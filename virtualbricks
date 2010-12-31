@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import gtk
+import gtk.glade
 import sys
 import os
 import ConfigParser
@@ -120,6 +121,7 @@ class BrickConfig():
 			print "%s=%s" % (k,v)
 
 
+
 class Brick():
 	def __init__(self, _factory, _name):
 		self.factory = _factory
@@ -130,6 +132,7 @@ class Brick():
 		self.cfg = BrickConfig()
 		self.command_builder=dict()
 		self.factory.bricks.append(self)
+		self.gui_changed = False
 		self.need_restart_to_apply_changes = False
 		
 	def cmdline(self):
@@ -177,6 +180,7 @@ class Brick():
 			if not p.configured():
 				if (p.connect(endpoint)):
 					self.on_config_changed()
+					self.gui_changed = True
 					return True
 		return False
 				
@@ -504,6 +508,7 @@ class TunnelConnect(TunnelListen):
 		return (self.plugs[0].sock is not None) and self.cfg.get("host") and len(self.cfg.host) > 0	
 
 qemu_eth_model = ["rtl8139","e1000","virtio","i82551", "i82557b", "i82559er","ne2k_pci","pcnet","ne2k_isa"]
+
 class VMethernet(Plug, BrickConfig):
 	def __init__(self, brick, name):
 		Plug.__init__(self, brick)
@@ -554,13 +559,13 @@ class VM(Brick):
 			'-baloon':'baloon',
 			#acpitable not supported
 			#smbios not supported
-			'-kernel':'',
-			'-append':'',
-			'-initrd':'',
-			'-serial':'',
-			'-parallel':'',
-			'-monitor':'',
-			'-qmp':'',
+			'-kernel':'kernel',
+			'-append':'append',
+			'-initrd':'initrd',
+			'-serial':'serial',
+			'-parallel':'parallel',
+			'-monitor':'monitor',
+			'-qmp':'qmp',
 			'-mon':'',
 			'-pidfile':'',
 			'-singlestep':'',
@@ -608,21 +613,30 @@ class VM(Brick):
 		
 	
 
-class BrickFactory():
+class BrickFactory(threading.Thread):
 	def __init__(self, showconsole=True):
 		self.bricks = []
 		self.socks = []
-		if (showconsole):
-			while True:
+		self.showconsole = showconsole
+		threading.Thread.__init__(self)
+		self.running_condition = True
+		
+
+	def run(self):
+		while self.running_condition:
+			if (self.showconsole):
 				print "virtualbricks> ",
 				command = sys.stdin.readline()
 				self.parse(command.rstrip('\n'))
+			else:
+				time.sleep(1)
+		sys.exit(0)
 	def quit(self):
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
-		print 'Bye!'
-		sys.exit(0)
+		print 'Engine: Bye!'
+		self.running_condition = False
 
 
 	def proclist(self):
@@ -670,7 +684,7 @@ class BrickFactory():
 					found = obj
 					break
 			
-			if found is not None:
+			if found is not None and len(command.split(" ")) > 1:
 				self.brickAction(found, command.split(" ")[1:])
 			else:
 				print 'Invalid command "%s"' % command	
@@ -768,11 +782,523 @@ class BrickFactory():
 			
 			
 			
+
+class VBGUI:
+	def __init__(self):
+		if not os.access(MYPATH, os.X_OK):
+			os.mkdir(MYPATH)
+
+		gtk.gdk.threads_init()
+		self.brickfactory = BrickFactory(True)
+		self.brickfactory.start()
+		try:
+			self.gladefile = gtk.glade.XML('./virtualbricks.glade')
+		except:
+			print "Cannot open required file 'virtualbricks.glade'"
+			sys.exit(1)
+		self.widg = self.get_widgets(self.widgetnames())
+		self.widg['main_win'].show()
+		self.ps = []
+		self.bricks = []
+		self.signals()
+		self.timers()
+		self.running_bricks = self.treestore('treeview_joblist', 
+			[gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], 
+			['PID','Type','Name'])
+		self.bookmarks = self.treestore('treeview_bookmarks', 
+				[gtk.gdk.Pixbuf, 
+				 gobject.TYPE_STRING, 
+				 gobject.TYPE_STRING, 
+				 gobject.TYPE_STRING], 
+				['Status','Type','Name', 'Parameters'])
+		try:
+			gtk.main()
+		except KeyboardInterrupt:
+			self.quit()
+
+	def quit(self):
+		print
+		print "GUI: Goodbye!"
+		self.brickfactory.quit()
+		sys.exit(0)
+
+
+	def get_widgets(self, l):
+		r = dict()
+		for i in l:	
+			r[i] =  self.gladefile.get_widget(i)
+			r[i].hide()
+		return r
+
+	def treestore(self, tree_name, fields,names):
+		tree = self.gladefile.get_widget(tree_name)
+		ret = gtk.TreeStore(*fields)
+		tree.set_model(ret)
+		for idx, name in enumerate(names):
+			col = gtk.TreeViewColumn(name)
+			if fields[idx] == gtk.gdk.Pixbuf:
+				elem = gtk.CellRendererPixbuf()
+				col.pack_start(elem, False)
+				col.add_attribute(elem, 'pixbuf', idx)
+			else:
+				elem = gtk.CellRendererText()
+				col.pack_start(elem, False)
+				col.add_attribute(elem, 'text', idx)
+			tree.append_column(col)
+		return ret
 		
-	
+
+	def widgetnames(self):
+		return ['main_win', 
+		'filechooserdialog_openimage', 
+		'dialog_settings', 
+		'dialog_bookmarks', 
+		'menu_popup_bookmarks', 
+		'dialog_about1',
+		'dialog_create_image',
+		'dialog_messages', 
+		'menu_popup_imagelist', 
+		'dialog_jobmonitor', 
+		'menu_popup_joblist', 
+		'menu_popup_usbhost',
+		'menu_popup_usbguest', 
+		'menu_popup_volumes',
+		'dialog_newnetcard',
+		'dialog_confirm_action',
+		'dialog_new_redirect',
+		'vm_config',
+		'switch_win',
+		'cables_win', 
+		'tunnel_win',
+		'ifconfig_win', 
+		'wf_cfg_win'
+	]
+
+	def on_window1_destroy(self, widget=None, data=""):
+		self.quit()
+		pass
+	def on_item_quit_activate(self, widget=None, data=""):
+		self.quit()
+		pass
+	def on_item_settings_activate(self, widget=None, data=""):
+		print "on_item_settings_activate undefined!"
+		pass
+	def on_item_settings_autoshow_activate(self, widget=None, data=""):
+		print "on_item_settings_autoshow_activate undefined!"
+		pass
+	def on_item_settings_autohide_activate(self, widget=None, data=""):
+		print "on_item_settings_autohide_activate undefined!"
+		pass
+	def on_item_create_image_activate(self, widget=None, data=""):
+		print "on_item_create_image_activate undefined!"
+		pass
+	def on_item_about_activate(self, widget=None, data=""):
+		self.widg['dialog_about1'].show_all()
+		pass
+	def on_toolbutton_launch_clicked(self, widget=None, data=""):
+		print "on_toolbutton_launch_clicked undefined!"
+		pass
+	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
+		print "on_toolbutton_launchxterm_clicked undefined!"
+		pass
+	def on_toolbutton_launch_unmanaged_clicked(self, widget=None, data=""):
+		print "on_toolbutton_launch_unmanaged_clicked undefined!"
+		pass
+	def on_vpaned_mainwindow_button_press_event(self, widget=None, data=""):
+		print "on_vpaned_mainwindow_button_press_event undefined!"
+		pass
+	def on_treeview_bookmarks_button_press_event(self, widget=None, data=""):
+		print "on_treeview_bookmarks_button_press_event undefined!"
+		pass
+	def on_treeview_bookmarks_cursor_changed(self, widget=None, data=""):
+		print "on_treeview_bookmarks_cursor_changed undefined!"
+		pass
+	def on_treeview_bookmarks_row_activated_event(self, widget=None, data=""):
+		print "on_treeview_bookmarks_row_activated_event undefined!"
+		pass
+	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
+		print "on_treeview_bootimages_button_press_event undefined!"
+		pass
+	def on_treeview_bootimages_cursor_changed(self, widget=None, data=""):
+		print "on_treeview_bootimages_cursor_changed undefined!"
+		pass
+	def on_treeview_bootimages_row_activated_event(self, widget=None, data=""):
+		print "on_treeview_bootimages_row_activated_event undefined!"
+		pass
+	def on_treeview_joblist_button_press_event(self, widget=None, data=""):
+		print "on_treeview_joblist_button_press_event undefined!"
+		pass
+	def on_treeview_joblist_row_activated_event(self, widget=None, data=""):
+		print "on_treeview_joblist_row_activated_event undefined!"
+		pass
+	def on_button_togglesettings_clicked(self, widget=None, data=""):
+		print "on_button_togglesettings_clicked undefined!"
+		pass
+	def on_filechooserdialog_openimage_response(self, widget=None, data=""):
+		print "on_filechooserdialog_openimage_response undefined!"
+		pass
+	def on_button_openimage_cancel_clicked(self, widget=None, data=""):
+		print "on_button_openimage_cancel_clicked undefined!"
+		pass
+	def on_button_openimage_open_clicked(self, widget=None, data=""):
+		print "on_button_openimage_open_clicked undefined!"
+		pass
+	def on_dialog_settings_response(self, widget=None, data=""):
+		print "on_dialog_settings_response undefined!"
+		pass
+	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
+		print "on_treeview_cdromdrives_row_activated undefined!"
+		pass
+	def on_button_settings_add_cdevice_clicked(self, widget=None, data=""):
+		print "on_button_settings_add_cdevice_clicked undefined!"
+		pass
+	def on_button_settings_rem_cdevice_clicked(self, widget=None, data=""):
+		print "on_button_settings_rem_cdevice_clicked undefined!"
+		pass
+	def on_treeview_qemupaths_row_activated(self, widget=None, data=""):
+		print "on_treeview_qemupaths_row_activated undefined!"
+		pass
+	def on_button_settings_add_qemubin_clicked(self, widget=None, data=""):
+		print "on_button_settings_add_qemubin_clicked undefined!"
+		pass
+	def on_button_settings_rem_qemubin_clicked(self, widget=None, data=""):
+		print "on_button_settings_rem_qemubin_clicked undefined!"
+		pass
+	def on_dialog_bookmarks_response(self, widget=None, data=""):
+		print "on_dialog_bookmarks_response undefined!"
+		pass
+	def on_edit_bookmark_activate(self, widget=None, data=""):
+		print "on_edit_bookmark_activate undefined!"
+		pass
+	def on_bookmark_info_activate(self, widget=None, data=""):
+		print "on_bookmark_info_activate undefined!"
+		pass
+	def on_delete_bookmark_activate(self, widget=None, data=""):
+		print "on_delete_bookmark_activate undefined!"
+		pass
+	def on_dialog_about_response(self, widget=None, data=""):
+		self.widg['dialog_about1'].hide()
+		return True
+	def on_dialog_create_image_response(self, widget=None, data=""):
+		print "on_dialog_create_image_response undefined!"
+		pass
+	def on_filechooserbutton_newimage_dest_selection_changed(self, widget=None, data=""):
+		print "on_filechooserbutton_newimage_dest_selection_changed undefined!"
+		pass
+	def on_filechooserbutton_newimage_dest_current_folder_changed(self, widget=None, data=""):
+		print "on_filechooserbutton_newimage_dest_current_folder_changed undefined!"
+		pass
+	def on_entry_newimage_name_changed(self, widget=None, data=""):
+		print "on_entry_newimage_name_changed undefined!"
+		pass
+	def on_combobox_newimage_format_changed(self, widget=None, data=""):
+		print "on_combobox_newimage_format_changed undefined!"
+		pass
+	def on_spinbutton_newimage_size_changed(self, widget=None, data=""):
+		print "on_spinbutton_newimage_size_changed undefined!"
+		pass
+	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
+		print "on_combobox_newimage_sizeunit_changed undefined!"
+		pass
+	def on_button_create_image_clicked(self, widget=None, data=""):
+		print "on_button_create_image_clicked undefined!"
+		pass
+	def on_dialog_messages_response(self, widget=None, data=""):
+		print "on_dialog_messages_response undefined!"
+		pass
+	def on_item_info_activate(self, widget=None, data=""):
+		print "on_item_info_activate undefined!"
+		pass
+	def on_item_bookmark_activate(self, widget=None, data=""):
+		print "on_item_bookmark_activate undefined!"
+		pass
+	def on_dialog_jobmonitor_response(self, widget=None, data=""):
+		print "on_dialog_jobmonitor_response undefined!"
+		pass
+	def on_toolbutton_stop_job_clicked(self, widget=None, data=""):
+		print "on_toolbutton_stop_job_clicked undefined!"
+		pass
+	def on_toolbutton_reset_job_clicked(self, widget=None, data=""):
+		print "on_toolbutton_reset_job_clicked undefined!"
+		pass
+	def on_toolbutton_pause_job_clicked(self, widget=None, data=""):
+		print "on_toolbutton_pause_job_clicked undefined!"
+		pass
+	def on_toolbutton_rerun_job_clicked(self, widget=None, data=""):
+		print "on_toolbutton_rerun_job_clicked undefined!"
+		pass
+	def on_treeview_jobmon_volumes_button_press_event(self, widget=None, data=""):
+		print "on_treeview_jobmon_volumes_button_press_event undefined!"
+		pass
+	def on_treeview_jobmon_volumes_row_activated(self, widget=None, data=""):
+		print "on_treeview_jobmon_volumes_row_activated undefined!"
+		pass
+	def on_button_jobmon_apply_cdrom_clicked(self, widget=None, data=""):
+		print "on_button_jobmon_apply_cdrom_clicked undefined!"
+		pass
+	def on_button_jobmon_apply_fda_clicked(self, widget=None, data=""):
+		print "on_button_jobmon_apply_fda_clicked undefined!"
+		pass
+	def on_button_jobmon_apply_fdb_clicked(self, widget=None, data=""):
+		print "on_button_jobmon_apply_fdb_clicked undefined!"
+		pass
+	def on_combobox_jobmon_cdrom_changed(self, widget=None, data=""):
+		print "on_combobox_jobmon_cdrom_changed undefined!"
+		pass
+	def on_combobox_jobmon_fda_changed(self, widget=None, data=""):
+		print "on_combobox_jobmon_fda_changed undefined!"
+		pass
+	def on_combobox_jobmon_fdb_changed(self, widget=None, data=""):
+		print "on_combobox_jobmon_fdb_changed undefined!"
+		pass
+	def on_treeview_usbhost_button_press_event(self, widget=None, data=""):
+		print "on_treeview_usbhost_button_press_event undefined!"
+		pass
+	def on_treeview_usbhost_row_activated(self, widget=None, data=""):
+		print "on_treeview_usbhost_row_activated undefined!"
+		pass
+	def on_treeview_usbguest_button_press_event(self, widget=None, data=""):
+		print "on_treeview_usbguest_button_press_event undefined!"
+		pass
+	def on_treeview_usbguest_row_activated(self, widget=None, data=""):
+		print "on_treeview_usbguest_row_activated undefined!"
+		pass
+	def on_item_jobmonoitor_activate(self, widget=None, data=""):
+		print "on_item_jobmonoitor_activate undefined!"
+		pass
+	def on_item_stop_job_activate(self, widget=None, data=""):
+		print "on_item_stop_job_activate undefined!"
+		pass
+	def on_item_cont_job_activate(self, widget=None, data=""):
+		print "on_item_cont_job_activate undefined!"
+		pass
+	def on_item_reset_job_activate(self, widget=None, data=""):
+		print "on_item_reset_job_activate undefined!"
+		pass
+	def on_item_kill_job_activate(self, widget=None, data=""):
+		print "on_item_kill_job_activate undefined!"
+		pass
+	def on_attach_device_activate(self, widget=None, data=""):
+		print "on_attach_device_activate undefined!"
+		pass
+	def on_detach_device_activate(self, widget=None, data=""):
+		print "on_detach_device_activate undefined!"
+		pass
+	def on_item_eject_activate(self, widget=None, data=""):
+		print "on_item_eject_activate undefined!"
+		pass
+	def on_dialog_newnetcard_response(self, widget=None, data=""):
+		print "on_dialog_newnetcard_response undefined!"
+		pass
+	def on_combobox_networktype_changed(self, widget=None, data=""):
+		print "on_combobox_networktype_changed undefined!"
+		pass
+	def on_entry_network_macaddr_changed(self, widget=None, data=""):
+		print "on_entry_network_macaddr_changed undefined!"
+		pass
+	def on_entry_network_ip_changed(self, widget=None, data=""):
+		print "on_entry_network_ip_changed undefined!"
+		pass
+	def on_spinbutton_network_port_changed(self, widget=None, data=""):
+		print "on_spinbutton_network_port_changed undefined!"
+		pass
+	def on_spinbutton_network_vlan_changed(self, widget=None, data=""):
+		print "on_spinbutton_network_vlan_changed undefined!"
+		pass
+	def on_entry_network_ifacename_changed(self, widget=None, data=""):
+		print "on_entry_network_ifacename_changed undefined!"
+		pass
+	def on_entry_network_tuntapscript_changed(self, widget=None, data=""):
+		print "on_entry_network_tuntapscript_changed undefined!"
+		pass
+	def on_button__network_open_tuntap_file_clicked(self, widget=None, data=""):
+		print "on_button__network_open_tuntap_file_clicked undefined!"
+		pass
+	def on_spinbutton_network_filedescriptor_changed(self, widget=None, data=""):
+		print "on_spinbutton_network_filedescriptor_changed undefined!"
+		pass
+	def on_dialog_new_redirect_response(self, widget=None, data=""):
+		print "on_dialog_new_redirect_response undefined!"
+		pass
+	def on_radiobutton_redirect_TCP_toggled(self, widget=None, data=""):
+		print "on_radiobutton_redirect_TCP_toggled undefined!"
+		pass
+	def on_radiobutton_redirect_UDP_toggled(self, widget=None, data=""):
+		print "on_radiobutton_redirect_UDP_toggled undefined!"
+		pass
+	def on_spinbutton_redirect_sport_changed(self, widget=None, data=""):
+		print "on_spinbutton_redirect_sport_changed undefined!"
+		pass
+	def on_entry_redirect_gIP_changed(self, widget=None, data=""):
+		print "on_entry_redirect_gIP_changed undefined!"
+		pass
+	def on_spinbutton_redirect_dport_changed(self, widget=None, data=""):
+		print "on_spinbutton_redirect_dport_changed undefined!"
+		pass
+
+	def signals(self):
+		self.signaldict =  {
+			"on_window1_destroy":self.on_window1_destroy,
+			"on_item_quit_activate":self.on_item_quit_activate,
+			"on_item_settings_activate":self.on_item_settings_activate,
+			"on_item_settings_autoshow_activate":self.on_item_settings_autoshow_activate,
+			"on_item_settings_autohide_activate":self.on_item_settings_autohide_activate,
+			"on_item_create_image_activate":self.on_item_create_image_activate,
+			"on_item_about_activate":self.on_item_about_activate,
+			"on_toolbutton_launch_clicked":self.on_toolbutton_launch_clicked,
+			"on_toolbutton_launchxterm_clicked":self.on_toolbutton_launchxterm_clicked,
+			"on_toolbutton_launch_unmanaged_clicked":self.on_toolbutton_launch_unmanaged_clicked,
+			"on_vpaned_mainwindow_button_press_event":self.on_vpaned_mainwindow_button_press_event,
+			"on_treeview_bookmarks_button_press_event":self.on_treeview_bookmarks_button_press_event,
+			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
+			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
+			"on_treeview_bootimages_button_press_event":self.on_treeview_bootimages_button_press_event,
+			"on_treeview_bootimages_cursor_changed":self.on_treeview_bootimages_cursor_changed,
+			"on_treeview_bootimages_row_activated_event":self.on_treeview_bootimages_row_activated_event,
+			"on_treeview_joblist_button_press_event":self.on_treeview_joblist_button_press_event,
+			"on_treeview_joblist_row_activated_event":self.on_treeview_joblist_row_activated_event,
+			"on_button_togglesettings_clicked":self.on_button_togglesettings_clicked,
+			"on_filechooserdialog_openimage_response":self.on_filechooserdialog_openimage_response,
+			"on_button_openimage_cancel_clicked":self.on_button_openimage_cancel_clicked,
+			"on_button_openimage_open_clicked":self.on_button_openimage_open_clicked,
+			"on_dialog_settings_response":self.on_dialog_settings_response,
+			"on_treeview_cdromdrives_row_activated":self.on_treeview_cdromdrives_row_activated,
+			"on_button_settings_add_cdevice_clicked":self.on_button_settings_add_cdevice_clicked,
+			"on_button_settings_rem_cdevice_clicked":self.on_button_settings_rem_cdevice_clicked,
+			"on_treeview_qemupaths_row_activated":self.on_treeview_qemupaths_row_activated,
+			"on_button_settings_add_qemubin_clicked":self.on_button_settings_add_qemubin_clicked,
+			"on_button_settings_rem_qemubin_clicked":self.on_button_settings_rem_qemubin_clicked,
+			"on_dialog_bookmarks_response":self.on_dialog_bookmarks_response,
+			"on_edit_bookmark_activate":self.on_edit_bookmark_activate,
+			"on_bookmark_info_activate":self.on_bookmark_info_activate,
+			"on_delete_bookmark_activate":self.on_delete_bookmark_activate,
+			"on_dialog_about_response":self.on_dialog_about_response,
+			"on_dialog_create_image_response":self.on_dialog_create_image_response,
+			"on_filechooserbutton_newimage_dest_selection_changed":self.on_filechooserbutton_newimage_dest_selection_changed,
+			"on_filechooserbutton_newimage_dest_current_folder_changed":self.on_filechooserbutton_newimage_dest_current_folder_changed,
+			"on_entry_newimage_name_changed":self.on_entry_newimage_name_changed,
+			"on_combobox_newimage_format_changed":self.on_combobox_newimage_format_changed,
+			"on_spinbutton_newimage_size_changed":self.on_spinbutton_newimage_size_changed,
+			"on_combobox_newimage_sizeunit_changed":self.on_combobox_newimage_sizeunit_changed,
+			"on_button_create_image_clicked":self.on_button_create_image_clicked,
+			"on_dialog_messages_response":self.on_dialog_messages_response,
+			"on_item_info_activate":self.on_item_info_activate,
+			"on_item_bookmark_activate":self.on_item_bookmark_activate,
+			"on_dialog_jobmonitor_response":self.on_dialog_jobmonitor_response,
+			"on_toolbutton_stop_job_clicked":self.on_toolbutton_stop_job_clicked,
+			"on_toolbutton_reset_job_clicked":self.on_toolbutton_reset_job_clicked,
+			"on_toolbutton_pause_job_clicked":self.on_toolbutton_pause_job_clicked,
+			"on_toolbutton_rerun_job_clicked":self.on_toolbutton_rerun_job_clicked,
+			"on_treeview_jobmon_volumes_button_press_event":self.on_treeview_jobmon_volumes_button_press_event,
+			"on_treeview_jobmon_volumes_row_activated":self.on_treeview_jobmon_volumes_row_activated,
+			"on_button_jobmon_apply_cdrom_clicked":self.on_button_jobmon_apply_cdrom_clicked,
+			"on_button_jobmon_apply_fda_clicked":self.on_button_jobmon_apply_fda_clicked,
+			"on_button_jobmon_apply_fdb_clicked":self.on_button_jobmon_apply_fdb_clicked,
+			"on_combobox_jobmon_cdrom_changed":self.on_combobox_jobmon_cdrom_changed,
+			"on_combobox_jobmon_fda_changed":self.on_combobox_jobmon_fda_changed,
+			"on_combobox_jobmon_fdb_changed":self.on_combobox_jobmon_fdb_changed,
+			"on_treeview_usbhost_button_press_event":self.on_treeview_usbhost_button_press_event,
+			"on_treeview_usbhost_row_activated":self.on_treeview_usbhost_row_activated,
+			"on_treeview_usbguest_button_press_event":self.on_treeview_usbguest_button_press_event,
+			"on_treeview_usbguest_row_activated":self.on_treeview_usbguest_row_activated,
+			"on_item_jobmonoitor_activate":self.on_item_jobmonoitor_activate,
+			"on_item_stop_job_activate":self.on_item_stop_job_activate,
+			"on_item_cont_job_activate":self.on_item_cont_job_activate,
+			"on_item_reset_job_activate":self.on_item_reset_job_activate,
+			"on_item_kill_job_activate":self.on_item_kill_job_activate,
+			"on_attach_device_activate":self.on_attach_device_activate,
+			"on_detach_device_activate":self.on_detach_device_activate,
+			"on_item_eject_activate":self.on_item_eject_activate,
+			"on_dialog_newnetcard_response":self.on_dialog_newnetcard_response,
+			"on_combobox_networktype_changed":self.on_combobox_networktype_changed,
+			"on_entry_network_macaddr_changed":self.on_entry_network_macaddr_changed,
+			"on_entry_network_ip_changed":self.on_entry_network_ip_changed,
+			"on_spinbutton_network_port_changed":self.on_spinbutton_network_port_changed,
+			"on_spinbutton_network_vlan_changed":self.on_spinbutton_network_vlan_changed,
+			"on_entry_network_ifacename_changed":self.on_entry_network_ifacename_changed,
+			"on_entry_network_tuntapscript_changed":self.on_entry_network_tuntapscript_changed,
+			"on_button__network_open_tuntap_file_clicked":self.on_button__network_open_tuntap_file_clicked,
+			"on_spinbutton_network_filedescriptor_changed":self.on_spinbutton_network_filedescriptor_changed,
+			"on_dialog_new_redirect_response":self.on_dialog_new_redirect_response,
+			"on_radiobutton_redirect_TCP_toggled":self.on_radiobutton_redirect_TCP_toggled,
+			"on_radiobutton_redirect_UDP_toggled":self.on_radiobutton_redirect_UDP_toggled,
+			"on_spinbutton_redirect_sport_changed":self.on_spinbutton_redirect_sport_changed,
+			"on_entry_redirect_gIP_changed":self.on_entry_redirect_gIP_changed,
+			"on_spinbutton_redirect_dport_changed":self.on_spinbutton_redirect_dport_changed,
+		}
+		self.gladefile.signal_autoconnect(self.signaldict)
+
+	def timers(self):
+		gobject.timeout_add(1000,self.check_joblist)
+		gobject.timeout_add(1100,self.check_bricks)
+
+	def check_bricks(self):
+		new_bricks = []
+		force_render = False
+		for b in self.brickfactory.bricks:
+			if b.gui_changed:
+				b.gui_changed = False
+				force_render = True
+			new_bricks.append(b)
+		if force_render or new_bricks != self.bricks:
+			self.bookmarks.clear()
+			self.bricks = new_bricks
+			tree = self.gladefile.get_widget('treeview_bookmarks')
+			for b in self.bricks:
+				iter = self.bookmarks.append(None, None)
+				if b.proc is not None:
+		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_YES, gtk.ICON_SIZE_MENU))
+				else:
+		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_NO, gtk.ICON_SIZE_MENU))
+				self.bookmarks.set_value(iter,1,b.get_type())
+				self.bookmarks.set_value(iter,2,b.name)
+				if (b.get_type() == "Switch"):
+					self.bookmarks.set_value(iter, 3, "Free ports: %d/%d" % (b.socks[0].get_free_ports(), int(b.cfg.numports)))
+				if (b.get_type() == "Wire"):
+					p0 = "disconnected"
+					p1 = "disconnected"
+					if (b.plugs[0].sock):
+						p0 = b.plugs[0].sock.brick.name
+					if b.plugs[1].sock:
+						p1 = b.plugs[1].sock.brick.name
+					self.bookmarks.set_value(iter, 3, "%s <--> %s" % (p0,p1))
+				if (b.get_type() == "Tap"):
+					p0 = "disconnected"
+					if b.plugs[0].sock:
+						p0 = "connected to " + b.plugs[0].sock.brick.name 
+					self.bookmarks.set_value(iter, 3, p0)
+					
+			print "bricks list updated"
+		return True
+			
+			
+		
+	def check_joblist(self):
+		new_ps = []
+		for b in self.brickfactory.bricks:
+			if b.proc is not None:
+				new_ps.append(b)
+		
+		if self.ps != new_ps:
+			self.ps = new_ps
+			self.bricks = []
+			self.running_bricks.clear()
+			for b in self.ps:
+				iter = self.running_bricks.append(None, None)
+				self.running_bricks.set_value(iter,0,b.pid)
+				self.running_bricks.set_value(iter,1,b.get_type())
+				self.running_bricks.set_value(iter,2,b.name)
+			print "proc list updated"
+		return True
+
+
 #Main.
 
-if not os.access(MYPATH, os.X_OK):
-	os.mkdir(MYPATH)
-brickfactory = BrickFactory(True)
+VB = VBGUI()
+		
+		
+	
+
+
+
 
