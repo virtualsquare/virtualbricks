@@ -270,7 +270,7 @@
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <widget class="GtkTreeView" id="treeview_bootimages">
+                          <widget class="GtkTreeView" id="treeview_joblist">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="tooltip" translatable="yes">Click to select an enty for use or edit its configuration, rightclick for more.</property>
@@ -301,13 +301,9 @@
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <widget class="GtkTreeView" id="treeview_joblist">
+                          <widget class="GtkImage" id="image_topology">
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="tooltip" translatable="yes">Doubleclick an entry to open the control monitor or rightclick for more options</property>
-                            <property name="hover_selection">True</property>
-                            <signal name="button_press_event" handler="on_treeview_joblist_button_press_event"/>
-                            <signal name="row_activated" handler="on_treeview_joblist_row_activated_event"/>
+                            <property name="stock">gtk-missing-image</property>
                           </widget>
                         </child>
                       </widget>
@@ -1317,10 +1313,10 @@ behavior of the config panel for the selected image or machine.
 Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.
 
 Virtualbricks is licensed under the terms of the GPL (General Public Licence) Version 2.
-© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. 
+&#xA9; 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. 
 
-VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.
-QEMU - Copyright © 2005-2011 Fabrice Bellard.
+VDE - Virtual Distributed Ethernet -  &#xA9; 2003-2011 Renzo Davoli.
+QEMU - Copyright &#xA9; 2005-2011 Fabrice Bellard.
 QEMU is a trademark of Fabrice Bellard.
 
 If you find virtualbricks useful for your business, please consider making a donation. 
