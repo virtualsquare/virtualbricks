@@ -622,6 +622,12 @@ class BrickFactory(threading.Thread):
 		self.running_condition = True
 		
 
+	def getbrickbyname(self, name):
+		for b in self.bricks:
+			if b.name == name:
+				return b
+		return None
+
 	def run(self):
 		while self.running_condition:
 			if (self.showconsole):
@@ -663,7 +669,7 @@ class BrickFactory(threading.Thread):
 			self.proclist()
 		
 		elif command.startswith('n ') or command.startswith('new '):
-			self.newbrick(command.split(" ")[1:])
+			self.newbrick(*command.split(" ")[1:])
 		elif command == 'list':
 			for obj in self.bricks:
 				print "%s %s" % (obj.get_type(), obj.name)
@@ -723,62 +729,39 @@ class BrickFactory(threading.Thread):
 			print "cannot find " + nick
 			print self.socks
 
+
 	
-	def newbrick(self, brick):
-		if brick[0] == "switch":
-			if len(brick) == 2:
-				s = Switch(self,brick[1]) 
-				print "new switch %s OK" % s.name
-			else: 
-				print "Usage: n[ew] switch switchname"
-				print "Usage: n[ew] switch switchname"
-		elif brick[0] == "tap":
-			if len(brick) == 2:
-				s = Tap(self,brick[1]) 
-				print "new tap %s OK" % s.name
-			else: 
-				print "Usage: n[ew] tap tapname"
-				print "Usage: n[ew] tap tapname"
-		elif brick[0] == "vm":
-			if len(brick) == 2:
-				s = VM(self, brick[1]) 
-				print "new vm %s OK" % s.name
-			else: 
-				print "Usage: n[ew] vm vmname"
-				print "Usage: n[ew] vm vmname"
-		elif brick[0] == "wire":
-			if len(brick) == 2:
-				s = Wire(self, brick[1]) 
-				print "new cable %s OK" % s.name
-			else: 
-				print "Usage: n[ew] cable cablename"
-				print "Usage: n[ew] cable cablename"
-		elif brick[0] == "wirefilter":
-			if len(brick) == 2:
-				s = Wirefilter(self,brick[1]) 
-				print "new wirefilter %s OK" % s.name
-			else: 
-				print "Usage: n[ew] wirefilter wirefiltername"
-				print "Usage: n[ew] wirefilter wirefiltername"
-		elif brick[0] == "tunnell":
-			if len(brick) == 2:
-				s = TunnelListen(self,brick[1]) 
-				print "new tunnel %s OK" % s.name
-			else: 
-				print "Usage: n[ew] tunnell tunnelname"
-				print "Usage: n[ew] tunnell tunnelname"
-		elif brick[0] == "tunnelc":
-			if len(brick) == 2:
-				s = TunnelConnect(self,brick[1]) 
-				print "new tunnel %s OK" % s.name
-			else: 
-				print "Usage: n[ew] tunnelc tunnelname"
-				print "Usage: n[ew] tunnelc tunnelname"
+	def newbrick(self, ntype="", name=""):
+		for oldb in self.bricks:
+			if oldb.name == name:
+				print "Name in use"
+				return False
+		if ntype == "switch":
+			s = Switch(self,name) 
+			print "new switch %s OK" % s.name
+		elif ntype == "tap":
+			s = Tap(self,name) 
+			print "new tap %s OK" % s.name
+		elif ntype == "vm":
+			s = VM(self, name) 
+			print "new vm %s OK" % s.name
+		elif ntype == "wire":
+			s = Wire(self, name) 
+			print "new cable %s OK" % s.name
+		elif ntype == "wirefilter":
+			s = Wirefilter(self,name) 
+			print "new wirefilter %s OK" % s.name
+		elif ntype == "tunnell":
+			s = TunnelListen(self,name) 
+			print "new tunnel %s OK" % s.name
+		elif ntype == "tunnelc":
+			s = TunnelConnect(self,name) 
+			print "new tunnel %s OK" % s.name
 		#elif ...:
-		elif len(brick) == 2:
-			print 'Unknown brick %s' % brick[0]
 		else:
 			print 'Invalid command.'
+			return False
+		return True
 			
 			
 			
@@ -811,10 +794,66 @@ class VBGUI:
 				 gobject.TYPE_STRING, 
 				 gobject.TYPE_STRING], 
 				['Status','Type','Name', 'Parameters'])
+		
+		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
+		self.curtain_down()
+		
+		self.selected = None
+		
+
 		try:
 			gtk.main()
 		except KeyboardInterrupt:
 			self.quit()
+
+	def curtain_is_down(self):
+		print self.curtain.get_position()
+		return (self.curtain.get_position()>500)
+
+	def curtain_down(self):
+		self.curtain.set_position(2147483647)
+		self.gladefile.get_widget('label_showhidesettings').set_text('Show Settings')
+
+	def curtain_up(self):
+		if self.selected.get_type() == 'Switch':
+			print "switch config"
+			self.gladefile.get_widget('box_vmconfig').hide()
+			self.gladefile.get_widget('box_switchconfig').show_all()
+			self.gladefile.get_widget('box_tapconfig').hide()
+			#self.gladefile.get_widget('box_tunnellconfig').hide()
+			#self.gladefile.get_widget('box_tunnelcconfig').hide()
+			#self.gladefile.get_widget('box_wireconfig').hide()
+			#self.gladefile.get_widget('box_wirefilterconfig').hide()
+		elif self.selected.get_type() == 'Tap':
+			print "tap config"
+			self.gladefile.get_widget('box_vmconfig').hide()
+			self.gladefile.get_widget('box_switchconfig').hide()
+			self.gladefile.get_widget('box_tapconfig').show_all()
+			#self.gladefile.get_widget('box_tunnellconfig').hide()
+			#self.gladefile.get_widget('box_tunnelcconfig').hide()
+			#self.gladefile.get_widget('box_wireconfig').hide()
+			#self.gladefile.get_widget('box_wirefilterconfig').hide()
+		self.curtain.set_position(280)
+		self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
+		
+	def get_treeselected(self, tree, store, pthinfo, c):
+
+		if pthinfo is not None:
+			path, col, cellx, celly = pthinfo
+			tree.grab_focus()
+			tree.set_cursor(path, col, 0)
+			iter = self.bookmarks.get_iter(path)
+			name = self.bookmarks.get_value(iter, c)
+			self.config_last_iter = iter
+			return name
+		return ""
+
+	def get_treeselected_name(self, t, s, p):
+		return self.get_treeselected(t, s, p, 2)
+	
+	def get_treeselected_type(self, t, s, p):
+		return self.get_treeselected(t, s, p, 1)
+		
 
 	def quit(self):
 		print
@@ -901,21 +940,45 @@ class VBGUI:
 	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
 		print "on_toolbutton_launchxterm_clicked undefined!"
 		pass
+
 	def on_toolbutton_launch_unmanaged_clicked(self, widget=None, data=""):
 		print "on_toolbutton_launch_unmanaged_clicked undefined!"
 		pass
-	def on_vpaned_mainwindow_button_press_event(self, widget=None, data=""):
-		print "on_vpaned_mainwindow_button_press_event undefined!"
-		pass
-	def on_treeview_bookmarks_button_press_event(self, widget=None, data=""):
-		print "on_treeview_bookmarks_button_press_event undefined!"
-		pass
-	def on_treeview_bookmarks_cursor_changed(self, widget=None, data=""):
-		print "on_treeview_bookmarks_cursor_changed undefined!"
-		pass
-	def on_treeview_bookmarks_row_activated_event(self, widget=None, data=""):
-		print "on_treeview_bookmarks_row_activated_event undefined!"
-		pass
+
+	def on_vpaned_mainwindow_button_release_event(self, widget=None, event=None, data=""):
+		self.curtain_up()
+		return False
+
+	def on_treeview_bookmarks_button_press_event(self, widget=None, event=None, data=""):
+		tree = self.gladefile.get_widget('treeview_bookmarks');
+		store = self.bookmarks
+		x = int(event.x)
+		y = int(event.y)
+		time = event.time
+		pthinfo = tree.get_path_at_pos(x, y)
+		name = self.get_treeselected_name(tree, store, pthinfo)
+		print name
+		if event.button == 3:
+			pass
+		
+	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
+		tree = self.gladefile.get_widget('treeview_bookmarks');
+		store = self.bookmarks
+		path, focus = tree.get_cursor()
+                iter = store.get_iter(path)
+                ntype = store.get_value(iter, 1)
+                name = store.get_value(iter, 2)
+		self.selected = self.brickfactory.getbrickbyname(name)
+		print self.selected
+		
+	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None , data=""):
+		tree = self.gladefile.get_widget('treeview_bookmarks');
+		store = self.bookmarks
+		path, focus = tree.get_cursor()
+                iter = store.get_iter(path)
+                ntype = store.get_value(iter, 1)
+                name = store.get_value(iter, 2)
+		print "Activating %s %s" % (ntype, name)
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"
 		pass
@@ -932,8 +995,12 @@ class VBGUI:
 		print "on_treeview_joblist_row_activated_event undefined!"
 		pass
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
-		print "on_button_togglesettings_clicked undefined!"
-		pass
+		if self.curtain_is_down():
+			self.curtain_up()
+			print "up"
+		else:
+			self.curtain_down()
+			print "down"
 	def on_filechooserdialog_openimage_response(self, widget=None, data=""):
 		print "on_filechooserdialog_openimage_response undefined!"
 		pass
@@ -1148,7 +1215,7 @@ class VBGUI:
 			"on_toolbutton_launch_clicked":self.on_toolbutton_launch_clicked,
 			"on_toolbutton_launchxterm_clicked":self.on_toolbutton_launchxterm_clicked,
 			"on_toolbutton_launch_unmanaged_clicked":self.on_toolbutton_launch_unmanaged_clicked,
-			"on_vpaned_mainwindow_button_press_event":self.on_vpaned_mainwindow_button_press_event,
+			"on_vpaned_mainwindow_button_release_event":self.on_vpaned_mainwindow_button_release_event,
 			"on_treeview_bookmarks_button_press_event":self.on_treeview_bookmarks_button_press_event,
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
 			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
