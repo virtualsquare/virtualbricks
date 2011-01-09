@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 import sys
 import os
 import ConfigParser
@@ -12,6 +13,7 @@ import random
 import threading
 import virtualbricks_GUI
 import virtualbricks_Global as Global
+import select
 
 class InvalidNameException(Exception):
 	def __init__(self):
@@ -126,6 +128,7 @@ class Brick():
 		self.factory.bricks.append(self)
 		self.gui_changed = False
 		self.need_restart_to_apply_changes = False
+		self.needsudo = False
 		
 	def cmdline(self):
 		return ""
@@ -218,6 +221,8 @@ class Brick():
 
 	def args(self):
 		res = []
+		if self.needsudo:
+			res.append('gksu')
 		res.append(self.prog())
 		for c in self.build_cmd_line():
 			res.append(c)
@@ -339,6 +344,7 @@ class Tap(Brick):
 		self.command_builder = {"-s":'sock', "*tap":"name"}
 		self.cfg.sock = ""
 		self.plugs.append(Plug(self))
+		#self.needsudo = True
 	
 
 	def prog(self):
@@ -685,11 +691,18 @@ class BrickFactory(threading.Thread):
 		return None
 
 	def run(self):
+		print "virtualbricks> ",
+		sys.stdout.flush()
+		p = select.poll()
+		p.register(sys.stdin, select.POLLIN)
 		while self.running_condition:
 			if (self.showconsole):
-				print "virtualbricks> ",
-				command = sys.stdin.readline()
-				self.parse(command.rstrip('\n'))
+				if (len(p.poll(10)) > 0):
+					command = sys.stdin.readline()
+					self.parse(command.rstrip('\n'))
+					print
+					print "virtualbricks> ",
+					sys.stdout.flush()
 			else:
 				time.sleep(1)
 		sys.exit(0)
@@ -699,6 +712,7 @@ class BrickFactory(threading.Thread):
 				b.poweroff()
 		print 'Engine: Bye!'
 		self.running_condition = False
+		sys.exit(0)
 
 
 	def proclist(self):

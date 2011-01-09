@@ -288,6 +288,7 @@ class VBGUI:
 		'ifconfig_win', 
 		'dialog_newbrick',
 		'menu_brickactions',
+		'dialog_warn'
 		]
 	def sockscombo(self):
 		return [
@@ -323,6 +324,15 @@ class VBGUI:
 		widget.hide()
 		return True
 
+	def error(self, text):
+		self.gladefile.get_widget('texterror').set_text(text)
+		self.show_window('dialog_warn')
+
+	def on_error_close(self, widget=None, data =""):
+		print "ERROR CLOSE"
+		self.widg['dialog_warn'].hide()
+		return True
+
 	def on_newbrick_cancel(self, widget=None, data=""):
 		self.show_window('')
 		
@@ -333,8 +343,7 @@ class VBGUI:
 		try:
 			self.brickfactory.newbrick(ntype, name)
 		except BrickFactory.InvalidNameException:
-			#TODO errormessage
-			print "Creation error"
+			self.error("Cannot create brick: Invalid name.")
 		else:
 			print "Created successfully"
 
@@ -375,7 +384,7 @@ class VBGUI:
 		self.quit()
 		pass
 	def on_item_settings_activate(self, widget=None, data=""):
-		print "on_item_settings_activate undefined!"
+		self.show_window('dialog_settings')
 		pass
 	def on_item_settings_autoshow_activate(self, widget=None, data=""):
 		print "on_item_settings_autoshow_activate undefined!"
@@ -466,8 +475,11 @@ class VBGUI:
 				b.poweron()
 			except(BrickFactory.BadConfigException):
 				b.gui_changed=True
-				#TODO: errormessage
-				print "error!"
+				self.error("Cannot start this Brick: Brick not configured, yet.")
+			except(BrickFactory.NotConnectedException):
+				self.error("Cannot start this Brick: Brick not connected.")
+			except(BrickFactory.LinkDownException):
+				self.error("Cannot start this Brick: Link down.")
 				pass
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"
@@ -479,6 +491,7 @@ class VBGUI:
 		print "on_treeview_bootimages_row_activated_event undefined!"
 		pass
 	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
+		print "Hello"
 		tree = self.gladefile.get_widget('treeview_joblist');
 		store = self.running_bricks
 		x = int(event.x)
@@ -488,7 +501,7 @@ class VBGUI:
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		if event.button == 3:
 			self.joblist_selected = self.brickfactory.getbrickbyname(name)
-			if self.selected:
+			if self.joblist_selected:
 				self.show_window('menu_popup_joblist')
 		pass
 	def on_treeview_joblist_row_activated_event(self, widget=None, data=""):
@@ -724,6 +737,7 @@ class VBGUI:
 			"on_windown_destroy":self.on_windown_destroy,
 			"on_newbrick_cancel":self.on_newbrick_cancel,
 			"on_newbrick_ok":self.on_newbrick_ok,
+			"on_error_close":self.on_error_close,
 			"on_config_cancel":self.on_config_cancel,
 			"on_config_ok":self.on_config_ok,
 			"on_gilbert_toggle": self.on_gilbert_toggle,
@@ -877,7 +891,17 @@ class VBGUI:
 				if (b.get_type() == "Tap"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
-						p0 = "connected to " + b.plugs[0].sock.brick.name 
+						p0 = "plugged to " + b.plugs[0].sock.brick.name 
+					self.bookmarks.set_value(iter, 3, p0)
+				if (b.get_type() == "TunnelListen"):
+					p0 = "disconnected"
+					if b.plugs[0].sock:
+						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", listening to udp:" + b.cfg.port 
+					self.bookmarks.set_value(iter, 3, p0)
+				if (b.get_type() == "TunnelConnect"):
+					p0 = "disconnected"
+					if b.plugs[0].sock:
+						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", connecting to udp://" + b.cfg.host
 					self.bookmarks.set_value(iter, 3, p0)
 					
 			print "bricks list updated"
@@ -890,6 +914,11 @@ class VBGUI:
 		for b in self.brickfactory.bricks:
 			if b.proc is not None:
 				new_ps.append(b)
+				ret = b.proc.poll()
+				if ret != None:
+					b.poweroff()
+					self.error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
+					b.gui_changed = True
 		
 		if self.ps != new_ps:
 			self.ps = new_ps

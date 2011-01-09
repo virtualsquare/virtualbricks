@@ -133,7 +133,7 @@
             <child>
               <widget class="GtkToolbar" id="toolbar1">
                 <property name="visible">True</property>
-                <property name="toolbar_style">icons</property>
+                <property name="toolbar_style">both</property>
                 <child>
                   <widget class="GtkToolButton" id="toolbutton_newbrick">
                     <property name="visible">True</property>
@@ -159,6 +159,7 @@
                   <widget class="GtkToolButton" id="toolbutton_start">
                     <property name="visible">True</property>
                     <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
+                    <property name="label" translatable="yes">Start All Bricks</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-media-play</property>
                     <signal name="clicked" handler="on_toolbutton_launch_unmanaged_clicked"/>
@@ -173,6 +174,7 @@
                     <property name="visible">True</property>
                     <property name="has_tooltip">True</property>
                     <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
+                    <property name="label" translatable="yes">Stop All Bricks</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-media-stop</property>
                   </widget>
@@ -3398,7 +3400,6 @@ Normal Distribution</property>
     </child>
   </widget>
   <widget class="GtkFileChooserDialog" id="filechooserdialog_openimage">
-    <property name="visible">True</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_filechooserdialog_openimage_response"/>
     <child internal-child="vbox">
@@ -3458,7 +3459,6 @@ Normal Distribution</property>
   <widget class="GtkDialog" id="dialog_settings">
     <property name="width_request">450</property>
     <property name="height_request">450</property>
-    <property name="visible">True</property>
     <property name="title" translatable="yes">settings</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_settings_response"/>
@@ -4056,7 +4056,6 @@ behavior of the config panel for the selected image or machine.
   </widget>
   <widget class="GtkDialog" id="dialog_bookmarks">
     <property name="width_request">400</property>
-    <property name="visible">True</property>
     <property name="title" translatable="yes">Add Bookmark</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_bookmarks_response"/>
@@ -4241,7 +4240,6 @@ behavior of the config panel for the selected image or machine.
   <widget class="GtkDialog" id="dialog_about1">
     <property name="width_request">600</property>
     <property name="height_request">500</property>
-    <property name="visible">True</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_about_response"/>
@@ -4356,7 +4354,6 @@ If you find virtualbricks useful for your business, please consider making a don
   <widget class="GtkDialog" id="dialog_create_image">
     <property name="width_request">447</property>
     <property name="height_request">285</property>
-    <property name="visible">True</property>
     <property name="title" translatable="yes">create new empty image</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_create_image_response"/>
@@ -4682,7 +4679,6 @@ GB</property>
   <widget class="GtkDialog" id="dialog_messages">
     <property name="width_request">400</property>
     <property name="height_request">300</property>
-    <property name="visible">True</property>
     <property name="title" translatable="yes">message</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_messages_response"/>
@@ -4762,7 +4758,6 @@ GB</property>
   <widget class="GtkDialog" id="dialog_jobmonitor">
     <property name="width_request">600</property>
     <property name="height_request">500</property>
-    <property name="visible">True</property>
     <property name="title" translatable="yes">Control monitor</property>
     <property name="modal">True</property>
     <property name="type_hint">dialog</property>
@@ -5307,7 +5302,6 @@ GB</property>
     </child>
   </widget>
   <widget class="GtkDialog" id="dialog_newnetcard">
-    <property name="visible">True</property>
     <property name="title" translatable="yes">Setup new network card</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_newnetcard_response"/>
@@ -5676,7 +5670,6 @@ Use an already open UDP multicast socket</property>
     </child>
   </widget>
   <widget class="GtkDialog" id="dialog_confirm_action">
-    <property name="visible">True</property>
     <property name="title" translatable="yes">Request</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
@@ -5764,7 +5757,6 @@ Use an already open UDP multicast socket</property>
     </child>
   </widget>
   <widget class="GtkDialog" id="dialog_new_redirect">
-    <property name="visible">True</property>
     <property name="title" translatable="yes">Add redirect</property>
     <property name="modal">True</property>
     <property name="type_hint">dialog</property>
@@ -6218,13 +6210,7 @@ Tunnel Client</property>
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkLabel" id="lbl_invalidname">
-                    <property name="label" translatable="yes">Invalid name.</property>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="position">1</property>
-                  </packing>
+                  <placeholder/>
                 </child>
               </widget>
             </child>
@@ -6321,6 +6307,72 @@ Tunnel Client</property>
         <property name="label" translatable="yes">Delete</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="on_brick_delete"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkWindow" id="dialog_warn">
+    <signal name="delete_event" handler="on_error_close"/>
+    <child>
+      <widget class="GtkVBox" id="vbox1">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <widget class="GtkHBox" id="hbox2">
+            <property name="visible">True</property>
+            <child>
+              <widget class="GtkImage" id="image1">
+                <property name="visible">True</property>
+                <property name="stock">gtk-dialog-warning</property>
+                <property name="icon-size">6</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="texterror">
+                <property name="visible">True</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">Error!</property>
+              </widget>
+              <packing>
+                <property name="padding">20</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkHButtonBox" id="hbuttonbox1">
+            <property name="visible">True</property>
+            <property name="spacing">867</property>
+            <property name="layout_style">end</property>
+            <child>
+              <widget class="GtkButton" id="button1">
+                <property name="label" translatable="yes">_OK</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_underline">True</property>
+                <signal name="clicked" handler="on_error_close"/>
+                <signal name="activate" handler="on_error_close"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
       </widget>
     </child>
   </widget>
