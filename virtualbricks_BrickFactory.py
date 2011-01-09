@@ -16,6 +16,15 @@ import virtualbricks_Global as Global
 class InvalidNameException(Exception):
 	def __init__(self):
 		pass
+class BadConfigException(Exception):
+	def __init__(self):
+		pass
+class NotConnectedException(Exception):
+	def __init__(self):
+		pass
+class LinkdownException(Exception):
+	def __init__(self):
+		pass
 
 
 
@@ -183,11 +192,14 @@ class Brick():
 	def poweron(self):
 
 		if not self.configured():
-			raise Global.BadConfigException
+			print "bad config"
+			raise BadConfigException
 		if not self.properly_connected():
-			raise Global.NotConnectedException
+			print "not connected"
+			raise NotConnectedException
 		if not self.check_links():
-			raise Global.Linkdown()
+			print "link down"
+			raise LinkdownException
 		self._poweron()
 
 	def build_cmd_line(self):
@@ -399,6 +411,27 @@ class Wirefilter(Wire):
 					"-N":"nofifo",
 					"-M":"console"
 			} 
+		self.cfg.noise = ""
+		self.cfg.capacity = ""
+		self.cfg.delayLR = ""
+		self.cfg.delayRL = ""
+		self.cfg.lossLR = ""
+		self.cfg.lossRL = ""
+		self.cfg.dupLR = ""
+		self.cfg.dupRL = ""
+		self.cfg.speedLR = ""
+		self.cfg.speedRL = ""
+		self.cfg.speedLRunit = ""
+		self.cfg.speedRLunit = ""
+		self.cfg.speedLRdistribution = ""
+		self.cfg.speedRLdistribution = ""
+		self.cfg.bandwidthLR = ""
+		self.cfg.bandwidthRL = ""
+		self.cfg.bandwidthLRunit = ""
+		self.cfg.bandwidthRLunit = ""
+		self.cfg.bandwidthLRdistribution = ""
+		self.cfg.bandwidthRLdistribution = ""
+
 	def args(self):
 		res = []
 		res.append(self.prog())
@@ -406,6 +439,42 @@ class Wirefilter(Wire):
 		res.append(self.cfg.sock0)
 		res.append(':')
 		res.append(self.cfg.sock1)
+
+		if len(self.cfg.delayLR) > 0:
+			res.append("-d")
+			res.append("LR"+self.cfg.delayLR)
+		if len(self.cfg.delayRL) > 0:
+			res.append("-d")
+			res.append("RL"+self.cfg.delayLR)
+		
+		if len(self.cfg.lossLR) > 0:
+			res.append("-l")
+			res.append("LR"+self.cfg.lossLR)
+		if len(self.cfg.lossRL) > 0:
+			res.append("-l")
+			res.append("RL"+self.cfg.lossLR)
+		
+		if len(self.cfg.dupLR) > 0:
+			res.append("-D")
+			res.append("LR"+self.cfg.dupLR)
+		if len(self.cfg.dupRL) > 0:
+			res.append("-D")
+			res.append("RL"+self.cfg.dupLR)
+		
+		if len(self.cfg.speedLR) > 0:
+			res.append("-s")
+			res.append("LR" + self.cfg.speedLR + self.cfg.speedLRunit + self.cfg.speedLRdistribution)
+		if len(self.cfg.speedRL) > 0:
+			res.append("-s")
+			res.append("RL" + self.cfg.speedRL + self.cfg.speedRLunit + self.cfg.speedRLdistribution)
+		
+		if len(self.cfg.bandwidthLR) > 0:
+			res.append("-s")
+			res.append("LR" + self.cfg.bandwidthLR + self.cfg.bandwidthLRunit + self.cfg.bandwidthLRdistribution)
+		if len(self.cfg.bandwidthRL) > 0:
+			res.append("-s")
+			res.append("RL" + self.cfg.bandwidthRL + self.cfg.bandwidthRLunit + self.cfg.bandwidthRLdistribution)
+
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
 		return res
@@ -429,6 +498,7 @@ class TunnelListen(Brick):
 		self.cfg.sock = ""
 		self.cfg.password = ""
 		self.plugs.append(Plug(self))
+		self.cfg.port = "7667"
 	
 
 	def prog(self):
@@ -488,6 +558,9 @@ class TunnelConnect(TunnelListen):
 	
 	def configured(self):
 		return (self.plugs[0].sock is not None) and self.cfg.get("host") and len(self.cfg.host) > 0	
+	
+	def get_type(self):
+		return 'TunnelConnect'
 
 qemu_eth_model = ["rtl8139","e1000","virtio","i82551", "i82557b", "i82559er","ne2k_pci","pcnet","ne2k_isa"]
 
@@ -734,10 +807,10 @@ class BrickFactory(threading.Thread):
 			print "new wirefilter %s OK" % s.name
 		elif ntype == "tunnell" or ntype == "Tunnel Server":
 			s = TunnelListen(self,name) 
-			print "new tunnel %s OK" % s.name
+			print "new tunnel server %s OK" % s.name
 		elif ntype == "tunnelc" or ntype == "Tunnel Client":
 			s = TunnelConnect(self,name) 
-			print "new tunnel %s OK" % s.name
+			print "new tunnel client %s OK" % s.name
 		#elif ...:
 		else:
 			print 'Invalid command.'

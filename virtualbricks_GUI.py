@@ -118,6 +118,12 @@ class VBGUI:
 					widget.set_active(True)
 				else:
 					widget.set_active(False)
+			
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
+			if (widget is not None):
+				#TODO combobox selection for units and distribution
+				print
+			
 
 	def config_brick_confirm(self):
 		b = self.selected
@@ -134,6 +140,12 @@ class VBGUI:
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
 				b.cfg.set(key+"="+str(widget.get_value()))
+			
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
+			if (widget is not None):
+				txt = widget.get_active_text()
+				if (txt):
+					b.cfg.set(key+"="+txt[0])
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
@@ -165,8 +177,8 @@ class VBGUI:
 	def curtain_up(self):
 		self.gladefile.get_widget('box_vmconfig').hide()
 		self.gladefile.get_widget('box_tapconfig').hide()
-		#self.gladefile.get_widget('box_tunnellconfig').hide()
-		#self.gladefile.get_widget('box_tunnelcconfig').hide()
+		self.gladefile.get_widget('box_tunnellconfig').hide()
+		self.gladefile.get_widget('box_tunnelcconfig').hide()
 		self.gladefile.get_widget('box_wireconfig').hide()
 		self.gladefile.get_widget('box_wirefilterconfig').hide()
 		self.gladefile.get_widget('box_switchconfig').hide()
@@ -191,6 +203,12 @@ class VBGUI:
 		elif self.selected.get_type() == 'Wirefilter':
 			print "wirefilter config"
 			self.gladefile.get_widget('box_wirefilterconfig').show_all()
+		elif self.selected.get_type() == 'TunnelConnect':
+			print "tunnelc config"
+			self.gladefile.get_widget('box_tunnelcconfig').show_all()
+		elif self.selected.get_type() == 'TunnelListen':
+			print "tunnell config"
+			self.gladefile.get_widget('box_tunnellconfig').show_all()
 		self.config_brick_prepare()
 
 		self.curtain.set_position(280)
@@ -275,7 +293,9 @@ class VBGUI:
 		'sockscombo_wire0',
 		'sockscombo_wire1',
 		'sockscombo_wirefilter0',
-		'sockscombo_wirefilter1'
+		'sockscombo_wirefilter1',
+		'sockscombo_tunnell',
+		'sockscombo_tunnelc'
 		]
 	def show_window(self, name):
 		for w in self.widg.keys():
@@ -307,8 +327,8 @@ class VBGUI:
 		try:
 			self.brickfactory.newbrick(ntype, name)
 		except BrickFactory.InvalidNameException:
+			#TODO errormessage
 			print "Creation error"
-			
 		else:
 			print "Created successfully"
 
@@ -412,7 +432,6 @@ class VBGUI:
                 ntype = store.get_value(iter, 1)
                 name = store.get_value(iter, 2)
 		self.selected = self.brickfactory.getbrickbyname(name)
-		print self.selected
 		
 	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None , data=""):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
@@ -422,6 +441,17 @@ class VBGUI:
                 ntype = store.get_value(iter, 1)
                 name = store.get_value(iter, 2)
 		print "Activating %s %s" % (ntype, name)
+		b = self.brickfactory.getbrickbyname(name)
+		if b.proc is not None:
+			b.poweroff()
+		else:
+			try:
+				b.poweron()
+			except(BrickFactory.BadConfigException):
+				b.gui_changed=True
+				#TODO: errormessage
+				print "error!"
+				pass
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"
 		pass
@@ -777,20 +807,30 @@ class VBGUI:
 				iter = self.bookmarks.append(None, None)
 				if b.proc is not None:
 		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_YES, gtk.ICON_SIZE_MENU))
+				elif not b.properly_connected():
+		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_MENU))
 				else:
 		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_NO, gtk.ICON_SIZE_MENU))
+
 				self.bookmarks.set_value(iter,1,b.get_type())
 				self.bookmarks.set_value(iter,2,b.name)
 				if (b.get_type() == "Switch"):
 					self.bookmarks.set_value(iter, 3, "Free ports: %d/%d" % (b.socks[0].get_free_ports(), int(str(b.cfg.numports))))
-				if (b.get_type() == "Wire"):
+				if (b.get_type().startswith("Wire")):
+						
+					ok = -2
 					p0 = "disconnected"
 					p1 = "disconnected"
 					if (b.plugs[0].sock):
+						ok+=1
 						p0 = b.plugs[0].sock.brick.name
 					if b.plugs[1].sock:
+						ok+=1
 						p1 = b.plugs[1].sock.brick.name
-					self.bookmarks.set_value(iter, 3, "%s <--> %s" % (p0,p1))
+					if ok == 0:
+						self.bookmarks.set_value(iter, 3, "Configured to connect %s to %s" %(p0,p1))
+					else:
+						self.bookmarks.set_value(iter, 3, "Not yet configured. Left plug is %s and right plug is %s" % (p0,p1))
 				if (b.get_type() == "Tap"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
