@@ -436,9 +436,7 @@ class Wirefilter(Wire):
 		res = []
 		res.append(self.prog())
 		res.append('-v')
-		res.append(self.cfg.sock0)
-		res.append(':')
-		res.append(self.cfg.sock1)
+		res.append(self.cfg.sock0+":"+self.cfg.sock1)
 
 		if len(self.cfg.delayLR) > 0:
 			res.append("-d")
@@ -540,6 +538,7 @@ class TunnelConnect(TunnelListen):
 			"-c":"host",
 			"#port":"port"
 		}
+		self.cfg.host = ""
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
 			self.cfg.sock = self.plugs[0].sock.path

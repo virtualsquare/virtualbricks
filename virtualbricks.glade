@@ -4,13 +4,13 @@
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkWindow" id="main_win">
     <property name="width_request">800</property>
-    <property name="height_request">800</property>
+    <property name="height_request">780</property>
     <property name="visible">True</property>
     <property name="border_width">2</property>
     <property name="title" translatable="yes">Virtualbricks</property>
     <property name="window_position">center</property>
     <property name="default_width">800</property>
-    <property name="default_height">800</property>
+    <property name="default_height">780</property>
     <signal name="destroy_event" handler="on_window1_destroy"/>
     <signal name="delete_event" handler="on_window1_destroy"/>
     <child>
@@ -137,7 +137,7 @@
                 <child>
                   <widget class="GtkToolButton" id="toolbutton_newbrick">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">toolbutton</property>
+                    <property name="label" translatable="yes">New Brick</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-new</property>
                     <signal name="clicked" handler="on_newbrick"/>
@@ -156,41 +156,25 @@
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkToolButton" id="toolbutton_launch">
+                  <widget class="GtkToolButton" id="toolbutton_start">
                     <property name="visible">True</property>
-                    <property name="sensitive">False</property>
-                    <property name="tooltip" translatable="yes">run current emulation with job management</property>
-                    <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-media-forward</property>
-                    <signal name="clicked" handler="on_toolbutton_launch_clicked"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="homogeneous">True</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkToolButton" id="toolbutton_launchxterm">
-                    <property name="visible">True</property>
-                    <property name="sensitive">False</property>
-                    <property name="tooltip" translatable="yes">run current emulation in xterm (unmanaged)</property>
-                    <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-justify-left</property>
-                    <signal name="clicked" handler="on_toolbutton_launchxterm_clicked"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="homogeneous">True</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkToolButton" id="toolbutton_launch_unmanaged">
-                    <property name="visible">True</property>
-                    <property name="sensitive">False</property>
                     <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-media-play</property>
                     <signal name="clicked" handler="on_toolbutton_launch_unmanaged_clicked"/>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="homogeneous">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkToolButton" id="toolbutton_stop">
+                    <property name="visible">True</property>
+                    <property name="has_tooltip">True</property>
+                    <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
+                    <property name="use_underline">True</property>
+                    <property name="stock_id">gtk-media-stop</property>
                   </widget>
                   <packing>
                     <property name="expand">False</property>
@@ -227,13 +211,28 @@
             <property name="can_focus">True</property>
             <property name="orientation">vertical</property>
             <property name="position_set">True</property>
-            <signal name="button_release_event" handler="on_vpaned_mainwindow_button_release_event"/>
             <child>
               <widget class="GtkVBox" id="vbox_topane">
                 <property name="visible">True</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <placeholder/>
+                  <widget class="GtkHBox" id="hbox41">
+                    <property name="visible">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="position">0</property>
+                  </packing>
                 </child>
                 <child>
                   <widget class="GtkLabel" id="label115">
@@ -252,6 +251,9 @@
                   <widget class="GtkNotebook" id="notebook3">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <signal name="switch_page" handler="on_focus_out"/>
+                    <signal name="select_page" handler="on_focus_out"/>
+                    <signal name="change_current_page" handler="on_focus_out"/>
                     <child>
                       <widget class="GtkScrolledWindow" id="scrolledwindow3">
                         <property name="visible">True</property>
@@ -265,6 +267,7 @@
                             <signal name="button_press_event" handler="on_treeview_bookmarks_button_press_event"/>
                             <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
                             <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
+                            <signal name="button_release_event" handler="on_vpaned_mainwindow_button_release_event"/>
                           </widget>
                         </child>
                       </widget>
@@ -289,9 +292,9 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="tooltip" translatable="yes">Click to select an enty for use or edit its configuration, rightclick for more.</property>
-                            <signal name="button_press_event" handler="on_treeview_bootimages_button_press_event"/>
-                            <signal name="cursor_changed" handler="on_treeview_bootimages_cursor_changed"/>
-                            <signal name="row_activated" handler="on_treeview_bootimages_row_activated_event"/>
+                            <signal name="button_press_event" handler="on_treeview_joblist_button_press_event"/>
+                            <signal name="cursor_changed" handler="on_treeview_joblist_cursor_changed"/>
+                            <signal name="row_activated" handler="on_treeview_joblilst_row_activated_event"/>
                           </widget>
                         </child>
                       </widget>
@@ -339,25 +342,6 @@
                     </child>
                   </widget>
                   <packing>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkHBox" id="hbox41">
-                    <property name="visible">True</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
                     <property name="position">2</property>
                   </packing>
                 </child>
@@ -410,6 +394,9 @@
                     <property name="expand">False</property>
                     <property name="position">3</property>
                   </packing>
+                </child>
+                <child>
+                  <placeholder/>
                 </child>
               </widget>
               <packing>
@@ -6166,56 +6153,80 @@ Use an already open UDP multicast socket</property>
         <property name="visible">True</property>
         <property name="orientation">vertical</property>
         <child>
-          <widget class="GtkTable" id="table1">
+          <widget class="GtkAspectFrame" id="aspectframe1">
             <property name="visible">True</property>
-            <property name="n_rows">2</property>
-            <property name="n_columns">2</property>
+            <property name="label_xalign">0</property>
+            <property name="shadow_type">none</property>
             <child>
-              <widget class="GtkLabel" id="label1">
+              <widget class="GtkVBox" id="vbox2">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Brick type:</property>
-              </widget>
-            </child>
-            <child>
-              <widget class="GtkComboBox" id="combo_newbricktype">
-                <property name="visible">True</property>
-                <property name="active">0</property>
-                <property name="items" translatable="yes">Switch
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkTable" id="table1">
+                    <property name="visible">True</property>
+                    <property name="n_rows">2</property>
+                    <property name="n_columns">2</property>
+                    <child>
+                      <widget class="GtkLabel" id="label1">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Brick type:</property>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkComboBox" id="combo_newbricktype">
+                        <property name="visible">True</property>
+                        <property name="active">0</property>
+                        <property name="items" translatable="yes">Switch
 Tap
 Wire
 Wirefilter
 Qemu
 Tunnel Server
 Tunnel Client</property>
+                      </widget>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="right_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="text_newbrickname">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="invisible_char">&#x25CF;</property>
+                      </widget>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="right_attach">2</property>
+                        <property name="top_attach">1</property>
+                        <property name="bottom_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="label2">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Brick name:</property>
+                      </widget>
+                      <packing>
+                        <property name="top_attach">1</property>
+                        <property name="bottom_attach">2</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkLabel" id="lbl_invalidname">
+                    <property name="label" translatable="yes">Invalid name.</property>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
               </widget>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkLabel" id="label2">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">Brick name:</property>
-              </widget>
-              <packing>
-                <property name="top_attach">1</property>
-                <property name="bottom_attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkEntry" id="text_newbrickname">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="is_focus">True</property>
-                <property name="invisible_char">&#x25CF;</property>
-              </widget>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-                <property name="top_attach">1</property>
-                <property name="bottom_attach">2</property>
-              </packing>
             </child>
           </widget>
           <packing>
@@ -6270,6 +6281,46 @@ Tunnel Client</property>
             <property name="position">1</property>
           </packing>
         </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_brickactions">
+    <property name="visible">True</property>
+    <child>
+      <widget class="GtkMenuItem" id="startstop_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Start/Stop</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_startstop"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="configure_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Configure</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_configure"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separatormenuitem1">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="copy_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Make a Copy</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_copy"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="delete_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Delete</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_delete"/>
       </widget>
     </child>
   </widget>

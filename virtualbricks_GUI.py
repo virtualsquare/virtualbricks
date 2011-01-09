@@ -6,6 +6,7 @@ import gtk.glade
 import virtualbricks_Global as Global
 import virtualbricks_BrickFactory as BrickFactory
 import gobject
+import time
 
 class VBGUI:
 	def __init__(self):
@@ -42,6 +43,7 @@ class VBGUI:
 		self.curtain_down()
 		
 		self.selected = None
+		self.joblist_selected = None
 		
 
 		try:
@@ -285,6 +287,7 @@ class VBGUI:
 		'dialog_new_redirect',
 		'ifconfig_win', 
 		'dialog_newbrick',
+		'menu_brickactions',
 		]
 	def sockscombo(self):
 		return [
@@ -300,8 +303,11 @@ class VBGUI:
 	def show_window(self, name):
 		for w in self.widg.keys():
 			if name == w or w == 'main_win':
-				self.widg[w].show_all()
-			else:
+				if w.startswith('menu'):
+					self.widg[w].popup(None,None,None, 3, 0)
+				else:
+					self.widg[w].show_all()
+			elif not name.startswith('menu'):
 				self.widg[w].hide()
 	
 	""" ******************************************************** """
@@ -422,7 +428,10 @@ class VBGUI:
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
-			pass
+			self.selected = self.brickfactory.getbrickbyname(name)
+			if self.selected:
+				self.show_window('menu_brickactions')
+			
 		
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
@@ -432,8 +441,16 @@ class VBGUI:
                 ntype = store.get_value(iter, 1)
                 name = store.get_value(iter, 2)
 		self.selected = self.brickfactory.getbrickbyname(name)
+		self.curtain_down()
 		
 	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None , data=""):
+		self.tree_startstop()
+
+	def on_treeview_bookmarks_focus_out(self, widget=None, event=None , data=""):
+		self.curtain_down()
+		self.selected=None
+
+	def tree_startstop(self, widget=None, event=None , data=""):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
 		path, focus = tree.get_cursor()
@@ -461,8 +478,18 @@ class VBGUI:
 	def on_treeview_bootimages_row_activated_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_row_activated_event undefined!"
 		pass
-	def on_treeview_joblist_button_press_event(self, widget=None, data=""):
-		print "on_treeview_joblist_button_press_event undefined!"
+	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
+		tree = self.gladefile.get_widget('treeview_joblist');
+		store = self.running_bricks
+		x = int(event.x)
+		y = int(event.y)
+		time = event.time
+		pthinfo = tree.get_path_at_pos(x, y)
+		name = self.get_treeselected_name(tree, store, pthinfo)
+		if event.button == 3:
+			self.joblist_selected = self.brickfactory.getbrickbyname(name)
+			if self.selected:
+				self.show_window('menu_popup_joblist')
 		pass
 	def on_treeview_joblist_row_activated_event(self, widget=None, data=""):
 		print "on_treeview_joblist_row_activated_event undefined!"
@@ -680,6 +707,17 @@ class VBGUI:
 		self.gladefile.get_widget('combo_newbricktype').set_active(0)
 		self.show_window('dialog_newbrick')
 
+	def on_brick_startstop(self,widget=None, event=None, data=""):
+		pass
+	def on_brick_delete(self,widget=None, event=None, data=""):
+		pass
+	def on_brick_configure(self,widget=None, event=None, data=""):
+		self.curtain_up()
+		pass
+	def on_brick_copy(self,widget=None, event=None, data=""):
+		pass
+		
+
 	def signals(self):
 		self.signaldict =  {
 			"on_window1_destroy":self.on_window1_destroy,
@@ -690,6 +728,10 @@ class VBGUI:
 			"on_config_ok":self.on_config_ok,
 			"on_gilbert_toggle": self.on_gilbert_toggle,
 			"on_mtu_toggle": self.on_mtu_toggle,
+			"on_brick_startstop": self.tree_startstop,
+			"on_brick_configure": self.on_brick_configure,
+			"on_brick_copy":self.on_brick_copy,
+			"on_brick_delete": self.on_brick_delete,
 			"on_item_quit_activate":self.on_item_quit_activate,
 			"on_item_settings_activate":self.on_item_settings_activate,
 			"on_item_settings_autoshow_activate":self.on_item_settings_autoshow_activate,
@@ -703,6 +745,7 @@ class VBGUI:
 			"on_treeview_bookmarks_button_press_event":self.on_treeview_bookmarks_button_press_event,
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
 			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
+			"on_focus_out":self.on_treeview_bookmarks_focus_out,
 			"on_treeview_bootimages_button_press_event":self.on_treeview_bootimages_button_press_event,
 			"on_treeview_bootimages_cursor_changed":self.on_treeview_bootimages_cursor_changed,
 			"on_treeview_bootimages_row_activated_event":self.on_treeview_bootimages_row_activated_event,
