@@ -521,8 +521,8 @@ class TunnelListen(Brick):
 		return (self.plugs[0].sock is not None)	
 
 	def args(self):
-		pwdgen="echo %s | sha1sum >/tmp/tunnel_%s.key" % (self.cfg.password, self.name)
-		os.system(pwdgen)
+		pwdgen="echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (self.cfg.password, self.name)
+		print "System= %d" % os.system(pwdgen)
 		res = [] 
 		res.append(self.prog())
 		res.append("-P")
@@ -532,7 +532,8 @@ class TunnelListen(Brick):
 		return res	
 
 	def post_poweroff(self):
-		os.unlink("/tmp/tunnel_%s.key" % self.name)
+		##os.unlink("/tmp/tunnel_%s.key" % self.name)
+		pass
 
 
 class TunnelConnect(TunnelListen):
@@ -545,6 +546,9 @@ class TunnelConnect(TunnelListen):
 			"#port":"port"
 		}
 		self.cfg.host = ""
+		self.cfg.localport="10771"
+		self.cfg.port="7667"
+	
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
 			self.cfg.sock = self.plugs[0].sock.path

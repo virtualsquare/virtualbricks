@@ -170,13 +170,15 @@ class VBGUI:
 
 	def curtain_is_down(self):
 		print self.curtain.get_position()
-		return (self.curtain.get_position()>500)
+		return (self.curtain.get_position()>660)
 
 	def curtain_down(self):
-		self.curtain.set_position(2147483647)
+		print "Old position: %d" % self.curtain.get_position()
+		self.curtain.set_position(99999)
 		self.gladefile.get_widget('label_showhidesettings').set_text('Show Settings')
 
 	def curtain_up(self):
+		print "Old position: %d" % self.curtain.get_position()
 		self.gladefile.get_widget('box_vmconfig').hide()
 		self.gladefile.get_widget('box_tapconfig').hide()
 		self.gladefile.get_widget('box_tunnellconfig').hide()
@@ -186,34 +188,44 @@ class VBGUI:
 		self.gladefile.get_widget('box_switchconfig').hide()
 		
 		if self.selected is None:
-			return 
-			
+			return  
+		
+		wg = self.curtain
 		if self.selected.get_type() == 'Switch':
 			print "switch config"
-			self.gladefile.get_widget('box_switchconfig').show_all()
+			ww = self.gladefile.get_widget('box_switchconfig')
+			wg.set_position(589)	
 		
 		elif self.selected.get_type() == 'Qemu':
 			print "qemu config"
-			self.gladefile.get_widget('box_vmconfig').show_all()
+			ww = self.gladefile.get_widget('box_vmconfig')
+			wg.set_position(245)
+
 		
 		elif self.selected.get_type() == 'Tap':
 			print "tap config"
-			self.gladefile.get_widget('box_tapconfig').show_all()
+			ww = self.gladefile.get_widget('box_tapconfig')
+			wg.set_position(606)	
+			
 		elif self.selected.get_type() == 'Wire':
 			print "wire config"
-			self.gladefile.get_widget('box_wireconfig').show_all()
+			ww = self.gladefile.get_widget('box_wireconfig')
+			wg.set_position(606)	
 		elif self.selected.get_type() == 'Wirefilter':
 			print "wirefilter config"
-			self.gladefile.get_widget('box_wirefilterconfig').show_all()
+			ww = self.gladefile.get_widget('box_wirefilterconfig')
+			wg.set_position(424)	
 		elif self.selected.get_type() == 'TunnelConnect':
 			print "tunnelc config"
-			self.gladefile.get_widget('box_tunnelcconfig').show_all()
+			ww = self.gladefile.get_widget('box_tunnelcconfig')
+			wg.set_position(424)	
 		elif self.selected.get_type() == 'TunnelListen':
 			print "tunnell config"
-			self.gladefile.get_widget('box_tunnellconfig').show_all()
+			ww = self.gladefile.get_widget('box_tunnellconfig')
+			wg.set_position(424)	
 		self.config_brick_prepare()
+		ww.show_all()
 
-		self.curtain.set_position(280)
 		self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
 		
 	def get_treeselected(self, tree, store, pthinfo, c):
@@ -863,11 +875,11 @@ class VBGUI:
 			for b in self.bricks:
 				iter = self.bookmarks.append(None, None)
 				if b.proc is not None:
-		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_YES, gtk.ICON_SIZE_MENU))
+		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_YES, gtk.ICON_SIZE_LARGE_TOOLBAR))
 				elif not b.properly_connected():
-		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_MENU))
+		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
 				else:
-		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_NO, gtk.ICON_SIZE_MENU))
+		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_NO, gtk.ICON_SIZE_LARGE_TOOLBAR))
 
 				self.bookmarks.set_value(iter,1,b.get_type())
 				self.bookmarks.set_value(iter,2,b.name)

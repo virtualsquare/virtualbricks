@@ -4,7 +4,7 @@
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkWindow" id="main_win">
     <property name="width_request">800</property>
-    <property name="height_request">780</property>
+    <property name="height_request">760</property>
     <property name="visible">True</property>
     <property name="border_width">2</property>
     <property name="title" translatable="yes">Virtualbricks</property>
@@ -665,6 +665,7 @@ image2</property>
                                                   <widget class="GtkImage" id="image5">
                                                     <property name="visible">True</property>
                                                     <property name="stock">gtk-harddisk</property>
+                                                    <property name="icon-size">3</property>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">0</property>
@@ -2321,6 +2322,7 @@ not support the KQEMU module or if KQEMU isn't installed, because it don't send 
                             <child>
                               <widget class="GtkLabel" id="label11">
                                 <property name="visible">True</property>
+                                <property name="xalign">0</property>
                                 <property name="label" translatable="yes">Interface Speed (Left to Right)</property>
                               </widget>
                             </child>
@@ -2404,6 +2406,7 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkLabel" id="label12">
                                 <property name="visible">True</property>
+                                <property name="xalign">0</property>
                                 <property name="label" translatable="yes">Interface Speed (Right to Left)</property>
                               </widget>
                               <packing>
@@ -2414,6 +2417,7 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkLabel" id="label38">
                                 <property name="visible">True</property>
+                                <property name="xalign">0</property>
                                 <property name="label" translatable="yes">Bandwidth Restriction (Left to Right)</property>
                               </widget>
                               <packing>
@@ -2424,6 +2428,7 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkLabel" id="label39">
                                 <property name="visible">True</property>
+                                <property name="xalign">0</property>
                                 <property name="label" translatable="yes">Bandwidth Restriction (Right to Left)</property>
                               </widget>
                               <packing>
@@ -2539,6 +2544,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label13">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Delay (Left to Right)</property>
                                   </widget>
                                   <packing>
@@ -2577,6 +2583,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label15">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Delay (Right to Left)</property>
                                   </widget>
                                   <packing>
@@ -2615,6 +2622,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label17">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Buffer size</property>
                                   </widget>
                                   <packing>
@@ -2676,6 +2684,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label22">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Packet loss (Left to Right)</property>
                                   </widget>
                                   <packing>
@@ -2713,6 +2722,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label24">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Packet loss (Right to Left)</property>
                                   </widget>
                                   <packing>
@@ -2750,6 +2760,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label34">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Duplicate packets (Left to Right)</property>
                                   </widget>
                                   <packing>
@@ -2787,6 +2798,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label36">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Duplicate Packets (Right to Left)</property>
                                   </widget>
                                   <packing>
@@ -2824,6 +2836,7 @@ Normal Distribution</property>
                                 <child>
                                   <widget class="GtkLabel" id="label40">
                                     <property name="visible">True</property>
+                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Noise Factor [swapped bits/MB]</property>
                                   </widget>
                                   <packing>
@@ -3050,6 +3063,7 @@ Normal Distribution</property>
                         <child>
                           <widget class="GtkLabel" id="label1">
                             <property name="visible">True</property>
+                            <property name="xalign">0</property>
                             <property name="label" translatable="yes">Connect to:</property>
                           </widget>
                           <packing>
@@ -3158,6 +3172,7 @@ Normal Distribution</property>
                     <child>
                       <widget class="GtkLabel" id="label49">
                         <property name="visible">True</property>
+                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">Connect to</property>
                       </widget>
                     </child>
@@ -3189,6 +3204,7 @@ Normal Distribution</property>
                     <child>
                       <widget class="GtkLabel" id="label51">
                         <property name="visible">True</property>
+                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">Listen to port:</property>
                       </widget>
                       <packing>
@@ -3246,6 +3262,7 @@ Normal Distribution</property>
                     <child>
                       <widget class="GtkLabel" id="label44">
                         <property name="visible">True</property>
+                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">Connect to</property>
                       </widget>
                     </child>
@@ -3261,30 +3278,7 @@ Normal Distribution</property>
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkLabel" id="label45">
-                        <property name="visible">True</property>
-                        <property name="label" translatable="yes">Host</property>
-                      </widget>
-                      <packing>
-                        <property name="top_attach">1</property>
-                        <property name="bottom_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkEntry" id="cfg_TunnelConnect_host_text">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="invisible_char">&#x25CF;</property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="top_attach">1</property>
-                        <property name="bottom_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkSpinButton" id="cfg_TunnelConnect_port_spinint">
+                      <widget class="GtkSpinButton" id="cfg_TunnelConnect_localport_spinint">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">&#x25CF;</property>
@@ -3300,7 +3294,8 @@ Normal Distribution</property>
                     <child>
                       <widget class="GtkLabel" id="label46">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Port:</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">Local port:</property>
                       </widget>
                       <packing>
                         <property name="top_attach">2</property>
@@ -3310,6 +3305,7 @@ Normal Distribution</property>
                     <child>
                       <widget class="GtkLabel" id="label48">
                         <property name="visible">True</property>
+                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">Password:</property>
                       </widget>
                       <packing>
@@ -3329,6 +3325,60 @@ Normal Distribution</property>
                         <property name="right_attach">2</property>
                         <property name="top_attach">3</property>
                         <property name="bottom_attach">4</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="label45">
+                        <property name="visible">True</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">Tunnel Server</property>
+                      </widget>
+                      <packing>
+                        <property name="top_attach">1</property>
+                        <property name="bottom_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkHBox" id="hbox31">
+                        <property name="visible">True</property>
+                        <child>
+                          <widget class="GtkEntry" id="cfg_TunnelConnect_host_text">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="invisible_char">&#x25CF;</property>
+                          </widget>
+                          <packing>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="label53">
+                            <property name="visible">True</property>
+                            <property name="xalign">1</property>
+                            <property name="label" translatable="yes">port:</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkSpinButton" id="cfg_TunnelConnect_port_spinint">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="invisible_char">&#x25CF;</property>
+                            <property name="adjustment">7667 1 65535 1 10 10</property>
+                          </widget>
+                          <packing>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="right_attach">2</property>
+                        <property name="top_attach">1</property>
+                        <property name="bottom_attach">2</property>
                       </packing>
                     </child>
                     <child>
@@ -3755,7 +3805,8 @@ Normal Distribution</property>
                 <child>
                   <widget class="GtkLabel" id="label12">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">Paths</property>
+                    <property name="label" translatable="yes">Qemu Options</property>
+                    <property name="justify">fill</property>
                   </widget>
                   <packing>
                     <property name="tab_fill">False</property>
