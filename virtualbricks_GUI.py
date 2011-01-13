@@ -25,6 +25,10 @@ class VBGUI:
 		self.widg['main_win'].show()
 		self.ps = []
 		self.bricks = []
+
+
+		self.config = Global.Settings(Global.CONFIGFILE)
+		self.config.load()
 		self.signals()
 		self.timers()
 		self.set_nonsensitivegroup(['cfg_Wirefilter_lossburst_text', 'cfg_Wirefilter_mtu_text'])
@@ -396,6 +400,39 @@ class VBGUI:
 		self.quit()
 		pass
 	def on_item_settings_activate(self, widget=None, data=""):
+		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_filename(self.config.get('bricksdirectory'))	
+		self.gladefile.get_widget('filechooserbutton_qemupath').set_filename(self.config.get('qemupath'))	
+		self.gladefile.get_widget('filechooserbutton_vdepath').set_filename(self.config.get('vdepath'))	
+		self.gladefile.get_widget('filechooserbutton_baseimages').set_filename(self.config.get('baseimages'))	
+		if self.config.get('kvm') is "1":
+			self.gladefile.get_widget('check_kvm').set_active(True)
+		else:
+			self.gladefile.get_widget('check_kvm').set_active(False)
+
+		if self.config.get('ksm') is "1":
+			self.gladefile.get_widget('check_ksm').set_active(True)
+		else:
+			self.gladefile.get_widget('check_ksm').set_active(False)
+
+		if self.config.get('kqemu') is "1":
+			self.gladefile.get_widget('check_kqemu').set_active(True)
+		else:
+			self.gladefile.get_widget('check_kqemu').set_active(False)
+
+		if self.config.get('femaleplugs') is "1":
+			self.gladefile.get_widget('check_femaleplugs').set_active(True)
+		else:
+			self.gladefile.get_widget('check_femaleplugs').set_active(False)
+
+		if self.config.get('python') is "1":
+			self.gladefile.get_widget('check_python').set_active(True)
+		else:
+			self.gladefile.get_widget('check_python').set_active(False)
+
+		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
+		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
+		self.gladefile.get_widget('spin_iconsize').set_value(int(self.config.get('iconsize')))
+
 		self.show_window('dialog_settings')
 		pass
 	def on_item_settings_autoshow_activate(self, widget=None, data=""):
@@ -535,9 +572,52 @@ class VBGUI:
 	def on_button_openimage_open_clicked(self, widget=None, data=""):
 		print "on_button_openimage_open_clicked undefined!"
 		pass
-	def on_dialog_settings_response(self, widget=None, data=""):
-		print "on_dialog_settings_response undefined!"
-		pass
+	def on_dialog_settings_response(self, widget=None, response=0, data=""):
+		if response == gtk.RESPONSE_CANCEL:
+			widget.hide()
+			return
+		if response == gtk.RESPONSE_APPLY or response == gtk.RESPONSE_OK:
+			print "Apply settings..."
+			for k in ['bricksdirectory', 'qemupath', 'vdepath', 'baseimages']:
+				self.config.set(k + '=' + self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
+			
+			if self.gladefile.get_widget('check_kvm').get_active():
+				self.config.set("kvm=1")
+			else:
+				self.config.set("kvm=0")
+
+			if self.gladefile.get_widget('check_ksm').get_active():
+				self.config.set("ksm=1")
+			else:
+				self.config.set("ksm=0")
+
+			if self.gladefile.get_widget('check_kqemu').get_active():
+				self.config.set("kqemu=1")
+			else:
+				self.config.set("kqemu=0")
+			
+			if self.gladefile.get_widget('check_python').get_active():
+				self.config.set("python=1")
+			else:
+				self.config.set("python=0")
+			
+			if self.gladefile.get_widget('check_femaleplugs').get_active():
+				self.config.set("femaleplugs=1")
+			else:
+				self.config.set("femaleplugs=0")
+	
+			self.config.set("term="+self.gladefile.get_widget('entry_term').get_text())
+			self.config.set("sudo="+self.gladefile.get_widget('entry_sudo').get_text())
+			self.config.set("iconsize="+str(int(self.gladefile.get_widget('spin_iconsize').get_value())))
+			
+			
+			self.gladefile.get_widget('spin_iconsize').set_value(int(self.config.get('iconsize')))
+			self.config.store()
+
+			if response == gtk.RESPONSE_OK:
+				widget.hide()
+			
+
 	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
 		print "on_treeview_cdromdrives_row_activated undefined!"
 		pass
@@ -732,6 +812,19 @@ class VBGUI:
 		self.gladefile.get_widget('combo_newbricktype').set_active(0)
 		self.show_window('dialog_newbrick')
 
+	def on_testconfig(self, widget=None, event=None, data=""):
+		print "signal not connected"
+	def on_autodetectsettings(self, widget=None, event=None, data=""):
+		print "signal not connected"
+	def on_check_kvm(self, widget=None, event=None, data=""):
+		print "signal not connected"
+	def on_check_ksm(self, widget=None, event=None, data=""):
+		print "signal not connected"
+	def on_add_cdrom(self, widget=None, event=None, data=""):
+		print "signal not connected"
+	def on_remove_cdrom(self, widget=None, event=None, data=""):
+		print "signal not connected"
+
 	def on_brick_startstop(self,widget=None, event=None, data=""):
 		pass
 	def on_brick_delete(self,widget=None, event=None, data=""):
@@ -846,6 +939,12 @@ class VBGUI:
 			"on_entry_redirect_gIP_changed":self.on_entry_redirect_gIP_changed,
 			"on_spinbutton_redirect_dport_changed":self.on_spinbutton_redirect_dport_changed,
 			"on_newbrick":self.on_newbrick,
+			"on_testconfig":self.on_testconfig,
+			"on_autodetectsettings":self.on_autodetectsettings,
+			"on_check_kvm":self.on_check_kvm,
+			"on_check_ksm":self.on_check_ksm,
+			"on_add_cdrom":self.on_add_cdrom,
+			"on_remove_cdrom":self.on_remove_cdrom,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
