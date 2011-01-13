@@ -13,6 +13,7 @@ import random
 import threading
 import virtualbricks_GUI
 import virtualbricks_Global as Global
+import virtualbricks_Settings as Settings
 import select
 
 class InvalidNameException(Exception):
@@ -24,7 +25,7 @@ class BadConfigException(Exception):
 class NotConnectedException(Exception):
 	def __init__(self):
 		pass
-class LinkdownException(Exception):
+class LinkloopException(Exception):
 	def __init__(self):
 		pass
 
@@ -118,6 +119,7 @@ class BrickConfig():
 class Brick():
 	def __init__(self, _factory, _name):
 		self.factory = _factory
+		self.settings = self.factory.settings
 		self.name = _name
 		self.plugs = []
 		self.socks = []
@@ -202,7 +204,7 @@ class Brick():
 			raise NotConnectedException
 		if not self.check_links():
 			print "link down"
-			raise LinkdownException
+			raise LinkloopException
 		self._poweron()
 
 	def build_cmd_line(self):
@@ -221,8 +223,6 @@ class Brick():
 
 	def args(self):
 		res = []
-		if self.needsudo:
-			res.append('gksu')
 		res.append(self.prog())
 		for c in self.build_cmd_line():
 			res.append(c)
@@ -232,21 +232,48 @@ class Brick():
 		if (self.proc != None):
 			return
 		command_line = self.args()
-		print 'Starting [%s]' % (command_line)
+		
+		if self.needsudo:
+			sudoarg = ""
+			for cmdarg in command_line:
+				sudoarg+=cmdarg + " "
+			sudoarg += "-P /tmp/" +self.name+".pid "
+			command_line[0] = self.settings.sudo
+			command_line[1] = sudoarg
+		print 'Starting "',
+		for cmdarg in command_line:
+			print cmdarg + " ",
+		print '"'
 		self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 #		self.proc.fromchild.close()
 #		self.proc.tochild.close()
-		self.pid = self.proc.pid
+		if self.needsudo:
+			time.sleep(0.5)
+			try:
+				pidfile = open("/tmp/" +self.name+".pid", "r")
+				print "open ok"
+				self.pid = int(pidfile.readline().rstrip('\n'))
+				print "read ok"
+				print self.pid
+			except:
+				print("Cannot get pid from pidfile!")	
+				pass
+		else:
+			self.pid = self.proc.pid
 		self.post_poweron()
 		
 	def poweroff(self):
 		print "Shutting down %s" % self.name
 		if (self.proc == None):
 			return False
-		try:
-			os.kill(self.proc.pid, 15)
-		except:
-			pass
+		if (self.needsudo):
+			os.system('gksu "kill '+ str(self.pid) + '"')
+		else:
+			try:
+				os.kill(self.proc.pid, 15)
+			except:
+				pass
+		
 		self.proc.wait()
 		self.proc = None
 		self.need_restart_to_apply_changes = False
@@ -295,8 +322,8 @@ class Switch(Brick):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
 		self.active = 0
-		self.cfg.path = Global.MYPATH + '/' + self.name + '.ctl' 
-		self.cfg.console = Global.MYPATH + '/' + self.name + '.mgmt' 
+		self.cfg.path = Settings.MYPATH + '/' + self.name + '.ctl' 
+		self.cfg.console = Settings.MYPATH + '/' + self.name + '.mgmt' 
 		self.cfg.numports = "32"
 		self.cfg.hub = ""
 		self.cfg.fstp = ""
@@ -320,7 +347,7 @@ class Switch(Brick):
 	
 
 	def prog(self):
-		return Global.VDEPATH + "/vde_switch"
+		return self.settings.get("vdepath") + "/vde_switch"
 
 	def get_type(self):
 		return 'Switch'
@@ -344,11 +371,11 @@ class Tap(Brick):
 		self.command_builder = {"-s":'sock', "*tap":"name"}
 		self.cfg.sock = ""
 		self.plugs.append(Plug(self))
-		#self.needsudo = True
+		self.needsudo = True
 	
 
 	def prog(self):
-		return Global.VDEPATH + "/vde_plug2tap"
+		return self.settings.get("vdepath") + "/vde_plug2tap"
 
 	def get_type(self):
 		return 'Tap'
@@ -387,7 +414,7 @@ class Wire(Brick):
 		return (self.plugs[0].sock is not None and self.plugs[1].sock is not None)	
 	
 	def prog(self):
-		return Global.VDEPATH + "/dpipe"
+		return self.settings.get("vdepath") + "/dpipe"
 	
 	def get_type(self):
 		return 'Wire'
@@ -395,10 +422,10 @@ class Wire(Brick):
 	def args(self):
 		res = []
 		res.append(self.prog())
-		res.append('vde_plug')
+		res.append(self.settings.get("vdepath") + '/vde_plug')
 		res.append(self.cfg.sock0)
 		res.append('=')
-		res.append('vde_plug')
+		res.append(self.settings.get("vdepath") + '/vde_plug')
 		res.append(self.cfg.sock1)
 		return res
 
@@ -484,7 +511,7 @@ class Wirefilter(Wire):
 		return res
 	
 	def prog(self):
-		return Global.VDEPATH + "/wirefilter"
+		return self.settings.get("vdepath") + "/wirefilter"
 	
 	def get_type(self):
 		return 'Wirefilter'
@@ -506,7 +533,7 @@ class TunnelListen(Brick):
 	
 
 	def prog(self):
-		return Global.VDEPATH + "/vde_cryptcab"
+		return self.settings.get("vdepath") + "/vde_cryptcab"
 
 	def get_type(self):
 		return 'TunnelListen'
@@ -686,6 +713,8 @@ class BrickFactory(threading.Thread):
 		self.showconsole = showconsole
 		threading.Thread.__init__(self)
 		self.running_condition = True
+		self.settings=Settings.Settings(Settings.CONFIGFILE)
+		self.settings.load()
 		
 
 	def getbrickbyname(self, name):

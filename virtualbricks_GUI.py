@@ -4,14 +4,15 @@ import sys
 import gtk
 import gtk.glade
 import virtualbricks_Global as Global
+import virtualbricks_Settings as Settings
 import virtualbricks_BrickFactory as BrickFactory
 import gobject
 import time
 
 class VBGUI:
 	def __init__(self):
-		if not os.access(Global.MYPATH, os.X_OK):
-			os.mkdir(Global.MYPATH)
+		if not os.access(Settings.MYPATH, os.X_OK):
+			os.mkdir(Settings.MYPATH)
 
 		gtk.gdk.threads_init()
 		self.brickfactory = BrickFactory.BrickFactory(True)
@@ -27,7 +28,7 @@ class VBGUI:
 		self.bricks = []
 
 
-		self.config = Global.Settings(Global.CONFIGFILE)
+		self.config = self.brickfactory.settings 
 		self.config.load()
 		self.signals()
 		self.timers()
@@ -324,7 +325,7 @@ class VBGUI:
 					self.widg[w].popup(None,None,None, 3, 0)
 				else:
 					self.widg[w].show_all()
-			elif not name.startswith('menu'):
+			elif not name.startswith('menu') and not name.endswith('dialog_warn'):
 				self.widg[w].hide()
 	
 	""" ******************************************************** """
@@ -345,7 +346,6 @@ class VBGUI:
 		self.show_window('dialog_warn')
 
 	def on_error_close(self, widget=None, data =""):
-		print "ERROR CLOSE"
 		self.widg['dialog_warn'].hide()
 		return True
 
@@ -423,6 +423,11 @@ class VBGUI:
 			self.gladefile.get_widget('check_femaleplugs').set_active(True)
 		else:
 			self.gladefile.get_widget('check_femaleplugs').set_active(False)
+		
+		if self.config.get('erroronloop') is "1":
+			self.gladefile.get_widget('check_erroronloop').set_active(True)
+		else:
+			self.gladefile.get_widget('check_erroronloop').set_active(False)
 
 		if self.config.get('python') is "1":
 			self.gladefile.get_widget('check_python').set_active(True)
@@ -431,7 +436,7 @@ class VBGUI:
 
 		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
 		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
-		self.gladefile.get_widget('spin_iconsize').set_value(int(self.config.get('iconsize')))
+		
 
 		self.show_window('dialog_settings')
 		pass
@@ -527,9 +532,13 @@ class VBGUI:
 				self.error("Cannot start this Brick: Brick not configured, yet.")
 			except(BrickFactory.NotConnectedException):
 				self.error("Cannot start this Brick: Brick not connected.")
-			except(BrickFactory.LinkDownException):
-				self.error("Cannot start this Brick: Link down.")
-				pass
+			except(BrickFactory.LinkloopException):
+				if (self.config.erroronloop):
+					error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
+					b.poweroff()
+				else:
+					pass
+				
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"
 		pass
@@ -588,7 +597,15 @@ class VBGUI:
 
 			if self.gladefile.get_widget('check_ksm').get_active():
 				self.config.set("ksm=1")
+				try:
+					self.config.check_ksm(True)
+				except:
+					pass
 			else:
+				try:
+					self.config.check_ksm(False)
+				except:
+					pass
 				self.config.set("ksm=0")
 
 			if self.gladefile.get_widget('check_kqemu').get_active():
@@ -605,13 +622,16 @@ class VBGUI:
 				self.config.set("femaleplugs=1")
 			else:
 				self.config.set("femaleplugs=0")
+			
+			if self.gladefile.get_widget('check_erroronloop').get_active():
+				self.config.set("erroronloop=1")
+			else:
+				self.config.set("erroronloop=0")
 	
 			self.config.set("term="+self.gladefile.get_widget('entry_term').get_text())
 			self.config.set("sudo="+self.gladefile.get_widget('entry_sudo').get_text())
-			self.config.set("iconsize="+str(int(self.gladefile.get_widget('spin_iconsize').get_value())))
 			
 			
-			self.gladefile.get_widget('spin_iconsize').set_value(int(self.config.get('iconsize')))
 			self.config.store()
 
 			if response == gtk.RESPONSE_OK:
@@ -817,9 +837,26 @@ class VBGUI:
 	def on_autodetectsettings(self, widget=None, event=None, data=""):
 		print "signal not connected"
 	def on_check_kvm(self, widget=None, event=None, data=""):
-		print "signal not connected"
+		if widget.get_active():
+			try:
+				self.config.check_kvm()
+			except IOError:
+				print "ioerror"
+				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+				widget.set_active(False)
+				
+			except NotImplementedError:
+				print "no support"
+				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+				widget.set_active(False)
+
 	def on_check_ksm(self, widget=None, event=None, data=""):
-		print "signal not connected"
+		try:
+			self.config.check_ksm(True)
+		except NotImplementedError:
+			print "no support"
+			self.error("No KSM support found on the system. Check your configuration. KSM will stay disabled.")
+			widget.set_active(False)
 	def on_add_cdrom(self, widget=None, event=None, data=""):
 		print "signal not connected"
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
@@ -834,6 +871,65 @@ class VBGUI:
 		pass
 	def on_brick_copy(self,widget=None, event=None, data=""):
 		pass
+		
+
+	def on_qemupath_changed(self, widget, data=None):
+		newpath = widget.get_filename()
+		missing_qemu = False
+		missing_kvm = False
+		missing,found = self.config.check_missing_qemupath(newpath)
+		lbl = self.gladefile.get_widget("label_qemupath_status")
+		if not os.access(newpath,os.X_OK):
+			lbl.set_markup('<span color="red">Error:</span>\ninvalid path for qemu binaries')
+			return
+		
+		for t in missing:
+			if t == 'qemu':
+				missing_qemu = True	
+			if t == 'kvm':
+				missing_kvm = True
+		if missing_qemu and missing_kvm:
+			lbl.set_markup('<span color="red">Error:</span>\ncannot find neither qemu nor kvm in this path')
+			return
+		txt = ""
+		if missing_qemu:
+			txt = '<span color="red">Warning:</span>\ncannot find qemu, using kvm only\n'
+		
+		elif missing_kvm:
+			txt = '<span color="yellow">Warning:</span>\nkvm not found. KVM support disabled.\n'
+		else:
+			txt = '<span color="darkgreen">KVM and Qemu detected.</span>\n'
+		arch = ""
+		rowlimit = 30
+		for i in found:
+			if i.startswith('qemu-system-'):
+				arch+=i.split('qemu-system-')[1] + ", "
+				if (len(arch) > rowlimit):
+					rowlimit+=30
+					arch.rstrip(', ')
+					arch+="\n"
+				
+				
+		if len(arch) > 0:
+			txt += "additional targets supported:\n"
+			txt += arch.rstrip(', ')
+		lbl.set_markup(txt)
+
+		
+	
+	def on_vdepath_changed(self, widget, data=None):
+		newpath = widget.get_filename()
+		missing = self.config.check_missing_vdepath(newpath)
+		lbl = self.gladefile.get_widget("label_vdepath_status")
+		if not os.access(newpath,os.X_OK):
+			lbl.set_markup('<span color="red">Error:</span>\ninvalid path for vde binaries')
+		elif len(missing) > 0:
+			txt = '<span color="red">Warning, missing modules:</span>\n' 
+			for l in missing:
+				txt+=l + "\n"
+			lbl.set_markup(txt)
+		else:
+			lbl.set_markup('<span color="darkgreen">All VDE components detected.</span>\n')
 		
 
 	def signals(self):
@@ -945,6 +1041,8 @@ class VBGUI:
 			"on_check_ksm":self.on_check_ksm,
 			"on_add_cdrom":self.on_add_cdrom,
 			"on_remove_cdrom":self.on_remove_cdrom,
+			"on_qemupath_changed":self.on_qemupath_changed,
+			"on_vdepath_changed":self.on_vdepath_changed,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
