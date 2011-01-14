@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <glade-interface>
   <!-- interface-requires gtk+ 2.6 -->
   <!-- interface-naming-policy toplevel-contextual -->
@@ -10,12 +10,11 @@
     <property name="title" translatable="yes">Virtualbricks</property>
     <property name="window_position">center</property>
     <property name="default_width">800</property>
-    <property name="default_height">780</property>
-    <signal name="destroy_event" handler="on_window1_destroy"/>
-    <signal name="delete_event" handler="on_window1_destroy"/>
+    <property name="default_height">778</property>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkMenuBar" id="menubar1">
             <property name="visible">True</property>
@@ -210,10 +209,12 @@
           <widget class="GtkVPaned" id="vpaned_mainwindow">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="orientation">vertical</property>
             <property name="position_set">True</property>
             <child>
               <widget class="GtkVBox" id="vbox_topane">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkHBox" id="hbox41">
                     <property name="visible">True</property>
@@ -406,9 +407,11 @@
             <child>
               <widget class="GtkVBox" id="vbox2">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkVBox" id="box_vmconfig">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkNotebook" id="notebook_imgsettings">
                         <property name="visible">True</property>
@@ -422,6 +425,7 @@
                             <child>
                               <widget class="GtkVBox" id="vbox3">
                                 <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
                                 <child>
                                   <widget class="GtkFrame" id="frame6">
                                     <property name="visible">True</property>
@@ -433,6 +437,7 @@
                                           <widget class="GtkVBox" id="vbox27">
                                             <property name="visible">True</property>
                                             <property name="border_width">3</property>
+                                            <property name="orientation">vertical</property>
                                             <child>
                                               <widget class="GtkHBox" id="hbox4">
                                                 <property name="visible">True</property>
@@ -564,7 +569,7 @@ fda</property>
                                                 <property name="can_focus">True</property>
                                                 <property name="receives_default">False</property>
                                                 <property name="has_tooltip">True</property>
-                                                <property name="tooltip" translatable="yes">don´t use any cdrom device</property>
+                                                <property name="tooltip" translatable="yes">don&#xB4;t use any cdrom device</property>
                                                 <property name="relief">none</property>
                                                 <property name="use_underline">True</property>
                                                 <property name="draw_indicator">True</property>
@@ -641,6 +646,7 @@ image2</property>
                             <child>
                               <widget class="GtkVBox" id="vbox28">
                                 <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
                                 <child>
                                   <widget class="GtkFrame" id="frame8">
                                     <property name="visible">True</property>
@@ -651,6 +657,7 @@ image2</property>
                                         <child>
                                           <widget class="GtkVBox" id="vbox31">
                                             <property name="visible">True</property>
+                                            <property name="orientation">vertical</property>
                                             <child>
                                               <widget class="GtkHBox" id="hbox25">
                                                 <property name="visible">True</property>
@@ -1042,14 +1049,15 @@ image2</property>
                                       <widget class="GtkVBox" id="vbox18">
                                         <property name="visible">True</property>
                                         <property name="border_width">3</property>
+                                        <property name="orientation">vertical</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox26">
                                             <property name="visible">True</property>
                                             <child>
-                                              <widget class="GtkLabel" id="label54">
+                                              <widget class="GtkLabel" id="label47">
                                                 <property name="visible">True</property>
                                                 <property name="xalign">0</property>
-                                                <property name="label" translatable="yes">Qemu command:</property>
+                                                <property name="label" translatable="yes">Qemu command: </property>
                                                 <property name="use_markup">True</property>
                                               </widget>
                                               <packing>
@@ -1085,7 +1093,7 @@ image2</property>
                                           </packing>
                                         </child>
                                         <child>
-                                          <widget class="GtkLabel" id="label47">
+                                          <widget class="GtkLabel" id="label1">
                                             <property name="visible">True</property>
                                             <property name="xalign">0</property>
                                             <property name="label" translatable="yes">CPU Type</property>
@@ -1175,6 +1183,7 @@ isapc</property>
                                       <widget class="GtkVBox" id="vbox26">
                                         <property name="visible">True</property>
                                         <property name="border_width">3</property>
+                                        <property name="orientation">vertical</property>
                                         <child>
                                           <widget class="GtkImage" id="image10">
                                             <property name="visible">True</property>
@@ -1237,6 +1246,7 @@ isapc</property>
                                       <widget class="GtkVBox" id="vbox10">
                                         <property name="visible">True</property>
                                         <property name="border_width">3</property>
+                                        <property name="orientation">vertical</property>
                                         <child>
                                           <widget class="GtkImage" id="image9">
                                             <property name="visible">True</property>
@@ -1318,7 +1328,7 @@ isapc</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
                                                 <property name="tooltip" translatable="yes">select Dsiplay for VNC server</property>
-                                                <property name="invisible_char">●</property>
+                                                <property name="invisible_char">&#x25CF;</property>
                                                 <property name="adjustment">1 0 500 1 10 10</property>
                                                 <property name="climb_rate">1</property>
                                                 <property name="numeric">True</property>
@@ -1369,6 +1379,7 @@ isapc</property>
                                       <widget class="GtkVBox" id="vbox25">
                                         <property name="visible">True</property>
                                         <property name="border_width">3</property>
+                                        <property name="orientation">vertical</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox28">
                                             <property name="visible">True</property>
@@ -1449,7 +1460,7 @@ isapc</property>
                                   <widget class="GtkSpinButton" id="cfg_Qemu_ram_spinint">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                     <property name="adjustment">128 1 99999 1 10 10</property>
                                     <property name="climb_rate">1</property>
                                     <property name="numeric">True</property>
@@ -1537,6 +1548,7 @@ isapc</property>
                             <child>
                               <widget class="GtkVBox" id="vbox22">
                                 <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
                                 <child>
                                   <widget class="GtkRadioButton" id="radiobutton_network_nonet">
                                     <property name="visible">True</property>
@@ -1714,7 +1726,7 @@ ne2k_isa
                                       <widget class="GtkEntry" id="entry15">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
-                                        <property name="invisible_char">●</property>
+                                        <property name="invisible_char">&#x25CF;</property>
                                       </widget>
                                       <packing>
                                         <property name="position">0</property>
@@ -1983,6 +1995,7 @@ ne2k_isa
                             <child>
                               <widget class="GtkVSeparator" id="vseparator1">
                                 <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
@@ -2116,9 +2129,10 @@ ne2k_isa
                                       <widget class="GtkVBox" id="vbox13">
                                         <property name="visible">True</property>
                                         <property name="border_width">3</property>
+                                        <property name="orientation">vertical</property>
                                         <child>
                                           <widget class="GtkRadioButton" id="radiobutton_nokqemu">
-                                            <property name="label" translatable="yes">don´t use kqemu</property>
+                                            <property name="label" translatable="yes">don&#xB4;t use kqemu</property>
                                             <property name="visible">True</property>
                                             <property name="can_focus">True</property>
                                             <property name="receives_default">False</property>
@@ -2276,6 +2290,7 @@ not support the KQEMU module or if KQEMU isn't installed, because it don't send 
                 <child>
                   <widget class="GtkVBox" id="box_wirefilterconfig">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkNotebook" id="notebook_wirefilterconfig">
                         <property name="visible">True</property>
@@ -2283,6 +2298,7 @@ not support the KQEMU module or if KQEMU isn't installed, because it don't send 
                         <child>
                           <widget class="GtkVBox" id="vbox6">
                             <property name="visible">True</property>
+                            <property name="orientation">vertical</property>
                             <child>
                               <widget class="GtkHBox" id="hbox5">
                                 <property name="visible">True</property>
@@ -2351,7 +2367,7 @@ not support the KQEMU module or if KQEMU isn't installed, because it don't send 
                               <widget class="GtkEntry" id="cfg_Wirefilter_speedLR_text">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -2387,7 +2403,7 @@ Normal Distribution</property>
                               <widget class="GtkEntry" id="cfg_Wirefilter_speedRL_text">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -2461,7 +2477,7 @@ Normal Distribution</property>
                               <widget class="GtkEntry" id="cfg_Wirefilter_bandwidhtLR_text">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -2474,7 +2490,7 @@ Normal Distribution</property>
                               <widget class="GtkEntry" id="cfg_Wirefilter_bandwidthRL_text">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -2575,7 +2591,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_delayLR_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2614,7 +2630,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_delayRL_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2653,7 +2669,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_capacity_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2697,6 +2713,7 @@ Normal Distribution</property>
                         <child>
                           <widget class="GtkVBox" id="vbox7">
                             <property name="visible">True</property>
+                            <property name="orientation">vertical</property>
                             <child>
                               <widget class="GtkHBox" id="hbox10">
                                 <property name="visible">True</property>
@@ -2714,7 +2731,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_lossLR_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2752,7 +2769,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_lossRL_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2790,7 +2807,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_dupLR_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2828,7 +2845,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_dupRL_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2866,7 +2883,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_noise_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="expand">False</property>
@@ -2909,7 +2926,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_lossburst_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="expand">False</property>
@@ -2941,7 +2958,7 @@ Normal Distribution</property>
                                   <widget class="GtkEntry" id="cfg_Wirefilter_mtu_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="invisible_char">●</property>
+                                    <property name="invisible_char">&#x25CF;</property>
                                   </widget>
                                   <packing>
                                     <property name="position">1</property>
@@ -2995,6 +3012,7 @@ Normal Distribution</property>
                 <child>
                   <widget class="GtkVBox" id="box_switchconfig">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkHBox" id="hbox2">
                         <property name="visible">True</property>
@@ -3011,7 +3029,7 @@ Normal Distribution</property>
                           <widget class="GtkSpinButton" id="cfg_Switch_numports_spinint">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="invisible_char">●</property>
+                            <property name="invisible_char">&#x25CF;</property>
                             <property name="adjustment">32 1 128 1 32 32</property>
                             <property name="snap_to_ticks">True</property>
                             <property name="numeric">True</property>
@@ -3024,6 +3042,7 @@ Normal Distribution</property>
                         <child>
                           <widget class="GtkVBox" id="vbox5">
                             <property name="visible">True</property>
+                            <property name="orientation">vertical</property>
                             <child>
                               <widget class="GtkCheckButton" id="cfg_Switch_fstp_check">
                                 <property name="label" translatable="yes">Use FSTP</property>
@@ -3073,11 +3092,12 @@ Normal Distribution</property>
                 <child>
                   <widget class="GtkVBox" id="box_tapconfig">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkHBox" id="hbox3">
                         <property name="visible">True</property>
                         <child>
-                          <widget class="GtkLabel" id="label1">
+                          <widget class="GtkLabel" id="label5">
                             <property name="visible">True</property>
                             <property name="xalign">0</property>
                             <property name="label" translatable="yes">Connect to:</property>
@@ -3128,6 +3148,7 @@ Normal Distribution</property>
                 <child>
                   <widget class="GtkVBox" id="box_wireconfig">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkHBox" id="hbox1">
                         <property name="visible">True</property>
@@ -3142,7 +3163,7 @@ Normal Distribution</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkLabel" id="label5">
+                          <widget class="GtkLabel" id="label44">
                             <property name="visible">True</property>
                             <property name="label" translatable="yes">&lt;=== connect ===&gt;</property>
                           </widget>
@@ -3206,7 +3227,7 @@ Normal Distribution</property>
                       <widget class="GtkSpinButton" id="cfg_TunnelListen_port_spinint">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="invisible_char">●</property>
+                        <property name="invisible_char">&#x25CF;</property>
                         <property name="adjustment">7667 1 65535 1 10 10</property>
                       </widget>
                       <packing>
@@ -3242,7 +3263,7 @@ Normal Distribution</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="visibility">False</property>
-                        <property name="invisible_char">●</property>
+                        <property name="invisible_char">&#x25CF;</property>
                       </widget>
                       <packing>
                         <property name="left_attach">1</property>
@@ -3275,7 +3296,7 @@ Normal Distribution</property>
                     <property name="n_rows">5</property>
                     <property name="n_columns">2</property>
                     <child>
-                      <widget class="GtkLabel" id="label44">
+                      <widget class="GtkLabel" id="label45">
                         <property name="visible">True</property>
                         <property name="xalign">0</property>
                         <property name="label" translatable="yes">Connect to</property>
@@ -3296,7 +3317,7 @@ Normal Distribution</property>
                       <widget class="GtkSpinButton" id="cfg_TunnelConnect_localport_spinint">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="invisible_char">●</property>
+                        <property name="invisible_char">&#x25CF;</property>
                         <property name="adjustment">7667 1 65535 1 10 10</property>
                       </widget>
                       <packing>
@@ -3333,7 +3354,7 @@ Normal Distribution</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="visibility">False</property>
-                        <property name="invisible_char">●</property>
+                        <property name="invisible_char">&#x25CF;</property>
                       </widget>
                       <packing>
                         <property name="left_attach">1</property>
@@ -3343,7 +3364,7 @@ Normal Distribution</property>
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkLabel" id="label45">
+                      <widget class="GtkLabel" id="label53">
                         <property name="visible">True</property>
                         <property name="xalign">0</property>
                         <property name="label" translatable="yes">Tunnel Server</property>
@@ -3360,14 +3381,14 @@ Normal Distribution</property>
                           <widget class="GtkEntry" id="cfg_TunnelConnect_host_text">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="invisible_char">●</property>
+                            <property name="invisible_char">&#x25CF;</property>
                           </widget>
                           <packing>
                             <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkLabel" id="label53">
+                          <widget class="GtkLabel" id="label54">
                             <property name="visible">True</property>
                             <property name="xalign">1</property>
                             <property name="label" translatable="yes">port:</property>
@@ -3381,7 +3402,7 @@ Normal Distribution</property>
                           <widget class="GtkSpinButton" id="cfg_TunnelConnect_port_spinint">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="invisible_char">●</property>
+                            <property name="invisible_char">&#x25CF;</property>
                             <property name="adjustment">7667 1 65535 1 10 10</property>
                           </widget>
                           <packing>
@@ -3466,10 +3487,10 @@ Normal Distribution</property>
   </widget>
   <widget class="GtkFileChooserDialog" id="filechooserdialog_openimage">
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_filechooserdialog_openimage_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox1">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <property name="spacing">24</property>
         <child internal-child="action_area">
           <widget class="GtkHButtonBox" id="dialog-action_area1">
@@ -3527,11 +3548,10 @@ Normal Distribution</property>
     <property name="resizable">False</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_settings_response"/>
-    <signal name="delete_event" handler="on_windown_destroy"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkLabel" id="label11">
             <property name="visible">True</property>
@@ -3550,6 +3570,7 @@ Normal Distribution</property>
               <widget class="GtkVBox" id="vbox8">
                 <property name="height_request">900</property>
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <property name="homogeneous">True</property>
                 <child>
                   <widget class="GtkFrame" id="frame1">
@@ -3559,6 +3580,7 @@ Normal Distribution</property>
                       <widget class="GtkVBox" id="vbox1">
                         <property name="height_request">150</property>
                         <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
                         <child>
                           <widget class="GtkTable" id="table1">
                             <property name="visible">True</property>
@@ -3610,7 +3632,7 @@ Normal Distribution</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="tooltip" translatable="yes">your favorite x-terminal-emulator</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -3624,7 +3646,7 @@ Normal Distribution</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="tooltip" translatable="yes">command to perform administrative actions on your system</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -3685,6 +3707,7 @@ Normal Distribution</property>
                         <child>
                           <widget class="GtkVBox" id="vbox3">
                             <property name="visible">True</property>
+                            <property name="orientation">vertical</property>
                             <child>
                               <widget class="GtkTable" id="table3">
                                 <property name="visible">True</property>
@@ -3833,6 +3856,7 @@ invalid path for vde binaries</property>
                     <child>
                       <widget class="GtkVBox" id="vbox2">
                         <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
                         <child>
                           <widget class="GtkTable" id="table2">
                             <property name="visible">True</property>
@@ -3972,6 +3996,7 @@ invalid path for qemu/kvm binaries</property>
                                 <child>
                                   <widget class="GtkVBox" id="vbox4">
                                     <property name="visible">True</property>
+                                    <property name="orientation">vertical</property>
                                     <child>
                                       <widget class="GtkHBox" id="hbox3">
                                         <property name="visible">True</property>
@@ -4094,7 +4119,7 @@ invalid path for qemu/kvm binaries</property>
                               <widget class="GtkEntry" id="entry_settings_cdevicename">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="position">1</property>
@@ -4115,7 +4140,7 @@ invalid path for qemu/kvm binaries</property>
                               <widget class="GtkEntry" id="entry_settings_cdevicepath">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="invisible_char">●</property>
+                                <property name="invisible_char">&#x25CF;</property>
                               </widget>
                               <packing>
                                 <property name="position">3</property>
@@ -4256,13 +4281,14 @@ invalid path for qemu/kvm binaries</property>
     <property name="width_request">400</property>
     <property name="title" translatable="yes">Add Bookmark</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_bookmarks_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox3">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkVBox" id="vbox12">
             <property name="visible">True</property>
+            <property name="orientation">vertical</property>
             <child>
               <widget class="GtkLabel" id="label22">
                 <property name="visible">True</property>
@@ -4280,7 +4306,7 @@ invalid path for qemu/kvm binaries</property>
               <widget class="GtkEntry" id="entry_bookmark_name">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">●</property>
+                <property name="invisible_char">&#x25CF;</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -4305,7 +4331,7 @@ invalid path for qemu/kvm binaries</property>
               <widget class="GtkEntry" id="entry_bookmark_path">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">●</property>
+                <property name="invisible_char">&#x25CF;</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -4438,14 +4464,14 @@ invalid path for qemu/kvm binaries</property>
     <property name="height_request">500</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_about_response"/>
-    <signal name="delete_event" handler="on_dialog_about_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox4">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkVBox" id="vbox14">
             <property name="visible">True</property>
+            <property name="orientation">vertical</property>
             <child>
               <widget class="GtkHBox" id="hbox13">
                 <property name="visible">True</property>
@@ -4494,10 +4520,10 @@ invalid path for qemu/kvm binaries</property>
 Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.
 
 Virtualbricks is licensed under the terms of the GPL (General Public Licence) Version 2.
-© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. 
+&#xA9; 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. 
 
-VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.
-QEMU - Copyright © 2005-2011 Fabrice Bellard.
+VDE - Virtual Distributed Ethernet -  &#xA9; 2003-2011 Renzo Davoli.
+QEMU - Copyright &#xA9; 2005-2011 Fabrice Bellard.
 QEMU is a trademark of Fabrice Bellard.
 
 If you find virtualbricks useful for your business, please consider making a donation. 
@@ -4550,13 +4576,14 @@ If you find virtualbricks useful for your business, please consider making a don
     <property name="height_request">285</property>
     <property name="title" translatable="yes">create new empty image</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_create_image_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox5">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkVBox" id="vbox15">
             <property name="visible">True</property>
+            <property name="orientation">vertical</property>
             <child>
               <widget class="GtkLabel" id="label41">
                 <property name="visible">True</property>
@@ -4622,7 +4649,7 @@ If you find virtualbricks useful for your business, please consider making a don
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="tooltip" translatable="yes">Enter a filename for the new image</property>
-            <property name="invisible_char">●</property>
+            <property name="invisible_char">&#x25CF;</property>
             <signal name="changed" handler="on_entry_newimage_name_changed"/>
           </widget>
           <packing>
@@ -4691,6 +4718,7 @@ If you find virtualbricks useful for your business, please consider making a don
             <child>
               <widget class="GtkVBox" id="vbox16">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkLabel" id="label44">
                     <property name="visible">True</property>
@@ -4727,6 +4755,7 @@ cloop</property>
             <child>
               <widget class="GtkVBox" id="vbox17">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkLabel" id="label45">
                     <property name="visible">True</property>
@@ -4871,10 +4900,10 @@ GB</property>
     <property name="height_request">300</property>
     <property name="title" translatable="yes">message</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_messages_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox6">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkScrolledWindow" id="scrolledwindow6">
             <property name="visible">True</property>
@@ -4951,13 +4980,14 @@ GB</property>
     <property name="modal">True</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
-    <signal name="response" handler="on_dialog_jobmonitor_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox7">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkVBox" id="vbox19">
             <property name="visible">True</property>
+            <property name="orientation">vertical</property>
             <child>
               <widget class="GtkLabel" id="label48">
                 <property name="visible">True</property>
@@ -5048,6 +5078,7 @@ GB</property>
                 <child>
                   <widget class="GtkVBox" id="vbox21">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkLabel" id="label69">
                         <property name="visible">True</property>
@@ -5254,6 +5285,7 @@ GB</property>
                 <child>
                   <widget class="GtkVBox" id="vbox20">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkLabel" id="label71">
                         <property name="visible">True</property>
@@ -5489,13 +5521,13 @@ GB</property>
   <widget class="GtkDialog" id="dialog_newnetcard">
     <property name="title" translatable="yes">Setup new network card</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_newnetcard_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox8">
         <property name="visible">True</property>
         <child>
           <widget class="GtkVBox" id="vbox23">
             <property name="visible">True</property>
+            <property name="orientation">vertical</property>
             <child>
               <widget class="GtkLabel" id="label76">
                 <property name="visible">True</property>
@@ -5571,7 +5603,7 @@ Use an already open UDP multicast socket</property>
                   <widget class="GtkEntry" id="entry_network_macaddr">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="invisible_char">●</property>
+                    <property name="invisible_char">&#x25CF;</property>
                     <signal name="changed" handler="on_entry_network_macaddr_changed"/>
                   </widget>
                   <packing>
@@ -5614,7 +5646,7 @@ Use an already open UDP multicast socket</property>
                   <widget class="GtkEntry" id="entry_network_ip">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="invisible_char">●</property>
+                    <property name="invisible_char">&#x25CF;</property>
                     <signal name="changed" handler="on_entry_network_ip_changed"/>
                   </widget>
                   <packing>
@@ -5704,7 +5736,7 @@ Use an already open UDP multicast socket</property>
                   <widget class="GtkEntry" id="entry_network_ifacename">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="invisible_char">●</property>
+                    <property name="invisible_char">&#x25CF;</property>
                     <signal name="changed" handler="on_entry_network_ifacename_changed"/>
                   </widget>
                   <packing>
@@ -5722,7 +5754,7 @@ Use an already open UDP multicast socket</property>
                       <widget class="GtkEntry" id="entry_network_tuntapscript">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="invisible_char">●</property>
+                        <property name="invisible_char">&#x25CF;</property>
                         <signal name="changed" handler="on_entry_network_tuntapscript_changed"/>
                       </widget>
                       <packing>
@@ -5859,6 +5891,7 @@ Use an already open UDP multicast socket</property>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox9">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkHBox" id="hbox20">
             <property name="visible">True</property>
@@ -5943,10 +5976,10 @@ Use an already open UDP multicast socket</property>
     <property name="title" translatable="yes">Add redirect</property>
     <property name="modal">True</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_new_redirect_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox10">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkFrame" id="frame1">
             <property name="visible">True</property>
@@ -5962,6 +5995,7 @@ Use an already open UDP multicast socket</property>
                     <child>
                       <widget class="GtkVBox" id="vbox24">
                         <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
                         <child>
                           <widget class="GtkRadioButton" id="radiobutton_redirect_TCP">
                             <property name="label" translatable="yes">TCP</property>
@@ -6041,7 +6075,7 @@ Use an already open UDP multicast socket</property>
                       <widget class="GtkEntry" id="entry_redirect_gIP">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="invisible_char">●</property>
+                        <property name="invisible_char">&#x25CF;</property>
                         <signal name="changed" handler="on_entry_redirect_gIP_changed"/>
                       </widget>
                       <packing>
@@ -6143,6 +6177,7 @@ Use an already open UDP multicast socket</property>
     <child>
       <widget class="GtkVBox" id="vbox5">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkHBox" id="hbox4">
             <property name="visible">True</property>
@@ -6158,6 +6193,7 @@ Use an already open UDP multicast socket</property>
             <child>
               <widget class="GtkVBox" id="vbox6">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkRadioButton" id="dhcp_radio">
                     <property name="label" translatable="yes">DHCP</property>
@@ -6228,7 +6264,7 @@ Use an already open UDP multicast socket</property>
               <widget class="GtkEntry" id="entry3">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">●</property>
+                <property name="invisible_char">&#x25CF;</property>
               </widget>
               <packing>
                 <property name="left_attach">1</property>
@@ -6239,7 +6275,7 @@ Use an already open UDP multicast socket</property>
               <widget class="GtkEntry" id="entry4">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">●</property>
+                <property name="invisible_char">&#x25CF;</property>
               </widget>
               <packing>
                 <property name="left_attach">1</property>
@@ -6319,10 +6355,10 @@ Use an already open UDP multicast socket</property>
     <property name="window_position">mouse</property>
     <property name="default_height">5</property>
     <property name="urgency_hint">True</property>
-    <signal name="delete_event" handler="on_windown_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkAspectFrame" id="aspectframe1">
             <property name="visible">True</property>
@@ -6331,6 +6367,7 @@ Use an already open UDP multicast socket</property>
             <child>
               <widget class="GtkVBox" id="vbox2">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkTable" id="table1">
                     <property name="visible">True</property>
@@ -6363,7 +6400,7 @@ Tunnel Client</property>
                       <widget class="GtkEntry" id="text_newbrickname">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="invisible_char">●</property>
+                        <property name="invisible_char">&#x25CF;</property>
                       </widget>
                       <packing>
                         <property name="left_attach">1</property>
@@ -6493,10 +6530,10 @@ Tunnel Client</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
-    <signal name="delete_event" handler="on_error_close"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkHBox" id="hbox2">
             <property name="visible">True</property>
