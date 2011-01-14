@@ -104,7 +104,14 @@ class VBGUI:
 						idx += 1
 						
         				w.set_active(active)
-
+		
+		#QEMU COMMAND COMBO
+		missing,found = self.config.check_missing_qemupath(self.config.qemupath)
+		w = self.gladefile.get_widget("cfg_Qemu_argv0_combo")
+		for arch in found:
+		  if arch.startswith('qemu-system-'):
+		    w.append_text(arch.split('qemu-system-')[1])
+		
 		for key in b.cfg.__dict__.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
@@ -125,6 +132,10 @@ class VBGUI:
 					widget.set_active(True)
 				else:
 					widget.set_active(False)
+			
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
+			if (widget is not None):
+				widget.set_active(0)
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
 			if (widget is not None):
@@ -153,11 +164,19 @@ class VBGUI:
 				txt = widget.get_active_text()
 				if (txt):
 					b.cfg.set(key+"="+txt[0])
+					
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
+			if (widget is not None):
+				txt = widget.get_active_text()
+				if (txt != "-- default --"):
+					b.cfg.set(key+"="+txt)
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
 				if widget.get_active():
 					b.cfg.set(key+'=*')
+					#print widget.get_label()
+					
 			b.gui_changed = True
 		self.curtain_down()
 		
