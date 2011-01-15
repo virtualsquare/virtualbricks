@@ -574,6 +574,7 @@ fda</property>
                                                 <property name="tooltip" translatable="yes">don&#xB4;t use any cdrom device</property>
                                                 <property name="relief">none</property>
                                                 <property name="use_underline">True</property>
+                                                <property name="active">True</property>
                                                 <property name="draw_indicator">True</property>
                                                 <property name="group">radiobutton_cdromtype2</property>
                                               </widget>
@@ -870,7 +871,7 @@ image2</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hda">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="filechooserbutton_hda">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_hda_filechooser">
                                                         <property name="width_request">200</property>
                                                         <property name="visible">True</property>
                                                       </widget>
@@ -886,7 +887,7 @@ image2</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hdb">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="filechooserbutton_hdb">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_hdb_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -904,7 +905,7 @@ image2</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hdc">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="filechooserbutton_hdc">
+                                                      <widget class="GtkFileChooserButton" id="config_Qemu_hdc_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -922,7 +923,7 @@ image2</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hdd">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="filechooserbutton_hdd">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_hdd_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -940,7 +941,7 @@ image2</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_fda">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="filechooserbutton_fda">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_fda_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -958,7 +959,7 @@ image2</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_fdb">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="filechooserbutton_fdb">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_fdb_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>

@@ -645,6 +645,12 @@ class VM(Brick):
 		self.cfg.usbmode = ""
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
+		self.cfg.hda =""
+		self.cfg.hdb =""
+		self.cfg.hdc =""
+		self.cfg.hdd =""
+		self.cfg.fda =""
+		self.cfg.fdb =""
 		#self.cfg.cdrom = ""
 		
 		#kernel etc.
@@ -660,12 +666,12 @@ class VM(Brick):
 			'-m':'ram',
 			'-boot':'boot',
 			##numa not supported
-			#'-fda':'fda',
-			#'-fdb':'fdb',
-			#'-hda':'hda',
-			#'-hdb':'hdb',
-			#'-hdc':'hdc',
-			#'-hdd':'hdd',
+			'-fda':'fda',
+			'-fdb':'fdb',
+			'-hda':'hda',
+			'-hdb':'hdb',
+			'-hdc':'hdc',
+			'-hdd':'hdd',
 			#'-cdrom':'cdrom',
 			##extended drive: TBD
 			#'-mtdblock':'mtdblock',
@@ -674,7 +680,7 @@ class VM(Brick):
 			'-usb':'usbmode',
 			##usbdevice to be implemented as a collection
 			##device to be implemented as a collection
-			#'-name':'name',
+			####'-name':'name', for NAME, BRINCKNAME is used.
 			#'-uuid':'uuid',
 			'-nographic':'novga',
 			#'-curses':'curses',
@@ -682,8 +688,8 @@ class VM(Brick):
 			#'-no-quit':'noquit',
 			'-snapshot':'snapshot',
 			'-vga':'vga',
-			'-vnc':'vncN',
-			'#vnc_e':'vnc',
+			'#vncN':'vncN',
+			'#vnc':'vnc',
 			#'-full-screen':'full-screen',
 			#'-sdl':'sdl',
 			#'-potrait':'potrait',
@@ -747,7 +753,42 @@ class VM(Brick):
 	def get_type(self):
 		return "Qemu"
 	
+	def configured(self):
+		cfg_ok = True
+		for p in self.plugs:
+			if self.plugs.sock is None:
+				cfg_ok = False
+		return cfg_ok
+	# QEMU PROGRAM SELECTION	
+	def prog(self):
+		if (len(self.cfg.argv0) > 0):
+			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
+		else:
+			cmd = self.settings.get("qemupath") + "/qemu"
+		if (cmd == 'qemu' or cmd.endswith('i386')) and self.settings.kvm == '1':
+			cmd = self.settings.get("qemupath") + "/kvm"
+		return cmd
 		
+
+	def args(self):
+		res = []
+		res.append(self.prog())
+		for c in self.build_cmd_line():
+			res.append(c)
+		if self.cfg.gdb == '*':
+			res.append('-gdb')
+			res.append('tcp::' + self.cfg.gdbport) 
+		if self.cfg.vnc == '*':
+			res.append('-vnc')
+			res.append(':' + self.cfg.vncN) 
+
+		res.append('-name')
+		res.append(self.name)
+		if (len(self.plugs) == 0):
+			res.append('-net')
+			res.append('none')
+
+		return res
 	
 
 class BrickFactory(threading.Thread):

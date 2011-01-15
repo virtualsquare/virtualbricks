@@ -212,8 +212,14 @@ class VBGUI:
 					if sel == so.nickname:
 						b.plugs[1].connect(so)
 					
+			if t == 'Qemu':
+				k = self.gladefile.get_widget('check_customkernel')
+				if not k.get_active():
+					b.cfg.kernel=""
+				ki = self.gladefile.get_widget('check_initrd')
+				if not ki.get_active():
+					b.cfg.initrd=""
 					
-			# TODO: read sockscombo value
 				
 		self.curtain_down()
 		
@@ -1258,6 +1264,12 @@ class VBGUI:
 
 				self.bookmarks.set_value(iter,1,b.get_type())
 				self.bookmarks.set_value(iter,2,b.name)
+
+				if (b.get_type() == "Qemu"):
+					txt = "command: " + b.prog() + ", "
+					txt += "ram: " + b.cfg.ram + ", "
+					self.bookmarks.set_value(iter, 3, txt)
+					
 				if (b.get_type() == "Switch"):
 					self.bookmarks.set_value(iter, 3, "Ports:%d" % (int(str(b.cfg.numports))))
 				if (b.get_type().startswith("Wire")):

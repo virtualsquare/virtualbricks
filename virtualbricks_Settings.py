@@ -195,6 +195,7 @@ class Settings:
 		
 		if not os.access("/sys/class/misc/kvm", os.X_OK):
 			raise NotImplementedError
+		return True
 		
 	def check_ksm(self, onoff):
 		if (onoff == False and self.ksm != "1"):
