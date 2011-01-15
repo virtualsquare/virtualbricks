@@ -502,17 +502,19 @@ class VBGUI:
 	def on_item_about_activate(self, widget=None, data=""):
 		self.show_window('dialog_about1')
 		pass
-	def on_toolbutton_launch_clicked(self, widget=None, data=""):
-		print "on_toolbutton_launch_clicked undefined!"
-		pass
 	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
 		print "on_toolbutton_launchxterm_clicked undefined!"
 		pass
 
-	def on_toolbutton_launch_unmanaged_clicked(self, widget=None, data=""):
-		print "on_toolbutton_launch_unmanaged_clicked undefined!"
-		pass
+	def on_toolbutton_start_all_clicked(self, widget=None, data=""):
+		for b in self.bricks:
+			if b.proc is None:
+				b.poweron()
 
+	def on_toolbutton_stop_all_clicked(self, widget=None, data=""):
+		for b in self.bricks:
+			if b.proc is not None:
+				b.poweroff()
 	def on_vpaned_mainwindow_button_release_event(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
@@ -1092,9 +1094,8 @@ class VBGUI:
 			"on_item_settings_autohide_activate":self.on_item_settings_autohide_activate,
 			"on_item_create_image_activate":self.on_item_create_image_activate,
 			"on_item_about_activate":self.on_item_about_activate,
-			"on_toolbutton_launch_clicked":self.on_toolbutton_launch_clicked,
-			"on_toolbutton_launchxterm_clicked":self.on_toolbutton_launchxterm_clicked,
-			"on_toolbutton_launch_unmanaged_clicked":self.on_toolbutton_launch_unmanaged_clicked,
+			"on_toolbutton_start_all_clicked":self.on_toolbutton_start_all_clicked,
+			"on_toolbutton_stop_all_clicked":self.on_toolbutton_stop_all_clicked,
 			"on_vpaned_mainwindow_button_release_event":self.on_vpaned_mainwindow_button_release_event,
 			"on_treeview_bookmarks_button_press_event":self.on_treeview_bookmarks_button_press_event,
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,

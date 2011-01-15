@@ -874,15 +874,20 @@ class BrickFactory(threading.Thread):
 				del(b)
 	def dupbrick(self,bricktodup):
 		b1 = copy.copy(bricktodup)
+		b1.cfg = copy.copy(bricktodup.cfg)
 		b1.name = "copy_of_"+bricktodup.name
 		b1.plugs = []
 		b1.socks = []
 		if b1.get_type() == "Switch":
 			portname = b1.name + "_port"
 			b1.socks.append(Sock(b1, portname))
+			b1.cfg.path = Settings.MYPATH + '/' + b1.name + '.ctl' 
 		if b1.get_type().startswith("Wire"):
 			self.cfg.sock0 = ""
 			self.cfg.sock1 = ""
+		
+		if (b1.cfg.console):
+			b1.cfg.console = Settings.MYPATH + '/' + b1.name + '.mgmt' 
 		self.bricks.append(b1)
 		b1.on_config_changed()
 
@@ -891,9 +896,11 @@ class BrickFactory(threading.Thread):
 			raise InvalidNameException
 		else:
 			b.name = newname
-			for so in b.socks:
-				if b.get_type() == "Switch":
+			if b.get_type() == "Switch":
+				for so in b.socks:
 					so.nickname = b.name + "_port"
+				b.cfg.path = Settings.MYPATH + '/' + b.name + '.ctl' 
+				b.cfg.console = Settings.MYPATH + '/' + b.name + '.mgmt' 
 			b.gui_changed = True
 	
 	def newbrick(self, ntype="", name=""):
