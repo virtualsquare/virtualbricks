@@ -30,6 +30,22 @@ class LinkloopException(Exception):
 		pass
 
 
+def ValidName(name):
+	if not re.search("\A[a-zA-Z]", name):
+		return None
+	while(name.startswith(' ')):
+		name = name.lstrip(' ')
+	while(name.endswith(' ')):
+		name = name.rstrip(' ')
+
+	name = re.sub(' ','_',name)
+	if not re.search("\A\w+\Z", name):
+		return None
+	return name
+	
+
+	
+
 
 class Plug():
 	def __init__(self, _brick):
@@ -850,11 +866,20 @@ class BrickFactory(threading.Thread):
 			print self.socks
 
 
+	def delbrick(self,bricktodel):
+		for b in self.bricks:
+			if b == bricktodel:
+				self.bricks.remove(b)
+				del(b)
 	
 	def newbrick(self, ntype="", name=""):
 		for oldb in self.bricks:
 			if oldb.name == name:
 				raise InvalidNameException
+		name = ValidName(name)
+		if not name:
+			raise InvalidNameException
+
 		if ntype == "switch" or ntype == "Switch":
 			s = Switch(self,name) 
 			print "new switch %s OK" % s.name

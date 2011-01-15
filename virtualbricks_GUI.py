@@ -347,7 +347,8 @@ class VBGUI:
 		'ifconfig_win', 
 		'dialog_newbrick',
 		'menu_brickactions',
-		'dialog_warn'
+		'dialog_warn',
+		'dialog_confirm'
 		]
 	def sockscombo_names(self):
 		return [
@@ -386,6 +387,13 @@ class VBGUI:
 	def error(self, text):
 		self.gladefile.get_widget('texterror').set_text(text)
 		self.show_window('dialog_warn')
+	
+	def ask_confirm(self, text, on_yes=None, on_no=None, arg=None):
+		self.gladefile.get_widget('lbl_confirm').set_text(text)
+		self.on_confirm_response_yes = on_yes
+		self.on_confirm_response_no = on_no
+		self.on_confirm_response_arg = arg
+		self.gladefile.get_widget('dialog_confirm').show_all()
 
 	def on_error_close(self, widget=None, data =""):
 		self.widg['dialog_warn'].hide()
@@ -679,6 +687,15 @@ class VBGUI:
 			if response == gtk.RESPONSE_OK:
 				widget.hide()
 			
+	def on_dialog_confirm_response(self, widget=None, response=0, data=""):
+		widget.hide()
+		if (response == 1):
+			if (self.on_confirm_response_yes):
+				self.on_confirm_response_yes(self.on_confirm_response_arg)
+		elif (response == 0):
+			if (self.on_confirm_response_no):
+				self.on_confirm_response_no(self.on_confirm_response_arg)
+		
 
 	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
 		print "on_treeview_cdromdrives_row_activated undefined!"
@@ -907,7 +924,11 @@ class VBGUI:
 	def on_brick_startstop(self,widget=None, event=None, data=""):
 		pass
 	def on_brick_delete(self,widget=None, event=None, data=""):
-		pass
+		if self.selected is None:
+			return
+		self.ask_confirm("Do you really want to delete " + self.selected.get_type() + " " + self.selected.name,
+				on_yes = self.brickfactory.delbrick, arg = self.selected)
+
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
 		pass
@@ -1130,6 +1151,7 @@ class VBGUI:
 			"on_qemupath_changed":self.on_qemupath_changed,
 			"on_vdepath_changed":self.on_vdepath_changed,
 			"on_arch_changed":self.on_arch_changed,
+			"on_dialog_confirm_response":self.on_dialog_confirm_response,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
