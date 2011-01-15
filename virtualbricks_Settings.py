@@ -31,6 +31,67 @@ HOME=os.path.expanduser("~")
 MYPATH=HOME + "/.virtualbricks"
 CONFIGFILE=HOME + "/.virtualbricks.conf"
 
+COMBOBOXES=dict()
+
+def ComboBox(widget):
+	for k,v in COMBOBOXES.items():
+		if k == widget:
+			return v
+	COMBOBOXES[widget] = ComboBoxObj(widget)
+	return COMBOBOXES[widget]
+	
+
+class ComboBoxObj:
+	def __init__(self, _widget):
+		self.widget = _widget 
+		self.model = self.widget.get_model()
+		self.options = dict()
+	
+	# args is dict[showing_name] = real name
+	def populate(self, args, selected=None, _clear=True):
+		if _clear:
+			self.clear()
+		for (k,v) in args.items():
+			self.options[k] = v
+
+		items = [(v,k) for k,v in self.options.items()]
+		items.sort()
+		items = [(k,v) for v,k in items]
+		for k,v in items:
+			self.widget.append_text(k)
+
+		if selected:
+			self.select(selected)
+
+	def clear(self):
+		self.options={}
+        	self.widget.set_model(None)
+        	self.model.clear()
+        	self.widget.set_model(self.model)
+
+	def select(self,regexp):
+		i = self.model.get_iter_first()
+		active=-1
+		while i is not None:
+			s = self.model.get_value(i, 0)
+			if re.search(regexp, s):
+				print "Found match:" + s
+				active = i
+			i = self.model.iter_next(i)
+		print "activate " + regexp
+		print "setting active to "+str(active)
+		self.widget.set_active_iter(active)
+
+	def get_selected(self):
+		txt = self.widget.get_active_text()
+		try:
+			return self.options[txt]
+		except KeyError:
+			return None
+
+	
+
+
 class Settings:
 	def __init__(self, f):
 		self.configfile = None

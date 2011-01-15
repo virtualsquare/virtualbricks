@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os
+import os, re
 import sys
 import gtk
 import gtk.glade
@@ -32,6 +32,7 @@ class VBGUI:
 		self.config.load()
 		self.signals()
 		self.timers()
+		self.sockscombo = dict()
 		self.set_nonsensitivegroup(['cfg_Wirefilter_lossburst_text', 'cfg_Wirefilter_mtu_text'])
 		self.running_bricks = self.treestore('treeview_joblist', 
 			[gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], 
@@ -68,49 +69,30 @@ class VBGUI:
 	def config_brick_prepare(self):
 		# Fill socks combobox
 		b = self.selected
-		for k in self.sockscombo():
-			w = self.gladefile.get_widget(k)
-        		model = w.get_model()
-        		w.set_model(None)
-        		model.clear()
-        		w.set_model(model)
+		for k in self.sockscombo_names():
+			combo = Settings.ComboBox(self.gladefile.get_widget(k))
+			opt=dict()
 			for so in self.brickfactory.socks:
-				w.append_text(so.nickname)
-			t = b.get_type()
-			active = 0
-			idx = 0
+				opt["Connect to " + so.nickname] = so.nickname 
+			combo.populate(opt)
+			t = b.get_type()	
 			if (not t.startswith('Wire')) or k.endswith('0'):
 				if len(b.plugs) >= 1 and b.plugs[0].sock:
-					model = w.get_model()
-					i = model.get_iter_first()
-					while i is not None:
-						s = model.get_value(i, 0)
-                				if s == b.plugs[0].sock.nickname:
-							active = idx
-						i = model.iter_next(i)
-						idx += 1
-						
-        				w.set_active(active)
+					combo.select(b.plugs[0].sock.nickname)
 
 			elif k.endswith('1') and t.startswith('Wire'):
-				if len(b.plugs) > 1 and b.plugs[1].sock: 
-					model = w.get_model()
-					i = model.get_iter_first()
-					while i is not None:
-						s = model.get_value(i, 0)
-                				if s == b.plugs[1].sock.nickname:
-							active = idx
-						i = model.iter_next(i)
-						idx += 1
-						
-        				w.set_active(active)
+				if len(b.plugs) >= 1 and b.plugs[1].sock:
+					combo.select(b.plugs[1].sock.nickname)
 		
 		#QEMU COMMAND COMBO
 		missing,found = self.config.check_missing_qemupath(self.config.qemupath)
-		w = self.gladefile.get_widget("cfg_Qemu_argv0_combo")
+		qemuarch = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
+		opt = dict()
 		for arch in found:
-		  if arch.startswith('qemu-system-'):
-		    w.append_text(arch.split('qemu-system-')[1])
+			if arch.startswith('qemu-system-'):
+				opt[arch.split('qemu-system-')[1]] = arch
+		qemuarch.populate(opt, 'i386')
+			
 		
 		for key in b.cfg.__dict__.keys():
 			t = b.get_type()
@@ -135,7 +117,8 @@ class VBGUI:
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
-				widget.set_active(0)
+				#todo
+				pass
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
 			if (widget is not None):
@@ -167,8 +150,10 @@ class VBGUI:
 					
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
-				txt = widget.get_active_text()
-				if (txt != "-- default --"):
+				combo = Settings.ComboBox(widget)
+				#txt = widget.get_active_text()
+				txt = combo.get_selected()
+				if txt is not None and (txt != "-- default --"):
 					b.cfg.set(key+"="+txt)
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
@@ -178,6 +163,44 @@ class VBGUI:
 					#print widget.get_label()
 					
 			b.gui_changed = True
+			t = b.get_type()
+			if t == 'Tap':
+				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[0].connect(so)
+			if t == 'TunnelConnect':
+				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[0].connect(so)
+			if t == 'TunnelListen':
+				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[0].connect(so)
+			if t == 'Wire':
+				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[0].connect(so)
+				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wire1')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[1].connect(so)
+			if t == 'Wirefilter':
+				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[0].connect(so)
+				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[1].connect(so)
+					
+					
+			# TODO: read sockscombo value
+				
 		self.curtain_down()
 		
 
@@ -326,7 +349,7 @@ class VBGUI:
 		'menu_brickactions',
 		'dialog_warn'
 		]
-	def sockscombo(self):
+	def sockscombo_names(self):
 		return [
 		'sockscombo_vmethernet',
 		'sockscombo_tap',
@@ -519,9 +542,9 @@ class VBGUI:
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
 		path, focus = tree.get_cursor()
-                iter = store.get_iter(path)
-                ntype = store.get_value(iter, 1)
-                name = store.get_value(iter, 2)
+		iter = store.get_iter(path)
+		ntype = store.get_value(iter, 1)
+		name = store.get_value(iter, 2)
 		self.selected = self.brickfactory.getbrickbyname(name)
 		self.curtain_down()
 		
@@ -949,6 +972,50 @@ class VBGUI:
 			lbl.set_markup(txt)
 		else:
 			lbl.set_markup('<span color="darkgreen">All VDE components detected.</span>\n')
+	
+	def on_arch_changed(self, widget, data=None):
+		combo = Settings.ComboBox(widget)
+		path = self.config.get('qemupath')
+		cpus = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_cpu_combo'))
+		machines = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_machine_combo'))
+	
+		os.system(path + "/" + combo.get_selected() + " -M ? >" + Settings.MYPATH+"/.vmachines")
+		optm={}
+		for m in open(Settings.MYPATH+"/.vmachines").readlines():
+			if not re.search('machines are', m):
+				v = m.split(' ')[0]
+				k = m.lstrip(v).rstrip('/n')
+				while (k.startswith(' ')):
+					k = k.lstrip(' ')
+				optm[k] = v
+		machines.clear()
+		machines.populate(optm)
+		os.unlink(Settings.MYPATH+"/.vmachines")
+		
+		os.system(path + "/" + combo.get_selected() + " -cpu ? >" + Settings.MYPATH+"/.cpus")
+		optc={}
+		for m in open(Settings.MYPATH+"/.cpus").readlines():
+			if not re.search('Available CPU', m):
+				if (m.startswith('  ')):
+					while (m.startswith(' ')):
+						m = m.lstrip(' ')
+					if m.endswith('\n'):
+						m = m.rstrip('\n')
+					optc[m] = m
+				else:
+					lst = m.split(' ')
+					if len(lst) > 1:
+						val = m.lstrip(lst[0])
+						while (val.startswith(' ')):
+							val = val.lstrip(' ')
+						if val.endswith('\n'):
+							val = val.rstrip('\n')
+						optc[val] = val
+		cpus.clear()
+		cpus.populate(optc)
+		os.unlink(Settings.MYPATH+"/.cpus")
+		
+		
 		
 
 	def signals(self):
@@ -1062,6 +1129,7 @@ class VBGUI:
 			"on_remove_cdrom":self.on_remove_cdrom,
 			"on_qemupath_changed":self.on_qemupath_changed,
 			"on_vdepath_changed":self.on_vdepath_changed,
+			"on_arch_changed":self.on_arch_changed,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 

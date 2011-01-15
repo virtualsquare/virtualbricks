@@ -1057,7 +1057,7 @@ image2</property>
                                               <widget class="GtkLabel" id="label47">
                                                 <property name="visible">True</property>
                                                 <property name="xalign">0</property>
-                                                <property name="label" translatable="yes">Qemu command: </property>
+                                                <property name="label" translatable="yes">Architecture: </property>
                                                 <property name="use_markup">True</property>
                                               </widget>
                                               <packing>
@@ -1086,7 +1086,9 @@ image2</property>
                                         <child>
                                           <widget class="GtkComboBox" id="cfg_Qemu_argv0_combo">
                                             <property name="visible">True</property>
-                                            <property name="items" translatable="yes"></property>
+                                            <property name="items" translatable="yes">
+</property>
+                                            <signal name="changed" handler="on_arch_changed"/>
                                           </widget>
                                           <packing>
                                             <property name="position">1</property>
@@ -1108,21 +1110,13 @@ image2</property>
                                         <child>
                                           <widget class="GtkComboBox" id="cfg_Qemu_cpu_combo">
                                             <property name="visible">True</property>
-                                            <property name="items" translatable="yes">-- default --
-qemu64
-phenom
-core2duo
-kvm64
-qemu32
-coreduo
-486
-pentium
-pentium2
-pentium3
-athlon
-n270</property>
+                                            <property name="items" translatable="yes">
+
+</property>
                                           </widget>
                                           <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">False</property>
                                             <property name="position">3</property>
                                           </packing>
                                         </child>
@@ -1142,13 +1136,12 @@ n270</property>
                                         <child>
                                           <widget class="GtkComboBox" id="cfg_Qemu_machine_combo">
                                             <property name="visible">True</property>
-                                            <property name="items" translatable="yes">-- default --
-pc-0.12
-pc-0.11
-pc-0.10
-isapc</property>
+                                            <property name="items" translatable="yes">
+</property>
                                           </widget>
                                           <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">False</property>
                                             <property name="position">5</property>
                                           </packing>
                                         </child>
@@ -3548,6 +3541,7 @@ Normal Distribution</property>
     <property name="resizable">False</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
+    <signal name="response" handler="on_dialog_settings_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>
