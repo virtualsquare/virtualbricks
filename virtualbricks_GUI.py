@@ -93,7 +93,8 @@ class VBGUI:
 				opt[arch.split('qemu-system-')[1]] = arch
 		qemuarch.populate(opt, 'i386')
 			
-		
+		kernelcheck=False
+		initrdcheck=False
 		for key in b.cfg.__dict__.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
@@ -101,7 +102,7 @@ class VBGUI:
 				widget.set_text(b.cfg.__dict__[key])
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-			if (widget is not None):
+			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
 				widget.set_value(int(b.cfg.__dict__[key]))
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
@@ -110,20 +111,26 @@ class VBGUI:
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
+				widget.set_active(True)
+				widget.set_active(False)
 				if (b.cfg.__dict__[key] == "*"):
 					widget.set_active(True)
 				else:
 					widget.set_active(False)
 			
-			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
-			if (widget is not None):
-				#todo
-				pass
-			
-			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
-			if (widget is not None):
-				#TODO combobox selection for units and distribution
-				print
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
+			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
+				widget.set_filename(b.cfg.__dict__[key])
+				if key == 'kernel':
+					kernelcheck=True
+				elif key == 'initrd':
+					initrdcheck=True
+
+		self.gladefile.get_widget('check_customkernel').set_active(True)
+		self.gladefile.get_widget('check_initrd').set_active(True)
+		self.gladefile.get_widget('check_customkernel').set_active(kernelcheck)
+		self.gladefile.get_widget('check_initrd').set_active(initrdcheck)
+				
 			
 
 	def config_brick_confirm(self):
@@ -160,7 +167,14 @@ class VBGUI:
 			if (widget is not None):
 				if widget.get_active():
 					b.cfg.set(key+'=*')
-					#print widget.get_label()
+				else:
+					b.cfg.set(key+'=')
+			
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
+			if (widget is not None):
+				f = widget.get_filename()
+				if f:
+					b.cfg.set(key+'='+f)
 					
 			b.gui_changed = True
 			t = b.get_type()
@@ -962,7 +976,7 @@ class VBGUI:
 			try:
 				self.brickfactory.renamebrick(self.selected,self.gladefile.get_widget('entry_brick_newname').get_text())
 			except BrickFactory.InvalidNameException:
-				error("Invalid name!")
+				self.error("Invalid name!")
 			
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
@@ -1070,6 +1084,25 @@ class VBGUI:
 		
 		
 		
+	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
+		if widget.get_active():
+			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(True)
+		else:
+			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_filename('/')
+			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(False)
+	
+	def on_check_initrd_toggled(self, widget=None, event=None, data=""):
+		if widget.get_active():
+			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(True)
+		else:
+			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_filename('/')
+			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(False)
+
+	def on_check_gdb_toggled(self, widget=None, event=None, data=""):
+		if widget.get_active():
+			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(True)
+		else:
+			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(False)
 
 	def signals(self):
 		self.signaldict =  {
@@ -1185,6 +1218,9 @@ class VBGUI:
 			"on_vdepath_changed":self.on_vdepath_changed,
 			"on_arch_changed":self.on_arch_changed,
 			"on_dialog_confirm_response":self.on_dialog_confirm_response,
+			"on_check_customkernel_toggled":self.on_check_customkernel_toggled,
+			"on_check_initrd_toggled":self.on_check_initrd_toggled,
+			"on_check_gdb_toggled":self.on_check_gdb_toggled,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 

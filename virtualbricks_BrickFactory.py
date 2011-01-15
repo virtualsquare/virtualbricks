@@ -646,6 +646,12 @@ class VM(Brick):
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
 		#self.cfg.cdrom = ""
+		
+		#kernel etc.
+		self.cfg.kernel=""
+		self.cfg.initrd=""
+		self.cfg.gdb=""
+		self.cfg.gdbport=""
 		self.command_builder = {
 			'#argv0':'argv0',
 			'-M':'machine',
@@ -687,9 +693,9 @@ class VM(Brick):
 			#'-baloon':'baloon',
 			##acpitable not supported
 			##smbios not supported
-			#'-kernel':'kernel',
-			#'-append':'append',
-			#'-initrd':'initrd',
+			'-kernel':'kernel',
+			'-append':'append',
+			'-initrd':'initrd',
 			#'-serial':'serial',
 			#'-parallel':'parallel',
 			#'-monitor':'monitor',
@@ -698,7 +704,8 @@ class VM(Brick):
 			#'-pidfile':'',
 			#'-singlestep':'',
 			#'-S':'',
-			#'-gdb':'',
+			'#gdb_e':'gdb',
+			'#gdb_port':'gdbport',
 			#'-s':'',
 			#'-d':'',
 			#'-hdachs':'',
@@ -946,7 +953,8 @@ class BrickFactory(threading.Thread):
 		b1.on_config_changed()
 
 	def renamebrick(self,b,newname):
-		if ValidName(newname) == None:
+		newname = ValidName(newname)
+		if newname == None:
 			raise InvalidNameException
 		else:
 			b.name = newname
