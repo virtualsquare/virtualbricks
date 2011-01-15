@@ -922,19 +922,49 @@ class VBGUI:
 		print "signal not connected"
 
 	def on_brick_startstop(self,widget=None, event=None, data=""):
-		pass
+		if self.selected is None:
+			return
+		if self.selected.proc is not None:
+			self.selected.poweroff()
+		else:
+			self.selected.poweron()
+
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		if self.selected is None:
 			return
+		if self.selected.proc != None:
+			error("Cannot delete brick: Brick is in use.")
+			return
 		self.ask_confirm("Do you really want to delete " + self.selected.get_type() + " " + self.selected.name,
 				on_yes = self.brickfactory.delbrick, arg = self.selected)
+		
 
+	def on_brick_copy(self,widget=None, event=None, data=""):
+		if self.selected is None:
+			return
+		self.brickfactory.dupbrick(self.selected)
+
+	def on_brick_rename(self,widget=None, event=None, data=""):
+		if self.selected is None:
+			return
+		if self.selected.proc != None:
+			error("Cannot rename brick: Brick is in use.")
+			return
+
+		self.gladefile.get_widget('entry_brick_newname').set_text(self.selected.name)
+		self.gladefile.get_widget('dialog_rename').show_all()
+	
+	def on_dialog_rename_response(self, widget=None, response=0, data=""):
+		widget.hide()
+		if response == 1:
+			try:
+				self.brickfactory.renamebrick(self.selected,self.gladefile.get_widget('entry_brick_newname').get_text())
+			except BrickFactory.InvalidNameException:
+				error("Invalid name!")
+			
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
 		pass
-	def on_brick_copy(self,widget=None, event=None, data=""):
-		pass
-		
 
 	def on_qemupath_changed(self, widget, data=None):
 		newpath = widget.get_filename()
@@ -1052,8 +1082,10 @@ class VBGUI:
 			"on_mtu_toggle": self.on_mtu_toggle,
 			"on_brick_startstop": self.tree_startstop,
 			"on_brick_configure": self.on_brick_configure,
-			"on_brick_copy":self.on_brick_copy,
 			"on_brick_delete": self.on_brick_delete,
+			"on_brick_copy": self.on_brick_copy,
+			"on_brick_rename": self.on_brick_rename,
+			"on_dialog_rename_response": self.on_dialog_rename_response,
 			"on_item_quit_activate":self.on_item_quit_activate,
 			"on_item_settings_activate":self.on_item_settings_activate,
 			"on_item_settings_autoshow_activate":self.on_item_settings_autoshow_activate,

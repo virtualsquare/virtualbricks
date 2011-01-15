@@ -15,6 +15,7 @@ import virtualbricks_GUI
 import virtualbricks_Global as Global
 import virtualbricks_Settings as Settings
 import select
+import copy
 
 class InvalidNameException(Exception):
 	def __init__(self):
@@ -871,6 +872,29 @@ class BrickFactory(threading.Thread):
 			if b == bricktodel:
 				self.bricks.remove(b)
 				del(b)
+	def dupbrick(self,bricktodup):
+		b1 = copy.copy(bricktodup)
+		b1.name = "copy_of_"+bricktodup.name
+		b1.plugs = []
+		b1.socks = []
+		if b1.get_type() == "Switch":
+			portname = b1.name + "_port"
+			b1.socks.append(Sock(b1, portname))
+		if b1.get_type().startswith("Wire"):
+			self.cfg.sock0 = ""
+			self.cfg.sock1 = ""
+		self.bricks.append(b1)
+		b1.on_config_changed()
+
+	def renamebrick(self,b,newname):
+		if ValidName(newname) == None:
+			raise InvalidNameException
+		else:
+			b.name = newname
+			for so in b.socks:
+				if b.get_type() == "Switch":
+					so.nickname = b.name + "_port"
+			b.gui_changed = True
 	
 	def newbrick(self, ntype="", name=""):
 		for oldb in self.bricks:

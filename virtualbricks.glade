@@ -11,6 +11,7 @@
     <property name="window_position">center</property>
     <property name="default_width">800</property>
     <property name="default_height">778</property>
+    <signal name="delete_event" handler="on_window1_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -4458,6 +4459,8 @@ invalid path for qemu/kvm binaries</property>
     <property name="height_request">500</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
+    <signal name="response" handler="on_dialog_about_response"/>
+    <signal name="delete_event" handler="on_windown_destroy"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox4">
         <property name="visible">True</property>
@@ -6345,7 +6348,7 @@ Use an already open UDP multicast socket</property>
     </child>
   </widget>
   <widget class="GtkWindow" id="dialog_newbrick">
-    <property name="height_request">80</property>
+    <property name="height_request">200</property>
     <property name="window_position">mouse</property>
     <property name="default_height">5</property>
     <property name="urgency_hint">True</property>
@@ -6495,6 +6498,14 @@ Tunnel Client</property>
         <property name="label" translatable="yes">Configure</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="on_brick_configure"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="rename">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Rename</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_rename"/>
       </widget>
     </child>
     <child>
@@ -6662,6 +6673,86 @@ Tunnel Client</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
                 <property name="image_position">top</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkDialog" id="dialog_rename">
+    <property name="border_width">5</property>
+    <property name="type_hint">normal</property>
+    <property name="has_separator">False</property>
+    <signal name="response" handler="on_dialog_rename_response"/>
+    <child internal-child="vbox">
+      <widget class="GtkVBox" id="dialog-vbox13">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child>
+          <widget class="GtkHBox" id="hbox1">
+            <property name="visible">True</property>
+            <child>
+              <widget class="GtkLabel" id="label1">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Choose a new name:</property>
+              </widget>
+              <packing>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkEntry" id="entry_brick_newname">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="invisible_char">&#x25CF;</property>
+              </widget>
+              <packing>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <widget class="GtkHButtonBox" id="dialog-action_area13">
+            <property name="visible">True</property>
+            <property name="layout_style">end</property>
+            <child>
+              <widget class="GtkButton" id="button2">
+                <property name="label">gtk-cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkButton" id="button1">
+                <property name="label">gtk-ok</property>
+                <property name="response_id">1</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
