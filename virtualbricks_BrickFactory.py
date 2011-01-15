@@ -294,6 +294,7 @@ class Brick():
 		self.proc.wait()
 		self.proc = None
 		self.need_restart_to_apply_changes = False
+		self.console = None
 		self.post_poweroff()
 
 	def post_poweron(self):
@@ -751,6 +752,7 @@ class BrickFactory(threading.Thread):
 		self.running_condition = True
 		self.settings=Settings.Settings(Settings.CONFIGFILE)
 		self.settings.load()
+		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
 		
 
 	def getbrickbyname(self, name):
@@ -775,11 +777,63 @@ class BrickFactory(threading.Thread):
 			else:
 				time.sleep(1)
 		sys.exit(0)
+
+	def config_dump(self,f):
+		p = open(f, "w+")
+		
+		for b in self.bricks:
+			p.write('[' + b.get_type() +':'+ b.name + ']\n')
+			for k,v in b.cfg.__dict__.items():
+				p.write(k +'=' + str(v) + '\n')
+		for b in self.bricks:
+			for pl in b.plugs:
+				if (pl.sock):
+					p.write('link:' + b.name + ":" + pl.sock.nickname+'\n')
+
+
+	def config_restore(self,f):
+		p = open(f, "r")
+		l = p.readline()
+		b = None
+		while (l):
+			l = re.sub(' ','',l)
+			if l.startswith('link:') and len(l.split(":")) == 3:
+				l.rstrip('\n')
+				print "************************* link detected"
+				for bb in self.bricks:
+					if bb.name == l.split(":")[1]:
+						self.connect(bb,l.split(':')[2].rstrip('\n'))
+				
+			if l.startswith('['):
+				ntype = l.lstrip('[').split(':')[0]
+				name = l.split(':')[1].rstrip(']\n')
+				print "new brick: "+ntype+":"+name
+				try:
+					self.newbrick(ntype,name)
+					for bb in self.bricks:
+						if name == bb.name:
+							b = bb
+							break
+				except Exception:
+					l = p.readline()
+					continue
+				
+				l = p.readline()	
+				while b and l and not l.startswith('[') and not l.startswith('link:'):
+					if len(l.split('=')) > 1:
+						b.cfg.set(l.rstrip('\n'))
+					l = p.readline()
+					
+				continue
+			l = p.readline()
+			
+
 	def quit(self):
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
 		print 'Engine: Bye!'
+		self.config_dump(Settings.MYPATH+"/.virtualbricks.state")
 		self.running_condition = False
 		sys.exit(0)
 
@@ -926,10 +980,10 @@ class BrickFactory(threading.Thread):
 		elif ntype == "wirefilter" or ntype == "Wirefilter":
 			s = Wirefilter(self,name) 
 			print "new wirefilter %s OK" % s.name
-		elif ntype == "tunnell" or ntype == "Tunnel Server":
+		elif ntype == "tunnell" or ntype == "Tunnel Server" or ntype == "TunnelListen":
 			s = TunnelListen(self,name) 
 			print "new tunnel server %s OK" % s.name
-		elif ntype == "tunnelc" or ntype == "Tunnel Client":
+		elif ntype == "tunnelc" or ntype == "Tunnel Client" or ntype == "TunnelConnect":
 			s = TunnelConnect(self,name) 
 			print "new tunnel client %s OK" % s.name
 		#elif ...:

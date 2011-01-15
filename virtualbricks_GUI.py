@@ -1223,7 +1223,7 @@ class VBGUI:
 				self.bookmarks.set_value(iter,1,b.get_type())
 				self.bookmarks.set_value(iter,2,b.name)
 				if (b.get_type() == "Switch"):
-					self.bookmarks.set_value(iter, 3, "Free ports: %d/%d" % (b.socks[0].get_free_ports(), int(str(b.cfg.numports))))
+					self.bookmarks.set_value(iter, 3, "Ports:%d" % (int(str(b.cfg.numports))))
 				if (b.get_type().startswith("Wire")):
 						
 					ok = -2
