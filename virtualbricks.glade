@@ -321,9 +321,15 @@
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <widget class="GtkImage" id="image_topology">
+                          <widget class="GtkViewport" id="viewport1">
                             <property name="visible">True</property>
-                            <property name="stock">gtk-missing-image</property>
+                            <property name="resize_mode">queue</property>
+                            <child>
+                              <widget class="GtkImage" id="image_topology">
+                                <property name="visible">True</property>
+                                <property name="stock">gtk-missing-image</property>
+                              </widget>
+                            </child>
                           </widget>
                         </child>
                       </widget>
@@ -3797,8 +3803,8 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="action">select-folder</property>
                                 <property name="use_preview_label">False</property>
+                                <property name="action">select-folder</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>

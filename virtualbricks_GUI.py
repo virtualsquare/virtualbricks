@@ -8,6 +8,9 @@ import virtualbricks_Settings as Settings
 import virtualbricks_BrickFactory as BrickFactory
 import gobject
 import time
+import pygraphviz as pgv
+
+
 
 class VBGUI:
 	def __init__(self):
@@ -32,6 +35,8 @@ class VBGUI:
 		self.config.load()
 		self.signals()
 		self.timers()
+		self.topology_active = False
+
 		self.sockscombo = dict()
 		self.set_nonsensitivegroup(['cfg_Wirefilter_lossburst_text', 'cfg_Wirefilter_mtu_text'])
 		self.running_bricks = self.treestore('treeview_joblist', 
@@ -41,8 +46,9 @@ class VBGUI:
 				[gtk.gdk.Pixbuf, 
 				 gobject.TYPE_STRING, 
 				 gobject.TYPE_STRING, 
+				 gobject.TYPE_STRING, 
 				 gobject.TYPE_STRING], 
-				['Status','Type','Name', 'Parameters'])
+				['','Status','Type','Name', 'Parameters'])
 		
 		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
 		self.Dragging = None
@@ -240,7 +246,7 @@ class VBGUI:
 		return (self.curtain.get_position()>660)
 
 	def curtain_down(self):
-		print "Old position: %d" % self.curtain.get_position()
+		#print "Old position: %d" % self.curtain.get_position()
 		self.curtain.set_position(99999)
 		self.gladefile.get_widget('label_showhidesettings').set_text('Show Settings')
 
@@ -308,10 +314,10 @@ class VBGUI:
 		return ""
 
 	def get_treeselected_name(self, t, s, p):
-		return self.get_treeselected(t, s, p, 2)
+		return self.get_treeselected(t, s, p, 3)
 	
 	def get_treeselected_type(self, t, s, p):
-		return self.get_treeselected(t, s, p, 1)
+		return self.get_treeselected(t, s, p, 2)
 		
 
 	def quit(self):
@@ -573,8 +579,8 @@ class VBGUI:
 		store = self.bookmarks
 		path, focus = tree.get_cursor()
 		iter = store.get_iter(path)
-		ntype = store.get_value(iter, 1)
-		name = store.get_value(iter, 2)
+		ntype = store.get_value(iter, 2)
+		name = store.get_value(iter, 3)
 		self.selected = self.brickfactory.getbrickbyname(name)
 		self.curtain_down()
 		
@@ -590,8 +596,8 @@ class VBGUI:
 		store = self.bookmarks
 		path, focus = tree.get_cursor()
                 iter = store.get_iter(path)
-                ntype = store.get_value(iter, 1)
-                name = store.get_value(iter, 2)
+                ntype = store.get_value(iter, 2)
+                name = store.get_value(iter, 3)
 		print "Activating %s %s" % (ntype, name)
 		b = self.brickfactory.getbrickbyname(name)
 		if b.proc is not None:
@@ -638,6 +644,7 @@ class VBGUI:
 		print "on_treeview_joblist_row_activated_event undefined!"
 		pass
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
+		print "selected: " + repr(self.selected)
 		if self.curtain_is_down():
 			self.curtain_up()
 			print "up"
@@ -1255,23 +1262,29 @@ class VBGUI:
 			tree = self.gladefile.get_widget('treeview_bookmarks')
 			for b in self.bricks:
 				iter = self.bookmarks.append(None, None)
+				state='running'
 				if b.proc is not None:
-		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_YES, gtk.ICON_SIZE_LARGE_TOOLBAR))
+		                        #self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_YES, gtk.ICON_SIZE_LARGE_TOOLBAR))
+		                        self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
 				elif not b.properly_connected():
 		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
+					state='disconnected'
 				else:
-		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_NO, gtk.ICON_SIZE_LARGE_TOOLBAR))
+					state='off'
+		                        #self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_NO, gtk.ICON_SIZE_LARGE_TOOLBAR))
+		                        self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
 
-				self.bookmarks.set_value(iter,1,b.get_type())
-				self.bookmarks.set_value(iter,2,b.name)
+				self.bookmarks.set_value(iter,1,state)
+				self.bookmarks.set_value(iter,2,b.get_type())
+				self.bookmarks.set_value(iter,3,b.name)
 
 				if (b.get_type() == "Qemu"):
 					txt = "command: " + b.prog() + ", "
 					txt += "ram: " + b.cfg.ram + ", "
-					self.bookmarks.set_value(iter, 3, txt)
+					self.bookmarks.set_value(iter, 4, txt)
 					
 				if (b.get_type() == "Switch"):
-					self.bookmarks.set_value(iter, 3, "Ports:%d" % (int(str(b.cfg.numports))))
+					self.bookmarks.set_value(iter, 4, "Ports:%d" % (int(str(b.cfg.numports))))
 				if (b.get_type().startswith("Wire")):
 						
 					ok = -2
@@ -1284,26 +1297,27 @@ class VBGUI:
 						ok+=1
 						p1 = b.plugs[1].sock.brick.name
 					if ok == 0:
-						self.bookmarks.set_value(iter, 3, "Configured to connect %s to %s" %(p0,p1))
+						self.bookmarks.set_value(iter, 4, "Configured to connect %s to %s" %(p0,p1))
 					else:
-						self.bookmarks.set_value(iter, 3, "Not yet configured. Left plug is %s and right plug is %s" % (p0,p1))
+						self.bookmarks.set_value(iter, 4, "Not yet configured. Left plug is %s and right plug is %s" % (p0,p1))
 				if (b.get_type() == "Tap"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
 						p0 = "plugged to " + b.plugs[0].sock.brick.name 
-					self.bookmarks.set_value(iter, 3, p0)
+					self.bookmarks.set_value(iter, 4, p0)
 				if (b.get_type() == "TunnelListen"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
 						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", listening to udp:" + b.cfg.port 
-					self.bookmarks.set_value(iter, 3, p0)
+					self.bookmarks.set_value(iter, 4, p0)
 				if (b.get_type() == "TunnelConnect"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
 						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", connecting to udp://" + b.cfg.host
-					self.bookmarks.set_value(iter, 3, p0)
+					self.bookmarks.set_value(iter, 4, p0)
 					
 			print "bricks list updated"
+			self.draw_topology()	
 		return True
 			
 			
@@ -1330,3 +1344,36 @@ class VBGUI:
 				self.running_bricks.set_value(iter,2,b.name)
 			print "proc list updated"
 		return True
+
+	def draw_topology(self):
+		topowidget = self.gladefile.get_widget('image_topology')
+		topo=pgv.AGraph()
+		topo.graph_attr['rankdir']='LR'
+		topo.graph_attr['ranksep']='0.1'
+
+		# Add nodes
+		for b in self.bricks:
+			topo.add_node(b.name)
+			n = topo.get_node(b.name)
+			n.attr['shape']='none'
+			n.attr['fillcolor']='green'
+			n.attr['fontsize']='9'
+			n.attr['image']=b.get_type()+'.png'
+
+		for b in self.bricks:
+			for e in b.plugs:
+				if e.sock is not None:
+					topo.add_edge(b.name, e.sock.brick.name)
+					e = topo.get_edge(b.name, e.sock.brick.name)
+					e.attr['rank'] = 'same'
+					e.attr['dir'] = 'none'
+					e.attr['color'] = 'black'
+					e.attr['name'] = "      "
+					e.attr['decorate']='true'
+					
+
+		#draw and save
+		topo.write("/tmp/vde.dot")
+		topo.layout('dot')
+		topo.draw("/tmp/vde_topology.png")
+		topowidget.set_from_file("/tmp/vde_topology.png")
