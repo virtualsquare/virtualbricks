@@ -49,12 +49,21 @@ class VBGUI:
 				 gobject.TYPE_STRING, 
 				 gobject.TYPE_STRING], 
 				['','Status','Type','Name', 'Parameters'])
+
+		self.vmplugs = self.treestore('treeview_networkcards',
+				[	gobject.TYPE_STRING,
+					gobject.TYPE_STRING,
+					gobject.TYPE_STRING,
+					gobject.TYPE_STRING
+				],
+				['Eth','connection','model','macaddr'])
 		
 		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
 		self.Dragging = None
 		self.curtain_down()
 		
 		self.selected = None
+		self.vmplug_selected = None
 		self.joblist_selected = None
 		
 
@@ -79,7 +88,7 @@ class VBGUI:
 			combo = Settings.ComboBox(self.gladefile.get_widget(k))
 			opt=dict()
 			for so in self.brickfactory.socks:
-				opt["Connect to " + so.nickname] = so.nickname 
+				opt[so.nickname] = so.nickname 
 			combo.populate(opt)
 			t = b.get_type()	
 			if (not t.startswith('Wire')) or k.endswith('0'):
@@ -98,7 +107,22 @@ class VBGUI:
 			if arch.startswith('qemu-system-'):
 				opt[arch.split('qemu-system-')[1]] = arch
 		qemuarch.populate(opt, 'i386')
+
+		
+		# Qemu VMplugs:
+		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
+		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).select('rtl8139')
+		if len(b.plugs) == 0:
+			self.gladefile.get_widget('radiobutton_network_nonet').set_active(True)
+			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
+				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+		else:
+			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
+			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
+				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+
 			
+		self.update_vmplugs_tree()
 		kernelcheck=False
 		initrdcheck=False
 		for key in b.cfg.__dict__.keys():
@@ -307,8 +331,8 @@ class VBGUI:
 			path, col, cellx, celly = pthinfo
 			tree.grab_focus()
 			tree.set_cursor(path, col, 0)
-			iter = self.bookmarks.get_iter(path)
-			name = self.bookmarks.get_value(iter, c)
+			iter = store.get_iter(path)
+			name = store.get_value(iter, c)
 			self.config_last_iter = iter
 			return name
 		return ""
@@ -351,6 +375,19 @@ class VBGUI:
 			tree.append_column(col)
 		return ret
 		
+	def qemu_eth_model(self):
+		res = dict()
+		for k in [ "rtl8139",
+			"e1000",
+			"virtio",
+			"i82551", 
+			"i82557b", 
+			"i82559er",
+			"ne2k_pci",
+			"pcnet",
+			"ne2k_isa"]:
+			res[k]=k
+		return res
 
 	def widgetnames(self):
 		return ['main_win', 
@@ -1116,7 +1153,83 @@ class VBGUI:
 			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(True)
 		else:
 			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(False)
+	
+	def on_random_macaddr(self, widget=None, event=None, data=""):
+		self.gladefile.get_widget('vmplug_macaddr').set_text(Global.RandMac())
 
+	def on_vmplug_add(self, widget=None, event=None, data=""):
+		pl = self.selected.add_plug()
+		pl.model = self.gladefile.get_widget('vmplug_model').get_active_text()
+		pl.macaddr = self.gladefile.get_widget('vmplug_macaddr').get_text()
+		
+		sockname = Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
+		for so in self.brickfactory.socks:
+			if so.nickname == sockname:
+				pl.connect(so)
+		self.update_vmplugs_tree()
+
+	def update_vmplugs_tree(self):
+		self.vmplugs.clear()
+		if (self.selected.get_type() == 'Qemu'):
+			for pl in self.selected.plugs:
+				iter = self.vmplugs.append(None, None)
+				self.vmplugs.set_value(iter,0,pl.vlan)
+				if pl.sock:
+					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
+				self.vmplugs.set_value(iter,2,pl.model)
+				self.vmplugs.set_value(iter,3,pl.mac)
+			
+		
+		
+		
+	def on_vmplug_selected(self, widget=None, event=None, data=""):
+		print "VMPLUG SELECTED"
+		tree = self.gladefile.get_widget('treeview_networkcards');
+		store = self.vmplugs
+		x = int(event.x)
+		y = int(event.y)
+		time = event.time
+		pthinfo = tree.get_path_at_pos(x, y)
+		number = self.get_treeselected(tree, store, pthinfo, 0)
+		for pl in self.selected.plugs:
+			if str(pl.vlan) == number:
+				self.vmplug_selected = pl
+				break
+		print "selected %d" % pl.vlan
+		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
+		self.gladefile.get_widget('vmplug_macaddr').set_text(pl.mac)
+		if (pl.sock):
+			Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
+		self.vmplug_selected = pl
+	
+		
+
+	def on_vmplug_edit(self, widget=None, event=None, data=""):
+		pl = self.vmplug_selected
+		if pl == None:
+			return
+		pl.model = Settings.ComboBox(self.gladefile.get_widget('vmplug_model')).get_selected()
+		pl.mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
+		sockname = Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
+		for so in self.brickfactory.socks:
+			if so.nickname == sockname:
+				pl.connect(so)
+		self.update_vmplugs_tree()
+
+	def on_vmplug_remove(self, widget=None, event=None, data=""):
+		pl = self.vmplug_selected
+		self.selected.remove_plug(pl.vlan)
+		self.update_vmplugs_tree()
+	
+	def on_vmplug_onoff(self, widget=None, event=None, data=""):
+		print "ONOFF"
+		if self.gladefile.get_widget('radiobutton_network_nonet').get_active():
+			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
+				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+		else:
+			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
+				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+			
 	def signals(self):
 		self.signaldict =  {
 			"on_window1_destroy":self.on_window1_destroy,
@@ -1234,6 +1347,12 @@ class VBGUI:
 			"on_check_customkernel_toggled":self.on_check_customkernel_toggled,
 			"on_check_initrd_toggled":self.on_check_initrd_toggled,
 			"on_check_gdb_toggled":self.on_check_gdb_toggled,
+			"on_vmplug_add":self.on_vmplug_add,
+			"on_vmplug_edit":self.on_vmplug_edit,
+			"on_vmplug_selected":self.on_vmplug_selected,
+			"on_vmplug_remove":self.on_vmplug_remove,
+			"on_vmplug_onoff":self.on_vmplug_onoff,
+			"on_random_macaddr":self.on_random_macaddr,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
@@ -1281,7 +1400,12 @@ class VBGUI:
 				if (b.get_type() == "Qemu"):
 					txt = "command: " + b.prog() + ", "
 					txt += "ram: " + b.cfg.ram + ", "
-					self.bookmarks.set_value(iter, 4, txt)
+					for p in b.plugs:
+						if p.sock:
+							txt+='eth'+str(p.vlan)+': '+ p.sock.nickname+', '
+					
+					self.bookmarks.set_value(iter, 4, txt.rstrip(', '))
+			
 					
 				if (b.get_type() == "Switch"):
 					self.bookmarks.set_value(iter, 4, "Ports:%d" % (int(str(b.cfg.numports))))

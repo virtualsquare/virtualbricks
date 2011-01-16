@@ -90,7 +90,9 @@ class Plug():
 			self.sock = _sock
 			return True
 	def disconnect(self):
-		self.sock=""
+		self.sock=None
+
+	
 		
 
 class Sock():
@@ -616,14 +618,13 @@ class TunnelConnect(TunnelListen):
 	def get_type(self):
 		return 'TunnelConnect'
 
-qemu_eth_model = ["rtl8139","e1000","virtio","i82551", "i82557b", "i82559er","ne2k_pci","pcnet","ne2k_isa"]
 
-class VMethernet(Plug, BrickConfig):
-	def __init__(self, brick, name):
+class VMPlug(Plug, BrickConfig):
+	def __init__(self, brick):
 		Plug.__init__(self, brick)
-		self.mac=RandMac()
+		self.mac=Global.RandMac()
 		self.model='rtl8139'
-		self.vlan=len(self.brick.plugs) + len(self.brick.socks) - 1
+		self.vlan=len(self.brick.plugs) + len(self.brick.socks) 
 	
 
 class VM(Brick):
@@ -756,7 +757,7 @@ class VM(Brick):
 	def configured(self):
 		cfg_ok = True
 		for p in self.plugs:
-			if self.plugs.sock is None:
+			if p.sock is None:
 				cfg_ok = False
 		return cfg_ok
 	# QEMU PROGRAM SELECTION	
@@ -767,6 +768,8 @@ class VM(Brick):
 			cmd = self.settings.get("qemupath") + "/qemu"
 		if (cmd == 'qemu' or cmd.endswith('i386')) and self.settings.kvm == '1':
 			cmd = self.settings.get("qemupath") + "/kvm"
+			self.cfg.cpu=""
+			self.cfg.machine=""
 		return cmd
 		
 
@@ -787,9 +790,46 @@ class VM(Brick):
 		if (len(self.plugs) == 0):
 			res.append('-net')
 			res.append('none')
+		else:
+			for pl in self.plugs:
+				if (pl.sock):
+					res.append("-net")
+					res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
+					res.append("-net")
+					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path))
+
 
 		return res
-	
+
+	def add_plug(self, sock=None, mac=None, model=None):
+		pl = VMPlug(self)
+		self.plugs.append(pl)
+		if sock:
+			pl.connect(sock)
+		if mac:
+			pl.mac = mac
+		if model:
+			pl.model = model
+		self.gui_changed=True
+		return pl
+
+	def connect(self,endpoint):
+		pl = self.add_plug()
+		pl.mac = Global.RandMac()
+		pl.model = 'rtl8139'
+		pl.connect(endpoint)
+		self.gui_changed=True
+
+	def remove_plug(self, idx):
+		for p in self.plugs:
+			if p.vlan == idx:
+				self.plugs.remove(p)	
+				del(p)
+		for p in self.plugs:
+			if p.vlan > idx:
+				p.vlan-=1
+		self.gui_changed=True
+			
 
 class BrickFactory(threading.Thread):
 	def __init__(self, showconsole=True):
@@ -836,21 +876,42 @@ class BrickFactory(threading.Thread):
 		for b in self.bricks:
 			for pl in b.plugs:
 				if (pl.sock):
-					p.write('link:' + b.name + ":" + pl.sock.nickname+'\n')
+					if b.get_type()=='Qemu':
+						p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+					else:
+						p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
 
 
 	def config_restore(self,f):
-		p = open(f, "r")
+		try:
+			p = open(f, "r")
+		except:
+			p = open(f, "w")
+			return 
+
 		l = p.readline()
 		b = None
 		while (l):
 			l = re.sub(' ','',l)
-			if l.startswith('link:') and len(l.split(":")) == 3:
+			if l.startswith('link|') and len(l.split("|")) >= 3:
 				l.rstrip('\n')
 				print "************************* link detected"
 				for bb in self.bricks:
-					if bb.name == l.split(":")[1]:
-						self.connect(bb,l.split(':')[2].rstrip('\n'))
+					if bb.name == l.split("|")[1]:
+						if (bb.get_type()=='Qemu'):
+							sockname = l.split('|')[2]
+							model = l.split("|")[3]	
+							macaddr = l.split("|")[4]	
+							vlan = l.split("|")[5]	
+							for s in self.socks:
+								if s.nickname == sockname:
+									this_sock = s
+									break
+							pl = bb.add_plug(this_sock, macaddr, model)
+							pl.vlan = int(vlan)
+							print "added eth%d" % pl.vlan
+						else:
+							self.connect(bb,l.split('|')[2].rstrip('\n'))
 				
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
@@ -867,7 +928,7 @@ class BrickFactory(threading.Thread):
 					continue
 				
 				l = p.readline()	
-				while b and l and not l.startswith('[') and not l.startswith('link:'):
+				while b and l and not l.startswith('[') and not l.startswith('link|'):
 					if len(l.split('=')) > 1:
 						b.cfg.set(l.rstrip('\n'))
 					l = p.readline()

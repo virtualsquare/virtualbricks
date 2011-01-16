@@ -74,7 +74,8 @@ class ComboBoxObj:
 		active=-1
 		while i is not None:
 			s = self.model.get_value(i, 0)
-			if re.search(regexp, s):
+			if s==regexp:
+			#if re.search(regexp, s):
 				print "Found match:" + s
 				active = i
 			i = self.model.iter_next(i)
