@@ -670,12 +670,16 @@ class VM(Brick):
 		self.cfg.fda =""
 		self.cfg.fdb =""
 		#self.cfg.cdrom = ""
+		self.cfg.kvm = ""
+		self.cfg.soundhw=""
 		
 		#kernel etc.
 		self.cfg.kernel=""
 		self.cfg.initrd=""
 		self.cfg.gdb=""
 		self.cfg.gdbport=""
+		
+		
 		self.command_builder = {
 			'#argv0':'argv0',
 			'-M':'machine',
@@ -694,7 +698,7 @@ class VM(Brick):
 			##extended drive: TBD
 			#'-mtdblock':'mtdblock',
 			#'-k':'keyboard',
-			#'-soundhw':'soundhw',
+			'-soundhw':'soundhw',
 			'-usb':'usbmode',
 			##usbdevice to be implemented as a collection
 			##device to be implemented as a collection
@@ -735,7 +739,7 @@ class VM(Brick):
 			#'-hdachs':'',
 			#'-L':'',
 			#'-bios':'',
-			#'-enable-kvm':'',
+			'#kvm':'kvm',
 			#'-no-reboot':'',
 			#'-no-shutdown':'',
 			#'-loadvm':'',
@@ -791,6 +795,11 @@ class VM(Brick):
 		
 
 	def args(self):
+		print self.cfg.argv0
+		if (self.cfg.kvm == "*"):
+		  self.cfg.argv0 = "kvm"
+		  self.cfg.cpu = ""
+		  self.cfg.machine= ""
 		res = []
 		res.append(self.prog())
 		for c in self.build_cmd_line():
@@ -815,7 +824,7 @@ class VM(Brick):
 					res.append("-net")
 					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path))
 
-
+		
 		return res
 
 	def add_plug(self, sock=None, mac=None, model=None):

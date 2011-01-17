@@ -108,6 +108,15 @@ class VBGUI:
 				opt[arch.split('qemu-system-')[1]] = arch
 		qemuarch.populate(opt, 'i386')
 
+		#SNDCARD COMBO
+		#missing,found = self.config.check_missing_qemupath(self.config.qemupath)
+		sndhw = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo"))
+		opt = dict()
+		opt['PC speaker']="pcspk"              
+		opt['Creative Sound Blaster 16'] = "sb16"
+		opt['Intel 82801AA AC97 Audio'] = "ac97"
+		opt['ENSONIQ AudioPCI ES1370'] = "es1370"                                                                                         
+		sndhw.populate(opt)
 		
 		# Qemu VMplugs:
 		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
@@ -1154,7 +1163,25 @@ class VBGUI:
 		cpus.populate(optc)
 		os.unlink(Settings.MYPATH+"/.cpus")
 		
-		
+	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
+	    if widget.get_active():
+		try:
+		    self.config.check_kvm()
+		    self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(False)
+		    self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(False)
+		    self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(False)
+		except IOError:
+		    print "ioerror"
+		    self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+		    widget.set_active(False)
+		except NotImplementedError:
+		    print "no support"
+		    self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+		    widget.set_active(False)
+	    else:
+		self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(True)
+		self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(True)
+		self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(True)
 		
 	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
@@ -1383,6 +1410,7 @@ class VBGUI:
 			"on_vmplug_onoff":self.on_vmplug_onoff,
 			"on_random_macaddr":self.on_random_macaddr,
 			"on_tap_config_manual":self.on_tap_config_manual,
+			"on_check_kvm_toggled":self.on_check_kvm_toggled
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
