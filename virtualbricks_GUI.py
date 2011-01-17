@@ -109,7 +109,6 @@ class VBGUI:
 		qemuarch.populate(opt, 'i386')
 
 		#SNDCARD COMBO
-		#missing,found = self.config.check_missing_qemupath(self.config.qemupath)
 		sndhw = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo"))
 		opt = dict()
 		opt['PC speaker']="pcspk"              
@@ -117,6 +116,25 @@ class VBGUI:
 		opt['Intel 82801AA AC97 Audio'] = "ac97"
 		opt['ENSONIQ AudioPCI ES1370'] = "es1370"                                                                                         
 		sndhw.populate(opt)
+		
+		#device COMBO
+		devices = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo"))
+		opt = dict()
+		opt['IDE1']="/dev/cdrom"              
+		#opt['Creative Sound Blaster 16'] = "sb16"
+		#opt['Intel 82801AA AC97 Audio'] = "ac97"
+		#opt['ENSONIQ AudioPCI ES1370'] = "es1370"                                                                                         
+		devices.populate(opt)
+		
+		#boot COMBO
+		boot_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo"))
+		opt = dict()
+		opt['HD1']="c"              
+		opt['FLOPPY'] = "a"
+		opt['CDROM'] = "d"
+		#opt['ENSONIQ AudioPCI ES1370'] = "es1370"                                                                                         
+		boot_c.populate(opt)
+
 		
 		# Qemu VMplugs:
 		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
@@ -129,8 +147,7 @@ class VBGUI:
 			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
-
-			
+		
 		self.update_vmplugs_tree()
 		kernelcheck=False
 		initrdcheck=False
@@ -974,6 +991,9 @@ class VBGUI:
 	def on_radiobutton_redirect_UDP_toggled(self, widget=None, data=""):
 		print "on_radiobutton_redirect_UDP_toggled undefined!"
 		pass
+	#def on_radiobutton_cdromtype2_toggled(self, widget=None, data=""):
+		#self.gladefile.get_widget('cfg_Qemu_cdrom_filechooser').set_active(True)
+		
 	def on_spinbutton_redirect_sport_changed(self, widget=None, data=""):
 		print "on_spinbutton_redirect_sport_changed undefined!"
 		pass
@@ -1386,6 +1406,7 @@ class VBGUI:
 			"on_dialog_new_redirect_response":self.on_dialog_new_redirect_response,
 			"on_radiobutton_redirect_TCP_toggled":self.on_radiobutton_redirect_TCP_toggled,
 			"on_radiobutton_redirect_UDP_toggled":self.on_radiobutton_redirect_UDP_toggled,
+			#"on_radiobutton_cdromtype2_toggled":self.on_radiobutton_cdromtype2_toggled,
 			"on_spinbutton_redirect_sport_changed":self.on_spinbutton_redirect_sport_changed,
 			"on_entry_redirect_gIP_changed":self.on_entry_redirect_gIP_changed,
 			"on_spinbutton_redirect_dport_changed":self.on_spinbutton_redirect_dport_changed,

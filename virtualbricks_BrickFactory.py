@@ -669,7 +669,10 @@ class VM(Brick):
 		self.cfg.hdd =""
 		self.cfg.fda =""
 		self.cfg.fdb =""
-		#self.cfg.cdrom = ""
+		self.cfg.cdrom = ""
+		self.cfg.device = ""
+		self.cfg.cdromen = ""
+		self.cfg.deviceen = ""
 		self.cfg.kvm = ""
 		self.cfg.soundhw=""
 		
@@ -694,7 +697,10 @@ class VM(Brick):
 			'-hdb':'hdb',
 			'-hdc':'hdc',
 			'-hdd':'hdd',
-			#'-cdrom':'cdrom',
+			'#cdrom':'cdrom',
+			'#device':'device',
+			'#cdromen': 'cdromen',
+			'#deviceen': 'deviceen',
 			##extended drive: TBD
 			#'-mtdblock':'mtdblock',
 			#'-k':'keyboard',
@@ -787,7 +793,7 @@ class VM(Brick):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
-		if (cmd == 'qemu' or cmd.endswith('i386')) and self.settings.kvm == '1':
+		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm == '*' or self.settings.kvm == 'kvm')):
 			cmd = self.settings.get("qemupath") + "/kvm"
 			self.cfg.cpu=""
 			self.cfg.machine=""
@@ -795,11 +801,6 @@ class VM(Brick):
 		
 
 	def args(self):
-		print self.cfg.argv0
-		if (self.cfg.kvm == "*"):
-		  self.cfg.argv0 = "kvm"
-		  self.cfg.cpu = ""
-		  self.cfg.machine= ""
 		res = []
 		res.append(self.prog())
 		for c in self.build_cmd_line():
@@ -824,7 +825,21 @@ class VM(Brick):
 					res.append("-net")
 					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path))
 
+		print self.cfg.cdromen
+		print self.cfg.cdrom
 		
+		print self.cfg.deviceen
+		print self.cfg.device
+
+		if (self.cfg.cdromen == "*"):
+		  if (self.cfg.cdrom != ""):
+		    res.append('-cdrom')
+		    res.append(self.cfg.cdrom)
+		elif (self.cfg.deviceen == "*"):
+		  if (self.cfg.device != ""):
+		    res.append('-cdrom')
+		    res.append(self.cfg.device)
+		  
 		return res
 
 	def add_plug(self, sock=None, mac=None, model=None):

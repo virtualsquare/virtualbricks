@@ -533,7 +533,7 @@ fda</property>
                                             <property name="n_rows">3</property>
                                             <property name="n_columns">2</property>
                                             <child>
-                                              <widget class="GtkRadioButton" id="radiobutton_cdromtype2">
+                                              <widget class="GtkRadioButton" id="cfg_Qemu_cdromen_check">
                                                 <property name="label" translatable="yes">use image as cdrom</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -543,6 +543,7 @@ fda</property>
                                                 <property name="use_underline">True</property>
                                                 <property name="active">True</property>
                                                 <property name="draw_indicator">True</property>
+                                                <property name="group">cfg_Qemu_nocdrom_check</property>
                                               </widget>
                                               <packing>
                                                 <property name="top_attach">2</property>
@@ -552,7 +553,7 @@ fda</property>
                                               </packing>
                                             </child>
                                             <child>
-                                              <widget class="GtkRadioButton" id="radiobutton_cdromtype1">
+                                              <widget class="GtkRadioButton" id="cfg_Qemu_deviceen_check">
                                                 <property name="label" translatable="yes">mount cdrom</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -561,7 +562,7 @@ fda</property>
                                                 <property name="tooltip" translatable="yes">mount local cdrom Drive</property>
                                                 <property name="use_underline">True</property>
                                                 <property name="draw_indicator">True</property>
-                                                <property name="group">radiobutton_cdromtype2</property>
+                                                <property name="group">cfg_Qemu_nocdrom_check</property>
                                               </widget>
                                               <packing>
                                                 <property name="top_attach">1</property>
@@ -571,7 +572,7 @@ fda</property>
                                               </packing>
                                             </child>
                                             <child>
-                                              <widget class="GtkRadioButton" id="cfg_Qemu_cdrom_check">
+                                              <widget class="GtkRadioButton" id="cfg_Qemu_nocdrom_check">
                                                 <property name="label" translatable="yes">no cdrom</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -582,7 +583,6 @@ fda</property>
                                                 <property name="use_underline">True</property>
                                                 <property name="active">True</property>
                                                 <property name="draw_indicator">True</property>
-                                                <property name="group">radiobutton_cdromtype2</property>
                                               </widget>
                                               <packing>
                                                 <property name="x_options">GTK_FILL</property>
@@ -590,33 +590,17 @@ fda</property>
                                               </packing>
                                             </child>
                                             <child>
-                                              <widget class="GtkComboBox" id="combobox_cdromdrive">
+                                              <widget class="GtkComboBox" id="cfg_Qemu_device_combo">
                                                 <property name="width_request">180</property>
                                                 <property name="visible">True</property>
-                                                <property name="items" translatable="yes" context="yes">- select drive -</property>
+                                                <property name="items" translatable="yes" context="yes">/dev/cdrom
+</property>
                                               </widget>
                                               <packing>
                                                 <property name="left_attach">1</property>
                                                 <property name="right_attach">2</property>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="y_options"></property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <widget class="GtkComboBox" id="combobox_imagecdrom">
-                                                <property name="width_request">180</property>
-                                                <property name="visible">True</property>
-                                                <property name="sensitive">False</property>
-                                                <property name="items" translatable="yes" context="yes">- select image -
-image1
-image2</property>
-                                              </widget>
-                                              <packing>
-                                                <property name="left_attach">1</property>
-                                                <property name="right_attach">2</property>
-                                                <property name="top_attach">2</property>
-                                                <property name="bottom_attach">3</property>
                                                 <property name="y_options"></property>
                                               </packing>
                                             </child>
@@ -628,6 +612,18 @@ image2</property>
                                               <packing>
                                                 <property name="left_attach">1</property>
                                                 <property name="right_attach">2</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <widget class="GtkFileChooserButton" id="cfg_Qemu_cdrom_filechooser">
+                                                <property name="width_request">200</property>
+                                                <property name="visible">True</property>
+                                              </widget>
+                                              <packing>
+                                                <property name="left_attach">1</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="top_attach">2</property>
+                                                <property name="bottom_attach">3</property>
                                               </packing>
                                             </child>
                                           </widget>
