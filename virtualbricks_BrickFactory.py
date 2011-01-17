@@ -392,7 +392,11 @@ class Tap(Brick):
 		self.cfg.sock = ""
 		self.plugs.append(Plug(self))
 		self.needsudo = True
-	
+		self.cfg.ip="10.0.0.1"
+		self.cfg.nm="255.255.255.0"
+		self.cfg.gw=""
+		self.cfg.mode="off"
+		
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_plug2tap"
@@ -408,6 +412,19 @@ class Tap(Brick):
 
 	def configured(self):
 		return (self.plugs[0].sock is not None)	
+
+	def post_poweron(self):
+		if self.cfg.mode == 'dhcp':
+			ret = os.system('gksudo dhclient '+self.name)
+	
+		elif self.cfg.mode == 'manual':
+			# XXX Ugly, can't we ioctls?
+			ret0 = os.system('gksudo /sbin/ifconfig '+ self.name + ' ' +  self.cfg.ip + ' netmask ' + self.cfg.nm)
+			if (len(self.cfg.gw) > 0):
+				ret1 = os.system('gksudo /sbin/route add default gw '+ self.cfg.gw + ' dev ' + self.name)
+		else:
+			return
+			
 
 
 class Wire(Brick):

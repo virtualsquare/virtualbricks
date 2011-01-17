@@ -160,6 +160,17 @@ class VBGUI:
 		self.gladefile.get_widget('check_initrd').set_active(True)
 		self.gladefile.get_widget('check_customkernel').set_active(kernelcheck)
 		self.gladefile.get_widget('check_initrd').set_active(initrdcheck)
+		
+		# Tap mode:
+		if b.get_type() == 'Tap':
+			self.gladefile.get_widget('radio_tap_no').set_active(True)
+			self.gladefile.get_widget('radio_tap_manual').set_active(True)
+			if b.cfg.mode == 'off':
+				self.gladefile.get_widget('radio_tap_no').set_active(True)
+			if b.cfg.mode == 'dhcp':
+				self.gladefile.get_widget('radio_tap_dhcp').set_active(True)
+			if b.cfg.mode == 'manual':
+				self.gladefile.get_widget('radio_tap_manual').set_active(True)
 				
 			
 
@@ -208,11 +219,22 @@ class VBGUI:
 					
 			b.gui_changed = True
 			t = b.get_type()
+
 			if t == 'Tap':
 				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
+				
+				# Address mode radio
+				if (self.gladefile.get_widget('radio_tap_no').get_active()):
+					b.cfg.mode = 'off'
+				elif (self.gladefile.get_widget('radio_tap_dhcp').get_active()):
+					b.cfg.mode = 'dhcp'
+				else:
+					b.cfg.mode = 'manual'
+	
+				
 			if t == 'TunnelConnect':
 				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
 				for so in self.brickfactory.socks:
@@ -302,7 +324,7 @@ class VBGUI:
 		elif self.selected.get_type() == 'Tap':
 			print "tap config"
 			ww = self.gladefile.get_widget('box_tapconfig')
-			wg.set_position(606)	
+			wg.set_position(513)	
 			
 		elif self.selected.get_type() == 'Wire':
 			print "wire config"
@@ -587,7 +609,7 @@ class VBGUI:
 		pthinfo = tree.get_path_at_pos(x, y)
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		dropbrick = self.brickfactory.getbrickbyname(name)
-		if (dropbrick != self.Dragging):
+		if (dropbrick and dropbrick != self.Dragging):
 			print "drag&drop!"
 			if (len(dropbrick.socks) > 0):
 				self.Dragging.connect(dropbrick.socks[0])
@@ -1229,6 +1251,13 @@ class VBGUI:
 		else:
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+
+	def on_tap_config_manual(self, widget=None, event=None, data=""):
+		if widget.get_active():
+			self.gladefile.get_widget('tap_ipconfig').set_sensitive(True)
+		else:
+			self.gladefile.get_widget('tap_ipconfig').set_sensitive(False)
+		
 			
 	def signals(self):
 		self.signaldict =  {
@@ -1353,6 +1382,7 @@ class VBGUI:
 			"on_vmplug_remove":self.on_vmplug_remove,
 			"on_vmplug_onoff":self.on_vmplug_onoff,
 			"on_random_macaddr":self.on_random_macaddr,
+			"on_tap_config_manual":self.on_tap_config_manual,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
