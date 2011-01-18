@@ -642,6 +642,21 @@ class VMPlug(Plug, BrickConfig):
 		self.mac=Global.RandMac()
 		self.model='rtl8139'
 		self.vlan=len(self.brick.plugs) + len(self.brick.socks) 
+		self.mode='vde'
+
+
+class VMPlugHostonly(VMPlug):
+	
+	def __init__(self, _brick):
+		VMPlug.__init__(self, _brick)
+		self.mode='hostonly'
+
+	def connect(self, endpoint):
+		return
+	def configured(self):
+		return True
+	def connected(self):
+		return True
 	
 
 class VM(Brick):
@@ -781,10 +796,16 @@ class VM(Brick):
 	def get_type(self):
 		return "Qemu"
 	
+	def properly_connected(self):
+		#Of course we are. Or at least it is our own's business.
+		return True
+	def check_links(self):
+		return True 
+	
 	def configured(self):
 		cfg_ok = True
 		for p in self.plugs:
-			if p.sock is None:
+			if p.sock is None and p.mode == 'vde':
 				cfg_ok = False
 		return cfg_ok
 	# QEMU PROGRAM SELECTION	
@@ -819,11 +840,14 @@ class VM(Brick):
 			res.append('none')
 		else:
 			for pl in self.plugs:
-				if (pl.sock):
-					res.append("-net")
-					res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
+				res.append("-net")
+				res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
+				if (pl.mode=='vde'):
 					res.append("-net")
 					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path))
+				else:
+					res.append("-net")
+					res.append("user")
 
 		print self.cfg.cdromen
 		print self.cfg.cdrom
@@ -843,9 +867,13 @@ class VM(Brick):
 		return res
 
 	def add_plug(self, sock=None, mac=None, model=None):
-		pl = VMPlug(self)
+		if sock and sock == '_hostonly':
+			pl = VMPlugHostonly(self)
+			print "hostonly added"
+		else:	
+			pl = VMPlug(self)
 		self.plugs.append(pl)
-		if sock:
+		if pl.mode == 'vde':
 			pl.connect(sock)
 		if mac:
 			pl.mac = mac
@@ -916,9 +944,12 @@ class BrickFactory(threading.Thread):
 				p.write(k +'=' + str(v) + '\n')
 		for b in self.bricks:
 			for pl in b.plugs:
-				if (pl.sock):
+				if (pl.sock or pl.mode == 'hostonly'):
 					if b.get_type()=='Qemu':
-						p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+						if pl.mode == 'vde':
+							p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+						else:
+							p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
 					else:
 						p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
 
@@ -934,7 +965,7 @@ class BrickFactory(threading.Thread):
 		b = None
 		while (l):
 			l = re.sub(' ','',l)
-			if l.startswith('link|') and len(l.split("|")) >= 3:
+			if re.search("\A.*link|", l) and len(l.split("|")) >= 3:
 				l.rstrip('\n')
 				print "************************* link detected"
 				for bb in self.bricks:
@@ -944,11 +975,16 @@ class BrickFactory(threading.Thread):
 							model = l.split("|")[3]	
 							macaddr = l.split("|")[4]	
 							vlan = l.split("|")[5]	
-							for s in self.socks:
-								if s.nickname == sockname:
-									this_sock = s
-									break
+							this_sock='?'
+							if l.split("|")[0] == 'userlink':
+								this_sock = '_hostonly'
+							else:	
+								for s in self.socks:
+									if s.nickname == sockname:
+										this_sock = s
+										break
 							pl = bb.add_plug(this_sock, macaddr, model)
+							
 							pl.vlan = int(vlan)
 							print "added eth%d" % pl.vlan
 						else:
