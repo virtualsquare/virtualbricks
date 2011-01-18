@@ -286,7 +286,7 @@ class Brick():
 		if (self.proc == None):
 			return False
 		if (self.needsudo):
-			os.system('gksu "kill '+ str(self.pid) + '"')
+			os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
 		else:
 			try:
 				os.kill(self.proc.pid, 15)
@@ -415,13 +415,13 @@ class Tap(Brick):
 
 	def post_poweron(self):
 		if self.cfg.mode == 'dhcp':
-			ret = os.system('gksudo dhclient '+self.name)
+			ret = os.system(self.settings.get('sudo')+' "dhclient '+self.name+'"')
 	
 		elif self.cfg.mode == 'manual':
 			# XXX Ugly, can't we ioctls?
-			ret0 = os.system('gksudo /sbin/ifconfig '+ self.name + ' ' +  self.cfg.ip + ' netmask ' + self.cfg.nm)
+			ret0 = os.system(self.settings.get('sudo') + ' "/sbin/ifconfig '+ self.name + ' ' +  self.cfg.ip + ' netmask ' + self.cfg.nm+'"')
 			if (len(self.cfg.gw) > 0):
-				ret1 = os.system('gksudo /sbin/route add default gw '+ self.cfg.gw + ' dev ' + self.name)
+				ret1 = os.system(self.settings.get('sudo') + ' "/sbin/route add default gw '+ self.cfg.gw + ' dev ' + self.name+'"')
 		else:
 			return
 			
