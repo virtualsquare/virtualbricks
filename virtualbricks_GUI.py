@@ -103,43 +103,47 @@ class VBGUI:
 			elif k.endswith('1') and t.startswith('Wire'):
 				if len(b.plugs) >= 1 and b.plugs[1].sock:
 					combo.select(b.plugs[1].sock.nickname)
-		
+		dicts=dict()
 		#QEMU COMMAND COMBO
 		missing,found = self.config.check_missing_qemupath(self.config.qemupath)
 		qemuarch = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
 		opt = dict()
 		for arch in found:
 			if arch.startswith('qemu-system-'):
-				opt[arch.split('qemu-system-')[1]] = arch
+				opt[arch.split('qemu-system-')[1]] = arch		
 		qemuarch.populate(opt, 'i386')
-
+		dicts['argv0']=opt
+		
 		#SNDCARD COMBO
 		sndhw = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo"))
 		opt = dict()
+		opt['no audio']=""
 		opt['PC speaker']="pcspk"              
 		opt['Creative Sound Blaster 16'] = "sb16"
 		opt['Intel 82801AA AC97 Audio'] = "ac97"
-		opt['ENSONIQ AudioPCI ES1370'] = "es1370"                                                                                         
-		sndhw.populate(opt)
+		opt['ENSONIQ AudioPCI ES1370'] = "es1370"
+		dicts['soundhw']=opt
+		sndhw.populate(opt, "")
+		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo")).select('Intel 82801AA AC97 Audio')
 		
 		#device COMBO
 		devices = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo"))
 		opt = dict()
-		opt['IDE1']="/dev/cdrom"              
-		#opt['Creative Sound Blaster 16'] = "sb16"
-		#opt['Intel 82801AA AC97 Audio'] = "ac97"
-		#opt['ENSONIQ AudioPCI ES1370'] = "es1370"                                                                                         
-		devices.populate(opt)
+		opt['NO']=""
+		opt['cdrom']="/dev/cdrom"   
+		dicts['device']=opt
+		devices.populate(opt, "")
+		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo")).select('NO')
 		
 		#boot COMBO
 		boot_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo"))
-		opt = dict()
-		opt['HD1']="c"              
+		opt = dict() 
+		opt['HD1']=""              
 		opt['FLOPPY'] = "a"
 		opt['CDROM'] = "d"
-		#opt['ENSONIQ AudioPCI ES1370'] = "es1370"                                                                                         
-		boot_c.populate(opt)
-
+		dicts['boot']=opt
+		boot_c.populate(opt, "")
+		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo")).select('HD1')
 		
 		# Qemu VMplugs:
 		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
@@ -156,6 +160,7 @@ class VBGUI:
 		self.update_vmplugs_tree()
 		kernelcheck=False
 		initrdcheck=False
+		
 		for key in b.cfg.__dict__.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
@@ -172,13 +177,17 @@ class VBGUI:
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
-				widget.set_active(True)
-				widget.set_active(False)
 				if (b.cfg.__dict__[key] == "*"):
 					widget.set_active(True)
 				else:
 					widget.set_active(False)
-			
+					
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
+			if (widget is not None and dicts.has_key(key)):
+			    for k, v in dicts[key].iteritems():
+			      if (v==b.cfg.__dict__[key]):
+				Settings.ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
+			    
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
 				widget.set_filename(b.cfg.__dict__[key])

@@ -2142,7 +2142,7 @@ ne2k_isa
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkEntry" id="cfg_Qemu_append_entry">
+                                      <widget class="GtkEntry" id="cfg_Qemu_append_text">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="invisible_char">&#x25CF;</property>

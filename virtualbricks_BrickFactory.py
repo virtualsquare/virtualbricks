@@ -228,15 +228,20 @@ class Brick():
 
 	def build_cmd_line(self):
 		res = []
+		
 		for (k,v) in self.command_builder.items():
+			
 			if not k.startswith("#"):
 				value = self.cfg.get(v)
 				if value is "*":
 					res.append(k)
+					
 				elif value is not None and len(value) > 0:
 					if not k.startswith("*"):
 						res.append(k)
+						
 					res.append(value)
+
 		return res
 
 
@@ -674,7 +679,6 @@ class VM(Brick):
 		self.cfg.vga = ""
 		self.cfg.vnc = ""
 		self.cfg.vncN = "1"
-		self.cfg.rtc = ""
 		self.cfg.usbmode = ""
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
@@ -690,13 +694,14 @@ class VM(Brick):
 		self.cfg.deviceen = ""
 		self.cfg.kvm = ""
 		self.cfg.soundhw=""
-		
+		self.cfg.rtc = ""
 		#kernel etc.
 		self.cfg.kernel=""
 		self.cfg.initrd=""
 		self.cfg.gdb=""
 		self.cfg.gdbport=""
 		
+		self.cfg.append=""
 		
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -743,7 +748,7 @@ class VM(Brick):
 			##acpitable not supported
 			##smbios not supported
 			'-kernel':'kernel',
-			'-append':'append',
+			'#append':'append',
 			'-initrd':'initrd',
 			#'-serial':'serial',
 			#'-parallel':'parallel',
@@ -767,7 +772,7 @@ class VM(Brick):
 			#'-daemonize':'',
 			#'-option-rom':'',
 			#'-clock':'',
-			'-rtc':'rtc',
+			'#rtc':'rtc',
 			#'-icount':'',
 			#'-watchdog':'',
 			#'-watchdog-action':'',
@@ -793,6 +798,8 @@ class VM(Brick):
 			#'-mem-path':'',
 			#'-mem-prealloc':''
 		}
+		
+		
 	def get_type(self):
 		return "Qemu"
 	
@@ -849,12 +856,6 @@ class VM(Brick):
 					res.append("-net")
 					res.append("user")
 
-		print self.cfg.cdromen
-		print self.cfg.cdrom
-		
-		print self.cfg.deviceen
-		print self.cfg.device
-
 		if (self.cfg.cdromen == "*"):
 		  if (self.cfg.cdrom != ""):
 		    res.append('-cdrom')
@@ -863,7 +864,14 @@ class VM(Brick):
 		  if (self.cfg.device != ""):
 		    res.append('-cdrom')
 		    res.append(self.cfg.device)
-		  
+		
+		if (self.cfg.rtc== "*"):
+			res.append('-rtc')
+			res.append('base=localtime')
+		
+		if (self.cfg.append != ""):
+		    res.append(self.cfg.append);
+
 		return res
 
 	def add_plug(self, sock=None, mac=None, model=None):
