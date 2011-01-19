@@ -735,7 +735,7 @@ class VM(Brick):
 			#'-no-frame':'noframe',
 			#'-no-quit':'noquit',
 			'-snapshot':'snapshot',
-			'-vga':'vga',
+			'#vga':'vga',
 			'#vncN':'vncN',
 			'#vnc':'vnc',
 			#'-full-screen':'full-screen',
@@ -839,6 +839,9 @@ class VM(Brick):
 		if self.cfg.vnc == '*':
 			res.append('-vnc')
 			res.append(':' + self.cfg.vncN) 
+		if self.cfg.vga == '*':
+			res.append('-vga')
+			res.append('std') 
 
 		res.append('-name')
 		res.append(self.name)
