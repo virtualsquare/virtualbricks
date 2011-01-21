@@ -1599,7 +1599,7 @@ class VBGUI:
 			self.running_bricks.clear()
 			for b in self.ps:
 				iter = self.running_bricks.append(None, None)
-				self.running_bricks.set_value(iter,0,b.pid)
+				self.running_bricks.set_value(iter,0,str(b.pid))
 				self.running_bricks.set_value(iter,1,b.get_type())
 				self.running_bricks.set_value(iter,2,b.name)
 			print "proc list updated"

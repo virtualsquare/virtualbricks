@@ -44,10 +44,6 @@ def ValidName(name):
 		return None
 	return name
 	
-
-	
-
-
 class Plug():
 	def __init__(self, _brick):
 		self.brick = _brick
@@ -127,10 +123,8 @@ class BrickConfig():
 		self.__dict__[key] = obj
 		
 	def get(self, key):
-		print "Getting: %s ", key,
 		try:
 			val = self.__dict__[key]
-			print val
 		except KeyError:
 			return None
 		return self.__dict__[key]
@@ -138,8 +132,6 @@ class BrickConfig():
 	def dump(self):
 		for (k,v) in self.__dict__.items():
 			print "%s=%s" % (k,v)
-
-
 
 class Brick():
 	def __init__(self, _factory, _name):
@@ -1012,7 +1004,11 @@ class BrickFactory(threading.Thread):
 		sys.exit(0)
 
 	def config_dump(self,f):
-		p = open(f, "w+")
+		try:
+		    p = open(f, "w+")
+		except:
+		    print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write in it."
+		    return
 		
 		for b in self.bricks:
 			p.write('[' + b.get_type() +':'+ b.name + ']\n')
@@ -1022,8 +1018,8 @@ class BrickFactory(threading.Thread):
 				  p.write(k +'=' + str(v) + '\n')
 				  
 		for b in self.bricks: 
-			for pl in b.plugs:
-				if (pl.sock or pl.mode == 'hostonly'):
+			for pl in b.plugs:			
+				if (pl.sock or pl.mode == 'hostonly'):					
 					if b.get_type()=='Qemu':
 						if pl.mode == 'vde':
 							p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
@@ -1083,8 +1079,8 @@ class BrickFactory(threading.Thread):
 					l = p.readline()
 					continue
 				
-				l = p.readline()	
-				while b and l and not l.startswith('[') and not l.startswith('link|'):
+				l = p.readline()
+				while b and l and not l.startswith('[') and not re.search("\A.*link|", l):
 					if len(l.split('=')) > 1:
 						b.cfg.set(l.rstrip('\n'))
 					l = p.readline()
