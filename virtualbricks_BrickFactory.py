@@ -121,10 +121,16 @@ class BrickConfig():
 			# pure magic. I love python.
 			self.__dict__[kv[0]] = kv[1]
 		
-
+      
+	def set_obj(self, key, obj):
+		print "setting_obj %s to '%s'" % (key, obj)
+		self.__dict__[key] = obj
+		
 	def get(self, key):
+		print "Getting: %s ", key,
 		try:
 			val = self.__dict__[key]
+			print val
 		except KeyError:
 			return None
 		return self.__dict__[key]
@@ -658,11 +664,43 @@ class VMPlugHostonly(VMPlug):
 
 	def connect(self, endpoint):
 		return
+
 	def configured(self):
 		return True
+
 	def connected(self):
 		return True
-	
+
+class VMDisk():
+  
+	def __init__(self, name, dev):
+		self.Name = name
+		self.base = ""
+		self.cow = False
+		self.device = dev
+		#self.snapshot = False
+		
+	def args(self, k):
+		ret = []
+		if self.cow:
+			cowname = os.path.dirname(self.base) + "/" + self.Name + "_" + self.device + ".cow"
+			if not os.access(cowname, os.R_OK):
+				print ("Creating Cow image...")
+				os.system('qemu-img create -b %s -f cow %s' % (self.base, cowname))
+				os.system('sync')
+				time.sleep(2)
+				print ("Done")
+			diskname = cowname
+		else:
+			diskname = self.base
+			
+		#if self.snapshot:
+			#ret.append('-snapshot')
+
+		if k:
+			ret.append("-"+self.device)
+		ret.append(diskname)
+		return ret
 
 class VM(Brick):
 	def __init__(self, _factory, _name):
@@ -682,12 +720,24 @@ class VM(Brick):
 		self.cfg.usbmode = ""
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
-		self.cfg.hda =""
-		self.cfg.hdb =""
-		self.cfg.hdc =""
-		self.cfg.hdd =""
-		self.cfg.fda =""
-		self.cfg.fdb =""
+		self.cfg.basehda =""
+		self.cfg.set_obj("hda",VMDisk(_name, "hda"))
+		self.cfg.privatehda=""
+		self.cfg.basehdb =""
+		self.cfg.set_obj("hdb", VMDisk(_name, "hdb"))
+		self.cfg.privatehdb=""
+		self.cfg.basehdc =""
+		self.cfg.set_obj("hdc", VMDisk(_name, "hdc"))
+		self.cfg.privatehdc=""
+		self.cfg.basehdd =""
+		self.cfg.set_obj("hdd", VMDisk(_name, "hdd"))
+		self.cfg.privatehdd=""
+		self.cfg.basefda =""
+		self.cfg.set_obj("fda", VMDisk(_name, "fda"))
+		self.cfg.privatefda=""
+		self.cfg.basefdb =""
+		self.cfg.set_obj("fdb", VMDisk(_name, "fdb"))
+		self.cfg.privatefdb=""
 		self.cfg.cdrom = ""
 		self.cfg.device = ""
 		self.cfg.cdromen = ""
@@ -699,10 +749,9 @@ class VM(Brick):
 		self.cfg.kernel=""
 		self.cfg.initrd=""
 		self.cfg.gdb=""
-		self.cfg.gdbport=""
-		
+		self.cfg.gdbport=""	
 		self.cfg.append=""
-		
+			
 		self.command_builder = {
 			'#argv0':'argv0',
 			'-M':'machine',
@@ -711,12 +760,18 @@ class VM(Brick):
 			'-m':'ram',
 			'-boot':'boot',
 			##numa not supported
-			'-fda':'fda',
-			'-fdb':'fdb',
-			'-hda':'hda',
-			'-hdb':'hdb',
-			'-hdc':'hdc',
-			'-hdd':'hdd',
+			'#basefda':'basefda',
+			'#basefdb':'basefdb',
+			'#basehda':'basehda',
+			'#basehdb':'basehdb',
+			'#basehdc':'basehdc',
+			'#basehdd':'basehdd',
+			'#privatehda': 'privatehda',
+			'#privatehdb': 'privatehdb',
+			'#privatehdc': 'privatehdc',
+			'#privatehdd': 'privatehdd',
+			'#privatefda': 'privatefda',
+			'#privatefdb': 'privatefdb',
 			'#cdrom':'cdrom',
 			'#device':'device',
 			'#cdromen': 'cdromen',
@@ -833,6 +888,16 @@ class VM(Brick):
 		res.append(self.prog())
 		for c in self.build_cmd_line():
 			res.append(c)
+		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb']:
+		  if self.cfg.get("base"+dev) != "":
+			disk = getattr(self.cfg, dev)
+			disk.base = self.cfg.get("base"+dev)
+			disk.cow=False
+			if (self.cfg.get("private"+dev) == "*"):
+			  disk.cow = True
+			args=disk.args(True)
+			res.append(args[0])
+			res.append(args[1])
 		if self.cfg.gdb == '*':
 			res.append('-gdb')
 			res.append('tcp::' + self.cfg.gdbport) 
@@ -874,7 +939,7 @@ class VM(Brick):
 		
 		if (self.cfg.append != ""):
 		    res.append(self.cfg.append);
-
+		print res
 		return res
 
 	def add_plug(self, sock=None, mac=None, model=None):
@@ -952,8 +1017,11 @@ class BrickFactory(threading.Thread):
 		for b in self.bricks:
 			p.write('[' + b.get_type() +':'+ b.name + ']\n')
 			for k,v in b.cfg.__dict__.items():
-				p.write(k +'=' + str(v) + '\n')
-		for b in self.bricks:
+				# VMDisk objects don't need to be saved 
+				if b.get_type()!="Qemu" or ( b.get_type()=="Qemu" and k not in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb'] ):
+				  p.write(k +'=' + str(v) + '\n')
+				  
+		for b in self.bricks: 
 			for pl in b.plugs:
 				if (pl.sock or pl.mode == 'hostonly'):
 					if b.get_type()=='Qemu':

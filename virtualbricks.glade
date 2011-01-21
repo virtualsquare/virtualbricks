@@ -253,9 +253,9 @@
                   <widget class="GtkNotebook" id="notebook3">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <signal name="change_current_page" handler="on_focus_out"/>
                     <signal name="switch_page" handler="on_focus_out"/>
                     <signal name="select_page" handler="on_focus_out"/>
-                    <signal name="change_current_page" handler="on_focus_out"/>
                     <child>
                       <widget class="GtkScrolledWindow" id="scrolledwindow3">
                         <property name="visible">True</property>
@@ -482,19 +482,30 @@ fda</property>
                                               </packing>
                                             </child>
                                             <child>
-                                              <widget class="GtkCheckButton" id="cfg_Qemu_snapshot_check">
-                                                <property name="label" translatable="yes">Snapshot mode</property>
+                                              <widget class="GtkHBox" id="hbox39">
                                                 <property name="visible">True</property>
-                                                <property name="can_focus">True</property>
-                                                <property name="receives_default">False</property>
-                                                <property name="has_tooltip">True</property>
-                                                <property name="tooltip" translatable="yes">write to temporary files instead of disk image files</property>
-                                                <property name="use_underline">True</property>
-                                                <property name="draw_indicator">True</property>
+                                                <child>
+                                                  <widget class="GtkCheckButton" id="cfg_Qemu_snapshot_check">
+                                                    <property name="label" translatable="yes">Snapshot mode</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">False</property>
+                                                    <property name="has_tooltip">True</property>
+                                                    <property name="tooltip" translatable="yes">write to temporary files instead of disk image files</property>
+                                                    <property name="use_underline">True</property>
+                                                    <property name="draw_indicator">True</property>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="expand">False</property>
+                                                    <property name="fill">False</property>
+                                                    <property name="position">0</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
                                               </widget>
                                               <packing>
-                                                <property name="expand">False</property>
-                                                <property name="fill">False</property>
                                                 <property name="position">1</property>
                                               </packing>
                                             </child>
@@ -782,98 +793,10 @@ fda</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox_hdb">
-                                                    <property name="width_request">80</property>
-                                                    <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">None</property>
-                                                  </widget>
-                                                  <packing>
-                                                    <property name="left_attach">2</property>
-                                                    <property name="right_attach">3</property>
-                                                    <property name="top_attach">1</property>
-                                                    <property name="bottom_attach">2</property>
-                                                    <property name="x_options">GTK_FILL</property>
-                                                    <property name="y_options">GTK_FILL</property>
-                                                  </packing>
-                                                </child>
-                                                <child>
-                                                  <widget class="GtkComboBox" id="combobox_hdc">
-                                                    <property name="width_request">80</property>
-                                                    <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">None</property>
-                                                  </widget>
-                                                  <packing>
-                                                    <property name="left_attach">2</property>
-                                                    <property name="right_attach">3</property>
-                                                    <property name="top_attach">2</property>
-                                                    <property name="bottom_attach">3</property>
-                                                    <property name="x_options">GTK_FILL</property>
-                                                    <property name="y_options">GTK_FILL</property>
-                                                  </packing>
-                                                </child>
-                                                <child>
-                                                  <widget class="GtkComboBox" id="combobox_hdd">
-                                                    <property name="width_request">80</property>
-                                                    <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">None</property>
-                                                  </widget>
-                                                  <packing>
-                                                    <property name="left_attach">2</property>
-                                                    <property name="right_attach">3</property>
-                                                    <property name="top_attach">3</property>
-                                                    <property name="bottom_attach">4</property>
-                                                    <property name="x_options">GTK_FILL</property>
-                                                    <property name="y_options">GTK_FILL</property>
-                                                  </packing>
-                                                </child>
-                                                <child>
-                                                  <widget class="GtkComboBox" id="combobox_fda">
-                                                    <property name="width_request">80</property>
-                                                    <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">None</property>
-                                                  </widget>
-                                                  <packing>
-                                                    <property name="left_attach">2</property>
-                                                    <property name="right_attach">3</property>
-                                                    <property name="top_attach">4</property>
-                                                    <property name="bottom_attach">5</property>
-                                                    <property name="x_options">GTK_FILL</property>
-                                                    <property name="y_options">GTK_FILL</property>
-                                                  </packing>
-                                                </child>
-                                                <child>
-                                                  <widget class="GtkComboBox" id="combobox_fdb">
-                                                    <property name="width_request">80</property>
-                                                    <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">None</property>
-                                                  </widget>
-                                                  <packing>
-                                                    <property name="left_attach">2</property>
-                                                    <property name="right_attach">3</property>
-                                                    <property name="top_attach">5</property>
-                                                    <property name="bottom_attach">6</property>
-                                                    <property name="x_options">GTK_FILL</property>
-                                                    <property name="y_options">GTK_FILL</property>
-                                                  </packing>
-                                                </child>
-                                                <child>
-                                                  <widget class="GtkComboBox" id="combobox_hda">
-                                                    <property name="width_request">80</property>
-                                                    <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">None</property>
-                                                  </widget>
-                                                  <packing>
-                                                    <property name="left_attach">2</property>
-                                                    <property name="right_attach">3</property>
-                                                    <property name="x_options">GTK_FILL</property>
-                                                    <property name="y_options">GTK_FILL</property>
-                                                  </packing>
-                                                </child>
-                                                <child>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hda">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_hda_filechooser">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_basehda_filechooser">
                                                         <property name="width_request">200</property>
                                                         <property name="visible">True</property>
                                                       </widget>
@@ -889,7 +812,7 @@ fda</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hdb">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_hdb_filechooser">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_basehdb_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -907,7 +830,7 @@ fda</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hdc">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="config_Qemu_hdc_filechooser">
+                                                      <widget class="GtkFileChooserButton" id="config_Qemu_basehdc_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -925,7 +848,7 @@ fda</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hdd">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_hdd_filechooser">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_basehdd_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -943,7 +866,7 @@ fda</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_fda">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_fda_filechooser">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_basefda_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -961,7 +884,7 @@ fda</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_fdb">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_fdb_filechooser">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_basefdb_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
@@ -973,6 +896,94 @@ fda</property>
                                                     <property name="bottom_attach">6</property>
                                                     <property name="x_options">GTK_FILL</property>
                                                     <property name="y_options">GTK_FILL</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <widget class="GtkCheckButton" id="cfg_Qemu_privatehda_check">
+                                                    <property name="label" translatable="yes">Private COW</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">False</property>
+                                                    <property name="draw_indicator">True</property>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="left_attach">2</property>
+                                                    <property name="right_attach">3</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <widget class="GtkCheckButton" id="checkbutton2">
+                                                    <property name="label" translatable="yes">Private COW</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">False</property>
+                                                    <property name="draw_indicator">True</property>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="left_attach">2</property>
+                                                    <property name="right_attach">3</property>
+                                                    <property name="top_attach">1</property>
+                                                    <property name="bottom_attach">2</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <widget class="GtkCheckButton" id="checkbutton3">
+                                                    <property name="label" translatable="yes">Private COW</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">False</property>
+                                                    <property name="draw_indicator">True</property>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="left_attach">2</property>
+                                                    <property name="right_attach">3</property>
+                                                    <property name="top_attach">3</property>
+                                                    <property name="bottom_attach">4</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <widget class="GtkCheckButton" id="checkbutton4">
+                                                    <property name="label" translatable="yes">Private COW</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">False</property>
+                                                    <property name="draw_indicator">True</property>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="left_attach">2</property>
+                                                    <property name="right_attach">3</property>
+                                                    <property name="top_attach">4</property>
+                                                    <property name="bottom_attach">5</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <widget class="GtkCheckButton" id="checkbutton5">
+                                                    <property name="label" translatable="yes">Private COW</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">False</property>
+                                                    <property name="draw_indicator">True</property>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="left_attach">2</property>
+                                                    <property name="right_attach">3</property>
+                                                    <property name="top_attach">2</property>
+                                                    <property name="bottom_attach">3</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <widget class="GtkCheckButton" id="checkbutton6">
+                                                    <property name="label" translatable="yes">Private COW</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">False</property>
+                                                    <property name="draw_indicator">True</property>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="left_attach">2</property>
+                                                    <property name="right_attach">3</property>
+                                                    <property name="top_attach">5</property>
+                                                    <property name="bottom_attach">6</property>
                                                   </packing>
                                                 </child>
                                               </widget>
@@ -1782,8 +1793,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Set up a new network card</property>
-                                    <signal name="clicked" handler="on_vmplug_add"/>
                                     <signal name="activate" handler="on_vmplug_add"/>
+                                    <signal name="clicked" handler="on_vmplug_add"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment9">
                                         <property name="visible">True</property>
@@ -1835,8 +1846,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Edit selected network card or redirection</property>
-                                    <signal name="clicked" handler="on_vmplug_edit"/>
                                     <signal name="activate" handler="on_vmplug_edit"/>
+                                    <signal name="clicked" handler="on_vmplug_edit"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment11">
                                         <property name="visible">True</property>
@@ -1888,8 +1899,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Remove selected network card or redirection</property>
-                                    <signal name="clicked" handler="on_vmplug_remove"/>
                                     <signal name="activate" handler="on_vmplug_remove"/>
+                                    <signal name="clicked" handler="on_vmplug_remove"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment12">
                                         <property name="visible">True</property>
@@ -3639,8 +3650,8 @@ Normal Distribution</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="clicked" handler="on_config_cancel"/>
                         <signal name="activate" handler="on_config_cancel"/>
+                        <signal name="clicked" handler="on_config_cancel"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -3658,8 +3669,8 @@ Normal Distribution</property>
                         <property name="can_default">True</property>
                         <property name="has_default">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="clicked" handler="on_config_ok"/>
                         <signal name="activate" handler="on_config_ok"/>
+                        <signal name="clicked" handler="on_config_ok"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -3798,8 +3809,8 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="use_preview_label">False</property>
                                 <property name="action">select-folder</property>
+                                <property name="use_preview_label">False</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
@@ -4666,8 +4677,8 @@ invalid path for qemu/kvm binaries</property>
     <property name="height_request">500</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_about_response"/>
     <signal name="delete_event" handler="on_windown_destroy"/>
+    <signal name="response" handler="on_dialog_about_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox4">
         <property name="visible">True</property>
@@ -4785,6 +4796,9 @@ If you find virtualbricks useful for your business, please consider making a don
         <property name="visible">True</property>
         <property name="orientation">vertical</property>
         <child>
+          <placeholder/>
+        </child>
+        <child>
           <widget class="GtkVBox" id="vbox15">
             <property name="visible">True</property>
             <property name="orientation">vertical</property>
@@ -4870,50 +4884,6 @@ If you find virtualbricks useful for your business, please consider making a don
             <property name="expand">False</property>
             <property name="padding">5</property>
             <property name="position">4</property>
-          </packing>
-        </child>
-        <child>
-          <widget class="GtkHBox" id="hbox1">
-            <property name="visible">True</property>
-            <child>
-              <widget class="GtkCheckButton" id="new_image">
-                <property name="label" translatable="yes">New Image</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="draw_indicator">True</property>
-              </widget>
-              <packing>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkCheckButton" id="private_cow">
-                <property name="label" translatable="yes">Use a private COW</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="draw_indicator">True</property>
-              </widget>
-              <packing>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkCheckButton" id="snapshot">
-                <property name="label" translatable="yes">Snapshot</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="draw_indicator">True</property>
-              </widget>
-              <packing>
-                <property name="position">2</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="position">5</property>
           </packing>
         </child>
         <child>
@@ -5082,6 +5052,7 @@ GB</property>
                 <property name="can_default">True</property>
                 <property name="receives_default">False</property>
                 <property name="use_stock">True</property>
+                <signal name="clicked" handler="on_button_newimage_close_clicked"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -6649,8 +6620,8 @@ Tunnel Client</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_newbrick_cancel"/>
                 <signal name="released" handler="on_newbrick_cancel"/>
+                <signal name="clicked" handler="on_newbrick_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -6669,8 +6640,8 @@ Tunnel Client</property>
                 <property name="has_default">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
-                <signal name="clicked" handler="on_newbrick_ok"/>
                 <signal name="activate" handler="on_newbrick_ok"/>
+                <signal name="clicked" handler="on_newbrick_ok"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -6788,8 +6759,8 @@ Tunnel Client</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
-                <signal name="clicked" handler="on_error_close"/>
                 <signal name="activate" handler="on_error_close"/>
+                <signal name="clicked" handler="on_error_close"/>
               </widget>
               <packing>
                 <property name="expand">False</property>

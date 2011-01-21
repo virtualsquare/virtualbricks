@@ -255,7 +255,8 @@ class VBGUI:
 			if (widget is not None):
 				f = widget.get_filename()
 				if f:
-					b.cfg.set(key+'='+f)
+				  #print f
+				  b.cfg.set(key+'='+f)
 					
 			b.gui_changed = True
 			t = b.get_type()
@@ -621,9 +622,8 @@ class VBGUI:
 	def on_item_settings_autohide_activate(self, widget=None, data=""):
 		print "on_item_settings_autohide_activate undefined!"
 		pass
-	def on_item_create_image_activate(self, widget=None, data=""):
-		print "on_item_create_image_activate undefined!"
-		pass
+	
+
 	def on_item_about_activate(self, widget=None, data=""):
 		self.show_window('dialog_about1')
 		pass
@@ -878,9 +878,37 @@ class VBGUI:
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
 		print "on_combobox_newimage_sizeunit_changed undefined!"
 		pass
-	def on_button_create_image_clicked(self, widget=None, data=""):
-		print "on_button_create_image_clicked undefined!"
+	      
+	def on_item_create_image_activate(self, widget=None, data=""):
+		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
+		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
+		self.show_window('dialog_create_image')
 		pass
+	      
+	def on_button_create_image_clicked(self, widget=None, data=""):
+		print "Image creating.. ",
+		path = self.gladefile.get_widget('filechooserbutton_newimage_dest').get_filename() + "/"
+		filename = self.gladefile.get_widget('entry_newimage_name').get_text()
+		img_format = self.gladefile.get_widget('combobox_newimage_format').get_active_text()
+		img_size = str(self.gladefile.get_widget('spinbutton_newimage_size').get_value())
+		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()
+		cmd='qemu-img create'
+		if filename=="":
+		  self.error("Choose a filename first!")
+		  return
+		if img_format == "Auto":
+		  img_format = "raw"		  
+		os.system('%s -f %s %s %s' % (cmd, img_format, path+filename+"."+img_format, img_size+img_sizeunit))
+		os.system('sync')
+		time.sleep(2)
+		print '%s -f %s %s %s' % (cmd, img_format, path+filename, img_size+img_sizeunit)
+		print ("Done")
+		pass
+
+	def on_newimage_close_clicked(self, widget=None, data=""):
+		self.widg['dialog_create_image'].hide()
+		return True
+
 	def on_dialog_messages_response(self, widget=None, data=""):
 		print "on_dialog_messages_response undefined!"
 		pass
@@ -1258,7 +1286,7 @@ class VBGUI:
 		if (self.selected.get_type() == 'Qemu'):
 			for pl in self.selected.plugs:
 				iter = self.vmplugs.append(None, None)
-				self.vmplugs.set_value(iter,0,pl.vlan)
+				#self.vmplugs.set_value(iter,0,pl.vlan)
 				if pl.mode == 'hostonly':
 					self.vmplugs.set_value(iter,1,'Host')
 				elif pl.sock:
@@ -1457,7 +1485,8 @@ class VBGUI:
 			"on_vmplug_onoff":self.on_vmplug_onoff,
 			"on_random_macaddr":self.on_random_macaddr,
 			"on_tap_config_manual":self.on_tap_config_manual,
-			"on_check_kvm_toggled":self.on_check_kvm_toggled
+			"on_check_kvm_toggled":self.on_check_kvm_toggled,
+			"on_button_newimage_close_clicked": self.on_newimage_close_clicked
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
