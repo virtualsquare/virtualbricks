@@ -184,9 +184,9 @@ class VBGUI:
 					
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None and dicts.has_key(key)):
-			    for k, v in dicts[key].iteritems():
-			      if (v==b.cfg.__dict__[key]):
-				Settings.ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
+				for k, v in dicts[key].iteritems():
+					if (v==b.cfg.__dict__[key]):
+						Settings.ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
 			    
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
@@ -694,9 +694,9 @@ class VBGUI:
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
 		path, focus = tree.get_cursor()
-                iter = store.get_iter(path)
-                ntype = store.get_value(iter, 2)
-                name = store.get_value(iter, 3)
+		iter = store.get_iter(path)
+		ntype = store.get_value(iter, 2)
+		name = store.get_value(iter, 3)
 		b = self.brickfactory.getbrickbyname(name)
 		if b.proc is not None:
 			b.poweroff()
@@ -878,7 +878,6 @@ class VBGUI:
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
 		print "on_combobox_newimage_sizeunit_changed undefined!"
 		pass
-	      
 	def on_item_create_image_activate(self, widget=None, data=""):
 		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
 		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
@@ -1225,24 +1224,24 @@ class VBGUI:
 		os.unlink(Settings.MYPATH+"/.cpus")
 		
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
-	    if widget.get_active():
-		try:
-		    self.config.check_kvm()
-		    self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(False)
-		    self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(False)
-		    self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(False)
-		except IOError:
-		    print "ioerror"
-		    self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
-		    widget.set_active(False)
-		except NotImplementedError:
-		    print "no support"
-		    self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
-		    widget.set_active(False)
-	    else:
-		self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(True)
-		self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(True)
-		self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(True)
+		if widget.get_active():
+			try:
+				self.config.check_kvm()
+				self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(False)
+				self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(False)
+				self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(False)
+			except IOError:
+				print "ioerror"
+				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+				widget.set_active(False)
+			except NotImplementedError:
+				print "no support"
+				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+				widget.set_active(False)
+			else:
+				self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(True)
+				self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(True)
+				self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(True)
 		
 	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
@@ -1517,15 +1516,13 @@ class VBGUI:
 				iter = self.bookmarks.append(None, None)
 				state='running'
 				if b.proc is not None:
-		                        #self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_YES, gtk.ICON_SIZE_LARGE_TOOLBAR))
-		                        self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
+					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
 				elif not b.properly_connected():
-		                        self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
+					self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
 					state='disconnected'
 				else:
 					state='off'
-		                        #self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_NO, gtk.ICON_SIZE_LARGE_TOOLBAR))
-		                        self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
+					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
 
 				self.bookmarks.set_value(iter,1,state)
 				self.bookmarks.set_value(iter,2,b.get_type())
@@ -1608,24 +1605,35 @@ class VBGUI:
 	def draw_topology(self):
 		topowidget = self.gladefile.get_widget('image_topology')
 		topo=pgv.AGraph()
-		topo.graph_attr['rankdir']='LR'
-		topo.graph_attr['ranksep']='0.1'
+		topo.graph_attr['rankdir']='TB'
+		topo.graph_attr['ranksep']='1.2'
 
 		# Add nodes
+		sg = topo.add_subgraph([],name="switches_rank")
+		sg.graph_attr['rank'] = 'same'
 		for b in self.bricks:
-			topo.add_node(b.name)
-			n = topo.get_node(b.name)
-			n.attr['shape']='none'
-			n.attr['fillcolor']='green'
-			n.attr['fontsize']='9'
-			n.attr['image']=b.get_type()+'.png'
+		### I would like to use this code, but pygraphviz has a bug.
+		#	if b.get_type() == 'Switch' or b.get_type().startswith('Wire'):
+		#		sg.add_node(b.name)
+		#		n = sg.get_node(b.name)
+		#		print n
+		#		n.attr['shape']='none'
+		#		n.attr['fontsize']='9'
+		#		n.attr['image']=b.get_type()+'.png'
+		#	else:
+				topo.add_node(b.name)
+				n = topo.get_node(b.name)
+				print n
+				n.attr['shape']='none'
+				n.attr['fontsize']='9'
+				n.attr['image']=b.get_type()+'.png'
+
 
 		for b in self.bricks:
 			for e in b.plugs:
 				if e.sock is not None:
 					topo.add_edge(b.name, e.sock.brick.name)
 					e = topo.get_edge(b.name, e.sock.brick.name)
-					e.attr['rank'] = 'same'
 					e.attr['dir'] = 'none'
 					e.attr['color'] = 'black'
 					e.attr['name'] = "      "

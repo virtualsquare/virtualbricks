@@ -288,15 +288,16 @@ class Brick():
 		print "Shutting down %s" % self.name
 		if (self.proc == None):
 			return False
-		if (self.needsudo):
-			os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
-		else:
-			try:
-				os.kill(self.proc.pid, 15)
-			except:
-				pass
+		if self.pid > 0:
+			if (self.needsudo):
+				os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
+			else:
+				try:
+					os.kill(self.proc.pid, 15)
+				except:
+					pass
 		
-		self.proc.wait()
+			self.proc.wait()
 		self.proc = None
 		self.need_restart_to_apply_changes = False
 		self.console = None
@@ -612,6 +613,7 @@ class TunnelConnect(TunnelListen):
 			"-c":"host",
 			"#port":"port"
 		}
+		self.cfg.sock = ""
 		self.cfg.host = ""
 		self.cfg.localport="10771"
 		self.cfg.port="7667"
@@ -850,9 +852,6 @@ class VM(Brick):
 	def get_type(self):
 		return "Qemu"
 	
-	def properly_connected(self):
-		#Of course we are. Or at least it is our own's business.
-		return True
 	def check_links(self):
 		return True 
 	
@@ -1040,7 +1039,7 @@ class BrickFactory(threading.Thread):
 		b = None
 		while (l):
 			l = re.sub(' ','',l)
-			if re.search("\A.*link|", l) and len(l.split("|")) >= 3:
+			if re.search("\A.*link\|", l) and len(l.split("|")) >= 3:
 				l.rstrip('\n')
 				print "************************* link detected"
 				for bb in self.bricks:
@@ -1074,14 +1073,16 @@ class BrickFactory(threading.Thread):
 					for bb in self.bricks:
 						if name == bb.name:
 							b = bb
-							break
 				except Exception:
+					print "--------- Bad config line"
 					l = p.readline()
 					continue
 				
 				l = p.readline()
-				while b and l and not l.startswith('[') and not re.search("\A.*link|", l):
+				print "-------- loading settings for "+b.name + " first line: " + l
+				while b and l and not l.startswith('[') and not re.search("\A.*link\|", l):
 					if len(l.split('=')) > 1:
+						print "setting" + l.strip('\n')
 						b.cfg.set(l.rstrip('\n'))
 					l = p.readline()
 					
