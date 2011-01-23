@@ -50,6 +50,12 @@ class VBGUI:
 				 gobject.TYPE_STRING], 
 				['','Status','Type','Name', 'Parameters'])
 
+		# associate Drag and Drop action
+		tree = self.gladefile.get_widget('treeview_bookmarks')
+		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],  gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
+
+
 		self.vmplugs = self.treestore('treeview_networkcards',
 				[	gobject.TYPE_STRING,
 					gobject.TYPE_STRING,
@@ -640,22 +646,43 @@ class VBGUI:
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
-	def on_vpaned_mainwindow_button_release_event(self, widget=None, event=None, data=""):
+
+	def on_mainwindow_dropaction(self, widget, drag_context, x, y, selection_data, info, timestamp):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
-		x = int(event.x)
-		y = int(event.y)
-		time = event.time
+		x = int(x)
+		y = int(y)
 		pthinfo = tree.get_path_at_pos(x, y)
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		dropbrick = self.brickfactory.getbrickbyname(name)
-		if (dropbrick and dropbrick != self.Dragging):
-			print "drag&drop!"
-			if (len(dropbrick.socks) > 0):
-				self.Dragging.connect(dropbrick.socks[0])
-			elif (len(self.Dragging.socks) > 0):
-				dropbrick.connect(self.Dragging.socks[0])
+
+		drop_info = tree.get_dest_row_at_pos(x, y)
+		if drop_info:
+			pth,pos = drop_info
 			
+		if pos == gtk.TREE_VIEW_DROP_BEFORE:
+			print 'dropped before'
+			drag_context.finish(False, False, timestamp)
+			return False
+		if pos == gtk.TREE_VIEW_DROP_AFTER:
+			drag_context.finish(False, False, timestamp)
+			print 'dropped after'
+			return False
+
+
+		if (dropbrick and dropbrick != self.Dragging):
+			print "drag&drop: %s onto %s" % (self.Dragging.name, dropbrick.name)
+			res = False
+			if (len(dropbrick.socks) > 0):
+				res = self.Dragging.connect(dropbrick.socks[0])
+			elif (len(self.Dragging.socks) > 0):
+				res = dropbrick.connect(self.Dragging.socks[0])
+			if (res):
+				drag_context.finish(True, False, timestamp)
+			else:
+				drag_context.finish(False, False, timestamp)
+		else:
+			drag_context.finish(False, False, timestamp)
 		self.Dragging = None
 
 	def on_treeview_bookmarks_button_press_event(self, widget=None, event=None, data=""):
@@ -671,7 +698,13 @@ class VBGUI:
 			self.selected = self.brickfactory.getbrickbyname(name)
 			if self.selected:
 				self.show_window('menu_brickactions')
-			
+
+	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
+		print "in get data?!"
+		store = self.bookmarks
+		name = self.get_treeselected_name(tree, store, pthinfo)
+		self.Dragging = self.brickfactory.getbrickbyname(name)
+		#context.set_icon_pixbuf('./'+self.Dragging.get_type()+'.png')
 		
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
@@ -1384,8 +1417,9 @@ class VBGUI:
 			"on_item_about_activate":self.on_item_about_activate,
 			"on_toolbutton_start_all_clicked":self.on_toolbutton_start_all_clicked,
 			"on_toolbutton_stop_all_clicked":self.on_toolbutton_stop_all_clicked,
-			"on_vpaned_mainwindow_button_release_event":self.on_vpaned_mainwindow_button_release_event,
+			"on_mainwindow_dropaction":self.on_mainwindow_dropaction,
 			"on_treeview_bookmarks_button_press_event":self.on_treeview_bookmarks_button_press_event,
+			"on_treeview_drag_get_data":self.on_treeview_drag_get_data,
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
 			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
 			"on_focus_out":self.on_treeview_bookmarks_focus_out,
@@ -1605,7 +1639,8 @@ class VBGUI:
 	def draw_topology(self):
 		topowidget = self.gladefile.get_widget('image_topology')
 		topo=pgv.AGraph()
-		topo.graph_attr['rankdir']='TB'
+		topo.graph_attr['rankdir']='LR'
+		#topo.graph_attr['rankdir']='TB'
 		topo.graph_attr['ranksep']='1.2'
 
 		# Add nodes
@@ -1623,17 +1658,22 @@ class VBGUI:
 		#	else:
 				topo.add_node(b.name)
 				n = topo.get_node(b.name)
-				print n
 				n.attr['shape']='none'
 				n.attr['fontsize']='9'
 				n.attr['image']=b.get_type()+'.png'
 
 
 		for b in self.bricks:
+			loop = 0
 			for e in b.plugs:
 				if e.sock is not None:
-					topo.add_edge(b.name, e.sock.brick.name)
-					e = topo.get_edge(b.name, e.sock.brick.name)
+					if loop < 2:
+						topo.add_edge(e.sock.brick.name, b.name)
+						e = topo.get_edge(e.sock.brick.name, b.name)
+					else:	
+						topo.add_edge(b.name, e.sock.brick.name)
+						e = topo.get_edge(b.name, e.sock.brick.name)
+					loop+=1
 					e.attr['dir'] = 'none'
 					e.attr['color'] = 'black'
 					e.attr['name'] = "      "

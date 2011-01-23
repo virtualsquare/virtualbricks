@@ -253,9 +253,9 @@
                   <widget class="GtkNotebook" id="notebook3">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <signal name="change_current_page" handler="on_focus_out"/>
                     <signal name="switch_page" handler="on_focus_out"/>
                     <signal name="select_page" handler="on_focus_out"/>
+                    <signal name="change_current_page" handler="on_focus_out"/>
                     <child>
                       <widget class="GtkScrolledWindow" id="scrolledwindow3">
                         <property name="visible">True</property>
@@ -269,7 +269,7 @@
                             <signal name="button_press_event" handler="on_treeview_bookmarks_button_press_event"/>
                             <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
                             <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
-                            <signal name="button_release_event" handler="on_vpaned_mainwindow_button_release_event"/>
+                            <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
                           </widget>
                         </child>
                       </widget>
@@ -1793,8 +1793,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Set up a new network card</property>
-                                    <signal name="activate" handler="on_vmplug_add"/>
                                     <signal name="clicked" handler="on_vmplug_add"/>
+                                    <signal name="activate" handler="on_vmplug_add"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment9">
                                         <property name="visible">True</property>
@@ -1846,8 +1846,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Edit selected network card or redirection</property>
-                                    <signal name="activate" handler="on_vmplug_edit"/>
                                     <signal name="clicked" handler="on_vmplug_edit"/>
+                                    <signal name="activate" handler="on_vmplug_edit"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment11">
                                         <property name="visible">True</property>
@@ -1899,8 +1899,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Remove selected network card or redirection</property>
-                                    <signal name="activate" handler="on_vmplug_remove"/>
                                     <signal name="clicked" handler="on_vmplug_remove"/>
+                                    <signal name="activate" handler="on_vmplug_remove"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment12">
                                         <property name="visible">True</property>
@@ -3650,8 +3650,8 @@ Normal Distribution</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="activate" handler="on_config_cancel"/>
                         <signal name="clicked" handler="on_config_cancel"/>
+                        <signal name="activate" handler="on_config_cancel"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -3669,8 +3669,8 @@ Normal Distribution</property>
                         <property name="can_default">True</property>
                         <property name="has_default">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="activate" handler="on_config_ok"/>
                         <signal name="clicked" handler="on_config_ok"/>
+                        <signal name="activate" handler="on_config_ok"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -4677,8 +4677,8 @@ invalid path for qemu/kvm binaries</property>
     <property name="height_request">500</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_windown_destroy"/>
     <signal name="response" handler="on_dialog_about_response"/>
+    <signal name="delete_event" handler="on_windown_destroy"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox4">
         <property name="visible">True</property>
@@ -4796,9 +4796,6 @@ If you find virtualbricks useful for your business, please consider making a don
         <property name="visible">True</property>
         <property name="orientation">vertical</property>
         <child>
-          <placeholder/>
-        </child>
-        <child>
           <widget class="GtkVBox" id="vbox15">
             <property name="visible">True</property>
             <property name="orientation">vertical</property>
@@ -4885,6 +4882,9 @@ If you find virtualbricks useful for your business, please consider making a don
             <property name="padding">5</property>
             <property name="position">4</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <widget class="GtkHBox" id="hbox14">
@@ -6620,8 +6620,8 @@ Tunnel Client</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="released" handler="on_newbrick_cancel"/>
                 <signal name="clicked" handler="on_newbrick_cancel"/>
+                <signal name="released" handler="on_newbrick_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -6640,8 +6640,8 @@ Tunnel Client</property>
                 <property name="has_default">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
-                <signal name="activate" handler="on_newbrick_ok"/>
                 <signal name="clicked" handler="on_newbrick_ok"/>
+                <signal name="activate" handler="on_newbrick_ok"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -6759,8 +6759,8 @@ Tunnel Client</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
-                <signal name="activate" handler="on_error_close"/>
                 <signal name="clicked" handler="on_error_close"/>
+                <signal name="activate" handler="on_error_close"/>
               </widget>
               <packing>
                 <property name="expand">False</property>

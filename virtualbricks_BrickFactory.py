@@ -296,7 +296,6 @@ class Brick():
 					os.kill(self.proc.pid, 15)
 				except:
 					pass
-		
 			self.proc.wait()
 		self.proc = None
 		self.need_restart_to_apply_changes = False
@@ -1186,6 +1185,8 @@ class BrickFactory(threading.Thread):
 	def delbrick(self,bricktodel):
 		for b in self.bricks:
 			if b == bricktodel:
+				for so in b.socks:
+					self.socks.remove(so)
 				self.bricks.remove(b)
 				del(b)
 	def dupbrick(self,bricktodup):
