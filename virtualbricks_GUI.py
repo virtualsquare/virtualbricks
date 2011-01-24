@@ -1667,7 +1667,10 @@ class VBGUI:
 			loop = 0
 			for e in b.plugs:
 				if e.sock is not None:
-					if loop < 2:
+					if (b.get_type() == 'Tap'):
+						topo.add_edge(b.name, e.sock.brick.name)
+						e = topo.get_edge(b.name, e.sock.brick.name)
+					elif (b.get_type().startswith('Wire') and loop == 0) or (not b.get_type().startswith('Wire') and loop < 2):
 						topo.add_edge(e.sock.brick.name, b.name)
 						e = topo.get_edge(e.sock.brick.name, b.name)
 					else:	
