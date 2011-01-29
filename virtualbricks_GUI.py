@@ -1046,7 +1046,10 @@ class VBGUI:
 		pass
 	
 	def on_item_jobmonoitor_activate(self, widget=None, data=""):
-		print "on_item_jobmonoitor_activate undefined!"
+		if self.joblist_selected.get_type() is "Qemu":
+			self.show_window('dialog_jobmonitor')
+		else:
+			self.joblist_selected.open_console()
 		pass
 	
 	def on_item_stop_job_activate(self, widget=None, data=""):
@@ -1056,11 +1059,12 @@ class VBGUI:
 			print "Sending to process signal 19!"
 			self.joblist_selected.proc.send_signal(19)
 		pass
+	
 	def on_item_cont_job_activate(self, widget=None, data=""):
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			print "Sending to process signal 19!"
+			print "Sending to process signal 18!"
 			self.joblist_selected.proc.send_signal(18)
 		pass
 	def on_item_reset_job_activate(self, widget=None, data=""):

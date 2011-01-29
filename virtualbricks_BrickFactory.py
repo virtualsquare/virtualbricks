@@ -291,7 +291,7 @@ class Brick():
 #		self.proc.fromchild.close()
 #		self.proc.tochild.close()
 		if self.needsudo:
-			time.sleep(0.5)
+			time.sleep(5)
 			try:
 				pidfile = open("/tmp/" +self.name+".pid", "r")
 				print "open ok"
