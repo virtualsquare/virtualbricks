@@ -130,63 +130,7 @@
           <widget class="GtkHBox" id="hbox12">
             <property name="visible">True</property>
             <child>
-              <widget class="GtkToolbar" id="toolbar1">
-                <property name="visible">True</property>
-                <property name="toolbar_style">both</property>
-                <child>
-                  <widget class="GtkToolButton" id="toolbutton_newbrick">
-                    <property name="visible">True</property>
-                    <property name="label" translatable="yes">New Brick</property>
-                    <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-new</property>
-                    <signal name="clicked" handler="on_newbrick"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="homogeneous">True</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkSeparatorToolItem" id="separatortoolitem1">
-                    <property name="visible">True</property>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkToolButton" id="toolbutton_start_all">
-                    <property name="visible">True</property>
-                    <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
-                    <property name="label" translatable="yes">Start All Bricks</property>
-                    <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-media-play</property>
-                    <signal name="clicked" handler="on_toolbutton_start_all_clicked"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="homogeneous">True</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkToolButton" id="toolbutton_stop_all">
-                    <property name="visible">True</property>
-                    <property name="has_tooltip">True</property>
-                    <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
-                    <property name="label" translatable="yes">Stop All Bricks</property>
-                    <property name="use_underline">True</property>
-                    <property name="stock_id">gtk-media-stop</property>
-                    <signal name="clicked" handler="on_toolbutton_stop_all_clicked"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="homogeneous">True</property>
-                  </packing>
-                </child>
-              </widget>
-              <packing>
-                <property name="position">0</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
               <widget class="GtkImage" id="image11">
@@ -257,20 +201,92 @@
                     <signal name="select_page" handler="on_focus_out"/>
                     <signal name="change_current_page" handler="on_focus_out"/>
                     <child>
-                      <widget class="GtkScrolledWindow" id="scrolledwindow3">
+                      <widget class="GtkVBox" id="vbox11">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="shadow_type">in</property>
+                        <property name="orientation">vertical</property>
                         <child>
-                          <widget class="GtkTreeView" id="treeview_bookmarks">
+                          <widget class="GtkToolbar" id="toolbar1">
+                            <property name="visible">True</property>
+                            <property name="toolbar_style">both</property>
+                            <child>
+                              <widget class="GtkToolButton" id="toolbutton_newbrick">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">New Brick</property>
+                                <property name="use_underline">True</property>
+                                <property name="stock_id">gtk-new</property>
+                                <signal name="clicked" handler="on_newbrick"/>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="homogeneous">True</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkSeparatorToolItem" id="separatortoolitem1">
+                                <property name="visible">True</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkToolButton" id="toolbutton_start_all">
+                                <property name="visible">True</property>
+                                <property name="has_tooltip">True</property>
+                                <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
+                                <property name="label" translatable="yes">Start All Bricks</property>
+                                <property name="use_underline">True</property>
+                                <property name="stock_id">gtk-media-play</property>
+                                <signal name="clicked" handler="on_toolbutton_start_all_clicked"/>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="homogeneous">True</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkToolButton" id="toolbutton_stop_all">
+                                <property name="visible">True</property>
+                                <property name="has_tooltip">True</property>
+                                <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
+                                <property name="label" translatable="yes">Stop All Bricks</property>
+                                <property name="use_underline">True</property>
+                                <property name="stock_id">gtk-media-stop</property>
+                                <signal name="clicked" handler="on_toolbutton_stop_all_clicked"/>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="homogeneous">True</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrolledwindow3">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="tooltip" translatable="yes">You can add items from the default bootimage folder list by rightclicking them, or any other file with the + My Machines Button left of the selected file entry.</property>
-                            <signal name="button_press_event" handler="on_treeview_bookmarks_button_press_event"/>
-                            <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
-                            <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
-                            <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
+                            <property name="shadow_type">in</property>
+                            <child>
+                              <widget class="GtkTreeView" id="treeview_bookmarks">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="has_tooltip">True</property>
+                                <property name="tooltip" translatable="yes">You can add items from the default bootimage folder list by rightclicking them, or any other file with the + My Machines Button left of the selected file entry.</property>
+                                <signal name="button_press_event" handler="on_treeview_bookmarks_button_press_event"/>
+                                <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
+                                <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
+                                <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
+                              </widget>
+                            </child>
                           </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
                         </child>
                       </widget>
                     </child>

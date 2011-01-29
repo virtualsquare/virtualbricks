@@ -1756,10 +1756,17 @@ class VBGUI:
 					if (b.get_type() == 'Tap'):
 						topo.add_edge(b.name, e.sock.brick.name)
 						e = topo.get_edge(b.name, e.sock.brick.name)
-					elif (b.get_type().startswith('Wire') and loop == 0) or (not b.get_type().startswith('Wire') and loop < 2):
+					elif len(b.plugs) == 2:
+						if  loop == 0:
+							topo.add_edge(e.sock.brick.name, b.name)
+							e = topo.get_edge(e.sock.brick.name, b.name)
+						else:
+							topo.add_edge(b.name, e.sock.brick.name)
+							e = topo.get_edge(b.name, e.sock.brick.name)
+					elif loop < (len(b.plugs) + 1) / 2:
 						topo.add_edge(e.sock.brick.name, b.name)
 						e = topo.get_edge(e.sock.brick.name, b.name)
-					else:	
+					else:
 						topo.add_edge(b.name, e.sock.brick.name)
 						e = topo.get_edge(b.name, e.sock.brick.name)
 					loop+=1

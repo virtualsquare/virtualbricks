@@ -635,6 +635,9 @@ class Wirefilter(Wire):
 	def get_type(self):
 		return 'Wirefilter'
 
+	#callbacks for live-management	
+	# TODO
+
 class TunnelListen(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
@@ -849,29 +852,29 @@ class VM(Brick):
 			'#cdromen': 'cdromen',
 			'#deviceen': 'deviceen',
 			##extended drive: TBD
-			#'-mtdblock':'mtdblock',
-			#'-k':'keyboard',
+			#'-mtdblock':'mtdblock', ## TODO 0.3
+			#'-k':'keyboard',  ## TODO 0.3
 			'-soundhw':'soundhw',
 			'-usb':'usbmode',
 			##usbdevice to be implemented as a collection
 			##device to be implemented as a collection
 			####'-name':'name', for NAME, BRINCKNAME is used.
 			#'-uuid':'uuid',
-			'-nographic':'novga',
-			#'-curses':'curses',
-			#'-no-frame':'noframe',
-			#'-no-quit':'noquit',
+			'-nographic':'novga', 
+			#'-curses':'curses', ## not implemented
+			#'-no-frame':'noframe', ## not implemented
+			#'-no-quit':'noquit', ## not implemented.
 			'-snapshot':'snapshot',
 			'#vga':'vga',
 			'#vncN':'vncN',
 			'#vnc':'vnc',
-			#'-full-screen':'full-screen',
-			#'-sdl':'sdl',
-			#'-potrait':'potrait',
-			#'-win2k-hack':'win2k',
-			#'-no-acpi':'noacpi',
-			#'no-hpet':'nohpet',
-			#'-baloon':'baloon',
+			#'-full-screen':'full-screen', ## TODO 0.3
+			#'-sdl':'sdl', ## TODO 0.3
+			#'-potrait':'potrait', ## TODO 0.3
+			#'-win2k-hack':'win2k', ## not implemented
+			#'-no-acpi':'noacpi', ## TODO 0.3
+			#'-no-hpet':'nohpet', ## ???
+			#'-baloon':'baloon', ## ???
 			##acpitable not supported
 			##smbios not supported
 			'-kernel':'kernel',
@@ -882,7 +885,7 @@ class VM(Brick):
 			#'-monitor':'monitor',
 			#'-qmp':'qmp',
 			#'-mon':'',
-			#'-pidfile':'',
+			#'-pidfile':'', ## not needed
 			#'-singlestep':'',
 			#'-S':'',
 			'#gdb_e':'gdb',
@@ -893,10 +896,10 @@ class VM(Brick):
 			#'-L':'',
 			#'-bios':'',
 			'#kvm':'kvm',
-			#'-no-reboot':'',
-			#'-no-shutdown':'',
+			#'-no-reboot':'', ## not supported
+			#'-no-shutdown':'', ## not supported
 			#'-loadvm':'',
-			#'-daemonize':'',
+			#'-daemonize':'', ## not supported
 			#'-option-rom':'',
 			#'-clock':'',
 			'#rtc':'rtc',
@@ -904,8 +907,8 @@ class VM(Brick):
 			#'-watchdog':'',
 			#'-watchdog-action':'',
 			#'-echr':'',
-			#'-virtioconsole':'',
-			#'-show-cursor':'',
+			#'-virtioconsole':'', ## future
+			#'-show-cursor':'', 
 			#'-tb-size':'',
 			#'-incoming':'',
 			#'-nodefaults':'',
@@ -913,15 +916,15 @@ class VM(Brick):
 			#'-runas':'',
 			#'-readconfig':'',
 			#'-writeconfig':'',
-			#'-no-kvm':'',
+			#'-no-kvm':'', ## already implemented otherwise
 			#'-no-kvm-irqchip':'',
 			#'-no-kvm-pit':'',
 			#'-no-kvm-pit-reinjection':'',
 			#'-pcidevice':'',
 			#'-enable-nesting':'',
-			#'-nvram':'',
-			#'-tdf':'',
-			#'-kvm-shadow-memory':'',
+			#'-nvram':'', 
+			#'-tdf':'', ## TODO 0.3
+			#'-kvm-shadow-memory':'',  ## TODO: maybe a global option
 			#'-mem-path':'',
 			#'-mem-prealloc':''
 		}
@@ -1084,7 +1087,7 @@ class BrickFactory(threading.Thread):
 		try:
 		    p = open(f, "w+")
 		except:
-		    print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write in it."
+		    print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it."
 		    return
 		
 		for b in self.bricks:
@@ -1095,15 +1098,12 @@ class BrickFactory(threading.Thread):
 				  p.write(k +'=' + str(v) + '\n')
 				  
 		for b in self.bricks: 
-			print "brick %s" % b.name
 			for pl in b.plugs:
-				print "     plug"
-				if ( pl.mode == 'hostonly'):					
-					if b.get_type()=='Qemu':
-						if pl.mode == 'vde':
-							p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
-						else:
-							p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+				if b.get_type()=='Qemu':
+					if pl.mode == 'vde':
+						p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+					else:
+						p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
 				elif (pl.sock is not None):
 					p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
 
