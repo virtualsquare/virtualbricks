@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 import os, re
 import sys
 import gtk
@@ -40,8 +41,8 @@ class VBGUI:
 		self.sockscombo = dict()
 		self.set_nonsensitivegroup(['cfg_Wirefilter_lossburst_text', 'cfg_Wirefilter_mtu_text'])
 		self.running_bricks = self.treestore('treeview_joblist', 
-			[gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], 
-			['PID','Type','Name'])
+			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], 
+			['','PID','Type','Name'])
 		self.bookmarks = self.treestore('treeview_bookmarks', 
 				[gtk.gdk.Pixbuf, 
 				 gobject.TYPE_STRING, 
@@ -186,7 +187,10 @@ class VBGUI:
 				if (b.cfg.__dict__[key] == "*"):
 					widget.set_active(True)
 				else:
-					widget.set_active(False)
+					if key is "kvm" and self.config.get('kvm') is "1":
+						self.gladefile.get_widget('cfg_Qemu_kvm_check').set_active(True)
+					else:
+						widget.set_active(False)
 					
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None and dicts.has_key(key)):
@@ -201,6 +205,9 @@ class VBGUI:
 					kernelcheck=True
 				elif key == 'initrd':
 					initrdcheck=True
+
+		# Apply KVM system configuration
+		
 
 		self.gladefile.get_widget('check_customkernel').set_active(True)
 		self.gladefile.get_widget('check_initrd').set_active(True)
@@ -395,7 +402,6 @@ class VBGUI:
 		self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
 		
 	def get_treeselected(self, tree, store, pthinfo, c):
-
 		if pthinfo is not None:
 			path, col, cellx, celly = pthinfo
 			tree.grab_focus()
@@ -411,7 +417,6 @@ class VBGUI:
 	
 	def get_treeselected_type(self, t, s, p):
 		return self.get_treeselected(t, s, p, 2)
-		
 
 	def quit(self):
 		print
@@ -1016,20 +1021,40 @@ class VBGUI:
 	def on_treeview_usbguest_row_activated(self, widget=None, data=""):
 		print "on_treeview_usbguest_row_activated undefined!"
 		pass
+	
 	def on_item_jobmonoitor_activate(self, widget=None, data=""):
 		print "on_item_jobmonoitor_activate undefined!"
 		pass
+	
 	def on_item_stop_job_activate(self, widget=None, data=""):
-		print "on_item_stop_job_activate undefined!"
+		if self.joblist_selected is None:
+			return
+		if self.joblist_selected.proc != None:
+			print "Sending to process signal 19!"
+			self.joblist_selected.proc.send_signal(19)
 		pass
 	def on_item_cont_job_activate(self, widget=None, data=""):
-		print "on_item_cont_job_activate undefined!"
+		if self.joblist_selected is None:
+			return
+		if self.joblist_selected.proc != None:
+			print "Sending to process signal 19!"
+			self.joblist_selected.proc.send_signal(18)
 		pass
 	def on_item_reset_job_activate(self, widget=None, data=""):
-		print "on_item_reset_job_activate undefined!"
+		print self.joblist_selected
+		if self.joblist_selected is None:
+			return
+		if self.joblist_selected.proc != None:
+			print "Restarting process!"
+			self.joblist_selected.poweroff()
+			self.joblist_selected.poweron()
 		pass
 	def on_item_kill_job_activate(self, widget=None, data=""):
-		print "on_item_kill_job_activate undefined!"
+		if self.joblist_selected is None:
+			return
+		if self.joblist_selected.proc != None:
+			print "Sending to process signal 9!"
+			self.joblist_selected.proc.send_signal(9)
 		pass
 	def on_attach_device_activate(self, widget=None, data=""):
 		print "on_attach_device_activate undefined!"
@@ -1095,12 +1120,14 @@ class VBGUI:
 	def on_newbrick(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		self.gladefile.get_widget('combo_newbricktype').set_active(0)
+		self.gladefile.get_widget('text_newbrickname').set_text("")
 		self.show_window('dialog_newbrick')
 
 	def on_testconfig(self, widget=None, event=None, data=""):
 		print "signal not connected"
 	def on_autodetectsettings(self, widget=None, event=None, data=""):
 		print "signal not connected"
+		
 	def on_check_kvm(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			try:
@@ -1277,11 +1304,9 @@ class VBGUI:
 		
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
-			try:
+			try:	
 				self.config.check_kvm()
-				self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(False)
-				self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(False)
-				self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(False)
+				self.disable_qemu_combos(True)
 			except IOError:
 				print "ioerror"
 				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
@@ -1290,11 +1315,19 @@ class VBGUI:
 				print "no support"
 				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
-			else:
-				self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(True)
-				self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(True)
-				self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(True)
-		
+		else:
+			self.disable_qemu_combos(False)
+			
+	def disable_qemu_combos(self,active):
+		if active:
+			self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(False)
+			self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(False)
+			self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(False)
+		else:
+			self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(True)
+			self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(True)
+			self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(True)
+	
 	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(True)
@@ -1649,9 +1682,10 @@ class VBGUI:
 			self.running_bricks.clear()
 			for b in self.ps:
 				iter = self.running_bricks.append(None, None)
-				self.running_bricks.set_value(iter,0,str(b.pid))
-				self.running_bricks.set_value(iter,1,b.get_type())
-				self.running_bricks.set_value(iter,2,b.name)
+				self.running_bricks.set_value(iter, 0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
+				self.running_bricks.set_value(iter,1,str(b.pid))
+				self.running_bricks.set_value(iter,2,b.get_type())
+				self.running_bricks.set_value(iter,3,b.name)
 			print "proc list updated"
 		return True
 

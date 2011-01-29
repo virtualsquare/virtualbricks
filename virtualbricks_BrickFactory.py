@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -1016,15 +1017,17 @@ class BrickFactory(threading.Thread):
 				  p.write(k +'=' + str(v) + '\n')
 				  
 		for b in self.bricks: 
-			for pl in b.plugs:			
-				if (pl.sock or pl.mode == 'hostonly'):					
-					if b.get_type()=='Qemu':
-						if pl.mode == 'vde':
-							p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+			for pl in b.plugs:
+				# if pl.sock is None doesn't has pl.mode attr
+				if ( pl.sock is not None):
+					if ( pl.mode == 'hostonly'):					
+						if b.get_type()=='Qemu':
+							if pl.mode == 'vde':
+								p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+							else:
+								p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
 						else:
-							p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
-					else:
-						p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
+							p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
 
 
 	def config_restore(self,f):
