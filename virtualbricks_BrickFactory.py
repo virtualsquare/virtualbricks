@@ -17,6 +17,8 @@ import virtualbricks_Global as Global
 import virtualbricks_Settings as Settings
 import select
 import copy
+import socket
+
 
 class InvalidNameException(Exception):
 	def __init__(self):
@@ -117,6 +119,7 @@ class BrickConfig():
 			print "setting %s to '%s'" % (kv[0], kv[1])
 			# pure magic. I love python.
 			self.__dict__[kv[0]] = kv[1]
+
 		
       
 	def set_obj(self, key, obj):
@@ -149,6 +152,7 @@ class Brick():
 		self.gui_changed = False
 		self.need_restart_to_apply_changes = False
 		self.needsudo = False
+		self.internal_console = None
 		
 	def cmdline(self):
 		return ""
@@ -204,6 +208,21 @@ class Brick():
 			if p.configured():
 				p.disconnect()
 		self.on_config_changed()
+	
+	def get_cbset(self, key):
+		cb = None
+		try:
+			if self.get_type() == 'Switch':
+				cb = Switch.__dict__["cbset_"+key]
+
+			elif self.get_type() == 'Wirefilter':
+				cb = Wirefilter.__dict__["cbset_"+key]
+				
+			elif self.get_type() == 'Qemu':
+				cb = Qemu.__dict__["cbset_"+key]
+		except:
+			cb = None
+		return cb
 		
 
 
@@ -268,6 +287,7 @@ class Brick():
 			print cmdarg + " ",
 		print '"'
 		self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		self.send('\n')
 #		self.proc.fromchild.close()
 #		self.proc.tochild.close()
 		if self.needsudo:
@@ -283,6 +303,8 @@ class Brick():
 				pass
 		else:
 			self.pid = self.proc.pid
+		if self.open_internal_console and callable(self.open_internal_console):
+			self.internal_console = self.open_internal_console()
 		self.post_poweron()
 		
 	def poweroff(self):
@@ -300,7 +322,8 @@ class Brick():
 			self.proc.wait()
 		self.proc = None
 		self.need_restart_to_apply_changes = False
-		self.console = None
+		if self.close_internal_console and callable(self.close_internal_console):
+			self.close_internal_console()
 		self.post_poweroff()
 
 	def post_poweron(self):
@@ -313,7 +336,7 @@ class Brick():
 	# Console related operations.
 	#############################
 	def has_console(self):
-		if (self.cfg_mgmt != None) and self.proc != None:
+		if (self.cfg.get('console')) and self.proc != None:
 			return True
 		else:
 			return False
@@ -322,18 +345,44 @@ class Brick():
 		if not self.has_console():
 			return 
 		else:
-			cmdline = ['xterm', '-T',self.name,'-e','vdeterm',self.cfg_mgmt]
+			cmdline = ['xterm', '-T',self.name,'-e','vdeterm',self.cfg.console]
 			console = subprocess.Popen(cmdline)
 
+	#Must be overridden in Qemu to use appropriate console as internal (stdin, stdout?)
+	def open_internal_console(self):
+		if not self.has_console():
+			return None
+		time.sleep(0.5)
+		c = socket.socket(socket.AF_UNIX)
+		c.connect(self.cfg.console)
+		return c
+
 	def send(self,msg):
-		if self.proc == None:
+		if self.internal_console == None:
 			return
-		self.proc.stdin.write(msg)
+		print "= sending " + msg
+		self.internal_console.send(msg)
 
 	def recv(self):
-		if self.proc == None:
+		if self.internal_console == None:
 			return ''
-		return self.proc.stdout.read()
+		res = ''
+		p = select.poll()
+		p.register(self.internal_console, select.POLLIN)
+		while True:
+			pollret = p.poll(300)
+			if (len(pollret)==1 and pollret[0][1] == select.POLLIN):
+				print "called recv"
+				line = self.internal_console.recv(100)
+				print "recv: line: "+line
+				res += line
+			else:
+				break
+		return res
+	def close_internal_console(self):
+		if not self.has_console():
+			return
+		self.internal_console.close()
 
 	def close_tty(self):
 		sys.stdin.close()
@@ -385,6 +434,16 @@ class Switch(Brick):
 	
 	def configured(self):
 		return self.socks[0].has_valid_path()
+
+	# live-management callbacks
+	def cbset_fstp(self, arg=False):
+		print "Callback fstp with argument " + self.name
+		if (arg):
+			self.send("fstp/setfstp 1\n")
+		else:
+			self.send("fstp/setfstp 0\n")
+		print self.recv()
+		
 
 class Tap(Brick):
 	def __init__(self, _factory, _name):

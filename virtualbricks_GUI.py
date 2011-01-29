@@ -233,14 +233,23 @@ class VBGUI:
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
+				cb = b.get_cbset(key)
+				if (cb is not None) and callable(cb):
+					cb(b,widget.get_text())
 				b.cfg.set(key+"="+widget.get_text())
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
 			if (widget is not None):
+				cb = b.get_cbset(key)
+				if (cb is not None) and callable(cb):
+					cb(b, widget.get_value())
 				b.cfg.set(key+"="+str(int(widget.get_value())))
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
+				cb = b.get_cbset(key)
+				if (cb is not None) and callable(cb):
+					cb(b, widget.get_value())
 				b.cfg.set(key+"="+str(widget.get_value()))
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
@@ -248,6 +257,9 @@ class VBGUI:
 				txt = widget.get_active_text()
 				if (txt):
 					b.cfg.set(key+"="+txt[0])
+					cb = b.get_cbset(key)
+					if (cb is not None) and callable(cb):
+						cb(b, txt[0])
 					
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
@@ -256,20 +268,31 @@ class VBGUI:
 				txt = combo.get_selected()
 				if txt is not None and (txt != "-- default --"):
 					b.cfg.set(key+"="+txt)
+					cb = b.get_cbset(key)
+					if (cb is not None) and callable(cb):
+						cb(b, txt)
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
+				cb = b.get_cbset(key)
 				if widget.get_active():
 					b.cfg.set(key+'=*')
+					if (cb is not None) and callable(cb):
+						cb(b, True)
 				else:
 					b.cfg.set(key+'=')
+					if (cb is not None) and callable(cb):
+						cb(b, False)
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None):
 				f = widget.get_filename()
 				if f:
-				  #print f
-				  b.cfg.set(key+'='+f)
+					#print f
+					b.cfg.set(key+'='+f)
+					cb = b.get_cbset(key)
+					if (cb is not None) and callable(cb):
+						cb(b, f)
 					
 			b.gui_changed = True
 			t = b.get_type()
