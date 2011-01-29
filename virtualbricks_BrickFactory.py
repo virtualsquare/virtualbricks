@@ -52,6 +52,7 @@ class Plug():
 		self.brick = _brick
 		self.sock=None
 		self.antiloop=False
+		self.mode='vde'
 
 	def configured(self):
 		if self.sock is None:
@@ -345,8 +346,13 @@ class Brick():
 		if not self.has_console():
 			return 
 		else:
-			cmdline = ['xterm', '-T',self.name,'-e','vdeterm',self.cfg.console]
-			console = subprocess.Popen(cmdline)
+			cmdline = [self.settings.get('term'),'-T',self.name,'-e','vdeterm',self.cfg.console]
+			print cmdline
+			try:
+				console = subprocess.Popen(cmdline)
+			except:
+				print "Error: cannot start xterm"
+				return
 
 	#Must be overridden in Qemu to use appropriate console as internal (stdin, stdout?)
 	def open_internal_console(self):
@@ -442,6 +448,19 @@ class Switch(Brick):
 			self.send("fstp/setfstp 1\n")
 		else:
 			self.send("fstp/setfstp 0\n")
+		print self.recv()
+	
+	def cbset_hub(self, arg=False):
+		print "Callback hub with argument " + self.name
+		if (arg):
+			self.send("port/sethub 1\n")
+		else:
+			self.send("port/sethub 0\n")
+		print self.recv()
+
+	def cbset_numports(self, arg=32):
+		print "Callback numports with argument " + self.name
+		self.send("port/setnumports "+str(arg))
 		print self.recv()
 		
 
@@ -1076,17 +1095,17 @@ class BrickFactory(threading.Thread):
 				  p.write(k +'=' + str(v) + '\n')
 				  
 		for b in self.bricks: 
+			print "brick %s" % b.name
 			for pl in b.plugs:
-				# if pl.sock is None doesn't has pl.mode attr
-				if ( pl.sock is not None):
-					if ( pl.mode == 'hostonly'):					
-						if b.get_type()=='Qemu':
-							if pl.mode == 'vde':
-								p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
-							else:
-								p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+				print "     plug"
+				if ( pl.mode == 'hostonly'):					
+					if b.get_type()=='Qemu':
+						if pl.mode == 'vde':
+							p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
 						else:
-							p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
+							p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+				elif (pl.sock is not None):
+					p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
 
 
 	def config_restore(self,f):

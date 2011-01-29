@@ -1654,7 +1654,13 @@ class VBGUI:
 			
 					
 				if (b.get_type() == "Switch"):
-					self.bookmarks.set_value(iter, 4, "Ports:%d" % (int(str(b.cfg.numports))))
+					fstp = ""
+					hub = ""
+					if (b.cfg.get('fstp') == '*'):
+						fstp=", FSTP"
+					if (b.cfg.get('hub') == '*'):
+						hub=", HUB"
+					self.bookmarks.set_value(iter, 4, "Ports:%d%s%s" % ((int(str(b.cfg.numports))),fstp,hub))
 				if (b.get_type().startswith("Wire")):
 						
 					ok = -2
