@@ -521,6 +521,7 @@ class VBGUI:
 		self.show_window('dialog_warn')
 	
 	def ask_confirm(self, text, on_yes=None, on_no=None, arg=None):
+		self.curtain_down()
 		self.gladefile.get_widget('lbl_confirm').set_text(text)
 		self.on_confirm_response_yes = on_yes
 		self.on_confirm_response_no = on_no
@@ -528,14 +529,17 @@ class VBGUI:
 		self.gladefile.get_widget('dialog_confirm').show_all()
 
 	def on_error_close(self, widget=None, data =""):
+		self.curtain_down()
 		self.widg['dialog_warn'].hide()
 		return True
 
 	def on_newbrick_cancel(self, widget=None, data=""):
+		self.curtain_down()
 		self.show_window('')
 		
 	def on_newbrick_ok(self, widget=None, data=""):
 		self.show_window('')
+		self.curtain_down()
 		name = self.gladefile.get_widget('text_newbrickname').get_text()
 		ntype = self.gladefile.get_widget('combo_newbricktype').get_active_text()
 		try:
@@ -548,8 +552,10 @@ class VBGUI:
 
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
+		self.curtain_down()
 	def on_config_ok(self, widget=None, data=""):
 		self.config_brick_confirm()
+		self.curtain_down()
 
 	def set_sensitivegroup(self,l):
 		for i in l:
@@ -632,17 +638,20 @@ class VBGUI:
 
 	def on_item_about_activate(self, widget=None, data=""):
 		self.show_window('dialog_about1')
+		self.curtain_down()
 		pass
 	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
 		print "on_toolbutton_launchxterm_clicked undefined!"
 		pass
 
 	def on_toolbutton_start_all_clicked(self, widget=None, data=""):
+		self.curtain_down()
 		for b in self.bricks:
 			if b.proc is None:
 				b.poweron()
 
 	def on_toolbutton_stop_all_clicked(self, widget=None, data=""):
+		self.curtain_down()
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
@@ -686,6 +695,7 @@ class VBGUI:
 		self.Dragging = None
 
 	def on_treeview_bookmarks_button_press_event(self, widget=None, event=None, data=""):
+		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
 		x = int(event.x)
@@ -718,12 +728,14 @@ class VBGUI:
 		
 	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None , data=""):
 		self.tree_startstop()
+		self.curtain_down()
 
 	def on_treeview_bookmarks_focus_out(self, widget=None, event=None , data=""):
 		self.curtain_down()
 		self.selected=None
 
 	def tree_startstop(self, widget=None, event=None , data=""):
+		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
 		path, focus = tree.get_cursor()
@@ -912,12 +924,14 @@ class VBGUI:
 		print "on_combobox_newimage_sizeunit_changed undefined!"
 		pass
 	def on_item_create_image_activate(self, widget=None, data=""):
+		self.curtain_down()
 		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
 		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
 		self.show_window('dialog_create_image')
 		pass
 	      
 	def on_button_create_image_clicked(self, widget=None, data=""):
+		self.curtain_down()
 		print "Image creating.. ",
 		path = self.gladefile.get_widget('filechooserbutton_newimage_dest').get_filename() + "/"
 		filename = self.gladefile.get_widget('entry_newimage_name').get_text()
@@ -938,6 +952,7 @@ class VBGUI:
 		pass
 
 	def on_newimage_close_clicked(self, widget=None, data=""):
+		self.curtain_down()
 		self.widg['dialog_create_image'].hide()
 		return True
 
@@ -1078,6 +1093,7 @@ class VBGUI:
 		pass
 
 	def on_newbrick(self, widget=None, event=None, data=""):
+		self.curtain_down()
 		self.gladefile.get_widget('combo_newbricktype').set_active(0)
 		self.show_window('dialog_newbrick')
 
@@ -1120,6 +1136,7 @@ class VBGUI:
 			self.selected.poweron()
 
 	def on_brick_delete(self,widget=None, event=None, data=""):
+		self.curtain_down()
 		if self.selected is None:
 			return
 		if self.selected.proc != None:
@@ -1130,11 +1147,13 @@ class VBGUI:
 		
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
+		self.curtain_down()
 		if self.selected is None:
 			return
 		self.brickfactory.dupbrick(self.selected)
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
+		self.curtain_down()
 		if self.selected is None:
 			return
 		if self.selected.proc != None:

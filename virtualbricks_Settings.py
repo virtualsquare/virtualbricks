@@ -78,10 +78,11 @@ class ComboBoxObj:
 			#if re.search(regexp, s):
 				print "Found match:" + s
 				active = i
+				print "activate " + regexp
+				print "setting active to "+str(active)
+				self.widget.set_active_iter(active)
+				break
 			i = self.model.iter_next(i)
-		print "activate " + regexp
-		print "setting active to "+str(active)
-		self.widget.set_active_iter(active)
 
 	def get_selected(self):
 		txt = self.widget.get_active_text()
