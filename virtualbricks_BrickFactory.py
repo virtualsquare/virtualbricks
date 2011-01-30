@@ -118,22 +118,21 @@ class BrickConfig():
 			return False
 		else:
 			val = ''
-			if (len(kv)) > 2:
+			if len(kv) > 2:
 				val='"'
 				for c in kv[1:]:
 					val+=c.lstrip('"').rstrip('"')
 					val+="="
 				val = val.rstrip('=') + '"'
-				
 			else:
-				val+=kv[1]
+				val += kv[1]
 
 			print "setting %s to '%s'" % (kv[0], val)
 			# pure magic. I love python.
 			self.__dict__[kv[0]] = val
-
+			return True
 		
-      
+	  
 	def set_obj(self, key, obj):
 		print "setting_obj %s to '%s'" % (key, obj)
 		self.__dict__[key] = obj
@@ -201,11 +200,14 @@ class Brick():
 		return True
 	
 
-	def configure(self, attrlist):
+	def initialize(self, attrlist):
 		for attr in attrlist:
 			self.cfg.set(attr)
+
+	def configure(self, attrlist):
+		self.initialize(attrlist)
 		self.on_config_changed()
-	
+
 	def connect(self,endpoint):
 		for p in self.plugs:
 			if not p.configured():
@@ -464,7 +466,6 @@ class Switch(Brick):
 
 	# live-management callbacks
 	def cbset_fstp(self, arg=False):
-		print "Callback fstp with argument " + self.name
 		if (arg):
 			self.send("fstp/setfstp 1\n")
 		else:
@@ -479,9 +480,9 @@ class Switch(Brick):
 			self.send("port/sethub 0\n")
 		print self.recv()
 
-	def cbset_numports(self, arg=32):
+	def cbset_numports(self, arg="32"):
 		print "Callback numports with argument " + self.name
-		self.send("port/setnumports "+str(arg))
+		self.send("port/setnumports "+ arg)
 		print self.recv()
 		
 
@@ -508,6 +509,7 @@ class Tap(Brick):
 		return 'Tap'
 
 	def on_config_changed(self):
+		print "self.plugs[0].sock", self.plugs[0].sock
 		if (self.plugs[0].sock is not None):
 			self.cfg.sock = self.plugs[0].sock.path
 		if (self.proc is not None):
@@ -969,7 +971,7 @@ class VM(Brick):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
-		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm == '*' or self.settings.kvm == 'kvm')):
+		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm or self.settings.kvm == 'kvm')):
 			cmd = self.settings.get("qemupath") + "/kvm"
 			self.cfg.cpu=""
 			self.cfg.machine=""
@@ -991,13 +993,13 @@ class VM(Brick):
 			args=disk.args(True)
 			res.append(args[0])
 			res.append(args[1])
-		if self.cfg.gdb == '*':
+		if self.cfg.gdb:
 			res.append('-gdb')
 			res.append('tcp::' + self.cfg.gdbport) 
-		if self.cfg.vnc == '*':
+		if self.cfg.vnc:
 			res.append('-vnc')
 			res.append(':' + self.cfg.vncN) 
-		if self.cfg.vga == '*':
+		if self.cfg.vga:
 			res.append('-vga')
 			res.append('std') 
 
@@ -1184,11 +1186,13 @@ class BrickFactory(threading.Thread):
 				
 				l = p.readline()
 				print "-------- loading settings for "+b.name + " first line: " + l
+				parameters = []
 				while b and l and not l.startswith('[') and not re.search("\A.*link\|", l):
 					if len(l.split('=')) > 1:
 						print "setting" + l.strip('\n')
-						b.cfg.set(l.rstrip('\n'))
+						parameters.append(l.rstrip('\n'))
 					l = p.readline()
+				b.initialize(parameters)
 					
 				continue
 			l = p.readline()
