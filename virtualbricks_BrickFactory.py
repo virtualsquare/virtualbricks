@@ -114,12 +114,23 @@ class Sock():
 class BrickConfig():
 	def set(self,attr):
 		kv = attr.split("=")
-		if len(kv) != 2:
+		if len(kv) < 2:
 			return False
 		else:
-			print "setting %s to '%s'" % (kv[0], kv[1])
+			val = ''
+			if (len(kv)) > 2:
+				val='"'
+				for c in kv[1:]:
+					val+=c.lstrip('"').rstrip('"')
+					val+="="
+				val = val.rstrip('=') + '"'
+				
+			else:
+				val+=kv[1]
+
+			print "setting %s to '%s'" % (kv[0], val)
 			# pure magic. I love python.
-			self.__dict__[kv[0]] = kv[1]
+			self.__dict__[kv[0]] = val
 
 		
       
@@ -313,18 +324,25 @@ class Brick():
 		if (self.proc == None):
 			return False
 		if self.pid > 0:
+				
+				
 			if (self.needsudo):
 				os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
+			elif self.internal_console is not None and self.get_type() != "Qemu":
+				self.send('shutdown\n')
+				print self.recv()
 			else:
 				try:
 					os.kill(self.proc.pid, 15)
 				except:
 					pass
-			self.proc.wait()
+			if(self.proc.poll()==None):
+				return
 		self.proc = None
 		self.need_restart_to_apply_changes = False
 		if self.close_internal_console and callable(self.close_internal_console):
 			self.close_internal_console()
+		self.internal_console == None
 		self.post_poweroff()
 
 	def post_poweron(self):
@@ -366,8 +384,11 @@ class Brick():
 	def send(self,msg):
 		if self.internal_console == None:
 			return
-		print "= sending " + msg
-		self.internal_console.send(msg)
+		try:
+			print "= sending " + msg
+			self.internal_console.send(msg)
+		except:
+			print "send failed"
 
 	def recv(self):
 		if self.internal_console == None:
@@ -825,7 +846,7 @@ class VM(Brick):
 		self.cfg.initrd=""
 		self.cfg.gdb=""
 		self.cfg.gdbport=""	
-		self.cfg.append=""
+		self.cfg.kopt=""
 			
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -878,7 +899,7 @@ class VM(Brick):
 			##acpitable not supported
 			##smbios not supported
 			'-kernel':'kernel',
-			'#append':'append',
+			'-append':'kopt',
 			'-initrd':'initrd',
 			#'-serial':'serial',
 			#'-parallel':'parallel',
@@ -898,7 +919,7 @@ class VM(Brick):
 			'#kvm':'kvm',
 			#'-no-reboot':'', ## not supported
 			#'-no-shutdown':'', ## not supported
-			#'-loadvm':'',
+			'-loadvm':'loadvm',
 			#'-daemonize':'', ## not supported
 			#'-option-rom':'',
 			#'-clock':'',
@@ -1008,9 +1029,12 @@ class VM(Brick):
 		if (self.cfg.rtc== "*"):
 			res.append('-rtc')
 			res.append('base=localtime')
-		
-		if (self.cfg.append != ""):
-		    res.append(self.cfg.append);
+
+		res.append("-mon")
+		res.append("chardev=mon")
+		res.append("-chardev")
+		res.append('socket,id=mon,path='+Settings.MYPATH + '/' + self.name + '.mgmt,server')
+		self.cfg.console=Settings.MYPATH + '/' + self.name + '.mgmt'
 		print res
 		return res
 

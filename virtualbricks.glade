@@ -2171,7 +2171,7 @@ ne2k_isa
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkEntry" id="cfg_Qemu_append_text">
+                                      <widget class="GtkEntry" id="cfg_Qemu_kopt_text">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="invisible_char">&#x25CF;</property>
@@ -4927,6 +4927,7 @@ If you find virtualbricks useful for your business, please consider making a don
                     <property name="items" translatable="yes">Auto
 raw
 qcow
+qcow2
 cow
 vmdk
 cloop</property>
@@ -5653,6 +5654,38 @@ GB</property>
     </child>
     <child>
       <widget class="GtkSeparatorMenuItem" id="separator2">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmsuspend">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="label" translatable="yes">Suspend Qemu</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_suspend"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmpoweroff">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="label" translatable="yes">Send ACPI poweroff</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_powerbutton"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmhardreset">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="label" translatable="yes">Send ACPI hard reset</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_hardreset"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="&lt;separator&gt;">
         <property name="visible">True</property>
       </widget>
     </child>
@@ -6684,6 +6717,15 @@ Tunnel Client</property>
         <property name="label" translatable="yes">Start/Stop</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="on_brick_startstop"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmresume">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="label" translatable="yes">Resume VM</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_resume"/>
       </widget>
     </child>
     <child>
