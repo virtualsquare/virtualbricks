@@ -10,6 +10,7 @@ import virtualbricks_BrickFactory as BrickFactory
 import gobject
 import time
 import pygraphviz as pgv
+import subprocess
 
 
 
@@ -734,6 +735,10 @@ class VBGUI:
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
 			self.selected = self.brickfactory.getbrickbyname(name)
+			if self.selected.get_type() == "Qemu":
+				self.set_sensitivegroup(['vmresume'])
+			else:
+				self.set_nonsensitivegroup(['vmresume'])
 			if self.selected:
 				self.show_window('menu_brickactions')
 
@@ -774,6 +779,8 @@ class VBGUI:
 		if b.proc is not None:
 			b.poweroff()
 		else:
+			if b.get_type() == "Qemu":
+				b.cfg.loadvm=''
 			try:
 				b.poweron()
 			except(BrickFactory.BadConfigException):
@@ -808,6 +815,11 @@ class VBGUI:
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		if event.button == 3:
 			self.joblist_selected = self.brickfactory.getbrickbyname(name)
+			if self.joblist_selected.get_type()=="Qemu":
+				self.set_sensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
+			else:
+				self.set_nonsensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
+				
 			if self.joblist_selected:
 				self.show_window('menu_popup_joblist')
 		pass
@@ -1046,10 +1058,7 @@ class VBGUI:
 		pass
 	
 	def on_item_jobmonoitor_activate(self, widget=None, data=""):
-		if self.joblist_selected.get_type() is "Qemu":
-			self.show_window('dialog_jobmonitor')
-		else:
-			self.joblist_selected.open_console()
+		self.joblist_selected.open_console()
 		pass
 	
 	def on_item_stop_job_activate(self, widget=None, data=""):
@@ -1469,6 +1478,42 @@ class VBGUI:
 			self.gladefile.get_widget('tap_ipconfig').set_sensitive(True)
 		else:
 			self.gladefile.get_widget('tap_ipconfig').set_sensitive(False)
+	
+	def on_vm_suspend(self, widget=None, event=None, data=""):
+		hda = self.joblist_selected.cfg.get('basehda')
+		if hda is None or 0 != subprocess.Popen(["qemu-img","snapshot","-c","virtualbricks",hda]).wait():
+			self.error("Suspend/Resume not supported on this disk.")
+			return
+		self.joblist_selected.recv()
+		self.joblist_selected.send("savevm virtualbricks\n")
+		while(not self.joblist_selected.recv().startswith("(qemu")):
+			print ".",
+			time.sleep(1)
+		print
+		self.joblist_selected.poweroff()
+
+	def on_vm_resume(self, widget=None, event=None, data=""):
+		hda = self.selected.cfg.get('basehda')
+		print "resume"
+		if os.system("qemu-img snapshot -l "+hda+" |grep virtualbricks") == 0:
+			if self.selected.proc is not None:
+				self.selected.send("loadvm virtualbricks\n")
+				self.selected.recv()
+				return
+			else:
+				self.selected.cfg.set("loadvm=virtualbricks")
+				self.selected.poweron()
+		else:
+			self.error("Cannot find suspend point.")
+		
+		
+	def on_vm_powerbutton(self, widget=None, event=None, data=""):
+		self.joblist_selected.send("system_powerdown\n")
+		self.joblist_selected.recv()
+
+	def on_vm_hardreset(self, widget=None, event=None, data=""):
+		self.joblist_selected.send("system_reset\n")
+		self.joblist_selected.recv()
 		
 			
 	def signals(self):
@@ -1598,7 +1643,11 @@ class VBGUI:
 			"on_random_macaddr":self.on_random_macaddr,
 			"on_tap_config_manual":self.on_tap_config_manual,
 			"on_check_kvm_toggled":self.on_check_kvm_toggled,
-			"on_button_newimage_close_clicked": self.on_newimage_close_clicked
+			"on_button_newimage_close_clicked": self.on_newimage_close_clicked,
+			"on_vm_suspend":self.on_vm_suspend,
+			"on_vm_powerbutton":self.on_vm_powerbutton,
+			"on_vm_hardreset":self.on_vm_hardreset,
+			"on_vm_resume":self.on_vm_resume,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
