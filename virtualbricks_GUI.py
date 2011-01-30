@@ -198,7 +198,7 @@ class VBGUI:
 				for k, v in dicts[key].iteritems():
 					if (v==b.cfg.__dict__[key]):
 						Settings.ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
-			    
+   
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
 				widget.set_filename(b.cfg.__dict__[key])
@@ -230,37 +230,27 @@ class VBGUI:
 
 	def config_brick_confirm(self):
 		b = self.selected
+		parameters = {}
+
 		for key in b.cfg.__dict__.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
-				cb = b.get_cbset(key)
-				if (cb is not None) and callable(cb):
-					cb(b,widget.get_text())
-				b.cfg.set(key+"="+widget.get_text())
+				parameters[key] = widget.get_text()
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
 			if (widget is not None):
-				cb = b.get_cbset(key)
-				if (cb is not None) and callable(cb):
-					cb(b, widget.get_value())
-				b.cfg.set(key+"="+str(int(widget.get_value())))
+				parameters[key] = str(int(widget.get_value()))
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
-				cb = b.get_cbset(key)
-				if (cb is not None) and callable(cb):
-					cb(b, widget.get_value())
-				b.cfg.set(key+"="+str(widget.get_value()))
+				parameters[key]=str(widget.get_value())
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
 			if (widget is not None):
 				txt = widget.get_active_text()
 				if (txt):
-					b.cfg.set(key+"="+txt[0])
-					cb = b.get_cbset(key)
-					if (cb is not None) and callable(cb):
-						cb(b, txt[0])
+					parameters[key] = txt[0]
 					
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
@@ -268,32 +258,20 @@ class VBGUI:
 				#txt = widget.get_active_text()
 				txt = combo.get_selected()
 				if txt is not None and (txt != "-- default --"):
-					b.cfg.set(key+"="+txt)
-					cb = b.get_cbset(key)
-					if (cb is not None) and callable(cb):
-						cb(b, txt)
+					parameters[key] = txt
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
-				cb = b.get_cbset(key)
 				if widget.get_active():
-					b.cfg.set(key+'=*')
-					if (cb is not None) and callable(cb):
-						cb(b, True)
+					parameters[key] = '*'
 				else:
-					b.cfg.set(key+'=')
-					if (cb is not None) and callable(cb):
-						cb(b, False)
-			
+					parameters[key] = ''
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None):
 				f = widget.get_filename()
 				if f:
-					#print f
-					b.cfg.set(key+'='+f)
-					cb = b.get_cbset(key)
-					if (cb is not None) and callable(cb):
-						cb(b, f)
+					parameters[key] = f
 					
 			b.gui_changed = True
 			t = b.get_type()
@@ -349,8 +327,14 @@ class VBGUI:
 				ki = self.gladefile.get_widget('check_initrd')
 				if not ki.get_active():
 					b.cfg.initrd=""
-					
-				
+
+		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
+		b.configure(fmt_params)
+		for key, value in parameters.iteritems():
+			callback = b.get_cbset(key)
+		 	if callable(callback):
+				callback(b, value)
+			
 		self.curtain_down()
 		
 
@@ -1705,9 +1689,9 @@ class VBGUI:
 				if (b.get_type() == "Switch"):
 					fstp = ""
 					hub = ""
-					if (b.cfg.get('fstp') == '*'):
+					if (b.cfg.get('fstp')):
 						fstp=", FSTP"
-					if (b.cfg.get('hub') == '*'):
+					if (b.cfg.get('hub')):
 						hub=", HUB"
 					self.bookmarks.set_value(iter, 4, "Ports:%d%s%s" % ((int(str(b.cfg.numports))),fstp,hub))
 				if (b.get_type().startswith("Wire")):
