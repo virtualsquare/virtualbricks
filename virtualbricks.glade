@@ -4927,6 +4927,7 @@ If you find virtualbricks useful for your business, please consider making a don
                     <property name="items" translatable="yes">Auto
 raw
 qcow
+qcow2
 cow
 vmdk
 cloop</property>
