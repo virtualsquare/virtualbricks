@@ -533,7 +533,7 @@ class Tap(Brick):
 
 		elif self.cfg.mode == 'manual':
 			# XXX Ugly, can't we ioctls?
-			ret0 = os.system(self.settings.get('sudo') + ' "/sbin/ifconfig '+ self.name + ' ' +  self.cfg.ip + ' netmask ' + self.cfg.nm+'"')
+			ret0 = os.system(self.settings.get('sudo') + ' "/sbin/ifconfig '+ self.name + ' ' + self.cfg.ip + ' netmask ' + self.cfg.nm+'"')
 			if (len(self.cfg.gw) > 0):
 				ret1 = os.system(self.settings.get('sudo') + ' "/sbin/route add default gw '+ self.cfg.gw + ' dev ' + self.name+'"')
 		else:
@@ -1029,13 +1029,13 @@ class VM(Brick):
 					res.append("user")
 
 		if (self.cfg.cdromen == "*"):
-		  if (self.cfg.cdrom != ""):
-		    res.append('-cdrom')
-		    res.append(self.cfg.cdrom)
+			if (self.cfg.cdrom != ""):
+				res.append('-cdrom')
+				res.append(self.cfg.cdrom)
 		elif (self.cfg.deviceen == "*"):
-		  if (self.cfg.device != ""):
-		    res.append('-cdrom')
-		    res.append(self.cfg.device)
+			if (self.cfg.device != ""):
+				res.append('-cdrom')
+				res.append(self.cfg.device)
 
 		if (self.cfg.rtc== "*"):
 			res.append('-rtc')

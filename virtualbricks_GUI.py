@@ -54,7 +54,7 @@ class VBGUI:
 
 		# associate Drag and Drop action
 		tree = self.gladefile.get_widget('treeview_bookmarks')
-		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],  gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
 
@@ -436,7 +436,7 @@ class VBGUI:
 	def get_widgets(self, l):
 		r = dict()
 		for i in l:
-			r[i] =  self.gladefile.get_widget(i)
+			r[i] = self.gladefile.get_widget(i)
 			r[i].hide()
 		return r
 
@@ -965,10 +965,10 @@ class VBGUI:
 		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()
 		cmd='qemu-img create'
 		if filename=="":
-		  self.error("Choose a filename first!")
-		  return
+			self.error("Choose a filename first!")
+			return
 		if img_format == "Auto":
-		  img_format = "raw"
+			img_format = "raw"
 		os.system('%s -f %s %s %s' % (cmd, img_format, path+filename+"."+img_format, img_size+img_sizeunit))
 		os.system('sync')
 		time.sleep(2)
@@ -1502,7 +1502,7 @@ class VBGUI:
 
 
 	def signals(self):
-		self.signaldict =  {
+		self.signaldict = {
 			"on_window1_destroy":self.on_window1_destroy,
 			"on_windown_destroy":self.on_windown_destroy,
 			"on_newbrick_cancel":self.on_newbrick_cancel,
@@ -1791,7 +1791,7 @@ class VBGUI:
 						topo.add_edge(b.name, e.sock.brick.name)
 						e = topo.get_edge(b.name, e.sock.brick.name)
 					elif len(b.plugs) == 2:
-						if  loop == 0:
+						if loop == 0:
 							topo.add_edge(e.sock.brick.name, b.name)
 							e = topo.get_edge(e.sock.brick.name, b.name)
 						else:
