@@ -775,7 +775,7 @@ class VBGUI:
 				self.error("Cannot start this Brick: Brick not connected.")
 			except(BrickFactory.LinkloopException):
 				if (self.config.erroronloop):
-					error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
+					self.error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
 				else:
 					pass
@@ -1188,7 +1188,7 @@ class VBGUI:
 		if self.selected is None:
 			return
 		if self.selected.proc != None:
-			error("Cannot delete brick: Brick is in use.")
+			self.error("Cannot delete brick: Brick is in use.")
 			return
 		self.ask_confirm("Do you really want to delete " + self.selected.get_type() + " " + self.selected.name,
 				on_yes = self.brickfactory.delbrick, arg = self.selected)
@@ -1205,7 +1205,7 @@ class VBGUI:
 		if self.selected is None:
 			return
 		if self.selected.proc != None:
-			error("Cannot rename brick: Brick is in use.")
+			self.error("Cannot rename brick: Brick is in use.")
 			return
 
 		self.gladefile.get_widget('entry_brick_newname').set_text(self.selected.name)
