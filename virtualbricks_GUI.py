@@ -169,23 +169,23 @@ class VBGUI:
 		kernelcheck=False
 		initrdcheck=False
 		
-		for key in b.cfg.__dict__.keys():
+		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
-				widget.set_text(b.cfg.__dict__[key])
+				widget.set_text(b.cfg[key])
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
-				widget.set_value(int(b.cfg.__dict__[key]))
+			if (widget is not None and len(b.cfg[key]) > 0):
+				widget.set_value(int(b.cfg[key]))
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
-				widget.set_value(float(b.cfg.__dict__[key]))
+				widget.set_value(float(b.cfg[key]))
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
-				if (b.cfg.__dict__[key] == "*"):
+				if (b.cfg[key] == "*"):
 					widget.set_active(True)
 				else:
 					if key is "kvm" and self.config.get('kvm') is "1":
@@ -196,12 +196,12 @@ class VBGUI:
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None and dicts.has_key(key)):
 				for k, v in dicts[key].iteritems():
-					if (v==b.cfg.__dict__[key]):
+					if (v==b.cfg[key]):
 						Settings.ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
    
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
-			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
-				widget.set_filename(b.cfg.__dict__[key])
+			if (widget is not None and len(b.cfg[key]) > 0):
+				widget.set_filename(b.cfg[key])
 				if key == 'kernel':
 					kernelcheck=True
 				elif key == 'initrd':
@@ -232,7 +232,7 @@ class VBGUI:
 		b = self.selected
 		parameters = {}
 
-		for key in b.cfg.__dict__.keys():
+		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
@@ -566,6 +566,7 @@ class VBGUI:
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
 		self.curtain_down()
+
 	def on_config_ok(self, widget=None, data=""):
 		self.config_brick_confirm()
 		self.curtain_down()

@@ -111,8 +111,26 @@ class Sock():
 		
 		
 
-class BrickConfig():
-	def set(self,attr):
+class BrickConfig(dict):
+    """
+    cfg = BrickConfig()
+    cfg.enabled = True
+    assert cfg['enabled'] == True
+    assert cfg.enabled == True
+
+    cfg.disabled = True
+    assert cfg['disabled'] == True
+    assert cfg.disabled == True
+    """
+	def __getattr__(self, name):
+        """override dict.__getattr__"""
+		return self[name]
+
+	def __setattr__(self, name, value):
+        """override dict.__setattr__"""
+		self[name] = value
+
+	def set(self, attr):
 		kv = attr.split("=")
 		if len(kv) < 2:
 			return False
@@ -128,24 +146,15 @@ class BrickConfig():
 				val += kv[1]
 
 			print "setting %s to '%s'" % (kv[0], val)
-			# pure magic. I love python.
-			self.__dict__[kv[0]] = val
+			self[kv[0]] = val
 			return True
-		
 	  
 	def set_obj(self, key, obj):
 		print "setting_obj %s to '%s'" % (key, obj)
-		self.__dict__[key] = obj
+		self[key] = obj
 		
-	def get(self, key):
-		try:
-			val = self.__dict__[key]
-		except KeyError:
-			return None
-		return self.__dict__[key]
-
 	def dump(self):
-		for (k,v) in self.__dict__.items():
+		for (k,v) in self.iteritems():
 			print "%s=%s" % (k,v)
 
 class Brick():
@@ -1111,18 +1120,18 @@ class BrickFactory(threading.Thread):
 
 	def config_dump(self,f):
 		try:
-		    p = open(f, "w+")
+			p = open(f, "w+")
 		except:
-		    print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it."
-		    return
+			print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it."
+			return
 		
 		for b in self.bricks:
 			p.write('[' + b.get_type() +':'+ b.name + ']\n')
-			for k,v in b.cfg.__dict__.items():
+			for k,v in b.cfg.iteritems():
 				# VMDisk objects don't need to be saved 
 				if b.get_type()!="Qemu" or ( b.get_type()=="Qemu" and k not in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb'] ):
-				  p.write(k +'=' + str(v) + '\n')
-				  
+					p.write(k +'=' + str(v) + '\n')
+
 		for b in self.bricks: 
 			for pl in b.plugs:
 				if b.get_type()=='Qemu':
@@ -1300,7 +1309,7 @@ class BrickFactory(threading.Thread):
 				del(b)
 	def dupbrick(self,bricktodup):
 		b1 = copy.copy(bricktodup)
-		b1.cfg = copy.copy(bricktodup.cfg)
+		b1.cfg = copy.deepcopy(bricktodup.cfg)
 		b1.name = "copy_of_"+bricktodup.name
 		b1.plugs = []
 		b1.socks = []
