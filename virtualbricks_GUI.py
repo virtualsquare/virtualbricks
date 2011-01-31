@@ -20,7 +20,7 @@ class VBGUI:
 			os.mkdir(Settings.MYPATH)
 
 		gtk.gdk.threads_init()
-		self.brickfactory = BrickFactory.BrickFactory(True)
+		self.brickfactory = BrickFactory.BrickFactory(self, True)
 		self.brickfactory.start()
 		try:
 			self.gladefile = gtk.glade.XML('./virtualbricks.glade')

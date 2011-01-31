@@ -15,6 +15,7 @@ import threading
 import virtualbricks_GUI
 import virtualbricks_Global as Global
 import virtualbricks_Settings as Settings
+from virtualbricks_Logger import ChildLogger
 import select
 import copy
 import socket
@@ -47,8 +48,9 @@ def ValidName(name):
 		return None
 	return name
 
-class Plug():
+class Plug(ChildLogger):
 	def __init__(self, _brick):
+		ChildLogger.__init__(self, _brick)
 		self.brick = _brick
 		self.sock=None
 		self.antiloop=False
@@ -157,8 +159,9 @@ class BrickConfig(dict):
 		for (k,v) in self.iteritems():
 			print "%s=%s" % (k,v)
 
-class Brick():
+class Brick(ChildLogger):
 	def __init__(self, _factory, _name):
+		ChildLogger.__init__(self, _factory)
 		self.factory = _factory
 		self.settings = self.factory.settings
 		self.name = _name
@@ -1083,8 +1086,9 @@ class VM(Brick):
 		self.gui_changed=True
 
 
-class BrickFactory(threading.Thread):
-	def __init__(self, showconsole=True):
+class BrickFactory(ChildLogger, threading.Thread):
+	def __init__(self, logger, showconsole=True):
+		ChildLogger.__init__(self, logger)
 		self.bricks = []
 		self.socks = []
 		self.showconsole = showconsole
