@@ -164,6 +164,7 @@ class Brick(ChildLogger):
 		ChildLogger.__init__(self, _factory)
 		self.factory = _factory
 		self.settings = self.factory.settings
+		self.active = False
 		self.name = _name
 		self.plugs = []
 		self.socks = []
@@ -396,7 +397,7 @@ class Brick(ChildLogger):
 		return c
 
 	def send(self,msg):
-		if self.internal_console == None:
+		if self.internal_console == None or not self.active:
 			return
 		try:
 			print "= sending " + msg
@@ -435,7 +436,6 @@ class Switch(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
-		self.active = 0
 		self.cfg.path = Settings.MYPATH + '/' + self.name + '.ctl'
 		self.cfg.console = Settings.MYPATH + '/' + self.name + '.mgmt'
 		self.cfg.numports = "32"
@@ -502,7 +502,6 @@ class Tap(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
-		self.active = 0
 		self.cfg.name = _name
 		self.command_builder = {"-s":'sock', "*tap":"name"}
 		self.cfg.sock = ""
@@ -548,7 +547,6 @@ class Wire(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
-		self.active = 0
 		self.cfg.name = _name
 		self.command_builder = {"#sock left":"sock0", "#sock right":"sock1"}
 		self.cfg.sock0 = ""
@@ -677,7 +675,6 @@ class TunnelListen(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
-		self.active = 0
 		self.cfg.name = _name
 		self.command_builder = {"-s":'sock',
 			"#password":"password",
@@ -816,7 +813,6 @@ class VM(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
-		self.active = 0
 		self.cfg.name = _name
 		self.cfg.argv0 = "i386"
 		self.cfg.machine = ""
