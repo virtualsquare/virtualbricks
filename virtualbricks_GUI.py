@@ -1516,6 +1516,9 @@ class VBGUI:
 						self.show_brickactions(n.name)
 		self.curtain_down()
 
+	def on_topology_scroll(self, widget=None, event=None, data=""):
+		print "scroll"
+
 	def signals(self):
 		self.signaldict = {
 			"on_window1_destroy":self.on_window1_destroy,
@@ -1649,6 +1652,7 @@ class VBGUI:
 			"on_vm_hardreset":self.on_vm_hardreset,
 			"on_vm_resume":self.on_vm_resume,
 			"on_topology_action":self.on_topology_action,
+			"on_topology_scroll":self.on_topology_scroll,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
@@ -1662,6 +1666,12 @@ class VBGUI:
 	def timers(self):
 		gobject.timeout_add(1000,self.check_joblist)
 		gobject.timeout_add(200,self.check_bricks)
+		gobject.timeout_add(500,self.check_topology_scroll)
+
+	def check_topology_scroll(self):
+		self.topology.x_adj = self.gladefile.get_widget('topology_scrolled').get_hadjustment().get_value()
+		self.topology.y_adj = self.gladefile.get_widget('topology_scrolled').get_vadjustment().get_value()
+		return True
 
 	def check_bricks(self):
 		new_bricks = []
@@ -1776,13 +1786,14 @@ class VBGUI:
 		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.bricks)
 		
 class Node:
-	def __init__(self, name, x, y, thresh = 50):
+	def __init__(self, topology, name, x, y, thresh = 50):
 		self.x = x
 		self.y = y 
 		self.thresh = thresh
 		self.name = name
+		self.parent = topology
 	def here(self, x, y):
-		if abs(x - self.x) < self.thresh and abs(y - self.y) < self.thresh:
+		if abs(x + self.parent.x_adj - self.x) < self.thresh and abs(y + self.parent.y_adj - self.y) < self.thresh:
 			return True
 		else: 
 			return False
@@ -1796,6 +1807,8 @@ class Topology():
 		#self.topo.graph_attr['rankdir']='TB'
 		self.topo.graph_attr['ranksep']='1.2'
 		self.nodes = []
+		self.x_adj = 0.0
+		self.y_adj = 0.0
 
 		# Add nodes
 		sg = self.topo.add_subgraph([],name="switches_rank")
@@ -1858,8 +1871,8 @@ class Topology():
 				x_fact = x_siz / float(arg[2])
 				y_fact = y_siz / float(arg[3])
 			elif arg[0] == 'node':
-				x = x_fact * float(arg[2])
+				x = x_fact * float(arg[2]) 
 				y = y_siz - y_fact * float(arg[3])
-				self.nodes.append(Node(arg[1],x,y))
+				self.nodes.append(Node(self, arg[1],x,y))
 		# Display on the widget
 		self.topowidget.set_from_file("/tmp/vde_topology.png")
