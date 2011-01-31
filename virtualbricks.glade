@@ -332,10 +332,11 @@
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkScrolledWindow" id="scrolledwindow4">
+                      <widget class="GtkScrolledWindow" id="topology_scrolled">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
+                        <signal name="drag_drop" handler="on_topology_scroll"/>
                         <child>
                           <widget class="GtkViewport" id="viewport1">
                             <property name="visible">True</property>
