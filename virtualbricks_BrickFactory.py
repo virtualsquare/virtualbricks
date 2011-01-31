@@ -112,22 +112,22 @@ class Sock():
 		
 
 class BrickConfig(dict):
-    """
-    cfg = BrickConfig()
-    cfg.enabled = True
-    assert cfg['enabled'] == True
-    assert cfg.enabled == True
+	"""
+	cfg = BrickConfig()
+	cfg.enabled = True
+	assert cfg['enabled'] == True
+	assert cfg.enabled == True
 
-    cfg.disabled = True
-    assert cfg['disabled'] == True
-    assert cfg.disabled == True
-    """
+	cfg.disabled = True
+	assert cfg['disabled'] == True
+	assert cfg.disabled == True
+	"""
 	def __getattr__(self, name):
-        """override dict.__getattr__"""
+		"""override dict.__getattr__"""
 		return self[name]
 
 	def __setattr__(self, name, value):
-        """override dict.__setattr__"""
+		"""override dict.__setattr__"""
 		self[name] = value
 
 	def set(self, attr):
