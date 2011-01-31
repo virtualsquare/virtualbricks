@@ -150,7 +150,7 @@ class BrickConfig(dict):
 			print "setting %s to '%s'" % (kv[0], val)
 			self[kv[0]] = val
 			return True
-
+ 
 	def set_obj(self, key, obj):
 		print "setting_obj %s to '%s'" % (key, obj)
 		self[key] = obj
@@ -211,7 +211,6 @@ class Brick(ChildLogger):
 			if p.connected() == False:
 				return False
 		return True
-
 
 	def initialize(self, attrlist):
 		for attr in attrlist:

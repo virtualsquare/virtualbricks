@@ -11,6 +11,7 @@ import gobject
 import time
 import pygraphviz as pgv
 import subprocess
+import Image
 
 
 
@@ -22,6 +23,7 @@ class VBGUI:
 		gtk.gdk.threads_init()
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
 		self.brickfactory.start()
+		self.topology = None
 		try:
 			self.gladefile = gtk.glade.XML('./virtualbricks.glade')
 		except:
@@ -516,6 +518,8 @@ class VBGUI:
 			elif not name.startswith('menu') and not name.endswith('dialog_warn'):
 				self.widg[w].hide()
 
+		self.gladefile.get_widget("brickaction_name").set_label(self.selected.name)
+
 	""" ******************************************************** """
 	"""                                                          """
 	""" EVENTS / SIGNALS                                         """
@@ -708,6 +712,15 @@ class VBGUI:
 			drag_context.finish(False, False, timestamp)
 		self.Dragging = None
 
+	def show_brickactions(self, name):
+		self.selected = self.brickfactory.getbrickbyname(name)
+		if self.selected.get_type() == "Qemu":
+			self.set_sensitivegroup(['vmresume'])
+		else:
+			self.set_nonsensitivegroup(['vmresume'])
+		if self.selected:
+			self.show_window('menu_brickactions')
+
 	def on_treeview_bookmarks_button_press_event(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
@@ -719,13 +732,7 @@ class VBGUI:
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
-			self.selected = self.brickfactory.getbrickbyname(name)
-			if self.selected.get_type() == "Qemu":
-				self.set_sensitivegroup(['vmresume'])
-			else:
-				self.set_nonsensitivegroup(['vmresume'])
-			if self.selected:
-				self.show_window('menu_brickactions')
+			self.show_brickactions(name)
 
 	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
 		print "in get data?!"
@@ -1499,7 +1506,15 @@ class VBGUI:
 	def on_vm_hardreset(self, widget=None, event=None, data=""):
 		self.joblist_selected.send("system_reset\n")
 		self.joblist_selected.recv()
-
+		
+	def on_topology_action(self, widget=None, event=None, data=""):
+		if self.topology:
+			for n in self.topology.nodes:
+				if n.here(event.x,event.y) and event.button == 3:
+					self.selected = self.brickfactory.getbrickbyname(n.name)
+					if (self.selected):
+						self.show_brickactions(n.name)
+		self.curtain_down()
 
 	def signals(self):
 		self.signaldict = {
@@ -1633,6 +1648,7 @@ class VBGUI:
 			"on_vm_powerbutton":self.on_vm_powerbutton,
 			"on_vm_hardreset":self.on_vm_hardreset,
 			"on_vm_resume":self.on_vm_resume,
+			"on_topology_action":self.on_topology_action,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
@@ -1757,16 +1773,34 @@ class VBGUI:
 		return True
 
 	def draw_topology(self):
-		topowidget = self.gladefile.get_widget('image_topology')
-		topo=pgv.AGraph()
-		topo.graph_attr['rankdir']='LR'
-		#topo.graph_attr['rankdir']='TB'
-		topo.graph_attr['ranksep']='1.2'
+		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.bricks)
+		
+class Node:
+	def __init__(self, name, x, y, thresh = 50):
+		self.x = x
+		self.y = y 
+		self.thresh = thresh
+		self.name = name
+	def here(self, x, y):
+		if abs(x - self.x) < self.thresh and abs(y - self.y) < self.thresh:
+			return True
+		else: 
+			return False
+
+class Topology():
+			
+	def __init__(self, widget, bricks):
+		self.topowidget = widget
+		self.topo = pgv.AGraph()
+		self.topo.graph_attr['rankdir']='LR'
+		#self.topo.graph_attr['rankdir']='TB'
+		self.topo.graph_attr['ranksep']='1.2'
+		self.nodes = []
 
 		# Add nodes
-		sg = topo.add_subgraph([],name="switches_rank")
+		sg = self.topo.add_subgraph([],name="switches_rank")
 		sg.graph_attr['rank'] = 'same'
-		for b in self.bricks:
+		for b in bricks:
 		### I would like to use this code, but pygraphviz has a bug.
 		#	if b.get_type() == 'Switch' or b.get_type().startswith('Wire'):
 		#		sg.add_node(b.name)
@@ -1776,33 +1810,33 @@ class VBGUI:
 		#		n.attr['fontsize']='9'
 		#		n.attr['image']=b.get_type()+'.png'
 		#	else:
-				topo.add_node(b.name)
-				n = topo.get_node(b.name)
+				self.topo.add_node(b.name)
+				n = self.topo.get_node(b.name)
 				n.attr['shape']='none'
 				n.attr['fontsize']='9'
 				n.attr['image']=b.get_type()+'.png'
 
 
-		for b in self.bricks:
+		for b in bricks:
 			loop = 0
 			for e in b.plugs:
 				if e.sock is not None:
 					if (b.get_type() == 'Tap'):
-						topo.add_edge(b.name, e.sock.brick.name)
-						e = topo.get_edge(b.name, e.sock.brick.name)
+						self.topo.add_edge(b.name, e.sock.brick.name)
+						e = self.topo.get_edge(b.name, e.sock.brick.name)
 					elif len(b.plugs) == 2:
 						if loop == 0:
 							topo.add_edge(e.sock.brick.name, b.name)
 							e = topo.get_edge(e.sock.brick.name, b.name)
 						else:
-							topo.add_edge(b.name, e.sock.brick.name)
-							e = topo.get_edge(b.name, e.sock.brick.name)
+							self.topo.add_edge(b.name, e.sock.brick.name)
+							e = self.topo.get_edge(b.name, e.sock.brick.name)
 					elif loop < (len(b.plugs) + 1) / 2:
-						topo.add_edge(e.sock.brick.name, b.name)
-						e = topo.get_edge(e.sock.brick.name, b.name)
+						self.topo.add_edge(e.sock.brick.name, b.name)
+						e = self.topo.get_edge(e.sock.brick.name, b.name)
 					else:
-						topo.add_edge(b.name, e.sock.brick.name)
-						e = topo.get_edge(b.name, e.sock.brick.name)
+						self.topo.add_edge(b.name, e.sock.brick.name)
+						e = self.topo.get_edge(b.name, e.sock.brick.name)
 					loop+=1
 					e.attr['dir'] = 'none'
 					e.attr['color'] = 'black'
@@ -1811,7 +1845,21 @@ class VBGUI:
 
 
 		#draw and save
-		topo.write("/tmp/vde.dot")
-		topo.layout('dot')
-		topo.draw("/tmp/vde_topology.png")
-		topowidget.set_from_file("/tmp/vde_topology.png")
+		self.topo.write("/tmp/vde.dot")
+		self.topo.layout('dot')
+		self.topo.draw("/tmp/vde_topology.png")
+		self.topo.draw("/tmp/vde_topology.plain")
+
+		img = Image.open("/tmp/vde_topology.png")
+		x_siz, y_siz = img.size
+		for line in open("/tmp/vde_topology.plain").readlines():
+			arg  = line.rstrip('\n').split(' ')
+			if arg[0] == 'graph':
+				x_fact = x_siz / float(arg[2])
+				y_fact = y_siz / float(arg[3])
+			elif arg[0] == 'node':
+				x = x_fact * float(arg[2])
+				y = y_siz - y_fact * float(arg[3])
+				self.nodes.append(Node(arg[1],x,y))
+		# Display on the widget
+		self.topowidget.set_from_file("/tmp/vde_topology.png")
