@@ -1869,7 +1869,7 @@ class Topology():
 		img = Image.open("/tmp/vde_topology.png")
 		x_siz, y_siz = img.size
 		for line in open("/tmp/vde_topology.plain").readlines():
-			arg  = line.rstrip('\n').split(' ')
+			arg  = re.split('\s+', line.rstrip('\n'))
 			if arg[0] == 'graph':
 				x_fact = x_siz / float(arg[2])
 				y_fact = y_siz / float(arg[3])
