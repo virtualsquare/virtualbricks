@@ -1348,27 +1348,27 @@ class BrickFactory(ChildLogger, threading.Thread):
 
 		if ntype == "switch" or ntype == "Switch":
 			s = Switch(self,name)
-			print "new switch %s OK" % s.name
+			self.debug("new switch %s OK", s.name)
 		elif ntype == "tap" or ntype == "Tap":
 			s = Tap(self,name)
-			print "new tap %s OK" % s.name
+			self.debug("new tap %s OK", s.name)
 		elif ntype == "vm" or ntype == "Qemu":
 			s = VM(self, name)
-			print "new vm %s OK" % s.name
+			self.debug("new vm %s OK", s.name)
 		elif ntype == "wire" or ntype == "Wire" or ntype == "Cable":
 			s = Wire(self, name)
-			print "new cable %s OK" % s.name
+			self.debug("new cable %s OK", s.name)
 		elif ntype == "wirefilter" or ntype == "Wirefilter":
 			s = Wirefilter(self,name)
-			print "new wirefilter %s OK" % s.name
+			self.debug("new wirefilter %s OK", s.name)
 		elif ntype == "tunnell" or ntype == "Tunnel Server" or ntype == "TunnelListen":
 			s = TunnelListen(self,name)
-			print "new tunnel server %s OK" % s.name
+			self.debug("new tunnel server %s OK", s.name)
 		elif ntype == "tunnelc" or ntype == "Tunnel Client" or ntype == "TunnelConnect":
 			s = TunnelConnect(self,name)
-			print "new tunnel client %s OK" % s.name
+			self.debug("new tunnel client %s OK", s.name)
 		#elif ...:
 		else:
-			print 'Invalid command.'
+			self.error('Invalid command.')
 			return False
 		return True
