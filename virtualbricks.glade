@@ -3830,8 +3830,8 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="use_preview_label">False</property>
                                 <property name="action">select-folder</property>
+                                <property name="use_preview_label">False</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
@@ -6630,6 +6630,7 @@ Tunnel Client</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">&#x25CF;</property>
+                        <property name="activates_default">True</property>
                       </widget>
                       <packing>
                         <property name="left_attach">1</property>
@@ -6695,7 +6696,6 @@ Tunnel Client</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
                 <signal name="clicked" handler="on_newbrick_ok"/>
-                <signal name="activate" handler="on_newbrick_ok"/>
               </widget>
               <packing>
                 <property name="expand">False</property>

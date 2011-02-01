@@ -7,6 +7,7 @@ import gtk.glade
 import virtualbricks_Global as Global
 import virtualbricks_Settings as Settings
 import virtualbricks_BrickFactory as BrickFactory
+from virtualbricks_Logger import ChildLogger
 import gobject
 import time
 import pygraphviz as pgv
@@ -15,19 +16,22 @@ import Image
 
 
 
-class VBGUI:
+class VBGUI(ChildLogger):
 	def __init__(self):
+		ChildLogger.__init__(self)
+		self.info("Starting VirtualBricks!")
+
 		if not os.access(Settings.MYPATH, os.X_OK):
 			os.mkdir(Settings.MYPATH)
 
 		gtk.gdk.threads_init()
-		self.brickfactory = BrickFactory.BrickFactory(True)
+		self.brickfactory = BrickFactory.BrickFactory(self, True)
 		self.brickfactory.start()
 		self.topology = None
 		try:
 			self.gladefile = gtk.glade.XML('./virtualbricks.glade')
 		except:
-			print "Cannot open required file 'virtualbricks.glade'"
+			self.error("Cannot open required file 'virtualbricks.glade'")
 			sys.exit(1)
 		self.widg = self.get_widgets(self.widgetnames())
 		self.widg['main_win'].show()
@@ -35,7 +39,7 @@ class VBGUI:
 		self.bricks = []
 
 
-		self.config = self.brickfactory.settings 
+		self.config = self.brickfactory.settings
 		self.config.load()
 		self.signals()
 		self.timers()
@@ -43,20 +47,20 @@ class VBGUI:
 
 		self.sockscombo = dict()
 		self.set_nonsensitivegroup(['cfg_Wirefilter_lossburst_text', 'cfg_Wirefilter_mtu_text'])
-		self.running_bricks = self.treestore('treeview_joblist', 
-			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], 
+		self.running_bricks = self.treestore('treeview_joblist',
+			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['','PID','Type','Name'])
-		self.bookmarks = self.treestore('treeview_bookmarks', 
-				[gtk.gdk.Pixbuf, 
-				 gobject.TYPE_STRING, 
-				 gobject.TYPE_STRING, 
-				 gobject.TYPE_STRING, 
-				 gobject.TYPE_STRING], 
+		self.bookmarks = self.treestore('treeview_bookmarks',
+				[gtk.gdk.Pixbuf,
+				 gobject.TYPE_STRING,
+				 gobject.TYPE_STRING,
+				 gobject.TYPE_STRING,
+				 gobject.TYPE_STRING],
 				['','Status','Type','Name', 'Parameters'])
 
 		# associate Drag and Drop action
 		tree = self.gladefile.get_widget('treeview_bookmarks')
-		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],  gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
 
@@ -67,15 +71,15 @@ class VBGUI:
 					gobject.TYPE_STRING
 				],
 				['Eth','connection','model','macaddr'])
-		
+
 		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
 		self.Dragging = None
 		self.curtain_down()
-		
+
 		self.selected = None
 		self.vmplug_selected = None
 		self.joblist_selected = None
-		
+
 
 		try:
 			gtk.main()
@@ -90,7 +94,7 @@ class VBGUI:
 	"""                                                          """
 	"""                                                          """
 	""" ******************************************************** """
-	
+
 	def config_brick_prepare(self):
 		# Fill socks combobox
 		b = self.selected
@@ -102,10 +106,10 @@ class VBGUI:
 				opt['Host-only ad hoc network']='_hostonly'
 
 			for so in self.brickfactory.socks:
-				opt[so.nickname] = so.nickname 
-					
+				opt[so.nickname] = so.nickname
+
 			combo.populate(opt)
-			t = b.get_type()	
+			t = b.get_type()
 			if (not t.startswith('Wire')) or k.endswith('0'):
 				if len(b.plugs) >= 1 and b.plugs[0].sock:
 					combo.select(b.plugs[0].sock.nickname)
@@ -120,41 +124,41 @@ class VBGUI:
 		opt = dict()
 		for arch in found:
 			if arch.startswith('qemu-system-'):
-				opt[arch.split('qemu-system-')[1]] = arch		
+				opt[arch.split('qemu-system-')[1]] = arch
 		qemuarch.populate(opt, 'i386')
 		dicts['argv0']=opt
-		
+
 		#SNDCARD COMBO
 		sndhw = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo"))
 		opt = dict()
 		opt['no audio']=""
-		opt['PC speaker']="pcspk"              
+		opt['PC speaker']="pcspk"
 		opt['Creative Sound Blaster 16'] = "sb16"
 		opt['Intel 82801AA AC97 Audio'] = "ac97"
 		opt['ENSONIQ AudioPCI ES1370'] = "es1370"
 		dicts['soundhw']=opt
 		sndhw.populate(opt, "")
 		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo")).select('Intel 82801AA AC97 Audio')
-		
+
 		#device COMBO
 		devices = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo"))
 		opt = dict()
 		opt['NO']=""
-		opt['cdrom']="/dev/cdrom"   
+		opt['cdrom']="/dev/cdrom"
 		dicts['device']=opt
 		devices.populate(opt, "")
 		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo")).select('NO')
-		
+
 		#boot COMBO
 		boot_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo"))
-		opt = dict() 
-		opt['HD1']=""              
+		opt = dict()
+		opt['HD1']=""
 		opt['FLOPPY'] = "a"
 		opt['CDROM'] = "d"
 		dicts['boot']=opt
 		boot_c.populate(opt, "")
 		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo")).select('HD1')
-		
+
 		# Qemu VMplugs:
 		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
 		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).select('rtl8139')
@@ -166,57 +170,57 @@ class VBGUI:
 			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
-		
+
 		self.update_vmplugs_tree()
 		kernelcheck=False
 		initrdcheck=False
-		
-		for key in b.cfg.__dict__.keys():
+
+		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
-				widget.set_text(b.cfg.__dict__[key])
-			
+				widget.set_text(b.cfg[key])
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
-				widget.set_value(int(b.cfg.__dict__[key]))
-			
+			if (widget is not None and len(b.cfg[key]) > 0):
+				widget.set_value(int(b.cfg[key]))
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
-				widget.set_value(float(b.cfg.__dict__[key]))
-			
+				widget.set_value(float(b.cfg[key]))
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
-				if (b.cfg.__dict__[key] == "*"):
+				if (b.cfg[key] == "*"):
 					widget.set_active(True)
 				else:
 					if key is "kvm" and self.config.get('kvm') is "1":
 						self.gladefile.get_widget('cfg_Qemu_kvm_check').set_active(True)
 					else:
 						widget.set_active(False)
-					
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None and dicts.has_key(key)):
 				for k, v in dicts[key].iteritems():
-					if (v==b.cfg.__dict__[key]):
+					if (v==b.cfg[key]):
 						Settings.ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
-   
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
-			if (widget is not None and len(b.cfg.__dict__[key]) > 0):
-				widget.set_filename(b.cfg.__dict__[key])
+			if (widget is not None and len(b.cfg[key]) > 0):
+				widget.set_filename(b.cfg[key])
 				if key == 'kernel':
 					kernelcheck=True
 				elif key == 'initrd':
 					initrdcheck=True
 
 		# Apply KVM system configuration
-		
+
 
 		self.gladefile.get_widget('check_customkernel').set_active(True)
 		self.gladefile.get_widget('check_initrd').set_active(True)
 		self.gladefile.get_widget('check_customkernel').set_active(kernelcheck)
 		self.gladefile.get_widget('check_initrd').set_active(initrdcheck)
-		
+
 		# Tap mode:
 		if b.get_type() == 'Tap':
 			self.gladefile.get_widget('radio_tap_no').set_active(True)
@@ -227,33 +231,33 @@ class VBGUI:
 				self.gladefile.get_widget('radio_tap_dhcp').set_active(True)
 			if b.cfg.mode == 'manual':
 				self.gladefile.get_widget('radio_tap_manual').set_active(True)
-				
-			
+
+
 
 	def config_brick_confirm(self):
 		b = self.selected
 		parameters = {}
 
-		for key in b.cfg.__dict__.keys():
+		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
 				parameters[key] = widget.get_text()
-			
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
 			if (widget is not None):
 				parameters[key] = str(int(widget.get_value()))
-			
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
 				parameters[key]=str(widget.get_value())
-			
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
 			if (widget is not None):
 				txt = widget.get_active_text()
 				if (txt):
 					parameters[key] = txt[0]
-					
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
 				combo = Settings.ComboBox(widget)
@@ -261,7 +265,7 @@ class VBGUI:
 				txt = combo.get_selected()
 				if txt is not None and (txt != "-- default --"):
 					parameters[key] = txt
-			
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
 				if widget.get_active():
@@ -274,7 +278,7 @@ class VBGUI:
 				f = widget.get_filename()
 				if f:
 					parameters[key] = f
-					
+
 			b.gui_changed = True
 			t = b.get_type()
 
@@ -283,7 +287,7 @@ class VBGUI:
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
-				
+
 				# Address mode radio
 				if (self.gladefile.get_widget('radio_tap_no').get_active()):
 					b.cfg.mode = 'off'
@@ -291,8 +295,8 @@ class VBGUI:
 					b.cfg.mode = 'dhcp'
 				else:
 					b.cfg.mode = 'manual'
-	
-				
+
+
 			if t == 'TunnelConnect':
 				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
 				for so in self.brickfactory.socks:
@@ -321,7 +325,7 @@ class VBGUI:
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[1].connect(so)
-					
+
 			if t == 'Qemu':
 				k = self.gladefile.get_widget('check_customkernel')
 				if not k.get_active():
@@ -336,14 +340,14 @@ class VBGUI:
 			callback = b.get_cbset(key)
 		 	if callable(callback):
 				callback(b, value)
-			
+
 		self.curtain_down()
-		
+
 
 	def config_brick_cancel(self):
 		self.curtain_down()
 
-	
+
 	""" ******************************************************** """
 	"""                                                          """
 	""" MISC / WINDOWS BEHAVIOR                                  """
@@ -352,16 +356,15 @@ class VBGUI:
 	""" ******************************************************** """
 
 	def curtain_is_down(self):
-		print self.curtain.get_position()
+		self.debug(self.curtain.get_position())
 		return (self.curtain.get_position()>660)
 
 	def curtain_down(self):
-		#print "Old position: %d" % self.curtain.get_position()
 		self.curtain.set_position(99999)
 		self.gladefile.get_widget('label_showhidesettings').set_text('Show Settings')
 
 	def curtain_up(self):
-		print "Old position: %d" % self.curtain.get_position()
+		self.debug("Old position: %d", self.curtain.get_position())
 		self.gladefile.get_widget('box_vmconfig').hide()
 		self.gladefile.get_widget('box_tapconfig').hide()
 		self.gladefile.get_widget('box_tunnellconfig').hide()
@@ -369,48 +372,48 @@ class VBGUI:
 		self.gladefile.get_widget('box_wireconfig').hide()
 		self.gladefile.get_widget('box_wirefilterconfig').hide()
 		self.gladefile.get_widget('box_switchconfig').hide()
-		
+
 		if self.selected is None:
-			return  
-		
+			return
+
 		wg = self.curtain
 		if self.selected.get_type() == 'Switch':
-			print "switch config"
+			self.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
-			wg.set_position(589)	
-		
+			wg.set_position(589)
+
 		elif self.selected.get_type() == 'Qemu':
-			print "qemu config"
+			self.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')
 			wg.set_position(245)
 
-		
+
 		elif self.selected.get_type() == 'Tap':
-			print "tap config"
+			self.debug("tap config")
 			ww = self.gladefile.get_widget('box_tapconfig')
-			wg.set_position(513)	
-			
+			wg.set_position(513)
+
 		elif self.selected.get_type() == 'Wire':
-			print "wire config"
+			self.debug("wire config")
 			ww = self.gladefile.get_widget('box_wireconfig')
-			wg.set_position(606)	
+			wg.set_position(606)
 		elif self.selected.get_type() == 'Wirefilter':
-			print "wirefilter config"
+			self.debug("wirefilter config")
 			ww = self.gladefile.get_widget('box_wirefilterconfig')
-			wg.set_position(424)	
+			wg.set_position(424)
 		elif self.selected.get_type() == 'TunnelConnect':
-			print "tunnelc config"
+			self.debug("tunnelc config")
 			ww = self.gladefile.get_widget('box_tunnelcconfig')
-			wg.set_position(424)	
+			wg.set_position(424)
 		elif self.selected.get_type() == 'TunnelListen':
-			print "tunnell config"
+			self.debug("tunnell config")
 			ww = self.gladefile.get_widget('box_tunnellconfig')
-			wg.set_position(424)	
+			wg.set_position(424)
 		self.config_brick_prepare()
 		ww.show_all()
 
 		self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
-		
+
 	def get_treeselected(self, tree, store, pthinfo, c):
 		if pthinfo is not None:
 			path, col, cellx, celly = pthinfo
@@ -424,21 +427,20 @@ class VBGUI:
 
 	def get_treeselected_name(self, t, s, p):
 		return self.get_treeselected(t, s, p, 3)
-	
+
 	def get_treeselected_type(self, t, s, p):
 		return self.get_treeselected(t, s, p, 2)
 
 	def quit(self):
-		print
-		print "GUI: Goodbye!"
+		self.info("GUI: Goodbye!")
 		self.brickfactory.quit()
 		sys.exit(0)
 
 
 	def get_widgets(self, l):
 		r = dict()
-		for i in l:	
-			r[i] =  self.gladefile.get_widget(i)
+		for i in l:
+			r[i] = self.gladefile.get_widget(i)
 			r[i].hide()
 		return r
 
@@ -458,14 +460,14 @@ class VBGUI:
 				col.add_attribute(elem, 'text', idx)
 			tree.append_column(col)
 		return ret
-		
+
 	def qemu_eth_model(self):
 		res = dict()
 		for k in [ "rtl8139",
 			"e1000",
 			"virtio",
-			"i82551", 
-			"i82557b", 
+			"i82551",
+			"i82557b",
 			"i82559er",
 			"ne2k_pci",
 			"pcnet",
@@ -474,24 +476,24 @@ class VBGUI:
 		return res
 
 	def widgetnames(self):
-		return ['main_win', 
-		'filechooserdialog_openimage', 
-		'dialog_settings', 
-		'dialog_bookmarks', 
-		'menu_popup_bookmarks', 
+		return ['main_win',
+		'filechooserdialog_openimage',
+		'dialog_settings',
+		'dialog_bookmarks',
+		'menu_popup_bookmarks',
 		'dialog_about1',
 		'dialog_create_image',
-		'dialog_messages', 
-		'menu_popup_imagelist', 
-		'dialog_jobmonitor', 
-		'menu_popup_joblist', 
+		'dialog_messages',
+		'menu_popup_imagelist',
+		'dialog_jobmonitor',
+		'menu_popup_joblist',
 		'menu_popup_usbhost',
-		'menu_popup_usbguest', 
+		'menu_popup_usbguest',
 		'menu_popup_volumes',
 		'dialog_newnetcard',
 		'dialog_confirm_action',
 		'dialog_new_redirect',
-		'ifconfig_win', 
+		'ifconfig_win',
 		'dialog_newbrick',
 		'menu_brickactions',
 		'dialog_warn',
@@ -519,7 +521,7 @@ class VBGUI:
 				self.widg[w].hide()
 
 		self.gladefile.get_widget("brickaction_name").set_label(self.selected.name)
-	
+
 	""" ******************************************************** """
 	"""                                                          """
 	""" EVENTS / SIGNALS                                         """
@@ -536,7 +538,7 @@ class VBGUI:
 	def error(self, text):
 		self.gladefile.get_widget('texterror').set_text(text)
 		self.show_window('dialog_warn')
-	
+
 	def ask_confirm(self, text, on_yes=None, on_no=None, arg=None):
 		self.curtain_down()
 		self.gladefile.get_widget('lbl_confirm').set_text(text)
@@ -553,7 +555,7 @@ class VBGUI:
 	def on_newbrick_cancel(self, widget=None, data=""):
 		self.curtain_down()
 		self.show_window('')
-		
+
 	def on_newbrick_ok(self, widget=None, data=""):
 		self.show_window('')
 		self.curtain_down()
@@ -564,12 +566,13 @@ class VBGUI:
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create brick: Invalid name.")
 		else:
-			print "Created successfully"
+			self.debug("Created successfully")
 
 
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
 		self.curtain_down()
+
 	def on_config_ok(self, widget=None, data=""):
 		self.config_brick_confirm()
 		self.curtain_down()
@@ -584,14 +587,14 @@ class VBGUI:
 			w = self.gladefile.get_widget(i)
 			w.set_sensitive(False)
 
-	def on_gilbert_toggle(self, widget=None, data=""):	
+	def on_gilbert_toggle(self, widget=None, data=""):
 		if widget.get_active():
 			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_sensitive(True)
 			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_text("0")
 		else:
 			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_text("")
 			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_sensitive(False)
-		
+
 	def on_mtu_toggle(self, widget=None, data=""):
 		if widget.get_active():
 			self.gladefile.get_widget('cfg_Wirefilter_mtu_text').set_sensitive(True)
@@ -599,16 +602,16 @@ class VBGUI:
 		else:
 			self.gladefile.get_widget('cfg_Wirefilter_mtu_text').set_text("")
 			self.gladefile.get_widget('cfg_Wirefilter_mtu_text').set_sensitive(False)
- 
+
 
 	def on_item_quit_activate(self, widget=None, data=""):
 		self.quit()
 		pass
 	def on_item_settings_activate(self, widget=None, data=""):
-		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_filename(self.config.get('bricksdirectory'))	
-		self.gladefile.get_widget('filechooserbutton_qemupath').set_filename(self.config.get('qemupath'))	
-		self.gladefile.get_widget('filechooserbutton_vdepath').set_filename(self.config.get('vdepath'))	
-		self.gladefile.get_widget('filechooserbutton_baseimages').set_filename(self.config.get('baseimages'))	
+		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_filename(self.config.get('bricksdirectory'))
+		self.gladefile.get_widget('filechooserbutton_qemupath').set_filename(self.config.get('qemupath'))
+		self.gladefile.get_widget('filechooserbutton_vdepath').set_filename(self.config.get('vdepath'))
+		self.gladefile.get_widget('filechooserbutton_baseimages').set_filename(self.config.get('baseimages'))
 		if self.config.get('kvm') is "1":
 			self.gladefile.get_widget('check_kvm').set_active(True)
 		else:
@@ -628,7 +631,7 @@ class VBGUI:
 			self.gladefile.get_widget('check_femaleplugs').set_active(True)
 		else:
 			self.gladefile.get_widget('check_femaleplugs').set_active(False)
-		
+
 		if self.config.get('erroronloop') is "1":
 			self.gladefile.get_widget('check_erroronloop').set_active(True)
 		else:
@@ -641,7 +644,7 @@ class VBGUI:
 
 		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
 		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
-		
+
 
 		self.show_window('dialog_settings')
 		pass
@@ -651,7 +654,7 @@ class VBGUI:
 	def on_item_settings_autohide_activate(self, widget=None, data=""):
 		print "on_item_settings_autohide_activate undefined!"
 		pass
-	
+
 
 	def on_item_about_activate(self, widget=None, data=""):
 		self.show_window('dialog_about1')
@@ -685,19 +688,19 @@ class VBGUI:
 		drop_info = tree.get_dest_row_at_pos(x, y)
 		if drop_info:
 			pth,pos = drop_info
-			
+
 		if pos == gtk.TREE_VIEW_DROP_BEFORE:
-			print 'dropped before'
+			self.debug('dropped before')
 			drag_context.finish(False, False, timestamp)
 			return False
 		if pos == gtk.TREE_VIEW_DROP_AFTER:
 			drag_context.finish(False, False, timestamp)
-			print 'dropped after'
+			self.debug('dropped after')
 			return False
 
 
 		if (dropbrick and dropbrick != self.Dragging):
-			print "drag&drop: %s onto %s" % (self.Dragging.name, dropbrick.name)
+			self.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
 			res = False
 			if (len(dropbrick.socks) > 0):
 				res = self.Dragging.connect(dropbrick.socks[0])
@@ -734,12 +737,12 @@ class VBGUI:
 			self.show_brickactions(name)
 
 	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
-		print "in get data?!"
+		self.debug("in get data?!")
 		store = self.bookmarks
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		#context.set_icon_pixbuf('./'+self.Dragging.get_type()+'.png')
-		
+
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		store = self.bookmarks
@@ -749,7 +752,7 @@ class VBGUI:
 		name = store.get_value(iter, 3)
 		self.selected = self.brickfactory.getbrickbyname(name)
 		self.curtain_down()
-		
+
 	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None , data=""):
 		self.tree_startstop()
 		self.curtain_down()
@@ -781,11 +784,11 @@ class VBGUI:
 				self.error("Cannot start this Brick: Brick not connected.")
 			except(BrickFactory.LinkloopException):
 				if (self.config.erroronloop):
-					error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
+					self.error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
 				else:
 					pass
-				
+
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"
 		pass
@@ -796,7 +799,7 @@ class VBGUI:
 		print "on_treeview_bootimages_row_activated_event undefined!"
 		pass
 	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
-		print "Hello"
+		self.debug("Hello")
 		tree = self.gladefile.get_widget('treeview_joblist');
 		store = self.running_bricks
 		x = int(event.x)
@@ -810,7 +813,7 @@ class VBGUI:
 				self.set_sensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
 			else:
 				self.set_nonsensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
-				
+
 			if self.joblist_selected:
 				self.show_window('menu_popup_joblist')
 		pass
@@ -821,10 +824,10 @@ class VBGUI:
 		print "selected: " + repr(self.selected)
 		if self.curtain_is_down():
 			self.curtain_up()
-			print "up"
+			self.debug("up")
 		else:
 			self.curtain_down()
-			print "down"
+			self.debug("down")
 	def on_filechooserdialog_openimage_response(self, widget=None, data=""):
 		print "on_filechooserdialog_openimage_response undefined!"
 		pass
@@ -839,10 +842,10 @@ class VBGUI:
 			widget.hide()
 			return
 		if response == gtk.RESPONSE_APPLY or response == gtk.RESPONSE_OK:
-			print "Apply settings..."
+			self.debug("Apply settings...")
 			for k in ['bricksdirectory', 'qemupath', 'vdepath', 'baseimages']:
 				self.config.set(k + '=' + self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
-			
+
 			if self.gladefile.get_widget('check_kvm').get_active():
 				self.config.set("kvm=1")
 			else:
@@ -865,31 +868,31 @@ class VBGUI:
 				self.config.set("kqemu=1")
 			else:
 				self.config.set("kqemu=0")
-			
+
 			if self.gladefile.get_widget('check_python').get_active():
 				self.config.set("python=1")
 			else:
 				self.config.set("python=0")
-			
+
 			if self.gladefile.get_widget('check_femaleplugs').get_active():
 				self.config.set("femaleplugs=1")
 			else:
 				self.config.set("femaleplugs=0")
-			
+
 			if self.gladefile.get_widget('check_erroronloop').get_active():
 				self.config.set("erroronloop=1")
 			else:
 				self.config.set("erroronloop=0")
-	
+
 			self.config.set("term="+self.gladefile.get_widget('entry_term').get_text())
 			self.config.set("sudo="+self.gladefile.get_widget('entry_sudo').get_text())
-			
-			
+
+
 			self.config.store()
 
 			if response == gtk.RESPONSE_OK:
 				widget.hide()
-			
+
 	def on_dialog_confirm_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if (response == 1):
@@ -898,7 +901,7 @@ class VBGUI:
 		elif (response == 0):
 			if (self.on_confirm_response_no):
 				self.on_confirm_response_no(self.on_confirm_response_arg)
-		
+
 
 	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
 		print "on_treeview_cdromdrives_row_activated undefined!"
@@ -960,10 +963,10 @@ class VBGUI:
 		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
 		self.show_window('dialog_create_image')
 		pass
-	      
+
 	def on_button_create_image_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		print "Image creating.. ",
+		self.debug("Image creating.. ",)
 		path = self.gladefile.get_widget('filechooserbutton_newimage_dest').get_filename() + "/"
 		filename = self.gladefile.get_widget('entry_newimage_name').get_text()
 		img_format = self.gladefile.get_widget('combobox_newimage_format').get_active_text()
@@ -971,10 +974,10 @@ class VBGUI:
 		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()
 		cmd='qemu-img create'
 		if filename=="":
-		  self.error("Choose a filename first!")
-		  return
+			self.error("Choose a filename first!")
+			return
 		if img_format == "Auto":
-		  img_format = "raw"		  
+			img_format = "raw"
 		os.system('%s -f %s %s %s' % (cmd, img_format, path+filename+"."+img_format, img_size+img_sizeunit))
 		os.system('sync')
 		time.sleep(2)
@@ -1047,32 +1050,32 @@ class VBGUI:
 	def on_treeview_usbguest_row_activated(self, widget=None, data=""):
 		print "on_treeview_usbguest_row_activated undefined!"
 		pass
-	
+
 	def on_item_jobmonoitor_activate(self, widget=None, data=""):
 		self.joblist_selected.open_console()
 		pass
-	
+
 	def on_item_stop_job_activate(self, widget=None, data=""):
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			print "Sending to process signal 19!"
+			self.debug("Sending to process signal 19!")
 			self.joblist_selected.proc.send_signal(19)
 		pass
-	
+
 	def on_item_cont_job_activate(self, widget=None, data=""):
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			print "Sending to process signal 18!"
+			self.debug("Sending to process signal 18!")
 			self.joblist_selected.proc.send_signal(18)
 		pass
 	def on_item_reset_job_activate(self, widget=None, data=""):
-		print self.joblist_selected
+		self.debug(self.joblist_selected)
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			print "Restarting process!"
+			self.debug("Restarting process!")
 			self.joblist_selected.poweroff()
 			self.joblist_selected.poweron()
 		pass
@@ -1080,7 +1083,7 @@ class VBGUI:
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			print "Sending to process signal 9!"
+			self.debug("Sending to process signal 9!")
 			self.joblist_selected.proc.send_signal(9)
 		pass
 	def on_attach_device_activate(self, widget=None, data=""):
@@ -1133,7 +1136,7 @@ class VBGUI:
 		pass
 	#def on_radiobutton_cdromtype2_toggled(self, widget=None, data=""):
 		#self.gladefile.get_widget('cfg_Qemu_cdrom_filechooser').set_active(True)
-		
+
 	def on_spinbutton_redirect_sport_changed(self, widget=None, data=""):
 		print "on_spinbutton_redirect_sport_changed undefined!"
 		pass
@@ -1154,7 +1157,7 @@ class VBGUI:
 		print "signal not connected"
 	def on_autodetectsettings(self, widget=None, event=None, data=""):
 		print "signal not connected"
-		
+
 	def on_check_kvm(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			try:
@@ -1163,7 +1166,7 @@ class VBGUI:
 				print "ioerror"
 				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
-				
+
 			except NotImplementedError:
 				print "no support"
 				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
@@ -1173,7 +1176,7 @@ class VBGUI:
 		try:
 			self.config.check_ksm(True)
 		except NotImplementedError:
-			print "no support"
+			self.debug("no support")
 			self.error("No KSM support found on the system. Check your configuration. KSM will stay disabled.")
 			widget.set_active(False)
 	def on_add_cdrom(self, widget=None, event=None, data=""):
@@ -1194,11 +1197,11 @@ class VBGUI:
 		if self.selected is None:
 			return
 		if self.selected.proc != None:
-			error("Cannot delete brick: Brick is in use.")
+			self.error("Cannot delete brick: Brick is in use.")
 			return
 		self.ask_confirm("Do you really want to delete " + self.selected.get_type() + " " + self.selected.name,
 				on_yes = self.brickfactory.delbrick, arg = self.selected)
-		
+
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
@@ -1211,12 +1214,12 @@ class VBGUI:
 		if self.selected is None:
 			return
 		if self.selected.proc != None:
-			error("Cannot rename brick: Brick is in use.")
+			self.error("Cannot rename brick: Brick is in use.")
 			return
 
 		self.gladefile.get_widget('entry_brick_newname').set_text(self.selected.name)
 		self.gladefile.get_widget('dialog_rename').show_all()
-	
+
 	def on_dialog_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if response == 1:
@@ -1224,7 +1227,7 @@ class VBGUI:
 				self.brickfactory.renamebrick(self.selected,self.gladefile.get_widget('entry_brick_newname').get_text())
 			except BrickFactory.InvalidNameException:
 				self.error("Invalid name!")
-			
+
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
 		pass
@@ -1238,10 +1241,10 @@ class VBGUI:
 		if not os.access(newpath,os.X_OK):
 			lbl.set_markup('<span color="red">Error:</span>\ninvalid path for qemu binaries')
 			return
-		
+
 		for t in missing:
 			if t == 'qemu':
-				missing_qemu = True	
+				missing_qemu = True
 			if t == 'kvm':
 				missing_kvm = True
 		if missing_qemu and missing_kvm:
@@ -1250,7 +1253,7 @@ class VBGUI:
 		txt = ""
 		if missing_qemu:
 			txt = '<span color="red">Warning:</span>\ncannot find qemu, using kvm only\n'
-		
+
 		elif missing_kvm:
 			txt = '<span color="yellow">Warning:</span>\nkvm not found. KVM support disabled.\n'
 		else:
@@ -1264,15 +1267,15 @@ class VBGUI:
 					rowlimit+=30
 					arch.rstrip(', ')
 					arch+="\n"
-				
-				
+
+
 		if len(arch) > 0:
 			txt += "additional targets supported:\n"
 			txt += arch.rstrip(', ')
 		lbl.set_markup(txt)
 
-		
-	
+
+
 	def on_vdepath_changed(self, widget, data=None):
 		newpath = widget.get_filename()
 		missing = self.config.check_missing_vdepath(newpath)
@@ -1280,19 +1283,19 @@ class VBGUI:
 		if not os.access(newpath,os.X_OK):
 			lbl.set_markup('<span color="red">Error:</span>\ninvalid path for vde binaries')
 		elif len(missing) > 0:
-			txt = '<span color="red">Warning, missing modules:</span>\n' 
+			txt = '<span color="red">Warning, missing modules:</span>\n'
 			for l in missing:
 				txt+=l + "\n"
 			lbl.set_markup(txt)
 		else:
 			lbl.set_markup('<span color="darkgreen">All VDE components detected.</span>\n')
-	
+
 	def on_arch_changed(self, widget, data=None):
 		combo = Settings.ComboBox(widget)
 		path = self.config.get('qemupath')
 		cpus = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_cpu_combo'))
 		machines = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_machine_combo'))
-	
+
 		os.system(path + "/" + combo.get_selected() + " -M ? >" + Settings.MYPATH+"/.vmachines")
 		optm={}
 		for m in open(Settings.MYPATH+"/.vmachines").readlines():
@@ -1305,7 +1308,7 @@ class VBGUI:
 		machines.clear()
 		machines.populate(optm)
 		os.unlink(Settings.MYPATH+"/.vmachines")
-		
+
 		os.system(path + "/" + combo.get_selected() + " -cpu ? >" + Settings.MYPATH+"/.cpus")
 		optc={}
 		for m in open(Settings.MYPATH+"/.cpus").readlines():
@@ -1328,23 +1331,23 @@ class VBGUI:
 		cpus.clear()
 		cpus.populate(optc)
 		os.unlink(Settings.MYPATH+"/.cpus")
-		
+
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
-			try:	
+			try:
 				self.config.check_kvm()
 				self.disable_qemu_combos(True)
 			except IOError:
-				print "ioerror"
+				self.debug("ioerror")
 				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 			except NotImplementedError:
-				print "no support"
+				self.debug("no support")
 				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 		else:
 			self.disable_qemu_combos(False)
-			
+
 	def disable_qemu_combos(self,active):
 		if active:
 			self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(False)
@@ -1354,14 +1357,14 @@ class VBGUI:
 			self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(True)
 			self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(True)
 			self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(True)
-	
+
 	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(True)
 		else:
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_filename('/')
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(False)
-	
+
 	def on_check_initrd_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(True)
@@ -1374,12 +1377,12 @@ class VBGUI:
 			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(True)
 		else:
 			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(False)
-	
+
 	def on_random_macaddr(self, widget=None, event=None, data=""):
 		self.gladefile.get_widget('vmplug_macaddr').set_text(Global.RandMac())
 
 	def on_vmplug_add(self, widget=None, event=None, data=""):
-		
+
 		sockname = Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
 		if (sockname == '_hostonly'):
 			pl = self.selected.add_plug('_hostonly')
@@ -1404,10 +1407,10 @@ class VBGUI:
 					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
 				self.vmplugs.set_value(iter,2,pl.model)
 				self.vmplugs.set_value(iter,3,pl.mac)
-			
-		
-		
-		
+
+
+
+
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_networkcards');
 		store = self.vmplugs
@@ -1427,8 +1430,8 @@ class VBGUI:
 		elif (pl.sock):
 			Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
 		self.vmplug_selected = pl
-	
-		
+
+
 
 	def on_vmplug_edit(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
@@ -1455,7 +1458,7 @@ class VBGUI:
 		pl = self.vmplug_selected
 		self.selected.remove_plug(pl.vlan)
 		self.update_vmplugs_tree()
-	
+
 	def on_vmplug_onoff(self, widget=None, event=None, data=""):
 		if self.gladefile.get_widget('radiobutton_network_nonet').get_active():
 			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
@@ -1469,7 +1472,7 @@ class VBGUI:
 			self.gladefile.get_widget('tap_ipconfig').set_sensitive(True)
 		else:
 			self.gladefile.get_widget('tap_ipconfig').set_sensitive(False)
-	
+
 	def on_vm_suspend(self, widget=None, event=None, data=""):
 		hda = self.joblist_selected.cfg.get('basehda')
 		if hda is None or 0 != subprocess.Popen(["qemu-img","snapshot","-c","virtualbricks",hda]).wait():
@@ -1485,7 +1488,7 @@ class VBGUI:
 
 	def on_vm_resume(self, widget=None, event=None, data=""):
 		hda = self.selected.cfg.get('basehda')
-		print "resume"
+		self.debug("resume")
 		if os.system("qemu-img snapshot -l "+hda+" |grep virtualbricks") == 0:
 			if self.selected.proc is not None:
 				self.selected.send("loadvm virtualbricks\n")
@@ -1496,8 +1499,8 @@ class VBGUI:
 				self.selected.poweron()
 		else:
 			self.error("Cannot find suspend point.")
-		
-		
+
+
 	def on_vm_powerbutton(self, widget=None, event=None, data=""):
 		self.joblist_selected.send("system_powerdown\n")
 		self.joblist_selected.recv()
@@ -1514,11 +1517,12 @@ class VBGUI:
 					if (self.selected):
 						self.show_brickactions(n.name)
 		self.curtain_down()
+
 	def on_topology_scroll(self, widget=None, event=None, data=""):
 		print "scroll"
-			
+
 	def signals(self):
-		self.signaldict =  {
+		self.signaldict = {
 			"on_window1_destroy":self.on_window1_destroy,
 			"on_windown_destroy":self.on_windown_destroy,
 			"on_newbrick_cancel":self.on_newbrick_cancel,
@@ -1708,10 +1712,10 @@ class VBGUI:
 							txt+='eth'+str(p.vlan)+': Host, '
 						elif p.sock:
 							txt+='eth'+str(p.vlan)+': '+ p.sock.nickname+', '
-					
+
 					self.bookmarks.set_value(iter, 4, txt.rstrip(', '))
-			
-					
+
+
 				if (b.get_type() == "Switch"):
 					fstp = ""
 					hub = ""
@@ -1721,7 +1725,7 @@ class VBGUI:
 						hub=", HUB"
 					self.bookmarks.set_value(iter, 4, "Ports:%d%s%s" % ((int(str(b.cfg.numports))),fstp,hub))
 				if (b.get_type().startswith("Wire")):
-						
+
 					ok = -2
 					p0 = "disconnected"
 					p1 = "disconnected"
@@ -1738,25 +1742,25 @@ class VBGUI:
 				if (b.get_type() == "Tap"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
-						p0 = "plugged to " + b.plugs[0].sock.brick.name 
+						p0 = "plugged to " + b.plugs[0].sock.brick.name
 					self.bookmarks.set_value(iter, 4, p0)
 				if (b.get_type() == "TunnelListen"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
-						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", listening to udp:" + b.cfg.port 
+						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", listening to udp:" + b.cfg.port
 					self.bookmarks.set_value(iter, 4, p0)
 				if (b.get_type() == "TunnelConnect"):
 					p0 = "disconnected"
 					if b.plugs[0].sock:
 						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", connecting to udp://" + b.cfg.host
 					self.bookmarks.set_value(iter, 4, p0)
-					
-			print "bricks list updated"
-			self.draw_topology()	
+
+			self.debug("bricks list updated")
+			self.draw_topology()
 		return True
-			
-			
-		
+
+
+
 	def check_joblist(self):
 		new_ps = []
 		for b in self.brickfactory.bricks:
@@ -1767,7 +1771,7 @@ class VBGUI:
 					b.poweroff()
 					self.error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
 					b.gui_changed = True
-		
+
 		if self.ps != new_ps:
 			self.ps = new_ps
 			self.bricks = []
@@ -1778,7 +1782,7 @@ class VBGUI:
 				self.running_bricks.set_value(iter,1,str(b.pid))
 				self.running_bricks.set_value(iter,2,b.get_type())
 				self.running_bricks.set_value(iter,3,b.name)
-			print "proc list updated"
+			self.debug("proc list updated")
 		return True
 
 	def draw_topology(self):
@@ -1837,9 +1841,9 @@ class Topology():
 						self.topo.add_edge(b.name, e.sock.brick.name)
 						e = self.topo.get_edge(b.name, e.sock.brick.name)
 					elif len(b.plugs) == 2:
-						if  loop == 0:
-							self.topo.add_edge(e.sock.brick.name, b.name)
-							e = self.topo.get_edge(e.sock.brick.name, b.name)
+						if loop == 0:
+							topo.add_edge(e.sock.brick.name, b.name)
+							e = topo.get_edge(e.sock.brick.name, b.name)
 						else:
 							self.topo.add_edge(b.name, e.sock.brick.name)
 							e = self.topo.get_edge(b.name, e.sock.brick.name)
@@ -1854,7 +1858,7 @@ class Topology():
 					e.attr['color'] = 'black'
 					e.attr['name'] = "      "
 					e.attr['decorate']='true'
-					
+
 
 		#draw and save
 		self.topo.write("/tmp/vde.dot")
