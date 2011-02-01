@@ -1667,9 +1667,10 @@ class VBGUI:
 		gobject.timeout_add(500,self.check_topology_scroll)
 
 	def check_topology_scroll(self):
-		self.topology.x_adj = self.gladefile.get_widget('topology_scrolled').get_hadjustment().get_value()
-		self.topology.y_adj = self.gladefile.get_widget('topology_scrolled').get_vadjustment().get_value()
-		return True
+		if self.topology:
+			self.topology.x_adj = self.gladefile.get_widget('topology_scrolled').get_hadjustment().get_value()
+			self.topology.y_adj = self.gladefile.get_widget('topology_scrolled').get_vadjustment().get_value()
+			return True
 
 	def check_bricks(self):
 		new_bricks = []
