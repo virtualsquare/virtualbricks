@@ -1842,8 +1842,8 @@ class Topology():
 						e = self.topo.get_edge(b.name, e.sock.brick.name)
 					elif len(b.plugs) == 2:
 						if loop == 0:
-							topo.add_edge(e.sock.brick.name, b.name)
-							e = topo.get_edge(e.sock.brick.name, b.name)
+							self.topo.add_edge(e.sock.brick.name, b.name)
+							e = self.topo.get_edge(e.sock.brick.name, b.name)
 						else:
 							self.topo.add_edge(b.name, e.sock.brick.name)
 							e = self.topo.get_edge(b.name, e.sock.brick.name)
