@@ -670,10 +670,10 @@ class Wirefilter(Wire):
 			res.append("RL" + self.cfg.speedRL + self.cfg.speedRLunit + self.cfg.speedRLdistribution)
 
 		if len(self.cfg.bandwidthLR) > 0:
-			res.append("-s")
+			res.append("-b")
 			res.append("LR" + self.cfg.bandwidthLR + self.cfg.bandwidthLRunit + self.cfg.bandwidthLRdistribution)
 		if len(self.cfg.bandwidthRL) > 0:
-			res.append("-s")
+			res.append("-b")
 			res.append("RL" + self.cfg.bandwidthRL + self.cfg.bandwidthRLunit + self.cfg.bandwidthRLdistribution)
 
 		if len(self.cfg.chanbufsizeLR) > 0:
@@ -695,137 +695,137 @@ class Wirefilter(Wire):
 
 	#callbacks for live-management
 	def cbset_lossLR(self, arg=0):
-		print "Callback wirefilter loss LR with argument " + self.name
+		print "Callback loss LR with argument " + self.name
 		self.send("loss LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_lossRL(self, arg=0):
-		print "Callback wirefilter loss RL with argument " + self.name
+		print "Callback loss RL with argument " + self.name
 		self.send("loss RL "+ arg + "\n")
 		print self.recv()
 
 	def cbset_loss(self, arg=0):
-		print "Callback wirefilter loss LR&RL with argument " + self.name
+		print "Callback loss LR&RL with argument " + self.name
 		self.send("loss "+ arg + "\n")
 		print self.recv()
 
 	def cbset_speedLR(self, arg=0):
-		print "Callback wirefilter speed LR with argument " + self.name
+		print "Callback speed LR with argument " + self.name
 		self.send("speed LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_speedRL(self, arg=0):
-		print "Callback wirefilter speed RL with argument " + self.name
+		print "Callback speed RL with argument " + self.name
 		self.send("speed RL "+ arg + "\n")
 		print self.recv()
 
 	def cbset_speed(self, arg=0):
-		print "Callback wirefilter speed LR&RL with argument " + self.name
+		print "Callback speed LR&RL with argument " + self.name
 		self.send("speed "+ arg + "\n")
 		print self.recv()
 
 	def cbset_noiseLR(self, arg=0):
-		print "Callback wirefilter noise LR with argument " + self.name
+		print "Callback noise LR with argument " + self.name
 		self.send("noise LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_noiseRL(self, arg=0):
-		print "Callback wirefilter noise RL with argument " + self.name
+		print "Callback noise RL with argument " + self.name
 		self.send("noise RL "+ arg + "\n")
 		print self.recv()
 
 	def cbset_noise(self, arg=0):
-		print "Callback wirefilter noise LR&RL with argument " + self.name
+		print "Callback noise LR&RL with argument " + self.name
 		self.send("noise "+ arg + "\n")
 		print self.recv()
 
 	def cbset_bandwidthLR(self, arg=0):
-		print "Callback wirefilter bandwidth LR with argument " + self.name
+		print "Callback bandwidth LR with argument " + self.name
 		self.send("bandwidth LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_bandwidthRL(self, arg=0):
-		print "Callback wirefilter bandwidth RL with argument " + self.name
+		print "Callback bandwidth RL with argument " + self.name
 		self.send("bandwidth RL "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_bandwidth(self, arg=0):
-		print "Callback wirefilter bandwidth LR&RL with argument " + self.name
+		print "Callback bandwidth LR&RL with argument " + self.name
 		self.send("bandwidth "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_delayLR(self, arg=0):
-		print "Callback wirefilter delay LR with argument " + self.name
+		print "Callback delay LR with argument " + self.name
 		self.send("delay LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_delayRL(self, arg=0):
-		print "Callback wirefilter delay RL with argument " + self.name
+		print "Callback delay RL with argument " + self.name
 		self.send("delay RL "+ arg + "\n")
 		print self.recv()
 
 	def cbset_delay(self, arg=0):
-		print "Callback wirefilter delay LR&RL with argument " + self.name
+		print "Callback delay LR&RL with argument " + self.name
 		self.send("delay "+ arg + "\n")
 		print self.recv()
 
 	def cbset_dupLR(self, arg=0):
-		print "Callback wirefilter dup LR with argument " + self.name
+		print "Callback dup LR with argument " + self.name
 		self.send("dup LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_dupRL(self, arg=0):
-		print "Callback wirefilter dup RL with argument " + self.name
+		print "Callback dup RL with argument " + self.name
 		self.send("dup RL "+ arg + "\n")
 		print self.recv()
 
 	def cbset_dup(self, arg=0):
-		print "Callback wirefilter dup LR&RL with argument " + self.name
+		print "Callback dup LR&RL with argument " + self.name
 		self.send("dup "+ arg + "\n")
 		print self.recv()
 
 	def cbset_MTULR(self, arg=0):
-		print "Callback wirefilter MTU LR with argument " + self.name
+		print "Callback MTU LR with argument " + self.name
 		self.send("MTU LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_MTURL(self, arg=0):
-		print "Callback wirefilter MTU RL with argument " + self.name
+		print "Callback MTU RL with argument " + self.name
 		self.send("MTU RL "+ arg + "\n")
 		print self.recv()
 
 	def cbset_MTU(self, arg=0):
-		print "Callback wirefilter MTU LR&RL with argument " + self.name
+		print "Callback MTU LR&RL with argument " + self.name
 		self.send("MTU "+ arg + "\n")
 		print self.recv()
 
 	def cbset_lburstLR(self, arg=0):
-		print "Callback wirefilter lburst LR with argument " + self.name
+		print "Callback lburst LR with argument " + self.name
 		self.send("lburst LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_lburstRL(self, arg=0):
-		print "Callback wirefilter lburst RL with argument " + self.name
+		print "Callback lburst RL with argument " + self.name
 		self.send("lburst RL "+ arg + "\n")
 		print self.recv()
 
 	def cbset_lburst(self, arg=0):
-		print "Callback wirefilter lburst LR&RL with argument " + self.name
+		print "Callback lburst LR&RL with argument " + self.name
 		self.send("lburst "+ arg + "\n")
 		print self.recv()
 
 	def cbset_chanbufsizeLR(self, arg=0):
-		print "Callback wirefilter chanbufsize LR (capacity) with argument " + self.name
+		print "Callback chanbufsize LR (capacity) with argument " + self.name
 		self.send("chanbufsize LR "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_chanbufsizeRL(self, arg=0):
-		print "Callback wirefilter chanbufsize RL (capacity) with argument " + self.name
+		print "Callback chanbufsize RL (capacity) with argument " + self.name
 		self.send("chanbufsize RL "+ arg+ "\n")
 		print self.recv()
 
 	def cbset_chanbufsize(self, arg=0):
-		print "Callback wirefilter chanbufsize LR&RL (capacity) with argument " + self.name
+		print "Callback chanbufsize LR&RL (capacity) with argument " + self.name
 		self.send("chanbufsize "+ arg+ "\n")
 		print self.recv()
 #Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?
