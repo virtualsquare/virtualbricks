@@ -719,7 +719,8 @@ class VBGUI(ChildLogger):
 		self.Dragging = None
 
 	def show_brickactions(self, name):
-		self.selected = self.brickfactory.getbrickbyname(name)
+#		self.selected = self.brickfactory.getbrickbyname(name) 
+# this has to remain in "on_treeview_bookmarks_button_release_event"!!!
 		if self.selected.get_type() == "Qemu":
 			self.set_sensitivegroup(['vmresume'])
 		else:
@@ -732,12 +733,14 @@ class VBGUI(ChildLogger):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		path = tree.get_cursor()[0]
-
+		print "on_treeview_bookmarks_button_release_event"
 		if path is None:
+			print "nothing selected!"
 			return
 
 		iter = tree.get_model().get_iter(path)
 		name = tree.get_model().get_value(iter, self.BOOKMARKS_NAME_IDX)
+		self.selected = self.brickfactory.getbrickbyname(name)
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
 			self.show_brickactions(name)
@@ -762,9 +765,9 @@ class VBGUI(ChildLogger):
 
 	def tree_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		tree = self.gladefile.get_widget('treeview_bookmarks');
+		tree = self.gladefile.get_widget('treeview_bookmarks')
 		path = tree.get_cursor()[0]
-
+		self.debug("tree_startstop")
 		if path is None:
 			return
 
