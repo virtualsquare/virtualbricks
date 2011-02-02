@@ -4,13 +4,13 @@
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkWindow" id="main_win">
     <property name="width_request">800</property>
-    <property name="height_request">760</property>
+    <property name="height_request">700</property>
     <property name="visible">True</property>
     <property name="border_width">2</property>
     <property name="title" translatable="yes">Virtualbricks</property>
     <property name="window_position">center</property>
     <property name="default_width">800</property>
-    <property name="default_height">778</property>
+    <property name="default_height">700</property>
     <signal name="delete_event" handler="on_window1_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
@@ -3830,8 +3830,8 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="use_preview_label">False</property>
                                 <property name="action">select-folder</property>
+                                <property name="use_preview_label">False</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
