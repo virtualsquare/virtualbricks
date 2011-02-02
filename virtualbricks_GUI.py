@@ -17,6 +17,13 @@ import Image
 
 
 class VBGUI(ChildLogger):
+
+	BOOKMARKS_ICON_IDX = 0
+	BOOKMARKS_STATUS_IDX = 1
+	BOOKMARKS_TYPE_IDX = 2
+	BOOKMARKS_NAME_IDX = 3
+	BOOKMARKS_PARAMETERS_IDX = 4
+
 	def __init__(self):
 		ChildLogger.__init__(self)
 		self.info("Starting VirtualBricks!")
@@ -50,13 +57,11 @@ class VBGUI(ChildLogger):
 		self.running_bricks = self.treestore('treeview_joblist',
 			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['','PID','Type','Name'])
+		
 		self.bookmarks = self.treestore('treeview_bookmarks',
-				[gtk.gdk.Pixbuf,
-				 gobject.TYPE_STRING,
-				 gobject.TYPE_STRING,
-				 gobject.TYPE_STRING,
-				 gobject.TYPE_STRING],
-				['','Status','Type','Name', 'Parameters'])
+			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
+				gobject.TYPE_STRING, gobject.TYPE_STRING],
+			['','Status','Type','Name', 'Parameters'])
 
 		# associate Drag and Drop action
 		tree = self.gladefile.get_widget('treeview_bookmarks')
@@ -510,17 +515,16 @@ class VBGUI(ChildLogger):
 		'sockscombo_tunnell',
 		'sockscombo_tunnelc'
 		]
+
 	def show_window(self, name):
 		for w in self.widg.keys():
 			if name == w or w == 'main_win':
 				if w.startswith('menu'):
-					self.widg[w].popup(None,None,None, 3, 0)
+					self.widg[w].popup(None, None, None, 3, 0)
 				else:
 					self.widg[w].show_all()
 			elif not name.startswith('menu') and not name.endswith('dialog_warn'):
 				self.widg[w].hide()
-
-		self.gladefile.get_widget("brickaction_name").set_label(self.selected.name)
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -721,17 +725,19 @@ class VBGUI(ChildLogger):
 		else:
 			self.set_nonsensitivegroup(['vmresume'])
 		if self.selected:
+			self.gladefile.get_widget("brickaction_name").set_label(self.selected.name)
 			self.show_window('menu_brickactions')
 
-	def on_treeview_bookmarks_button_press_event(self, widget=None, event=None, data=""):
+	def on_treeview_bookmarks_button_release_event(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
-		store = self.bookmarks
-		x = int(event.x)
-		y = int(event.y)
-		time = event.time
-		pthinfo = tree.get_path_at_pos(x, y)
-		name = self.get_treeselected_name(tree, store, pthinfo)
+		path = tree.get_cursor()[0]
+
+		if path is None:
+			return
+
+		iter = tree.get_model().get_iter(path)
+		name = tree.get_model().get_value(iter, self.BOOKMARKS_NAME_IDX)
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
 			self.show_brickactions(name)
@@ -744,32 +750,30 @@ class VBGUI(ChildLogger):
 		#context.set_icon_pixbuf('./'+self.Dragging.get_type()+'.png')
 
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
-		tree = self.gladefile.get_widget('treeview_bookmarks');
-		store = self.bookmarks
-		path, focus = tree.get_cursor()
-		iter = store.get_iter(path)
-		ntype = store.get_value(iter, 2)
-		name = store.get_value(iter, 3)
-		self.selected = self.brickfactory.getbrickbyname(name)
 		self.curtain_down()
 
-	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None , data=""):
-		self.tree_startstop()
+	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
+		self.tree_startstop(widget, event, data)
 		self.curtain_down()
 
 	def on_treeview_bookmarks_focus_out(self, widget=None, event=None , data=""):
 		self.curtain_down()
 		self.selected=None
 
-	def tree_startstop(self, widget=None, event=None , data=""):
+	def tree_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
-		store = self.bookmarks
-		path, focus = tree.get_cursor()
-		iter = store.get_iter(path)
-		ntype = store.get_value(iter, 2)
-		name = store.get_value(iter, 3)
+		path = tree.get_cursor()[0]
+
+		if path is None:
+			return
+
+		model = tree.get_model()
+		iter = model.get_iter(path)
+		ntype = model.get_value(iter, self.BOOKMARKS_TYPE_IDX)
+		name = model.get_value(iter, self.BOOKMARKS_NAME_IDX)
 		b = self.brickfactory.getbrickbyname(name)
+
 		if b.proc is not None:
 			b.poweroff()
 		else:
@@ -1184,9 +1188,11 @@ class VBGUI(ChildLogger):
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
 		print "signal not connected"
 
-	def on_brick_startstop(self,widget=None, event=None, data=""):
+	def on_brick_startstop(self, widget=None, event=None, data=""):
+		print "coin"
 		if self.selected is None:
 			return
+
 		if self.selected.proc is not None:
 			self.selected.poweroff()
 		else:
@@ -1547,7 +1553,7 @@ class VBGUI(ChildLogger):
 			"on_toolbutton_start_all_clicked":self.on_toolbutton_start_all_clicked,
 			"on_toolbutton_stop_all_clicked":self.on_toolbutton_stop_all_clicked,
 			"on_mainwindow_dropaction":self.on_mainwindow_dropaction,
-			"on_treeview_bookmarks_button_press_event":self.on_treeview_bookmarks_button_press_event,
+			"on_treeview_bookmarks_button_release_event":self.on_treeview_bookmarks_button_release_event,
 			"on_treeview_drag_get_data":self.on_treeview_drag_get_data,
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
 			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
@@ -1666,9 +1672,9 @@ class VBGUI(ChildLogger):
 	""" ******************************************************** """
 
 	def timers(self):
-		gobject.timeout_add(1000,self.check_joblist)
-		gobject.timeout_add(200,self.check_bricks)
-		gobject.timeout_add(500,self.check_topology_scroll)
+		gobject.timeout_add(1000, self.check_joblist)
+		gobject.timeout_add(200, self.check_bricks)
+		gobject.timeout_add(500, self.check_topology_scroll)
 
 	def check_topology_scroll(self):
 		if self.topology:

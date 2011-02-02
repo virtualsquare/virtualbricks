@@ -335,11 +335,10 @@ class Brick(ChildLogger):
 
 	def poweroff(self):
 		print "Shutting down %s" % self.name
-		if (self.proc == None):
+		if self.proc is None:
 			return False
+
 		if self.pid > 0:
-
-
 			if (self.needsudo):
 				os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
 			elif self.internal_console is not None and self.get_type() != "Qemu":
@@ -348,10 +347,13 @@ class Brick(ChildLogger):
 			else:
 				try:
 					os.kill(self.proc.pid, 15)
-				except:
-					pass
-			if(self.proc.poll()==None):
+				except Exception, err:
+					print "ERROR", err
+
+			ret = self.proc.poll()
+			if ret is None:
 				return
+
 		self.proc = None
 		self.need_restart_to_apply_changes = False
 		if self.close_internal_console and callable(self.close_internal_console):
@@ -360,10 +362,10 @@ class Brick(ChildLogger):
 		self.post_poweroff()
 
 	def post_poweron(self):
-		pass
-	def post_poweroff(self):
-		pass
+		self.active = True
 
+	def post_poweroff(self):
+		self.active = False
 
 	#############################
 	# Console related operations.
@@ -397,12 +399,13 @@ class Brick(ChildLogger):
 
 	def send(self,msg):
 		if self.internal_console == None or not self.active:
+			print "cancel send"
 			return
 		try:
 			print "= sending " + msg
 			self.internal_console.send(msg)
-		except:
-			print "send failed"
+		except Exception, err:
+			print "send failed", err, type(err)
 
 	def recv(self):
 		if self.internal_console == None:

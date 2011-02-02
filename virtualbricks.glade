@@ -277,10 +277,10 @@
                                 <property name="can_focus">True</property>
                                 <property name="has_tooltip">True</property>
                                 <property name="tooltip" translatable="yes">You can add items from the default bootimage folder list by rightclicking them, or any other file with the + My Machines Button left of the selected file entry.</property>
-                                <signal name="button_press_event" handler="on_treeview_bookmarks_button_press_event"/>
                                 <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
                                 <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
                                 <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
+                                <signal name="button_release_event" handler="on_treeview_bookmarks_button_release_event"/>
                               </widget>
                             </child>
                           </widget>
@@ -3830,8 +3830,8 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="action">select-folder</property>
                                 <property name="use_preview_label">False</property>
+                                <property name="action">select-folder</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
@@ -6719,65 +6719,61 @@ Tunnel Client</property>
     <child>
       <widget class="GtkMenuItem" id="brickaction_name">
         <property name="visible">True</property>
-        <child>
-          <widget class="GtkMenu" id="menu1">
-            <property name="visible">True</property>
-            <child>
-              <widget class="GtkMenuItem" id="startstop_brick_action">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">_Start/Stop</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_brick_startstop"/>
-              </widget>
-            </child>
-            <child>
-              <widget class="GtkMenuItem" id="vmresume">
-                <property name="visible">True</property>
-                <property name="sensitive">False</property>
-                <property name="label" translatable="yes">_Resume VM</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_vm_resume"/>
-              </widget>
-            </child>
-            <child>
-              <widget class="GtkSeparatorMenuItem" id="separatormenuitem1">
-                <property name="visible">True</property>
-              </widget>
-            </child>
-            <child>
-              <widget class="GtkMenuItem" id="configure_brick_action">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">_Configure</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_brick_configure"/>
-              </widget>
-            </child>
-            <child>
-              <widget class="GtkMenuItem" id="rename">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">Re_name</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_brick_rename"/>
-              </widget>
-            </child>
-            <child>
-              <widget class="GtkMenuItem" id="copy_brick_action">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">Make a C_opy</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_brick_copy"/>
-              </widget>
-            </child>
-            <child>
-              <widget class="GtkMenuItem" id="delete_brick_action">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">_Delete</property>
-                <property name="use_underline">True</property>
-                <signal name="activate" handler="on_brick_delete"/>
-              </widget>
-            </child>
-          </widget>
-        </child>
+        <property name="label" translatable="yes"> </property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="menuitem_separator">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="startstop_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Start/Stop</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_startstop"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="delete_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Delete</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_delete"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="copy_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Make a C_opy</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_copy"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="rename">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Re_name</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_rename"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="configure_brick_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Configure</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_configure"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmresume">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="label" translatable="yes">_Resume VM</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_resume"/>
       </widget>
     </child>
   </widget>
