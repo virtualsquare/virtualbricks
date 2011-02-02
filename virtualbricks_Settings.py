@@ -135,7 +135,7 @@ class Settings(object):
 		return self.config.get(self.DEFAULT_SECTION, attr)
 
 	def set(self, attr, value):
-		self.config.set(self.DEFAULT_SECTION, attr, value)
+		self.config.set(self.DEFAULT_SECTION, str(attr), str(value))
 
 	def store(self):
 		with open(self.filename, 'wb') as configfile:
