@@ -2538,7 +2538,7 @@ Normal Distribution</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkEntry" id="cfg_Wirefilter_bandwidhtLR_text">
+                              <widget class="GtkEntry" id="cfg_Wirefilter_bandwidthLR_text">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="invisible_char">&#x25CF;</property>

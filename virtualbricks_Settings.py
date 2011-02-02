@@ -206,4 +206,3 @@ class Settings(object):
 
 	def sudo_system(self, cmd):
 		return (os.system(self.get("sudo")+' '+repr(cmd)))
-
