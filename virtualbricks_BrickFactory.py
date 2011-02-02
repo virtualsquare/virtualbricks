@@ -309,7 +309,7 @@ class Brick(ChildLogger):
 			for cmdarg in command_line:
 				sudoarg+=cmdarg + " "
 			sudoarg += "-P /tmp/" +self.name+".pid "
-			command_line[0] = self.settings.sudo
+			command_line[0] = self.settings.get("sudo")
 			command_line[1] = sudoarg
 		print 'Starting "',
 		for cmdarg in command_line:
