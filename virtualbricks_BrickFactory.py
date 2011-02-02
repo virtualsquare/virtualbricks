@@ -248,7 +248,7 @@ class Brick(ChildLogger):
 				cb = Wirefilter.__dict__["cbset_"+key]
 
 			elif self.get_type() == 'Qemu':
-				cb = Qemu.__dict__["cbset_"+key]
+				cb = VM.__dict__["cbset_"+key]
 		except:
 			cb = None
 		return cb
@@ -592,20 +592,23 @@ class Wire(Brick):
 class Wirefilter(Wire):
 	def __init__(self, _factory, _name):
 		Wire.__init__(self, _factory, _name)
+		self.cfg.console = Settings.MYPATH + '/' + self.name + '.mgmt'
 		self.command_builder = {"-d":"delay",
 					"-l":"loss",
 					"-L":"lossburst",
 					"-D":"dup",
 					"-b":"bandwidth",
 					"-s":"speed",
-					"-c":"capacity",
+					"-c":"chanbufsize",
 					"-n":"noise",
 					"-m":"mtu",
 					"-N":"nofifo",
 					"-M":"console"
 			}
-		self.cfg.noise = ""
-		self.cfg.capacity = ""
+		self.cfg.noiseLR = ""
+		self.cfg.noiseRL = ""
+		self.cfg.chanbufsizeLR = ""
+		self.cfg.chanbufsizeRL = ""
 		self.cfg.delayLR = ""
 		self.cfg.delayRL = ""
 		self.cfg.lossLR = ""
@@ -636,21 +639,28 @@ class Wirefilter(Wire):
 			res.append("LR"+self.cfg.delayLR)
 		if len(self.cfg.delayRL) > 0:
 			res.append("-d")
-			res.append("RL"+self.cfg.delayLR)
+			res.append("RL"+self.cfg.delayRL)
+
+		if len(self.cfg.noiseLR) > 0:
+			res.append("-n")
+			res.append("LR"+self.cfg.noiseLR)
+		if len(self.cfg.noiseRL) > 0:
+			res.append("-n")
+			res.append("RL"+self.cfg.noiseRL)
 
 		if len(self.cfg.lossLR) > 0:
 			res.append("-l")
 			res.append("LR"+self.cfg.lossLR)
 		if len(self.cfg.lossRL) > 0:
 			res.append("-l")
-			res.append("RL"+self.cfg.lossLR)
+			res.append("RL"+self.cfg.lossRL)
 
 		if len(self.cfg.dupLR) > 0:
 			res.append("-D")
 			res.append("LR"+self.cfg.dupLR)
 		if len(self.cfg.dupRL) > 0:
 			res.append("-D")
-			res.append("RL"+self.cfg.dupLR)
+			res.append("RL"+self.cfg.dupRL)
 
 		if len(self.cfg.speedLR) > 0:
 			res.append("-s")
@@ -665,6 +675,13 @@ class Wirefilter(Wire):
 		if len(self.cfg.bandwidthRL) > 0:
 			res.append("-s")
 			res.append("RL" + self.cfg.bandwidthRL + self.cfg.bandwidthRLunit + self.cfg.bandwidthRLdistribution)
+			
+		if len(self.cfg.chanbufsizeLR) > 0:
+			res.append("-c")
+			res.append("LR"+self.cfg.chanbufsizeLR)
+		if len(self.cfg.chanbufsizeRL) > 0:
+			res.append("-c")
+			res.append("RL"+self.cfg.chanbufsizeRL)
 
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
@@ -796,7 +813,21 @@ class Wirefilter(Wire):
 		print "Callback wirefilter lburst LR&RL with argument " + self.name
 		self.send("lburst "+ arg + "\n")
 		print self.recv()
-#Cap.   L->R 0+0U   R->L 0+0U    ??? does it still exist? 
+
+	def cbset_chanbufsizeLR(self, arg=0):
+		print "Callback wirefilter chanbufsize LR (capacity) with argument " + self.name
+		self.send("chanbufsize LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_chanbufsizeRL(self, arg=0):
+		print "Callback wirefilter chanbufsize RL (capacity) with argument " + self.name
+		self.send("chanbufsize RL "+ arg+ "\n")
+		print self.recv()
+		
+	def cbset_chanbufsize(self, arg=0):
+		print "Callback wirefilter chanbufsize LR&RL (capacity) with argument " + self.name
+		self.send("chanbufsize "+ arg+ "\n")
+		print self.recv()
 #Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?   
 
 
