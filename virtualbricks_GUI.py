@@ -124,7 +124,7 @@ class VBGUI(ChildLogger):
 					combo.select(b.plugs[1].sock.nickname)
 		dicts=dict()
 		#QEMU COMMAND COMBO
-		missing,found = self.config.check_missing_qemupath(self.config.qemupath)
+		missing,found = self.config.check_missing_qemupath(self.config.get("qemupath"))
 		qemuarch = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
 		opt = dict()
 		for arch in found:

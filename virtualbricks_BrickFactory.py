@@ -248,7 +248,7 @@ class Brick(ChildLogger):
 				cb = Wirefilter.__dict__["cbset_"+key]
 
 			elif self.get_type() == 'Qemu':
-				cb = Qemu.__dict__["cbset_"+key]
+				cb = VM.__dict__["cbset_"+key]
 		except:
 			cb = None
 		return cb
@@ -385,9 +385,15 @@ class Brick(ChildLogger):
 			try:
 				console = subprocess.Popen(cmdline)
 			except:
-				print "Error: cannot start xterm"
-				return
-
+				print "xterm run failed, trying gnome-terminal"
+				cmdline = ['gnome-terminal','-t',self.name,'-e', 'vdeterm ' + self.cfg.console]
+				print cmdline 
+				try:
+					console = subprocess.Popen(cmdline)
+				except:
+					print "Error: cannot start a terminal emulator"
+					return
+				
 	#Must be overridden in Qemu to use appropriate console as internal (stdin, stdout?)
 	def open_internal_console(self):
 		if not self.has_console():
@@ -586,20 +592,23 @@ class Wire(Brick):
 class Wirefilter(Wire):
 	def __init__(self, _factory, _name):
 		Wire.__init__(self, _factory, _name)
+		self.cfg.console = Settings.MYPATH + '/' + self.name + '.mgmt'
 		self.command_builder = {"-d":"delay",
 					"-l":"loss",
 					"-L":"lossburst",
 					"-D":"dup",
 					"-b":"bandwidth",
 					"-s":"speed",
-					"-c":"capacity",
+					"-c":"chanbufsize",
 					"-n":"noise",
 					"-m":"mtu",
 					"-N":"nofifo",
 					"-M":"console"
 			}
-		self.cfg.noise = ""
-		self.cfg.capacity = ""
+		self.cfg.noiseLR = ""
+		self.cfg.noiseRL = ""
+		self.cfg.chanbufsizeLR = ""
+		self.cfg.chanbufsizeRL = ""
 		self.cfg.delayLR = ""
 		self.cfg.delayRL = ""
 		self.cfg.lossLR = ""
@@ -630,21 +639,28 @@ class Wirefilter(Wire):
 			res.append("LR"+self.cfg.delayLR)
 		if len(self.cfg.delayRL) > 0:
 			res.append("-d")
-			res.append("RL"+self.cfg.delayLR)
+			res.append("RL"+self.cfg.delayRL)
+
+		if len(self.cfg.noiseLR) > 0:
+			res.append("-n")
+			res.append("LR"+self.cfg.noiseLR)
+		if len(self.cfg.noiseRL) > 0:
+			res.append("-n")
+			res.append("RL"+self.cfg.noiseRL)
 
 		if len(self.cfg.lossLR) > 0:
 			res.append("-l")
 			res.append("LR"+self.cfg.lossLR)
 		if len(self.cfg.lossRL) > 0:
 			res.append("-l")
-			res.append("RL"+self.cfg.lossLR)
+			res.append("RL"+self.cfg.lossRL)
 
 		if len(self.cfg.dupLR) > 0:
 			res.append("-D")
 			res.append("LR"+self.cfg.dupLR)
 		if len(self.cfg.dupRL) > 0:
 			res.append("-D")
-			res.append("RL"+self.cfg.dupLR)
+			res.append("RL"+self.cfg.dupRL)
 
 		if len(self.cfg.speedLR) > 0:
 			res.append("-s")
@@ -659,6 +675,13 @@ class Wirefilter(Wire):
 		if len(self.cfg.bandwidthRL) > 0:
 			res.append("-s")
 			res.append("RL" + self.cfg.bandwidthRL + self.cfg.bandwidthRLunit + self.cfg.bandwidthRLdistribution)
+			
+		if len(self.cfg.chanbufsizeLR) > 0:
+			res.append("-c")
+			res.append("LR"+self.cfg.chanbufsizeLR)
+		if len(self.cfg.chanbufsizeRL) > 0:
+			res.append("-c")
+			res.append("RL"+self.cfg.chanbufsizeRL)
 
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
@@ -670,8 +693,143 @@ class Wirefilter(Wire):
 	def get_type(self):
 		return 'Wirefilter'
 
-	#callbacks for live-management
-	# TODO
+	#callbacks for live-management	
+	def cbset_lossLR(self, arg=0):
+		print "Callback wirefilter loss LR with argument " + self.name
+		self.send("loss LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_lossRL(self, arg=0):
+		print "Callback wirefilter loss RL with argument " + self.name
+		self.send("loss RL "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_loss(self, arg=0):
+		print "Callback wirefilter loss LR&RL with argument " + self.name
+		self.send("loss "+ arg + "\n")
+		print self.recv()
+
+	def cbset_speedLR(self, arg=0):
+		print "Callback wirefilter speed LR with argument " + self.name
+		self.send("speed LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_speedRL(self, arg=0):
+		print "Callback wirefilter speed RL with argument " + self.name
+		self.send("speed RL "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_speed(self, arg=0):
+		print "Callback wirefilter speed LR&RL with argument " + self.name
+		self.send("speed "+ arg + "\n")
+		print self.recv()
+
+	def cbset_noiseLR(self, arg=0):
+		print "Callback wirefilter noise LR with argument " + self.name
+		self.send("noise LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_noiseRL(self, arg=0):
+		print "Callback wirefilter noise RL with argument " + self.name
+		self.send("noise RL "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_noise(self, arg=0):
+		print "Callback wirefilter noise LR&RL with argument " + self.name
+		self.send("noise "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_bandwidthLR(self, arg=0):
+		print "Callback wirefilter bandwidth LR with argument " + self.name
+		self.send("bandwidth LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_bandwidthRL(self, arg=0):
+		print "Callback wirefilter bandwidth RL with argument " + self.name
+		self.send("bandwidth RL "+ arg+ "\n")
+		print self.recv()
+		
+	def cbset_bandwidth(self, arg=0):
+		print "Callback wirefilter bandwidth LR&RL with argument " + self.name
+		self.send("bandwidth "+ arg+ "\n")
+		print self.recv()
+		
+	def cbset_delayLR(self, arg=0):
+		print "Callback wirefilter delay LR with argument " + self.name
+		self.send("delay LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_delayRL(self, arg=0):
+		print "Callback wirefilter delay RL with argument " + self.name
+		self.send("delay RL "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_delay(self, arg=0):
+		print "Callback wirefilter delay LR&RL with argument " + self.name
+		self.send("delay "+ arg + "\n")
+		print self.recv()
+
+	def cbset_dupLR(self, arg=0):
+		print "Callback wirefilter dup LR with argument " + self.name
+		self.send("dup LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_dupRL(self, arg=0):
+		print "Callback wirefilter dup RL with argument " + self.name
+		self.send("dup RL "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_dup(self, arg=0):
+		print "Callback wirefilter dup LR&RL with argument " + self.name
+		self.send("dup "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_MTULR(self, arg=0):
+		print "Callback wirefilter MTU LR with argument " + self.name
+		self.send("MTU LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_MTURL(self, arg=0):
+		print "Callback wirefilter MTU RL with argument " + self.name
+		self.send("MTU RL "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_MTU(self, arg=0):
+		print "Callback wirefilter MTU LR&RL with argument " + self.name
+		self.send("MTU "+ arg + "\n")
+		print self.recv()
+
+	def cbset_lburstLR(self, arg=0):
+		print "Callback wirefilter lburst LR with argument " + self.name
+		self.send("lburst LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_lburstRL(self, arg=0):
+		print "Callback wirefilter lburst RL with argument " + self.name
+		self.send("lburst RL "+ arg + "\n")
+		print self.recv()
+		
+	def cbset_lburst(self, arg=0):
+		print "Callback wirefilter lburst LR&RL with argument " + self.name
+		self.send("lburst "+ arg + "\n")
+		print self.recv()
+
+	def cbset_chanbufsizeLR(self, arg=0):
+		print "Callback wirefilter chanbufsize LR (capacity) with argument " + self.name
+		self.send("chanbufsize LR "+ arg+ "\n")
+		print self.recv()
+
+	def cbset_chanbufsizeRL(self, arg=0):
+		print "Callback wirefilter chanbufsize RL (capacity) with argument " + self.name
+		self.send("chanbufsize RL "+ arg+ "\n")
+		print self.recv()
+		
+	def cbset_chanbufsize(self, arg=0):
+		print "Callback wirefilter chanbufsize LR&RL (capacity) with argument " + self.name
+		self.send("chanbufsize "+ arg+ "\n")
+		print self.recv()
+#Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?   
+
 
 class TunnelListen(Brick):
 	def __init__(self, _factory, _name):
@@ -981,7 +1139,7 @@ class VM(Brick):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
-		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm or self.settings.kvm == 'kvm')):
+		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm or self.settings.get("kvm") == 'kvm')):
 			cmd = self.settings.get("qemupath") + "/kvm"
 			self.cfg.cpu=""
 			self.cfg.machine=""
