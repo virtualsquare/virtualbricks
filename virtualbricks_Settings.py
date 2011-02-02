@@ -8,12 +8,12 @@
 ##	modify it under the terms of the GNU General Public License
 ##	as published by the Free Software Foundation; either version 2
 ##	of the License, or (at your option) any later version.
-##	
+##
 ##	This program is distributed in the hope that it will be useful,
 ##	but WITHOUT ANY WARRANTY; without even the implied warranty of
 ##	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##	GNU General Public License for more details.
-##	
+##
 ##	You should have received a copy of the GNU General Public License
 ##	along with this program; if not, write to the Free Software
 ##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -40,14 +40,14 @@ def ComboBox(widget):
 			return v
 	COMBOBOXES[widget] = ComboBoxObj(widget)
 	return COMBOBOXES[widget]
-	
+
 
 class ComboBoxObj:
 	def __init__(self, _widget):
-		self.widget = _widget 
+		self.widget = _widget
 		self.model = self.widget.get_model()
 		self.options = dict()
-	
+
 	# args is dict[showing_name] = real name
 	def populate(self, args, selected=None, _clear=True):
 		if _clear:
@@ -148,7 +148,7 @@ class Settings(object):
 			if not os.access(path + "/" + v, os.X_OK):
 				res.append(v)
 		return res
-	
+
 	def check_missing_qemupath(self, path):
 		qemubin_template = ['qemu', 'kvm',
 			'qemu-system-arm',
@@ -169,7 +169,7 @@ class Settings(object):
 			'qemu-system-sparc64',
 			'qemu-system-x86_64'
 		]
-	
+
 		res0 = []
 		res1 = []
 		for v in qemubin_template:
@@ -180,15 +180,15 @@ class Settings(object):
 		return res0, res1
 
 	def check_kvm(self):
-		for b in self.check_missing_qemupath(get("qemupath")):
+		for b in self.check_missing_qemupath(self.get("qemupath")):
 			if b == 'kvm':
-				raise IOError	
+				raise IOError
 				return False
-		
+
 		if not os.access("/sys/class/misc/kvm", os.X_OK):
 			raise NotImplementedError
 		return True
-		
+
 	def check_ksm(self, onoff):
 		if (onoff == False and self.ksm != "1"):
 			return True
@@ -201,9 +201,9 @@ class Settings(object):
 		if self.sudo_system(cmd) != 0:
 			print cmd
 			raise NotImplementedError
-		
-		
-		
+
+
+
 	def sudo_system(self, cmd):
-		return (os.system(self.sudo+' '+repr(cmd)))
-		
+		return (os.system(self.get("sudo")+' '+repr(cmd)))
+
