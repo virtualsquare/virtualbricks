@@ -1139,7 +1139,7 @@ class VM(Brick):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
-		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm or self.settings.kvm == 'kvm')):
+		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm or self.settings.get("kvm") == 'kvm')):
 			cmd = self.settings.get("qemupath") + "/kvm"
 			self.cfg.cpu=""
 			self.cfg.machine=""
