@@ -177,7 +177,7 @@ class Brick(ChildLogger):
 		self.need_restart_to_apply_changes = False
 		self.needsudo = False
 		self.internal_console = None
-		self.icon = Icon(self) 
+		self.icon = Icon(self)
 
 	def cmdline(self):
 		return ""
@@ -387,13 +387,13 @@ class Brick(ChildLogger):
 			except:
 				print "xterm run failed, trying gnome-terminal"
 				cmdline = ['gnome-terminal','-t',self.name,'-e', 'vdeterm ' + self.cfg.console]
-				print cmdline 
+				print cmdline
 				try:
 					console = subprocess.Popen(cmdline)
 				except:
 					print "Error: cannot start a terminal emulator"
 					return
-				
+
 	#Must be overridden in Qemu to use appropriate console as internal (stdin, stdout?)
 	def open_internal_console(self):
 		if not self.has_console():
@@ -675,7 +675,7 @@ class Wirefilter(Wire):
 		if len(self.cfg.bandwidthRL) > 0:
 			res.append("-s")
 			res.append("RL" + self.cfg.bandwidthRL + self.cfg.bandwidthRLunit + self.cfg.bandwidthRLdistribution)
-			
+
 		if len(self.cfg.chanbufsizeLR) > 0:
 			res.append("-c")
 			res.append("LR"+self.cfg.chanbufsizeLR)
@@ -693,7 +693,7 @@ class Wirefilter(Wire):
 	def get_type(self):
 		return 'Wirefilter'
 
-	#callbacks for live-management	
+	#callbacks for live-management
 	def cbset_lossLR(self, arg=0):
 		print "Callback wirefilter loss LR with argument " + self.name
 		self.send("loss LR "+ arg+ "\n")
@@ -703,7 +703,7 @@ class Wirefilter(Wire):
 		print "Callback wirefilter loss RL with argument " + self.name
 		self.send("loss RL "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_loss(self, arg=0):
 		print "Callback wirefilter loss LR&RL with argument " + self.name
 		self.send("loss "+ arg + "\n")
@@ -718,7 +718,7 @@ class Wirefilter(Wire):
 		print "Callback wirefilter speed RL with argument " + self.name
 		self.send("speed RL "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_speed(self, arg=0):
 		print "Callback wirefilter speed LR&RL with argument " + self.name
 		self.send("speed "+ arg + "\n")
@@ -733,12 +733,12 @@ class Wirefilter(Wire):
 		print "Callback wirefilter noise RL with argument " + self.name
 		self.send("noise RL "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_noise(self, arg=0):
 		print "Callback wirefilter noise LR&RL with argument " + self.name
 		self.send("noise "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_bandwidthLR(self, arg=0):
 		print "Callback wirefilter bandwidth LR with argument " + self.name
 		self.send("bandwidth LR "+ arg+ "\n")
@@ -748,12 +748,12 @@ class Wirefilter(Wire):
 		print "Callback wirefilter bandwidth RL with argument " + self.name
 		self.send("bandwidth RL "+ arg+ "\n")
 		print self.recv()
-		
+
 	def cbset_bandwidth(self, arg=0):
 		print "Callback wirefilter bandwidth LR&RL with argument " + self.name
 		self.send("bandwidth "+ arg+ "\n")
 		print self.recv()
-		
+
 	def cbset_delayLR(self, arg=0):
 		print "Callback wirefilter delay LR with argument " + self.name
 		self.send("delay LR "+ arg+ "\n")
@@ -763,7 +763,7 @@ class Wirefilter(Wire):
 		print "Callback wirefilter delay RL with argument " + self.name
 		self.send("delay RL "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_delay(self, arg=0):
 		print "Callback wirefilter delay LR&RL with argument " + self.name
 		self.send("delay "+ arg + "\n")
@@ -778,12 +778,12 @@ class Wirefilter(Wire):
 		print "Callback wirefilter dup RL with argument " + self.name
 		self.send("dup RL "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_dup(self, arg=0):
 		print "Callback wirefilter dup LR&RL with argument " + self.name
 		self.send("dup "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_MTULR(self, arg=0):
 		print "Callback wirefilter MTU LR with argument " + self.name
 		self.send("MTU LR "+ arg+ "\n")
@@ -793,7 +793,7 @@ class Wirefilter(Wire):
 		print "Callback wirefilter MTU RL with argument " + self.name
 		self.send("MTU RL "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_MTU(self, arg=0):
 		print "Callback wirefilter MTU LR&RL with argument " + self.name
 		self.send("MTU "+ arg + "\n")
@@ -808,7 +808,7 @@ class Wirefilter(Wire):
 		print "Callback wirefilter lburst RL with argument " + self.name
 		self.send("lburst RL "+ arg + "\n")
 		print self.recv()
-		
+
 	def cbset_lburst(self, arg=0):
 		print "Callback wirefilter lburst LR&RL with argument " + self.name
 		self.send("lburst "+ arg + "\n")
@@ -823,12 +823,12 @@ class Wirefilter(Wire):
 		print "Callback wirefilter chanbufsize RL (capacity) with argument " + self.name
 		self.send("chanbufsize RL "+ arg+ "\n")
 		print self.recv()
-		
+
 	def cbset_chanbufsize(self, arg=0):
 		print "Callback wirefilter chanbufsize LR&RL (capacity) with argument " + self.name
 		self.send("chanbufsize "+ arg+ "\n")
 		print self.recv()
-#Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?   
+#Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?
 
 
 class TunnelListen(Brick):
