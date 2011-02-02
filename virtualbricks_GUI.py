@@ -13,6 +13,8 @@ import time
 import pygraphviz as pgv
 import subprocess
 import Image
+from virtualbricks_Graphics import *
+
 
 
 
@@ -1698,13 +1700,13 @@ class VBGUI(ChildLogger):
 				iter = self.bookmarks.append(None, None)
 				state='running'
 				if b.proc is not None:
-					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
+					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
 				elif not b.properly_connected():
 					self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
 					state='disconnected'
 				else:
 					state='off'
-					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
+					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
 
 				self.bookmarks.set_value(iter,1,state)
 				self.bookmarks.set_value(iter,2,b.get_type())
@@ -1784,7 +1786,7 @@ class VBGUI(ChildLogger):
 			self.running_bricks.clear()
 			for b in self.ps:
 				iter = self.running_bricks.append(None, None)
-				self.running_bricks.set_value(iter, 0,gtk.gdk.pixbuf_new_from_file_at_size(b.get_type()+'.png', 48, 48))
+				self.running_bricks.set_value(iter, 0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
 				self.running_bricks.set_value(iter,1,str(b.pid))
 				self.running_bricks.set_value(iter,2,b.get_type())
 				self.running_bricks.set_value(iter,3,b.name)
@@ -1793,95 +1795,4 @@ class VBGUI(ChildLogger):
 
 	def draw_topology(self):
 		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.bricks)
-		
-class Node:
-	def __init__(self, topology, name, x, y, thresh = 50):
-		self.x = x
-		self.y = y 
-		self.thresh = thresh
-		self.name = name
-		self.parent = topology
-	def here(self, x, y):
-		if abs(x + self.parent.x_adj - self.x) < self.thresh and abs(y + self.parent.y_adj - self.y) < self.thresh:
-			return True
-		else: 
-			return False
 
-class Topology():
-			
-	def __init__(self, widget, bricks):
-		self.topowidget = widget
-		self.topo = pgv.AGraph()
-		self.topo.graph_attr['rankdir']='LR'
-		#self.topo.graph_attr['rankdir']='TB'
-		self.topo.graph_attr['ranksep']='1.2'
-		self.nodes = []
-		self.x_adj = 0.0
-		self.y_adj = 0.0
-
-		# Add nodes
-		sg = self.topo.add_subgraph([],name="switches_rank")
-		sg.graph_attr['rank'] = 'same'
-		for b in bricks:
-		### I would like to use this code, but pygraphviz has a bug.
-		#	if b.get_type() == 'Switch' or b.get_type().startswith('Wire'):
-		#		sg.add_node(b.name)
-		#		n = sg.get_node(b.name)
-		#		print n
-		#		n.attr['shape']='none'
-		#		n.attr['fontsize']='9'
-		#		n.attr['image']=b.get_type()+'.png'
-		#	else:
-				self.topo.add_node(b.name)
-				n = self.topo.get_node(b.name)
-				n.attr['shape']='none'
-				n.attr['fontsize']='9'
-				n.attr['image']=b.get_type()+'.png'
-
-
-		for b in bricks:
-			loop = 0
-			for e in b.plugs:
-				if e.sock is not None:
-					if (b.get_type() == 'Tap'):
-						self.topo.add_edge(b.name, e.sock.brick.name)
-						e = self.topo.get_edge(b.name, e.sock.brick.name)
-					elif len(b.plugs) == 2:
-						if loop == 0:
-							self.topo.add_edge(e.sock.brick.name, b.name)
-							e = self.topo.get_edge(e.sock.brick.name, b.name)
-						else:
-							self.topo.add_edge(b.name, e.sock.brick.name)
-							e = self.topo.get_edge(b.name, e.sock.brick.name)
-					elif loop < (len(b.plugs) + 1) / 2:
-						self.topo.add_edge(e.sock.brick.name, b.name)
-						e = self.topo.get_edge(e.sock.brick.name, b.name)
-					else:
-						self.topo.add_edge(b.name, e.sock.brick.name)
-						e = self.topo.get_edge(b.name, e.sock.brick.name)
-					loop+=1
-					e.attr['dir'] = 'none'
-					e.attr['color'] = 'black'
-					e.attr['name'] = "      "
-					e.attr['decorate']='true'
-
-
-		#draw and save
-		self.topo.write("/tmp/vde.dot")
-		self.topo.layout('dot')
-		self.topo.draw("/tmp/vde_topology.png")
-		self.topo.draw("/tmp/vde_topology.plain")
-
-		img = Image.open("/tmp/vde_topology.png")
-		x_siz, y_siz = img.size
-		for line in open("/tmp/vde_topology.plain").readlines():
-			arg  = re.split('\s+', line.rstrip('\n'))
-			if arg[0] == 'graph':
-				x_fact = x_siz / float(arg[2])
-				y_fact = y_siz / float(arg[3])
-			elif arg[0] == 'node':
-				x = x_fact * float(arg[2]) 
-				y = y_siz - y_fact * float(arg[3])
-				self.nodes.append(Node(self, arg[1],x,y))
-		# Display on the widget
-		self.topowidget.set_from_file("/tmp/vde_topology.png")

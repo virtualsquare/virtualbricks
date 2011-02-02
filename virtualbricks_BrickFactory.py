@@ -19,6 +19,7 @@ from virtualbricks_Logger import ChildLogger
 import select
 import copy
 import socket
+from virtualbricks_Graphics import *
 
 
 class InvalidNameException(Exception):
@@ -177,6 +178,7 @@ class Brick(ChildLogger):
 		self.need_restart_to_apply_changes = False
 		self.needsudo = False
 		self.internal_console = None
+		self.icon = Icon(self) 
 
 	def cmdline(self):
 		return ""
@@ -341,9 +343,6 @@ class Brick(ChildLogger):
 		if self.pid > 0:
 			if (self.needsudo):
 				os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
-			elif self.internal_console is not None and self.get_type() != "Qemu":
-				self.send('shutdown\n')
-				print self.recv()
 			else:
 				try:
 					os.kill(self.proc.pid, 15)
@@ -1054,6 +1053,7 @@ class VM(Brick):
 		if sock and sock == '_hostonly':
 			pl = VMPlugHostonly(self)
 			print "hostonly added"
+			pl.mode = "hostonly"
 		else:
 			pl = VMPlug(self)
 		self.plugs.append(pl)
