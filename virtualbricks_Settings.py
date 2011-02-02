@@ -132,10 +132,10 @@ class Settings(object):
 				return
 
 	def get(self, attr):
-		return self.config.get(self.DEFAULT_SECTION, attr)
+		return self.config.get(self.DEFAULT_SECTION, str(attr))
 
 	def set(self, attr, value):
-		self.config.set(self.DEFAULT_SECTION, attr, value)
+		self.config.set(self.DEFAULT_SECTION, str(attr), str(value))
 
 	def store(self):
 		with open(self.filename, 'wb') as configfile:
@@ -180,7 +180,7 @@ class Settings(object):
 		return res0, res1
 
 	def check_kvm(self):
-		for b in self.check_missing_qemupath(self.config.get(self.DEFAULT_SECTION,"qemupath")):
+		for b in self.check_missing_qemupath(get("qemupath")):
 			if b == 'kvm':
 				raise IOError	
 				return False
