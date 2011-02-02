@@ -30,6 +30,7 @@ VDEPATH="/usr/bin"
 HOME=os.path.expanduser("~")
 MYPATH=HOME + "/.virtualbricks"
 CONFIGFILE=HOME + "/.virtualbricks.conf"
+#TERM=os.environ.get("COLORTERM",None);
 
 COMBOBOXES=dict()
 
@@ -111,7 +112,11 @@ class Settings(object):
 			"erroronloop": False,
 		}
 		self.filename = filename
-		self.config = ConfigParser.SafeConfigParser(default_conf)
+		self.config = ConfigParser.SafeConfigParser()
+		self.config.add_section(self.DEFAULT_SECTION)
+		if(default_conf):
+			for key,value in default_conf.items():
+				self.config.set(self.DEFAULT_SECTION, key, str(value))
 
 		try:
 			self.config.read(self.filename)
@@ -127,7 +132,7 @@ class Settings(object):
 				return
 
 	def get(self, attr):
-		return self.config.set(self.DEFAULT_SECTION, attr)
+		return self.config.get(self.DEFAULT_SECTION, attr)
 
 	def set(self, attr, value):
 		self.config.set(self.DEFAULT_SECTION, attr, value)
