@@ -1,0 +1,25 @@
+#!/usr/bin/python
+import sys
+import os
+import ConfigParser
+import time
+import re
+import subprocess 
+import gobject
+import signal
+import string
+import random
+import threading
+import virtualbricks_GUI
+import virtualbricks_Global as Global
+
+#Main.
+
+VB = virtualbricks_GUI.VBGUI()
+		
+		
+	
+
+
+
+

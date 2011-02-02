@@ -180,7 +180,7 @@ class Settings(object):
 		return res0, res1
 
 	def check_kvm(self):
-		for b in self.check_missing_qemupath(self.qemupath):
+		for b in self.check_missing_qemupath(self.config.get(self.DEFAULT_SECTION,"qemupath")):
 			if b == 'kvm':
 				raise IOError	
 				return False
