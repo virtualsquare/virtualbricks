@@ -146,11 +146,10 @@ class BrickConfig(dict):
 				val = val.rstrip('=') + '"'
 			else:
 				val += kv[1]
-
 			print "setting %s to '%s'" % (kv[0], val)
 			self[kv[0]] = val
 			return True
- 
+
 	def set_obj(self, key, obj):
 		print "setting_obj %s to '%s'" % (key, obj)
 		self[key] = obj
@@ -213,10 +212,12 @@ class Brick(ChildLogger):
 		return True
 
 	def initialize(self, attrlist):
+		"""TODO attrs : dict attr => value"""
 		for attr in attrlist:
 			self.cfg.set(attr)
 
 	def configure(self, attrlist):
+		"""TODO attrs : dict attr => value"""
 		self.initialize(attrlist)
 		self.on_config_changed()
 
@@ -1089,8 +1090,7 @@ class BrickFactory(ChildLogger, threading.Thread):
 		self.showconsole = showconsole
 		threading.Thread.__init__(self)
 		self.running_condition = True
-		self.settings=Settings.Settings(Settings.CONFIGFILE)
-		self.settings.load()
+		self.settings = Settings.Settings(Settings.CONFIGFILE)
 		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
 
 

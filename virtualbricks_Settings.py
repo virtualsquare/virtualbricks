@@ -24,7 +24,7 @@ import pickle
 import re
 import shutil
 from copy import copy
-
+import ConfigParser
 
 VDEPATH="/usr/bin"
 HOME=os.path.expanduser("~")
@@ -91,65 +91,50 @@ class ComboBoxObj:
 		except KeyError:
 			return None
 
-	
-
-
-class Settings:
-	def __init__(self, f):
-		self.configfile = None
-		#default config
-		self.bricksdirectory = HOME + "/virtualbricks"
-		self.term = "/usr/bin/xterm"
-		self.sudo = "/usr/bin/gksu"
-		self.qemupath="/usr/bin"
-		self.baseimages = HOME + "/virtualbricks/img"
-		self.kvm = "0"
-		self.ksm = "0"
-		self.kqemu = "0"
-		self.cdroms = ""
-		self.vdepath="/usr/bin"
-		self.python = "0"
-		self.femaleplugs = "0"
-		self.erroronloop = "0"
+class Settings(object):
+	DEFAULT_SECTION = "Main"
+	def __init__(self, filename):
+		# default config
+		default_conf = {
+			"bricksdirectory": HOME + "/virtualbricks",
+			"term": "/usr/bin/xterm",
+			"sudo": "/usr/bin/gksu",
+			"qemupath": "/usr/bin",
+			"baseimages": HOME + "/virtualbricks/img",
+			"kvm": False,
+			"ksm": False,
+			"kqemu": False,
+			"cdroms": "",
+			"vdepath": "/usr/bin",
+			"python": False,
+			"femaleplugs": False,
+			"erroronloop": False,
+		}
+		self.filename = filename
+		self.config = ConfigParser.SafeConfigParser(default_conf)
 
 		try:
-			self.configfile = open(f, "r+")
-		except Exception:
-			try:
-				self.configfile = open(f, "w+")
-			except Exception:
-				print "FATAL: Cannot open config file!!"
-				return
-			else:
-				self.store()
-				print "CONFIGURATION: WRITTEN."
-		else:
-			self.load()
+			self.config.read(self.filename)
 			print "CONFIGURATION: LOADED."
+		except Exception:
+			print "FATAL: Cannot open config file!!"
+			try:
+				with open(self.filename, 'wb') as configfile:
+					self.config.write(configfile)
+					print "default configuration written"
+			except Exception:
+				print "Can not save default configuration"
+				return
 
-	def load(self):
-		for l in self.configfile:
-			self.set(l.rstrip("\n"))
+	def get(self, attr):
+		return self.config.set(self.DEFAULT_SECTION, attr)
 
-	def set(self,attr):
-		kv = attr.split("=")
-		if len(kv) != 2:
-			return False
-		else:
-			self.__dict__[kv[0]] = kv[1]
-		
-	def get(self, key):
-		try:
-			val = self.__dict__[key]
-		except KeyError:
-			return "" 
-		return self.__dict__[key]
+	def set(self, attr, value):
+		self.config.set(self.DEFAULT_SECTION, attr, value)
 
 	def store(self):
-		for (k,v) in self.__dict__.items():
-			if k is not 'configfile':	
-				self.configfile.write("%s=%s\n" % (k,v))
-
+		with open(self.filename, 'wb') as configfile:
+			self.config.write(configfile)
 
 	def check_missing_vdepath(self, path):
 		vdebin_template = ['vde_switch', 'vde_plug', 'vde_cryptcab', 'dpipe', 'vdeterm', 'vde_plug2tap', 'wirefilter']

@@ -38,9 +38,7 @@ class VBGUI(ChildLogger):
 		self.ps = []
 		self.bricks = []
 
-
 		self.config = self.brickfactory.settings
-		self.config.load()
 		self.signals()
 		self.timers()
 		self.topology_active = False
@@ -844,15 +842,15 @@ class VBGUI(ChildLogger):
 		if response == gtk.RESPONSE_APPLY or response == gtk.RESPONSE_OK:
 			self.debug("Apply settings...")
 			for k in ['bricksdirectory', 'qemupath', 'vdepath', 'baseimages']:
-				self.config.set(k + '=' + self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
+				self.config.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
 
 			if self.gladefile.get_widget('check_kvm').get_active():
-				self.config.set("kvm=1")
+				self.config.set("kvm", True)
 			else:
-				self.config.set("kvm=0")
+				self.config.set("kvm", False)
 
 			if self.gladefile.get_widget('check_ksm').get_active():
-				self.config.set("ksm=1")
+				self.config.set("ksm", True)
 				try:
 					self.config.check_ksm(True)
 				except:
@@ -862,30 +860,30 @@ class VBGUI(ChildLogger):
 					self.config.check_ksm(False)
 				except:
 					pass
-				self.config.set("ksm=0")
+				self.config.set("ksm", False)
 
 			if self.gladefile.get_widget('check_kqemu').get_active():
-				self.config.set("kqemu=1")
+				self.config.set("kqemu", True)
 			else:
-				self.config.set("kqemu=0")
+				self.config.set("kqemu", False)
 
 			if self.gladefile.get_widget('check_python').get_active():
-				self.config.set("python=1")
+				self.config.set("python", True)
 			else:
-				self.config.set("python=0")
+				self.config.set("python", False)
 
 			if self.gladefile.get_widget('check_femaleplugs').get_active():
-				self.config.set("femaleplugs=1")
+				self.config.set("femaleplugs", True)
 			else:
-				self.config.set("femaleplugs=0")
+				self.config.set("femaleplugs", False)
 
 			if self.gladefile.get_widget('check_erroronloop').get_active():
-				self.config.set("erroronloop=1")
+				self.config.set("erroronloop", True)
 			else:
-				self.config.set("erroronloop=0")
+				self.config.set("erroronloop", False)
 
-			self.config.set("term="+self.gladefile.get_widget('entry_term').get_text())
-			self.config.set("sudo="+self.gladefile.get_widget('entry_sudo').get_text())
+			self.config.set("term", self.gladefile.get_widget('entry_term').get_text())
+			self.config.set("sudo", self.gladefile.get_widget('entry_sudo').get_text())
 
 
 			self.config.store()
@@ -1495,7 +1493,7 @@ class VBGUI(ChildLogger):
 				self.selected.recv()
 				return
 			else:
-				self.selected.cfg.set("loadvm=virtualbricks")
+				self.selected.cfg.set("loadvm", "virtualbricks")
 				self.selected.poweron()
 		else:
 			self.error("Cannot find suspend point.")
