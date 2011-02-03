@@ -897,7 +897,6 @@ class TunnelConnect(TunnelListen):
 
 		p = self.cfg.get("port")
 		if p is not None:
-			del(self.cfg.port)
 			h = self.cfg.get("host")
 			if h is not None:
 				h = h.split(":")[0]
