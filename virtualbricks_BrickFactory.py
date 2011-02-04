@@ -1468,7 +1468,7 @@ class BrickFactory(ChildLogger, threading.Thread):
 				del(b)
 	def dupbrick(self,bricktodup):
 		b1 = copy.copy(bricktodup)
-		b1.cfg = copy.deepcopy(bricktodup.cfg)
+		b1.cfg = copy.copy(bricktodup.cfg)
 		b1.name = "copy_of_"+bricktodup.name
 		b1.plugs = []
 		b1.socks = []
