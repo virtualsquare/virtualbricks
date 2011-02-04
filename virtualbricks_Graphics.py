@@ -52,7 +52,6 @@ class Node:
 			return False
 
 class Topology():
-	DOUBLECLICKTIME = 600
 
 	def __init__(self, widget, bricks):
 		self.topowidget = widget
@@ -63,8 +62,6 @@ class Topology():
 		self.nodes = []
 		self.x_adj = 0.0
 		self.y_adj = 0.0
-
-		self.clicktime = 0
 
 		# Add nodes
 		sg = self.topo.add_subgraph([],name="switches_rank")

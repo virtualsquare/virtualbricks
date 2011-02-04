@@ -813,8 +813,10 @@ class VBGUI(ChildLogger):
 
 	def startstop_brick(self, b):
 		if b.proc is not None:
+			print "Power OFF"
 			b.poweroff()
 		else:
+			print "Power ON"
 			if b.get_type() == "Qemu":
 				b.cfg.loadvm='' #prevent restore from saved state
 			try:
@@ -828,8 +830,8 @@ class VBGUI(ChildLogger):
 				if (self.config.erroronloop):
 					self.error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
-				else:
-					pass
+			else:
+				pass
 
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"
@@ -1591,12 +1593,10 @@ class VBGUI(ChildLogger):
 					brick = self.brickfactory.getbrickbyname(n.name)
 					if brick is not None:
 						self.show_brickactions(brick)
-				if n.here(event.x,event.y) and event.button == 1:
-					if (event.time - self.topology.clicktime < Topology.DOUBLECLICKTIME):
+				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
 						brick = self.brickfactory.getbrickbyname(n.name)
 						if brick is not None:
 							self.startstop_brick(brick)
-					self.topology.clicktime = event.time
 		self.curtain_down()
 
 	def on_topology_scroll(self, widget=None, event=None, data=""):
