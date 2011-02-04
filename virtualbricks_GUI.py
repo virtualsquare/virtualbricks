@@ -101,15 +101,14 @@ class VBGUI(ChildLogger):
 
 		self.vmplug_selected = None
 		self.joblist_selected = None
+		self.brick_selected = None
 
 		try:
 			gtk.main()
 		except KeyboardInterrupt:
 			self.quit()
 
-	def get_selected_brick(self):
-		# TODO refactor adding treeview parameter in order
-		# to get selected item for other trees
+	def get_selected_bookmark(self):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		path = tree.get_cursor()[0]
 
@@ -134,7 +133,8 @@ class VBGUI(ChildLogger):
 	"""                                                          """
 	""" ******************************************************** """
 
-	def config_brick_prepare(self, b):
+	def config_brick_prepare(self):
+		b = self.brick_selected
 		# Fill socks combobox
 		for k in self.sockscombo_names():
 			combo = Settings.ComboBox(self.gladefile.get_widget(k))
@@ -284,10 +284,10 @@ class VBGUI(ChildLogger):
 
 
 
-	def config_brick_confirm(self, b):
+	def config_brick_confirm(self):
 		# TODO merge in on_config_ok
 		parameters = {}
-
+		b = self.brick_selected
 		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
@@ -423,44 +423,39 @@ class VBGUI(ChildLogger):
 		self.gladefile.get_widget('box_wirefilterconfig').hide()
 		self.gladefile.get_widget('box_switchconfig').hide()
 
-		brick = self.get_selected_brick()
-		if brick is None:
+		if self.brick_selected is None:
 			return
 
 		wg = self.curtain
-		if brick.get_type() == 'Switch':
+		if self.brick_selected.get_type() == 'Switch':
 			self.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
 			wg.set_position(589)
-
-		elif brick.get_type() == 'Qemu':
+		elif self.brick_selected.get_type() == 'Qemu':
 			self.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')
 			wg.set_position(245)
-
-
-		elif brick.get_type() == 'Tap':
+		elif self.brick_selected.get_type() == 'Tap':
 			self.debug("tap config")
 			ww = self.gladefile.get_widget('box_tapconfig')
 			wg.set_position(513)
-
-		elif brick.get_type() == 'Wire':
+		elif self.brick_selected.get_type() == 'Wire':
 			self.debug("wire config")
 			ww = self.gladefile.get_widget('box_wireconfig')
 			wg.set_position(606)
-		elif brick.get_type() == 'Wirefilter':
+		elif self.brick_selected.get_type() == 'Wirefilter':
 			self.debug("wirefilter config")
 			ww = self.gladefile.get_widget('box_wirefilterconfig')
 			wg.set_position(424)
-		elif brick.get_type() == 'TunnelConnect':
+		elif self.brick_selected.get_type() == 'TunnelConnect':
 			self.debug("tunnelc config")
 			ww = self.gladefile.get_widget('box_tunnelcconfig')
 			wg.set_position(424)
-		elif brick.get_type() == 'TunnelListen':
+		elif self.brick_selected.get_type() == 'TunnelListen':
 			self.debug("tunnell config")
 			ww = self.gladefile.get_widget('box_tunnellconfig')
 			wg.set_position(424)
-		self.config_brick_prepare(brick)
+		self.config_brick_prepare()
 		ww.show_all()
 
 		self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
@@ -585,9 +580,10 @@ class VBGUI(ChildLogger):
 		widget.hide()
 		return True
 
-	def error(self, text):
+	def show_error(self, text):
 		self.gladefile.get_widget('texterror').set_text(text)
 		self.show_window('dialog_warn')
+		self.error(text)
 
 	def ask_confirm(self, text, on_yes=None, on_no=None, arg=None):
 		self.curtain_down()
@@ -618,14 +614,12 @@ class VBGUI(ChildLogger):
 		else:
 			self.debug("Created successfully")
 
-
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
 		self.curtain_down()
 
 	def on_config_ok(self, widget=None, data=""):
-		brick = self.get_selected_brick()
-		self.config_brick_confirm(brick)
+		self.config_brick_confirm()
 		self.curtain_down()
 
 	def set_sensitivegroup(self,l):
@@ -765,19 +759,18 @@ class VBGUI(ChildLogger):
 			drag_context.finish(False, False, timestamp)
 		self.Dragging = None
 
-	def show_brickactions(self, brick):
-		if brick.get_type() == "Qemu":
+	def show_brickactions(self):
+		if self.brick_selected.get_type() == "Qemu":
 			self.set_sensitivegroup(['vmresume'])
 		else:
 			self.set_nonsensitivegroup(['vmresume'])
 
-		if brick is not None:
-			self.gladefile.get_widget("brickaction_name").set_label(brick.name)
-			self.show_window('menu_brickactions')
+		self.gladefile.get_widget("brickaction_name").set_label(self.brick_selected.name)
+		self.show_window('menu_brickactions')
 
 	def on_treeview_bookmarks_button_release_event(self, widget=None, event=None, data=""):
-		brick = self.get_selected_brick()
-		if brick is None:
+		self.brick_selected = self.get_selected_bookmark()
+		if self.brick_selected is None:
 			return
 
 		self.curtain_down()
@@ -792,7 +785,7 @@ class VBGUI(ChildLogger):
 		name = tree.get_model().get_value(iter, self.BOOKMARKS_NAME_IDX)
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
-			self.show_brickactions(brick)
+			self.show_brickactions()
 
 	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
 		self.debug("in get data?!")
@@ -838,12 +831,12 @@ class VBGUI(ChildLogger):
 				b.poweron()
 			except(BrickFactory.BadConfigException):
 				b.gui_changed=True
-				self.error("Cannot start this Brick: Brick not configured, yet.")
+				self.show_error("Cannot start this Brick: Brick not configured, yet.")
 			except(BrickFactory.NotConnectedException):
-				self.error("Cannot start this Brick: Brick not connected.")
+				self.show_error("Cannot start this Brick: Brick not connected.")
 			except(BrickFactory.LinkloopException):
 				if (self.config.erroronloop):
-					self.error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
+					self.show_error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
 			else:
 				pass
@@ -881,7 +874,7 @@ class VBGUI(ChildLogger):
 		pass
 
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
-		print "selected: " + repr(self.get_selected_brick())
+		print "selected: " + repr(self.brick_selected)
 		if self.curtain_is_down():
 			self.curtain_up()
 			self.debug("up")
@@ -1035,7 +1028,7 @@ class VBGUI(ChildLogger):
 		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()
 		cmd='qemu-img create'
 		if filename=="":
-			self.error("Choose a filename first!")
+			self.show_error("Choose a filename first!")
 			return
 		if img_format == "Auto":
 			img_format = "raw"
@@ -1225,12 +1218,12 @@ class VBGUI(ChildLogger):
 				self.config.check_kvm()
 			except IOError:
 				print "ioerror"
-				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+				self.show_error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 
 			except NotImplementedError:
 				print "no support"
-				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+				self.show_error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 
 	def on_check_ksm(self, widget=None, event=None, data=""):
@@ -1238,7 +1231,7 @@ class VBGUI(ChildLogger):
 			self.config.check_ksm(True)
 		except NotImplementedError:
 			self.debug("no support")
-			self.error("No KSM support found on the system. Check your configuration. KSM will stay disabled.")
+			self.show_error("No KSM support found on the system. Check your configuration. KSM will stay disabled.")
 			widget.set_active(False)
 	def on_add_cdrom(self, widget=None, event=None, data=""):
 		print "signal not connected"
@@ -1246,60 +1239,42 @@ class VBGUI(ChildLogger):
 		print "signal not connected"
 
 	def on_brick_startstop(self, widget=None, event=None, data=""):
-		brick = self.get_selected_brick()
-		if brick is None:
-			return
-
-		if brick.proc is not None:
-			brick.poweroff()
+		if self.brick_selected.proc is not None:
+			self.brick_selected.poweroff()
 		else:
-			brick.poweron()
+			self.brick_selected.poweron()
 
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
-		brick = self.get_selected_brick()
 
-		if brick is None:
+		if self.brick_selected.proc is not None:
+			self.show_error("Cannot delete self.selected: self.selected is in use.")
 			return
 
-		if brick.proc is not None:
-			self.error("Cannot delete brick: Brick is in use.")
-			return
-
-		self.ask_confirm("Do you really want to delete " + brick.get_type() + " " + brick.name,
-				on_yes = self.brickfactory.delbrick, arg = brick)
-
+		self.ask_confirm("Do you really want to delete " +
+				self.brick_selected.get_type() + " " + self.brick_selected.name,
+				on_yes = self.brickfactory.delbrick, arg = self.brick_selected)
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
-		brick = self.get_selected_brick()
-		if brick is None:
-			return
-		self.brickfactory.dupbrick(brick)
+		self.brickfactory.dupbrick(self.brick_selected)
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
 		self.curtain_down()
-		brick = self.get_selected_brick()
-		if brick is None:
-			return
-		if brick.proc != None:
-			self.error("Cannot rename brick: Brick is in use.")
+		if self.brick_selected.proc != None:
+			self.show_error("Cannot rename self.selected: self.selected is in use.")
 			return
 
-		self.gladefile.get_widget('entry_brick_newname').set_text(brick.name)
+		self.gladefile.get_widget('entry_self.selected_newname').set_text(self.brick_selected.name)
 		self.gladefile.get_widget('dialog_rename').show_all()
 
 	def on_dialog_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
-		brick = self.get_selected_brick()
-		if brick is None:
-			return
-
 		if response == 1:
 			try:
-				self.brickfactory.renamebrick(brick,self.gladefile.get_widget('entry_brick_newname').get_text())
+				self.brickfactory.renamebrick(self.brick_selected, self.gladefile.get_widget('entry_brick_newname').get_text())
 			except BrickFactory.InvalidNameException:
-				self.error("Invalid name!")
+				self.show_error("Invalid name!")
 
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
@@ -1412,11 +1387,11 @@ class VBGUI(ChildLogger):
 				self.disable_qemu_combos(True)
 			except IOError:
 				self.debug("ioerror")
-				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+				self.show_error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 			except NotImplementedError:
 				self.debug("no support")
-				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+				self.show_error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 		else:
 			self.disable_qemu_combos(False)
@@ -1455,14 +1430,13 @@ class VBGUI(ChildLogger):
 		self.gladefile.get_widget('vmplug_macaddr').set_text(Global.RandMac())
 
 	def on_vmplug_add(self, widget=None, event=None, data=""):
-		brick = self.get_selected_brick()
-		if brick is None:
+		if self.brick_selected is None:
 			return
 		sockname = Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
 		if (sockname == '_hostonly'):
-			pl = brick.add_plug('_hostonly')
+			pl = self.brick_selected.add_plug('_hostonly')
 		else:
-			pl = brick.add_plug()
+			pl = self.brick_selected.add_plug()
 			for so in self.brickfactory.socks:
 				if so.nickname == sockname:
 					pl.connect(so)
@@ -1471,13 +1445,12 @@ class VBGUI(ChildLogger):
 		self.update_vmplugs_tree()
 
 	def update_vmplugs_tree(self):
-		brick = self.get_selected_brick()
-		if brick is None:
+		if self.brick_selected is None:
 			return
 
 		self.vmplugs.clear()
-		if (brick.get_type() == 'Qemu'):
-			for pl in brick.plugs:
+		if (self.brick_selected.get_type() == 'Qemu'):
+			for pl in self.brick_selected.plugs:
 				iter = self.vmplugs.append(None, None)
 				#self.vmplugs.set_value(iter,0,pl.vlan)
 				if pl.mode == 'hostonly':
@@ -1488,8 +1461,7 @@ class VBGUI(ChildLogger):
 				self.vmplugs.set_value(iter,3,pl.mac)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
-		brick = self.get_selected_brick()
-		if brick is None:
+		if self.brick_selected is None:
 			return
 
 		tree = self.gladefile.get_widget('treeview_networkcards');
@@ -1499,7 +1471,7 @@ class VBGUI(ChildLogger):
 		time = event.time
 		pthinfo = tree.get_path_at_pos(x, y)
 		number = self.get_treeselected(tree, store, pthinfo, 0)
-		for pl in brick.plugs:
+		for pl in self.brick_selected.plugs:
 			if str(pl.vlan) == number:
 				self.vmplug_selected = pl
 				break
@@ -1511,29 +1483,26 @@ class VBGUI(ChildLogger):
 			Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
 		self.vmplug_selected = pl
 
-
-
 	def on_vmplug_edit(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
 		if pl == None:
 			return
 		vlan = pl.vlan
 
-		brick = self.get_selected_brick()
-		if brick is None:
+		if self.brick_selected is None:
 			return
 
-		brick.plugs.remove(pl)
+		self.brick_selected.plugs.remove(pl)
 		del(pl)
 		model = Settings.ComboBox(self.gladefile.get_widget('vmplug_model')).get_selected()
 		mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
 		sockname = Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
 		if (sockname == '_hostonly'):
-			pl = brick.add_plug(sockname)
+			pl = self.brick_selected.add_plug(sockname)
 		else:
 			for so in self.brickfactory.socks:
 				if so.nickname == sockname:
-					pl = brick.add_plug(so)
+					pl = self.brick_selected.add_plug(so)
 		pl.vlan = vlan
 		pl.model = model
 		pl.mac = mac
@@ -1541,10 +1510,7 @@ class VBGUI(ChildLogger):
 
 	def on_vmplug_remove(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
-		brick = self.get_selected_brick()
-		if brick is None:
-			return
-		brick.remove_plug(pl.vlan)
+		self.brick_selected.remove_plug(pl.vlan)
 		self.update_vmplugs_tree()
 
 	def on_vmplug_onoff(self, widget=None, event=None, data=""):
@@ -1564,7 +1530,7 @@ class VBGUI(ChildLogger):
 	def on_vm_suspend(self, widget=None, event=None, data=""):
 		hda = self.joblist_selected.cfg.get('basehda')
 		if hda is None or 0 != subprocess.Popen(["qemu-img","snapshot","-c","virtualbricks",hda]).wait():
-			self.error("Suspend/Resume not supported on this disk.")
+			self.show_error("Suspend/Resume not supported on this disk.")
 			return
 		self.joblist_selected.recv()
 		self.joblist_selected.send("savevm virtualbricks\n")
@@ -1575,22 +1541,21 @@ class VBGUI(ChildLogger):
 		self.joblist_selected.poweroff()
 
 	def on_vm_resume(self, widget=None, event=None, data=""):
-		brick = self.get_selected_brick()
-		if brick is None:
+		if self.brick_selected is None:
 			return
 
-		hda = brick.cfg.get('basehda')
+		hda = self.brick_selected.cfg.get('basehda')
 		self.debug("resume")
 		if os.system("qemu-img snapshot -l "+hda+" |grep virtualbricks") == 0:
-			if brick.proc is not None:
-				brick.send("loadvm virtualbricks\n")
-				brick.recv()
+			if self.brick_selected.proc is not None:
+				self.brick_selected.send("loadvm virtualbricks\n")
+				self.brick_selected.recv()
 				return
 			else:
-				brick.cfg.set("loadvm", "virtualbricks")
-				brick.poweron()
+				self.brick_selected.cfg.set("loadvm", "virtualbricks")
+				self.brick_selected.poweron()
 		else:
-			self.error("Cannot find suspend point.")
+			self.show_error("Cannot find suspend point.")
 
 
 	def on_vm_powerbutton(self, widget=None, event=None, data=""):
@@ -1607,10 +1572,12 @@ class VBGUI(ChildLogger):
 				if n.here(event.x,event.y) and event.button == 3:
 					brick = self.brickfactory.getbrickbyname(n.name)
 					if brick is not None:
-						self.show_brickactions(brick)
+						self.brick_selected = brick
+						self.show_brickactions()
 				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
 						brick = self.brickfactory.getbrickbyname(n.name)
 						if brick is not None:
+							self.brick_selected = brick
 							self.user_wait_action(self.startstop_brick,[brick])
 		self.curtain_down()
 
@@ -1865,7 +1832,7 @@ class VBGUI(ChildLogger):
 				ret = b.proc.poll()
 				if ret != None:
 					b.poweroff()
-					self.error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
+					self.show_error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
 					b.gui_changed = True
 
 		if self.ps != new_ps:
