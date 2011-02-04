@@ -2730,7 +2730,7 @@ Normal Distribution</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <widget class="GtkEntry" id="cfg_Wirefilter_capacity_text">
+                                  <widget class="GtkEntry" id="cfg_Wirefilter_chanbufsize_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">&#x25CF;</property>

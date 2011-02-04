@@ -596,7 +596,7 @@ class Wirefilter(Wire):
 		self.cfg.console = Settings.MYPATH + '/' + self.name + '.mgmt'
 		self.command_builder = {"-d":"delay",
 					"-l":"loss",
-					"-L":"lossburst",
+					"-L":"lostburst",
 					"-D":"dup",
 					"-b":"bandwidth",
 					"-s":"speed",
@@ -608,12 +608,23 @@ class Wirefilter(Wire):
 			}
 		self.cfg.noiseLR = ""
 		self.cfg.noiseRL = ""
+		#remove the following line when the interface will split noise
+		#into noise[LR,RL]
+		self.cfg.noise = ""
 		self.cfg.chanbufsizeLR = ""
 		self.cfg.chanbufsizeRL = ""
+		#remove the following line when the interface will split chanbufsize
+		#into chanbufsize[LR,RL]
+		self.cfg.chanbufsize = ""
 		self.cfg.delayLR = ""
 		self.cfg.delayRL = ""
 		self.cfg.lossLR = ""
 		self.cfg.lossRL = ""
+		self.cfg.lostburstLR = ""
+		self.cfg.lostburstRL = ""
+		#remove the following line when the interface will split lostburst
+		#into lostburst[LR,RL]
+		self.cfg.lostburst = ""
 		self.cfg.dupLR = ""
 		self.cfg.dupRL = ""
 		self.cfg.speedLR = ""
@@ -641,13 +652,6 @@ class Wirefilter(Wire):
 		if len(self.cfg.delayRL) > 0:
 			res.append("-d")
 			res.append("RL"+self.cfg.delayRL)
-
-		if len(self.cfg.noiseLR) > 0:
-			res.append("-n")
-			res.append("LR"+self.cfg.noiseLR)
-		if len(self.cfg.noiseRL) > 0:
-			res.append("-n")
-			res.append("RL"+self.cfg.noiseRL)
 
 		if len(self.cfg.lossLR) > 0:
 			res.append("-l")
@@ -683,6 +687,35 @@ class Wirefilter(Wire):
 		if len(self.cfg.chanbufsizeRL) > 0:
 			res.append("-c")
 			res.append("RL"+self.cfg.chanbufsizeRL)
+		#remove the following line when the interface will split chanbufsize
+		#into chanbufsize[LR,RL]
+		#if len(self.cfg.chanbufsize) > 0:
+		#	res.append("-c")
+		#	res.append(self.cfg.chanbufsize)
+
+		if len(self.cfg.noiseLR) > 0:
+			res.append("-n")
+			res.append("LR"+self.cfg.noiseLR)
+		if len(self.cfg.noiseRL) > 0:
+			res.append("-n")
+			res.append("RL"+self.cfg.noiseRL)
+		#remove the following line when the interface will split noise
+		#into noise[LR,RL]
+		#if len(self.cfg.noise) > 0:
+		#	res.append("-n")
+		#	res.append(self.cfg.noise)
+
+		if len(self.cfg.lostburstLR) > 0:
+			res.append("-L")
+			res.append("LR"+self.cfg.lostburstLR)
+		if len(self.cfg.lostburstRL) > 0:
+			res.append("-L")
+			res.append("RL"+self.cfg.lostburstRL)
+		#remove the following line when the interface will split lossburst
+		#into lossburst[LR,RL]
+		#if len(self.cfg.lostburst) > 0:
+		#	res.append("-L")
+		#	res.append(self.cfg.lostburst)
 
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
@@ -829,6 +862,18 @@ class Wirefilter(Wire):
 		print "Callback chanbufsize LR&RL (capacity) with argument " + self.name
 		self.send("chanbufsize "+ arg+ "\n")
 		print self.recv()
+	
+	#Follows a "duplicate" code of "chanbufsizeXX", because chanbufsize was called
+	#capacity before. Justo to be sure...
+	#Remove when will be sure that "capacity" will not be used anymore.
+	def cbset_capacityLR(self, arg=0):
+		cbset_chanbufsizeLR(arg)
+
+	def cbset_capacityeRL(self, arg=0):
+		cbset_chanbufsizeRL(arg)
+		
+	def cbset_capacity(self, arg=0):
+		cbset_chanbufsize(arg)
 #Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?
 
 
