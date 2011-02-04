@@ -47,6 +47,9 @@ class VBGUI(ChildLogger):
 		self.ps = []
 		self.bricks = []
 
+		''' Don't remove me, I am useful after config, when treeview may lose focus and selection. '''
+		self.last_known_selected_brick = None
+
 		self.config = self.brickfactory.settings
 		self.signals()
 		self.timers()
@@ -57,7 +60,7 @@ class VBGUI(ChildLogger):
 		self.running_bricks = self.treestore('treeview_joblist',
 			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['','PID','Type','Name'])
-		
+
 		self.bookmarks = self.treestore('treeview_bookmarks',
 			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
 				gobject.TYPE_STRING, gobject.TYPE_STRING],
@@ -96,12 +99,18 @@ class VBGUI(ChildLogger):
 		path = tree.get_cursor()[0]
 
 		if path is None:
-			return
+			'''
+			' Default to something that makes sense,
+			' otherwise on_config_ok will be broken
+			' when treeviews lose their selections.
+			'''
+			return self.last_known_selected_brick
 
 		model = tree.get_model()
 		iter = model.get_iter(path)
 		name = model.get_value(iter, self.BOOKMARKS_NAME_IDX)
-		return self.brickfactory.getbrickbyname(name)
+		self.last_known_selected_brick = self.brickfactory.getbrickbyname(name)
+		return self.last_known_selected_brick
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -793,7 +802,7 @@ class VBGUI(ChildLogger):
 			b.poweroff()
 		else:
 			if b.get_type() == "Qemu":
-				b.cfg.loadvm=''
+				b.cfg.loadvm='' #prevent restore from saved state
 			try:
 				b.poweron()
 			except(BrickFactory.BadConfigException):
@@ -1560,7 +1569,7 @@ class VBGUI(ChildLogger):
 	def on_vm_hardreset(self, widget=None, event=None, data=""):
 		self.joblist_selected.send("system_reset\n")
 		self.joblist_selected.recv()
-		
+
 	def on_topology_action(self, widget=None, event=None, data=""):
 		if self.topology:
 			for n in self.topology.nodes:

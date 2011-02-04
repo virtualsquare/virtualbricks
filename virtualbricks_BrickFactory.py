@@ -64,6 +64,7 @@ class Plug(ChildLogger):
 			return True
 
 	def connected(self):
+		print "CALLED connected"
 		if self.antiloop:
 			print "Network loop detected!"
 			self.antiloop = False
@@ -422,7 +423,6 @@ class Brick(ChildLogger):
 		while True:
 			pollret = p.poll(300)
 			if (len(pollret)==1 and pollret[0][1] == select.POLLIN):
-				print "called recv"
 				line = self.internal_console.recv(100)
 				print "recv: line: "+line
 				res += line
@@ -935,6 +935,7 @@ class VMPlugHostonly(VMPlug):
 		return True
 
 	def connected(self):
+		print "CALLED hostonly connected"
 		return True
 
 class VMDisk():
@@ -1123,8 +1124,6 @@ class VM(Brick):
 	def get_type(self):
 		return "Qemu"
 
-	def check_links(self):
-		return True
 
 	def configured(self):
 		cfg_ok = True
