@@ -4,7 +4,7 @@ def ImgPrefix():
 	return "./"
 
 class Icon:
-		
+
 	def __init__(self, brick):
 	#if brick.get_type()!="Qemu":
 		self.brick = brick
@@ -20,7 +20,7 @@ class Icon:
 
 	def make_grey(self):
 		if not os.access(self.base, os.R_OK):
-			return 
+			return
 		if not os.access(self.grey, os.R_OK):
 				# the reason for the existence of this class, so far.
 			src = Image.open(self.base).convert('RGB', palette=Image.ADAPTIVE).convert('L').save(self.grey, transparency = 0)
@@ -28,7 +28,7 @@ class Icon:
 			#	self.debug("Cannot create grey image: defaulting to base")
 			#	self.grey = self.base
 		self.ready = True
-		
+
 
 	def get_img(self):
 		if not self.ready:
@@ -37,22 +37,23 @@ class Icon:
 			return self.base
 		else:
 			return self.grey
-		
+
 class Node:
 	def __init__(self, topology, name, x, y, thresh = 50):
 		self.x = x
-		self.y = y 
+		self.y = y
 		self.thresh = thresh
 		self.name = name
 		self.parent = topology
 	def here(self, x, y):
 		if abs(x + self.parent.x_adj - self.x) < self.thresh and abs(y + self.parent.y_adj - self.y) < self.thresh:
 			return True
-		else: 
+		else:
 			return False
 
 class Topology():
-			
+	DOUBLECLICKTIME = 600
+
 	def __init__(self, widget, bricks):
 		self.topowidget = widget
 		self.topo = pgv.AGraph()
@@ -62,6 +63,8 @@ class Topology():
 		self.nodes = []
 		self.x_adj = 0.0
 		self.y_adj = 0.0
+
+		self.clicktime = 0
 
 		# Add nodes
 		sg = self.topo.add_subgraph([],name="switches_rank")
@@ -125,7 +128,7 @@ class Topology():
 				x_fact = x_siz / float(arg[2])
 				y_fact = y_siz / float(arg[3])
 			elif arg[0] == 'node':
-				x = x_fact * float(arg[2]) 
+				x = x_fact * float(arg[2])
 				y = y_siz - y_fact * float(arg[3])
 				self.nodes.append(Node(self, arg[1],x,y))
 		# Display on the widget

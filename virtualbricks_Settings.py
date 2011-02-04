@@ -121,6 +121,8 @@ class Settings(object):
 		try:
 			self.config.read(self.filename)
 			print "CONFIGURATION: LOADED."
+			self.check_ksm(self.cfg.get('ksm'))
+
 		except Exception:
 			print "FATAL: Cannot open config file!!"
 			try:
@@ -132,7 +134,11 @@ class Settings(object):
 				return
 
 	def get(self, attr):
-		return self.config.get(self.DEFAULT_SECTION, str(attr))
+		val = self.config.get(self.DEFAULT_SECTION, str(attr))
+		if val == "False":
+			print "I hate configfile!!!!"
+			return False
+		return val
 
 	def set(self, attr, value):
 		self.config.set(self.DEFAULT_SECTION, str(attr), str(value))

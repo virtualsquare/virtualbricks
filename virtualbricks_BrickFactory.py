@@ -64,9 +64,10 @@ class Plug(ChildLogger):
 			return True
 
 	def connected(self):
-		print "CALLED connected"
 		if self.antiloop:
 			print "Network loop detected!"
+			if self.settings.get('erroronloop'):
+				raise NotConnectedException
 			self.antiloop = False
 			return False
 
