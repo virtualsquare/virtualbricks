@@ -7015,4 +7015,49 @@ Tunnel Client</property>
       </widget>
     </child>
   </widget>
+  <widget class="GtkWindow" id="window_userwait">
+    <property name="width_request">200</property>
+    <property name="height_request">50</property>
+    <property name="title" translatable="yes">Virtualbricks: action in progress</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-always</property>
+    <property name="skip_taskbar_hint">True</property>
+    <property name="skip_pager_hint">True</property>
+    <property name="urgency_hint">True</property>
+    <property name="decorated">False</property>
+    <property name="deletable">False</property>
+    <child>
+      <widget class="GtkVBox" id="vbox1">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <widget class="GtkLabel" id="Pleaselabel">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">Please wait</property>
+          </widget>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkProgressBar" id="userwait_progressbar">
+            <property name="visible">True</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkLabel" id="label2">
+            <property name="visible">True</property>
+          </widget>
+          <packing>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
 </glade-interface>

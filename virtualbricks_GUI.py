@@ -14,7 +14,20 @@ import pygraphviz as pgv
 import subprocess
 import Image
 from virtualbricks_Graphics import *
+from threading import Thread, Timer
 
+
+class VBuserwait(Thread):
+	def __init__(self, call, args=[]):
+		self.action = call
+		self.args = args
+		Thread.__init__(self)
+		self.running = True
+	def run(self):
+		print "thread started"
+		self.action(*self.args)
+		print "thread finished"
+		self.running = False
 
 
 
@@ -25,6 +38,8 @@ class VBGUI(ChildLogger):
 	BOOKMARKS_TYPE_IDX = 2
 	BOOKMARKS_NAME_IDX = 3
 	BOOKMARKS_PARAMETERS_IDX = 4
+
+
 
 	def __init__(self):
 		ChildLogger.__init__(self)
@@ -809,7 +824,7 @@ class VBGUI(ChildLogger):
 		ntype = model.get_value(iter, self.BOOKMARKS_TYPE_IDX)
 		name = model.get_value(iter, self.BOOKMARKS_NAME_IDX)
 		b = self.brickfactory.getbrickbyname(name)
-		self.startstop_brick(b)
+		self.user_wait_action(self.startstop_brick,[b])
 
 	def startstop_brick(self, b):
 		if b.proc is not None:
@@ -1596,7 +1611,7 @@ class VBGUI(ChildLogger):
 				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
 						brick = self.brickfactory.getbrickbyname(n.name)
 						if brick is not None:
-							self.startstop_brick(brick)
+							self.user_wait_action(self.startstop_brick,[brick])
 		self.curtain_down()
 
 	def on_topology_scroll(self, widget=None, event=None, data=""):
@@ -1869,3 +1884,17 @@ class VBGUI(ChildLogger):
 	def draw_topology(self):
 		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.bricks)
 
+	def user_wait_action(self, action, args=[]):
+		self.gladefile.get_widget("window_userwait").show_all()
+		t = VBuserwait(action, args)
+		gobject.timeout_add(200, self.user_wait_action_timer, t)
+		t.start()
+
+	def user_wait_action_timer(self, t):
+		if not t.running:
+			self.gladefile.get_widget("window_userwait").hide()
+			self.gladefile.get_widget("main_win").set_sensitive(True)
+		else:
+			self.gladefile.get_widget("main_win").set_sensitive(False)
+			self.gladefile.get_widget("userwait_progressbar").pulse()
+		return t.running
