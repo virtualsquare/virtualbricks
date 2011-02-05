@@ -606,6 +606,12 @@ class Wirefilter(Wire):
 					"-N":"nofifo",
 					"-M":"console"
 			}
+		
+		self.cfg.mtuLR = ""
+		self.cfg.mtuRL = ""
+		#remove the following line when the interface will split mtu
+		#into mtu[LR,RL]
+		self.cfg.mtu = ""
 		self.cfg.noiseLR = ""
 		self.cfg.noiseRL = ""
 		#remove the following line when the interface will split noise
@@ -687,11 +693,6 @@ class Wirefilter(Wire):
 		if len(self.cfg.chanbufsizeRL) > 0:
 			res.append("-c")
 			res.append("RL"+self.cfg.chanbufsizeRL)
-		#remove the following line when the interface will split chanbufsize
-		#into chanbufsize[LR,RL]
-		#if len(self.cfg.chanbufsize) > 0:
-		#	res.append("-c")
-		#	res.append(self.cfg.chanbufsize)
 
 		if len(self.cfg.noiseLR) > 0:
 			res.append("-n")
@@ -699,11 +700,13 @@ class Wirefilter(Wire):
 		if len(self.cfg.noiseRL) > 0:
 			res.append("-n")
 			res.append("RL"+self.cfg.noiseRL)
-		#remove the following line when the interface will split noise
-		#into noise[LR,RL]
-		#if len(self.cfg.noise) > 0:
-		#	res.append("-n")
-		#	res.append(self.cfg.noise)
+
+		if len(self.cfg.mtuLR) > 0:
+			res.append("-m")
+			res.append("LR"+self.cfg.mtuLR)
+		if len(self.cfg.mtuRL) > 0:
+			res.append("-m")
+			res.append("RL"+self.cfg.mtuRL)
 
 		if len(self.cfg.lostburstLR) > 0:
 			res.append("-L")
@@ -711,11 +714,6 @@ class Wirefilter(Wire):
 		if len(self.cfg.lostburstRL) > 0:
 			res.append("-L")
 			res.append("RL"+self.cfg.lostburstRL)
-		#remove the following line when the interface will split lossburst
-		#into lossburst[LR,RL]
-		#if len(self.cfg.lostburst) > 0:
-		#	res.append("-L")
-		#	res.append(self.cfg.lostburst)
 
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
@@ -818,19 +816,19 @@ class Wirefilter(Wire):
 		self.send("dup "+ arg + "\n")
 		print self.recv()
 
-	def cbset_MTULR(self, arg=0):
-		print "Callback MTU LR with argument " + self.name
-		self.send("MTU LR "+ arg+ "\n")
+	def cbset_mtuLR(self, arg=0):
+		print "Callback mtu LR with argument " + self.name
+		self.send("mtu LR "+ arg+ "\n")
 		print self.recv()
 
-	def cbset_MTURL(self, arg=0):
-		print "Callback MTU RL with argument " + self.name
-		self.send("MTU RL "+ arg + "\n")
+	def cbset_mtuRL(self, arg=0):
+		print "Callback mtu RL with argument " + self.name
+		self.send("mtu RL "+ arg + "\n")
 		print self.recv()
 
-	def cbset_MTU(self, arg=0):
-		print "Callback MTU LR&RL with argument " + self.name
-		self.send("MTU "+ arg + "\n")
+	def cbset_mtu(self, arg=0):
+		print "Callback mtu LR&RL with argument " + self.name
+		self.send("mtu "+ arg + "\n")
 		print self.recv()
 
 	def cbset_lburstLR(self, arg=0):
