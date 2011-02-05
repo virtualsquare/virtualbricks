@@ -71,7 +71,7 @@ class VBGUI(ChildLogger):
 		self.topology_active = False
 
 		self.sockscombo = dict()
-		self.set_nonsensitivegroup(['cfg_Wirefilter_lossburst_text', 'cfg_Wirefilter_mtu_text'])
+		self.set_nonsensitivegroup(['cfg_Wirefilter_lostburst_text', 'cfg_Wirefilter_mtu_text'])
 		self.running_bricks = self.treestore('treeview_joblist',
 			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['','PID','Type','Name'])
@@ -634,11 +634,11 @@ class VBGUI(ChildLogger):
 
 	def on_gilbert_toggle(self, widget=None, data=""):
 		if widget.get_active():
-			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_sensitive(True)
-			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_text("0")
+			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_sensitive(True)
+			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_text("0")
 		else:
-			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_text("")
-			self.gladefile.get_widget('cfg_Wirefilter_lossburst_text').set_sensitive(False)
+			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_text("")
+			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_sensitive(False)
 
 	def on_mtu_toggle(self, widget=None, data=""):
 		if widget.get_active():

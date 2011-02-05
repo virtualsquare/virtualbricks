@@ -2987,7 +2987,7 @@ Normal Distribution</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <widget class="GtkEntry" id="cfg_Wirefilter_lossburst_text">
+                                  <widget class="GtkEntry" id="cfg_Wirefilter_lostburst_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">&#x25CF;</property>

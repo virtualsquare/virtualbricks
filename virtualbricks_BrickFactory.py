@@ -831,19 +831,19 @@ class Wirefilter(Wire):
 		self.send("mtu "+ arg + "\n")
 		print self.recv()
 
-	def cbset_lburstLR(self, arg=0):
-		print "Callback lburst LR with argument " + self.name
-		self.send("lburst LR "+ arg+ "\n")
+	def cbset_lostburstLR(self, arg=0):
+		print "Callback lostburst LR with argument " + self.name
+		self.send("lostburst LR "+ arg+ "\n")
 		print self.recv()
 
-	def cbset_lburstRL(self, arg=0):
-		print "Callback lburst RL with argument " + self.name
-		self.send("lburst RL "+ arg + "\n")
+	def cbset_lostburstRL(self, arg=0):
+		print "Callback lostburst RL with argument " + self.name
+		self.send("lostburst RL "+ arg + "\n")
 		print self.recv()
 
-	def cbset_lburst(self, arg=0):
-		print "Callback lburst LR&RL with argument " + self.name
-		self.send("lburst "+ arg + "\n")
+	def cbset_lostburst(self, arg=0):
+		print "Callback lostburst LR&RL with argument " + self.name
+		self.send("lostburst "+ arg + "\n")
 		print self.recv()
 
 	def cbset_chanbufsizeLR(self, arg=0):
