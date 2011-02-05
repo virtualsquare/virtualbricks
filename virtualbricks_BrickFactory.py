@@ -612,6 +612,7 @@ class Wirefilter(Wire):
 		#remove the following line when the interface will split mtu
 		#into mtu[LR,RL]
 		self.cfg.mtu = ""
+		self.cfg.mtuck = ""
 		self.cfg.noiseLR = ""
 		self.cfg.noiseRL = ""
 		#remove the following line when the interface will split noise
@@ -631,6 +632,7 @@ class Wirefilter(Wire):
 		#remove the following line when the interface will split lostburst
 		#into lostburst[LR,RL]
 		self.cfg.lostburst = ""
+		self.cfg.gilbertck = ""
 		self.cfg.dupLR = ""
 		self.cfg.dupRL = ""
 		self.cfg.speedLR = ""

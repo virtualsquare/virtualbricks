@@ -633,20 +633,22 @@ class VBGUI(ChildLogger):
 			w.set_sensitive(False)
 
 	def on_gilbert_toggle(self, widget=None, data=""):
+		currentwidget = self.gladefile.get_widget('cfg_Wirefilter_lostburst_text')
 		if widget.get_active():
-			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_sensitive(True)
-			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_text("0")
+			currentwidget.set_sensitive(True)
+			currentwidget.set_text("0")
 		else:
-			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_text("")
-			self.gladefile.get_widget('cfg_Wirefilter_lostburst_text').set_sensitive(False)
+			currentwidget.set_text("")
+			currentwidget.set_sensitive(False)
 
 	def on_mtu_toggle(self, widget=None, data=""):
+		currentwidget = self.gladefile.get_widget('cfg_Wirefilter_mtu_text')
 		if widget.get_active():
-			self.gladefile.get_widget('cfg_Wirefilter_mtu_text').set_sensitive(True)
-			self.gladefile.get_widget('cfg_Wirefilter_mtu_text').set_text("1024")
+			currentwidget.set_sensitive(True)
+			currentwidget.set_text("1024")
 		else:
-			self.gladefile.get_widget('cfg_Wirefilter_mtu_text').set_text("")
-			self.gladefile.get_widget('cfg_Wirefilter_mtu_text').set_sensitive(False)
+			currentwidget.set_text("")
+			currentwidget.set_sensitive(False)
 
 
 	def on_item_quit_activate(self, widget=None, data=""):

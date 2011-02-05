@@ -2963,7 +2963,7 @@ Normal Distribution</property>
                               <widget class="GtkHBox" id="hbox16">
                                 <property name="visible">True</property>
                                 <child>
-                                  <widget class="GtkCheckButton" id="gilbert_check">
+                                  <widget class="GtkCheckButton" id="cfg_Wirefilter_gilbertck_check">
                                     <property name="label" translatable="yes">Gilbert model</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
@@ -3006,7 +3006,7 @@ Normal Distribution</property>
                               <widget class="GtkHBox" id="hbox17">
                                 <property name="visible">True</property>
                                 <child>
-                                  <widget class="GtkCheckButton" id="mtu_check">
+                                  <widget class="GtkCheckButton" id="cfg_Wirefilter_mtuck_check">
                                     <property name="label" translatable="yes">Discard packets larger than:</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
@@ -3830,8 +3830,8 @@ Normal Distribution</property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="action">select-folder</property>
                                 <property name="use_preview_label">False</property>
+                                <property name="action">select-folder</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
