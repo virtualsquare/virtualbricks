@@ -12,10 +12,17 @@ import random
 import threading
 import virtualbricks_GUI
 import virtualbricks_Global as Global
+import virtualbricks_BrickFactory as BrickFactory
 
 #Main.
 
-VB = virtualbricks_GUI.VBGUI()
+if len(sys.argv) > 1 and sys.argv[1] == '-nogui':
+	VB = BrickFactory.BrickFactory()
+	VB.start()
+	while True:
+		time.sleep(100)
+else:
+	VB = virtualbricks_GUI.VBGUI()
 		
 		
 	

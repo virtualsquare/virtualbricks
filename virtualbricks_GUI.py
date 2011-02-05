@@ -1552,7 +1552,7 @@ class VBGUI(ChildLogger):
 				self.brick_selected.recv()
 				return
 			else:
-				self.brick_selected.cfg.set("loadvm", "virtualbricks")
+				self.brick_selected.cfg.set("loadvm=virtualbricks")
 				self.brick_selected.poweron()
 		else:
 			self.show_error("Cannot find suspend point.")

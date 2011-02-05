@@ -860,7 +860,7 @@ class Wirefilter(Wire):
 		print "Callback chanbufsize LR&RL (capacity) with argument " + self.name
 		self.send("chanbufsize "+ arg+ "\n")
 		print self.recv()
-	
+
 	#Follows a "duplicate" code of "chanbufsizeXX", because chanbufsize was called
 	#capacity before. Justo to be sure...
 	#Remove when will be sure that "capacity" will not be used anymore.
@@ -869,7 +869,7 @@ class Wirefilter(Wire):
 
 	def cbset_capacityeRL(self, arg=0):
 		cbset_chanbufsizeRL(arg)
-		
+
 	def cbset_capacity(self, arg=0):
 		cbset_chanbufsize(arg)
 #Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?
@@ -1286,7 +1286,7 @@ class VM(Brick):
 
 
 class BrickFactory(ChildLogger, threading.Thread):
-	def __init__(self, logger, showconsole=True):
+	def __init__(self, logger=None, showconsole=True):
 		ChildLogger.__init__(self, logger)
 		self.bricks = []
 		self.socks = []
