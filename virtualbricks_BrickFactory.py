@@ -129,7 +129,10 @@ class BrickConfig(dict):
 	"""
 	def __getattr__(self, name):
 		"""override dict.__getattr__"""
-		return self[name]
+		try:
+			return self[name]
+		except KeyError:
+			raise AttributeError(name)
 
 	def __setattr__(self, name, value):
 		"""override dict.__setattr__"""
