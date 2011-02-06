@@ -117,15 +117,21 @@ class Sock():
 
 
 class BrickConfig(dict):
-	"""
-	cfg = BrickConfig()
-	cfg.enabled = True
-	assert cfg['enabled'] == True
-	assert cfg.enabled == True
+	"""Generic configuration for Brick
 
-	cfg.disabled = True
-	assert cfg['disabled'] == True
-	assert cfg.disabled == True
+	>>> cfg = BrickConfig()
+	>>> cfg.enabled = True
+	>>> cfg['enabled'] == True
+	True
+	>>> cfg.enabled == True
+	True
+	>>> cfg.disabled = True
+	>>> cfg['disabled'] == True
+	True
+	>>> cfg.disabled == True
+	True
+	>>> from copy import deepcopy
+	>>> cfg2 = deepcopy(cfg)
 	"""
 	def __getattr__(self, name):
 		"""override dict.__getattr__"""
@@ -1580,3 +1586,11 @@ class BrickFactory(ChildLogger, threading.Thread):
 			self.error('Invalid command.')
 			return False
 		return True
+
+if __name__ == "__main__":
+	"""
+	run tests with 'python virtualbricks_BrickFactory.py -v'
+	"""
+	import doctest
+	doctest.testmod()
+
