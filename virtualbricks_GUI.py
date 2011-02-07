@@ -431,6 +431,10 @@ class VBGUI(ChildLogger):
 			self.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
 			wg.set_position(589)
+		if self.brick_selected.get_type() == 'Event':
+			self.debug("event config")
+			ww = self.gladefile.get_widget('box_eventconfig')
+			wg.set_position(589)
 		elif self.brick_selected.get_type() == 'Qemu':
 			self.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')

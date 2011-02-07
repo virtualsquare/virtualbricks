@@ -15,10 +15,12 @@ import threading
 import virtualbricks_GUI
 import virtualbricks_Global as Global
 import virtualbricks_Settings as Settings
+#import virtualbricks_Events as Events
 from virtualbricks_Logger import ChildLogger
 import select
 import copy
 import socket
+from threading import Timer
 from virtualbricks_Graphics import *
 
 
@@ -260,11 +262,12 @@ class Brick(ChildLogger):
 
 			elif self.get_type() == 'Qemu':
 				cb = VM.__dict__["cbset_"+key]
+				
+			#elif self.get_type() == 'Event':
+			#	cb = None;
 		except:
 			cb = None
 		return cb
-
-
 
 
 	############################
@@ -514,6 +517,102 @@ class Switch(Brick):
 		print "Callback numports with argument " + self.name
 		self.send("port/setnumports "+ arg)
 		print self.recv()
+
+class Event(Brick):
+	def __init__(self, _factory, _name):
+		Brick.__init__(self, _factory, _name)
+		#self.cfg.set_obj("actions",actions=list())
+		self.actions=list()
+		self.cfg.delay = 0
+		self.timer=Timer(self.cfg.delay,self.doactions,())
+
+	def cmdline(self):
+		return ""
+
+	def help(self):
+		return
+		
+	def get_type(self):
+		return 'Event'
+
+	def configured(self):
+		return (len(self.actions)>0 and self.cfg.delay>0)
+		#return (len(self.cfg.actions)>0 and self.cfg.delay>0)
+		
+	def initialize(self, attrlist):
+		configactions=list()
+		#check if it's an add config command here,
+		#it needs special management
+		if(attrlist.count('add')>0):
+			i=attrlist.index('add')
+			configactions.append(attrlist[i+1:]) #get the action string
+			del attrlist[i:] #remove from the list "add"...
+		#Execute the actions in the command line
+		#for attr in configactions:
+		#	self.actions.append(attr)
+			self.actions.append(configactions)
+		else:
+			#Call the base method to set the parameters
+			Brick.initialize(self, attrlist)
+			
+
+	def properly_connected(self):
+		return True
+
+	def check_links(self):
+		return True
+	
+	def connect(self,endpoint):
+		return True
+
+	def disconnect(self):
+		return
+	
+	############################
+	########### Poweron/Poweroff
+	############################
+	def poweron(self):
+		if not self.configured():
+			print "bad config"
+			raise BadConfigException
+		self.timer.start()
+		self.active = True
+ 
+	def poweroff(self):
+		self.timer.cancel()
+		self.active = False
+
+	def doactions(self):
+		for action in self.actions:
+			BrickFactory.parse(action)
+			#action()
+
+	#def addaction(self,action):
+	#	self.actions.append(action)
+
+	#def delaction(self,action):
+	#	self.actions.remove(action)
+
+	#def settimer(self,delay):
+	#	self.delay=delay
+		
+	def on_config_changed(self):
+		self.timer=Timer(float(self.cfg.delay),self.doactions,())
+
+	def build_cmd_line(self):
+		return ""
+	
+	def args(self):
+		return ""
+
+	#############################
+	# Console related operations.
+	#############################
+	def has_console(self):
+			return False
+
+	def close_tty(self):
+		return
 
 
 class Tap(Brick):
@@ -1592,6 +1691,9 @@ class BrickFactory(ChildLogger, threading.Thread):
 		elif ntype == "tunnelc" or ntype == "Tunnel Client" or ntype == "TunnelConnect":
 			s = TunnelConnect(self,name)
 			self.debug("new tunnel client %s OK", s.name)
+		elif ntype == "event" or ntype == "Event":
+			s = Event(self,name)
+			self.debug("new event %s OK", s.name)
 		#elif ...:
 		else:
 			self.error('Invalid command.')
