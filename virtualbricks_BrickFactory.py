@@ -615,7 +615,7 @@ class Wirefilter(Wire):
 					"-N":"nofifo",
 					"-M":"console"
 			}
-		
+
 		self.cfg.mtuLR = ""
 		self.cfg.mtuRL = ""
 		#remove the following line when the interface will split mtu
@@ -1075,8 +1075,8 @@ class VM(Brick):
 
 		self.command_builder = {
 			'#argv0':'argv0',
-			'-M':'machine',
-			'-cpu':'cpu',
+			'#M':'machine',
+			'#cpu':'cpu',
 			'-smp':'smp',
 			'-m':'ram',
 			'-boot':'boot',
@@ -1188,22 +1188,33 @@ class VM(Brick):
 		return cfg_ok
 	# QEMU PROGRAM SELECTION
 	def prog(self):
-		if (len(self.cfg.argv0) > 0):
+		if (len(self.cfg.argv0) > 0 and self.cfg.kvm!="*"):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
-		if ((cmd == 'qemu' or cmd.endswith('i386')) and (self.cfg.kvm or self.settings.get("kvm") == 'kvm')):
+		if ((self.cfg.kvm or self.settings.get("kvm") == 'kvm')):
 			cmd = self.settings.get("qemupath") + "/kvm"
-			self.cfg.cpu=""
-			self.cfg.machine=""
+			#self.cfg.cpu=""
+			#self.cfg.machine=""
 		return cmd
 
 
 	def args(self):
 		res = []
 		res.append(self.prog())
+
 		for c in self.build_cmd_line():
 			res.append(c)
+		print self.cfg.machine + " " + self.cfg.cpu
+		if (self.cfg.kvm is False):
+			if self.cfg.machine != "":
+				res.append("-M")
+				res.append(self.cfg.machine)
+			if self.cfg.cpu != "":
+				res.append("-cpu")
+				res.append(self.cfg.cpu)
+
+
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb']:
 		  if self.cfg.get("base"+dev) != "":
 			disk = getattr(self.cfg, dev)

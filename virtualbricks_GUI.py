@@ -1346,21 +1346,28 @@ class VBGUI(ChildLogger):
 		cpus = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_cpu_combo'))
 		machines = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_machine_combo'))
 
+		#Machine COMBO
+		machine_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_machine_combo"))
+		opt_m = dict()
 		os.system(path + "/" + combo.get_selected() + " -M ? >" + Settings.MYPATH+"/.vmachines")
-		optm={}
 		for m in open(Settings.MYPATH+"/.vmachines").readlines():
 			if not re.search('machines are', m):
 				v = m.split(' ')[0]
 				k = m.lstrip(v).rstrip('/n')
 				while (k.startswith(' ')):
 					k = k.lstrip(' ')
-				optm[k] = v
-		machines.clear()
-		machines.populate(optm)
+				opt_m[v]=k
+		toSelect=""
+		for k, v in opt_m.iteritems():
+			if v.strip() == self.brick_selected.cfg.machine.strip():
+				toSelect=k
+		machine_c.populate(opt_m, toSelect)
 		os.unlink(Settings.MYPATH+"/.vmachines")
 
+		#CPU combo
+		opt_c = dict()
+		cpu_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_cpu_combo"))
 		os.system(path + "/" + combo.get_selected() + " -cpu ? >" + Settings.MYPATH+"/.cpus")
-		optc={}
 		for m in open(Settings.MYPATH+"/.cpus").readlines():
 			if not re.search('Available CPU', m):
 				if (m.startswith('  ')):
@@ -1368,7 +1375,7 @@ class VBGUI(ChildLogger):
 						m = m.lstrip(' ')
 					if m.endswith('\n'):
 						m = m.rstrip('\n')
-					optc[m] = m
+					opt_c[m] = m
 				else:
 					lst = m.split(' ')
 					if len(lst) > 1:
@@ -1377,10 +1384,10 @@ class VBGUI(ChildLogger):
 							val = val.lstrip(' ')
 						if val.endswith('\n'):
 							val = val.rstrip('\n')
-						optc[val] = val
-		cpus.clear()
-		cpus.populate(optc)
+						opt_c[val]=val
+		cpu_c.populate(opt_c, self.brick_selected.cfg.cpu)
 		os.unlink(Settings.MYPATH+"/.cpus")
+
 
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
