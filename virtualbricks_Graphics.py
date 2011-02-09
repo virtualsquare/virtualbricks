@@ -31,6 +31,8 @@ class Icon:
 
 
 	def get_img(self):
+		if 'icon' in self.brick.cfg.keys() and self.brick.cfg.icon != "":
+			self.set_from_file(self.brick.cfg.icon)
 		if not self.ready:
 			self.set_from_bricktype()
 		if self.brick.proc is not None:

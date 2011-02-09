@@ -262,7 +262,7 @@ class Brick(ChildLogger):
 
 			elif self.get_type() == 'Qemu':
 				cb = VM.__dict__["cbset_"+key]
-				
+
 			#elif self.get_type() == 'Event':
 			#	cb = None;
 		except:
@@ -531,14 +531,14 @@ class Event(Brick):
 
 	def help(self):
 		return
-		
+
 	def get_type(self):
 		return 'Event'
 
 	def configured(self):
 		return (len(self.actions)>0 and self.cfg.delay>0)
 		#return (len(self.cfg.actions)>0 and self.cfg.delay>0)
-		
+
 	def initialize(self, attrlist):
 		configactions=list()
 		#check if it's an add config command here,
@@ -554,20 +554,20 @@ class Event(Brick):
 		else:
 			#Call the base method to set the parameters
 			Brick.initialize(self, attrlist)
-			
+
 
 	def properly_connected(self):
 		return True
 
 	def check_links(self):
 		return True
-	
+
 	def connect(self,endpoint):
 		return True
 
 	def disconnect(self):
 		return
-	
+
 	############################
 	########### Poweron/Poweroff
 	############################
@@ -577,7 +577,7 @@ class Event(Brick):
 			raise BadConfigException
 		self.timer.start()
 		self.active = True
- 
+
 	def poweroff(self):
 		self.timer.cancel()
 		self.active = False
@@ -595,13 +595,13 @@ class Event(Brick):
 
 	#def settimer(self,delay):
 	#	self.delay=delay
-		
+
 	def on_config_changed(self):
 		self.timer=Timer(float(self.cfg.delay),self.doactions,())
 
 	def build_cmd_line(self):
 		return ""
-	
+
 	def args(self):
 		return ""
 
@@ -1171,6 +1171,7 @@ class VM(Brick):
 		self.cfg.gdb=""
 		self.cfg.gdbport=""
 		self.cfg.kopt=""
+		self.cfg.icon=""
 
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -1272,6 +1273,7 @@ class VM(Brick):
 			#'-kvm-shadow-memory':'',  ## TODO: maybe a global option
 			#'-mem-path':'',
 			#'-mem-prealloc':''
+			'#icon': 'icon'
 		}
 
 

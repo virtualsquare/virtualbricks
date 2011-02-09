@@ -4,6 +4,7 @@ import os, re
 import sys
 import gtk
 import gtk.glade
+import gtk.gdk
 import virtualbricks_Global as Global
 import virtualbricks_Settings as Settings
 import virtualbricks_BrickFactory as BrickFactory
@@ -262,7 +263,8 @@ class VBGUI(ChildLogger):
 					kernelcheck=True
 				elif key == 'initrd':
 					initrdcheck=True
-
+				elif key == 'icon' and b.cfg[key] != "":
+					self.gladefile.get_widget("qemuicon").set_from_pixbuf(gtk.gdk.pixbuf_new_from_file_at_size(b.cfg[key], 48, 48))
 		# Apply KVM system configuration
 
 
@@ -383,7 +385,6 @@ class VBGUI(ChildLogger):
 				ki = self.gladefile.get_widget('check_initrd')
 				if not ki.get_active():
 					b.cfg.initrd=""
-
 		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
 		b.configure(fmt_params)
 		for key, value in parameters.iteritems():
@@ -422,6 +423,7 @@ class VBGUI(ChildLogger):
 		self.gladefile.get_widget('box_wireconfig').hide()
 		self.gladefile.get_widget('box_wirefilterconfig').hide()
 		self.gladefile.get_widget('box_switchconfig').hide()
+		self.gladefile.get_widget('box_eventconfig').hide()
 
 		if self.brick_selected is None:
 			return
@@ -1597,6 +1599,19 @@ class VBGUI(ChildLogger):
 	def on_topology_scroll(self, widget=None, event=None, data=""):
 		print "scroll"
 
+	def on_vnc_novga_toggled(self, widget=None, event=None, data=""):
+		novga = self.gladefile.get_widget('cfg_Qemu_novga_check')
+		vnc = self.gladefile.get_widget('cfg_Qemu_vnc_check')
+		if (novga==widget):
+			vnc.set_sensitive(not novga.get_active())
+			self.gladefile.get_widget('cfg_Qemu_vncN_spinint').set_sensitive(not novga.get_active())
+			self.gladefile.get_widget('label33').set_sensitive(not novga.get_active())
+		if (vnc == widget):
+			novga.set_sensitive(not vnc.get_active())
+
+	def on_vmicon_file_change(self, widget=None, event=None, data=""):
+		self.gladefile.get_widget("qemuicon").set_from_pixbuf(gtk.gdk.pixbuf_new_from_file_at_size(widget.get_filename(), 48, 48))
+
 	def signals(self):
 		self.signaldict = {
 			"on_window1_destroy":self.on_window1_destroy,
@@ -1731,6 +1746,9 @@ class VBGUI(ChildLogger):
 			"on_vm_resume":self.on_vm_resume,
 			"on_topology_action":self.on_topology_action,
 			"on_topology_scroll":self.on_topology_scroll,
+			"on_cfg_Qemu_vnc_check_toggled": self.on_vnc_novga_toggled,
+			"on_cfg_Qemu_novga_check_toggled": self.on_vnc_novga_toggled,
+			"on_filechooserbutton1_file_set": self.on_vmicon_file_change,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
