@@ -263,8 +263,12 @@ class VBGUI(ChildLogger):
 					kernelcheck=True
 				elif key == 'initrd':
 					initrdcheck=True
-				elif key == 'icon' and b.cfg[key] != "":
-					self.gladefile.get_widget("qemuicon").set_from_pixbuf(gtk.gdk.pixbuf_new_from_file_at_size(b.cfg[key], 48, 48))
+
+			if 'icon' in b.cfg.keys() and b.cfg['icon'] != "":
+				self.gladefile.get_widget("qemuicon").set_from_pixbuf(gtk.gdk.pixbuf_new_from_file_at_size(b.cfg['icon'], 48, 48))
+			else:
+				self.gladefile.get_widget("qemuicon").set_from_file(b.icon.get_img())
+
 		# Apply KVM system configuration
 
 
