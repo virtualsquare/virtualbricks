@@ -706,12 +706,12 @@ class VBGUI(ChildLogger):
 		else:
 			self.gladefile.get_widget('check_femaleplugs').set_active(False)
 
-		if self.config.get('erroronloop'):
+		if self.config.erroronloop:
 			self.gladefile.get_widget('check_erroronloop').set_active(True)
 		else:
 			self.gladefile.get_widget('check_erroronloop').set_active(False)
 
-		if self.config.get('python'):
+		if self.config.python:
 			self.gladefile.get_widget('check_python').set_active(True)
 		else:
 			self.gladefile.get_widget('check_python').set_active(False)
@@ -728,7 +728,6 @@ class VBGUI(ChildLogger):
 	def on_item_settings_autohide_activate(self, widget=None, data=""):
 		print "on_item_settings_autohide_activate undefined!"
 		pass
-
 
 	def on_item_about_activate(self, widget=None, data=""):
 		self.show_window('dialog_about1')
