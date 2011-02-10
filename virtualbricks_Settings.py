@@ -210,6 +210,9 @@ class Settings(object):
 	def check_ksm(self, enable_ksm):
 		"""enable ksm if needed"""
 		ksm_path = '/sys/kernel/mm/ksm/run'
+		if not os.path.isfile(ksm_path):
+			return
+		
 		with open(ksm_path) as input:
 			ksm_state = input.readline().strip()
 
