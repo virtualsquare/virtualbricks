@@ -551,6 +551,7 @@ class VBGUI(ChildLogger):
 		'dialog_new_redirect',
 		'ifconfig_win',
 		'dialog_newbrick',
+		'dialog_newevent',
 		'menu_brickactions',
 		'dialog_warn',
 		'dialog_confirm'
@@ -623,6 +624,22 @@ class VBGUI(ChildLogger):
 			self.error("Cannot create brick: Invalid name.")
 		else:
 			self.debug("Created successfully")
+			
+	def on_newevent_cancel(self, widget=None, data=""):
+		self.curtain_down()
+		self.show_window('')
+
+	def on_newevent_ok(self, widget=None, data=""):
+		self.show_window('')
+		self.curtain_down()
+		name = self.gladefile.get_widget('text_neweventname').get_text()
+		ntype = self.gladefile.get_widget('combo_neweventtype').get_active_text()
+#		try:
+#			self.brickfactory.newbrick(ntype, name)
+#		except BrickFactory.InvalidNameException:
+#			self.error("Cannot create brick: Invalid name.")
+#		else:
+#			self.debug("Created successfully")
 
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
@@ -1218,6 +1235,12 @@ class VBGUI(ChildLogger):
 		self.gladefile.get_widget('combo_newbricktype').set_active(0)
 		self.gladefile.get_widget('text_newbrickname').set_text("")
 		self.show_window('dialog_newbrick')
+		
+	def on_newevent(self, widget=None, event=None, data=""):
+		self.curtain_down()
+		self.gladefile.get_widget('combo_neweventtype').set_active(0)
+		self.gladefile.get_widget('text_neweventname').set_text("")
+		self.show_window('dialog_newevent')
 
 	def on_testconfig(self, widget=None, event=None, data=""):
 		print "signal not connected"
@@ -1622,6 +1645,8 @@ class VBGUI(ChildLogger):
 			"on_windown_destroy":self.on_windown_destroy,
 			"on_newbrick_cancel":self.on_newbrick_cancel,
 			"on_newbrick_ok":self.on_newbrick_ok,
+			"on_newevent_cancel":self.on_newevent_cancel,
+			"on_newevent_ok":self.on_newevent_ok,
 			"on_error_close":self.on_error_close,
 			"on_config_cancel":self.on_config_cancel,
 			"on_config_ok":self.on_config_ok,
@@ -1722,6 +1747,7 @@ class VBGUI(ChildLogger):
 			"on_entry_redirect_gIP_changed":self.on_entry_redirect_gIP_changed,
 			"on_spinbutton_redirect_dport_changed":self.on_spinbutton_redirect_dport_changed,
 			"on_newbrick":self.on_newbrick,
+			"on_newevent":self.on_newevent,
 			"on_testconfig":self.on_testconfig,
 			"on_autodetectsettings":self.on_autodetectsettings,
 			"on_check_kvm":self.on_check_kvm,
