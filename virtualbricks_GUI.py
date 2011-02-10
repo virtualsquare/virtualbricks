@@ -11,11 +11,9 @@ import virtualbricks_BrickFactory as BrickFactory
 from virtualbricks_Logger import ChildLogger
 import gobject
 import time
-import pygraphviz as pgv
 import subprocess
-import Image
 from virtualbricks_Graphics import *
-from threading import Thread, Timer
+from threading import Thread
 
 
 class VBuserwait(Thread):
@@ -586,7 +584,7 @@ class VBGUI(ChildLogger):
 	""" ******************************************************** """
 	def on_window1_destroy(self, widget=None, data=""):
 		self.quit()
-		pass
+
 	def on_windown_destroy(self, widget=None, data=""):
 		widget.hide()
 		return True
@@ -680,12 +678,13 @@ class VBGUI(ChildLogger):
 
 	def on_item_quit_activate(self, widget=None, data=""):
 		self.quit()
-		pass
+
 	def on_item_settings_activate(self, widget=None, data=""):
 		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_filename(self.config.get('bricksdirectory'))
 		self.gladefile.get_widget('filechooserbutton_qemupath').set_filename(self.config.get('qemupath'))
 		self.gladefile.get_widget('filechooserbutton_vdepath').set_filename(self.config.get('vdepath'))
 		self.gladefile.get_widget('filechooserbutton_baseimages').set_filename(self.config.get('baseimages'))
+
 		if self.config.kvm:
 			self.gladefile.get_widget('check_kvm').set_active(True)
 		else:
@@ -719,9 +718,8 @@ class VBGUI(ChildLogger):
 		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
 		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
 
-
 		self.show_window('dialog_settings')
-		pass
+
 	def on_item_settings_autoshow_activate(self, widget=None, data=""):
 		print "on_item_settings_autoshow_activate undefined!"
 		pass
@@ -842,7 +840,6 @@ class VBGUI(ChildLogger):
 
 		model = tree.get_model()
 		iter = model.get_iter(path)
-		ntype = model.get_value(iter, self.BOOKMARKS_TYPE_IDX)
 		name = model.get_value(iter, self.BOOKMARKS_NAME_IDX)
 		b = self.brickfactory.getbrickbyname(name)
 		self.user_wait_action(self.startstop_brick,[b])
@@ -884,7 +881,6 @@ class VBGUI(ChildLogger):
 		store = self.running_bricks
 		x = int(event.x)
 		y = int(event.y)
-		time = event.time
 		pthinfo = tree.get_path_at_pos(x, y)
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		if event.button == 3:
@@ -896,7 +892,7 @@ class VBGUI(ChildLogger):
 
 			if self.joblist_selected:
 				self.show_window('menu_popup_joblist')
-		pass
+
 	def on_treeview_joblist_row_activated_event(self, widget=None, data=""):
 		print "on_treeview_joblist_row_activated_event undefined!"
 		pass
@@ -919,10 +915,18 @@ class VBGUI(ChildLogger):
 	def on_button_openimage_open_clicked(self, widget=None, data=""):
 		print "on_button_openimage_open_clicked undefined!"
 		pass
+
+	def on_dialog_settings_delete_event(self, widget=None, event=None, data=""):
+		"""we could use deletable property but deletable is only available in
+		GTK+ 2.10 and above"""
+		widget.hide()
+		return True
+
 	def on_dialog_settings_response(self, widget=None, response=0, data=""):
 		if response == gtk.RESPONSE_CANCEL:
 			widget.hide()
 			return
+
 		if response == gtk.RESPONSE_APPLY or response == gtk.RESPONSE_OK:
 			self.debug("Apply settings...")
 			for k in ['bricksdirectory', 'qemupath', 'vdepath', 'baseimages']:
@@ -1375,8 +1379,6 @@ class VBGUI(ChildLogger):
 	def on_arch_changed(self, widget, data=None):
 		combo = Settings.ComboBox(widget)
 		path = self.config.get('qemupath')
-		cpus = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_cpu_combo'))
-		machines = Settings.ComboBox(self.gladefile.get_widget('cfg_Qemu_machine_combo'))
 
 		#Machine COMBO
 		machine_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_machine_combo"))
@@ -1509,7 +1511,6 @@ class VBGUI(ChildLogger):
 		store = self.vmplugs
 		x = int(event.x)
 		y = int(event.y)
-		time = event.time
 		pthinfo = tree.get_path_at_pos(x, y)
 		number = self.get_treeselected(tree, store, pthinfo, 0)
 		for pl in self.brick_selected.plugs:
@@ -1680,6 +1681,7 @@ class VBGUI(ChildLogger):
 			"on_filechooserdialog_openimage_response":self.on_filechooserdialog_openimage_response,
 			"on_button_openimage_cancel_clicked":self.on_button_openimage_cancel_clicked,
 			"on_button_openimage_open_clicked":self.on_button_openimage_open_clicked,
+			"on_dialog_settings_delete_event":self.on_dialog_settings_delete_event,
 			"on_dialog_settings_response":self.on_dialog_settings_response,
 			"on_treeview_cdromdrives_row_activated":self.on_treeview_cdromdrives_row_activated,
 			"on_button_settings_add_cdevice_clicked":self.on_button_settings_add_cdevice_clicked,

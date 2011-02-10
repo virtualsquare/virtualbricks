@@ -4112,6 +4112,7 @@ Number of ports: </property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_settings_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>
