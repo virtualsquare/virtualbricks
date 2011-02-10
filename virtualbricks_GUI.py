@@ -212,7 +212,7 @@ class VBGUI(ChildLogger):
 
 		# Qemu: check if KVM is checkable
 		if (b.get_type()=="Qemu"):
-			if (self.config.get('kvm')):
+			if self.config.kvm:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(True)
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM")
 			else:
@@ -245,7 +245,7 @@ class VBGUI(ChildLogger):
 				if (b.cfg[key] == "*"):
 					widget.set_active(True)
 				else:
-					if key is "kvm" and self.config.get('kvm') is "1":
+					if key is "kvm" and self.config.kvm:
 						self.gladefile.get_widget('cfg_Qemu_kvm_check').set_active(True)
 					else:
 						widget.set_active(False)
@@ -669,22 +669,22 @@ class VBGUI(ChildLogger):
 		self.gladefile.get_widget('filechooserbutton_qemupath').set_filename(self.config.get('qemupath'))
 		self.gladefile.get_widget('filechooserbutton_vdepath').set_filename(self.config.get('vdepath'))
 		self.gladefile.get_widget('filechooserbutton_baseimages').set_filename(self.config.get('baseimages'))
-		if self.config.get('kvm'):
+		if self.config.kvm:
 			self.gladefile.get_widget('check_kvm').set_active(True)
 		else:
 			self.gladefile.get_widget('check_kvm').set_active(False)
 
-		if self.config.get('ksm'):
+		if self.config.ksm:
 			self.gladefile.get_widget('check_ksm').set_active(True)
 		else:
 			self.gladefile.get_widget('check_ksm').set_active(False)
 
-		if self.config.get('kqemu'):
+		if self.config.kqemu:
 			self.gladefile.get_widget('check_kqemu').set_active(True)
 		else:
 			self.gladefile.get_widget('check_kqemu').set_active(False)
 
-		if self.config.get('femaleplugs'):
+		if self.config.femaleplugs:
 			self.gladefile.get_widget('check_femaleplugs').set_active(True)
 		else:
 			self.gladefile.get_widget('check_femaleplugs').set_active(False)

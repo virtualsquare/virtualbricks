@@ -17,25 +17,20 @@
 ##	You should have received a copy of the GNU General Public License
 ##	along with this program; if not, write to the Free Software
 ##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-from os import path
+import new
 import os
-import sys
-import pickle
-import re
-import shutil
-from copy import copy
 import ConfigParser
 
-VDEPATH="/usr/bin"
-HOME=os.path.expanduser("~")
-MYPATH=HOME + "/.virtualbricks"
-CONFIGFILE=HOME + "/.virtualbricks.conf"
+VDEPATH = "/usr/bin"
+HOME = os.path.expanduser("~")
+MYPATH = os.path.join(HOME, ".virtualbricks")
+CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
 #TERM=os.environ.get("COLORTERM",None);
 
-COMBOBOXES=dict()
+COMBOBOXES = dict()
 
 def ComboBox(widget):
-	for k,v in COMBOBOXES.items():
+	for k, v in COMBOBOXES.items():
 		if k == widget:
 			return v
 	COMBOBOXES[widget] = ComboBoxObj(widget)
@@ -48,42 +43,42 @@ class ComboBoxObj:
 		self.model = self.widget.get_model()
 		self.options = dict()
 
-	# args is dict[showing_name] = real name
 	def populate(self, args, selected=None, _clear=True):
+		"""args is dict[showing_name] = real name"""
 		if _clear:
 			self.clear()
-		for (k,v) in args.items():
+		for (k, v) in args.items():
 			self.options[k] = v
 
-		items = [(v,k) for k,v in self.options.items()]
+		items = [(v, k) for k, v in self.options.items()]
 		items.sort()
-		items = [(k,v) for v,k in items]
-		for k,v in items:
+		items = [(k, v) for v, k in items]
+		for k, v in items:
 			self.widget.append_text(k)
 
 		if selected:
 			self.select(selected)
 
 	def clear(self):
-		self.options={}
-        	self.widget.set_model(None)
-        	self.model.clear()
-        	self.widget.set_model(self.model)
+		self.options = {}
+		self.widget.set_model(None)
+		self.model.clear()
+		self.widget.set_model(self.model)
 
-	def select(self,regexp):
-		i = self.model.get_iter_first()
-		active=-1
-		while i is not None:
-			s = self.model.get_value(i, 0)
-			if s==regexp:
+	def select(self, regexp):
+		index = self.model.get_iter_first()
+		active = -1
+		while index is not None:
+			value = self.model.get_value(index, 0)
+			if value == regexp:
 			#if re.search(regexp, s):
-				print "Found match:" + s
-				active = i
+				print "Found match:" + value
+				active = index
 				print "activate " + regexp
-				print "setting active to "+str(active)
+				print "setting active to " + unicode(active)
 				self.widget.set_active_iter(active)
 				break
-			i = self.model.iter_next(i)
+			index = self.model.iter_next(index)
 
 	def get_selected(self):
 		txt = self.widget.get_active_text()
@@ -97,7 +92,7 @@ class Settings(object):
 	def __init__(self, filename):
 		# default config
 		default_conf = {
-			"bricksdirectory": HOME + "/virtualbricks",
+			"bricksdirectory": os.path.join(HOME, "virtualbricks"),
 			"term": "/usr/bin/xterm",
 			"sudo": "/usr/bin/gksu",
 			"qemupath": "/usr/bin",
@@ -113,35 +108,53 @@ class Settings(object):
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
+
+		def create_get(attr):
+			return lambda instance, x: self.config.getboolean(self.DEFAULT_SECTION, attr)
+
+		def create_set(attr):
+			return lambda instance, x, enabled: self.config.set(self.DEFAULT_SECTION, attr,
+				unicode(enabled))
+
+		for attr in ['kvm', 'ksm', 'kqemu', 'python', 'femaleplugs',
+				'erroronloop']:
+			m_get = new.instancemethod(create_get(attr), self, Settings)
+			m_set = new.instancemethod(create_set(attr), self, Settings)
+			setattr(self, 'get_%s' % attr, m_get)
+			setattr(self, 'set_%s' % attr, m_set)
+			setattr(Settings, attr, property(m_get, m_set))
+
 		self.config.add_section(self.DEFAULT_SECTION)
-		if(default_conf):
-			for key,value in default_conf.items():
-				self.config.set(self.DEFAULT_SECTION, key, str(value))
+		for key, value in default_conf.items():
+			self.config.set(self.DEFAULT_SECTION, key, unicode(value))
+
+		self.config.read(self.filename)
 
 		try:
 			self.config.read(self.filename)
 			print "CONFIGURATION: LOADED."
-			self.check_ksm(self.cfg.get('ksm'))
-
-		except Exception:
-			print "FATAL: Cannot open config file!!"
+			self.check_ksm(self.ksm)
+			self.ksm = self.ksm
+		except Exception, err:
+			print "Cannot open config file '%s': '%s'!" % (self.filename, err)
+			raise err
 			try:
 				with open(self.filename, 'wb') as configfile:
 					self.config.write(configfile)
 					print "default configuration written"
-			except Exception:
-				print "Can not save default configuration"
+			except Exception, err:
+				print "Can not save default configuration: '%s'" % err
 				return
 
+
 	def get(self, attr):
-		val = self.config.get(self.DEFAULT_SECTION, str(attr))
-		if val == "False":
-			print "I hate configfile!!!!"
-			return False
+		val = self.config.get(self.DEFAULT_SECTION, unicode(attr))
+		if val == "False" or val == "True":
+			raise Exception("'%s' use getboolean" % attr)
 		return val
 
 	def set(self, attr, value):
-		self.config.set(self.DEFAULT_SECTION, str(attr), str(value))
+		self.config.set(self.DEFAULT_SECTION, unicode(attr), unicode(value))
 
 	def store(self):
 		with open(self.filename, 'wb') as configfile:
@@ -151,7 +164,7 @@ class Settings(object):
 		vdebin_template = ['vde_switch', 'vde_plug', 'vde_cryptcab', 'dpipe', 'vdeterm', 'vde_plug2tap', 'wirefilter']
 		res = []
 		for v in vdebin_template:
-			if not os.access(path + "/" + v, os.X_OK):
+			if not os.access(os.path.join(path, v), os.X_OK):
 				res.append(v)
 		return res
 
@@ -188,27 +201,27 @@ class Settings(object):
 	def check_kvm(self):
 		for b in self.check_missing_qemupath(self.get("qemupath")):
 			if b == 'kvm':
-				raise IOError
-				return False
+				raise IOError()
 
 		if not os.access("/sys/class/misc/kvm", os.X_OK):
-			raise NotImplementedError
+			raise NotImplementedError()
 		return True
 
-	def check_ksm(self, onoff):
-		if (onoff == False and self.ksm != "1"):
-			return True
-		if (onoff):
-			arg = '1'
-		else:
-			arg = '0'
-		cmd = "echo '" + arg + "'>/sys/kernel/mm/ksm/run"
+	def check_ksm(self, enable_ksm):
+		"""enable ksm if needed"""
+		ksm_path = '/sys/kernel/mm/ksm/run'
+		with open(ksm_path) as input:
+			ksm_state = input.readline().strip()
 
-		if self.sudo_system(cmd) != 0:
-			print cmd
-			raise NotImplementedError
+		cmd = ''
+		if enable_ksm and ksm_state == '0':
+			cmd = "echo 1 > %s" % ksm_path
 
+		if not enable_ksm and ksm_state == '1':
+			cmd = "echo 0 > %s" % ksm_path
 
+		if cmd and self.sudo_system(cmd) != 0:
+			raise NotImplementedError()
 
 	def sudo_system(self, cmd):
-		return (os.system(self.get("sudo")+' '+repr(cmd)))
+		return os.system(self.get("sudo") + ' ' + repr(cmd))
