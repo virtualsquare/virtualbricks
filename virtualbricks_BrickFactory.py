@@ -412,9 +412,15 @@ class Brick(ChildLogger):
 	def open_internal_console(self):
 		if not self.has_console():
 			return None
-		time.sleep(0.5)
-		c = socket.socket(socket.AF_UNIX)
-		c.connect(self.cfg.console)
+		while True:
+			try:
+				time.sleep(0.5)
+				c = socket.socket(socket.AF_UNIX)
+				c.connect(self.cfg.console)
+			except:
+				pass
+			else:
+				break
 		return c
 
 	def send(self,msg):

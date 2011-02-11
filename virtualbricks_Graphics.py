@@ -1,4 +1,5 @@
 import os, re, Image, pygraphviz as pgv
+import virtualbricks_Settings as Settings
 
 def ImgPrefix():
 	return "./"
@@ -10,7 +11,17 @@ class Icon:
 		self.brick = brick
 		self.ready = False
 
+	def has_custom_icon(self):
+		return ('icon' in self.brick.cfg.keys()) and self.brick.cfg.icon != ""
+
 	def set_from_file(self, filename):
+
+		newname = Settings.MYPATH + "/qemuicon_" + self.brick.name + ".png"
+		if self.has_custom_icon() and self.brick.cfg.icon != newname:
+			src = Image.open(filename).resize((48,48),Image.ANTIALIAS)
+			src.save(newname)
+			filename = self.brick.cfg.icon = newname
+
 		self.base = filename
 		self.grey = os.path.basename(filename).split('.')[0]+"_grey.png"
 		self.make_grey()
@@ -22,7 +33,6 @@ class Icon:
 		if not os.access(self.base, os.R_OK):
 			return
 		if not os.access(self.grey, os.R_OK):
-				# the reason for the existence of this class, so far.
 			src = Image.open(self.base).convert('RGB', palette=Image.ADAPTIVE).convert('L').save(self.grey, transparency = 0)
 			#except:
 			#	self.debug("Cannot create grey image: defaulting to base")
@@ -31,7 +41,7 @@ class Icon:
 
 
 	def get_img(self):
-		if 'icon' in self.brick.cfg.keys() and self.brick.cfg.icon != "":
+		if self.has_custom_icon():
 			self.set_from_file(self.brick.cfg.icon)
 		if not self.ready:
 			self.set_from_bricktype()
@@ -83,7 +93,6 @@ class Topology():
 				n.attr['shape']='none'
 				n.attr['fontsize']='9'
 				n.attr['image'] = b.icon.get_img()
-
 
 		for b in bricks:
 			loop = 0

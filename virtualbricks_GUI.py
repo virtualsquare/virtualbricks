@@ -622,7 +622,7 @@ class VBGUI(ChildLogger):
 			self.error("Cannot create brick: Invalid name.")
 		else:
 			self.debug("Created successfully")
-			
+
 	def on_newevent_cancel(self, widget=None, data=""):
 		self.curtain_down()
 		self.show_window('')
@@ -1238,7 +1238,7 @@ class VBGUI(ChildLogger):
 		self.gladefile.get_widget('combo_newbricktype').set_active(0)
 		self.gladefile.get_widget('text_newbrickname').set_text("")
 		self.show_window('dialog_newbrick')
-		
+
 	def on_newevent(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		self.gladefile.get_widget('combo_neweventtype').set_active(0)
@@ -1823,7 +1823,11 @@ class VBGUI(ChildLogger):
 					state='disconnected'
 				else:
 					state='off'
-					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
+					try:
+						self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
+					except:
+						self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
+						pass
 
 				self.bookmarks.set_value(iter,1,state)
 				self.bookmarks.set_value(iter,2,b.get_type())
