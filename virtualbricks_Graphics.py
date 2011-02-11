@@ -1,4 +1,4 @@
-import os, re, Image, pygraphviz as pgv
+import os, re, Image, ImageEnhance, pygraphviz as pgv
 import virtualbricks_Settings as Settings
 
 def ImgPrefix():
@@ -23,7 +23,7 @@ class Icon:
 			filename = self.brick.cfg.icon = newname
 
 		self.base = filename
-		self.grey = os.path.basename(filename).split('.')[0]+"_grey.png"
+		self.grey = "/tmp/"+os.path.basename(filename).split('.')[0]+"_grey.png"
 		self.make_grey()
 
 	def set_from_bricktype(self):
@@ -33,7 +33,9 @@ class Icon:
 		if not os.access(self.base, os.R_OK):
 			return
 		if not os.access(self.grey, os.R_OK):
-			src = Image.open(self.base).convert('RGB', palette=Image.ADAPTIVE).convert('L').save(self.grey, transparency = 0)
+			src = Image.open(self.base).convert('RGB', palette=Image.ADAPTIVE).convert('L')
+			bri = ImageEnhance.Brightness(src)
+			bri.enhance(2.0).save(self.grey, transparency = 0)
 			#except:
 			#	self.debug("Cannot create grey image: defaulting to base")
 			#	self.grey = self.base
