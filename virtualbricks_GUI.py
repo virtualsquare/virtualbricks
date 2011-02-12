@@ -1316,13 +1316,13 @@ class VBGUI(ChildLogger):
 		self.brickfactory.dupbrick(self.brick_selected)
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
-		self.curtain_down()
 		if self.brick_selected.proc != None:
 			self.show_error("Cannot rename self.selected: self.selected is in use.")
 			return
 
-		self.gladefile.get_widget('entry_self.selected_newname').set_text(self.brick_selected.name)
+		self.gladefile.get_widget('entry_brick_newname').set_text(self.brick_selected.name)
 		self.gladefile.get_widget('dialog_rename').show_all()
+		self.curtain_down()
 
 	def on_dialog_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()

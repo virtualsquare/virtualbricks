@@ -19,7 +19,6 @@ class Icon:
 		newname = Settings.MYPATH + "/qemuicon_" + self.brick.name + ".png"
 		if self.has_custom_icon() and self.brick.cfg.icon != newname:
 			src = Image.open(filename).resize((48,48),Image.ANTIALIAS)
-			base = Image.open("qemu_base.png")
 			src.convert('RGBA').save(newname)
 			filename = self.brick.cfg.icon = newname
 
