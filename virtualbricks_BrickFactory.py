@@ -1422,9 +1422,8 @@ class BrickFactory(ChildLogger, threading.Thread):
 		self.showconsole = showconsole
 		threading.Thread.__init__(self)
 		self.running_condition = True
-		self.settings = Settings.Settings(Settings.CONFIGFILE)
+		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
 		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
-
 
 	def getbrickbyname(self, name):
 		for b in self.bricks:

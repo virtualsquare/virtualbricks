@@ -20,6 +20,7 @@
 import new
 import os
 import ConfigParser
+from virtualbricks_Logger import ChildLogger
 
 VDEPATH = "/usr/bin"
 HOME = os.path.expanduser("~")
@@ -87,9 +88,10 @@ class ComboBoxObj:
 		except KeyError:
 			return None
 
-class Settings(object):
+class Settings(ChildLogger):
 	DEFAULT_SECTION = "Main"
-	def __init__(self, filename):
+	def __init__(self, filename, logger):
+		ChildLogger.__init__(self, logger)
 		# default config
 		default_conf = {
 			"bricksdirectory": os.path.join(HOME, "virtualbricks"),
@@ -145,7 +147,6 @@ class Settings(object):
 			except Exception, err:
 				print "Can not save default configuration: '%s'" % err
 				return
-
 
 	def get(self, attr):
 		val = self.config.get(self.DEFAULT_SECTION, unicode(attr))
@@ -224,7 +225,7 @@ class Settings(object):
 			cmd = "echo 0 > %s" % ksm_path
 
 		if cmd and self.sudo_system(cmd) != 0:
-			raise NotImplementedError()
+			self.error("Can not change ksm state.")
 
 	def sudo_system(self, cmd):
 		return os.system(self.get("sudo") + ' ' + repr(cmd))
