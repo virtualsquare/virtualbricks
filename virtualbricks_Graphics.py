@@ -33,12 +33,13 @@ class Icon:
 		if not os.access(self.base, os.R_OK):
 			return
 		if not os.access(self.grey, os.R_OK):
-			src = Image.open(self.base).convert('RGB', palette=Image.ADAPTIVE).convert('L')
-			bri = ImageEnhance.Brightness(src)
-			bri.enhance(2.0).save(self.grey, transparency = 0)
-			#except:
-			#	self.debug("Cannot create grey image: defaulting to base")
-			#	self.grey = self.base
+			try:
+				src = Image.open(self.base).convert('RGB', palette=Image.ADAPTIVE).convert('L')
+				bri = ImageEnhance.Brightness(src)
+				bri.enhance(2.0).save(self.grey, transparency = 0)
+			except:
+				self.debug("Cannot create grey image: defaulting to base")
+				self.grey = self.base
 		self.ready = True
 
 
@@ -70,9 +71,14 @@ class Topology():
 	def __init__(self, widget, bricks):
 		self.topowidget = widget
 		self.topo = pgv.AGraph()
+
+		''' Use next line for Left-right Topology '''
 		self.topo.graph_attr['rankdir']='LR'
+
+		''' Use next line for Top-Bottom Topology '''
 		#self.topo.graph_attr['rankdir']='TB'
-		self.topo.graph_attr['ranksep']='1.2'
+
+		self.topo.graph_attr['ranksep']='2.0'
 		self.nodes = []
 		self.x_adj = 0.0
 		self.y_adj = 0.0
@@ -81,20 +87,11 @@ class Topology():
 		sg = self.topo.add_subgraph([],name="switches_rank")
 		sg.graph_attr['rank'] = 'same'
 		for b in bricks:
-		### I would like to use this code, but pygraphviz has a bug.
-		#	if b.get_type() == 'Switch' or b.get_type().startswith('Wire'):
-		#		sg.add_node(b.name)
-		#		n = sg.get_node(b.name)
-		#		print n
-		#		n.attr['shape']='none'
-		#		n.attr['fontsize']='9'
-		#		n.attr['image']=b.get_type()+'.png'
-		#	else:
-				self.topo.add_node(b.name)
-				n = self.topo.get_node(b.name)
-				n.attr['shape']='none'
-				n.attr['fontsize']='9'
-				n.attr['image'] = b.icon.get_img()
+			self.topo.add_node(b.name)
+			n = self.topo.get_node(b.name)
+			n.attr['shape']='none'
+			n.attr['fontsize']='9'
+			n.attr['image'] = b.icon.get_img()
 
 		for b in bricks:
 			loop = 0

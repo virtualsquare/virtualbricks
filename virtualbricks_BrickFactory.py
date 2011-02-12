@@ -195,6 +195,9 @@ class Brick(ChildLogger):
 	def cmdline(self):
 		return ""
 
+	def getname(self):
+		return self.name
+
 	def on_config_changed(self):
 		return
 

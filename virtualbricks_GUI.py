@@ -1926,7 +1926,7 @@ class VBGUI(ChildLogger):
 		return True
 
 	def draw_topology(self):
-		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.bricks)
+		self.topology = Topology(self.gladefile.get_widget('image_topology'), sorted(self.bricks, key = lambda b: b.name))
 
 	def user_wait_action(self, action, args=[]):
 		self.gladefile.get_widget("window_userwait").show_all()
