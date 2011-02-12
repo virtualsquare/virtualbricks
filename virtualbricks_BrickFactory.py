@@ -37,7 +37,6 @@ class LinkloopException(Exception):
 	def __init__(self):
 		pass
 
-
 def ValidName(name):
 	if not re.search("\A[a-zA-Z]", name):
 		return None
@@ -191,6 +190,7 @@ class Brick(ChildLogger):
 		self.needsudo = False
 		self.internal_console = None
 		self.icon = Icon(self)
+		self.terminal = "vdeterm"
 
 	def cmdline(self):
 		return ""
@@ -340,21 +340,20 @@ class Brick(ChildLogger):
 			time.sleep(5)
 			try:
 				pidfile = open("/tmp/" +self.name+".pid", "r")
-				print "open ok"
 				self.pid = int(pidfile.readline().rstrip('\n'))
-				print "read ok"
-				print self.pid
 			except:
 				print("Cannot get pid from pidfile!")
 				pass
 		else:
 			self.pid = self.proc.pid
+
 		if self.open_internal_console and callable(self.open_internal_console):
 			self.internal_console = self.open_internal_console()
 		self.post_poweron()
 
 	def poweroff(self):
 		print "Shutting down %s" % self.name
+
 		if self.proc is None:
 			return False
 
@@ -363,13 +362,14 @@ class Brick(ChildLogger):
 				os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
 			else:
 				try:
-					os.kill(self.proc.pid, 15)
+					#self.proc.send_signal(15)
+					os.kill(self.pid, 15)
 				except Exception, err:
 					print "ERROR", err
 
 			ret = self.proc.poll()
-			if ret is None:
-				return
+			while ret is None:
+				ret= self.proc.poll()
 
 		self.proc = None
 		self.need_restart_to_apply_changes = False
@@ -394,16 +394,16 @@ class Brick(ChildLogger):
 			return False
 
 	def open_console(self):
+		print "open_console"
 		if not self.has_console():
 			return
 		else:
-			cmdline = [self.settings.get('term'),'-T',self.name,'-e','vdeterm',self.cfg.console]
-			print cmdline
+			cmdline = [self.settings.get('term'),'-T',self.name,'-e',self.terminal,self.cfg.console]
 			try:
 				console = subprocess.Popen(cmdline)
 			except:
 				print "xterm run failed, trying gnome-terminal"
-				cmdline = ['gnome-terminal','-t',self.name,'-e', 'vdeterm ' + self.cfg.console]
+				cmdline = ['gnome-terminal','-t',self.name,'-e', self.terminal + self.cfg.console]
 				print cmdline
 				try:
 					console = subprocess.Popen(cmdline)
@@ -413,6 +413,7 @@ class Brick(ChildLogger):
 
 	#Must be overridden in Qemu to use appropriate console as internal (stdin, stdout?)
 	def open_internal_console(self):
+		print "open_internal_console"
 		if not self.has_console():
 			return None
 		while True:
@@ -437,6 +438,7 @@ class Brick(ChildLogger):
 			print "send failed", err, type(err)
 
 	def recv(self):
+		print "recv"
 		if self.internal_console == None:
 			return ''
 		res = ''
@@ -446,7 +448,6 @@ class Brick(ChildLogger):
 			pollret = p.poll(300)
 			if (len(pollret)==1 and pollret[0][1] == select.POLLIN):
 				line = self.internal_console.recv(100)
-				print "recv: line: "+line
 				res += line
 			else:
 				break
@@ -1181,6 +1182,7 @@ class VM(Brick):
 		self.cfg.gdbport=""
 		self.cfg.kopt=""
 		self.cfg.icon=""
+		self.terminal="unixterm"
 
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -1377,8 +1379,15 @@ class VM(Brick):
 		res.append("-mon")
 		res.append("chardev=mon")
 		res.append("-chardev")
-		res.append('socket,id=mon,path='+Settings.MYPATH + '/' + self.name + '.mgmt,server')
-		self.cfg.console=Settings.MYPATH + '/' + self.name + '.mgmt'
+		res.append('socket,id=mon_cons,path='+Settings.MYPATH + '/' + self.name + '_cons.mgmt,server,nowait')
+		self.cfg.console=Settings.MYPATH + '/' + self.name + '_cons.mgmt'
+
+		res.append("-mon")
+		res.append("chardev=mon_cons")
+		res.append("-chardev")
+		res.append('socket,id=mon,path='+Settings.MYPATH + '/' + self.name + '.mgmt,server,nowait')
+		self.cfg.console2=Settings.MYPATH + '/' + self.name + '.mgmt'
+
 		print res
 		return res
 
@@ -1416,6 +1425,20 @@ class VM(Brick):
 				p.vlan-=1
 		self.gui_changed=True
 
+	def open_internal_console(self):
+		print "open_internal_console_qemu"
+		if not self.has_console():
+			return None
+		while True:
+			try:
+				time.sleep(0.5)
+				c = socket.socket(socket.AF_UNIX)
+				c.connect(self.cfg.console2)
+			except:
+				pass
+			else:
+				break
+		return c
 
 class BrickFactory(ChildLogger, threading.Thread):
 	def __init__(self, logger=None, showconsole=True):
