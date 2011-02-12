@@ -19,11 +19,16 @@ class Icon:
 		newname = Settings.MYPATH + "/qemuicon_" + self.brick.name + ".png"
 		if self.has_custom_icon() and self.brick.cfg.icon != newname:
 			src = Image.open(filename).resize((48,48),Image.ANTIALIAS)
-			src.save(newname)
+			base = Image.open("qemu_base.png")
+			src.convert('RGBA').save(newname)
 			filename = self.brick.cfg.icon = newname
 
 		self.base = filename
 		self.grey = "/tmp/"+os.path.basename(filename).split('.')[0]+"_grey.png"
+		try:
+			os.unlink(self.grey)
+		except:
+			pass
 		self.make_grey()
 
 	def set_from_bricktype(self):

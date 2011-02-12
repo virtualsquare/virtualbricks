@@ -591,6 +591,8 @@ class VBGUI(ChildLogger):
 		wdg.set_property('message-type', type)
 		wdg.set_property('text', text)
 		wdg.run()
+	def show_error(self, text):
+		self.show_msg(text, gtk.MESSAGE_ERROR)
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -1624,6 +1626,8 @@ class VBGUI(ChildLogger):
 		self.joblist_selected.send("system_reset\n")
 		self.joblist_selected.recv()
 
+	def on_topology_drag(self, widget=None, event=None, data=""):
+		print "DRAG"
 	def on_topology_action(self, widget=None, event=None, data=""):
 		if self.topology:
 			for n in self.topology.nodes:
@@ -1793,6 +1797,7 @@ class VBGUI(ChildLogger):
 			"on_vm_resume":self.on_vm_resume,
 			"on_topology_action":self.on_topology_action,
 			"on_topology_scroll":self.on_topology_scroll,
+			"on_topology_drag":self.on_topology_drag,
 			"on_cfg_Qemu_vnc_check_toggled": self.on_vnc_novga_toggled,
 			"on_cfg_Qemu_novga_check_toggled": self.on_vnc_novga_toggled,
 			"on_filechooserbutton1_file_set": self.on_vmicon_file_change,
@@ -1914,7 +1919,7 @@ class VBGUI(ChildLogger):
 				ret = b.proc.poll()
 				if ret != None:
 					b.poweroff()
-					self.show_error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
+					#self.show_error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
 					b.gui_changed = True
 
 		if self.ps != new_ps:
