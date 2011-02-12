@@ -622,11 +622,17 @@ class VBGUI(ChildLogger):
 		self.curtain_down()
 		self.show_window('')
 
+	def selected_type(self):
+		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu']:
+			if self.gladefile.get_widget('typebutton_'+ntype).get_active():
+				return ntype
+		return 'Switch'
+
 	def on_newbrick_ok(self, widget=None, data=""):
 		self.show_window('')
 		self.curtain_down()
 		name = self.gladefile.get_widget('text_newbrickname').get_text()
-		ntype = self.gladefile.get_widget('combo_newbricktype').get_active_text()
+		ntype = self.selected_type()
 		try:
 			self.brickfactory.newbrick(ntype, name)
 		except BrickFactory.InvalidNameException:
@@ -1246,7 +1252,6 @@ class VBGUI(ChildLogger):
 
 	def on_newbrick(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		self.gladefile.get_widget('combo_newbricktype').set_active(0)
 		self.gladefile.get_widget('text_newbrickname').set_text("")
 		self.show_window('dialog_newbrick')
 
@@ -1926,7 +1931,7 @@ class VBGUI(ChildLogger):
 		return True
 
 	def draw_topology(self):
-		self.topology = Topology(self.gladefile.get_widget('image_topology'), sorted(self.bricks, key = lambda b: b.name))
+		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.bricks)
 
 	def user_wait_action(self, action, args=[]):
 		self.gladefile.get_widget("window_userwait").show_all()
