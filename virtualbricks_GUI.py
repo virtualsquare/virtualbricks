@@ -615,7 +615,7 @@ class VBGUI(ChildLogger):
 		self.on_confirm_response_arg = arg
 		self.gladefile.get_widget('dialog_confirm').show_all()
 
-	def on_error_close(self, widget=None, data =""):
+	def on_dialog_warn_close(self, widget=None, data=""):
 		self.curtain_down()
 		self.widg['dialog_warn'].hide()
 		return True
@@ -851,17 +851,7 @@ class VBGUI(ChildLogger):
 
 	def tree_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		tree = self.gladefile.get_widget('treeview_bookmarks')
-		path = tree.get_cursor()[0]
-		self.debug("tree_startstop")
-		if path is None:
-			return
-
-		model = tree.get_model()
-		iter = model.get_iter(path)
-		name = model.get_value(iter, self.BOOKMARKS_NAME_IDX)
-		b = self.brickfactory.getbrickbyname(name)
-		self.user_wait_action(self.startstop_brick,[b])
+		self.user_wait_action(self.startstop_brick, [self.brick_selected])
 
 	def startstop_brick(self, b):
 		if b.proc is not None:
@@ -1628,6 +1618,7 @@ class VBGUI(ChildLogger):
 
 	def on_topology_drag(self, widget=None, event=None, data=""):
 		print "DRAG"
+
 	def on_topology_action(self, widget=None, event=None, data=""):
 		if self.topology:
 			for n in self.topology.nodes:
@@ -1637,10 +1628,10 @@ class VBGUI(ChildLogger):
 						self.brick_selected = brick
 						self.show_brickactions()
 				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
-						brick = self.brickfactory.getbrickbyname(n.name)
-						if brick is not None:
-							self.brick_selected = brick
-							self.user_wait_action(self.startstop_brick,[brick])
+					brick = self.brickfactory.getbrickbyname(n.name)
+					if brick is not None:
+						self.brick_selected = brick
+						self.user_wait_action(self.startstop_brick,[brick])
 		self.curtain_down()
 
 	def on_topology_scroll(self, widget=None, event=None, data=""):
@@ -1667,7 +1658,7 @@ class VBGUI(ChildLogger):
 			"on_newbrick_ok":self.on_newbrick_ok,
 			"on_newevent_cancel":self.on_newevent_cancel,
 			"on_newevent_ok":self.on_newevent_ok,
-			"on_error_close":self.on_error_close,
+			"on_dialog_warn_close":self.on_dialog_warn_close,
 			"on_config_cancel":self.on_config_cancel,
 			"on_config_ok":self.on_config_ok,
 			"on_gilbert_toggle": self.on_gilbert_toggle,
