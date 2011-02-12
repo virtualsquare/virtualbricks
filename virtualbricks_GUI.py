@@ -38,26 +38,29 @@ class VBGUI(ChildLogger):
 	BOOKMARKS_NAME_IDX = 3
 	BOOKMARKS_PARAMETERS_IDX = 4
 
-
-
 	def __init__(self):
-		ChildLogger.__init__(self)
-		self.info("Starting VirtualBricks!")
-
 		if not os.access(Settings.MYPATH, os.X_OK):
 			os.mkdir(Settings.MYPATH)
 
-		gtk.gdk.threads_init()
-		self.brickfactory = BrickFactory.BrickFactory(self, True)
-		self.brickfactory.start()
 		self.topology = None
 		try:
 			self.gladefile = gtk.glade.XML('./virtualbricks.glade')
 		except:
 			self.error("Cannot open required file 'virtualbricks.glade'")
 			sys.exit(1)
+
 		self.widg = self.get_widgets(self.widgetnames())
+
+		ChildLogger.__init__(self)
+
+		self.info("Starting VirtualBricks!")
+
+		gtk.gdk.threads_init()
+		self.brickfactory = BrickFactory.BrickFactory(self, True)
+		self.brickfactory.start()
+
 		self.widg['main_win'].show()
+
 		self.ps = []
 		self.bricks = []
 
@@ -84,7 +87,6 @@ class VBGUI(ChildLogger):
 		tree = self.gladefile.get_widget('treeview_bookmarks')
 		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
-
 
 		self.vmplugs = self.treestore('treeview_networkcards',
 				[	gobject.TYPE_STRING,
@@ -549,9 +551,9 @@ class VBGUI(ChildLogger):
 		'dialog_new_redirect',
 		'ifconfig_win',
 		'dialog_newbrick',
+		'dialog_warn',
 		'dialog_newevent',
 		'menu_brickactions',
-		'dialog_warn',
 		'dialog_confirm'
 		]
 	def sockscombo_names(self):
@@ -576,6 +578,20 @@ class VBGUI(ChildLogger):
 			elif not name.startswith('menu') and not name.endswith('dialog_warn'):
 				self.widg[w].hide()
 
+	def critical(self, text):
+		ChildLogger.critical(self, text)
+		self.show_msg(text)
+
+	def error(self, text):
+		ChildLogger.error(self, text)
+		self.show_msg(text)
+
+	def show_msg(self, text, type=gtk.MESSAGE_ERROR):
+		wdg = self.widg['dialog_warn']
+		wdg.set_property('message-type', type)
+		wdg.set_property('text', text)
+		wdg.run()
+
 	""" ******************************************************** """
 	"""                                                          """
 	""" EVENTS / SIGNALS                                         """
@@ -588,11 +604,6 @@ class VBGUI(ChildLogger):
 	def on_windown_destroy(self, widget=None, data=""):
 		widget.hide()
 		return True
-
-	def show_error(self, text):
-		self.gladefile.get_widget('texterror').set_text(text)
-		self.show_window('dialog_warn')
-		self.error(text)
 
 	def ask_confirm(self, text, on_yes=None, on_no=None, arg=None):
 		self.curtain_down()
