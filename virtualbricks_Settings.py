@@ -107,6 +107,7 @@ class Settings(ChildLogger):
 			"python": False,
 			"femaleplugs": False,
 			"erroronloop": False,
+			"systray": False,
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
@@ -119,7 +120,7 @@ class Settings(ChildLogger):
 				unicode(enabled))
 
 		for attr in ['kvm', 'ksm', 'kqemu', 'python', 'femaleplugs',
-				'erroronloop']:
+				'erroronloop', 'systray']:
 			m_get = new.instancemethod(create_get(attr), self, Settings)
 			m_set = new.instancemethod(create_set(attr), self, Settings)
 			setattr(self, 'get_%s' % attr, m_get)
@@ -213,7 +214,7 @@ class Settings(ChildLogger):
 		ksm_path = '/sys/kernel/mm/ksm/run'
 		if not os.path.isfile(ksm_path):
 			return
-		
+
 		with open(ksm_path) as input:
 			ksm_state = input.readline().strip()
 

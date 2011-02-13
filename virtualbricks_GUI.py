@@ -64,7 +64,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		''' Don't remove me, I am useful after config, when treeview may lose focus and selection. '''
 		self.last_known_selected_brick = None
-
+		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
 		self.config = self.brickfactory.settings
 		self.signals()
 		self.timers()
@@ -99,6 +99,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.vmplugs = self.treestore('treeview_networkcards', [gobject.TYPE_STRING,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Eth','connection','model','macaddr'])
+
+		#TRAYICON
+		self.systray=False
+		if self.config.systray:
+			self.start_systray()
 
 		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
 		self.Dragging = None
@@ -457,6 +462,35 @@ class VBGUI(ChildLogger, gobject.GObject):
 	"""                                                          """
 	""" ******************************************************** """
 
+
+	def start_systray(self):
+		if not self.systray:
+			self.statusicon = gtk.status_icon_new_from_file("virtualbricks.png")
+       			self.statusicon.set_tooltip("VirtualBricks Visible")
+			self.statusicon.connect('activate', self.status_clicked )
+			self.systray=True
+
+	def stop_systray(self):
+		if self.systray:
+			self.statusicon.set_visible(False)
+			self.statusicon = ""
+			self.systray=False
+
+
+	def delete_event(self,window,event):
+		#don't delete; hide instead
+		if self.config.systray and self.systray:
+			self.gladefile.get_widget("main_win").hide_on_delete()
+			self.statusicon.set_tooltip("VirtualBricks Hidden")
+		else:
+			self.quit()
+		return True
+
+	def status_clicked(self,status):
+        	#unhide the window
+        	self.gladefile.get_widget("main_win").show_all()
+        	self.statusicon.set_tooltip("the window is visible")
+
 	def curtain_is_down(self):
 		self.debug(self.curtain.get_position())
 		return (self.curtain.get_position()>660)
@@ -810,6 +844,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 		else:
 			self.gladefile.get_widget('check_python').set_active(False)
 
+		if self.config.systray:
+			self.gladefile.get_widget('check_systray').set_active(True)
+		else:
+			self.gladefile.get_widget('check_systray').set_active(False)
+
 		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
 		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
 		self.curtain_down()
@@ -1053,6 +1092,13 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.config.set("erroronloop", True)
 			else:
 				self.config.set("erroronloop", False)
+
+			if self.gladefile.get_widget('check_systray').get_active():
+				self.config.set('systray', True)
+				self.start_systray()
+			else:
+				self.config.set('systray', False)
+				self.stop_systray()
 
 			self.config.set("term", self.gladefile.get_widget('entry_term').get_text())
 			self.config.set("sudo", self.gladefile.get_widget('entry_sudo').get_text())

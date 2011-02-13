@@ -70,7 +70,7 @@ class Node:
 		else:
 			return False
 
-class Topology(object):
+class Topology():
 
 	def __init__(self, widget, bricks_model, scale=1.00, orientation="LR", export=None):
 		self.topowidget = widget
