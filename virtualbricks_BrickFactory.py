@@ -460,6 +460,16 @@ class Brick(ChildLogger):
 	def get_parameters(self):
 		raise NotImplemented('get_parameters')
 
+	def get_state(self):
+		"""return state of the brick"""
+		if self.proc is not None:
+			state = 'running'
+		elif not self.properly_connected():
+			state = 'disconnected'
+		else:
+			state = 'off'
+		return state
+
 class Switch(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)

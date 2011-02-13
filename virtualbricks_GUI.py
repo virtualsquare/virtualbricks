@@ -97,7 +97,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['','PID','Type','Name'])
 
-		columns = ['Icon','Status','Type','Name', 'Parameters']
+		columns = ['Icon', 'Status', 'Type', 'Name', 'Parameters']
 		tree = self.gladefile.get_widget('treeview_bookmarks')
 		tree.set_model(self.brickfactory.model)
 		for name in columns:
@@ -153,13 +153,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 						48)
 				cell.set_property('pixbuf', icon)
 		elif column.get_title() == 'Status':
-			if brick.proc is not None:
-				state = 'running'
-			elif not brick.properly_connected():
-				state = 'disconnected'
-			else:
-				state = 'off'
-			cell.set_property('text', state)
+			cell.set_property('text', brick.get_state())
 		elif column.get_title() == 'Type':
 			cell.set_property('text', brick.get_type())
 		elif column.get_title() == 'Name':
@@ -464,7 +458,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		b.configure(fmt_params)
 		for key, value in parameters.iteritems():
 			callback = b.get_cbset(key)
-		 	if callable(callback):
+			if callable(callback):
 				callback(b, value)
 
 		self.curtain_down()
