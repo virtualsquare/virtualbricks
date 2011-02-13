@@ -1,20 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os, re
-import sys
-import gtk
-import gtk.glade
-import gtk.gdk
-import virtualbricks_Global as Global
-import virtualbricks_Settings as Settings
-import virtualbricks_BrickFactory as BrickFactory
-from virtualbricks_Logger import ChildLogger
 import gobject
-import time
+import gtk
+import os
+import re
 import subprocess
-from virtualbricks_Graphics import *
-from threading import Thread
+import sys
+import time
 
+import virtualbricks_BrickFactory as BrickFactory
+import virtualbricks_Global as Global
+from virtualbricks_Logger import ChildLogger
+import virtualbricks_Models as Models
+import virtualbricks_Settings as Settings
+from threading import Thread
+from virtualbricks_Graphics import *
 
 class VBuserwait(Thread):
 	def __init__(self, call, args=[]):
@@ -28,17 +28,10 @@ class VBuserwait(Thread):
 		print "thread finished"
 		self.running = False
 
-
-
-class VBGUI(ChildLogger):
-
-	BOOKMARKS_ICON_IDX = 0
-	BOOKMARKS_STATUS_IDX = 1
-	BOOKMARKS_TYPE_IDX = 2
-	BOOKMARKS_NAME_IDX = 3
-	BOOKMARKS_PARAMETERS_IDX = 4
-
+class VBGUI(ChildLogger, gobject.GObject):
 	def __init__(self):
+		gobject.GObject.__init__(self)
+
 		if not os.access(Settings.MYPATH, os.X_OK):
 			os.mkdir(Settings.MYPATH)
 
@@ -56,7 +49,11 @@ class VBGUI(ChildLogger):
 		self.info("Starting VirtualBricks!")
 
 		gtk.gdk.threads_init()
+
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
+		self.brickfactory.model.connect("brick_added", self.cb_brick_added)
+		self.brickfactory.model.connect("brick_deleted", self.cb_brick_deleted)
+		self.draw_topology()
 		self.brickfactory.start()
 
 		self.widg['main_win'].show()
@@ -74,27 +71,33 @@ class VBGUI(ChildLogger):
 
 		self.sockscombo = dict()
 		self.set_nonsensitivegroup(['cfg_Wirefilter_lostburst_text', 'cfg_Wirefilter_mtu_text'])
-		self.running_bricks = self.treestore('treeview_joblist',
-			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+
+		self.running_bricks = self.treestore('treeview_joblist', [gtk.gdk.Pixbuf,
+			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['','PID','Type','Name'])
 
-		self.bookmarks = self.treestore('treeview_bookmarks',
-			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
-				gobject.TYPE_STRING, gobject.TYPE_STRING],
-			['','Status','Type','Name', 'Parameters'])
+		columns = ['Icon','Status','Type','Name', 'Parameters']
+		tree = self.gladefile.get_widget('treeview_bookmarks')
+		tree.set_model(self.brickfactory.model)
+		for name in columns:
+			col = gtk.TreeViewColumn(name)
+			if name != 'Icon':
+				elem = gtk.CellRendererText()
+				col.pack_start(elem, False)
+			else:
+				elem = gtk.CellRendererPixbuf()
+				col.pack_start(elem, False)
+			col.set_cell_data_func(elem, self.brick_to_cell)
+			tree.append_column(col)
 
 		# associate Drag and Drop action
 		tree = self.gladefile.get_widget('treeview_bookmarks')
 		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
-		self.vmplugs = self.treestore('treeview_networkcards',
-				[	gobject.TYPE_STRING,
-					gobject.TYPE_STRING,
-					gobject.TYPE_STRING,
-					gobject.TYPE_STRING
-				],
-				['Eth','connection','model','macaddr'])
+		self.vmplugs = self.treestore('treeview_networkcards', [gobject.TYPE_STRING,
+			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+			['Eth','connection','model','macaddr'])
 
 		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
 		self.Dragging = None
@@ -108,6 +111,38 @@ class VBGUI(ChildLogger):
 			gtk.main()
 		except KeyboardInterrupt:
 			self.quit()
+
+	def brick_to_cell(self, column, cell, model, iter):
+		brick = model.get_value(iter, Models.BricksModel.BRICK_IDX)
+		assert brick is not None
+		if column.get_title() == 'Icon':
+			if brick.proc is not None:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
+					48)
+				cell.set_property('pixbuf', icon)
+			elif not brick.properly_connected():
+				cell.set_property('stock-id', gtk.STOCK_DIALOG_ERROR)
+				cell.set_property('stock-size', gtk.ICON_SIZE_LARGE_TOOLBAR)
+			else:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
+						48)
+				cell.set_property('pixbuf', icon)
+		elif column.get_title() == 'Status':
+			if brick.proc is not None:
+				state = 'running'
+			elif not brick.properly_connected():
+				state = 'disconnected'
+			else:
+				state = 'off'
+			cell.set_property('text', state)
+		elif column.get_title() == 'Type':
+			cell.set_property('text', brick.get_type())
+		elif column.get_title() == 'Name':
+			cell.set_property('text', brick.name)
+		elif column.get_title() == 'Parameters':
+			cell.set_property('text', brick.get_parameters())
+		else:
+			raise NotImplemented()
 
 	def get_selected_bookmark(self):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
@@ -123,9 +158,19 @@ class VBGUI(ChildLogger):
 
 		model = tree.get_model()
 		iter = model.get_iter(path)
-		name = model.get_value(iter, self.BOOKMARKS_NAME_IDX)
+		name = model.get_value(iter, Models.BricksModel.BRICK_IDX).name
 		self.last_known_selected_brick = self.brickfactory.getbrickbyname(name)
 		return self.last_known_selected_brick
+
+	""" ******************************************************** """
+	""" Signal handlers                                          """
+	""" ******************************************************** """
+
+	def cb_brick_added(self, model, name):
+		self.draw_topology()
+
+	def cb_brick_deleted(self, model, name):
+		self.draw_topology()
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -282,8 +327,6 @@ class VBGUI(ChildLogger):
 				self.gladefile.get_widget('radio_tap_dhcp').set_active(True)
 			if b.cfg.mode == 'manual':
 				self.gladefile.get_widget('radio_tap_manual').set_active(True)
-
-
 
 	def config_brick_confirm(self):
 		# TODO merge in on_config_ok
@@ -468,6 +511,17 @@ class VBGUI(ChildLogger):
 
 		self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
 
+	def get_tree_selected(self, tree, store, pthinfo, idx):
+		"""TODO replace get_treeselected by get_tree_selected"""
+		if pthinfo is not None:
+			path, col, cellx, celly = pthinfo
+			tree.grab_focus()
+			tree.set_cursor(path, col, 0)
+			iter = store.get_iter(path)
+			brick = store.get_value(iter, idx)
+			self.config_last_iter = iter
+			return brick
+
 	def get_treeselected(self, tree, store, pthinfo, c):
 		if pthinfo is not None:
 			path, col, cellx, celly = pthinfo
@@ -498,7 +552,7 @@ class VBGUI(ChildLogger):
 			r[i].hide()
 		return r
 
-	def treestore(self, tree_name, fields,names):
+	def treestore(self, tree_name, fields, names):
 		tree = self.gladefile.get_widget(tree_name)
 		ret = gtk.TreeStore(*fields)
 		tree.set_model(ret)
@@ -509,7 +563,7 @@ class VBGUI(ChildLogger):
 				col.pack_start(elem, False)
 				col.add_attribute(elem, 'pixbuf', idx)
 			else:
-				elem = gtk.CellRendererText()
+	 			elem = gtk.CellRendererText()
 				col.pack_start(elem, False)
 				col.add_attribute(elem, 'text', idx)
 			tree.append_column(col)
@@ -766,28 +820,28 @@ class VBGUI(ChildLogger):
 
 	def on_mainwindow_dropaction(self, widget, drag_context, x, y, selection_data, info, timestamp):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
-		store = self.bookmarks
 		x = int(x)
 		y = int(y)
 		pthinfo = tree.get_path_at_pos(x, y)
-		name = self.get_treeselected_name(tree, store, pthinfo)
-		dropbrick = self.brickfactory.getbrickbyname(name)
+		dropbrick = self.get_tree_selected(tree, self.brickfactory.model,
+			pthinfo, Models.BricksModel.BRICK_IDX)
+		print x, y, pthinfo, dropbrick.name
 
 		drop_info = tree.get_dest_row_at_pos(x, y)
 		if drop_info:
-			pth,pos = drop_info
+			pth, pos = drop_info
 
 		if pos == gtk.TREE_VIEW_DROP_BEFORE:
 			self.debug('dropped before')
 			drag_context.finish(False, False, timestamp)
 			return False
+
 		if pos == gtk.TREE_VIEW_DROP_AFTER:
 			drag_context.finish(False, False, timestamp)
 			self.debug('dropped after')
 			return False
 
-
-		if (dropbrick and dropbrick != self.Dragging):
+		if dropbrick and dropbrick != self.Dragging:
 			self.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
 			res = False
 			if (len(dropbrick.socks) > 0):
@@ -825,16 +879,15 @@ class VBGUI(ChildLogger):
 			return
 
 		iter = tree.get_model().get_iter(path)
-		name = tree.get_model().get_value(iter, self.BOOKMARKS_NAME_IDX)
+		name = tree.get_model().get_value(iter, Models.BricksModel.BRICK_IDX).name
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
 			self.show_brickactions()
 
 	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
 		self.debug("in get data?!")
-		store = self.bookmarks
-		name = self.get_treeselected_name(tree, store, pthinfo)
-		self.Dragging = self.brickfactory.getbrickbyname(name)
+		self.Dragging = self.get_tree_selected(tree, self.brickfactory.model,
+				pthinfo, Models.BricksModel.BRICK_IDX)
 		#context.set_icon_pixbuf('./'+self.Dragging.get_type()+'.png')
 
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
@@ -1804,7 +1857,6 @@ class VBGUI(ChildLogger):
 
 	def timers(self):
 		gobject.timeout_add(1000, self.check_joblist)
-		gobject.timeout_add(200, self.check_bricks)
 		gobject.timeout_add(500, self.check_topology_scroll)
 
 	def check_topology_scroll(self):
@@ -1812,95 +1864,6 @@ class VBGUI(ChildLogger):
 			self.topology.x_adj = self.gladefile.get_widget('topology_scrolled').get_hadjustment().get_value()
 			self.topology.y_adj = self.gladefile.get_widget('topology_scrolled').get_vadjustment().get_value()
 			return True
-
-	def check_bricks(self):
-		new_bricks = []
-		force_render = False
-		for b in self.brickfactory.bricks:
-			if b.gui_changed:
-				b.gui_changed = False
-				force_render = True
-			new_bricks.append(b)
-		if force_render or new_bricks != self.bricks:
-			self.bookmarks.clear()
-			self.bricks = new_bricks
-			tree = self.gladefile.get_widget('treeview_bookmarks')
-			for b in self.bricks:
-				iter = self.bookmarks.append(None, None)
-				state='running'
-				if b.proc is not None:
-					self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
-				elif not b.properly_connected():
-					self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
-					state='disconnected'
-				else:
-					state='off'
-					try:
-						self.bookmarks.set_value(iter,0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
-					except:
-						self.bookmarks.set_value(iter,0,tree.render_icon(gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_LARGE_TOOLBAR))
-						pass
-
-				self.bookmarks.set_value(iter,1,state)
-				self.bookmarks.set_value(iter,2,b.get_type())
-				self.bookmarks.set_value(iter,3,b.name)
-
-				if (b.get_type() == "Qemu"):
-					txt = "command: " + b.prog() + ", "
-					txt += "ram: " + b.cfg.ram + ", "
-					for p in b.plugs:
-						if p.mode == 'hostonly':
-							txt+='eth'+str(p.vlan)+': Host, '
-						elif p.sock:
-							txt+='eth'+str(p.vlan)+': '+ p.sock.nickname+', '
-
-					self.bookmarks.set_value(iter, 4, txt.rstrip(', '))
-
-
-				if (b.get_type() == "Switch"):
-					fstp = ""
-					hub = ""
-					if (b.cfg.get('fstp')):
-						fstp=", FSTP"
-					if (b.cfg.get('hub')):
-						hub=", HUB"
-					self.bookmarks.set_value(iter, 4, "Ports:%d%s%s" % ((int(str(b.cfg.numports))),fstp,hub))
-				if (b.get_type().startswith("Wire")):
-
-					ok = -2
-					p0 = "disconnected"
-					p1 = "disconnected"
-					if (b.plugs[0].sock):
-						ok+=1
-						p0 = b.plugs[0].sock.brick.name
-					if b.plugs[1].sock:
-						ok+=1
-						p1 = b.plugs[1].sock.brick.name
-					if ok == 0:
-						self.bookmarks.set_value(iter, 4, "Configured to connect %s to %s" %(p0,p1))
-					else:
-						self.bookmarks.set_value(iter, 4, "Not yet configured. Left plug is %s and right plug is %s" % (p0,p1))
-				if (b.get_type() == "Tap"):
-					p0 = "disconnected"
-					if b.plugs[0].sock:
-						p0 = "plugged to " + b.plugs[0].sock.brick.name
-					self.bookmarks.set_value(iter, 4, p0)
-				if (b.get_type() == "TunnelListen"):
-					p0 = "disconnected"
-					if b.plugs[0].sock:
-						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", listening to udp:" + b.cfg.port
-					self.bookmarks.set_value(iter, 4, p0)
-				if (b.get_type() == "TunnelConnect"):
-					p0 = "disconnected"
-					if b.plugs[0].sock:
-						p0 = "plugged to " + b.plugs[0].sock.brick.name + ", connecting to udp://" + b.cfg.host
-					self.bookmarks.set_value(iter, 4, p0)
-
-			self.debug("bricks list updated")
-			self.draw_topology()
-		return True
-
-
 
 	def check_joblist(self):
 		new_ps = []
@@ -1910,7 +1873,7 @@ class VBGUI(ChildLogger):
 				ret = b.proc.poll()
 				if ret != None:
 					b.poweroff()
-					#self.show_error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
+					#self.error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
 					b.gui_changed = True
 
 		if self.ps != new_ps:
@@ -1927,7 +1890,8 @@ class VBGUI(ChildLogger):
 		return True
 
 	def draw_topology(self):
-		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.bricks)
+		self.topology = Topology(self.gladefile.get_widget('image_topology'),
+				self.brickfactory.model)
 
 	def user_wait_action(self, action, args=[]):
 		self.gladefile.get_widget("window_userwait").show_all()

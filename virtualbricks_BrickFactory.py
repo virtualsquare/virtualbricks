@@ -1,28 +1,22 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys
+import copy
 import os
-import ConfigParser
-import time
 import re
+import select
+import socket
 import subprocess
-import gobject
-import signal
-import string
-import random
-import threading
-import virtualbricks_GUI
+import sys
+from threading import Thread, Timer
+import time
+
 import virtualbricks_Global as Global
+from virtualbricks_Logger import ChildLogger
+import virtualbricks_Models as Models
 import virtualbricks_Settings as Settings
 #import virtualbricks_Events as Events
-from virtualbricks_Logger import ChildLogger
-import select
-import copy
-import socket
-from threading import Timer
 from virtualbricks_Graphics import *
-
 
 class InvalidNameException(Exception):
 	def __init__(self):
@@ -97,9 +91,6 @@ class Plug(ChildLogger):
 			return True
 	def disconnect(self):
 		self.sock=None
-
-
-
 
 class Sock():
 	def __init__(self, _brick, _nickname):
@@ -191,6 +182,8 @@ class Brick(ChildLogger):
 		self.internal_console = None
 		self.icon = Icon(self)
 		self.terminal = "vdeterm"
+
+		self.factory.model.add_brick(self)
 
 	def cmdline(self):
 		return ""
@@ -307,7 +300,6 @@ class Brick(ChildLogger):
 					res.append(value)
 
 		return res
-
 
 	def args(self):
 		res = []
@@ -452,6 +444,7 @@ class Brick(ChildLogger):
 			else:
 				break
 		return res
+
 	def close_internal_console(self):
 		if not self.has_console():
 			return
@@ -462,6 +455,8 @@ class Brick(ChildLogger):
 		sys.stdout.close()
 		sys.stderr.close()
 
+	def get_parameters(self):
+		raise NotImplemented('get_parameters')
 
 class Switch(Brick):
 	def __init__(self, _factory, _name):
@@ -490,6 +485,14 @@ class Switch(Brick):
 		self.socks.append(Sock(self, portname))
 		self.on_config_changed()
 
+	def get_parameters(self):
+		fstp = ""
+		hub = ""
+		if (self.cfg.get('fstp')):
+			fstp=", FSTP"
+		if (self.cfg.get('hub')):
+			hub=", HUB"
+		return "Ports:%d%s%s" % ((int(unicode(self.cfg.numports))), fstp, hub)
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_switch"
@@ -624,7 +627,6 @@ class Event(Brick):
 	def close_tty(self):
 		return
 
-
 class Tap(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
@@ -639,6 +641,11 @@ class Tap(Brick):
 		self.cfg.gw=""
 		self.cfg.mode="off"
 
+	def get_parameters(self):
+		if self.plugs[0].sock:
+			return "plugged to %s " % self.plugs[0].sock.brick.name
+
+		return "disconnected"
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_plug2tap"
@@ -669,7 +676,6 @@ class Tap(Brick):
 			return
 
 
-
 class Wire(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
@@ -680,6 +686,23 @@ class Wire(Brick):
 		self.cfg.sock1 = ""
 		self.plugs.append(Plug(self))
 		self.plugs.append(Plug(self))
+
+	def get_parameters(self):
+		if self.plugs[0].sock:
+			p0 = self.plugs[0].sock.brick.name
+		else:
+			p0 = "disconnected"
+
+		if self.plugs[1].sock:
+			p1 = self.plugs[1].sock.brick.name
+		else:
+			p1 = "disconnected"
+
+		if p0 != 'disconnected' and p1 != 'disconnected':
+			return "Configured to connect %s to %s" % (p0, p1)
+		else:
+			return "Not yet configured. "\
+				"Left plug is %s and right plug is %s" % (p0, p1)
 
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
@@ -994,7 +1017,6 @@ class Wirefilter(Wire):
 		cbset_chanbufsize(arg)
 #Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?
 
-
 class TunnelListen(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
@@ -1009,6 +1031,11 @@ class TunnelListen(Brick):
 		self.plugs.append(Plug(self))
 		self.cfg.port = "7667"
 
+	def get_parameters(self):
+		if self.plugs[0].sock:
+			return "plugged to %s, listening to udp: %s" % (self.plugs[0].sock.brick.name
+				, self.cfg.port)
+		return "disconnected"
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_cryptcab"
@@ -1055,6 +1082,13 @@ class TunnelConnect(TunnelListen):
 		self.cfg.localport="10771"
 		self.cfg.port="7667"
 
+	def get_parameters(self):
+		if self.plugs[0].sock:
+			return "plugged to %s, connecting to udp://%s" % (
+				self.plugs[0].sock.brick.name, self.cfg.host)
+
+		return "disconnected"
+
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
 			self.cfg.sock = self.plugs[0].sock.path
@@ -1085,9 +1119,7 @@ class VMPlug(Plug, BrickConfig):
 		self.vlan=len(self.brick.plugs) + len(self.brick.socks)
 		self.mode='vde'
 
-
 class VMPlugHostonly(VMPlug):
-
 	def __init__(self, _brick):
 		VMPlug.__init__(self, _brick)
 		self.mode='hostonly'
@@ -1103,7 +1135,6 @@ class VMPlugHostonly(VMPlug):
 		return True
 
 class VMDisk():
-
 	def __init__(self, name, dev):
 		self.Name = name
 		self.base = ""
@@ -1304,10 +1335,17 @@ class VM(Brick):
 			'#icon': 'icon'
 		}
 
+	def get_parameters(self):
+		txt = "command: %s, ram: %s" % (self.prog(), self.cfg.ram)
+		for p in self.plugs:
+			if p.mode == 'hostonly':
+				txt += ', eth %s: Host' % unicode(p.vlan)
+			elif p.sock:
+				txt += ', eth %s: %s' % (unicode(p.vlan), p.sock.nickname)
+		return txt
 
 	def get_type(self):
 		return "Qemu"
-
 
 	def configured(self):
 		cfg_ok = True
@@ -1475,15 +1513,14 @@ class VM(Brick):
 				break
 		return c
 
-
-
-class BrickFactory(ChildLogger, threading.Thread):
+class BrickFactory(ChildLogger, Thread):
 	def __init__(self, logger=None, showconsole=True):
 		ChildLogger.__init__(self, logger)
 		self.bricks = []
 		self.socks = []
+		self.model = Models.BricksModel()
 		self.showconsole = showconsole
-		threading.Thread.__init__(self)
+		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
 		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
@@ -1581,8 +1618,8 @@ class BrickFactory(ChildLogger, threading.Thread):
 					for bb in self.bricks:
 						if name == bb.name:
 							b = bb
-				except Exception:
-					print "--------- Bad config line"
+				except Exception, err:
+					print "--------- Bad config line:", err
 					l = p.readline()
 					continue
 
@@ -1599,7 +1636,6 @@ class BrickFactory(ChildLogger, threading.Thread):
 				continue
 			l = p.readline()
 
-
 	def quit(self):
 		for b in self.bricks:
 			if b.proc is not None:
@@ -1609,13 +1645,11 @@ class BrickFactory(ChildLogger, threading.Thread):
 		self.running_condition = False
 		sys.exit(0)
 
-
 	def proclist(self):
 		procs = 0
 		for b in self.bricks:
 			if b.proc is not None:
 				procs+=1
-
 
 		if procs > 0:
 			print "PID\tType\tname"
@@ -1692,14 +1726,15 @@ class BrickFactory(ChildLogger, threading.Thread):
 			print "cannot find " + nick
 			print self.socks
 
-
-	def delbrick(self,bricktodel):
+	def delbrick(self, bricktodel):
+		# XXX check me
 		for b in self.bricks:
 			if b == bricktodel:
 				for so in b.socks:
 					self.socks.remove(so)
 				self.bricks.remove(b)
-				del(b)
+		self.model.del_brick(bricktodel)
+
 	def dupbrick(self,bricktodup):
 		b1 = copy.copy(bricktodup)
 		b1.cfg = copy.copy(bricktodup.cfg)
@@ -1741,33 +1776,33 @@ class BrickFactory(ChildLogger, threading.Thread):
 			raise InvalidNameException
 
 		if ntype == "switch" or ntype == "Switch":
-			s = Switch(self,name)
-			self.debug("new switch %s OK", s.name)
+			brick = Switch(self, name)
+			self.debug("new switch %s OK", brick.name)
 		elif ntype == "tap" or ntype == "Tap":
-			s = Tap(self,name)
-			self.debug("new tap %s OK", s.name)
+			brick = Tap(self, name)
+			self.debug("new tap %s OK", brick.name)
 		elif ntype == "vm" or ntype == "Qemu":
-			s = VM(self, name)
-			self.debug("new vm %s OK", s.name)
+			brick = VM(self, name)
+			self.debug("new vm %s OK", brick.name)
 		elif ntype == "wire" or ntype == "Wire" or ntype == "Cable":
-			s = Wire(self, name)
-			self.debug("new cable %s OK", s.name)
+			brick = Wire(self, name)
+			self.debug("new cable %s OK", brick.name)
 		elif ntype == "wirefilter" or ntype == "Wirefilter":
-			s = Wirefilter(self,name)
-			self.debug("new wirefilter %s OK", s.name)
+			brick = Wirefilter(self, name)
+			self.debug("new wirefilter %s OK", brick.name)
 		elif ntype == "tunnell" or ntype == "Tunnel Server" or ntype == "TunnelListen":
-			s = TunnelListen(self,name)
-			self.debug("new tunnel server %s OK", s.name)
+			brick = TunnelListen(self, name)
+			self.debug("new tunnel server %s OK", brick.name)
 		elif ntype == "tunnelc" or ntype == "Tunnel Client" or ntype == "TunnelConnect":
-			s = TunnelConnect(self,name)
-			self.debug("new tunnel client %s OK", s.name)
+			brick = TunnelConnect(self, name)
+			self.debug("new tunnel client %s OK", brick.name)
 		elif ntype == "event" or ntype == "Event":
-			s = Event(self,name)
-			self.debug("new event %s OK", s.name)
-		#elif ...:
+			brick = Event(self, name)
+			self.debug("new event %s OK", brick.name)
 		else:
-			self.error('Invalid command.')
+			self.error("Invalid command '%s'", name)
 			return False
+
 		return True
 
 if __name__ == "__main__":

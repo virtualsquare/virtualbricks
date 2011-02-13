@@ -70,9 +70,9 @@ class Node:
 		else:
 			return False
 
-class Topology():
+class Topology(object):
 
-	def __init__(self, widget, bricks):
+	def __init__(self, widget, bricks_model):
 		self.topowidget = widget
 		self.topo = pgv.AGraph()
 
@@ -90,14 +90,16 @@ class Topology():
 		# Add nodes
 		sg = self.topo.add_subgraph([],name="switches_rank")
 		sg.graph_attr['rank'] = 'same'
-		for b in bricks:
+		for row in bricks_model:
+			b = row[0]
 			self.topo.add_node(b.name)
 			n = self.topo.get_node(b.name)
 			n.attr['shape']='none'
 			n.attr['fontsize']='9'
 			n.attr['image'] = b.icon.get_img()
 
-		for b in bricks:
+		for row in bricks_model:
+			b = row[0]
 			loop = 0
 			for e in b.plugs:
 				if e.sock is not None:
@@ -134,7 +136,7 @@ class Topology():
 		x_siz, y_siz = img.size
 		for line in open("/tmp/vde_topology.plain").readlines():
 			#arg  = line.rstrip('\n').split(' ')
-			arg  = re.split('\s+', line.rstrip('\n'))
+			arg = re.split('\s+', line.rstrip('\n'))
 			if arg[0] == 'graph':
 				x_fact = x_siz / float(arg[2])
 				y_fact = y_siz / float(arg[3])
