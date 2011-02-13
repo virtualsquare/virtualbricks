@@ -16,6 +16,26 @@ import virtualbricks_Settings as Settings
 from threading import Thread
 from virtualbricks_Graphics import *
 
+class MyTray(gtk.StatusIcon):
+
+	def __init__(self):
+		super(self.__class__,self).__init__()
+		self.enabled = False
+		self.win_hide = False
+
+	def set_enabled(self, val):
+		self.enabled=val
+
+	def set_window_is_hide(self, val):
+		self.win_hide=val
+
+	def get_enabled(self):
+		return self.enabled
+
+	def get_window_is_hide(self):
+		return self.win_hide
+
+
 class VBuserwait(Thread):
 	def __init__(self, call, args=[]):
 		self.action = call
@@ -101,7 +121,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 			['Eth','connection','model','macaddr'])
 
 		#TRAYICON
-		self.systray=False
 		if self.config.systray:
 			self.start_systray()
 
@@ -464,23 +483,28 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 
 	def start_systray(self):
-		if not self.systray:
-			self.statusicon = gtk.status_icon_new_from_file("virtualbricks.png")
+		try:
+    			systray = getattr(self, "statusicon")
+		except AttributeError:
+			self.statusicon=MyTray()
+			self.statusicon.set_from_file("virtualbricks.png")
        			self.statusicon.set_tooltip("VirtualBricks Visible")
 			self.statusicon.connect('activate', self.status_clicked )
-			self.systray=True
+		if not self.statusicon.get_enabled():
+			self.statusicon.set_enabled(True)
+			self.statusicon.set_visible(True)
 
 	def stop_systray(self):
-		if self.systray:
+		if self.statusicon.get_enabled():
 			self.statusicon.set_visible(False)
-			self.statusicon = ""
-			self.systray=False
+			self.statusicon.set_enabled(False)
 
 
 	def delete_event(self,window,event):
 		#don't delete; hide instead
-		if self.config.systray and self.systray:
+		if self.config.systray and self.statusicon.get_enabled():
 			self.gladefile.get_widget("main_win").hide_on_delete()
+			self.statusicon.set_window_is_hide(True)
 			self.statusicon.set_tooltip("VirtualBricks Hidden")
 		else:
 			self.quit()
@@ -488,8 +512,13 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def status_clicked(self,status):
         	#unhide the window
-        	self.gladefile.get_widget("main_win").show_all()
-        	self.statusicon.set_tooltip("the window is visible")
+        	if self.statusicon.get_window_is_hide():
+			self.gladefile.get_widget("main_win").show_all()
+        		self.statusicon.set_tooltip("the window is visible")
+			self.statusicon.set_window_is_hide(False)
+		else:
+			self.gladefile.get_widget("main_win").hide()
+			self.statusicon.set_window_is_hide(True)
 
 	def curtain_is_down(self):
 		self.debug(self.curtain.get_position())
