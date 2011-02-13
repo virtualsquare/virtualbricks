@@ -1691,6 +1691,37 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_topology_drag(self, widget=None, event=None, data=""):
 		print "DRAG"
+	def on_topology_redraw(self, widget=None, event=None, data=""):
+		print "redraw"
+		self.draw_topology()
+	def on_topology_export(self, widget=None, event=None, data=""):
+		print "export"
+		self.gladefile.get_widget('topology_export_dialog').show_all()
+	def on_topology_export_ok(self, widget=None, event=None, data=""):
+		print "   OK " + self.gladefile.get_widget('topology_export_dialog').get_filename()
+		fname = self.gladefile.get_widget('topology_export_dialog').get_filename()
+		self.gladefile.get_widget('topology_export_dialog').hide()
+		if fname:
+			if os.access(fname,os.R_OK):
+				self.ask_confirm("Do you want to overwrite " + fname + "?", on_yes=self.topology_export, arg=fname)
+			else:
+				self.topology_export(fname)
+
+	def topology_export(self, fname):
+		try:
+			Image.open('/tmp/vde_topology.png').save(fname)
+		except KeyError:
+			self.error("Error saving topology: Invalid image format")
+		except IOError:
+			self.error("Error saving topology: Could not write file")
+		except:
+			self.error("Error saving topology: Unknown error")
+
+
+
+	def on_topology_export_cancel(self, widget=None, event=None, data=""):
+		print "   cancel"
+		self.gladefile.get_widget('topology_export_dialog').hide()
 
 	def on_topology_action(self, widget=None, event=None, data=""):
 		if self.topology:
@@ -1874,9 +1905,13 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_topology_action":self.on_topology_action,
 			"on_topology_scroll":self.on_topology_scroll,
 			"on_topology_drag":self.on_topology_drag,
+			"on_topology_redraw":self.on_topology_redraw,
+			"on_topology_export":self.on_topology_export,
 			"on_cfg_Qemu_vnc_check_toggled": self.on_vnc_novga_toggled,
 			"on_cfg_Qemu_novga_check_toggled": self.on_vnc_novga_toggled,
 			"on_filechooserbutton1_file_set": self.on_vmicon_file_change,
+			"on_topology_export_ok":self.on_topology_export_ok,
+			"on_topology_export_cancel":self.on_topology_export_cancel,
 			#"on_cfg_Qemu_basehda_filechooser_selection_changed": self.filechooser_selection_changed,
 			#"filechooser_clear": self.filechooser_clear,
 			"filechooser_image_clear": self.filechooser_image_clear,
@@ -1925,8 +1960,13 @@ class VBGUI(ChildLogger, gobject.GObject):
 		return True
 
 	def draw_topology(self):
-		self.topology = Topology(self.gladefile.get_widget('image_topology'),
-				self.brickfactory.model)
+		print "topo"
+		if self.gladefile.get_widget('topology_tb').get_active():
+			orientation = "TB"
+		else:
+			orientation = "LR"
+
+		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.model, 1.00, orientation)
 
 	def user_wait_action(self, action, args=[]):
 		self.gladefile.get_widget("window_userwait").show_all()

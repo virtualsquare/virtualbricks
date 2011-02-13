@@ -72,15 +72,12 @@ class Node:
 
 class Topology(object):
 
-	def __init__(self, widget, bricks_model):
+	def __init__(self, widget, bricks_model, scale=1.00, orientation="LR", export=None):
 		self.topowidget = widget
 		self.topo = pgv.AGraph()
 
-		''' Use next line for Left-right Topology '''
-		self.topo.graph_attr['rankdir']='LR'
+		self.topo.graph_attr['rankdir']=orientation
 
-		''' Use next line for Top-Bottom Topology '''
-		#self.topo.graph_attr['rankdir']='TB'
 
 		self.topo.graph_attr['ranksep']='2.0'
 		self.nodes = []
@@ -138,11 +135,16 @@ class Topology(object):
 			#arg  = line.rstrip('\n').split(' ')
 			arg = re.split('\s+', line.rstrip('\n'))
 			if arg[0] == 'graph':
-				x_fact = x_siz / float(arg[2])
-				y_fact = y_siz / float(arg[3])
+				x_fact = scale * (x_siz / float(arg[2]))
+				y_fact = scale * (y_siz / float(arg[3]))
 			elif arg[0] == 'node':
-				x = x_fact * float(arg[2])
-				y = y_siz - y_fact * float(arg[3])
+				x = scale * (x_fact * float(arg[2]))
+				y = scale * (y_siz - y_fact * float(arg[3]))
 				self.nodes.append(Node(self, arg[1],x,y))
 		# Display on the widget
+		if scale < 1.00:
+			img.resize((x_siz * scale, y_siz * scale)).save("/tmp/vde_topology.png")
+
 		self.topowidget.set_from_file("/tmp/vde_topology.png")
+		if export:
+			img.save(export)
