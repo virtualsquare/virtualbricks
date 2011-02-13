@@ -85,7 +85,7 @@ class Plug(ChildLogger):
 				self.antiloop = False
 				return False
 		self.antiloop = False
-		print "connect ok"
+		#print "connect ok"
 		return True
 
 	def connect(self, _sock):
@@ -159,12 +159,12 @@ class BrickConfig(dict):
 				val = val.rstrip('=') + '"'
 			else:
 				val += kv[1]
-			print "setting %s to '%s'" % (kv[0], val)
+			#print "setting %s to '%s'" % (kv[0], val)
 			self[kv[0]] = val
 			return True
 
 	def set_obj(self, key, obj):
-		print "setting_obj %s to '%s'" % (key, obj)
+		#print "setting_obj %s to '%s'" % (key, obj)
 		self[key] = obj
 
 	def dump(self):
@@ -1168,6 +1168,9 @@ class VM(Brick):
 		self.cfg.basefdb =""
 		self.cfg.set_obj("fdb", VMDisk(_name, "fdb"))
 		self.cfg.privatefdb=""
+		self.cfg.basemtdblock=""
+		self.cfg.set_obj("mtdblock", VMDisk(_name, "mtdblock"))
+		self.cfg.privatemtdblock=""
 		self.cfg.cdrom = ""
 		self.cfg.device = ""
 		self.cfg.cdromen = ""
@@ -1177,12 +1180,21 @@ class VM(Brick):
 		self.cfg.rtc = ""
 		#kernel etc.
 		self.cfg.kernel=""
+		self.cfg.kernelenbl=""
 		self.cfg.initrd=""
+		self.cfg.initrdenbl=""
 		self.cfg.gdb=""
 		self.cfg.gdbport=""
 		self.cfg.kopt=""
 		self.cfg.icon=""
 		self.terminal="unixterm"
+		self.cfg.keyboard=""
+		self.cfg.noacpi=""
+		self.cfg.sdl=""
+		self.cfg.portrait=""
+		self.cfg.tdf=""
+		self.cfg.kvmsm=""
+		self.cfg.kvmsmem=""
 
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -1198,19 +1210,21 @@ class VM(Brick):
 			'#basehdb':'basehdb',
 			'#basehdc':'basehdc',
 			'#basehdd':'basehdd',
+			'#basemtdblock':'basemtdblock',
 			'#privatehda': 'privatehda',
 			'#privatehdb': 'privatehdb',
 			'#privatehdc': 'privatehdc',
 			'#privatehdd': 'privatehdd',
 			'#privatefda': 'privatefda',
 			'#privatefdb': 'privatefdb',
+			'#privatemtdblock': 'privatemtdblock',
 			'#cdrom':'cdrom',
 			'#device':'device',
 			'#cdromen': 'cdromen',
 			'#deviceen': 'deviceen',
 			##extended drive: TBD
 			#'-mtdblock':'mtdblock', ## TODO 0.3
-			#'-k':'keyboard',  ## TODO 0.3
+			'#keyboard':'keyboard',
 			'-soundhw':'soundhw',
 			'-usb':'usbmode',
 			##usbdevice to be implemented as a collection
@@ -1226,17 +1240,19 @@ class VM(Brick):
 			'#vncN':'vncN',
 			'#vnc':'vnc',
 			#'-full-screen':'full-screen', ## TODO 0.3
-			#'-sdl':'sdl', ## TODO 0.3
-			#'-potrait':'potrait', ## TODO 0.3
-			#'-win2k-hack':'win2k', ## not implemented
-			#'-no-acpi':'noacpi', ## TODO 0.3
+			'-sdl':'sdl',
+			'-portrait':'portrait',
+			'-win2k-hack':'win2k', ## not implemented
+			'-no-acpi':'noacpi',
 			#'-no-hpet':'nohpet', ## ???
 			#'-baloon':'baloon', ## ???
 			##acpitable not supported
 			##smbios not supported
-			'-kernel':'kernel',
+			'#kernel':'kernel',
+			'#kernelenbl':'kernelenbl',
 			'-append':'kopt',
-			'-initrd':'initrd',
+			'#initrd':'initrd',
+			'#initrdenbl': 'initrdenbl',
 			#'-serial':'serial',
 			#'-parallel':'parallel',
 			#'-monitor':'monitor',
@@ -1280,8 +1296,9 @@ class VM(Brick):
 			#'-pcidevice':'',
 			#'-enable-nesting':'',
 			#'-nvram':'',
-			#'-tdf':'', ## TODO 0.3
-			#'-kvm-shadow-memory':'',  ## TODO: maybe a global option
+			'-tdf':'tdf',
+			'#kvmsm':'kvmsm',
+			'#kvmsmem': 'kvmsmem',
 			#'-mem-path':'',
 			#'-mem-prealloc':''
 			'#icon': 'icon'
@@ -1317,7 +1334,7 @@ class VM(Brick):
 
 		for c in self.build_cmd_line():
 			res.append(c)
-		print self.cfg.machine + " " + self.cfg.cpu
+
 		if (self.cfg.kvm is False):
 			if self.cfg.machine != "":
 				res.append("-M")
@@ -1327,16 +1344,26 @@ class VM(Brick):
 				res.append(self.cfg.cpu)
 
 
-		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb']:
-		  if self.cfg.get("base"+dev) != "":
-			disk = getattr(self.cfg, dev)
-			disk.base = self.cfg.get("base"+dev)
-			disk.cow=False
-			if (self.cfg.get("private"+dev) == "*"):
-			  disk.cow = True
-			args=disk.args(True)
-			res.append(args[0])
-			res.append(args[1])
+		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
+			print dev + self.cfg.get("base"+dev)
+			if self.cfg.get("base"+dev) != "":
+				disk = getattr(self.cfg, dev)
+				disk.base = self.cfg.get("base"+dev)
+				disk.cow=False
+				if (self.cfg.get("private"+dev) == "*"):
+					disk.cow = True
+				args=disk.args(True)
+				res.append(args[0])
+				res.append(args[1])
+
+		if self.cfg.kernelenbl=="*":
+			res.append("-kernel")
+			res.append(self.cfg.kernel)
+
+		if self.cfg.initrdenbl=="*":
+			res.append("-initrd")
+			res.append(self.cfg.initrd)
+
 		if self.cfg.gdb:
 			res.append('-gdb')
 			res.append('tcp::' + self.cfg.gdbport)
@@ -1375,6 +1402,14 @@ class VM(Brick):
 		if (self.cfg.rtc== "*"):
 			res.append('-rtc')
 			res.append('base=localtime')
+
+		if (len(self.cfg.keyboard)==2):
+			res.append('-k')
+			res.append(self.cfg.keyboard)
+
+		if (self.cfg.kvmsm=="*"):
+			res.append('-kvm-shadow-memory')
+			res.append(self.cfg.kvmsmem)
 
 		res.append("-mon")
 		res.append("chardev=mon")
@@ -1440,6 +1475,8 @@ class VM(Brick):
 				break
 		return c
 
+
+
 class BrickFactory(ChildLogger, threading.Thread):
 	def __init__(self, logger=None, showconsole=True):
 		ChildLogger.__init__(self, logger)
@@ -1485,7 +1522,7 @@ class BrickFactory(ChildLogger, threading.Thread):
 			p.write('[' + b.get_type() +':'+ b.name + ']\n')
 			for k,v in b.cfg.iteritems():
 				# VMDisk objects don't need to be saved
-				if b.get_type()!="Qemu" or ( b.get_type()=="Qemu" and k not in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb'] ):
+				if b.get_type()!="Qemu" or ( b.get_type()=="Qemu" and k not in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock'] ):
 					p.write(k +'=' + str(v) + '\n')
 
 		for b in self.bricks:
@@ -1550,11 +1587,11 @@ class BrickFactory(ChildLogger, threading.Thread):
 					continue
 
 				l = p.readline()
-				print "-------- loading settings for "+b.name + " first line: " + l
+				#print "-------- loading settings for "+b.name + " first line: " + l
 				parameters = []
 				while b and l and not l.startswith('[') and not re.search("\A.*link\|", l):
 					if len(l.split('=')) > 1:
-						print "setting" + l.strip('\n')
+						#print "setting" + l.strip('\n')
 						parameters.append(l.rstrip('\n'))
 					l = p.readline()
 				b.initialize(parameters)

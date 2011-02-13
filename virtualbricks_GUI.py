@@ -223,8 +223,8 @@ class VBGUI(ChildLogger):
 
 
 		self.update_vmplugs_tree()
-		kernelcheck=False
-		initrdcheck=False
+		#kernelcheck=False
+		#initrdcheck=False
 
 		for key in b.cfg.keys():
 			t = b.get_type()
@@ -259,10 +259,6 @@ class VBGUI(ChildLogger):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg[key]) > 0):
 				widget.set_filename(b.cfg[key])
-				if key == 'kernel':
-					kernelcheck=True
-				elif key == 'initrd':
-					initrdcheck=True
 
 			if 'icon' in b.cfg.keys() and b.cfg['icon'] != "":
 				self.gladefile.get_widget("qemuicon").set_from_pixbuf(gtk.gdk.pixbuf_new_from_file_at_size(b.cfg['icon'], 48, 48))
@@ -271,11 +267,10 @@ class VBGUI(ChildLogger):
 
 		# Apply KVM system configuration
 
-
-		self.gladefile.get_widget('check_customkernel').set_active(True)
-		self.gladefile.get_widget('check_initrd').set_active(True)
-		self.gladefile.get_widget('check_customkernel').set_active(kernelcheck)
-		self.gladefile.get_widget('check_initrd').set_active(initrdcheck)
+		#self.gladefile.get_widget('check_customkernel').set_active(True)
+		#self.gladefile.get_widget('check_initrd').set_active(True)
+		#self.gladefile.get_widget('check_customkernel').set_active(kernelcheck)
+		#self.gladefile.get_widget('check_initrd').set_active(initrdcheck)
 
 		# Tap mode:
 		if b.get_type() == 'Tap':
@@ -332,8 +327,10 @@ class VBGUI(ChildLogger):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None):
 				f = widget.get_filename()
-				if f:
+				if f is not None:
 					parameters[key] = f
+				else:
+					parameters[key] = ''
 
 			b.gui_changed = True
 			t = b.get_type()
@@ -382,13 +379,14 @@ class VBGUI(ChildLogger):
 					if sel == so.nickname:
 						b.plugs[1].connect(so)
 
-			if t == 'Qemu':
-				k = self.gladefile.get_widget('check_customkernel')
-				if not k.get_active():
-					b.cfg.kernel=""
-				ki = self.gladefile.get_widget('check_initrd')
-				if not ki.get_active():
-					b.cfg.initrd=""
+#			if t == 'Qemu':
+#				k = self.gladefile.get_widget('check_customkernel')
+#				if not k.get_active():
+#					b.cfg.kernel=""
+#				ki = self.gladefile.get_widget('check_initrd')
+#				if not ki.get_active():
+#					b.cfg.initrd=""
+
 		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
 		b.configure(fmt_params)
 		for key, value in parameters.iteritems():
@@ -736,7 +734,7 @@ class VBGUI(ChildLogger):
 
 		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
 		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
-
+		self.curtain_down()
 		self.show_window('dialog_settings')
 
 	def on_item_settings_autoshow_activate(self, widget=None, data=""):
@@ -1279,6 +1277,7 @@ class VBGUI(ChildLogger):
 			self.debug("no support")
 			self.show_error("No KSM support found on the system. Check your configuration. KSM will stay disabled.")
 			widget.set_active(False)
+
 	def on_add_cdrom(self, widget=None, event=None, data=""):
 		print "signal not connected"
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
@@ -1435,7 +1434,7 @@ class VBGUI(ChildLogger):
 		if widget.get_active():
 			try:
 				self.config.check_kvm()
-				self.disable_qemu_combos(True)
+				self.kvm_toggle_all(True)
 			except IOError:
 				self.debug("ioerror")
 				self.show_error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
@@ -1445,17 +1444,18 @@ class VBGUI(ChildLogger):
 				self.show_error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 		else:
-			self.disable_qemu_combos(False)
+			self.kvm_toggle_all(False)
+
+	def kvm_toggle_all(self, enabled):
+		self.gladefile.get_widget('cfg_Qemu_kvmsmem_spinint').set_sensitive(enabled)
+		self.gladefile.get_widget('cfg_Qemu_kvmsm_check').set_sensitive(enabled)
+		self.disable_qemu_combos(not enabled)
+
 
 	def disable_qemu_combos(self,active):
-		if active:
-			self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(False)
-			self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(False)
-			self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(False)
-		else:
-			self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(True)
-			self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(True)
-			self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(True)
+		self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(active)
+		self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(active)
+		self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(active)
 
 	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
