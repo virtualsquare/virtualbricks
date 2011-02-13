@@ -282,6 +282,7 @@ class Brick(ChildLogger):
 			print "link down"
 			raise LinkloopException
 		self._poweron()
+		self.factory.model.change_brick(self)
 
 	def build_cmd_line(self):
 		res = []
@@ -368,6 +369,7 @@ class Brick(ChildLogger):
 		if self.close_internal_console and callable(self.close_internal_console):
 			self.close_internal_console()
 		self.internal_console == None
+		self.factory.model.change_brick(self)
 		self.post_poweroff()
 
 	def post_poweron(self):

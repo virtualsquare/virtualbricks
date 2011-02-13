@@ -12,6 +12,8 @@ class BricksModel(gtk.ListStore):
 			(gobject.TYPE_STRING,)),
 		'brick_deleted' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
 			(gobject.TYPE_STRING,)),
+		'brick_changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+			(gobject.TYPE_STRING,)),
 	}
 
 	def __init__(self):
@@ -30,6 +32,9 @@ class BricksModel(gtk.ListStore):
 			return
 		del self[idx]
 		self.emit("brick_deleted", brick_to_delete.name)
+
+	def change_brick(self, brick_that_has_changed):
+		self.emit("brick_changed", brick_that_has_changed)
 
 gobject.type_register(BricksModel)
 

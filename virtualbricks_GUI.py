@@ -53,6 +53,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
 		self.brickfactory.model.connect("brick_added", self.cb_brick_added)
 		self.brickfactory.model.connect("brick_deleted", self.cb_brick_deleted)
+		self.brickfactory.model.connect("brick_changed", self.cb_brick_changed)
 		self.draw_topology()
 		self.brickfactory.start()
 
@@ -170,6 +171,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.draw_topology()
 
 	def cb_brick_deleted(self, model, name):
+		self.draw_topology()
+
+	def cb_brick_changed(self, model, name):
 		self.draw_topology()
 
 	""" ******************************************************** """
