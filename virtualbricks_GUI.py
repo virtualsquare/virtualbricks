@@ -19,7 +19,7 @@ from virtualbricks_Graphics import *
 class MyTray(gtk.StatusIcon):
 
 	def __init__(self):
-		super(self.__class__,self).__init__()
+		gtk.StatusIcon.__init__(self)
 		self.enabled = False
 		self.win_hide = False
 

@@ -107,7 +107,7 @@ class Settings(ChildLogger):
 			"python": False,
 			"femaleplugs": False,
 			"erroronloop": False,
-			"systray": False,
+			"systray": True,
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
