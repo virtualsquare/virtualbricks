@@ -303,10 +303,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg[key]) > 0):
-				widget.set_filename(b.cfg[key])
+				#print "LOAD: %s ->> %s" % (key, b.cfg[key])
+				widget.select_filename(b.cfg[key])
 
 			if 'icon' in b.cfg.keys() and b.cfg['icon'] != "":
-				self.gladefile.get_widget("qemuicon").set_from_pixbuf(gtk.gdk.pixbuf_new_from_file_at_size(b.cfg['icon'], 48, 48))
+				self.gladefile.get_widget("qemuicon").set_from_pixbuf(self.pixbuf_scaled(b.cfg['icon']))
 			else:
 				self.gladefile.get_widget("qemuicon").set_from_file(b.icon.get_img())
 
@@ -370,6 +371,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None):
 				f = widget.get_filename()
+				#print "CONFIRM %s ->> %s" % (key, f)
 				if f is not None:
 					parameters[key] = f
 				else:
@@ -645,6 +647,24 @@ class VBGUI(ChildLogger, gobject.GObject):
 		wdg.run()
 	def show_error(self, text):
 		self.show_msg(text, gtk.MESSAGE_ERROR)
+
+        def pixbuf_scaled(self, filename):
+                if filename is None or filename == "":
+                        return None
+                pixbuf=gtk.gdk.pixbuf_new_from_file(filename)
+                width=pixbuf.get_width()
+                height=pixbuf.get_height()
+                if width<=height:
+                        new_height=48*height/width
+                        new_width=48
+                else:
+                        new_height=48
+                        new_width=48*width/height
+                pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
+                #pixbuf= pixbuf.scale(pixbuf, 0, 0, 48, 48, 0, 0, height/new_height, width/new_width, gtk.gdk.INTERP_BILINEAR)
+                #print "%s %d %d" % (filename, new_height, new_width)
+                return pixbuf
+
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -1701,7 +1721,19 @@ class VBGUI(ChildLogger, gobject.GObject):
 			novga.set_sensitive(not vnc.get_active())
 
 	def on_vmicon_file_change(self, widget=None, event=None, data=""):
-		self.gladefile.get_widget("qemuicon").set_from_pixbuf(gtk.gdk.pixbuf_new_from_file_at_size(widget.get_filename(), 48, 48))
+		print "ON_VMICON_FILE_CHANGE"
+		if (widget.get_filename() is not None):
+			pixbuf = self.pixbuf_scaled(widget.get_filename())
+			self.gladefile.get_widget("qemuicon").set_from_pixbuf(pixbuf)
+
+	def filechooser_clear(self, widget=None, event=None, data=""):
+		filechooser = widget.name[8:] + "_filechooser"
+		self.gladefile.get_widget(filechooser).unselect_all()
+
+	def filechooser_image_clear(self, widget=None, event=None, data=""):
+		print "FILECHOOSER_IMAGE"
+		self.filechooser_clear(widget)
+		self.gladefile.get_widget("qemuicon").set_from_file("Qemu.png")
 
 	def signals(self):
 		self.signaldict = {
@@ -1845,6 +1877,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_cfg_Qemu_vnc_check_toggled": self.on_vnc_novga_toggled,
 			"on_cfg_Qemu_novga_check_toggled": self.on_vnc_novga_toggled,
 			"on_filechooserbutton1_file_set": self.on_vmicon_file_change,
+			#"on_cfg_Qemu_basehda_filechooser_selection_changed": self.filechooser_selection_changed,
+			#"filechooser_clear": self.filechooser_clear,
+			"filechooser_image_clear": self.filechooser_image_clear,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
