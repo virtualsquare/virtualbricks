@@ -71,9 +71,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		gtk.gdk.threads_init()
 
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
-		self.brickfactory.model.connect("brick_added", self.cb_brick_added)
-		self.brickfactory.model.connect("brick_deleted", self.cb_brick_deleted)
-		self.brickfactory.model.connect("brick_changed", self.cb_brick_changed)
+		self.brickfactory.model.connect("brick-added", self.cb_brick_added)
+		self.brickfactory.model.connect("brick-deleted", self.cb_brick_deleted)
+		self.brickfactory.model.connect("row-changed", self.cb_brick_changed)
+
 		self.draw_topology()
 		self.brickfactory.start()
 
@@ -186,12 +187,12 @@ class VBGUI(ChildLogger, gobject.GObject):
 	""" ******************************************************** """
 
 	def cb_brick_added(self, model, name):
-		self.draw_topology()
+		pass
 
 	def cb_brick_deleted(self, model, name):
 		self.draw_topology()
 
-	def cb_brick_changed(self, model, name):
+	def cb_brick_changed(self, model, path, iter):
 		self.draw_topology()
 
 	""" ******************************************************** """
@@ -353,6 +354,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def config_brick_confirm(self):
 		# TODO merge in on_config_ok
+
 		parameters = {}
 		b = self.brick_selected
 		for key in b.cfg.keys():
@@ -393,7 +395,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None):
 				f = widget.get_filename()
-				#print "CONFIRM %s ->> %s" % (key, f)
 				if f is not None:
 					parameters[key] = f
 				else:
@@ -460,9 +461,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 			callback = b.get_cbset(key)
 			if callable(callback):
 				callback(b, value)
-
-		self.curtain_down()
-
 
 	def config_brick_cancel(self):
 		self.curtain_down()

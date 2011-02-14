@@ -155,7 +155,6 @@ class BrickConfig(dict):
 			return True
 
 	def set_obj(self, key, obj):
-		#print "setting_obj %s to '%s'" % (key, obj)
 		self[key] = obj
 
 	def dump(self):
@@ -230,6 +229,8 @@ class Brick(ChildLogger):
 	def configure(self, attrlist):
 		"""TODO attrs : dict attr => value"""
 		self.initialize(attrlist)
+		# TODO brick should be gobject and a signal should be launched
+		self.factory.model.change_brick(self)
 		self.on_config_changed()
 
 	def connect(self,endpoint):
