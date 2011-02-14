@@ -482,9 +482,18 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.statusicon.set_from_file("virtualbricks.png")
        			self.statusicon.set_tooltip("VirtualBricks Visible")
 			self.statusicon.connect('activate', self.status_clicked )
+			systray_menu=self.gladefile.get_widget("systray_menu")
+			self.statusicon.connect('popup-menu', self.systray_menu_popup, systray_menu)
 		if not self.statusicon.get_enabled():
 			self.statusicon.set_enabled(True)
 			self.statusicon.set_visible(True)
+
+	def systray_menu_popup(self, widget, button, time, data = None):
+		if button == 3:
+			if data:
+				data.show_all()
+				data.popup(None, None, None, 3, time)
+
 
 	def stop_systray(self):
 		if self.statusicon.get_enabled():
@@ -502,9 +511,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.quit()
 		return True
 
-	def status_clicked(self,status):
+	def status_clicked(self,status=None):
         	#unhide the window
-        	if self.statusicon.get_window_is_hide():
+        	if self.statusicon.get_window_is_hide() or status==True:
 			self.gladefile.get_widget("main_win").show_all()
         		self.statusicon.set_tooltip("the window is visible")
 			self.statusicon.set_window_is_hide(False)
@@ -731,6 +740,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 	"""                                                          """
 	"""                                                          """
 	""" ******************************************************** """
+
+	def systray_show_window_cb(self, widget=None, data=""):
+		self.status_clicked(True)
+
+	def systray_hide_window_cb(self, widget=None, data=""):
+		self.status_clicked(False)
+
+
 	def on_window1_destroy(self, widget=None, data=""):
 		self.quit()
 
@@ -1986,6 +2003,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 			#"on_cfg_Qemu_basehda_filechooser_selection_changed": self.filechooser_selection_changed,
 			#"filechooser_clear": self.filechooser_clear,
 			"filechooser_image_clear": self.filechooser_image_clear,
+			"systray_show_window_cb": self.systray_show_window_cb,
+			"systray_hide_window_cb": self.systray_hide_window_cb,
+			"systray_exit_cb": self.on_window1_destroy,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 

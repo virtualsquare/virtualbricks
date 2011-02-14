@@ -11,6 +11,7 @@
     <property name="window_position">center</property>
     <property name="default_width">800</property>
     <property name="default_height">700</property>
+    <property name="icon">virtualbricks.png</property>
     <signal name="delete_event" handler="on_window1_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
@@ -8188,6 +8189,38 @@ Event Collation</property>
             <property name="position">0</property>
           </packing>
         </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="systray_menu">
+    <property name="visible">True</property>
+    <child>
+      <widget class="GtkMenuItem" id="systray_menu_show_window">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Show Main Window</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="systray_show_window_cb"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="systray_menu_hide_window">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Hide Main Window</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="systray_hide_window_cb"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="menuitem3">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="systray_menu_close">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Close VB</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="systray_exit_cb"/>
       </widget>
     </child>
   </widget>
