@@ -57,7 +57,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		self.topology = None
 		try:
-			self.gladefile = gtk.glade.XML('./virtualbricks.glade')
+			self.gladefile = gtk.glade.XML('/usr/share/virtualbricks/virtualbricks.glade')
 		except:
 			self.error("Cannot open required file 'virtualbricks.glade'")
 			sys.exit(1)
@@ -75,7 +75,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory.model.connect("brick-deleted", self.cb_brick_deleted)
 		self.brickfactory.model.connect("row-changed", self.cb_brick_changed)
 		self.brickfactory.model.connect("engine-closed", self.quit)
-		
+
 		self.draw_topology()
 		self.brickfactory.start()
 

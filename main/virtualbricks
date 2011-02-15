@@ -1,16 +1,15 @@
 #!/usr/bin/python
 import sys
 import time
-import virtualbricks_GUI
-import virtualbricks_BrickFactory as BrickFactory
+from  virtualbricks import VBGUI, BrickFactory
 
 #Main.
 
 if len(sys.argv) > 1 and sys.argv[1] == '-nogui':
-	VB = BrickFactory.BrickFactory()
+	VB = BrickFactory()
 	VB.start()
 	#while True:
 	#	time.sleep(100)
 else:
-	VB = virtualbricks_GUI.VBGUI()
+	VB = VBGUI()
 

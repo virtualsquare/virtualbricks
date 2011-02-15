@@ -2,7 +2,7 @@ import os, re, Image, ImageEnhance, pygraphviz as pgv
 import virtualbricks_Settings as Settings
 
 def ImgPrefix():
-	return "./images/"
+	return "/usr/share/pixmaps/"
 
 class Icon:
 
