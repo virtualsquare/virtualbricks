@@ -16,7 +16,7 @@ class BricksModel(gtk.ListStore):
 		'brick-deleted' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
 			(gobject.TYPE_STRING,)),
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
-
+		'brick-stopped':  (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 	}
 
 	def __init__(self):
@@ -30,6 +30,9 @@ class BricksModel(gtk.ListStore):
 
 	def console_quit(self):
 		self.emit("engine-closed")
+
+	def stopped_brick(self):
+		self.emit("brick-stopped")
 
 	def del_brick(self, brick):
 		"""remove brick from the model and send 'brick_deleted' signal"""

@@ -371,6 +371,7 @@ class Brick(ChildLogger):
 			self.close_internal_console()
 		self.internal_console == None
 		self.factory.model.change_brick(self)
+		self.factory.model.stopped_brick()
 		self.post_poweroff()
 
 	def post_poweron(self):
@@ -1537,7 +1538,7 @@ class BrickFactory(ChildLogger, Thread):
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
 		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
-	
+
 	def getbrickbyname(self, name):
 		for b in self.bricks:
 			if b.name == name:

@@ -75,6 +75,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory.model.connect("brick-deleted", self.cb_brick_deleted)
 		self.brickfactory.model.connect("row-changed", self.cb_brick_changed)
 		self.brickfactory.model.connect("engine-closed", self.quit)
+		self.brickfactory.model.connect("brick-stopped", self.systray_blinking)
 
 		self.draw_topology()
 		self.brickfactory.start()
@@ -495,6 +496,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.statusicon.set_visible(False)
 			self.statusicon.set_enabled(False)
 
+	def systray_blinking(self, args=None, disable=False):
+		if disable == True:
+			self.statusicon.set_blinking(True)
+		self.statusicon.set_blinking(not self.statusicon.get_blinking())
 
 	def delete_event(self,window,event):
 		#don't delete; hide instead
@@ -508,6 +513,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def status_clicked(self,status=None):
         	#unhide the window
+		if self.statusicon.get_blinking():
+			self.systray_blinking(None, True)
+			return
+
         	if self.statusicon.get_window_is_hide() or status==True:
 			self.gladefile.get_widget("main_win").show_all()
         		self.statusicon.set_tooltip("the window is visible")
