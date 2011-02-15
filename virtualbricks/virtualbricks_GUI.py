@@ -51,6 +51,7 @@ class VBuserwait(Thread):
 class VBGUI(ChildLogger, gobject.GObject):
 	def __init__(self):
 		gobject.GObject.__init__(self)
+		ChildLogger.__init__(self)
 
 		if not os.access(Settings.MYPATH, os.X_OK):
 			os.mkdir(Settings.MYPATH)
@@ -59,12 +60,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		try:
 			self.gladefile = gtk.glade.XML('/usr/share/virtualbricks/virtualbricks.glade')
 		except:
-			self.error("Cannot open required file 'virtualbricks.glade'")
-			sys.exit(1)
+			self.critical("Cannot open required file 'virtualbricks.glade'")
 
 		self.widg = self.get_widgets(self.widgetnames())
 
-		ChildLogger.__init__(self)
 
 		self.info("Starting VirtualBricks!")
 
@@ -708,7 +707,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def critical(self, text):
 		ChildLogger.critical(self, text)
-		self.show_msg(text)
+		sys.exit(1)
 
 	def error(self, text):
 		ChildLogger.error(self, text)
