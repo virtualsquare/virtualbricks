@@ -6,4 +6,4 @@ Exec=virtualbricks
 Icon=virtualbricks
 Terminal=true
 Type=Application
-Categories=GNOME;Office;
+Categories=GNOME;Network;
