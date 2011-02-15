@@ -498,8 +498,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def systray_blinking(self, args=None, disable=False):
 		if disable == True:
+			self.statusicon.set_blinking(False)
+			return
+		if self.statusicon.get_blinking() == False:
 			self.statusicon.set_blinking(True)
-		self.statusicon.set_blinking(not self.statusicon.get_blinking())
 
 	def delete_event(self,window,event):
 		#don't delete; hide instead
