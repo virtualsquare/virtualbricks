@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 import time
+from traceback import format_exception
 
 import virtualbricks_BrickFactory as BrickFactory
 import virtualbricks_Global as Global
@@ -34,7 +35,6 @@ class MyTray(gtk.StatusIcon):
 
 	def get_window_is_hide(self):
 		return self.win_hide
-
 
 class VBuserwait(Thread):
 	def __init__(self, call, args=[]):
@@ -706,7 +706,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.widg[w].hide()
 
 	def critical(self, text):
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		traceback = format_exception(exc_type, exc_value, exc_traceback)
 		ChildLogger.critical(self, text)
+		for line in traceback:
+			ChildLogger.critical(self, line.rstrip('\n'))
 		sys.exit(1)
 
 	def error(self, text):
