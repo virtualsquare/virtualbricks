@@ -480,7 +480,7 @@ class VBGUI(ChildLogger, gobject.GObject):
     			systray = getattr(self, "statusicon")
 		except AttributeError:
 			self.statusicon=MyTray()
-			self.statusicon.set_from_file("virtualbricks.png")
+			self.statusicon.set_from_file("/usr/share/pixmaps/virtualbricks.png")
        			self.statusicon.set_tooltip("VirtualBricks Visible")
 			self.statusicon.connect('activate', self.status_clicked )
 			systray_menu=self.gladefile.get_widget("systray_menu")
