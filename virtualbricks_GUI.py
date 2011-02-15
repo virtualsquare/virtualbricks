@@ -74,7 +74,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory.model.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.model.connect("brick-deleted", self.cb_brick_deleted)
 		self.brickfactory.model.connect("row-changed", self.cb_brick_changed)
-
+		self.brickfactory.model.connect("engine-closed", self.quit)
+		
 		self.draw_topology()
 		self.brickfactory.start()
 
@@ -609,7 +610,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def get_treeselected_type(self, t, s, p):
 		return self.get_treeselected(t, s, p, 2)
 
-	def quit(self):
+	def quit(self, args=None):
 		self.info("GUI: Goodbye!")
 		self.brickfactory.quit()
 		sys.exit(0)

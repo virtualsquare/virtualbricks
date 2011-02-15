@@ -9,8 +9,8 @@ import virtualbricks_BrickFactory as BrickFactory
 if len(sys.argv) > 1 and sys.argv[1] == '-nogui':
 	VB = BrickFactory.BrickFactory()
 	VB.start()
-	while True:
-		time.sleep(100)
+	#while True:
+	#	time.sleep(100)
 else:
 	VB = virtualbricks_GUI.VBGUI()
 

@@ -1537,7 +1537,7 @@ class BrickFactory(ChildLogger, Thread):
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
 		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
-
+	
 	def getbrickbyname(self, name):
 		for b in self.bricks:
 			if b.name == name:
@@ -1554,7 +1554,7 @@ class BrickFactory(ChildLogger, Thread):
 				if (len(p.poll(10)) > 0):
 					command = sys.stdin.readline()
 					self.parse(command.rstrip('\n'))
-					print
+					print ""
 					print "virtualbricks> ",
 					sys.stdout.flush()
 			else:
@@ -1674,6 +1674,7 @@ class BrickFactory(ChildLogger, Thread):
 
 	def parse(self, command):
 		if (command == 'q' or command == 'quit'):
+			self.model.console_quit()
 			self.quit()
 		elif (command == 'h' or command == 'help'):
 			print 'no help available'
