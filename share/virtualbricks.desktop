@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=0.3
+Name=Virtualbricks
+Comment=Manage your virtual network and virtual machines
+Exec=virtualbricks
+Icon=virtualbricks
+Terminal=true
+Type=Application
+Categories=GNOME;Office;
