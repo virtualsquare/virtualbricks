@@ -327,20 +327,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg[key]) > 0):
-				#print "LOAD: %s ->> %s" % (key, b.cfg[key])
 				widget.select_filename(b.cfg[key])
+			elif (widget is not None and t=='Qemu' and (key[0:4]=='base' or key=='cdrom')):
+				widget.set_current_folder(self.config.get('baseimages'))
 
 			if 'icon' in b.cfg.keys() and b.cfg['icon'] != "":
 				self.gladefile.get_widget("qemuicon").set_from_pixbuf(self.pixbuf_scaled(b.cfg['icon']))
 			else:
 				self.gladefile.get_widget("qemuicon").set_from_file(b.icon.get_img())
-
-		# Apply KVM system configuration
-
-		#self.gladefile.get_widget('check_customkernel').set_active(True)
-		#self.gladefile.get_widget('check_initrd').set_active(True)
-		#self.gladefile.get_widget('check_customkernel').set_active(kernelcheck)
-		#self.gladefile.get_widget('check_initrd').set_active(initrdcheck)
 
 		# Tap mode:
 		if b.get_type() == 'Tap':
@@ -848,10 +842,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.quit()
 
 	def on_item_settings_activate(self, widget=None, data=""):
-		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_filename(self.config.get('bricksdirectory'))
-		self.gladefile.get_widget('filechooserbutton_qemupath').set_filename(self.config.get('qemupath'))
-		self.gladefile.get_widget('filechooserbutton_vdepath').set_filename(self.config.get('vdepath'))
-		self.gladefile.get_widget('filechooserbutton_baseimages').set_filename(self.config.get('baseimages'))
+		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_current_folder(self.config.get('bricksdirectory'))
+		self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(self.config.get('qemupath'))
+		self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(self.config.get('vdepath'))
+		self.gladefile.get_widget('filechooserbutton_baseimages').set_current_folder(self.config.get('baseimages'))
 
 		if self.config.kvm:
 			self.gladefile.get_widget('check_kvm').set_active(True)
