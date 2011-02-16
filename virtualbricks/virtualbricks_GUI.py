@@ -73,8 +73,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory.model.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.model.connect("brick-deleted", self.cb_brick_deleted)
 		self.brickfactory.model.connect("row-changed", self.cb_brick_changed)
-		self.brickfactory.model.connect("engine-closed", self.quit)
-		self.brickfactory.model.connect("brick-stopped", self.systray_blinking)
+		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit)
+		self.brickfactory.connect("brick-stopped", self.systray_blinking)
 
 		self.draw_topology()
 		self.brickfactory.start()
@@ -470,25 +470,23 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 
 	def start_systray(self):
-		try:
-    			systray = getattr(self, "statusicon")
-		except AttributeError:
-			self.statusicon=MyTray()
+		systray = getattr(self, "statusicon", None)
+		if systray is None:
+			self.statusicon = MyTray()
 			self.statusicon.set_from_file("/usr/share/pixmaps/virtualbricks.png")
-       			self.statusicon.set_tooltip("VirtualBricks Visible")
+			self.statusicon.set_tooltip("VirtualBricks Visible")
 			self.statusicon.connect('activate', self.status_clicked )
-			systray_menu=self.gladefile.get_widget("systray_menu")
+			systray_menu = self.gladefile.get_widget("systray_menu")
 			self.statusicon.connect('popup-menu', self.systray_menu_popup, systray_menu)
+
 		if not self.statusicon.get_enabled():
 			self.statusicon.set_enabled(True)
 			self.statusicon.set_visible(True)
 
 	def systray_menu_popup(self, widget, button, time, data = None):
-		if button == 3:
-			if data:
-				data.show_all()
-				data.popup(None, None, None, 3, time)
-
+		if button == 3 and data:
+			data.show_all()
+			data.popup(None, None, None, 3, time)
 
 	def stop_systray(self):
 		if self.statusicon.get_enabled():
@@ -496,10 +494,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.statusicon.set_enabled(False)
 
 	def systray_blinking(self, args=None, disable=False):
-		if disable == True:
+		if disable:
 			self.statusicon.set_blinking(False)
 			return
-		if self.statusicon.get_blinking() == False:
+		if not self.statusicon.get_blinking():
 			self.statusicon.set_blinking(True)
 
 	def delete_event(self,window,event):
@@ -513,14 +511,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 		return True
 
 	def status_clicked(self,status=None):
-        	#unhide the window
+		#unhide the window
 		if self.statusicon.get_blinking():
 			self.systray_blinking(None, True)
 			return
 
-        	if self.statusicon.get_window_is_hide() or status==True:
+		if self.statusicon.get_window_is_hide() or status:
 			self.gladefile.get_widget("main_win").show_all()
-        		self.statusicon.set_tooltip("the window is visible")
+			self.statusicon.set_tooltip("the window is visible")
 			self.statusicon.set_window_is_hide(False)
 		else:
 			self.gladefile.get_widget("main_win").hide()
@@ -616,9 +614,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def quit(self, args=None):
 		self.info("GUI: Goodbye!")
+		self.brickfactory.disconnect(self._engine_closed)
 		self.brickfactory.quit()
 		sys.exit(0)
-
 
 	def get_widgets(self, l):
 		r = dict()

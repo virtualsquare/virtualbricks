@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import copy
+import gobject
 import os
 import re
 import select
@@ -370,8 +371,7 @@ class Brick(ChildLogger):
 		if self.close_internal_console and callable(self.close_internal_console):
 			self.close_internal_console()
 		self.internal_console == None
-		self.factory.model.change_brick(self)
-		self.factory.model.stopped_brick()
+		self.factory.emit("brick-stopped")
 		self.post_poweroff()
 
 	def post_poweron(self):
@@ -1527,8 +1527,14 @@ class VM(Brick):
 				break
 		return c
 
-class BrickFactory(ChildLogger, Thread):
+class BrickFactory(ChildLogger, Thread, gobject.GObject):
+	__gsignals__ = {
+		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+	}
+
 	def __init__(self, logger=None, showconsole=True):
+		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
 		self.bricks = []
 		self.socks = []
@@ -1621,7 +1627,7 @@ class BrickFactory(ChildLogger, Thread):
 							pl.vlan = int(vlan)
 							print "added eth%d" % pl.vlan
 						else:
-							self.connect(bb,l.split('|')[2].rstrip('\n'))
+							self.connect_to(bb,l.split('|')[2].rstrip('\n'))
 
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
@@ -1657,6 +1663,7 @@ class BrickFactory(ChildLogger, Thread):
 		print 'Engine: Bye!'
 		self.config_dump(Settings.MYPATH+"/.virtualbricks.state")
 		self.running_condition = False
+		self.emit("engine-closed")
 		sys.exit(0)
 
 	def proclist(self):
@@ -1675,13 +1682,11 @@ class BrickFactory(ChildLogger, Thread):
 
 	def parse(self, command):
 		if (command == 'q' or command == 'quit'):
-			self.model.console_quit()
 			self.quit()
 		elif (command == 'h' or command == 'help'):
 			print 'no help available'
 		elif (command == 'ps'):
 			self.proclist()
-
 		elif command.startswith('n ') or command.startswith('new '):
 			self.newbrick(*command.split(" ")[1:])
 		elif command == 'list':
@@ -1719,7 +1724,7 @@ class BrickFactory(ChildLogger, Thread):
 		if (cmd[0] == 'show'):
 			obj.cfg.dump()
 		if (cmd[0] == 'connect' and len(cmd) == 2):
-			if(self.connect(obj, cmd[1].rstrip('\n'))):
+			if(self.connect_to(obj, cmd[1].rstrip('\n'))):
 				print ("Connection ok")
 			else:
 				print ("Connection failed")
@@ -1728,7 +1733,7 @@ class BrickFactory(ChildLogger, Thread):
 		if (cmd[0] == 'help'):
 			obj.help()
 
-	def connect(self, brick, nick):
+	def connect_to(self, brick, nick):
 		endpoint = None
 		if len(nick) == 0:
 			return False
@@ -1819,6 +1824,8 @@ class BrickFactory(ChildLogger, Thread):
 			return False
 
 		return True
+
+gobject.type_register(BrickFactory)
 
 if __name__ == "__main__":
 	"""
