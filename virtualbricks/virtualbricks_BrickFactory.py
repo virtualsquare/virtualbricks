@@ -344,6 +344,7 @@ class Brick(ChildLogger):
 
 		if self.open_internal_console and callable(self.open_internal_console):
 			self.internal_console = self.open_internal_console()
+		self.factory.emit("brick-started")
 		self.post_poweron()
 
 	def poweroff(self):
@@ -1531,6 +1532,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'brick-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 	}
 
 	def __init__(self, logger=None, showconsole=True):

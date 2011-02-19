@@ -72,9 +72,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
 		self.brickfactory.model.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.model.connect("brick-deleted", self.cb_brick_deleted)
-		self.brickfactory.model.connect("row-changed", self.cb_brick_changed)
 		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit)
-		self.brickfactory.connect("brick-stopped", self.systray_blinking)
+		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
+		self.brickfactory.connect("brick-started", self.cb_brick_started)
 
 		self.draw_topology()
 		self.brickfactory.start()
@@ -193,7 +193,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def cb_brick_deleted(self, model, name):
 		self.draw_topology()
 
-	def cb_brick_changed(self, model, path, iter):
+	def cb_brick_stopped(self, model, name=""):
+		self.draw_topology()
+		self.systray_blinking(None, False)
+	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
 
 	""" ******************************************************** """
