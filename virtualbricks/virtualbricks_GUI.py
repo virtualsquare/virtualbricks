@@ -330,7 +330,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg[key]) > 0):
-				widget.select_filename(b.cfg[key])
+				widget.set_filename(b.cfg[key])
 			elif (widget is not None and t=='Qemu' and (key[0:4]=='base' or key=='cdrom')):
 				widget.set_current_folder(self.config.get('baseimages'))
 
