@@ -282,9 +282,9 @@
                   <widget class="GtkNotebook" id="notebook3">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <signal name="change_current_page" handler="on_focus_out"/>
                     <signal name="switch_page" handler="on_focus_out"/>
                     <signal name="select_page" handler="on_focus_out"/>
-                    <signal name="change_current_page" handler="on_focus_out"/>
                     <child>
                       <widget class="GtkVBox" id="vbox11">
                         <property name="visible">True</property>
@@ -363,8 +363,8 @@
                                 <property name="has_tooltip">True</property>
                                 <property name="tooltip" translatable="yes">You can add items from the default bootimage folder list by rightclicking them, or any other file with the + My Machines Button left of the selected file entry.</property>
                                 <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
-                                <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
                                 <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
+                                <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
                                 <signal name="button_release_event" handler="on_treeview_bookmarks_button_release_event"/>
                               </widget>
                             </child>
@@ -1212,7 +1212,7 @@ fda</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkCheckButton" id="cfg_Qemu_privatehda_check1">
+                                                  <widget class="GtkCheckButton" id="cfg_Qemu_privatehda_check">
                                                     <property name="label" translatable="yes">Private COW</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
@@ -2387,8 +2387,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Set up a new network card</property>
-                                    <signal name="clicked" handler="on_vmplug_add"/>
                                     <signal name="activate" handler="on_vmplug_add"/>
+                                    <signal name="clicked" handler="on_vmplug_add"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment9">
                                         <property name="visible">True</property>
@@ -2440,8 +2440,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Edit selected network card or redirection</property>
-                                    <signal name="clicked" handler="on_vmplug_edit"/>
                                     <signal name="activate" handler="on_vmplug_edit"/>
+                                    <signal name="clicked" handler="on_vmplug_edit"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment11">
                                         <property name="visible">True</property>
@@ -2493,8 +2493,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Remove selected network card or redirection</property>
-                                    <signal name="clicked" handler="on_vmplug_remove"/>
                                     <signal name="activate" handler="on_vmplug_remove"/>
+                                    <signal name="clicked" handler="on_vmplug_remove"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment12">
                                         <property name="visible">True</property>
@@ -4452,8 +4452,8 @@ Number of ports: </property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="clicked" handler="on_config_cancel"/>
                         <signal name="activate" handler="on_config_cancel"/>
+                        <signal name="clicked" handler="on_config_cancel"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -4471,8 +4471,8 @@ Number of ports: </property>
                         <property name="can_default">True</property>
                         <property name="has_default">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="clicked" handler="on_config_ok"/>
                         <signal name="activate" handler="on_config_ok"/>
+                        <signal name="clicked" handler="on_config_ok"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -4562,8 +4562,8 @@ Number of ports: </property>
     <property name="resizable">False</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_settings_response"/>
     <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
+    <signal name="response" handler="on_dialog_settings_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>
@@ -4612,8 +4612,8 @@ Number of ports: </property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="use_preview_label">False</property>
                                 <property name="action">select-folder</property>
+                                <property name="use_preview_label">False</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
@@ -5489,8 +5489,8 @@ invalid path for qemu/kvm binaries</property>
     <property name="height_request">500</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_about_response"/>
     <signal name="delete_event" handler="on_windown_destroy"/>
+    <signal name="response" handler="on_dialog_about_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox4">
         <property name="visible">True</property>
@@ -7737,8 +7737,8 @@ Use an already open UDP multicast socket</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_newbrick_cancel"/>
                 <signal name="released" handler="on_newbrick_cancel"/>
+                <signal name="clicked" handler="on_newbrick_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -8144,8 +8144,8 @@ Event Collation</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_newevent_cancel"/>
                 <signal name="released" handler="on_newevent_cancel"/>
+                <signal name="clicked" handler="on_newevent_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
