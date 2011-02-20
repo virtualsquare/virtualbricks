@@ -1546,6 +1546,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
 		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
+		self.current_project = None
+		self.recent_projects = []
 
 	def getbrickbyname(self, name):
 		for b in self.bricks:
@@ -1594,12 +1596,27 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				elif (pl.sock is not None):
 					p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
 
-
-	def config_restore(self,f):
+	# ACTIONS flags for this:
+	# Initial restore of latest open: True,False (default)
+	# Open or Open Recent: False, True
+	# Import: False, False
+	# New: True, True (missing check for existing file, must be check from caller)
+	def config_restore(self, f, create_if_not_found=True, start_from_scratch=False):
 		try:
 			p = open(f, "r")
 		except:
-			p = open(f, "w")
+			if create_if_not_found:
+				p = open(f, "w")
+				self.current_project = f
+			else:
+				raise BadConfigException
+			return
+
+		if start_from_scratch:
+			self.current_project = f
+			for b in self.bricks:
+				self.delbrick(b)
+			self.bricks = []
 			return
 
 		l = p.readline()
