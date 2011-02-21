@@ -91,7 +91,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
-		self.brickfactory.bricksmodel.connect("row-changed", self.cb_brick_changed)
 
 		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit)
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
@@ -99,7 +98,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
-		self.brickfactory.eventsmodel.connect("row-changed", self.cb_event_changed)
+
 		self.brickfactory.connect("event-stopped", self.systray_blinking)
 
 		self.draw_topology()
