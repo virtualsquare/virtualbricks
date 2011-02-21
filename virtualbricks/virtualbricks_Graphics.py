@@ -1,3 +1,22 @@
+# coding=utf-8
+
+##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+##	Copyright (C) 2011 Virtualbricks team
+##
+##	This program is free software; you can redistribute it and/or
+##	modify it under the terms of the GNU General Public License
+##	as published by the Free Software Foundation; either version 2
+##	of the License, or (at your option) any later version.
+##
+##	This program is distributed in the hope that it will be useful,
+##	but WITHOUT ANY WARRANTY; without even the implied warranty of
+##	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##	GNU General Public License for more details.
+##
+##	You should have received a copy of the GNU General Public License
+##	along with this program; if not, write to the Free Software
+##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 import os, re, Image, ImageEnhance, pygraphviz as pgv
 import virtualbricks_Settings as Settings
 
@@ -6,21 +25,21 @@ def ImgPrefix():
 
 class Icon:
 
-	def __init__(self, brick):
-	#if brick.get_type()!="Qemu":
-		self.brick = brick
+	def __init__(self, component):
+	#if component.get_type()!="Qemu":
+		self.component = component
 		self.ready = False
 
 	def has_custom_icon(self):
-		return ('icon' in self.brick.cfg.keys()) and self.brick.cfg.icon != ""
+		return ('icon' in self.component.cfg.keys()) and self.component.cfg.icon != ""
 
 	def set_from_file(self, filename):
 
-		newname = Settings.MYPATH + "/qemuicon_" + self.brick.name + ".png"
-		if self.has_custom_icon() and self.brick.cfg.icon != newname:
+		newname = Settings.MYPATH + "/qemuicon_" + self.component.name + ".png"
+		if self.has_custom_icon() and self.component.cfg.icon != newname:
 			src = Image.open(filename).resize((48,48),Image.ANTIALIAS)
 			src.convert('RGBA').save(newname)
-			filename = self.brick.cfg.icon = newname
+			filename = self.component.cfg.icon = newname
 
 		self.base = filename
 		self.grey = "/tmp/"+os.path.basename(filename).split('.')[0]+"_grey.png"
@@ -31,7 +50,7 @@ class Icon:
 		self.make_grey()
 
 	def set_from_bricktype(self):
-		self.set_from_file(ImgPrefix() + self.brick.get_type() + ".png")
+		self.set_from_file(ImgPrefix() + self.component.get_type() + ".png")
 
 	def make_grey(self):
 		if not os.access(self.base, os.R_OK):
@@ -49,13 +68,21 @@ class Icon:
 
 	def get_img(self):
 		if self.has_custom_icon():
-			self.set_from_file(self.brick.cfg.icon)
+			self.set_from_file(self.component.cfg.icon)
 		if not self.ready:
 			self.set_from_bricktype()
-		if self.brick.proc is not None:
-			return self.base
+		if hasattr(self.component,"proc"):
+			if self.component.proc is not None:
+				return self.base
+			else:
+				return self.grey
+		elif hasattr(self.component,"active"):
+			if self.component.active == True:
+				return self.base
+			else:
+				return self.grey
 		else:
-			return self.grey
+			return self.base
 
 class Node:
 	def __init__(self, topology, name, x, y, thresh = 50):

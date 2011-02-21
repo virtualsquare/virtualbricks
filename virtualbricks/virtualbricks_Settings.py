@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-##	Qemulator - a qemu gui written in python and GTK/Glade.
-##	Copyright (C) 2006  rainer haage
+##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+##	Copyright (C) 2011 Virtualbricks team
 ##
 ##	This program is free software; you can redistribute it and/or
 ##	modify it under the terms of the GNU General Public License

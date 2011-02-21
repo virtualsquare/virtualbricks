@@ -1,6 +1,23 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+##	Copyright (C) 2011 Virtualbricks team
+##
+##	This program is free software; you can redistribute it and/or
+##	modify it under the terms of the GNU General Public License
+##	as published by the Free Software Foundation; either version 2
+##	of the License, or (at your option) any later version.
+##
+##	This program is distributed in the hope that it will be useful,
+##	but WITHOUT ANY WARRANTY; without even the implied warranty of
+##	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##	GNU General Public License for more details.
+##
+##	You should have received a copy of the GNU General Public License
+##	along with this program; if not, write to the Free Software
+##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 import copy
 import gobject
 import os
@@ -16,7 +33,8 @@ import virtualbricks_Global as Global
 from virtualbricks_Logger import ChildLogger
 import virtualbricks_Models as Models
 import virtualbricks_Settings as Settings
-#import virtualbricks_Events as Events
+#from virtualbricks_Events import Event
+import virtualbricks_Events as Events
 from virtualbricks_Graphics import *
 
 class InvalidNameException(Exception):
@@ -40,7 +58,7 @@ def ValidName(name):
 	while(name.endswith(' ')):
 		name = name.rstrip(' ')
 
-	name = re.sub(' ','_',name)
+	name = re.sub(' ', '_', name)
 	if not re.search("\A\w+\Z", name):
 		return None
 	return name
@@ -49,9 +67,9 @@ class Plug(ChildLogger):
 	def __init__(self, _brick):
 		ChildLogger.__init__(self, _brick)
 		self.brick = _brick
-		self.sock=None
-		self.antiloop=False
-		self.mode='vde'
+		self.sock = None
+		self.antiloop = False
+		self.mode = 'vde'
 
 	def configured(self):
 		if self.sock is None:
@@ -69,7 +87,7 @@ class Plug(ChildLogger):
 
 		self.antiloop = True
 		if self.sock is None or self.sock.brick is None:
-			self.antiloop=False
+			self.antiloop = False
 			return False
 		self.sock.brick.poweron()
 		if self.sock.brick.proc is None:
@@ -91,12 +109,12 @@ class Plug(ChildLogger):
 			self.sock = _sock
 			return True
 	def disconnect(self):
-		self.sock=None
+		self.sock = None
 
 class Sock():
 	def __init__(self, _brick, _nickname):
 		self.brick = _brick
-		self.nickname=_nickname
+		self.nickname = _nickname
 		self.path = ""
 		self.plugs = []
 		self.brick.factory.socks.append(self)
@@ -144,10 +162,10 @@ class BrickConfig(dict):
 		else:
 			val = ''
 			if len(kv) > 2:
-				val='"'
+				val = '"'
 				for c in kv[1:]:
-					val+=c.lstrip('"').rstrip('"')
-					val+="="
+					val += c.lstrip('"').rstrip('"')
+					val += "="
 				val = val.rstrip('=') + '"'
 			else:
 				val += kv[1]
@@ -159,8 +177,8 @@ class BrickConfig(dict):
 		self[key] = obj
 
 	def dump(self):
-		for (k,v) in self.iteritems():
-			print "%s=%s" % (k,v)
+		for (k, v) in self.iteritems():
+			print "%s=%s" % (k, v)
 
 class Brick(ChildLogger):
 	def __init__(self, _factory, _name):
@@ -173,8 +191,8 @@ class Brick(ChildLogger):
 		self.socks = []
 		self.proc = None
 		self.cfg = BrickConfig()
-		self.cfg.numports = 0
-		self.command_builder=dict()
+		self.cfg.numports = 0 #Why is it needed here!?!
+		self.command_builder = dict()
 		self.factory.bricks.append(self)
 		self.gui_changed = False
 		self.need_restart_to_apply_changes = False
@@ -183,7 +201,7 @@ class Brick(ChildLogger):
 		self.icon = Icon(self)
 		self.terminal = "vdeterm"
 
-		self.factory.model.add_brick(self)
+		self.factory.bricksmodel.add_brick(self)
 
 	def cmdline(self):
 		return ""
@@ -197,7 +215,7 @@ class Brick(ChildLogger):
 	def help(self):
 		print "Object type: " + self.get_type()
 		print "Possible configuration parameter: "
-		for (k,v) in self.command_builder.items():
+		for (k, v) in self.command_builder.items():
 			if not k.startswith("*"):
 				print v,
 				print "  ",
@@ -231,10 +249,10 @@ class Brick(ChildLogger):
 		"""TODO attrs : dict attr => value"""
 		self.initialize(attrlist)
 		# TODO brick should be gobject and a signal should be launched
-		self.factory.model.change_brick(self)
+		self.factory.bricksmodel.change_brick(self)
 		self.on_config_changed()
 
-	def connect(self,endpoint):
+	def connect(self, endpoint):
 		for p in self.plugs:
 			if not p.configured():
 				if (p.connect(endpoint)):
@@ -253,13 +271,13 @@ class Brick(ChildLogger):
 		cb = None
 		try:
 			if self.get_type() == 'Switch':
-				cb = Switch.__dict__["cbset_"+key]
+				cb = Switch.__dict__["cbset_" + key]
 
 			elif self.get_type() == 'Wirefilter':
-				cb = Wirefilter.__dict__["cbset_"+key]
+				cb = Wirefilter.__dict__["cbset_" + key]
 
 			elif self.get_type() == 'Qemu':
-				cb = VM.__dict__["cbset_"+key]
+				cb = VM.__dict__["cbset_" + key]
 
 			#elif self.get_type() == 'Event':
 			#	cb = None;
@@ -284,12 +302,12 @@ class Brick(ChildLogger):
 			print "link down"
 			raise LinkloopException
 		self._poweron()
-		self.factory.model.change_brick(self)
+		self.factory.bricksmodel.change_brick(self)
 
 	def build_cmd_line(self):
 		res = []
 
-		for (k,v) in self.command_builder.items():
+		for (k, v) in self.command_builder.items():
 
 			if not k.startswith("#"):
 				value = self.cfg.get(v)
@@ -319,8 +337,8 @@ class Brick(ChildLogger):
 		if self.needsudo:
 			sudoarg = ""
 			for cmdarg in command_line:
-				sudoarg+=cmdarg + " "
-			sudoarg += "-P /tmp/" +self.name+".pid "
+				sudoarg += cmdarg + " "
+			sudoarg += "-P /tmp/" + self.name + ".pid "
 			command_line[0] = self.settings.get("sudo")
 			command_line[1] = sudoarg
 		print 'Starting "',
@@ -334,7 +352,7 @@ class Brick(ChildLogger):
 		if self.needsudo:
 			time.sleep(5)
 			try:
-				pidfile = open("/tmp/" +self.name+".pid", "r")
+				pidfile = open("/tmp/" + self.name + ".pid", "r")
 				self.pid = int(pidfile.readline().rstrip('\n'))
 			except:
 				print("Cannot get pid from pidfile!")
@@ -355,7 +373,7 @@ class Brick(ChildLogger):
 
 		if self.pid > 0:
 			if (self.needsudo):
-				os.system(self.settings.get('sudo') + ' "kill '+ str(self.pid) + '"')
+				os.system(self.settings.get('sudo') + ' "kill ' + str(self.pid) + '"')
 			else:
 				try:
 					#self.proc.send_signal(15)
@@ -365,7 +383,7 @@ class Brick(ChildLogger):
 
 			ret = self.proc.poll()
 			while ret is None:
-				ret= self.proc.poll()
+				ret = self.proc.poll()
 
 		self.proc = None
 		self.need_restart_to_apply_changes = False
@@ -395,12 +413,12 @@ class Brick(ChildLogger):
 		if not self.has_console():
 			return
 		else:
-			cmdline = [self.settings.get('term'),'-T',self.name,'-e',self.terminal,self.cfg.console]
+			cmdline = [self.settings.get('term'), '-T', self.name, '-e', self.terminal, self.cfg.console]
 			try:
 				console = subprocess.Popen(cmdline)
 			except:
 				print "xterm run failed, trying gnome-terminal"
-				cmdline = ['gnome-terminal','-t',self.name,'-e', self.terminal + self.cfg.console]
+				cmdline = ['gnome-terminal', '-t', self.name, '-e', self.terminal + self.cfg.console]
 				print cmdline
 				try:
 					console = subprocess.Popen(cmdline)
@@ -424,7 +442,7 @@ class Brick(ChildLogger):
 				break
 		return c
 
-	def send(self,msg):
+	def send(self, msg):
 		if self.internal_console == None or not self.active:
 			print "cancel send"
 			return
@@ -443,7 +461,7 @@ class Brick(ChildLogger):
 		p.register(self.internal_console, select.POLLIN)
 		while True:
 			pollret = p.poll(300)
-			if (len(pollret)==1 and pollret[0][1] == select.POLLIN):
+			if (len(pollret) == 1 and pollret[0][1] == select.POLLIN):
 				line = self.internal_console.recv(100)
 				res += line
 			else:
@@ -472,6 +490,142 @@ class Brick(ChildLogger):
 		else:
 			state = 'off'
 		return state
+
+class Event(ChildLogger):
+	def __init__(self, _factory, _name):
+		ChildLogger.__init__(self, _factory)
+		self.factory = _factory
+		self.settings = self.factory.settings
+		self.active = False
+		self.name = _name
+		self.cfg = BrickConfig()
+		self.actions = list()
+		self.cfg.delay = 0
+		self.factory.events.append(self)
+		self.gui_changed = False
+		self.need_restart_to_apply_changes = False
+		self.needsudo = False
+		self.internal_console = None
+		self.icon = Icon(self)
+		self.terminal = ""
+		self.factory.eventsmodel.add_event(self)
+		self.on_config_changed()
+		self.timer = None
+
+#	def cmdline(self):
+#		return ""
+
+	def help(self):
+		return
+
+	def get_type(self):
+		return 'Event'
+	
+	def get_state(self):
+		"""return state of the event"""
+		if self.active == True:
+			state = 'on'
+		elif self.timer is None:
+			state = 'disabled'
+		elif self.timer is not None:
+			state = 'off'
+		return state
+
+	def configured(self):
+		return (len(self.actions) > 0 and self.cfg.delay > 0)
+
+	def initialize(self, attrlist):
+		configactions = list()
+		#check if it's an add config command here,
+		#it needs special management
+		if(attrlist.count('add') > 0):
+			i = attrlist.index('add')
+			configactions = attrlist[i + 1:] #get the action string
+			del attrlist[i:] #remove from the list "add"...
+		#Execute the actions in the command line
+		#for attr in configactions:
+		#	self.actions.append(attr)
+			act = ''
+			#for part in configactions:
+			#	act=act+' '+part
+			act = ' '.join(configactions)
+			self.actions.append(act)
+			#self.actions.append("new switch mioswitch")
+			print "Added command: %s" % str(act)
+		else:
+		   	for attr in attrlist:
+		   		self.cfg.set(attr)
+
+	def properly_connected(self):
+		return True
+	
+	def get_parameters(self):
+		return "Delay: %d" % int(self.cfg.delay)
+
+	def connect(self, endpoint):
+		return True
+
+	def disconnect(self):
+		return
+
+	def configure(self, attrlist):
+		self.initialize(attrlist)
+		# TODO brick should be gobject and a signal should be launched
+		self.factory.eventsmodel.change_event(self)
+		self.on_config_changed()
+
+	############################
+	########### Poweron/Poweroff
+	############################
+	def poweron(self):
+		if not self.configured():
+			print "bad config"
+			raise BadConfigException
+		if(self.active == True):
+			self.timer.cancel()
+		if(int(self.cfg.delay > 0)):
+			try:
+				self.timer.start()
+			except RuntimeError:
+				pass
+			self.active = True
+
+	def poweroff(self):
+		self.timer.cancel()
+		self.active = False
+		self.factory.emit("event-stopped")
+
+	def doactions(self):
+		for action in self.actions:
+			self.factory.parse(action)
+			#action()
+
+	#def addaction(self,action):
+	#	self.actions.append(action)
+
+	#def delaction(self,action):
+	#	self.actions.remove(action)
+
+	#def settimer(self,delay):
+	#	self.delay=delay
+
+	def on_config_changed(self):
+		self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+
+#	def build_cmd_line(self):
+#		return ""
+
+#	def args(self):
+#		return ""
+
+	#############################
+	# Console related operations.
+	#############################
+	def has_console(self):
+			return False
+
+	def close_tty(self):
+		return
 
 class Switch(Brick):
 	def __init__(self, _factory, _name):
@@ -504,9 +658,9 @@ class Switch(Brick):
 		fstp = ""
 		hub = ""
 		if (self.cfg.get('fstp')):
-			fstp=", FSTP"
+			fstp = ", FSTP"
 		if (self.cfg.get('hub')):
-			hub=", HUB"
+			hub = ", HUB"
 		return "Ports:%d%s%s" % ((int(unicode(self.cfg.numports))), fstp, hub)
 
 	def prog(self):
@@ -516,8 +670,8 @@ class Switch(Brick):
 		return 'Switch'
 
 	def on_config_changed(self):
-		self.socks[0].path=self.cfg.path
-		self.socks[0].ports=int(self.cfg.numports)
+		self.socks[0].path = self.cfg.path
+		self.socks[0].ports = int(self.cfg.numports)
 
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
@@ -543,104 +697,9 @@ class Switch(Brick):
 
 	def cbset_numports(self, arg="32"):
 		print "Callback numports with argument " + self.name
-		self.send("port/setnumports "+ arg)
+		self.send("port/setnumports " + arg)
 		print self.recv()
 
-class Event(Brick):
-	def __init__(self, _factory, _name):
-		Brick.__init__(self, _factory, _name)
-		#self.cfg.set_obj("actions",actions=list())
-		self.actions=list()
-		self.cfg.delay = 0
-		self.timer=Timer(self.cfg.delay,self.doactions,())
-
-	def cmdline(self):
-		return ""
-
-	def help(self):
-		return
-
-	def get_type(self):
-		return 'Event'
-
-	def configured(self):
-		return (len(self.actions)>0 and self.cfg.delay>0)
-		#return (len(self.cfg.actions)>0 and self.cfg.delay>0)
-
-	def initialize(self, attrlist):
-		configactions=list()
-		#check if it's an add config command here,
-		#it needs special management
-		if(attrlist.count('add')>0):
-			i=attrlist.index('add')
-			configactions.append(attrlist[i+1:]) #get the action string
-			del attrlist[i:] #remove from the list "add"...
-		#Execute the actions in the command line
-		#for attr in configactions:
-		#	self.actions.append(attr)
-			self.actions.append(configactions)
-		else:
-			#Call the base method to set the parameters
-			Brick.initialize(self, attrlist)
-
-
-	def properly_connected(self):
-		return True
-
-	def check_links(self):
-		return True
-
-	def connect(self,endpoint):
-		return True
-
-	def disconnect(self):
-		return
-
-	############################
-	########### Poweron/Poweroff
-	############################
-	def poweron(self):
-		if not self.configured():
-			print "bad config"
-			raise BadConfigException
-		self.timer.start()
-		self.active = True
-
-	def poweroff(self):
-		self.timer.cancel()
-		self.active = False
-
-	def doactions(self):
-		for action in self.actions:
-			BrickFactory.parse(action)
-			#action()
-
-	#def addaction(self,action):
-	#	self.actions.append(action)
-
-	#def delaction(self,action):
-	#	self.actions.remove(action)
-
-	#def settimer(self,delay):
-	#	self.delay=delay
-
-	def on_config_changed(self):
-		self.timer=Timer(float(self.cfg.delay),self.doactions,())
-
-	def build_cmd_line(self):
-		return ""
-
-	def args(self):
-		return ""
-
-	#############################
-	# Console related operations.
-	#############################
-	def has_console(self):
-			return False
-
-	def close_tty(self):
-		return
 
 class Tap(Brick):
 	def __init__(self, _factory, _name):
@@ -651,10 +710,10 @@ class Tap(Brick):
 		self.cfg.sock = ""
 		self.plugs.append(Plug(self))
 		self.needsudo = True
-		self.cfg.ip="10.0.0.1"
-		self.cfg.nm="255.255.255.0"
-		self.cfg.gw=""
-		self.cfg.mode="off"
+		self.cfg.ip = "10.0.0.1"
+		self.cfg.nm = "255.255.255.0"
+		self.cfg.gw = ""
+		self.cfg.mode = "off"
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
@@ -680,13 +739,13 @@ class Tap(Brick):
 
 	def post_poweron(self):
 		if self.cfg.mode == 'dhcp':
-			ret = os.system(self.settings.get('sudo')+' "dhclient '+self.name+'"')
+			ret = os.system(self.settings.get('sudo') + ' "dhclient ' + self.name + '"')
 
 		elif self.cfg.mode == 'manual':
 			# XXX Ugly, can't we ioctls?
-			ret0 = os.system(self.settings.get('sudo') + ' "/sbin/ifconfig '+ self.name + ' ' + self.cfg.ip + ' netmask ' + self.cfg.nm+'"')
+			ret0 = os.system(self.settings.get('sudo') + ' "/sbin/ifconfig ' + self.name + ' ' + self.cfg.ip + ' netmask ' + self.cfg.nm + '"')
 			if (len(self.cfg.gw) > 0):
-				ret1 = os.system(self.settings.get('sudo') + ' "/sbin/route add default gw '+ self.cfg.gw + ' dev ' + self.name+'"')
+				ret1 = os.system(self.settings.get('sudo') + ' "/sbin/route add default gw ' + self.cfg.gw + ' dev ' + self.name + '"')
 		else:
 			return
 
@@ -808,28 +867,28 @@ class Wirefilter(Wire):
 		res = []
 		res.append(self.prog())
 		res.append('-v')
-		res.append(self.cfg.sock0+":"+self.cfg.sock1)
+		res.append(self.cfg.sock0 + ":" + self.cfg.sock1)
 
 		if len(self.cfg.delayLR) > 0:
 			res.append("-d")
-			res.append("LR"+self.cfg.delayLR)
+			res.append("LR" + self.cfg.delayLR)
 		if len(self.cfg.delayRL) > 0:
 			res.append("-d")
-			res.append("RL"+self.cfg.delayRL)
+			res.append("RL" + self.cfg.delayRL)
 
 		if len(self.cfg.lossLR) > 0:
 			res.append("-l")
-			res.append("LR"+self.cfg.lossLR)
+			res.append("LR" + self.cfg.lossLR)
 		if len(self.cfg.lossRL) > 0:
 			res.append("-l")
-			res.append("RL"+self.cfg.lossRL)
+			res.append("RL" + self.cfg.lossRL)
 
 		if len(self.cfg.dupLR) > 0:
 			res.append("-D")
-			res.append("LR"+self.cfg.dupLR)
+			res.append("LR" + self.cfg.dupLR)
 		if len(self.cfg.dupRL) > 0:
 			res.append("-D")
-			res.append("RL"+self.cfg.dupRL)
+			res.append("RL" + self.cfg.dupRL)
 
 		if len(self.cfg.speedLR) > 0:
 			res.append("-s")
@@ -847,31 +906,31 @@ class Wirefilter(Wire):
 
 		if len(self.cfg.chanbufsizeLR) > 0:
 			res.append("-c")
-			res.append("LR"+self.cfg.chanbufsizeLR)
+			res.append("LR" + self.cfg.chanbufsizeLR)
 		if len(self.cfg.chanbufsizeRL) > 0:
 			res.append("-c")
-			res.append("RL"+self.cfg.chanbufsizeRL)
+			res.append("RL" + self.cfg.chanbufsizeRL)
 
 		if len(self.cfg.noiseLR) > 0:
 			res.append("-n")
-			res.append("LR"+self.cfg.noiseLR)
+			res.append("LR" + self.cfg.noiseLR)
 		if len(self.cfg.noiseRL) > 0:
 			res.append("-n")
-			res.append("RL"+self.cfg.noiseRL)
+			res.append("RL" + self.cfg.noiseRL)
 
 		if len(self.cfg.mtuLR) > 0:
 			res.append("-m")
-			res.append("LR"+self.cfg.mtuLR)
+			res.append("LR" + self.cfg.mtuLR)
 		if len(self.cfg.mtuRL) > 0:
 			res.append("-m")
-			res.append("RL"+self.cfg.mtuRL)
+			res.append("RL" + self.cfg.mtuRL)
 
 		if len(self.cfg.lostburstLR) > 0:
 			res.append("-L")
-			res.append("LR"+self.cfg.lostburstLR)
+			res.append("LR" + self.cfg.lostburstLR)
 		if len(self.cfg.lostburstRL) > 0:
 			res.append("-L")
-			res.append("RL"+self.cfg.lostburstRL)
+			res.append("RL" + self.cfg.lostburstRL)
 
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
@@ -886,137 +945,137 @@ class Wirefilter(Wire):
 	#callbacks for live-management
 	def cbset_lossLR(self, arg=0):
 		print "Callback loss LR with argument " + self.name
-		self.send("loss LR "+ arg+ "\n")
+		self.send("loss LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_lossRL(self, arg=0):
 		print "Callback loss RL with argument " + self.name
-		self.send("loss RL "+ arg + "\n")
+		self.send("loss RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_loss(self, arg=0):
 		print "Callback loss LR&RL with argument " + self.name
-		self.send("loss "+ arg + "\n")
+		self.send("loss " + arg + "\n")
 		print self.recv()
 
 	def cbset_speedLR(self, arg=0):
 		print "Callback speed LR with argument " + self.name
-		self.send("speed LR "+ arg+ "\n")
+		self.send("speed LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_speedRL(self, arg=0):
 		print "Callback speed RL with argument " + self.name
-		self.send("speed RL "+ arg + "\n")
+		self.send("speed RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_speed(self, arg=0):
 		print "Callback speed LR&RL with argument " + self.name
-		self.send("speed "+ arg + "\n")
+		self.send("speed " + arg + "\n")
 		print self.recv()
 
 	def cbset_noiseLR(self, arg=0):
 		print "Callback noise LR with argument " + self.name
-		self.send("noise LR "+ arg+ "\n")
+		self.send("noise LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_noiseRL(self, arg=0):
 		print "Callback noise RL with argument " + self.name
-		self.send("noise RL "+ arg + "\n")
+		self.send("noise RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_noise(self, arg=0):
 		print "Callback noise LR&RL with argument " + self.name
-		self.send("noise "+ arg + "\n")
+		self.send("noise " + arg + "\n")
 		print self.recv()
 
 	def cbset_bandwidthLR(self, arg=0):
 		print "Callback bandwidth LR with argument " + self.name
-		self.send("bandwidth LR "+ arg+ "\n")
+		self.send("bandwidth LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_bandwidthRL(self, arg=0):
 		print "Callback bandwidth RL with argument " + self.name
-		self.send("bandwidth RL "+ arg+ "\n")
+		self.send("bandwidth RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_bandwidth(self, arg=0):
 		print "Callback bandwidth LR&RL with argument " + self.name
-		self.send("bandwidth "+ arg+ "\n")
+		self.send("bandwidth " + arg + "\n")
 		print self.recv()
 
 	def cbset_delayLR(self, arg=0):
 		print "Callback delay LR with argument " + self.name
-		self.send("delay LR "+ arg+ "\n")
+		self.send("delay LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_delayRL(self, arg=0):
 		print "Callback delay RL with argument " + self.name
-		self.send("delay RL "+ arg + "\n")
+		self.send("delay RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_delay(self, arg=0):
 		print "Callback delay LR&RL with argument " + self.name
-		self.send("delay "+ arg + "\n")
+		self.send("delay " + arg + "\n")
 		print self.recv()
 
 	def cbset_dupLR(self, arg=0):
 		print "Callback dup LR with argument " + self.name
-		self.send("dup LR "+ arg+ "\n")
+		self.send("dup LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_dupRL(self, arg=0):
 		print "Callback dup RL with argument " + self.name
-		self.send("dup RL "+ arg + "\n")
+		self.send("dup RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_dup(self, arg=0):
 		print "Callback dup LR&RL with argument " + self.name
-		self.send("dup "+ arg + "\n")
+		self.send("dup " + arg + "\n")
 		print self.recv()
 
 	def cbset_mtuLR(self, arg=0):
 		print "Callback mtu LR with argument " + self.name
-		self.send("mtu LR "+ arg+ "\n")
+		self.send("mtu LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_mtuRL(self, arg=0):
 		print "Callback mtu RL with argument " + self.name
-		self.send("mtu RL "+ arg + "\n")
+		self.send("mtu RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_mtu(self, arg=0):
 		print "Callback mtu LR&RL with argument " + self.name
-		self.send("mtu "+ arg + "\n")
+		self.send("mtu " + arg + "\n")
 		print self.recv()
 
 	def cbset_lostburstLR(self, arg=0):
 		print "Callback lostburst LR with argument " + self.name
-		self.send("lostburst LR "+ arg+ "\n")
+		self.send("lostburst LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_lostburstRL(self, arg=0):
 		print "Callback lostburst RL with argument " + self.name
-		self.send("lostburst RL "+ arg + "\n")
+		self.send("lostburst RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_lostburst(self, arg=0):
 		print "Callback lostburst LR&RL with argument " + self.name
-		self.send("lostburst "+ arg + "\n")
+		self.send("lostburst " + arg + "\n")
 		print self.recv()
 
 	def cbset_chanbufsizeLR(self, arg=0):
 		print "Callback chanbufsize LR (capacity) with argument " + self.name
-		self.send("chanbufsize LR "+ arg+ "\n")
+		self.send("chanbufsize LR " + arg + "\n")
 		print self.recv()
 
 	def cbset_chanbufsizeRL(self, arg=0):
 		print "Callback chanbufsize RL (capacity) with argument " + self.name
-		self.send("chanbufsize RL "+ arg+ "\n")
+		self.send("chanbufsize RL " + arg + "\n")
 		print self.recv()
 
 	def cbset_chanbufsize(self, arg=0):
 		print "Callback chanbufsize LR&RL (capacity) with argument " + self.name
-		self.send("chanbufsize "+ arg+ "\n")
+		self.send("chanbufsize " + arg + "\n")
 		print self.recv()
 
 	#Follows a "duplicate" code of "chanbufsizeXX", because chanbufsize was called
@@ -1030,7 +1089,7 @@ class Wirefilter(Wire):
 
 	def cbset_capacity(self, arg=0):
 		cbset_chanbufsize(arg)
-#Current Delay Queue size:   L->R 0      R->L 0 ??? Is it status or parameter?
+#Current Delay Queue size:   L->R 0	  R->L 0 ??? Is it status or parameter?
 
 class TunnelListen(Brick):
 	def __init__(self, _factory, _name):
@@ -1068,7 +1127,7 @@ class TunnelListen(Brick):
 		return (self.plugs[0].sock is not None)
 
 	def args(self):
-		pwdgen="echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (self.cfg.password, self.name)
+		pwdgen = "echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (self.cfg.password, self.name)
 		print "System= %d" % os.system(pwdgen)
 		res = []
 		res.append(self.prog())
@@ -1094,8 +1153,8 @@ class TunnelConnect(TunnelListen):
 		}
 		self.cfg.sock = ""
 		self.cfg.host = ""
-		self.cfg.localport="10771"
-		self.cfg.port="7667"
+		self.cfg.localport = "10771"
+		self.cfg.port = "7667"
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
@@ -1113,8 +1172,8 @@ class TunnelConnect(TunnelListen):
 			h = self.cfg.get("host")
 			if h is not None:
 				h = h.split(":")[0]
-				h +=":"+p
-				self.cfg.host=h
+				h += ":" + p
+				self.cfg.host = h
 
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
@@ -1129,15 +1188,15 @@ class TunnelConnect(TunnelListen):
 class VMPlug(Plug, BrickConfig):
 	def __init__(self, brick):
 		Plug.__init__(self, brick)
-		self.mac=Global.RandMac()
-		self.model='rtl8139'
-		self.vlan=len(self.brick.plugs) + len(self.brick.socks)
-		self.mode='vde'
+		self.mac = Global.RandMac()
+		self.bricksmodel = 'rtl8139'
+		self.vlan = len(self.brick.plugs) + len(self.brick.socks)
+		self.mode = 'vde'
 
 class VMPlugHostonly(VMPlug):
 	def __init__(self, _brick):
 		VMPlug.__init__(self, _brick)
-		self.mode='hostonly'
+		self.mode = 'hostonly'
 
 	def connect(self, endpoint):
 		return
@@ -1175,7 +1234,7 @@ class VMDisk():
 			#ret.append('-snapshot')
 
 		if k:
-			ret.append("-"+self.device)
+			ret.append("-" + self.device)
 		ret.append(diskname)
 		return ret
 
@@ -1196,51 +1255,51 @@ class VM(Brick):
 		self.cfg.usbmode = ""
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
-		self.cfg.basehda =""
-		self.cfg.set_obj("hda",VMDisk(_name, "hda"))
-		self.cfg.privatehda=""
-		self.cfg.basehdb =""
+		self.cfg.basehda = ""
+		self.cfg.set_obj("hda", VMDisk(_name, "hda"))
+		self.cfg.privatehda = ""
+		self.cfg.basehdb = ""
 		self.cfg.set_obj("hdb", VMDisk(_name, "hdb"))
-		self.cfg.privatehdb=""
-		self.cfg.basehdc =""
+		self.cfg.privatehdb = ""
+		self.cfg.basehdc = ""
 		self.cfg.set_obj("hdc", VMDisk(_name, "hdc"))
-		self.cfg.privatehdc=""
-		self.cfg.basehdd =""
+		self.cfg.privatehdc = ""
+		self.cfg.basehdd = ""
 		self.cfg.set_obj("hdd", VMDisk(_name, "hdd"))
-		self.cfg.privatehdd=""
-		self.cfg.basefda =""
+		self.cfg.privatehdd = ""
+		self.cfg.basefda = ""
 		self.cfg.set_obj("fda", VMDisk(_name, "fda"))
-		self.cfg.privatefda=""
-		self.cfg.basefdb =""
+		self.cfg.privatefda = ""
+		self.cfg.basefdb = ""
 		self.cfg.set_obj("fdb", VMDisk(_name, "fdb"))
-		self.cfg.privatefdb=""
-		self.cfg.basemtdblock=""
+		self.cfg.privatefdb = ""
+		self.cfg.basemtdblock = ""
 		self.cfg.set_obj("mtdblock", VMDisk(_name, "mtdblock"))
-		self.cfg.privatemtdblock=""
+		self.cfg.privatemtdblock = ""
 		self.cfg.cdrom = ""
 		self.cfg.device = ""
 		self.cfg.cdromen = ""
 		self.cfg.deviceen = ""
 		self.cfg.kvm = ""
-		self.cfg.soundhw=""
+		self.cfg.soundhw = ""
 		self.cfg.rtc = ""
 		#kernel etc.
-		self.cfg.kernel=""
-		self.cfg.kernelenbl=""
-		self.cfg.initrd=""
-		self.cfg.initrdenbl=""
-		self.cfg.gdb=""
-		self.cfg.gdbport=""
-		self.cfg.kopt=""
-		self.cfg.icon=""
-		self.terminal="unixterm"
-		self.cfg.keyboard=""
-		self.cfg.noacpi=""
-		self.cfg.sdl=""
-		self.cfg.portrait=""
-		self.cfg.tdf=""
-		self.cfg.kvmsm=""
-		self.cfg.kvmsmem=""
+		self.cfg.kernel = ""
+		self.cfg.kernelenbl = ""
+		self.cfg.initrd = ""
+		self.cfg.initrdenbl = ""
+		self.cfg.gdb = ""
+		self.cfg.gdbport = ""
+		self.cfg.kopt = ""
+		self.cfg.icon = ""
+		self.terminal = "unixterm"
+		self.cfg.keyboard = ""
+		self.cfg.noacpi = ""
+		self.cfg.sdl = ""
+		self.cfg.portrait = ""
+		self.cfg.tdf = ""
+		self.cfg.kvmsm = ""
+		self.cfg.kvmsmem = ""
 
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -1370,7 +1429,7 @@ class VM(Brick):
 		return cfg_ok
 	# QEMU PROGRAM SELECTION
 	def prog(self):
-		if (len(self.cfg.argv0) > 0 and self.cfg.kvm!="*"):
+		if (len(self.cfg.argv0) > 0 and self.cfg.kvm != "*"):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
@@ -1398,22 +1457,22 @@ class VM(Brick):
 
 
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-			print dev + self.cfg.get("base"+dev)
-			if self.cfg.get("base"+dev) != "":
+			print dev + self.cfg.get("base" + dev)
+			if self.cfg.get("base" + dev) != "":
 				disk = getattr(self.cfg, dev)
-				disk.base = self.cfg.get("base"+dev)
-				disk.cow=False
-				if (self.cfg.get("private"+dev) == "*"):
+				disk.base = self.cfg.get("base" + dev)
+				disk.cow = False
+				if (self.cfg.get("private" + dev) == "*"):
 					disk.cow = True
-				args=disk.args(True)
+				args = disk.args(True)
 				res.append(args[0])
 				res.append(args[1])
 
-		if self.cfg.kernelenbl=="*":
+		if self.cfg.kernelenbl == "*":
 			res.append("-kernel")
 			res.append(self.cfg.kernel)
 
-		if self.cfg.initrdenbl=="*":
+		if self.cfg.initrdenbl == "*":
 			res.append("-initrd")
 			res.append(self.cfg.initrd)
 
@@ -1435,8 +1494,8 @@ class VM(Brick):
 		else:
 			for pl in self.plugs:
 				res.append("-net")
-				res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
-				if (pl.mode=='vde'):
+				res.append("nic,bricksmodel=%s,vlan=%d,macaddr=%s" % (pl.bricksmodel, pl.vlan, pl.mac))
+				if (pl.mode == 'vde'):
 					res.append("-net")
 					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path))
 				else:
@@ -1452,29 +1511,29 @@ class VM(Brick):
 				res.append('-cdrom')
 				res.append(self.cfg.device)
 
-		if (self.cfg.rtc== "*"):
+		if (self.cfg.rtc == "*"):
 			res.append('-rtc')
 			res.append('base=localtime')
 
-		if (len(self.cfg.keyboard)==2):
+		if (len(self.cfg.keyboard) == 2):
 			res.append('-k')
 			res.append(self.cfg.keyboard)
 
-		if (self.cfg.kvmsm=="*"):
+		if (self.cfg.kvmsm == "*"):
 			res.append('-kvm-shadow-memory')
 			res.append(self.cfg.kvmsmem)
 
 		res.append("-mon")
 		res.append("chardev=mon")
 		res.append("-chardev")
-		res.append('socket,id=mon_cons,path='+Settings.MYPATH + '/' + self.name + '_cons.mgmt,server,nowait')
-		self.cfg.console=Settings.MYPATH + '/' + self.name + '_cons.mgmt'
+		res.append('socket,id=mon_cons,path=' + Settings.MYPATH + '/' + self.name + '_cons.mgmt,server,nowait')
+		self.cfg.console = Settings.MYPATH + '/' + self.name + '_cons.mgmt'
 
 		res.append("-mon")
 		res.append("chardev=mon_cons")
 		res.append("-chardev")
-		res.append('socket,id=mon,path='+Settings.MYPATH + '/' + self.name + '.mgmt,server,nowait')
-		self.cfg.console2=Settings.MYPATH + '/' + self.name + '.mgmt'
+		res.append('socket,id=mon,path=' + Settings.MYPATH + '/' + self.name + '.mgmt,server,nowait')
+		self.cfg.console2 = Settings.MYPATH + '/' + self.name + '.mgmt'
 
 		print res
 		return res
@@ -1492,16 +1551,16 @@ class VM(Brick):
 		if mac:
 			pl.mac = mac
 		if model:
-			pl.model = model
-		self.gui_changed=True
+			pl.bricksmodel = model
+		self.gui_changed = True
 		return pl
 
-	def connect(self,endpoint):
+	def connect(self, endpoint):
 		pl = self.add_plug()
 		pl.mac = Global.RandMac()
-		pl.model = 'rtl8139'
+		pl.bricksmodel = 'rtl8139'
 		pl.connect(endpoint)
-		self.gui_changed=True
+		self.gui_changed = True
 
 	def remove_plug(self, idx):
 		for p in self.plugs:
@@ -1510,8 +1569,8 @@ class VM(Brick):
 				del(p)
 		for p in self.plugs:
 			if p.vlan > idx:
-				p.vlan-=1
-		self.gui_changed=True
+				p.vlan -= 1
+		self.gui_changed = True
 
 	def open_internal_console(self):
 		print "open_internal_console_qemu"
@@ -1532,6 +1591,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'event-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'brick-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 	}
 
@@ -1539,13 +1599,15 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
 		self.bricks = []
+		self.events = []
 		self.socks = []
-		self.model = Models.BricksModel()
+		self.bricksmodel = Models.BricksModel()
+		self.eventsmodel = Models.EventsModel()
 		self.showconsole = showconsole
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
-		self.config_restore(Settings.MYPATH+"/.virtualbricks.state")
+		self.config_restore(Settings.MYPATH + "/.virtualbricks.state")
 		self.current_project = None
 		self.recent_projects = []
 
@@ -1553,6 +1615,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for b in self.bricks:
 			if b.name == name:
 				return b
+		return None
+
+	def geteventbyname(self, name):
+		for e in self.events:
+			if e.name == name:
+				return e
 		return None
 
 	def run(self):
@@ -1572,7 +1640,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				time.sleep(1)
 		sys.exit(0)
 
-	def config_dump(self,f):
+	def config_dump(self, f):
 		try:
 			p = open(f, "w+")
 		except:
@@ -1580,20 +1648,24 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return
 
 		for b in self.bricks:
-			p.write('[' + b.get_type() +':'+ b.name + ']\n')
-			for k,v in b.cfg.iteritems():
+			p.write('[' + b.get_type() + ':' + b.name + ']\n')
+			for k, v in b.cfg.iteritems():
 				# VMDisk objects don't need to be saved
-				if b.get_type()!="Qemu" or ( b.get_type()=="Qemu" and k not in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock'] ):
-					p.write(k +'=' + str(v) + '\n')
+				if b.get_type() != "Qemu" or (b.get_type() == "Qemu" and k not in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']):
+					p.write(k + '=' + str(v) + '\n')
 
 		for b in self.bricks:
 			for pl in b.plugs:
-				if b.get_type()=='Qemu':
+				if b.get_type() == 'Qemu':
 					if pl.mode == 'vde':
-						p.write('link|' + b.name + "|" + pl.sock.nickname+'|'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+						p.write('link|' + b.name + "|" + pl.sock.nickname + '|' + pl.bricksmodel + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
 					else:
-						p.write('userlink|'+b.name+'||'+pl.model+'|'+pl.mac+'|'+str(pl.vlan)+'\n')
+						p.write('userlink|' + b.name + '||' + pl.bricksmodel + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
 				elif (pl.sock is not None):
+					p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
+
+
+	def config_restore(self, f):
 					p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
 
 	# ACTIONS flags for this:
@@ -1622,18 +1694,18 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		l = p.readline()
 		b = None
 		while (l):
-			l = re.sub(' ','',l)
+			l = re.sub(' ', '', l)
 			if re.search("\A.*link\|", l) and len(l.split("|")) >= 3:
 				l.rstrip('\n')
 				print "************************* link detected"
 				for bb in self.bricks:
 					if bb.name == l.split("|")[1]:
-						if (bb.get_type()=='Qemu'):
+						if (bb.get_type() == 'Qemu'):
 							sockname = l.split('|')[2]
 							model = l.split("|")[3]
 							macaddr = l.split("|")[4]
 							vlan = l.split("|")[5]
-							this_sock='?'
+							this_sock = '?'
 							if l.split("|")[0] == 'userlink':
 								this_sock = '_hostonly'
 							else:
@@ -1646,14 +1718,14 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							pl.vlan = int(vlan)
 							print "added eth%d" % pl.vlan
 						else:
-							self.connect_to(bb,l.split('|')[2].rstrip('\n'))
+							self.connect_to(bb, l.split('|')[2].rstrip('\n'))
 
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
 				name = l.split(':')[1].rstrip(']\n')
-				print "new brick: "+ntype+":"+name
+				print "new brick: " + ntype + ":" + name
 				try:
-					self.newbrick(ntype,name)
+					self.newbrick(ntype, name)
 					for bb in self.bricks:
 						if name == bb.name:
 							b = bb
@@ -1676,11 +1748,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			l = p.readline()
 
 	def quit(self):
+		for e in self.events:
+			e.poweroff()
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
 		print 'Engine: Bye!'
-		self.config_dump(Settings.MYPATH+"/.virtualbricks.state")
+		self.config_dump(Settings.MYPATH + "/.virtualbricks.state")
 		self.running_condition = False
 		self.emit("engine-closed")
 		sys.exit(0)
@@ -1689,13 +1763,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		procs = 0
 		for b in self.bricks:
 			if b.proc is not None:
-				procs+=1
+				procs += 1
 
 		if procs > 0:
 			print "PID\tType\tname"
 			for b in self.bricks:
 				if b.proc is not None:
-					print "%d\t%s\t%s" % (b.pid,b.get_type(),b.name)
+					print "%d\t%s\t%s" % (b.pid, b.get_type(), b.name)
 		else:
 			print "No process running"
 
@@ -1707,9 +1781,17 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		elif (command == 'ps'):
 			self.proclist()
 		elif command.startswith('n ') or command.startswith('new '):
-			self.newbrick(*command.split(" ")[1:])
+			if(command.startswith('n event') or (command.startswith('new event'))):
+				self.newevent(*command.split(" ")[1:])
+			else:
+				self.newbrick(*command.split(" ")[1:])
 		elif command == 'list':
+			print "Bricks:"
 			for obj in self.bricks:
+				print "%s %s" % (obj.get_type(), obj.name)
+			print
+			print "Events:"
+			for obj in self.events:
 				print "%s %s" % (obj.get_type(), obj.name)
 			print "End of list."
 			print
@@ -1722,11 +1804,16 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				else:
 					print "not configured."
 		else:
-			found=None
+			found = None
 			for obj in self.bricks:
 				if obj.name == command.split(" ")[0]:
 					found = obj
 					break
+			if found is None:
+				for obj in self.events:
+					if obj.name == command.split(" ")[0]:
+						found = obj
+						break	
 
 			if found is not None and len(command.split(" ")) > 1:
 				self.brickAction(found, command.split(" ")[1:])
@@ -1772,12 +1859,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				for so in b.socks:
 					self.socks.remove(so)
 				self.bricks.remove(b)
-		self.model.del_brick(bricktodel)
+		self.bricksmodel.del_brick(bricktodel)
 
-	def dupbrick(self,bricktodup):
+	def dupbrick(self, bricktodup):
 		b1 = copy.copy(bricktodup)
 		b1.cfg = copy.copy(bricktodup.cfg)
-		b1.name = "copy_of_"+bricktodup.name
+		b1.name = "copy_of_" + bricktodup.name
 		b1.plugs = []
 		b1.socks = []
 		if b1.get_type() == "Switch":
@@ -1793,7 +1880,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.bricks.append(b1)
 		b1.on_config_changed()
 
-	def renamebrick(self,b,newname):
+	def renamebrick(self, b, newname):
 		newname = ValidName(newname)
 		if newname == None:
 			raise InvalidNameException
@@ -1844,6 +1931,23 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		return True
 
+	def newevent(self, ntype="", name=""):
+		for olde in self.events:
+			if olde.name == name:
+				raise InvalidNameException
+		name = ValidName(name)
+		if not name:
+			raise InvalidNameException
+
+		if ntype == "event" or ntype == "Event":
+			brick = Event(self, name)
+			self.debug("new event %s OK", brick.name)
+		else:
+			self.error("Invalid command '%s'", name)
+			return False
+
+		return True
+
 gobject.type_register(BrickFactory)
 
 if __name__ == "__main__":
@@ -1852,4 +1956,3 @@ if __name__ == "__main__":
 	"""
 	import doctest
 	doctest.testmod()
-

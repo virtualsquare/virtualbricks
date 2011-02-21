@@ -1,5 +1,23 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+##	Copyright (C) 2011 Virtualbricks team
+##
+##	This program is free software; you can redistribute it and/or
+##	modify it under the terms of the GNU General Public License
+##	as published by the Free Software Foundation; either version 2
+##	of the License, or (at your option) any later version.
+##
+##	This program is distributed in the hope that it will be useful,
+##	but WITHOUT ANY WARRANTY; without even the implied warranty of
+##	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##	GNU General Public License for more details.
+##
+##	You should have received a copy of the GNU General Public License
+##	along with this program; if not, write to the Free Software
+##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 import gobject
 import gtk
 import os
@@ -14,6 +32,7 @@ import virtualbricks_Global as Global
 from virtualbricks_Logger import ChildLogger
 import virtualbricks_Models as Models
 import virtualbricks_Settings as Settings
+import virtualbricks_Events as Events
 from threading import Thread
 from virtualbricks_Graphics import *
 
@@ -70,11 +89,18 @@ class VBGUI(ChildLogger, gobject.GObject):
 		gtk.gdk.threads_init()
 
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
-		self.brickfactory.model.connect("brick-added", self.cb_brick_added)
-		self.brickfactory.model.connect("brick-deleted", self.cb_brick_deleted)
+		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
+		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
+		self.brickfactory.bricksmodel.connect("row-changed", self.cb_brick_changed)
+
 		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit)
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
+
+		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
+		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
+		self.brickfactory.eventsmodel.connect("row-changed", self.cb_event_changed)
+		self.brickfactory.connect("event-stopped", self.systray_blinking)
 
 		self.draw_topology()
 		self.brickfactory.start()
@@ -101,7 +127,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		columns = ['Icon', 'Status', 'Type', 'Name', 'Parameters']
 		tree = self.gladefile.get_widget('treeview_bookmarks')
-		tree.set_model(self.brickfactory.model)
+		tree.set_model(self.brickfactory.bricksmodel)
 		for name in columns:
 			col = gtk.TreeViewColumn(name)
 			if name != 'Icon':
@@ -113,10 +139,27 @@ class VBGUI(ChildLogger, gobject.GObject):
 			col.set_cell_data_func(elem, self.brick_to_cell)
 			tree.append_column(col)
 
+		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
+		eventstree.set_model(self.brickfactory.eventsmodel)
+		for name in columns:
+			col = gtk.TreeViewColumn(name)
+			if name != 'Icon':
+				elem = gtk.CellRendererText()
+				col.pack_start(elem, False)
+			else:
+				elem = gtk.CellRendererPixbuf()
+				col.pack_start(elem, False)
+			col.set_cell_data_func(elem, self.event_to_cell)
+			eventstree.append_column(col)
+
 		# associate Drag and Drop action
 		tree = self.gladefile.get_widget('treeview_bookmarks')
 		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
+
+		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
+		eventstree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		eventstree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
 		self.vmplugs = self.treestore('treeview_networkcards', [gobject.TYPE_STRING,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
@@ -165,6 +208,25 @@ class VBGUI(ChildLogger, gobject.GObject):
 		else:
 			raise NotImplemented()
 
+	def event_to_cell(self, column, cell, model, iter):
+		event = model.get_value(iter, Models.EventsModel.EVENT_IDX)
+		assert event is not None
+		if column.get_title() == 'Icon':
+			if event.active == True:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.get_img(), 48,
+					48)
+				cell.set_property('pixbuf', icon)
+		elif column.get_title() == 'Status':
+			cell.set_property('text', event.get_state())
+		elif column.get_title() == 'Type':
+			cell.set_property('text', event.get_type())
+		elif column.get_title() == 'Name':
+			cell.set_property('text', event.name)
+		elif column.get_title() == 'Parameters':
+			cell.set_property('text', event.get_parameters())
+		else:
+			raise NotImplemented()
+
 	def get_selected_bookmark(self):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		path = tree.get_cursor()[0]
@@ -198,6 +260,15 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.systray_blinking(None, False)
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
+
+	def cb_event_added(self, model, name):
+		pass
+
+	def cb_event_deleted(self, model, name):
+		pass
+
+	def cb_event_changed(self, model, path, iter):
+		pass
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -787,6 +858,12 @@ class VBGUI(ChildLogger, gobject.GObject):
 				return ntype
 		return 'Switch'
 
+	def selected_event_type(self):
+		for ntype in ['BrickStart','BrickStop','BrickConfig','ShellCommand','EventsCollation']:
+			if self.gladefile.get_widget('typebutton_'+ntype).get_active():
+				return ntype
+		return 'BrickStart'
+
 	def on_newbrick_ok(self, widget=None, data=""):
 		self.show_window('')
 		self.curtain_down()
@@ -807,13 +884,22 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.show_window('')
 		self.curtain_down()
 		name = self.gladefile.get_widget('text_neweventname').get_text()
-		ntype = self.gladefile.get_widget('combo_neweventtype').get_active_text()
-#		try:
-#			self.brickfactory.newbrick(ntype, name)
-#		except BrickFactory.InvalidNameException:
-#			self.error("Cannot create brick: Invalid name.")
-#		else:
-#			self.debug("Created successfully")
+		delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
+		ntype = self.selected_event_type()
+		try:
+			self.brickfactory.newevent("event", name)
+			if(ntype == 'ShellCommand'):
+				self.gladefile.get_widget('entry_shell_command').set_text("new switch myswitch")
+				self.gladefile.get_widget('dialog_shellcommand').show_all()
+				command=self.gladefile.get_widget('entry_shell_command').get_text()
+				print "name:%s,delay:%s,type:%s,command:%s" % (name,str(delay),ntype,command)
+				currevent=self.brickfactory.geteventbyname(name)
+				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+				self.brickfactory.brickAction(currevent,('config add '+str(command)).split(" "))
+		except BrickFactory.InvalidNameException:
+			self.error("Cannot create event: Invalid name.")
+		else:
+			self.debug("Event created successfully")
 
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
@@ -1417,7 +1503,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_newevent(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		self.gladefile.get_widget('combo_neweventtype').set_active(0)
 		self.gladefile.get_widget('text_neweventname').set_text("")
 		self.show_window('dialog_newevent')
 
@@ -2066,7 +2151,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		else:
 			orientation = "LR"
 
-		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.model, 1.00, orientation)
+		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation)
 
 	def user_wait_action(self, action, args=[]):
 		self.gladefile.get_widget("window_userwait").show_all()
