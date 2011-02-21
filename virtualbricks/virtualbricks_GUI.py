@@ -518,8 +518,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		if self.statusicon.get_blinking():
 			self.systray_blinking(None, True)
 			return
-
-		if self.statusicon.get_window_is_hide() or status:
+		if self.statusicon.get_window_is_hide() or status == True:
 			self.gladefile.get_widget("main_win").show_all()
 			self.statusicon.set_tooltip("the window is visible")
 			self.statusicon.set_window_is_hide(False)
