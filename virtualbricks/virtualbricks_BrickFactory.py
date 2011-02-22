@@ -69,7 +69,7 @@ class Plug(ChildLogger):
 		self.brick = _brick
 		self.sock = None
 		self.antiloop = False
-		self.model = 'vde'
+		self.mode = 'vde'
 
 	def configured(self):
 		if self.sock is None:

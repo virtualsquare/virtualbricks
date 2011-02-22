@@ -1811,7 +1811,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 					self.vmplugs.set_value(iter,1,'Host')
 				elif pl.sock:
 					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
-				self.vmplugs.set_value(iter,2,pl.mode)
+				self.vmplugs.set_value(iter,2,pl.bricksmodel)
 				self.vmplugs.set_value(iter,3,pl.mac)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
