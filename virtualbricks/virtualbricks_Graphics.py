@@ -29,6 +29,8 @@ class Icon:
 	#if component.get_type()!="Qemu":
 		self.component = component
 		self.ready = False
+		self.base = ""
+		self.grey = ""
 
 	def has_custom_icon(self):
 		return ('icon' in self.component.cfg.keys()) and self.component.cfg.icon != ""

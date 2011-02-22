@@ -211,10 +211,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		event = model.get_value(iter, Models.EventsModel.EVENT_IDX)
 		assert event is not None
 		if column.get_title() == 'Icon':
-			if event.active == True:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.get_img(), 48,
-					48)
-				cell.set_property('pixbuf', icon)
+			#print "base: %s, grey: %s" % (event.icon.base,event.icon.grey)
+			icon = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.get_img(), 48,
+				48)
+			cell.set_property('pixbuf', icon)
 		elif column.get_title() == 'Status':
 			cell.set_property('text', event.get_state())
 		elif column.get_title() == 'Type':
@@ -244,8 +244,26 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.last_known_selected_brick = self.brickfactory.getbrickbyname(name)
 		return self.last_known_selected_brick
 
+	def get_event_selected_bookmark(self):
+		tree = self.gladefile.get_widget('treeview_events_bookmarks');
+		path = tree.get_cursor()[0]
+
+		if path is None:
+			'''
+			' Default to something that makes sense,
+			' otherwise on_config_ok will be broken
+			' when treeviews lose their selections.
+			'''
+			return self.last_known_selected_event
+
+		model = tree.get_model()
+		iter = model.get_iter(path)
+		name = model.get_value(iter, Models.EventsModel.EVENT_IDX).name
+		self.last_known_selected_event = self.brickfactory.geteventbyname(name)
+		return self.last_known_selected_event
+
 	""" ******************************************************** """
-	""" Signal handlers                                          """
+	""" Signal handlers										  """
 	""" ******************************************************** """
 
 	def cb_brick_added(self, model, name):
@@ -270,10 +288,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		pass
 
 	""" ******************************************************** """
-	"""                                                          """
-	""" BRICK CONFIGURATION                                      """
-	"""                                                          """
-	"""                                                          """
+	"""														  """
+	""" BRICK CONFIGURATION									  """
+	"""														  """
+	"""														  """
 	""" ******************************************************** """
 
 	def config_brick_prepare(self):
@@ -535,10 +553,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 
 	""" ******************************************************** """
-	"""                                                          """
-	""" MISC / WINDOWS BEHAVIOR                                  """
-	"""                                                          """
-	"""                                                          """
+	"""														  """
+	""" MISC / WINDOWS BEHAVIOR								  """
+	"""														  """
+	"""														  """
 	""" ******************************************************** """
 
 
@@ -795,29 +813,29 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def show_error(self, text):
 		self.show_msg(text, gtk.MESSAGE_ERROR)
 
-        def pixbuf_scaled(self, filename):
-                if filename is None or filename == "":
-                        return None
-                pixbuf=gtk.gdk.pixbuf_new_from_file(filename)
-                width=pixbuf.get_width()
-                height=pixbuf.get_height()
-                if width<=height:
-                        new_height=48*height/width
-                        new_width=48
-                else:
-                        new_height=48
-                        new_width=48*width/height
-                pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
-                #pixbuf= pixbuf.scale(pixbuf, 0, 0, 48, 48, 0, 0, height/new_height, width/new_width, gtk.gdk.INTERP_BILINEAR)
-                #print "%s %d %d" % (filename, new_height, new_width)
-                return pixbuf
+		def pixbuf_scaled(self, filename):
+				if filename is None or filename == "":
+						return None
+				pixbuf=gtk.gdk.pixbuf_new_from_file(filename)
+				width=pixbuf.get_width()
+				height=pixbuf.get_height()
+				if width<=height:
+						new_height=48*height/width
+						new_width=48
+				else:
+						new_height=48
+						new_width=48*width/height
+				pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
+				#pixbuf= pixbuf.scale(pixbuf, 0, 0, 48, 48, 0, 0, height/new_height, width/new_width, gtk.gdk.INTERP_BILINEAR)
+				#print "%s %d %d" % (filename, new_height, new_width)
+				return pixbuf
 
 
 	""" ******************************************************** """
-	"""                                                          """
-	""" EVENTS / SIGNALS                                         """
-	"""                                                          """
-	"""                                                          """
+	"""														  """
+	""" EVENTS / SIGNALS										 """
+	"""														  """
+	"""														  """
 	""" ******************************************************** """
 
 	def systray_show_window_cb(self, widget=None, data=""):
@@ -885,13 +903,15 @@ class VBGUI(ChildLogger, gobject.GObject):
 		name = self.gladefile.get_widget('text_neweventname').get_text()
 		delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 		ntype = self.selected_event_type()
+		ntype = 'ShellCommand' #temporary fix
 		try:
 			self.brickfactory.newevent("event", name)
 			if(ntype == 'ShellCommand'):
-				self.gladefile.get_widget('entry_shell_command').set_text("new switch myswitch")
-				self.gladefile.get_widget('dialog_shellcommand').show_all()
-				command=self.gladefile.get_widget('entry_shell_command').get_text()
-				print "name:%s,delay:%s,type:%s,command:%s" % (name,str(delay),ntype,command)
+				#self.gladefile.get_widget('entry_shell_command').set_text("new switch myswitch")
+				#self.gladefile.get_widget('dialog_shellcommand').show_all()
+				#command=self.gladefile.get_widget('entry_shell_command').get_text()
+				command='new switch myswitch'
+				#print "name:%s,delay:%s,type:%s,command:%s" % (name,str(delay),ntype,command)
 				currevent=self.brickfactory.geteventbyname(name)
 				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
 				self.brickfactory.brickAction(currevent,('config add '+str(command)).split(" "))
@@ -1078,6 +1098,25 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
 			self.show_brickactions()
+
+	def on_treeview_events_bookmarks_button_release_event(self, widget=None, event=None, data=""):
+		self.event_selected = self.get_event_selected_bookmark()
+		if self.event_selected is None:
+			return
+
+		self.curtain_down()
+		tree = self.gladefile.get_widget('treeview_events_bookmarks');
+		path = tree.get_cursor()[0]
+		print "on_treeview_events_bookmarks_button_release_event"
+		if path is None:
+			print "nothing selected!"
+			return
+
+		iter = tree.get_model().get_iter(path)
+		name = tree.get_model().get_value(iter, Models.EventsModel.EVENT_IDX).name
+		self.Dragging = self.brickfactory.geteventbyname(name)
+		if event.button == 3:
+			self.show_eventactions()
 
 	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
 		self.debug("in get data?!")
@@ -1976,6 +2015,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_toolbutton_stop_all_clicked":self.on_toolbutton_stop_all_clicked,
 			"on_mainwindow_dropaction":self.on_mainwindow_dropaction,
 			"on_treeview_bookmarks_button_release_event":self.on_treeview_bookmarks_button_release_event,
+			"on_treeview_events_bookmarks_button_release_event":self.on_treeview_events_bookmarks_button_release_event,
 			"on_treeview_drag_get_data":self.on_treeview_drag_get_data,
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
 			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
@@ -2103,10 +2143,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.gladefile.signal_autoconnect(self.signaldict)
 
 	""" ******************************************************** """
-	"""                                                          """
-	""" TIMERS                                                   """
-	"""                                                          """
-	"""                                                          """
+	"""														  """
+	""" TIMERS												   """
+	"""														  """
+	"""														  """
 	""" ******************************************************** """
 
 	def timers(self):

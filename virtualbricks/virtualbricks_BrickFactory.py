@@ -551,7 +551,7 @@ class Event(ChildLogger):
 			act = ' '.join(configactions)
 			self.actions.append(act)
 			#self.actions.append("new switch mioswitch")
-			print "Added command: %s" % str(act)
+			print "Added command: \"%s\"" % str(act)
 		else:
 		   	for attr in attrlist:
 		   		self.cfg.set(attr)

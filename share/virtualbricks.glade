@@ -361,7 +361,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="has_tooltip">True</property>
-                                <property name="tooltip" translatable="yes">You can add items from the default bootimage folder list by rightclicking them, or any other file with the + My Machines Button left of the selected file entry.</property>
+                                <property name="tooltip" translatable="yes">You can use drag and drop to connect bricks and double click to start/stop them.</property>
                                 <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
                                 <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
                                 <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
@@ -459,7 +459,8 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="has_tooltip">True</property>
-                                <property name="tooltip" translatable="yes">You can add items from the default bootimage folder list by rightclicking them, or any other file with the + My Machines Button left of the selected file entry.</property>
+                                <property name="tooltip" translatable="yes">You can use drag and drop to add an event to events collation and double click to start/stop.</property>
+                                <signal name="button_release_event" handler="on_treeview_events_bookmarks_button_release_event"/>
                               </widget>
                             </child>
                           </widget>
@@ -4612,8 +4613,8 @@ Number of ports: </property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="use_preview_label">False</property>
                                 <property name="action">select-folder</property>
+                                <property name="use_preview_label">False</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
