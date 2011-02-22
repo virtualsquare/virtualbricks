@@ -813,22 +813,22 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def show_error(self, text):
 		self.show_msg(text, gtk.MESSAGE_ERROR)
 
-		def pixbuf_scaled(self, filename):
-				if filename is None or filename == "":
-						return None
-				pixbuf=gtk.gdk.pixbuf_new_from_file(filename)
-				width=pixbuf.get_width()
-				height=pixbuf.get_height()
-				if width<=height:
-						new_height=48*height/width
-						new_width=48
-				else:
-						new_height=48
-						new_width=48*width/height
-				pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
-				#pixbuf= pixbuf.scale(pixbuf, 0, 0, 48, 48, 0, 0, height/new_height, width/new_width, gtk.gdk.INTERP_BILINEAR)
-				#print "%s %d %d" % (filename, new_height, new_width)
-				return pixbuf
+	def pixbuf_scaled(self, filename):
+		if filename is None or filename == "":
+				return None
+		pixbuf=gtk.gdk.pixbuf_new_from_file(filename)
+		width=pixbuf.get_width()
+		height=pixbuf.get_height()
+		if width<=height:
+				new_height=48*height/width
+				new_width=48
+		else:
+				new_height=48
+				new_width=48*width/height
+		pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
+		#pixbuf= pixbuf.scale(pixbuf, 0, 0, 48, 48, 0, 0, height/new_height, width/new_width, gtk.gdk.INTERP_BILINEAR)
+		#print "%s %d %d" % (filename, new_height, new_width)
+		return pixbuf
 
 
 	""" ******************************************************** """
