@@ -111,6 +111,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		''' Don't remove me, I am useful after config, when treeview may lose focus and selection. '''
 		self.last_known_selected_brick = None
+		self.last_known_selected_event = None
 		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
 		self.config = self.brickfactory.settings
 		self.signals()
@@ -769,6 +770,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		'dialog_warn',
 		'dialog_newevent',
 		'menu_brickactions',
+		'menu_eventactions',
 		'dialog_confirm'
 		]
 	def sockscombo_names(self):
@@ -1080,6 +1082,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.gladefile.get_widget("brickaction_name").set_label(self.brick_selected.name)
 		self.show_window('menu_brickactions')
 
+	def show_eventactions(self):
+		#if self.event_selected.get_type() == "Event":
+		self.gladefile.get_widget("eventaction_name").set_label(self.event_selected.name)
+		self.show_window('menu_eventactions')
+
 	def on_treeview_bookmarks_button_release_event(self, widget=None, event=None, data=""):
 		self.brick_selected = self.get_selected_bookmark()
 		if self.brick_selected is None:
@@ -1128,6 +1135,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.curtain_down()
 
 	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
+		self.tree_startstop(widget, event, data)
+		self.curtain_down()
+
+	def on_treeview_bookmarks_events_row_activated_event(self, widget=None, event=None, data=""):
 		self.tree_startstop(widget, event, data)
 		self.curtain_down()
 
@@ -1192,7 +1203,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 		pass
 
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
-		print "selected: " + repr(self.brick_selected)
 		if self.curtain_is_down():
 			self.curtain_up()
 			self.debug("up")
@@ -1801,7 +1811,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 					self.vmplugs.set_value(iter,1,'Host')
 				elif pl.sock:
 					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
-				self.vmplugs.set_value(iter,2,pl.model)
+				self.vmplugs.set_value(iter,2,pl.mode)
 				self.vmplugs.set_value(iter,3,pl.mac)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):

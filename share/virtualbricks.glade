@@ -459,7 +459,8 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="has_tooltip">True</property>
-                                <property name="tooltip" translatable="yes">You can use drag and drop to add an event to events collation and double click to start/stop.</property>
+                                <property name="tooltip" translatable="yes">You can use drag and drop to add an event to events collation and double click to start/stop them.</property>
+                                <signal name="row_activated" handler="on_treeview_events_bookmarks_row_activated_event"/>
                                 <signal name="button_release_event" handler="on_treeview_events_bookmarks_button_release_event"/>
                               </widget>
                             </child>
@@ -8597,6 +8598,55 @@ Shell Command</property>
             <property name="position">0</property>
           </packing>
         </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_eventactions">
+    <property name="visible">True</property>
+    <child>
+      <widget class="GtkMenuItem" id="eventaction_name">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes"> </property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="menuitem_separator">
+        <property name="visible">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="startstop_event_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Start/Stop</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="delete_event_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Delete</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="copy_event_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Make a C_opy</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="rename">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">Re_name</property>
+        <property name="use_underline">True</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="configure_event_action">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">_Configure</property>
+        <property name="use_underline">True</property>
       </widget>
     </child>
   </widget>

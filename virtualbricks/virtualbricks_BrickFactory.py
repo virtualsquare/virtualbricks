@@ -69,7 +69,7 @@ class Plug(ChildLogger):
 		self.brick = _brick
 		self.sock = None
 		self.antiloop = False
-		self.mode = 'vde'
+		self.model = 'vde'
 
 	def configured(self):
 		if self.sock is None:
@@ -507,13 +507,9 @@ class Event(ChildLogger):
 		self.needsudo = False
 		self.internal_console = None
 		self.icon = Icon(self)
-		self.terminal = ""
 		self.factory.eventsmodel.add_event(self)
 		self.on_config_changed()
 		self.timer = None
-
-#	def cmdline(self):
-#		return ""
 
 	def help(self):
 		return
