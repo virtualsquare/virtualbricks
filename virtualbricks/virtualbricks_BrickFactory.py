@@ -1502,7 +1502,7 @@ class VM(Brick):
 		else:
 			for pl in self.plugs:
 				res.append("-net")
-				res.append("nic,bricksmodel=%s,vlan=%d,macaddr=%s" % (pl.bricksmodel, pl.vlan, pl.mac))
+				res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
 				if (pl.mode == 'vde'):
 					res.append("-net")
 					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path))
@@ -1559,14 +1559,14 @@ class VM(Brick):
 		if mac:
 			pl.mac = mac
 		if model:
-			pl.bricksmodel = model
+			pl.model = model
 		self.gui_changed = True
 		return pl
 
 	def connect(self, endpoint):
 		pl = self.add_plug()
 		pl.mac = Global.RandMac()
-		pl.bricksmodel = 'rtl8139'
+		pl.model = 'rtl8139'
 		pl.connect(endpoint)
 		self.gui_changed = True
 
@@ -1666,9 +1666,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for pl in b.plugs:
 				if b.get_type() == 'Qemu':
 					if pl.mode == 'vde':
-						p.write('link|' + b.name + "|" + pl.sock.nickname + '|' + pl.bricksmodel + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
+						p.write('link|' + b.name + "|" + pl.sock.nickname + '|' + pl.model + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
 					else:
-						p.write('userlink|' + b.name + '||' + pl.bricksmodel + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
+						p.write('userlink|' + b.name + '||' + pl.model + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
 				elif (pl.sock is not None):
 					p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
 
