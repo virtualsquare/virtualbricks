@@ -176,6 +176,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.vmplug_selected = None
 		self.joblist_selected = None
 		self.brick_selected = None
+		self.event_selected = None
 
 		try:
 			gtk.main()
@@ -881,7 +882,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		for ntype in ['BrickStart','BrickStop','BrickConfig','ShellCommand','EventsCollation']:
 			if self.gladefile.get_widget('typebutton_'+ntype).get_active():
 				return ntype
-		return 'BrickStart'
+		return 'ShellCommand'
 
 	def on_newbrick_ok(self, widget=None, data=""):
 		self.show_window('')
@@ -902,21 +903,12 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_newevent_ok(self, widget=None, data=""):
 		self.show_window('')
 		self.curtain_down()
-		#name = self.gladefile.get_widget('text_neweventname').get_text()
-		#delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 		ntype = self.selected_event_type()
 		ntype = 'ShellCommand' #temporary fix
 		try:
-			#self.brickfactory.newevent("event", name)
 			if(ntype == 'ShellCommand'):
 				self.gladefile.get_widget('entry_shell_command').set_text("new switch myswitch")
 				self.gladefile.get_widget('dialog_shellcommand').show_all()
-				#command=self.gladefile.get_widget('entry_shell_command').get_text()
-				#command='new switch myswitch'
-				#print "name:%s,delay:%s,type:%s,command:%s" % (name,str(delay),ntype,command)
-				#currevent=self.brickfactory.geteventbyname(name)
-				#self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
-				#self.brickfactory.brickAction(currevent,('config add '+str(command)).split(" "))
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
 		else:
@@ -1040,7 +1032,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		x = int(x)
 		y = int(y)
 		pthinfo = tree.get_path_at_pos(x, y)
-		dropbrick = self.get_tree_selected(tree, self.brickfactory.model,
+		dropbrick = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
 			pthinfo, Models.BricksModel.BRICK_IDX)
 		print x, y, pthinfo, dropbrick.name
 
@@ -1127,7 +1119,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
 		self.debug("in get data?!")
-		self.Dragging = self.get_tree_selected(tree, self.brickfactory.model,
+		self.Dragging = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
 				pthinfo, Models.BricksModel.BRICK_IDX)
 		#context.set_icon_pixbuf('./'+self.Dragging.get_type()+'.png')
 
@@ -1138,8 +1130,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.tree_startstop(widget, event, data)
 		self.curtain_down()
 
-	def on_treeview_bookmarks_events_row_activated_event(self, widget=None, event=None, data=""):
-		self.tree_startstop(widget, event, data)
+	def on_treeview_events_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
+		self.events_tree_startstop(widget, event, data)
 		self.curtain_down()
 
 	def on_treeview_bookmarks_focus_out(self, widget=None, event=None , data=""):
@@ -1148,6 +1140,20 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def tree_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		self.user_wait_action(self.startstop_brick, [self.brick_selected])
+
+	def events_tree_startstop(self, widget=None, event=None, data=""):
+		self.curtain_down()
+		self.user_wait_action(self.events_startstop_brick, [self.event_selected])
+		
+	def events_startstop_brick(self, e):
+		if(e.get_type() == 'Event'):
+			if(e.active == True):
+				print "Power OFF"
+				e.poweroff()
+			else:
+				print "Power ON"
+				e.poweron()
+			return
 
 	def startstop_brick(self, b):
 		if b.proc is not None:
@@ -1592,16 +1598,34 @@ class VBGUI(ChildLogger, gobject.GObject):
 		else:
 			self.brick_selected.poweron()
 
+	def on_event_startstop(self, widget=None, event=None, data=""):
+		if self.event_selected.active == True:
+			self.event_selected.poweroff()
+		else:
+			self.event_selected.poweron()
+
+
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
 
 		if self.brick_selected.proc is not None:
-			self.show_error("Cannot delete self.selected: self.selected is in use.")
+			self.show_error("Cannot delete Brick: it is in use.")
 			return
 
 		self.ask_confirm("Do you really want to delete " +
-				self.brick_selected.get_type() + " " + self.brick_selected.name,
+				self.brick_selected.get_type() + " " + self.brick_selected.name + " ?",
 				on_yes = self.brickfactory.delbrick, arg = self.brick_selected)
+
+	def on_event_delete(self,widget=None, event=None, data=""):
+		self.curtain_down()
+		
+		msg=""
+		if self.event_selected.active == True:
+			msg="This event is in use. "
+
+		self.ask_confirm(msg + "Do you really want to delete " +
+				self.event_selected.get_type() + " " + self.event_selected.name + " ?",
+				on_yes = self.brickfactory.delevent, arg = self.event_selected)
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
@@ -1609,11 +1633,20 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
 		if self.brick_selected.proc != None:
-			self.show_error("Cannot rename self.selected: self.selected is in use.")
+			self.show_error("Cannot rename Brick: it is in use.")
 			return
 
 		self.gladefile.get_widget('entry_brick_newname').set_text(self.brick_selected.name)
 		self.gladefile.get_widget('dialog_rename').show_all()
+		self.curtain_down()
+
+	def on_event_rename(self,widget=None, event=None, data=""):
+		if self.event_selected.active == True:
+			self.show_error("Cannot rename Event: it is in use.")
+			return
+
+		self.gladefile.get_widget('entry_event_newname').set_text(self.event_selected.name)
+		self.gladefile.get_widget('dialog_event_rename').show_all()
 		self.curtain_down()
 
 	def on_dialog_rename_response(self, widget=None, response=0, data=""):
@@ -1621,6 +1654,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 		if response == 1:
 			try:
 				self.brickfactory.renamebrick(self.brick_selected, self.gladefile.get_widget('entry_brick_newname').get_text())
+			except BrickFactory.InvalidNameException:
+				self.show_error("Invalid name!")
+
+	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
+		widget.hide()
+		if response == 1:
+			try:
+				self.brickfactory.renameevent(self.event_selected, self.gladefile.get_widget('entry_event_newname').get_text())
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
 
@@ -1827,7 +1868,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 					self.vmplugs.set_value(iter,1,'Host')
 				elif pl.sock:
 					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
-				self.vmplugs.set_value(iter,2,pl.bricksmodel)
+				self.vmplugs.set_value(iter,2,pl.model)
 				self.vmplugs.set_value(iter,3,pl.mac)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
@@ -2026,11 +2067,15 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_gilbert_toggle": self.on_gilbert_toggle,
 			"on_mtu_toggle": self.on_mtu_toggle,
 			"on_brick_startstop": self.tree_startstop,
+			"on_event_startstop": self.tree_startstop,
 			"on_brick_configure": self.on_brick_configure,
 			"on_brick_delete": self.on_brick_delete,
+			"on_event_delete": self.on_event_delete,
 			"on_brick_copy": self.on_brick_copy,
 			"on_brick_rename": self.on_brick_rename,
+			"on_event_rename": self.on_event_rename,
 			"on_dialog_rename_response": self.on_dialog_rename_response,
+			"on_dialog_event_rename_response": self.on_dialog_event_rename_response,
 			"on_dialog_shellcommand_response": self.on_dialog_shellcommand_response,
 			"on_item_quit_activate":self.on_item_quit_activate,
 			"on_item_settings_activate":self.on_item_settings_activate,
@@ -2046,6 +2091,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_treeview_drag_get_data":self.on_treeview_drag_get_data,
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
 			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
+			"on_treeview_events_bookmarks_row_activated_event":self.on_treeview_events_bookmarks_row_activated_event,
 			"on_focus_out":self.on_treeview_bookmarks_focus_out,
 			"on_treeview_bootimages_button_press_event":self.on_treeview_bootimages_button_press_event,
 			"on_treeview_bootimages_cursor_changed":self.on_treeview_bootimages_cursor_changed,

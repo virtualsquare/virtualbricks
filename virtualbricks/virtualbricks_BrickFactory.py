@@ -582,14 +582,18 @@ class Event(ChildLogger):
 			raise BadConfigException
 		if(self.active == True):
 			self.timer.cancel()
-		if(int(self.cfg.delay > 0)):
-			try:
-				self.timer.start()
-			except RuntimeError:
-				pass
-			self.active = True
+			self.active=False
+			self.factory.emit("event-stopped")
+			self.on_config_changed()
+		try:
+			self.timer.start()
+		except RuntimeError:
+			pass
+		self.active = True
 
 	def poweroff(self):
+		if(self.active == False):
+			return
 		self.timer.cancel()
 		self.active = False
 		#We get ready for new poweron
@@ -1193,7 +1197,7 @@ class VMPlug(Plug, BrickConfig):
 	def __init__(self, brick):
 		Plug.__init__(self, brick)
 		self.mac = Global.RandMac()
-		self.bricksmodel = 'rtl8139'
+		self.model = 'rtl8139'
 		self.vlan = len(self.brick.plugs) + len(self.brick.socks)
 		self.mode = 'vde'
 
@@ -1832,7 +1836,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if (cmd[0] == 'remove'):
 			if obj.get_type() == 'Event':
 				self.delevent(obj)
-			elif obj.get_type() == 'Brick':
+			elif isinstance(obj, Brick):
 				self.delbrick(obj)
 			else:
 				raise UnmanagedTypeException
@@ -1903,22 +1907,48 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		newname = ValidName(newname)
 		if newname == None:
 			raise InvalidNameException
-		else:
-			b.name = newname
-			if b.get_type() == "Switch":
-				for so in b.socks:
-					so.nickname = b.name + "_port"
-				b.cfg.path = Settings.MYPATH + '/' + b.name + '.ctl'
-				b.cfg.console = Settings.MYPATH + '/' + b.name + '.mgmt'
-			b.gui_changed = True
+		
+		self.isNameFree(name)
+				
+		b.name = newname
+		if b.get_type() == "Switch":
+			for so in b.socks:
+				so.nickname = b.name + "_port"
+			b.cfg.path = Settings.MYPATH + '/' + b.name + '.ctl'
+			b.cfg.console = Settings.MYPATH + '/' + b.name + '.mgmt'
+		b.gui_changed = True
+
+	def renameevent(self, e, newname):
+		newname = ValidName(newname)
+		if newname == None:
+			raise InvalidNameException
+		
+		self.isNameFree(name)
+		
+		e.name = newname
+		if e.get_type() == "Event":
+			#It's a little comlicated here, if we are renaming
+			#an event we have to rename it in all command of other
+			#events...
+			pass
+		#e.gui_changed = True
+			
+	def isNameFree(self, name):
+		for b in self.bricks:
+			if b.name == name:
+				raise InvalidNameException
+		
+		for e in self.events:
+			if e.name == name:
+				raise InvalidNameException
+
 
 	def newbrick(self, ntype="", name=""):
-		for oldb in self.bricks:
-			if oldb.name == name:
-				raise InvalidNameException
 		name = ValidName(name)
 		if not name:
 			raise InvalidNameException
+		
+		self.isNameFree(name)
 
 		if ntype == "switch" or ntype == "Switch":
 			brick = Switch(self, name)
@@ -1951,13 +1981,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		return True
 
 	def newevent(self, ntype="", name=""):
-		for olde in self.events:
-			if olde.name == name:
-				raise InvalidNameException
 		name = ValidName(name)
 		if not name:
 			raise InvalidNameException
 
+		self.isNameFree(name)
+		
 		if ntype == "event" or ntype == "Event":
 			brick = Event(self, name)
 			self.debug("new event %s OK", brick.name)

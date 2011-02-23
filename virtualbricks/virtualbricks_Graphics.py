@@ -164,11 +164,19 @@ class Topology():
 			#arg  = line.rstrip('\n').split(' ')
 			arg = re.split('\s+', line.rstrip('\n'))
 			if arg[0] == 'graph':
-				x_fact = scale * (x_siz / float(arg[2]))
-				y_fact = scale * (y_siz / float(arg[3]))
+				if(float(arg[2]) != 0 and float(arg[3]) !=0 ):
+					x_fact = scale * (x_siz / float(arg[2]))
+					y_fact = scale * (y_siz / float(arg[3]))
+				else:
+					x_fact = 1
+					y_fact = 1
 			elif arg[0] == 'node':
-				x = scale * (x_fact * float(arg[2]))
-				y = scale * (y_siz - y_fact * float(arg[3]))
+				if(float(arg[2]) !=0 and float(arg[3] != 0)):
+					x = scale * (x_fact * float(arg[2]))
+					y = scale * (y_siz - y_fact * float(arg[3]))
+				else:
+					x = scale * (x_fact)
+					y = scale * (y_siz - y_fact)					
 				self.nodes.append(Node(self, arg[1],x,y))
 		# Display on the widget
 		if scale < 1.00:
