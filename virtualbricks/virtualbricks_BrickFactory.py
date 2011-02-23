@@ -1908,7 +1908,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if newname == None:
 			raise InvalidNameException
 		
-		self.isNameFree(name)
+		self.isNameFree(newname)
 				
 		b.name = newname
 		if b.get_type() == "Switch":
@@ -1923,7 +1923,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if newname == None:
 			raise InvalidNameException
 		
-		self.isNameFree(name)
+		self.isNameFree(newname)
 		
 		e.name = newname
 		if e.get_type() == "Event":

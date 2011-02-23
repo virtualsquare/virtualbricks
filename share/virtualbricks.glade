@@ -279,7 +279,7 @@
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkNotebook" id="notebook3">
+                  <widget class="GtkNotebook" id="main_notebook">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <signal name="switch_page" handler="on_focus_out"/>
@@ -4614,8 +4614,8 @@ Number of ports: </property>
                             <child>
                               <widget class="GtkFileChooserButton" id="filechooserbutton_bricksdirectory">
                                 <property name="visible">True</property>
-                                <property name="use_preview_label">False</property>
                                 <property name="action">select-folder</property>
+                                <property name="use_preview_label">False</property>
                                 <property name="title" translatable="yes">Select A Folder</property>
                               </widget>
                               <packing>
@@ -8650,6 +8650,7 @@ Shell Command</property>
         <property name="visible">True</property>
         <property name="label" translatable="yes">Make a C_opy</property>
         <property name="use_underline">True</property>
+        <signal name="activate" handler="on_event_copy"/>
       </widget>
     </child>
     <child>
@@ -8665,6 +8666,7 @@ Shell Command</property>
         <property name="visible">True</property>
         <property name="label" translatable="yes">_Configure</property>
         <property name="use_underline">True</property>
+        <signal name="activate" handler="on_event_configure"/>
       </widget>
     </child>
   </widget>

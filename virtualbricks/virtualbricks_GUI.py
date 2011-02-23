@@ -291,6 +291,18 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	""" ******************************************************** """
 	"""														  """
+	""" EVENT CONFIGURATION									  """
+	"""														  """
+	"""														  """
+	""" ******************************************************** """
+
+	def config_event_prepare(self):
+		e = self.event_selected
+		pass
+
+
+	""" ******************************************************** """
+	"""														  """
 	""" BRICK CONFIGURATION									  """
 	"""														  """
 	"""														  """
@@ -634,18 +646,28 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.gladefile.get_widget('box_wirefilterconfig').hide()
 		self.gladefile.get_widget('box_switchconfig').hide()
 		self.gladefile.get_widget('box_eventconfig').hide()
-
+		
+		wg = self.curtain
+		notebook=self.gladefile.get_widget('main_notebook')
+		
+		if notebook.get_current_page() == 1:
+			if self.event_selected is None:
+				return
+			if self.event_selected.get_type() == 'Event':
+				self.debug("event config")
+				ww = self.gladefile.get_widget('box_eventconfig')
+				wg.set_position(589)
+				self.config_event_prepare()
+				ww.show_all()
+				self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
+			return
+		
 		if self.brick_selected is None:
 			return
 
-		wg = self.curtain
 		if self.brick_selected.get_type() == 'Switch':
 			self.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
-			wg.set_position(589)
-		if self.brick_selected.get_type() == 'Event':
-			self.debug("event config")
-			ww = self.gladefile.get_widget('box_eventconfig')
 			wg.set_position(589)
 		elif self.brick_selected.get_type() == 'Qemu':
 			self.debug("qemu config")
@@ -1645,6 +1667,16 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.show_error("Cannot rename Event: it is in use.")
 			return
 
+	def on_event_copy(self,widget=None, event=None, data=""):
+		#self.curtain_down()
+		#self.brickfactory.dupbrick(self.brick_selected)
+		pass
+	
+	def on_event_configure(self,widget=None, event=None, data=""):
+		self.curtain_up()
+		return
+		
+	def on_event_rename(self,widget=None, event=None, data=""):
 		self.gladefile.get_widget('entry_event_newname').set_text(self.event_selected.name)
 		self.gladefile.get_widget('dialog_event_rename').show_all()
 		self.curtain_down()
@@ -2067,13 +2099,15 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_gilbert_toggle": self.on_gilbert_toggle,
 			"on_mtu_toggle": self.on_mtu_toggle,
 			"on_brick_startstop": self.tree_startstop,
-			"on_event_startstop": self.tree_startstop,
+			"on_event_startstop": self.events_tree_startstop,
 			"on_brick_configure": self.on_brick_configure,
 			"on_brick_delete": self.on_brick_delete,
 			"on_event_delete": self.on_event_delete,
 			"on_brick_copy": self.on_brick_copy,
 			"on_brick_rename": self.on_brick_rename,
 			"on_event_rename": self.on_event_rename,
+			"on_event_copy": self.on_event_copy,
+			"on_event_configure": self.on_event_configure,
 			"on_dialog_rename_response": self.on_dialog_rename_response,
 			"on_dialog_event_rename_response": self.on_dialog_event_rename_response,
 			"on_dialog_shellcommand_response": self.on_dialog_shellcommand_response,
