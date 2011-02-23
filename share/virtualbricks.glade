@@ -8540,6 +8540,7 @@ Shell Command</property>
     <property name="border_width">5</property>
     <property name="modal">True</property>
     <property name="type_hint">normal</property>
+    <signal name="response" handler="on_dialog_shellcommand_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox19">
         <property name="visible">True</property>

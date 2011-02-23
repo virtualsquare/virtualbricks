@@ -49,6 +49,9 @@ class NotConnectedException(Exception):
 class LinkloopException(Exception):
 	def __init__(self):
 		pass
+class UnmanagedTypeException(Exception):
+	def __init__(self):
+		pass
 
 def ValidName(name):
 	if not re.search("\A[a-zA-Z]", name):
@@ -520,10 +523,10 @@ class Event(ChildLogger):
 	def get_state(self):
 		"""return state of the event"""
 		if self.active == True:
-			state = 'on'
-		elif self.timer is None:
-			state = 'disabled'
-		elif self.timer is not None:
+			state = 'running'
+		elif self.configured() == False:
+			state = 'unconfigured'
+		else:
 			state = 'off'
 		return state
 
@@ -589,12 +592,17 @@ class Event(ChildLogger):
 	def poweroff(self):
 		self.timer.cancel()
 		self.active = False
+		#We get ready for new poweron
+		self.on_config_changed()
 		self.factory.emit("event-stopped")
 
 	def doactions(self):
 		for action in self.actions:
 			self.factory.parse(action)
+		self.active = False
 			#action()
+		#We get ready for new poweron
+		self.on_config_changed()
 
 	#def addaction(self,action):
 	#	self.actions.append(action)
@@ -1821,6 +1829,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			obj.poweron()
 		if (cmd[0] == 'off'):
 			obj.poweroff()
+		if (cmd[0] == 'remove'):
+			if obj.get_type() == 'Event':
+				self.delevent(obj)
+			elif obj.get_type() == 'Brick':
+				self.delbrick(obj)
+			else:
+				raise UnmanagedTypeException
 		if (cmd[0] == 'config'):
 			obj.configure(cmd[1:])
 		if (cmd[0] == 'show'):
@@ -1856,6 +1871,14 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					self.socks.remove(so)
 				self.bricks.remove(b)
 		self.bricksmodel.del_brick(bricktodel)
+
+	def delevent(self, eventtodel):
+		# XXX check me
+		for e in self.events:
+			if e == eventtodel:
+				e.poweroff()
+				self.events.remove(e)
+		self.eventsmodel.del_event(eventtodel)
 
 	def dupbrick(self, bricktodup):
 		b1 = copy.copy(bricktodup)

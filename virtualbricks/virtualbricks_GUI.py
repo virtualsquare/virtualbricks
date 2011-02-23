@@ -902,21 +902,21 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_newevent_ok(self, widget=None, data=""):
 		self.show_window('')
 		self.curtain_down()
-		name = self.gladefile.get_widget('text_neweventname').get_text()
-		delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
+		#name = self.gladefile.get_widget('text_neweventname').get_text()
+		#delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 		ntype = self.selected_event_type()
 		ntype = 'ShellCommand' #temporary fix
 		try:
-			self.brickfactory.newevent("event", name)
+			#self.brickfactory.newevent("event", name)
 			if(ntype == 'ShellCommand'):
-				#self.gladefile.get_widget('entry_shell_command').set_text("new switch myswitch")
-				#self.gladefile.get_widget('dialog_shellcommand').show_all()
+				self.gladefile.get_widget('entry_shell_command').set_text("new switch myswitch")
+				self.gladefile.get_widget('dialog_shellcommand').show_all()
 				#command=self.gladefile.get_widget('entry_shell_command').get_text()
-				command='new switch myswitch'
+				#command='new switch myswitch'
 				#print "name:%s,delay:%s,type:%s,command:%s" % (name,str(delay),ntype,command)
-				currevent=self.brickfactory.geteventbyname(name)
-				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
-				self.brickfactory.brickAction(currevent,('config add '+str(command)).split(" "))
+				#currevent=self.brickfactory.geteventbyname(name)
+				#self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+				#self.brickfactory.brickAction(currevent,('config add '+str(command)).split(" "))
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
 		else:
@@ -1624,6 +1624,22 @@ class VBGUI(ChildLogger, gobject.GObject):
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
 
+	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
+		widget.hide()
+		if response == 1:
+			try:
+				name = self.gladefile.get_widget('text_neweventname').get_text()
+				delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
+				self.brickfactory.newevent("event", name)
+				command=self.gladefile.get_widget('entry_shell_command').get_text()
+				#command='new switch myswitch'
+				#print "name:%s,delay:%s,type:%s,command:%s" % (name,str(delay),ntype,command)
+				currevent=self.brickfactory.geteventbyname(name)
+				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+				self.brickfactory.brickAction(currevent,('config add '+str(command)).split(" "))
+			except BrickFactory.InvalidNameException:
+				self.show_error("Invalid name!")
+
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
 		pass
@@ -2015,6 +2031,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_brick_copy": self.on_brick_copy,
 			"on_brick_rename": self.on_brick_rename,
 			"on_dialog_rename_response": self.on_dialog_rename_response,
+			"on_dialog_shellcommand_response": self.on_dialog_shellcommand_response,
 			"on_item_quit_activate":self.on_item_quit_activate,
 			"on_item_settings_activate":self.on_item_settings_activate,
 			"on_item_settings_autoshow_activate":self.on_item_settings_autoshow_activate,
