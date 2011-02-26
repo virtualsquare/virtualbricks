@@ -33,9 +33,7 @@ import string
 import random
 import threading
 
-
-
-
+GUI_EVENT_PARAM_NCHAR = 70
 
 def RandMac():
 	# put me into VM utilities, please.
@@ -46,4 +44,9 @@ def RandMac():
 	mac = mac +"%02x:" % random.getrandbits(8)
 	mac = mac +"%02x" % random.getrandbits(8)
 	return mac
+
+#Ternary operator -> bCondition ? uTrue : uFalse
+def ImIf( bCondition, uTrue, uFalse ):
+    #
+    return ( uTrue, uFalse )[ not bCondition ]
 

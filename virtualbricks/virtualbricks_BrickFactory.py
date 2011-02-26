@@ -559,7 +559,19 @@ class Event(ChildLogger):
 		return True
 	
 	def get_parameters(self):
-		return "Delay: %d" % int(self.cfg.delay)
+		tempstr = "Delay: %d" % int(self.cfg.delay)
+		l = len(self.actions)
+		if(l>0):
+			tempstr += "; Actions:"
+			#Add actions cutting the tail if it's too long
+			for s in self.actions:
+				if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
+					tempstr+=" ...."
+					break
+				tempstr += " \"%s\"," % s
+			#Remove the last character
+			tempstr=tempstr[0:len(tempstr)-1]
+		return tempstr
 
 	def connect(self, endpoint):
 		return True

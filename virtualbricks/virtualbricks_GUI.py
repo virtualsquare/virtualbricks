@@ -1635,7 +1635,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			return
 
 		self.ask_confirm("Do you really want to delete " +
-				self.brick_selected.get_type() + " " + self.brick_selected.name + " ?",
+				self.brick_selected.get_type() + " \"" + self.brick_selected.name + "\" ?",
 				on_yes = self.brickfactory.delbrick, arg = self.brick_selected)
 
 	def on_event_delete(self,widget=None, event=None, data=""):
@@ -1646,7 +1646,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			msg="This event is in use. "
 
 		self.ask_confirm(msg + "Do you really want to delete " +
-				self.event_selected.get_type() + " " + self.event_selected.name + " ?",
+				self.event_selected.get_type() + " \"" + self.event_selected.name + "\" ?",
 				on_yes = self.brickfactory.delevent, arg = self.event_selected)
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
