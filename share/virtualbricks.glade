@@ -5610,6 +5610,9 @@ If you find virtualbricks useful for your business, please consider making a don
         <property name="visible">True</property>
         <property name="orientation">vertical</property>
         <child>
+          <placeholder/>
+        </child>
+        <child>
           <widget class="GtkVBox" id="vbox15">
             <property name="visible">True</property>
             <property name="orientation">vertical</property>
@@ -5696,9 +5699,6 @@ If you find virtualbricks useful for your business, please consider making a don
             <property name="padding">5</property>
             <property name="position">4</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
         <child>
           <widget class="GtkHBox" id="hbox14">
@@ -8416,7 +8416,6 @@ Shell Command</property>
     <property name="type_hint">normal</property>
     <property name="skip_taskbar_hint">True</property>
     <property name="deletable">False</property>
-    <property name="has_separator">False</property>
     <property name="message_type">warning</property>
     <property name="buttons">close</property>
     <signal name="close" handler="on_dialog_warn_close"/>
@@ -8450,7 +8449,6 @@ Shell Command</property>
     <property name="border_width">5</property>
     <property name="title" translatable="yes">Select Image file</property>
     <property name="type_hint">normal</property>
-    <property name="has_separator">False</property>
     <signal name="delete_event" handler="on_windown_destroy"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox16">
@@ -8552,17 +8550,17 @@ Shell Command</property>
             <child>
               <widget class="GtkLabel" id="label1">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">Enter shell command:</property>
+                <property name="label" translatable="yes">Enter shell command:
+(each line is an action)</property>
               </widget>
               <packing>
                 <property name="position">0</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkEntry" id="entry_shell_command">
+              <widget class="GtkTextView" id="entry_shell_command">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">&#x2022;</property>
               </widget>
               <packing>
                 <property name="position">1</property>

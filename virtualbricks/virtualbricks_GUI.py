@@ -929,7 +929,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 		ntype = 'ShellCommand' #temporary fix
 		try:
 			if(ntype == 'ShellCommand'):
-				self.gladefile.get_widget('entry_shell_command').set_text("new switch myswitch")
+				textbuffer = self.gladefile.get_widget('entry_shell_command').get_buffer()
+				textbuffer.set_text("new switch myswitch")
 				self.gladefile.get_widget('dialog_shellcommand').show_all()
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
@@ -1704,12 +1705,12 @@ class VBGUI(ChildLogger, gobject.GObject):
 				name = self.gladefile.get_widget('text_neweventname').get_text()
 				delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 				self.brickfactory.newevent("event", name)
-				command=self.gladefile.get_widget('entry_shell_command').get_text()
-				#command='new switch myswitch'
-				#print "name:%s,delay:%s,type:%s,command:%s" % (name,str(delay),ntype,command)
+				textbuffer=self.gladefile.get_widget('entry_shell_command').get_buffer()
+				command=textbuffer.get_text(textbuffer.get_start_iter() , textbuffer.get_end_iter())
 				currevent=self.brickfactory.geteventbyname(name)
 				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
-				self.brickfactory.brickAction(currevent,('config add '+str(command)).split(" "))
+				for line in command.splitlines():				
+					self.brickfactory.brickAction(currevent,('config add '+str(line)).split(" "))
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
 
