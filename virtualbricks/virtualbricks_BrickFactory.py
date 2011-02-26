@@ -421,7 +421,7 @@ class Brick(ChildLogger):
 				console = subprocess.Popen(cmdline)
 			except:
 				print "xterm run failed, trying gnome-terminal"
-				cmdline = ['gnome-terminal', '-t', self.name, '-e', self.terminal + self.cfg.console]
+				cmdline = ['gnome-terminal', '-t', self.name, '-e', self.terminal + " " + self.cfg.console]
 				print cmdline
 				try:
 					console = subprocess.Popen(cmdline)

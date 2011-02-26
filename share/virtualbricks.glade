@@ -318,7 +318,6 @@
                               <widget class="GtkToolButton" id="toolbutton_start_all">
                                 <property name="visible">True</property>
                                 <property name="has_tooltip">True</property>
-                                <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
                                 <property name="label" translatable="yes">Start All Bricks</property>
                                 <property name="use_underline">True</property>
                                 <property name="stock_id">gtk-media-play</property>
@@ -333,7 +332,6 @@
                               <widget class="GtkToolButton" id="toolbutton_stop_all">
                                 <property name="visible">True</property>
                                 <property name="has_tooltip">True</property>
-                                <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
                                 <property name="label" translatable="yes">Stop All Bricks</property>
                                 <property name="use_underline">True</property>
                                 <property name="stock_id">gtk-media-stop</property>
@@ -418,10 +416,10 @@
                               <widget class="GtkToolButton" id="toolbutton_start_all_events">
                                 <property name="visible">True</property>
                                 <property name="has_tooltip">True</property>
-                                <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
                                 <property name="label" translatable="yes">Start All Events</property>
                                 <property name="use_underline">True</property>
                                 <property name="stock_id">gtk-media-play</property>
+                                <signal name="clicked" handler="on_toolbutton_start_all_events_clicked"/>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
@@ -432,10 +430,10 @@
                               <widget class="GtkToolButton" id="toolbutton_stop_all_events">
                                 <property name="visible">True</property>
                                 <property name="has_tooltip">True</property>
-                                <property name="tooltip" translatable="yes">run current emulation unmanaged</property>
                                 <property name="label" translatable="yes">Stop All Events</property>
                                 <property name="use_underline">True</property>
                                 <property name="stock_id">gtk-media-stop</property>
+                                <signal name="clicked" handler="on_toolbutton_stop_all_events_clicked"/>
                               </widget>
                               <packing>
                                 <property name="expand">False</property>
@@ -8561,6 +8559,11 @@ Shell Command</property>
               <widget class="GtkTextView" id="entry_shell_command">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="has_focus">True</property>
+                <property name="tooltip" translatable="yes">Insert virtualbricks-shell
+commands here.
+You can add multiple lines.</property>
+                <property name="accepts_tab">False</property>
               </widget>
               <packing>
                 <property name="position">1</property>

@@ -1040,15 +1040,27 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_toolbutton_start_all_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for b in self.bricks:
+		for b in self.brickfactory.bricks:
 			if b.proc is None:
 				b.poweron()
 
 	def on_toolbutton_stop_all_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for b in self.bricks:
+		for b in self.brickfactory.bricks:
 			if b.proc is not None:
 				b.poweroff()
+
+	def on_toolbutton_start_all_events_clicked(self, widget=None, data=""):
+		self.curtain_down()
+		for e in self.brickfactory.events:
+			if e.active == False:
+				e.poweron()
+
+	def on_toolbutton_stop_all_events_clicked(self, widget=None, data=""):
+		self.curtain_down()
+		for e in self.brickfactory.events:
+			if e.active == True:
+				e.poweroff()
 
 	def on_mainwindow_dropaction(self, widget, drag_context, x, y, selection_data, info, timestamp):
 		tree = self.gladefile.get_widget('treeview_bookmarks');
@@ -1210,7 +1222,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		print "on_treeview_bootimages_row_activated_event undefined!"
 		pass
 	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
-		self.debug("Hello")
+		#self.debug("Hello")
 		tree = self.gladefile.get_widget('treeview_joblist');
 		store = self.running_bricks
 		x = int(event.x)
@@ -1219,13 +1231,15 @@ class VBGUI(ChildLogger, gobject.GObject):
 		name = self.get_treeselected_name(tree, store, pthinfo)
 		if event.button == 3:
 			self.joblist_selected = self.brickfactory.getbrickbyname(name)
+			if not self.joblist_selected:
+				return
+			
 			if self.joblist_selected.get_type()=="Qemu":
 				self.set_sensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
 			else:
 				self.set_nonsensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
 
-			if self.joblist_selected:
-				self.show_window('menu_popup_joblist')
+			self.show_window('menu_popup_joblist')
 
 	def on_treeview_joblist_row_activated_event(self, widget=None, data=""):
 		print "on_treeview_joblist_row_activated_event undefined!"
@@ -2120,6 +2134,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_item_about_activate":self.on_item_about_activate,
 			"on_toolbutton_start_all_clicked":self.on_toolbutton_start_all_clicked,
 			"on_toolbutton_stop_all_clicked":self.on_toolbutton_stop_all_clicked,
+			"on_toolbutton_start_all_events_clicked":self.on_toolbutton_start_all_events_clicked,
+			"on_toolbutton_stop_all_events_clicked":self.on_toolbutton_stop_all_events_clicked,
 			"on_mainwindow_dropaction":self.on_mainwindow_dropaction,
 			"on_treeview_bookmarks_button_release_event":self.on_treeview_bookmarks_button_release_event,
 			"on_treeview_events_bookmarks_button_release_event":self.on_treeview_events_bookmarks_button_release_event,
