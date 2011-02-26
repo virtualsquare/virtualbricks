@@ -4448,10 +4448,11 @@ Number of ports: </property>
                     <property name="visible">True</property>
                     <child>
                       <widget class="GtkButton" id="button8">
-                        <property name="label" translatable="yes">Cancel</property>
+                        <property name="label">gtk-undo</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
+                        <property name="use_stock">True</property>
                         <signal name="clicked" handler="on_config_cancel"/>
                         <signal name="activate" handler="on_config_cancel"/>
                       </widget>
@@ -4463,7 +4464,7 @@ Number of ports: </property>
                     </child>
                     <child>
                       <widget class="GtkButton" id="button9">
-                        <property name="label" translatable="yes">Ok</property>
+                        <property name="label">gtk-ok</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="has_focus">True</property>
@@ -4471,6 +4472,7 @@ Number of ports: </property>
                         <property name="can_default">True</property>
                         <property name="has_default">True</property>
                         <property name="receives_default">True</property>
+                        <property name="use_stock">True</property>
                         <signal name="clicked" handler="on_config_ok"/>
                         <signal name="activate" handler="on_config_ok"/>
                       </widget>
