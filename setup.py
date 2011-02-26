@@ -33,6 +33,7 @@ setup(
 			('/usr/bin', ['main/virtualbricks']),
 			('/usr/share/virtualbricks/', ['share/virtualbricks.glade']),
 			('/usr/share/applications', ['share/virtualbricks.desktop']),
+			('/usr/share/locale/it_IT/LC_MESSAGES/', ['locale/virtualbricks.mo']),
 			('/usr/share/pixmaps', ['share/virtualbricks.png']),
 			('/usr/share/pixmaps',['images/Event.png']),
 			('/usr/share/pixmaps',['images/Qemu.png']),

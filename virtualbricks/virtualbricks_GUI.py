@@ -36,6 +36,27 @@ import virtualbricks_Events as Events
 from threading import Thread
 from virtualbricks_Graphics import *
 
+#Gettext stuff
+try:
+	import gettext
+	import locale
+except:
+	print "locale and/or gettext for language support not installed"
+	sys.exit(1)
+
+APP = 'virtualbricks'
+#DIR = 'locale'
+DIR = '/usr/share/locale'
+#print "DIR: " + DIR
+locale.setlocale(locale.LC_ALL, '')
+for module in gtk.glade, gettext:
+	module.bindtextdomain(APP, DIR)
+	module.textdomain(APP)
+
+import __builtin__
+__builtin__._ = gettext.gettext
+#_ = gettext.gettext
+
 class MyTray(gtk.StatusIcon):
 
 	def __init__(self):
