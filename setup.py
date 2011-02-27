@@ -18,6 +18,8 @@
 ##	along with this program; if not, write to the Free Software
 ##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+SUPPORTED_LANGS=['it_IT']
+
 from distutils.core import setup
 import sys,os
 
@@ -28,12 +30,11 @@ if not os.access('/usr/share/virtualbricks/', os.X_OK):
 		print "Cannot create directory. Bye."
 		sys.exit(1)
 
-setup(
-	data_files=[
+
+FILES=[
 			('/usr/bin', ['main/virtualbricks']),
 			('/usr/share/virtualbricks/', ['share/virtualbricks.glade']),
 			('/usr/share/applications', ['share/virtualbricks.desktop']),
-			('/usr/share/locale/it_IT/LC_MESSAGES/', ['locale/virtualbricks.mo']),
 			('/usr/share/pixmaps', ['share/virtualbricks.png']),
 			('/usr/share/pixmaps',['images/Event.png']),
 			('/usr/share/pixmaps',['images/Qemu.png']),
@@ -43,11 +44,13 @@ setup(
 			('/usr/share/pixmaps',['images/TunnelListen.png']),
 			('/usr/share/pixmaps',['images/Wirefilter.png']),
 			('/usr/share/pixmaps',['images/Wire.png'])
+]
 
-		],
+for l in SUPPORTED_LANGS:
+	os.system("msgfmt -o virtualbricks.mo locale/virtualbricks_"+l+".po")
+	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['virtualbricks.mo']))
 
-	name='virtualbricks',
-	version='0.3',
+setup( data_files=FILES, name='virtualbricks', version='0.3',
 	description='Virtualbricks Virtualization Tools',
 	license='GPL2',
 	author='Daniele Lacamera, Rainer Haage, Francesco Apollonio, Pierre-Louis Bonicoli, Simone Abbati',
@@ -57,3 +60,7 @@ setup(
 	package_dir = {'': '.'}
 	)
 
+try:
+	os.unlink('virtualbricks.mo')
+except:
+	pass
