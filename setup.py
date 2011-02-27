@@ -36,19 +36,19 @@ FILES=[
 			('/usr/share/virtualbricks/', ['share/virtualbricks.glade']),
 			('/usr/share/applications', ['share/virtualbricks.desktop']),
 			('/usr/share/pixmaps', ['share/virtualbricks.png']),
-			('/usr/share/pixmaps',['images/Event.png']),
-			('/usr/share/pixmaps',['images/Qemu.png']),
-			('/usr/share/pixmaps',['images/Switch.png']),
-			('/usr/share/pixmaps',['images/Tap.png']),
-			('/usr/share/pixmaps',['images/TunnelConnect.png']),
-			('/usr/share/pixmaps',['images/TunnelListen.png']),
-			('/usr/share/pixmaps',['images/Wirefilter.png']),
-			('/usr/share/pixmaps',['images/Wire.png'])
+			('/usr/share/pixmaps', ['images/Event.png']),
+			('/usr/share/pixmaps', ['images/Qemu.png']),
+			('/usr/share/pixmaps', ['images/Switch.png']),
+			('/usr/share/pixmaps', ['images/Tap.png']),
+			('/usr/share/pixmaps', ['images/TunnelConnect.png']),
+			('/usr/share/pixmaps', ['images/TunnelListen.png']),
+			('/usr/share/pixmaps', ['images/Wirefilter.png']),
+			('/usr/share/pixmaps', ['images/Wire.png'])
 ]
 
 for l in SUPPORTED_LANGS:
-	os.system("msgfmt -o virtualbricks.mo locale/virtualbricks/"+l+".po")
-	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['virtualbricks.mo']))
+	os.system("msgfmt -o locale/"+l+"/virtualbricks.mo locale/"+l+"/virtualbricks_"+l+".po")
+	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['locale/'+l+'/virtualbricks.mo']))
 
 setup( data_files=FILES, name='virtualbricks', version='0.3',
 	description='Virtualbricks Virtualization Tools',
@@ -60,7 +60,9 @@ setup( data_files=FILES, name='virtualbricks', version='0.3',
 	package_dir = {'': '.'}
 	)
 
-try:
-	os.unlink('virtualbricks.mo')
-except:
-	pass
+#Remove compiled l10n files
+for l in SUPPORTED_LANGS:
+	try:
+		os.unlink('locale/'+l+'/virtualbricks.mo')
+	except:
+		continue
