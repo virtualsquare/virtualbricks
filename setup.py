@@ -47,7 +47,7 @@ FILES=[
 ]
 
 for l in SUPPORTED_LANGS:
-	os.system("msgfmt -o virtualbricks.mo locale/virtualbricks_"+l+".po")
+	os.system("msgfmt -o virtualbricks.mo locale/virtualbricks/"+l+".po")
 	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['virtualbricks.mo']))
 
 setup( data_files=FILES, name='virtualbricks', version='0.3',
