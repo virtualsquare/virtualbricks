@@ -52,7 +52,10 @@ class LinkloopException(Exception):
 class UnmanagedTypeException(Exception):
 	def __init__(self):
 		pass
-
+class InvalidActionException(Exception):
+	def __init__(self):
+		pass
+	
 def ValidName(name):
 	if not re.search("\A[a-zA-Z]", name):
 		return None
@@ -493,6 +496,16 @@ class Brick(ChildLogger):
 		else:
 			state = 'off'
 		return state
+	
+class VbShellCommand(str):
+	def __init__(self, mystr):
+		self=mystr
+	pass
+
+class ShellCommand(str):
+	def __init__(self, mystr):
+		self=mystr
+	pass
 
 class Event(ChildLogger):
 	def __init__(self, _factory, _name):
@@ -529,32 +542,46 @@ class Event(ChildLogger):
 		else:
 			state = 'off'
 		return state
+	
+	def change_state(self):
+		if self.active == True:
+			self.poweroff()
+		else:
+			self.poweron()
 
 	def configured(self):
 		return (len(self.actions) > 0 and self.cfg.delay > 0)
-
+	
 	def initialize(self, attrlist):
-		configactions = list()
-		#check if it's an add config command here,
-		#it needs special management
-		if(attrlist.count('add') > 0):
-			i = attrlist.index('add')
-			configactions = attrlist[i + 1:] #get the action string
-			del attrlist[i:] #remove from the list "add"...
-		#Execute the actions in the command line
-		#for attr in configactions:
-		#	self.actions.append(attr)
-			act = ''
-			#for part in configactions:
-			#	act=act+' '+part
-			act = ' '.join(configactions)
-			self.actions.append(act)
-			#self.actions.append("new switch mioswitch")
-			print "Added command: \"%s\"" % str(act)
+		if(attrlist.count('add') > 0 and attrlist.count('addsh') > 0):
+			print "Error: config line must contain add OR addsh."
+			print "Split in two different line."
+			raise InvalidActionException
+		elif(attrlist.count('add') > 0):
+			configactions = list()
+			configactions = (' '.join(attrlist)).split('add')
+			for action in configactions[1:]:
+				action = action.strip()
+				self.actions.append(VbShellCommand(action))
+				print "Added vb-shell command: \"%s\"" % str(action)
+		elif(attrlist.count('addsh') > 0):
+			configactions = list()
+			configactions = (' '.join(attrlist)).split('addsh')
+			for action in configactions[1:]:
+				action = action.strip()
+				self.actions.append(ShellCommand(action))
+				print "Added host-shell command: \"%s\"" % str(action)
+#		elif(attrlist.count('addev') > 0):
+#			configactions = list()
+#			configactions = (' '.join(attrlist)).split('addev')
+#			for action in configactions[1:]:
+#				action = action.strip()
+#				self.actions.append(self.factory.geteventbyname(action))
+#				print "Added event: \"%s\"" % str(action)
 		else:
-		   	for attr in attrlist:
-		   		self.cfg.set(attr)
-
+			for attr in attrlist:
+				self.cfg.set(attr)
+			
 	def properly_connected(self):
 		return True
 	
@@ -614,29 +641,24 @@ class Event(ChildLogger):
 
 	def doactions(self):
 		for action in self.actions:
-			self.factory.parse(action)
+			if (isinstance(action, VbShellCommand)):
+				self.factory.parse(action)
+			elif (isinstance(action, ShellCommand)):
+				try:
+					console = subprocess.Popen(action.split(' '))
+				except:
+					print "Error: cannot execute shell command \"%s\"" % action
+					continue
+#			else:
+#				#it is an event
+#				action.poweron()
+
 		self.active = False
-			#action()
 		#We get ready for new poweron
 		self.on_config_changed()
 
-	#def addaction(self,action):
-	#	self.actions.append(action)
-
-	#def delaction(self,action):
-	#	self.actions.remove(action)
-
-	#def settimer(self,delay):
-	#	self.delay=delay
-
 	def on_config_changed(self):
 		self.timer = Timer(float(self.cfg.delay), self.doactions, ())
-
-#	def build_cmd_line(self):
-#		return ""
-
-#	def args(self):
-#		return ""
 
 	#############################
 	# Console related operations.
