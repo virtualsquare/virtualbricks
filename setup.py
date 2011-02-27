@@ -64,4 +64,4 @@ setup( data_files=FILES, name='virtualbricks', version='0.3',
 try:
 	os.unlink('locale/virtualbricks/virtualbricks.mo')
 except:
-	continue
+	pass
