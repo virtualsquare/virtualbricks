@@ -7378,6 +7378,7 @@ Use an already open UDP multicast socket</property>
     <property name="default_height">5</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -7787,6 +7788,7 @@ Use an already open UDP multicast socket</property>
     <property name="default_height">5</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -7810,7 +7812,7 @@ Use an already open UDP multicast socket</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
                         <property name="active">True</property>
-                        <property name="draw_indicator">True</property>
+                        <property name="draw_indicator">False</property>
                         <child>
                           <widget class="GtkVBox" id="vbox3">
                             <property name="visible">True</property>
@@ -7847,7 +7849,7 @@ Use an already open UDP multicast socket</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
+                        <property name="draw_indicator">False</property>
                         <property name="group">typebutton_BrickStart</property>
                         <child>
                           <widget class="GtkVBox" id="vbox4">
@@ -7886,7 +7888,7 @@ Use an already open UDP multicast socket</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
+                        <property name="draw_indicator">False</property>
                         <property name="group">typebutton_BrickStart</property>
                         <child>
                           <widget class="GtkVBox" id="vbox5">
@@ -7924,7 +7926,7 @@ Use an already open UDP multicast socket</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
+                        <property name="draw_indicator">False</property>
                         <property name="group">typebutton_BrickStart</property>
                         <child>
                           <widget class="GtkVBox" id="vbox6">
@@ -8205,6 +8207,7 @@ Shell Command</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
     <signal name="response" handler="on_dialog_confirm_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox12">
         <property name="visible">True</property>
@@ -8294,6 +8297,7 @@ Shell Command</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_rename_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox13">
         <property name="visible">True</property>
@@ -8546,6 +8550,7 @@ Shell Command</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_shellcommand_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox19">
         <property name="visible">True</property>
@@ -8688,6 +8693,7 @@ You can add multiple lines.</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_event_rename_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox25">
         <property name="visible">True</property>
@@ -8769,6 +8775,7 @@ You can add multiple lines.</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox21">
         <property name="visible">True</property>
