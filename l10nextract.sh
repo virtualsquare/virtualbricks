@@ -1,6 +1,6 @@
 COMMONS="--package-name=virtualbricks --package-version=0.3 --msgid-bugs-address=qemulator-list@createweb.de"
 JOIN="-j"
-LANGUAGES="it_IT nl_NL"
+LANGUAGES="it nl"
 SOURCES="share/*.glade virtualbricks/*"
 xgettext -plocale/virtualbricks -ovirtualbricks.pot $JOIN $COMMONS $SOURCES
 for l in $LANGUAGES;

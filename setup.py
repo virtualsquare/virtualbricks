@@ -18,7 +18,7 @@
 ##	along with this program; if not, write to the Free Software
 ##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-SUPPORTED_LANGS=['it_IT','nl_NL']
+SUPPORTED_LANGS=['it','nl']
 
 from distutils.core import setup
 import sys,os
@@ -47,8 +47,10 @@ FILES=[
 ]
 
 for l in SUPPORTED_LANGS:
-	os.system("msgfmt -o locale/virtualbricks/virtualbricks.mo locale/virtualbricks/"+l+".po")
-	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['locale/virtualbricks/virtualbricks.mo']))
+	command="msgfmt -o "+"locale/virtualbricks/" + l + ".mo " + "locale/virtualbricks/" + l + ".po"
+	print "%s" % command
+	os.system(command)
+	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['locale/virtualbricks/' + l + '.mo']))
 
 setup( data_files=FILES, name='virtualbricks', version='0.3',
 	description='Virtualbricks Virtualization Tools',
@@ -61,7 +63,8 @@ setup( data_files=FILES, name='virtualbricks', version='0.3',
 	)
 
 #Remove compiled l10n files
-try:
-	os.unlink('locale/virtualbricks/virtualbricks.mo')
-except:
-	pass
+for l in SUPPORTED_LANGS:
+	try:
+		os.unlink('locale/virtualbricks/'+ l + '.mo')
+	except:
+		continue
