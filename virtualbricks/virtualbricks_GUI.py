@@ -1243,7 +1243,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 		print "on_treeview_bootimages_row_activated_event undefined!"
 		pass
 	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
-		#self.debug("Hello")
 		tree = self.gladefile.get_widget('treeview_joblist');
 		store = self.running_bricks
 		x = int(event.x)
@@ -1432,7 +1431,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 		filename = self.gladefile.get_widget('entry_newimage_name').get_text()
 		img_format = self.gladefile.get_widget('combobox_newimage_format').get_active_text()
 		img_size = str(self.gladefile.get_widget('spinbutton_newimage_size').get_value())
-		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()
+		#Get size unit and remove the last character 'B'
+		#because qemu-img want k, M, G or T suffixes.
+		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()[:-1]
 		cmd='qemu-img create'
 		if filename=="":
 			self.show_error("Choose a filename first!")
@@ -1670,8 +1671,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.show_error("Cannot delete Brick: it is in use.")
 			return
 
-		self.ask_confirm("Do you really want to delete " +
-				self.brick_selected.get_type() + " \"" + self.brick_selected.name + "\" ?",
+		self.ask_confirm(_("Do you really want to delete ") +
+				_(self.brick_selected.get_type()) + " \"" + self.brick_selected.name + "\" ?",
 				on_yes = self.brickfactory.delbrick, arg = self.brick_selected)
 
 	def on_event_delete(self,widget=None, event=None, data=""):
@@ -1679,10 +1680,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		
 		msg=""
 		if self.event_selected.active == True:
-			msg="This event is in use. "
+			msg=_("This event is in use. ")
 
-		self.ask_confirm(msg + "Do you really want to delete " +
-				self.event_selected.get_type() + " \"" + self.event_selected.name + "\" ?",
+		self.ask_confirm(msg + _("Do you really want to delete ") +
+				_(self.event_selected.get_type()) + " \"" + self.event_selected.name + "\" ?",
 				on_yes = self.brickfactory.delevent, arg = self.event_selected)
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
@@ -1691,7 +1692,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
 		if self.brick_selected.proc != None:
-			self.show_error("Cannot rename Brick: it is in use.")
+			self.show_error(_("Cannot rename Brick: it is in use."))
 			return
 
 		self.gladefile.get_widget('entry_brick_newname').set_text(self.brick_selected.name)
@@ -1700,7 +1701,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_event_rename(self,widget=None, event=None, data=""):
 		if self.event_selected.active == True:
-			self.show_error("Cannot rename Event: it is in use.")
+			self.show_error(_("Cannot rename Event: it is in use."))
 			return
 
 	def on_event_copy(self,widget=None, event=None, data=""):

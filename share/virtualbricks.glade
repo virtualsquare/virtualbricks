@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <glade-interface>
-  <!-- interface-requires gtk+ 2.10 -->
+  <!-- interface-requires gtk+ 2.12 -->
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkWindow" id="main_win">
     <property name="width_request">800</property>
@@ -7373,8 +7373,10 @@ Use an already open UDP multicast socket</property>
     </child>
   </widget>
   <widget class="GtkWindow" id="dialog_newbrick">
+    <property name="modal">True</property>
     <property name="window_position">mouse</property>
     <property name="default_height">5</property>
+    <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
     <child>
       <widget class="GtkVBox" id="vbox1">
@@ -7779,8 +7781,11 @@ Use an already open UDP multicast socket</property>
     </child>
   </widget>
   <widget class="GtkWindow" id="dialog_newevent">
+    <property name="title" translatable="yes">Event type selection</property>
+    <property name="modal">True</property>
     <property name="window_position">mouse</property>
     <property name="default_height">5</property>
+    <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
     <child>
       <widget class="GtkVBox" id="vbox1">
@@ -8197,8 +8202,9 @@ Shell Command</property>
   </widget>
   <widget class="GtkDialog" id="dialog_confirm">
     <property name="border_width">5</property>
+    <property name="modal">True</property>
     <property name="window_position">mouse</property>
-    <property name="type_hint">normal</property>
+    <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
     <property name="deletable">False</property>
     <signal name="response" handler="on_dialog_confirm_response"/>
@@ -8287,7 +8293,9 @@ Shell Command</property>
   </widget>
   <widget class="GtkDialog" id="dialog_rename">
     <property name="border_width">5</property>
-    <property name="type_hint">normal</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-always</property>
+    <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_rename_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox13">
@@ -8413,7 +8421,7 @@ Shell Command</property>
     <property name="border_width">5</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
-    <property name="type_hint">normal</property>
+    <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
     <property name="deletable">False</property>
     <property name="message_type">warning</property>
@@ -8448,7 +8456,8 @@ Shell Command</property>
   <widget class="GtkFileChooserDialog" id="topology_export_dialog">
     <property name="border_width">5</property>
     <property name="title" translatable="yes">Select Image file</property>
-    <property name="type_hint">normal</property>
+    <property name="modal">True</property>
+    <property name="type_hint">dialog</property>
     <signal name="delete_event" handler="on_windown_destroy"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox16">
@@ -8536,8 +8545,10 @@ Shell Command</property>
   </widget>
   <widget class="GtkDialog" id="dialog_shellcommand">
     <property name="border_width">5</property>
+    <property name="title" translatable="yes">Shell command actions</property>
     <property name="modal">True</property>
-    <property name="type_hint">normal</property>
+    <property name="window_position">center-always</property>
+    <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_shellcommand_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox19">
@@ -8675,7 +8686,10 @@ You can add multiple lines.</property>
   </widget>
   <widget class="GtkDialog" id="dialog_event_rename">
     <property name="border_width">5</property>
-    <property name="type_hint">normal</property>
+    <property name="title" translatable="yes">New event name</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-always</property>
+    <property name="type_hint">dialog</property>
     <signal name="response" handler="on_dialog_event_rename_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox25">
@@ -8711,6 +8725,163 @@ You can add multiple lines.</property>
         </child>
         <child internal-child="action_area">
           <widget class="GtkHButtonBox" id="dialog-action_area25">
+            <property name="visible">True</property>
+            <property name="layout_style">end</property>
+            <child>
+              <widget class="GtkButton" id="button2">
+                <property name="label">gtk-cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkButton" id="button1">
+                <property name="label">gtk-ok</property>
+                <property name="response_id">1</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkDialog" id="dialog_brick_select">
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Bricks to add to the event</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-always</property>
+    <property name="type_hint">dialog</property>
+    <child internal-child="vbox">
+      <widget class="GtkVBox" id="dialog-vbox21">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child>
+          <widget class="GtkHBox" id="hbox1">
+            <property name="visible">True</property>
+            <child>
+              <widget class="GtkVPaned" id="vpaned1">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkLabel" id="label1">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">Bricks
+available</property>
+                  </widget>
+                  <packing>
+                    <property name="resize">False</property>
+                    <property name="shrink">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkTreeView" id="treeview1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                  </widget>
+                  <packing>
+                    <property name="resize">True</property>
+                    <property name="shrink">True</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkVPaned" id="vpaned3">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkLabel" id="label3">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">--&gt;</property>
+                  </widget>
+                  <packing>
+                    <property name="resize">False</property>
+                    <property name="shrink">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkButton" id="button3">
+                    <property name="label">gtk-add</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_stock">True</property>
+                  </widget>
+                  <packing>
+                    <property name="resize">True</property>
+                    <property name="shrink">True</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkVPaned" id="vpaned2">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <widget class="GtkLabel" id="label2">
+                    <property name="visible">True</property>
+                    <property name="label" translatable="yes">Bricks
+added</property>
+                  </widget>
+                  <packing>
+                    <property name="resize">False</property>
+                    <property name="shrink">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkTreeView" id="treeview2">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                  </widget>
+                  <packing>
+                    <property name="resize">True</property>
+                    <property name="shrink">True</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="position">2</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <widget class="GtkHButtonBox" id="dialog-action_area21">
             <property name="visible">True</property>
             <property name="layout_style">end</property>
             <child>
