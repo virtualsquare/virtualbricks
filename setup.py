@@ -47,10 +47,12 @@ FILES=[
 ]
 
 for l in SUPPORTED_LANGS:
-	command="msgfmt -o "+"locale/virtualbricks/" + l + ".mo " + "locale/virtualbricks/" + l + ".po"
-	print "%s" % command
+	modest="locale/"+l
+	if not os.path.exists(modest):
+		os.makedirs(modest)
+	command="msgfmt -o "+"locale/" + l + "/virtualbricks.mo " + "locale/virtualbricks/" + l + ".po"
 	os.system(command)
-	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['locale/virtualbricks/' + l + '.mo']))
+	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['locale/' + l + '/virtualbricks.mo']))
 
 setup( data_files=FILES, name='virtualbricks', version='0.3',
 	description='Virtualbricks Virtualization Tools',
@@ -65,6 +67,6 @@ setup( data_files=FILES, name='virtualbricks', version='0.3',
 #Remove compiled l10n files
 for l in SUPPORTED_LANGS:
 	try:
-		os.unlink('locale/virtualbricks/'+ l + '.mo')
+		os.unlink('locale/'+ l + '/virtualbricks.mo')
 	except:
 		continue
