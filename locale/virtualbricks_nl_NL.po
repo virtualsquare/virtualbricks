@@ -73,7 +73,7 @@ msgstr "Niet uitgevoerd"
 
 #: share/virtualbricks.glade:178
 msgid "_Create new image"
-msgstr "Maak een niewe image"
+msgstr "Maak een nieuwe image"
 
 #: share/virtualbricks.glade:190
 msgid "_Help"
