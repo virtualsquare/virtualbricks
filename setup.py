@@ -21,7 +21,7 @@
 SUPPORTED_LANGS=['it','nl']
 
 from distutils.core import setup
-import sys,os
+import sys,os,tempfile
 
 if not os.access('/usr/share/virtualbricks/', os.X_OK):
 	try:
@@ -46,13 +46,14 @@ FILES=[
 			('/usr/share/pixmaps', ['images/Wire.png'])
 ]
 
+tempdirs=list()
+
 for l in SUPPORTED_LANGS:
-	modest="locale/"+l
-	if not os.path.exists(modest):
-		os.makedirs(modest)
-	command="msgfmt -o "+"locale/" + l + "/virtualbricks.mo " + "locale/virtualbricks/" + l + ".po"
+	directory_name = tempfile.mkdtemp()
+	tempdirs.append(directory_name)
+	command='msgfmt -o ' + directory_name + '/virtualbricks.mo ' + 'locale/virtualbricks/' + l + '.po'
 	os.system(command)
-	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', ['locale/' + l + '/virtualbricks.mo']))
+	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', [directory_name + '/virtualbricks.mo']))
 
 setup( data_files=FILES, name='virtualbricks', version='0.3',
 	description='Virtualbricks Virtualization Tools',
@@ -65,8 +66,12 @@ setup( data_files=FILES, name='virtualbricks', version='0.3',
 	)
 
 #Remove compiled l10n files
-for l in SUPPORTED_LANGS:
+for d in tempdirs:
 	try:
-		os.unlink('locale/'+ l + '/virtualbricks.mo')
+		#Remove the compilaed file
+		os.unlink(d + '/virtualbricks.mo')
+		# Clean up the directory yourself
+		os.removedirs(d)
 	except:
+		print "Not critical error while removing: %s(.virtualbricks.mo)" %d
 		continue
