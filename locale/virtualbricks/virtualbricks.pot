@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.3\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-02-27 21:29+0100\n"
+"POT-Creation-Date: 2011-03-01 15:21+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -529,6 +529,7 @@ msgstr ""
 
 #: share/virtualbricks.glade:3031 share/virtualbricks.glade:7901
 #: share/virtualbricks.glade:7908 share/virtualbricks.glade:7907
+#: share/virtualbricks.glade:7909
 msgid "Brick Config"
 msgstr ""
 
@@ -723,7 +724,7 @@ msgid "Password:"
 msgstr ""
 
 #: share/virtualbricks.glade:4384 share/virtualbricks.glade:7660
-#: share/virtualbricks.glade:7664
+#: share/virtualbricks.glade:7664 share/virtualbricks.glade:7665
 msgid "Tunnel Server"
 msgstr ""
 
@@ -736,6 +737,7 @@ msgstr ""
 #: share/virtualbricks.glade:7736 share/virtualbricks.glade:8090
 #: share/virtualbricks.glade:7343 share/virtualbricks.glade:7740
 #: share/virtualbricks.glade:8097 share/virtualbricks.glade:8095
+#: share/virtualbricks.glade:7741
 msgid "Cancel"
 msgstr ""
 
@@ -743,6 +745,7 @@ msgstr ""
 #: share/virtualbricks.glade:7751 share/virtualbricks.glade:8105
 #: share/virtualbricks.glade:7356 share/virtualbricks.glade:7755
 #: share/virtualbricks.glade:8112 share/virtualbricks.glade:8110
+#: share/virtualbricks.glade:7756
 msgid "Ok"
 msgstr ""
 
@@ -1259,39 +1262,47 @@ msgid "Advanced"
 msgstr ""
 
 #: share/virtualbricks.glade:7417 share/virtualbricks.glade:7421
+#: share/virtualbricks.glade:7422
 msgid "Switch"
 msgstr ""
 
 #: share/virtualbricks.glade:7456 share/virtualbricks.glade:7460
+#: share/virtualbricks.glade:7461
 msgid "Wire"
 msgstr ""
 
 #: share/virtualbricks.glade:7495 share/virtualbricks.glade:7499
+#: share/virtualbricks.glade:7500
 msgid "Wirefilter"
 msgstr ""
 
 #: share/virtualbricks.glade:7534 share/virtualbricks.glade:7538
+#: share/virtualbricks.glade:7539
 msgid "Tap"
 msgstr ""
 
 #: share/virtualbricks.glade:7582 share/virtualbricks.glade:7586
+#: share/virtualbricks.glade:7587
 msgid "Tunnel Client"
 msgstr ""
 
 #: share/virtualbricks.glade:7621 share/virtualbricks.glade:7625
+#: share/virtualbricks.glade:7626
 msgid "Virtual Machine"
 msgstr ""
 
 #: share/virtualbricks.glade:7702 share/virtualbricks.glade:7706
+#: share/virtualbricks.glade:7707
 msgid "Brick name:"
 msgstr ""
 
 #: share/virtualbricks.glade:7823 share/virtualbricks.glade:7830
+#: share/virtualbricks.glade:7832
 msgid "Brick Start"
 msgstr ""
 
 #: share/virtualbricks.glade:7862 share/virtualbricks.glade:7869
-#: share/virtualbricks.glade:7868
+#: share/virtualbricks.glade:7868 share/virtualbricks.glade:7870
 msgid "Brick Stop"
 msgstr ""
 
@@ -1325,36 +1336,42 @@ msgstr ""
 #: share/virtualbricks.glade:8138 share/virtualbricks.glade:8625
 #: share/virtualbricks.glade:8145 share/virtualbricks.glade:8638
 #: share/virtualbricks.glade:8143 share/virtualbricks.glade:8635
+#: share/virtualbricks.glade:8640
 msgid " "
 msgstr ""
 
 #: share/virtualbricks.glade:8149 share/virtualbricks.glade:8636
 #: share/virtualbricks.glade:8156 share/virtualbricks.glade:8649
 #: share/virtualbricks.glade:8154 share/virtualbricks.glade:8646
+#: share/virtualbricks.glade:8651
 msgid "_Start/Stop"
 msgstr ""
 
 #: share/virtualbricks.glade:8157 share/virtualbricks.glade:8644
 #: share/virtualbricks.glade:8164 share/virtualbricks.glade:8657
 #: share/virtualbricks.glade:8162 share/virtualbricks.glade:8654
+#: share/virtualbricks.glade:8659
 msgid "_Delete"
 msgstr ""
 
 #: share/virtualbricks.glade:8165 share/virtualbricks.glade:8652
 #: share/virtualbricks.glade:8172 share/virtualbricks.glade:8665
 #: share/virtualbricks.glade:8170 share/virtualbricks.glade:8662
+#: share/virtualbricks.glade:8667
 msgid "Make a C_opy"
 msgstr ""
 
 #: share/virtualbricks.glade:8173 share/virtualbricks.glade:8660
 #: share/virtualbricks.glade:8180 share/virtualbricks.glade:8673
 #: share/virtualbricks.glade:8178 share/virtualbricks.glade:8670
+#: share/virtualbricks.glade:8675
 msgid "Re_name"
 msgstr ""
 
 #: share/virtualbricks.glade:8181 share/virtualbricks.glade:8668
 #: share/virtualbricks.glade:8188 share/virtualbricks.glade:8681
 #: share/virtualbricks.glade:8186 share/virtualbricks.glade:8678
+#: share/virtualbricks.glade:8683
 msgid "_Configure"
 msgstr ""
 
@@ -1371,16 +1388,17 @@ msgstr ""
 #: share/virtualbricks.glade:8301 share/virtualbricks.glade:8689
 #: share/virtualbricks.glade:8311 share/virtualbricks.glade:8705
 #: share/virtualbricks.glade:8308 share/virtualbricks.glade:8702
+#: share/virtualbricks.glade:8312 share/virtualbricks.glade:8708
 msgid "Choose a new name:"
 msgstr ""
 
 #: share/virtualbricks.glade:8368 share/virtualbricks.glade:8378
-#: share/virtualbricks.glade:8375
+#: share/virtualbricks.glade:8375 share/virtualbricks.glade:8379
 msgid "Virtualbricks: action in progress"
 msgstr ""
 
 #: share/virtualbricks.glade:8383 share/virtualbricks.glade:8393
-#: share/virtualbricks.glade:8390
+#: share/virtualbricks.glade:8390 share/virtualbricks.glade:8394
 msgid "Please wait"
 msgstr ""
 
@@ -1405,14 +1423,14 @@ msgid "Close VB"
 msgstr ""
 
 #: share/virtualbricks.glade:8551 share/virtualbricks.glade:8564
-#: share/virtualbricks.glade:8561
+#: share/virtualbricks.glade:8561 share/virtualbricks.glade:8566
 msgid ""
 "Enter shell command:\n"
 "(each line is an action)"
 msgstr ""
 
 #: share/virtualbricks.glade:8563 share/virtualbricks.glade:8576
-#: share/virtualbricks.glade:8573
+#: share/virtualbricks.glade:8573 share/virtualbricks.glade:8578
 msgid ""
 "Insert virtualbricks-shell\n"
 "commands here.\n"
@@ -1423,7 +1441,7 @@ msgstr ""
 msgid "Hello world!"
 msgstr ""
 
-#: share/virtualbricks.glade:7784
+#: share/virtualbricks.glade:7784 share/virtualbricks.glade:7785
 msgid "Event type selection"
 msgstr ""
 
@@ -1432,14 +1450,17 @@ msgid "Shell command actions"
 msgstr ""
 
 #: share/virtualbricks.glade:8689 share/virtualbricks.glade:8686
+#: share/virtualbricks.glade:8691
 msgid "New event name"
 msgstr ""
 
 #: share/virtualbricks.glade:8771 share/virtualbricks.glade:8768
+#: share/virtualbricks.glade:8774
 msgid "Bricks to add to the event"
 msgstr ""
 
 #: share/virtualbricks.glade:8791 share/virtualbricks.glade:8788
+#: share/virtualbricks.glade:8795 share/virtualbricks.glade:8796
 msgid ""
 "Bricks\n"
 "available"
@@ -1450,6 +1471,7 @@ msgid "-->"
 msgstr ""
 
 #: share/virtualbricks.glade:8855 share/virtualbricks.glade:8852
+#: share/virtualbricks.glade:8887 share/virtualbricks.glade:8888
 msgid ""
 "Bricks\n"
 "added"
@@ -1459,20 +1481,95 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1686
 #: virtualbricks/virtualbricks_GUI.py:1690
 #: virtualbricks/virtualbricks_GUI.py:1701
+#: virtualbricks/virtualbricks_GUI.py:1765
+#: virtualbricks/virtualbricks_GUI.py:1776
+#: virtualbricks/virtualbricks_GUI.py:1786
+#: virtualbricks/virtualbricks_GUI.py:1797
 msgid "Do you really want to delete "
 msgstr ""
 
 #: virtualbricks/virtualbricks_GUI.py:1684
 #: virtualbricks/virtualbricks_GUI.py:1699
+#: virtualbricks/virtualbricks_GUI.py:1774
+#: virtualbricks/virtualbricks_GUI.py:1795
 msgid "This event is in use. "
 msgstr ""
 
 #: virtualbricks/virtualbricks_GUI.py:1696
 #: virtualbricks/virtualbricks_GUI.py:1711
+#: virtualbricks/virtualbricks_GUI.py:1786
+#: virtualbricks/virtualbricks_GUI.py:1807
 msgid "Cannot rename Brick: it is in use."
 msgstr ""
 
 #: virtualbricks/virtualbricks_GUI.py:1705
 #: virtualbricks/virtualbricks_GUI.py:1720
+#: virtualbricks/virtualbricks_GUI.py:1795
+#: virtualbricks/virtualbricks_GUI.py:1840
 msgid "Cannot rename Event: it is in use."
+msgstr ""
+
+#: share/virtualbricks.glade:8831 share/virtualbricks.glade:8832
+msgid ""
+"--->\n"
+"<---"
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:988
+#: virtualbricks/virtualbricks_GUI.py:1008
+#: virtualbricks/virtualbricks_GUI.py:1006
+#: virtualbricks/virtualbricks_GUI.py:1028
+msgid "Icon"
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:990
+#: virtualbricks/virtualbricks_GUI.py:1010
+#: virtualbricks/virtualbricks_GUI.py:1008
+#: virtualbricks/virtualbricks_GUI.py:1030
+msgid "Type"
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:992
+#: virtualbricks/virtualbricks_GUI.py:1012
+#: virtualbricks/virtualbricks_GUI.py:1010
+#: virtualbricks/virtualbricks_GUI.py:1032
+msgid "Name"
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:994
+#: virtualbricks/virtualbricks_GUI.py:1014
+#: virtualbricks/virtualbricks_GUI.py:1012
+#: virtualbricks/virtualbricks_GUI.py:1034
+msgid "Parameters"
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:1023
+#: virtualbricks/virtualbricks_GUI.py:1044
+msgid "Bricks to add to the event to be started"
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:1029
+#: virtualbricks/virtualbricks_GUI.py:1048
+msgid "Bricks to add to the event to be stopped"
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:960
+#: virtualbricks/virtualbricks_GUI.py:964
+msgid "The name \""
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:960
+msgid "\" has forbidden format."
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:964
+msgid "\" has been adapted to \""
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:967
+msgid "An event named \""
+msgstr ""
+
+#: virtualbricks/virtualbricks_GUI.py:967
+msgid "\" already exist."
 msgstr ""

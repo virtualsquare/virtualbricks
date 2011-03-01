@@ -33,7 +33,7 @@ import string
 import random
 import threading
 
-GUI_EVENT_PARAM_NCHAR = 70
+#GUI_EVENT_PARAM_NCHAR = 70
 
 def RandMac():
 	# put me into VM utilities, please.
@@ -49,4 +49,9 @@ def RandMac():
 def ImIf( bCondition, uTrue, uFalse ):
     #
     return ( uTrue, uFalse )[ not bCondition ]
-
+   
+#Truncate the string if it's longer than 30 characters
+def TruncateString(str, length=-1):
+	if length == -1:
+		return str
+	return ImIf(len(str)>length, str[0:length]+' ...', str)

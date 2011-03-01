@@ -68,9 +68,9 @@ setup( data_files=FILES, name='virtualbricks', version='0.3',
 #Remove compiled l10n files
 for d in tempdirs:
 	try:
-		#Remove the compilaed file
+		#Remove the compiled file
 		os.unlink(d + '/virtualbricks.mo')
-		# Clean up the directory yourself
+		# Clean up the directory
 		os.removedirs(d)
 	except:
 		print "Not critical error while removing: %s(.virtualbricks.mo)" %d
