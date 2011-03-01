@@ -592,9 +592,9 @@ class Event(ChildLogger):
 			tempstr += "; Actions:"
 			#Add actions cutting the tail if it's too long
 			for s in self.actions:
-				if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
-					tempstr+=" ...."
-					break
+				#if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
+				#	tempstr+=" ...."
+				#	break
 				tempstr += " \"%s\"," % s
 			#Remove the last character
 			tempstr=tempstr[0:len(tempstr)-1]
@@ -1845,6 +1845,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					print " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports())
 				else:
 					print "not configured."
+		elif command == '':
+			pass
 		else:
 			found = None
 			for obj in self.bricks:
@@ -1970,11 +1972,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def isNameFree(self, name):
 		for b in self.bricks:
 			if b.name == name:
-				raise InvalidNameException
+				return False
 		
 		for e in self.events:
 			if e.name == name:
-				raise InvalidNameException
+				return False
+			
+		return True
 
 
 	def newbrick(self, ntype="", name=""):
@@ -1982,7 +1986,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if not name:
 			raise InvalidNameException
 		
-		self.isNameFree(name)
+		if self.isNameFree(name) == False:
+			raise InvalidNameException
 
 		if ntype == "switch" or ntype == "Switch":
 			brick = Switch(self, name)
@@ -2019,7 +2024,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if not name:
 			raise InvalidNameException
 
-		self.isNameFree(name)
+		if self.isNameFree(name) == False:
+			raise InvalidNameException
 		
 		if ntype == "event" or ntype == "Event":
 			brick = Event(self, name)

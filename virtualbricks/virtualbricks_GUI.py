@@ -121,6 +121,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
 
 		self.brickfactory.connect("event-stopped", self.systray_blinking)
+		
+		self.availmodel = None
+		self.addedmodel = None
 
 		self.draw_topology()
 		self.brickfactory.start()
@@ -944,35 +947,128 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.show_window('')
 
 	def on_newevent_ok(self, widget=None, data=""):
+		
+		eventname = self.gladefile.get_widget('text_neweventname').get_text()
+		if eventname == '':
+			return
+			
+		validname = BrickFactory.ValidName(eventname)
+		if  validname == None:
+			self.show_error(_("The name \"")+eventname+_("\" has forbidden format."))
+			return
+		elif validname != eventname:
+			self.gladefile.get_widget('text_neweventname').set_text(validname)
+			self.show_error(_("The name \"")+eventname+_("\" has been adapted to \"")+validname+"\".")
+			eventname=validname
+		if self.brickfactory.isNameFree(eventname) == False:
+			self.show_error(_("An event named \"")+eventname+_("\" already exist."))
+			return
+		
 		self.show_window('')
 		self.curtain_down()
+		
 		ntype = self.selected_event_type()
-		#ntype = 'ShellCommand' #temporary fix
+		
 		try:
 			if(ntype == 'ShellCommand'):
+				
 				textbuffer = self.gladefile.get_widget('entry_shell_command').get_buffer()
 				textbuffer.set_text("new switch myswitch")
 				self.gladefile.get_widget('dialog_shellcommand').show_all()
-			elif(ntype == 'BrickStart'):
-				#availevents=self.gladefile.get_widget('bricks_available_treeview')
-				#availevents.clear_all()
-				#addedevents=self.gladefile.get_widget('bricks_added_treeview')
-				#addedevents.clear_all()
-				#for e in self.brickfactory.events:
-				#	availevents.add('boh','boh')
+				
+			elif(ntype == 'BrickStart' or ntype == 'BrickStop'):
+				
+				columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = (0, 1, 2, 3)
+				
+				availbricks = self.gladefile.get_widget('bricks_available_treeview')
+				addedbricks = self.gladefile.get_widget('bricks_added_treeview')
+				
+				self.availmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
+				self.addedmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
+				
+				for brick in self.brickfactory.bricks:
+					iter = self.availmodel.\
+					append ([gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.base, 48,
+					48), brick.get_type(), brick.name, \
+					Global.TruncateString(brick.get_parameters(), 30)])
+					#if(len(brick.get_parameters()) > 30):
+						#iter.set_tooltip_text("fdsfs")
+						#tt = gtk.Tooltip()
+						#tt.set_text(_('Configuration: ') + brick.get_parameters())
+						#availbricks.set_tooltip_row(tt, availmodel.get_path(iter))
+						#availbricks.connect('query-tooltip',self.provola)
+						#availbricks.has_tooltip = True
+
+				availbricks.set_model(self.availmodel)
+				addedbricks.set_model(self.addedmodel)
+
+				cell = gtk.CellRendererPixbuf ()
+				column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
+				cell = gtk.CellRendererText ()
+				column_type = gtk.TreeViewColumn (_("Type"), cell, text = COL_TYPE)
+				cell = gtk.CellRendererText ()
+				column_name = gtk.TreeViewColumn (_("Name"), cell, text = COL_NAME)
+				cell = gtk.CellRendererText ()
+				column_config = gtk.TreeViewColumn (_("Parameters"), cell, text = COL_CONFIG)
+				
+				# Clear columns 
+				for c in availbricks.get_columns():
+					availbricks.remove_column(c)
+
+				for c in addedbricks.get_columns():
+					addedbricks.remove_column(c)
+				
+				# Add columns
+				availbricks.append_column (column_icon)
+				availbricks.append_column (column_type)
+				availbricks.append_column (column_name)
+				availbricks.append_column (column_config)
+
+				cell = gtk.CellRendererPixbuf ()
+				column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
+				cell = gtk.CellRendererText ()
+				column_type = gtk.TreeViewColumn (_("Type"), cell, text = COL_TYPE)
+				cell = gtk.CellRendererText ()
+				column_name = gtk.TreeViewColumn (_("Name"), cell, text = COL_NAME)
+				cell = gtk.CellRendererText ()
+				column_config = gtk.TreeViewColumn (_("Parameters"), cell, text = COL_CONFIG)
+
+				addedbricks.append_column (column_icon)
+				addedbricks.append_column (column_type)
+				addedbricks.append_column (column_name)
+				addedbricks.append_column (column_config)
+				
+				if(ntype == 'BrickStart'):
+					self.gladefile.\
+				get_widget('dialog_event_bricks_select').\
+				set_title(_("Bricks to add to the event to be started"))
+				else:
+					self.gladefile.\
+				get_widget('dialog_event_bricks_select').\
+				set_title(_("Bricks to add to the event to be stopped"))
+				
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
-			elif(ntype == 'BrickStop'):
-				#availevents=self.gladefile.get_widget('bricks_available_treeview')
-				#availevents.clear_all()
-				#addedevents=self.gladefile.get_widget('bricks_added_treeview')
-				#addedevents.clear_all()
-				#for e in self.brickfactory.events:
-				#	availevents.add('boh','boh')
-				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
+				
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
 		else:
 			self.debug("Event created successfully")
+	
+	def on_event_brick_select_add_clicked(self, widget=None, data=""):
+		availbricks = self.gladefile.get_widget('bricks_available_treeview')
+		model, iter =availbricks.get_selection().get_selected()
+		if not iter:
+			return
+		self.addedmodel.append(model[iter])
+		model.remove(iter)
+		
+	def on_event_brick_select_remove_clicked(self, widget=None, data=""):
+		addedbricks = self.gladefile.get_widget('bricks_added_treeview')
+		model, iter = addedbricks.get_selection().get_selected()
+		if not iter:
+			return
+		self.availmodel.append(model[iter])
+		model.remove(iter)
 
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
@@ -1715,11 +1811,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.gladefile.get_widget('dialog_rename').show_all()
 		self.curtain_down()
 
-	def on_event_rename(self,widget=None, event=None, data=""):
-		if self.event_selected.active == True:
-			self.show_error(_("Cannot rename Event: it is in use."))
-			return
-
 	def on_event_copy(self,widget=None, event=None, data=""):
 		#self.curtain_down()
 		#self.brickfactory.dupbrick(self.brick_selected)
@@ -1745,6 +1836,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if response == 1:
+			if self.event_selected.active == True:
+				self.show_error(_("Cannot rename Event: it is in use."))
+				return
+			
 			try:
 				self.brickfactory.renameevent(self.event_selected, self.gladefile.get_widget('entry_event_newname').get_text())
 			except BrickFactory.InvalidNameException:
@@ -1767,6 +1862,34 @@ class VBGUI(ChildLogger, gobject.GObject):
 					self.brickfactory.brickAction(currevent,('config add '+str(line)).split(" "))
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
+				
+	def on_dialog_event_bricks_select_response(self,widget=None, response=0, data=""):
+		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = (0, 1, 2, 3)
+		addedbricks = self.gladefile.get_widget('bricks_added_treeview')
+		iter = self.addedmodel.get_iter_first()
+		
+		if not iter and response==1:
+			return
+		elif response==0:
+			widget.hide()
+			return
+		else:
+			widget.hide()
+		
+		evname = self.gladefile.get_widget('text_neweventname').get_text()
+		delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
+		self.brickfactory.newevent("event", evname)
+		currevent = self.brickfactory.geteventbyname(evname)
+		self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+
+		action = Global.ImIf(self.selected_event_type()=='BrickStart',' on',' off')
+
+		while iter:
+			evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
+			self.brickfactory.\
+			brickAction(currevent,('config add ' + evnametoadd + action).\
+										split(" "))
+			iter = self.addedmodel.iter_next(iter)
 
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
@@ -2142,6 +2265,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def signals(self):
 		self.signaldict = {
+			"on_dialog_event_bricks_select_response":self.on_dialog_event_bricks_select_response,
+			"on_event_brick_select_add_clicked":self.on_event_brick_select_add_clicked,
+			"on_event_brick_select_remove_clicked":self.on_event_brick_select_remove_clicked,
 			"on_window1_destroy":self.on_window1_destroy,
 			"on_windown_destroy":self.on_windown_destroy,
 			"on_newbrick_cancel":self.on_newbrick_cancel,
