@@ -135,7 +135,7 @@
                   <widget class="GtkMenu" id="menuitem_edit_menu">
                     <child>
                       <widget class="GtkImageMenuItem" id="item_settings">
-                        <property name="label">_Preferences</property>
+                        <property name="label">gtk-preferences</property>
                         <property name="visible">True</property>
                         <property name="tooltip" translatable="yes">configure Virtualbricks</property>
                         <property name="use_underline">True</property>

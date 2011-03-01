@@ -149,14 +149,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		self.running_bricks = self.treestore('treeview_joblist', [gtk.gdk.Pixbuf,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			['','PID','Type','Name'])
+			['',_('PID'),_('Type'),_('Name')])
 
-		columns = ['Icon', 'Status', 'Type', 'Name', 'Parameters']
+		columns = [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')]
 		tree = self.gladefile.get_widget('treeview_bookmarks')
 		tree.set_model(self.brickfactory.bricksmodel)
 		for name in columns:
 			col = gtk.TreeViewColumn(name)
-			if name != 'Icon':
+			if name != _('Icon'):
 				elem = gtk.CellRendererText()
 				col.pack_start(elem, False)
 			else:
@@ -169,7 +169,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		eventstree.set_model(self.brickfactory.eventsmodel)
 		for name in columns:
 			col = gtk.TreeViewColumn(name)
-			if name != 'Icon':
+			if name != _('Icon'):
 				elem = gtk.CellRendererText()
 				col.pack_start(elem, False)
 			else:
@@ -214,7 +214,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def brick_to_cell(self, column, cell, model, iter):
 		brick = model.get_value(iter, Models.BricksModel.BRICK_IDX)
 		assert brick is not None
-		if column.get_title() == 'Icon':
+		if column.get_title() == _('Icon'):
 			if brick.proc is not None:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
 					48)
@@ -226,13 +226,13 @@ class VBGUI(ChildLogger, gobject.GObject):
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
 						48)
 				cell.set_property('pixbuf', icon)
-		elif column.get_title() == 'Status':
+		elif column.get_title() == _('Status'):
 			cell.set_property('text', brick.get_state())
-		elif column.get_title() == 'Type':
+		elif column.get_title() == _('Type'):
 			cell.set_property('text', brick.get_type())
-		elif column.get_title() == 'Name':
+		elif column.get_title() == _('Name'):
 			cell.set_property('text', brick.name)
-		elif column.get_title() == 'Parameters':
+		elif column.get_title() == _('Parameters'):
 			cell.set_property('text', brick.get_parameters())
 		else:
 			raise NotImplemented()
@@ -240,18 +240,18 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def event_to_cell(self, column, cell, model, iter):
 		event = model.get_value(iter, Models.EventsModel.EVENT_IDX)
 		assert event is not None
-		if column.get_title() == 'Icon':
+		if column.get_title() == _('Icon'):
 			#print "base: %s, grey: %s" % (event.icon.base,event.icon.grey)
 			icon = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.get_img(), 48,
 				48)
 			cell.set_property('pixbuf', icon)
-		elif column.get_title() == 'Status':
+		elif column.get_title() == _('Status'):
 			cell.set_property('text', event.get_state())
-		elif column.get_title() == 'Type':
+		elif column.get_title() == _('Type'):
 			cell.set_property('text', event.get_type())
-		elif column.get_title() == 'Name':
+		elif column.get_title() == _('Name'):
 			cell.set_property('text', event.name)
-		elif column.get_title() == 'Parameters':
+		elif column.get_title() == _('Parameters'):
 			cell.set_property('text', event.get_parameters())
 		else:
 			raise NotImplemented()
@@ -669,7 +669,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def curtain_down(self):
 		self.curtain.set_position(99999)
-		self.gladefile.get_widget('label_showhidesettings').set_text('Show Settings')
+		self.gladefile.get_widget('label_showhidesettings').set_text(_('Show Settings'))
 
 	def curtain_up(self):
 		self.debug("Old position: %d", self.curtain.get_position())
@@ -694,7 +694,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				wg.set_position(589)
 				self.config_event_prepare()
 				ww.show_all()
-				self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
+				self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
 			return
 
 		if self.brick_selected is None:
@@ -731,7 +731,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.config_brick_prepare()
 		ww.show_all()
 
-		self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
+		self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
 
 	def get_tree_selected(self, tree, store, pthinfo, idx):
 		"""TODO replace get_treeselected by get_tree_selected"""
@@ -876,6 +876,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		wdg.set_property('message-type', type)
 		wdg.set_property('text', text)
 		wdg.run()
+		
 	def show_error(self, text):
 		self.show_msg(text, gtk.MESSAGE_ERROR)
 

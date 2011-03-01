@@ -491,11 +491,11 @@ class Brick(ChildLogger):
 	def get_state(self):
 		"""return state of the brick"""
 		if self.proc is not None:
-			state = 'running'
+			state = _('running')
 		elif not self.properly_connected():
-			state = 'disconnected'
+			state = _('disconnected')
 		else:
-			state = 'off'
+			state = _('off')
 		return state
 	
 class VbShellCommand(str):
@@ -537,11 +537,11 @@ class Event(ChildLogger):
 	def get_state(self):
 		"""return state of the event"""
 		if self.active == True:
-			state = 'running'
+			state = _('running')
 		elif self.configured() == False:
-			state = 'unconfigured'
+			state = _('unconfigured')
 		else:
-			state = 'off'
+			state = _('off')
 		return state
 	
 	def change_state(self):

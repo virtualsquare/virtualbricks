@@ -37,7 +37,6 @@ def ComboBox(widget):
 	COMBOBOXES[widget] = ComboBoxObj(widget)
 	return COMBOBOXES[widget]
 
-
 class ComboBoxObj:
 	def __init__(self, _widget):
 		self.widget = _widget
