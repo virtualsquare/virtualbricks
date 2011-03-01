@@ -113,7 +113,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
 
-		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit)
+		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit_from_commandline)
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
 
@@ -754,7 +754,13 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.info("GUI: Goodbye!")
 		self.brickfactory.disconnect(self._engine_closed)
 		self.brickfactory.quit()
+		#gtk.mainquit()
 		sys.exit(0)
+		
+	def quit_from_commandline(self, args=None):
+		self.info("GUI: Goodbye!")
+		gtk.main_quit()
+		#sys.exit(0)
 
 	def get_widgets(self, l):
 		r = dict()
