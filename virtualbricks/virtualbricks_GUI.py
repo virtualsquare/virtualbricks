@@ -110,20 +110,20 @@ class VBGUI(ChildLogger, gobject.GObject):
 		gtk.gdk.threads_init()
 
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
-		
+
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
 
 		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit_from_commandline)
-		
+
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
-		
+
 		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
 
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
-		
+
 		self.availmodel = None
 		self.addedmodel = None
 
@@ -203,7 +203,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.joblist_selected = None
 		self.brick_selected = None
 		self.event_selected = None
-		
+
 		self.statusicon = None
 
 		try:
@@ -306,19 +306,19 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def cb_brick_stopped(self, model, name=""):
 		self.draw_topology()
 		self.systray_blinking(None, False)
-		
+
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
-	
+
 	def cb_event_added(self, model, name):
 		pass
 
 	def cb_event_deleted(self, model, name):
 		pass
-	
+
 	def cb_event_stopped(self, model, name=""):
 		pass
-	
+
 	def cb_event_started(self, model, name=""):
 		pass
 
@@ -681,10 +681,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.gladefile.get_widget('box_wirefilterconfig').hide()
 		self.gladefile.get_widget('box_switchconfig').hide()
 		self.gladefile.get_widget('box_eventconfig').hide()
-		
+
 		wg = self.curtain
 		notebook=self.gladefile.get_widget('main_notebook')
-		
+
 		if notebook.get_current_page() == 1:
 			if self.event_selected is None:
 				return
@@ -696,7 +696,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				ww.show_all()
 				self.gladefile.get_widget('label_showhidesettings').set_text('Hide Settings')
 			return
-		
+
 		if self.brick_selected is None:
 			return
 
@@ -767,7 +767,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brickfactory.quit()
 		#gtk.mainquit()
 		sys.exit(0)
-		
+
 	def quit_from_commandline(self, args=None):
 		self.info("GUI: Goodbye!")
 		gtk.main_quit()
@@ -964,11 +964,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.show_window('')
 
 	def on_newevent_ok(self, widget=None, data=""):
-		
+
 		eventname = self.gladefile.get_widget('text_neweventname').get_text()
 		if eventname == '':
 			return
-			
+
 		validname = BrickFactory.ValidName(eventname)
 		if  validname == None:
 			self.show_error(_("The name \"")+eventname+_("\" has forbidden format."))
@@ -980,29 +980,29 @@ class VBGUI(ChildLogger, gobject.GObject):
 		if self.brickfactory.isNameFree(eventname) == False:
 			self.show_error(_("An event named \"")+eventname+_("\" already exist."))
 			return
-		
+
 		self.show_window('')
 		self.curtain_down()
-		
+
 		ntype = self.selected_event_type()
-		
+
 		try:
 			if(ntype == 'ShellCommand'):
-				
+
 				textbuffer = self.gladefile.get_widget('entry_shell_command').get_buffer()
 				textbuffer.set_text("new switch myswitch")
 				self.gladefile.get_widget('dialog_shellcommand').show_all()
-				
+
 			elif(ntype == 'BrickStart' or ntype == 'BrickStop'):
-				
+
 				columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = (0, 1, 2, 3)
-				
+
 				availbricks = self.gladefile.get_widget('bricks_available_treeview')
 				addedbricks = self.gladefile.get_widget('bricks_added_treeview')
-				
+
 				self.availmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
 				self.addedmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
-				
+
 				for brick in self.brickfactory.bricks:
 					iter = self.availmodel.\
 					append ([gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.base, 48,
@@ -1027,14 +1027,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 				column_name = gtk.TreeViewColumn (_("Name"), cell, text = COL_NAME)
 				cell = gtk.CellRendererText ()
 				column_config = gtk.TreeViewColumn (_("Parameters"), cell, text = COL_CONFIG)
-				
-				# Clear columns 
+
+				# Clear columns
 				for c in availbricks.get_columns():
 					availbricks.remove_column(c)
 
 				for c in addedbricks.get_columns():
 					addedbricks.remove_column(c)
-				
+
 				# Add columns
 				availbricks.append_column (column_icon)
 				availbricks.append_column (column_type)
@@ -1054,7 +1054,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				addedbricks.append_column (column_type)
 				addedbricks.append_column (column_name)
 				addedbricks.append_column (column_config)
-				
+
 				if(ntype == 'BrickStart'):
 					self.gladefile.\
 				get_widget('dialog_event_bricks_select').\
@@ -1063,14 +1063,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 					self.gladefile.\
 				get_widget('dialog_event_bricks_select').\
 				set_title(_("Bricks to add to the event to be stopped"))
-				
+
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
-				
+
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
 		else:
 			self.debug("Event created successfully")
-	
+
 	def on_event_brick_select_add_clicked(self, widget=None, data=""):
 		availbricks = self.gladefile.get_widget('bricks_available_treeview')
 		model, iter =availbricks.get_selection().get_selected()
@@ -1078,7 +1078,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			return
 		self.addedmodel.append(model[iter])
 		model.remove(iter)
-		
+
 	def on_event_brick_select_remove_clicked(self, widget=None, data=""):
 		addedbricks = self.gladefile.get_widget('bricks_added_treeview')
 		model, iter = addedbricks.get_selection().get_selected()
@@ -1094,7 +1094,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_config_ok(self, widget=None, data=""):
 		self.config_brick_confirm()
 		self.curtain_down()
-	
+
 	def on_generic_event(self, widget=None, data=""):
 		self.systray_blinking(None, True)
 
@@ -1332,7 +1332,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def events_tree_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		self.user_wait_action(self.events_startstop_brick, [self.event_selected])
-		
+
 	def events_startstop_brick(self, e):
 		if(e.get_type() == 'Event'):
 			if(e.active == True):
@@ -1385,7 +1385,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.joblist_selected = self.brickfactory.getbrickbyname(name)
 			if not self.joblist_selected:
 				return
-			
+
 			if self.joblist_selected.get_type()=="Qemu":
 				self.set_sensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
 			else:
@@ -1809,7 +1809,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def on_event_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
-		
+
 		msg=""
 		if self.event_selected.active == True:
 			msg=_("This event is in use. ")
@@ -1835,11 +1835,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.curtain_down()
 		self.brickfactory.dupevent(self.event_selected)
 		pass
-	
+
 	def on_event_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
 		return
-		
+
 	def on_event_rename(self,widget=None, event=None, data=""):
 		self.gladefile.get_widget('entry_event_newname').set_text(self.event_selected.name)
 		self.gladefile.get_widget('dialog_event_rename').show_all()
@@ -1859,7 +1859,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			if self.event_selected.active == True:
 				self.show_error(_("Cannot rename Event: it is in use."))
 				return
-			
+
 			try:
 				self.brickfactory.renameevent(self.event_selected, self.gladefile.get_widget('entry_event_newname').get_text())
 			except BrickFactory.InvalidNameException:
@@ -1876,18 +1876,18 @@ class VBGUI(ChildLogger, gobject.GObject):
 				command=textbuffer.get_text(textbuffer.get_start_iter() , textbuffer.get_end_iter())
 				currevent=self.brickfactory.geteventbyname(name)
 				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
-				for line in command.splitlines():	
+				for line in command.splitlines():
 					if(line==''):
-						continue			
+						continue
 					self.brickfactory.brickAction(currevent,('config add '+str(line)).split(" "))
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
-				
+
 	def on_dialog_event_bricks_select_response(self,widget=None, response=0, data=""):
 		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = (0, 1, 2, 3)
 		addedbricks = self.gladefile.get_widget('bricks_added_treeview')
 		iter = self.addedmodel.get_iter_first()
-		
+
 		if not iter and response==1:
 			return
 		elif response==0:
@@ -1895,7 +1895,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			return
 		else:
 			widget.hide()
-		
+
 		evname = self.gladefile.get_widget('text_neweventname').get_text()
 		delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 		self.brickfactory.newevent("event", evname)
@@ -2278,6 +2278,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 		filechooser = widget.name[8:] + "_filechooser"
 		self.gladefile.get_widget(filechooser).unselect_all()
 
+	def filechooser_hd_clear(self, widget=None, event=None, data=""):
+		self.filechooser_clear(widget)
+		hd = widget.name[21:]
+		check = self.gladefile.get_widget("cfg_Qemu_private"+hd+"_check")
+		check.set_active(False)
+		filechooser = widget.name[8:] + "_filechooser"
+		self.gladefile.get_widget(filechooser).set_current_folder(self.config.get('baseimages'))
+
 	def filechooser_image_clear(self, widget=None, event=None, data=""):
 		print "FILECHOOSER_IMAGE"
 		self.filechooser_clear(widget)
@@ -2450,6 +2458,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"systray_show_window_cb": self.systray_show_window_cb,
 			"systray_hide_window_cb": self.systray_hide_window_cb,
 			"systray_exit_cb": self.on_window1_destroy,
+			"filechooser_clear": self.filechooser_clear,
+			"filechooser_hd_clear": self.filechooser_hd_clear,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
