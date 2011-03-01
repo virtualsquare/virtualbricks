@@ -191,6 +191,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Eth','connection','model','macaddr'])
 
+		self.statusicon = None
+
 		#TRAYICON
 		if self.config.systray:
 			self.start_systray()
@@ -204,8 +206,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.brick_selected = None
 		self.event_selected = None
 		
-		self.statusicon = None
-
 		try:
 			gtk.main()
 		except KeyboardInterrupt:
