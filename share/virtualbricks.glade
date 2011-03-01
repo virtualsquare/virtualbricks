@@ -12,6 +12,7 @@
     <property name="default_width">800</property>
     <property name="default_height">700</property>
     <property name="icon">/usr/share/pixmaps/virtualbricks.png</property>
+    <signal name="event" handler="on_generic_event"/>
     <signal name="delete_event" handler="on_window1_destroy"/>
     <child>
       <widget class="GtkVBox" id="vbox1">

@@ -57,6 +57,7 @@ class InvalidActionException(Exception):
 		pass
 	
 def ValidName(name):
+	name=str(name)
 	if not re.search("\A[a-zA-Z]", name):
 		return None
 	while(name.startswith(' ')):
@@ -629,6 +630,7 @@ class Event(ChildLogger):
 		except RuntimeError:
 			pass
 		self.active = True
+		self.factory.emit("event-started")
 
 	def poweroff(self):
 		if(self.active == False):
@@ -656,6 +658,7 @@ class Event(ChildLogger):
 		self.active = False
 		#We get ready for new poweron
 		self.on_config_changed()
+		self.factory.emit("event-accomplished")
 
 	def on_config_changed(self):
 		self.timer = Timer(float(self.cfg.delay), self.doactions, ())
@@ -1632,9 +1635,11 @@ class VM(Brick):
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
-		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
-		'event-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'brick-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'event-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'event-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'event-accomplished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 	}
 
 	def __init__(self, logger=None, showconsole=True):
@@ -1845,8 +1850,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					print " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports())
 				else:
 					print "not configured."
+					
 		elif command == '':
 			pass
+		
 		else:
 			found = None
 			for obj in self.bricks:
@@ -1938,6 +1945,20 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			b1.cfg.console = Settings.MYPATH + '/' + b1.name + '.mgmt'
 		self.bricks.append(b1)
 		b1.on_config_changed()
+		self.bricksmodel.add_brick(b1)
+
+	def dupevent(self, eventtodup):
+		newname = self.nextValidName("Copy_of_"+eventtodup.name)
+		if newname == None:
+			print "Name error duplicating event."
+			return
+		self.newevent("Event", newname)
+		event = self.geteventbyname(eventtodup.name)
+		newevent = self.geteventbyname(newname)
+		newevent.actions = copy.deepcopy(event.actions)
+		newevent.cfg = copy.deepcopy(event.cfg)
+		newevent.active = False
+		newevent.on_config_changed()
 
 	def renamebrick(self, b, newname):
 		newname = ValidName(newname)
@@ -1979,7 +2000,18 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				return False
 			
 		return True
-
+	
+	def nextValidName(self, name, toappend="_new"):
+		newname = ValidName(name)
+		if not newname:
+			return None
+		for e in self.events:
+			if newname == e.name:
+				newname += toappend
+		for b in self.bricks:
+			if newname == b.name:
+				newname += toappend
+		return newname
 
 	def newbrick(self, ntype="", name=""):
 		name = ValidName(name)

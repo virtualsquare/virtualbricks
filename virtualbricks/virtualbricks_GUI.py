@@ -110,17 +110,19 @@ class VBGUI(ChildLogger, gobject.GObject):
 		gtk.gdk.threads_init()
 
 		self.brickfactory = BrickFactory.BrickFactory(self, True)
+		
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
 
 		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit_from_commandline)
+		
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
+		
+		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
 
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
-
-		self.brickfactory.connect("event-stopped", self.systray_blinking)
 		
 		self.availmodel = None
 		self.addedmodel = None
@@ -201,6 +203,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.joblist_selected = None
 		self.brick_selected = None
 		self.event_selected = None
+		
+		self.statusicon = None
 
 		try:
 			gtk.main()
@@ -293,6 +297,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 	""" ******************************************************** """
 
 	def cb_brick_added(self, model, name):
+		self.draw_topology()
 		pass
 
 	def cb_brick_deleted(self, model, name):
@@ -301,16 +306,20 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def cb_brick_stopped(self, model, name=""):
 		self.draw_topology()
 		self.systray_blinking(None, False)
+		
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
-
+	
 	def cb_event_added(self, model, name):
 		pass
 
 	def cb_event_deleted(self, model, name):
 		pass
-
-	def cb_event_changed(self, model, path, iter):
+	
+	def cb_event_stopped(self, model, name=""):
+		pass
+	
+	def cb_event_started(self, model, name=""):
 		pass
 
 	""" ******************************************************** """
@@ -623,6 +632,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.statusicon.set_enabled(False)
 
 	def systray_blinking(self, args=None, disable=False):
+		if not self.statusicon or self.statusicon.get_enabled() == False:
+			return
 		if disable:
 			self.statusicon.set_blinking(False)
 			return
@@ -1083,6 +1094,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_config_ok(self, widget=None, data=""):
 		self.config_brick_confirm()
 		self.curtain_down()
+	
+	def on_generic_event(self, widget=None, data=""):
+		self.systray_blinking(None, True)
 
 	def set_sensitivegroup(self,l):
 		for i in l:
@@ -1818,8 +1832,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.curtain_down()
 
 	def on_event_copy(self,widget=None, event=None, data=""):
-		#self.curtain_down()
-		#self.brickfactory.dupbrick(self.brick_selected)
+		self.curtain_down()
+		self.brickfactory.dupevent(self.event_selected)
 		pass
 	
 	def on_event_configure(self,widget=None, event=None, data=""):
@@ -2271,6 +2285,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def signals(self):
 		self.signaldict = {
+			"on_generic_event":self.on_generic_event,
 			"on_dialog_event_bricks_select_response":self.on_dialog_event_bricks_select_response,
 			"on_event_brick_select_add_clicked":self.on_event_brick_select_add_clicked,
 			"on_event_brick_select_remove_clicked":self.on_event_brick_select_remove_clicked,
