@@ -322,7 +322,7 @@ msgstr "mtdblock"
 #: share/virtualbricks.glade:1475
 #: share/virtualbricks.glade:1517
 msgid "Private COW"
-msgstr "COW privato"
+msgstr "COW Privato"
 
 #: share/virtualbricks.glade:1330
 #: share/virtualbricks.glade:1547
@@ -700,8 +700,7 @@ msgstr "<b>Icona Macchina Virtuale</b>"
 #: share/virtualbricks.glade:8182
 msgid "Brick Config"
 msgstr ""
-"Configurazione\n"
-"Mattone"
+"Configura Mattone"
 
 #: share/virtualbricks.glade:3085
 #: share/virtualbricks.glade:4104

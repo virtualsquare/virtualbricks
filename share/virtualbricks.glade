@@ -9,7 +9,7 @@
     <property name="border_width">2</property>
     <property name="title" translatable="yes">Virtualbricks</property>
     <property name="window_position">center</property>
-    <property name="default_width">800</property>
+    <property name="default_width">850</property>
     <property name="default_height">700</property>
     <property name="icon">/usr/share/pixmaps/virtualbricks.png</property>
     <signal name="event" handler="on_generic_event"/>
@@ -283,9 +283,9 @@
                   <widget class="GtkNotebook" id="main_notebook">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <signal name="change_current_page" handler="on_focus_out"/>
                     <signal name="switch_page" handler="on_focus_out"/>
                     <signal name="select_page" handler="on_focus_out"/>
-                    <signal name="change_current_page" handler="on_focus_out"/>
                     <child>
                       <widget class="GtkVBox" id="vbox11">
                         <property name="visible">True</property>
@@ -362,8 +362,8 @@
                                 <property name="has_tooltip">True</property>
                                 <property name="tooltip" translatable="yes">You can use drag and drop to connect bricks and double click to start/stop them.</property>
                                 <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
-                                <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
                                 <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
+                                <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
                                 <signal name="button_release_event" handler="on_treeview_bookmarks_button_release_event"/>
                               </widget>
                             </child>
@@ -797,6 +797,7 @@ fda</property>
                                                 </child>
                                               </widget>
                                               <packing>
+                                                <property name="fill">False</property>
                                                 <property name="position">1</property>
                                               </packing>
                                             </child>
@@ -850,7 +851,7 @@ fda</property>
                                               <packing>
                                                 <property name="top_attach">2</property>
                                                 <property name="bottom_attach">3</property>
-                                                <property name="x_options">GTK_FILL</property>
+                                                <property name="x_options"></property>
                                                 <property name="y_options"></property>
                                               </packing>
                                             </child>
@@ -909,11 +910,15 @@ fda</property>
                                             <child>
                                               <widget class="GtkImage" id="image6">
                                                 <property name="visible">True</property>
+                                                <property name="xalign">0</property>
+                                                <property name="yalign">0</property>
                                                 <property name="stock">gtk-cdrom</property>
                                               </widget>
                                               <packing>
                                                 <property name="left_attach">1</property>
                                                 <property name="right_attach">2</property>
+                                                <property name="x_options"></property>
+                                                <property name="y_options"></property>
                                               </packing>
                                             </child>
                                             <child>
@@ -938,6 +943,7 @@ fda</property>
                                                       <widget class="GtkImage" id="image27">
                                                         <property name="visible">True</property>
                                                         <property name="stock">gtk-delete</property>
+                                                        <property name="icon-size">2</property>
                                                       </widget>
                                                     </child>
                                                   </widget>
@@ -972,6 +978,7 @@ fda</property>
                                   </widget>
                                   <packing>
                                     <property name="expand">False</property>
+                                    <property name="fill">False</property>
                                     <property name="position">1</property>
                                   </packing>
                                 </child>
@@ -1123,7 +1130,7 @@ fda</property>
                                                   <packing>
                                                     <property name="left_attach">1</property>
                                                     <property name="right_attach">2</property>
-                                                    <property name="y_options">GTK_FILL</property>
+                                                    <property name="y_options"></property>
                                                   </packing>
                                                 </child>
                                                 <child>
@@ -1140,8 +1147,7 @@ fda</property>
                                                     <property name="right_attach">2</property>
                                                     <property name="top_attach">1</property>
                                                     <property name="bottom_attach">2</property>
-                                                    <property name="x_options">GTK_FILL</property>
-                                                    <property name="y_options">GTK_FILL</property>
+                                                    <property name="y_options"></property>
                                                   </packing>
                                                 </child>
                                                 <child>
@@ -1158,7 +1164,6 @@ fda</property>
                                                     <property name="right_attach">2</property>
                                                     <property name="top_attach">2</property>
                                                     <property name="bottom_attach">3</property>
-                                                    <property name="x_options">GTK_FILL</property>
                                                     <property name="y_options">GTK_FILL</property>
                                                   </packing>
                                                 </child>
@@ -1176,7 +1181,6 @@ fda</property>
                                                     <property name="right_attach">2</property>
                                                     <property name="top_attach">3</property>
                                                     <property name="bottom_attach">4</property>
-                                                    <property name="x_options">GTK_FILL</property>
                                                     <property name="y_options">GTK_FILL</property>
                                                   </packing>
                                                 </child>
@@ -1194,7 +1198,6 @@ fda</property>
                                                     <property name="right_attach">2</property>
                                                     <property name="top_attach">4</property>
                                                     <property name="bottom_attach">5</property>
-                                                    <property name="x_options">GTK_FILL</property>
                                                     <property name="y_options">GTK_FILL</property>
                                                   </packing>
                                                 </child>
@@ -1212,7 +1215,6 @@ fda</property>
                                                     <property name="right_attach">2</property>
                                                     <property name="top_attach">5</property>
                                                     <property name="bottom_attach">6</property>
-                                                    <property name="x_options">GTK_FILL</property>
                                                     <property name="y_options">GTK_FILL</property>
                                                   </packing>
                                                 </child>
@@ -1293,6 +1295,7 @@ fda</property>
                                                           <widget class="GtkImage" id="image21">
                                                             <property name="visible">True</property>
                                                             <property name="stock">gtk-delete</property>
+                                                            <property name="icon-size">2</property>
                                                           </widget>
                                                         </child>
                                                       </widget>
@@ -1335,6 +1338,7 @@ fda</property>
                                                           <widget class="GtkImage" id="image22">
                                                             <property name="visible">True</property>
                                                             <property name="stock">gtk-delete</property>
+                                                            <property name="icon-size">2</property>
                                                           </widget>
                                                         </child>
                                                       </widget>
@@ -1377,6 +1381,7 @@ fda</property>
                                                           <widget class="GtkImage" id="image23">
                                                             <property name="visible">True</property>
                                                             <property name="stock">gtk-delete</property>
+                                                            <property name="icon-size">2</property>
                                                           </widget>
                                                         </child>
                                                       </widget>
@@ -1419,6 +1424,7 @@ fda</property>
                                                           <widget class="GtkImage" id="image24">
                                                             <property name="visible">True</property>
                                                             <property name="stock">gtk-delete</property>
+                                                            <property name="icon-size">2</property>
                                                           </widget>
                                                         </child>
                                                       </widget>
@@ -1461,6 +1467,7 @@ fda</property>
                                                           <widget class="GtkImage" id="image25">
                                                             <property name="visible">True</property>
                                                             <property name="stock">gtk-delete</property>
+                                                            <property name="icon-size">2</property>
                                                           </widget>
                                                         </child>
                                                       </widget>
@@ -1503,6 +1510,7 @@ fda</property>
                                                           <widget class="GtkImage" id="image26">
                                                             <property name="visible">True</property>
                                                             <property name="stock">gtk-delete</property>
+                                                            <property name="icon-size">2</property>
                                                           </widget>
                                                         </child>
                                                       </widget>
@@ -1534,6 +1542,8 @@ fda</property>
                                                 </child>
                                               </widget>
                                               <packing>
+                                                <property name="expand">False</property>
+                                                <property name="fill">False</property>
                                                 <property name="position">1</property>
                                               </packing>
                                             </child>
@@ -2604,8 +2614,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Set up a new network card</property>
-                                    <signal name="clicked" handler="on_vmplug_add"/>
                                     <signal name="activate" handler="on_vmplug_add"/>
+                                    <signal name="clicked" handler="on_vmplug_add"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment9">
                                         <property name="visible">True</property>
@@ -2657,8 +2667,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Edit selected network card or redirection</property>
-                                    <signal name="clicked" handler="on_vmplug_edit"/>
                                     <signal name="activate" handler="on_vmplug_edit"/>
+                                    <signal name="clicked" handler="on_vmplug_edit"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment11">
                                         <property name="visible">True</property>
@@ -2710,8 +2720,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Remove selected network card or redirection</property>
-                                    <signal name="clicked" handler="on_vmplug_remove"/>
                                     <signal name="activate" handler="on_vmplug_remove"/>
+                                    <signal name="clicked" handler="on_vmplug_remove"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment12">
                                         <property name="visible">True</property>
@@ -3008,6 +3018,7 @@ ne2k_isa
                                         <child>
                                           <widget class="GtkButton" id="filedel_cfg_Qemu_kernel">
                                             <property name="visible">True</property>
+                                            <property name="sensitive">False</property>
                                             <property name="can_focus">True</property>
                                             <property name="receives_default">True</property>
                                             <signal name="clicked" handler="filechooser_clear"/>
@@ -3047,6 +3058,7 @@ ne2k_isa
                                         <child>
                                           <widget class="GtkButton" id="filedel_cfg_Qemu_initrd">
                                             <property name="visible">True</property>
+                                            <property name="sensitive">False</property>
                                             <property name="can_focus">True</property>
                                             <property name="receives_default">True</property>
                                             <signal name="clicked" handler="filechooser_clear"/>
@@ -4726,8 +4738,8 @@ Number of ports: </property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="clicked" handler="on_config_cancel"/>
                         <signal name="activate" handler="on_config_cancel"/>
+                        <signal name="clicked" handler="on_config_cancel"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -4746,8 +4758,8 @@ Number of ports: </property>
                         <property name="has_default">True</property>
                         <property name="receives_default">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="clicked" handler="on_config_ok"/>
                         <signal name="activate" handler="on_config_ok"/>
+                        <signal name="clicked" handler="on_config_ok"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -4837,8 +4849,8 @@ Number of ports: </property>
     <property name="resizable">False</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_settings_response"/>
     <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
+    <signal name="response" handler="on_dialog_settings_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>
@@ -5764,8 +5776,8 @@ invalid path for qemu/kvm binaries</property>
     <property name="height_request">500</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_about_response"/>
     <signal name="delete_event" handler="on_windown_destroy"/>
+    <signal name="response" handler="on_dialog_about_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox4">
         <property name="visible">True</property>
@@ -5883,9 +5895,6 @@ If you find virtualbricks useful for your business, please consider making a don
         <property name="visible">True</property>
         <property name="orientation">vertical</property>
         <child>
-          <placeholder/>
-        </child>
-        <child>
           <widget class="GtkVBox" id="vbox15">
             <property name="visible">True</property>
             <property name="orientation">vertical</property>
@@ -5972,6 +5981,9 @@ If you find virtualbricks useful for your business, please consider making a don
             <property name="padding">5</property>
             <property name="position">4</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <widget class="GtkHBox" id="hbox14">
@@ -8015,8 +8027,8 @@ Use an already open UDP multicast socket</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_newbrick_cancel"/>
                 <signal name="released" handler="on_newbrick_cancel"/>
+                <signal name="clicked" handler="on_newbrick_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -8371,8 +8383,8 @@ Shell Command</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_newevent_cancel"/>
                 <signal name="released" handler="on_newevent_cancel"/>
+                <signal name="clicked" handler="on_newevent_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -8479,8 +8491,8 @@ Shell Command</property>
     <property name="window_position">mouse</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
-    <signal name="response" handler="on_dialog_confirm_response"/>
     <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
+    <signal name="response" handler="on_dialog_confirm_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox12">
         <property name="visible">True</property>
@@ -8569,8 +8581,8 @@ Shell Command</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_rename_response"/>
     <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
+    <signal name="response" handler="on_dialog_rename_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox13">
         <property name="visible">True</property>
@@ -8822,8 +8834,8 @@ Shell Command</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_shellcommand_response"/>
     <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
+    <signal name="response" handler="on_dialog_shellcommand_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox19">
         <property name="visible">True</property>
@@ -8965,8 +8977,8 @@ You can add multiple lines.</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_event_rename_response"/>
     <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
+    <signal name="response" handler="on_dialog_event_rename_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox25">
         <property name="visible">True</property>
@@ -9048,8 +9060,8 @@ You can add multiple lines.</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_dialog_event_bricks_select_response"/>
     <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
+    <signal name="response" handler="on_dialog_event_bricks_select_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox21">
         <property name="visible">True</property>

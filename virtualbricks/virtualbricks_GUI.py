@@ -876,7 +876,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		wdg.set_property('message-type', type)
 		wdg.set_property('text', text)
 		wdg.run()
-		
+
 	def show_error(self, text):
 		self.show_msg(text, gtk.MESSAGE_ERROR)
 
@@ -2051,16 +2051,20 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(True)
+			self.gladefile.get_widget('filedel_cfg_Qemu_kernel').set_sensitive(True)
 		else:
-			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_filename('/')
+			self.filechooser_clear(self.gladefile.get_widget('cfg_Qemu_kernel_filechooser'), None, "", True)
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(False)
+			self.gladefile.get_widget('filedel_cfg_Qemu_kernel').set_sensitive(False)
 
 	def on_check_initrd_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(True)
+			self.gladefile.get_widget('filedel_cfg_Qemu_initrd').set_sensitive(False)
 		else:
-			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_filename('/')
+			self.filechooser_clear(self.gladefile.get_widget('cfg_Qemu_initrd_filechooser'), None, "", True)
 			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(False)
+			self.gladefile.get_widget('filedel_cfg_Qemu_initrd').set_sensitive(True)
 
 	def on_check_gdb_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
@@ -2275,8 +2279,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 			pixbuf = self.pixbuf_scaled(widget.get_filename())
 			self.gladefile.get_widget("qemuicon").set_from_pixbuf(pixbuf)
 
-	def filechooser_clear(self, widget=None, event=None, data=""):
-		filechooser = widget.name[8:] + "_filechooser"
+	def filechooser_clear(self, widget=None, event=None, data="", direct=False):
+		if (direct is False):
+			filechooser = widget.name[8:] + "_filechooser"
+		else:
+			filechooser = widget.name
 		self.gladefile.get_widget(filechooser).unselect_all()
 
 	def filechooser_hd_clear(self, widget=None, event=None, data=""):
