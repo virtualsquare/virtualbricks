@@ -55,7 +55,7 @@ class UnmanagedTypeException(Exception):
 class InvalidActionException(Exception):
 	def __init__(self):
 		pass
-	
+
 def ValidName(name):
 	name=str(name)
 	if not re.search("\A[a-zA-Z]", name):
@@ -497,7 +497,7 @@ class Brick(ChildLogger):
 		else:
 			state = _('off')
 		return state
-	
+
 class VbShellCommand(str):
 	def __init__(self, mystr):
 		self=mystr
@@ -533,7 +533,7 @@ class Event(ChildLogger):
 
 	def get_type(self):
 		return 'Event'
-	
+
 	def get_state(self):
 		"""return state of the event"""
 		if self.active == True:
@@ -543,7 +543,7 @@ class Event(ChildLogger):
 		else:
 			state = _('off')
 		return state
-	
+
 	def change_state(self):
 		if self.active == True:
 			self.poweroff()
@@ -552,7 +552,7 @@ class Event(ChildLogger):
 
 	def configured(self):
 		return (len(self.actions) > 0 and self.cfg.delay > 0)
-	
+
 	def initialize(self, attrlist):
 		if(attrlist.count('add') > 0 and attrlist.count('addsh') > 0):
 			print "Error: config line must contain add OR addsh."
@@ -582,10 +582,10 @@ class Event(ChildLogger):
 		else:
 			for attr in attrlist:
 				self.cfg.set(attr)
-			
+
 	def properly_connected(self):
 		return True
-	
+
 	def get_parameters(self):
 		tempstr = "Delay: %d" % int(self.cfg.delay)
 		l = len(self.actions)
@@ -1345,6 +1345,7 @@ class VM(Brick):
 		self.cfg.tdf = ""
 		self.cfg.kvmsm = ""
 		self.cfg.kvmsmem = ""
+		self.cfg.serial = ""
 
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -1450,8 +1451,9 @@ class VM(Brick):
 			'#kvmsm':'kvmsm',
 			'#kvmsmem': 'kvmsmem',
 			#'-mem-path':'',
-			#'-mem-prealloc':''
-			'#icon': 'icon'
+			#'-mem-prealloc':'',
+			'#icon': 'icon',
+			'#serial': 'serial'
 		}
 
 	def get_parameters(self):
@@ -1568,6 +1570,10 @@ class VM(Brick):
 			res.append('-kvm-shadow-memory')
 			res.append(self.cfg.kvmsmem)
 
+		if (self.cfg.serial == "*"):
+			res.append('-serial')
+			res.append('unix:'+Settings.MYPATH+'/'+self.name+'_serial,server,nowait')
+
 		res.append("-mon")
 		res.append("chardev=mon")
 		res.append("-chardev")
@@ -1580,7 +1586,6 @@ class VM(Brick):
 		res.append('socket,id=mon,path=' + Settings.MYPATH + '/' + self.name + '.mgmt,server,nowait')
 		self.cfg.console2 = Settings.MYPATH + '/' + self.name + '.mgmt'
 
-		print res
 		return res
 
 	def add_plug(self, sock=None, mac=None, model=None):
@@ -1850,10 +1855,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					print " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports())
 				else:
 					print "not configured."
-					
+
 		elif command == '':
 			pass
-		
+
 		else:
 			found = None
 			for obj in self.bricks:
@@ -1864,7 +1869,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				for obj in self.events:
 					if obj.name == command.split(" ")[0]:
 						found = obj
-						break	
+						break
 
 			if found is not None and len(command.split(" ")) > 1:
 				self.brickAction(found, command.split(" ")[1:])
@@ -1964,9 +1969,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		newname = ValidName(newname)
 		if newname == None:
 			raise InvalidNameException
-		
+
 		self.isNameFree(newname)
-				
+
 		b.name = newname
 		if b.get_type() == "Switch":
 			for so in b.socks:
@@ -1979,9 +1984,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		newname = ValidName(newname)
 		if newname == None:
 			raise InvalidNameException
-		
+
 		self.isNameFree(newname)
-		
+
 		e.name = newname
 		if e.get_type() == "Event":
 			#It's a little comlicated here, if we are renaming
@@ -1989,18 +1994,18 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			#events...
 			pass
 		#e.gui_changed = True
-			
+
 	def isNameFree(self, name):
 		for b in self.bricks:
 			if b.name == name:
 				return False
-		
+
 		for e in self.events:
 			if e.name == name:
 				return False
-			
+
 		return True
-	
+
 	def nextValidName(self, name, toappend="_new"):
 		newname = ValidName(name)
 		if not newname:
@@ -2017,7 +2022,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		name = ValidName(name)
 		if not name:
 			raise InvalidNameException
-		
+
 		if self.isNameFree(name) == False:
 			raise InvalidNameException
 
@@ -2058,7 +2063,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		if self.isNameFree(name) == False:
 			raise InvalidNameException
-		
+
 		if ntype == "event" or ntype == "Event":
 			brick = Event(self, name)
 			self.debug("new event %s OK", brick.name)
