@@ -174,6 +174,10 @@ class BrickConfig(dict):
 					val += c.lstrip('"').rstrip('"')
 					val += "="
 				val = val.rstrip('=') + '"'
+			#else:
+#				if '[' in kv:
+#					for el in kv.lstrip("[").rstrip("]").split(","):
+#						self[kv[0]]
 			else:
 				val += kv[1]
 			#print "setting %s to '%s'" % (kv[0], val)
@@ -516,7 +520,7 @@ class Event(ChildLogger):
 		self.active = False
 		self.name = _name
 		self.cfg = BrickConfig()
-		self.actions = list()
+		self.cfg.actions = list()
 		self.cfg.delay = 0
 		self.factory.events.append(self)
 		self.gui_changed = False
@@ -551,28 +555,28 @@ class Event(ChildLogger):
 			self.poweron()
 
 	def configured(self):
-		return (len(self.actions) > 0 and self.cfg.delay > 0)
+		return (len(self.cfg.actions) > 0 and self.cfg.delay > 0)
 
 	def initialize(self, attrlist):
-		if(attrlist.count('add') > 0 and attrlist.count('addsh') > 0):
+		if('add' in attrlist and 'addsh' in attrlist):
 			print "Error: config line must contain add OR addsh."
 			print "Split in two different line."
 			raise InvalidActionException
-		elif(attrlist.count('add') > 0):
+		elif('add' in attrlist):
 			configactions = list()
 			configactions = (' '.join(attrlist)).split('add')
 			for action in configactions[1:]:
 				action = action.strip()
-				self.actions.append(VbShellCommand(action))
+				self.cfg.actions.append(VbShellCommand(action))
 				print "Added vb-shell command: \"%s\"" % str(action)
-		elif(attrlist.count('addsh') > 0):
+		elif('addsh' in attrlist):
 			configactions = list()
 			configactions = (' '.join(attrlist)).split('addsh')
 			for action in configactions[1:]:
 				action = action.strip()
 				self.actions.append(ShellCommand(action))
 				print "Added host-shell command: \"%s\"" % str(action)
-#		elif(attrlist.count('addev') > 0):
+#		elif('addev' in attrlist):
 #			configactions = list()
 #			configactions = (' '.join(attrlist)).split('addev')
 #			for action in configactions[1:]:
@@ -588,11 +592,11 @@ class Event(ChildLogger):
 
 	def get_parameters(self):
 		tempstr = "Delay: %d" % int(self.cfg.delay)
-		l = len(self.actions)
+		l = len(self.cfg.actions)
 		if(l>0):
 			tempstr += "; Actions:"
 			#Add actions cutting the tail if it's too long
-			for s in self.actions:
+			for s in self.cfg.actions:
 				#if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
 				#	tempstr+=" ...."
 				#	break
@@ -642,7 +646,7 @@ class Event(ChildLogger):
 		self.factory.emit("event-stopped")
 
 	def doactions(self):
-		for action in self.actions:
+		for action in self.cfg.actions:
 			if (isinstance(action, VbShellCommand)):
 				self.factory.parse(action)
 			elif (isinstance(action, ShellCommand)):
@@ -1698,6 +1702,28 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		except:
 			print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it."
 			return
+		
+		for e in self.events:
+			p.write('[' + e.get_type() + ':' + e.name + ']\n')
+			for k, v in e.cfg.iteritems():
+				#Special management for actions parameter
+				if k == 'actions':
+					tempactions=list()
+					for action in e.cfg.actions:
+						#It's an host shell command
+						if isinstance(action, ShellCommand):
+							tempactions.append("addsh "+''.join(action[1:]))
+						#It's a vb shell command
+						elif isinstance(action, VbShellCommand):
+							tempactions.append("add "+action)
+						else:
+							print "Error: unmanaged action type."
+							print "Will not be saved!"
+							continue
+					p.write(k + '=' + str(tempactions) + '\n')
+				#Standard management for other parameters
+				else:
+					p.write(k + '=' + str(v) + '\n')
 
 		for b in self.bricks:
 			p.write('[' + b.get_type() + ':' + b.name + ']\n')
@@ -1741,6 +1767,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for b in self.bricks:
 				self.delbrick(b)
 			self.bricks = []
+			
+			for e in self.events:
+				self.delevent(e)
+			self.events = []
+			
 			return
 
 		l = p.readline()
@@ -1775,12 +1806,17 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
 				name = l.split(':')[1].rstrip(']\n')
-				print "new brick: " + ntype + ":" + name
+				print \
+				"new " +Global.ImIf(ntype=='Event',"event","brick")\
+				+": "+ ntype + ":" + name
 				try:
-					self.newbrick(ntype, name)
-					for bb in self.bricks:
-						if name == bb.name:
-							b = bb
+					if(ntype == 'Event'):
+						self.newevent(ntype, name)
+						component = self.geteventbyname(name)
+					else:
+						self.newbrick(ntype, name)
+						component = self.getbrickbyname(name)
+					
 				except Exception, err:
 					print "--------- Bad config line:", err
 					l = p.readline()
@@ -1789,12 +1825,20 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				l = p.readline()
 				#print "-------- loading settings for "+b.name + " first line: " + l
 				parameters = []
-				while b and l and not l.startswith('[') and not re.search("\A.*link\|", l):
+				while component and l and not l.startswith('[') and not re.search("\A.*link\|", l):
 					if len(l.split('=')) > 1:
-						#print "setting" + l.strip('\n')
+						#Special management for event actions
+						if l.split('=')[0] == "actions" and ntype == 'Event':
+							actions=eval(''.join(l.rstrip('\n').split('=')[1:]))
+							for action in actions:
+							#Initialize one by one
+								component.configure(action.split(' '))
+							l = p.readline()
+							continue
 						parameters.append(l.rstrip('\n'))
 					l = p.readline()
-				b.initialize(parameters)
+				if parameters:
+					component.configure(parameters)
 
 				continue
 			l = p.readline()
@@ -1960,7 +2004,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.newevent("Event", newname)
 		event = self.geteventbyname(eventtodup.name)
 		newevent = self.geteventbyname(newname)
-		newevent.actions = copy.deepcopy(event.actions)
+		newevent.cfg.actions = copy.deepcopy(event.cfg.actions)
 		newevent.cfg = copy.deepcopy(event.cfg)
 		newevent.active = False
 		newevent.on_config_changed()

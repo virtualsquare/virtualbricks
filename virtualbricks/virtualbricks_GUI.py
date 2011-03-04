@@ -1069,8 +1069,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
-		else:
-			self.debug("Event created successfully")
 
 	def on_event_brick_select_add_clicked(self, widget=None, data=""):
 		availbricks = self.gladefile.get_widget('bricks_available_treeview')
@@ -1223,7 +1221,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		pthinfo = tree.get_path_at_pos(x, y)
 		dropbrick = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
 			pthinfo, Models.BricksModel.BRICK_IDX)
-		print x, y, pthinfo, dropbrick.name
+		#print x, y, pthinfo, dropbrick.name
 
 		drop_info = tree.get_dest_row_at_pos(x, y)
 		if drop_info:
@@ -1276,7 +1274,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		path = tree.get_cursor()[0]
-		print "on_treeview_bookmarks_button_release_event"
+		#print "on_treeview_bookmarks_button_release_event"
 		if path is None:
 			print "nothing selected!"
 			return
@@ -1295,7 +1293,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_events_bookmarks');
 		path = tree.get_cursor()[0]
-		print "on_treeview_events_bookmarks_button_release_event"
+		#print "on_treeview_events_bookmarks_button_release_event"
 		if path is None:
 			print "nothing selected!"
 			return
@@ -1881,6 +1879,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 					if(line==''):
 						continue
 					self.brickfactory.brickAction(currevent,('config add '+str(line)).split(" "))
+				self.debug("Event created successfully")
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
 
@@ -1911,6 +1910,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 			brickAction(currevent,('config add ' + evnametoadd + action).\
 										split(" "))
 			iter = self.addedmodel.iter_next(iter)
+		
+		self.debug("Event created successfully")
 
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
