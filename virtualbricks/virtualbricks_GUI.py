@@ -1910,7 +1910,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			brickAction(currevent,('config add ' + evnametoadd + action).\
 										split(" "))
 			iter = self.addedmodel.iter_next(iter)
-		
+
 		self.debug("Event created successfully")
 
 	def on_brick_configure(self,widget=None, event=None, data=""):
@@ -2099,7 +2099,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		if (self.brick_selected.get_type() == 'Qemu'):
 			for pl in self.brick_selected.plugs:
 				iter = self.vmplugs.append(None, None)
-				#self.vmplugs.set_value(iter,0,pl.vlan)
+				self.vmplugs.set_value(iter,0,pl.vlan)
 				if pl.mode == 'hostonly':
 					self.vmplugs.set_value(iter,1,'Host')
 				elif pl.sock:
