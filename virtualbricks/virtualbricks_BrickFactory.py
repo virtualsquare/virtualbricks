@@ -548,6 +548,15 @@ class Event(ChildLogger):
 			state = _('off')
 		return state
 
+	def get_cbset(self, key):
+		cb = None
+		try:
+			if self.get_type() == 'Event':
+				cb = Event.__dict__["cbset_" + key]
+		except:
+			cb = None
+		return cb
+
 	def change_state(self):
 		if self.active == True:
 			self.poweroff()
@@ -574,7 +583,7 @@ class Event(ChildLogger):
 			configactions = (' '.join(attrlist)).split('addsh')
 			for action in configactions[1:]:
 				action = action.strip()
-				self.actions.append(ShellCommand(action))
+				self.cfg.actions.append(ShellCommand(action))
 				print "Added host-shell command: \"%s\"" % str(action)
 #		elif('addev' in attrlist):
 #			configactions = list()
@@ -593,16 +602,19 @@ class Event(ChildLogger):
 	def get_parameters(self):
 		tempstr = "Delay: %d" % int(self.cfg.delay)
 		l = len(self.cfg.actions)
-		if(l>0):
+		if l > 0:
 			tempstr += "; Actions:"
 			#Add actions cutting the tail if it's too long
 			for s in self.cfg.actions:
 				#if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
 				#	tempstr+=" ...."
 				#	break
-				tempstr += " \"%s\"," % s
+				if isinstance(s, ShellCommand) == True:
+					tempstr += " \"*%s\"," % s
+				else:
+					tempstr += " \"%s\"," % s
 			#Remove the last character
-			tempstr=tempstr[0:len(tempstr)-1]
+			tempstr=tempstr[0:-1]
 		return tempstr
 
 	def connect(self, endpoint):
@@ -1709,7 +1721,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					for action in e.cfg.actions:
 						#It's an host shell command
 						if isinstance(action, ShellCommand):
-							tempactions.append("addsh "+''.join(action[1:]))
+							tempactions.append("addsh "+action)
 						#It's a vb shell command
 						elif isinstance(action, VbShellCommand):
 							tempactions.append("add "+action)

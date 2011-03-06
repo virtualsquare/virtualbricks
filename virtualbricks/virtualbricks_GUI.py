@@ -126,6 +126,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		self.availmodel = None
 		self.addedmodel = None
+		self.shcommandsmodel = None
 
 		self.draw_topology()
 		self.brickfactory.start()
@@ -331,8 +332,43 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 	def config_event_prepare(self):
 		e = self.event_selected
-		pass
+		for key in e.cfg.keys():
+			t = e.get_type()
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
+			if (widget is not None):
+				widget.set_text(e.cfg[key])
+				
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "treeview")
+			if (widget is not None):
+				self.shcommandsmodel = None
+				self.shcommandsmodel = gtk.ListStore (str, bool)
+				
+				for a in e.cfg[key]:
+					iter = self.shcommandsmodel.append ([a, Global.ImIf(isinstance(a, BrickFactory.VbShellCommand), False, True)])
 
+				iter = self.shcommandsmodel.append (["", False])
+				
+				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')				
+				actions.set_model(self.shcommandsmodel)
+				
+				columns = (COL_COMMAND, COL_BOOL) = range(2)
+				cell = gtk.CellRendererText ()
+				column_command = gtk.TreeViewColumn (_("Command"), cell, text = COL_COMMAND)
+				cell.set_property('editable', True)
+				cell.connect('edited', self.edited_callback, (self.shcommandsmodel, COL_COMMAND))
+				cell = gtk.CellRendererToggle ()
+				column_bool = gtk.TreeViewColumn (_("Host shell command"), cell, active = COL_BOOL)
+				cell.set_property('activatable', True)
+				cell.connect('toggled', self.toggled_callback, (self.shcommandsmodel, COL_BOOL))
+	  				
+				# Clear columns
+				for c in actions.get_columns():
+					actions.remove_column(c)
+
+				# Add columns
+				actions.append_column (column_command)
+				actions.append_column (column_bool)
+		return
 
 	""" ******************************************************** """
 	"""														  """
@@ -489,7 +525,12 @@ class VBGUI(ChildLogger, gobject.GObject):
 		# TODO merge in on_config_ok
 
 		parameters = {}
-		b = self.brick_selected
+		notebook=self.gladefile.get_widget('main_notebook')
+		# It's an event
+		if notebook.get_current_page() == 1:
+			b = self.event_selected
+		else:	
+			b = self.brick_selected
 		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
@@ -535,6 +576,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 			b.gui_changed = True
 			t = b.get_type()
+			
+			if t == 'Event':
+				pass
 
 			if t == 'Tap':
 				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
@@ -691,7 +735,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			if self.event_selected.get_type() == 'Event':
 				self.debug("event config")
 				ww = self.gladefile.get_widget('box_eventconfig')
-				wg.set_position(589)
+				wg.set_position(430)
 				self.config_event_prepare()
 				ww.show_all()
 				self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
@@ -990,13 +1034,37 @@ class VBGUI(ChildLogger, gobject.GObject):
 		try:
 			if(ntype == 'ShellCommand'):
 
-				textbuffer = self.gladefile.get_widget('entry_shell_command').get_buffer()
-				textbuffer.set_text("new switch myswitch")
+				self.shcommandsmodel = None
+				self.shcommandsmodel = gtk.ListStore (str, bool)
+				iter = self.shcommandsmodel.append (["new switch myswitch", False])
+				iter = self.shcommandsmodel.append (["", False])
+				
+				actions = self.gladefile.get_widget('treeview_event_actions')				
+				actions.set_model(self.shcommandsmodel)
+				
+				columns = (COL_COMMAND, COL_BOOL) = range(2)
+				cell = gtk.CellRendererText ()
+				column_command = gtk.TreeViewColumn (_("Command"), cell, text = COL_COMMAND)
+				cell.set_property('editable', True)
+				cell.connect('edited', self.edited_callback, (self.shcommandsmodel, COL_COMMAND))
+				cell = gtk.CellRendererToggle ()
+				column_bool = gtk.TreeViewColumn (_("Host shell command"), cell, active = COL_BOOL)
+				cell.set_property('activatable', True)
+				cell.connect('toggled', self.toggled_callback, (self.shcommandsmodel, COL_BOOL))
+	  				
+				# Clear columns
+				for c in actions.get_columns():
+					actions.remove_column(c)
+
+				# Add columns
+				actions.append_column (column_command)
+				actions.append_column (column_bool)
+
 				self.gladefile.get_widget('dialog_shellcommand').show_all()
 
 			elif(ntype == 'BrickStart' or ntype == 'BrickStop'):
 
-				columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = (0, 1, 2, 3)
+				columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
 
 				availbricks = self.gladefile.get_widget('bricks_available_treeview')
 				addedbricks = self.gladefile.get_widget('bricks_added_treeview')
@@ -1069,6 +1137,22 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
+	
+	def edited_callback (self, cell, rowpath, new_text, user_data):
+		model, col_id = user_data
+		model[rowpath][col_id] = new_text
+		iter = self.shcommandsmodel.get_iter_first()
+		while iter:
+			last=iter
+			iter=self.shcommandsmodel.iter_next(iter)
+		if self.shcommandsmodel.get_value(last, col_id) != '':
+			self.shcommandsmodel.append (["", False])
+		return
+		
+	def toggled_callback (self, cell, rowpath, user_data):
+		model, col_id = user_data
+		model[rowpath][col_id] = not model[rowpath][col_id]
+		return
 
 	def on_event_brick_select_add_clicked(self, widget=None, data=""):
 		availbricks = self.gladefile.get_widget('bricks_available_treeview')
@@ -1276,7 +1360,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		path = tree.get_cursor()[0]
 		#print "on_treeview_bookmarks_button_release_event"
 		if path is None:
-			print "nothing selected!"
+			#print "nothing selected!"
 			return
 
 		iter = tree.get_model().get_iter(path)
@@ -1295,7 +1379,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		path = tree.get_cursor()[0]
 		#print "on_treeview_events_bookmarks_button_release_event"
 		if path is None:
-			print "nothing selected!"
+			#print "nothing selected!"
 			return
 
 		iter = tree.get_model().get_iter(path)
@@ -1865,26 +1949,61 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.show_error("Invalid name!")
 
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
-		widget.hide()
 		if response == 1:
 			try:
+				
 				name = self.gladefile.get_widget('text_neweventname').get_text()
 				delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
-				self.brickfactory.newevent("event", name)
-				textbuffer=self.gladefile.get_widget('entry_shell_command').get_buffer()
-				command=textbuffer.get_text(textbuffer.get_start_iter() , textbuffer.get_end_iter())
-				currevent=self.brickfactory.geteventbyname(name)
-				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
-				for line in command.splitlines():
-					if(line==''):
-						continue
-					self.brickfactory.brickAction(currevent,('config add '+str(line)).split(" "))
-				self.debug("Event created successfully")
+				actions = self.gladefile.get_widget('treeview_event_actions')
+				
+				iter = self.shcommandsmodel.get_iter_first() 
+				
+				#Do not hide window
+				if not iter:
+					return
+				
+				currevent = None
+				
+				columns = (COL_COMMAND, COL_BOOL) = range(2)
+								
+				while iter:
+					linecommand = self.shcommandsmodel.get_value (iter, COL_COMMAND)
+					shbool = self.shcommandsmodel.get_value (iter, COL_BOOL)
+					
+					linecommand=linecommand.lstrip("\n").rstrip("\n").strip()		   			
+		   			commands=linecommand.split("\n")
+		   			
+		   			commandtype=Global.ImIf(shbool==True,'addsh','add')
+		   			
+		   			if not commands[0] or commands[0] == '':
+		   				iter=self.shcommandsmodel.iter_next(iter)
+		   				continue
+		   					   			
+		   			commands[0] = 'config ' + commandtype + ' ' + commands[0]
+
+		   			c=str(' ' + commandtype + ' ').join(commands)
+		   			
+		   			if not currevent:
+		   				self.brickfactory.newevent("event", name)
+		   				currevent=self.brickfactory.geteventbyname(name)
+		   				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+		   					   			
+		   			self.brickfactory.brickAction(currevent, c.split(" "))
+		   			
+		   			iter=self.shcommandsmodel.iter_next(iter)
+		   		#If at least one element added 
+		   		if currevent:
+		   			self.debug("Event created successfully")
+		   			widget.hide()
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
+				widget.hide()
+		#Dialog window canceled
+		else:	
+			widget.hide()
 
 	def on_dialog_event_bricks_select_response(self,widget=None, response=0, data=""):
-		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = (0, 1, 2, 3)
+		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
 		addedbricks = self.gladefile.get_widget('bricks_added_treeview')
 		iter = self.addedmodel.get_iter_first()
 
