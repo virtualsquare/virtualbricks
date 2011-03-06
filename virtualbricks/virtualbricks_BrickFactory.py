@@ -1484,10 +1484,8 @@ class VM(Brick):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
-		if self.cfg.kvm or self.settings.kvm:
+		if self.cfg.kvm :
 			cmd = self.settings.get("qemupath") + "/kvm"
-			#self.cfg.cpu=""
-			#self.cfg.machine=""
 		return cmd
 
 
@@ -1495,10 +1493,7 @@ class VM(Brick):
 		res = []
 		res.append(self.prog())
 
-		for c in self.build_cmd_line():
-			res.append(c)
-
-		if (self.cfg.kvm is False):
+		if (self.cfg.kvm == ""):
 			if self.cfg.machine != "":
 				res.append("-M")
 				res.append(self.cfg.machine)
@@ -1506,6 +1501,8 @@ class VM(Brick):
 				res.append("-cpu")
 				res.append(self.cfg.cpu)
 
+		for c in self.build_cmd_line():
+			res.append(c)
 
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			print dev + self.cfg.get("base" + dev)
@@ -1702,7 +1699,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		except:
 			print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it."
 			return
-		
+
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
 			for k, v in e.cfg.iteritems():
@@ -1767,11 +1764,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for b in self.bricks:
 				self.delbrick(b)
 			self.bricks = []
-			
+
 			for e in self.events:
 				self.delevent(e)
 			self.events = []
-			
+
 			return
 
 		l = p.readline()
@@ -1816,7 +1813,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					else:
 						self.newbrick(ntype, name)
 						component = self.getbrickbyname(name)
-					
+
 				except Exception, err:
 					print "--------- Bad config line:", err
 					l = p.readline()

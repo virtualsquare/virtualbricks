@@ -452,7 +452,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				if (b.cfg[key] == "*"):
 					widget.set_active(True)
 				else:
-					if key is "kvm" and self.config.kvm:
+					if key is "kvm" and self.config.kvm and b.cfg.kvm=="*":
 						self.gladefile.get_widget('cfg_Qemu_kvm_check').set_active(True)
 					else:
 						widget.set_active(False)
@@ -1989,7 +1989,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				k = m.lstrip(v).rstrip('/n')
 				while (k.startswith(' ')):
 					k = k.lstrip(' ')
-				opt_m[v]=k
+				opt_m[v]=v
 		toSelect=""
 		for k, v in opt_m.iteritems():
 			if v.strip() == self.brick_selected.cfg.machine.strip():
@@ -2015,8 +2015,17 @@ class VBGUI(ChildLogger, gobject.GObject):
 						val = m.lstrip(lst[0])
 						while (val.startswith(' ')):
 							val = val.lstrip(' ')
+						if val.startswith('\''):
+							val = val.lstrip('\'')
+						if val.startswith('['):
+							val = val.lstrip('[')
 						if val.endswith('\n'):
 							val = val.rstrip('\n')
+
+						if val.endswith('\''):
+							val = val.rstrip('\'')
+						if val.endswith(']'):
+							val = val.rstrip(']')
 						opt_c[val]=val
 		cpu_c.populate(opt_c, self.brick_selected.cfg.cpu)
 		os.unlink(Settings.MYPATH+"/.cpus")
@@ -2041,6 +2050,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def kvm_toggle_all(self, enabled):
 		self.gladefile.get_widget('cfg_Qemu_kvmsmem_spinint').set_sensitive(enabled)
 		self.gladefile.get_widget('cfg_Qemu_kvmsm_check').set_sensitive(enabled)
+		# disable incompatible options
+		if (self.gladefile.get_widget('cfg_Qemu_tdf_check').get_active()==True and enabled == False):
+			self.gladefile.get_widget('cfg_Qemu_tdf_check').set_active(False)
+		self.gladefile.get_widget('cfg_Qemu_tdf_check').set_sensitive(enabled)
 		self.disable_qemu_combos(not enabled)
 
 
