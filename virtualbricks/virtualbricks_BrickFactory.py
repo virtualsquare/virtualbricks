@@ -174,10 +174,6 @@ class BrickConfig(dict):
 					val += c.lstrip('"').rstrip('"')
 					val += "="
 				val = val.rstrip('=') + '"'
-			#else:
-#				if '[' in kv:
-#					for el in kv.lstrip("[").rstrip("]").split(","):
-#						self[kv[0]]
 			else:
 				val += kv[1]
 			#print "setting %s to '%s'" % (kv[0], val)
@@ -533,7 +529,14 @@ class Event(ChildLogger):
 		self.timer = None
 
 	def help(self):
-		return
+		print "Object type: " + self.get_type()
+		print "Possible configuration parameter: "
+		print "delay=n OR add [vb-shell command] OR addsh [host-shell command]"
+		print "Example: <eventname> config delay=5"
+		print "Example: <eventname> config add new switch myswitch add n wirefilter wf"
+		print "Example: <eventname> config addsh touch /tmp/vbshcmd addsh cp /tmp/vbshcmd /tmp/vbshcmd1"
+		print "END of help"
+		print
 
 	def get_type(self):
 		return 'Event'
@@ -600,10 +603,10 @@ class Event(ChildLogger):
 		return True
 
 	def get_parameters(self):
-		tempstr = "Delay: %d" % int(self.cfg.delay)
+		tempstr = _("Delay") + ": %d" % int(self.cfg.delay)
 		l = len(self.cfg.actions)
 		if l > 0:
-			tempstr += "; Actions:"
+			tempstr += "; "+ _("Actions")+":"
 			#Add actions cutting the tail if it's too long
 			for s in self.cfg.actions:
 				#if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
@@ -882,6 +885,13 @@ class Wirefilter(Wire):
 					"-N":"nofifo",
 					"-M":"console"
 			}
+		
+#		self.cfg.sock0 = ""
+#		self.cfg.sock1 = ""
+#
+#		self.plugs.append(Plug(self))
+#		self.plugs.append(Plug(self))
+
 
 		self.cfg.mtuLR = ""
 		self.cfg.mtuRL = ""
@@ -1996,8 +2006,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			b1.socks.append(Sock(b1, portname))
 			b1.cfg.path = Settings.MYPATH + '/' + b1.name + '.ctl'
 		if b1.get_type().startswith("Wire"):
-			self.cfg.sock0 = ""
-			self.cfg.sock1 = ""
+			b1.cfg.sock0 = ""
+			b1.cfg.sock1 = ""
 
 		if (b1.cfg.console):
 			b1.cfg.console = Settings.MYPATH + '/' + b1.name + '.mgmt'
@@ -2013,7 +2023,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.newevent("Event", newname)
 		event = self.geteventbyname(eventtodup.name)
 		newevent = self.geteventbyname(newname)
-		newevent.cfg.actions = copy.deepcopy(event.cfg.actions)
+		#newevent.cfg.actions = copy.deepcopy(event.cfg.actions)
 		newevent.cfg = copy.deepcopy(event.cfg)
 		newevent.active = False
 		newevent.on_config_changed()
