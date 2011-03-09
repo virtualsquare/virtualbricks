@@ -1660,6 +1660,29 @@ class VM(Brick):
 				break
 		return c
 
+class BricksLockManager():
+
+       def __init__(self):
+               self.bricks_lock = {}
+
+       def lock_brick(self, brick, value):
+               print "LOCK %s con %d" % (brick.get_type()+"_"+value, id(brick))
+               self.bricks_lock[brick.get_type()+"_"+value]=id(brick)
+
+       def unlock_brick(self, brick, value):
+               if self.bricks_lock.has_key(brick.get_type()+"_"+value):
+                       print "UNLOCK %s con %d" % (brick.get_type()+"_"+value, id(brick))
+                       self.bricks_lock[brick.get_type()+"_"+value]=None
+
+       def get_brick_lock_status(self, brick, value):
+               if self.bricks_lock.has_key(brick.get_type()+"_"+value) and self.bricks_lock[brick.get_type()+"_"+value] != id(brick):
+                       print "LOCK TRUE %s con %d" % (brick.get_type()+"_"+value, id(brick))
+                       return True
+               else:
+                       print "LOCK FALSE %s con %d" % (brick.get_type()+"_"+value, id(brick))
+                       return False
+
+
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),

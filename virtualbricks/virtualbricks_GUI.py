@@ -337,20 +337,20 @@ class VBGUI(ChildLogger, gobject.GObject):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
 				widget.set_text(e.cfg[key])
-				
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "treeview")
 			if (widget is not None):
 				self.shcommandsmodel = None
 				self.shcommandsmodel = gtk.ListStore (str, bool)
-				
+
 				for a in e.cfg[key]:
 					iter = self.shcommandsmodel.append ([a, Global.ImIf(isinstance(a, BrickFactory.VbShellCommand), False, True)])
 
 				iter = self.shcommandsmodel.append (["", False])
-				
-				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')				
+
+				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
 				actions.set_model(self.shcommandsmodel)
-				
+
 				columns = (COL_COMMAND, COL_BOOL) = range(2)
 				cell = gtk.CellRendererText ()
 				column_command = gtk.TreeViewColumn (_("Command"), cell, text = COL_COMMAND)
@@ -360,7 +360,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				column_bool = gtk.TreeViewColumn (_("Host shell command"), cell, active = COL_BOOL)
 				cell.set_property('activatable', True)
 				cell.connect('toggled', self.toggled_callback, (self.shcommandsmodel, COL_BOOL))
-	  				
+
 				# Clear columns
 				for c in actions.get_columns():
 					actions.remove_column(c)
@@ -529,7 +529,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		# It's an event
 		if notebook.get_current_page() == 1:
 			b = self.event_selected
-		else:	
+		else:
 			b = self.brick_selected
 		for key in b.cfg.keys():
 			t = b.get_type()
@@ -576,7 +576,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 			b.gui_changed = True
 			t = b.get_type()
-			
+
 			if t == 'Event':
 				pass
 
@@ -1038,10 +1038,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.shcommandsmodel = gtk.ListStore (str, bool)
 				iter = self.shcommandsmodel.append (["new switch myswitch", False])
 				iter = self.shcommandsmodel.append (["", False])
-				
-				actions = self.gladefile.get_widget('treeview_event_actions')				
+
+				actions = self.gladefile.get_widget('treeview_event_actions')
 				actions.set_model(self.shcommandsmodel)
-				
+
 				columns = (COL_COMMAND, COL_BOOL) = range(2)
 				cell = gtk.CellRendererText ()
 				column_command = gtk.TreeViewColumn (_("Command"), cell, text = COL_COMMAND)
@@ -1051,7 +1051,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				column_bool = gtk.TreeViewColumn (_("Host shell command"), cell, active = COL_BOOL)
 				cell.set_property('activatable', True)
 				cell.connect('toggled', self.toggled_callback, (self.shcommandsmodel, COL_BOOL))
-	  				
+
 				# Clear columns
 				for c in actions.get_columns():
 					actions.remove_column(c)
@@ -1137,7 +1137,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		except BrickFactory.InvalidNameException:
 			self.error("Cannot create event: Invalid name.")
-	
+
 	def edited_callback (self, cell, rowpath, new_text, user_data):
 		model, col_id = user_data
 		model[rowpath][col_id] = new_text
@@ -1148,7 +1148,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		if self.shcommandsmodel.get_value(last, col_id) != '':
 			self.shcommandsmodel.append (["", False])
 		return
-		
+
 	def toggled_callback (self, cell, rowpath, user_data):
 		model, col_id = user_data
 		model[rowpath][col_id] = not model[rowpath][col_id]
@@ -1637,10 +1637,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
 		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
 		self.show_window('dialog_create_image')
-		pass
 
-	def on_button_create_image_clicked(self, widget=None, data=""):
-		self.curtain_down()
+	def image_create (self):
 		self.debug("Image creating.. ",)
 		path = self.gladefile.get_widget('filechooserbutton_newimage_dest').get_filename() + "/"
 		filename = self.gladefile.get_widget('entry_newimage_name').get_text()
@@ -1660,7 +1658,10 @@ class VBGUI(ChildLogger, gobject.GObject):
 		time.sleep(2)
 		print '%s -f %s %s %s' % (cmd, img_format, path+filename, img_size+img_sizeunit)
 		print ("Done")
-		pass
+
+	def on_button_create_image_clicked(self, widget=None, data=""):
+		self.curtain_down()
+		self.user_wait_action(self.image_create)
 
 	def on_newimage_close_clicked(self, widget=None, data=""):
 		self.curtain_down()
@@ -1951,47 +1952,47 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
 		if response == 1:
 			try:
-				
+
 				name = self.gladefile.get_widget('text_neweventname').get_text()
 				delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 				actions = self.gladefile.get_widget('treeview_event_actions')
-				
-				iter = self.shcommandsmodel.get_iter_first() 
-				
+
+				iter = self.shcommandsmodel.get_iter_first()
+
 				#Do not hide window
 				if not iter:
 					return
-				
+
 				currevent = None
-				
+
 				columns = (COL_COMMAND, COL_BOOL) = range(2)
-								
+
 				while iter:
 					linecommand = self.shcommandsmodel.get_value (iter, COL_COMMAND)
 					shbool = self.shcommandsmodel.get_value (iter, COL_BOOL)
-					
-					linecommand=linecommand.lstrip("\n").rstrip("\n").strip()		   			
+
+					linecommand=linecommand.lstrip("\n").rstrip("\n").strip()
 		   			commands=linecommand.split("\n")
-		   			
+
 		   			commandtype=Global.ImIf(shbool==True,'addsh','add')
-		   			
+
 		   			if not commands[0] or commands[0] == '':
 		   				iter=self.shcommandsmodel.iter_next(iter)
 		   				continue
-		   					   			
+
 		   			commands[0] = 'config ' + commandtype + ' ' + commands[0]
 
 		   			c=str(' ' + commandtype + ' ').join(commands)
-		   			
+
 		   			if not currevent:
 		   				self.brickfactory.newevent("event", name)
 		   				currevent=self.brickfactory.geteventbyname(name)
 		   				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
-		   					   			
+
 		   			self.brickfactory.brickAction(currevent, c.split(" "))
-		   			
+
 		   			iter=self.shcommandsmodel.iter_next(iter)
-		   		#If at least one element added 
+		   		#If at least one element added
 		   		if currevent:
 		   			self.debug("Event created successfully")
 		   			widget.hide()
@@ -1999,7 +2000,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.show_error("Invalid name!")
 				widget.hide()
 		#Dialog window canceled
-		else:	
+		else:
 			widget.hide()
 
 	def on_dialog_event_bricks_select_response(self,widget=None, response=0, data=""):
