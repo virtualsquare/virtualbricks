@@ -692,6 +692,21 @@ class Event(ChildLogger):
 		return
 
 class Switch(Brick):
+	"""
+	>>> # bug #730812
+	>>> from copy import deepcopy
+	>>> factory = BrickFactory()
+	>>> sw1 = Switch(factory, 'sw1')
+	>>> sw2 = factory.dupbrick(sw1)
+	>>> id(sw1) != id(sw2)
+	True
+	>>> sw1 is not sw2
+	True
+	>>> sw1.cfg is not sw2.cfg
+	True
+	>>> sw1.icon is not sw2.icon
+	True
+	"""
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
@@ -2037,6 +2052,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.bricks.append(b1)
 		b1.on_config_changed()
 		self.bricksmodel.add_brick(b1)
+		return b1
 
 	def dupevent(self, eventtodup):
 		newname = self.nextValidName("Copy_of_"+eventtodup.name)
