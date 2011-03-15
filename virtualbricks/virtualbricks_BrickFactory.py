@@ -456,6 +456,7 @@ class Brick(ChildLogger):
 				c = socket.socket(socket.AF_UNIX)
 				c.connect(self.console())
 			except:
+				print "foobar"
 				pass
 			else:
 				break
@@ -1674,25 +1675,24 @@ class VM(Brick):
 		self.gui_changed = True
 
 	def open_internal_console(self):
-		print "open_internal_console_qemu"
+		self.info("open_internal_console_qemu")
 		if not self.has_console():
+			self.info("no console")
 			return None
-		fail_count = 0
-		while True:
+
+		for index in range(10):
 			try:
 				time.sleep(0.5)
 				c = socket.socket(socket.AF_UNIX)
 				c.connect(self.console2())
-			except:
-				fail_count += 1
-				if fail_count > 9:
-					print "give up!"
-					print "FATAL: Virtual Machine startup failed. Check your configuration!"
-					break
-				pass
-			else:
-				break
-		return c
+				return c
+			except Exception, err:
+				self.info("******************************************")
+				self.info("Virtual Machine startup failed. Check your"
+					" configuration!")
+				self.info("******************************************")
+				return None
+
 
 class BricksLockManager():
 
