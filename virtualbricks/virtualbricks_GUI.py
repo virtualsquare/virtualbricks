@@ -1952,7 +1952,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
 		if response == 1:
 			try:
-
 				name = self.gladefile.get_widget('text_neweventname').get_text()
 				delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 				actions = self.gladefile.get_widget('treeview_event_actions')
@@ -1964,36 +1963,34 @@ class VBGUI(ChildLogger, gobject.GObject):
 					return
 
 				currevent = None
-
 				columns = (COL_COMMAND, COL_BOOL) = range(2)
 
 				while iter:
 					linecommand = self.shcommandsmodel.get_value (iter, COL_COMMAND)
 					shbool = self.shcommandsmodel.get_value (iter, COL_BOOL)
 
-					linecommand=linecommand.lstrip("\n").rstrip("\n").strip()
-		 			commands=linecommand.split("\n")
+					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
+		 			commands = linecommand.split("\n")
+		 			commandtype = Global.ImIf(shbool, 'addsh', 'add')
 
-		 			commandtype=Global.ImIf(shbool==True,'addsh','add')
-
-		 			if not commands[0] or commands[0] == '':
-		 				iter=self.shcommandsmodel.iter_next(iter)
+		 			if not commands[0]:
+		 				iter = self.shcommandsmodel.iter_next(iter)
 		 				continue
 
-		 			commands[0] = 'config ' + commandtype + ' ' + commands[0]
+		 			commands[0] = 'config %s %s' % (commandtype, commands[0])
+		 			c = unicode(' %s ' % commandtype).join(commands)
 
-		 			c=str(' ' + commandtype + ' ').join(commands)
-
-		 			if not currevent:
+		 			if currevent is None:
 						self.brickfactory.newevent("event", name)
-		 				currevent=self.brickfactory.geteventbyname(name)
-		 				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+		 				currevent = self.brickfactory.geteventbyname(name)
+		 				self.brickfactory.brickAction(currevent,
+							('config delay='+str(delay)).split(" "))
 
 		 			self.brickfactory.brickAction(currevent, c.split(" "))
+		 			iter = self.shcommandsmodel.iter_next(iter)
 
-		 			iter=self.shcommandsmodel.iter_next(iter)
-		 		#If at least one element added
-		 		if currevent:
+		 		if currevent is not None:
+					#If at least one element added
 					self.debug("Event created successfully")
 		 			widget.hide()
 			except BrickFactory.InvalidNameException:
