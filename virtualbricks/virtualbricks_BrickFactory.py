@@ -38,23 +38,22 @@ import virtualbricks_Events as Events
 from virtualbricks_Graphics import *
 
 class InvalidNameException(Exception):
-	def __init__(self):
-		pass
+	pass
+
 class BadConfigException(Exception):
-	def __init__(self):
-		pass
+	pass
+
 class NotConnectedException(Exception):
-	def __init__(self):
-		pass
+	pass
+
 class LinkloopException(Exception):
-	def __init__(self):
-		pass
+	pass
+
 class UnmanagedTypeException(Exception):
-	def __init__(self):
-		pass
+	pass
+
 class InvalidActionException(Exception):
-	def __init__(self):
-		pass
+	pass
 
 def ValidName(name):
 	name=str(name)
@@ -86,9 +85,8 @@ class Plug(ChildLogger):
 
 	def connected(self):
 		if self.antiloop:
-			print "Network loop detected!"
 			if self.settings.get('erroronloop'):
-				raise NotConnectedException
+				raise NotConnectedException('Network loop detected!')
 			self.antiloop = False
 			return False
 
@@ -101,20 +99,20 @@ class Plug(ChildLogger):
 			self.antiloop = False
 			return False
 		for p in self.sock.brick.plugs:
-			if p.connected() == False:
+			if not p.connected():
 				self.antiloop = False
 				return False
 		self.antiloop = False
-		#print "connect ok"
 		return True
 
 	def connect(self, _sock):
-		if _sock == None:
+		if _sock is None:
 			return False
 		else:
 			_sock.plugs.append(self)
 			self.sock = _sock
 			return True
+
 	def disconnect(self):
 		self.sock = None
 
