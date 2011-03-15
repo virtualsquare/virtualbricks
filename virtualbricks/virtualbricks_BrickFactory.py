@@ -133,7 +133,6 @@ class Sock():
 		return os.access(os.path.dirname(self.path), os.W_OK)
 
 
-
 class BrickConfig(dict):
 	"""Generic configuration for Brick
 
@@ -210,6 +209,20 @@ class Brick(ChildLogger):
 
 		self.factory.bricksmodel.add_brick(self)
 
+	def __deepcopy__(self, memo):
+		newname = self.factory.nextValidName("Copy_of_%s" % self.name)
+		if newname is None:
+			raise Exception("Name error duplicating event.")
+		new_brick = type(self)(self.factory, newname)
+		new_brick.cfg = copy.deepcopy(self.cfg, memo)
+		return new_brick
+
+	def path(self):
+		return "%s/%s.ctl" % (Settings.MYPATH, self.name)
+
+	def console(self):
+		return "%s/%s.mgmt" % (Settings.MYPATH, self.name)
+
 	def cmdline(self):
 		return ""
 
@@ -222,13 +235,16 @@ class Brick(ChildLogger):
 	def help(self):
 		print "Object type: " + self.get_type()
 		print "Possible configuration parameter: "
-		for (k, v) in self.command_builder.items():
-			if not k.startswith("*"):
-				print v,
+		for (switch, v) in self.command_builder.items():
+			if not switch.startswith("*"):
+				if callable(v):
+					print v.__name__,
+				else:
+					print v,
 				print "  ",
-				print "\t(like %s %s)" % (self.prog(), k)
+				print "\t(like %s %s)" % (self.prog(), switch)
 			else:
-				print k + " " + v + "\tset '" + v + "' to append this value to the command line with no argument prefix"
+				print "%s %s\tset '%s' to append this value to the command line with no argument prefix" % (switch, v, v)
 		print "END of help"
 		print
 
@@ -314,19 +330,18 @@ class Brick(ChildLogger):
 	def build_cmd_line(self):
 		res = []
 
-		for (k, v) in self.command_builder.items():
-
-			if not k.startswith("#"):
-				value = self.cfg.get(v)
+		for (switch, v) in self.command_builder.items():
+			if not switch.startswith("#"):
+				if callable(v):
+					value = v()
+				else:
+					value = self.cfg.get(v)
 				if value is "*":
-					res.append(k)
-
+					res.append(switch)
 				elif value is not None and len(value) > 0:
-					if not k.startswith("*"):
-						res.append(k)
-
+					if not switch.startswith("*"):
+						res.append(switch)
 					res.append(value)
-
 		return res
 
 	def args(self):
@@ -420,12 +435,12 @@ class Brick(ChildLogger):
 		if not self.has_console():
 			return
 		else:
-			cmdline = [self.settings.get('term'), '-T', self.name, '-e', self.terminal, self.cfg.console]
+			cmdline = [self.settings.get('term'), '-T', self.name, '-e', self.terminal, self.console()]
 			try:
 				console = subprocess.Popen(cmdline)
 			except:
 				print "xterm run failed, trying gnome-terminal"
-				cmdline = ['gnome-terminal', '-t', self.name, '-e', self.terminal + " " + self.cfg.console]
+				cmdline = ['gnome-terminal', '-t', self.name, '-e', self.terminal + " " + self.console()]
 				print cmdline
 				try:
 					console = subprocess.Popen(cmdline)
@@ -442,7 +457,7 @@ class Brick(ChildLogger):
 			try:
 				time.sleep(0.5)
 				c = socket.socket(socket.AF_UNIX)
-				c.connect(self.cfg.console)
+				c.connect(self.console())
 			except:
 				pass
 			else:
@@ -710,14 +725,12 @@ class Switch(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
-		self.cfg.path = Settings.MYPATH + '/' + self.name + '.ctl'
-		self.cfg.console = Settings.MYPATH + '/' + self.name + '.mgmt'
 		self.cfg.numports = "32"
 		self.cfg.hub = ""
 		self.cfg.fstp = ""
 		self.ports_used = 0
-		self.command_builder = {"-s":'path',
-					"-M":'console',
+		self.command_builder = {"-s":self.path,
+					"-M":self.console,
 					"-x":"hubmode",
 					"-n":"numports",
 					"-F":"fstp",
@@ -749,7 +762,7 @@ class Switch(Brick):
 		return 'Switch'
 
 	def on_config_changed(self):
-		self.socks[0].path = self.cfg.path
+		self.socks[0].path = self.path()
 		self.socks[0].ports = int(self.cfg.numports)
 
 		if (self.proc is not None):
@@ -887,20 +900,20 @@ class Wire(Brick):
 class Wirefilter(Wire):
 	def __init__(self, _factory, _name):
 		Wire.__init__(self, _factory, _name)
-		self.cfg.console = Settings.MYPATH + '/' + self.name + '.mgmt'
-		self.command_builder = {"-d":"delay",
-					"-l":"loss",
-					"-L":"lostburst",
-					"-D":"dup",
-					"-b":"bandwidth",
-					"-s":"speed",
-					"-c":"chanbufsize",
-					"-n":"noise",
-					"-m":"mtu",
-					"-N":"nofifo",
-					"-M":"console"
-			}
-		
+		self.command_builder = {
+			"-d":"delay",
+			"-l":"loss",
+			"-L":"lostburst",
+			"-D":"dup",
+			"-b":"bandwidth",
+			"-s":"speed",
+			"-c":"chanbufsize",
+			"-n":"noise",
+			"-m":"mtu",
+			"-N":"nofifo",
+			"-M":self.console,
+		}
+
 #		self.cfg.sock0 = ""
 #		self.cfg.sock1 = ""
 #
@@ -1615,16 +1628,20 @@ class VM(Brick):
 		res.append("-mon")
 		res.append("chardev=mon")
 		res.append("-chardev")
-		res.append('socket,id=mon_cons,path=' + Settings.MYPATH + '/' + self.name + '_cons.mgmt,server,nowait')
-		self.cfg.console = Settings.MYPATH + '/' + self.name + '_cons.mgmt'
+		res.append('socket,id=mon_cons,path=%s,server,nowait' % self.console2())
 
 		res.append("-mon")
 		res.append("chardev=mon_cons")
 		res.append("-chardev")
-		res.append('socket,id=mon,path=' + Settings.MYPATH + '/' + self.name + '.mgmt,server,nowait')
-		self.cfg.console2 = Settings.MYPATH + '/' + self.name + '.mgmt'
+		res.append('socket,id=mon,path=%s,server,nowait' % self.console())
 
 		return res
+
+	def console(self):
+		return "%s/%s_cons.mgmt" % (Settings.MYPATH, self.name)
+
+	def console2(self):
+		return "%s/%s.mgmt" % (Settings.MYPATH, self.name)
 
 	def add_plug(self, sock=None, mac=None, model=None):
 		if sock and sock == '_hostonly':
@@ -1668,7 +1685,7 @@ class VM(Brick):
 			try:
 				time.sleep(0.5)
 				c = socket.socket(socket.AF_UNIX)
-				c.connect(self.cfg.console2)
+				c.connect(self.console2())
 			except:
 				pass
 			else:
@@ -2034,25 +2051,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.eventsmodel.del_event(eventtodel)
 
 	def dupbrick(self, bricktodup):
-		b1 = copy.copy(bricktodup)
-		b1.cfg = copy.copy(bricktodup.cfg)
-		b1.name = "copy_of_" + bricktodup.name
-		b1.plugs = []
-		b1.socks = []
-		if b1.get_type() == "Switch":
-			portname = b1.name + "_port"
-			b1.socks.append(Sock(b1, portname))
-			b1.cfg.path = Settings.MYPATH + '/' + b1.name + '.ctl'
-		if b1.get_type().startswith("Wire"):
-			b1.cfg.sock0 = ""
-			b1.cfg.sock1 = ""
-
-		if (b1.cfg.console):
-			b1.cfg.console = Settings.MYPATH + '/' + b1.name + '.mgmt'
-		self.bricks.append(b1)
-		b1.on_config_changed()
-		self.bricksmodel.add_brick(b1)
-		return b1
+		new_brick = copy.deepcopy(bricktodup)
+		new_brick.on_config_changed()
+		return new_brick
 
 	def dupevent(self, eventtodup):
 		newname = self.nextValidName("Copy_of_"+eventtodup.name)
@@ -2078,8 +2079,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if b.get_type() == "Switch":
 			for so in b.socks:
 				so.nickname = b.name + "_port"
-			b.cfg.path = Settings.MYPATH + '/' + b.name + '.ctl'
-			b.cfg.console = Settings.MYPATH + '/' + b.name + '.mgmt'
 		b.gui_changed = True
 
 	def renameevent(self, e, newname):
