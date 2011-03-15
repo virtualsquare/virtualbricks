@@ -33,8 +33,6 @@ import virtualbricks_Global as Global
 from virtualbricks_Logger import ChildLogger
 import virtualbricks_Models as Models
 import virtualbricks_Settings as Settings
-#from virtualbricks_Events import Event
-import virtualbricks_Events as Events
 from virtualbricks_Graphics import *
 
 class InvalidNameException(Exception):
@@ -1177,13 +1175,13 @@ class Wirefilter(Wire):
 	#capacity before. Justo to be sure...
 	#Remove when will be sure that "capacity" will not be used anymore.
 	def cbset_capacityLR(self, arg=0):
-		cbset_chanbufsizeLR(arg)
+		self.cbset_chanbufsizeLR(arg)
 
-	def cbset_capacityeRL(self, arg=0):
-		cbset_chanbufsizeRL(arg)
+	def cbset_capacityRL(self, arg=0):
+		self.cbset_chanbufsizeRL(arg)
 
 	def cbset_capacity(self, arg=0):
-		cbset_chanbufsize(arg)
+		self.cbset_chanbufsize(arg)
 #Current Delay Queue size:   L->R 0	  R->L 0 ??? Is it status or parameter?
 
 class TunnelListen(Brick):
