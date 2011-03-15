@@ -2059,7 +2059,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.newevent("Event", newname)
 		event = self.geteventbyname(eventtodup.name)
 		newevent = self.geteventbyname(newname)
-		#newevent.cfg.actions = copy.deepcopy(event.cfg.actions)
 		newevent.cfg = copy.deepcopy(event.cfg)
 		newevent.active = False
 		newevent.on_config_changed()
