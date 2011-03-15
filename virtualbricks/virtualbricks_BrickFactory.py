@@ -116,7 +116,7 @@ class Plug(ChildLogger):
 	def disconnect(self):
 		self.sock = None
 
-class Sock():
+class Sock(object):
 	def __init__(self, _brick, _nickname):
 		self.brick = _brick
 		self.nickname = _nickname
@@ -129,7 +129,6 @@ class Sock():
 
 	def has_valid_path(self):
 		return os.access(os.path.dirname(self.path), os.W_OK)
-
 
 class BrickConfig(dict):
 	"""Generic configuration for Brick
@@ -276,7 +275,7 @@ class Brick(ChildLogger):
 	def connect(self, endpoint):
 		for p in self.plugs:
 			if not p.configured():
-				if (p.connect(endpoint)):
+				if p.connect(endpoint):
 					self.on_config_changed()
 					self.gui_changed = True
 					return True
@@ -2020,13 +2019,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 	def connect_to(self, brick, nick):
 		endpoint = None
-		if len(nick) == 0:
+		if not nick:
 			return False
 		for n in self.socks:
 			if n.nickname == nick:
 				endpoint = n
 		if endpoint is not None:
-			return 	brick.connect(endpoint)
+			return brick.connect(endpoint)
 		else:
 			print "cannot find " + nick
 			print self.socks
