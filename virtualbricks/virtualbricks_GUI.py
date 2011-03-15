@@ -1972,30 +1972,30 @@ class VBGUI(ChildLogger, gobject.GObject):
 					shbool = self.shcommandsmodel.get_value (iter, COL_BOOL)
 
 					linecommand=linecommand.lstrip("\n").rstrip("\n").strip()
-		   			commands=linecommand.split("\n")
+		 			commands=linecommand.split("\n")
 
-		   			commandtype=Global.ImIf(shbool==True,'addsh','add')
+		 			commandtype=Global.ImIf(shbool==True,'addsh','add')
 
-		   			if not commands[0] or commands[0] == '':
-		   				iter=self.shcommandsmodel.iter_next(iter)
-		   				continue
+		 			if not commands[0] or commands[0] == '':
+		 				iter=self.shcommandsmodel.iter_next(iter)
+		 				continue
 
-		   			commands[0] = 'config ' + commandtype + ' ' + commands[0]
+		 			commands[0] = 'config ' + commandtype + ' ' + commands[0]
 
-		   			c=str(' ' + commandtype + ' ').join(commands)
+		 			c=str(' ' + commandtype + ' ').join(commands)
 
-		   			if not currevent:
-		   				self.brickfactory.newevent("event", name)
-		   				currevent=self.brickfactory.geteventbyname(name)
-		   				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+		 			if not currevent:
+						self.brickfactory.newevent("event", name)
+		 				currevent=self.brickfactory.geteventbyname(name)
+		 				self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
 
-		   			self.brickfactory.brickAction(currevent, c.split(" "))
+		 			self.brickfactory.brickAction(currevent, c.split(" "))
 
-		   			iter=self.shcommandsmodel.iter_next(iter)
-		   		#If at least one element added
-		   		if currevent:
-		   			self.debug("Event created successfully")
-		   			widget.hide()
+		 			iter=self.shcommandsmodel.iter_next(iter)
+		 		#If at least one element added
+		 		if currevent:
+					self.debug("Event created successfully")
+		 			widget.hide()
 			except BrickFactory.InvalidNameException:
 				self.show_error("Invalid name!")
 				widget.hide()
