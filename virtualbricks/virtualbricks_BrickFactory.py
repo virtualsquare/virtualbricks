@@ -760,9 +760,8 @@ class Switch(Brick):
 
 	def on_config_changed(self):
 		self.socks[0].path = self.path()
-		self.socks[0].ports = int(self.cfg.numports)
 
-		if (self.proc is not None):
+		if self.proc is not None:
 			self.need_restart_to_apply_changes = True
 
 	def configured(self):
