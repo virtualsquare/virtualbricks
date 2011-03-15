@@ -1680,18 +1680,17 @@ class VM(Brick):
 			self.info("no console")
 			return None
 
-		for index in range(10):
-			try:
-				time.sleep(0.5)
-				c = socket.socket(socket.AF_UNIX)
-				c.connect(self.console2())
-				return c
-			except Exception, err:
-				self.info("******************************************")
-				self.info("Virtual Machine startup failed. Check your"
-					" configuration!")
-				self.info("******************************************")
-				return None
+		try:
+			time.sleep(0.5)
+			c = socket.socket(socket.AF_UNIX)
+			c.connect(self.console2())
+			return c
+		except Exception, err:
+			self.info("******************************************")
+			self.info("Virtual Machine startup failed. Check your"
+				" configuration!")
+			self.info("******************************************")
+			return None
 
 
 class BricksLockManager():
