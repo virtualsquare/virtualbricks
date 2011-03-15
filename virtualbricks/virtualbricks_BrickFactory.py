@@ -1677,12 +1677,18 @@ class VM(Brick):
 		print "open_internal_console_qemu"
 		if not self.has_console():
 			return None
+		fail_count = 0
 		while True:
 			try:
 				time.sleep(0.5)
 				c = socket.socket(socket.AF_UNIX)
 				c.connect(self.console2())
 			except:
+				fail_count += 1
+				if fail_count > 9:
+					print "give up!"
+					print "FATAL: Virtual Machine startup failed. Check your configuration!"
+					break
 				pass
 			else:
 				break
