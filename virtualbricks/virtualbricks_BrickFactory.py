@@ -1813,15 +1813,14 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
 
 
-	def config_restore(self, f):
-					p.write('link|' + b.name + "|" + pl.sock.nickname+'\n')
-
-	# ACTIONS flags for this:
-	# Initial restore of latest open: True,False (default)
-	# Open or Open Recent: False, True
-	# Import: False, False
-	# New: True, True (missing check for existing file, must be check from caller)
 	def config_restore(self, f, create_if_not_found=True, start_from_scratch=False):
+		"""
+		ACTIONS flags for this:
+		Initial restore of latest open: True,False (default)
+		Open or Open Recent: False, True
+		Import: False, False
+		New: True, True (missing check for existing file, must be check from caller)
+		"""
 		try:
 			p = open(f, "r")
 		except:
