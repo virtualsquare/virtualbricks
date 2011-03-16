@@ -55,6 +55,9 @@ class UnmanagedTypeException(Exception):
 class InvalidActionException(Exception):
 	pass
 
+class DiskLockedException(Exception):
+	pass
+
 def ValidName(name):
 	name=str(name)
 	if not re.search("\A[a-zA-Z]", name):
@@ -1311,9 +1314,19 @@ class VMDisk():
 		self.cow = False
 		self.device = dev
 		#self.snapshot = False
+		self.real_disk_name=""
 
 	def args(self, k):
 		ret = []
+
+		diskname = self.get_real_disk_name()
+
+		if k:
+			ret.append("-" + self.device)
+		ret.append(diskname)
+		return ret
+
+	def get_real_disk_name(self):
 		if self.cow:
 			cowname = os.path.dirname(self.base) + "/" + self.Name + "_" + self.device + ".cow"
 			if not os.access(cowname, os.R_OK):
@@ -1322,20 +1335,12 @@ class VMDisk():
 				os.system('sync')
 				time.sleep(2)
 				print ("Done")
-			diskname = cowname
+			return cowname
 		else:
-			diskname = self.base
-
-		#if self.snapshot:
-			#ret.append('-snapshot')
-
-		if k:
-			ret.append("-" + self.device)
-		ret.append(diskname)
-		return ret
+			return self.base
 
 class VM(Brick):
-	def __init__(self, _factory, _name):
+	def __init__(self, _factory, _name, disks_lock=None):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
 		self.cfg.name = _name
@@ -1397,6 +1402,7 @@ class VM(Brick):
 		self.cfg.kvmsm = ""
 		self.cfg.kvmsmem = ""
 		self.cfg.serial = ""
+		self.disks_lock=disks_lock
 
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -1551,17 +1557,35 @@ class VM(Brick):
 		for c in self.build_cmd_line():
 			res.append(c)
 
+		if (self.disks_lock is None):
+			raise DiskLockedException("Disks_lock obj not exists")
+
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-			print dev + self.cfg.get("base" + dev)
 			if self.cfg.get("base" + dev) != "":
 				disk = getattr(self.cfg, dev)
 				disk.base = self.cfg.get("base" + dev)
 				disk.cow = False
 				if (self.cfg.get("private" + dev) == "*"):
 					disk.cow = True
-				args = disk.args(True)
-				res.append(args[0])
-				res.append(args[1])
+				real_disk = disk.get_real_disk_name()
+
+				if self.disks_lock is None:
+					raise DiskLockedException("Disk lock obj not found")
+
+				d_lock = self.disks_lock.get_brick_lock_status(self, real_disk)
+
+				if d_lock==False and self.cfg.snapshot == "":
+					self.disks_lock.lock_brick(self, real_disk)
+					args = disk.args(True)
+					res.append(args[0])
+					res.append(args[1])
+				elif self.cfg.snapshot=="*":
+					args = disk.args(True)
+					res.append(args[0])
+					res.append(args[1])
+				else:
+					#raise DiskLockedException("Disk base "+ disk.base+" already used")
+					pass
 
 		if self.cfg.kernelenbl == "*":
 			res.append("-kernel")
@@ -1692,29 +1716,40 @@ class VM(Brick):
 			self.info("******************************************")
 			return None
 
+	def post_poweroff(self):
+		self.active = False
+		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
+			if self.cfg.get("base" + dev) != "":
+				base = self.cfg.get("base" + dev)
+				if self.disks_lock is not None and self.disks_lock.get_brick_locker(base) == id (self):
+					print "LOCKER: " + str(id(self))
+					self.disks_lock.unlock_brick(self, base)
 
 class BricksLockManager():
 
-       def __init__(self):
-               self.bricks_lock = {}
+	def __init__(self):
+		self.bricks_lock = {}
 
-       def lock_brick(self, brick, value):
-               print "LOCK %s con %d" % (brick.get_type()+"_"+value, id(brick))
-               self.bricks_lock[brick.get_type()+"_"+value]=id(brick)
+	def lock_brick(self, brick, value):
+		if value not in self.bricks_lock.keys():
+			self.bricks_lock[value]=id(brick)
 
-       def unlock_brick(self, brick, value):
-               if self.bricks_lock.has_key(brick.get_type()+"_"+value):
-                       print "UNLOCK %s con %d" % (brick.get_type()+"_"+value, id(brick))
-                       self.bricks_lock[brick.get_type()+"_"+value]=None
+	def unlock_brick(self, brick, value):
+		if value in self.bricks_lock.keys():
+			self.bricks_lock[value]=None
+			del self.bricks_lock[value]
 
-       def get_brick_lock_status(self, brick, value):
-               if self.bricks_lock.has_key(brick.get_type()+"_"+value) and self.bricks_lock[brick.get_type()+"_"+value] != id(brick):
-                       print "LOCK TRUE %s con %d" % (brick.get_type()+"_"+value, id(brick))
-                       return True
-               else:
-                       print "LOCK FALSE %s con %d" % (brick.get_type()+"_"+value, id(brick))
-                       return False
+	def get_brick_locker(self, value):
+		if value in self.bricks_lock.keys():
+			return self.bricks_lock[value]
+		else:
+			return None
 
+	def get_brick_lock_status(self, brick, value):
+		if value in self.bricks_lock.keys() and self.bricks_lock[value] != id(brick):
+			return True
+		else:
+			return False
 
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
@@ -1738,6 +1773,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
+		self.disks_lock= BricksLockManager()
 		self.config_restore(Settings.MYPATH + "/.virtualbricks.state")
 		self.current_project = None
 		self.recent_projects = []
@@ -1880,7 +1916,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
 				name = l.split(':')[1].rstrip(']\n')
-				
+
 				self.info("new %s : %s", ntype, name)
 				try:
 					if ntype == 'Event':
@@ -2052,6 +2088,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def dupbrick(self, bricktodup):
 		new_brick = copy.deepcopy(bricktodup)
 		new_brick.on_config_changed()
+		if new_brick.get_type=="Qemu":
+			new_brick.disks_lock=self.disks_lock
 		return new_brick
 
 	def dupevent(self, eventtodup):
@@ -2132,7 +2170,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick = Tap(self, name)
 			self.debug("new tap %s OK", brick.name)
 		elif ntype == "vm" or ntype == "Qemu":
-			brick = VM(self, name)
+			brick = VM(self, name, self.disks_lock)
 			self.debug("new vm %s OK", brick.name)
 		elif ntype == "wire" or ntype == "Wire" or ntype == "Cable":
 			brick = Wire(self, name)

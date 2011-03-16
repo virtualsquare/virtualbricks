@@ -1440,8 +1440,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 				if (self.config.erroronloop):
 					self.show_error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
-			else:
-				pass
+			#except(BrickFactory.DiskLockedException):
+			#	self.show_error("Disk used is loked by another VM")
+			#	b.poweroff()
 
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"
