@@ -466,8 +466,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 
 		self.update_vmplugs_tree()
-		#kernelcheck=False
-		#initrdcheck=False
 
 		for key in b.cfg.keys():
 			t = b.get_type()
@@ -623,14 +621,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[1].connect(so)
-
-#			if t == 'Qemu':
-#				k = self.gladefile.get_widget('check_customkernel')
-#				if not k.get_active():
-#					b.cfg.kernel=""
-#				ki = self.gladefile.get_widget('check_initrd')
-#				if not ki.get_active():
-#					b.cfg.initrd=""
 
 		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
 		b.configure(fmt_params)
@@ -1440,9 +1430,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 				if (self.config.erroronloop):
 					self.show_error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
-			#except(BrickFactory.DiskLockedException):
-			#	self.show_error("Disk used is loked by another VM")
-			#	b.poweroff()
+			except(BrickFactory.DiskLockedException):
+				b.gui_changed=True
+				#self.show_error("Disk used is loked by another VM")
+				print "Disk used by the VM is locked by another machine"
+				b.poweroff()
 
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
 		print "on_treeview_bootimages_button_press_event undefined!"

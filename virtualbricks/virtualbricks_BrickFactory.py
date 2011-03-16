@@ -1458,7 +1458,7 @@ class VM(Brick):
 			##smbios not supported
 			'#kernel':'kernel',
 			'#kernelenbl':'kernelenbl',
-			'-append':'kopt',
+			'#append':'kopt',
 			'#initrd':'initrd',
 			'#initrdenbl': 'initrdenbl',
 			#'-serial':'serial',
@@ -1584,16 +1584,20 @@ class VM(Brick):
 					res.append(args[0])
 					res.append(args[1])
 				else:
-					#raise DiskLockedException("Disk base "+ disk.base+" already used")
-					pass
+					raise DiskLockedException("Disk base "+ disk.base+" already used")
+				#	pass
 
-		if self.cfg.kernelenbl == "*":
+		if self.cfg.kernelenbl == "*" and self.cfg.kernel!="":
 			res.append("-kernel")
 			res.append(self.cfg.kernel)
 
-		if self.cfg.initrdenbl == "*":
+		if self.cfg.initrdenbl == "*" and self.cfg.initrd!="":
 			res.append("-initrd")
 			res.append(self.cfg.initrd)
+
+		if self.cfg.kopt != "" and self.cfg.kernelenbl =="*" and self.cfg.kernel != "":
+			res.append("-append")
+			res.append(self.cfg.kopt)
 
 		if self.cfg.gdb:
 			res.append('-gdb')
@@ -2088,7 +2092,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def dupbrick(self, bricktodup):
 		new_brick = copy.deepcopy(bricktodup)
 		new_brick.on_config_changed()
-		if new_brick.get_type=="Qemu":
+		if new_brick.get_type()=="Qemu":
 			new_brick.disks_lock=self.disks_lock
 		return new_brick
 
