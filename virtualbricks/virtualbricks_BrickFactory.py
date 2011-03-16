@@ -1880,11 +1880,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
 				name = l.split(':')[1].rstrip(']\n')
-				print \
-				"new " +Global.ImIf(ntype=='Event',"event","brick")\
-				+": "+ ntype + ":" + name
+				
+				self.info("new %s : %s", ntype, name)
 				try:
-					if(ntype == 'Event'):
+					if ntype == 'Event':
 						self.newevent(ntype, name)
 						component = self.geteventbyname(name)
 					else:

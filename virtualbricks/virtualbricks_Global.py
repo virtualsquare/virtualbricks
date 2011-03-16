@@ -26,7 +26,7 @@ import os
 import ConfigParser
 import time
 import re
-import subprocess 
+import subprocess
 import gobject
 import signal
 import string
@@ -45,13 +45,3 @@ def RandMac():
 	mac = mac +"%02x" % random.getrandbits(8)
 	return mac
 
-#Ternary operator -> bCondition ? uTrue : uFalse
-def ImIf( bCondition, uTrue, uFalse ):
-    #
-    return ( uTrue, uFalse )[ not bCondition ]
-   
-#Truncate the string if it's longer than 30 characters
-def TruncateString(str, length=-1):
-	if length == -1:
-		return str
-	return ImIf(len(str)>length, str[0:length]+' ...', str)

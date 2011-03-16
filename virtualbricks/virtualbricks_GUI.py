@@ -344,20 +344,20 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.shcommandsmodel = gtk.ListStore (str, bool)
 
 				for a in e.cfg[key]:
-					iter = self.shcommandsmodel.append ([a, Global.ImIf(isinstance(a, BrickFactory.VbShellCommand), False, True)])
+					iter = self.shcommandsmodel.append([a, not isinstance(a, BrickFactory.VbShellCommand)])
 
-				iter = self.shcommandsmodel.append (["", False])
+				iter = self.shcommandsmodel.append(["", False])
 
 				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
 				actions.set_model(self.shcommandsmodel)
 
 				columns = (COL_COMMAND, COL_BOOL) = range(2)
 				cell = gtk.CellRendererText ()
-				column_command = gtk.TreeViewColumn (_("Command"), cell, text = COL_COMMAND)
+				column_command = gtk.TreeViewColumn(_("Command"), cell, text = COL_COMMAND)
 				cell.set_property('editable', True)
 				cell.connect('edited', self.edited_callback, (self.shcommandsmodel, COL_COMMAND))
-				cell = gtk.CellRendererToggle ()
-				column_bool = gtk.TreeViewColumn (_("Host shell command"), cell, active = COL_BOOL)
+				cell = gtk.CellRendererToggle()
+				column_bool = gtk.TreeViewColumn(_("Host shell command"), cell, active = COL_BOOL)
 				cell.set_property('activatable', True)
 				cell.connect('toggled', self.toggled_callback, (self.shcommandsmodel, COL_BOOL))
 
@@ -1062,7 +1062,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 				self.gladefile.get_widget('dialog_shellcommand').show_all()
 
-			elif(ntype == 'BrickStart' or ntype == 'BrickStop'):
+			elif ntype in ['BrickStart', 'BrickStop']:
 
 				columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
 
@@ -1073,17 +1073,12 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.addedmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
 
 				for brick in self.brickfactory.bricks:
-					iter = self.availmodel.\
-					append ([gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.base, 48,
-					48), brick.get_type(), brick.name, \
-					Global.TruncateString(brick.get_parameters(), 30)])
-					#if(len(brick.get_parameters()) > 30):
-						#iter.set_tooltip_text("fdsfs")
-						#tt = gtk.Tooltip()
-						#tt.set_text(_('Configuration: ') + brick.get_parameters())
-						#availbricks.set_tooltip_row(tt, availmodel.get_path(iter))
-						#availbricks.connect('query-tooltip',self.provola)
-						#availbricks.has_tooltip = True
+					parameters = brick.get_parameters()
+					if len(parameters) > 30:
+						parameters = "%s..." % parameters[:30]
+					iter = self.availmodel.append(
+						[gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.base, 48, 48),
+						brick.get_type(), brick.name, parameters])
 
 				availbricks.set_model(self.availmodel)
 				addedbricks.set_model(self.addedmodel)
@@ -1967,11 +1962,11 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 				while iter:
 					linecommand = self.shcommandsmodel.get_value (iter, COL_COMMAND)
-					shbool = self.shcommandsmodel.get_value (iter, COL_BOOL)
+					shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
 
 					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
 		 			commands = linecommand.split("\n")
-		 			commandtype = Global.ImIf(shbool, 'addsh', 'add')
+		 			commandtype = 'addsh' if shbool else 'add'
 
 		 			if not commands[0]:
 		 				iter = self.shcommandsmodel.iter_next(iter)
@@ -2019,7 +2014,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		currevent = self.brickfactory.geteventbyname(evname)
 		self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
 
-		action = Global.ImIf(self.selected_event_type()=='BrickStart',' on',' off')
+		action = ' on' if self.selected_event_type() == 'BrickStart' else 'off'
 
 		while iter:
 			evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
