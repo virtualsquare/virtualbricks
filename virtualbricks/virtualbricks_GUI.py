@@ -29,7 +29,7 @@ from traceback import format_exception
 
 import virtualbricks_BrickFactory as BrickFactory
 import virtualbricks_Global as Global
-from virtualbricks_Logger import ChildLogger
+from virtualbricks_GUILogger import GUILogger
 import virtualbricks_Models as Models
 import virtualbricks_Settings as Settings
 import virtualbricks_Events as Events
@@ -88,10 +88,10 @@ class VBuserwait(Thread):
 		print "thread finished"
 		self.running = False
 
-class VBGUI(ChildLogger, gobject.GObject):
+class VBGUI(GUILogger, gobject.GObject):
 	def __init__(self):
 		gobject.GObject.__init__(self)
-		ChildLogger.__init__(self)
+		GUILogger.__init__(self)
 
 		if not os.access(Settings.MYPATH, os.X_OK):
 			os.mkdir(Settings.MYPATH)
@@ -103,7 +103,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.critical("Cannot open required file 'virtualbricks.glade'")
 
 		self.widg = self.get_widgets(self.widgetnames())
-
 
 		self.info("Starting VirtualBricks!")
 
@@ -130,6 +129,8 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		self.draw_topology()
 		self.brickfactory.start()
+
+		self.gladefile.get_widget("messages_textview").set_buffer(self.messages_buffer)
 
 		self.widg['main_win'].show()
 
@@ -865,7 +866,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 		'dialog_new_redirect',
 		'ifconfig_win',
 		'dialog_newbrick',
-		'dialog_warn',
 		'dialog_newevent',
 		'menu_brickactions',
 		'menu_eventactions',
@@ -890,29 +890,35 @@ class VBGUI(ChildLogger, gobject.GObject):
 					self.widg[w].popup(None, None, None, 3, 0)
 				else:
 					self.widg[w].show_all()
-			elif not name.startswith('menu') and not name.endswith('dialog_warn'):
+			elif not name.startswith('menu'):
 				self.widg[w].hide()
 
-	def critical(self, text):
+	def critical(self, text, *args, **kwargs):
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		traceback = format_exception(exc_type, exc_value, exc_traceback)
-		ChildLogger.critical(self, text)
+		GUILogger.critical(self, text, *args, **kwargs)
 		for line in traceback:
-			ChildLogger.critical(self, line.rstrip('\n'))
+			GUILogger.critical(self, line.rstrip('\n'))
 		sys.exit(1)
 
-	def error(self, text):
-		ChildLogger.error(self, text)
-		self.show_msg(text)
-
-	def show_msg(self, text, type=gtk.MESSAGE_ERROR):
-		wdg = self.widg['dialog_warn']
-		wdg.set_property('message-type', type)
-		wdg.set_property('text', text)
-		wdg.run()
+	def error(self, text, *args, **kwargs):
+		GUILogger.error(self, text, *args, **kwargs)
+		text = text % args
+		self.show_error(text)
 
 	def show_error(self, text):
-		self.show_msg(text, gtk.MESSAGE_ERROR)
+		def on_response(widget, response_id=None, data=None):
+			widget.destroy()
+			return True
+
+		parent = self.gladefile.get_widget("main_win")
+		dlg = gtk.MessageDialog(parent=parent, flags=gtk.DIALOG_MODAL,
+			type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE,
+			message_format=None)
+		dlg.set_property('message-type', gtk.MESSAGE_ERROR)
+		dlg.set_property('text', text)
+		dlg.connect("response", on_response)
+		dlg.run()
 
 	def pixbuf_scaled(self, filename):
 		if filename is None or filename == "":
@@ -960,11 +966,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.on_confirm_response_no = on_no
 		self.on_confirm_response_arg = arg
 		self.gladefile.get_widget('dialog_confirm').show_all()
-
-	def on_dialog_warn_close(self, widget=None, data=""):
-		self.curtain_down()
-		self.widg['dialog_warn'].hide()
-		return True
 
 	def on_newbrick_cancel(self, widget=None, data=""):
 		self.curtain_down()
@@ -2414,9 +2415,21 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.gladefile.get_widget(filechooser).set_current_folder(self.config.get('baseimages'))
 
 	def filechooser_image_clear(self, widget=None, event=None, data=""):
-		print "FILECHOOSER_IMAGE"
 		self.filechooser_clear(widget)
 		self.gladefile.get_widget("qemuicon").set_from_file("Qemu.png")
+
+	def on_show_messages_activate(self, menuitem, data=None):
+		messages = self.gladefile.get_widget("messages_dialog")
+		messages.show_all()
+
+	def on_messages_dialog_delete_event(self, widget=None, event=None, data=""):
+		"""we could use deletable property but deletable is only available in
+		GTK+ 2.10 and above"""
+		widget.hide()
+		return True
+
+	def on_messages_dialog_clear_clicked(self, button, data=None):
+		self.messages_buffer.set_text("")
 
 	def signals(self):
 		self.signaldict = {
@@ -2430,7 +2443,6 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_newbrick_ok":self.on_newbrick_ok,
 			"on_newevent_cancel":self.on_newevent_cancel,
 			"on_newevent_ok":self.on_newevent_ok,
-			"on_dialog_warn_close":self.on_dialog_warn_close,
 			"on_config_cancel":self.on_config_cancel,
 			"on_config_ok":self.on_config_ok,
 			"on_gilbert_toggle": self.on_gilbert_toggle,
@@ -2579,14 +2591,15 @@ class VBGUI(ChildLogger, gobject.GObject):
 			"on_filechooserbutton1_file_set": self.on_vmicon_file_change,
 			"on_topology_export_ok":self.on_topology_export_ok,
 			"on_topology_export_cancel":self.on_topology_export_cancel,
-			#"on_cfg_Qemu_basehda_filechooser_selection_changed": self.filechooser_selection_changed,
-			#"filechooser_clear": self.filechooser_clear,
 			"filechooser_image_clear": self.filechooser_image_clear,
 			"systray_show_window_cb": self.systray_show_window_cb,
 			"systray_hide_window_cb": self.systray_hide_window_cb,
 			"systray_exit_cb": self.on_window1_destroy,
 			"filechooser_clear": self.filechooser_clear,
 			"filechooser_hd_clear": self.filechooser_hd_clear,
+			"on_show_messages_activate": self.on_show_messages_activate,
+			"on_messages_dialog_delete_event": self.on_messages_dialog_delete_event,
+			"on_messages_dialog_clear_clicked": self.on_messages_dialog_clear_clicked,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
