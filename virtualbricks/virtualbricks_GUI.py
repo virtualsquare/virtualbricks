@@ -1834,12 +1834,12 @@ class VBGUI(ChildLogger, gobject.GObject):
 				self.config.check_kvm()
 			except IOError:
 				print "ioerror"
-				self.show_error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+				self.show_error(_("No KVM binary found")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
 				widget.set_active(False)
 
 			except NotImplementedError:
 				print "no support"
-				self.show_error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+				self.show_error(_("No KVM support found on the system")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
 				widget.set_active(False)
 
 	def on_check_ksm(self, widget=None, event=None, data=""):
@@ -1847,7 +1847,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 			self.config.check_ksm(True)
 		except NotImplementedError:
 			self.debug("no support")
-			self.show_error("No KSM support found on the system. Check your configuration. KSM will stay disabled.")
+			self.show_error(_("No KSM support found on the system")+". "+_("Check your configuration")+". "+_("KSM will stay disabled")+".")
 			widget.set_active(False)
 
 	def on_add_cdrom(self, widget=None, event=None, data=""):
@@ -1872,7 +1872,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		self.curtain_down()
 
 		if self.brick_selected.proc is not None:
-			self.show_error("Cannot delete Brick: it is in use.")
+			self.show_error(_("Cannot delete Brick: it is in use")+".")
 			return
 
 		self.ask_confirm(_("Do you really want to delete ") +
@@ -1884,9 +1884,9 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 		msg=""
 		if self.event_selected.active == True:
-			msg=_("This event is in use. ")
+			msg=_("This event is in use")+". "
 
-		self.ask_confirm(msg + _("Do you really want to delete ") +
+		self.ask_confirm(msg + _("Do you really want to delete") + " "+
 				_(self.event_selected.get_type()) + " \"" + self.event_selected.name + "\" ?",
 				on_yes = self.brickfactory.delevent, arg = self.event_selected)
 
@@ -2029,7 +2029,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 		missing,found = self.config.check_missing_qemupath(newpath)
 		lbl = self.gladefile.get_widget("label_qemupath_status")
 		if not os.access(newpath,os.X_OK):
-			lbl.set_markup('<span color="red">Error:</span>\ninvalid path for qemu binaries')
+			lbl.set_markup('<span color="red">'+_("Error")+':</span>\n'+_("invalid path for qemu binaries"))
 			return
 
 		for t in missing:
@@ -2038,16 +2038,16 @@ class VBGUI(ChildLogger, gobject.GObject):
 			if t == 'kvm':
 				missing_kvm = True
 		if missing_qemu and missing_kvm:
-			lbl.set_markup('<span color="red">Error:</span>\ncannot find neither qemu nor kvm in this path')
+			lbl.set_markup('<span color="red">'+_("Error")+':</span>\n'+_("cannot find neither qemu nor kvm in this path"))
 			return
 		txt = ""
 		if missing_qemu:
-			txt = '<span color="red">Warning:</span>\ncannot find qemu, using kvm only\n'
+			txt = '<span color="red">'+_("Warning")+':</span>\n'+_("cannot find qemu, using kvm only\n")
 
 		elif missing_kvm:
-			txt = '<span color="yellow">Warning:</span>\nkvm not found. KVM support disabled.\n'
+			txt = '<span color="yellow">'+_("Warning")+':</span>\n'+_("kvm not found")+"."+_("KVM support disabled")+'.\n'
 		else:
-			txt = '<span color="darkgreen">KVM and Qemu detected.</span>\n'
+			txt = '<span color="darkgreen">'+_("KVM and Qemu detected")+'.</span>\n'
 		arch = ""
 		rowlimit = 30
 		for i in found:
@@ -2060,7 +2060,7 @@ class VBGUI(ChildLogger, gobject.GObject):
 
 
 		if len(arch) > 0:
-			txt += "additional targets supported:\n"
+			txt += _("additional targets supported")+":\n"
 			txt += arch.rstrip(', ')
 		lbl.set_markup(txt)
 
@@ -2071,14 +2071,14 @@ class VBGUI(ChildLogger, gobject.GObject):
 		missing = self.config.check_missing_vdepath(newpath)
 		lbl = self.gladefile.get_widget("label_vdepath_status")
 		if not os.access(newpath,os.X_OK):
-			lbl.set_markup('<span color="red">Error:</span>\ninvalid path for vde binaries')
+			lbl.set_markup('<span color="red">'+_("Error")+':</span>\n'+_("invalid path for vde binaries"))
 		elif len(missing) > 0:
-			txt = '<span color="red">Warning, missing modules:</span>\n'
+			txt = '<span color="red">'+_("Warning, missing modules")+':</span>\n'
 			for l in missing:
 				txt+=l + "\n"
 			lbl.set_markup(txt)
 		else:
-			lbl.set_markup('<span color="darkgreen">All VDE components detected.</span>\n')
+			lbl.set_markup('<span color="darkgreen">'+_("All VDE components detected")+'.</span>\n')
 
 	def on_arch_changed(self, widget, data=None):
 		combo = Settings.ComboBox(widget)
