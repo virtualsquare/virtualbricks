@@ -44,16 +44,17 @@ class GUILogger(ChildLogger):
 			tag = self.messages_buffer.create_tag(level)
 			for property_name, value in properties.iteritems():
 				tag.set_property(property_name, value)
-			function = functools.partial(self._log, level=level)
+			function = functools.partial(GUILogger._log, level=level)
 			method = new.instancemethod(function, None, GUILogger)
 			setattr(GUILogger, level, method)
 
-	def _log(self, gui, text, *args, **kwargs):
+	def _log(self, text, *args, **kwargs):
+		"""log text at level specified by kwargs['level']"""
 		level = kwargs.pop('level')
 		method = getattr(ChildLogger, level)
 		method(self, text, *args, **kwargs)
 		text = text % args
-		iter = self.messages_buffer.get_end_iter()
-		self.messages_buffer.insert_with_tags_by_name(iter, "%s\n" % text, level)
+		pos = self.messages_buffer.get_end_iter()
+		self.messages_buffer.insert_with_tags_by_name(pos, "%s\n" % text, level)
 
 
