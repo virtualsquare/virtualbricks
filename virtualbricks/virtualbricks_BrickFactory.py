@@ -1986,7 +1986,20 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if (command == 'q' or command == 'quit'):
 			self.quit()
 		elif (command == 'h' or command == 'help'):
-			print 'no help available'
+			print 'Base command -------------------------------------------------'
+			print 'ps				List of active process'
+			print 'n[ew]				Create a new brick'
+			print 'list				List of bricks already created'
+			print 'socks				List of connections available for bricks'
+			print '\nBrick configuration command ----------------------------------'
+			print 'BRICK_NAME show			List parameters of BRICK_NAME brick'
+			print 'BRICK_NAME on			Starts BRICK_NAME'
+			print 'BRICK_NAME off			Stops BRICK_NAME'
+			print 'BRICK_NAME remove		Delete BRICK_NAME'
+			print 'BRICK_NAME config PARM=VALUE	Configure a parameter of BRICK_NAME.'
+			print 'BRICK_NAME connect NICK		Connect BRICK_NAME to a Sock'
+			print 'BRICK_NAME disconnect		Disconnect BRICK_NAME to a sock'
+			print 'BRICK_NAME help			Help about parameters of BRICK_NAME'
 		elif (command == 'ps'):
 			self.proclist()
 		elif command.startswith('n ') or command.startswith('new '):
