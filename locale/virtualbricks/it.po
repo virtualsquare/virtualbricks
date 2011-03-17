@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.3\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-03-17 21:43+0100\n"
-"PO-Revision-Date: 2011-03-17 21:44+0100\n"
+"POT-Creation-Date: 2011-03-18 00:18+0100\n"
+"PO-Revision-Date: 2011-03-18 00:20+0100\n"
 "Last-Translator: \n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
@@ -33,7 +33,7 @@ msgstr "_Apri Progetto"
 #: share/virtualbricks.glade:48
 #: share/virtualbricks.glade:49
 msgid "_Recent Projects..."
-msgstr "Progetto _Recenti"
+msgstr "Progetti _Recenti"
 
 #: share/virtualbricks.glade:67
 #: share/virtualbricks.glade:68
@@ -3061,6 +3061,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1900
 #: virtualbricks/virtualbricks_GUI.py:1878
 #: virtualbricks/virtualbricks_GUI.py:1879
+#: virtualbricks/virtualbricks_GUI.py:1891
 msgid "Do you really want to delete "
 msgstr "Si vuole veramente cancellare "
 
@@ -3086,6 +3087,7 @@ msgstr "Questo evento è un uso. "
 #: virtualbricks/virtualbricks_GUI.py:1910
 #: virtualbricks/virtualbricks_GUI.py:1899
 #: virtualbricks/virtualbricks_GUI.py:1900
+#: virtualbricks/virtualbricks_GUI.py:1912
 msgid "Cannot rename Brick: it is in use."
 msgstr "Impossibile rinominare Mattone: è in uso."
 
@@ -3099,6 +3101,7 @@ msgstr "Impossibile rinominare Mattone: è in uso."
 #: virtualbricks/virtualbricks_GUI.py:1943
 #: virtualbricks/virtualbricks_GUI.py:1932
 #: virtualbricks/virtualbricks_GUI.py:1933
+#: virtualbricks/virtualbricks_GUI.py:1945
 msgid "Cannot rename Event: it is in use."
 msgstr "Impossibile rinominare Evento: è in uso."
 
@@ -3146,6 +3149,8 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:245
 #: virtualbricks/virtualbricks_GUI.py:1078
 #: virtualbricks/virtualbricks_GUI.py:1100
+#: virtualbricks/virtualbricks_GUI.py:1090
+#: virtualbricks/virtualbricks_GUI.py:1112
 msgid "Icon"
 msgstr "Icona"
 
@@ -3176,6 +3181,8 @@ msgstr "Icona"
 #: virtualbricks/virtualbricks_GUI.py:252
 #: virtualbricks/virtualbricks_GUI.py:1080
 #: virtualbricks/virtualbricks_GUI.py:1102
+#: virtualbricks/virtualbricks_GUI.py:1092
+#: virtualbricks/virtualbricks_GUI.py:1114
 msgid "Type"
 msgstr "Tipo"
 
@@ -3206,6 +3213,8 @@ msgstr "Tipo"
 #: virtualbricks/virtualbricks_GUI.py:254
 #: virtualbricks/virtualbricks_GUI.py:1082
 #: virtualbricks/virtualbricks_GUI.py:1104
+#: virtualbricks/virtualbricks_GUI.py:1094
+#: virtualbricks/virtualbricks_GUI.py:1116
 msgid "Name"
 msgstr "Nome"
 
@@ -3234,6 +3243,8 @@ msgstr "Nome"
 #: virtualbricks/virtualbricks_GUI.py:256
 #: virtualbricks/virtualbricks_GUI.py:1084
 #: virtualbricks/virtualbricks_GUI.py:1106
+#: virtualbricks/virtualbricks_GUI.py:1096
+#: virtualbricks/virtualbricks_GUI.py:1118
 msgid "Parameters"
 msgstr "Parametri"
 
@@ -3245,6 +3256,7 @@ msgstr "Parametri"
 #: virtualbricks/virtualbricks_GUI.py:1130
 #: virtualbricks/virtualbricks_GUI.py:1115
 #: virtualbricks/virtualbricks_GUI.py:1116
+#: virtualbricks/virtualbricks_GUI.py:1128
 msgid "Bricks to add to the event to be started"
 msgstr "Mattoni da aggiungere all'evento per essere avviati"
 
@@ -3256,6 +3268,7 @@ msgstr "Mattoni da aggiungere all'evento per essere avviati"
 #: virtualbricks/virtualbricks_GUI.py:1134
 #: virtualbricks/virtualbricks_GUI.py:1119
 #: virtualbricks/virtualbricks_GUI.py:1120
+#: virtualbricks/virtualbricks_GUI.py:1132
 msgid "Bricks to add to the event to be stopped"
 msgstr "Mattoni da aggiungere all'evento per essere fermati"
 
@@ -3273,6 +3286,8 @@ msgstr "Mattoni da aggiungere all'evento per essere fermati"
 #: virtualbricks/virtualbricks_GUI.py:1013
 #: virtualbricks/virtualbricks_GUI.py:1010
 #: virtualbricks/virtualbricks_GUI.py:1014
+#: virtualbricks/virtualbricks_GUI.py:1022
+#: virtualbricks/virtualbricks_GUI.py:1026
 msgid "The name \""
 msgstr "Il nome \""
 
@@ -3283,6 +3298,7 @@ msgstr "Il nome \""
 #: virtualbricks/virtualbricks_GUI.py:1019
 #: virtualbricks/virtualbricks_GUI.py:1009
 #: virtualbricks/virtualbricks_GUI.py:1010
+#: virtualbricks/virtualbricks_GUI.py:1022
 msgid "\" has forbidden format."
 msgstr "\" ha un formato proibito."
 
@@ -3293,6 +3309,7 @@ msgstr "\" ha un formato proibito."
 #: virtualbricks/virtualbricks_GUI.py:1023
 #: virtualbricks/virtualbricks_GUI.py:1013
 #: virtualbricks/virtualbricks_GUI.py:1014
+#: virtualbricks/virtualbricks_GUI.py:1026
 msgid "\" has been adapted to \""
 msgstr "\" è stato adattato a \""
 
@@ -3303,6 +3320,7 @@ msgstr "\" è stato adattato a \""
 #: virtualbricks/virtualbricks_GUI.py:1026
 #: virtualbricks/virtualbricks_GUI.py:1016
 #: virtualbricks/virtualbricks_GUI.py:1017
+#: virtualbricks/virtualbricks_GUI.py:1029
 msgid "An event named \""
 msgstr "Un evento di nome \""
 
@@ -3313,6 +3331,7 @@ msgstr "Un evento di nome \""
 #: virtualbricks/virtualbricks_GUI.py:1026
 #: virtualbricks/virtualbricks_GUI.py:1016
 #: virtualbricks/virtualbricks_GUI.py:1017
+#: virtualbricks/virtualbricks_GUI.py:1029
 msgid "\" already exist."
 msgstr "\" esiste già."
 
@@ -3399,6 +3418,7 @@ msgstr "Seriale"
 #: virtualbricks/virtualbricks_GUI.py:1037
 #: virtualbricks/virtualbricks_GUI.py:357
 #: virtualbricks/virtualbricks_GUI.py:1038
+#: virtualbricks/virtualbricks_GUI.py:1050
 msgid "Command"
 msgstr "Comando"
 
@@ -3408,6 +3428,7 @@ msgstr "Comando"
 #: virtualbricks/virtualbricks_GUI.py:1041
 #: virtualbricks/virtualbricks_GUI.py:361
 #: virtualbricks/virtualbricks_GUI.py:1042
+#: virtualbricks/virtualbricks_GUI.py:1054
 msgid "Host shell command"
 msgstr "Comando della shell Host"
 
@@ -3424,16 +3445,21 @@ msgstr "Azioni"
 #: virtualbricks/virtualbricks_GUI.py:2033
 #: virtualbricks/virtualbricks_GUI.py:2042
 #: virtualbricks/virtualbricks_GUI.py:2075
+#: virtualbricks/virtualbricks_GUI.py:2045
+#: virtualbricks/virtualbricks_GUI.py:2054
+#: virtualbricks/virtualbricks_GUI.py:2087
 msgid "Error"
 msgstr "Errore"
 
 #: virtualbricks/virtualbricks_GUI.py:2032
 #: virtualbricks/virtualbricks_GUI.py:2033
+#: virtualbricks/virtualbricks_GUI.py:2045
 msgid "invalid path for qemu binaries"
 msgstr "percorso non valido per i binari di qemu"
 
 #: virtualbricks/virtualbricks_GUI.py:2041
 #: virtualbricks/virtualbricks_GUI.py:2042
+#: virtualbricks/virtualbricks_GUI.py:2054
 msgid "cannot find neither qemu nor kvm in this path"
 msgstr "né qemu né kvm sono stati trovati in questo percorso"
 
@@ -3441,51 +3467,62 @@ msgstr "né qemu né kvm sono stati trovati in questo percorso"
 #: virtualbricks/virtualbricks_GUI.py:2048
 #: virtualbricks/virtualbricks_GUI.py:2046
 #: virtualbricks/virtualbricks_GUI.py:2049
+#: virtualbricks/virtualbricks_GUI.py:2058
+#: virtualbricks/virtualbricks_GUI.py:2061
 msgid "Warning"
 msgstr "Attenzione"
 
 #: virtualbricks/virtualbricks_GUI.py:2045
 #: virtualbricks/virtualbricks_GUI.py:2046
+#: virtualbricks/virtualbricks_GUI.py:2058
 msgid "cannot find qemu, using kvm only\n"
 msgstr "non trovo qemu, uso solo kvm\n"
 
 #: virtualbricks/virtualbricks_GUI.py:2063
 #: virtualbricks/virtualbricks_GUI.py:2064
+#: virtualbricks/virtualbricks_GUI.py:2076
 msgid "additional targets supported"
 msgstr "altri target supportati"
 
 #: virtualbricks/virtualbricks_GUI.py:2074
 #: virtualbricks/virtualbricks_GUI.py:2075
+#: virtualbricks/virtualbricks_GUI.py:2087
 msgid "invalid path for vde binaries"
 msgstr "percorso non valido per i binari di vde"
 
 #: virtualbricks/virtualbricks_GUI.py:2076
 #: virtualbricks/virtualbricks_GUI.py:2077
+#: virtualbricks/virtualbricks_GUI.py:2089
 msgid "Warning, missing modules"
 msgstr "Attenzione, moduli mancanti"
 
 #: virtualbricks/virtualbricks_GUI.py:2081
 #: virtualbricks/virtualbricks_GUI.py:2082
+#: virtualbricks/virtualbricks_GUI.py:2094
 msgid "All VDE components detected"
 msgstr "Tutti i componenti VDE rilevati"
 
 #: virtualbricks/virtualbricks_GUI.py:2048
 #: virtualbricks/virtualbricks_GUI.py:2049
+#: virtualbricks/virtualbricks_GUI.py:2061
 msgid "kvm not found"
 msgstr "kvm non trovato"
 
 #: virtualbricks/virtualbricks_GUI.py:2048
 #: virtualbricks/virtualbricks_GUI.py:2049
+#: virtualbricks/virtualbricks_GUI.py:2061
 msgid "KVM support disabled"
 msgstr "Supporto KVM disabilitato"
 
 #: virtualbricks/virtualbricks_GUI.py:2050
 #: virtualbricks/virtualbricks_GUI.py:2051
+#: virtualbricks/virtualbricks_GUI.py:2063
 msgid "KVM and Qemu detected"
 msgstr "KVM e Qemu rilevati"
 
 #: virtualbricks/virtualbricks_GUI.py:1837
 #: virtualbricks/virtualbricks_GUI.py:1838
+#: virtualbricks/virtualbricks_GUI.py:1850
 msgid "No KVM binary found"
 msgstr "Binari KVM non trovati"
 
@@ -3493,6 +3530,8 @@ msgstr "Binari KVM non trovati"
 #: virtualbricks/virtualbricks_GUI.py:1842
 #: virtualbricks/virtualbricks_GUI.py:1838
 #: virtualbricks/virtualbricks_GUI.py:1843
+#: virtualbricks/virtualbricks_GUI.py:1850
+#: virtualbricks/virtualbricks_GUI.py:1855
 msgid "Check your active configuration"
 msgstr "Controlla la configurazione attiva"
 
@@ -3500,41 +3539,50 @@ msgstr "Controlla la configurazione attiva"
 #: virtualbricks/virtualbricks_GUI.py:1842
 #: virtualbricks/virtualbricks_GUI.py:1838
 #: virtualbricks/virtualbricks_GUI.py:1843
+#: virtualbricks/virtualbricks_GUI.py:1850
+#: virtualbricks/virtualbricks_GUI.py:1855
 msgid "KVM will stay disabled"
 msgstr "KVM rimmarrà disabilitato"
 
 #: virtualbricks/virtualbricks_GUI.py:1842
 #: virtualbricks/virtualbricks_GUI.py:1843
+#: virtualbricks/virtualbricks_GUI.py:1855
 msgid "No KVM support found on the system"
 msgstr "Nessun supporto KVM trovato nel sistema"
 
 #: virtualbricks/virtualbricks_GUI.py:1850
 #: virtualbricks/virtualbricks_GUI.py:1851
+#: virtualbricks/virtualbricks_GUI.py:1863
 msgid "No KSM support found on the system"
 msgstr "Nessun supporto KSM trovato nel sistema"
 
 #: virtualbricks/virtualbricks_GUI.py:1850
 #: virtualbricks/virtualbricks_GUI.py:1851
+#: virtualbricks/virtualbricks_GUI.py:1863
 msgid "Check your configuration"
 msgstr "Controlla la configurazione"
 
 #: virtualbricks/virtualbricks_GUI.py:1850
 #: virtualbricks/virtualbricks_GUI.py:1851
+#: virtualbricks/virtualbricks_GUI.py:1863
 msgid "KSM will stay disabled"
 msgstr "KSM rimarrà disabilitato"
 
 #: virtualbricks/virtualbricks_GUI.py:1875
 #: virtualbricks/virtualbricks_GUI.py:1876
+#: virtualbricks/virtualbricks_GUI.py:1888
 msgid "Cannot delete Brick: it is in use"
 msgstr "Non posso cancellare il Mattone: è in uso"
 
 #: virtualbricks/virtualbricks_GUI.py:1887
 #: virtualbricks/virtualbricks_GUI.py:1888
+#: virtualbricks/virtualbricks_GUI.py:1900
 msgid "This event is in use"
 msgstr "Questo evento è in uso"
 
 #: virtualbricks/virtualbricks_GUI.py:1889
 #: virtualbricks/virtualbricks_GUI.py:1890
+#: virtualbricks/virtualbricks_GUI.py:1902
 msgid "Do you really want to delete"
 msgstr "Vuoi davvero cancellare"
 
@@ -3554,4 +3602,13 @@ msgstr "_Messaggi"
 #: share/virtualbricks.glade:9252
 msgid "Messages"
 msgstr "Messaggi"
+
+#: virtualbricks/virtualbricks_BrickFactory.py:1745
+#, python-format
+msgid "Current project is %s"
+msgstr "Il progetto corrente è %s"
+
+#: virtualbricks/virtualbricks_BrickFactory.py:1931
+msgid "Engine: Bye!"
+msgstr "Motore: Arrivederci!"
 
