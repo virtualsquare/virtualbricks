@@ -107,7 +107,7 @@ class Settings(ChildLogger):
 			"femaleplugs": False,
 			"erroronloop": False,
 			"systray": True,
-			"current_project": os.path.join(HOME, ".virtualbricks.conf"),
+			"current_project": HOME + "/.virtualbricks/.virtualbricks.state",
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
