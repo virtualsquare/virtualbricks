@@ -1780,7 +1780,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		except:
 			self.error( "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
 			return
-
+		self.debug("CONFIG DUMP on " + f)
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
 			for k, v in e.cfg.iteritems():

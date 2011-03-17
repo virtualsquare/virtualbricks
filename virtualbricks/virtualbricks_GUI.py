@@ -920,6 +920,8 @@ class VBGUI(GUILogger, gobject.GObject):
 		dlg.connect("response", on_response)
 		dlg.run()
 
+
+
 	def pixbuf_scaled(self, filename):
 		if filename is None or filename == "":
 				return None
@@ -958,6 +960,17 @@ class VBGUI(GUILogger, gobject.GObject):
 	def on_windown_destroy(self, widget=None, data=""):
 		widget.hide()
 		return True
+
+	def confirm(self, message):
+#		dialog = gtk.MessageDialog(None, 0, gtk.MESSAGE_QUESTION, (gtk.STOCK_NO, gtk.RESPONSE_NO, gtk.STOCK_YES, gtk.RESPONSE_YES), message)
+		dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_YES_NO, message)
+		response = dialog.run()
+		dialog.destroy()
+
+		if response == gtk.RESPONSE_YES:
+			return True
+		elif response == gtk.RESPONSE_NO:
+			return False
 
 	def ask_confirm(self, text, on_yes=None, on_no=None, arg=None):
 		self.curtain_down()
@@ -2431,7 +2444,11 @@ class VBGUI(GUILogger, gobject.GObject):
 	def on_messages_dialog_clear_clicked(self, button, data=None):
 		self.messages_buffer.set_text("")
 
+
 	def on_open_project(self, widget, data=None):
+		if self.confirm("Save current project?")==True:
+			self.brickfactory.config_dump(self.config.get('current_project'))
+
 		chooser = gtk.FileChooserDialog(title="Open a project",action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
 		filt = gtk.FileFilter()
@@ -2445,9 +2462,9 @@ class VBGUI(GUILogger, gobject.GObject):
 		resp = chooser.run()
 		if resp == gtk.RESPONSE_OK:
 			filename = chooser.get_filename()
+			self.config.set('current_project', filename)
 			self.brickfactory.config_restore(filename, False, True)
-		self.config.set('current-project', filename)
-		self.config.store()
+			self.config.store()
 		chooser.destroy()
 
 	def on_save_project(self, widget, data=None):
@@ -2467,9 +2484,9 @@ class VBGUI(GUILogger, gobject.GObject):
 			filename = chooser.get_filename()
 			if filename[len(filename)-4:] != ".vbl":
 				filename+=".vbl"
+			self.config.set('current_project', filename)
 			self.brickfactory.config_dump(filename)
-		self.config.set('current-project', filename)
-		self.config.store()
+			self.config.store()
 		chooser.destroy()
 
 
