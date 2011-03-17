@@ -1338,7 +1338,8 @@ class VMDisk():
 			return self.base
 
 class VM(Brick):
-	def __init__(self, _factory, _name, disks_lock=None):
+	DISKS_LOCKED = set()
+	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
 		self.cfg.name = _name
@@ -1400,7 +1401,6 @@ class VM(Brick):
 		self.cfg.kvmsm = ""
 		self.cfg.kvmsmem = ""
 		self.cfg.serial = ""
-		self.disks_lock=disks_lock
 
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -1555,25 +1555,19 @@ class VM(Brick):
 		for c in self.build_cmd_line():
 			res.append(c)
 
-		if (self.disks_lock is None):
-			raise DiskLockedException("Disks_lock obj not exists")
-
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			if self.cfg.get("base" + dev) != "":
 				disk = getattr(self.cfg, dev)
 				disk.base = self.cfg.get("base" + dev)
 				disk.cow = False
-				if (self.cfg.get("private" + dev) == "*"):
+				if self.cfg.get("private" + dev) == "*":
 					disk.cow = True
 				real_disk = disk.get_real_disk_name()
 
-				if self.disks_lock is None:
-					raise DiskLockedException("Disk lock obj not found")
+				d_lock = real_disk in VM.DISKS_LOCKED
 
-				d_lock = self.disks_lock.get_brick_lock_status(self, real_disk)
-
-				if d_lock==False and self.cfg.snapshot == "":
-					self.disks_lock.lock_brick(self, real_disk)
+				if not d_lock and self.cfg.snapshot == "":
+					VM.DISKS_LOCKED.add(real_disk)
 					args = disk.args(True)
 					res.append(args[0])
 					res.append(args[1])
@@ -1582,8 +1576,8 @@ class VM(Brick):
 					res.append(args[0])
 					res.append(args[1])
 				else:
-					raise DiskLockedException("Disk base "+ disk.base+" already used")
-				#	pass
+					raise DiskLockedException("Disk base %s already used" %
+						disk.base)
 
 		if self.cfg.kernelenbl == "*" and self.cfg.kernel!="":
 			res.append("-kernel")
@@ -1721,37 +1715,10 @@ class VM(Brick):
 	def post_poweroff(self):
 		self.active = False
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-			if self.cfg.get("base" + dev) != "":
+			if self.cfg.get("base" + dev):
 				base = self.cfg.get("base" + dev)
-				if self.disks_lock is not None and self.disks_lock.get_brick_locker(base) == id (self):
-					print "LOCKER: " + str(id(self))
-					self.disks_lock.unlock_brick(self, base)
-
-class BricksLockManager():
-
-	def __init__(self):
-		self.bricks_lock = {}
-
-	def lock_brick(self, brick, value):
-		if value not in self.bricks_lock.keys():
-			self.bricks_lock[value]=id(brick)
-
-	def unlock_brick(self, brick, value):
-		if value in self.bricks_lock.keys():
-			self.bricks_lock[value]=None
-			del self.bricks_lock[value]
-
-	def get_brick_locker(self, value):
-		if value in self.bricks_lock.keys():
-			return self.bricks_lock[value]
-		else:
-			return None
-
-	def get_brick_lock_status(self, brick, value):
-		if value in self.bricks_lock.keys() and self.bricks_lock[value] != id(brick):
-			return True
-		else:
-			return False
+				if base in VM.DISKS_LOCKED:
+					VM.DISKS_LOCKED.remove(base)
 
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
@@ -1775,12 +1742,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
-		self.disks_lock= BricksLockManager()
-		#self.config_restore(Settings.MYPATH + "/.virtualbricks.state")
-		self.info( "Current project is " + self.settings.get('current_project') )
+		self.info(_("Current project is %s") % self.settings.get('current_project'))
 		self.config_restore(self.settings.get('current_project'))
-		#self.current_project = None
-		#self.recent_projects = []
 
 	def getbrickbyname(self, name):
 		for b in self.bricks:
@@ -1963,7 +1926,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
-		self.info( 'Engine: Bye!' )
+		self.info(_('Engine: Bye!'))
 		self.config_dump(self.settings.get('current_project'))
 		self.running_condition = False
 		self.emit("engine-closed")
@@ -2106,8 +2069,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def dupbrick(self, bricktodup):
 		new_brick = copy.deepcopy(bricktodup)
 		new_brick.on_config_changed()
-		if new_brick.get_type()=="Qemu":
-			new_brick.disks_lock=self.disks_lock
 		return new_brick
 
 	def dupevent(self, eventtodup):
@@ -2188,7 +2149,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick = Tap(self, name)
 			self.debug("new tap %s OK", brick.name)
 		elif ntype == "vm" or ntype == "Qemu":
-			brick = VM(self, name, self.disks_lock)
+			brick = VM(self, name)
 			self.debug("new vm %s OK", brick.name)
 		elif ntype == "wire" or ntype == "Wire" or ntype == "Cable":
 			brick = Wire(self, name)
