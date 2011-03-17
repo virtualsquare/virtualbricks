@@ -2432,14 +2432,44 @@ class VBGUI(GUILogger, gobject.GObject):
 		self.messages_buffer.set_text("")
 
 	def on_open_project(self, widget, data=None):
-		self.debug( "OPEN PROJECT undefined" )
-
-	def on_save_project(self, widget, data=None):
-		chooser = gtk.FileChooserDialog(title="Save as...",action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
-		chooser.set_do_overwrite_confirmation(True)
+		chooser = gtk.FileChooserDialog(title="Open a project",action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+		chooser.set_current_folder(self.config.get('bricksdirectory'))
+		filt = gtk.FileFilter()
+		filt.set_name("Virtualbricks Bricks List (*.vbl)")
+		filt.add_pattern("*.vbl")
+		chooser.add_filter(filt)
+		filt = gtk.FileFilter()
+		filt.set_name("All files")
+		filt.add_pattern("*")
+		chooser.add_filter(filt)
 		resp = chooser.run()
 		if resp == gtk.RESPONSE_OK:
-			self.debug( chooser.get_filename() + ' selected')
+			filename = chooser.get_filename()
+			self.brickfactory.config_restore(filename, False, True)
+		self.config.set('current-project', filename)
+		self.config.store()
+		chooser.destroy()
+
+	def on_save_project(self, widget, data=None):
+		chooser = gtk.FileChooserDialog(title="Save as...",action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
+		chooser.set_do_overwrite_confirmation(True)
+		chooser.set_current_folder(self.config.get('bricksdirectory'))
+		filt = gtk.FileFilter()
+		filt.set_name("Virtualbricks Bricks List (*.vbl)")
+		filt.add_pattern("*.vbl")
+		chooser.add_filter(filt)
+		filt = gtk.FileFilter()
+		filt.set_name("All files")
+		filt.add_pattern("*")
+		chooser.add_filter(filt)
+		resp = chooser.run()
+		if resp == gtk.RESPONSE_OK:
+			filename = chooser.get_filename()
+			if filename[len(filename)-4:] != ".vbl":
+				filename+=".vbl"
+			self.brickfactory.config_dump(filename)
+		self.config.set('current-project', filename)
+		self.config.store()
 		chooser.destroy()
 
 

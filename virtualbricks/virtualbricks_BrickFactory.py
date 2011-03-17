@@ -1776,9 +1776,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.running_condition = True
 		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
 		self.disks_lock= BricksLockManager()
-		self.config_restore(Settings.MYPATH + "/.virtualbricks.state")
-		self.current_project = None
-		self.recent_projects = []
+		#self.config_restore(Settings.MYPATH + "/.virtualbricks.state")
+		self.info( "Current project is " + self.settings.get('current_project') )
+		self.config_restore(self.settings.get('current_project'))
+		#self.current_project = None
+		#self.recent_projects = []
 
 	def getbrickbyname(self, name):
 		for b in self.bricks:
@@ -1813,7 +1815,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		try:
 			p = open(f, "w+")
 		except:
-			print "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it."
+			self.error( "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
 			return
 
 		for e in self.events:
@@ -1874,8 +1876,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				raise BadConfigException
 			return
 
+		self.info("Open " + f + " project")
+
 		if start_from_scratch:
-			self.current_project = f
+			#self.current_project = f
 			for b in self.bricks:
 				self.delbrick(b)
 			self.bricks = []
@@ -1884,15 +1888,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				self.delevent(e)
 			self.events = []
 
-			return
-
 		l = p.readline()
 		b = None
 		while (l):
 			l = re.sub(' ', '', l)
 			if re.search("\A.*link\|", l) and len(l.split("|")) >= 3:
 				l.rstrip('\n')
-				print "************************* link detected"
+				self.debug( "************************* link detected" )
 				for bb in self.bricks:
 					if bb.name == l.split("|")[1]:
 						if (bb.get_type() == 'Qemu'):
@@ -1911,7 +1913,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							pl = bb.add_plug(this_sock, macaddr, model)
 
 							pl.vlan = int(vlan)
-							print "added eth%d" % pl.vlan
+							self.debug( "added eth%d" % pl.vlan )
 						else:
 							self.connect_to(bb, l.split('|')[2].rstrip('\n'))
 
@@ -1929,12 +1931,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						component = self.getbrickbyname(name)
 
 				except Exception, err:
-					print "--------- Bad config line:", err
+					self.debug ( "--------- Bad config line:", err )
 					l = p.readline()
 					continue
 
 				l = p.readline()
-				#print "-------- loading settings for "+b.name + " first line: " + l
 				parameters = []
 				while component and l and not l.startswith('[') and not re.search("\A.*link\|", l):
 					if len(l.split('=')) > 1:
@@ -1960,8 +1961,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
-		print 'Engine: Bye!'
-		self.config_dump(Settings.MYPATH + "/.virtualbricks.state")
+		self.info( 'Engine: Bye!' )
+		self.config_dump(self.settings.get('current_project'))
 		self.running_condition = False
 		self.emit("engine-closed")
 		sys.exit(0)
