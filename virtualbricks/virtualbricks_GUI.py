@@ -962,7 +962,6 @@ class VBGUI(GUILogger, gobject.GObject):
 		return True
 
 	def confirm(self, message):
-#		dialog = gtk.MessageDialog(None, 0, gtk.MESSAGE_QUESTION, (gtk.STOCK_NO, gtk.RESPONSE_NO, gtk.STOCK_YES, gtk.RESPONSE_YES), message)
 		dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_YES_NO, message)
 		response = dialog.run()
 		dialog.destroy()
@@ -2494,7 +2493,29 @@ class VBGUI(GUILogger, gobject.GObject):
 		self.debug( "IMPORT PROJECT undefined" )
 
 	def on_new_project(self, widget, data=None):
-		self.debug( "NEW PROJECT undefined" )
+		if self.confirm("Save current project?")==True:
+			self.brickfactory.config_dump(self.config.get('current_project'))
+
+		chooser = gtk.FileChooserDialog(title="New project",action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
+		chooser.set_do_overwrite_confirmation(True)
+		chooser.set_current_folder(self.config.get('bricksdirectory'))
+		filt = gtk.FileFilter()
+		filt.set_name("Virtualbricks Bricks List (*.vbl)")
+		filt.add_pattern("*.vbl")
+		chooser.add_filter(filt)
+		filt = gtk.FileFilter()
+		filt.set_name("All files")
+		filt.add_pattern("*")
+		chooser.add_filter(filt)
+		resp = chooser.run()
+		if resp == gtk.RESPONSE_OK:
+			filename = chooser.get_filename()
+			if filename[len(filename)-4:] != ".vbl":
+				filename+=".vbl"
+			self.config.set('current_project', filename)
+			self.brickfactory.config_restore(filename, True, True)
+			self.config.store()
+		chooser.destroy()
 
 	def on_recent_project(self, widget, data=None):
 		self.debug( "RECENT PROJECT undefined" )

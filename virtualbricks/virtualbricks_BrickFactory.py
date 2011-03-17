@@ -1852,6 +1852,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for e in self.events:
 				self.delevent(e)
 			self.events = []
+			if create_if_not_found:
+				return
 
 		l = p.readline()
 		b = None
