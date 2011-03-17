@@ -53,7 +53,7 @@ class GUILogger(ChildLogger):
 		level = kwargs.pop('level')
 		method = getattr(ChildLogger, level)
 		method(self, text, *args, **kwargs)
-		text = text % args
+		text = unicode(text) % args
 		pos = self.messages_buffer.get_end_iter()
 		self.messages_buffer.insert_with_tags_by_name(pos, "%s\n" % text, level)
 
