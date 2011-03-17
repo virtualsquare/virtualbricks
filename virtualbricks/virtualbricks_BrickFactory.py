@@ -1866,6 +1866,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Import: False, False
 		New: True, True (missing check for existing file, must be check from caller)
 		"""
+		self.bricksmodel.clear()
+		self.eventsmodel.clear()
+
 		try:
 			p = open(f, "r")
 		except:
@@ -1873,13 +1876,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				p = open(f, "w")
 				self.current_project = f
 			else:
-				raise BadConfigException
+				raise BadConfigException()
 			return
 
 		self.info("Open " + f + " project")
 
 		if start_from_scratch:
-			#self.current_project = f
 			for b in self.bricks:
 				self.delbrick(b)
 			self.bricks = []
@@ -1943,7 +1945,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						if l.split('=')[0] == "actions" and ntype == 'Event':
 							actions=eval(''.join(l.rstrip('\n').split('=')[1:]))
 							for action in actions:
-							#Initialize one by one
+								#Initialize one by one
 								component.configure(action.split(' '))
 							l = p.readline()
 							continue
