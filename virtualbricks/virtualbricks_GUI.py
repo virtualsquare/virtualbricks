@@ -2431,6 +2431,27 @@ class VBGUI(GUILogger, gobject.GObject):
 	def on_messages_dialog_clear_clicked(self, button, data=None):
 		self.messages_buffer.set_text("")
 
+	def on_open_project(self, widget, data=None):
+		self.debug( "OPEN PROJECT undefined" )
+
+	def on_save_project(self, widget, data=None):
+		chooser = gtk.FileChooserDialog(title="Save as...",action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+		chooser.set_do_overwrite_confirmation(True)
+		resp = chooser.run()
+		if resp == gtk.RESPONSE_OK:
+			self.debug( chooser.get_filename() + ' selected')
+		chooser.destroy()
+
+
+	def on_import_project(self, widget, data=None):
+		self.debug( "IMPORT PROJECT undefined" )
+
+	def on_new_project(self, widget, data=None):
+		self.debug( "NEW PROJECT undefined" )
+
+	def on_recent_project(self, widget, data=None):
+		self.debug( "RECENT PROJECT undefined" )
+
 	def signals(self):
 		self.signaldict = {
 			"on_generic_event":self.on_generic_event,
@@ -2600,6 +2621,11 @@ class VBGUI(GUILogger, gobject.GObject):
 			"on_show_messages_activate": self.on_show_messages_activate,
 			"on_messages_dialog_delete_event": self.on_messages_dialog_delete_event,
 			"on_messages_dialog_clear_clicked": self.on_messages_dialog_clear_clicked,
+			"on_open_project": self.on_open_project,
+			"on_open-recent_project": self.on_recent_project,
+			"on_new_project": self.on_new_project,
+			"on_import_project": self.on_import_project,
+			"on_save_project_as": self.on_save_project,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 

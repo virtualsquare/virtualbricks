@@ -50,6 +50,7 @@
                         <property name="visible">True</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">False</property>
+                        <signal name="activate" handler="on_open-recent_project"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image16">
                             <property name="visible">True</property>
@@ -99,7 +100,7 @@
                         <property name="visible">True</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_save_project"/>
+                        <signal name="activate" handler="on_save_project_as"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image19">
                             <property name="visible">True</property>
