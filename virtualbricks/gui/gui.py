@@ -31,13 +31,13 @@ import time
 from traceback import format_exception
 
 from virtualbricks import tools
-from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.brickfactory import BrickFactory, ValidName, VbShellCommand
+from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
+from virtualbricks.gui.combo import ComboBox
 from virtualbricks.gui.graphics import *
 from virtualbricks.gui.logger import Logger
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
-from virtualbricks.gui.combo import ComboBox
-from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 
 class MyTray(gtk.StatusIcon):
 
@@ -327,7 +327,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.shcommandsmodel = gtk.ListStore (str, bool)
 
 				for a in e.cfg[key]:
-					iter = self.shcommandsmodel.append([a, not isinstance(a, BrickFactory.VbShellCommand)])
+					iter = self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
 
 				iter = self.shcommandsmodel.append(["", False])
 
@@ -998,7 +998,7 @@ class VBGUI(Logger, gobject.GObject):
 		if eventname == '':
 			return
 
-		validname = BrickFactory.ValidName(eventname)
+		validname = ValidName(eventname)
 		if validname is None:
 			self.error(_("The name \"")+eventname+_("\" has forbidden format."))
 			return
