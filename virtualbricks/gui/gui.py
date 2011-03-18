@@ -885,8 +885,9 @@ class VBGUI(Logger, gobject.GObject):
 
 	def error(self, text, *args, **kwargs):
 		Logger.error(self, text, *args, **kwargs)
-		text = text % args
-		self.show_error(text)
+		# TODO #737271
+		# text = text % args
+		# self.show_error(text)
 
 	def show_error(self, text):
 		def on_response(widget, response_id=None, data=None):
@@ -901,8 +902,6 @@ class VBGUI(Logger, gobject.GObject):
 		dlg.set_property('text', text)
 		dlg.connect("response", on_response)
 		dlg.run()
-
-
 
 	def pixbuf_scaled(self, filename):
 		if filename is None or filename == "":
@@ -1000,15 +999,16 @@ class VBGUI(Logger, gobject.GObject):
 			return
 
 		validname = BrickFactory.ValidName(eventname)
-		if validname == None:
-			self.show_error(_("The name \"")+eventname+_("\" has forbidden format."))
+		if validname is None:
+			self.error(_("The name \"")+eventname+_("\" has forbidden format."))
 			return
 		elif validname != eventname:
 			self.gladefile.get_widget('text_neweventname').set_text(validname)
-			self.show_error(_("The name \"")+eventname+_("\" has been adapted to \"")+validname+"\".")
-			eventname=validname
-		if self.brickfactory.isNameFree(eventname) == False:
-			self.show_error(_("An event named \"")+eventname+_("\" already exist."))
+			self.error(_("The name \"")+eventname+_("\" has been adapted to \"")+validname+"\".")
+			eventname = validname
+
+		if not self.brickfactory.isNameFree(eventname):
+			self.error(_("An event named \"")+eventname+_("\" already exist."))
 			return
 
 		self.show_window('')
@@ -1017,7 +1017,7 @@ class VBGUI(Logger, gobject.GObject):
 		ntype = self.selected_event_type()
 
 		try:
-			if(ntype == 'ShellCommand'):
+			if ntype == 'ShellCommand':
 
 				self.shcommandsmodel = None
 				self.shcommandsmodel = gtk.ListStore (str, bool)
@@ -1418,17 +1418,16 @@ class VBGUI(Logger, gobject.GObject):
 				b.poweron()
 			except BadConfig:
 				b.gui_changed=True
-				self.show_error("Cannot start this Brick: Brick not configured, yet.")
+				self.error("Cannot start this Brick: Brick not configured, yet.")
 			except NotConnected:
-				self.show_error("Cannot start this Brick: Brick not connected.")
+				self.error("Cannot start this Brick: Brick not connected.")
 			except Linkloop:
 				if (self.config.erroronloop):
-					self.show_error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
+					self.error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
 			except DiskLocked:
 				b.gui_changed=True
-				#self.show_error("Disk used is loked by another VM")
-				print "Disk used by the VM is locked by another machine"
+				self.error("Disk used by the VM is locked by another machine")
 				b.poweroff()
 
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
@@ -1631,9 +1630,10 @@ class VBGUI(Logger, gobject.GObject):
 		#because qemu-img want k, M, G or T suffixes.
 		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()[:-1]
 		cmd='qemu-img create'
-		if filename=="":
-			self.show_error("Choose a filename first!")
+		if not filename:
+			self.error("Choose a filename first!")
 			return
+
 		if img_format == "Auto":
 			img_format = "raw"
 		os.system('%s -f %s %s %s' % (cmd, img_format, path+filename+"."+img_format, img_size+img_sizeunit))
@@ -1828,13 +1828,10 @@ class VBGUI(Logger, gobject.GObject):
 			try:
 				self.config.check_kvm()
 			except IOError:
-				print "ioerror"
-				self.show_error(_("No KVM binary found")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
+				self.error(_("No KVM binary found")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
 				widget.set_active(False)
-
 			except NotImplementedError:
-				print "no support"
-				self.show_error(_("No KVM support found on the system")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
+				self.error(_("No KVM support found on the system")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
 				widget.set_active(False)
 
 	def on_check_ksm(self, widget=None, event=None, data=""):
@@ -1842,7 +1839,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.config.check_ksm(True)
 		except NotImplementedError:
 			self.debug("no support")
-			self.show_error(_("No KSM support found on the system")+". "+_("Check your configuration")+". "+_("KSM will stay disabled")+".")
+			self.error(_("No KSM support found on the system")+". "+_("Check your configuration")+". "+_("KSM will stay disabled")+".")
 			widget.set_active(False)
 
 	def on_add_cdrom(self, widget=None, event=None, data=""):
@@ -1867,7 +1864,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 
 		if self.brick_selected.proc is not None:
-			self.show_error(_("Cannot delete Brick: it is in use")+".")
+			self.error(_("Cannot delete Brick: it is in use")+".")
 			return
 
 		self.ask_confirm(_("Do you really want to delete ") +
@@ -1891,7 +1888,7 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
 		if self.brick_selected.proc != None:
-			self.show_error(_("Cannot rename Brick: it is in use."))
+			self.error(_("Cannot rename Brick: it is in use."))
 			return
 
 		self.gladefile.get_widget('entry_brick_newname').set_text(self.brick_selected.name)
@@ -1918,19 +1915,19 @@ class VBGUI(Logger, gobject.GObject):
 			try:
 				self.brickfactory.renamebrick(self.brick_selected, self.gladefile.get_widget('entry_brick_newname').get_text())
 			except InvalidName:
-				self.show_error("Invalid name!")
+				self.error("Invalid name!")
 
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if response == 1:
-			if self.event_selected.active == True:
-				self.show_error(_("Cannot rename Event: it is in use."))
+			if self.event_selected.active:
+				self.error(_("Cannot rename Event: it is in use."))
 				return
 
 			try:
 				self.brickfactory.renameevent(self.event_selected, self.gladefile.get_widget('entry_event_newname').get_text())
 			except InvalidName:
-				self.show_error("Invalid name!")
+				self.error("Invalid name!")
 
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
 		if response == 1:
@@ -1977,7 +1974,7 @@ class VBGUI(Logger, gobject.GObject):
 					self.debug("Event created successfully")
 		 			widget.hide()
 			except InvalidName:
-				self.show_error("Invalid name!")
+				self.error("Invalid name!")
 				widget.hide()
 		#Dialog window canceled
 		else:
@@ -2137,12 +2134,10 @@ class VBGUI(Logger, gobject.GObject):
 				self.config.check_kvm()
 				self.kvm_toggle_all(True)
 			except IOError:
-				self.debug("ioerror")
-				self.show_error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 			except NotImplementedError:
-				self.debug("no support")
-				self.show_error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
 				widget.set_active(False)
 		else:
 			self.kvm_toggle_all(False)
@@ -2289,7 +2284,7 @@ class VBGUI(Logger, gobject.GObject):
 	def on_vm_suspend(self, widget=None, event=None, data=""):
 		hda = self.joblist_selected.cfg.get('basehda')
 		if hda is None or 0 != subprocess.Popen(["qemu-img","snapshot","-c","virtualbricks",hda]).wait():
-			self.show_error("Suspend/Resume not supported on this disk.")
+			self.error("Suspend/Resume not supported on this disk.")
 			return
 		self.joblist_selected.recv()
 		self.joblist_selected.send("savevm virtualbricks\n")
@@ -2314,7 +2309,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.brick_selected.cfg.set("loadvm=virtualbricks")
 				self.brick_selected.poweron()
 		else:
-			self.show_error("Cannot find suspend point.")
+			self.error("Cannot find suspend point.")
 
 
 	def on_vm_powerbutton(self, widget=None, event=None, data=""):
