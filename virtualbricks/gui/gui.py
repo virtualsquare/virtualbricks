@@ -1418,16 +1418,21 @@ class VBGUI(Logger, gobject.GObject):
 				b.poweron()
 			except BadConfig:
 				b.gui_changed=True
-				self.error("Cannot start this Brick: Brick not configured, yet.")
+				self.error(_("Cannot start '%s': not configured"),
+					b.name)
 			except NotConnected:
-				self.error("Cannot start this Brick: Brick not connected.")
+				self.error(_("Cannot start '%s': not connected"),
+					b.name)
 			except Linkloop:
 				if (self.config.erroronloop):
-					self.error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
+					self.error(_("Loop link detected: aborting operation. If you want to start "
+						"a looped network, disable the check loop feature in the general "
+						"settings"))
 					b.poweroff()
 			except DiskLocked:
 				b.gui_changed=True
-				self.error("Disk used by the VM is locked by another machine")
+				self.error(_("Disk used by the VM is locked by another "
+					"machine"))
 				b.poweroff()
 
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
