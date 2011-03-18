@@ -1,27 +1,31 @@
 #!/usr/bin/env python
-# coding=utf-8
+# coding: utf-8
 
-##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-##	Copyright (C) 2011 Virtualbricks team
-##
-##	This program is free software; you can redistribute it and/or
-##	modify it under the terms of the GNU General Public License
-##	as published by the Free Software Foundation; either version 2
-##	of the License, or (at your option) any later version.
-##
-##	This program is distributed in the hope that it will be useful,
-##	but WITHOUT ANY WARRANTY; without even the implied warranty of
-##	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-##	GNU General Public License for more details.
-##
-##	You should have received a copy of the GNU General Public License
-##	along with this program; if not, write to the Free Software
-##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""
+Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+Copyright (C) 2011 Virtualbricks team
 
-SUPPORTED_LANGS=['it','nl']
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""
+
+SUPPORTED_LANGS = ['it','nl']
 
 from distutils.core import setup
-import sys,os,tempfile
+import os
+import sys
+import tempfile
 
 if not os.access('/usr/share/virtualbricks/', os.X_OK):
 	try:
@@ -31,7 +35,7 @@ if not os.access('/usr/share/virtualbricks/', os.X_OK):
 		sys.exit(1)
 
 
-FILES=[
+FILES = [
 			('/usr/bin', ['main/virtualbricks']),
 			('/usr/share/virtualbricks/', ['share/virtualbricks.glade']),
 			('/usr/share/applications', ['share/virtualbricks.desktop']),
@@ -46,12 +50,12 @@ FILES=[
 			('/usr/share/pixmaps', ['images/Wire.png'])
 ]
 
-tempdirs=list()
+tempdirs = []
 
 for l in SUPPORTED_LANGS:
 	directory_name = tempfile.mkdtemp()
 	tempdirs.append(directory_name)
-	command='msgfmt -o ' + directory_name + '/virtualbricks.mo ' + 'locale/virtualbricks/' + l + '.po'
+	command = 'msgfmt -o ' + directory_name + '/virtualbricks.mo ' + 'locale/virtualbricks/' + l + '.po'
 	os.system(command)
 	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', [directory_name + '/virtualbricks.mo']))
 

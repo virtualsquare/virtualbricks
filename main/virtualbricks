@@ -20,7 +20,8 @@
 
 import sys
 import time
-from  virtualbricks import VBGUI, BrickFactory
+from virtualbricks.gui import VBGUI
+from virtualbricks.brickfactory import BrickFactory
 
 #Main.
 

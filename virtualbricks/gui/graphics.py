@@ -1,4 +1,4 @@
-# coding=utf-8
+# coding: utf-8
 
 ##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 ##	Copyright (C) 2011 Virtualbricks team
@@ -17,8 +17,13 @@
 ##	along with this program; if not, write to the Free Software
 ##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import os, re, Image, ImageEnhance, pygraphviz as pgv
-import virtualbricks_Settings as Settings
+import Image
+import ImageEnhance
+import os
+import pygraphviz as pgv
+import re
+
+from virtualbricks.settings import MYPATH
 
 def ImgPrefix():
 	return "/usr/share/pixmaps/"
@@ -37,7 +42,7 @@ class Icon:
 
 	def set_from_file(self, filename):
 
-		newname = Settings.MYPATH + "/qemuicon_" + self.component.name + ".png"
+		newname = MYPATH + "/qemuicon_" + self.component.name + ".png"
 		if self.has_custom_icon() and self.component.cfg.icon != newname:
 			src = Image.open(filename).resize((48,48),Image.ANTIALIAS)
 			src.convert('RGBA').save(newname)

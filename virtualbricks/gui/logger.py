@@ -24,9 +24,9 @@ import functools
 import gtk
 import new
 
-from virtualbricks_Logger import ChildLogger
+from virtualbricks.logger import ChildLogger
 
-class GUILogger(ChildLogger):
+class Logger(ChildLogger):
 	def __init__(self):
 		ChildLogger.__init__(self)
 
@@ -44,9 +44,9 @@ class GUILogger(ChildLogger):
 			tag = self.messages_buffer.create_tag(level)
 			for property_name, value in properties.iteritems():
 				tag.set_property(property_name, value)
-			function = functools.partial(GUILogger._log, level=level)
-			method = new.instancemethod(function, None, GUILogger)
-			setattr(GUILogger, level, method)
+			function = functools.partial(Logger._log, level=level)
+			method = new.instancemethod(function, None, Logger)
+			setattr(Logger, level, method)
 
 	def _log(self, text, *args, **kwargs):
 		"""log text at level specified by kwargs['level']"""

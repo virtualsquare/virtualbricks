@@ -1,22 +1,24 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-##	Copyright (C) 2011 Virtualbricks team
-##
-##	This program is free software; you can redistribute it and/or
-##	modify it under the terms of the GNU General Public License
-##	as published by the Free Software Foundation; either version 2
-##	of the License, or (at your option) any later version.
-##
-##	This program is distributed in the hope that it will be useful,
-##	but WITHOUT ANY WARRANTY; without even the implied warranty of
-##	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-##	GNU General Public License for more details.
-##
-##	You should have received a copy of the GNU General Public License
-##	along with this program; if not, write to the Free Software
-##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""
+Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+Copyright (C) 2011 Virtualbricks team
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""
 
 import gobject
 import gtk
@@ -24,38 +26,17 @@ import os
 import re
 import subprocess
 import sys
+from threading import Thread
 import time
 from traceback import format_exception
 
-import virtualbricks_BrickFactory as BrickFactory
-import virtualbricks_Global as Global
-from virtualbricks_GUILogger import GUILogger
-import virtualbricks_Models as Models
-import virtualbricks_Settings as Settings
-import virtualbricks_Events as Events
-from threading import Thread
-from virtualbricks_Graphics import *
-
-#Gettext stuff
-try:
-	import gettext
-	import locale
-except:
-	print "locale and/or gettext for language support not installed"
-	sys.exit(1)
-
-APP = 'virtualbricks'
-#DIR = 'locale'
-DIR = '/usr/share/locale'
-#print "DIR: " + DIR
-locale.setlocale(locale.LC_ALL, '')
-for module in gtk.glade, gettext:
-	module.bindtextdomain(APP, DIR)
-	module.textdomain(APP)
-
-import __builtin__
-__builtin__._ = gettext.gettext
-#_ = gettext.gettext
+from virtualbricks import tools
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.gui.graphics import *
+from virtualbricks.gui.logger import Logger
+from virtualbricks.models import BricksModel, EventsModel
+from virtualbricks.settings import MYPATH
+from virtualbricks.gui.combo import ComboBox
 
 class MyTray(gtk.StatusIcon):
 
@@ -88,13 +69,13 @@ class VBuserwait(Thread):
 		print "thread finished"
 		self.running = False
 
-class VBGUI(GUILogger, gobject.GObject):
+class VBGUI(Logger, gobject.GObject):
 	def __init__(self):
 		gobject.GObject.__init__(self)
-		GUILogger.__init__(self)
+		Logger.__init__(self)
 
-		if not os.access(Settings.MYPATH, os.X_OK):
-			os.mkdir(Settings.MYPATH)
+		if not os.access(MYPATH, os.X_OK):
+			os.mkdir(MYPATH)
 
 		self.topology = None
 		try:
@@ -108,7 +89,7 @@ class VBGUI(GUILogger, gobject.GObject):
 
 		gtk.gdk.threads_init()
 
-		self.brickfactory = BrickFactory.BrickFactory(self, True)
+		self.brickfactory = BrickFactory(self, True)
 
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
@@ -214,7 +195,7 @@ class VBGUI(GUILogger, gobject.GObject):
 			self.quit()
 
 	def brick_to_cell(self, column, cell, model, iter):
-		brick = model.get_value(iter, Models.BricksModel.BRICK_IDX)
+		brick = model.get_value(iter, BricksModel.BRICK_IDX)
 		assert brick is not None
 		if column.get_title() == _('Icon'):
 			if brick.proc is not None:
@@ -240,7 +221,7 @@ class VBGUI(GUILogger, gobject.GObject):
 			raise NotImplemented()
 
 	def event_to_cell(self, column, cell, model, iter):
-		event = model.get_value(iter, Models.EventsModel.EVENT_IDX)
+		event = model.get_value(iter, EventsModel.EVENT_IDX)
 		assert event is not None
 		if column.get_title() == _('Icon'):
 			#print "base: %s, grey: %s" % (event.icon.base,event.icon.grey)
@@ -272,7 +253,7 @@ class VBGUI(GUILogger, gobject.GObject):
 
 		model = tree.get_model()
 		iter = model.get_iter(path)
-		name = model.get_value(iter, Models.BricksModel.BRICK_IDX).name
+		name = model.get_value(iter, BricksModel.BRICK_IDX).name
 		self.last_known_selected_brick = self.brickfactory.getbrickbyname(name)
 		return self.last_known_selected_brick
 
@@ -290,7 +271,7 @@ class VBGUI(GUILogger, gobject.GObject):
 
 		model = tree.get_model()
 		iter = model.get_iter(path)
-		name = model.get_value(iter, Models.EventsModel.EVENT_IDX).name
+		name = model.get_value(iter, EventsModel.EVENT_IDX).name
 		self.last_known_selected_event = self.brickfactory.geteventbyname(name)
 		return self.last_known_selected_event
 
@@ -382,7 +363,7 @@ class VBGUI(GUILogger, gobject.GObject):
 		b = self.brick_selected
 		# Fill socks combobox
 		for k in self.sockscombo_names():
-			combo = Settings.ComboBox(self.gladefile.get_widget(k))
+			combo = ComboBox(self.gladefile.get_widget(k))
 			opt=dict()
 			# add Ad-hoc host only to the vmehternet
 			if k == 'sockscombo_vmethernet':
@@ -403,7 +384,7 @@ class VBGUI(GUILogger, gobject.GObject):
 		dicts=dict()
 		#QEMU COMMAND COMBO
 		missing,found = self.config.check_missing_qemupath(self.config.get("qemupath"))
-		qemuarch = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
+		qemuarch = ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
 		opt = dict()
 		for arch in found:
 			if arch.startswith('qemu-system-'):
@@ -412,7 +393,7 @@ class VBGUI(GUILogger, gobject.GObject):
 		dicts['argv0']=opt
 
 		#SNDCARD COMBO
-		sndhw = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo"))
+		sndhw = ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo"))
 		opt = dict()
 		opt['no audio']=""
 		opt['PC speaker']="pcspk"
@@ -421,30 +402,30 @@ class VBGUI(GUILogger, gobject.GObject):
 		opt['ENSONIQ AudioPCI ES1370'] = "es1370"
 		dicts['soundhw']=opt
 		sndhw.populate(opt, "")
-		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo")).select('Intel 82801AA AC97 Audio')
+		ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo")).select('Intel 82801AA AC97 Audio')
 
 		#device COMBO
-		devices = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo"))
+		devices = ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo"))
 		opt = dict()
 		opt['NO']=""
 		opt['cdrom']="/dev/cdrom"
 		dicts['device']=opt
 		devices.populate(opt, "")
-		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo")).select('NO')
+		ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo")).select('NO')
 
 		#boot COMBO
-		boot_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo"))
+		boot_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo"))
 		opt = dict()
 		opt['HD1']=""
 		opt['FLOPPY'] = "a"
 		opt['CDROM'] = "d"
 		dicts['boot']=opt
 		boot_c.populate(opt, "")
-		Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo")).select('HD1')
+		ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo")).select('HD1')
 
 		# Qemu VMplugs:
-		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
-		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).select('rtl8139')
+		ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
+		ComboBox(self.gladefile.get_widget("vmplug_model")).select('rtl8139')
 		if len(b.plugs) == 0:
 			self.gladefile.get_widget('radiobutton_network_nonet').set_active(True)
 			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
@@ -496,7 +477,7 @@ class VBGUI(GUILogger, gobject.GObject):
 			if (widget is not None and dicts.has_key(key)):
 				for k, v in dicts[key].iteritems():
 					if (v==b.cfg[key]):
-						Settings.ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
+						ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg[key]) > 0):
@@ -552,7 +533,7 @@ class VBGUI(GUILogger, gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
-				combo = Settings.ComboBox(widget)
+				combo = ComboBox(widget)
 				#txt = widget.get_active_text()
 				txt = combo.get_selected()
 				if txt is not None and (txt != "-- default --"):
@@ -580,7 +561,7 @@ class VBGUI(GUILogger, gobject.GObject):
 				pass
 
 			if t == 'Tap':
-				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
@@ -595,30 +576,30 @@ class VBGUI(GUILogger, gobject.GObject):
 
 
 			if t == 'TunnelConnect':
-				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
 			if t == 'TunnelListen':
-				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
 			if t == 'Wire':
-				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
-				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wire1')).get_selected()
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_wire1')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[1].connect(so)
 			if t == 'Wirefilter':
-				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
-				sel = Settings.ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[1].connect(so)
@@ -896,13 +877,13 @@ class VBGUI(GUILogger, gobject.GObject):
 	def critical(self, text, *args, **kwargs):
 		exc_type, exc_value, exc_traceback = sys.exc_info()
 		traceback = format_exception(exc_type, exc_value, exc_traceback)
-		GUILogger.critical(self, text, *args, **kwargs)
+		Logger.critical(self, text, *args, **kwargs)
 		for line in traceback:
-			GUILogger.critical(self, line.rstrip('\n'))
+			Logger.critical(self, line.rstrip('\n'))
 		sys.exit(1)
 
 	def error(self, text, *args, **kwargs):
-		GUILogger.error(self, text, *args, **kwargs)
+		Logger.error(self, text, *args, **kwargs)
 		text = text % args
 		self.show_error(text)
 
@@ -1302,7 +1283,7 @@ class VBGUI(GUILogger, gobject.GObject):
 		y = int(y)
 		pthinfo = tree.get_path_at_pos(x, y)
 		dropbrick = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
-			pthinfo, Models.BricksModel.BRICK_IDX)
+			pthinfo, BricksModel.BRICK_IDX)
 		#print x, y, pthinfo, dropbrick.name
 
 		drop_info = tree.get_dest_row_at_pos(x, y)
@@ -1362,7 +1343,7 @@ class VBGUI(GUILogger, gobject.GObject):
 			return
 
 		iter = tree.get_model().get_iter(path)
-		name = tree.get_model().get_value(iter, Models.BricksModel.BRICK_IDX).name
+		name = tree.get_model().get_value(iter, BricksModel.BRICK_IDX).name
 		self.Dragging = self.brickfactory.getbrickbyname(name)
 		if event.button == 3:
 			self.show_brickactions()
@@ -1381,7 +1362,7 @@ class VBGUI(GUILogger, gobject.GObject):
 			return
 
 		iter = tree.get_model().get_iter(path)
-		name = tree.get_model().get_value(iter, Models.EventsModel.EVENT_IDX).name
+		name = tree.get_model().get_value(iter, EventsModel.EVENT_IDX).name
 		self.Dragging = self.brickfactory.geteventbyname(name)
 		if event.button == 3:
 			self.show_eventactions()
@@ -1389,7 +1370,7 @@ class VBGUI(GUILogger, gobject.GObject):
 	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
 		self.debug("in get data?!")
 		self.Dragging = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
-				pthinfo, Models.BricksModel.BRICK_IDX)
+				pthinfo, BricksModel.BRICK_IDX)
 		#context.set_icon_pixbuf('./'+self.Dragging.get_type()+'.png')
 
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
@@ -2094,14 +2075,14 @@ class VBGUI(GUILogger, gobject.GObject):
 			lbl.set_markup('<span color="darkgreen">'+_("All VDE components detected")+'.</span>\n')
 
 	def on_arch_changed(self, widget, data=None):
-		combo = Settings.ComboBox(widget)
+		combo = ComboBox(widget)
 		path = self.config.get('qemupath')
 
 		#Machine COMBO
-		machine_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_machine_combo"))
+		machine_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_machine_combo"))
 		opt_m = dict()
-		os.system(path + "/" + combo.get_selected() + " -M ? >" + Settings.MYPATH+"/.vmachines")
-		for m in open(Settings.MYPATH+"/.vmachines").readlines():
+		os.system(path + "/" + combo.get_selected() + " -M ? >" + MYPATH+"/.vmachines")
+		for m in open(MYPATH+"/.vmachines").readlines():
 			if not re.search('machines are', m):
 				v = m.split(' ')[0]
 				k = m.lstrip(v).rstrip('/n')
@@ -2113,13 +2094,13 @@ class VBGUI(GUILogger, gobject.GObject):
 			if v.strip() == self.brick_selected.cfg.machine.strip():
 				toSelect=k
 		machine_c.populate(opt_m, toSelect)
-		os.unlink(Settings.MYPATH+"/.vmachines")
+		os.unlink(MYPATH+"/.vmachines")
 
 		#CPU combo
 		opt_c = dict()
-		cpu_c = Settings.ComboBox(self.gladefile.get_widget("cfg_Qemu_cpu_combo"))
-		os.system(path + "/" + combo.get_selected() + " -cpu ? >" + Settings.MYPATH+"/.cpus")
-		for m in open(Settings.MYPATH+"/.cpus").readlines():
+		cpu_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_cpu_combo"))
+		os.system(path + "/" + combo.get_selected() + " -cpu ? >" + MYPATH+"/.cpus")
+		for m in open(MYPATH+"/.cpus").readlines():
 			if not re.search('Available CPU', m):
 				if (m.startswith('  ')):
 					while (m.startswith(' ')):
@@ -2146,7 +2127,7 @@ class VBGUI(GUILogger, gobject.GObject):
 							val = val.rstrip(']')
 						opt_c[val]=val
 		cpu_c.populate(opt_c, self.brick_selected.cfg.cpu)
-		os.unlink(Settings.MYPATH+"/.cpus")
+		os.unlink(MYPATH+"/.cpus")
 
 
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
@@ -2205,12 +2186,12 @@ class VBGUI(GUILogger, gobject.GObject):
 			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(False)
 
 	def on_random_macaddr(self, widget=None, event=None, data=""):
-		self.gladefile.get_widget('vmplug_macaddr').set_text(Global.RandMac())
+		self.gladefile.get_widget('vmplug_macaddr').set_text(tools.RandMac())
 
 	def on_vmplug_add(self, widget=None, event=None, data=""):
 		if self.brick_selected is None:
 			return
-		sockname = Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
+		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
 		if (sockname == '_hostonly'):
 			pl = self.brick_selected.add_plug('_hostonly')
 		else:
@@ -2252,12 +2233,12 @@ class VBGUI(GUILogger, gobject.GObject):
 			if str(pl.vlan) == number:
 				self.vmplug_selected = pl
 				break
-		Settings.ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
+		ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
 		self.gladefile.get_widget('vmplug_macaddr').set_text(pl.mac)
 		if (pl.mode == 'hostonly'):
-			Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Host-only ad hoc network')
+			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Host-only ad hoc network')
 		elif (pl.sock):
-			Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
+			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
 		self.vmplug_selected = pl
 
 	def on_vmplug_edit(self, widget=None, event=None, data=""):
@@ -2271,9 +2252,9 @@ class VBGUI(GUILogger, gobject.GObject):
 
 		self.brick_selected.plugs.remove(pl)
 		del(pl)
-		model = Settings.ComboBox(self.gladefile.get_widget('vmplug_model')).get_selected()
+		model = ComboBox(self.gladefile.get_widget('vmplug_model')).get_selected()
 		mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
-		sockname = Settings.ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
+		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
 		if (sockname == '_hostonly'):
 			pl = self.brick_selected.add_plug(sockname)
 		else:

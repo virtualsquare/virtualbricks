@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # coding: utf-8
 
 """
@@ -19,23 +20,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
-#Gettext stuff
-try:
-	import gettext
-	import locale
-except:
-	print "locale and/or gettext for language support not installed"
-	sys.exit(1)
+import random
 
-import gtk.glade
-
-APP = 'virtualbricks'
-DIR = '/usr/share/locale'
-locale.setlocale(locale.LC_ALL, '')
-for module in gtk.glade, gettext:
-	module.bindtextdomain(APP, DIR)
-	module.textdomain(APP)
-
-import __builtin__
-__builtin__._ = gettext.gettext
+def RandMac():
+	""" put me into VM utilities, please. """
+	random.seed()
+	mac = "00:aa:"
+	mac = mac +"%02x:" % random.getrandbits(8)
+	mac = mac +"%02x:" % random.getrandbits(8)
+	mac = mac +"%02x:" % random.getrandbits(8)
+	mac = mac +"%02x" % random.getrandbits(8)
+	return mac
 

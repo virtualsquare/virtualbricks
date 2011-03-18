@@ -29,11 +29,11 @@ import sys
 from threading import Thread, Timer
 import time
 
-import virtualbricks_Global as Global
-from virtualbricks_Logger import ChildLogger
-import virtualbricks_Models as Models
-import virtualbricks_Settings as Settings
-from virtualbricks_Graphics import *
+from virtualbricks import tools
+from virtualbricks.gui.graphics import *
+from virtualbricks.logger import ChildLogger
+from virtualbricks.models import BricksModel, EventsModel
+from virtualbricks.settings import CONFIGFILE, MYPATH, Settings
 
 class InvalidNameException(Exception):
 	pass
@@ -216,10 +216,10 @@ class Brick(ChildLogger):
 		return new_brick
 
 	def path(self):
-		return "%s/%s.ctl" % (Settings.MYPATH, self.name)
+		return "%s/%s.ctl" % (MYPATH, self.name)
 
 	def console(self):
-		return "%s/%s.mgmt" % (Settings.MYPATH, self.name)
+		return "%s/%s.mgmt" % (MYPATH, self.name)
 
 	def cmdline(self):
 		return ""
@@ -1285,7 +1285,7 @@ class TunnelConnect(TunnelListen):
 class VMPlug(Plug, BrickConfig):
 	def __init__(self, brick):
 		Plug.__init__(self, brick)
-		self.mac = Global.RandMac()
+		self.mac = tools.RandMac()
 		self.model = 'rtl8139'
 		self.vlan = len(self.brick.plugs) + len(self.brick.socks)
 		self.mode = 'vde'
@@ -1640,7 +1640,7 @@ class VM(Brick):
 
 		if (self.cfg.serial == "*"):
 			res.append('-serial')
-			res.append('unix:'+Settings.MYPATH+'/'+self.name+'_serial,server,nowait')
+			res.append('unix:'+MYPATH+'/'+self.name+'_serial,server,nowait')
 
 		res.append("-mon")
 		res.append("chardev=mon")
@@ -1655,10 +1655,10 @@ class VM(Brick):
 		return res
 
 	def console(self):
-		return "%s/%s_cons.mgmt" % (Settings.MYPATH, self.name)
+		return "%s/%s_cons.mgmt" % (MYPATH, self.name)
 
 	def console2(self):
-		return "%s/%s.mgmt" % (Settings.MYPATH, self.name)
+		return "%s/%s.mgmt" % (MYPATH, self.name)
 
 	def add_plug(self, sock=None, mac=None, model=None):
 		if sock and sock == '_hostonly':
@@ -1679,7 +1679,7 @@ class VM(Brick):
 
 	def connect(self, endpoint):
 		pl = self.add_plug()
-		pl.mac = Global.RandMac()
+		pl.mac = tools.RandMac()
 		pl.model = 'rtl8139'
 		pl.connect(endpoint)
 		self.gui_changed = True
@@ -1736,13 +1736,14 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.bricks = []
 		self.events = []
 		self.socks = []
-		self.bricksmodel = Models.BricksModel()
-		self.eventsmodel = Models.EventsModel()
+		self.bricksmodel = BricksModel()
+		self.eventsmodel = EventsModel()
 		self.showconsole = showconsole
 		Thread.__init__(self)
 		self.running_condition = True
-		self.settings = Settings.Settings(Settings.CONFIGFILE, self)
-		self.info(_("Current project is %s") % self.settings.get('current_project'))
+		self.settings = Settings(CONFIGFILE, self)
+		# self.info(_("Current project is %s") % self.settings.get('current_project'))
+		self.info("Current project is %s" % self.settings.get('current_project'))
 		self.config_restore(self.settings.get('current_project'))
 
 	def getbrickbyname(self, name):
@@ -2195,7 +2196,7 @@ gobject.type_register(BrickFactory)
 
 if __name__ == "__main__":
 	"""
-	run tests with 'python virtualbricks_BrickFactory.py -v'
+	run tests with 'python BrickFactory.py -v'
 	"""
 	import doctest
 	doctest.testmod()
