@@ -37,6 +37,7 @@ from virtualbricks.gui.logger import Logger
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
 from virtualbricks.gui.combo import ComboBox
+from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 
 class MyTray(gtk.StatusIcon):
 
@@ -983,7 +984,7 @@ class VBGUI(Logger, gobject.GObject):
 		ntype = self.selected_type()
 		try:
 			self.brickfactory.newbrick(ntype, name)
-		except BrickFactory.InvalidNameException:
+		except InvalidName:
 			self.error("Cannot create brick: Invalid name.")
 		else:
 			self.debug("Created successfully")
@@ -999,7 +1000,7 @@ class VBGUI(Logger, gobject.GObject):
 			return
 
 		validname = BrickFactory.ValidName(eventname)
-		if  validname == None:
+		if validname == None:
 			self.show_error(_("The name \"")+eventname+_("\" has forbidden format."))
 			return
 		elif validname != eventname:
@@ -1114,7 +1115,7 @@ class VBGUI(Logger, gobject.GObject):
 
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
 
-		except BrickFactory.InvalidNameException:
+		except InvalidName:
 			self.error("Cannot create event: Invalid name.")
 
 	def edited_callback (self, cell, rowpath, new_text, user_data):
@@ -1415,16 +1416,16 @@ class VBGUI(Logger, gobject.GObject):
 				b.cfg.loadvm='' #prevent restore from saved state
 			try:
 				b.poweron()
-			except(BrickFactory.BadConfigException):
+			except BadConfig:
 				b.gui_changed=True
 				self.show_error("Cannot start this Brick: Brick not configured, yet.")
-			except(BrickFactory.NotConnectedException):
+			except NotConnected:
 				self.show_error("Cannot start this Brick: Brick not connected.")
-			except(BrickFactory.LinkloopException):
+			except Linkloop:
 				if (self.config.erroronloop):
 					self.show_error("Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings")
 					b.poweroff()
-			except(BrickFactory.DiskLockedException):
+			except DiskLocked:
 				b.gui_changed=True
 				#self.show_error("Disk used is loked by another VM")
 				print "Disk used by the VM is locked by another machine"
@@ -1916,7 +1917,7 @@ class VBGUI(Logger, gobject.GObject):
 		if response == 1:
 			try:
 				self.brickfactory.renamebrick(self.brick_selected, self.gladefile.get_widget('entry_brick_newname').get_text())
-			except BrickFactory.InvalidNameException:
+			except InvalidName:
 				self.show_error("Invalid name!")
 
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
@@ -1928,7 +1929,7 @@ class VBGUI(Logger, gobject.GObject):
 
 			try:
 				self.brickfactory.renameevent(self.event_selected, self.gladefile.get_widget('entry_event_newname').get_text())
-			except BrickFactory.InvalidNameException:
+			except InvalidName:
 				self.show_error("Invalid name!")
 
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
@@ -1975,7 +1976,7 @@ class VBGUI(Logger, gobject.GObject):
 					#If at least one element added
 					self.debug("Event created successfully")
 		 			widget.hide()
-			except BrickFactory.InvalidNameException:
+			except InvalidName:
 				self.show_error("Invalid name!")
 				widget.hide()
 		#Dialog window canceled

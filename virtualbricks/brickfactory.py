@@ -1,22 +1,24 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-##	Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-##	Copyright (C) 2011 Virtualbricks team
-##
-##	This program is free software; you can redistribute it and/or
-##	modify it under the terms of the GNU General Public License
-##	as published by the Free Software Foundation; either version 2
-##	of the License, or (at your option) any later version.
-##
-##	This program is distributed in the hope that it will be useful,
-##	but WITHOUT ANY WARRANTY; without even the implied warranty of
-##	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-##	GNU General Public License for more details.
-##
-##	You should have received a copy of the GNU General Public License
-##	along with this program; if not, write to the Free Software
-##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""
+Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+Copyright (C) 2011 Virtualbricks team
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""
 
 import copy
 import gobject
@@ -34,27 +36,8 @@ from virtualbricks.gui.graphics import *
 from virtualbricks.logger import ChildLogger
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, MYPATH, Settings
-
-class InvalidNameException(Exception):
-	pass
-
-class BadConfigException(Exception):
-	pass
-
-class NotConnectedException(Exception):
-	pass
-
-class LinkloopException(Exception):
-	pass
-
-class UnmanagedTypeException(Exception):
-	pass
-
-class InvalidActionException(Exception):
-	pass
-
-class DiskLockedException(Exception):
-	pass
+from virtualbricks.errors import (BadConfig, DiskLocked, InvalidAction,
+	InvalidName, Linkloop, NotConnected, UnmanagedType)
 
 def ValidName(name):
 	name=str(name)
@@ -87,7 +70,7 @@ class Plug(ChildLogger):
 	def connected(self):
 		if self.antiloop:
 			if self.settings.get('erroronloop'):
-				raise NotConnectedException('Network loop detected!')
+				raise NotConnected('Network loop detected!')
 			self.antiloop = False
 			return False
 
@@ -210,7 +193,7 @@ class Brick(ChildLogger):
 	def __deepcopy__(self, memo):
 		newname = self.factory.nextValidName("Copy_of_%s" % self.name)
 		if newname is None:
-			raise Exception("Name error duplicating event.")
+			raise InvalidName("'%s' (was '%s')" % newname)
 		new_brick = type(self)(self.factory, newname)
 		new_brick.cfg = copy.deepcopy(self.cfg, memo)
 		return new_brick
@@ -315,13 +298,13 @@ class Brick(ChildLogger):
 
 		if not self.configured():
 			print "bad config"
-			raise BadConfigException
+			raise BadConfig()
 		if not self.properly_connected():
 			print "not connected"
-			raise NotConnectedException
+			raise NotConnected()
 		if not self.check_links():
 			print "link down"
-			raise LinkloopException
+			raise Linkloop()
 		self._poweron()
 		self.factory.bricksmodel.change_brick(self)
 
@@ -587,7 +570,7 @@ class Event(ChildLogger):
 		if('add' in attrlist and 'addsh' in attrlist):
 			print "Error: config line must contain add OR addsh."
 			print "Split in two different line."
-			raise InvalidActionException
+			raise InvalidAction()
 		elif('add' in attrlist):
 			configactions = list()
 			configactions = (' '.join(attrlist)).split('add')
@@ -652,7 +635,7 @@ class Event(ChildLogger):
 	def poweron(self):
 		if not self.configured():
 			print "bad config"
-			raise BadConfigException
+			raise BadConfig()
 		if(self.active == True):
 			self.timer.cancel()
 			self.active=False
@@ -1576,7 +1559,7 @@ class VM(Brick):
 					res.append(args[0])
 					res.append(args[1])
 				else:
-					raise DiskLockedException("Disk base %s already used" %
+					raise DiskLocked("Disk base %s already used" %
 						disk.base)
 
 		if self.cfg.kernelenbl == "*" and self.cfg.kernel!="":
@@ -1840,7 +1823,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				p = open(f, "w")
 				self.current_project = f
 			else:
-				raise BadConfigException()
+				raise BadConfig()
 			return
 
 		self.info("Open " + f + " project")
@@ -2024,7 +2007,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			elif isinstance(obj, Brick):
 				self.delbrick(obj)
 			else:
-				raise UnmanagedTypeException
+				raise UnmanagedType()
 		if (cmd[0] == 'config'):
 			obj.configure(cmd[1:])
 		if (cmd[0] == 'show'):
@@ -2089,7 +2072,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def renamebrick(self, b, newname):
 		newname = ValidName(newname)
 		if newname == None:
-			raise InvalidNameException
+			raise InvalidName()
 
 		self.isNameFree(newname)
 
@@ -2102,7 +2085,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def renameevent(self, e, newname):
 		newname = ValidName(newname)
 		if newname == None:
-			raise InvalidNameException
+			raise InvalidName()
 
 		self.isNameFree(newname)
 
@@ -2140,10 +2123,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def newbrick(self, ntype="", name=""):
 		name = ValidName(name)
 		if not name:
-			raise InvalidNameException
+			raise InvalidName()
 
 		if self.isNameFree(name) == False:
-			raise InvalidNameException
+			raise InvalidName()
 
 		if ntype == "switch" or ntype == "Switch":
 			brick = Switch(self, name)
@@ -2178,10 +2161,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def newevent(self, ntype="", name=""):
 		name = ValidName(name)
 		if not name:
-			raise InvalidNameException
+			raise InvalidName()
 
 		if self.isNameFree(name) == False:
-			raise InvalidNameException
+			raise InvalidName()
 
 		if ntype == "event" or ntype == "Event":
 			brick = Event(self, name)
