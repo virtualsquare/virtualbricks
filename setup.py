@@ -65,7 +65,7 @@ setup( data_files=FILES, name='virtualbricks', version='0.3',
 	author='Daniele Lacamera, Rainer Haage, Francesco Apollonio, Pierre-Louis Bonicoli, Simone Abbati',
 	author_email='qemulator-list@createweb.de',
 	url='http://www.virtualbricks.eu/',
-	packages=['virtualbricks'],
+	packages=['virtualbricks', 'virtualbricks.gui'],
 	package_dir = {'': '.'}
 	)
 
