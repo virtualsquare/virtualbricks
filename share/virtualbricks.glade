@@ -304,9 +304,9 @@
                   <widget class="GtkNotebook" id="main_notebook">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <signal name="change_current_page" handler="on_focus_out"/>
                     <signal name="switch_page" handler="on_focus_out"/>
                     <signal name="select_page" handler="on_focus_out"/>
+                    <signal name="change_current_page" handler="on_focus_out"/>
                     <child>
                       <widget class="GtkVBox" id="vbox11">
                         <property name="visible">True</property>
@@ -383,8 +383,8 @@
                                 <property name="has_tooltip">True</property>
                                 <property name="tooltip" translatable="yes">You can use drag and drop to connect bricks and double click to start/stop them.</property>
                                 <signal name="cursor_changed" handler="on_treeview_bookmarks_cursor_changed"/>
-                                <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
                                 <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
+                                <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
                                 <signal name="button_release_event" handler="on_treeview_bookmarks_button_release_event"/>
                               </widget>
                             </child>
@@ -2647,8 +2647,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Set up a new network card</property>
-                                    <signal name="activate" handler="on_vmplug_add"/>
                                     <signal name="clicked" handler="on_vmplug_add"/>
+                                    <signal name="activate" handler="on_vmplug_add"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment9">
                                         <property name="visible">True</property>
@@ -2700,8 +2700,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Edit selected network card or redirection</property>
-                                    <signal name="activate" handler="on_vmplug_edit"/>
                                     <signal name="clicked" handler="on_vmplug_edit"/>
+                                    <signal name="activate" handler="on_vmplug_edit"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment11">
                                         <property name="visible">True</property>
@@ -2753,8 +2753,8 @@ ne2k_isa
                                     <property name="receives_default">True</property>
                                     <property name="has_tooltip">True</property>
                                     <property name="tooltip" translatable="yes">Remove selected network card or redirection</property>
-                                    <signal name="activate" handler="on_vmplug_remove"/>
                                     <signal name="clicked" handler="on_vmplug_remove"/>
+                                    <signal name="activate" handler="on_vmplug_remove"/>
                                     <child>
                                       <widget class="GtkAlignment" id="alignment12">
                                         <property name="visible">True</property>
@@ -4782,8 +4782,8 @@ Normal Distribution</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="on_config_cancel"/>
                         <signal name="clicked" handler="on_config_cancel"/>
+                        <signal name="activate" handler="on_config_cancel"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -4802,8 +4802,8 @@ Normal Distribution</property>
                         <property name="has_default">True</property>
                         <property name="receives_default">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="on_config_ok"/>
                         <signal name="clicked" handler="on_config_ok"/>
+                        <signal name="activate" handler="on_config_ok"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
@@ -4893,8 +4893,8 @@ Normal Distribution</property>
     <property name="resizable">False</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <signal name="response" handler="on_dialog_settings_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>
@@ -5820,8 +5820,8 @@ invalid path for qemu/kvm binaries</property>
     <property name="height_request">500</property>
     <property name="title" translatable="yes">About: Virtualbricks</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_windown_destroy"/>
     <signal name="response" handler="on_dialog_about_response"/>
+    <signal name="delete_event" handler="on_windown_destroy"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox4">
         <property name="visible">True</property>
@@ -5939,6 +5939,9 @@ If you find virtualbricks useful for your business, please consider making a don
         <property name="visible">True</property>
         <property name="orientation">vertical</property>
         <child>
+          <placeholder/>
+        </child>
+        <child>
           <widget class="GtkVBox" id="vbox15">
             <property name="visible">True</property>
             <property name="orientation">vertical</property>
@@ -6025,9 +6028,6 @@ If you find virtualbricks useful for your business, please consider making a don
             <property name="padding">5</property>
             <property name="position">4</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
         <child>
           <widget class="GtkHBox" id="hbox14">
@@ -8071,8 +8071,8 @@ Use an already open UDP multicast socket</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="released" handler="on_newbrick_cancel"/>
                 <signal name="clicked" handler="on_newbrick_cancel"/>
+                <signal name="released" handler="on_newbrick_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -8299,9 +8299,8 @@ Shell Command</property>
                   <widget class="GtkHButtonBox" id="hbuttonbox2">
                     <property name="visible">True</property>
                     <child>
-                      <widget class="GtkRadioButton" id="typebutton_EventCollation">
+                      <widget class="GtkRadioButton" id="typebutton_EventsCollation">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
                         <property name="draw_indicator">True</property>
@@ -8427,8 +8426,8 @@ Shell Command</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="released" handler="on_newevent_cancel"/>
                 <signal name="clicked" handler="on_newevent_cancel"/>
+                <signal name="released" handler="on_newevent_cancel"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -8535,8 +8534,8 @@ Shell Command</property>
     <property name="window_position">mouse</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <signal name="response" handler="on_dialog_confirm_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox12">
         <property name="visible">True</property>
@@ -8625,8 +8624,8 @@ Shell Command</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <signal name="response" handler="on_dialog_rename_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox13">
         <property name="visible">True</property>
@@ -8843,8 +8842,8 @@ Shell Command</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <signal name="response" handler="on_dialog_shellcommand_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox19">
         <property name="visible">True</property>
@@ -8981,8 +8980,8 @@ Shell Command</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <signal name="response" handler="on_dialog_event_rename_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox25">
         <property name="visible">True</property>
@@ -9064,8 +9063,8 @@ Shell Command</property>
     <property name="modal">True</property>
     <property name="window_position">center-always</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <signal name="response" handler="on_dialog_event_bricks_select_response"/>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox21">
         <property name="visible">True</property>
@@ -9253,7 +9252,6 @@ added</property>
     <property name="window_position">center-on-parent</property>
     <property name="type_hint">normal</property>
     <property name="transient_for">main_win</property>
-    <property name="has_separator">False</property>
     <signal name="delete_event" handler="on_messages_dialog_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="messages_box">

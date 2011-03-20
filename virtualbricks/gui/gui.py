@@ -1047,7 +1047,7 @@ class VBGUI(Logger, gobject.GObject):
 
 				self.gladefile.get_widget('dialog_shellcommand').show_all()
 
-			elif ntype in ['BrickStart', 'BrickStop']:
+			elif ntype in ['BrickStart', 'BrickStop', 'EventsCollation']:
 
 				columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
 
@@ -1056,8 +1056,13 @@ class VBGUI(Logger, gobject.GObject):
 
 				self.availmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
 				self.addedmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
+				
+				if ntype == 'EventsCollation':
+					container = self.brickfactory.events
+				else:
+					container = self.brickfactory.bricks
 
-				for brick in self.brickfactory.bricks:
+				for brick in container:
 					parameters = brick.get_parameters()
 					if len(parameters) > 30:
 						parameters = "%s..." % parameters[:30]
@@ -2004,7 +2009,8 @@ class VBGUI(Logger, gobject.GObject):
 		currevent = self.brickfactory.geteventbyname(evname)
 		self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
 
-		action = ' on' if self.selected_event_type() == 'BrickStart' else 'off'
+		action = ' on' if self.selected_event_type() in ['BrickStart', 'EventsCollation'] else ' off'
+		
 
 		while iter:
 			evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
