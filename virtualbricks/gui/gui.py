@@ -190,10 +190,13 @@ class VBGUI(Logger, gobject.GObject):
 		self.brick_selected = None
 		self.event_selected = None
 
+		gtk.gdk.threads_enter()
 		try:
 			gtk.main()
 		except KeyboardInterrupt:
 			self.quit()
+		finally:
+			gtk.gdk.threads_leave()
 
 	def brick_to_cell(self, column, cell, model, iter):
 		brick = model.get_value(iter, BricksModel.BRICK_IDX)
@@ -886,8 +889,12 @@ class VBGUI(Logger, gobject.GObject):
 	def error(self, text, *args, **kwargs):
 		Logger.error(self, text, *args, **kwargs)
 		# TODO #737271
-		# text = text % args
-		# self.show_error(text)
+		text = text % args
+		gtk.gdk.threads_enter()
+		try:
+			self.show_error(text)
+		finally:
+			gtk.gdk.threads_leave()
 
 	def show_error(self, text):
 		def on_response(widget, response_id=None, data=None):
@@ -1056,7 +1063,7 @@ class VBGUI(Logger, gobject.GObject):
 
 				self.availmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
 				self.addedmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
-				
+
 				if ntype == 'EventsCollation':
 					container = self.brickfactory.events
 				else:
@@ -1121,7 +1128,7 @@ class VBGUI(Logger, gobject.GObject):
 					self.gladefile.\
 				get_widget('dialog_event_bricks_select').\
 				set_title(_("Events to add to the event to be started"))
-				
+
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
 
 		except InvalidName:
@@ -2014,7 +2021,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
 
 		action = ' on' if self.selected_event_type() in ['BrickStart', 'EventsCollation'] else ' off'
-		
+
 
 		while iter:
 			evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
