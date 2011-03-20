@@ -1113,11 +1113,15 @@ class VBGUI(Logger, gobject.GObject):
 					self.gladefile.\
 				get_widget('dialog_event_bricks_select').\
 				set_title(_("Bricks to add to the event to be started"))
-				else:
+				elif(ntype == 'BrickStop'):
 					self.gladefile.\
 				get_widget('dialog_event_bricks_select').\
 				set_title(_("Bricks to add to the event to be stopped"))
-
+				else:
+					self.gladefile.\
+				get_widget('dialog_event_bricks_select').\
+				set_title(_("Events to add to the event to be started"))
+				
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
 
 		except InvalidName:
