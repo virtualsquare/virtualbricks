@@ -2734,6 +2734,7 @@ class VBGUI(Logger, gobject.GObject):
 
 	def user_wait_action(self, action, *args):
 		self.gladefile.get_widget("window_userwait").show_all()
+		self.gladefile.get_widget("main_win").set_sensitive(False)
 		thread = Thread(target=action, args=args)
 		gobject.timeout_add(200, self.user_wait_action_timer, thread)
 		thread.start()
@@ -2744,7 +2745,6 @@ class VBGUI(Logger, gobject.GObject):
 			self.gladefile.get_widget("window_userwait").hide()
 			self.gladefile.get_widget("main_win").set_sensitive(True)
 		else:
-			self.gladefile.get_widget("main_win").set_sensitive(False)
 			self.gladefile.get_widget("userwait_progressbar").pulse()
 		return is_alive
 
