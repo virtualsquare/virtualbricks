@@ -234,13 +234,13 @@ class Brick(ChildLogger):
 
 	def properly_connected(self):
 		for p in self.plugs:
-			if p.configured() == False:
+			if not p.configured():
 				return False
 		return True
 
 	def check_links(self):
 		for p in self.plugs:
-			if p.connected() == False:
+			if not p.connected():
 				return False
 		return True
 
@@ -540,9 +540,9 @@ class Event(ChildLogger):
 
 	def get_state(self):
 		"""return state of the event"""
-		if self.active == True:
+		if self.active:
 			state = _('running')
-		elif self.configured() == False:
+		elif not self.configured():
 			state = _('unconfigured')
 		else:
 			state = _('off')
@@ -558,7 +558,7 @@ class Event(ChildLogger):
 		return cb
 
 	def change_state(self):
-		if self.active == True:
+		if self.active:
 			self.poweroff()
 		else:
 			self.poweron()
@@ -609,7 +609,7 @@ class Event(ChildLogger):
 				#if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
 				#	tempstr+=" ...."
 				#	break
-				if isinstance(s, ShellCommand) == True:
+				if isinstance(s, ShellCommand):
 					tempstr += " \"*%s\"," % s
 				else:
 					tempstr += " \"%s\"," % s
@@ -636,7 +636,7 @@ class Event(ChildLogger):
 		if not self.configured():
 			print "bad config"
 			raise BadConfig()
-		if(self.active == True):
+		if self.active:
 			self.timer.cancel()
 			self.active=False
 			self.factory.emit("event-stopped")
@@ -649,7 +649,7 @@ class Event(ChildLogger):
 		self.factory.emit("event-started")
 
 	def poweroff(self):
-		if(self.active == False):
+		if not self.active:
 			return
 		self.timer.cancel()
 		self.active = False
@@ -2125,7 +2125,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if not name:
 			raise InvalidName()
 
-		if self.isNameFree(name) == False:
+		if not self.isNameFree(name):
 			raise InvalidName()
 
 		if ntype == "switch" or ntype == "Switch":
@@ -2163,7 +2163,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if not name:
 			raise InvalidName()
 
-		if self.isNameFree(name) == False:
+		if not self.isNameFree(name):
 			raise InvalidName()
 
 		if ntype == "event" or ntype == "Event":

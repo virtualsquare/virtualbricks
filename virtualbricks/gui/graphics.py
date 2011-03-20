@@ -84,7 +84,7 @@ class Icon:
 			else:
 				return self.grey
 		elif hasattr(self.component,"active"):
-			if self.component.active == True:
+			if self.component.active:
 				return self.base
 			else:
 				return self.grey
@@ -181,7 +181,7 @@ class Topology():
 					y = scale * (y_siz - y_fact * float(arg[3]))
 				else:
 					x = scale * (x_fact)
-					y = scale * (y_siz - y_fact)					
+					y = scale * (y_siz - y_fact)
 				self.nodes.append(Node(self, arg[1],x,y))
 		# Display on the widget
 		if scale < 1.00:

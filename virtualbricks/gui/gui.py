@@ -640,7 +640,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.statusicon.set_enabled(False)
 
 	def systray_blinking(self, args=None, disable=False):
-		if not self.statusicon or self.statusicon.get_enabled() == False:
+		if not (self.statusicon and self.statusicon.get_enabled()):
 			return
 		if disable:
 			self.statusicon.set_blinking(False)
@@ -663,7 +663,7 @@ class VBGUI(Logger, gobject.GObject):
 		if self.statusicon.get_blinking():
 			self.systray_blinking(None, True)
 			return
-		if self.statusicon.get_window_is_hide() or status == True:
+		if self.statusicon.get_window_is_hide() or status:
 			self.gladefile.get_widget("main_win").show_all()
 			self.statusicon.set_tooltip("the window is visible")
 			self.statusicon.set_window_is_hide(False)
@@ -1273,13 +1273,13 @@ class VBGUI(Logger, gobject.GObject):
 	def on_toolbutton_start_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
 		for e in self.brickfactory.events:
-			if e.active == False:
+			if not e.active:
 				e.poweron()
 
 	def on_toolbutton_stop_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
 		for e in self.brickfactory.events:
-			if e.active == True:
+			if e.active:
 				e.poweroff()
 
 	def on_mainwindow_dropaction(self, widget, drag_context, x, y, selection_data, info, timestamp):
@@ -1401,8 +1401,8 @@ class VBGUI(Logger, gobject.GObject):
 		self.user_wait_action(self.events_startstop_brick, self.event_selected)
 
 	def events_startstop_brick(self, e):
-		if(e.get_type() == 'Event'):
-			if(e.active == True):
+		if e.get_type() == 'Event':
+			if e.active:
 				print "Power OFF"
 				e.poweroff()
 			else:
@@ -1861,7 +1861,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.brick_selected.poweron()
 
 	def on_event_startstop(self, widget=None, event=None, data=""):
-		if self.event_selected.active == True:
+		if self.event_selected.active:
 			self.event_selected.poweroff()
 		else:
 			self.event_selected.poweron()
@@ -1882,7 +1882,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 
 		msg=""
-		if self.event_selected.active == True:
+		if self.event_selected.active:
 			msg=_("This event is in use")+". "
 
 		self.ask_confirm(msg + _("Do you really want to delete") + " "+
@@ -2154,7 +2154,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('cfg_Qemu_kvmsmem_spinint').set_sensitive(enabled)
 		self.gladefile.get_widget('cfg_Qemu_kvmsm_check').set_sensitive(enabled)
 		# disable incompatible options
-		if (self.gladefile.get_widget('cfg_Qemu_tdf_check').get_active()==True and enabled == False):
+		if self.gladefile.get_widget('cfg_Qemu_tdf_check').get_active() and not enabled:
 			self.gladefile.get_widget('cfg_Qemu_tdf_check').set_active(False)
 		self.gladefile.get_widget('cfg_Qemu_tdf_check').set_sensitive(enabled)
 		self.disable_qemu_combos(not enabled)
@@ -2430,7 +2430,7 @@ class VBGUI(Logger, gobject.GObject):
 
 
 	def on_open_project(self, widget, data=None):
-		if self.confirm("Save current project?")==True:
+		if self.confirm("Save current project?"):
 			self.brickfactory.config_dump(self.config.get('current_project'))
 
 		chooser = gtk.FileChooserDialog(title="Open a project",action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
@@ -2478,7 +2478,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.debug( "IMPORT PROJECT undefined" )
 
 	def on_new_project(self, widget, data=None):
-		if self.confirm("Save current project?")==True:
+		if self.confirm("Save current project?"):
 			self.brickfactory.config_dump(self.config.get('current_project'))
 
 		chooser = gtk.FileChooserDialog(title="New project",action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
