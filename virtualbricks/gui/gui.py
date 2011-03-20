@@ -58,18 +58,6 @@ class MyTray(gtk.StatusIcon):
 	def get_window_is_hide(self):
 		return self.win_hide
 
-class VBuserwait(Thread):
-	def __init__(self, call, args=[]):
-		self.action = call
-		self.args = args
-		Thread.__init__(self)
-		self.running = True
-	def run(self):
-		print "thread started"
-		self.action(*self.args)
-		print "thread finished"
-		self.running = False
-
 class VBGUI(Logger, gobject.GObject):
 	def __init__(self):
 		gobject.GObject.__init__(self)
@@ -1406,11 +1394,11 @@ class VBGUI(Logger, gobject.GObject):
 
 	def tree_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		self.user_wait_action(self.startstop_brick, [self.brick_selected])
+		self.user_wait_action(self.startstop_brick, self.brick_selected)
 
 	def events_tree_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		self.user_wait_action(self.events_startstop_brick, [self.event_selected])
+		self.user_wait_action(self.events_startstop_brick, self.event_selected)
 
 	def events_startstop_brick(self, e):
 		if(e.get_type() == 'Event'):
@@ -1424,12 +1412,10 @@ class VBGUI(Logger, gobject.GObject):
 
 	def startstop_brick(self, b):
 		if b.proc is not None:
-			print "Power OFF"
 			b.poweroff()
 		else:
-			print "Power ON"
 			if b.get_type() == "Qemu":
-				b.cfg.loadvm='' #prevent restore from saved state
+				b.cfg.loadvm = '' #prevent restore from saved state
 			try:
 				b.poweron()
 			except BadConfig:
@@ -2388,7 +2374,7 @@ class VBGUI(Logger, gobject.GObject):
 					brick = self.brickfactory.getbrickbyname(n.name)
 					if brick is not None:
 						self.brick_selected = brick
-						self.user_wait_action(self.startstop_brick,[brick])
+						self.user_wait_action(self.startstop_brick, brick)
 		self.curtain_down()
 
 	def on_topology_scroll(self, widget=None, event=None, data=""):
@@ -2746,17 +2732,19 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation)
 
-	def user_wait_action(self, action, args=[]):
+	def user_wait_action(self, action, *args):
 		self.gladefile.get_widget("window_userwait").show_all()
-		t = VBuserwait(action, args)
-		gobject.timeout_add(200, self.user_wait_action_timer, t)
-		t.start()
+		thread = Thread(target=action, args=args)
+		gobject.timeout_add(200, self.user_wait_action_timer, thread)
+		thread.start()
 
-	def user_wait_action_timer(self, t):
-		if not t.running:
+	def user_wait_action_timer(self, thread):
+		is_alive = thread.isAlive()
+		if not is_alive:
 			self.gladefile.get_widget("window_userwait").hide()
 			self.gladefile.get_widget("main_win").set_sensitive(True)
 		else:
 			self.gladefile.get_widget("main_win").set_sensitive(False)
 			self.gladefile.get_widget("userwait_progressbar").pulse()
-		return t.running
+		return is_alive
+
