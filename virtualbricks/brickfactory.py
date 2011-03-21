@@ -1812,9 +1812,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Import: False, False
 		New: True, True (missing check for existing file, must be check from caller)
 		"""
-		self.bricksmodel.clear()
-		self.eventsmodel.clear()
-
+		
 		try:
 			p = open(f, "r")
 		except:
@@ -1829,6 +1827,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.info("Open " + f + " project")
 
 		if start_from_scratch:
+			self.bricksmodel.clear()
+			self.eventsmodel.clear()
 			for b in self.bricks:
 				self.delbrick(b)
 			del self.bricks[:]
