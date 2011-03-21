@@ -1680,7 +1680,7 @@ class VM(Brick):
 	def open_internal_console(self):
 		self.info("open_internal_console_qemu")
 		if not self.has_console():
-			self.info("no console")
+			self.error("No console detected.")
 			return None
 
 		try:
@@ -1689,10 +1689,8 @@ class VM(Brick):
 			c.connect(self.console2())
 			return c
 		except Exception, err:
-			self.info("******************************************")
-			self.info("Virtual Machine startup failed. Check your"
+			self.error("Virtual Machine startup failed. Check your"
 				" configuration!")
-			self.info("******************************************")
 			return None
 
 	def post_poweroff(self):
@@ -1812,7 +1810,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Import: False, False
 		New: True, True (missing check for existing file, must be check from caller)
 		"""
-		
+
 		try:
 			p = open(f, "r")
 		except:
@@ -1832,11 +1830,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for b in self.bricks:
 				self.delbrick(b)
 			del self.bricks[:]
-				
+
 			for e in self.events:
 				self.delevent(e)
 			del self.events[:]
-			
+
 			if create_if_not_found:
 				return
 
