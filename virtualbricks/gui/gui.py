@@ -59,7 +59,7 @@ class MyTray(gtk.StatusIcon):
 		return self.win_hide
 
 class VBGUI(Logger, gobject.GObject):
-	def __init__(self):
+	def __init__(self, noterm=False):
 		gobject.GObject.__init__(self)
 		Logger.__init__(self)
 
@@ -78,7 +78,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		gtk.gdk.threads_init()
 
-		self.brickfactory = BrickFactory(self, True)
+		self.brickfactory = BrickFactory(self, not noterm)
 
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
@@ -103,7 +103,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget("messages_textview").set_buffer(self.messages_buffer)
 
 		self.widg['main_win'].show()
-
+		
 		self.ps = []
 		self.bricks = []
 
@@ -2475,7 +2475,25 @@ class VBGUI(Logger, gobject.GObject):
 
 
 	def on_import_project(self, widget, data=None):
-		self.debug( "IMPORT PROJECT undefined" )
+		if self.confirm("Save current project?")==True:
+			self.brickfactory.config_dump(self.config.get('current_project'))
+
+		chooser = gtk.FileChooserDialog(title="Import a project",action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+		chooser.set_current_folder(self.config.get('bricksdirectory'))
+		filt = gtk.FileFilter()
+		filt.set_name("Virtualbricks Bricks List (*.vbl)")
+		filt.add_pattern("*.vbl")
+		chooser.add_filter(filt)
+		filt = gtk.FileFilter()
+		filt.set_name("All files")
+		filt.add_pattern("*")
+		chooser.add_filter(filt)
+		resp = chooser.run()
+		if resp == gtk.RESPONSE_OK:
+			filename = chooser.get_filename()
+			self.brickfactory.config_restore(filename, False, False)
+		chooser.destroy()
+
 
 	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?"):
@@ -2721,6 +2739,9 @@ class VBGUI(Logger, gobject.GObject):
 				self.running_bricks.set_value(iter,2,b.get_type())
 				self.running_bricks.set_value(iter,3,b.name)
 			self.debug("proc list updated")
+
+		self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+" )")
+		
 		return True
 
 	def draw_topology(self):

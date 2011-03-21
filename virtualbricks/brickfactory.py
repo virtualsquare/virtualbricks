@@ -1725,7 +1725,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings(CONFIGFILE, self)
-		# self.info(_("Current project is %s") % self.settings.get('current_project'))
 		self.info("Current project is %s" % self.settings.get('current_project'))
 		self.config_restore(self.settings.get('current_project'))
 
@@ -1820,22 +1819,24 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			p = open(f, "r")
 		except:
 			if create_if_not_found:
-				p = open(f, "w")
+				p = open(f, "w+")
+				self.info("Current project file" + f + " doesn't exist. Creating a new file.")
 				self.current_project = f
 			else:
 				raise BadConfig()
-			return
+			#return
 
 		self.info("Open " + f + " project")
 
 		if start_from_scratch:
 			for b in self.bricks:
 				self.delbrick(b)
-			self.bricks = []
-
+			del self.bricks[:]
+				
 			for e in self.events:
 				self.delevent(e)
-			self.events = []
+			del self.events[:]
+			
 			if create_if_not_found:
 				return
 

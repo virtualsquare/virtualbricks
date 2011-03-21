@@ -31,5 +31,8 @@ if len(sys.argv) > 1 and sys.argv[1] == '-nogui':
 	#while True:
 	#	time.sleep(100)
 else:
-	VB = VBGUI()
+	if len(sys.argv) > 1 and sys.argv[1] == '-noterm':
+		VB = VBGUI(True)
+	else:
+		VB = VBGUI()
 
