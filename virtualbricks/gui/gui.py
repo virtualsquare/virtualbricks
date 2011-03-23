@@ -841,7 +841,6 @@ class VBGUI(Logger, gobject.GObject):
 
 	def error(self, text, *args, **kwargs):
 		Logger.error(self, text, *args, **kwargs)
-		# TODO #737271
 		text = text % args
 		gtk.gdk.threads_enter()
 		try:
