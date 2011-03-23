@@ -39,25 +39,6 @@ from virtualbricks.gui.logger import Logger
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
 
-class MyTray(gtk.StatusIcon):
-
-	def __init__(self):
-		gtk.StatusIcon.__init__(self)
-		self.enabled = False
-		self.win_hide = False
-
-	def set_enabled(self, val):
-		self.enabled=val
-
-	def set_window_is_hide(self, val):
-		self.win_hide=val
-
-	def get_enabled(self):
-		return self.enabled
-
-	def get_window_is_hide(self):
-		return self.win_hide
-
 class VBGUI(Logger, gobject.GObject):
 	def __init__(self, noterm=False):
 		gobject.GObject.__init__(self)
@@ -616,17 +597,15 @@ class VBGUI(Logger, gobject.GObject):
 
 
 	def start_systray(self):
-		systray = getattr(self, "statusicon", None)
-		if systray is None:
-			self.statusicon = MyTray()
+		if self.statusicon is None:
+			self.statusicon = gtk.StatusIcon()
 			self.statusicon.set_from_file("/usr/share/pixmaps/virtualbricks.png")
 			self.statusicon.set_tooltip("VirtualBricks Visible")
-			self.statusicon.connect('activate', self.status_clicked )
+			self.statusicon.connect('activate', self.systray_menu_toggle_cb)
 			systray_menu = self.gladefile.get_widget("systray_menu")
 			self.statusicon.connect('popup-menu', self.systray_menu_popup, systray_menu)
 
-		if not self.statusicon.get_enabled():
-			self.statusicon.set_enabled(True)
+		if not self.statusicon.get_visible():
 			self.statusicon.set_visible(True)
 
 	def systray_menu_popup(self, widget, button, time, data = None):
@@ -635,41 +614,27 @@ class VBGUI(Logger, gobject.GObject):
 			data.popup(None, None, None, 3, time)
 
 	def stop_systray(self):
-		if self.statusicon.get_enabled():
+		if self.statusicon.is_visible():
 			self.statusicon.set_visible(False)
-			self.statusicon.set_enabled(False)
+			self.statusicon = None
 
 	def systray_blinking(self, args=None, disable=False):
-		if not (self.statusicon and self.statusicon.get_enabled()):
+		if self.statusicon is None or not self.statusicon.get_visible():
 			return
+
 		if disable:
 			self.statusicon.set_blinking(False)
-			return
-		if not self.statusicon.get_blinking():
+		elif not self.statusicon.get_blinking():
 			self.statusicon.set_blinking(True)
 
 	def delete_event(self,window,event):
 		#don't delete; hide instead
-		if self.config.systray and self.statusicon.get_enabled():
+		if self.config.systray and self.statusicon is not None:
 			self.gladefile.get_widget("main_win").hide_on_delete()
-			self.statusicon.set_window_is_hide(True)
 			self.statusicon.set_tooltip("VirtualBricks Hidden")
 		else:
 			self.quit()
 		return True
-
-	def status_clicked(self,status=None):
-		#unhide the window
-		if self.statusicon.get_blinking():
-			self.systray_blinking(None, True)
-			return
-		if self.statusicon.get_window_is_hide() or status:
-			self.gladefile.get_widget("main_win").show_all()
-			self.statusicon.set_tooltip("the window is visible")
-			self.statusicon.set_window_is_hide(False)
-		else:
-			self.gladefile.get_widget("main_win").hide()
-			self.statusicon.set_window_is_hide(True)
 
 	def curtain_is_down(self):
 		self.debug(self.curtain.get_position())
@@ -923,12 +888,16 @@ class VBGUI(Logger, gobject.GObject):
 	"""														  """
 	""" ******************************************************** """
 
-	def systray_show_window_cb(self, widget=None, data=""):
-		self.status_clicked(True)
+	def systray_menu_toggle_cb(self, widget=None, data=""):
+		if self.statusicon.get_blinking():
+			self.systray_blinking(None, True)
+			return
 
-	def systray_hide_window_cb(self, widget=None, data=""):
-		self.status_clicked(False)
-
+		if not self.gladefile.get_widget("main_win").get_visible():
+			self.gladefile.get_widget("main_win").show_all()
+			self.statusicon.set_tooltip("the window is visible")
+		else:
+			self.gladefile.get_widget("main_win").hide()
 
 	def on_window1_destroy(self, widget=None, data=""):
 		self.quit()
@@ -1161,9 +1130,6 @@ class VBGUI(Logger, gobject.GObject):
 	def on_config_ok(self, widget=None, data=""):
 		self.config_brick_confirm()
 		self.curtain_down()
-
-	def on_generic_event(self, widget=None, data=""):
-		self.systray_blinking(None, True)
 
 	def set_sensitivegroup(self,l):
 		for i in l:
@@ -2525,7 +2491,6 @@ class VBGUI(Logger, gobject.GObject):
 
 	def signals(self):
 		self.signaldict = {
-			"on_generic_event":self.on_generic_event,
 			"on_dialog_event_bricks_select_response":self.on_dialog_event_bricks_select_response,
 			"on_event_brick_select_add_clicked":self.on_event_brick_select_add_clicked,
 			"on_event_brick_select_remove_clicked":self.on_event_brick_select_remove_clicked,
@@ -2684,8 +2649,7 @@ class VBGUI(Logger, gobject.GObject):
 			"on_topology_export_ok":self.on_topology_export_ok,
 			"on_topology_export_cancel":self.on_topology_export_cancel,
 			"filechooser_image_clear": self.filechooser_image_clear,
-			"systray_show_window_cb": self.systray_show_window_cb,
-			"systray_hide_window_cb": self.systray_hide_window_cb,
+			"systray_menu_toggle_cb": self.systray_menu_toggle_cb,
 			"systray_exit_cb": self.on_window1_destroy,
 			"filechooser_clear": self.filechooser_clear,
 			"filechooser_hd_clear": self.filechooser_hd_clear,
