@@ -254,7 +254,6 @@ class VBGUI(Logger, gobject.GObject):
 
 	def cb_brick_added(self, model, name):
 		self.draw_topology()
-		pass
 
 	def cb_brick_deleted(self, model, name):
 		self.draw_topology()
@@ -738,7 +737,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.info("GUI: Goodbye!")
 		self.brickfactory.disconnect(self._engine_closed)
 		self.brickfactory.quit()
-		#gtk.mainquit()
 		sys.exit(0)
 
 	def quit_from_commandline(self, args=None):
@@ -875,8 +873,6 @@ class VBGUI(Logger, gobject.GObject):
 				new_height=48
 				new_width=48*width/height
 		pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
-		#pixbuf= pixbuf.scale(pixbuf, 0, 0, 48, 48, 0, 0, height/new_height, width/new_width, gtk.gdk.INTERP_BILINEAR)
-		#print "%s %d %d" % (filename, new_height, new_width)
 		return pixbuf
 
 
@@ -1158,7 +1154,6 @@ class VBGUI(Logger, gobject.GObject):
 			currentwidget.set_text("")
 			currentwidget.set_sensitive(False)
 
-
 	def on_item_quit_activate(self, widget=None, data=""):
 		self.quit()
 
@@ -1209,19 +1204,17 @@ class VBGUI(Logger, gobject.GObject):
 		self.show_window('dialog_settings')
 
 	def on_item_settings_autoshow_activate(self, widget=None, data=""):
-		print "on_item_settings_autoshow_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_item_settings_autohide_activate(self, widget=None, data=""):
-		print "on_item_settings_autohide_activate undefined!"
-		pass
+		raise NotImplementedError()
 
 	def on_item_about_activate(self, widget=None, data=""):
 		self.show_window('dialog_about1')
 		self.curtain_down()
-		pass
+
 	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
-		print "on_toolbutton_launchxterm_clicked undefined!"
-		pass
+		raise NotImplementedError()
 
 	def on_toolbutton_start_all_clicked(self, widget=None, data=""):
 		self.curtain_down()
@@ -1254,7 +1247,6 @@ class VBGUI(Logger, gobject.GObject):
 		pthinfo = tree.get_path_at_pos(x, y)
 		dropbrick = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
 			pthinfo, BricksModel.BRICK_IDX)
-		#print x, y, pthinfo, dropbrick.name
 
 		drop_info = tree.get_dest_row_at_pos(x, y)
 		if drop_info:
@@ -1273,11 +1265,12 @@ class VBGUI(Logger, gobject.GObject):
 		if dropbrick and dropbrick != self.Dragging:
 			self.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
 			res = False
-			if (len(dropbrick.socks) > 0):
+			if len(dropbrick.socks) > 0:
 				res = self.Dragging.connect(dropbrick.socks[0])
-			elif (len(self.Dragging.socks) > 0):
+			elif len(self.Dragging.socks) > 0:
 				res = dropbrick.connect(self.Dragging.socks[0])
-			if (res):
+
+			if res:
 				drag_context.finish(True, False, timestamp)
 			else:
 				drag_context.finish(False, False, timestamp)
@@ -1295,7 +1288,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.show_window('menu_brickactions')
 
 	def show_eventactions(self):
-		#if self.event_selected.get_type() == "Event":
 		self.gladefile.get_widget("eventaction_name").set_label(self.event_selected.name)
 		self.show_window('menu_eventactions')
 
@@ -1307,9 +1299,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_bookmarks');
 		path = tree.get_cursor()[0]
-		#print "on_treeview_bookmarks_button_release_event"
 		if path is None:
-			#print "nothing selected!"
 			return
 
 		iter = tree.get_model().get_iter(path)
@@ -1341,7 +1331,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.debug("in get data?!")
 		self.Dragging = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
 				pthinfo, BricksModel.BRICK_IDX)
-		#context.set_icon_pixbuf('./'+self.Dragging.get_type()+'.png')
 
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
 		self.curtain_down()
@@ -1403,14 +1392,14 @@ class VBGUI(Logger, gobject.GObject):
 				b.poweroff()
 
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
-		print "on_treeview_bootimages_button_press_event undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_bootimages_cursor_changed(self, widget=None, data=""):
-		print "on_treeview_bootimages_cursor_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_bootimages_row_activated_event(self, widget=None, data=""):
-		print "on_treeview_bootimages_row_activated_event undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_joblist');
 		store = self.running_bricks
@@ -1431,8 +1420,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.show_window('menu_popup_joblist')
 
 	def on_treeview_joblist_row_activated_event(self, widget=None, data=""):
-		print "on_treeview_joblist_row_activated_event undefined!"
-		pass
+		raise NotImplementedError()
 
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
 		if self.curtain_is_down():
@@ -1443,14 +1431,13 @@ class VBGUI(Logger, gobject.GObject):
 			self.debug("down")
 
 	def on_filechooserdialog_openimage_response(self, widget=None, data=""):
-		print "on_filechooserdialog_openimage_response undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_openimage_cancel_clicked(self, widget=None, data=""):
-		print "on_button_openimage_cancel_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_openimage_open_clicked(self, widget=None, data=""):
-		print "on_button_openimage_open_clicked undefined!"
-		pass
+		raise NotImplementedError()
 
 	def on_dialog_settings_delete_event(self, widget=None, event=None, data=""):
 		"""we could use deletable property but deletable is only available in
@@ -1463,7 +1450,7 @@ class VBGUI(Logger, gobject.GObject):
 			widget.hide()
 			return
 
-		if response == gtk.RESPONSE_APPLY or response == gtk.RESPONSE_OK:
+		if response in [gtk.RESPONSE_APPLY, gtk.RESPONSE_OK]:
 			self.debug("Apply settings...")
 			for k in ['bricksdirectory', 'qemupath', 'vdepath', 'baseimages']:
 				self.config.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
@@ -1516,7 +1503,6 @@ class VBGUI(Logger, gobject.GObject):
 			self.config.set("term", self.gladefile.get_widget('entry_term').get_text())
 			self.config.set("sudo", self.gladefile.get_widget('entry_sudo').get_text())
 
-
 			self.config.store()
 
 			if response == gtk.RESPONSE_OK:
@@ -1531,61 +1517,61 @@ class VBGUI(Logger, gobject.GObject):
 			if (self.on_confirm_response_no):
 				self.on_confirm_response_no(self.on_confirm_response_arg)
 
-
 	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
-		print "on_treeview_cdromdrives_row_activated undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_settings_add_cdevice_clicked(self, widget=None, data=""):
-		print "on_button_settings_add_cdevice_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_settings_rem_cdevice_clicked(self, widget=None, data=""):
-		print "on_button_settings_rem_cdevice_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_qemupaths_row_activated(self, widget=None, data=""):
-		print "on_treeview_qemupaths_row_activated undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_settings_add_qemubin_clicked(self, widget=None, data=""):
-		print "on_button_settings_add_qemubin_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_settings_rem_qemubin_clicked(self, widget=None, data=""):
-		print "on_button_settings_rem_qemubin_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_dialog_bookmarks_response(self, widget=None, data=""):
-		print "on_dialog_bookmarks_response undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_edit_bookmark_activate(self, widget=None, data=""):
-		print "on_edit_bookmark_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_bookmark_info_activate(self, widget=None, data=""):
-		print "on_bookmark_info_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_delete_bookmark_activate(self, widget=None, data=""):
-		print "on_delete_bookmark_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_dialog_about_response(self, widget=None, data=""):
 		self.widg['dialog_about1'].hide()
 		return True
+
 	def on_dialog_create_image_response(self, widget=None, data=""):
-		print "on_dialog_create_image_response undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_filechooserbutton_newimage_dest_selection_changed(self, widget=None, data=""):
-		print "on_filechooserbutton_newimage_dest_selection_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_filechooserbutton_newimage_dest_current_folder_changed(self, widget=None, data=""):
-		print "on_filechooserbutton_newimage_dest_current_folder_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_entry_newimage_name_changed(self, widget=None, data=""):
-		print "on_entry_newimage_name_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_combobox_newimage_format_changed(self, widget=None, data=""):
-		print "on_combobox_newimage_format_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_spinbutton_newimage_size_changed(self, widget=None, data=""):
-		print "on_spinbutton_newimage_size_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
-		print "on_combobox_newimage_sizeunit_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_item_create_image_activate(self, widget=None, data=""):
 		self.curtain_down()
 		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
@@ -1611,8 +1597,6 @@ class VBGUI(Logger, gobject.GObject):
 		os.system('%s -f %s %s %s' % (cmd, img_format, path+filename+"."+img_format, img_size+img_sizeunit))
 		os.system('sync')
 		time.sleep(2)
-		print '%s -f %s %s %s' % (cmd, img_format, path+filename, img_size+img_sizeunit)
-		print ("Done")
 
 	def on_button_create_image_clicked(self, widget=None, data=""):
 		self.curtain_down()
@@ -1624,69 +1608,67 @@ class VBGUI(Logger, gobject.GObject):
 		return True
 
 	def on_dialog_messages_response(self, widget=None, data=""):
-		print "on_dialog_messages_response undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_item_info_activate(self, widget=None, data=""):
-		print "on_item_info_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_item_bookmark_activate(self, widget=None, data=""):
-		print "on_item_bookmark_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_dialog_jobmonitor_response(self, widget=None, data=""):
-		print "on_dialog_jobmonitor_response undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_toolbutton_stop_job_clicked(self, widget=None, data=""):
-		print "on_toolbutton_stop_job_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_toolbutton_reset_job_clicked(self, widget=None, data=""):
-		print "on_toolbutton_reset_job_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_toolbutton_pause_job_clicked(self, widget=None, data=""):
-		print "on_toolbutton_pause_job_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_toolbutton_rerun_job_clicked(self, widget=None, data=""):
-		print "on_toolbutton_rerun_job_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_jobmon_volumes_button_press_event(self, widget=None, data=""):
-		print "on_treeview_jobmon_volumes_button_press_event undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_jobmon_volumes_row_activated(self, widget=None, data=""):
-		print "on_treeview_jobmon_volumes_row_activated undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_jobmon_apply_cdrom_clicked(self, widget=None, data=""):
-		print "on_button_jobmon_apply_cdrom_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_jobmon_apply_fda_clicked(self, widget=None, data=""):
-		print "on_button_jobmon_apply_fda_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button_jobmon_apply_fdb_clicked(self, widget=None, data=""):
-		print "on_button_jobmon_apply_fdb_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_combobox_jobmon_cdrom_changed(self, widget=None, data=""):
-		print "on_combobox_jobmon_cdrom_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_combobox_jobmon_fda_changed(self, widget=None, data=""):
-		print "on_combobox_jobmon_fda_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_combobox_jobmon_fdb_changed(self, widget=None, data=""):
-		print "on_combobox_jobmon_fdb_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_usbhost_button_press_event(self, widget=None, data=""):
-		print "on_treeview_usbhost_button_press_event undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_usbhost_row_activated(self, widget=None, data=""):
-		print "on_treeview_usbhost_row_activated undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_usbguest_button_press_event(self, widget=None, data=""):
-		print "on_treeview_usbguest_button_press_event undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_treeview_usbguest_row_activated(self, widget=None, data=""):
-		print "on_treeview_usbguest_row_activated undefined!"
-		pass
+		raise NotImplementedError()
 
 	def on_item_jobmonoitor_activate(self, widget=None, data=""):
 		self.joblist_selected.open_console()
-		pass
 
 	def on_item_stop_job_activate(self, widget=None, data=""):
 		if self.joblist_selected is None:
@@ -1694,7 +1676,6 @@ class VBGUI(Logger, gobject.GObject):
 		if self.joblist_selected.proc != None:
 			self.debug("Sending to process signal 19!")
 			self.joblist_selected.proc.send_signal(19)
-		pass
 
 	def on_item_cont_job_activate(self, widget=None, data=""):
 		if self.joblist_selected is None:
@@ -1702,7 +1683,7 @@ class VBGUI(Logger, gobject.GObject):
 		if self.joblist_selected.proc != None:
 			self.debug("Sending to process signal 18!")
 			self.joblist_selected.proc.send_signal(18)
-		pass
+
 	def on_item_reset_job_activate(self, widget=None, data=""):
 		self.debug(self.joblist_selected)
 		if self.joblist_selected is None:
@@ -1711,74 +1692,70 @@ class VBGUI(Logger, gobject.GObject):
 			self.debug("Restarting process!")
 			self.joblist_selected.poweroff()
 			self.joblist_selected.poweron()
-		pass
+
 	def on_item_kill_job_activate(self, widget=None, data=""):
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
 			self.debug("Sending to process signal 9!")
 			self.joblist_selected.proc.send_signal(9)
-		pass
+
 	def on_attach_device_activate(self, widget=None, data=""):
-		print "on_attach_device_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_detach_device_activate(self, widget=None, data=""):
-		print "on_detach_device_activate undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_item_eject_activate(self, widget=None, data=""):
-		print "on_item_eject_activate undefined!"
-		pass
+		raise NotImplementedError()
+	
 	def on_dialog_newnetcard_response(self, widget=None, data=""):
-		print "on_dialog_newnetcard_response undefined!"
-		pass
+		raise NotImplementedError()
+	
 	def on_combobox_networktype_changed(self, widget=None, data=""):
-		print "on_combobox_networktype_changed undefined!"
-		pass
+		raise NotImplementedError()
+	
 	def on_entry_network_macaddr_changed(self, widget=None, data=""):
-		print "on_entry_network_macaddr_changed undefined!"
-		pass
+		raise NotImplementedError()
+	
 	def on_entry_network_ip_changed(self, widget=None, data=""):
-		print "on_entry_network_ip_changed undefined!"
-		pass
+		raise NotImplementedError()
+	
 	def on_spinbutton_network_port_changed(self, widget=None, data=""):
-		print "on_spinbutton_network_port_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_spinbutton_network_vlan_changed(self, widget=None, data=""):
-		print "on_spinbutton_network_vlan_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_entry_network_ifacename_changed(self, widget=None, data=""):
-		print "on_entry_network_ifacename_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_entry_network_tuntapscript_changed(self, widget=None, data=""):
-		print "on_entry_network_tuntapscript_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_button__network_open_tuntap_file_clicked(self, widget=None, data=""):
-		print "on_button__network_open_tuntap_file_clicked undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_spinbutton_network_filedescriptor_changed(self, widget=None, data=""):
-		print "on_spinbutton_network_filedescriptor_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_dialog_new_redirect_response(self, widget=None, data=""):
-		print "on_dialog_new_redirect_response undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_radiobutton_redirect_TCP_toggled(self, widget=None, data=""):
-		print "on_radiobutton_redirect_TCP_toggled undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_radiobutton_redirect_UDP_toggled(self, widget=None, data=""):
-		print "on_radiobutton_redirect_UDP_toggled undefined!"
-		pass
-	#def on_radiobutton_cdromtype2_toggled(self, widget=None, data=""):
-		#self.gladefile.get_widget('cfg_Qemu_cdrom_filechooser').set_active(True)
+		raise NotImplementedError()
 
 	def on_spinbutton_redirect_sport_changed(self, widget=None, data=""):
-		print "on_spinbutton_redirect_sport_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_entry_redirect_gIP_changed(self, widget=None, data=""):
-		print "on_entry_redirect_gIP_changed undefined!"
-		pass
+		raise NotImplementedError()
+
 	def on_spinbutton_redirect_dport_changed(self, widget=None, data=""):
-		print "on_spinbutton_redirect_dport_changed undefined!"
-		pass
+		raise NotImplementedError()
 
 	def on_newbrick(self, widget=None, event=None, data=""):
 		self.curtain_down()
@@ -1791,9 +1768,10 @@ class VBGUI(Logger, gobject.GObject):
 		self.show_window('dialog_newevent')
 
 	def on_testconfig(self, widget=None, event=None, data=""):
-		print "signal not connected"
+		raise NotImplementedError()
+
 	def on_autodetectsettings(self, widget=None, event=None, data=""):
-		print "signal not connected"
+		raise NotImplementedError()
 
 	def on_check_kvm(self, widget=None, event=None, data=""):
 		if widget.get_active():
@@ -1815,9 +1793,10 @@ class VBGUI(Logger, gobject.GObject):
 			widget.set_active(False)
 
 	def on_add_cdrom(self, widget=None, event=None, data=""):
-		print "signal not connected"
+		raise NotImplementedError()
+
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
-		print "signal not connected"
+		raise NotImplementedError()
 
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
@@ -1857,7 +1836,6 @@ class VBGUI(Logger, gobject.GObject):
 	def on_event_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
 		self.brickfactory.dupevent(self.event_selected)
-		pass
 
 	def on_event_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
@@ -1960,7 +1938,6 @@ class VBGUI(Logger, gobject.GObject):
 
 		action = ' on' if self.selected_event_type() in ['BrickStart', 'EventsCollation'] else ' off'
 
-
 		while iter:
 			evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
 			self.brickfactory.\
@@ -1972,7 +1949,6 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
-		pass
 
 	def on_qemupath_changed(self, widget, data=None):
 		newpath = widget.get_filename()
@@ -2010,13 +1986,10 @@ class VBGUI(Logger, gobject.GObject):
 					arch.rstrip(', ')
 					arch+="\n"
 
-
 		if len(arch) > 0:
 			txt += _("additional targets supported")+":\n"
 			txt += arch.rstrip(', ')
 		lbl.set_markup(txt)
-
-
 
 	def on_vdepath_changed(self, widget, data=None):
 		newpath = widget.get_filename()
@@ -2087,7 +2060,6 @@ class VBGUI(Logger, gobject.GObject):
 		cpu_c.populate(opt_c, self.brick_selected.cfg.cpu)
 		os.unlink(MYPATH+"/.cpus")
 
-
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			try:
@@ -2110,7 +2082,6 @@ class VBGUI(Logger, gobject.GObject):
 			self.gladefile.get_widget('cfg_Qemu_tdf_check').set_active(False)
 		self.gladefile.get_widget('cfg_Qemu_tdf_check').set_sensitive(enabled)
 		self.disable_qemu_combos(not enabled)
-
 
 	def disable_qemu_combos(self,active):
 		self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(active)
@@ -2271,7 +2242,6 @@ class VBGUI(Logger, gobject.GObject):
 		else:
 			self.error("Cannot find suspend point.")
 
-
 	def on_vm_powerbutton(self, widget=None, event=None, data=""):
 		self.joblist_selected.send("system_powerdown\n")
 		self.joblist_selected.recv()
@@ -2281,15 +2251,15 @@ class VBGUI(Logger, gobject.GObject):
 		self.joblist_selected.recv()
 
 	def on_topology_drag(self, widget=None, event=None, data=""):
-		print "DRAG"
+		raise NotImplementedError()
+
 	def on_topology_redraw(self, widget=None, event=None, data=""):
-		print "redraw"
 		self.draw_topology()
+
 	def on_topology_export(self, widget=None, event=None, data=""):
-		print "export"
 		self.gladefile.get_widget('topology_export_dialog').show_all()
+
 	def on_topology_export_ok(self, widget=None, event=None, data=""):
-		print "   OK " + self.gladefile.get_widget('topology_export_dialog').get_filename()
 		fname = self.gladefile.get_widget('topology_export_dialog').get_filename()
 		self.gladefile.get_widget('topology_export_dialog').hide()
 		if fname:
@@ -2308,10 +2278,7 @@ class VBGUI(Logger, gobject.GObject):
 		except:
 			self.error("Error saving topology: Unknown error")
 
-
-
 	def on_topology_export_cancel(self, widget=None, event=None, data=""):
-		print "   cancel"
 		self.gladefile.get_widget('topology_export_dialog').hide()
 
 	def on_topology_action(self, widget=None, event=None, data=""):
@@ -2330,7 +2297,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 
 	def on_topology_scroll(self, widget=None, event=None, data=""):
-		print "scroll"
+		raise NotImplementedError()
 
 	def on_vnc_novga_toggled(self, widget=None, event=None, data=""):
 		novga = self.gladefile.get_widget('cfg_Qemu_novga_check')
@@ -2343,13 +2310,12 @@ class VBGUI(Logger, gobject.GObject):
 			novga.set_sensitive(not vnc.get_active())
 
 	def on_vmicon_file_change(self, widget=None, event=None, data=""):
-		print "ON_VMICON_FILE_CHANGE"
-		if (widget.get_filename() is not None):
+		if widget.get_filename() is not None:
 			pixbuf = self.pixbuf_scaled(widget.get_filename())
 			self.gladefile.get_widget("qemuicon").set_from_pixbuf(pixbuf)
 
 	def on_filechooser_clear(self, widget=None, event=None, data="", direct=False):
-		if (direct is False):
+		if not direct:
 			filechooser = widget.name[8:] + "_filechooser"
 		else:
 			filechooser = widget.name
@@ -2379,7 +2345,6 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_messages_dialog_clear_clicked(self, button, data=None):
 		self.messages_buffer.set_text("")
-
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm("Save current project?"):
@@ -2425,7 +2390,6 @@ class VBGUI(Logger, gobject.GObject):
 			self.config.store()
 		chooser.destroy()
 
-
 	def on_import_project(self, widget, data=None):
 		if self.confirm("Save current project?")==True:
 			self.brickfactory.config_dump(self.config.get('current_project'))
@@ -2445,7 +2409,6 @@ class VBGUI(Logger, gobject.GObject):
 			filename = chooser.get_filename()
 			self.brickfactory.config_restore(filename, False, False)
 		chooser.destroy()
-
 
 	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?"):
@@ -2473,7 +2436,7 @@ class VBGUI(Logger, gobject.GObject):
 		chooser.destroy()
 
 	def on_open_recent_project(self, widget, data=None):
-		self.debug( "RECENT PROJECT undefined" )
+		raise NotImplementedError()
 
 	def signals(self):
 		self.signaldict = {
@@ -2694,7 +2657,6 @@ class VBGUI(Logger, gobject.GObject):
 		return True
 
 	def draw_topology(self):
-		print "topo"
 		if self.gladefile.get_widget('topology_tb').get_active():
 			orientation = "TB"
 		else:
