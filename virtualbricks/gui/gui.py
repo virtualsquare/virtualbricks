@@ -601,7 +601,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.statusicon = gtk.StatusIcon()
 			self.statusicon.set_from_file("/usr/share/pixmaps/virtualbricks.png")
 			self.statusicon.set_tooltip("VirtualBricks Visible")
-			self.statusicon.connect('activate', self.systray_menu_toggle_cb)
+			self.statusicon.connect('activate', self.on_systray_menu_toggle)
 			systray_menu = self.gladefile.get_widget("systray_menu")
 			self.statusicon.connect('popup-menu', self.systray_menu_popup, systray_menu)
 
@@ -887,7 +887,7 @@ class VBGUI(Logger, gobject.GObject):
 	"""														  """
 	""" ******************************************************** """
 
-	def systray_menu_toggle_cb(self, widget=None, data=""):
+	def on_systray_menu_toggle(self, widget=None, data=""):
 		if self.statusicon.get_blinking():
 			self.systray_blinking(None, True)
 			return
@@ -898,7 +898,7 @@ class VBGUI(Logger, gobject.GObject):
 		else:
 			self.gladefile.get_widget("main_win").hide()
 
-	def on_window1_destroy(self, widget=None, data=""):
+	def on_systray_exit(self, widget=None, data=""):
 		self.quit()
 
 	def on_windown_destroy(self, widget=None, data=""):
@@ -1347,21 +1347,21 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 
 	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
-		self.tree_startstop(widget, event, data)
+		self.on_brick_startstop(widget, event, data)
 		self.curtain_down()
 
 	def on_treeview_events_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
-		self.events_tree_startstop(widget, event, data)
+		self.on_events_startstop(widget, event, data)
 		self.curtain_down()
 
-	def on_treeview_bookmarks_focus_out(self, widget=None, event=None , data=""):
+	def on_focus_out(self, widget=None, event=None , data=""):
 		self.curtain_down()
 
-	def tree_startstop(self, widget=None, event=None, data=""):
+	def on_brick_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		self.user_wait_action(self.startstop_brick, self.brick_selected)
 
-	def events_tree_startstop(self, widget=None, event=None, data=""):
+	def on_event_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
 		self.user_wait_action(self.events_startstop_brick, self.event_selected)
 
@@ -2122,7 +2122,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(True)
 			self.gladefile.get_widget('filedel_cfg_Qemu_kernel').set_sensitive(True)
 		else:
-			self.filechooser_clear(self.gladefile.get_widget('cfg_Qemu_kernel_filechooser'), None, "", True)
+			self.on_filechooser_clear(self.gladefile.get_widget('cfg_Qemu_kernel_filechooser'), None, "", True)
 			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(False)
 			self.gladefile.get_widget('filedel_cfg_Qemu_kernel').set_sensitive(False)
 
@@ -2131,7 +2131,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(True)
 			self.gladefile.get_widget('filedel_cfg_Qemu_initrd').set_sensitive(False)
 		else:
-			self.filechooser_clear(self.gladefile.get_widget('cfg_Qemu_initrd_filechooser'), None, "", True)
+			self.on_filechooser_clear(self.gladefile.get_widget('cfg_Qemu_initrd_filechooser'), None, "", True)
 			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(False)
 			self.gladefile.get_widget('filedel_cfg_Qemu_initrd').set_sensitive(True)
 
@@ -2348,23 +2348,23 @@ class VBGUI(Logger, gobject.GObject):
 			pixbuf = self.pixbuf_scaled(widget.get_filename())
 			self.gladefile.get_widget("qemuicon").set_from_pixbuf(pixbuf)
 
-	def filechooser_clear(self, widget=None, event=None, data="", direct=False):
+	def on_filechooser_clear(self, widget=None, event=None, data="", direct=False):
 		if (direct is False):
 			filechooser = widget.name[8:] + "_filechooser"
 		else:
 			filechooser = widget.name
 		self.gladefile.get_widget(filechooser).unselect_all()
 
-	def filechooser_hd_clear(self, widget=None, event=None, data=""):
-		self.filechooser_clear(widget)
+	def on_filechooser_hd_clear(self, widget=None, event=None, data=""):
+		self.on_filechooser_clear(widget)
 		hd = widget.name[21:]
 		check = self.gladefile.get_widget("cfg_Qemu_private"+hd+"_check")
 		check.set_active(False)
 		filechooser = widget.name[8:] + "_filechooser"
 		self.gladefile.get_widget(filechooser).set_current_folder(self.config.get('baseimages'))
 
-	def filechooser_image_clear(self, widget=None, event=None, data=""):
-		self.filechooser_clear(widget)
+	def on_filechooser_image_clear(self, widget=None, event=None, data=""):
+		self.on_filechooser_clear(widget)
 		self.gladefile.get_widget("qemuicon").set_from_file("Qemu.png")
 
 	def on_show_messages_activate(self, menuitem, data=None):
@@ -2472,7 +2472,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.config.store()
 		chooser.destroy()
 
-	def on_recent_project(self, widget, data=None):
+	def on_open_recent_project(self, widget, data=None):
 		self.debug( "RECENT PROJECT undefined" )
 
 	def signals(self):
@@ -2480,7 +2480,7 @@ class VBGUI(Logger, gobject.GObject):
 			"on_dialog_event_bricks_select_response":self.on_dialog_event_bricks_select_response,
 			"on_event_brick_select_add_clicked":self.on_event_brick_select_add_clicked,
 			"on_event_brick_select_remove_clicked":self.on_event_brick_select_remove_clicked,
-			"on_window1_destroy":self.on_window1_destroy,
+			"on_systray_exit":self.on_systray_exit,
 			"on_windown_destroy":self.on_windown_destroy,
 			"on_newbrick_cancel":self.on_newbrick_cancel,
 			"on_newbrick_ok":self.on_newbrick_ok,
@@ -2490,8 +2490,8 @@ class VBGUI(Logger, gobject.GObject):
 			"on_config_ok":self.on_config_ok,
 			"on_gilbert_toggle": self.on_gilbert_toggle,
 			"on_mtu_toggle": self.on_mtu_toggle,
-			"on_brick_startstop": self.tree_startstop,
-			"on_event_startstop": self.events_tree_startstop,
+			"on_brick_startstop": self.on_brick_startstop,
+			"on_event_startstop": self.on_event_startstop,
 			"on_brick_configure": self.on_brick_configure,
 			"on_brick_delete": self.on_brick_delete,
 			"on_event_delete": self.on_event_delete,
@@ -2520,7 +2520,7 @@ class VBGUI(Logger, gobject.GObject):
 			"on_treeview_bookmarks_cursor_changed":self.on_treeview_bookmarks_cursor_changed,
 			"on_treeview_bookmarks_row_activated_event":self.on_treeview_bookmarks_row_activated_event,
 			"on_treeview_events_bookmarks_row_activated_event":self.on_treeview_events_bookmarks_row_activated_event,
-			"on_focus_out":self.on_treeview_bookmarks_focus_out,
+			"on_focus_out":self.on_focus_out,
 			"on_treeview_bootimages_button_press_event":self.on_treeview_bootimages_button_press_event,
 			"on_treeview_bootimages_cursor_changed":self.on_treeview_bootimages_cursor_changed,
 			"on_treeview_bootimages_row_activated_event":self.on_treeview_bootimages_row_activated_event,
@@ -2592,7 +2592,6 @@ class VBGUI(Logger, gobject.GObject):
 			"on_dialog_new_redirect_response":self.on_dialog_new_redirect_response,
 			"on_radiobutton_redirect_TCP_toggled":self.on_radiobutton_redirect_TCP_toggled,
 			"on_radiobutton_redirect_UDP_toggled":self.on_radiobutton_redirect_UDP_toggled,
-			#"on_radiobutton_cdromtype2_toggled":self.on_radiobutton_cdromtype2_toggled,
 			"on_spinbutton_redirect_sport_changed":self.on_spinbutton_redirect_sport_changed,
 			"on_entry_redirect_gIP_changed":self.on_entry_redirect_gIP_changed,
 			"on_spinbutton_redirect_dport_changed":self.on_spinbutton_redirect_dport_changed,
@@ -2634,19 +2633,19 @@ class VBGUI(Logger, gobject.GObject):
 			"on_filechooserbutton1_file_set": self.on_vmicon_file_change,
 			"on_topology_export_ok":self.on_topology_export_ok,
 			"on_topology_export_cancel":self.on_topology_export_cancel,
-			"filechooser_image_clear": self.filechooser_image_clear,
-			"systray_menu_toggle_cb": self.systray_menu_toggle_cb,
-			"systray_exit_cb": self.on_window1_destroy,
-			"filechooser_clear": self.filechooser_clear,
-			"filechooser_hd_clear": self.filechooser_hd_clear,
+			"on_filechooser_image_clear": self.on_filechooser_image_clear,
+			"on_systray_menu_toggle": self.on_systray_menu_toggle,
+			"on_systray_exit": self.on_systray_exit,
+			"on_filechooser_clear": self.on_filechooser_clear,
+			"on_filechooser_hd_clear": self.on_filechooser_hd_clear,
 			"on_show_messages_activate": self.on_show_messages_activate,
 			"on_messages_dialog_delete_event": self.on_messages_dialog_delete_event,
 			"on_messages_dialog_clear_clicked": self.on_messages_dialog_clear_clicked,
 			"on_open_project": self.on_open_project,
-			"on_open-recent_project": self.on_recent_project,
+			"on_open_recent_project": self.on_open_recent_project,
 			"on_new_project": self.on_new_project,
 			"on_import_project": self.on_import_project,
-			"on_save_project_as": self.on_save_project,
+			"on_save_project": self.on_save_project,
 		}
 		self.gladefile.signal_autoconnect(self.signaldict)
 
