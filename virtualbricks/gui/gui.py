@@ -1819,12 +1819,6 @@ class VBGUI(Logger, gobject.GObject):
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
 		print "signal not connected"
 
-	def on_brick_startstop(self, widget=None, event=None, data=""):
-		if self.brick_selected.proc is not None:
-			self.brick_selected.poweroff()
-		else:
-			self.brick_selected.poweron()
-
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
 
