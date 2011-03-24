@@ -1825,13 +1825,6 @@ class VBGUI(Logger, gobject.GObject):
 		else:
 			self.brick_selected.poweron()
 
-	def on_event_startstop(self, widget=None, event=None, data=""):
-		if self.event_selected.active:
-			self.event_selected.poweroff()
-		else:
-			self.event_selected.poweron()
-
-
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
 
