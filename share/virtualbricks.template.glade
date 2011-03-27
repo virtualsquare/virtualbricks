@@ -233,29 +233,7 @@
           </packing>
         </child>
         <child>
-          <widget class="GtkHBox" id="hbox12">
-            <property name="visible">True</property>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <widget class="GtkImage" id="image11">
-                <property name="visible">True</property>
-                <property name="pixbuf">logo3-100.png</property>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="padding">5</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">1</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
           <widget class="GtkVPaned" id="vpaned_mainwindow">
