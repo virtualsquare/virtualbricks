@@ -1880,7 +1880,7 @@ fda</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="tooltip" translatable="yes">select Dsiplay for VNC server</property>
                                                         <property name="invisible_char">&#x25CF;</property>
-                                                        <property name="adjustment">1 0 500 1 10 10</property>
+                                                        <property name="adjustment">1 0 500 1 10 0</property>
                                                         <property name="climb_rate">1</property>
                                                         <property name="numeric">True</property>
                                                       </widget>
@@ -2247,7 +2247,7 @@ fda</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x25CF;</property>
-                                                    <property name="adjustment">128 1 99999 1 10 10</property>
+                                                    <property name="adjustment">128 1 99999 1 10 0</property>
                                                     <property name="climb_rate">1</property>
                                                     <property name="numeric">True</property>
                                                   </widget>
@@ -2294,7 +2294,7 @@ fda</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x25CF;</property>
-                                                    <property name="adjustment">1 0 99999 1 10 10</property>
+                                                    <property name="adjustment">1 0 99999 1 10 0</property>
                                                     <property name="climb_rate">1</property>
                                                     <property name="numeric">True</property>
                                                   </widget>
@@ -3142,7 +3142,7 @@ ne2k_isa
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="invisible_char">&#x25CF;</property>
-                                        <property name="adjustment">1234 1 65535 1 10 1000</property>
+                                        <property name="adjustment">1234 1 65535 1 10 0</property>
                                       </widget>
                                       <packing>
                                         <property name="expand">False</property>
@@ -4092,7 +4092,7 @@ Normal Distribution</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="invisible_char">&#x25CF;</property>
-                            <property name="adjustment">32 1 128 1 32 32</property>
+                            <property name="adjustment">32 1 128 1 32 0</property>
                             <property name="snap_to_ticks">True</property>
                             <property name="numeric">True</property>
                           </widget>
@@ -4548,7 +4548,7 @@ Normal Distribution</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">&#x25CF;</property>
-                        <property name="adjustment">7667 1 65535 1 10 10</property>
+                        <property name="adjustment">7667 1 65535 1 10 0</property>
                       </widget>
                       <packing>
                         <property name="left_attach">1</property>
@@ -4638,7 +4638,7 @@ Normal Distribution</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">&#x25CF;</property>
-                        <property name="adjustment">7667 1 65535 1 10 10</property>
+                        <property name="adjustment">7667 1 65535 1 10 0</property>
                       </widget>
                       <packing>
                         <property name="left_attach">1</property>
@@ -4723,7 +4723,7 @@ Normal Distribution</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="invisible_char">&#x25CF;</property>
-                            <property name="adjustment">7667 1 65535 1 10 10</property>
+                            <property name="adjustment">7667 1 65535 1 10 0</property>
                           </widget>
                           <packing>
                             <property name="position">2</property>
@@ -6071,7 +6071,7 @@ cloop</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="tooltip" translatable="yes">Size of the new image</property>
-                        <property name="adjustment">1 0 100 1 10 10</property>
+                        <property name="adjustment">1 0 100 1 10 0</property>
                         <property name="climb_rate">1</property>
                         <property name="numeric">True</property>
                         <signal name="changed" handler="on_spinbutton_newimage_size_changed"/>
@@ -6987,7 +6987,7 @@ Use an already open UDP multicast socket</property>
                   <widget class="GtkSpinButton" id="spinbutton_network_port">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="adjustment">1 1 65535 1 10 10</property>
+                    <property name="adjustment">1 1 65535 1 10 0</property>
                     <property name="climb_rate">1</property>
                     <signal name="changed" handler="on_spinbutton_network_port_changed"/>
                   </widget>
@@ -7002,7 +7002,7 @@ Use an already open UDP multicast socket</property>
                   <widget class="GtkSpinButton" id="spinbutton_network_vlan">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="adjustment">0 0 999 1 10 10</property>
+                    <property name="adjustment">0 0 999 1 10 0</property>
                     <property name="climb_rate">1</property>
                     <signal name="changed" handler="on_spinbutton_network_vlan_changed"/>
                   </widget>
@@ -7147,7 +7147,7 @@ Use an already open UDP multicast socket</property>
                   <widget class="GtkSpinButton" id="spinbutton_network_filedescriptor">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="adjustment">0 0 100 1 10 10</property>
+                    <property name="adjustment">0 0 100 1 10 0</property>
                     <property name="climb_rate">1</property>
                     <signal name="changed" handler="on_spinbutton_network_filedescriptor_changed"/>
                   </widget>
@@ -7378,7 +7378,7 @@ Use an already open UDP multicast socket</property>
                       <widget class="GtkSpinButton" id="spinbutton_redirect_sport">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="adjustment">1 1 65535 1 10 10</property>
+                        <property name="adjustment">1 1 65535 1 10 0</property>
                         <property name="climb_rate">1</property>
                         <property name="numeric">True</property>
                         <signal name="changed" handler="on_spinbutton_redirect_sport_changed"/>
@@ -7426,7 +7426,7 @@ Use an already open UDP multicast socket</property>
                       <widget class="GtkSpinButton" id="spinbutton_redirect_dport">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="adjustment">1 1 65535 1 10 10</property>
+                        <property name="adjustment">1 1 65535 1 10 0</property>
                         <property name="climb_rate">1</property>
                         <property name="numeric">True</property>
                         <signal name="changed" handler="on_spinbutton_redirect_dport_changed"/>
