@@ -51,10 +51,7 @@ class Logger(ChildLogger):
 	def _log(self, text, *args, **kwargs):
 		"""log text at level specified by kwargs['level']"""
 		level = kwargs.pop('level')
-		method = getattr(ChildLogger, level)
-		method(self, text, *args, **kwargs)
 		text = unicode(text) % args
 		pos = self.messages_buffer.get_end_iter()
 		self.messages_buffer.insert_with_tags_by_name(pos, "%s\n" % text, level)
-
 
