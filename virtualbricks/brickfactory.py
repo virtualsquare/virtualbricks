@@ -567,24 +567,23 @@ class Event(ChildLogger):
 		return (len(self.cfg.actions) > 0 and self.cfg.delay > 0)
 
 	def initialize(self, attrlist):
-		if('add' in attrlist and 'addsh' in attrlist):
-			print "Error: config line must contain add OR addsh."
-			print "Split in two different line."
-			raise InvalidAction()
+		if 'add' in attrlist and 'addsh' in attrlist:
+			raise InvalidAction(_("Error: config line must contain add OR "
+				"addsh."))
 		elif('add' in attrlist):
 			configactions = list()
 			configactions = (' '.join(attrlist)).split('add')
 			for action in configactions[1:]:
 				action = action.strip()
 				self.cfg.actions.append(VbShellCommand(action))
-				print "Added vb-shell command: \"%s\"" % str(action)
+				self.info(_("Added vb-shell command: '%s'"), unicode(action))
 		elif('addsh' in attrlist):
 			configactions = list()
 			configactions = (' '.join(attrlist)).split('addsh')
 			for action in configactions[1:]:
 				action = action.strip()
 				self.cfg.actions.append(ShellCommand(action))
-				print "Added host-shell command: \"%s\"" % str(action)
+				self.info(_("Added host-shell command: '%s'"), unicode(action))
 #		elif('addev' in attrlist):
 #			configactions = list()
 #			configactions = (' '.join(attrlist)).split('addev')
