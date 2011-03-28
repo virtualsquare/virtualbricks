@@ -75,23 +75,25 @@ class Settings(ChildLogger):
 		for key, value in default_conf.items():
 			self.config.set(self.DEFAULT_SECTION, key, unicode(value))
 
-		self.config.read(self.filename)
-
-		try:
-			self.config.read(self.filename)
-			print "CONFIGURATION: LOADED."
-			self.check_ksm(self.ksm)
-			self.ksm = self.ksm
-		except Exception, err:
-			print "Cannot open config file '%s': '%s'!" % (self.filename, err)
-			raise err
+		if os.path.exists(self.filename):
+			try:
+				self.config.read(self.filename)
+				self.info(_("Configuration loaded ('%s')"), self.filename)
+			except Exception, err:
+				self.error(_("Cannot read config file '%s': '%s'!"), (self.filename,
+					err))
+		else:
+			self.info(_("Default configuration loaded"))
 			try:
 				with open(self.filename, 'wb') as configfile:
 					self.config.write(configfile)
-					print "default configuration written"
+				self.info(_("Default configuration saved ('%s')"),
+						self.filename)
 			except Exception, err:
-				print "Can not save default configuration: '%s'" % err
-				return
+				self.error(_("Cannot save default configuration"))
+
+		self.check_ksm(self.ksm)
+		self.ksm = self.ksm
 
 	def get(self, attr):
 		val = self.config.get(self.DEFAULT_SECTION, unicode(attr))
