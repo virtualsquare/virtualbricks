@@ -54,18 +54,15 @@ def ValidName(name):
 	return name
 
 class Plug(ChildLogger):
-	def __init__(self, _brick):
-		ChildLogger.__init__(self, _brick)
-		self.brick = _brick
+	def __init__(self, brick):
+		ChildLogger.__init__(self, brick)
+		self.brick = brick
 		self.sock = None
 		self.antiloop = False
 		self.mode = 'vde'
 
 	def configured(self):
-		if self.sock is None:
-			return False
-		else:
-			return True
+		return self.sock is not None
 
 	def connected(self):
 		if self.antiloop:
@@ -89,21 +86,21 @@ class Plug(ChildLogger):
 		self.antiloop = False
 		return True
 
-	def connect(self, _sock):
-		if _sock is None:
+	def connect(self, sock):
+		if sock is None:
 			return False
 		else:
-			_sock.plugs.append(self)
-			self.sock = _sock
+			sock.plugs.append(self)
+			self.sock = sock
 			return True
 
 	def disconnect(self):
 		self.sock = None
 
 class Sock(object):
-	def __init__(self, _brick, _nickname):
-		self.brick = _brick
-		self.nickname = _nickname
+	def __init__(self, brick, nickname):
+		self.brick = brick
+		self.nickname = nickname
 		self.path = ""
 		self.plugs = []
 		self.brick.factory.socks.append(self)
