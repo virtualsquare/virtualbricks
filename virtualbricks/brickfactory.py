@@ -341,10 +341,7 @@ class Brick(ChildLogger):
 			sudoarg += "-P /tmp/" + self.name + ".pid "
 			command_line[0] = self.settings.get("sudo")
 			command_line[1] = sudoarg
-		print 'Starting "',
-		for cmdarg in command_line:
-			print cmdarg + " ",
-		print '"'
+		self.debug(_("Starting: '%s'"), ' '.join(command_line))
 		self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		self.send('\n')
 #		self.proc.fromchild.close()
@@ -366,20 +363,20 @@ class Brick(ChildLogger):
 		self.post_poweron()
 
 	def poweroff(self):
-		print "Shutting down %s" % self.name
-
 		if self.proc is None:
 			return False
 
+		self.debug(_("Shutting down %s"), self.name)
 		if self.pid > 0:
 			if (self.needsudo):
-				os.system(self.settings.get('sudo') + ' "kill ' + str(self.pid) + '"')
+				os.system('%s "kill %s"' % (self.settings.get('sudo'),
+					self.pid))
 			else:
 				try:
-					#self.proc.send_signal(15)
 					os.kill(self.pid, 15)
 				except Exception, err:
-					print "ERROR", err
+					self.error(_("can not send SIGTERM to '%s': '%s'"),
+						self.pid, err)
 
 			ret = self.proc.poll()
 			while ret is None:
@@ -409,7 +406,7 @@ class Brick(ChildLogger):
 			return False
 
 	def open_console(self):
-		print "open_console"
+		self.debug("open_console")
 		if not self.has_console():
 			return
 		else:
@@ -417,18 +414,18 @@ class Brick(ChildLogger):
 			try:
 				console = subprocess.Popen(cmdline)
 			except:
-				print "xterm run failed, trying gnome-terminal"
+				self.error("term run failed, trying gnome-terminal")
 				cmdline = ['gnome-terminal', '-t', self.name, '-e', self.terminal + " " + self.console()]
-				print cmdline
+				self.debug(cmdline)
 				try:
 					console = subprocess.Popen(cmdline)
 				except:
-					print "Error: cannot start a terminal emulator"
+					self.debug(_("Error: cannot start a terminal emulator"))
 					return
 
 	#Must be overridden in Qemu to use appropriate console as internal (stdin, stdout?)
 	def open_internal_console(self):
-		print "open_internal_console"
+		self.debug("open_internal_console")
 		if not self.has_console():
 			return None
 		while True:
@@ -437,7 +434,6 @@ class Brick(ChildLogger):
 				c = socket.socket(socket.AF_UNIX)
 				c.connect(self.console())
 			except:
-				print "foobar"
 				pass
 			else:
 				break
@@ -445,16 +441,16 @@ class Brick(ChildLogger):
 
 	def send(self, msg):
 		if self.internal_console == None or not self.active:
-			print "cancel send"
+			self.debug("cancel send")
 			return
 		try:
-			print "= sending " + msg
+			self.debug("sending '%s'", msg)
 			self.internal_console.send(msg)
 		except Exception, err:
-			print "send failed", err, type(err)
+			self.err("send failed : %s", err)
 
 	def recv(self):
-		print "recv"
+		self.debug("recv")
 		if self.internal_console == None:
 			return ''
 		res = ''
@@ -750,7 +746,7 @@ class Switch(Brick):
 
 	# live-management callbacks
 	def cbset_fstp(self, arg=False):
-		if (arg):
+		if arg:
 			self.send("fstp/setfstp 1\n")
 		else:
 			self.send("fstp/setfstp 0\n")
@@ -758,7 +754,7 @@ class Switch(Brick):
 
 	def cbset_hub(self, arg=False):
 		print "Callback hub with argument " + self.name
-		if (arg):
+		if arg:
 			self.send("port/sethub 1\n")
 		else:
 			self.send("port/sethub 0\n")
