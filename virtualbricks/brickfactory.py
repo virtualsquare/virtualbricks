@@ -204,6 +204,10 @@ class Brick(ChildLogger):
 	def cmdline(self):
 		return ""
 
+	def pidfile(self):
+		return "/tmp/%s.pid" % self.name
+	pidfile = property(pidfile)
+
 	def getname(self):
 		return self.name
 
@@ -329,34 +333,20 @@ class Brick(ChildLogger):
 			res.append(c)
 		return res
 
-	def _poweron(self):
-		if (self.proc != None):
+	def poweron(self):
+		if self.proc != None:
 			return
 		command_line = self.args()
-
-		pidfile = "/tmp/%s.pid" % self.name
 
 		if self.needsudo:
 			sudoarg = ""
 			for cmdarg in command_line:
 				sudoarg += cmdarg + " "
-			sudoarg += "-P %s" % pidfile
+			sudoarg += "-P %s" % self.pidfile
 			command_line[0] = self.settings.get("sudo")
 			command_line[1] = sudoarg
 		self.debug(_("Starting: '%s'"), ' '.join(command_line))
 		self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-#		self.proc.fromchild.close()
-#		self.proc.tochild.close()
-		if self.needsudo:
-			time.sleep(5)
-			try:
-				pidfile = open(pidfile, "r")
-				self.pid = int(pidfile.readline().rstrip('\n'))
-			except Exception, err:
-				self.error(_("Cannot get pid from pidfile (%s): '%s'"), pidfile,
-					err)
-		else:
-			self.pid = self.proc.pid
 
 		if self.open_internal_console and callable(self.open_internal_console):
 			self.internal_console = self.open_internal_console()
@@ -368,20 +358,24 @@ class Brick(ChildLogger):
 			return False
 
 		self.debug(_("Shutting down %s"), self.name)
-		if self.pid > 0:
-			if (self.needsudo):
-				os.system('%s "kill %s"' % (self.settings.get('sudo'),
-					self.pid))
+		is_running = self.proc.poll() is None
+		if is_running:
+			if self.needsudo:
+				proc = subprocess.Popen([self.settings.get('sudo'),
+					'kill', "'`cat %s`'" % self.pidfile])
+				ret = proc.wait()
+				if ret != 0:
+					self.error(_("can not stop brick (error code: '%s')"), ret)
+					return
 			else:
 				try:
-					os.kill(self.pid, 15)
+					self.proc.terminate()
 				except Exception, err:
-					self.error(_("can not send SIGTERM to '%s': '%s'"),
-						self.pid, err)
+					self.error(_("can not send SIGTERM: '%s'"), err)
 
+		ret = None
+		while ret is None:
 			ret = self.proc.poll()
-			while ret is None:
-				ret = self.proc.poll()
 
 		self.proc = None
 		self.need_restart_to_apply_changes = False
@@ -401,7 +395,7 @@ class Brick(ChildLogger):
 	# Console related operations.
 	#############################
 	def has_console(self):
-		if (self.cfg.get('console')) and self.proc != None:
+		if self.proc != None and os.path.exists(self.console()):
 			return True
 		else:
 			return False
