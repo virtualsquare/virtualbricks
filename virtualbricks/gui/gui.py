@@ -2462,11 +2462,11 @@ class VBGUI(Logger, gobject.GObject):
 		new_ps = []
 		for b in self.brickfactory.bricks:
 			if b.proc is not None:
-				new_ps.append(b)
 				ret = b.proc.poll()
-				if ret != None:
+				if ret is None:
+					new_ps.append(b)
+				else:
 					b.poweroff()
-					#self.error("%s '%s' Terminated with code %d" %(b.get_type(), b.name, ret))
 					b.gui_changed = True
 
 		if self.ps != new_ps:
