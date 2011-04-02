@@ -334,11 +334,13 @@ class Brick(ChildLogger):
 			return
 		command_line = self.args()
 
+		pidfile = "/tmp/%s.pid" % self.name
+
 		if self.needsudo:
 			sudoarg = ""
 			for cmdarg in command_line:
 				sudoarg += cmdarg + " "
-			sudoarg += "-P /tmp/" + self.name + ".pid "
+			sudoarg += "-P %s" % pidfile
 			command_line[0] = self.settings.get("sudo")
 			command_line[1] = sudoarg
 		self.debug(_("Starting: '%s'"), ' '.join(command_line))
@@ -348,11 +350,11 @@ class Brick(ChildLogger):
 		if self.needsudo:
 			time.sleep(5)
 			try:
-				pidfile = open("/tmp/" + self.name + ".pid", "r")
+				pidfile = open(pidfile, "r")
 				self.pid = int(pidfile.readline().rstrip('\n'))
-			except:
-				print("Cannot get pid from pidfile!")
-				pass
+			except Exception, err:
+				self.error(_("Cannot get pid from pidfile (%s): '%s'"), pidfile,
+					err)
 		else:
 			self.pid = self.proc.pid
 
