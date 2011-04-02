@@ -343,7 +343,6 @@ class Brick(ChildLogger):
 			command_line[1] = sudoarg
 		self.debug(_("Starting: '%s'"), ' '.join(command_line))
 		self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-		self.send('\n')
 #		self.proc.fromchild.close()
 #		self.proc.tochild.close()
 		if self.needsudo:
