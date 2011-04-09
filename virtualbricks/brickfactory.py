@@ -76,6 +76,7 @@ class Plug(ChildLogger):
 			self.antiloop = False
 			return False
 		self.sock.brick.poweron()
+
 		if self.sock.brick.proc is None:
 			self.antiloop = False
 			return False
@@ -333,7 +334,7 @@ class Brick(ChildLogger):
 			res.append(c)
 		return res
 
-	def poweron(self):
+	def _poweron(self):
 		if self.proc != None:
 			return
 		command_line = self.args()
@@ -351,7 +352,8 @@ class Brick(ChildLogger):
 		if self.open_internal_console and callable(self.open_internal_console):
 			self.internal_console = self.open_internal_console()
 
-		self.pid = self.proc.pid
+		if self.proc is not None:
+			self.pid = self.proc.pid
 
 		self.factory.emit("brick-started")
 		self.post_poweron()
