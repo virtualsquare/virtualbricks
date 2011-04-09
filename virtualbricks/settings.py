@@ -80,8 +80,7 @@ class Settings(ChildLogger):
 				self.config.read(self.filename)
 				self.info(_("Configuration loaded ('%s')"), self.filename)
 			except Exception, err:
-				self.error(_("Cannot read config file '%s': '%s'!"), (self.filename,
-					err))
+				self.error(_("Cannot read config file ") + "'" + self.filename + "':" + "'" + err + "'!")
 		else:
 			self.info(_("Default configuration loaded"))
 			try:

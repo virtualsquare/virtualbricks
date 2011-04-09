@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.3\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-03-20 18:39+0100\n"
-"PO-Revision-Date: 2011-03-20 18:40+0100\n"
+"POT-Creation-Date: 2011-04-09 20:00+0200\n"
+"PO-Revision-Date: 2011-04-09 22:00+0100\n"
 "Last-Translator: \n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
@@ -17,57 +17,67 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: share/virtualbricks.glade:10
+#: share/virtualbricks.template.glade:10
 msgid "Virtualbricks"
 msgstr "Virtualbricks"
 
 #: share/virtualbricks.glade:27
 #: share/virtualbricks.glade:28
+#: share/virtualbricks.template.glade:27
 msgid "_File"
 msgstr "_File"
 
 #: share/virtualbricks.glade:33
 #: share/virtualbricks.glade:34
+#: share/virtualbricks.template.glade:33
 msgid "_Open Project"
 msgstr "_Apri Progetto"
 
 #: share/virtualbricks.glade:48
 #: share/virtualbricks.glade:49
+#: share/virtualbricks.template.glade:48
 msgid "_Recent Projects..."
 msgstr "Progetti _Recenti"
 
 #: share/virtualbricks.glade:67
 #: share/virtualbricks.glade:68
 #: share/virtualbricks.glade:69
+#: share/virtualbricks.template.glade:68
 msgid "Restart with _empty project"
 msgstr "Avvia un progetto _vuoto"
 
 #: share/virtualbricks.glade:82
 #: share/virtualbricks.glade:83
 #: share/virtualbricks.glade:84
+#: share/virtualbricks.template.glade:83
 msgid "_Import bricks"
 msgstr "_Importa Mattoni"
 
 #: share/virtualbricks.glade:97
 #: share/virtualbricks.glade:98
 #: share/virtualbricks.glade:99
+#: share/virtualbricks.template.glade:98
 msgid "_Save project as..."
 msgstr "_Salva progetto come..."
 
 #: share/virtualbricks.glade:131
 #: share/virtualbricks.glade:132
 #: share/virtualbricks.glade:133
+#: share/virtualbricks.template.glade:132
 msgid "_Settings"
 msgstr "_Impostazioni"
 
 #: share/virtualbricks.glade:139
 #: share/virtualbricks.glade:140
 #: share/virtualbricks.glade:141
+#: share/virtualbricks.template.glade:140
 msgid "configure Virtualbricks"
 msgstr "configura Virtualbricks"
 
 #: share/virtualbricks.glade:149
 #: share/virtualbricks.glade:150
 #: share/virtualbricks.glade:151
+#: share/virtualbricks.template.glade:150
 msgid "auto show empty settings"
 msgstr ""
 "mostra automaticamente\n"
@@ -76,6 +86,7 @@ msgstr ""
 #: share/virtualbricks.glade:158
 #: share/virtualbricks.glade:159
 #: share/virtualbricks.glade:160
+#: share/virtualbricks.template.glade:159
 msgid "auto hide stored settings"
 msgstr ""
 "nascondi automaticamente\n"
@@ -84,144 +95,168 @@ msgstr ""
 #: share/virtualbricks.glade:170
 #: share/virtualbricks.glade:171
 #: share/virtualbricks.glade:192
+#: share/virtualbricks.template.glade:191
 msgid "_Image creation"
 msgstr "Creazione _Immagine"
 
 #: share/virtualbricks.glade:177
 #: share/virtualbricks.glade:178
 #: share/virtualbricks.glade:199
+#: share/virtualbricks.template.glade:198
 msgid "Not implemented yet"
 msgstr "Ancora non implementato"
 
 #: share/virtualbricks.glade:178
 #: share/virtualbricks.glade:179
 #: share/virtualbricks.glade:200
+#: share/virtualbricks.template.glade:199
 msgid "_Create new image"
 msgstr "_Crea nuova immagine"
 
 #: share/virtualbricks.glade:190
 #: share/virtualbricks.glade:191
 #: share/virtualbricks.glade:212
+#: share/virtualbricks.template.glade:211
 msgid "_Help"
 msgstr "_Aiuto"
 
 #: share/virtualbricks.glade:197
 #: share/virtualbricks.glade:198
 #: share/virtualbricks.glade:219
+#: share/virtualbricks.template.glade:218
 msgid "About Virtualbricks and QEMU"
 msgstr "Informazioni su Virtualbricks e QEMU"
 
 #: share/virtualbricks.glade:198
 #: share/virtualbricks.glade:199
 #: share/virtualbricks.glade:220
+#: share/virtualbricks.template.glade:219
 msgid "_About"
 msgstr "_Informazioni su"
 
 #: share/virtualbricks.glade:272
 #: share/virtualbricks.glade:273
 #: share/virtualbricks.glade:294
+#: share/virtualbricks.template.glade:271
 msgid "<b>Bricks:</b>"
 msgstr "<b>Mattoni:</b>"
 
 #: share/virtualbricks.glade:299
 #: share/virtualbricks.glade:300
 #: share/virtualbricks.glade:321
+#: share/virtualbricks.template.glade:298
 msgid "New Brick"
 msgstr "Nuovo Mattone"
 
 #: share/virtualbricks.glade:321
 #: share/virtualbricks.glade:322
 #: share/virtualbricks.glade:343
+#: share/virtualbricks.template.glade:320
 msgid "Start All Bricks"
 msgstr "Avvia Tutti i Mattoni"
 
 #: share/virtualbricks.glade:335
 #: share/virtualbricks.glade:336
 #: share/virtualbricks.glade:357
+#: share/virtualbricks.template.glade:334
 msgid "Stop All Bricks"
 msgstr "Ferma Tutti i Mattoni"
 
 #: share/virtualbricks.glade:362
 #: share/virtualbricks.glade:363
 #: share/virtualbricks.glade:384
+#: share/virtualbricks.template.glade:361
 msgid "You can use drag and drop to connect bricks and double click to start/stop them."
 msgstr "Si può usare il drag and drop per connettere i mattoni e il doppio click per avviarli/fermarli."
 
 #: share/virtualbricks.glade:379
 #: share/virtualbricks.glade:380
 #: share/virtualbricks.glade:401
+#: share/virtualbricks.template.glade:378
 msgid "Bricks"
 msgstr "Mattoni"
 
 #: share/virtualbricks.glade:397
 #: share/virtualbricks.glade:398
 #: share/virtualbricks.glade:419
+#: share/virtualbricks.template.glade:396
 msgid "New Event"
 msgstr "Nuovo Evento"
 
 #: share/virtualbricks.glade:419
 #: share/virtualbricks.glade:420
 #: share/virtualbricks.glade:441
+#: share/virtualbricks.template.glade:418
 msgid "Start All Events"
 msgstr "Avvia Tutti gli Eventi"
 
 #: share/virtualbricks.glade:433
 #: share/virtualbricks.glade:434
 #: share/virtualbricks.glade:455
+#: share/virtualbricks.template.glade:432
 msgid "Stop All Events"
 msgstr "Ferma Tutti gli Eventi"
 
 #: share/virtualbricks.glade:460
 #: share/virtualbricks.glade:461
 #: share/virtualbricks.glade:482
+#: share/virtualbricks.template.glade:459
 msgid "You can use drag and drop to add an event to events collation and double click to start/stop them."
 msgstr "Si può usare il drag and drop per aggiungere un evento ad una collezione di eventi e il doppio click per per avviarli/fermarli."
 
 #: share/virtualbricks.glade:478
 #: share/virtualbricks.glade:479
 #: share/virtualbricks.glade:500
+#: share/virtualbricks.template.glade:477
 msgid "Events"
 msgstr "Eventi"
 
 #: share/virtualbricks.glade:495
 #: share/virtualbricks.glade:496
 #: share/virtualbricks.glade:517
+#: share/virtualbricks.template.glade:494
 msgid "Click to select an enty for use or edit its configuration, rightclick for more."
 msgstr "Clicca per selezionare un elemento da usare o configurare, tasto destro per altro."
 
 #: share/virtualbricks.glade:509
 #: share/virtualbricks.glade:510
 #: share/virtualbricks.glade:531
+#: share/virtualbricks.template.glade:508
 msgid "Running Components"
 msgstr "Componenti in esecuzione"
 
 #: share/virtualbricks.glade:545
 #: share/virtualbricks.glade:546
 #: share/virtualbricks.glade:567
+#: share/virtualbricks.template.glade:544
 msgid "Export as Image"
 msgstr "Esporta come Immagine"
 
 #: share/virtualbricks.glade:561
 #: share/virtualbricks.glade:562
 #: share/virtualbricks.glade:583
+#: share/virtualbricks.template.glade:560
 msgid "Expand Horizontally"
 msgstr "Espandi Orizzontalmente"
 
 #: share/virtualbricks.glade:576
 #: share/virtualbricks.glade:577
 #: share/virtualbricks.glade:598
+#: share/virtualbricks.template.glade:575
 msgid "Expand Vertically"
 msgstr "Espandi Verticalmente"
 
 #: share/virtualbricks.glade:633
 #: share/virtualbricks.glade:634
 #: share/virtualbricks.glade:655
+#: share/virtualbricks.template.glade:632
 msgid "Topology"
 msgstr "Topologia"
 
 #: share/virtualbricks.glade:652
 #: share/virtualbricks.glade:653
 #: share/virtualbricks.glade:674
+#: share/virtualbricks.template.glade:651
 msgid "Show/hide configuration panel for selected boot image"
 msgstr ""
 "Mostra/nascondi pannello di configurazione per\n"
@@ -230,24 +265,28 @@ msgstr ""
 #: share/virtualbricks.glade:677
 #: share/virtualbricks.glade:678
 #: share/virtualbricks.glade:699
+#: share/virtualbricks.template.glade:676
 msgid "Show settings"
 msgstr "Mostra impostazioni"
 
 #: share/virtualbricks.glade:747
 #: share/virtualbricks.glade:748
 #: share/virtualbricks.glade:769
+#: share/virtualbricks.template.glade:746
 msgid "boot as device"
 msgstr "fai boot dal dispositivo"
 
 #: share/virtualbricks.glade:779
 #: share/virtualbricks.glade:780
 #: share/virtualbricks.glade:801
+#: share/virtualbricks.template.glade:778
 msgid "Snapshot mode"
 msgstr "Modalità Snapshot"
 
 #: share/virtualbricks.glade:784
 #: share/virtualbricks.glade:785
 #: share/virtualbricks.glade:806
+#: share/virtualbricks.template.glade:783
 msgid "write to temporary files instead of disk image files"
 msgstr "scrivi su un file temporaneo invece delle immagini disco"
 
@@ -255,6 +294,7 @@ msgstr "scrivi su un file temporaneo invece delle immagini disco"
 #: share/virtualbricks.glade:810
 #: share/virtualbricks.glade:811
 #: share/virtualbricks.glade:832
+#: share/virtualbricks.template.glade:809
 msgid "<b>boot options</b>"
 msgstr "<b>opzioni di boot</b>"
 
@@ -262,6 +302,7 @@ msgstr "<b>opzioni di boot</b>"
 #: share/virtualbricks.glade:839
 #: share/virtualbricks.glade:840
 #: share/virtualbricks.glade:861
+#: share/virtualbricks.template.glade:838
 msgid "use image as cdrom"
 msgstr "usa immagine come cdrom"
 
@@ -269,6 +310,7 @@ msgstr "usa immagine come cdrom"
 #: share/virtualbricks.glade:844
 #: share/virtualbricks.glade:845
 #: share/virtualbricks.glade:866
+#: share/virtualbricks.template.glade:843
 msgid "use one of the image files in the default folder as cdrom device"
 msgstr "usa uno di questi file immagine nella cartella di default come dispositivo cdrom"
 
@@ -276,6 +318,7 @@ msgstr "usa uno di questi file immagine nella cartella di default come dispositi
 #: share/virtualbricks.glade:859
 #: share/virtualbricks.glade:860
 #: share/virtualbricks.glade:881
+#: share/virtualbricks.template.glade:858
 msgid "mount cdrom"
 msgstr "monta cdrom"
 
@@ -283,6 +326,7 @@ msgstr "monta cdrom"
 #: share/virtualbricks.glade:864
 #: share/virtualbricks.glade:865
 #: share/virtualbricks.glade:886
+#: share/virtualbricks.template.glade:863
 msgid "mount local cdrom Drive"
 msgstr "monta dispositovo cdrom locale"
 
@@ -290,6 +334,7 @@ msgstr "monta dispositovo cdrom locale"
 #: share/virtualbricks.glade:878
 #: share/virtualbricks.glade:879
 #: share/virtualbricks.glade:900
+#: share/virtualbricks.template.glade:877
 msgid "no cdrom"
 msgstr "nessun cdrom"
 
@@ -297,6 +342,7 @@ msgstr "nessun cdrom"
 #: share/virtualbricks.glade:883
 #: share/virtualbricks.glade:884
 #: share/virtualbricks.glade:905
+#: share/virtualbricks.template.glade:882
 msgid "don´t use any cdrom device"
 msgstr "non usare nessun dispositivo cdrom"
 
@@ -304,6 +350,7 @@ msgstr "non usare nessun dispositivo cdrom"
 #: share/virtualbricks.glade:898
 #: share/virtualbricks.glade:899
 #: share/virtualbricks.glade:920
+#: share/virtualbricks.template.glade:897
 msgid "/dev/cdrom\n"
 msgstr "/dev/cdrom\n"
 
@@ -311,6 +358,7 @@ msgstr "/dev/cdrom\n"
 #: share/virtualbricks.glade:965
 #: share/virtualbricks.glade:971
 #: share/virtualbricks.glade:992
+#: share/virtualbricks.template.glade:969
 msgid "<b>cdrom device</b>"
 msgstr "<b>dispositivo cdrom</b>"
 
@@ -318,6 +366,7 @@ msgstr "<b>dispositivo cdrom</b>"
 #: share/virtualbricks.glade:1012
 #: share/virtualbricks.glade:1019
 #: share/virtualbricks.glade:1040
+#: share/virtualbricks.template.glade:1017
 msgid "Select images for Qemu volumes"
 msgstr "Seleziona immagini per supporti Qemu"
 
@@ -331,6 +380,8 @@ msgstr "Seleziona immagini per supporti Qemu"
 #: share/virtualbricks.glade:6510
 #: share/virtualbricks.glade:1064
 #: share/virtualbricks.glade:6531
+#: share/virtualbricks.template.glade:1041
+#: share/virtualbricks.template.glade:6508
 msgid "fdb"
 msgstr "fdb"
 
@@ -344,6 +395,8 @@ msgstr "fdb"
 #: share/virtualbricks.glade:6495
 #: share/virtualbricks.glade:1078
 #: share/virtualbricks.glade:6516
+#: share/virtualbricks.template.glade:1055
+#: share/virtualbricks.template.glade:6493
 msgid "fda"
 msgstr "fda"
 
@@ -351,6 +404,7 @@ msgstr "fda"
 #: share/virtualbricks.glade:1064
 #: share/virtualbricks.glade:1071
 #: share/virtualbricks.glade:1092
+#: share/virtualbricks.template.glade:1069
 msgid "hdd"
 msgstr "hdd"
 
@@ -358,6 +412,7 @@ msgstr "hdd"
 #: share/virtualbricks.glade:1078
 #: share/virtualbricks.glade:1085
 #: share/virtualbricks.glade:1106
+#: share/virtualbricks.template.glade:1083
 msgid "hdc"
 msgstr "hdc"
 
@@ -365,6 +420,7 @@ msgstr "hdc"
 #: share/virtualbricks.glade:1092
 #: share/virtualbricks.glade:1099
 #: share/virtualbricks.glade:1120
+#: share/virtualbricks.template.glade:1097
 msgid "hdb"
 msgstr "hdb"
 
@@ -372,6 +428,7 @@ msgstr "hdb"
 #: share/virtualbricks.glade:1106
 #: share/virtualbricks.glade:1113
 #: share/virtualbricks.glade:1134
+#: share/virtualbricks.template.glade:1111
 msgid "hda"
 msgstr "hda"
 
@@ -379,6 +436,7 @@ msgstr "hda"
 #: share/virtualbricks.glade:1222
 #: share/virtualbricks.glade:1224
 #: share/virtualbricks.glade:1245
+#: share/virtualbricks.template.glade:1222
 msgid "mtdblock"
 msgstr "mtdblock"
 
@@ -409,6 +467,13 @@ msgstr "mtdblock"
 #: share/virtualbricks.glade:1460
 #: share/virtualbricks.glade:1503
 #: share/virtualbricks.glade:1546
+#: share/virtualbricks.template.glade:1267
+#: share/virtualbricks.template.glade:1308
+#: share/virtualbricks.template.glade:1351
+#: share/virtualbricks.template.glade:1394
+#: share/virtualbricks.template.glade:1437
+#: share/virtualbricks.template.glade:1480
+#: share/virtualbricks.template.glade:1523
 msgid "Private COW"
 msgstr "COW Privato"
 
@@ -416,6 +481,7 @@ msgstr "COW Privato"
 #: share/virtualbricks.glade:1547
 #: share/virtualbricks.glade:1557
 #: share/virtualbricks.glade:1578
+#: share/virtualbricks.template.glade:1555
 msgid "<b>additional media</b>"
 msgstr "<b>supporti aggiuntivi</b>"
 
@@ -429,6 +495,8 @@ msgstr "<b>supporti aggiuntivi</b>"
 #: share/virtualbricks.glade:6576
 #: share/virtualbricks.glade:1615
 #: share/virtualbricks.glade:6597
+#: share/virtualbricks.template.glade:1592
+#: share/virtualbricks.template.glade:6574
 msgid "Drives"
 msgstr "Drives"
 
@@ -436,6 +504,7 @@ msgstr "Drives"
 #: share/virtualbricks.glade:1622
 #: share/virtualbricks.glade:1632
 #: share/virtualbricks.glade:1653
+#: share/virtualbricks.template.glade:1630
 msgid "Architecture: "
 msgstr "Architettura:"
 
@@ -447,6 +516,8 @@ msgstr "Architettura:"
 #: share/virtualbricks.glade:1711
 #: share/virtualbricks.glade:1682
 #: share/virtualbricks.glade:1732
+#: share/virtualbricks.template.glade:1659
+#: share/virtualbricks.template.glade:1709
 msgid "\n"
 msgstr "\n"
 
@@ -454,6 +525,7 @@ msgstr "\n"
 #: share/virtualbricks.glade:1663
 #: share/virtualbricks.glade:1673
 #: share/virtualbricks.glade:1694
+#: share/virtualbricks.template.glade:1671
 msgid "CPU Type"
 msgstr "Tipo di CPU"
 
@@ -461,6 +533,7 @@ msgstr "Tipo di CPU"
 #: share/virtualbricks.glade:1675
 #: share/virtualbricks.glade:1685
 #: share/virtualbricks.glade:1706
+#: share/virtualbricks.template.glade:1683
 msgid ""
 "\n"
 "\n"
@@ -472,6 +545,7 @@ msgstr ""
 #: share/virtualbricks.glade:1689
 #: share/virtualbricks.glade:1699
 #: share/virtualbricks.glade:1720
+#: share/virtualbricks.template.glade:1697
 msgid "Machine type"
 msgstr "Tipo di macchina"
 
@@ -479,6 +553,7 @@ msgstr "Tipo di macchina"
 #: share/virtualbricks.glade:1712
 #: share/virtualbricks.glade:1722
 #: share/virtualbricks.glade:1743
+#: share/virtualbricks.template.glade:1720
 msgid "KVM"
 msgstr "KVM"
 
@@ -486,6 +561,7 @@ msgstr "KVM"
 #: share/virtualbricks.glade:1732
 #: share/virtualbricks.glade:1742
 #: share/virtualbricks.glade:1763
+#: share/virtualbricks.template.glade:1740
 msgid "<b>System and machine</b>"
 msgstr "<b>Sistema e macchina</b>"
 
@@ -493,6 +569,7 @@ msgstr "<b>Sistema e macchina</b>"
 #: share/virtualbricks.glade:1790
 #: share/virtualbricks.glade:1800
 #: share/virtualbricks.glade:1821
+#: share/virtualbricks.template.glade:1798
 msgid "disable graphical output"
 msgstr "disabilita output grafico"
 
@@ -500,6 +577,7 @@ msgstr "disabilita output grafico"
 #: share/virtualbricks.glade:1795
 #: share/virtualbricks.glade:1805
 #: share/virtualbricks.glade:1826
+#: share/virtualbricks.template.glade:1803
 msgid "disable graphical output and redirect serial I/Os to console"
 msgstr "disabilita output grafico e ridirigi I/O seriale alla console"
 
@@ -507,6 +585,7 @@ msgstr "disabilita output grafico e ridirigi I/O seriale alla console"
 #: share/virtualbricks.glade:1822
 #: share/virtualbricks.glade:1832
 #: share/virtualbricks.glade:1853
+#: share/virtualbricks.template.glade:1830
 msgid "Use VGA instead of Default"
 msgstr "Usa VGA invece del Default"
 
@@ -514,6 +593,7 @@ msgstr "Usa VGA invece del Default"
 #: share/virtualbricks.glade:1827
 #: share/virtualbricks.glade:1837
 #: share/virtualbricks.glade:1858
+#: share/virtualbricks.template.glade:1835
 msgid "simulate a standard VGA card with VESA Bochs Extensions (default is CL-GD5446 PCI VGA)"
 msgstr "simula una VGA standard con l'estensione VESA Bochs (il default è CL-GD5446 PCI VGA)"
 
@@ -521,6 +601,7 @@ msgstr "simula una VGA standard con l'estensione VESA Bochs (il default è CL-GD
 #: share/virtualbricks.glade:1842
 #: share/virtualbricks.glade:1852
 #: share/virtualbricks.glade:1873
+#: share/virtualbricks.template.glade:1850
 msgid "Start in vncserver"
 msgstr "Avvia in vncserver"
 
@@ -528,6 +609,7 @@ msgstr "Avvia in vncserver"
 #: share/virtualbricks.glade:1847
 #: share/virtualbricks.glade:1857
 #: share/virtualbricks.glade:1878
+#: share/virtualbricks.template.glade:1855
 msgid "start emulation in a VNC server on display"
 msgstr "avvia emulazione in un server VNC nel display"
 
@@ -535,6 +617,7 @@ msgstr "avvia emulazione in un server VNC nel display"
 #: share/virtualbricks.glade:1861
 #: share/virtualbricks.glade:1871
 #: share/virtualbricks.glade:1892
+#: share/virtualbricks.template.glade:1869
 msgid "on Display: "
 msgstr "sul Display:"
 
@@ -542,6 +625,7 @@ msgstr "sul Display:"
 #: share/virtualbricks.glade:1873
 #: share/virtualbricks.glade:1883
 #: share/virtualbricks.glade:1904
+#: share/virtualbricks.template.glade:1881
 msgid "select Dsiplay for VNC server"
 msgstr "seleziona il display per il server VNC"
 
@@ -549,6 +633,7 @@ msgstr "seleziona il display per il server VNC"
 #: share/virtualbricks.glade:1891
 #: share/virtualbricks.glade:1901
 #: share/virtualbricks.glade:1922
+#: share/virtualbricks.template.glade:1899
 msgid "SDL"
 msgstr "SDL"
 
@@ -556,6 +641,7 @@ msgstr "SDL"
 #: share/virtualbricks.glade:1903
 #: share/virtualbricks.glade:1913
 #: share/virtualbricks.glade:1934
+#: share/virtualbricks.template.glade:1911
 msgid "Portrait"
 msgstr "Verticale"
 
@@ -563,6 +649,7 @@ msgstr "Verticale"
 #: share/virtualbricks.glade:1925
 #: share/virtualbricks.glade:1935
 #: share/virtualbricks.glade:1956
+#: share/virtualbricks.template.glade:1933
 msgid "<b>Display Options</b>"
 msgstr "<b>Visualizza Opzioni</b>"
 
@@ -570,6 +657,7 @@ msgstr "<b>Visualizza Opzioni</b>"
 #: share/virtualbricks.glade:1954
 #: share/virtualbricks.glade:1964
 #: share/virtualbricks.glade:1985
+#: share/virtualbricks.template.glade:1962
 msgid "enable usb"
 msgstr "abilita usb"
 
@@ -577,6 +665,7 @@ msgstr "abilita usb"
 #: share/virtualbricks.glade:1959
 #: share/virtualbricks.glade:1969
 #: share/virtualbricks.glade:1990
+#: share/virtualbricks.template.glade:1967
 msgid "enable access to usb"
 msgstr "abilita l'accesso all'usb"
 
@@ -584,6 +673,7 @@ msgstr "abilita l'accesso all'usb"
 #: share/virtualbricks.glade:1990
 #: share/virtualbricks.glade:2000
 #: share/virtualbricks.glade:2021
+#: share/virtualbricks.template.glade:1998
 msgid "<b>USB settings</b>"
 msgstr "<b>Impostazioni USB</b>"
 
@@ -591,6 +681,7 @@ msgstr "<b>Impostazioni USB</b>"
 #: share/virtualbricks.glade:2027
 #: share/virtualbricks.glade:2037
 #: share/virtualbricks.glade:2058
+#: share/virtualbricks.template.glade:2035
 msgid "Set realtime clock to local time"
 msgstr "Imposta l'orologio come l'ora locale"
 
@@ -598,6 +689,7 @@ msgstr "Imposta l'orologio come l'ora locale"
 #: share/virtualbricks.glade:2032
 #: share/virtualbricks.glade:2042
 #: share/virtualbricks.glade:2063
+#: share/virtualbricks.template.glade:2040
 msgid "set the real time clock to local time [default=utc]"
 msgstr "imposta l'orologio come l'ora locale [default=utc]"
 
@@ -605,6 +697,7 @@ msgstr "imposta l'orologio come l'ora locale [default=utc]"
 #: share/virtualbricks.glade:2044
 #: share/virtualbricks.glade:2054
 #: share/virtualbricks.glade:2075
+#: share/virtualbricks.template.glade:2052
 msgid "Guest time drift compensation (TDF)"
 msgstr ""
 "Compensazione dello slittamento\n"
@@ -614,6 +707,7 @@ msgstr ""
 #: share/virtualbricks.glade:2062
 #: share/virtualbricks.glade:2072
 #: share/virtualbricks.glade:2093
+#: share/virtualbricks.template.glade:2070
 msgid "Keyboard: "
 msgstr "Tastiera:"
 
@@ -621,6 +715,7 @@ msgstr "Tastiera:"
 #: share/virtualbricks.glade:2097
 #: share/virtualbricks.glade:2119
 #: share/virtualbricks.glade:2140
+#: share/virtualbricks.template.glade:2117
 msgid "<b>Extra Settings</b>"
 msgstr "<b>Impostazioni Extra</b>"
 
@@ -628,6 +723,7 @@ msgstr "<b>Impostazioni Extra</b>"
 #: share/virtualbricks.glade:2143
 #: share/virtualbricks.glade:2165
 #: share/virtualbricks.glade:2186
+#: share/virtualbricks.template.glade:2163
 msgid "select emulated Soundcard "
 msgstr "seleziona Scheda audio emulata"
 
@@ -663,6 +759,14 @@ msgstr "seleziona Scheda audio emulata"
 #: share/virtualbricks.glade:4433
 #: share/virtualbricks.glade:4561
 #: share/virtualbricks.glade:4651
+#: share/virtualbricks.template.glade:2191
+#: share/virtualbricks.template.glade:2533
+#: share/virtualbricks.template.glade:3370
+#: share/virtualbricks.template.glade:3391
+#: share/virtualbricks.template.glade:4389
+#: share/virtualbricks.template.glade:4410
+#: share/virtualbricks.template.glade:4538
+#: share/virtualbricks.template.glade:4628
 msgid " \n"
 msgstr " \n"
 
@@ -670,6 +774,7 @@ msgstr " \n"
 #: share/virtualbricks.glade:2187
 #: share/virtualbricks.glade:2209
 #: share/virtualbricks.glade:2230
+#: share/virtualbricks.template.glade:2207
 msgid "<b>Audio Device Settings</b>"
 msgstr "<b>Impostazioni dispositivo audio</b>"
 
@@ -677,6 +782,7 @@ msgstr "<b>Impostazioni dispositivo audio</b>"
 #: share/virtualbricks.glade:2216
 #: share/virtualbricks.glade:2238
 #: share/virtualbricks.glade:2259
+#: share/virtualbricks.template.glade:2236
 msgid "Used RAM:"
 msgstr "RAM usata:"
 
@@ -688,6 +794,8 @@ msgstr "RAM usata:"
 #: share/virtualbricks.glade:2311
 #: share/virtualbricks.glade:2285
 #: share/virtualbricks.glade:2332
+#: share/virtualbricks.template.glade:2262
+#: share/virtualbricks.template.glade:2309
 msgid " MB"
 msgstr " MB"
 
@@ -695,6 +803,7 @@ msgstr " MB"
 #: share/virtualbricks.glade:2260
 #: share/virtualbricks.glade:2282
 #: share/virtualbricks.glade:2303
+#: share/virtualbricks.template.glade:2280
 msgid "KVM Shadow Memory: "
 msgstr "KVM Shadow Memory: "
 
@@ -702,6 +811,7 @@ msgstr "KVM Shadow Memory: "
 #: share/virtualbricks.glade:2307
 #: share/virtualbricks.glade:2329
 #: share/virtualbricks.glade:2350
+#: share/virtualbricks.template.glade:2327
 msgid "<b>Memory Settings</b>"
 msgstr "<b>Impostazioni memoria</b>"
 
@@ -709,6 +819,7 @@ msgstr "<b>Impostazioni memoria</b>"
 #: share/virtualbricks.glade:2368
 #: share/virtualbricks.glade:2390
 #: share/virtualbricks.glade:2411
+#: share/virtualbricks.template.glade:2388
 msgid "System"
 msgstr "Sistema"
 
@@ -716,6 +827,7 @@ msgstr "Sistema"
 #: share/virtualbricks.glade:2394
 #: share/virtualbricks.glade:2416
 #: share/virtualbricks.glade:2437
+#: share/virtualbricks.template.glade:2414
 msgid "Disable networking"
 msgstr "Disabilita rete"
 
@@ -723,6 +835,7 @@ msgstr "Disabilita rete"
 #: share/virtualbricks.glade:2421
 #: share/virtualbricks.glade:2443
 #: share/virtualbricks.glade:2464
+#: share/virtualbricks.template.glade:2441
 msgid "<b>No Network</b>"
 msgstr "<b>Nessuna rete</b>"
 
@@ -730,6 +843,7 @@ msgstr "<b>Nessuna rete</b>"
 #: share/virtualbricks.glade:2448
 #: share/virtualbricks.glade:2470
 #: share/virtualbricks.glade:2491
+#: share/virtualbricks.template.glade:2468
 msgid "Start with usermode network (default)"
 msgstr "Avvia con la rete usermode (default)"
 
@@ -737,6 +851,7 @@ msgstr "Avvia con la rete usermode (default)"
 #: share/virtualbricks.glade:2474
 #: share/virtualbricks.glade:2496
 #: share/virtualbricks.glade:2517
+#: share/virtualbricks.template.glade:2494
 msgid "<b>Connect to network</b>"
 msgstr "<b>Connetti alla rete</b>"
 
@@ -748,6 +863,8 @@ msgstr "<b>Connetti alla rete</b>"
 #: share/virtualbricks.glade:4176
 #: share/virtualbricks.glade:2543
 #: share/virtualbricks.glade:4197
+#: share/virtualbricks.template.glade:2520
+#: share/virtualbricks.template.glade:4174
 msgid "Connect to:"
 msgstr "Connetti a:"
 
@@ -755,6 +872,7 @@ msgstr "Connetti a:"
 #: share/virtualbricks.glade:2524
 #: share/virtualbricks.glade:2546
 #: share/virtualbricks.glade:2567
+#: share/virtualbricks.template.glade:2544
 msgid "Virtual ethernet model:"
 msgstr "Modello virtual ethernet:"
 
@@ -762,6 +880,7 @@ msgstr "Modello virtual ethernet:"
 #: share/virtualbricks.glade:2535
 #: share/virtualbricks.glade:2557
 #: share/virtualbricks.glade:2578
+#: share/virtualbricks.template.glade:2555
 msgid ""
 "\n"
 "rtl8139\n"
@@ -789,6 +908,7 @@ msgstr ""
 #: share/virtualbricks.glade:2555
 #: share/virtualbricks.glade:2577
 #: share/virtualbricks.glade:2598
+#: share/virtualbricks.template.glade:2575
 msgid "Mac address:"
 msgstr "Indirizzo Mac:"
 
@@ -796,6 +916,7 @@ msgstr "Indirizzo Mac:"
 #: share/virtualbricks.glade:2576
 #: share/virtualbricks.glade:2598
 #: share/virtualbricks.glade:2619
+#: share/virtualbricks.template.glade:2596
 msgid "Randomize"
 msgstr "Randomizza"
 
@@ -803,6 +924,7 @@ msgstr "Randomizza"
 #: share/virtualbricks.glade:2606
 #: share/virtualbricks.glade:2628
 #: share/virtualbricks.glade:2649
+#: share/virtualbricks.template.glade:2626
 msgid "Set up a new network card"
 msgstr "Imposta una nuova scheda di rete"
 
@@ -810,6 +932,7 @@ msgstr "Imposta una nuova scheda di rete"
 #: share/virtualbricks.glade:2633
 #: share/virtualbricks.glade:2655
 #: share/virtualbricks.glade:2676
+#: share/virtualbricks.template.glade:2653
 msgid "Add Network card"
 msgstr "Aggiungi una scheda di rete"
 
@@ -817,6 +940,7 @@ msgstr "Aggiungi una scheda di rete"
 #: share/virtualbricks.glade:2659
 #: share/virtualbricks.glade:2681
 #: share/virtualbricks.glade:2702
+#: share/virtualbricks.template.glade:2679
 msgid "Edit selected network card or redirection"
 msgstr "Modifica la scheda di rete selezionata o la redirezione"
 
@@ -824,6 +948,7 @@ msgstr "Modifica la scheda di rete selezionata o la redirezione"
 #: share/virtualbricks.glade:2686
 #: share/virtualbricks.glade:2708
 #: share/virtualbricks.glade:2729
+#: share/virtualbricks.template.glade:2706
 msgid "Edit"
 msgstr "Modifica"
 
@@ -831,6 +956,7 @@ msgstr "Modifica"
 #: share/virtualbricks.glade:2712
 #: share/virtualbricks.glade:2734
 #: share/virtualbricks.glade:2755
+#: share/virtualbricks.template.glade:2732
 msgid "Remove selected network card or redirection"
 msgstr "Rimuovi la scheda di rete selezionata o la redirezione"
 
@@ -844,6 +970,8 @@ msgstr "Rimuovi la scheda di rete selezionata o la redirezione"
 #: share/virtualbricks.glade:5502
 #: share/virtualbricks.glade:2783
 #: share/virtualbricks.glade:5523
+#: share/virtualbricks.template.glade:2760
+#: share/virtualbricks.template.glade:5500
 msgid "Remove"
 msgstr "Rimuovi"
 
@@ -851,6 +979,7 @@ msgstr "Rimuovi"
 #: share/virtualbricks.glade:2800
 #: share/virtualbricks.glade:2822
 #: share/virtualbricks.glade:2843
+#: share/virtualbricks.template.glade:2820
 msgid "<b>SMB share</b>"
 msgstr "<b>Condivisione SMB</b>"
 
@@ -858,6 +987,7 @@ msgstr "<b>Condivisione SMB</b>"
 #: share/virtualbricks.glade:2825
 #: share/virtualbricks.glade:2847
 #: share/virtualbricks.glade:2868
+#: share/virtualbricks.template.glade:2845
 msgid "SMB Share"
 msgstr "Condivisione SMB"
 
@@ -865,6 +995,7 @@ msgstr "Condivisione SMB"
 #: share/virtualbricks.glade:2881
 #: share/virtualbricks.glade:2903
 #: share/virtualbricks.glade:2924
+#: share/virtualbricks.template.glade:2901
 msgid "<b>Network cards</b>"
 msgstr "<b>Schede di rete</b>"
 
@@ -872,6 +1003,7 @@ msgstr "<b>Schede di rete</b>"
 #: share/virtualbricks.glade:2914
 #: share/virtualbricks.glade:2936
 #: share/virtualbricks.glade:2957
+#: share/virtualbricks.template.glade:2934
 msgid "Network"
 msgstr "Rete"
 
@@ -879,6 +1011,7 @@ msgstr "Rete"
 #: share/virtualbricks.glade:2942
 #: share/virtualbricks.glade:2964
 #: share/virtualbricks.glade:2985
+#: share/virtualbricks.template.glade:2962
 msgid "Use a custom kernel"
 msgstr "Usa kernel personalizzato"
 
@@ -886,6 +1019,7 @@ msgstr "Usa kernel personalizzato"
 #: share/virtualbricks.glade:2955
 #: share/virtualbricks.glade:2977
 #: share/virtualbricks.glade:2998
+#: share/virtualbricks.template.glade:2975
 msgid "Specify initial ramdisk"
 msgstr "Specifica ramdisk iniziale"
 
@@ -893,6 +1027,7 @@ msgstr "Specifica ramdisk iniziale"
 #: share/virtualbricks.glade:2986
 #: share/virtualbricks.glade:3008
 #: share/virtualbricks.glade:3029
+#: share/virtualbricks.template.glade:3006
 msgid "Parameters to append to command line:"
 msgstr "Parametri da appendere alla riga di comando:"
 
@@ -900,6 +1035,7 @@ msgstr "Parametri da appendere alla riga di comando:"
 #: share/virtualbricks.glade:3096
 #: share/virtualbricks.glade:3120
 #: share/virtualbricks.glade:3141
+#: share/virtualbricks.template.glade:3118
 msgid "Enable kernel debugging"
 msgstr "Abilita il debugging del kernel"
 
@@ -907,6 +1043,7 @@ msgstr "Abilita il debugging del kernel"
 #: share/virtualbricks.glade:3111
 #: share/virtualbricks.glade:3135
 #: share/virtualbricks.glade:3156
+#: share/virtualbricks.template.glade:3133
 msgid "GNU debugger TCP port:"
 msgstr "Porta TCP debugger GNU:"
 
@@ -914,6 +1051,7 @@ msgstr "Porta TCP debugger GNU:"
 #: share/virtualbricks.glade:3144
 #: share/virtualbricks.glade:3168
 #: share/virtualbricks.glade:3189
+#: share/virtualbricks.template.glade:3166
 msgid "<b>Booting Linux</b>"
 msgstr "<b>Booting Linux</b>"
 
@@ -921,6 +1059,7 @@ msgstr "<b>Booting Linux</b>"
 #: share/virtualbricks.glade:3171
 #: share/virtualbricks.glade:3195
 #: share/virtualbricks.glade:3216
+#: share/virtualbricks.template.glade:3193
 msgid "Customize Linux Boot"
 msgstr "Personalizza Linux Boot"
 
@@ -928,6 +1067,7 @@ msgstr "Personalizza Linux Boot"
 #: share/virtualbricks.glade:3264
 #: share/virtualbricks.glade:3288
 #: share/virtualbricks.glade:3309
+#: share/virtualbricks.template.glade:3286
 msgid "<b>Virtual Machine Icon</b>"
 msgstr "<b>Icona Macchina Virtuale</b>"
 
@@ -943,6 +1083,8 @@ msgstr "<b>Icona Macchina Virtuale</b>"
 #: share/virtualbricks.glade:8217
 #: share/virtualbricks.glade:3349
 #: share/virtualbricks.glade:8238
+#: share/virtualbricks.template.glade:3326
+#: share/virtualbricks.template.glade:8215
 msgid "Brick Config"
 msgstr "Configura Mattone"
 
@@ -954,6 +1096,8 @@ msgstr "Configura Mattone"
 #: share/virtualbricks.glade:4401
 #: share/virtualbricks.glade:3403
 #: share/virtualbricks.glade:4422
+#: share/virtualbricks.template.glade:3380
+#: share/virtualbricks.template.glade:4399
 msgid "<=== connect ===>"
 msgstr "<=== connetti ===>"
 
@@ -961,6 +1105,7 @@ msgstr "<=== connetti ===>"
 #: share/virtualbricks.glade:3387
 #: share/virtualbricks.glade:3411
 #: share/virtualbricks.glade:3432
+#: share/virtualbricks.template.glade:3409
 msgid "Plugs"
 msgstr "Plugs"
 
@@ -968,6 +1113,7 @@ msgstr "Plugs"
 #: share/virtualbricks.glade:3403
 #: share/virtualbricks.glade:3427
 #: share/virtualbricks.glade:3448
+#: share/virtualbricks.template.glade:3425
 msgid "Interface Speed (Left to Right)"
 msgstr "Velocità interfaccia (da sinistra a destra)"
 
@@ -987,6 +1133,10 @@ msgstr "Velocità interfaccia (da sinistra a destra)"
 #: share/virtualbricks.glade:3503
 #: share/virtualbricks.glade:3590
 #: share/virtualbricks.glade:3605
+#: share/virtualbricks.template.glade:3442
+#: share/virtualbricks.template.glade:3480
+#: share/virtualbricks.template.glade:3567
+#: share/virtualbricks.template.glade:3582
 msgid ""
 "B/s\n"
 "KB/s\n"
@@ -1014,6 +1164,10 @@ msgstr ""
 #: share/virtualbricks.glade:3518
 #: share/virtualbricks.glade:3620
 #: share/virtualbricks.glade:3633
+#: share/virtualbricks.template.glade:3456
+#: share/virtualbricks.template.glade:3495
+#: share/virtualbricks.template.glade:3597
+#: share/virtualbricks.template.glade:3610
 msgid ""
 "Uniform Distribution\n"
 "Normal Distribution"
@@ -1025,6 +1179,7 @@ msgstr ""
 #: share/virtualbricks.glade:3487
 #: share/virtualbricks.glade:3511
 #: share/virtualbricks.glade:3532
+#: share/virtualbricks.template.glade:3509
 msgid "Interface Speed (Right to Left)"
 msgstr "Velocità interfaccia (da destra a sinistra)"
 
@@ -1032,6 +1187,7 @@ msgstr "Velocità interfaccia (da destra a sinistra)"
 #: share/virtualbricks.glade:3498
 #: share/virtualbricks.glade:3522
 #: share/virtualbricks.glade:3543
+#: share/virtualbricks.template.glade:3520
 msgid "Bandwidth Restriction (Left to Right)"
 msgstr "Restrizione di Banda (da sinistra a destra)"
 
@@ -1039,6 +1195,7 @@ msgstr "Restrizione di Banda (da sinistra a destra)"
 #: share/virtualbricks.glade:3509
 #: share/virtualbricks.glade:3533
 #: share/virtualbricks.glade:3554
+#: share/virtualbricks.template.glade:3531
 msgid "Bandwidth Restriction (Right to Left)"
 msgstr "Restrizione di Banda (da destra a sinistra)"
 
@@ -1046,6 +1203,7 @@ msgstr "Restrizione di Banda (da destra a sinistra)"
 #: share/virtualbricks.glade:3606
 #: share/virtualbricks.glade:3630
 #: share/virtualbricks.glade:3651
+#: share/virtualbricks.template.glade:3628
 msgid "Bandwidth"
 msgstr "Larghezza di banda"
 
@@ -1053,6 +1211,7 @@ msgstr "Larghezza di banda"
 #: share/virtualbricks.glade:3624
 #: share/virtualbricks.glade:3648
 #: share/virtualbricks.glade:3669
+#: share/virtualbricks.template.glade:3646
 msgid "Delay (Left to Right)"
 msgstr "Ritardo (da sinistra a destra)"
 
@@ -1064,6 +1223,8 @@ msgstr "Ritardo (da sinistra a destra)"
 #: share/virtualbricks.glade:3706
 #: share/virtualbricks.glade:3688
 #: share/virtualbricks.glade:3727
+#: share/virtualbricks.template.glade:3665
+#: share/virtualbricks.template.glade:3704
 msgid "ms"
 msgstr "ms"
 
@@ -1071,6 +1232,7 @@ msgstr "ms"
 #: share/virtualbricks.glade:3663
 #: share/virtualbricks.glade:3687
 #: share/virtualbricks.glade:3708
+#: share/virtualbricks.template.glade:3685
 msgid "Delay (Right to Left)"
 msgstr "Ritardo (da destra a sinistra)"
 
@@ -1078,6 +1240,7 @@ msgstr "Ritardo (da destra a sinistra)"
 #: share/virtualbricks.glade:3702
 #: share/virtualbricks.glade:3726
 #: share/virtualbricks.glade:3747
+#: share/virtualbricks.template.glade:3724
 msgid "Buffer size"
 msgstr "Dimensione Buffer"
 
@@ -1089,6 +1252,8 @@ msgstr "Dimensione Buffer"
 #: share/virtualbricks.glade:4034
 #: share/virtualbricks.glade:3766
 #: share/virtualbricks.glade:4055
+#: share/virtualbricks.template.glade:3743
+#: share/virtualbricks.template.glade:4032
 msgid "Bytes"
 msgstr "Bytes"
 
@@ -1099,6 +1264,8 @@ msgstr "Bytes"
 #: virtualbricks/virtualbricks_BrickFactory.py:620
 #: share/virtualbricks.glade:3790
 #: virtualbricks/brickfactory.py:603
+#: share/virtualbricks.template.glade:3767
+#: virtualbricks/brickfactory.py:596
 msgid "Delay"
 msgstr "Ritardo"
 
@@ -1106,6 +1273,7 @@ msgstr "Ritardo"
 #: share/virtualbricks.glade:3764
 #: share/virtualbricks.glade:3788
 #: share/virtualbricks.glade:3809
+#: share/virtualbricks.template.glade:3786
 msgid "Packet loss (Left to Right)"
 msgstr "Perdita pacchetti (da sinistra a destra)"
 
@@ -1125,6 +1293,10 @@ msgstr "Perdita pacchetti (da sinistra a destra)"
 #: share/virtualbricks.glade:3866
 #: share/virtualbricks.glade:3904
 #: share/virtualbricks.glade:3942
+#: share/virtualbricks.template.glade:3805
+#: share/virtualbricks.template.glade:3843
+#: share/virtualbricks.template.glade:3881
+#: share/virtualbricks.template.glade:3919
 msgid "percent"
 msgstr "percentuale"
 
@@ -1132,6 +1304,7 @@ msgstr "percentuale"
 #: share/virtualbricks.glade:3802
 #: share/virtualbricks.glade:3826
 #: share/virtualbricks.glade:3847
+#: share/virtualbricks.template.glade:3824
 msgid "Packet loss (Right to Left)"
 msgstr "Perdita pacchetti (da destra a sinistra)"
 
@@ -1139,6 +1312,7 @@ msgstr "Perdita pacchetti (da destra a sinistra)"
 #: share/virtualbricks.glade:3840
 #: share/virtualbricks.glade:3864
 #: share/virtualbricks.glade:3885
+#: share/virtualbricks.template.glade:3862
 msgid "Duplicate packets (Left to Right)"
 msgstr "Pacchetti duplicati (da sinistra a destra)"
 
@@ -1146,6 +1320,7 @@ msgstr "Pacchetti duplicati (da sinistra a destra)"
 #: share/virtualbricks.glade:3878
 #: share/virtualbricks.glade:3902
 #: share/virtualbricks.glade:3923
+#: share/virtualbricks.template.glade:3900
 msgid "Duplicate Packets (Right to Left)"
 msgstr "Pacchetti duplicati (da destra a sinistra)"
 
@@ -1153,6 +1328,7 @@ msgstr "Pacchetti duplicati (da destra a sinistra)"
 #: share/virtualbricks.glade:3916
 #: share/virtualbricks.glade:3940
 #: share/virtualbricks.glade:3961
+#: share/virtualbricks.template.glade:3938
 msgid "Noise Factor [swapped bits/MB]"
 msgstr "Fattore di rumore [bits/MB scambiati]"
 
@@ -1160,6 +1336,7 @@ msgstr "Fattore di rumore [bits/MB scambiati]"
 #: share/virtualbricks.glade:3943
 #: share/virtualbricks.glade:3967
 #: share/virtualbricks.glade:3988
+#: share/virtualbricks.template.glade:3965
 msgid "Gilbert model"
 msgstr "Modello di Gilbert"
 
@@ -1167,6 +1344,7 @@ msgstr "Modello di Gilbert"
 #: share/virtualbricks.glade:3957
 #: share/virtualbricks.glade:3981
 #: share/virtualbricks.glade:4002
+#: share/virtualbricks.template.glade:3979
 msgid "Mean loss Lenght:"
 msgstr "Lunghezza media perdita:"
 
@@ -1174,6 +1352,7 @@ msgstr "Lunghezza media perdita:"
 #: share/virtualbricks.glade:3986
 #: share/virtualbricks.glade:4010
 #: share/virtualbricks.glade:4031
+#: share/virtualbricks.template.glade:4008
 msgid "Discard packets larger than:"
 msgstr "Rigetta pacchetti più grandi di:"
 
@@ -1181,6 +1360,7 @@ msgstr "Rigetta pacchetti più grandi di:"
 #: share/virtualbricks.glade:4030
 #: share/virtualbricks.glade:4054
 #: share/virtualbricks.glade:4075
+#: share/virtualbricks.template.glade:4052
 msgid "Disruptions"
 msgstr "Interruzioni"
 
@@ -1188,6 +1368,7 @@ msgstr "Interruzioni"
 #: share/virtualbricks.glade:4062
 #: share/virtualbricks.glade:4086
 #: share/virtualbricks.glade:4107
+#: share/virtualbricks.template.glade:4084
 msgid "Number of ports: "
 msgstr "Numero di porte:"
 
@@ -1198,6 +1379,7 @@ msgstr "Numero di porte:"
 #: share/virtualbricks.glade:4112
 #: share/virtualbricks.glade:4471
 #: share/virtualbricks.glade:4133
+#: share/virtualbricks.template.glade:4110
 msgid "Use FSTP"
 msgstr "Usa FSTP"
 
@@ -1208,6 +1390,7 @@ msgstr "Usa FSTP"
 #: share/virtualbricks.glade:4124
 #: share/virtualbricks.glade:4483
 #: share/virtualbricks.glade:4145
+#: share/virtualbricks.template.glade:4122
 msgid "Hub mode"
 msgstr "Modalità Hub"
 
@@ -1215,6 +1398,7 @@ msgstr "Modalità Hub"
 #: share/virtualbricks.glade:4161
 #: share/virtualbricks.glade:4185
 #: share/virtualbricks.glade:4206
+#: share/virtualbricks.template.glade:4183
 msgid ""
 " \n"
 "\n"
@@ -1226,6 +1410,7 @@ msgstr ""
 #: share/virtualbricks.glade:4192
 #: share/virtualbricks.glade:4216
 #: share/virtualbricks.glade:4237
+#: share/virtualbricks.template.glade:4214
 msgid "Don't touch interface settings"
 msgstr "Non toccare le impostazioni di interfaccia"
 
@@ -1233,6 +1418,7 @@ msgstr "Non toccare le impostazioni di interfaccia"
 #: share/virtualbricks.glade:4202
 #: share/virtualbricks.glade:4226
 #: share/virtualbricks.glade:4247
+#: share/virtualbricks.template.glade:4224
 msgid "Use DHCP"
 msgstr "Usa DHCP"
 
@@ -1240,6 +1426,7 @@ msgstr "Usa DHCP"
 #: share/virtualbricks.glade:4217
 #: share/virtualbricks.glade:4241
 #: share/virtualbricks.glade:4262
+#: share/virtualbricks.template.glade:4239
 msgid "Manual settings"
 msgstr "Impostazion manuali"
 
@@ -1247,6 +1434,7 @@ msgstr "Impostazion manuali"
 #: share/virtualbricks.glade:4247
 #: share/virtualbricks.glade:4271
 #: share/virtualbricks.glade:4292
+#: share/virtualbricks.template.glade:4269
 msgid "IP Address:  "
 msgstr "Indirizzo IP:"
 
@@ -1254,6 +1442,7 @@ msgstr "Indirizzo IP:"
 #: share/virtualbricks.glade:4254
 #: share/virtualbricks.glade:4278
 #: share/virtualbricks.glade:4299
+#: share/virtualbricks.template.glade:4276
 msgid "Netmask:  "
 msgstr "Netmask:  "
 
@@ -1261,6 +1450,7 @@ msgstr "Netmask:  "
 #: share/virtualbricks.glade:4265
 #: share/virtualbricks.glade:4289
 #: share/virtualbricks.glade:4310
+#: share/virtualbricks.template.glade:4287
 msgid "Gateway:  "
 msgstr "Gateway:  "
 
@@ -1268,6 +1458,7 @@ msgstr "Gateway:  "
 #: share/virtualbricks.glade:4279
 #: share/virtualbricks.glade:4303
 #: share/virtualbricks.glade:4324
+#: share/virtualbricks.template.glade:4301
 msgid "10.0.0.1"
 msgstr "10.0.0.1"
 
@@ -1275,6 +1466,7 @@ msgstr "10.0.0.1"
 #: share/virtualbricks.glade:4294
 #: share/virtualbricks.glade:4318
 #: share/virtualbricks.glade:4339
+#: share/virtualbricks.template.glade:4316
 msgid "255.0.0.0"
 msgstr "255.0.0.0"
 
@@ -1282,6 +1474,7 @@ msgstr "255.0.0.0"
 #: share/virtualbricks.glade:4335
 #: share/virtualbricks.glade:4359
 #: share/virtualbricks.glade:4380
+#: share/virtualbricks.template.glade:4357
 msgid "<b>Tap Configuration</b>"
 msgstr "<b>Configurazione Tap</b>"
 
@@ -1307,6 +1500,8 @@ msgstr ""
 #: share/virtualbricks.glade:4624
 #: share/virtualbricks.glade:4555
 #: share/virtualbricks.glade:4645
+#: share/virtualbricks.template.glade:4532
+#: share/virtualbricks.template.glade:4622
 msgid "Connect to"
 msgstr "Connetti a"
 
@@ -1315,6 +1510,7 @@ msgstr "Connetti a"
 #: share/virtualbricks.glade:4555
 #: share/virtualbricks.glade:4566
 #: share/virtualbricks.glade:4587
+#: share/virtualbricks.template.glade:4564
 msgid "Listen to port:"
 msgstr "Porta di ascolto:"
 
@@ -1323,6 +1519,7 @@ msgstr "Porta di ascolto:"
 #: share/virtualbricks.glade:4565
 #: share/virtualbricks.glade:4576
 #: share/virtualbricks.glade:4597
+#: share/virtualbricks.template.glade:4574
 msgid "Expect password:"
 msgstr "Password attesa:"
 
@@ -1331,6 +1528,7 @@ msgstr "Password attesa:"
 #: share/virtualbricks.glade:4645
 #: share/virtualbricks.glade:4656
 #: share/virtualbricks.glade:4677
+#: share/virtualbricks.template.glade:4654
 msgid "Local port:"
 msgstr "Porta locale:"
 
@@ -1339,6 +1537,7 @@ msgstr "Porta locale:"
 #: share/virtualbricks.glade:4656
 #: share/virtualbricks.glade:4667
 #: share/virtualbricks.glade:4688
+#: share/virtualbricks.template.glade:4665
 msgid "Password:"
 msgstr "Password:"
 
@@ -1354,6 +1553,8 @@ msgstr "Password:"
 #: share/virtualbricks.glade:7973
 #: share/virtualbricks.glade:4713
 #: share/virtualbricks.glade:7994
+#: share/virtualbricks.template.glade:4690
+#: share/virtualbricks.template.glade:7971
 msgid "Tunnel Server"
 msgstr "Tunnel Server"
 
@@ -1368,6 +1569,8 @@ msgstr "Tunnel Server"
 #: share/virtualbricks.glade:6951
 #: share/virtualbricks.glade:4737
 #: share/virtualbricks.glade:6972
+#: share/virtualbricks.template.glade:4714
+#: share/virtualbricks.template.glade:6949
 msgid "port:"
 msgstr "porta:"
 
@@ -1393,6 +1596,9 @@ msgstr "porta:"
 #: share/virtualbricks.glade:8070
 #: share/virtualbricks.glade:8426
 #: share/virtualbricks.glade:8425
+#: share/virtualbricks.template.glade:7649
+#: share/virtualbricks.template.glade:8047
+#: share/virtualbricks.template.glade:8402
 msgid "Cancel"
 msgstr "Annulla"
 
@@ -1418,6 +1624,9 @@ msgstr "Annulla"
 #: share/virtualbricks.glade:8085
 #: share/virtualbricks.glade:8441
 #: share/virtualbricks.glade:8440
+#: share/virtualbricks.template.glade:7662
+#: share/virtualbricks.template.glade:8062
+#: share/virtualbricks.template.glade:8417
 msgid "Ok"
 msgstr "Ok"
 
@@ -1427,6 +1636,7 @@ msgstr "Ok"
 #: share/virtualbricks.glade:4860
 #: share/virtualbricks.glade:4871
 #: share/virtualbricks.glade:4892
+#: share/virtualbricks.template.glade:4869
 msgid "Virtualbricks Settings"
 msgstr "Impostazioni Virtualbricks"
 
@@ -1436,6 +1646,7 @@ msgstr "Impostazioni Virtualbricks"
 #: share/virtualbricks.glade:4873
 #: share/virtualbricks.glade:4884
 #: share/virtualbricks.glade:4905
+#: share/virtualbricks.template.glade:4882
 msgid "<b>System Settings</b>"
 msgstr "<b>Impostazioni di sistema</b>"
 
@@ -1445,6 +1656,7 @@ msgstr "<b>Impostazioni di sistema</b>"
 #: share/virtualbricks.glade:4908
 #: share/virtualbricks.glade:4919
 #: share/virtualbricks.glade:4940
+#: share/virtualbricks.template.glade:4917
 msgid "Bricks directory"
 msgstr "Direttorio Mattoni"
 
@@ -1472,6 +1684,10 @@ msgstr "Direttorio Mattoni"
 #: share/virtualbricks.glade:5084
 #: share/virtualbricks.glade:5233
 #: share/virtualbricks.glade:5317
+#: share/virtualbricks.template.glade:4925
+#: share/virtualbricks.template.glade:5061
+#: share/virtualbricks.template.glade:5210
+#: share/virtualbricks.template.glade:5294
 msgid "Select A Folder"
 msgstr "Seleziona una carella"
 
@@ -1481,6 +1697,7 @@ msgstr "Seleziona una carella"
 #: share/virtualbricks.glade:4927
 #: share/virtualbricks.glade:4938
 #: share/virtualbricks.glade:4959
+#: share/virtualbricks.template.glade:4936
 msgid "X-window terminal command"
 msgstr ""
 "Comando per\n"
@@ -1492,6 +1709,7 @@ msgstr ""
 #: share/virtualbricks.glade:4938
 #: share/virtualbricks.glade:4949
 #: share/virtualbricks.glade:4970
+#: share/virtualbricks.template.glade:4947
 msgid "X-window sudo command"
 msgstr ""
 "Comando per\n"
@@ -1503,6 +1721,7 @@ msgstr ""
 #: share/virtualbricks.glade:4949
 #: share/virtualbricks.glade:4960
 #: share/virtualbricks.glade:4981
+#: share/virtualbricks.template.glade:4958
 msgid "your favorite x-terminal-emulator"
 msgstr "x-terminal-emulator preferito"
 
@@ -1512,6 +1731,7 @@ msgstr "x-terminal-emulator preferito"
 #: share/virtualbricks.glade:4963
 #: share/virtualbricks.glade:4974
 #: share/virtualbricks.glade:4995
+#: share/virtualbricks.template.glade:4972
 msgid "command to perform administrative actions on your system"
 msgstr "comando per eseguire azioni amministrative nel sistema"
 
@@ -1521,6 +1741,7 @@ msgstr "comando per eseguire azioni amministrative nel sistema"
 #: share/virtualbricks.glade:4987
 #: share/virtualbricks.glade:4998
 #: share/virtualbricks.glade:5019
+#: share/virtualbricks.template.glade:4996
 msgid "Enable SysTray"
 msgstr "Abilita SysTray"
 
@@ -1530,6 +1751,7 @@ msgstr "Abilita SysTray"
 #: share/virtualbricks.glade:5008
 #: share/virtualbricks.glade:5019
 #: share/virtualbricks.glade:5040
+#: share/virtualbricks.template.glade:5017
 msgid "<b>General</b>"
 msgstr "<b>Generali</b>"
 
@@ -1539,6 +1761,7 @@ msgstr "<b>Generali</b>"
 #: share/virtualbricks.glade:5044
 #: share/virtualbricks.glade:5055
 #: share/virtualbricks.glade:5076
+#: share/virtualbricks.template.glade:5053
 msgid "VDE binaries path"
 msgstr ""
 "Percorso\n"
@@ -1550,6 +1773,7 @@ msgstr ""
 #: share/virtualbricks.glade:5050
 #: share/virtualbricks.glade:5061
 #: share/virtualbricks.glade:5082
+#: share/virtualbricks.template.glade:5059
 msgid "Path for vde components installed on the system"
 msgstr "Percorso per componenti vde installati nel sistema"
 
@@ -1565,6 +1789,8 @@ msgstr "Percorso per componenti vde installati nel sistema"
 #: share/virtualbricks.glade:5225
 #: share/virtualbricks.glade:5097
 #: share/virtualbricks.glade:5246
+#: share/virtualbricks.template.glade:5074
+#: share/virtualbricks.template.glade:5223
 msgid "Status:"
 msgstr "Stato:"
 
@@ -1574,6 +1800,7 @@ msgstr "Stato:"
 #: share/virtualbricks.glade:5081
 #: share/virtualbricks.glade:5092
 #: share/virtualbricks.glade:5113
+#: share/virtualbricks.template.glade:5090
 msgid ""
 "<span color=\"red\">Error:</span>\n"
 "invalid path for vde binaries"
@@ -1587,6 +1814,7 @@ msgstr ""
 #: share/virtualbricks.glade:5108
 #: share/virtualbricks.glade:5119
 #: share/virtualbricks.glade:5140
+#: share/virtualbricks.template.glade:5117
 msgid "Use python support"
 msgstr "Usa supporto python"
 
@@ -1596,6 +1824,7 @@ msgstr "Usa supporto python"
 #: share/virtualbricks.glade:5112
 #: share/virtualbricks.glade:5123
 #: share/virtualbricks.glade:5144
+#: share/virtualbricks.template.glade:5121
 msgid "Use native python support from libvdeplug"
 msgstr "Usa supporto nativo python da libvdeplug"
 
@@ -1605,6 +1834,7 @@ msgstr "Usa supporto nativo python da libvdeplug"
 #: share/virtualbricks.glade:5121
 #: share/virtualbricks.glade:5132
 #: share/virtualbricks.glade:5153
+#: share/virtualbricks.template.glade:5130
 msgid "Allow female plugs on devices"
 msgstr "Permetti plugs femmina nei dispositivi"
 
@@ -1614,6 +1844,7 @@ msgstr "Permetti plugs femmina nei dispositivi"
 #: share/virtualbricks.glade:5125
 #: share/virtualbricks.glade:5136
 #: share/virtualbricks.glade:5157
+#: share/virtualbricks.template.glade:5134
 msgid "Allow use of female plugs with all brick types"
 msgstr "Permetti l'uso dei plugs femmina con tutti i tipi di mattoni"
 
@@ -1623,6 +1854,7 @@ msgstr "Permetti l'uso dei plugs femmina con tutti i tipi di mattoni"
 #: share/virtualbricks.glade:5134
 #: share/virtualbricks.glade:5145
 #: share/virtualbricks.glade:5166
+#: share/virtualbricks.template.glade:5143
 msgid "Network topology loop detection"
 msgstr "Rileva loop della topologia di rete"
 
@@ -1632,6 +1864,7 @@ msgstr "Rileva loop della topologia di rete"
 #: share/virtualbricks.glade:5138
 #: share/virtualbricks.glade:5149
 #: share/virtualbricks.glade:5170
+#: share/virtualbricks.template.glade:5147
 msgid "If enabled, detect network loops when starting the bricks, and generate an error."
 msgstr "Se abilitato, rileva loop di rete quando si avviano i mattoni, e fenera un errore."
 
@@ -1641,6 +1874,7 @@ msgstr "Se abilitato, rileva loop di rete quando si avviano i mattoni, e fenera 
 #: share/virtualbricks.glade:5152
 #: share/virtualbricks.glade:5163
 #: share/virtualbricks.glade:5184
+#: share/virtualbricks.template.glade:5161
 msgid "<b>Vde</b>"
 msgstr "<b>Vde</b>"
 
@@ -1650,6 +1884,7 @@ msgstr "<b>Vde</b>"
 #: share/virtualbricks.glade:5193
 #: share/virtualbricks.glade:5204
 #: share/virtualbricks.glade:5225
+#: share/virtualbricks.template.glade:5202
 msgid "Qemu/KVM binaries path"
 msgstr "Percorso binari Qemu/KVM"
 
@@ -1659,6 +1894,7 @@ msgstr "Percorso binari Qemu/KVM"
 #: share/virtualbricks.glade:5199
 #: share/virtualbricks.glade:5210
 #: share/virtualbricks.glade:5231
+#: share/virtualbricks.template.glade:5208
 msgid "Path for qemu and kvm binaries"
 msgstr "Percorso per i binari di qemu e kvm"
 
@@ -1668,6 +1904,7 @@ msgstr "Percorso per i binari di qemu e kvm"
 #: share/virtualbricks.glade:5230
 #: share/virtualbricks.glade:5241
 #: share/virtualbricks.glade:5262
+#: share/virtualbricks.template.glade:5239
 msgid ""
 "<span color=\"red\">Error:</span>\n"
 "invalid path for qemu/kvm binaries"
@@ -1681,6 +1918,7 @@ msgstr ""
 #: share/virtualbricks.glade:5277
 #: share/virtualbricks.glade:5288
 #: share/virtualbricks.glade:5309
+#: share/virtualbricks.template.glade:5286
 msgid "Disk images repository"
 msgstr "Repository per le immagini disco"
 
@@ -1690,6 +1928,7 @@ msgstr "Repository per le immagini disco"
 #: share/virtualbricks.glade:5283
 #: share/virtualbricks.glade:5294
 #: share/virtualbricks.glade:5315
+#: share/virtualbricks.template.glade:5292
 msgid "Directory that contains hard disk images"
 msgstr "Direttorio che contiene le immagini degli hard disk"
 
@@ -1699,6 +1938,7 @@ msgstr "Direttorio che contiene le immagini degli hard disk"
 #: share/virtualbricks.glade:5301
 #: share/virtualbricks.glade:5312
 #: share/virtualbricks.glade:5333
+#: share/virtualbricks.template.glade:5310
 msgid "Disk Images"
 msgstr "immagini disco"
 
@@ -1708,6 +1948,7 @@ msgstr "immagini disco"
 #: share/virtualbricks.glade:5329
 #: share/virtualbricks.glade:5340
 #: share/virtualbricks.glade:5361
+#: share/virtualbricks.template.glade:5338
 msgid "Use KVM"
 msgstr "Usa KVM"
 
@@ -1717,6 +1958,7 @@ msgstr "Usa KVM"
 #: share/virtualbricks.glade:5333
 #: share/virtualbricks.glade:5344
 #: share/virtualbricks.glade:5365
+#: share/virtualbricks.template.glade:5342
 msgid "Allow the use of kernel-based virtual machine (recommended)"
 msgstr "Permetti l'uso di kernel-based virtual machine (raccomandato)"
 
@@ -1726,6 +1968,7 @@ msgstr "Permetti l'uso di kernel-based virtual machine (raccomandato)"
 #: share/virtualbricks.glade:5343
 #: share/virtualbricks.glade:5354
 #: share/virtualbricks.glade:5375
+#: share/virtualbricks.template.glade:5352
 msgid "Enable KSM"
 msgstr "Abilita KSM"
 
@@ -1735,6 +1978,7 @@ msgstr "Abilita KSM"
 #: share/virtualbricks.glade:5347
 #: share/virtualbricks.glade:5358
 #: share/virtualbricks.glade:5379
+#: share/virtualbricks.template.glade:5356
 msgid "Allow using the Kernel SamePage Merging support to enhance scalability"
 msgstr "Permetti l'uso del supporto a Kernel SamePage Merging per potenziare la scalabilità"
 
@@ -1744,6 +1988,7 @@ msgstr "Permetti l'uso del supporto a Kernel SamePage Merging per potenziare la 
 #: share/virtualbricks.glade:5362
 #: share/virtualbricks.glade:5373
 #: share/virtualbricks.glade:5394
+#: share/virtualbricks.template.glade:5371
 msgid "Use kqemu"
 msgstr "Usa Kqemu"
 
@@ -1753,6 +1998,7 @@ msgstr "Usa Kqemu"
 #: share/virtualbricks.glade:5366
 #: share/virtualbricks.glade:5377
 #: share/virtualbricks.glade:5398
+#: share/virtualbricks.template.glade:5375
 msgid "Use old kqemu support"
 msgstr "Usa vecchio supporto kqemu"
 
@@ -1762,6 +2008,7 @@ msgstr "Usa vecchio supporto kqemu"
 #: share/virtualbricks.glade:5380
 #: share/virtualbricks.glade:5391
 #: share/virtualbricks.glade:5412
+#: share/virtualbricks.template.glade:5389
 msgid "X86 optimizations"
 msgstr "Ottimizzazioni X86"
 
@@ -1771,6 +2018,7 @@ msgstr "Ottimizzazioni X86"
 #: share/virtualbricks.glade:5397
 #: share/virtualbricks.glade:5408
 #: share/virtualbricks.glade:5429
+#: share/virtualbricks.template.glade:5406
 msgid "CD-Rom/DVD/Floppy Devices"
 msgstr "Dispositivi CD-Rom/DVD/Floppy "
 
@@ -1780,6 +2028,7 @@ msgstr "Dispositivi CD-Rom/DVD/Floppy "
 #: share/virtualbricks.glade:5417
 #: share/virtualbricks.glade:5428
 #: share/virtualbricks.glade:5449
+#: share/virtualbricks.template.glade:5426
 msgid "Add your \"real\" physical drive volumes like CDR, DVD or Floppy devices here."
 msgstr "Aggiungi qui il tuo supporto drive fisico \"reale\" come CDR, DVD o dispositivi Floppy."
 
@@ -1789,6 +2038,7 @@ msgstr "Aggiungi qui il tuo supporto drive fisico \"reale\" come CDR, DVD o disp
 #: share/virtualbricks.glade:5434
 #: share/virtualbricks.glade:5445
 #: share/virtualbricks.glade:5466
+#: share/virtualbricks.template.glade:5443
 msgid "Name: "
 msgstr "Nome:"
 
@@ -1798,6 +2048,7 @@ msgstr "Nome:"
 #: share/virtualbricks.glade:5455
 #: share/virtualbricks.glade:5466
 #: share/virtualbricks.glade:5487
+#: share/virtualbricks.template.glade:5464
 msgid "Device Path: "
 msgstr "Percorso dispositivo:"
 
@@ -1807,6 +2058,7 @@ msgstr "Percorso dispositivo:"
 #: share/virtualbricks.glade:5475
 #: share/virtualbricks.glade:5486
 #: share/virtualbricks.glade:5507
+#: share/virtualbricks.template.glade:5484
 msgid "Add"
 msgstr "Aggiungi"
 
@@ -1816,6 +2068,7 @@ msgstr "Aggiungi"
 #: share/virtualbricks.glade:5519
 #: share/virtualbricks.glade:5530
 #: share/virtualbricks.glade:5551
+#: share/virtualbricks.template.glade:5528
 msgid "<b>Qemu/KVM </b>"
 msgstr "<b>Qemu/KVM </b>"
 
@@ -1825,6 +2078,7 @@ msgstr "<b>Qemu/KVM </b>"
 #: share/virtualbricks.glade:5606
 #: share/virtualbricks.glade:5617
 #: share/virtualbricks.glade:5638
+#: share/virtualbricks.template.glade:5615
 msgid "Add Bookmark"
 msgstr "Aggiungi Segnalibro"
 
@@ -1834,6 +2088,7 @@ msgstr "Aggiungi Segnalibro"
 #: share/virtualbricks.glade:5620
 #: share/virtualbricks.glade:5631
 #: share/virtualbricks.glade:5652
+#: share/virtualbricks.template.glade:5629
 msgid "Name:"
 msgstr "Nome:"
 
@@ -1843,6 +2098,7 @@ msgstr "Nome:"
 #: share/virtualbricks.glade:5645
 #: share/virtualbricks.glade:5656
 #: share/virtualbricks.glade:5677
+#: share/virtualbricks.template.glade:5654
 msgid "Path:"
 msgstr "Percorso:"
 
@@ -1852,6 +2108,7 @@ msgstr "Percorso:"
 #: share/virtualbricks.glade:5674
 #: share/virtualbricks.glade:5685
 #: share/virtualbricks.glade:5706
+#: share/virtualbricks.template.glade:5683
 msgid "Select A Icon"
 msgstr "Seleziona un'Icona"
 
@@ -1861,6 +2118,7 @@ msgstr "Seleziona un'Icona"
 #: share/virtualbricks.glade:5684
 #: share/virtualbricks.glade:5695
 #: share/virtualbricks.glade:5716
+#: share/virtualbricks.template.glade:5693
 msgid "Icon for this Machine"
 msgstr "Icona per questa Macchina"
 
@@ -1876,6 +2134,8 @@ msgstr "Icona per questa Macchina"
 #: share/virtualbricks.glade:6257
 #: share/virtualbricks.glade:5796
 #: share/virtualbricks.glade:6278
+#: share/virtualbricks.template.glade:5773
+#: share/virtualbricks.template.glade:6255
 msgid "show qemu volume info for selected image"
 msgstr "mostra le info del supporto per l'immagine selezionata"
 
@@ -1885,6 +2145,7 @@ msgstr "mostra le info del supporto per l'immagine selezionata"
 #: share/virtualbricks.glade:5779
 #: share/virtualbricks.glade:5790
 #: share/virtualbricks.glade:5811
+#: share/virtualbricks.template.glade:5788
 msgid "remove this entry from My Machines"
 msgstr "rimuovi questo elemento delle Mie Macchine"
 
@@ -1894,6 +2155,7 @@ msgstr "rimuovi questo elemento delle Mie Macchine"
 #: share/virtualbricks.glade:5789
 #: share/virtualbricks.glade:5800
 #: share/virtualbricks.glade:5821
+#: share/virtualbricks.template.glade:5798
 msgid "About: Virtualbricks"
 msgstr "Informazioni su: Virtualbricks"
 
@@ -1912,6 +2174,7 @@ msgstr "Informazioni su Virtualbricks e Qemu"
 #: share/virtualbricks.glade:5845
 #: share/virtualbricks.glade:5856
 #: share/virtualbricks.glade:5877
+#: share/virtualbricks.template.glade:5854
 msgid ""
 "\n"
 "Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.\n"
@@ -1946,6 +2209,7 @@ msgstr ""
 #: share/virtualbricks.glade:5903
 #: share/virtualbricks.glade:5914
 #: share/virtualbricks.glade:5935
+#: share/virtualbricks.template.glade:5912
 msgid "create new empty image"
 msgstr "crea una nuova immagine vuota"
 
@@ -1956,6 +2220,7 @@ msgstr "crea una nuova immagine vuota"
 #: share/virtualbricks.glade:5930
 #: share/virtualbricks.glade:5948
 #: share/virtualbricks.glade:5951
+#: share/virtualbricks.template.glade:5925
 msgid "<b>create new empty Disk image</b>\n"
 msgstr "<b>crea una nuova immagine Disco vuota</b>\n"
 
@@ -1966,6 +2231,7 @@ msgstr "<b>crea una nuova immagine Disco vuota</b>\n"
 #: share/virtualbricks.glade:5943
 #: share/virtualbricks.glade:5961
 #: share/virtualbricks.glade:5964
+#: share/virtualbricks.template.glade:5938
 msgid "Target Folder for the new image"
 msgstr "Cartella di destinazione per la nuova immagine"
 
@@ -1976,6 +2242,7 @@ msgstr "Cartella di destinazione per la nuova immagine"
 #: share/virtualbricks.glade:5953
 #: share/virtualbricks.glade:5971
 #: share/virtualbricks.glade:5974
+#: share/virtualbricks.template.glade:5948
 msgid "Select A Directory"
 msgstr "Selezione Una Directory"
 
@@ -1986,6 +2253,7 @@ msgstr "Selezione Una Directory"
 #: share/virtualbricks.glade:5976
 #: share/virtualbricks.glade:5994
 #: share/virtualbricks.glade:5997
+#: share/virtualbricks.template.glade:5971
 msgid "Name of the new image (or base image)"
 msgstr ""
 "Nome della nuova immagine\n"
@@ -1998,6 +2266,7 @@ msgstr ""
 #: share/virtualbricks.glade:5991
 #: share/virtualbricks.glade:6009
 #: share/virtualbricks.glade:6012
+#: share/virtualbricks.template.glade:5986
 msgid "Enter a filename for the new image"
 msgstr "Inserisci un nome file per la nuova immagine"
 
@@ -2007,6 +2276,7 @@ msgstr "Inserisci un nome file per la nuova immagine"
 #: share/virtualbricks.glade:6011
 #: share/virtualbricks.glade:6022
 #: share/virtualbricks.glade:6043
+#: share/virtualbricks.template.glade:6020
 msgid "Image format"
 msgstr "Formato immagine"
 
@@ -2016,6 +2286,7 @@ msgstr "Formato immagine"
 #: share/virtualbricks.glade:6022
 #: share/virtualbricks.glade:6033
 #: share/virtualbricks.glade:6054
+#: share/virtualbricks.template.glade:6031
 msgid ""
 "Auto\n"
 "raw\n"
@@ -2039,6 +2310,7 @@ msgstr ""
 #: share/virtualbricks.glade:6049
 #: share/virtualbricks.glade:6060
 #: share/virtualbricks.glade:6081
+#: share/virtualbricks.template.glade:6058
 msgid "Size"
 msgstr "Dimensione"
 
@@ -2048,6 +2320,7 @@ msgstr "Dimensione"
 #: share/virtualbricks.glade:6064
 #: share/virtualbricks.glade:6075
 #: share/virtualbricks.glade:6096
+#: share/virtualbricks.template.glade:6073
 msgid "Size of the new image"
 msgstr "Dimensione della nuova immagine"
 
@@ -2057,6 +2330,7 @@ msgstr "Dimensione della nuova immagine"
 #: share/virtualbricks.glade:6078
 #: share/virtualbricks.glade:6089
 #: share/virtualbricks.glade:6110
+#: share/virtualbricks.template.glade:6087
 msgid ""
 "KB\n"
 "MB\n"
@@ -2072,6 +2346,7 @@ msgstr ""
 #: share/virtualbricks.glade:6188
 #: share/virtualbricks.glade:6199
 #: share/virtualbricks.glade:6220
+#: share/virtualbricks.template.glade:6197
 msgid "message"
 msgstr "messaggio"
 
@@ -2081,6 +2356,7 @@ msgstr "messaggio"
 #: share/virtualbricks.glade:6256
 #: share/virtualbricks.glade:6267
 #: share/virtualbricks.glade:6288
+#: share/virtualbricks.template.glade:6265
 msgid "add this image to bookmarks"
 msgstr "aggiungi l'immagine ai segnalibri"
 
@@ -2090,6 +2366,7 @@ msgstr "aggiungi l'immagine ai segnalibri"
 #: share/virtualbricks.glade:6266
 #: share/virtualbricks.glade:6277
 #: share/virtualbricks.glade:6298
+#: share/virtualbricks.template.glade:6275
 msgid "Control monitor"
 msgstr "Monitor di controllo"
 
@@ -2099,6 +2376,7 @@ msgstr "Monitor di controllo"
 #: share/virtualbricks.glade:6281
 #: share/virtualbricks.glade:6292
 #: share/virtualbricks.glade:6313
+#: share/virtualbricks.template.glade:6290
 msgid "<b>control monitor for selected qemu job</b>"
 msgstr "<b>monitor di controllo per il lavoro qemu selezionato</b>"
 
@@ -2108,6 +2386,7 @@ msgstr "<b>monitor di controllo per il lavoro qemu selezionato</b>"
 #: share/virtualbricks.glade:6297
 #: share/virtualbricks.glade:6308
 #: share/virtualbricks.glade:6329
+#: share/virtualbricks.template.glade:6306
 msgid "kill emulation immediately"
 msgstr "uccidi emulazione immediatamente"
 
@@ -2117,6 +2396,7 @@ msgstr "uccidi emulazione immediatamente"
 #: share/virtualbricks.glade:6310
 #: share/virtualbricks.glade:6321
 #: share/virtualbricks.glade:6342
+#: share/virtualbricks.template.glade:6319
 msgid "reset emulation"
 msgstr "resetta emulazione"
 
@@ -2126,6 +2406,7 @@ msgstr "resetta emulazione"
 #: share/virtualbricks.glade:6331
 #: share/virtualbricks.glade:6342
 #: share/virtualbricks.glade:6363
+#: share/virtualbricks.template.glade:6340
 msgid "pause emulation"
 msgstr "sospendi emulazione"
 
@@ -2135,6 +2416,7 @@ msgstr "sospendi emulazione"
 #: share/virtualbricks.glade:6344
 #: share/virtualbricks.glade:6355
 #: share/virtualbricks.glade:6376
+#: share/virtualbricks.template.glade:6353
 msgid "resume emulation"
 msgstr "riprendi emulazione"
 
@@ -2144,6 +2426,7 @@ msgstr "riprendi emulazione"
 #: share/virtualbricks.glade:6372
 #: share/virtualbricks.glade:6383
 #: share/virtualbricks.glade:6404
+#: share/virtualbricks.template.glade:6381
 msgid "<b>Available block devices</b>"
 msgstr "<b>Dispositivi a blocchi disponibili</b>"
 
@@ -2153,6 +2436,7 @@ msgstr "<b>Dispositivi a blocchi disponibili</b>"
 #: share/virtualbricks.glade:6390
 #: share/virtualbricks.glade:6401
 #: share/virtualbricks.glade:6422
+#: share/virtualbricks.template.glade:6399
 msgid "This is a list of all blockdevices used by the emulation. Rightclick an entry to eject. (hd volumes normally can not be ejected)"
 msgstr ""
 "Questa è una lista di tutti i dispositivi a blocchi usati dall'emulazione.\n"
@@ -2164,6 +2448,7 @@ msgstr ""
 #: share/virtualbricks.glade:6404
 #: share/virtualbricks.glade:6415
 #: share/virtualbricks.glade:6436
+#: share/virtualbricks.template.glade:6413
 msgid "<b>change soure of block devices</b>"
 msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
 
@@ -2184,6 +2469,9 @@ msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
 #: share/virtualbricks.glade:6463
 #: share/virtualbricks.glade:6467
 #: share/virtualbricks.glade:6484
+#: share/virtualbricks.template.glade:6429
+#: share/virtualbricks.template.glade:6444
+#: share/virtualbricks.template.glade:6461
 msgid "Change"
 msgstr "Cambia"
 
@@ -2193,6 +2481,7 @@ msgstr "Cambia"
 #: share/virtualbricks.glade:6424
 #: share/virtualbricks.glade:6435
 #: share/virtualbricks.glade:6456
+#: share/virtualbricks.template.glade:6433
 msgid "change the source for qemu cdrom device to the selected image or drive"
 msgstr "cambia la sorgente del dispositivo cdrom qemu con l'immagine o il drive selezionato"
 
@@ -2202,6 +2491,7 @@ msgstr "cambia la sorgente del dispositivo cdrom qemu con l'immagine o il drive 
 #: share/virtualbricks.glade:6439
 #: share/virtualbricks.glade:6450
 #: share/virtualbricks.glade:6471
+#: share/virtualbricks.template.glade:6448
 msgid "change the source for qemu floppy A device to the selected image or drive"
 msgstr "cambia la sorgente per il dispositivo floppy A qemu con l'immagine o il drive selezionato"
 
@@ -2211,6 +2501,7 @@ msgstr "cambia la sorgente per il dispositivo floppy A qemu con l'immagine o il 
 #: share/virtualbricks.glade:6456
 #: share/virtualbricks.glade:6467
 #: share/virtualbricks.glade:6488
+#: share/virtualbricks.template.glade:6465
 msgid "change the source for qemu floppy B device to the selected image or drive"
 msgstr "cambia la sorgente per il dispositivo floppy B qemu con l'immagine o il drive selezionato"
 
@@ -2220,6 +2511,7 @@ msgstr "cambia la sorgente per il dispositivo floppy B qemu con l'immagine o il 
 #: share/virtualbricks.glade:6471
 #: share/virtualbricks.glade:6482
 #: share/virtualbricks.glade:6503
+#: share/virtualbricks.template.glade:6480
 msgid "cdrom"
 msgstr "cdrom"
 
@@ -2241,6 +2533,9 @@ msgstr "cdrom"
 #: share/virtualbricks.glade:6546
 #: share/virtualbricks.glade:6559
 #: share/virtualbricks.glade:6575
+#: share/virtualbricks.template.glade:6523
+#: share/virtualbricks.template.glade:6536
+#: share/virtualbricks.template.glade:6552
 msgid "None"
 msgstr "Nessuno"
 
@@ -2250,6 +2545,7 @@ msgstr "Nessuno"
 #: share/virtualbricks.glade:6579
 #: share/virtualbricks.glade:6590
 #: share/virtualbricks.glade:6611
+#: share/virtualbricks.template.glade:6588
 msgid "<b>Available host usb devices</b>"
 msgstr "<b>Dispositivi usb host disponibili</b>"
 
@@ -2259,6 +2555,7 @@ msgstr "<b>Dispositivi usb host disponibili</b>"
 #: share/virtualbricks.glade:6597
 #: share/virtualbricks.glade:6608
 #: share/virtualbricks.glade:6629
+#: share/virtualbricks.template.glade:6606
 msgid "All available host usb-devices. rightclick to attach a device to the virtual engine (you must have write access to /proc/bus/usb to attach devices)"
 msgstr ""
 "Tutti i dispositivi usb host disponibili. Tasto destro per collegare un dispositivo al motore virtuale\n"
@@ -2270,6 +2567,7 @@ msgstr ""
 #: share/virtualbricks.glade:6611
 #: share/virtualbricks.glade:6622
 #: share/virtualbricks.glade:6643
+#: share/virtualbricks.template.glade:6620
 msgid "<b>Attached guest usb devices</b>"
 msgstr "<b>Dispositivi usb guest collegati</b>"
 
@@ -2279,6 +2577,7 @@ msgstr "<b>Dispositivi usb guest collegati</b>"
 #: share/virtualbricks.glade:6629
 #: share/virtualbricks.glade:6640
 #: share/virtualbricks.glade:6661
+#: share/virtualbricks.template.glade:6638
 msgid "All attached usb devices for this emulation. Rightclick to detach a device"
 msgstr "Tutti i dispositivi usb collegati per questa emulazione. Tasto destro per scollegare un dispositivo"
 
@@ -2288,6 +2587,7 @@ msgstr "Tutti i dispositivi usb collegati per questa emulazione. Tasto destro pe
 #: share/virtualbricks.glade:6648
 #: share/virtualbricks.glade:6659
 #: share/virtualbricks.glade:6680
+#: share/virtualbricks.template.glade:6657
 msgid "USB"
 msgstr "USB"
 
@@ -2297,6 +2597,7 @@ msgstr "USB"
 #: share/virtualbricks.glade:6660
 #: share/virtualbricks.glade:6671
 #: share/virtualbricks.glade:6692
+#: share/virtualbricks.template.glade:6669
 msgid "coming soon..."
 msgstr "coming soon..."
 
@@ -2306,6 +2607,7 @@ msgstr "coming soon..."
 #: share/virtualbricks.glade:6670
 #: share/virtualbricks.glade:6681
 #: share/virtualbricks.glade:6702
+#: share/virtualbricks.template.glade:6679
 msgid "Emulation"
 msgstr "Emulazione"
 
@@ -2315,6 +2617,7 @@ msgstr "Emulazione"
 #: share/virtualbricks.glade:6722
 #: share/virtualbricks.glade:6733
 #: share/virtualbricks.glade:6754
+#: share/virtualbricks.template.glade:6731
 msgid "open control monitor"
 msgstr "Apri console di controllo"
 
@@ -2324,6 +2627,7 @@ msgstr "Apri console di controllo"
 #: share/virtualbricks.glade:6759
 #: share/virtualbricks.glade:6770
 #: share/virtualbricks.glade:6791
+#: share/virtualbricks.template.glade:6768
 msgid "Suspend Qemu"
 msgstr "Sospendi Qemu"
 
@@ -2333,6 +2637,7 @@ msgstr "Sospendi Qemu"
 #: share/virtualbricks.glade:6768
 #: share/virtualbricks.glade:6779
 #: share/virtualbricks.glade:6800
+#: share/virtualbricks.template.glade:6777
 msgid "Send ACPI poweroff"
 msgstr "Invia poweroff ACPI"
 
@@ -2342,6 +2647,7 @@ msgstr "Invia poweroff ACPI"
 #: share/virtualbricks.glade:6777
 #: share/virtualbricks.glade:6788
 #: share/virtualbricks.glade:6809
+#: share/virtualbricks.template.glade:6786
 msgid "Send ACPI hard reset"
 msgstr "Invia hard reset ACPI"
 
@@ -2351,6 +2657,7 @@ msgstr "Invia hard reset ACPI"
 #: share/virtualbricks.glade:6833
 #: share/virtualbricks.glade:6844
 #: share/virtualbricks.glade:6865
+#: share/virtualbricks.template.glade:6842
 msgid "eject / unmount selected device"
 msgstr "espelli / smonta il dispositivo selezionato"
 
@@ -2360,6 +2667,7 @@ msgstr "espelli / smonta il dispositivo selezionato"
 #: share/virtualbricks.glade:6841
 #: share/virtualbricks.glade:6852
 #: share/virtualbricks.glade:6873
+#: share/virtualbricks.template.glade:6850
 msgid "Setup new network card"
 msgstr "Configura una nuova interfaccia di rete"
 
@@ -2369,6 +2677,7 @@ msgstr "Configura una nuova interfaccia di rete"
 #: share/virtualbricks.glade:6854
 #: share/virtualbricks.glade:6865
 #: share/virtualbricks.glade:6886
+#: share/virtualbricks.template.glade:6863
 msgid "<b>Network Type</b>"
 msgstr "<b>Tipo di rete</b>"
 
@@ -2378,6 +2687,7 @@ msgstr "<b>Tipo di rete</b>"
 #: share/virtualbricks.glade:6866
 #: share/virtualbricks.glade:6877
 #: share/virtualbricks.glade:6898
+#: share/virtualbricks.template.glade:6875
 msgid ""
 "Open a TUN/TAP interface\n"
 "Use an already open TUN/TAP interface\n"
@@ -2401,6 +2711,7 @@ msgstr ""
 #: share/virtualbricks.glade:6901
 #: share/virtualbricks.glade:6912
 #: share/virtualbricks.glade:6933
+#: share/virtualbricks.template.glade:6910
 msgid "IP address: "
 msgstr "Indirizzo IP:"
 
@@ -2410,6 +2721,7 @@ msgstr "Indirizzo IP:"
 #: share/virtualbricks.glade:6912
 #: share/virtualbricks.glade:6923
 #: share/virtualbricks.glade:6944
+#: share/virtualbricks.template.glade:6921
 msgid "MAC address: "
 msgstr "Indirizzo MAC: "
 
@@ -2419,6 +2731,7 @@ msgstr "Indirizzo MAC: "
 #: share/virtualbricks.glade:6953
 #: share/virtualbricks.glade:6964
 #: share/virtualbricks.glade:6985
+#: share/virtualbricks.template.glade:6962
 msgid "VLAN:"
 msgstr "VLAN:"
 
@@ -2428,6 +2741,7 @@ msgstr "VLAN:"
 #: share/virtualbricks.glade:7034
 #: share/virtualbricks.glade:7045
 #: share/virtualbricks.glade:7066
+#: share/virtualbricks.template.glade:7043
 msgid "TUN/TAP configuration script:"
 msgstr "Script di configurazione TUN/TAP:"
 
@@ -2437,6 +2751,7 @@ msgstr "Script di configurazione TUN/TAP:"
 #: share/virtualbricks.glade:7045
 #: share/virtualbricks.glade:7056
 #: share/virtualbricks.glade:7077
+#: share/virtualbricks.template.glade:7054
 msgid "Name of network interface:"
 msgstr "Nome dell'interfaccia di rete:"
 
@@ -2446,6 +2761,7 @@ msgstr "Nome dell'interfaccia di rete:"
 #: share/virtualbricks.glade:7129
 #: share/virtualbricks.glade:7140
 #: share/virtualbricks.glade:7161
+#: share/virtualbricks.template.glade:7138
 msgid "File descriptor: "
 msgstr "Descrittore file:"
 
@@ -2455,6 +2771,7 @@ msgstr "Descrittore file:"
 #: share/virtualbricks.glade:7208
 #: share/virtualbricks.glade:7219
 #: share/virtualbricks.glade:7240
+#: share/virtualbricks.template.glade:7217
 msgid "Request"
 msgstr "Richiesta"
 
@@ -2472,6 +2789,8 @@ msgstr "Richiesta"
 #: share/virtualbricks.glade:7268
 #: share/virtualbricks.glade:8558
 #: share/virtualbricks.glade:8557
+#: share/virtualbricks.template.glade:7245
+#: share/virtualbricks.template.glade:8534
 msgid "Are you sure?"
 msgstr "Sei sicuro?"
 
@@ -2481,6 +2800,7 @@ msgstr "Sei sicuro?"
 #: share/virtualbricks.glade:7295
 #: share/virtualbricks.glade:7306
 #: share/virtualbricks.glade:7327
+#: share/virtualbricks.template.glade:7304
 msgid "Add redirect"
 msgstr "Aggiungi ridirezione"
 
@@ -2490,6 +2810,7 @@ msgstr "Aggiungi ridirezione"
 #: share/virtualbricks.glade:7320
 #: share/virtualbricks.glade:7331
 #: share/virtualbricks.glade:7352
+#: share/virtualbricks.template.glade:7329
 msgid "TCP"
 msgstr "TCP"
 
@@ -2499,6 +2820,7 @@ msgstr "TCP"
 #: share/virtualbricks.glade:7336
 #: share/virtualbricks.glade:7347
 #: share/virtualbricks.glade:7368
+#: share/virtualbricks.template.glade:7345
 msgid "UDP"
 msgstr "UDP"
 
@@ -2514,6 +2836,8 @@ msgstr "UDP"
 #: share/virtualbricks.glade:7418
 #: share/virtualbricks.glade:7391
 #: share/virtualbricks.glade:7439
+#: share/virtualbricks.template.glade:7368
+#: share/virtualbricks.template.glade:7416
 msgid "port "
 msgstr "porta"
 
@@ -2523,6 +2847,7 @@ msgstr "porta"
 #: share/virtualbricks.glade:7384
 #: share/virtualbricks.glade:7395
 #: share/virtualbricks.glade:7416
+#: share/virtualbricks.template.glade:7393
 msgid "to guest IP "
 msgstr "to guest IP "
 
@@ -2532,6 +2857,7 @@ msgstr "to guest IP "
 #: share/virtualbricks.glade:7436
 #: share/virtualbricks.glade:7447
 #: share/virtualbricks.glade:7468
+#: share/virtualbricks.template.glade:7445
 msgid "<b>Add redirect(s)</b>"
 msgstr "<b>Aggiungi ridirezione(i)</b>"
 
@@ -2541,6 +2867,7 @@ msgstr "<b>Aggiungi ridirezione(i)</b>"
 #: share/virtualbricks.glade:7506
 #: share/virtualbricks.glade:7517
 #: share/virtualbricks.glade:7538
+#: share/virtualbricks.template.glade:7515
 msgid "Mode:"
 msgstr "Modalità:"
 
@@ -2550,6 +2877,7 @@ msgstr "Modalità:"
 #: share/virtualbricks.glade:7518
 #: share/virtualbricks.glade:7529
 #: share/virtualbricks.glade:7550
+#: share/virtualbricks.template.glade:7527
 msgid "DHCP"
 msgstr "DHCP"
 
@@ -2559,6 +2887,7 @@ msgstr "DHCP"
 #: share/virtualbricks.glade:7531
 #: share/virtualbricks.glade:7542
 #: share/virtualbricks.glade:7563
+#: share/virtualbricks.template.glade:7540
 msgid "Manual"
 msgstr "Manuale"
 
@@ -2568,6 +2897,7 @@ msgstr "Manuale"
 #: share/virtualbricks.glade:7569
 #: share/virtualbricks.glade:7580
 #: share/virtualbricks.glade:7601
+#: share/virtualbricks.template.glade:7578
 msgid "Address:"
 msgstr "Indirizzo:"
 
@@ -2577,6 +2907,7 @@ msgstr "Indirizzo:"
 #: share/virtualbricks.glade:7575
 #: share/virtualbricks.glade:7586
 #: share/virtualbricks.glade:7607
+#: share/virtualbricks.template.glade:7584
 msgid "Netmask:"
 msgstr "Netmask:"
 
@@ -2586,6 +2917,7 @@ msgstr "Netmask:"
 #: share/virtualbricks.glade:7619
 #: share/virtualbricks.glade:7630
 #: share/virtualbricks.glade:7651
+#: share/virtualbricks.template.glade:7628
 msgid "Advanced"
 msgstr "Avanzate"
 
@@ -2596,6 +2928,7 @@ msgstr "Avanzate"
 #: share/virtualbricks.glade:7719
 #: share/virtualbricks.glade:7730
 #: share/virtualbricks.glade:7751
+#: share/virtualbricks.template.glade:7728
 msgid "Switch"
 msgstr "Switch"
 
@@ -2606,6 +2939,7 @@ msgstr "Switch"
 #: share/virtualbricks.glade:7758
 #: share/virtualbricks.glade:7769
 #: share/virtualbricks.glade:7790
+#: share/virtualbricks.template.glade:7767
 msgid "Wire"
 msgstr "Wire"
 
@@ -2616,6 +2950,7 @@ msgstr "Wire"
 #: share/virtualbricks.glade:7797
 #: share/virtualbricks.glade:7808
 #: share/virtualbricks.glade:7829
+#: share/virtualbricks.template.glade:7806
 msgid "Wirefilter"
 msgstr "Wirefilter"
 
@@ -2626,6 +2961,7 @@ msgstr "Wirefilter"
 #: share/virtualbricks.glade:7836
 #: share/virtualbricks.glade:7847
 #: share/virtualbricks.glade:7868
+#: share/virtualbricks.template.glade:7845
 msgid "Tap"
 msgstr "Tap"
 
@@ -2636,6 +2972,7 @@ msgstr "Tap"
 #: share/virtualbricks.glade:7884
 #: share/virtualbricks.glade:7895
 #: share/virtualbricks.glade:7916
+#: share/virtualbricks.template.glade:7893
 msgid "Tunnel Client"
 msgstr "Tunnel Client"
 
@@ -2646,6 +2983,7 @@ msgstr "Tunnel Client"
 #: share/virtualbricks.glade:7923
 #: share/virtualbricks.glade:7934
 #: share/virtualbricks.glade:7955
+#: share/virtualbricks.template.glade:7932
 msgid "Virtual Machine"
 msgstr "Macchina Virtuale"
 
@@ -2656,6 +2994,7 @@ msgstr "Macchina Virtuale"
 #: share/virtualbricks.glade:8004
 #: share/virtualbricks.glade:8015
 #: share/virtualbricks.glade:8036
+#: share/virtualbricks.template.glade:8013
 msgid "Brick name:"
 msgstr "Nome Mattone:"
 
@@ -2666,6 +3005,7 @@ msgstr "Nome Mattone:"
 #: share/virtualbricks.glade:8129
 #: share/virtualbricks.glade:8140
 #: share/virtualbricks.glade:8161
+#: share/virtualbricks.template.glade:8138
 msgid "Brick Start"
 msgstr "Avvia Mattone"
 
@@ -2677,6 +3017,7 @@ msgstr "Avvia Mattone"
 #: share/virtualbricks.glade:8167
 #: share/virtualbricks.glade:8178
 #: share/virtualbricks.glade:8199
+#: share/virtualbricks.template.glade:8176
 msgid "Brick Stop"
 msgstr "Ferma Mattone"
 
@@ -2687,6 +3028,7 @@ msgstr "Ferma Mattone"
 #: share/virtualbricks.glade:8244
 #: share/virtualbricks.glade:8255
 #: share/virtualbricks.glade:8276
+#: share/virtualbricks.template.glade:8253
 msgid ""
 "Free\n"
 "Shell Command"
@@ -2702,6 +3044,7 @@ msgstr ""
 #: share/virtualbricks.glade:8304
 #: share/virtualbricks.glade:8325
 #: share/virtualbricks.glade:8324
+#: share/virtualbricks.template.glade:8301
 msgid "Events Collation"
 msgstr "Collezione di Eventi"
 
@@ -2713,6 +3056,7 @@ msgstr "Collezione di Eventi"
 #: share/virtualbricks.glade:8347
 #: share/virtualbricks.glade:8368
 #: share/virtualbricks.glade:8367
+#: share/virtualbricks.template.glade:8344
 msgid "Event name:"
 msgstr "Nome Evento:"
 
@@ -2726,6 +3070,8 @@ msgstr "Nome Evento:"
 #: share/virtualbricks.glade:4469
 #: share/virtualbricks.glade:8386
 #: share/virtualbricks.glade:8385
+#: share/virtualbricks.template.glade:4446
+#: share/virtualbricks.template.glade:8362
 msgid "Delay:"
 msgstr "Ritardo:"
 
@@ -2737,6 +3083,7 @@ msgstr "Ritardo:"
 #: share/virtualbricks.glade:8377
 #: share/virtualbricks.glade:8398
 #: share/virtualbricks.glade:8397
+#: share/virtualbricks.template.glade:8374
 msgid "10"
 msgstr "10"
 
@@ -2757,6 +3104,8 @@ msgstr "10"
 #: share/virtualbricks.glade:8929
 #: share/virtualbricks.glade:8473
 #: share/virtualbricks.glade:8928
+#: share/virtualbricks.template.glade:8450
+#: share/virtualbricks.template.glade:8897
 msgid " "
 msgstr " "
 
@@ -2777,6 +3126,8 @@ msgstr " "
 #: share/virtualbricks.glade:8940
 #: share/virtualbricks.glade:8484
 #: share/virtualbricks.glade:8939
+#: share/virtualbricks.template.glade:8461
+#: share/virtualbricks.template.glade:8908
 msgid "_Start/Stop"
 msgstr "_Avvia/Ferma"
 
@@ -2797,6 +3148,8 @@ msgstr "_Avvia/Ferma"
 #: share/virtualbricks.glade:8948
 #: share/virtualbricks.glade:8492
 #: share/virtualbricks.glade:8947
+#: share/virtualbricks.template.glade:8469
+#: share/virtualbricks.template.glade:8916
 msgid "_Delete"
 msgstr "Ca_ncella"
 
@@ -2817,6 +3170,8 @@ msgstr "Ca_ncella"
 #: share/virtualbricks.glade:8956
 #: share/virtualbricks.glade:8500
 #: share/virtualbricks.glade:8955
+#: share/virtualbricks.template.glade:8477
+#: share/virtualbricks.template.glade:8924
 msgid "Make a C_opy"
 msgstr "Crea una Co_pia"
 
@@ -2837,6 +3192,8 @@ msgstr "Crea una Co_pia"
 #: share/virtualbricks.glade:8964
 #: share/virtualbricks.glade:8508
 #: share/virtualbricks.glade:8963
+#: share/virtualbricks.template.glade:8485
+#: share/virtualbricks.template.glade:8932
 msgid "Re_name"
 msgstr "_Rinomina"
 
@@ -2857,6 +3214,8 @@ msgstr "_Rinomina"
 #: share/virtualbricks.glade:8972
 #: share/virtualbricks.glade:8516
 #: share/virtualbricks.glade:8971
+#: share/virtualbricks.template.glade:8493
+#: share/virtualbricks.template.glade:8940
 msgid "_Configure"
 msgstr "_Configura"
 
@@ -2868,6 +3227,7 @@ msgstr "_Configura"
 #: share/virtualbricks.glade:8505
 #: share/virtualbricks.glade:8526
 #: share/virtualbricks.glade:8525
+#: share/virtualbricks.template.glade:8502
 msgid "_Resume VM"
 msgstr "R_iprendi VM"
 
@@ -2879,6 +3239,7 @@ msgstr "R_iprendi VM"
 #: share/virtualbricks.glade:8545
 #: share/virtualbricks.glade:8566
 #: share/virtualbricks.glade:8565
+#: share/virtualbricks.template.glade:8542
 msgid "<b>Confirm Action</b>"
 msgstr "<b>Conferma Azione</b>"
 
@@ -2900,6 +3261,8 @@ msgstr "<b>Conferma Azione</b>"
 #: share/virtualbricks.glade:8997
 #: share/virtualbricks.glade:8640
 #: share/virtualbricks.glade:8996
+#: share/virtualbricks.template.glade:8617
+#: share/virtualbricks.template.glade:8965
 msgid "Choose a new name:"
 msgstr "Scegli un nuovo nome:"
 
@@ -2912,6 +3275,7 @@ msgstr "Scegli un nuovo nome:"
 #: share/virtualbricks.glade:8687
 #: share/virtualbricks.glade:8708
 #: share/virtualbricks.glade:8707
+#: share/virtualbricks.template.glade:8684
 msgid "Virtualbricks: action in progress"
 msgstr "Virtualbricks: azione in corso"
 
@@ -2924,6 +3288,7 @@ msgstr "Virtualbricks: azione in corso"
 #: share/virtualbricks.glade:8702
 #: share/virtualbricks.glade:8723
 #: share/virtualbricks.glade:8722
+#: share/virtualbricks.template.glade:8699
 msgid "Please wait"
 msgstr "Prego attendere"
 
@@ -2935,6 +3300,7 @@ msgstr "Prego attendere"
 #: share/virtualbricks.glade:8766
 #: share/virtualbricks.glade:8752
 #: share/virtualbricks.glade:8751
+#: share/virtualbricks.template.glade:8728
 msgid "Select Image file"
 msgstr "Selezionare il file immagine"
 
@@ -2968,6 +3334,7 @@ msgstr "Nascondi Finestra Principale"
 #: share/virtualbricks.glade:8848
 #: share/virtualbricks.glade:8834
 #: share/virtualbricks.glade:8833
+#: share/virtualbricks.template.glade:8802
 msgid "Close VB"
 msgstr "Chiudi VB"
 
@@ -2980,6 +3347,7 @@ msgstr "Chiudi VB"
 #: share/virtualbricks.glade:8873
 #: share/virtualbricks.glade:8859
 #: share/virtualbricks.glade:8858
+#: share/virtualbricks.template.glade:8827
 msgid ""
 "Enter shell command:\n"
 "(each line is an action)"
@@ -3012,6 +3380,7 @@ msgstr "Ciao mondo!"
 #: share/virtualbricks.glade:8082
 #: share/virtualbricks.glade:8093
 #: share/virtualbricks.glade:8114
+#: share/virtualbricks.template.glade:8091
 msgid "Event type selection"
 msgstr "Selezione del tipo di evento"
 
@@ -3022,6 +3391,7 @@ msgstr "Selezione del tipo di evento"
 #: share/virtualbricks.glade:8856
 #: share/virtualbricks.glade:8842
 #: share/virtualbricks.glade:8841
+#: share/virtualbricks.template.glade:8810
 msgid "Shell command actions"
 msgstr "Azioni comandi di shell"
 
@@ -3033,6 +3403,7 @@ msgstr "Azioni comandi di shell"
 #: share/virtualbricks.glade:8994
 #: share/virtualbricks.glade:8980
 #: share/virtualbricks.glade:8979
+#: share/virtualbricks.template.glade:8948
 msgid "New event name"
 msgstr "Nuovo nome evento"
 
@@ -3044,6 +3415,7 @@ msgstr "Nuovo nome evento"
 #: share/virtualbricks.glade:9077
 #: share/virtualbricks.glade:9063
 #: share/virtualbricks.glade:9062
+#: share/virtualbricks.template.glade:9031
 msgid "Bricks to add to the event"
 msgstr "Mattoni da aggiungere all'evento"
 
@@ -3056,6 +3428,7 @@ msgstr "Mattoni da aggiungere all'evento"
 #: share/virtualbricks.glade:9099
 #: share/virtualbricks.glade:9085
 #: share/virtualbricks.glade:9084
+#: share/virtualbricks.template.glade:9053
 msgid ""
 "Bricks\n"
 "available"
@@ -3077,6 +3450,7 @@ msgstr "-->"
 #: share/virtualbricks.glade:9191
 #: share/virtualbricks.glade:9177
 #: share/virtualbricks.glade:9176
+#: share/virtualbricks.template.glade:9145
 msgid ""
 "Bricks\n"
 "added"
@@ -3105,6 +3479,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1891
 #: virtualbricks/gui/gui.py:1875
 #: virtualbricks/gui/gui.py:1884
+#: virtualbricks/gui/gui.py:1808
 msgid "Do you really want to delete "
 msgstr "Si vuole veramente cancellare "
 
@@ -3133,6 +3508,7 @@ msgstr "Questo evento è un uso. "
 #: virtualbricks/virtualbricks_GUI.py:1912
 #: virtualbricks/gui/gui.py:1896
 #: virtualbricks/gui/gui.py:1905
+#: virtualbricks/gui/gui.py:1829
 msgid "Cannot rename Brick: it is in use."
 msgstr "Impossibile rinominare Mattone: è in uso."
 
@@ -3149,6 +3525,7 @@ msgstr "Impossibile rinominare Mattone: è in uso."
 #: virtualbricks/virtualbricks_GUI.py:1945
 #: virtualbricks/gui/gui.py:1929
 #: virtualbricks/gui/gui.py:1938
+#: virtualbricks/gui/gui.py:1861
 msgid "Cannot rename Event: it is in use."
 msgstr "Impossibile rinominare Evento: è in uso."
 
@@ -3159,6 +3536,7 @@ msgstr "Impossibile rinominare Evento: è in uso."
 #: share/virtualbricks.glade:9135
 #: share/virtualbricks.glade:9121
 #: share/virtualbricks.glade:9120
+#: share/virtualbricks.template.glade:9089
 msgid ""
 "--->\n"
 "<---"
@@ -3208,6 +3586,13 @@ msgstr ""
 #: virtualbricks/gui/gui.py:1094
 #: virtualbricks/gui/gui.py:1077
 #: virtualbricks/gui/gui.py:1099
+#: virtualbricks/gui/gui.py:107
+#: virtualbricks/gui/gui.py:112
+#: virtualbricks/gui/gui.py:125
+#: virtualbricks/gui/gui.py:173
+#: virtualbricks/gui/gui.py:199
+#: virtualbricks/gui/gui.py:1036
+#: virtualbricks/gui/gui.py:1058
 msgid "Icon"
 msgstr "Icona"
 
@@ -3248,6 +3633,12 @@ msgstr "Icona"
 #: virtualbricks/gui/gui.py:1096
 #: virtualbricks/gui/gui.py:1079
 #: virtualbricks/gui/gui.py:1101
+#: virtualbricks/gui/gui.py:105
+#: virtualbricks/gui/gui.py:107
+#: virtualbricks/gui/gui.py:187
+#: virtualbricks/gui/gui.py:206
+#: virtualbricks/gui/gui.py:1038
+#: virtualbricks/gui/gui.py:1060
 msgid "Type"
 msgstr "Tipo"
 
@@ -3288,6 +3679,12 @@ msgstr "Tipo"
 #: virtualbricks/gui/gui.py:1098
 #: virtualbricks/gui/gui.py:1081
 #: virtualbricks/gui/gui.py:1103
+#: virtualbricks/gui/gui.py:105
+#: virtualbricks/gui/gui.py:107
+#: virtualbricks/gui/gui.py:189
+#: virtualbricks/gui/gui.py:208
+#: virtualbricks/gui/gui.py:1040
+#: virtualbricks/gui/gui.py:1062
 msgid "Name"
 msgstr "Nome"
 
@@ -3325,6 +3722,11 @@ msgstr "Nome"
 #: virtualbricks/gui/gui.py:1100
 #: virtualbricks/gui/gui.py:1083
 #: virtualbricks/gui/gui.py:1105
+#: virtualbricks/gui/gui.py:107
+#: virtualbricks/gui/gui.py:191
+#: virtualbricks/gui/gui.py:210
+#: virtualbricks/gui/gui.py:1042
+#: virtualbricks/gui/gui.py:1064
 msgid "Parameters"
 msgstr "Parametri"
 
@@ -3339,6 +3741,7 @@ msgstr "Parametri"
 #: virtualbricks/virtualbricks_GUI.py:1128
 #: virtualbricks/gui/gui.py:1110
 #: virtualbricks/gui/gui.py:1115
+#: virtualbricks/gui/gui.py:1074
 msgid "Bricks to add to the event to be started"
 msgstr "Mattoni da aggiungere all'evento per essere avviati"
 
@@ -3353,6 +3756,7 @@ msgstr "Mattoni da aggiungere all'evento per essere avviati"
 #: virtualbricks/virtualbricks_GUI.py:1132
 #: virtualbricks/gui/gui.py:1114
 #: virtualbricks/gui/gui.py:1119
+#: virtualbricks/gui/gui.py:1078
 msgid "Bricks to add to the event to be stopped"
 msgstr "Mattoni da aggiungere all'evento per essere fermati"
 
@@ -3374,6 +3778,8 @@ msgstr "Mattoni da aggiungere all'evento per essere fermati"
 #: virtualbricks/virtualbricks_GUI.py:1026
 #: virtualbricks/gui/gui.py:1003
 #: virtualbricks/gui/gui.py:1007
+#: virtualbricks/gui/gui.py:962
+#: virtualbricks/gui/gui.py:966
 msgid "The name \""
 msgstr "Il nome \""
 
@@ -3386,6 +3792,7 @@ msgstr "Il nome \""
 #: virtualbricks/virtualbricks_GUI.py:1010
 #: virtualbricks/virtualbricks_GUI.py:1022
 #: virtualbricks/gui/gui.py:1003
+#: virtualbricks/gui/gui.py:962
 msgid "\" has forbidden format."
 msgstr "\" ha un formato proibito."
 
@@ -3398,6 +3805,7 @@ msgstr "\" ha un formato proibito."
 #: virtualbricks/virtualbricks_GUI.py:1014
 #: virtualbricks/virtualbricks_GUI.py:1026
 #: virtualbricks/gui/gui.py:1007
+#: virtualbricks/gui/gui.py:966
 msgid "\" has been adapted to \""
 msgstr "\" è stato adattato a \""
 
@@ -3410,6 +3818,7 @@ msgstr "\" è stato adattato a \""
 #: virtualbricks/virtualbricks_GUI.py:1017
 #: virtualbricks/virtualbricks_GUI.py:1029
 #: virtualbricks/gui/gui.py:1011
+#: virtualbricks/gui/gui.py:970
 msgid "An event named \""
 msgstr "Un evento di nome \""
 
@@ -3422,6 +3831,7 @@ msgstr "Un evento di nome \""
 #: virtualbricks/virtualbricks_GUI.py:1017
 #: virtualbricks/virtualbricks_GUI.py:1029
 #: virtualbricks/gui/gui.py:1011
+#: virtualbricks/gui/gui.py:970
 msgid "\" already exist."
 msgstr "\" esiste già."
 
@@ -3434,6 +3844,8 @@ msgstr "\" esiste già."
 #: virtualbricks/virtualbricks_BrickFactory.py:561
 #: virtualbricks/brickfactory.py:491
 #: virtualbricks/brickfactory.py:544
+#: virtualbricks/brickfactory.py:485
+#: virtualbricks/brickfactory.py:538
 msgid "running"
 msgstr "acceso"
 
@@ -3441,6 +3853,7 @@ msgstr "acceso"
 #: virtualbricks/virtualbricks_BrickFactory.py:500
 #: virtualbricks/virtualbricks_BrickFactory.py:510
 #: virtualbricks/brickfactory.py:493
+#: virtualbricks/brickfactory.py:487
 msgid "disconnected"
 msgstr "disconnesso"
 
@@ -3453,6 +3866,8 @@ msgstr "disconnesso"
 #: virtualbricks/virtualbricks_BrickFactory.py:565
 #: virtualbricks/brickfactory.py:495
 #: virtualbricks/brickfactory.py:548
+#: virtualbricks/brickfactory.py:489
+#: virtualbricks/brickfactory.py:542
 msgid "off"
 msgstr "spento"
 
@@ -3461,6 +3876,7 @@ msgstr "spento"
 #: virtualbricks/virtualbricks_BrickFactory.py:549
 #: virtualbricks/virtualbricks_BrickFactory.py:563
 #: virtualbricks/brickfactory.py:546
+#: virtualbricks/brickfactory.py:540
 msgid "unconfigured"
 msgstr "non configurato"
 
@@ -3468,6 +3884,7 @@ msgstr "non configurato"
 #: virtualbricks/virtualbricks_GUI.py:153
 #: virtualbricks/virtualbricks_GUI.py:154
 #: virtualbricks/gui/gui.py:136
+#: virtualbricks/gui/gui.py:105
 msgid "PID"
 msgstr "PID"
 
@@ -3483,6 +3900,9 @@ msgstr "PID"
 #: virtualbricks/gui/gui.py:138
 #: virtualbricks/gui/gui.py:213
 #: virtualbricks/gui/gui.py:232
+#: virtualbricks/gui/gui.py:107
+#: virtualbricks/gui/gui.py:185
+#: virtualbricks/gui/gui.py:204
 msgid "Status"
 msgstr "Stato"
 
@@ -3492,6 +3912,7 @@ msgstr "Stato"
 #: virtualbricks/virtualbricks_GUI.py:706
 #: virtualbricks/virtualbricks_GUI.py:707
 #: virtualbricks/gui/gui.py:689
+#: virtualbricks/gui/gui.py:644
 msgid "Show Settings"
 msgstr "Mostra Impostazioni"
 
@@ -3507,11 +3928,14 @@ msgstr "Mostra Impostazioni"
 #: virtualbricks/virtualbricks_GUI.py:769
 #: virtualbricks/gui/gui.py:714
 #: virtualbricks/gui/gui.py:751
+#: virtualbricks/gui/gui.py:669
+#: virtualbricks/gui/gui.py:706
 msgid "Hide Settings"
 msgstr "Nascondi Impostazioni"
 
 #: share/virtualbricks.glade:2102
 #: share/virtualbricks.glade:2123
+#: share/virtualbricks.template.glade:2100
 msgid "Serial"
 msgstr "Seriale"
 
@@ -3524,6 +3948,8 @@ msgstr "Seriale"
 #: virtualbricks/virtualbricks_GUI.py:1050
 #: virtualbricks/gui/gui.py:339
 #: virtualbricks/gui/gui.py:1032
+#: virtualbricks/gui/gui.py:310
+#: virtualbricks/gui/gui.py:991
 msgid "Command"
 msgstr "Comando"
 
@@ -3536,6 +3962,8 @@ msgstr "Comando"
 #: virtualbricks/virtualbricks_GUI.py:1054
 #: virtualbricks/gui/gui.py:343
 #: virtualbricks/gui/gui.py:1036
+#: virtualbricks/gui/gui.py:314
+#: virtualbricks/gui/gui.py:995
 msgid "Host shell command"
 msgstr "Comando della shell Host"
 
@@ -3544,6 +3972,8 @@ msgstr "Comando della shell Host"
 #: virtualbricks/virtualbricks_BrickFactory.py:623
 #: share/virtualbricks.glade:4501
 #: virtualbricks/brickfactory.py:606
+#: share/virtualbricks.template.glade:4478
+#: virtualbricks/brickfactory.py:599
 msgid "Actions"
 msgstr "Azioni"
 
@@ -3562,6 +3992,9 @@ msgstr "Azioni"
 #: virtualbricks/gui/gui.py:2039
 #: virtualbricks/gui/gui.py:2048
 #: virtualbricks/gui/gui.py:2081
+#: virtualbricks/gui/gui.py:1960
+#: virtualbricks/gui/gui.py:1969
+#: virtualbricks/gui/gui.py:1999
 msgid "Error"
 msgstr "Errore"
 
@@ -3570,6 +4003,7 @@ msgstr "Errore"
 #: virtualbricks/virtualbricks_GUI.py:2045
 #: virtualbricks/gui/gui.py:2029
 #: virtualbricks/gui/gui.py:2039
+#: virtualbricks/gui/gui.py:1960
 msgid "invalid path for qemu binaries"
 msgstr "percorso non valido per i binari di qemu"
 
@@ -3578,6 +4012,7 @@ msgstr "percorso non valido per i binari di qemu"
 #: virtualbricks/virtualbricks_GUI.py:2054
 #: virtualbricks/gui/gui.py:2038
 #: virtualbricks/gui/gui.py:2048
+#: virtualbricks/gui/gui.py:1969
 msgid "cannot find neither qemu nor kvm in this path"
 msgstr "né qemu né kvm sono stati trovati in questo percorso"
 
@@ -3591,6 +4026,8 @@ msgstr "né qemu né kvm sono stati trovati in questo percorso"
 #: virtualbricks/gui/gui.py:2045
 #: virtualbricks/gui/gui.py:2052
 #: virtualbricks/gui/gui.py:2055
+#: virtualbricks/gui/gui.py:1973
+#: virtualbricks/gui/gui.py:1976
 msgid "Warning"
 msgstr "Attenzione"
 
@@ -3599,6 +4036,7 @@ msgstr "Attenzione"
 #: virtualbricks/virtualbricks_GUI.py:2058
 #: virtualbricks/gui/gui.py:2042
 #: virtualbricks/gui/gui.py:2052
+#: virtualbricks/gui/gui.py:1973
 msgid "cannot find qemu, using kvm only\n"
 msgstr "non trovo qemu, uso solo kvm\n"
 
@@ -3607,6 +4045,7 @@ msgstr "non trovo qemu, uso solo kvm\n"
 #: virtualbricks/virtualbricks_GUI.py:2076
 #: virtualbricks/gui/gui.py:2060
 #: virtualbricks/gui/gui.py:2070
+#: virtualbricks/gui/gui.py:1990
 msgid "additional targets supported"
 msgstr "altri target supportati"
 
@@ -3615,6 +4054,7 @@ msgstr "altri target supportati"
 #: virtualbricks/virtualbricks_GUI.py:2087
 #: virtualbricks/gui/gui.py:2071
 #: virtualbricks/gui/gui.py:2081
+#: virtualbricks/gui/gui.py:1999
 msgid "invalid path for vde binaries"
 msgstr "percorso non valido per i binari di vde"
 
@@ -3623,6 +4063,7 @@ msgstr "percorso non valido per i binari di vde"
 #: virtualbricks/virtualbricks_GUI.py:2089
 #: virtualbricks/gui/gui.py:2073
 #: virtualbricks/gui/gui.py:2083
+#: virtualbricks/gui/gui.py:2001
 msgid "Warning, missing modules"
 msgstr "Attenzione, moduli mancanti"
 
@@ -3631,6 +4072,7 @@ msgstr "Attenzione, moduli mancanti"
 #: virtualbricks/virtualbricks_GUI.py:2094
 #: virtualbricks/gui/gui.py:2078
 #: virtualbricks/gui/gui.py:2088
+#: virtualbricks/gui/gui.py:2006
 msgid "All VDE components detected"
 msgstr "Tutti i componenti VDE rilevati"
 
@@ -3639,6 +4081,7 @@ msgstr "Tutti i componenti VDE rilevati"
 #: virtualbricks/virtualbricks_GUI.py:2061
 #: virtualbricks/gui/gui.py:2045
 #: virtualbricks/gui/gui.py:2055
+#: virtualbricks/gui/gui.py:1976
 msgid "kvm not found"
 msgstr "kvm non trovato"
 
@@ -3647,6 +4090,7 @@ msgstr "kvm non trovato"
 #: virtualbricks/virtualbricks_GUI.py:2061
 #: virtualbricks/gui/gui.py:2045
 #: virtualbricks/gui/gui.py:2055
+#: virtualbricks/gui/gui.py:1976
 msgid "KVM support disabled"
 msgstr "Supporto KVM disabilitato"
 
@@ -3655,6 +4099,7 @@ msgstr "Supporto KVM disabilitato"
 #: virtualbricks/virtualbricks_GUI.py:2063
 #: virtualbricks/gui/gui.py:2047
 #: virtualbricks/gui/gui.py:2057
+#: virtualbricks/gui/gui.py:1978
 msgid "KVM and Qemu detected"
 msgstr "KVM e Qemu rilevati"
 
@@ -3663,6 +4108,7 @@ msgstr "KVM e Qemu rilevati"
 #: virtualbricks/virtualbricks_GUI.py:1850
 #: virtualbricks/gui/gui.py:1836
 #: virtualbricks/gui/gui.py:1845
+#: virtualbricks/gui/gui.py:1781
 msgid "No KVM binary found"
 msgstr "Binari KVM non trovati"
 
@@ -3676,6 +4122,8 @@ msgstr "Binari KVM non trovati"
 #: virtualbricks/gui/gui.py:1839
 #: virtualbricks/gui/gui.py:1845
 #: virtualbricks/gui/gui.py:1848
+#: virtualbricks/gui/gui.py:1781
+#: virtualbricks/gui/gui.py:1784
 msgid "Check your active configuration"
 msgstr "Controlla la configurazione attiva"
 
@@ -3689,6 +4137,8 @@ msgstr "Controlla la configurazione attiva"
 #: virtualbricks/gui/gui.py:1839
 #: virtualbricks/gui/gui.py:1845
 #: virtualbricks/gui/gui.py:1848
+#: virtualbricks/gui/gui.py:1781
+#: virtualbricks/gui/gui.py:1784
 msgid "KVM will stay disabled"
 msgstr "KVM rimmarrà disabilitato"
 
@@ -3697,6 +4147,7 @@ msgstr "KVM rimmarrà disabilitato"
 #: virtualbricks/virtualbricks_GUI.py:1855
 #: virtualbricks/gui/gui.py:1839
 #: virtualbricks/gui/gui.py:1848
+#: virtualbricks/gui/gui.py:1784
 msgid "No KVM support found on the system"
 msgstr "Nessun supporto KVM trovato nel sistema"
 
@@ -3705,6 +4156,7 @@ msgstr "Nessun supporto KVM trovato nel sistema"
 #: virtualbricks/virtualbricks_GUI.py:1863
 #: virtualbricks/gui/gui.py:1847
 #: virtualbricks/gui/gui.py:1856
+#: virtualbricks/gui/gui.py:1792
 msgid "No KSM support found on the system"
 msgstr "Nessun supporto KSM trovato nel sistema"
 
@@ -3713,6 +4165,7 @@ msgstr "Nessun supporto KSM trovato nel sistema"
 #: virtualbricks/virtualbricks_GUI.py:1863
 #: virtualbricks/gui/gui.py:1847
 #: virtualbricks/gui/gui.py:1856
+#: virtualbricks/gui/gui.py:1792
 msgid "Check your configuration"
 msgstr "Controlla la configurazione"
 
@@ -3721,6 +4174,7 @@ msgstr "Controlla la configurazione"
 #: virtualbricks/virtualbricks_GUI.py:1863
 #: virtualbricks/gui/gui.py:1847
 #: virtualbricks/gui/gui.py:1856
+#: virtualbricks/gui/gui.py:1792
 msgid "KSM will stay disabled"
 msgstr "KSM rimarrà disabilitato"
 
@@ -3729,6 +4183,7 @@ msgstr "KSM rimarrà disabilitato"
 #: virtualbricks/virtualbricks_GUI.py:1888
 #: virtualbricks/gui/gui.py:1872
 #: virtualbricks/gui/gui.py:1881
+#: virtualbricks/gui/gui.py:1805
 msgid "Cannot delete Brick: it is in use"
 msgstr "Non posso cancellare il Mattone: è in uso"
 
@@ -3737,6 +4192,7 @@ msgstr "Non posso cancellare il Mattone: è in uso"
 #: virtualbricks/virtualbricks_GUI.py:1900
 #: virtualbricks/gui/gui.py:1884
 #: virtualbricks/gui/gui.py:1893
+#: virtualbricks/gui/gui.py:1817
 msgid "This event is in use"
 msgstr "Questo evento è in uso"
 
@@ -3745,24 +4201,29 @@ msgstr "Questo evento è in uso"
 #: virtualbricks/virtualbricks_GUI.py:1902
 #: virtualbricks/gui/gui.py:1886
 #: virtualbricks/gui/gui.py:1895
+#: virtualbricks/gui/gui.py:1819
 msgid "Do you really want to delete"
 msgstr "Vuoi davvero cancellare"
 
 #: share/virtualbricks.glade:6149
 #: share/virtualbricks.glade:6170
+#: share/virtualbricks.template.glade:6147
 msgid "Create"
 msgstr "Crea"
 
 #: share/virtualbricks.glade:172
+#: share/virtualbricks.template.glade:171
 msgid "_View"
 msgstr "_Vista"
 
 #: share/virtualbricks.glade:180
+#: share/virtualbricks.template.glade:179
 msgid "_Messages"
 msgstr "_Messaggi"
 
 #: share/virtualbricks.glade:9252
 #: share/virtualbricks.glade:9251
+#: share/virtualbricks.template.glade:9220
 msgid "Messages"
 msgstr "Messaggi"
 
@@ -3773,32 +4234,114 @@ msgstr "Il progetto corrente è %s"
 
 #: virtualbricks/virtualbricks_BrickFactory.py:1931
 #: virtualbricks/brickfactory.py:1915
+#: virtualbricks/brickfactory.py:1907
 msgid "Engine: Bye!"
 msgstr "Motore: Arrivederci!"
 
 #: virtualbricks/gui/gui.py:1421
 #: virtualbricks/gui/gui.py:1430
+#: virtualbricks/gui/gui.py:1377
 #, python-format
 msgid "Cannot start '%s': not configured"
 msgstr "Impossibile avviare '%s': non configurato"
 
 #: virtualbricks/gui/gui.py:1424
 #: virtualbricks/gui/gui.py:1433
+#: virtualbricks/gui/gui.py:1380
 #, python-format
 msgid "Cannot start '%s': not connected"
 msgstr "Impossibile avviare '%s': non connesso"
 
 #: virtualbricks/gui/gui.py:1428
 #: virtualbricks/gui/gui.py:1437
+#: virtualbricks/gui/gui.py:1384
 msgid "Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings"
 msgstr "Loop di collegamento rilevato: annullamento delle operazioni. Se vuoi avviare una rete con loop, modifica la configurazione nelle impostazioni generali"
 
 #: virtualbricks/gui/gui.py:1434
 #: virtualbricks/gui/gui.py:1443
+#: virtualbricks/gui/gui.py:1390
 msgid "Disk used by the VM is locked by another machine"
 msgstr "Il disco usato dalla VM è bloccato da un'altra macchina"
 
 #: virtualbricks/gui/gui.py:1123
+#: virtualbricks/gui/gui.py:1082
 msgid "Events to add to the event to be started"
 msgstr "Eventi da aggiungere all'evento per essere avviati"
+
+#: share/virtualbricks.template.glade:8789
+msgid "Toggle window"
+msgstr "Attiva finestra"
+
+#: virtualbricks/brickfactory.py:349
+#, python-format
+msgid "Starting: '%s'"
+msgstr "Avvio: '%s'"
+
+#: virtualbricks/brickfactory.py:365
+#, python-format
+msgid "Shutting down %s"
+msgstr "Arresto %s"
+
+#: virtualbricks/brickfactory.py:373
+#, python-format
+msgid "can not stop brick (error code: '%s')"
+msgstr "impossibile fermare mattone (codice errore: '%s')"
+
+#: virtualbricks/brickfactory.py:379
+#, python-format
+msgid "can not send SIGTERM: '%s'"
+msgstr "impossibile inviare SIGTERM: '%s'"
+
+#: virtualbricks/brickfactory.py:424
+msgid "Error: cannot start a terminal emulator"
+msgstr "Errore: impossibile avviare un emulatore di terminale"
+
+#: virtualbricks/brickfactory.py:565
+msgid "Error: config line must contain add OR addsh."
+msgstr "Errore: la riga di configurazione deve contenere add oppure addsh."
+
+#: virtualbricks/brickfactory.py:573
+#, python-format
+msgid "Added vb-shell command: '%s'"
+msgstr "Aggiunto un comando vb-shell: '%s'"
+
+#: virtualbricks/brickfactory.py:580
+#, python-format
+msgid "Added host-shell command: '%s'"
+msgstr "Aggiunto un comando host-shell: '%s'"
+
+#: virtualbricks/settings.py:81
+#, python-format
+msgid "Configuration loaded ('%s')"
+msgstr "Configurazione caricata ('%s')"
+
+#: virtualbricks/settings.py:83
+#, python-format
+msgid "Cannot read config file '%s': '%s'!"
+msgstr "Impossibile leggere il file di configurazione '%s': '%s'!"
+
+#: virtualbricks/settings.py:86
+#: virtualbricks/settings.py:85
+msgid "Default configuration loaded"
+msgstr "Caricata configurazione di default"
+
+#: virtualbricks/settings.py:90
+#: virtualbricks/settings.py:89
+#, python-format
+msgid "Default configuration saved ('%s')"
+msgstr "Salvata configurazione di default ('%s')"
+
+#: virtualbricks/settings.py:93
+#: virtualbricks/settings.py:92
+msgid "Cannot save default configuration"
+msgstr "Impossibile salvare la configurazione di default"
+
+#: virtualbricks/settings.py:83
+msgid "Cannot read config file"
+msgstr "Impossibile leggere il file di configurazione"
+
+#: virtualbricks/settings.py:83
+msgid "Cannot read config file "
+msgstr "Impossibile leggere il file di configurazione "
 
