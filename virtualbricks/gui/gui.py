@@ -84,7 +84,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget("messages_textview").set_buffer(self.messages_buffer)
 
 		self.widg['main_win'].show()
-		
+
 		self.ps = []
 		self.bricks = []
 
@@ -1708,19 +1708,19 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_item_eject_activate(self, widget=None, data=""):
 		raise NotImplementedError()
-	
+
 	def on_dialog_newnetcard_response(self, widget=None, data=""):
 		raise NotImplementedError()
-	
+
 	def on_combobox_networktype_changed(self, widget=None, data=""):
 		raise NotImplementedError()
-	
+
 	def on_entry_network_macaddr_changed(self, widget=None, data=""):
 		raise NotImplementedError()
-	
+
 	def on_entry_network_ip_changed(self, widget=None, data=""):
 		raise NotImplementedError()
-	
+
 	def on_spinbutton_network_port_changed(self, widget=None, data=""):
 		raise NotImplementedError()
 
@@ -2482,7 +2482,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.debug("proc list updated")
 
 		self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+" )")
-		
+
 		return True
 
 	def draw_topology(self):

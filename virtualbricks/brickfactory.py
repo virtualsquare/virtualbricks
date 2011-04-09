@@ -350,6 +350,9 @@ class Brick(ChildLogger):
 
 		if self.open_internal_console and callable(self.open_internal_console):
 			self.internal_console = self.open_internal_console()
+
+		self.pid = self.proc.pid
+
 		self.factory.emit("brick-started")
 		self.post_poweron()
 
@@ -395,6 +398,7 @@ class Brick(ChildLogger):
 	# Console related operations.
 	#############################
 	def has_console(self):
+
 		if self.proc != None and os.path.exists(self.console()):
 			return True
 		else:
