@@ -99,11 +99,12 @@ class Plug(ChildLogger):
 		self.sock = None
 
 class Sock(object):
-	def __init__(self, brick, nickname):
+	def __init__(self, brick, name = ""):
 		self.brick = brick
-		self.nickname = nickname
-		self.path = ""
+		self.path = name
+		self.nickname = name
 		self.plugs = []
+		self.mode="sock"
 		self.brick.factory.socks.append(self)
 
 	def get_free_ports(self):
@@ -185,6 +186,7 @@ class Brick(ChildLogger):
 		self.internal_console = None
 		self.icon = Icon(self)
 		self.terminal = "vdeterm"
+		self.config_socks = []
 
 		self.factory.bricksmodel.add_brick(self)
 
@@ -794,9 +796,8 @@ class Tap(Brick):
 		return 'Tap'
 
 	def on_config_changed(self):
-		print "self.plugs[0].sock", self.plugs[0].sock
 		if (self.plugs[0].sock is not None):
-			self.cfg.sock = self.plugs[0].sock.path
+			self.cfg.sock = self.plugs[0].sock.path.rstrip("[]")
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
 
@@ -846,9 +847,9 @@ class Wire(Brick):
 
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
-			self.cfg.sock0 = self.plugs[0].sock.path
+			self.cfg.sock0 = self.plugs[0].sock.path.rstrip('[]')
 		if (self.plugs[1].sock is not None):
-			self.cfg.sock1 = self.plugs[1].sock.path
+			self.cfg.sock1 = self.plugs[1].sock.path.rstrip('[]')
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
 
@@ -1192,7 +1193,7 @@ class TunnelListen(Brick):
 
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
-			self.cfg.sock = self.plugs[0].sock.path
+			self.cfg.sock = self.plugs[0].sock.path.rstrip('[]')
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
 
@@ -1238,7 +1239,7 @@ class TunnelConnect(TunnelListen):
 
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
-			self.cfg.sock = self.plugs[0].sock.path
+			self.cfg.sock = self.plugs[0].sock.path.rstrip('[]')
 
 		p = self.cfg.get("port")
 		if p is not None:
@@ -1265,6 +1266,18 @@ class VMPlug(Plug, BrickConfig):
 		self.model = 'rtl8139'
 		self.vlan = len(self.brick.plugs) + len(self.brick.socks)
 		self.mode = 'vde'
+
+class VMSock(Sock, BrickConfig):
+	def __init__(self,brick):
+		Sock.__init__(self, brick)
+		self.mac = tools.RandMac()
+		self.model = 'rtl8139'
+		self.vlan = len(self.brick.plugs) + len(self.brick.socks)
+		self.path = MYPATH + "/" + self.brick.name+ "_sock_eth" + str(self.vlan) + "[]"
+		self.nickname = self.path.split('/')[-1].rstrip('[]')
+	def connect(self, endpoint):
+		return
+		
 
 class VMPlugHostonly(VMPlug):
 	def __init__(self, _brick):
@@ -1579,7 +1592,7 @@ class VM(Brick):
 
 		res.append('-name')
 		res.append(self.name)
-		if (len(self.plugs) == 0):
+		if (len(self.plugs) + len(self.socks) == 0):
 			res.append('-net')
 			res.append('none')
 		else:
@@ -1588,10 +1601,15 @@ class VM(Brick):
 				res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
 				if (pl.mode == 'vde'):
 					res.append("-net")
-					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path))
+					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path.rstrip('[]')))
 				else:
 					res.append("-net")
 					res.append("user")
+			for pl in self.socks:
+				res.append("-net")
+				res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
+				res.append("-net")
+				res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.path))
 
 		if (self.cfg.cdromen == "*"):
 			if (self.cfg.cdrom != ""):
@@ -1635,6 +1653,16 @@ class VM(Brick):
 
 	def console2(self):
 		return "%s/%s.mgmt" % (MYPATH, self.name)
+	
+	def add_sock(self, mac=None, model=None):
+		sk = VMSock(self)
+		self.socks.append(sk)
+		if mac:
+			sk.mac = mac
+		if model:
+			sk.model = model
+		self.gui_changed = True
+		return sk
 
 	def add_plug(self, sock=None, mac=None, model=None):
 		if sock and sock == '_hostonly':
@@ -1665,7 +1693,14 @@ class VM(Brick):
 			if p.vlan == idx:
 				self.plugs.remove(p)
 				del(p)
+		for p in self.socks:
+			if p.vlan == idx:
+				self.socks.remove(p)
+				del(p)
 		for p in self.plugs:
+			if p.vlan > idx:
+				p.vlan -= 1
+		for p in self.socks:
 			if p.vlan > idx:
 				p.vlan -= 1
 		self.gui_changed = True
@@ -1785,6 +1820,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					p.write(k + '=' + str(v) + '\n')
 
 		for b in self.bricks:
+			for sk in b.socks:
+				if b.get_type() == 'Qemu':
+					p.write('sock|' + b.name + "|" + sk.nickname + '|' + sk.model + '|' + sk.mac + '|' + str(sk.vlan) + '\n')
 			for pl in b.plugs:
 				if b.get_type() == 'Qemu':
 					if pl.mode == 'vde':
@@ -1835,6 +1873,21 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		b = None
 		while (l):
 			l = re.sub(' ', '', l)
+			if re.search("\A.*sock\|", l) and len(l.split("|")) >= 3:
+				l.rstrip('\n')
+				self.debug( "************************* sock detected" )
+				for bb in self.bricks:
+					if bb.name == l.split("|")[1]:
+						if (bb.get_type() == 'Qemu'):
+							sockname = l.split('|')[2]
+							model = l.split("|")[3]
+							macaddr = l.split("|")[4]
+							vlan = l.split("|")[5]
+							pl = bb.add_sock(macaddr, model)
+
+							pl.vlan = int(vlan)
+							self.debug( "added eth%d" % pl.vlan )
+
 			if re.search("\A.*link\|", l) and len(l.split("|")) >= 3:
 				l.rstrip('\n')
 				self.debug( "************************* link detected" )
@@ -1845,7 +1898,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							model = l.split("|")[3]
 							macaddr = l.split("|")[4]
 							vlan = l.split("|")[5]
-							this_sock = '?'
+							this_sock = "?" 
 							if l.split("|")[0] == 'userlink':
 								this_sock = '_hostonly'
 							else:
@@ -1858,7 +1911,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							pl.vlan = int(vlan)
 							self.debug( "added eth%d" % pl.vlan )
 						else:
-							self.connect_to(bb, l.split('|')[2].rstrip('\n'))
+							bb.config_socks.append(l.split('|')[2].rstrip('\n'))	
 
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
@@ -1874,13 +1927,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						component = self.getbrickbyname(name)
 
 				except Exception, err:
-					self.debug ( "--------- Bad config line:", err )
+					self.debug ( "--------- Bad config line:" + str(err) )
 					l = p.readline()
 					continue
 
 				l = p.readline()
 				parameters = []
-				while component and l and not l.startswith('[') and not re.search("\A.*link\|", l):
+				while component and l and not l.startswith('[') and not re.search("\A.*link\|",l) and not re.search("\A.*sock\|", l):
 					if len(l.split('=')) > 1:
 						#Special management for event actions
 						if l.split('=')[0] == "actions" and ntype == 'Event':
@@ -1897,6 +1950,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 				continue
 			l = p.readline()
+			for b in self.bricks:
+				for c in b.config_socks:
+						self.connect_to(b,c)
 
 	def quit(self):
 		for e in self.events:

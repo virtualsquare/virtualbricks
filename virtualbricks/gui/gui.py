@@ -340,10 +340,10 @@ class VBGUI(Logger, gobject.GObject):
 			# add Ad-hoc host only to the vmehternet
 			if k == 'sockscombo_vmethernet':
 				opt['Host-only ad hoc network']='_hostonly'
+				opt['Vde socket']='_sock'
 
 			for so in self.brickfactory.socks:
 				opt[so.nickname] = so.nickname
-
 			combo.populate(opt)
 			t = b.get_type()
 			if (not t.startswith('Wire')) or k.endswith('0'):
@@ -398,7 +398,7 @@ class VBGUI(Logger, gobject.GObject):
 		# Qemu VMplugs:
 		ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
 		ComboBox(self.gladefile.get_widget("vmplug_model")).select('rtl8139')
-		if len(b.plugs) == 0:
+		if len(b.plugs)+ len(b.socks) == 0:
 			self.gladefile.get_widget('radiobutton_network_nonet').set_active(True)
 			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
@@ -2119,7 +2119,9 @@ class VBGUI(Logger, gobject.GObject):
 		if self.brick_selected is None:
 			return
 		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
-		if (sockname == '_hostonly'):
+		if sockname == '_sock':
+			pl = self.brick_selected.add_sock()
+		elif (sockname == '_hostonly'):
 			pl = self.brick_selected.add_plug('_hostonly')
 		else:
 			pl = self.brick_selected.add_plug()
@@ -2145,6 +2147,12 @@ class VBGUI(Logger, gobject.GObject):
 					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
 				self.vmplugs.set_value(iter,2,pl.model)
 				self.vmplugs.set_value(iter,3,pl.mac)
+			for sk in self.brick_selected.socks:
+				iter = self.vmplugs.append(None, None)
+				self.vmplugs.set_value(iter,0,sk.vlan)
+				self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
+				self.vmplugs.set_value(iter,2,sk.model)
+				self.vmplugs.set_value(iter,3,sk.mac)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
 		if self.brick_selected is None:
@@ -2156,17 +2164,28 @@ class VBGUI(Logger, gobject.GObject):
 		y = int(event.y)
 		pthinfo = tree.get_path_at_pos(x, y)
 		number = self.get_treeselected(tree, store, pthinfo, 0)
+		self.vmplug_selected = None
+		vmsock = False
 		for pl in self.brick_selected.plugs:
 			if str(pl.vlan) == number:
 				self.vmplug_selected = pl
 				break
+		if not self.vmplug_selected:
+			for pl in self.brick_selected.socks:
+				if str(pl.vlan) == number:
+					self.vmplug_selected = pl
+					vmsock=True
+					break
+		pl = self.vmplug_selected
+		
 		ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
 		self.gladefile.get_widget('vmplug_macaddr').set_text(pl.mac)
-		if (pl.mode == 'hostonly'):
+		if (pl.mode == 'sock'):
+			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Vde socket')
+		elif (pl.mode == 'hostonly'):
 			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Host-only ad hoc network')
 		elif (pl.sock):
 			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
-		self.vmplug_selected = pl
 
 	def on_vmplug_edit(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
@@ -2177,11 +2196,16 @@ class VBGUI(Logger, gobject.GObject):
 		if self.brick_selected is None:
 			return
 
-		self.brick_selected.plugs.remove(pl)
+		if (pl.mode == 'sock'):
+			self.brick_selected.socks.remove(pl)
+		else:
+			self.brick_selected.plugs.remove(pl)
 		del(pl)
 		model = ComboBox(self.gladefile.get_widget('vmplug_model')).get_selected()
 		mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
 		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
+		if (sockname == '_sock'):
+			pl = self.brick_selected.add_sock()
 		if (sockname == '_hostonly'):
 			pl = self.brick_selected.add_plug(sockname)
 		else:
