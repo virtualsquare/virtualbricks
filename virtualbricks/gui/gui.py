@@ -340,10 +340,12 @@ class VBGUI(Logger, gobject.GObject):
 			# add Ad-hoc host only to the vmehternet
 			if k == 'sockscombo_vmethernet':
 				opt['Host-only ad hoc network']='_hostonly'
+			if self.config.femaleplugs:
 				opt['Vde socket']='_sock'
 
 			for so in self.brickfactory.socks:
-				opt[so.nickname] = so.nickname
+				if so.brick.get_type() == 'Switch' or self.config.femaleplugs:
+					opt[so.nickname] = so.nickname
 			combo.populate(opt)
 			t = b.get_type()
 			if (not t.startswith('Wire')) or k.endswith('0'):
@@ -2147,12 +2149,13 @@ class VBGUI(Logger, gobject.GObject):
 					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
 				self.vmplugs.set_value(iter,2,pl.model)
 				self.vmplugs.set_value(iter,3,pl.mac)
-			for sk in self.brick_selected.socks:
-				iter = self.vmplugs.append(None, None)
-				self.vmplugs.set_value(iter,0,sk.vlan)
-				self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
-				self.vmplugs.set_value(iter,2,sk.model)
-				self.vmplugs.set_value(iter,3,sk.mac)
+			if self.config.femaleplugs:
+				for sk in self.brick_selected.socks:
+					iter = self.vmplugs.append(None, None)
+					self.vmplugs.set_value(iter,0,sk.vlan)
+					self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
+					self.vmplugs.set_value(iter,2,sk.model)
+					self.vmplugs.set_value(iter,3,sk.mac)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
 		if self.brick_selected is None:
