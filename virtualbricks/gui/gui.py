@@ -78,6 +78,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.addedmodel = None
 		self.shcommandsmodel = None
 
+		self.config = self.brickfactory.settings
 		self.draw_topology()
 		self.brickfactory.start()
 
@@ -92,7 +93,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.last_known_selected_brick = None
 		self.last_known_selected_event = None
 		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
-		self.config = self.brickfactory.settings
 		self.signals()
 		self.timers()
 		self.topology_active = False
@@ -615,7 +615,7 @@ class VBGUI(Logger, gobject.GObject):
 			data.popup(None, None, None, 3, time)
 
 	def stop_systray(self):
-		if self.statusicon.is_visible():
+		if self.statusicon is not None and self.statusicon.get_visible():
 			self.statusicon.set_visible(False)
 			self.statusicon = None
 
