@@ -106,7 +106,7 @@ class Node:
 
 class Topology():
 
-	def __init__(self, widget, bricks_model, scale=1.00, orientation="LR", export=None):
+	def __init__(self, widget, bricks_model, scale=1.00, orientation="LR", export=None, tempdir="/tmp/"):
 		self.topowidget = widget
 		self.topo = pgv.AGraph()
 
@@ -156,16 +156,15 @@ class Topology():
 					e.attr['name'] = "      "
 					e.attr['decorate']='true'
 
-
 		#draw and save
-		self.topo.write("/tmp/vde.dot")
+		self.topo.write(tempdir+"vde.dot")
 		self.topo.layout('dot')
-		self.topo.draw("/tmp/vde_topology.png")
-		self.topo.draw("/tmp/vde_topology.plain")
+		self.topo.draw(tempdir+"vde_topology.png")
+		self.topo.draw(tempdir+"vde_topology.plain")
 
-		img = Image.open("/tmp/vde_topology.png")
+		img = Image.open(tempdir+"vde_topology.png")
 		x_siz, y_siz = img.size
-		for line in open("/tmp/vde_topology.plain").readlines():
+		for line in open(tempdir+"vde_topology.plain").readlines():
 			#arg  = line.rstrip('\n').split(' ')
 			arg = re.split('\s+', line.rstrip('\n'))
 			if arg[0] == 'graph':
@@ -185,8 +184,8 @@ class Topology():
 				self.nodes.append(Node(self, arg[1],x,y))
 		# Display on the widget
 		if scale < 1.00:
-			img.resize((x_siz * scale, y_siz * scale)).save("/tmp/vde_topology.png")
+			img.resize((x_siz * scale, y_siz * scale)).save(tempdir+"vde_topology.png")
 
-		self.topowidget.set_from_file("/tmp/vde_topology.png")
+		self.topowidget.set_from_file(tempdir+"vde_topology.png")
 		if export:
 			img.save(export)

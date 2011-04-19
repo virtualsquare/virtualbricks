@@ -2180,7 +2180,7 @@ class VBGUI(Logger, gobject.GObject):
 					vmsock=True
 					break
 		pl = self.vmplug_selected
-		
+
 		ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
 		self.gladefile.get_widget('vmplug_macaddr').set_text(pl.mac)
 		if (pl.mode == 'sock'):
@@ -2518,7 +2518,7 @@ class VBGUI(Logger, gobject.GObject):
 		else:
 			orientation = "LR"
 
-		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation)
+		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation, None, self.brickfactory.settings.get("bricksdirectory")+"/")
 
 	def user_wait_action(self, action, *args):
 		self.gladefile.get_widget("window_userwait").show_all()
