@@ -1277,7 +1277,7 @@ class VMSock(Sock, BrickConfig):
 		self.nickname = self.path.split('/')[-1].rstrip('[]')
 	def connect(self, endpoint):
 		return
-		
+
 
 class VMPlugHostonly(VMPlug):
 	def __init__(self, _brick):
@@ -1554,13 +1554,12 @@ class VM(Brick):
 				real_disk = disk.get_real_disk_name()
 
 				d_lock = real_disk in VM.DISKS_LOCKED
-
 				if not d_lock and self.cfg.snapshot == "":
 					VM.DISKS_LOCKED.add(real_disk)
 					args = disk.args(True)
 					res.append(args[0])
 					res.append(args[1])
-				elif self.cfg.snapshot=="*":
+				elif self.cfg.snapshot=="*" or disk.cow==True:
 					args = disk.args(True)
 					res.append(args[0])
 					res.append(args[1])
@@ -1653,7 +1652,7 @@ class VM(Brick):
 
 	def console2(self):
 		return "%s/%s.mgmt" % (MYPATH, self.name)
-	
+
 	def add_sock(self, mac=None, model=None):
 		sk = VMSock(self)
 		self.socks.append(sk)
@@ -1898,7 +1897,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							model = l.split("|")[3]
 							macaddr = l.split("|")[4]
 							vlan = l.split("|")[5]
-							this_sock = "?" 
+							this_sock = "?"
 							if l.split("|")[0] == 'userlink':
 								this_sock = '_hostonly'
 							else:
@@ -1911,7 +1910,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							pl.vlan = int(vlan)
 							self.debug( "added eth%d" % pl.vlan )
 						else:
-							bb.config_socks.append(l.split('|')[2].rstrip('\n'))	
+							bb.config_socks.append(l.split('|')[2].rstrip('\n'))
 
 			if l.startswith('['):
 				ntype = l.lstrip('[').split(':')[0]
