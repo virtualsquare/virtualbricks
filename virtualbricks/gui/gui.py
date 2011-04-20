@@ -1342,7 +1342,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 
 	def on_treeview_events_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
-		self.on_events_startstop(widget, event, data)
+		self.on_event_startstop(widget, event, data)
 		self.curtain_down()
 
 	def on_focus_out(self, widget=None, event=None , data=""):
@@ -1354,9 +1354,9 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_event_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		self.user_wait_action(self.events_startstop_brick, self.event_selected)
+		self.user_wait_action(self.event_startstop_brick, self.event_selected)
 
-	def events_startstop_brick(self, e):
+	def event_startstop_brick(self, e):
 		if e.get_type() == 'Event':
 			if e.active:
 				print "Power OFF"
@@ -1802,9 +1802,9 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
-
+		
 		if self.brick_selected.proc is not None:
-			self.error(_("Cannot delete Brick: it is in use")+".")
+			self.show_error(_("Cannot delete Brick: it is in use")+".")
 			return
 
 		self.ask_confirm(_("Do you really want to delete ") +
