@@ -37,11 +37,11 @@ class Settings(ChildLogger):
 		ChildLogger.__init__(self, logger)
 		# default config
 		default_conf = {
-			"bricksdirectory": os.path.join(HOME, "virtualbricks"),
+			"bricksdirectory": HOME + "/.virtualbricks",
 			"term": "/usr/bin/xterm",
 			"sudo": "/usr/bin/gksu",
 			"qemupath": "/usr/bin",
-			"baseimages": HOME + "/virtualbricks/img",
+			"baseimages": HOME + "/.virtualbricks/img",
 			"kvm": False,
 			"ksm": False,
 			"kqemu": False,

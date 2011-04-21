@@ -842,11 +842,11 @@ class VBGUI(Logger, gobject.GObject):
 	def error(self, text, *args, **kwargs):
 		Logger.error(self, text, *args, **kwargs)
 		text = text % args
-		gtk.gdk.threads_enter()
-		try:
-			self.show_error(text)
-		finally:
-			gtk.gdk.threads_leave()
+#		gtk.gdk.threads_enter()
+#		try:
+		self.show_error(text)
+#		finally:
+#			gtk.gdk.threads_leave()
 
 	def show_error(self, text):
 		def on_response(widget, response_id=None, data=None):
@@ -945,7 +945,7 @@ class VBGUI(Logger, gobject.GObject):
 		try:
 			self.brickfactory.newbrick(ntype, name)
 		except InvalidName:
-			self.error("Cannot create brick: Invalid name.")
+			self.error(_("Cannot create brick: Invalid name."))
 		else:
 			self.debug("Created successfully")
 
@@ -1086,7 +1086,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
 
 		except InvalidName:
-			self.error("Cannot create event: Invalid name.")
+			self.error(_("Cannot create event: Invalid name."))
 
 	def edited_callback (self, cell, rowpath, new_text, user_data):
 		model, col_id = user_data
@@ -1591,7 +1591,7 @@ class VBGUI(Logger, gobject.GObject):
 		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()[:-1]
 		cmd='qemu-img create'
 		if not filename:
-			self.error("Choose a filename first!")
+			self.error(_("Choose a filename first!"))
 			return
 
 		if img_format == "Auto":
@@ -1804,7 +1804,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 		
 		if self.brick_selected.proc is not None:
-			self.show_error(_("Cannot delete Brick: it is in use")+".")
+			self.error(_("Cannot delete Brick: it is in use")+".")
 			return
 
 		self.ask_confirm(_("Do you really want to delete ") +
@@ -1854,7 +1854,7 @@ class VBGUI(Logger, gobject.GObject):
 			try:
 				self.brickfactory.renamebrick(self.brick_selected, self.gladefile.get_widget('entry_brick_newname').get_text())
 			except InvalidName:
-				self.error("Invalid name!")
+				self.error(_("Invalid name!"))
 
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
@@ -1866,7 +1866,7 @@ class VBGUI(Logger, gobject.GObject):
 			try:
 				self.brickfactory.renameevent(self.event_selected, self.gladefile.get_widget('entry_event_newname').get_text())
 			except InvalidName:
-				self.error("Invalid name!")
+				self.error(_("Invalid name!"))
 
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
 		if response == 1:
@@ -1913,7 +1913,7 @@ class VBGUI(Logger, gobject.GObject):
 					self.debug("Event created successfully")
 		 			widget.hide()
 			except InvalidName:
-				self.error("Invalid name!")
+				self.error(_("Invalid name!"))
 				widget.hide()
 		#Dialog window canceled
 		else:
@@ -2068,10 +2068,10 @@ class VBGUI(Logger, gobject.GObject):
 				self.config.check_kvm()
 				self.kvm_toggle_all(True)
 			except IOError:
-				self.error("No KVM binary found. Check your active configuration. KVM will stay disabled.")
+				self.error(_("No KVM binary found. Check your active configuration. KVM will stay disabled."))
 				widget.set_active(False)
 			except NotImplementedError:
-				self.error("No KVM support found on the system. Check your active configuration. KVM will stay disabled.")
+				self.error(_("No KVM support found on the system. Check your active configuration. KVM will stay disabled."))
 				widget.set_active(False)
 		else:
 			self.kvm_toggle_all(False)
@@ -2242,7 +2242,7 @@ class VBGUI(Logger, gobject.GObject):
 	def on_vm_suspend(self, widget=None, event=None, data=""):
 		hda = self.joblist_selected.cfg.get('basehda')
 		if hda is None or 0 != subprocess.Popen(["qemu-img","snapshot","-c","virtualbricks",hda]).wait():
-			self.error("Suspend/Resume not supported on this disk.")
+			self.error(_("Suspend/Resume not supported on this disk."))
 			return
 		self.joblist_selected.recv()
 		self.joblist_selected.send("savevm virtualbricks\n")
@@ -2267,7 +2267,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.brick_selected.cfg.set("loadvm=virtualbricks")
 				self.brick_selected.poweron()
 		else:
-			self.error("Cannot find suspend point.")
+			self.error(_("Cannot find suspend point."))
 
 	def on_vm_powerbutton(self, widget=None, event=None, data=""):
 		self.joblist_selected.send("system_powerdown\n")
@@ -2299,11 +2299,11 @@ class VBGUI(Logger, gobject.GObject):
 		try:
 			Image.open('/tmp/vde_topology.png').save(fname)
 		except KeyError:
-			self.error("Error saving topology: Invalid image format")
+			self.error(_("Error saving topology: Invalid image format"))
 		except IOError:
-			self.error("Error saving topology: Could not write file")
+			self.error(_("Error saving topology: Could not write file"))
 		except:
-			self.error("Error saving topology: Unknown error")
+			self.error(_("Error saving topology: Unknown error"))
 
 	def on_topology_export_cancel(self, widget=None, event=None, data=""):
 		self.gladefile.get_widget('topology_export_dialog').hide()
@@ -2374,17 +2374,17 @@ class VBGUI(Logger, gobject.GObject):
 		self.messages_buffer.set_text("")
 
 	def on_open_project(self, widget, data=None):
-		if self.confirm("Save current project?"):
+		if self.confirm(_("Save current project?"))==True:
 			self.brickfactory.config_dump(self.config.get('current_project'))
 
-		chooser = gtk.FileChooserDialog(title="Open a project",action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+		chooser = gtk.FileChooserDialog(title=_("Open a project"),action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
 		filt = gtk.FileFilter()
-		filt.set_name("Virtualbricks Bricks List (*.vbl)")
+		filt.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
 		filt.add_pattern("*.vbl")
 		chooser.add_filter(filt)
 		filt = gtk.FileFilter()
-		filt.set_name("All files")
+		filt.set_name(_("All files"))
 		filt.add_pattern("*")
 		chooser.add_filter(filt)
 		resp = chooser.run()
@@ -2396,15 +2396,15 @@ class VBGUI(Logger, gobject.GObject):
 		chooser.destroy()
 
 	def on_save_project(self, widget, data=None):
-		chooser = gtk.FileChooserDialog(title="Save as...",action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
+		chooser = gtk.FileChooserDialog(title=_("Save as..."),action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
 		filt = gtk.FileFilter()
-		filt.set_name("Virtualbricks Bricks List (*.vbl)")
+		filt.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
 		filt.add_pattern("*.vbl")
 		chooser.add_filter(filt)
 		filt = gtk.FileFilter()
-		filt.set_name("All files")
+		filt.set_name(_("All files"))
 		filt.add_pattern("*")
 		chooser.add_filter(filt)
 		resp = chooser.run()
@@ -2418,38 +2418,21 @@ class VBGUI(Logger, gobject.GObject):
 		chooser.destroy()
 
 	def on_import_project(self, widget, data=None):
+		self.debug( "IMPORT PROJECT undefined" )
+
+	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?")==True:
 			self.brickfactory.config_dump(self.config.get('current_project'))
 
-		chooser = gtk.FileChooserDialog(title="Import a project",action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
-		chooser.set_current_folder(self.config.get('bricksdirectory'))
-		filt = gtk.FileFilter()
-		filt.set_name("Virtualbricks Bricks List (*.vbl)")
-		filt.add_pattern("*.vbl")
-		chooser.add_filter(filt)
-		filt = gtk.FileFilter()
-		filt.set_name("All files")
-		filt.add_pattern("*")
-		chooser.add_filter(filt)
-		resp = chooser.run()
-		if resp == gtk.RESPONSE_OK:
-			filename = chooser.get_filename()
-			self.brickfactory.config_restore(filename, False, False)
-		chooser.destroy()
-
-	def on_new_project(self, widget, data=None):
-		if self.confirm("Save current project?"):
-			self.brickfactory.config_dump(self.config.get('current_project'))
-
-		chooser = gtk.FileChooserDialog(title="New project",action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
+		chooser = gtk.FileChooserDialog(title=_("New project"),action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
 		filt = gtk.FileFilter()
-		filt.set_name("Virtualbricks Bricks List (*.vbl)")
+		filt.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
 		filt.add_pattern("*.vbl")
 		chooser.add_filter(filt)
 		filt = gtk.FileFilter()
-		filt.set_name("All files")
+		filt.set_name(_("All files"))
 		filt.add_pattern("*")
 		chooser.add_filter(filt)
 		resp = chooser.run()
