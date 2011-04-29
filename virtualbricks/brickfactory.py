@@ -2023,6 +2023,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			print 'n[ew]				Create a new brick'
 			print 'list				List of bricks already created'
 			print 'socks				List of connections available for bricks'
+			print 'conn[ections]			List of connections for each bricks'
 			print '\nBrick configuration command ----------------------------------'
 			print 'BRICK_NAME show			List parameters of BRICK_NAME brick'
 			print 'BRICK_NAME on			Starts BRICK_NAME'
@@ -2057,6 +2058,22 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					print " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports())
 				else:
 					print "not configured."
+
+		elif command.startswith("conn") or command.startswith("connections"):
+			for b in self.bricks:
+				print "Connections from " + b.name + " brick:\n"
+				for sk in b.socks:
+					if b.get_type() == 'Qemu':
+						print '\tsock connected to ' + sk.nickname + ' with an ' + sk.model + ' (' + sk.mac + ') card\n'
+				for pl in b.plugs:
+					if b.get_type() == 'Qemu':
+						if pl.mode == 'vde':
+							print '\tlink connected to ' + pl.sock.nickname + ' with a ' + pl.model + ' (' + pl.mac + ') card\n'
+						else:
+							print '\tuserlink connected with a ' + pl.model + ' (' + pl.mac + ') card\n'
+					elif (pl.sock is not None):
+						print '\tlink: ' + pl.sock.nickname + '\n'
+
 
 		elif command == '':
 			pass
