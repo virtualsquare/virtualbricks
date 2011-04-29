@@ -1295,13 +1295,14 @@ class VMPlugHostonly(VMPlug):
 		return True
 
 class VMDisk():
-	def __init__(self, name, dev):
+	def __init__(self, name, dev, basefolder=""):
 		self.Name = name
 		self.base = ""
 		self.cow = False
 		self.device = dev
 		#self.snapshot = False
 		self.real_disk_name=""
+		self.basefolder = basefolder
 
 	def args(self, k):
 		ret = []
@@ -1315,7 +1316,9 @@ class VMDisk():
 
 	def get_real_disk_name(self):
 		if self.cow:
-			cowname = os.path.dirname(self.base) + "/" + self.Name + "_" + self.device + ".cow"
+			if not os.path.exists(self.basefolder):
+				os.makedirs(self.basefolder)
+			cowname = self.basefolder + "/" + self.Name + "_" + self.device + ".cow"
 			if not os.access(cowname, os.R_OK):
 				print ("Creating Cow image...")
 				os.system('qemu-img create -b %s -f cow %s' % (self.base, cowname))
@@ -1345,25 +1348,26 @@ class VM(Brick):
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
 		self.cfg.basehda = ""
-		self.cfg.set_obj("hda", VMDisk(_name, "hda"))
+		basepath = self.settings.get("baseimages")
+		self.cfg.set_obj("hda", VMDisk(_name, "hda", basepath))
 		self.cfg.privatehda = ""
 		self.cfg.basehdb = ""
-		self.cfg.set_obj("hdb", VMDisk(_name, "hdb"))
+		self.cfg.set_obj("hdb", VMDisk(_name, "hdb", basepath))
 		self.cfg.privatehdb = ""
 		self.cfg.basehdc = ""
-		self.cfg.set_obj("hdc", VMDisk(_name, "hdc"))
+		self.cfg.set_obj("hdc", VMDisk(_name, "hdc", basepath))
 		self.cfg.privatehdc = ""
 		self.cfg.basehdd = ""
-		self.cfg.set_obj("hdd", VMDisk(_name, "hdd"))
+		self.cfg.set_obj("hdd", VMDisk(_name, "hdd", basepath))
 		self.cfg.privatehdd = ""
 		self.cfg.basefda = ""
-		self.cfg.set_obj("fda", VMDisk(_name, "fda"))
+		self.cfg.set_obj("fda", VMDisk(_name, "fda", basepath))
 		self.cfg.privatefda = ""
 		self.cfg.basefdb = ""
-		self.cfg.set_obj("fdb", VMDisk(_name, "fdb"))
+		self.cfg.set_obj("fdb", VMDisk(_name, "fdb", basepath))
 		self.cfg.privatefdb = ""
 		self.cfg.basemtdblock = ""
-		self.cfg.set_obj("mtdblock", VMDisk(_name, "mtdblock"))
+		self.cfg.set_obj("mtdblock", VMDisk(_name, "mtdblock", basepath))
 		self.cfg.privatemtdblock = ""
 		self.cfg.cdrom = ""
 		self.cfg.device = ""
@@ -1741,6 +1745,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def __init__(self, logger=None, showconsole=True):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
+		# DEFINE PROJECT PARMS
+		self.project_parms = {
+			"id": "0",
+		}
 		self.bricks = []
 		self.events = []
 		self.socks = []
@@ -1789,6 +1797,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			self.error( "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
 			return
 		self.debug("CONFIG DUMP on " + f)
+
+		# DUMP PROJECT PARMS
+		p.write('[Project:'+f+']\n')
+		for key, value in self.project_parms.items():
+			p.write( key + "=" + value+"\n")
+
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
 			for k, v in e.cfg.iteritems():
@@ -1830,6 +1844,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						p.write('userlink|' + b.name + '||' + pl.model + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
 				elif (pl.sock is not None):
 					p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
+
+
 
 
 	def config_restore(self, f, create_if_not_found=True, start_from_scratch=False):
@@ -1921,6 +1937,17 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					if ntype == 'Event':
 						self.newevent(ntype, name)
 						component = self.geteventbyname(name)
+					# READ PROJECT PARMS
+					elif ntype == 'Project':
+						self.debug( "Found Project " + name  + " Sections" )
+						l = p.readline()
+						while l and not l.startswith('['):
+							values= l.rstrip("\n").split("=")
+							if len(values)>1 and values[0] in self.project_parms:
+								self.debug( "Add " + values[0] )
+								self.project_parms[values[0]]=values[1]
+							l = p.readline()
+						continue
 					else:
 						self.newbrick(ntype, name)
 						component = self.getbrickbyname(name)
@@ -1952,6 +1979,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for b in self.bricks:
 				for c in b.config_socks:
 						self.connect_to(b,c)
+
+		if self.project_parms['id']=="0":
+			projects = int(self.settings.get('projects'))
+			self.settings.set("projects", projects+1)
+			self.project_parms['id']=str(projects+1)
+			self.debug("Project no= " + str(projects+1))
+			self.settings.store()
 
 	def quit(self):
 		for e in self.events:

@@ -1802,7 +1802,7 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
-		
+
 		if self.brick_selected.proc is not None:
 			self.error(_("Cannot delete Brick: it is in use")+".")
 			return

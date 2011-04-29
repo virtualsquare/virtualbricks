@@ -52,6 +52,7 @@ class Settings(ChildLogger):
 			"erroronloop": False,
 			"systray": True,
 			"current_project": HOME + "/.virtualbricks/.virtualbricks.state",
+			"projects": 0,
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
