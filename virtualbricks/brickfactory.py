@@ -187,6 +187,8 @@ class Brick(ChildLogger):
 		self.icon = Icon(self)
 		self.terminal = "vdeterm"
 		self.config_socks = []
+		self.cfg.pon_vbevent = ""
+		self.cfg.poff_vbevent = ""
 
 		self.factory.bricksmodel.add_brick(self)
 
@@ -394,9 +396,15 @@ class Brick(ChildLogger):
 
 	def post_poweron(self):
 		self.active = True
+		ev=self.factory.geteventbyname(self.cfg.pon_vbevent)
+		if ev:
+			ev.poweron()
 
 	def post_poweroff(self):
 		self.active = False
+		ev=self.factory.geteventbyname(self.cfg.poff_vbevent)
+		if ev:
+			ev.poweron()
 
 	#############################
 	# Console related operations.
@@ -580,13 +588,6 @@ class Event(ChildLogger):
 				action = action.strip()
 				self.cfg.actions.append(ShellCommand(action))
 				self.info(_("Added host-shell command: '%s'"), unicode(action))
-#		elif('addev' in attrlist):
-#			configactions = list()
-#			configactions = (' '.join(attrlist)).split('addev')
-#			for action in configactions[1:]:
-#				action = action.strip()
-#				self.actions.append(self.factory.geteventbyname(action))
-#				print "Added event: \"%s\"" % str(action)
 		else:
 			for attr in attrlist:
 				self.cfg.set(attr)
@@ -658,7 +659,7 @@ class Event(ChildLogger):
 				self.factory.parse(action)
 			elif (isinstance(action, ShellCommand)):
 				try:
-					subprocess.Popen(action.split(' '))
+					subprocess.Popen(action, shell = True)
 				except:
 					print "Error: cannot execute shell command \"%s\"" % action
 					continue
