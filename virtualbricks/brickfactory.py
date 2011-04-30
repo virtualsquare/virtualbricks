@@ -185,6 +185,7 @@ class Brick(ChildLogger):
 		self.needsudo = False
 		self.internal_console = None
 		self.icon = Icon(self)
+		self.icon.get_img() #sic
 		self.terminal = "vdeterm"
 		self.config_socks = []
 		self.cfg.pon_vbevent = ""
@@ -399,12 +400,20 @@ class Brick(ChildLogger):
 		ev=self.factory.geteventbyname(self.cfg.pon_vbevent)
 		if ev:
 			ev.poweron()
+		else:
+			self.debug("Warning. The Start-Event '"+self.cfg.pon_vbevent+\
+					"' attached to Brick '"+\
+					self.name+"' is not available. Skipping execution.")
 
 	def post_poweroff(self):
 		self.active = False
 		ev=self.factory.geteventbyname(self.cfg.poff_vbevent)
 		if ev:
 			ev.poweron()
+		else:
+			self.debug("Warning. The Stop-Event '"+self.cfg.poff_vbevent+\
+					"' attached to Brick '"+\
+					self.name+"' is not available. Skipping execution.")
 
 	#############################
 	# Console related operations.
@@ -525,6 +534,7 @@ class Event(ChildLogger):
 		self.needsudo = False
 		self.internal_console = None
 		self.icon = Icon(self)
+		self.icon.get_img() #sic
 		self.factory.eventsmodel.add_event(self)
 		self.on_config_changed()
 		self.timer = None
