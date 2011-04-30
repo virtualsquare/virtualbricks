@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.3\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-05-01 00:04+0200\n"
+"POT-Creation-Date: 2011-05-01 00:31+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -931,6 +931,7 @@ msgstr ""
 #: share/virtualbricks.glade:3790 virtualbricks/brickfactory.py:603
 #: share/virtualbricks.template.glade:3767 virtualbricks/brickfactory.py:596
 #: virtualbricks/brickfactory.py:598 virtualbricks/brickfactory.py:601
+#: virtualbricks/brickfactory.py:614
 msgid "Delay"
 msgstr ""
 
@@ -2811,6 +2812,7 @@ msgstr ""
 #: virtualbricks/brickfactory.py:485 virtualbricks/brickfactory.py:538
 #: virtualbricks/brickfactory.py:487 virtualbricks/brickfactory.py:540
 #: virtualbricks/brickfactory.py:496 virtualbricks/brickfactory.py:550
+#: virtualbricks/brickfactory.py:509 virtualbricks/brickfactory.py:563
 msgid "running"
 msgstr ""
 
@@ -2819,6 +2821,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_BrickFactory.py:510
 #: virtualbricks/brickfactory.py:493 virtualbricks/brickfactory.py:487
 #: virtualbricks/brickfactory.py:489 virtualbricks/brickfactory.py:498
+#: virtualbricks/brickfactory.py:511
 msgid "disconnected"
 msgstr ""
 
@@ -2833,6 +2836,7 @@ msgstr ""
 #: virtualbricks/brickfactory.py:489 virtualbricks/brickfactory.py:542
 #: virtualbricks/brickfactory.py:491 virtualbricks/brickfactory.py:544
 #: virtualbricks/brickfactory.py:500 virtualbricks/brickfactory.py:554
+#: virtualbricks/brickfactory.py:513 virtualbricks/brickfactory.py:567
 msgid "off"
 msgstr ""
 
@@ -2842,6 +2846,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_BrickFactory.py:563
 #: virtualbricks/brickfactory.py:546 virtualbricks/brickfactory.py:540
 #: virtualbricks/brickfactory.py:542 virtualbricks/brickfactory.py:552
+#: virtualbricks/brickfactory.py:565
 msgid "unconfigured"
 msgstr ""
 
@@ -2932,6 +2937,7 @@ msgstr ""
 #: share/virtualbricks.glade:4501 virtualbricks/brickfactory.py:606
 #: share/virtualbricks.template.glade:4478 virtualbricks/brickfactory.py:599
 #: virtualbricks/brickfactory.py:601 virtualbricks/brickfactory.py:604
+#: virtualbricks/brickfactory.py:617
 msgid "Actions"
 msgstr ""
 
@@ -3167,6 +3173,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_BrickFactory.py:1931
 #: virtualbricks/brickfactory.py:1915 virtualbricks/brickfactory.py:1907
 #: virtualbricks/brickfactory.py:1962 virtualbricks/brickfactory.py:1999
+#: virtualbricks/brickfactory.py:2014
 msgid "Engine: Bye!"
 msgstr ""
 
@@ -3209,47 +3216,47 @@ msgid "Toggle window"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:349 virtualbricks/brickfactory.py:351
-#: virtualbricks/brickfactory.py:354
+#: virtualbricks/brickfactory.py:354 virtualbricks/brickfactory.py:355
 #, python-format
 msgid "Starting: '%s'"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:365 virtualbricks/brickfactory.py:367
-#: virtualbricks/brickfactory.py:370
+#: virtualbricks/brickfactory.py:370 virtualbricks/brickfactory.py:371
 #, python-format
 msgid "Shutting down %s"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:373 virtualbricks/brickfactory.py:375
-#: virtualbricks/brickfactory.py:378
+#: virtualbricks/brickfactory.py:378 virtualbricks/brickfactory.py:379
 #, python-format
 msgid "can not stop brick (error code: '%s')"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:379 virtualbricks/brickfactory.py:381
-#: virtualbricks/brickfactory.py:384
+#: virtualbricks/brickfactory.py:384 virtualbricks/brickfactory.py:385
 #, python-format
 msgid "can not send SIGTERM: '%s'"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:424 virtualbricks/brickfactory.py:426
-#: virtualbricks/brickfactory.py:435
+#: virtualbricks/brickfactory.py:435 virtualbricks/brickfactory.py:448
 msgid "Error: cannot start a terminal emulator"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:565 virtualbricks/brickfactory.py:567
-#: virtualbricks/brickfactory.py:577
+#: virtualbricks/brickfactory.py:577 virtualbricks/brickfactory.py:590
 msgid "Error: config line must contain add OR addsh."
 msgstr ""
 
 #: virtualbricks/brickfactory.py:573 virtualbricks/brickfactory.py:575
-#: virtualbricks/brickfactory.py:585
+#: virtualbricks/brickfactory.py:585 virtualbricks/brickfactory.py:598
 #, python-format
 msgid "Added vb-shell command: '%s'"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:580 virtualbricks/brickfactory.py:582
-#: virtualbricks/brickfactory.py:592
+#: virtualbricks/brickfactory.py:592 virtualbricks/brickfactory.py:605
 #, python-format
 msgid "Added host-shell command: '%s'"
 msgstr ""
@@ -3384,4 +3391,9 @@ msgstr ""
 
 #: virtualbricks/gui/gui.py:2481
 msgid "Virtualbricks-Events to attach to the start/stop Brick Events"
+msgstr ""
+
+#: share/virtualbricks.template.glade:9355
+#: share/virtualbricks.template.glade:9410
+msgid "Assign Nothing"
 msgstr ""

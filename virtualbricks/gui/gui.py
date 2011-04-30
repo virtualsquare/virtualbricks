@@ -2412,22 +2412,22 @@ class VBGUI(Logger, gobject.GObject):
 		attach_event_window = self.gladefile.get_widget("dialog_attach_event")
 		
 		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
-
+		
 		startavailevents = self.gladefile.get_widget('start_events_avail_treeview')
 		stopavailevents = self.gladefile.get_widget('stop_events_avail_treeview')
-
+		
 		self.eventsmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
+		
+		startavailevents.set_model(self.eventsmodel)
+		stopavailevents.set_model(self.eventsmodel)
 		
 		treeviewselectionstart = startavailevents.get_selection()
 		treeviewselectionstart.unselect_all()
 		treeviewselectionstop = stopavailevents.get_selection()
 		treeviewselectionstop.unselect_all()
 		
-		startavailevents.set_model(self.eventsmodel)
-		stopavailevents.set_model(self.eventsmodel)
-
 		container = self.brickfactory.events
-
+		
 		for event in container:
 			if event.configured():
 				parameters = event.get_parameters()
@@ -2439,7 +2439,7 @@ class VBGUI(Logger, gobject.GObject):
 					treeviewselectionstart.select_iter(iter)
 				if self.brick_selected.cfg.poff_vbevent == event.name:
 					treeviewselectionstop.select_iter(iter)
-
+		
 		cell = gtk.CellRendererPixbuf ()
 		column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
 		cell = gtk.CellRendererText ()
@@ -2475,7 +2475,7 @@ class VBGUI(Logger, gobject.GObject):
 		stopavailevents.append_column (column_type)
 		stopavailevents.append_column (column_name)
 		stopavailevents.append_column (column_config)
-
+		
 		self.gladefile.\
 		get_widget('dialog_attach_event').\
 		set_title(_("Virtualbricks-Events to attach to the start/stop Brick Events"))
@@ -2628,4 +2628,3 @@ class VBGUI(Logger, gobject.GObject):
 		else:
 			self.gladefile.get_widget("userwait_progressbar").pulse()
 		return is_alive
-

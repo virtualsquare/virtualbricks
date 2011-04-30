@@ -398,6 +398,8 @@ class Brick(ChildLogger):
 
 	def post_poweron(self):
 		self.active = True
+		if not self.cfg.pon_vbevent:
+			return
 		ev=self.factory.geteventbyname(self.cfg.pon_vbevent)
 		if ev:
 			ev.poweron()
@@ -408,6 +410,8 @@ class Brick(ChildLogger):
 
 	def post_poweroff(self):
 		self.active = False
+		if not self.cfg.poff_vbevent:
+			return
 		ev=self.factory.geteventbyname(self.cfg.poff_vbevent)
 		if ev:
 			ev.poweron()

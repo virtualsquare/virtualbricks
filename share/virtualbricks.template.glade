@@ -9304,6 +9304,7 @@ added</property>
     <property name="window_position">mouse</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
+    <signal name="delete_event" handler="on_messages_dialog_delete_event"/>
     <signal name="response" handler="on_dialog_attach_event_response"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox21">
@@ -9352,7 +9353,7 @@ added</property>
                 </child>
                 <child>
                   <widget class="GtkButton" id="assign_nothing_start_button">
-                    <property name="label">Assign Nothing</property>
+                    <property name="label" translatable="yes">Assign Nothing</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
@@ -9407,7 +9408,7 @@ added</property>
                 </child>
                 <child>
                   <widget class="GtkButton" id="assign_nothing_stop_button">
-                    <property name="label">Assign Nothing</property>
+                    <property name="label" translatable="yes">Assign Nothing</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
