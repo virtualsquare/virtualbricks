@@ -171,6 +171,7 @@ class Brick(ChildLogger):
 		ChildLogger.__init__(self, _factory)
 		self.factory = _factory
 		self.settings = self.factory.settings
+		self.project_parms = self.factory.project_parms
 		self.active = False
 		self.name = _name
 		self.plugs = []
@@ -1349,6 +1350,8 @@ class VM(Brick):
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
 		self.cfg.basehda = ""
+		# PRIVATE COW IMAGES MUST BE CREATED IN A DIFFERENT DIRECTORY FOR EACH PROJECT
+		#basepath = self.settings.get("baseimages") + "/." + self.project_parms['id']
 		basepath = self.settings.get("baseimages")
 		self.cfg.set_obj("hda", VMDisk(_name, "hda", basepath))
 		self.cfg.privatehda = ""
@@ -1712,7 +1715,7 @@ class VM(Brick):
 	def open_internal_console(self):
 		self.info("open_internal_console_qemu")
 		if not self.has_console():
-			self.error("No console detected.")
+			self.debug("No console detected.")
 			return None
 
 		try:
@@ -2141,6 +2144,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				for so in b.socks:
 					self.socks.remove(so)
 				self.bricks.remove(b)
+			else: # connections to bricktodel must be deleted too
+				for pl in reversed(b.plugs):
+					self.debug( "Deleting plug to " + pl.sock.nickname )
+					if pl.sock.nickname.startswith(bricktodel.name):
+						b.plugs.remove(pl)
 		self.bricksmodel.del_brick(bricktodel)
 
 	def delevent(self, eventtodel):

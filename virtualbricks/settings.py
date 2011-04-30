@@ -51,7 +51,7 @@ class Settings(ChildLogger):
 			"femaleplugs": False,
 			"erroronloop": False,
 			"systray": True,
-			"current_project": HOME + "/.virtualbricks/.virtualbricks.state",
+			"current_project": HOME + "/.virtualbricks/.virtualbricks.vbl",
 			"projects": 0,
 		}
 		self.filename = filename

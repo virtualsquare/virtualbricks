@@ -1804,7 +1804,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 
 		if self.brick_selected.proc is not None:
-			self.error(_("Cannot delete Brick: it is in use")+".")
+			self.show_error(_("Cannot delete Brick: it is in use")+".")
 			return
 
 		self.ask_confirm(_("Do you really want to delete ") +
