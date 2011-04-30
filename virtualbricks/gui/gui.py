@@ -76,6 +76,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.availmodel = None
 		self.addedmodel = None
+		self.eventsmodel = None
 		self.shcommandsmodel = None
 
 		self.config = self.brickfactory.settings
@@ -1519,6 +1520,34 @@ class VBGUI(Logger, gobject.GObject):
 			if (self.on_confirm_response_no):
 				self.on_confirm_response_no(self.on_confirm_response_arg)
 
+	def on_dialog_attach_event_response(self, widget=None, response=0, data=""):
+		widget.hide()
+		if (response == 1):
+			startevents = self.gladefile.get_widget('start_events_avail_treeview')
+			stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
+			model, iter = startevents.get_selection().get_selected()
+			if iter:
+				self.brick_selected.cfg.pon_vbevent = model[iter][2]
+			else:
+				self.brick_selected.cfg.pon_vbevent = ""
+			model, iter = stopevents.get_selection().get_selected()
+			if iter:
+				self.brick_selected.cfg.poff_vbevent = model[iter][2]
+			else:
+				self.brick_selected.cfg.poff_vbevent = ""
+
+		return True
+	
+	def on_start_assign_nothing_button_clicked(self, widget=None, data=""):
+		startevents = self.gladefile.get_widget('start_events_avail_treeview')
+		treeselection = startevents.get_selection()
+		treeselection.unselect_all()
+
+	def on_stop_assign_nothing_button_clicked(self, widget=None, data=""):
+		stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
+		treeselection = stopevents.get_selection()
+		treeselection.unselect_all()
+			
 	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
 		raise NotImplementedError()
 
@@ -2369,9 +2398,90 @@ class VBGUI(Logger, gobject.GObject):
 		GTK+ 2.10 and above"""
 		widget.hide()
 		return True
-
+	
+	def on_messages_dialog_close_event(self, widget=None, event=None, data=""):
+		messages = self.gladefile.get_widget("messages_dialog")
+		messages.hide()
+		return True
+	
 	def on_messages_dialog_clear_clicked(self, button, data=None):
 		self.messages_buffer.set_text("")
+		return True
+	
+	def on_brick_attach_event(self, menuitem, data=None):
+		attach_event_window = self.gladefile.get_widget("dialog_attach_event")
+		
+		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
+
+		startavailevents = self.gladefile.get_widget('start_events_avail_treeview')
+		stopavailevents = self.gladefile.get_widget('stop_events_avail_treeview')
+
+		self.eventsmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
+		
+		treeviewselectionstart = startavailevents.get_selection()
+		treeviewselectionstart.unselect_all()
+		treeviewselectionstop = stopavailevents.get_selection()
+		treeviewselectionstop.unselect_all()
+		
+		startavailevents.set_model(self.eventsmodel)
+		stopavailevents.set_model(self.eventsmodel)
+
+		container = self.brickfactory.events
+
+		for event in container:
+			if event.configured():
+				parameters = event.get_parameters()
+				if len(parameters) > 30:
+					parameters = "%s..." % parameters[:30]
+				image = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.base, 48, 48)
+				iter = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
+				if self.brick_selected.cfg.pon_vbevent == event.name:
+					treeviewselectionstart.select_iter(iter)
+				if self.brick_selected.cfg.poff_vbevent == event.name:
+					treeviewselectionstop.select_iter(iter)
+
+		cell = gtk.CellRendererPixbuf ()
+		column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
+		cell = gtk.CellRendererText ()
+		column_type = gtk.TreeViewColumn (_("Type"), cell, text = COL_TYPE)
+		cell = gtk.CellRendererText ()
+		column_name = gtk.TreeViewColumn (_("Name"), cell, text = COL_NAME)
+		cell = gtk.CellRendererText ()
+		column_config = gtk.TreeViewColumn (_("Parameters"), cell, text = COL_CONFIG)
+
+		# Clear columns
+		for c in startavailevents.get_columns():
+			startavailevents.remove_column(c)
+
+		for c in stopavailevents.get_columns():
+			stopavailevents.remove_column(c)
+
+		# Add columns
+		startavailevents.append_column (column_icon)
+		startavailevents.append_column (column_type)
+		startavailevents.append_column (column_name)
+		startavailevents.append_column (column_config)
+
+		cell = gtk.CellRendererPixbuf ()
+		column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
+		cell = gtk.CellRendererText ()
+		column_type = gtk.TreeViewColumn (_("Type"), cell, text = COL_TYPE)
+		cell = gtk.CellRendererText ()
+		column_name = gtk.TreeViewColumn (_("Name"), cell, text = COL_NAME)
+		cell = gtk.CellRendererText ()
+		column_config = gtk.TreeViewColumn (_("Parameters"), cell, text = COL_CONFIG)
+
+		stopavailevents.append_column (column_icon)
+		stopavailevents.append_column (column_type)
+		stopavailevents.append_column (column_name)
+		stopavailevents.append_column (column_config)
+
+		self.gladefile.\
+		get_widget('dialog_attach_event').\
+		set_title(_("Virtualbricks-Events to attach to the start/stop Brick Events"))
+				
+		attach_event_window.show_all()
+		return True
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm(_("Save current project?"))==True:
