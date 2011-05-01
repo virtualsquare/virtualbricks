@@ -843,11 +843,11 @@ class VBGUI(Logger, gobject.GObject):
 	def error(self, text, *args, **kwargs):
 		Logger.error(self, text, *args, **kwargs)
 		text = text % args
-#		gtk.gdk.threads_enter()
-#		try:
-		self.show_error(text)
-#		finally:
-#			gtk.gdk.threads_leave()
+		gtk.gdk.threads_enter()
+		try:
+			self.show_error(text)
+		finally:
+			gtk.gdk.threads_leave()
 
 	def show_error(self, text):
 		def on_response(widget, response_id=None, data=None):
@@ -1360,10 +1360,10 @@ class VBGUI(Logger, gobject.GObject):
 	def event_startstop_brick(self, e):
 		if e.get_type() == 'Event':
 			if e.active:
-				print "Power OFF"
+				self.debug( "Power OFF" )
 				e.poweroff()
 			else:
-				print "Power ON"
+				self.debug ( "Power ON" )
 				e.poweron()
 			return
 
@@ -1382,6 +1382,7 @@ class VBGUI(Logger, gobject.GObject):
 			except NotConnected:
 				self.error(_("Cannot start '%s': not connected"),
 					b.name)
+
 			except Linkloop:
 				if (self.config.erroronloop):
 					self.error(_("Loop link detected: aborting operation. If you want to start "
@@ -1537,7 +1538,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.brick_selected.cfg.poff_vbevent = ""
 
 		return True
-	
+
 	def on_start_assign_nothing_button_clicked(self, widget=None, data=""):
 		startevents = self.gladefile.get_widget('start_events_avail_treeview')
 		treeselection = startevents.get_selection()
@@ -1547,7 +1548,7 @@ class VBGUI(Logger, gobject.GObject):
 		stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
 		treeselection = stopevents.get_selection()
 		treeselection.unselect_all()
-			
+
 	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
 		raise NotImplementedError()
 
@@ -1832,11 +1833,11 @@ class VBGUI(Logger, gobject.GObject):
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
 
+		message=""
 		if self.brick_selected.proc is not None:
-			self.show_error(_("Cannot delete Brick: it is in use")+".")
-			return
+			message = "The brick is still running, it will be killed before being deleted!\n"
 
-		self.ask_confirm(_("Do you really want to delete ") +
+		self.ask_confirm(_(message + "Do you really want to delete ") +
 				_(self.brick_selected.get_type()) + " \"" + self.brick_selected.name + "\" ?",
 				on_yes = self.brickfactory.delbrick, arg = self.brick_selected)
 
@@ -2398,36 +2399,36 @@ class VBGUI(Logger, gobject.GObject):
 		GTK+ 2.10 and above"""
 		widget.hide()
 		return True
-	
+
 	def on_messages_dialog_close_event(self, widget=None, event=None, data=""):
 		messages = self.gladefile.get_widget("messages_dialog")
 		messages.hide()
 		return True
-	
+
 	def on_messages_dialog_clear_clicked(self, button, data=None):
 		self.messages_buffer.set_text("")
 		return True
-	
+
 	def on_brick_attach_event(self, menuitem, data=None):
 		attach_event_window = self.gladefile.get_widget("dialog_attach_event")
-		
+
 		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
-		
+
 		startavailevents = self.gladefile.get_widget('start_events_avail_treeview')
 		stopavailevents = self.gladefile.get_widget('stop_events_avail_treeview')
-		
+
 		self.eventsmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
-		
+
 		startavailevents.set_model(self.eventsmodel)
 		stopavailevents.set_model(self.eventsmodel)
-		
+
 		treeviewselectionstart = startavailevents.get_selection()
 		treeviewselectionstart.unselect_all()
 		treeviewselectionstop = stopavailevents.get_selection()
 		treeviewselectionstop.unselect_all()
-		
+
 		container = self.brickfactory.events
-		
+
 		for event in container:
 			if event.configured():
 				parameters = event.get_parameters()
@@ -2439,7 +2440,7 @@ class VBGUI(Logger, gobject.GObject):
 					treeviewselectionstart.select_iter(iter)
 				if self.brick_selected.cfg.poff_vbevent == event.name:
 					treeviewselectionstop.select_iter(iter)
-		
+
 		cell = gtk.CellRendererPixbuf ()
 		column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
 		cell = gtk.CellRendererText ()
@@ -2475,11 +2476,11 @@ class VBGUI(Logger, gobject.GObject):
 		stopavailevents.append_column (column_type)
 		stopavailevents.append_column (column_name)
 		stopavailevents.append_column (column_config)
-		
+
 		self.gladefile.\
 		get_widget('dialog_attach_event').\
 		set_title(_("Virtualbricks-Events to attach to the start/stop Brick Events"))
-				
+
 		attach_event_window.show_all()
 		return True
 
@@ -2562,10 +2563,10 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.signal_autoconnect(self)
 
 	""" ******************************************************** """
-	"""														  """
-	""" TIMERS												   """
-	"""														  """
-	"""														  """
+	"""							     """
+	""" TIMERS						     """
+	"""							     """
+	"""							     """
 	""" ******************************************************** """
 
 	def timers(self):

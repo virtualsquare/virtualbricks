@@ -360,6 +360,8 @@ class Brick(ChildLogger):
 
 		if self.proc is not None:
 			self.pid = self.proc.pid
+		else:
+			self.error("Brick startup failed. Check your configuration!")
 
 		self.factory.emit("brick-started")
 		self.post_poweron()
@@ -424,7 +426,6 @@ class Brick(ChildLogger):
 	# Console related operations.
 	#############################
 	def has_console(self):
-
 		if self.proc != None and os.path.exists(self.console()):
 			return True
 		else:
@@ -1034,139 +1035,139 @@ class Wirefilter(Wire):
 
 	#callbacks for live-management
 	def cbset_lossLR(self, arg=0):
-		print "Callback loss LR with argument " + self.name
+		#print "Callback loss LR with argument " + self.name
 		self.send("loss LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_lossRL(self, arg=0):
-		print "Callback loss RL with argument " + self.name
+		#print "Callback loss RL with argument " + self.name
 		self.send("loss RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_loss(self, arg=0):
-		print "Callback loss LR&RL with argument " + self.name
+		#print "Callback loss LR&RL with argument " + self.name
 		self.send("loss " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_speedLR(self, arg=0):
-		print "Callback speed LR with argument " + self.name
+		#print "Callback speed LR with argument " + self.name
 		self.send("speed LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_speedRL(self, arg=0):
-		print "Callback speed RL with argument " + self.name
+		#print "Callback speed RL with argument " + self.name
 		self.send("speed RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_speed(self, arg=0):
-		print "Callback speed LR&RL with argument " + self.name
+		#print "Callback speed LR&RL with argument " + self.name
 		self.send("speed " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_noiseLR(self, arg=0):
-		print "Callback noise LR with argument " + self.name
+		#print "Callback noise LR with argument " + self.name
 		self.send("noise LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_noiseRL(self, arg=0):
-		print "Callback noise RL with argument " + self.name
+		#print "Callback noise RL with argument " + self.name
 		self.send("noise RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_noise(self, arg=0):
-		print "Callback noise LR&RL with argument " + self.name
+		#print "Callback noise LR&RL with argument " + self.name
 		self.send("noise " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_bandwidthLR(self, arg=0):
-		print "Callback bandwidth LR with argument " + self.name
+		#print "Callback bandwidth LR with argument " + self.name
 		self.send("bandwidth LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_bandwidthRL(self, arg=0):
-		print "Callback bandwidth RL with argument " + self.name
+		#print "Callback bandwidth RL with argument " + self.name
 		self.send("bandwidth RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_bandwidth(self, arg=0):
-		print "Callback bandwidth LR&RL with argument " + self.name
+		#print "Callback bandwidth LR&RL with argument " + self.name
 		self.send("bandwidth " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_delayLR(self, arg=0):
-		print "Callback delay LR with argument " + self.name
+		#print "Callback delay LR with argument " + self.name
 		self.send("delay LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_delayRL(self, arg=0):
-		print "Callback delay RL with argument " + self.name
+		#print "Callback delay RL with argument " + self.name
 		self.send("delay RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_delay(self, arg=0):
-		print "Callback delay LR&RL with argument " + self.name
+		#print "Callback delay LR&RL with argument " + self.name
 		self.send("delay " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_dupLR(self, arg=0):
-		print "Callback dup LR with argument " + self.name
+		#print "Callback dup LR with argument " + self.name
 		self.send("dup LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_dupRL(self, arg=0):
-		print "Callback dup RL with argument " + self.name
+		#print "Callback dup RL with argument " + self.name
 		self.send("dup RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_dup(self, arg=0):
-		print "Callback dup LR&RL with argument " + self.name
+		#print "Callback dup LR&RL with argument " + self.name
 		self.send("dup " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_mtuLR(self, arg=0):
-		print "Callback mtu LR with argument " + self.name
+		#print "Callback mtu LR with argument " + self.name
 		self.send("mtu LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_mtuRL(self, arg=0):
-		print "Callback mtu RL with argument " + self.name
+		#print "Callback mtu RL with argument " + self.name
 		self.send("mtu RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_mtu(self, arg=0):
-		print "Callback mtu LR&RL with argument " + self.name
+		#print "Callback mtu LR&RL with argument " + self.name
 		self.send("mtu " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_lostburstLR(self, arg=0):
-		print "Callback lostburst LR with argument " + self.name
+		#print "Callback lostburst LR with argument " + self.name
 		self.send("lostburst LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_lostburstRL(self, arg=0):
-		print "Callback lostburst RL with argument " + self.name
+		#print "Callback lostburst RL with argument " + self.name
 		self.send("lostburst RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_lostburst(self, arg=0):
-		print "Callback lostburst LR&RL with argument " + self.name
+		#print "Callback lostburst LR&RL with argument " + self.name
 		self.send("lostburst " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_chanbufsizeLR(self, arg=0):
-		print "Callback chanbufsize LR (capacity) with argument " + self.name
+		#print "Callback chanbufsize LR (capacity) with argument " + self.name
 		self.send("chanbufsize LR " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_chanbufsizeRL(self, arg=0):
-		print "Callback chanbufsize RL (capacity) with argument " + self.name
+		#print "Callback chanbufsize RL (capacity) with argument " + self.name
 		self.send("chanbufsize RL " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	def cbset_chanbufsize(self, arg=0):
-		print "Callback chanbufsize LR&RL (capacity) with argument " + self.name
+		#print "Callback chanbufsize LR&RL (capacity) with argument " + self.name
 		self.send("chanbufsize " + arg + "\n")
-		print self.recv()
+		#print self.recv()
 
 	#Follows a "duplicate" code of "chanbufsizeXX", because chanbufsize was called
 	#capacity before. Justo to be sure...
@@ -1336,11 +1337,11 @@ class VMDisk():
 				os.makedirs(self.basefolder)
 			cowname = self.basefolder + "/" + self.Name + "_" + self.device + ".cow"
 			if not os.access(cowname, os.R_OK):
-				print ("Creating Cow image...")
+				self.info ("Creating Cow image...")
 				os.system('qemu-img create -b %s -f cow %s' % (self.base, cowname))
 				os.system('sync')
+				self.info("Done.")
 				time.sleep(2)
-				print ("Done")
 			return cowname
 		else:
 			return self.base
@@ -1688,7 +1689,7 @@ class VM(Brick):
 	def add_plug(self, sock=None, mac=None, model=None):
 		if sock and sock == '_hostonly':
 			pl = VMPlugHostonly(self)
-			print "hostonly added"
+#			print "hostonly added"
 			pl.mode = "hostonly"
 		else:
 			pl = VMPlug(self)
@@ -1727,9 +1728,9 @@ class VM(Brick):
 		self.gui_changed = True
 
 	def open_internal_console(self):
-		self.info("open_internal_console_qemu")
+
 		if not self.has_console():
-			self.debug("No console detected.")
+			self.error("No console detected.")
 			return None
 
 		try:
@@ -1738,8 +1739,7 @@ class VM(Brick):
 			c.connect(self.console2())
 			return c
 		except Exception, err:
-			self.error("Virtual Machine startup failed. Check your"
-				" configuration!")
+			self.error("Virtual Machine startup failed. Check your configuration!")
 			return None
 
 	def post_poweroff(self):
@@ -2153,6 +2153,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 	def delbrick(self, bricktodel):
 		# XXX check me
+
+		if bricktodel.proc is not None:
+			bricktodel.poweroff()
+
 		for b in self.bricks:
 			if b == bricktodel:
 				for so in b.socks:
@@ -2181,7 +2185,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def dupevent(self, eventtodup):
 		newname = self.nextValidName("Copy_of_"+eventtodup.name)
 		if newname == None:
-			print "Name error duplicating event."
+			self.debug( "Name error duplicating event." )
 			return
 		self.newevent("Event", newname)
 		event = self.geteventbyname(eventtodup.name)
