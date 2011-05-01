@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.3\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-05-01 00:31+0200\n"
+"POT-Creation-Date: 2011-05-01 18:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -931,7 +931,7 @@ msgstr ""
 #: share/virtualbricks.glade:3790 virtualbricks/brickfactory.py:603
 #: share/virtualbricks.template.glade:3767 virtualbricks/brickfactory.py:596
 #: virtualbricks/brickfactory.py:598 virtualbricks/brickfactory.py:601
-#: virtualbricks/brickfactory.py:614
+#: virtualbricks/brickfactory.py:614 virtualbricks/brickfactory.py:615
 msgid "Delay"
 msgstr ""
 
@@ -2464,6 +2464,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1891 virtualbricks/gui/gui.py:1875
 #: virtualbricks/gui/gui.py:1884 virtualbricks/gui/gui.py:1808
 #: virtualbricks/gui/gui.py:1810 virtualbricks/gui/gui.py:1839
+#: virtualbricks/gui/gui.py:1840
 msgid "Do you really want to delete "
 msgstr ""
 
@@ -2492,6 +2493,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1912 virtualbricks/gui/gui.py:1896
 #: virtualbricks/gui/gui.py:1905 virtualbricks/gui/gui.py:1829
 #: virtualbricks/gui/gui.py:1831 virtualbricks/gui/gui.py:1860
+#: virtualbricks/gui/gui.py:1861
 msgid "Cannot rename Brick: it is in use."
 msgstr ""
 
@@ -2508,6 +2510,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1945 virtualbricks/gui/gui.py:1929
 #: virtualbricks/gui/gui.py:1938 virtualbricks/gui/gui.py:1861
 #: virtualbricks/gui/gui.py:1863 virtualbricks/gui/gui.py:1892
+#: virtualbricks/gui/gui.py:1893
 msgid "Cannot rename Event: it is in use."
 msgstr ""
 
@@ -2567,6 +2570,7 @@ msgstr ""
 #: virtualbricks/gui/gui.py:174 virtualbricks/gui/gui.py:200
 #: virtualbricks/gui/gui.py:1039 virtualbricks/gui/gui.py:1061
 #: virtualbricks/gui/gui.py:2444 virtualbricks/gui/gui.py:2466
+#: virtualbricks/gui/gui.py:2445 virtualbricks/gui/gui.py:2467
 msgid "Icon"
 msgstr ""
 
@@ -2610,7 +2614,8 @@ msgstr ""
 #: virtualbricks/gui/gui.py:108 virtualbricks/gui/gui.py:188
 #: virtualbricks/gui/gui.py:207 virtualbricks/gui/gui.py:1041
 #: virtualbricks/gui/gui.py:1063 virtualbricks/gui/gui.py:2446
-#: virtualbricks/gui/gui.py:2468
+#: virtualbricks/gui/gui.py:2468 virtualbricks/gui/gui.py:2447
+#: virtualbricks/gui/gui.py:2469
 msgid "Type"
 msgstr ""
 
@@ -2654,7 +2659,8 @@ msgstr ""
 #: virtualbricks/gui/gui.py:108 virtualbricks/gui/gui.py:190
 #: virtualbricks/gui/gui.py:209 virtualbricks/gui/gui.py:1043
 #: virtualbricks/gui/gui.py:1065 virtualbricks/gui/gui.py:2448
-#: virtualbricks/gui/gui.py:2470
+#: virtualbricks/gui/gui.py:2470 virtualbricks/gui/gui.py:2449
+#: virtualbricks/gui/gui.py:2471
 msgid "Name"
 msgstr ""
 
@@ -2695,6 +2701,7 @@ msgstr ""
 #: virtualbricks/gui/gui.py:192 virtualbricks/gui/gui.py:211
 #: virtualbricks/gui/gui.py:1045 virtualbricks/gui/gui.py:1067
 #: virtualbricks/gui/gui.py:2450 virtualbricks/gui/gui.py:2472
+#: virtualbricks/gui/gui.py:2451 virtualbricks/gui/gui.py:2473
 msgid "Parameters"
 msgstr ""
 
@@ -2813,6 +2820,7 @@ msgstr ""
 #: virtualbricks/brickfactory.py:487 virtualbricks/brickfactory.py:540
 #: virtualbricks/brickfactory.py:496 virtualbricks/brickfactory.py:550
 #: virtualbricks/brickfactory.py:509 virtualbricks/brickfactory.py:563
+#: virtualbricks/brickfactory.py:510 virtualbricks/brickfactory.py:564
 msgid "running"
 msgstr ""
 
@@ -2821,7 +2829,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_BrickFactory.py:510
 #: virtualbricks/brickfactory.py:493 virtualbricks/brickfactory.py:487
 #: virtualbricks/brickfactory.py:489 virtualbricks/brickfactory.py:498
-#: virtualbricks/brickfactory.py:511
+#: virtualbricks/brickfactory.py:511 virtualbricks/brickfactory.py:512
 msgid "disconnected"
 msgstr ""
 
@@ -2837,6 +2845,7 @@ msgstr ""
 #: virtualbricks/brickfactory.py:491 virtualbricks/brickfactory.py:544
 #: virtualbricks/brickfactory.py:500 virtualbricks/brickfactory.py:554
 #: virtualbricks/brickfactory.py:513 virtualbricks/brickfactory.py:567
+#: virtualbricks/brickfactory.py:514 virtualbricks/brickfactory.py:568
 msgid "off"
 msgstr ""
 
@@ -2846,7 +2855,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_BrickFactory.py:563
 #: virtualbricks/brickfactory.py:546 virtualbricks/brickfactory.py:540
 #: virtualbricks/brickfactory.py:542 virtualbricks/brickfactory.py:552
-#: virtualbricks/brickfactory.py:565
+#: virtualbricks/brickfactory.py:565 virtualbricks/brickfactory.py:566
 msgid "unconfigured"
 msgstr ""
 
@@ -2937,7 +2946,7 @@ msgstr ""
 #: share/virtualbricks.glade:4501 virtualbricks/brickfactory.py:606
 #: share/virtualbricks.template.glade:4478 virtualbricks/brickfactory.py:599
 #: virtualbricks/brickfactory.py:601 virtualbricks/brickfactory.py:604
-#: virtualbricks/brickfactory.py:617
+#: virtualbricks/brickfactory.py:617 virtualbricks/brickfactory.py:618
 msgid "Actions"
 msgstr ""
 
@@ -2957,6 +2966,7 @@ msgstr ""
 #: virtualbricks/gui/gui.py:1962 virtualbricks/gui/gui.py:1971
 #: virtualbricks/gui/gui.py:2001 virtualbricks/gui/gui.py:1991
 #: virtualbricks/gui/gui.py:2000 virtualbricks/gui/gui.py:2030
+#: virtualbricks/gui/gui.py:1992 virtualbricks/gui/gui.py:2031
 msgid "Error"
 msgstr ""
 
@@ -2965,6 +2975,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2045 virtualbricks/gui/gui.py:2029
 #: virtualbricks/gui/gui.py:2039 virtualbricks/gui/gui.py:1960
 #: virtualbricks/gui/gui.py:1962 virtualbricks/gui/gui.py:1991
+#: virtualbricks/gui/gui.py:1992
 msgid "invalid path for qemu binaries"
 msgstr ""
 
@@ -2973,6 +2984,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2054 virtualbricks/gui/gui.py:2038
 #: virtualbricks/gui/gui.py:2048 virtualbricks/gui/gui.py:1969
 #: virtualbricks/gui/gui.py:1971 virtualbricks/gui/gui.py:2000
+#: virtualbricks/gui/gui.py:2001
 msgid "cannot find neither qemu nor kvm in this path"
 msgstr ""
 
@@ -2986,7 +2998,8 @@ msgstr ""
 #: virtualbricks/gui/gui.py:2055 virtualbricks/gui/gui.py:1973
 #: virtualbricks/gui/gui.py:1976 virtualbricks/gui/gui.py:1975
 #: virtualbricks/gui/gui.py:1978 virtualbricks/gui/gui.py:2004
-#: virtualbricks/gui/gui.py:2007
+#: virtualbricks/gui/gui.py:2007 virtualbricks/gui/gui.py:2005
+#: virtualbricks/gui/gui.py:2008
 msgid "Warning"
 msgstr ""
 
@@ -2995,6 +3008,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2058 virtualbricks/gui/gui.py:2042
 #: virtualbricks/gui/gui.py:2052 virtualbricks/gui/gui.py:1973
 #: virtualbricks/gui/gui.py:1975 virtualbricks/gui/gui.py:2004
+#: virtualbricks/gui/gui.py:2005
 msgid "cannot find qemu, using kvm only\n"
 msgstr ""
 
@@ -3003,6 +3017,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2076 virtualbricks/gui/gui.py:2060
 #: virtualbricks/gui/gui.py:2070 virtualbricks/gui/gui.py:1990
 #: virtualbricks/gui/gui.py:1992 virtualbricks/gui/gui.py:2021
+#: virtualbricks/gui/gui.py:2022
 msgid "additional targets supported"
 msgstr ""
 
@@ -3011,6 +3026,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2087 virtualbricks/gui/gui.py:2071
 #: virtualbricks/gui/gui.py:2081 virtualbricks/gui/gui.py:1999
 #: virtualbricks/gui/gui.py:2001 virtualbricks/gui/gui.py:2030
+#: virtualbricks/gui/gui.py:2031
 msgid "invalid path for vde binaries"
 msgstr ""
 
@@ -3019,6 +3035,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2089 virtualbricks/gui/gui.py:2073
 #: virtualbricks/gui/gui.py:2083 virtualbricks/gui/gui.py:2001
 #: virtualbricks/gui/gui.py:2003 virtualbricks/gui/gui.py:2032
+#: virtualbricks/gui/gui.py:2033
 msgid "Warning, missing modules"
 msgstr ""
 
@@ -3027,6 +3044,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2094 virtualbricks/gui/gui.py:2078
 #: virtualbricks/gui/gui.py:2088 virtualbricks/gui/gui.py:2006
 #: virtualbricks/gui/gui.py:2008 virtualbricks/gui/gui.py:2037
+#: virtualbricks/gui/gui.py:2038
 msgid "All VDE components detected"
 msgstr ""
 
@@ -3035,6 +3053,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2061 virtualbricks/gui/gui.py:2045
 #: virtualbricks/gui/gui.py:2055 virtualbricks/gui/gui.py:1976
 #: virtualbricks/gui/gui.py:1978 virtualbricks/gui/gui.py:2007
+#: virtualbricks/gui/gui.py:2008
 msgid "kvm not found"
 msgstr ""
 
@@ -3043,6 +3062,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2061 virtualbricks/gui/gui.py:2045
 #: virtualbricks/gui/gui.py:2055 virtualbricks/gui/gui.py:1976
 #: virtualbricks/gui/gui.py:1978 virtualbricks/gui/gui.py:2007
+#: virtualbricks/gui/gui.py:2008
 msgid "KVM support disabled"
 msgstr ""
 
@@ -3051,6 +3071,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:2063 virtualbricks/gui/gui.py:2047
 #: virtualbricks/gui/gui.py:2057 virtualbricks/gui/gui.py:1978
 #: virtualbricks/gui/gui.py:1980 virtualbricks/gui/gui.py:2009
+#: virtualbricks/gui/gui.py:2010
 msgid "KVM and Qemu detected"
 msgstr ""
 
@@ -3059,6 +3080,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1850 virtualbricks/gui/gui.py:1836
 #: virtualbricks/gui/gui.py:1845 virtualbricks/gui/gui.py:1781
 #: virtualbricks/gui/gui.py:1783 virtualbricks/gui/gui.py:1812
+#: virtualbricks/gui/gui.py:1813
 msgid "No KVM binary found"
 msgstr ""
 
@@ -3072,7 +3094,8 @@ msgstr ""
 #: virtualbricks/gui/gui.py:1848 virtualbricks/gui/gui.py:1781
 #: virtualbricks/gui/gui.py:1784 virtualbricks/gui/gui.py:1783
 #: virtualbricks/gui/gui.py:1786 virtualbricks/gui/gui.py:1812
-#: virtualbricks/gui/gui.py:1815
+#: virtualbricks/gui/gui.py:1815 virtualbricks/gui/gui.py:1813
+#: virtualbricks/gui/gui.py:1816
 msgid "Check your active configuration"
 msgstr ""
 
@@ -3086,7 +3109,8 @@ msgstr ""
 #: virtualbricks/gui/gui.py:1848 virtualbricks/gui/gui.py:1781
 #: virtualbricks/gui/gui.py:1784 virtualbricks/gui/gui.py:1783
 #: virtualbricks/gui/gui.py:1786 virtualbricks/gui/gui.py:1812
-#: virtualbricks/gui/gui.py:1815
+#: virtualbricks/gui/gui.py:1815 virtualbricks/gui/gui.py:1813
+#: virtualbricks/gui/gui.py:1816
 msgid "KVM will stay disabled"
 msgstr ""
 
@@ -3095,6 +3119,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1855 virtualbricks/gui/gui.py:1839
 #: virtualbricks/gui/gui.py:1848 virtualbricks/gui/gui.py:1784
 #: virtualbricks/gui/gui.py:1786 virtualbricks/gui/gui.py:1815
+#: virtualbricks/gui/gui.py:1816
 msgid "No KVM support found on the system"
 msgstr ""
 
@@ -3103,6 +3128,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1863 virtualbricks/gui/gui.py:1847
 #: virtualbricks/gui/gui.py:1856 virtualbricks/gui/gui.py:1792
 #: virtualbricks/gui/gui.py:1794 virtualbricks/gui/gui.py:1823
+#: virtualbricks/gui/gui.py:1824
 msgid "No KSM support found on the system"
 msgstr ""
 
@@ -3111,6 +3137,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1863 virtualbricks/gui/gui.py:1847
 #: virtualbricks/gui/gui.py:1856 virtualbricks/gui/gui.py:1792
 #: virtualbricks/gui/gui.py:1794 virtualbricks/gui/gui.py:1823
+#: virtualbricks/gui/gui.py:1824
 msgid "Check your configuration"
 msgstr ""
 
@@ -3119,6 +3146,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1863 virtualbricks/gui/gui.py:1847
 #: virtualbricks/gui/gui.py:1856 virtualbricks/gui/gui.py:1792
 #: virtualbricks/gui/gui.py:1794 virtualbricks/gui/gui.py:1823
+#: virtualbricks/gui/gui.py:1824
 msgid "KSM will stay disabled"
 msgstr ""
 
@@ -3135,6 +3163,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1900 virtualbricks/gui/gui.py:1884
 #: virtualbricks/gui/gui.py:1893 virtualbricks/gui/gui.py:1817
 #: virtualbricks/gui/gui.py:1819 virtualbricks/gui/gui.py:1848
+#: virtualbricks/gui/gui.py:1849
 msgid "This event is in use"
 msgstr ""
 
@@ -3143,6 +3172,7 @@ msgstr ""
 #: virtualbricks/virtualbricks_GUI.py:1902 virtualbricks/gui/gui.py:1886
 #: virtualbricks/gui/gui.py:1895 virtualbricks/gui/gui.py:1819
 #: virtualbricks/gui/gui.py:1821 virtualbricks/gui/gui.py:1850
+#: virtualbricks/gui/gui.py:1851
 msgid "Do you really want to delete"
 msgstr ""
 
@@ -3193,7 +3223,7 @@ msgstr ""
 
 #: virtualbricks/gui/gui.py:1428 virtualbricks/gui/gui.py:1437
 #: virtualbricks/gui/gui.py:1384 virtualbricks/gui/gui.py:1386
-#: virtualbricks/gui/gui.py:1387
+#: virtualbricks/gui/gui.py:1387 virtualbricks/gui/gui.py:1388
 msgid ""
 "Loop link detected: aborting operation. If you want to start a looped "
 "network, disable the check loop feature in the general settings"
@@ -3201,7 +3231,7 @@ msgstr ""
 
 #: virtualbricks/gui/gui.py:1434 virtualbricks/gui/gui.py:1443
 #: virtualbricks/gui/gui.py:1390 virtualbricks/gui/gui.py:1392
-#: virtualbricks/gui/gui.py:1393
+#: virtualbricks/gui/gui.py:1393 virtualbricks/gui/gui.py:1394
 msgid "Disk used by the VM is locked by another machine"
 msgstr ""
 
@@ -3223,40 +3253,47 @@ msgstr ""
 
 #: virtualbricks/brickfactory.py:365 virtualbricks/brickfactory.py:367
 #: virtualbricks/brickfactory.py:370 virtualbricks/brickfactory.py:371
+#: virtualbricks/brickfactory.py:373
 #, python-format
 msgid "Shutting down %s"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:373 virtualbricks/brickfactory.py:375
 #: virtualbricks/brickfactory.py:378 virtualbricks/brickfactory.py:379
+#: virtualbricks/brickfactory.py:381
 #, python-format
 msgid "can not stop brick (error code: '%s')"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:379 virtualbricks/brickfactory.py:381
 #: virtualbricks/brickfactory.py:384 virtualbricks/brickfactory.py:385
+#: virtualbricks/brickfactory.py:387
 #, python-format
 msgid "can not send SIGTERM: '%s'"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:424 virtualbricks/brickfactory.py:426
 #: virtualbricks/brickfactory.py:435 virtualbricks/brickfactory.py:448
+#: virtualbricks/brickfactory.py:449
 msgid "Error: cannot start a terminal emulator"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:565 virtualbricks/brickfactory.py:567
 #: virtualbricks/brickfactory.py:577 virtualbricks/brickfactory.py:590
+#: virtualbricks/brickfactory.py:591
 msgid "Error: config line must contain add OR addsh."
 msgstr ""
 
 #: virtualbricks/brickfactory.py:573 virtualbricks/brickfactory.py:575
 #: virtualbricks/brickfactory.py:585 virtualbricks/brickfactory.py:598
+#: virtualbricks/brickfactory.py:599
 #, python-format
 msgid "Added vb-shell command: '%s'"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:580 virtualbricks/brickfactory.py:582
 #: virtualbricks/brickfactory.py:592 virtualbricks/brickfactory.py:605
+#: virtualbricks/brickfactory.py:606
 #, python-format
 msgid "Added host-shell command: '%s'"
 msgstr ""
@@ -3293,30 +3330,38 @@ msgid "Cannot read config file "
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2377 virtualbricks/gui/gui.py:2487
+#: virtualbricks/gui/gui.py:2488
 msgid "Save current project?"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2380 virtualbricks/gui/gui.py:2490
+#: virtualbricks/gui/gui.py:2491
 msgid "Open a project"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2383 virtualbricks/gui/gui.py:2403
 #: virtualbricks/gui/gui.py:2432 virtualbricks/gui/gui.py:2493
 #: virtualbricks/gui/gui.py:2513 virtualbricks/gui/gui.py:2541
+#: virtualbricks/gui/gui.py:2494 virtualbricks/gui/gui.py:2514
+#: virtualbricks/gui/gui.py:2542
 msgid "Virtualbricks Bricks List"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2387 virtualbricks/gui/gui.py:2407
 #: virtualbricks/gui/gui.py:2436 virtualbricks/gui/gui.py:2497
 #: virtualbricks/gui/gui.py:2517 virtualbricks/gui/gui.py:2545
+#: virtualbricks/gui/gui.py:2498 virtualbricks/gui/gui.py:2518
+#: virtualbricks/gui/gui.py:2546
 msgid "All files"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2399 virtualbricks/gui/gui.py:2509
+#: virtualbricks/gui/gui.py:2510
 msgid "Save as..."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2428 virtualbricks/gui/gui.py:2537
+#: virtualbricks/gui/gui.py:2538
 msgid "New project"
 msgstr ""
 
@@ -3329,43 +3374,53 @@ msgid "Cannot create event: Invalid name."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1594 virtualbricks/gui/gui.py:1623
+#: virtualbricks/gui/gui.py:1624
 msgid "Choose a filename first!"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1857 virtualbricks/gui/gui.py:1869
 #: virtualbricks/gui/gui.py:1916 virtualbricks/gui/gui.py:1886
 #: virtualbricks/gui/gui.py:1898 virtualbricks/gui/gui.py:1945
+#: virtualbricks/gui/gui.py:1887 virtualbricks/gui/gui.py:1899
+#: virtualbricks/gui/gui.py:1946
 msgid "Invalid name!"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2071 virtualbricks/gui/gui.py:2100
+#: virtualbricks/gui/gui.py:2101
 msgid ""
 "No KVM binary found. Check your active configuration. KVM will stay disabled."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2074 virtualbricks/gui/gui.py:2103
+#: virtualbricks/gui/gui.py:2104
 msgid ""
 "No KVM support found on the system. Check your active configuration. KVM "
 "will stay disabled."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2245 virtualbricks/gui/gui.py:2274
+#: virtualbricks/gui/gui.py:2275
 msgid "Suspend/Resume not supported on this disk."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2270 virtualbricks/gui/gui.py:2299
+#: virtualbricks/gui/gui.py:2300
 msgid "Cannot find suspend point."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2302 virtualbricks/gui/gui.py:2331
+#: virtualbricks/gui/gui.py:2332
 msgid "Error saving topology: Invalid image format"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2304 virtualbricks/gui/gui.py:2333
+#: virtualbricks/gui/gui.py:2334
 msgid "Error saving topology: Could not write file"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2306 virtualbricks/gui/gui.py:2335
+#: virtualbricks/gui/gui.py:2336
 msgid "Error saving topology: Unknown error"
 msgstr ""
 
@@ -3382,18 +3437,26 @@ msgid "_Attach Event"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9341
+#: share/virtualbricks.template.glade:9342
 msgid "<b>Start Event selection</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9396
+#: share/virtualbricks.template.glade:9397
 msgid "<b>Stop Event selection</b>"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2481
+#: virtualbricks/gui/gui.py:2481 virtualbricks/gui/gui.py:2482
 msgid "Virtualbricks-Events to attach to the start/stop Brick Events"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9355
 #: share/virtualbricks.template.glade:9410
+#: share/virtualbricks.template.glade:9356
+#: share/virtualbricks.template.glade:9411
 msgid "Assign Nothing"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1838
+msgid "The brick is still running, it will be killed before being deleted!\n"
 msgstr ""

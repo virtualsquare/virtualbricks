@@ -1835,10 +1835,10 @@ class VBGUI(Logger, gobject.GObject):
 
 		message=""
 		if self.brick_selected.proc is not None:
-			message = "The brick is still running, it will be killed before being deleted!\n"
+			message = _("The brick is still running, it will be killed before being deleted!\n")
 
-		self.ask_confirm(_(message + "Do you really want to delete ") +
-				_(self.brick_selected.get_type()) + " \"" + self.brick_selected.name + "\" ?",
+		self.ask_confirm(message + _("Do you really want to delete ") +
+				self.brick_selected.get_type() + " \"" + self.brick_selected.name + "\" ?",
 				on_yes = self.brickfactory.delbrick, arg = self.brick_selected)
 
 	def on_event_delete(self,widget=None, event=None, data=""):
