@@ -353,7 +353,10 @@ class Brick(ChildLogger):
 			command_line[0] = self.settings.get("sudo")
 			command_line[1] = sudoarg
 		self.debug(_("Starting: '%s'"), ' '.join(command_line))
-		self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		try:
+			self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		except OSError:
+			self.error("OSError Brick startup failed. Check your configuration!")
 
 		if self.open_internal_console and callable(self.open_internal_console):
 			self.internal_console = self.open_internal_console()
@@ -1337,10 +1340,8 @@ class VMDisk():
 				os.makedirs(self.basefolder)
 			cowname = self.basefolder + "/" + self.Name + "_" + self.device + ".cow"
 			if not os.access(cowname, os.R_OK):
-				self.info ("Creating Cow image...")
 				os.system('qemu-img create -b %s -f cow %s' % (self.base, cowname))
 				os.system('sync')
-				self.info("Done.")
 				time.sleep(2)
 			return cowname
 		else:
