@@ -1853,8 +1853,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						elif isinstance(action, VbShellCommand):
 							tempactions.append("add "+action)
 						else:
-							print "Error: unmanaged action type."
-							print "Will not be saved!"
+							self.error( "Error: unmanaged action type."+\
+							"Will not be saved!" )
 							continue
 					p.write(k + '=' + str(tempactions) + '\n')
 				#Standard management for other parameters
@@ -1872,6 +1872,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for sk in b.socks:
 				if b.get_type() == 'Qemu':
 					p.write('sock|' + b.name + "|" + sk.nickname + '|' + sk.model + '|' + sk.mac + '|' + str(sk.vlan) + '\n')
+		for b in self.bricks:
 			for pl in b.plugs:
 				if b.get_type() == 'Qemu':
 					if pl.mode == 'vde':
@@ -1966,6 +1967,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 									if s.nickname == sockname:
 										this_sock = s
 										break
+							if this_sock == '?':
+								self.warning( "socket '" + sockname + \
+											"' not found while parsing following line: " +\
+											l + "\n. Skipping." )
+								continue
 							pl = bb.add_plug(this_sock, macaddr, model)
 
 							pl.vlan = int(vlan)
