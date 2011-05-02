@@ -2524,6 +2524,8 @@ class VBGUI(Logger, gobject.GObject):
 			if filename[len(filename)-4:] != ".vbl":
 				filename+=".vbl"
 			self.config.set('current_project', filename)
+			# FORCE CONFIG_DUMP TO CALCULATE A NEW PROJECT ID
+			self.brickfactory.project_parms['id'] = "0"
 			self.brickfactory.config_dump(filename)
 			self.config.store()
 		chooser.destroy()
@@ -2602,7 +2604,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.running_bricks.set_value(iter,3,b.name)
 			self.debug("proc list updated")
 
-		self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+" )")
+		self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+ " ID: " + self.brickfactory.project_parms["id"] + " )")
 
 		return True
 

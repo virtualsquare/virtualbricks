@@ -30,7 +30,6 @@ HOME = os.path.expanduser("~")
 MYPATH = os.path.join(HOME, ".virtualbricks")
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
 
-
 class Settings(ChildLogger):
 	DEFAULT_SECTION = "Main"
 	def __init__(self, filename, logger):
@@ -176,3 +175,4 @@ class Settings(ChildLogger):
 
 	def sudo_system(self, cmd):
 		return os.system(self.get("sudo") + ' ' + repr(cmd))
+

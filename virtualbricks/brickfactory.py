@@ -1761,13 +1761,21 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		'event-accomplished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 	}
 
+	def clear_project_parms(self):
+		DEFAULT_PARMS = {
+			"id": "0",
+		}
+		parms={}
+		for key, value in DEFAULT_PARMS.items():
+			parms[key]=value
+
+		return parms
+
 	def __init__(self, logger=None, showconsole=True):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
 		# DEFINE PROJECT PARMS
-		self.project_parms = {
-			"id": "0",
-		}
+		self.project_parms = self.clear_project_parms()
 		self.bricks = []
 		self.events = []
 		self.socks = []
@@ -1815,12 +1823,21 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		except:
 			self.error( "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
 			return
-		#self.debug("CONFIG DUMP on " + f)
+
+		self.debug("CONFIG DUMP on " + f)
+		
+		# If project hasn't an ID we need to calculate it
+		if self.project_parms['id'] == "0":
+			projects = int(self.settings.get('projects'))
+			self.settings.set("projects", projects+1)
+			self.project_parms['id']=str(projects+1)
+			self.debug("Project no= " + str(projects+1) + ", Projects: " + self.settings.get("projects"))
+			self.settings.store()
 
 		# DUMP PROJECT PARMS
-		#p.write('[Project:'+f+']\n')
-		#for key, value in self.project_parms.items():
-		#	p.write( key + "=" + value+"\n")
+		p.write('[Project:'+f+']\n')
+		for key, value in self.project_parms.items():
+			p.write( key + "=" + value+"\n")
 
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
@@ -1889,6 +1906,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		self.info("Open " + f + " project")
 
+
 		if start_from_scratch:
 			self.bricksmodel.clear()
 			self.eventsmodel.clear()
@@ -1900,7 +1918,15 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				self.delevent(e)
 			del self.events[:]
 
+			# RESET PROJECT PARMS TO DEFAULT	
+			self.project_parms = self.clear_project_parms()
 			if create_if_not_found:
+				# UPDATE PROJECT ID
+				projects = int(self.settings.get('projects'))
+				self.settings.set("projects", projects+1)
+				self.project_parms['id']=str(projects+1)
+				self.debug("Project no= " + str(projects+1) + ", Projects: " + self.settings.get("projects"))
+				self.settings.store()
 				return
 
 		l = p.readline()
@@ -2003,7 +2029,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			projects = int(self.settings.get('projects'))
 			self.settings.set("projects", projects+1)
 			self.project_parms['id']=str(projects+1)
-			self.debug("Project no= " + str(projects+1))
+			self.debug("Project no= " + str(projects+1) + ", Projects: " + self.settings.get("projects"))
 			self.settings.store()
 
 	def quit(self):
