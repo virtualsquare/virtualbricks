@@ -2164,9 +2164,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				self.bricks.remove(b)
 			else: # connections to bricktodel must be deleted too
 				for pl in reversed(b.plugs):
-					self.debug( "Deleting plug to " + pl.sock.nickname )
-					if pl.sock.nickname.startswith(bricktodel.name):
-						b.plugs.remove(pl)
+					if pl.sock:
+						self.debug( "Deleting plug to " + pl.sock.nickname )
+						if pl.sock.nickname.startswith(bricktodel.name):
+							b.plugs.remove(pl)
 		self.bricksmodel.del_brick(bricktodel)
 
 	def delevent(self, eventtodel):
