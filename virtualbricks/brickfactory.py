@@ -140,6 +140,8 @@ class BrickConfig(dict):
 	def __setattr__(self, name, value):
 		"""override dict.__setattr__"""
 		self[name] = value
+		#Set value for running brick
+		self.set_running(name, value)
 
 	def set(self, attr):
 		kv = attr.split("=")
@@ -157,10 +159,32 @@ class BrickConfig(dict):
 				val += kv[1]
 			#print "setting %s to '%s'" % (kv[0], val)
 			self[kv[0]] = val
+			#Set value for running brick
+			self.set_running(kv[0], val)
 			return True
 
 	def set_obj(self, key, obj):
 		self[key] = obj
+
+	def set_running(self, key, value):
+		"""
+		Set the value for the running brick,
+		if available and running
+		"""
+		import inspect
+		stack = inspect.stack()
+		frame = stack[2][0]
+		caller = frame.f_locals.get('self', None)
+		
+		if not isinstance(caller, Brick):
+			return
+		if not callable(caller.get_cbset):
+			return
+		callback = caller.get_cbset(key)
+		if callable(callback):
+			#self.debug("Callback: setting value %s for key %s" %(value,key))
+			callback(caller, value)
+		#else: self.debug("callback not found for key: %s" % (key))
 
 	def dump(self):
 		for (k, v) in self.iteritems():
@@ -178,7 +202,7 @@ class Brick(ChildLogger):
 		self.socks = []
 		self.proc = None
 		self.cfg = BrickConfig()
-		self.cfg.numports = 0 #Why is it needed here!?!
+		#self.cfg.numports = 0 #Why is it needed here!?!
 		self.command_builder = dict()
 		self.factory.bricks.append(self)
 		self.gui_changed = False
@@ -291,8 +315,6 @@ class Brick(ChildLogger):
 			elif self.get_type() == 'Qemu':
 				cb = VM.__dict__["cbset_" + key]
 
-			#elif self.get_type() == 'Event':
-			#	cb = None;
 		except:
 			cb = None
 		return cb
@@ -397,7 +419,7 @@ class Brick(ChildLogger):
 		self.need_restart_to_apply_changes = False
 		if self.close_internal_console and callable(self.close_internal_console):
 			self.close_internal_console()
-		self.internal_console == None
+		self.internal_console = None
 		self.factory.emit("brick-stopped")
 		self.post_poweroff()
 
@@ -409,7 +431,7 @@ class Brick(ChildLogger):
 		if ev:
 			ev.poweron()
 		else:
-			self.debug("Warning. The Start-Event '"+self.cfg.pon_vbevent+\
+			self.warning("Warning. The Start-Event '"+self.cfg.pon_vbevent+\
 					"' attached to Brick '"+\
 					self.name+"' is not available. Skipping execution.")
 
@@ -421,7 +443,7 @@ class Brick(ChildLogger):
 		if ev:
 			ev.poweron()
 		else:
-			self.debug("Warning. The Stop-Event '"+self.cfg.poff_vbevent+\
+			self.warning("Warning. The Stop-Event '"+self.cfg.poff_vbevent+\
 					"' attached to Brick '"+\
 					self.name+"' is not available. Skipping execution.")
 
@@ -429,7 +451,7 @@ class Brick(ChildLogger):
 	# Console related operations.
 	#############################
 	def has_console(self):
-		if self.proc != None and os.path.exists(self.console()):
+		if self.proc != None and self.console():
 			return True
 		else:
 			return False
@@ -438,24 +460,25 @@ class Brick(ChildLogger):
 		self.debug("open_console")
 		if not self.has_console():
 			return
-		else:
+
+		if os.access(self.settings.get('term'), os.X_OK):				
 			cmdline = [self.settings.get('term'), '-T', self.name, '-e', self.terminal, self.console()]
-			try:
-				console = subprocess.Popen(cmdline)
-			except:
-				self.error("term run failed, trying gnome-terminal")
-				cmdline = ['gnome-terminal', '-t', self.name, '-e', self.terminal + " " + self.console()]
-				self.debug(cmdline)
-				try:
-					console = subprocess.Popen(cmdline)
-				except:
-					self.debug(_("Error: cannot start a terminal emulator"))
-					return
+		elif os.access(self.settings.get('alt-term'), os.X_OK):
+			cmdline = [self.settings.get('alt-term'), '-t', self.name, '-e', self.terminal + " " + self.console()]
+		else:
+			self.error(_("Error: cannot start a terminal emulator"))
+			return
+		try:
+			console = subprocess.Popen(cmdline)
+		except:
+			self.exception(_("Error running command line")+ " '" + cmdline + " '")
+			return
 
 	#Must be overridden in Qemu to use appropriate console as internal (stdin, stdout?)
 	def open_internal_console(self):
 		self.debug("open_internal_console")
 		if not self.has_console():
+			self.debug(self.get_type()+" does not have a console")
 			return None
 		while True:
 			try:
@@ -470,13 +493,13 @@ class Brick(ChildLogger):
 
 	def send(self, msg):
 		if self.internal_console == None or not self.active:
-			self.debug("cancel send")
+			self.debug(self.get_type()+": cancel send")
 			return
 		try:
-			self.debug("sending '%s'", msg)
+			self.debug(self.get_type()+": sending '%s'", msg)
 			self.internal_console.send(msg)
 		except Exception, err:
-			self.err("send failed : %s", err)
+			self.exception(self.get_type()+": send failed : %s", err)
 
 	def recv(self):
 		self.debug("recv")
@@ -621,9 +644,6 @@ class Event(ChildLogger):
 			tempstr += "; "+ _("Actions")+":"
 			#Add actions cutting the tail if it's too long
 			for s in self.cfg.actions:
-				#if(len(tempstr)+len(s) > Global.GUI_EVENT_PARAM_NCHAR):
-				#	tempstr+=" ...."
-				#	break
 				if isinstance(s, ShellCommand):
 					tempstr += " \"*%s\"," % s
 				else:
@@ -769,25 +789,25 @@ class Switch(Brick):
 
 	# live-management callbacks
 	def cbset_fstp(self, arg=False):
+		self.debug( self.name + ": callback 'fstp' with argument " + arg)
 		if arg:
 			self.send("fstp/setfstp 1\n")
 		else:
 			self.send("fstp/setfstp 0\n")
-		print self.recv()
+		self.debug(self.recv())
 
 	def cbset_hub(self, arg=False):
-		print "Callback hub with argument " + self.name
+		self.debug( self.name + ": callback 'hub' with argument " + arg)
 		if arg:
 			self.send("port/sethub 1\n")
 		else:
 			self.send("port/sethub 0\n")
-		print self.recv()
+		self.debug(self.recv())
 
 	def cbset_numports(self, arg="32"):
-		print "Callback numports with argument " + self.name
-		self.send("port/setnumports " + arg)
-		print self.recv()
-
+		self.debug( self.name + ": callback 'numports' with argument " + str(arg))
+		self.send("port/setnumports " + str(arg))
+		self.debug(self.recv())
 
 class Tap(Brick):
 	def __init__(self, _factory, _name):
@@ -908,13 +928,6 @@ class Wirefilter(Wire):
 			"-N":"nofifo",
 			"-M":self.console,
 		}
-
-#		self.cfg.sock0 = ""
-#		self.cfg.sock1 = ""
-#
-#		self.plugs.append(Plug(self))
-#		self.plugs.append(Plug(self))
-
 
 		self.cfg.mtuLR = ""
 		self.cfg.mtuRL = ""
@@ -1038,139 +1051,139 @@ class Wirefilter(Wire):
 
 	#callbacks for live-management
 	def cbset_lossLR(self, arg=0):
-		#print "Callback loss LR with argument " + self.name
+		self.debug(self.name + ": callback 'loss LR' with argument " + arg)
 		self.send("loss LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_lossRL(self, arg=0):
-		#print "Callback loss RL with argument " + self.name
+		self.debug(self.name + ": callback 'loss RL' with argument " + arg)
 		self.send("loss RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_loss(self, arg=0):
-		#print "Callback loss LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'loss LR&RL' with argument " + arg)
 		self.send("loss " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_speedLR(self, arg=0):
-		#print "Callback speed LR with argument " + self.name
+		self.debug(self.name + ": callback 'speed LR' with argument " + arg)
 		self.send("speed LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_speedRL(self, arg=0):
-		#print "Callback speed RL with argument " + self.name
+		self.debug(self.name + ": callback 'speed RL' with argument " + arg)
 		self.send("speed RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_speed(self, arg=0):
-		#print "Callback speed LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'speed LR&RL' with argument " + arg)
 		self.send("speed " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_noiseLR(self, arg=0):
-		#print "Callback noise LR with argument " + self.name
+		self.debug(self.name + ": callback 'noise LR' with argument " + arg)
 		self.send("noise LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_noiseRL(self, arg=0):
-		#print "Callback noise RL with argument " + self.name
+		self.debug(self.name + ": callback 'noise RL' with argument " + arg)
 		self.send("noise RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_noise(self, arg=0):
-		#print "Callback noise LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'noise LR&RL' with argument " + arg)
 		self.send("noise " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_bandwidthLR(self, arg=0):
-		#print "Callback bandwidth LR with argument " + self.name
+		self.debug(self.name + ": callback 'bandwidth LR' with argument " + arg)
 		self.send("bandwidth LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_bandwidthRL(self, arg=0):
-		#print "Callback bandwidth RL with argument " + self.name
+		self.debug(self.name + ": callback 'bandwidth RL' with argument " + arg)
 		self.send("bandwidth RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_bandwidth(self, arg=0):
-		#print "Callback bandwidth LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'bandwidth RL&LR' with argument " + arg)
 		self.send("bandwidth " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_delayLR(self, arg=0):
-		#print "Callback delay LR with argument " + self.name
+		self.debug(self.name + ": callback 'delay LR' with argument " + arg)
 		self.send("delay LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_delayRL(self, arg=0):
-		#print "Callback delay RL with argument " + self.name
+		self.debug(self.name + ": callback 'delay RL' with argument " + arg)
 		self.send("delay RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_delay(self, arg=0):
-		#print "Callback delay LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'delay LR&RL' with argument " + arg)
 		self.send("delay " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_dupLR(self, arg=0):
-		#print "Callback dup LR with argument " + self.name
+		self.debug(self.name + ": callback 'dup LR' with argument " + arg)
 		self.send("dup LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_dupRL(self, arg=0):
-		#print "Callback dup RL with argument " + self.name
+		self.debug(self.name + ": callback 'dup RL' with argument " + arg)
 		self.send("dup RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_dup(self, arg=0):
-		#print "Callback dup LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'dup RL&LR' with argument " + arg)
 		self.send("dup " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_mtuLR(self, arg=0):
-		#print "Callback mtu LR with argument " + self.name
+		self.debug(self.name + ": callback 'mtu LR' with argument " + arg)
 		self.send("mtu LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_mtuRL(self, arg=0):
-		#print "Callback mtu RL with argument " + self.name
+		self.debug(self.name + ": callback 'mtu RL' with argument " + arg)
 		self.send("mtu RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_mtu(self, arg=0):
-		#print "Callback mtu LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'mtu LR&RL' with argument " + arg)
 		self.send("mtu " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_lostburstLR(self, arg=0):
-		#print "Callback lostburst LR with argument " + self.name
+		self.debug(self.name + ": callback 'lostburst LR' with argument " + arg)
 		self.send("lostburst LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_lostburstRL(self, arg=0):
-		#print "Callback lostburst RL with argument " + self.name
+		self.debug(self.name + ": callback 'lostburst RL' with argument " + arg)
 		self.send("lostburst RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_lostburst(self, arg=0):
-		#print "Callback lostburst LR&RL with argument " + self.name
+		self.debug(self.name + ": callback 'lostburst RL&RL' with argument " + arg)
 		self.send("lostburst " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_chanbufsizeLR(self, arg=0):
-		#print "Callback chanbufsize LR (capacity) with argument " + self.name
+		self.debug(self.name + ": callback 'chanbufsize (capacity) LR' with argument " + arg)
 		self.send("chanbufsize LR " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_chanbufsizeRL(self, arg=0):
-		#print "Callback chanbufsize RL (capacity) with argument " + self.name
+		self.debug(self.name + ": callback 'chanbufsize (capacity) RL' with argument " + arg)
 		self.send("chanbufsize RL " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	def cbset_chanbufsize(self, arg=0):
-		#print "Callback chanbufsize LR&RL (capacity) with argument " + self.name
+		self.debug(self.name + ": callback 'chanbufsize (capacity) LR&RL' with argument " + arg)
 		self.send("chanbufsize " + arg + "\n")
-		#print self.recv()
+		self.debug(self.recv())
 
 	#Follows a "duplicate" code of "chanbufsizeXX", because chanbufsize was called
 	#capacity before. Justo to be sure...
@@ -1183,7 +1196,6 @@ class Wirefilter(Wire):
 
 	def cbset_capacity(self, arg=0):
 		self.cbset_chanbufsize(arg)
-#Current Delay Queue size:   L->R 0	  R->L 0 ??? Is it status or parameter?
 
 class TunnelListen(Brick):
 	def __init__(self, _factory, _name):
@@ -2027,7 +2039,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						component = self.getbrickbyname(name)
 
 				except Exception, err:
-					self.debug ( "--------- Bad config line:" + str(err) )
+					import traceback,sys
+					self.exception ( "--------- Bad config line:" + str(err))
+					traceback.print_exc(file=sys.stdout)
+					
 					l = p.readline()
 					continue
 
@@ -2050,9 +2065,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 				continue
 			l = p.readline()
-			for b in self.bricks:
-				for c in b.config_socks:
-						self.connect_to(b,c)
+			
+		for b in self.bricks:
+			for c in b.config_socks:
+				self.connect_to(b,c)
 
 		if self.project_parms['id']=="0":
 			projects = int(self.settings.get('projects'))

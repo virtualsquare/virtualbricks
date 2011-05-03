@@ -38,6 +38,7 @@ class Logger(ChildLogger):
 			'warning': {'foreground': '#ff9500'},
 			'error': {'foreground': '#b8032e'},
 			'critical': {'foreground': '#b8032e', 'background': '#000'},
+			'exception': {'foreground': '#000', 'background': '#b8032e'},
 		}
 
 		for level, properties in tags.iteritems():

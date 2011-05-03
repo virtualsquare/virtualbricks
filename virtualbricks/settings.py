@@ -38,6 +38,7 @@ class Settings(ChildLogger):
 		default_conf = {
 			"bricksdirectory": HOME + "/.virtualbricks",
 			"term": "/usr/bin/xterm",
+			"alt-term": "/usr/bin/gnome-terminal",
 			"sudo": "/usr/bin/gksu",
 			"qemupath": "/usr/bin",
 			"baseimages": HOME + "/.virtualbricks/img",

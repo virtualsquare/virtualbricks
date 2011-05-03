@@ -291,7 +291,7 @@ class VBGUI(Logger, gobject.GObject):
 			t = e.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
-				widget.set_text(e.cfg[key])
+				widget.set_text(str(e.cfg[key]))
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "treeview")
 			if (widget is not None):
@@ -417,7 +417,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM")
 			else:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(False)
-				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM is disabled from Properties")
+				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled from Properties"))
 				b.cfg.kvm=False
 
 
@@ -426,18 +426,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		for key in b.cfg.keys():
 			t = b.get_type()
-			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
-			if (widget is not None):
-				widget.set_text(b.cfg[key])
-
-			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-			if (widget is not None and len(b.cfg[key]) > 0):
-				widget.set_value(int(b.cfg[key]))
-
-			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
-			if (widget is not None):
-				widget.set_value(float(b.cfg[key]))
-
+			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
 				if (b.cfg[key] == "*"):
@@ -447,6 +436,21 @@ class VBGUI(Logger, gobject.GObject):
 						self.gladefile.get_widget('cfg_Qemu_kvm_check').set_active(True)
 					else:
 						widget.set_active(False)
+
+		for key in b.cfg.keys():
+			t = b.get_type()
+
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
+			if (widget is not None):
+				widget.set_text(str(b.cfg[key]))
+
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
+			if (widget is not None and len(b.cfg[key]) > 0):
+				widget.set_value(int(b.cfg[key]))
+
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
+			if (widget is not None):
+				widget.set_value(float(b.cfg[key]))
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None and dicts.has_key(key)):
@@ -535,7 +539,7 @@ class VBGUI(Logger, gobject.GObject):
 			if t == 'Event':
 				pass
 
-			if t == 'Tap':
+			elif t == 'Tap':
 				sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
@@ -550,17 +554,17 @@ class VBGUI(Logger, gobject.GObject):
 					b.cfg.mode = 'manual'
 
 
-			if t == 'TunnelConnect':
+			elif t == 'TunnelConnect':
 				sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
-			if t == 'TunnelListen':
+			elif t == 'TunnelListen':
 				sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[0].connect(so)
-			if t == 'Wire':
+			elif t == 'Wire':
 				sel = ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
@@ -569,7 +573,7 @@ class VBGUI(Logger, gobject.GObject):
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
 						b.plugs[1].connect(so)
-			if t == 'Wirefilter':
+			elif t == 'Wirefilter':
 				sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
 				for so in self.brickfactory.socks:
 					if sel == so.nickname:
@@ -581,10 +585,10 @@ class VBGUI(Logger, gobject.GObject):
 
 		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
 		b.configure(fmt_params)
-		for key, value in parameters.iteritems():
-			callback = b.get_cbset(key)
-			if callable(callback):
-				callback(b, value)
+#		for key, value in parameters.iteritems():
+#			callback = b.get_cbset(key)
+#			if callable(callback):
+#				callback(b, value)
 
 	def config_brick_cancel(self):
 		self.curtain_down()

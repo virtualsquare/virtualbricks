@@ -37,12 +37,15 @@ class Logger(object):
 
 	def critical(self, *args, **kwargs):
 		self.logger.critical(*args, **kwargs)
+		
+	def exception(self, *args, **kwargs):
+		self.logger.exception(*args, **kwargs)
 
 class ChildLogger(Logger):
 	def __init__(self, logger=None, name=None):
 		if logger is None:
 			logger = logging.getLogger()
-			logger.setLevel(logging.DEBUG)
+			logger.setLevel(logging.INFO)
 			handler = logging.StreamHandler()
 			logger.addHandler(handler)
 
