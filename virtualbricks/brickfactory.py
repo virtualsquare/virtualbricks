@@ -1368,26 +1368,26 @@ class VM(Brick):
 		self.cfg.basehda = ""
 		# PRIVATE COW IMAGES MUST BE CREATED IN A DIFFERENT DIRECTORY FOR EACH PROJECT
 		#basepath = self.settings.get("baseimages") + "/." + self.project_parms['id']
-		basepath = self.settings.get("baseimages")
-		self.cfg.set_obj("hda", VMDisk(_name, "hda", basepath))
+		self.basepath = self.settings.get("baseimages")
+		self.cfg.set_obj("hda", VMDisk(_name, "hda", self.basepath))
 		self.cfg.privatehda = ""
 		self.cfg.basehdb = ""
-		self.cfg.set_obj("hdb", VMDisk(_name, "hdb", basepath))
+		self.cfg.set_obj("hdb", VMDisk(_name, "hdb", self.basepath))
 		self.cfg.privatehdb = ""
 		self.cfg.basehdc = ""
-		self.cfg.set_obj("hdc", VMDisk(_name, "hdc", basepath))
+		self.cfg.set_obj("hdc", VMDisk(_name, "hdc", self.basepath))
 		self.cfg.privatehdc = ""
 		self.cfg.basehdd = ""
-		self.cfg.set_obj("hdd", VMDisk(_name, "hdd", basepath))
+		self.cfg.set_obj("hdd", VMDisk(_name, "hdd", self.basepath))
 		self.cfg.privatehdd = ""
 		self.cfg.basefda = ""
-		self.cfg.set_obj("fda", VMDisk(_name, "fda", basepath))
+		self.cfg.set_obj("fda", VMDisk(_name, "fda", self.basepath))
 		self.cfg.privatefda = ""
 		self.cfg.basefdb = ""
-		self.cfg.set_obj("fdb", VMDisk(_name, "fdb", basepath))
+		self.cfg.set_obj("fdb", VMDisk(_name, "fdb", self.basepath))
 		self.cfg.privatefdb = ""
 		self.cfg.basemtdblock = ""
-		self.cfg.set_obj("mtdblock", VMDisk(_name, "mtdblock", basepath))
+		self.cfg.set_obj("mtdblock", VMDisk(_name, "mtdblock", self.basepath))
 		self.cfg.privatemtdblock = ""
 		self.cfg.cdrom = ""
 		self.cfg.device = ""
@@ -1671,6 +1671,29 @@ class VM(Brick):
 
 		return res
 
+	def __deepcopy__(self, memo):
+		newname = self.factory.nextValidName("Copy_of_%s" % self.name)
+		if newname is None:
+			raise InvalidName("'%s' (was '%s')" % newname)
+		new_brick = type(self)(self.factory, newname)
+		new_brick.cfg = copy.deepcopy(self.cfg, memo)
+
+		new_brick.newname_changes(newname)
+
+		return new_brick
+
+	def newname_changes(self, newname):
+
+		basepath = self.basepath
+
+		self.cfg.set_obj("hda", VMDisk(newname, "hda", basepath))
+		self.cfg.set_obj("hdb", VMDisk(newname, "hdb", basepath))
+		self.cfg.set_obj("hdc", VMDisk(newname, "hdc", basepath))
+		self.cfg.set_obj("hdd", VMDisk(newname, "hdd", basepath))
+		self.cfg.set_obj("fda", VMDisk(newname, "fda", basepath))
+		self.cfg.set_obj("fdb", VMDisk(newname, "fdb", basepath))
+		self.cfg.set_obj("mtdblock", VMDisk(newname, "mtdblock", basepath))
+
 	def console(self):
 		return "%s/%s_cons.mgmt" % (MYPATH, self.name)
 
@@ -1825,7 +1848,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return
 
 		self.debug("CONFIG DUMP on " + f)
-		
+
 		# If project hasn't an ID we need to calculate it
 		if self.project_parms['id'] == "0":
 			projects = int(self.settings.get('projects'))
@@ -1919,7 +1942,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				self.delevent(e)
 			del self.events[:]
 
-			# RESET PROJECT PARMS TO DEFAULT	
+			# RESET PROJECT PARMS TO DEFAULT
 			self.project_parms = self.clear_project_parms()
 			if create_if_not_found:
 				# UPDATE PROJECT ID
@@ -2239,6 +2262,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if b.get_type() == "Switch":
 			for so in b.socks:
 				so.nickname = b.name + "_port"
+		elif b.get_type() == "Qemu":
+			b.newname_changes(newname)
+
 		b.gui_changed = True
 
 	def renameevent(self, e, newname):
