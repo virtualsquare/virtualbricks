@@ -289,6 +289,7 @@ class VBGUI(Logger, gobject.GObject):
 		e = self.event_selected
 		for key in e.cfg.keys():
 			t = e.get_type()
+			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
 				widget.set_text(str(e.cfg[key]))
@@ -356,6 +357,7 @@ class VBGUI(Logger, gobject.GObject):
 			elif k.endswith('1') and t.startswith('Wire'):
 				if len(b.plugs) >= 1 and b.plugs[1].sock:
 					combo.select(b.plugs[1].sock.nickname)
+					
 		dicts=dict()
 		#QEMU COMMAND COMBO
 		missing,found = self.config.check_missing_qemupath(self.config.get("qemupath"))
@@ -418,7 +420,7 @@ class VBGUI(Logger, gobject.GObject):
 			else:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(False)
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled from Properties"))
-				b.cfg.kvm=False
+				b.cfg.kvm=""
 
 
 
@@ -429,14 +431,11 @@ class VBGUI(Logger, gobject.GObject):
 			
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
-				if (b.cfg[key] == "*"):
-					widget.set_active(True)
-				else:
-					if key is "kvm" and self.config.kvm and b.cfg.kvm=="*":
-						self.gladefile.get_widget('cfg_Qemu_kvm_check').set_active(True)
-					else:
-						widget.set_active(False)
-
+				if (b.cfg[key] == "*" or b.cfg[key] == 'True' or b.cfg[key] == True):
+					if key is "kvm" and self.config.kvm: widget.set_active(True)
+					elif key is not "kvm": widget.set_active(True)
+				else: widget.set_active(False)
+						
 		for key in b.cfg.keys():
 			t = b.get_type()
 
@@ -585,10 +584,6 @@ class VBGUI(Logger, gobject.GObject):
 
 		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
 		b.configure(fmt_params)
-#		for key, value in parameters.iteritems():
-#			callback = b.get_cbset(key)
-#			if callable(callback):
-#				callback(b, value)
 
 	def config_brick_cancel(self):
 		self.curtain_down()
@@ -682,7 +677,7 @@ class VBGUI(Logger, gobject.GObject):
 		if self.brick_selected.get_type() == 'Switch':
 			self.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
-			wg.set_position(589)
+			wg.set_position(575)
 		elif self.brick_selected.get_type() == 'Qemu':
 			self.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')
@@ -690,7 +685,7 @@ class VBGUI(Logger, gobject.GObject):
 		elif self.brick_selected.get_type() == 'Tap':
 			self.debug("tap config")
 			ww = self.gladefile.get_widget('box_tapconfig')
-			wg.set_position(513)
+			wg.set_position(500)
 		elif self.brick_selected.get_type() == 'Wire':
 			self.debug("wire config")
 			ww = self.gladefile.get_widget('box_wireconfig')
@@ -702,11 +697,11 @@ class VBGUI(Logger, gobject.GObject):
 		elif self.brick_selected.get_type() == 'TunnelConnect':
 			self.debug("tunnelc config")
 			ww = self.gladefile.get_widget('box_tunnelcconfig')
-			wg.set_position(424)
+			wg.set_position(500)
 		elif self.brick_selected.get_type() == 'TunnelListen':
 			self.debug("tunnell config")
 			ww = self.gladefile.get_widget('box_tunnellconfig')
-			wg.set_position(424)
+			wg.set_position(524)
 		self.config_brick_prepare()
 		ww.show_all()
 
@@ -847,11 +842,11 @@ class VBGUI(Logger, gobject.GObject):
 	def error(self, text, *args, **kwargs):
 		Logger.error(self, text, *args, **kwargs)
 		text = text % args
-		gtk.gdk.threads_enter()
-		try:
-			self.show_error(text)
-		finally:
-			gtk.gdk.threads_leave()
+		#gtk.gdk.threads_enter()
+		#try:
+		self.show_error(text)
+		#finally:
+		#	gtk.gdk.threads_leave()
 
 	def show_error(self, text):
 		def on_response(widget, response_id=None, data=None):
@@ -2042,6 +2037,9 @@ class VBGUI(Logger, gobject.GObject):
 			lbl.set_markup('<span color="darkgreen">'+_("All VDE components detected")+'.</span>\n')
 
 	def on_arch_changed(self, widget, data=None):
+		if self.brick_selected.get_type() != 'Qemu':
+			return
+		 
 		combo = ComboBox(widget)
 		path = self.config.get('qemupath')
 

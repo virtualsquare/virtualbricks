@@ -1323,7 +1323,7 @@ class VMPlugHostonly(VMPlug):
 		return True
 
 	def connected(self):
-		print "CALLED hostonly connected"
+		self.debug( "CALLED hostonly connected" )
 		return True
 
 class VMDisk():

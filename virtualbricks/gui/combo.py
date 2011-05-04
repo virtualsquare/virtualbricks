@@ -64,10 +64,10 @@ class ComboBoxObj:
 			value = self.model.get_value(index, 0)
 			if value == regexp:
 			#if re.search(regexp, s):
-				print "Found match:" + value
+				#print "Found match:" + value
 				active = index
-				print "activate " + regexp
-				print "setting active to " + unicode(active)
+				#print "activate " + regexp
+				#print "setting active to " + unicode(active)
 				self.widget.set_active_iter(active)
 				break
 			index = self.model.iter_next(index)

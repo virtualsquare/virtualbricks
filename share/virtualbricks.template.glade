@@ -4076,64 +4076,81 @@ Normal Distribution</property>
                     <property name="visible">True</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <widget class="GtkHBox" id="hbox3">
+                      <widget class="GtkFrame" id="frame14">
                         <property name="visible">True</property>
+                        <property name="label_xalign">0</property>
+                        <property name="shadow_type">in</property>
                         <child>
-                          <widget class="GtkLabel" id="switch_ports_label">
+                          <widget class="GtkHBox" id="hbox3">
                             <property name="visible">True</property>
-                            <property name="label" translatable="yes">Number of ports: </property>
-                          </widget>
-                          <packing>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkSpinButton" id="cfg_Switch_numports_spinint">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="invisible_char">&#x25CF;</property>
-                            <property name="adjustment">32 1 128 1 32 0</property>
-                            <property name="snap_to_ticks">True</property>
-                            <property name="numeric">True</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkVBox" id="vbox9">
-                            <property name="visible">True</property>
-                            <property name="orientation">vertical</property>
                             <child>
-                              <widget class="GtkCheckButton" id="cfg_Switch_fstp_check">
-                                <property name="label" translatable="yes">Use FSTP</property>
+                              <widget class="GtkLabel" id="switch_ports_label">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">False</property>
-                                <property name="draw_indicator">True</property>
+                                <property name="label" translatable="yes">Number of ports: </property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cfg_Switch_hub_check">
-                                <property name="label" translatable="yes">Hub mode</property>
+                              <widget class="GtkSpinButton" id="cfg_Switch_numports_spinint">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="receives_default">False</property>
-                                <property name="draw_indicator">True</property>
+                                <property name="invisible_char">&#x2022;</property>
+                                <property name="adjustment">32 1 128 1 32 0</property>
+                                <property name="snap_to_ticks">True</property>
+                                <property name="numeric">True</property>
                               </widget>
                               <packing>
+                                <property name="expand">False</property>
                                 <property name="position">1</property>
                               </packing>
                             </child>
+                            <child>
+                              <widget class="GtkVBox" id="vbox9">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkCheckButton" id="cfg_Switch_fstp_check">
+                                    <property name="label" translatable="yes">Use FSTP</property>
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">False</property>
+                                    <property name="draw_indicator">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkCheckButton" id="cfg_Switch_hub_check">
+                                    <property name="label" translatable="yes">Hub mode</property>
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">False</property>
+                                    <property name="draw_indicator">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="padding">206</property>
+                                <property name="pack_type">end</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="label73">
+                            <property name="visible">True</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Switch Configuration&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
                           </widget>
                           <packing>
-                            <property name="padding">206</property>
-                            <property name="pack_type">end</property>
-                            <property name="position">2</property>
+                            <property name="type">label_item</property>
                           </packing>
                         </child>
                       </widget>
@@ -4433,69 +4450,80 @@ Normal Distribution</property>
                     <property name="visible">True</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <widget class="GtkHPaned" id="hpaned1">
+                      <widget class="GtkFrame" id="frame13">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="label_xalign">0</property>
+                        <property name="shadow_type">in</property>
                         <child>
-                          <widget class="GtkHPaned" id="hpaned2">
+                          <widget class="GtkHPaned" id="hpaned1">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <child>
-                              <widget class="GtkLabel" id="label70">
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Delay:</property>
-                              </widget>
-                              <packing>
-                                <property name="resize">False</property>
-                                <property name="shrink">True</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkEntry" id="cfg_Event_delay_text">
+                              <widget class="GtkHPaned" id="hpaned2">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="invisible_char">&#x2022;</property>
-                              </widget>
-                              <packing>
-                                <property name="resize">True</property>
-                                <property name="shrink">True</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="resize">False</property>
-                            <property name="shrink">True</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkHPaned" id="hpaned3">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="orientation">vertical</property>
-                            <child>
-                              <widget class="GtkLabel" id="label71">
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">Actions</property>
-                              </widget>
-                              <packing>
-                                <property name="resize">False</property>
-                                <property name="shrink">True</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkScrolledWindow" id="scrolledwindow4">
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="hscrollbar_policy">automatic</property>
-                                <property name="vscrollbar_policy">automatic</property>
                                 <child>
-                                  <widget class="GtkTreeView" id="cfg_Event_actions_treeview">
-                                    <property name="width_request">787</property>
-                                    <property name="height_request">142</property>
+                                  <widget class="GtkLabel" id="label71">
+                                    <property name="visible">True</property>
+                                    <property name="label" translatable="yes">Delay:</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="resize">False</property>
+                                    <property name="shrink">True</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkEntry" id="cfg_Event_delay_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="enable_grid_lines">both</property>
+                                    <property name="invisible_char">&#x2022;</property>
                                   </widget>
+                                  <packing>
+                                    <property name="resize">True</property>
+                                    <property name="shrink">True</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="resize">False</property>
+                                <property name="shrink">True</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkHPaned" id="hpaned3">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkLabel" id="label72">
+                                    <property name="visible">True</property>
+                                    <property name="label" translatable="yes">Actions</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="resize">False</property>
+                                    <property name="shrink">True</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkScrolledWindow" id="scrolledwindow4">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="hscrollbar_policy">automatic</property>
+                                    <property name="vscrollbar_policy">automatic</property>
+                                    <child>
+                                      <widget class="GtkTreeView" id="cfg_Event_actions_treeview">
+                                        <property name="width_request">787</property>
+                                        <property name="height_request">142</property>
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">True</property>
+                                        <property name="enable_grid_lines">both</property>
+                                      </widget>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="resize">True</property>
+                                    <property name="shrink">True</property>
+                                  </packing>
                                 </child>
                               </widget>
                               <packing>
@@ -4504,9 +4532,15 @@ Normal Distribution</property>
                               </packing>
                             </child>
                           </widget>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="label70">
+                            <property name="visible">True</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Event Configuration&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
+                          </widget>
                           <packing>
-                            <property name="resize">True</property>
-                            <property name="shrink">True</property>
+                            <property name="type">label_item</property>
                           </packing>
                         </child>
                       </widget>
@@ -4521,231 +4555,282 @@ Normal Distribution</property>
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkTable" id="box_tunnellconfig">
+                  <widget class="GtkVBox" id="box_tunnellconfig">
                     <property name="visible">True</property>
-                    <property name="n_rows">5</property>
-                    <property name="n_columns">2</property>
+                    <property name="orientation">vertical</property>
                     <child>
-                      <widget class="GtkLabel" id="label49">
+                      <widget class="GtkFrame" id="frame15">
                         <property name="visible">True</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Connect to</property>
-                      </widget>
-                    </child>
-                    <child>
-                      <widget class="GtkComboBox" id="sockscombo_tunnell">
-                        <property name="visible">True</property>
-                        <property name="items" translatable="yes"> 
+                        <property name="label_xalign">0</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <widget class="GtkTable" id="box">
+                            <property name="visible">True</property>
+                            <property name="n_rows">5</property>
+                            <property name="n_columns">2</property>
+                            <child>
+                              <widget class="GtkLabel" id="label51">
+                                <property name="visible">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Connect to</property>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkComboBox" id="sockscombo_tunnell">
+                                <property name="visible">True</property>
+                                <property name="items" translatable="yes"> 
 </property>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkSpinButton" id="cfg_TunnelListen_port_spinint">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="invisible_char">&#x2022;</property>
+                                <property name="adjustment">7667 1 65535 1 10 0</property>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">2</property>
+                                <property name="bottom_attach">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label52">
+                                <property name="visible">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Listen to port:</property>
+                              </widget>
+                              <packing>
+                                <property name="top_attach">2</property>
+                                <property name="bottom_attach">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label75">
+                                <property name="visible">True</property>
+                                <property name="label" translatable="yes">Expect password:</property>
+                              </widget>
+                              <packing>
+                                <property name="top_attach">3</property>
+                                <property name="bottom_attach">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkEntry" id="cfg_TunnelListen_password_text">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="visibility">False</property>
+                                <property name="invisible_char">&#x2022;</property>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">3</property>
+                                <property name="bottom_attach">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                          </widget>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="label46">
+                            <property name="visible">True</property>
+                            <property name="xalign">0.47999998927116394</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Tunnel server Configuration&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
+                          </widget>
+                          <packing>
+                            <property name="type">label_item</property>
+                          </packing>
+                        </child>
                       </widget>
                       <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
+                        <property name="position">0</property>
                       </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkSpinButton" id="cfg_TunnelListen_port_spinint">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="invisible_char">&#x25CF;</property>
-                        <property name="adjustment">7667 1 65535 1 10 0</property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="top_attach">2</property>
-                        <property name="bottom_attach">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkLabel" id="label51">
-                        <property name="visible">True</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Listen to port:</property>
-                      </widget>
-                      <packing>
-                        <property name="top_attach">2</property>
-                        <property name="bottom_attach">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkLabel" id="label52">
-                        <property name="visible">True</property>
-                        <property name="label" translatable="yes">Expect password:</property>
-                      </widget>
-                      <packing>
-                        <property name="top_attach">3</property>
-                        <property name="bottom_attach">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkEntry" id="cfg_TunnelListen_password_text">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="visibility">False</property>
-                        <property name="invisible_char">&#x25CF;</property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="top_attach">3</property>
-                        <property name="bottom_attach">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                   </widget>
                   <packing>
-                    <property name="expand">False</property>
                     <property name="position">6</property>
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkTable" id="box_tunnelcconfig">
+                  <widget class="GtkVBox" id="box_tunnelcconfig">
                     <property name="visible">True</property>
-                    <property name="n_rows">5</property>
-                    <property name="n_columns">2</property>
+                    <property name="orientation">vertical</property>
                     <child>
-                      <widget class="GtkLabel" id="label46">
+                      <widget class="GtkFrame" id="frame16">
                         <property name="visible">True</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Connect to</property>
-                      </widget>
-                    </child>
-                    <child>
-                      <widget class="GtkComboBox" id="sockscombo_tunnelc">
-                        <property name="visible">True</property>
-                        <property name="items" translatable="yes"> 
+                        <property name="label_xalign">0</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <widget class="GtkTable" id="bo">
+                            <property name="visible">True</property>
+                            <property name="n_rows">5</property>
+                            <property name="n_columns">2</property>
+                            <child>
+                              <widget class="GtkLabel" id="label49">
+                                <property name="visible">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Connect to</property>
+                              </widget>
+                            </child>
+                            <child>
+                              <widget class="GtkHBox" id="hbox52">
+                                <property name="visible">True</property>
+                                <child>
+                                  <widget class="GtkEntry" id="cfg_TunnelConnect_host_text">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="invisible_char">&#x2022;</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkLabel" id="label69">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">1</property>
+                                    <property name="label" translatable="yes">port:</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkSpinButton" id="cfg_TunnelConnect_port_spinint">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="invisible_char">&#x2022;</property>
+                                    <property name="adjustment">7667 1 65535 1 10 0</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">1</property>
+                                <property name="bottom_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label54">
+                                <property name="visible">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Tunnel Server</property>
+                              </widget>
+                              <packing>
+                                <property name="top_attach">1</property>
+                                <property name="bottom_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkEntry" id="cfg_TunnelConnect_password_text">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="visibility">False</property>
+                                <property name="invisible_char">&#x2022;</property>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">3</property>
+                                <property name="bottom_attach">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label53">
+                                <property name="visible">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Password:</property>
+                              </widget>
+                              <packing>
+                                <property name="top_attach">3</property>
+                                <property name="bottom_attach">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label74">
+                                <property name="visible">True</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Local port:</property>
+                              </widget>
+                              <packing>
+                                <property name="top_attach">2</property>
+                                <property name="bottom_attach">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkSpinButton" id="cfg_TunnelConnect_localport_spinint">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="invisible_char">&#x2022;</property>
+                                <property name="adjustment">7667 1 65535 1 10 0</property>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">2</property>
+                                <property name="bottom_attach">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkComboBox" id="sockscombo_tunnelc">
+                                <property name="visible">True</property>
+                                <property name="items" translatable="yes"> 
 </property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkSpinButton" id="cfg_TunnelConnect_localport_spinint">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="invisible_char">&#x25CF;</property>
-                        <property name="adjustment">7667 1 65535 1 10 0</property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="top_attach">2</property>
-                        <property name="bottom_attach">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkLabel" id="label48">
-                        <property name="visible">True</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Local port:</property>
-                      </widget>
-                      <packing>
-                        <property name="top_attach">2</property>
-                        <property name="bottom_attach">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkLabel" id="label53">
-                        <property name="visible">True</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Password:</property>
-                      </widget>
-                      <packing>
-                        <property name="top_attach">3</property>
-                        <property name="bottom_attach">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkEntry" id="cfg_TunnelConnect_password_text">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="visibility">False</property>
-                        <property name="invisible_char">&#x25CF;</property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="top_attach">3</property>
-                        <property name="bottom_attach">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkLabel" id="label54">
-                        <property name="visible">True</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Tunnel Server</property>
-                      </widget>
-                      <packing>
-                        <property name="top_attach">1</property>
-                        <property name="bottom_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkHBox" id="hbox52">
-                        <property name="visible">True</property>
-                        <child>
-                          <widget class="GtkEntry" id="cfg_TunnelConnect_host_text">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="invisible_char">&#x25CF;</property>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
                           </widget>
-                          <packing>
-                            <property name="position">0</property>
-                          </packing>
                         </child>
                         <child>
-                          <widget class="GtkLabel" id="label69">
+                          <widget class="GtkLabel" id="label48">
                             <property name="visible">True</property>
-                            <property name="xalign">1</property>
-                            <property name="label" translatable="yes">port:</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Tunnel client Configuration&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
                           </widget>
                           <packing>
-                            <property name="expand">False</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkSpinButton" id="cfg_TunnelConnect_port_spinint">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="invisible_char">&#x25CF;</property>
-                            <property name="adjustment">7667 1 65535 1 10 0</property>
-                          </widget>
-                          <packing>
-                            <property name="position">2</property>
+                            <property name="type">label_item</property>
                           </packing>
                         </child>
                       </widget>
                       <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="top_attach">1</property>
-                        <property name="bottom_attach">2</property>
+                        <property name="position">0</property>
                       </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                   </widget>
                   <packing>
-                    <property name="expand">False</property>
                     <property name="position">7</property>
                   </packing>
                 </child>
