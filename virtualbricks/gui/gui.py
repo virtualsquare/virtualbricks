@@ -536,7 +536,51 @@ class VBGUI(Logger, gobject.GObject):
 			t = b.get_type()
 
 			if t == 'Event':
-				pass
+				
+				
+				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
+
+				iter = self.shcommandsmodel.get_iter_first()
+
+				#Do not hide window
+				#if not iter:
+				#	return
+
+				currevent = None
+				columns = (COL_COMMAND, COL_BOOL) = range(2)
+				currevent = self.event_selected
+				
+				currevent.cfg.actions=list()
+
+				while iter:
+					linecommand = self.shcommandsmodel.get_value(iter, COL_COMMAND)
+					shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
+
+					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
+					""" 
+					Can be multiline command.
+					CTRL+ENTER does not send "enter" inside
+					the field but confirms the field instead, exiting edit mode.
+					That feature is managed anyway.
+					Example:
+					sw1 config fstp=False
+					wf1 config xxx=yyy
+					....
+					will be transformed into:
+					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...  
+					"""
+		 			commands = linecommand.split("\n")
+		 			commandtype = 'addsh' if shbool else 'add'
+
+		 			if not commands[0]:
+		 				iter = self.shcommandsmodel.iter_next(iter)
+		 				continue
+
+		 			commands[0] = 'config %s %s' % (commandtype, commands[0])
+		 			c = unicode(' %s ' % commandtype).join(commands)
+
+		 			self.brickfactory.brickAction(currevent, c.split(" "))
+		 			iter = self.shcommandsmodel.iter_next(iter)
 
 			elif t == 'Tap':
 				sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
@@ -1918,6 +1962,18 @@ class VBGUI(Logger, gobject.GObject):
 					shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
 
 					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
+					""" 
+					Can be multiline command.
+					CTRL+ENTER does not send "enter" inside
+					the field but confirms the field instead, exiting edit mode.
+					That feature is managed anyway.
+					Example:
+					sw1 config fstp=False
+					wf1 config xxx=yyy
+					....
+					will be transformed into:
+					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...  
+					"""
 		 			commands = linecommand.split("\n")
 		 			commandtype = 'addsh' if shbool else 'add'
 

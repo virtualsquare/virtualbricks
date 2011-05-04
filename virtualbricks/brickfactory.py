@@ -766,11 +766,13 @@ class Switch(Brick):
 	def get_parameters(self):
 		fstp = ""
 		hub = ""
-		if (self.cfg.get('fstp')):
-			fstp = ", FSTP"
-		if (self.cfg.get('hub')):
-			hub = ", HUB"
-		return "Ports:%d%s%s" % ((int(unicode(self.cfg.numports))), fstp, hub)
+		if (self.cfg.get('fstp',False)):
+			if self.cfg.fstp == '*':
+				fstp = ", FSTP"
+		if (self.cfg.get('hub',False)):
+			if self.cfg.hub == '*':
+				hub = ", HUB"
+		return "Ports:%d%s%s" % ((int(unicode(self.cfg.get('numports','32')))), fstp, hub)
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_switch"
@@ -2034,7 +2036,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 								self.project_parms[values[0]]=values[1]
 							l = p.readline()
 						continue
-					else:
+					else: #elif ntype == 'Brick'
 						self.newbrick(ntype, name)
 						component = self.getbrickbyname(name)
 
@@ -2052,7 +2054,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					if len(l.split('=')) > 1:
 						#Special management for event actions
 						if l.split('=')[0] == "actions" and ntype == 'Event':
-							actions=eval(''.join(l.rstrip('\n').split('=')[1:]))
+							actions=eval(''.join(l.rstrip('\n').split('=',1)[1:]))
 							for action in actions:
 								#Initialize one by one
 								component.configure(action.split(' '))
