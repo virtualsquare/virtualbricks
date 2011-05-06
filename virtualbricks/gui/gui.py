@@ -1429,7 +1429,7 @@ class VBGUI(Logger, gobject.GObject):
 					b.name)
 
 			except Linkloop:
-				if (self.config.erroronloop):
+				if self.config.erroronloop:
 					gtk.gdk.threads_enter()
 					self.error(_("Loop link detected: aborting operation. If you want to start "
 						"a looped network, disable the check loop feature in the general "

@@ -379,14 +379,14 @@ class Brick(ChildLogger):
 			self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		except OSError:
 			self.error("OSError Brick startup failed. Check your configuration!")
-
-		if self.open_internal_console and callable(self.open_internal_console):
-			self.internal_console = self.open_internal_console()
-
+			
 		if self.proc is not None:
 			self.pid = self.proc.pid
 		else:
 			self.error("Brick startup failed. Check your configuration!")
+
+		if self.open_internal_console and callable(self.open_internal_console):
+			self.internal_console = self.open_internal_console()
 
 		self.factory.emit("brick-started")
 		self.post_poweron()
@@ -451,10 +451,13 @@ class Brick(ChildLogger):
 	# Console related operations.
 	#############################
 	def has_console(self):
-		if self.proc != None and self.console():
-			return True
-		else:
-			return False
+		for i in range(1, 10):
+			if self.proc != None and os.path.exists(self.console()):
+				return True
+			else:
+				time.sleep(0.5)
+		return False
+			
 
 	def open_console(self):
 		self.debug("open_console")
@@ -480,7 +483,7 @@ class Brick(ChildLogger):
 		if not self.has_console():
 			self.debug(self.get_type()+" does not have a console")
 			return None
-		while True:
+		for i in range(1, 10):
 			try:
 				time.sleep(0.5)
 				c = socket.socket(socket.AF_UNIX)
@@ -488,8 +491,8 @@ class Brick(ChildLogger):
 			except:
 				pass
 			else:
-				break
-		return c
+				return c
+		return None
 
 	def send(self, msg):
 		if self.internal_console == None or not self.active:
@@ -700,7 +703,7 @@ class Event(ChildLogger):
 				try:
 					subprocess.Popen(action, shell = True)
 				except:
-					print "Error: cannot execute shell command \"%s\"" % action
+					self.error("Error: cannot execute shell command \"%s\"" % action)
 					continue
 #			else:
 #				#it is an event
@@ -772,7 +775,7 @@ class Switch(Brick):
 		if (self.cfg.get('hub',False)):
 			if self.cfg.hub == '*':
 				hub = ", HUB"
-		return "Ports:%d%s%s" % ((int(unicode(self.cfg.get('numports','32')))), fstp, hub)
+		return _("Ports:%d%s%s") % ((int(unicode(self.cfg.get('numports','32')))), fstp, hub)
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_switch"
@@ -1269,10 +1272,10 @@ class TunnelConnect(TunnelListen):
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
-			return "plugged to %s, connecting to udp://%s" % (
+			return _("plugged to %s, connecting to udp://%s") % (
 				self.plugs[0].sock.brick.name, self.cfg.host)
 
-		return "disconnected"
+		return _("disconnected")
 
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
@@ -1542,7 +1545,7 @@ class VM(Brick):
 		}
 
 	def get_parameters(self):
-		txt = "command: %s, ram: %s" % (self.prog(), self.cfg.ram)
+		txt = _("command:") + " %s, ram: %s" % (self.prog(), self.cfg.ram)
 		for p in self.plugs:
 			if p.mode == 'hostonly':
 				txt += ', eth %s: Host' % unicode(p.vlan)
