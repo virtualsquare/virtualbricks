@@ -175,7 +175,7 @@ class BrickConfig(dict):
 		stack = inspect.stack()
 		frame = stack[2][0]
 		caller = frame.f_locals.get('self', None)
-		
+
 		if not isinstance(caller, Brick):
 			return
 		if not callable(caller.get_cbset):
@@ -461,7 +461,7 @@ class Brick(ChildLogger):
 		if not self.has_console():
 			return
 
-		if os.access(self.settings.get('term'), os.X_OK):				
+		if os.access(self.settings.get('term'), os.X_OK):
 			cmdline = [self.settings.get('term'), '-T', self.name, '-e', self.terminal, self.console()]
 		elif os.access(self.settings.get('alt-term'), os.X_OK):
 			cmdline = [self.settings.get('alt-term'), '-t', self.name, '-e', self.terminal + " " + self.console()]
@@ -836,6 +836,9 @@ class Tap(Brick):
 
 	def get_type(self):
 		return 'Tap'
+
+	def console(self):
+		return None
 
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
@@ -2044,7 +2047,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					import traceback,sys
 					self.exception ( "--------- Bad config line:" + str(err))
 					traceback.print_exc(file=sys.stdout)
-					
+
 					l = p.readline()
 					continue
 
@@ -2067,7 +2070,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 				continue
 			l = p.readline()
-			
+
 		for b in self.bricks:
 			for c in b.config_socks:
 				self.connect_to(b,c)
