@@ -289,7 +289,7 @@ class VBGUI(Logger, gobject.GObject):
 		e = self.event_selected
 		for key in e.cfg.keys():
 			t = e.get_type()
-			
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
 				widget.set_text(str(e.cfg[key]))
@@ -357,7 +357,7 @@ class VBGUI(Logger, gobject.GObject):
 			elif k.endswith('1') and t.startswith('Wire'):
 				if len(b.plugs) >= 1 and b.plugs[1].sock:
 					combo.select(b.plugs[1].sock.nickname)
-					
+
 		dicts=dict()
 		#QEMU COMMAND COMBO
 		missing,found = self.config.check_missing_qemupath(self.config.get("qemupath"))
@@ -428,14 +428,14 @@ class VBGUI(Logger, gobject.GObject):
 
 		for key in b.cfg.keys():
 			t = b.get_type()
-			
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
 				if (b.cfg[key] == "*" or b.cfg[key] == 'True' or b.cfg[key] == True):
 					if key is "kvm" and self.config.kvm: widget.set_active(True)
 					elif key is not "kvm": widget.set_active(True)
 				else: widget.set_active(False)
-						
+
 		for key in b.cfg.keys():
 			t = b.get_type()
 
@@ -536,8 +536,8 @@ class VBGUI(Logger, gobject.GObject):
 			t = b.get_type()
 
 			if t == 'Event':
-				
-				
+
+
 				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
 
 				iter = self.shcommandsmodel.get_iter_first()
@@ -549,7 +549,7 @@ class VBGUI(Logger, gobject.GObject):
 				currevent = None
 				columns = (COL_COMMAND, COL_BOOL) = range(2)
 				currevent = self.event_selected
-				
+
 				currevent.cfg.actions=list()
 
 				while iter:
@@ -557,7 +557,7 @@ class VBGUI(Logger, gobject.GObject):
 					shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
 
 					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
-					""" 
+					"""
 					Can be multiline command.
 					CTRL+ENTER does not send "enter" inside
 					the field but confirms the field instead, exiting edit mode.
@@ -567,7 +567,7 @@ class VBGUI(Logger, gobject.GObject):
 					wf1 config xxx=yyy
 					....
 					will be transformed into:
-					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...  
+					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...
 					"""
 		 			commands = linecommand.split("\n")
 		 			commandtype = 'addsh' if shbool else 'add'
@@ -1420,22 +1420,28 @@ class VBGUI(Logger, gobject.GObject):
 				b.poweron()
 			except BadConfig:
 				b.gui_changed=True
+				gtk.gdk.threads_enter()
 				self.error(_("Cannot start '%s': not configured"),
 					b.name)
+				gtk.gdk.threads_leave()
 			except NotConnected:
 				self.error(_("Cannot start '%s': not connected"),
 					b.name)
 
 			except Linkloop:
 				if (self.config.erroronloop):
+					gtk.gdk.threads_enter()
 					self.error(_("Loop link detected: aborting operation. If you want to start "
 						"a looped network, disable the check loop feature in the general "
 						"settings"))
+					gtk.gdk.threads_leave()
 					b.poweroff()
 			except DiskLocked:
 				b.gui_changed=True
+				gtk.gdk.threads_enter()
 				self.error(_("Disk used by the VM is locked by another "
 					"machine"))
+				gtk.gdk.threads_leave()
 				b.poweroff()
 
 	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
@@ -1962,7 +1968,7 @@ class VBGUI(Logger, gobject.GObject):
 					shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
 
 					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
-					""" 
+					"""
 					Can be multiline command.
 					CTRL+ENTER does not send "enter" inside
 					the field but confirms the field instead, exiting edit mode.
@@ -1972,7 +1978,7 @@ class VBGUI(Logger, gobject.GObject):
 					wf1 config xxx=yyy
 					....
 					will be transformed into:
-					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...  
+					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...
 					"""
 		 			commands = linecommand.split("\n")
 		 			commandtype = 'addsh' if shbool else 'add'
@@ -2095,7 +2101,7 @@ class VBGUI(Logger, gobject.GObject):
 	def on_arch_changed(self, widget, data=None):
 		if self.brick_selected.get_type() != 'Qemu':
 			return
-		 
+
 		combo = ComboBox(widget)
 		path = self.config.get('qemupath')
 
