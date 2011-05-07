@@ -29,8 +29,7 @@ import socket
 import subprocess
 import sys
 from threading import Thread, Timer
-import time
-
+import time, socket, hashlib
 from virtualbricks import tools
 from virtualbricks.gui.graphics import *
 from virtualbricks.logger import ChildLogger
@@ -45,6 +44,77 @@ def CommandLineOutput(outf, data):
 		return outf.write(data + '\n')
 	else:
 		return outf.send(data + '\n')
+
+class RemoteHost():
+	def __init__(self, factory, address):
+		self.factory = factory
+		self.addr = (address,1050)
+		self.connected=False
+		self.password=""
+
+	def connect(self):
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		try:
+			self.sock.connect(self.addr)
+			rec = self.sock.recv(5)
+			if (not rec.startswith('HELO')):
+				return False
+			rec = self.sock.recv(256)
+			sha = hashlib.sha256()
+			sha.update(self.password)
+			sha.update(rec)
+			hashed = sha.digest()
+			self.sock.send(hashed)
+			p = select.poll()
+			p.register(self.sock, select.POLLIN)
+		except:
+			print "ERROR"
+			pass
+		if (p.poll(5000)):
+			rec = self.sock.recv(4)
+			if rec.startswith("OK"):
+				self.connected=True
+				self.post_connect_init()
+				return True
+		return False
+
+	def disconnect(self):
+		if self.connected:
+			self.sock.close()
+			self.connected=False
+
+	def upload(self,b):
+		self.send("new "+b.get_type()+" "+b.name)
+		self.putconfig(b)
+
+	def putconfig(self,b):
+		for (k, v) in b.cfg.iteritems():
+			self.send(b.name + ' config ' + "%s=%s" % (k, v))
+
+
+
+	def post_connect_init(self):
+		for b in self.factory.bricks:
+			if b.homehost and b.homehost.addr == self.addr:
+				self.upload(b)
+
+	def send(self, cmd):
+		if self.connected:
+			self.sock.send(cmd)
+			p = select.poll()
+			p.register(self.sock, select.POLLIN)
+			if (p.poll()):
+				rec = self.sock.recv(4)
+				if rec.startswith("OK"):
+					return True
+
+	def recv(self, size):
+		if not self.connected:
+			return ""
+		return self.sock.recv(size)
+
+
+
 
 def ValidName(name):
 	name=str(name)
@@ -198,7 +268,7 @@ class BrickConfig(dict):
 			print "%s=%s" % (k, v)
 
 class Brick(ChildLogger):
-	def __init__(self, _factory, _name):
+	def __init__(self, _factory, _name, homehost=""):
 		ChildLogger.__init__(self, _factory)
 		self.factory = _factory
 		self.settings = self.factory.settings
@@ -222,8 +292,25 @@ class Brick(ChildLogger):
 		self.config_socks = []
 		self.cfg.pon_vbevent = ""
 		self.cfg.poff_vbevent = ""
+		self.cfg.homehost=homehost
+		self.homehost = None
+		if (homehost):
+			self.set_host(homehost)
 
 		self.factory.bricksmodel.add_brick(self)
+
+	def set_host(self,host):
+		self.cfg.homehost=host
+		self.homehost = None
+		if len(host) > 0:
+			for existing in self.factory.remote_hosts:
+				if existing.addr == host:
+					self.homehost = existing
+					break
+			if not self.homehost:
+				self.homehost = RemoteHost(self.factory, host)
+				self.factory.remote_hosts.append(self.homehost)
+			print self.homehost
 
 	def restore_self_plugs(self): # DO NOT REMOVE
 		pass
@@ -293,6 +380,9 @@ class Brick(ChildLogger):
 		"""TODO attrs : dict attr => value"""
 		for attr in attrlist:
 			self.cfg.set(attr)
+			k=attr.split("=")[0]
+			if k == 'homehost':
+				self.set_host(attr.split('=')[1])
 
 	def configure(self, attrlist):
 		"""TODO attrs : dict attr => value"""
@@ -1865,20 +1955,22 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		ChildLogger.__init__(self, logger)
 		# DEFINE PROJECT PARMS
 		self.project_parms = self.clear_project_parms()
+		self.remote_hosts = []
 		self.bricks = []
 		self.events = []
 		self.socks = []
 		self.bricksmodel = BricksModel()
 		self.eventsmodel = EventsModel()
 		self.showconsole = showconsole
+		self.TCP = None
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings(CONFIGFILE, self)
-		self.info("Current project is %s" % self.settings.get('current_project'))
-		self.config_restore(self.settings.get('current_project'))
-		self.TCP = None
 		if nogui:
 			self.start_tcp_server()
+		if not self.TCP:
+			self.info("Current project is %s" % self.settings.get('current_project'))
+			self.config_restore(self.settings.get('current_project'))
 
 	def start_tcp_server(self):
 		self.TCP = TcpServer(self)
@@ -1916,6 +2008,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		sys.exit(0)
 
 	def config_dump(self, f):
+		if self.TCP:
+			return
 		try:
 			p = open(f, "w+")
 		except:
@@ -1991,6 +2085,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Import: False, False
 		New: True, True (missing check for existing file, must be check from caller)
 		"""
+		if self.TCP:
+			return
 
 		try:
 			p = open(f, "r")
@@ -2232,6 +2328,22 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						CommandLineOutput(console,  '\tlink: ' + pl.sock.nickname + '\n')
 			return True
 
+		elif command.startswith("control ") and len(command.split(" "))==3:
+			host=command.split(" ")[1]
+			password = command.split(" ")[2]
+			remote = None
+			for h in self.remote_hosts:
+				if h.addr == host:
+					remote = h
+					break
+			if not remote:
+				remote = RemoteHost(self, host)
+			remote.password = password
+
+			if remote.connect():
+				CommandLineOutput(console, "Connection OK\n")
+			else:
+				CommandLineOutput(console, "Connection Failed.\n")
 
 		elif command == '':
 			return True
@@ -2395,7 +2507,18 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				newname += toappend
 		return newname
 
-	def newbrick(self, ntype="", name=""):
+	def newbrick(self, arg1="", arg2="",arg3="",arg4="", arg5=""):
+		host=""
+		if arg1 == "remote":
+			remote=True
+			ntype=arg2
+			name=arg3
+			host=arg4
+			password=arg5
+		else:
+			ntype=arg1
+			name=arg2
+
 		name = ValidName(name)
 		if not name:
 			raise InvalidName()
@@ -2430,6 +2553,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		else:
 			self.error("Invalid command '%s'", name)
 			return False
+		if len(host) > 0:
+			brick.set_host(host)
 
 		return True
 

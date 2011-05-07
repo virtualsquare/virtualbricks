@@ -186,7 +186,10 @@ class VBGUI(Logger, gobject.GObject):
 		elif column.get_title() == _('Status'):
 			cell.set_property('text', brick.get_state())
 		elif column.get_title() == _('Type'):
-			cell.set_property('text', brick.get_type())
+			if brick.homehost:
+				cell.set_property('text', "Remote " + brick.get_type() +" on " + brick.homehost.addr[0])
+			else:
+				cell.set_property('text', brick.get_type())
 		elif column.get_title() == _('Name'):
 			cell.set_property('text', brick.name)
 		elif column.get_title() == _('Parameters'):

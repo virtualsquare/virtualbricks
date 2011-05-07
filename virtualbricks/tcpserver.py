@@ -35,20 +35,25 @@ class TcpServer(ChildLogger, Thread):
 						sha.update("passw0rd")
 						sha.update(challenge)
 						hashed = sha.digest()
-						del sha
 						sock.send(self.proto.HELO())
 						sock.send(challenge)
 						p_cha = select.poll()
 						p_cha.register(sock, select.POLLIN)
-						if len(p_cha.poll(5000)) > 0:
-							rec = sock.recv(len(hashed))
-							if rec != hashed:
-								self.info("%s: Client authenticated.", str(addr))
-								self.serve_connection(sock)
+						try:
+							if len(p_cha.poll(5000)) > 0:
+								rec = sock.recv(len(hashed))
+								if rec == hashed:
+									self.info("%s: Client authenticated.", str(addr))
+									sock.send("OK\n")
+									self.serve_connection(sock)
+								else:
+									self.info("%s: Authentication failed. " % str(addr))
+									sock.send("FAIL\n")
 							else:
-								self.info("%s: Authentication failed.", str(addr))
-						else:
-							self.info("%s: Challenge timeout", str(addr))
+								self.info("%s: Challenge timeout", str(addr))
+						except:
+							pass
+
 						sock.close()
 
 	def serve_connection(self, sock):
@@ -57,15 +62,10 @@ class TcpServer(ChildLogger, Thread):
 		rec=''
 		while(self.factory.running_condition):
 			while(p.poll(100)):
-				c = sock.recv(1)
-				if (c != '\n'):
-					rec+=c
+				rec = sock.recv(4000)
+				if self.factory.parse(rec.rstrip('\n'), console=sock):
+					sock.send("OK\n")
 				else:
-					self.info ("Received text: %s" % rec)
-					if self.factory.parse(rec.rstrip('\n'), console=sock):
-						sock.send("OK\n")
-					else:
-						sock.send("FAIL\n")
-					rec=''
+					sock.send("FAIL\n")
 
 
