@@ -1288,7 +1288,7 @@ fda</property>
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">True</property>
-                                                        <signal name="clicked" handler="filechooser_hd_clear"/>
+                                                        <signal name="clicked" handler="on_filechooser_hd_clear"/>
                                                         <child>
                                                           <widget class="GtkImage" id="image21">
                                                             <property name="visible">True</property>
@@ -1331,7 +1331,7 @@ fda</property>
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">True</property>
-                                                        <signal name="clicked" handler="filechooser_hd_clear"/>
+                                                        <signal name="clicked" handler="on_filechooser_hd_clear"/>
                                                         <child>
                                                           <widget class="GtkImage" id="image22">
                                                             <property name="visible">True</property>
@@ -1374,7 +1374,7 @@ fda</property>
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">True</property>
-                                                        <signal name="clicked" handler="filechooser_hd_clear"/>
+                                                        <signal name="clicked" handler="on_filechooser_hd_clear"/>
                                                         <child>
                                                           <widget class="GtkImage" id="image23">
                                                             <property name="visible">True</property>
@@ -1417,7 +1417,7 @@ fda</property>
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">True</property>
-                                                        <signal name="clicked" handler="filechooser_hd_clear"/>
+                                                        <signal name="clicked" handler="on_filechooser_hd_clear"/>
                                                         <child>
                                                           <widget class="GtkImage" id="image24">
                                                             <property name="visible">True</property>
@@ -1460,7 +1460,7 @@ fda</property>
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">True</property>
-                                                        <signal name="clicked" handler="filechooser_hd_clear"/>
+                                                        <signal name="clicked" handler="on_filechooser_hd_clear"/>
                                                         <child>
                                                           <widget class="GtkImage" id="image25">
                                                             <property name="visible">True</property>
@@ -1503,7 +1503,7 @@ fda</property>
                                                         <property name="visible">True</property>
                                                         <property name="can_focus">True</property>
                                                         <property name="receives_default">True</property>
-                                                        <signal name="clicked" handler="filechooser_hd_clear"/>
+                                                        <signal name="clicked" handler="on_filechooser_hd_clear"/>
                                                         <child>
                                                           <widget class="GtkImage" id="image26">
                                                             <property name="visible">True</property>

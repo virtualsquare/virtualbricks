@@ -219,6 +219,12 @@ class Brick(ChildLogger):
 
 		self.factory.bricksmodel.add_brick(self)
 
+	def restore_self_plugs(self): # DO NOT REMOVE
+		pass
+
+	def clear_self_socks(self, sock=None): # DO NOT REMOVE
+		pass
+
 	def __deepcopy__(self, memo):
 		newname = self.factory.nextValidName("Copy_of_%s" % self.name)
 		if newname is None:
@@ -426,25 +432,29 @@ class Brick(ChildLogger):
 
 	def post_poweron(self):
 		self.active = True
-		if not self.cfg.pon_vbevent:
-			return
-		ev=self.factory.geteventbyname(self.cfg.pon_vbevent)
-		if ev:
-			ev.poweron()
-		else:
-			self.warning("Warning. The Start-Event '"+self.cfg.pon_vbevent+\
-					"' attached to Brick '"+\
-					self.name+"' is not available. Skipping execution.")
+		self.start_related_events(on=True)
 
 	def post_poweroff(self):
 		self.active = False
-		if not self.cfg.poff_vbevent:
+		self.start_related_events(off=True)
+
+	def start_related_events(self, on=True, off=False):
+
+		if on == False and off == False:
 			return
-		ev=self.factory.geteventbyname(self.cfg.poff_vbevent)
+
+		if (off and not self.cfg.poff_vbevent) or (on and not self.cfg.pon_vbevent):
+			return
+
+		if off:
+			ev=self.factory.geteventbyname(self.cfg.poff_vbevent)
+		elif on:
+			ev=self.factory.geteventbyname(self.cfg.pon_vbevent)
+
 		if ev:
 			ev.poweron()
 		else:
-			self.warning("Warning. The Stop-Event '"+self.cfg.poff_vbevent+\
+			self.warning("Warning. The Event '"+self.cfg.poff_vbevent+\
 					"' attached to Brick '"+\
 					self.name+"' is not available. Skipping execution.")
 
@@ -830,6 +840,12 @@ class Tap(Brick):
 		self.cfg.gw = ""
 		self.cfg.mode = "off"
 
+	def restore_self_plugs(self):
+		self.plugs.append(Plug(self))
+
+	def clear_self_socks(self, sock=None):
+		self.cfg.sock=""
+
 	def get_parameters(self):
 		if self.plugs[0].sock:
 			return _("plugged to %s ") % self.plugs[0].sock.brick.name
@@ -855,6 +871,7 @@ class Tap(Brick):
 		return (self.plugs[0].sock is not None)
 
 	def post_poweron(self):
+		self.start_related_events(on=True)
 		if self.cfg.mode == 'dhcp':
 			ret = os.system(self.settings.get('sudo') + ' "dhclient ' + self.name + '"')
 
@@ -877,6 +894,19 @@ class Wire(Brick):
 		self.cfg.sock1 = ""
 		self.plugs.append(Plug(self))
 		self.plugs.append(Plug(self))
+
+	def restore_self_plugs(self):
+		while len(self.plugs) < 2 :
+			self.plugs.append(Plug(self))
+
+	def clear_self_socks(self, sock=None):
+		if sock is None:
+			self.cfg.sock0=""
+			self.cfg.sock1=""
+		elif self.cfg.sock0 == sock:
+			self.cfg.sock0=""
+		elif self.cfg.sock1 == sock:
+			self.cfg.sock1=""
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
@@ -1222,6 +1252,12 @@ class TunnelListen(Brick):
 		self.plugs.append(Plug(self))
 		self.cfg.port = "7667"
 
+	def restore_self_plugs(self):
+		self.plugs.append(Plug(self))
+
+	def clear_self_socks(self, sock=None):
+		self.cfg.sock=""
+
 	def get_parameters(self):
 		if self.plugs[0].sock:
 			return _("plugged to") + " " + self.plugs[0].sock.brick.name + " " +\
@@ -1254,9 +1290,9 @@ class TunnelListen(Brick):
 			res.append(arg)
 		return res
 
-	def post_poweroff(self):
-		##os.unlink("/tmp/tunnel_%s.key" % self.name)
-		pass
+	#def post_poweroff(self):
+	#	os.unlink("/tmp/tunnel_%s.key" % self.name)
+	#	pass
 
 
 class TunnelConnect(TunnelListen):
@@ -1791,6 +1827,7 @@ class VM(Brick):
 
 	def post_poweroff(self):
 		self.active = False
+		self.start_related_events(off=True)
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			if self.cfg.get("base" + dev):
 				base = self.cfg.get("base" + dev)
@@ -2257,9 +2294,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			else: # connections to bricktodel must be deleted too
 				for pl in reversed(b.plugs):
 					if pl.sock:
-						self.debug( "Deleting plug to " + pl.sock.nickname )
 						if pl.sock.nickname.startswith(bricktodel.name):
+							self.debug( "Deleting plug to " + pl.sock.nickname )
 							b.plugs.remove(pl)
+							b.clear_self_socks(pl.sock.path)
+							b.restore_self_plugs() # recreate Plug(self) of some objects
+
 		self.bricksmodel.del_brick(bricktodel)
 
 	def delevent(self, eventtodel):
