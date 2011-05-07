@@ -40,6 +40,12 @@ from virtualbricks.errors import (BadConfig, DiskLocked, InvalidAction,
 	InvalidName, Linkloop, NotConnected, UnmanagedType)
 from virtualbricks.tcpserver import TcpServer
 
+def CommandLineOutput(outf, data):
+	if outf == sys.stdout:
+		return outf.write(data + '\n')
+	else:
+		return outf.send(data + '\n')
+
 def ValidName(name):
 	name=str(name)
 	if not re.search("\A[a-zA-Z]", name):
@@ -2160,69 +2166,75 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		else:
 			print "No process running"
 
-	def parse(self, command):
+	def parse(self, command, console=sys.stdout):
 		if (command == 'q' or command == 'quit'):
 			self.quit()
 		elif (command == 'h' or command == 'help'):
-			print 'Base command -------------------------------------------------'
-			print 'ps				List of active process'
-			print 'n[ew]				Create a new brick'
-			print 'list				List of bricks already created'
-			print 'socks				List of connections available for bricks'
-			print 'conn[ections]			List of connections for each bricks'
-			print '\nBrick configuration command ----------------------------------'
-			print 'BRICK_NAME show			List parameters of BRICK_NAME brick'
-			print 'BRICK_NAME on			Starts BRICK_NAME'
-			print 'BRICK_NAME off			Stops BRICK_NAME'
-			print 'BRICK_NAME remove		Delete BRICK_NAME'
-			print 'BRICK_NAME config PARM=VALUE	Configure a parameter of BRICK_NAME.'
-			print 'BRICK_NAME connect NICK		Connect BRICK_NAME to a Sock'
-			print 'BRICK_NAME disconnect		Disconnect BRICK_NAME to a sock'
-			print 'BRICK_NAME help			Help about parameters of BRICK_NAME'
+			CommandLineOutput(console,  'Base command -------------------------------------------------')
+			CommandLineOutput(console,  'ps				List of active process')
+			CommandLineOutput(console,  'n[ew]				Create a new brick')
+			CommandLineOutput(console,  'list				List of bricks already created')
+			CommandLineOutput(console,  'socks				List of connections available for bricks')
+			CommandLineOutput(console,  'conn[ections]			List of connections for each bricks')
+			CommandLineOutput(console,  '\nBrick configuration command ----------------------------------')
+			CommandLineOutput(console,  'BRICK_NAME show			List parameters of BRICK_NAME brick')
+			CommandLineOutput(console,  'BRICK_NAME on			Starts BRICK_NAME')
+			CommandLineOutput(console,  'BRICK_NAME off			Stops BRICK_NAME')
+			CommandLineOutput(console,  'BRICK_NAME remove		Delete BRICK_NAME')
+			CommandLineOutput(console,  'BRICK_NAME config PARM=VALUE	Configure a parameter of BRICK_NAME.')
+			CommandLineOutput(console,  'BRICK_NAME connect NICK		Connect BRICK_NAME to a Sock')
+			CommandLineOutput(console,  'BRICK_NAME disconnect		Disconnect BRICK_NAME to a sock')
+			CommandLineOutput(console,  'BRICK_NAME help			Help about parameters of BRICK_NAME')
+			return True
 		elif (command == 'ps'):
 			self.proclist()
+			return True
 		elif command.startswith('n ') or command.startswith('new '):
 			if(command.startswith('n event') or (command.startswith('new event'))):
 				self.newevent(*command.split(" ")[1:])
 			else:
 				self.newbrick(*command.split(" ")[1:])
+			return True
 		elif command == 'list':
-			print "Bricks:"
+			CommandLineOutput(console,  "Bricks:")
 			for obj in self.bricks:
-				print "%s %s" % (obj.get_type(), obj.name)
-			print
-			print "Events:"
+				CommandLineOutput(console,  "%s %s" % (obj.get_type(), obj.name))
+			CommandLineOutput(console,"" )
+			CommandLineOutput(console,  "Events:")
 			for obj in self.events:
-				print "%s %s" % (obj.get_type(), obj.name)
-			print "End of list."
-			print
+				CommandLineOutput(console,  "%s %s" % (obj.get_type(), obj.name))
+			CommandLineOutput(console,  "End of list.")
+			CommandLineOutput(console, "" )
+			return True
 
 		elif command == 'socks':
 			for s in self.socks:
-				print "%s" % s.nickname,
+				CommandLineOutput(console,  "%s" % s.nickname,)
 				if s.brick is not None:
-					print " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports())
+					CommandLineOutput(console,  " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports()))
 				else:
-					print "not configured."
+					CommandLineOutput(console,  "not configured.")
+			return True
 
 		elif command.startswith("conn") or command.startswith("connections"):
 			for b in self.bricks:
-				print "Connections from " + b.name + " brick:\n"
+				CommandLineOutput(console,  "Connections from " + b.name + " brick:\n")
 				for sk in b.socks:
 					if b.get_type() == 'Qemu':
-						print '\tsock connected to ' + sk.nickname + ' with an ' + sk.model + ' (' + sk.mac + ') card\n'
+						CommandLineOutput(console,  '\tsock connected to ' + sk.nickname + ' with an ' + sk.model + ' (' + sk.mac + ') card\n')
 				for pl in b.plugs:
 					if b.get_type() == 'Qemu':
 						if pl.mode == 'vde':
-							print '\tlink connected to ' + pl.sock.nickname + ' with a ' + pl.model + ' (' + pl.mac + ') card\n'
+							CommandLineOutput(console,  '\tlink connected to ' + pl.sock.nickname + ' with a ' + pl.model + ' (' + pl.mac + ') card\n')
 						else:
-							print '\tuserlink connected with a ' + pl.model + ' (' + pl.mac + ') card\n'
+							CommandLineOutput(console,  '\tuserlink connected with a ' + pl.model + ' (' + pl.mac + ') card\n')
 					elif (pl.sock is not None):
-						print '\tlink: ' + pl.sock.nickname + '\n'
+						CommandLineOutput(console,  '\tlink: ' + pl.sock.nickname + '\n')
+			return True
 
 
 		elif command == '':
-			pass
+			return True
 
 		else:
 			found = None
@@ -2238,8 +2250,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 			if found is not None and len(command.split(" ")) > 1:
 				self.brickAction(found, command.split(" ")[1:])
+				return True
 			else:
 				print 'Invalid command "%s"' % command
+				return False
 
 	def brickAction(self, obj, cmd):
 		if (cmd[0] == 'on'):

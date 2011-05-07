@@ -62,7 +62,10 @@ class TcpServer(ChildLogger, Thread):
 					rec+=c
 				else:
 					self.info ("Received text: %s" % rec)
-					self.factory.parse(rec.rstrip('\n'))
+					if self.factory.parse(rec.rstrip('\n'), console=sock):
+						sock.send("OK\n")
+					else:
+						sock.send("FAIL\n")
 					rec=''
 
 
