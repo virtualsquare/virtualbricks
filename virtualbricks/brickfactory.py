@@ -38,6 +38,7 @@ from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, MYPATH, Settings
 from virtualbricks.errors import (BadConfig, DiskLocked, InvalidAction,
 	InvalidName, Linkloop, NotConnected, UnmanagedType)
+from virtualbricks.tcpserver import TcpServer
 
 def ValidName(name):
 	name=str(name)
@@ -379,7 +380,7 @@ class Brick(ChildLogger):
 			self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		except OSError:
 			self.error("OSError Brick startup failed. Check your configuration!")
-			
+
 		if self.proc is not None:
 			self.pid = self.proc.pid
 		else:
@@ -457,7 +458,7 @@ class Brick(ChildLogger):
 			else:
 				time.sleep(0.5)
 		return False
-			
+
 
 	def open_console(self):
 		self.debug("open_console")
@@ -1816,7 +1817,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		return parms
 
-	def __init__(self, logger=None, showconsole=True):
+	def __init__(self, logger=None, showconsole=True, nogui=False):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
 		# DEFINE PROJECT PARMS
@@ -1832,6 +1833,15 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.settings = Settings(CONFIGFILE, self)
 		self.info("Current project is %s" % self.settings.get('current_project'))
 		self.config_restore(self.settings.get('current_project'))
+		self.TCP = None
+		if nogui:
+			self.start_tcp_server()
+
+	def start_tcp_server(self):
+		self.TCP = TcpServer(self)
+		self.TCP.start()
+
+
 
 	def getbrickbyname(self, name):
 		for b in self.bricks:

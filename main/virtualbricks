@@ -26,7 +26,7 @@ from virtualbricks.brickfactory import BrickFactory
 #Main.
 
 if len(sys.argv) > 1 and sys.argv[1] == '-nogui':
-	VB = BrickFactory()
+	VB = BrickFactory(nogui=True)
 	VB.start()
 	#while True:
 	#	time.sleep(100)
