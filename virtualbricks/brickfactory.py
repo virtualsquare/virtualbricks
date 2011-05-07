@@ -218,6 +218,12 @@ class Brick(ChildLogger):
 
 		self.factory.bricksmodel.add_brick(self)
 
+	def restore_self_plugs(self): # DO NOT REMOVE
+		pass
+
+	def clear_self_socks(self, sock=None): # DO NOT REMOVE
+		pass
+
 	def __deepcopy__(self, memo):
 		newname = self.factory.nextValidName("Copy_of_%s" % self.name)
 		if newname is None:
@@ -379,7 +385,7 @@ class Brick(ChildLogger):
 			self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		except OSError:
 			self.error("OSError Brick startup failed. Check your configuration!")
-			
+
 		if self.proc is not None:
 			self.pid = self.proc.pid
 		else:
@@ -457,7 +463,7 @@ class Brick(ChildLogger):
 			else:
 				time.sleep(0.5)
 		return False
-			
+
 
 	def open_console(self):
 		self.debug("open_console")
@@ -829,6 +835,12 @@ class Tap(Brick):
 		self.cfg.gw = ""
 		self.cfg.mode = "off"
 
+	def restore_self_plugs(self):
+		self.plugs.append(Plug(self))
+
+	def clear_self_socks(self, sock=None):
+		self.cfg.sock=""
+
 	def get_parameters(self):
 		if self.plugs[0].sock:
 			return _("plugged to %s ") % self.plugs[0].sock.brick.name
@@ -876,6 +888,19 @@ class Wire(Brick):
 		self.cfg.sock1 = ""
 		self.plugs.append(Plug(self))
 		self.plugs.append(Plug(self))
+
+	def restore_self_plugs(self):
+		while len(self.plugs) < 2 :
+			self.plugs.append(Plug(self))
+
+	def clear_self_socks(self, sock=None):
+		if sock is None:
+			self.cfg.sock0=""
+			self.cfg.sock1=""
+		elif self.cfg.sock0 == sock:
+			self.cfg.sock0=""
+		elif self.cfg.sock1 == sock:
+			self.cfg.sock1=""
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
@@ -1220,6 +1245,12 @@ class TunnelListen(Brick):
 		self.cfg.password = ""
 		self.plugs.append(Plug(self))
 		self.cfg.port = "7667"
+
+	def restore_self_plugs(self):
+		self.plugs.append(Plug(self))
+
+	def clear_self_socks(self, sock=None):
+		self.cfg.sock=""
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
@@ -2247,9 +2278,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			else: # connections to bricktodel must be deleted too
 				for pl in reversed(b.plugs):
 					if pl.sock:
-						self.debug( "Deleting plug to " + pl.sock.nickname )
 						if pl.sock.nickname.startswith(bricktodel.name):
+							self.debug( "Deleting plug to " + pl.sock.nickname )
 							b.plugs.remove(pl)
+							b.clear_self_socks(pl.sock.path)
+							b.restore_self_plugs() # recreate Plug(self) of some objects
+
 		self.bricksmodel.del_brick(bricktodel)
 
 	def delevent(self, eventtodel):
