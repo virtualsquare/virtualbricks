@@ -387,7 +387,23 @@ class Brick(ChildLogger):
 			self.error("OSError Brick startup failed. Check your configuration!")
 
 		if self.proc is not None:
-			self.pid = self.proc.pid
+			if self.needsudo:
+				timeout=0
+
+				while not os.path.exists(self.pidfile):
+					if timeout > 10:
+						self.debug( "Pidfile not Ready!" )
+						break
+					time.sleep(0.5)
+					timeout = timeout + 1
+
+				if os.path.exists(self.pidfile):
+					with open(self.pidfile) as pidfile:
+						self.pid = int(pidfile.readline().rstrip("\n"))
+						self.gui_changed=True
+
+			else:
+				self.pid = self.proc.pid
 		else:
 			self.error("Brick startup failed. Check your configuration!")
 
@@ -405,8 +421,12 @@ class Brick(ChildLogger):
 		is_running = self.proc.poll() is None
 		if is_running:
 			if self.needsudo:
-				proc = subprocess.Popen([self.settings.get('sudo'),
-					'kill', "'`cat %s`'" % self.pidfile])
+
+				with open(self.pidfile) as pidfile:
+					pid = pidfile.readline().rstrip("\n")
+
+				command=[self.settings.get('sudo'), 'kill', pid]
+				proc = subprocess.Popen([self.settings.get('sudo'),'kill', pid])
 				ret = proc.wait()
 				if ret != 0:
 					self.error(_("can not stop brick (error code: '%s')"), ret)
