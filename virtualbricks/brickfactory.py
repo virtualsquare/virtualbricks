@@ -431,25 +431,29 @@ class Brick(ChildLogger):
 
 	def post_poweron(self):
 		self.active = True
-		if not self.cfg.pon_vbevent:
-			return
-		ev=self.factory.geteventbyname(self.cfg.pon_vbevent)
-		if ev:
-			ev.poweron()
-		else:
-			self.warning("Warning. The Start-Event '"+self.cfg.pon_vbevent+\
-					"' attached to Brick '"+\
-					self.name+"' is not available. Skipping execution.")
+		self.start_related_events(on=True)
 
 	def post_poweroff(self):
 		self.active = False
-		if not self.cfg.poff_vbevent:
+		self.start_related_events(off=True)
+
+	def start_related_events(self, on=True, off=False):
+
+		if on == False and off == False:
 			return
-		ev=self.factory.geteventbyname(self.cfg.poff_vbevent)
+
+		if (off and not self.cfg.poff_vbevent) or (on and not self.cfg.pon_vbevent):
+			return
+
+		if off:
+			ev=self.factory.geteventbyname(self.cfg.poff_vbevent)
+		elif on:
+			ev=self.factory.geteventbyname(self.cfg.pon_vbevent)
+
 		if ev:
 			ev.poweron()
 		else:
-			self.warning("Warning. The Stop-Event '"+self.cfg.poff_vbevent+\
+			self.warning("Warning. The Event '"+self.cfg.poff_vbevent+\
 					"' attached to Brick '"+\
 					self.name+"' is not available. Skipping execution.")
 
@@ -866,6 +870,7 @@ class Tap(Brick):
 		return (self.plugs[0].sock is not None)
 
 	def post_poweron(self):
+		self.start_related_events(on=True)
 		if self.cfg.mode == 'dhcp':
 			ret = os.system(self.settings.get('sudo') + ' "dhclient ' + self.name + '"')
 
@@ -1284,9 +1289,9 @@ class TunnelListen(Brick):
 			res.append(arg)
 		return res
 
-	def post_poweroff(self):
-		##os.unlink("/tmp/tunnel_%s.key" % self.name)
-		pass
+	#def post_poweroff(self):
+	#	os.unlink("/tmp/tunnel_%s.key" % self.name)
+	#	pass
 
 
 class TunnelConnect(TunnelListen):
@@ -1821,6 +1826,7 @@ class VM(Brick):
 
 	def post_poweroff(self):
 		self.active = False
+		self.start_related_events(off=True)
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			if self.cfg.get("base" + dev):
 				base = self.cfg.get("base" + dev)
