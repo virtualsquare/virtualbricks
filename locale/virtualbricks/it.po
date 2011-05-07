@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: virtualbricks 0.3\n"
+"Project-Id-Version: virtualbricks 0.4\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-05-06 23:40+0200\n"
-"PO-Revision-Date: 2011-05-06 23:41+0100\n"
+"POT-Creation-Date: 2011-05-07 00:27+0200\n"
+"PO-Revision-Date: 2011-05-07 02:12+0100\n"
 "Last-Translator: \n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
@@ -1283,6 +1283,7 @@ msgstr "Bytes"
 #: virtualbricks/brickfactory.py:615
 #: virtualbricks/brickfactory.py:641
 #: virtualbricks/brickfactory.py:644
+#: virtualbricks/brickfactory.py:645
 msgid "Delay"
 msgstr "Ritardo"
 
@@ -1936,7 +1937,7 @@ msgstr "Rileva loop della topologia di rete"
 #: share/virtualbricks.template.glade:5147
 #: share/virtualbricks.template.glade:5232
 msgid "If enabled, detect network loops when starting the bricks, and generate an error."
-msgstr "Se abilitato, rileva loop di rete quando si avviano i mattoni, e fenera un errore."
+msgstr "Se abilitato, rileva loop di rete quando si avviano i mattoni, e genera un errore."
 
 #: share/virtualbricks.glade:4853
 #: share/virtualbricks.glade:4855
@@ -4243,6 +4244,7 @@ msgstr "\" esiste già."
 #: virtualbricks/brickfactory.py:590
 #: virtualbricks/brickfactory.py:539
 #: virtualbricks/brickfactory.py:593
+#: virtualbricks/brickfactory.py:594
 msgid "running"
 msgstr "acceso"
 
@@ -4258,6 +4260,15 @@ msgstr "acceso"
 #: virtualbricks/brickfactory.py:538
 #: virtualbricks/brickfactory.py:541
 #: virtualbricks/brickfactory.py:1278
+#: virtualbricks/brickfactory.py:835
+#: virtualbricks/brickfactory.py:542
+#: virtualbricks/brickfactory.py:836
+#: virtualbricks/brickfactory.py:1279
+#: virtualbricks/brickfactory.py:884
+#: virtualbricks/brickfactory.py:889
+#: virtualbricks/brickfactory.py:891
+#: virtualbricks/brickfactory.py:1228
+#: virtualbricks/brickfactory.py:1280
 msgid "disconnected"
 msgstr "disconnesso"
 
@@ -4284,6 +4295,7 @@ msgstr "disconnesso"
 #: virtualbricks/brickfactory.py:594
 #: virtualbricks/brickfactory.py:543
 #: virtualbricks/brickfactory.py:597
+#: virtualbricks/brickfactory.py:598
 msgid "off"
 msgstr "spento"
 
@@ -4299,6 +4311,7 @@ msgstr "spento"
 #: virtualbricks/brickfactory.py:566
 #: virtualbricks/brickfactory.py:592
 #: virtualbricks/brickfactory.py:595
+#: virtualbricks/brickfactory.py:596
 msgid "unconfigured"
 msgstr "non configurato"
 
@@ -4431,6 +4444,7 @@ msgstr "Comando della shell Host"
 #: virtualbricks/brickfactory.py:644
 #: share/virtualbricks.template.glade:4500
 #: virtualbricks/brickfactory.py:647
+#: virtualbricks/brickfactory.py:648
 msgid "Actions"
 msgstr "Azioni"
 
@@ -4860,6 +4874,8 @@ msgstr "Il progetto corrente è %s"
 #: virtualbricks/brickfactory.py:2086
 #: virtualbricks/brickfactory.py:2088
 #: virtualbricks/brickfactory.py:2094
+#: virtualbricks/brickfactory.py:2095
+#: virtualbricks/brickfactory.py:2096
 msgid "Engine: Bye!"
 msgstr "Motore: Arrivederci!"
 
@@ -4982,6 +4998,7 @@ msgstr "Errore: impossibile avviare un emulatore di terminale"
 #: virtualbricks/brickfactory.py:591
 #: virtualbricks/brickfactory.py:617
 #: virtualbricks/brickfactory.py:620
+#: virtualbricks/brickfactory.py:621
 msgid "Error: config line must contain add OR addsh."
 msgstr "Errore: la riga di configurazione deve contenere add oppure addsh."
 
@@ -4992,6 +5009,7 @@ msgstr "Errore: la riga di configurazione deve contenere add oppure addsh."
 #: virtualbricks/brickfactory.py:599
 #: virtualbricks/brickfactory.py:625
 #: virtualbricks/brickfactory.py:628
+#: virtualbricks/brickfactory.py:629
 #, python-format
 msgid "Added vb-shell command: '%s'"
 msgstr "Aggiunto un comando vb-shell: '%s'"
@@ -5003,6 +5021,7 @@ msgstr "Aggiunto un comando vb-shell: '%s'"
 #: virtualbricks/brickfactory.py:606
 #: virtualbricks/brickfactory.py:632
 #: virtualbricks/brickfactory.py:635
+#: virtualbricks/brickfactory.py:636
 #, python-format
 msgid "Added host-shell command: '%s'"
 msgstr "Aggiunto un comando host-shell: '%s'"
@@ -5335,16 +5354,69 @@ msgid "<b>Bricks added</b>"
 msgstr "<b>Mattoni aggiunti</b>"
 
 #: virtualbricks/brickfactory.py:778
+#: virtualbricks/brickfactory.py:779
 #, python-format
 msgid "Ports:%d%s%s"
 msgstr "Porte:%d%s%s"
 
 #: virtualbricks/brickfactory.py:1275
+#: virtualbricks/brickfactory.py:1276
 #, python-format
 msgid "plugged to %s, connecting to udp://%s"
 msgstr "connesso a %s, connessione a udp://%s"
 
 #: virtualbricks/brickfactory.py:1548
+#: virtualbricks/brickfactory.py:1549
+#: virtualbricks/brickfactory.py:1550
 msgid "command:"
 msgstr "comando:"
+
+#: virtualbricks/brickfactory.py:484
+msgid "does not have a console"
+msgstr "non ha una console"
+
+#: virtualbricks/brickfactory.py:833
+#: virtualbricks/brickfactory.py:834
+#, python-format
+msgid "plugged to %s "
+msgstr "connesso a %s"
+
+#: virtualbricks/brickfactory.py:495
+msgid "error opening internal console"
+msgstr "errore nell'apertura della console interna"
+
+#: virtualbricks/brickfactory.py:1276
+#: virtualbricks/brickfactory.py:1226
+#: virtualbricks/brickfactory.py:1277
+msgid "plugged to"
+msgstr "connesso a"
+
+#: virtualbricks/brickfactory.py:1277
+#: virtualbricks/brickfactory.py:1278
+msgid ", connecting to udp://"
+msgstr ", connessione a udp://"
+
+#: virtualbricks/brickfactory.py:779
+msgid "Ports:"
+msgstr "Porte:"
+
+#: virtualbricks/brickfactory.py:892
+msgid "Configured to connect"
+msgstr "Configurato per connettere"
+
+#: virtualbricks/brickfactory.py:894
+msgid "Not yet configured."
+msgstr "Non ancora configurato."
+
+#: virtualbricks/brickfactory.py:895
+msgid "Left plug is"
+msgstr "Il plug sinistro è"
+
+#: virtualbricks/brickfactory.py:895
+msgid "and right plug is"
+msgstr "e il plug destro è"
+
+#: virtualbricks/brickfactory.py:1227
+msgid "listening to udp:"
+msgstr "in ascolto su udp:"
 

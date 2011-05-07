@@ -1,4 +1,4 @@
-COMMONS="--package-name=virtualbricks --package-version=0.3 --msgid-bugs-address=qemulator-list@createweb.de"
+COMMONS="--package-name=virtualbricks --package-version=0.4 --msgid-bugs-address=qemulator-list@createweb.de"
 JOIN="-j"
 LANGUAGES="it nl"
 SOURCES="share/*.glade `find virtualbricks/ -type f`"

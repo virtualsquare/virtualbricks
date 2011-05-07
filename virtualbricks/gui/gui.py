@@ -894,6 +894,7 @@ class VBGUI(Logger, gobject.GObject):
 
 	def show_error(self, text):
 		def on_response(widget, response_id=None, data=None):
+			gtk.gdk.threads_leave()
 			widget.destroy()
 			return True
 
@@ -1425,9 +1426,10 @@ class VBGUI(Logger, gobject.GObject):
 					b.name)
 				gtk.gdk.threads_leave()
 			except NotConnected:
+				gtk.gdk.threads_enter()
 				self.error(_("Cannot start '%s': not connected"),
 					b.name)
-
+				gtk.gdk.threads_leave()
 			except Linkloop:
 				if self.config.erroronloop:
 					gtk.gdk.threads_enter()

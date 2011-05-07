@@ -452,7 +452,7 @@ class Brick(ChildLogger):
 	#############################
 	def has_console(self):
 		for i in range(1, 10):
-			if self.proc != None and os.path.exists(self.console()):
+			if self.proc != None and self.console() and os.path.exists(self.console()):
 				return True
 			else:
 				time.sleep(0.5)
@@ -481,7 +481,7 @@ class Brick(ChildLogger):
 	def open_internal_console(self):
 		self.debug("open_internal_console")
 		if not self.has_console():
-			self.debug(self.get_type()+" does not have a console")
+			self.debug(self.get_type() + " " + _("does not have a console"))
 			return None
 		for i in range(1, 10):
 			try:
@@ -492,6 +492,7 @@ class Brick(ChildLogger):
 				pass
 			else:
 				return c
+		self.error(self.get_type() + ": " + _("error opening internal console"))
 		return None
 
 	def send(self, msg):
@@ -775,7 +776,7 @@ class Switch(Brick):
 		if (self.cfg.get('hub',False)):
 			if self.cfg.hub == '*':
 				hub = ", HUB"
-		return _("Ports:%d%s%s") % ((int(unicode(self.cfg.get('numports','32')))), fstp, hub)
+		return _("Ports:") + "%d%s%s" % ((int(unicode(self.cfg.get('numports','32')))), fstp, hub)
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_switch"
@@ -830,9 +831,9 @@ class Tap(Brick):
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
-			return "plugged to %s " % self.plugs[0].sock.brick.name
+			return _("plugged to %s ") % self.plugs[0].sock.brick.name
 
-		return "disconnected"
+		return _("disconnected")
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_plug2tap"
@@ -880,18 +881,19 @@ class Wire(Brick):
 		if self.plugs[0].sock:
 			p0 = self.plugs[0].sock.brick.name
 		else:
-			p0 = "disconnected"
+			p0 = _("disconnected")
 
 		if self.plugs[1].sock:
 			p1 = self.plugs[1].sock.brick.name
 		else:
-			p1 = "disconnected"
+			p1 = _("disconnected")
 
-		if p0 != 'disconnected' and p1 != 'disconnected':
-			return "Configured to connect %s to %s" % (p0, p1)
+		if p0 != _('disconnected') and p1 != _('disconnected'):
+			return _("Configured to connect") + " " + p0 + " " + "to" + " " + p1
 		else:
-			return "Not yet configured. "\
-				"Left plug is %s and right plug is %s" % (p0, p1)
+			return _("Not yet configured.") + " " +\
+				_("Left plug is") + " " + p0 +" " + _("and right plug is")+\
+				" " + p1
 
 	def on_config_changed(self):
 		if (self.plugs[0].sock is not None):
@@ -1221,9 +1223,9 @@ class TunnelListen(Brick):
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
-			return "plugged to %s, listening to udp: %s" % (self.plugs[0].sock.brick.name
-				, self.cfg.port)
-		return "disconnected"
+			return _("plugged to") + " " + self.plugs[0].sock.brick.name + " " +\
+				_("listening to udp:") + " " + str(self.cfg.port)
+		return _("disconnected")
 
 	def prog(self):
 		return self.settings.get("vdepath") + "/vde_cryptcab"
@@ -1272,8 +1274,8 @@ class TunnelConnect(TunnelListen):
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
-			return _("plugged to %s, connecting to udp://%s") % (
-				self.plugs[0].sock.brick.name, self.cfg.host)
+			return _("plugged to") + self.plugs[0].sock.brick.name +\
+				_(", connecting to udp://") + str(self.cfg.host)
 
 		return _("disconnected")
 
