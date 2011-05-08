@@ -51,6 +51,15 @@ class RemoteHost():
 		self.addr = (address,1050)
 		self.connected=False
 		self.password=""
+		self.factory.remotehosts_changed=True
+		self.autoconnect=False
+
+	def num_bricks(self):
+		r = 0
+		for b in self.factory.bricks:
+			if b.homehost and b.homehost.addr[0] == self.addr[0]:
+				r+=1
+		return r
 
 	def connect(self):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -75,21 +84,26 @@ class RemoteHost():
 			if rec.startswith("OK"):
 				self.connected=True
 				self.post_connect_init()
+				self.factory.remotehosts_changed=True
 				return True
 		return False
+		self.factory.remotehosts_changed=True
 
 	def disconnect(self):
 		if self.connected:
 			self.sock.close()
 			self.connected=False
+		self.factory.remotehosts_changed=True
 
 	def upload(self,b):
 		self.send("new "+b.get_type()+" "+b.name)
 		self.putconfig(b)
+		self.factory.remotehosts_changed=True
 
 	def putconfig(self,b):
 		for (k, v) in b.cfg.iteritems():
 			self.send(b.name + ' config ' + "%s=%s" % (k, v))
+		self.factory.remotehosts_changed=True
 
 
 
@@ -304,13 +318,12 @@ class Brick(ChildLogger):
 		self.homehost = None
 		if len(host) > 0:
 			for existing in self.factory.remote_hosts:
-				if existing.addr == host:
+				if existing.addr[0] == host:
 					self.homehost = existing
 					break
 			if not self.homehost:
 				self.homehost = RemoteHost(self.factory, host)
 				self.factory.remote_hosts.append(self.homehost)
-			print self.homehost
 
 	def restore_self_plugs(self): # DO NOT REMOVE
 		pass
@@ -1962,6 +1975,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.bricksmodel = BricksModel()
 		self.eventsmodel = EventsModel()
 		self.showconsole = showconsole
+		self.remotehosts_changed=False
 		self.TCP = None
 		Thread.__init__(self)
 		self.running_condition = True
@@ -1975,8 +1989,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def start_tcp_server(self):
 		self.TCP = TcpServer(self)
 		self.TCP.start()
-
-
 
 	def getbrickbyname(self, name):
 		for b in self.bricks:
