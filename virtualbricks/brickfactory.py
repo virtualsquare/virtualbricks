@@ -202,6 +202,7 @@ class Sock(object):
 		return int(self.brick.cfg.numports) - len(self.plugs)
 
 	def has_valid_path(self):
+		print self.path
 		return os.access(os.path.dirname(self.path), os.W_OK)
 
 class BrickConfig(dict):
@@ -298,7 +299,7 @@ class Brick(ChildLogger):
 		self.factory.bricks.append(self)
 		self.gui_changed = False
 		self.need_restart_to_apply_changes = False
-		self.needsudo = False
+		self._needsudo = False
 		self.internal_console = None
 		self.icon = Icon(self)
 		self.icon.get_img() #sic
@@ -312,6 +313,9 @@ class Brick(ChildLogger):
 			self.set_host(homehost)
 
 		self.factory.bricksmodel.add_brick(self)
+
+	def needsudo(self):
+		return self.factory.TCP is None and self._needsudo
 
 	def set_host(self,host):
 		self.cfg.homehost=host
@@ -483,7 +487,7 @@ class Brick(ChildLogger):
 			return
 		command_line = self.args()
 
-		if self.needsudo:
+		if self.needsudo():
 			sudoarg = ""
 			for cmdarg in command_line:
 				sudoarg += cmdarg + " "
@@ -514,7 +518,7 @@ class Brick(ChildLogger):
 		self.debug(_("Shutting down %s"), self.name)
 		is_running = self.proc.poll() is None
 		if is_running:
-			if self.needsudo:
+			if self.needsudo():
 				proc = subprocess.Popen([self.settings.get('sudo'),
 					'kill', "'`cat %s`'" % self.pidfile])
 				ret = proc.wait()
@@ -687,13 +691,16 @@ class Event(ChildLogger):
 		self.factory.events.append(self)
 		self.gui_changed = False
 		self.need_restart_to_apply_changes = False
-		self.needsudo = False
+		self._needsudo = False
 		self.internal_console = None
 		self.icon = Icon(self)
 		self.icon.get_img() #sic
 		self.factory.eventsmodel.add_event(self)
 		self.on_config_changed()
 		self.timer = None
+
+	def needsudo(self):
+		return self.factory.TCP is None and self._needsudo
 
 	def help(self):
 		print "Object type: " + self.get_type()
@@ -943,7 +950,7 @@ class Tap(Brick):
 		self.command_builder = {"-s":'sock', "*tap":"name"}
 		self.cfg.sock = ""
 		self.plugs.append(Plug(self))
-		self.needsudo = True
+		self._needsudo = True
 		self.cfg.ip = "10.0.0.1"
 		self.cfg.nm = "255.255.255.0"
 		self.cfg.gw = ""
@@ -1963,7 +1970,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		return parms
 
-	def __init__(self, logger=None, showconsole=True, nogui=False):
+	def __init__(self, logger=None, showconsole=True, nogui=False, server=False):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
 		# DEFINE PROJECT PARMS
@@ -1980,11 +1987,19 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings(CONFIGFILE, self)
-		if nogui:
+
+		if server:
+			if os.getuid() != 0:
+				print ("ERROR: -server requires to be run by root.")
+				sys.exit(5)
 			self.start_tcp_server()
+
 		if not self.TCP:
 			self.info("Current project is %s" % self.settings.get('current_project'))
 			self.config_restore(self.settings.get('current_project'))
+		else:
+			self.config_restore('/tmp/TCP_controlled.vb')
+
 
 	def start_tcp_server(self):
 		self.TCP = TcpServer(self)
@@ -2097,8 +2112,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Import: False, False
 		New: True, True (missing check for existing file, must be check from caller)
 		"""
-		if self.TCP:
-			return
 
 		try:
 			p = open(f, "r")

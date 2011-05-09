@@ -40,6 +40,8 @@ FILES = [
 			('/usr/share/virtualbricks/', ['share/virtualbricks.glade']),
 			('/usr/share/applications', ['share/virtualbricks.desktop']),
 			('/usr/share/pixmaps', ['share/virtualbricks.png']),
+			('/usr/share/pixmaps', ['images/Connect.png']),
+			('/usr/share/pixmaps', ['images/Disconnect.png']),
 			('/usr/share/pixmaps', ['images/Event.png']),
 			('/usr/share/pixmaps', ['images/Qemu.png']),
 			('/usr/share/pixmaps', ['images/Switch.png']),

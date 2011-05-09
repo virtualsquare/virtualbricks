@@ -56,6 +56,10 @@ class Settings(ChildLogger):
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
+		try:
+			os.mkdir(MYPATH)
+		except:
+			pass
 
 		def create_get(attr):
 			return lambda instance, x: self.config.getboolean(self.DEFAULT_SECTION, attr)
@@ -97,6 +101,8 @@ class Settings(ChildLogger):
 
 	def get(self, attr):
 		val = self.config.get(self.DEFAULT_SECTION, unicode(attr))
+		if attr == 'sudo' and os.getuid()==0:
+			return ''
 		if val == "False" or val == "True":
 			raise Exception("'%s' use getboolean" % attr)
 		return val
@@ -172,8 +178,12 @@ class Settings(ChildLogger):
 			cmd = "echo 0 > %s" % ksm_path
 
 		if cmd and self.sudo_system(cmd) != 0:
-			self.error("Can not change ksm state.")
+			self.error("Can not change ksm state. (failed command: %s)" % cmd )
 
 	def sudo_system(self, cmd):
-		return os.system(self.get("sudo") + ' ' + repr(cmd))
+		sudo = self.get("sudo")
+		if len(sudo) > 0:
+			return os.system(self.get("sudo") + ' ' + repr(cmd))
+		else:
+			return os.system(cmd)
 
