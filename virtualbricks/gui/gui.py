@@ -1512,7 +1512,7 @@ class VBGUI(Logger, gobject.GObject):
 			return
 		elif event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
 			if self.remotehost_selected.connected:
-				self.remotehost_selected.disconnect()
+				self.user_wait_action(self.remotehost_selected.disconnect)
 			else:
 				conn_ok, msg = self.remotehost_selected.connect()
 				if not conn_ok:
@@ -2765,8 +2765,12 @@ class VBGUI(Logger, gobject.GObject):
 			self.running_bricks.clear()
 			for b in self.ps:
 				iter = self.running_bricks.append(None, None)
+				if b.homehost:
+					pid = "Remote"
+				else:
+					pid = str(b.pid)
 				self.running_bricks.set_value(iter, 0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
-				self.running_bricks.set_value(iter,1,str(b.pid))
+				self.running_bricks.set_value(iter,1,pid)
 				self.running_bricks.set_value(iter,2,b.get_type())
 				self.running_bricks.set_value(iter,3,b.name)
 			self.debug("proc list updated")
