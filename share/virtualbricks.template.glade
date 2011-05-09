@@ -9736,10 +9736,11 @@ Shell Command</property>
       </widget>
     </child>
     <child>
-      <widget class="GtkCheckMenuItem" id="menuitem3">
+      <widget class="GtkCheckMenuItem" id="popupcheck_autoconnect">
         <property name="visible">True</property>
         <property name="label" translatable="yes">Auto-connect at startup</property>
         <property name="use_underline">True</property>
+        <signal name="toggled" handler="on_remote_autoconnect"/>
       </widget>
     </child>
     <child>

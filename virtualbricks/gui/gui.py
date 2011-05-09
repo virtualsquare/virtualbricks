@@ -1498,6 +1498,7 @@ class VBGUI(Logger, gobject.GObject):
 		if not self.remotehost_selected:
 			return
 		if event.button == 3:
+			self.gladefile.get_widget('popupcheck_autoconnect').set_active(self.remotehost_selected.autoconnect)
 			self.show_window('menu_popup_remotehosts')
 
 	def on_treeview_remotehosts_button_press_event(self, widget=None, event=None, data=""):
@@ -2723,7 +2724,8 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('text_remote_password').set_text(self.remotehost_selected.password)
 		self.show_window('dialog_remote_password')
 
-
+	def on_remote_autoconnect(self, widget, event=None, data=None):
+		self.remotehost_selected.autoconnect = widget.get_active()
 
 	def signals(self):
 		self.gladefile.signal_autoconnect(self)

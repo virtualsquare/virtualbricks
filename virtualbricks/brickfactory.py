@@ -63,6 +63,7 @@ class RemoteHost():
 
 	def connect(self):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		print self.addr
 		try:
 			self.sock.connect(self.addr)
 		except:
@@ -84,7 +85,7 @@ class RemoteHost():
 		self.sock.send(hashed)
 		p = select.poll()
 		p.register(self.sock, select.POLLIN)
-		if (p.poll(5000)):
+		if p.poll(2000):
 			rec = self.sock.recv(4)
 			if rec.startswith("OK"):
 				self.connected=True
@@ -2096,6 +2097,18 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for key, value in self.project_parms.items():
 			p.write( key + "=" + value+"\n")
 
+		# Remote hosts
+		for r in self.remote_hosts:
+			p.write('[RemoteHost:'+r.addr[0]+']\n')
+			p.write('port='+str(r.addr[1])+'\n')
+			p.write('password='+r.password+'\n')
+			if r.autoconnect:
+				p.write('autoconnect=True\n')
+			else:
+				p.write('autoconnect=False\n')
+
+
+
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
 			for k, v in e.cfg.iteritems():
@@ -2255,6 +2268,27 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 								self.debug( "Add " + values[0] )
 								self.project_parms[values[0]]=values[1]
 							l = p.readline()
+						continue
+					elif ntype == 'RemoteHost':
+						self.debug("Found remote host %s" % name)
+						newr=None
+						for existing in self.remote_hosts:
+							if existing.addr[0] == name:
+								newr = existing
+								break
+						if not newr:
+							newr = RemoteHost(self,name)
+							self.remote_hosts.append(newr)
+						l = p.readline()
+						while l and not l.startswith('['):
+							k,v = l.rstrip("\n").split("=")
+							if k == 'password':
+								newr.password = str(v)
+							elif k == 'autoconnect' and v == 'True':
+								newr.autoconnect = True
+							l = p.readline()
+						if newr.autoconnect:
+							newr.connect()
 						continue
 					else: #elif ntype == 'Brick'
 						self.newbrick(ntype, name)
@@ -2579,7 +2613,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			ntype=arg2
 			name=arg3
 			host=arg4
-			password=arg5
 		else:
 			ntype=arg1
 			name=arg2
