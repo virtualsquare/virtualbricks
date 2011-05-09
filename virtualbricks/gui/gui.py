@@ -68,6 +68,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
+		self.brickfactory.connect("brick-error", self.cb_brickfactory_error)
 
 		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
 
@@ -278,6 +279,12 @@ class VBGUI(Logger, gobject.GObject):
 
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
+		self.check_joblist(force=True)
+
+	def cb_brickfactory_error(self, model, name=""):
+		gtk.gdk.threads_enter()
+		self.error(name)
+		gtk.gdk.threads_leave()
 
 	def cb_event_added(self, model, name):
 		pass
@@ -2747,7 +2754,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.topology.y_adj = self.gladefile.get_widget('topology_scrolled').get_vadjustment().get_value()
 			return True
 
-	def check_joblist(self):
+	def check_joblist(self, force=False):
 		new_ps = []
 		for b in self.brickfactory.bricks:
 			if b.proc is not None:
@@ -2761,7 +2768,7 @@ class VBGUI(Logger, gobject.GObject):
 					b.poweroff()
 					b.gui_changed = True
 
-		if self.ps != new_ps:
+		if self.ps != new_ps or force==True:
 			self.ps = new_ps
 			self.bricks = []
 			self.running_bricks.clear()
