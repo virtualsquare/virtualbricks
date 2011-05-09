@@ -178,7 +178,11 @@ class VBGUI(Logger, gobject.GObject):
 		brick = model.get_value(iter, BricksModel.BRICK_IDX)
 		assert brick is not None
 		if column.get_title() == _('Icon'):
-			if brick.proc is not None:
+			if brick.homehost is not None and not brick.homehost.connected:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48)
+				cell.set_property('pixbuf', icon)
+
+			elif brick.proc is not None:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
 					48)
 				cell.set_property('pixbuf', icon)
@@ -861,7 +865,8 @@ class VBGUI(Logger, gobject.GObject):
 		'menu_brickactions',
 		'menu_eventactions',
 		'dialog_confirm',
-		'menu_popup_remotehosts'
+		'menu_popup_remotehosts',
+		'dialog_remote_password'
 		]
 	def sockscombo_names(self):
 		return [
@@ -997,12 +1002,23 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 		name = self.gladefile.get_widget('text_newbrickname').get_text()
 		ntype = self.selected_type()
-		try:
-			self.brickfactory.newbrick(ntype, name)
-		except InvalidName:
-			self.error(_("Cannot create brick: Invalid name."))
+		runremote = self.gladefile.get_widget('check_newbrick_runremote').get_active()
+		if runremote:
+			remotehost = self.gladefile.get_widget('text_newbrick_runremote').get_text()
+			try:
+				self.brickfactory.newbrick('remote', ntype, name, remotehost, "")
+			except InvalidName:
+				self.error(_("Cannot create brick: Invalid name."))
+			else:
+				self.debug("Created successfully")
 		else:
-			self.debug("Created successfully")
+			try:
+				self.brickfactory.newbrick(ntype, name)
+			except InvalidName:
+				self.error(_("Cannot create brick: Invalid name."))
+			else:
+				self.debug("Created successfully")
+
 
 	def on_newevent_cancel(self, widget=None, data=""):
 		self.curtain_down()
@@ -1471,6 +1487,19 @@ class VBGUI(Logger, gobject.GObject):
 				return r
 		return None
 
+	def on_treeview_remotehosts_button_release_event(self, widget=None, event=None, data=""):
+		tree = self.gladefile.get_widget('treeview_remotehosts');
+		store = self.remote_hosts_tree
+		x = int(event.x)
+		y = int(event.y)
+		pthinfo = tree.get_path_at_pos(x, y)
+		addr = self.get_treeselected(tree, store, pthinfo, 1)
+		self.remotehost_selected = self.getremotehost(addr)
+		if not self.remotehost_selected:
+			return
+		if event.button == 3:
+			self.show_window('menu_popup_remotehosts')
+
 	def on_treeview_remotehosts_button_press_event(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_remotehosts');
 		store = self.remote_hosts_tree
@@ -1478,11 +1507,16 @@ class VBGUI(Logger, gobject.GObject):
 		y = int(event.y)
 		pthinfo = tree.get_path_at_pos(x, y)
 		addr = self.get_treeselected(tree, store, pthinfo, 1)
-		if event.button == 3:
-			self.remotehost_selected = self.getremotehost(addr)
-			if not self.remotehost_selected:
-				return
-			self.show_window('menu_popup_remotehosts')
+		self.remotehost_selected = self.getremotehost(addr)
+		if not self.remotehost_selected:
+			return
+		elif event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+			if self.remotehost_selected.connected:
+				self.remotehost_selected.disconnect()
+			else:
+				conn_ok, msg = self.remotehost_selected.connect()
+				if not conn_ok:
+					self.error("Error connecting to remote host %s: %s" % (self.remotehost_selected.addr[0], msg))
 
 	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_joblist');
@@ -2664,6 +2698,33 @@ class VBGUI(Logger, gobject.GObject):
 					return
 			self.brickfactory.remote_hosts.append(RemoteHost(self.brickfactory, txt))
 
+	def on_check_newbrick_runremote_toggled(self, widget, event=None, data=None):
+		self.gladefile.get_widget('text_newbrick_runremote').set_sensitive(widget.get_active())
+
+	def on_passwd_ok(self, widget, event=None, data=None):
+		self.remotehost_selected.password=self.gladefile.get_widget('text_remote_password').get_text()
+		self.show_window('')
+		return True
+
+	def on_passwd_cancel(self, widget, event=None, data=None):
+		self.show_window('')
+		return True
+
+	def on_remote_connect(self, widget, event=None, data=None):
+		print "connect"
+		if self.remotehost_selected.connected:
+			self.remotehost_selected.disconnect()
+		else:
+			conn_ok, msg = self.remotehost_selected.connect()
+			if not conn_ok:
+				self.error("Error connecting to remote host %s: %s" % (self.remotehost_selected.addr[0], msg))
+
+	def on_remote_password(self, widget, event=None, data=None):
+		self.gladefile.get_widget('text_remote_password').set_text(self.remotehost_selected.password)
+		self.show_window('dialog_remote_password')
+
+
+
 	def signals(self):
 		self.gladefile.signal_autoconnect(self)
 
@@ -2688,7 +2749,10 @@ class VBGUI(Logger, gobject.GObject):
 		new_ps = []
 		for b in self.brickfactory.bricks:
 			if b.proc is not None:
-				ret = b.proc.poll()
+				if b.homehost and b.homehost.connected:
+					ret = None
+				else:
+					ret = b.proc.poll()
 				if ret is None:
 					new_ps.append(b)
 				else:

@@ -65,62 +65,84 @@ class RemoteHost():
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		try:
 			self.sock.connect(self.addr)
-			rec = self.sock.recv(5)
-			if (not rec.startswith('HELO')):
-				return False
-			rec = self.sock.recv(256)
-			sha = hashlib.sha256()
-			sha.update(self.password)
-			sha.update(rec)
-			hashed = sha.digest()
-			self.sock.send(hashed)
-			p = select.poll()
-			p.register(self.sock, select.POLLIN)
 		except:
 			print "ERROR"
-			pass
+			return False,"Error connecting to host"
+		else:
+			try:
+				rec = self.sock.recv(5)
+			except:
+				return False,"Error reading from socket"
+
+		if (not rec.startswith('HELO')):
+			return False,"Invalid server response"
+		rec = self.sock.recv(256)
+		sha = hashlib.sha256()
+		sha.update(self.password)
+		sha.update(rec)
+		hashed = sha.digest()
+		self.sock.send(hashed)
+		p = select.poll()
+		p.register(self.sock, select.POLLIN)
 		if (p.poll(5000)):
 			rec = self.sock.recv(4)
 			if rec.startswith("OK"):
 				self.connected=True
 				self.post_connect_init()
 				self.factory.remotehosts_changed=True
-				return True
-		return False
+				return True,"Success"
 		self.factory.remotehosts_changed=True
+		return False,"Authentication Failed."
 
 	def disconnect(self):
 		if self.connected:
+			for b in self.factory.bricks:
+				if b.homehost and b.homehost.addr[0] == self.addr[0]:
+					b.poweroff()
+			self.send("reset all")
 			self.sock.close()
 			self.connected=False
 		self.factory.remotehosts_changed=True
 
 	def upload(self,b):
-		self.send("new "+b.get_type()+" "+b.name)
-		self.putconfig(b)
-		self.factory.remotehosts_changed=True
+		try:
+			self.send("new "+b.get_type()+" "+b.name)
+			self.putconfig(b)
+			self.factory.remotehosts_changed=True
+		except:
+			return False
+		else:
+			return True
 
 	def putconfig(self,b):
-		for (k, v) in b.cfg.iteritems():
-			self.send(b.name + ' config ' + "%s=%s" % (k, v))
-		self.factory.remotehosts_changed=True
-
-
+		try:
+			for (k, v) in b.cfg.iteritems():
+				if k != 'homehost':
+					self.send(b.name + ' config ' + "%s=%s" % (k, v))
+			self.factory.remotehosts_changed=True
+		except:
+			return False
+		else:
+			return True
 
 	def post_connect_init(self):
+		self.send('reset all')
+
 		for b in self.factory.bricks:
 			if b.homehost and b.homehost.addr == self.addr:
-				self.upload(b)
+					self.upload(b)
+					self.putconfig(b)
 
 	def send(self, cmd):
 		if self.connected:
-			self.sock.send(cmd)
+			self.sock.send(cmd + '\n')
 			p = select.poll()
 			p.register(self.sock, select.POLLIN)
-			if (p.poll()):
+			if (p.poll(5000)):
 				rec = self.sock.recv(4)
 				if rec.startswith("OK"):
 					return True
+		return False
 
 	def recv(self, size):
 		if not self.connected:
@@ -407,6 +429,8 @@ class Brick(ChildLogger):
 		# TODO brick should be gobject and a signal should be launched
 		self.factory.bricksmodel.change_brick(self)
 		self.on_config_changed()
+		if self.homehost and self.homehost.connected:
+			self.homehost.putconfig(self)
 
 	def connect(self, endpoint):
 		for p in self.plugs:
@@ -495,25 +519,39 @@ class Brick(ChildLogger):
 			command_line[0] = self.settings.get("sudo")
 			command_line[1] = sudoarg
 		self.debug(_("Starting: '%s'"), ' '.join(command_line))
-		try:
-			self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-		except OSError:
-			self.error("OSError Brick startup failed. Check your configuration!")
 
-		if self.proc is not None:
-			self.pid = self.proc.pid
+		if self.homehost:
+			if not self.homehost.connected:
+				self.info("Error: You must be connected to the host to perform this action")
+				return
+			else:
+				self.proc = self.homehost.send(self.name+" on")
 		else:
-			self.error("Brick startup failed. Check your configuration!")
+			# LOCAL BRICK
+			try:
+				self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+			except OSError:
+				self.error("OSError: Brick startup failed. Check your configuration!")
 
-		if self.open_internal_console and callable(self.open_internal_console):
-			self.internal_console = self.open_internal_console()
+			if self.proc is not None:
+				self.pid = self.proc.pid
+			else:
+				self.error("Brick startup failed. Check your configuration!")
+
+			if self.open_internal_console and callable(self.open_internal_console):
+				self.internal_console = self.open_internal_console()
+			# LOCAL BRICK END
 
 		self.factory.emit("brick-started")
 		self.post_poweron()
 
 	def poweroff(self):
 		if self.proc is None:
-			return False
+			return
+		if self.homehost:
+			self.proc = None
+			self.homehost.send(self.name+" off")
+			return
 
 		self.debug(_("Shutting down %s"), self.name)
 		is_running = self.proc.poll() is None
@@ -2310,6 +2348,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		elif (command == 'ps'):
 			self.proclist()
 			return True
+		elif command.startswith('reset all'):
+			self.reset_config()
 		elif command.startswith('n ') or command.startswith('new '):
 			if(command.startswith('n event') or (command.startswith('new event'))):
 				self.newevent(*command.split(" ")[1:])
@@ -2582,6 +2622,15 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick.set_host(host)
 
 		return True
+
+	def reset_config(self):
+		for b in self.bricks:
+			b.poweroff()
+			self.delbrick(b)
+		for e in self.events:
+			self.delevents(e)
+		self.bricks=[]
+		self.events=[]
 
 	def newevent(self, ntype="", name=""):
 		name = ValidName(name)
