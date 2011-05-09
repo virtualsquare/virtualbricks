@@ -68,6 +68,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
+		self.brickfactory.connect("brick-error", self.cb_brickfactory_error)
 
 		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
 
@@ -266,6 +267,11 @@ class VBGUI(Logger, gobject.GObject):
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
 		self.check_joblist(force=True)
+
+	def cb_brickfactory_error(self, model, name=""):
+		gtk.gdk.threads_enter()
+		self.error(name)
+		gtk.gdk.threads_leave()
 
 	def cb_event_added(self, model, name):
 		pass

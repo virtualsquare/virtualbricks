@@ -384,7 +384,7 @@ class Brick(ChildLogger):
 		try:
 			self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		except OSError:
-			self.error("OSError Brick startup failed. Check your configuration!")
+			self.factory.err("OSError Brick startup failed. Check your configuration!")
 
 		if self.proc is not None:
 			if self.needsudo:
@@ -405,7 +405,7 @@ class Brick(ChildLogger):
 			else:
 				self.pid = self.proc.pid
 		else:
-			self.error("Brick startup failed. Check your configuration!")
+			self.factory.err(self, "Brick startup failed. Check your configuration!")
 
 		if self.open_internal_console and callable(self.open_internal_console):
 			self.internal_console = self.open_internal_console()
@@ -429,13 +429,13 @@ class Brick(ChildLogger):
 				proc = subprocess.Popen([self.settings.get('sudo'),'kill', pid])
 				ret = proc.wait()
 				if ret != 0:
-					self.error(_("can not stop brick (error code: '%s')"), ret)
+					self.factory.err(self, _("can not stop brick (error code: '%s')"), ret)
 					return
 			else:
 				try:
 					self.proc.terminate()
 				except Exception, err:
-					self.error(_("can not send SIGTERM: '%s'"), err)
+					self.factory.err(self, _("can not send SIGTERM: '%s'"), err)
 
 		ret = None
 		while ret is None:
@@ -499,7 +499,7 @@ class Brick(ChildLogger):
 		elif os.access(self.settings.get('alt-term'), os.X_OK):
 			cmdline = [self.settings.get('alt-term'), '-t', self.name, '-e', self.terminal + " " + self.console()]
 		else:
-			self.error(_("Error: cannot start a terminal emulator"))
+			self.factory.err(self, _("Error: cannot start a terminal emulator"))
 			return
 		try:
 			console = subprocess.Popen(cmdline)
@@ -522,7 +522,7 @@ class Brick(ChildLogger):
 				pass
 			else:
 				return c
-		self.error(self.get_type() + ": " + _("error opening internal console"))
+		self.factory.err(self, self.get_type() + ": " + _("error opening internal console"))
 		return None
 
 	def send(self, msg):
@@ -734,7 +734,7 @@ class Event(ChildLogger):
 				try:
 					subprocess.Popen(action, shell = True)
 				except:
-					self.error("Error: cannot execute shell command \"%s\"" % action)
+					self.factory.err(self, "Error: cannot execute shell command \"%s\"" % action)
 					continue
 #			else:
 #				#it is an event
@@ -1832,7 +1832,7 @@ class VM(Brick):
 	def open_internal_console(self):
 
 		if not self.has_console():
-			self.error("No console detected.")
+			self.factory.err(self, "No console detected.")
 			return None
 
 		try:
@@ -1841,7 +1841,7 @@ class VM(Brick):
 			c.connect(self.console2())
 			return c
 		except Exception, err:
-			self.error("Virtual Machine startup failed. Check your configuration!")
+			self.factory.err(self, "Virtual Machine startup failed. Check your configuration!")
 			return None
 
 	def post_poweroff(self):
@@ -1856,6 +1856,7 @@ class VM(Brick):
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'brick-error'   : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
 		'brick-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'event-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
@@ -1902,6 +1903,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				return e
 		return None
 
+	def err(self, caller_obj, *args, **kargv):
+		txt = ''
+		for a in args:
+			txt+=a
+		self.emit("brick-error", txt)
+
 	def run(self):
 		print "virtualbricks> ",
 		sys.stdout.flush()
@@ -1923,7 +1930,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		try:
 			p = open(f, "w+")
 		except:
-			self.error( "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
+			self.factory.err(self, "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
 			return
 
 		self.debug("CONFIG DUMP on " + f)
@@ -1955,7 +1962,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						elif isinstance(action, VbShellCommand):
 							tempactions.append("add "+action)
 						else:
-							self.error( "Error: unmanaged action type."+\
+							self.factory.err( "Error: unmanaged action type."+\
 							"Will not be saved!" )
 							continue
 					p.write(k + '=' + str(tempactions) + '\n')
@@ -2424,7 +2431,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick = Event(self, name)
 			self.debug("new event %s OK", brick.name)
 		else:
-			self.error("Invalid command '%s'", name)
+			self.err(self,"Invalid command '%s'", name)
 			return False
 
 		return True
@@ -2441,7 +2448,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick = Event(self, name)
 			self.debug("new event %s OK", brick.name)
 		else:
-			self.error("Invalid command '%s'", name)
+			self.err(self, "Invalid command '%s'", name)
 			return False
 
 		return True
