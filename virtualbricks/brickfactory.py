@@ -470,7 +470,6 @@ class Brick(ChildLogger):
 	############################
 
 	def poweron(self):
-
 		if not self.configured():
 			print "bad config"
 			raise BadConfig()
@@ -2137,7 +2136,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						elif isinstance(action, VbShellCommand):
 							tempactions.append("add "+action)
 						else:
-							self.factory.err( "Error: unmanaged action type."+\
+							self.factory.err(self, "Error: unmanaged action type."+\
 							"Will not be saved!" )
 							continue
 					p.write(k + '=' + str(tempactions) + '\n')
