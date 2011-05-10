@@ -1444,7 +1444,7 @@ class VM(Brick):
 		self.cfg.boot = ""
 		self.cfg.basehda = ""
 		# PRIVATE COW IMAGES MUST BE CREATED IN A DIFFERENT DIRECTORY FOR EACH PROJECT
-		basepath = self.settings.get("baseimages") + "/." + self.project_parms['id']
+		self.basepath = self.settings.get("baseimages") + "/." + self.project_parms['id']
 		self.cfg.set_obj("hda", VMDisk(_name, "hda", self.basepath))
 		self.cfg.privatehda = ""
 		self.cfg.basehdb = ""
