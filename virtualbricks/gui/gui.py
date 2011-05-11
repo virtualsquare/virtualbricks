@@ -31,7 +31,7 @@ import time
 from traceback import format_exception
 
 from virtualbricks import tools
-from virtualbricks.brickfactory import BrickFactory, ValidName, VbShellCommand
+from virtualbricks.brickfactory import BrickFactory, ValidName, VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.gui.combo import ComboBox
 from virtualbricks.gui.graphics import *
@@ -109,6 +109,11 @@ class VBGUI(Logger, gobject.GObject):
 		columns = [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')]
 		tree = self.gladefile.get_widget('treeview_bookmarks')
 		tree.set_model(self.brickfactory.bricksmodel)
+
+		self.remote_hosts_tree = self.treestore('treeview_remotehosts', [gtk.gdk.Pixbuf,
+			 gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+			['Status',_('Address'),_('Bricks'),_('Autoconnect')])
+
 		for name in columns:
 			col = gtk.TreeViewColumn(name)
 			if name != _('Icon'):
@@ -160,6 +165,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.joblist_selected = None
 		self.brick_selected = None
 		self.event_selected = None
+		self.remotehost_selected = None
 
 		gtk.gdk.threads_enter()
 		try:
@@ -173,7 +179,11 @@ class VBGUI(Logger, gobject.GObject):
 		brick = model.get_value(iter, BricksModel.BRICK_IDX)
 		assert brick is not None
 		if column.get_title() == _('Icon'):
-			if brick.proc is not None:
+			if brick.homehost is not None and not brick.homehost.connected:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48)
+				cell.set_property('pixbuf', icon)
+
+			elif brick.proc is not None:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
 					48)
 				cell.set_property('pixbuf', icon)
@@ -187,7 +197,10 @@ class VBGUI(Logger, gobject.GObject):
 		elif column.get_title() == _('Status'):
 			cell.set_property('text', brick.get_state())
 		elif column.get_title() == _('Type'):
-			cell.set_property('text', brick.get_type())
+			if brick.homehost:
+				cell.set_property('text', "Remote " + brick.get_type() +" on " + brick.homehost.addr[0])
+			else:
+				cell.set_property('text', brick.get_type())
 		elif column.get_title() == _('Name'):
 			cell.set_property('text', brick.name)
 		elif column.get_title() == _('Parameters'):
@@ -858,7 +871,9 @@ class VBGUI(Logger, gobject.GObject):
 		'dialog_newevent',
 		'menu_brickactions',
 		'menu_eventactions',
-		'dialog_confirm'
+		'dialog_confirm',
+		'menu_popup_remotehosts',
+		'dialog_remote_password'
 		]
 	def sockscombo_names(self):
 		return [
@@ -994,12 +1009,23 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 		name = self.gladefile.get_widget('text_newbrickname').get_text()
 		ntype = self.selected_type()
-		try:
-			self.brickfactory.newbrick(ntype, name)
-		except InvalidName:
-			self.error(_("Cannot create brick: Invalid name."))
+		runremote = self.gladefile.get_widget('check_newbrick_runremote').get_active()
+		if runremote:
+			remotehost = self.gladefile.get_widget('text_newbrick_runremote').get_text()
+			try:
+				self.brickfactory.newbrick('remote', ntype, name, remotehost, "")
+			except InvalidName:
+				self.error(_("Cannot create brick: Invalid name."))
+			else:
+				self.debug("Created successfully")
 		else:
-			self.debug("Created successfully")
+			try:
+				self.brickfactory.newbrick(ntype, name)
+			except InvalidName:
+				self.error(_("Cannot create brick: Invalid name."))
+			else:
+				self.debug("Created successfully")
+
 
 	def on_newevent_cancel(self, widget=None, data=""):
 		self.curtain_down()
@@ -1461,6 +1487,44 @@ class VBGUI(Logger, gobject.GObject):
 
 	def on_treeview_bootimages_row_activated_event(self, widget=None, data=""):
 		raise NotImplementedError()
+
+	def getremotehost(self, addr):
+		for r in self.brickfactory.remote_hosts:
+			if r.addr[0]+":"+str(r.addr[1]) == addr:
+				return r
+		return None
+
+	def on_treeview_remotehosts_button_release_event(self, widget=None, event=None, data=""):
+		tree = self.gladefile.get_widget('treeview_remotehosts');
+		store = self.remote_hosts_tree
+		x = int(event.x)
+		y = int(event.y)
+		pthinfo = tree.get_path_at_pos(x, y)
+		addr = self.get_treeselected(tree, store, pthinfo, 1)
+		self.remotehost_selected = self.getremotehost(addr)
+		if not self.remotehost_selected:
+			return
+		if event.button == 3:
+			self.gladefile.get_widget('popupcheck_autoconnect').set_active(self.remotehost_selected.autoconnect)
+			self.show_window('menu_popup_remotehosts')
+
+	def on_treeview_remotehosts_button_press_event(self, widget=None, event=None, data=""):
+		tree = self.gladefile.get_widget('treeview_remotehosts');
+		store = self.remote_hosts_tree
+		x = int(event.x)
+		y = int(event.y)
+		pthinfo = tree.get_path_at_pos(x, y)
+		addr = self.get_treeselected(tree, store, pthinfo, 1)
+		self.remotehost_selected = self.getremotehost(addr)
+		if not self.remotehost_selected:
+			return
+		elif event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+			if self.remotehost_selected.connected:
+				self.user_wait_action(self.remotehost_selected.disconnect)
+			else:
+				conn_ok, msg = self.remotehost_selected.connect()
+				if not conn_ok:
+					self.error("Error connecting to remote host %s: %s" % (self.remotehost_selected.addr[0], msg))
 
 	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_joblist');
@@ -2634,6 +2698,42 @@ class VBGUI(Logger, gobject.GObject):
 	def on_open_recent_project(self, widget, data=None):
 		raise NotImplementedError()
 
+	def on_add_remotehost(self, widget, data=None):
+		txt = self.gladefile.get_widget("newhost_text").get_text()
+		if len(txt) > 0:
+			for existing in self.brickfactory.remote_hosts:
+				if (txt == existing.addr[0]):
+					return
+			self.brickfactory.remote_hosts.append(RemoteHost(self.brickfactory, txt))
+
+	def on_check_newbrick_runremote_toggled(self, widget, event=None, data=None):
+		self.gladefile.get_widget('text_newbrick_runremote').set_sensitive(widget.get_active())
+
+	def on_passwd_ok(self, widget, event=None, data=None):
+		self.remotehost_selected.password=self.gladefile.get_widget('text_remote_password').get_text()
+		self.show_window('')
+		return True
+
+	def on_passwd_cancel(self, widget, event=None, data=None):
+		self.show_window('')
+		return True
+
+	def on_remote_connect(self, widget, event=None, data=None):
+		print "connect"
+		if self.remotehost_selected.connected:
+			self.remotehost_selected.disconnect()
+		else:
+			conn_ok, msg = self.remotehost_selected.connect()
+			if not conn_ok:
+				self.error("Error connecting to remote host %s: %s" % (self.remotehost_selected.addr[0], msg))
+
+	def on_remote_password(self, widget, event=None, data=None):
+		self.gladefile.get_widget('text_remote_password').set_text(self.remotehost_selected.password)
+		self.show_window('dialog_remote_password')
+
+	def on_remote_autoconnect(self, widget, event=None, data=None):
+		self.remotehost_selected.autoconnect = widget.get_active()
+
 	def signals(self):
 		self.gladefile.signal_autoconnect(self)
 
@@ -2658,7 +2758,10 @@ class VBGUI(Logger, gobject.GObject):
 		new_ps = []
 		for b in self.brickfactory.bricks:
 			if b.proc is not None:
-				ret = b.proc.poll()
+				if b.homehost and b.homehost.connected:
+					ret = None
+				else:
+					ret = b.proc.poll()
 				if ret is None:
 					new_ps.append(b)
 				else:
@@ -2671,11 +2774,32 @@ class VBGUI(Logger, gobject.GObject):
 			self.running_bricks.clear()
 			for b in self.ps:
 				iter = self.running_bricks.append(None, None)
+				if b.homehost:
+					pid = "Remote"
+				else:
+					pid = str(b.pid)
 				self.running_bricks.set_value(iter, 0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
-				self.running_bricks.set_value(iter,1,str(b.pid))
+				self.running_bricks.set_value(iter,1,pid)
 				self.running_bricks.set_value(iter,2,b.get_type())
 				self.running_bricks.set_value(iter,3,b.name)
 			self.debug("proc list updated")
+		new_rhosts = []
+		if self.brickfactory.remotehosts_changed:
+			self.remote_hosts_tree.clear()
+			for r in self.brickfactory.remote_hosts:
+				iter = self.remote_hosts_tree.append(None,None)
+				if (r.connected):
+					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Connect.png", 48, 48) )
+				else:
+					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48) )
+				self.remote_hosts_tree.set_value(iter, 1, r.addr[0]+":"+str(r.addr[1]))
+				self.remote_hosts_tree.set_value(iter, 2, str(r.num_bricks()))
+				if r.autoconnect:
+					self.remote_hosts_tree.set_value(iter, 3, "Yes")
+				else:
+					self.remote_hosts_tree.set_value(iter, 3, "No")
+				self.brickfactory.remotehosts_changed=False
+
 
 		self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+ " ID: " + self.brickfactory.project_parms["id"] + " )")
 
