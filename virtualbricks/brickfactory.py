@@ -67,7 +67,7 @@ class RemoteHost():
 		try:
 			self.sock.connect(self.addr)
 		except:
-			print "ERROR"
+			print " ******************* ERROR"
 			return False,"Error connecting to host"
 		else:
 			try:
@@ -532,18 +532,14 @@ class Brick(ChildLogger):
 			except OSError:
 				self.factory.err(self,"OSError: Brick startup failed. Check your configuration!")
 
-			if self.proc is not None:
+			if self.proc:
 				self.pid = self.proc.pid
 			else:
+				print "**********************************" +  self.proc
 				self.factory.err(self, "Brick startup failed. Check your configuration!")
 
 			if self.open_internal_console and callable(self.open_internal_console):
 				self.internal_console = self.open_internal_console()
-			# LOCAL BRICK END
-			self.factory.err(self, "Brick startup failed. Check your configuration!")
-
-		if self.open_internal_console and callable(self.open_internal_console):
-			self.internal_console = self.open_internal_console()
 
 		self.factory.emit("brick-started")
 		self.post_poweron()
@@ -559,8 +555,7 @@ class Brick(ChildLogger):
 		self.debug(_("Shutting down %s"), self.name)
 		is_running = self.proc.poll() is None
 		if is_running:
-			if self.needsudo:
-
+			if self.needsudo():
 				with open(self.pidfile) as pidfile:
 					pid = pidfile.readline().rstrip("\n")
 
