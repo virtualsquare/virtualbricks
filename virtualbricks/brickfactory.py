@@ -1017,7 +1017,7 @@ class Tap(Brick):
 		return _("disconnected")
 
 	def prog(self):
-		return self.settings.get("vdepath") + "/vde_plug2tap"
+		return "/sbin/modprobe tun && " + self.settings.get("vdepath") + "/vde_plug2tap"
 
 	def get_type(self):
 		return 'Tap'
