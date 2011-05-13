@@ -2774,7 +2774,9 @@ class VBGUI(Logger, gobject.GObject):
 			self.running_bricks.clear()
 			for b in self.ps:
 				iter = self.running_bricks.append(None, None)
-				if b.homehost:
+				if (b.pid == -10):
+					pid = "python-thread   "
+				elif b.homehost:
 					pid = "Remote"
 				else:
 					pid = str(b.pid)

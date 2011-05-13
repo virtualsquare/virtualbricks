@@ -39,6 +39,18 @@ from virtualbricks.errors import (BadConfig, DiskLocked, InvalidAction,
 	InvalidName, Linkloop, NotConnected, UnmanagedType)
 from virtualbricks.tcpserver import TcpServer
 
+global VDESUPPORT
+try:
+	import VdePlug
+except:
+	print "VdePlug support not found. I will disable native VDE python support."
+	VDESUPPORT = False
+else:
+	VDESUPPORT = True
+	print "VdePlug support ENABLED."
+
+
+
 def CommandLineOutput(outf, data):
 	if outf == sys.stdout:
 		return outf.write(data + '\n')
@@ -63,11 +75,9 @@ class RemoteHost():
 
 	def connect(self):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		print self.addr
 		try:
 			self.sock.connect(self.addr)
 		except:
-			print " ******************* ERROR"
 			return False,"Error connecting to host"
 		else:
 			try:
@@ -225,7 +235,6 @@ class Sock(object):
 		return int(self.brick.cfg.numports) - len(self.plugs)
 
 	def has_valid_path(self):
-		print self.path
 		return os.access(os.path.dirname(self.path), os.W_OK)
 
 class BrickConfig(dict):
@@ -535,7 +544,6 @@ class Brick(ChildLogger):
 			if self.proc:
 				self.pid = self.proc.pid
 			else:
-				print "**********************************" +  self.proc
 				self.factory.err(self, "Brick startup failed. Check your configuration!")
 
 			if self.open_internal_console and callable(self.open_internal_console):
@@ -1108,6 +1116,69 @@ class Wire(Brick):
 		res.append(self.settings.get("vdepath") + '/vde_plug')
 		res.append(self.cfg.sock1)
 		return res
+
+class PyWireThread(Thread):
+	def __init__(self, wire):
+		self.wire = wire
+		self.run_condition=False
+		Thread.__init__(self)
+
+	def run(self):
+		host0 = self.wire.plugs[0].sock.brick.homehost
+		host1 = self.wire.plugs[1].sock.brick.homehost
+		self.run_condition=True
+		self.wire.pid = -10
+		if host0 == host1:
+			print "on the same host"
+			v0 = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
+			v1 = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
+			p = select.epoll()
+			p.register(v0.datafd().fileno(), select.POLLIN)
+			p.register(v1.datafd().fileno(), select.POLLIN)
+			while self.run_condition:
+				res = p.poll(0.250)
+				for (f,e) in res:
+					if f == v0.datafd().fileno() and (e & select.POLLIN):
+						buf = v0.recv(2000)
+						v1.send(buf)
+					if f == v1.datafd().fileno() and (e & select.POLLIN):
+						buf = v1.recv(2000)
+						v0.send(buf)
+		else:
+			print "on different hosts"
+			print "Not yet implemented"
+
+		print "bye!"
+		self.wire.pid = -1
+
+	def poll(self):
+		if self.isAlive():
+			return None
+		else:
+			return True
+
+	def wait(self):
+		return self.join()
+
+	def terminate(self):
+		self.run_condition=False
+
+	def send_signal(self, signo):
+		# TODO: Suspend/resume.
+		self.run_condition=False
+
+
+class PyWire(Wire):
+
+	def prog(self):
+		return ''
+
+	def _poweron(self):
+		# self.proc
+		self.pid = -1
+		self.proc = PyWireThread(self)
+		self.proc.start()
+
 
 class Wirefilter(Wire):
 	def __init__(self, _factory, _name):
@@ -2641,8 +2712,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick = VM(self, name)
 			self.debug("new vm %s OK", brick.name)
 		elif ntype == "wire" or ntype == "Wire" or ntype == "Cable":
-			brick = Wire(self, name)
-			self.debug("new cable %s OK", brick.name)
+			if VDESUPPORT and self.settings.python:
+				brick = PyWire(self, name)
+				self.debug("new cable %s OK - Type: Python-VdePlug.", brick.name)
+			else:
+				brick = Wire(self, name)
+				self.debug("new cable %s OK - Type: Traditional.", brick.name)
 		elif ntype == "wirefilter" or ntype == "Wirefilter":
 			brick = Wirefilter(self, name)
 			self.debug("new wirefilter %s OK", brick.name)
