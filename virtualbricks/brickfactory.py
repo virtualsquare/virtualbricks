@@ -1538,7 +1538,7 @@ class TunnelConnect(TunnelListen):
 
 	def get_parameters(self):
 		if self.plugs[0].sock:
-			return _("plugged to") + self.plugs[0].sock.brick.name +\
+			return _("plugged to") + " " + self.plugs[0].sock.brick.name +\
 				_(", connecting to udp://") + str(self.cfg.host)
 
 		return _("disconnected")
