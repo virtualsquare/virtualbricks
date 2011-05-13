@@ -38,6 +38,7 @@ from virtualbricks.settings import CONFIGFILE, MYPATH, Settings
 from virtualbricks.errors import (BadConfig, DiskLocked, InvalidAction,
 	InvalidName, Linkloop, NotConnected, UnmanagedType)
 from virtualbricks.tcpserver import TcpServer
+import getpass
 
 global VDESUPPORT
 try:
@@ -2103,7 +2104,35 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if os.getuid() != 0:
 				print ("ERROR: -server requires to be run by root.")
 				sys.exit(5)
-			self.start_tcp_server()
+			try:
+				pwdfile = open("/etc/virtualbricks-passwd", "r")
+			except:
+				print "Password not set."
+				while True:
+					password = getpass.getpass("Insert password:")
+					repeat = getpass.getpass("Confirm:")
+					if password == repeat:
+						try:
+							pwdfile = open('/etc/virtualbricks-passwd', 'w+')
+						except:
+							print "Could not save password."
+						else:
+							pwdfile.write(password)
+							pwdfile.close()
+							print "Password saved."
+						break
+					else:
+						print "Passwords don't match. Retry."
+			else:
+				password = pwdfile.readline()
+				pwdfile.close()
+
+			try:
+				os.chmod('/etc/virtualbricks-passwd', 0600)
+			except:
+				os.unlink('/etc/virtualbricks-passwd')
+
+			self.start_tcp_server(password)
 
 		if not self.TCP:
 			self.info("Current project is %s" % self.settings.get('current_project'))
@@ -2112,8 +2141,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			self.config_restore('/tmp/TCP_controlled.vb')
 
 
-	def start_tcp_server(self):
-		self.TCP = TcpServer(self)
+	def start_tcp_server(self, password):
+		self.TCP = TcpServer(self, password)
 		self.TCP.start()
 
 	def getbrickbyname(self, name):

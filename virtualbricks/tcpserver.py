@@ -5,13 +5,14 @@ from virtualbricks.tcpproto import *
 import time, socket, sys, hashlib, select
 
 class TcpServer(ChildLogger, Thread):
-	def __init__(self, factory, port=1050):
+	def __init__(self, factory, password, port=1050):
 		self.port = port
 		self.factory = factory
 		self.logger = factory.logger
 		self.listening = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.proto = VirtualbricksTCPPROTO()
 		ChildLogger.__init__(self, self.logger)
+		self.password = password
 		Thread.__init__(self)
 
 	def run(self):
@@ -32,7 +33,7 @@ class TcpServer(ChildLogger, Thread):
 						randfile = open("/dev/urandom", "r")
 						challenge = randfile.read(256)
 						sha = hashlib.sha256()
-						sha.update("passw0rd")
+						sha.update(self.password)
 						sha.update(challenge)
 						hashed = sha.digest()
 						sock.send(self.proto.HELO())
