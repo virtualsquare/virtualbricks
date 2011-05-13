@@ -1,4 +1,11 @@
 #!/bin/bash
+
+if [ `id -g` -ne 0 ]; then
+  echo You have not root privileges.
+  echo Try executing \"sudo $0\" or \"su -c './install.sh'\"
+  exit -1
+fi
+
 # Set version here
 VERSION_MAJOR=0
 VERSION_MINOR=5
@@ -9,3 +16,16 @@ cat share/virtualbricks.template.glade | sed -e "s/___VERSION___/$VERSION/g" > s
 
 python setup.py install --record .filesinstalled
 rm -f share/virtualbricks.glade
+
+if [ -d .bzr ]; then
+  echo
+  echo "What follows can be useful for developers."
+  echo "If you are user please ingore it."
+  echo "-------pyflakes---------"
+  pyflakes virtualbricks
+  echo "-------pylint---------"
+  pylint --errors virtualbricks
+  echo "----------------"
+fi
+
+echo "Installation finished."
