@@ -20,7 +20,7 @@ rm -f share/virtualbricks.glade
 if [ -d .bzr ]; then
   echo
   echo "What follows can be useful for developers."
-  echo "If you are user please ingore it."
+  echo "If you are user please ignore it."
   echo "-------pyflakes---------"
   pyflakes virtualbricks
   echo "-------pylint---------"
