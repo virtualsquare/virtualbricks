@@ -732,6 +732,7 @@ class VBGUI(Logger, gobject.GObject):
 				wg.set_position(430)
 				self.config_event_prepare()
 				ww.show_all()
+				self.gladefile.get_widget("wait_label").hide()
 				self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
 			return
 
@@ -757,7 +758,7 @@ class VBGUI(Logger, gobject.GObject):
 		elif self.brick_selected.get_type() == 'Wirefilter':
 			self.debug("wirefilter config")
 			ww = self.gladefile.get_widget('box_wirefilterconfig')
-			wg.set_position(424)
+			wg.set_position(344)
 		elif self.brick_selected.get_type() == 'TunnelConnect':
 			self.debug("tunnelc config")
 			ww = self.gladefile.get_widget('box_tunnelcconfig')
@@ -768,7 +769,7 @@ class VBGUI(Logger, gobject.GObject):
 			wg.set_position(524)
 		self.config_brick_prepare()
 		ww.show_all()
-
+		self.gladefile.get_widget("wait_label").hide()
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
 
 	def get_tree_selected(self, tree, store, pthinfo, idx):
@@ -1203,6 +1204,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_down()
 
 	def on_config_ok(self, widget=None, data=""):
+		self.gladefile.get_widget("wait_label").show_now()
 		self.config_brick_confirm()
 		self.curtain_down()
 
@@ -1234,6 +1236,27 @@ class VBGUI(Logger, gobject.GObject):
 			currentwidget.set_text("")
 			currentwidget.set_sensitive(False)
 
+	def on_symm_toggle(self, widget=None, data=""):
+		base_name = widget.name.rstrip("check").rstrip("_")
+		text = self.gladefile.get_widget('cfg_' + base_name + '_text')
+		text_LR = self.gladefile.get_widget('cfg_' + base_name + 'LR_text')
+		text_RL = self.gladefile.get_widget('cfg_' + base_name + 'RL_text')
+		frame = self.gladefile.get_widget(base_name + '_frame')
+		frame_LR = self.gladefile.get_widget(base_name + 'LR_frame')
+		frame_RL = self.gladefile.get_widget(base_name + 'RL_frame')
+		if widget.get_active():
+			frame_LR.set_sensitive(False)
+			text_LR.set_text("")
+			frame_RL.set_sensitive(False)
+			text_RL.set_text("")
+			frame.set_sensitive(True)
+			text.set_text("")
+		else:
+			frame.set_sensitive(False)
+			text.set_text("")
+			frame_LR.set_sensitive(True)
+			frame_RL.set_sensitive(True)
+			
 	def on_item_quit_activate(self, widget=None, data=""):
 		self.quit()
 
@@ -1570,6 +1593,11 @@ class VBGUI(Logger, gobject.GObject):
 		GTK+ 2.10 and above"""
 		widget.hide()
 		return True
+
+	def on_button_newimage_close_clicked(self, widget=None, data=""):
+		self.gladefile.get_widget('dialog_create_image').hide()
+		return True
+
 
 	def on_dialog_settings_response(self, widget=None, response=0, data=""):
 		if response == gtk.RESPONSE_CANCEL:

@@ -1185,59 +1185,79 @@ class Wirefilter(Wire):
 	def __init__(self, _factory, _name):
 		Wire.__init__(self, _factory, _name)
 		self.command_builder = {
-			"-d":"delay",
-			"-l":"loss",
-			"-L":"lostburst",
-			"-D":"dup",
-			"-b":"bandwidth",
-			"-s":"speed",
-			"-c":"chanbufsize",
-			"-n":"noise",
-			"-m":"mtu",
 			"-N":"nofifo",
 			"-M":self.console,
 		}
 
-		self.cfg.mtuLR = ""
-		self.cfg.mtuRL = ""
-		#remove the following line when the interface will split mtu
-		#into mtu[LR,RL]
-		self.cfg.mtu = ""
-		self.cfg.mtuck = ""
-		self.cfg.noiseLR = ""
-		self.cfg.noiseRL = ""
-		#remove the following line when the interface will split noise
-		#into noise[LR,RL]
-		self.cfg.noise = ""
-		self.cfg.chanbufsizeLR = ""
-		self.cfg.chanbufsizeRL = ""
-		#remove the following line when the interface will split chanbufsize
-		#into chanbufsize[LR,RL]
-		self.cfg.chanbufsize = ""
-		self.cfg.delayLR = ""
-		self.cfg.delayRL = ""
-		self.cfg.lossLR = ""
-		self.cfg.lossRL = ""
-		self.cfg.lostburstLR = ""
-		self.cfg.lostburstRL = ""
-		#remove the following line when the interface will split lostburst
-		#into lostburst[LR,RL]
-		self.cfg.lostburst = ""
-		self.cfg.gilbertck = ""
-		self.cfg.dupLR = ""
-		self.cfg.dupRL = ""
-		self.cfg.speedLR = ""
-		self.cfg.speedRL = ""
-		self.cfg.speedLRunit = ""
-		self.cfg.speedRLunit = ""
-		self.cfg.speedLRdistribution = ""
-		self.cfg.speedRLdistribution = ""
 		self.cfg.bandwidthLR = ""
 		self.cfg.bandwidthRL = ""
+		self.cfg.bandwidth = ""
 		self.cfg.bandwidthLRunit = ""
 		self.cfg.bandwidthRLunit = ""
 		self.cfg.bandwidthLRdistribution = ""
 		self.cfg.bandwidthRLdistribution = ""
+		
+		self.cfg.speedLR = ""
+		self.cfg.speedRL = ""
+		self.cfg.speed = ""
+		self.cfg.speedLRunit = ""
+		self.cfg.speedRLunit = ""
+		self.cfg.speedLRdistribution = ""
+		self.cfg.speedRLdistribution = ""
+		
+		self.cfg.delayLR = ""
+		self.cfg.delayRL = ""
+		self.cfg.delay = ""
+		self.cfg.delayLRunit = ""
+		self.cfg.delayRLunit = ""
+		self.cfg.delayLRdistribution = ""
+		self.cfg.delayRLdistribution = ""
+
+		self.cfg.chanbufsizeLR = ""
+		self.cfg.chanbufsizeRL = ""
+		self.cfg.chanbufsize = ""
+		self.cfg.chanbufsizeLRunit = ""
+		self.cfg.chanbufsizeRLunit = ""
+		self.cfg.chanbufsizeLRdistribution = ""
+		self.cfg.chanbufsizeRLdistribution = ""
+
+		self.cfg.lossLR = ""
+		self.cfg.lossRL = ""
+		self.cfg.loss = ""
+		self.cfg.lossLRunit = ""
+		self.cfg.lossRLunit = ""
+		self.cfg.lossLRdistribution = ""
+		self.cfg.lossRLdistribution = ""
+
+		self.cfg.dupLR = ""
+		self.cfg.dupRL = ""
+		self.cfg.dup = ""
+		self.cfg.dupLRunit = ""
+		self.cfg.dupRLunit = ""
+		self.cfg.dupLRdistribution = ""
+		self.cfg.dupRLdistribution = ""
+
+		self.cfg.noiseLR = ""
+		self.cfg.noiseRL = ""
+		self.cfg.noise = ""
+		self.cfg.noiseLRunit = ""
+		self.cfg.noiseRLunit = ""
+		self.cfg.noiseLRdistribution = ""
+		self.cfg.noiseRLdistribution = ""
+
+		self.cfg.gilbertck = ""
+		self.cfg.lostburstLR = ""
+		self.cfg.lostburstRL = ""
+		self.cfg.lostburst = ""
+		self.cfg.lostburstLRunit = ""
+		self.cfg.lostburstRLunit = ""
+		self.cfg.lostburstLRdistribution = ""
+		self.cfg.lostburstRLdistribution = ""
+
+		self.cfg.mtuLR = ""
+		self.cfg.mtuRL = ""
+		self.cfg.mtu = ""
+		self.cfg.mtuck = ""
 
 	def args(self):
 		res = []
@@ -1245,68 +1265,104 @@ class Wirefilter(Wire):
 		res.append('-v')
 		res.append(self.cfg.sock0 + ":" + self.cfg.sock1)
 
-		if len(self.cfg.delayLR) > 0:
+		if len(self.cfg.delay) > 0:
 			res.append("-d")
-			res.append("LR" + self.cfg.delayLR)
-		if len(self.cfg.delayRL) > 0:
-			res.append("-d")
-			res.append("RL" + self.cfg.delayRL)
+			res.append(self.cfg.delay)
+		else:
+			if len(self.cfg.delayLR) > 0:
+				res.append("-d")
+				res.append("LR" + self.cfg.delayLR)
+			if len(self.cfg.delayRL) > 0:
+				res.append("-d")
+				res.append("RL" + self.cfg.delayRL)
 
-		if len(self.cfg.lossLR) > 0:
+		if len(self.cfg.loss) > 0:
 			res.append("-l")
-			res.append("LR" + self.cfg.lossLR)
-		if len(self.cfg.lossRL) > 0:
-			res.append("-l")
-			res.append("RL" + self.cfg.lossRL)
+			res.append(self.cfg.loss)
+		else:
+			if len(self.cfg.lossLR) > 0:
+				res.append("-l")
+				res.append("LR" + self.cfg.lossLR)
+			if len(self.cfg.lossRL) > 0:
+				res.append("-l")
+				res.append("RL" + self.cfg.lossRL)
 
-		if len(self.cfg.dupLR) > 0:
+		if len(self.cfg.dup) > 0:
 			res.append("-D")
-			res.append("LR" + self.cfg.dupLR)
-		if len(self.cfg.dupRL) > 0:
-			res.append("-D")
-			res.append("RL" + self.cfg.dupRL)
+			res.append(self.cfg.dup)
+		else:
+			if len(self.cfg.dupLR) > 0:
+				res.append("-D")
+				res.append("LR" + self.cfg.dupLR)
+			if len(self.cfg.dupRL) > 0:
+				res.append("-D")
+				res.append("RL" + self.cfg.dupRL)
 
-		if len(self.cfg.speedLR) > 0:
+		if len(self.cfg.speed) > 0:
 			res.append("-s")
-			res.append("LR" + self.cfg.speedLR + self.cfg.speedLRunit + self.cfg.speedLRdistribution)
-		if len(self.cfg.speedRL) > 0:
-			res.append("-s")
-			res.append("RL" + self.cfg.speedRL + self.cfg.speedRLunit + self.cfg.speedRLdistribution)
+			res.append(self.cfg.speed)
+		else:
+			if len(self.cfg.speedLR) > 0:
+				res.append("-s")
+				res.append("LR" + self.cfg.speedLR)
+			if len(self.cfg.speedRL) > 0:
+				res.append("-s")
+				res.append("RL" + self.cfg.speedRL)
 
-		if len(self.cfg.bandwidthLR) > 0:
+		if len(self.cfg.bandwidth) >0:
 			res.append("-b")
-			res.append("LR" + self.cfg.bandwidthLR + self.cfg.bandwidthLRunit + self.cfg.bandwidthLRdistribution)
-		if len(self.cfg.bandwidthRL) > 0:
-			res.append("-b")
-			res.append("RL" + self.cfg.bandwidthRL + self.cfg.bandwidthRLunit + self.cfg.bandwidthRLdistribution)
+			res.append(self.cfg.bandwidth)
+		else:
+			if len(self.cfg.bandwidthLR) > 0:
+				res.append("-b")
+				res.append("LR" + self.cfg.bandwidthLR)
+			if len(self.cfg.bandwidthRL) > 0:
+				res.append("-b")
+				res.append("RL" + self.cfg.bandwidthRL)
 
-		if len(self.cfg.chanbufsizeLR) > 0:
+		if len(self.cfg.chanbufsize) > 0:
 			res.append("-c")
-			res.append("LR" + self.cfg.chanbufsizeLR)
-		if len(self.cfg.chanbufsizeRL) > 0:
-			res.append("-c")
-			res.append("RL" + self.cfg.chanbufsizeRL)
+			res.append(self.cfg.chanbufsize)
+		else:
+			if len(self.cfg.chanbufsizeLR) > 0:
+				res.append("-c")
+				res.append("LR" + self.cfg.chanbufsizeLR)
+			if len(self.cfg.chanbufsizeRL) > 0:
+				res.append("-c")
+				res.append("RL" + self.cfg.chanbufsizeRL)
 
-		if len(self.cfg.noiseLR) > 0:
+		if len(self.cfg.noise) > 0:
 			res.append("-n")
-			res.append("LR" + self.cfg.noiseLR)
-		if len(self.cfg.noiseRL) > 0:
-			res.append("-n")
-			res.append("RL" + self.cfg.noiseRL)
+			res.append(self.cfg.noise)
+		else:
+			if len(self.cfg.noiseLR) > 0:
+				res.append("-n")
+				res.append("LR" + self.cfg.noiseLR)
+			if len(self.cfg.noiseRL) > 0:
+				res.append("-n")
+				res.append("RL" + self.cfg.noiseRL)
 
-		if len(self.cfg.mtuLR) > 0:
+		if len(self.cfg.mtu) > 0:
 			res.append("-m")
-			res.append("LR" + self.cfg.mtuLR)
-		if len(self.cfg.mtuRL) > 0:
-			res.append("-m")
-			res.append("RL" + self.cfg.mtuRL)
+			res.append(self.cfg.mtu)
+		else:			
+			if len(self.cfg.mtuLR) > 0:
+				res.append("-m")
+				res.append("LR" + self.cfg.mtuLR)
+			if len(self.cfg.mtuRL) > 0:
+				res.append("-m")
+				res.append("RL" + self.cfg.mtuRL)
 
-		if len(self.cfg.lostburstLR) > 0:
+		if len(self.cfg.lostburst) > 0:
 			res.append("-L")
-			res.append("LR" + self.cfg.lostburstLR)
-		if len(self.cfg.lostburstRL) > 0:
-			res.append("-L")
-			res.append("RL" + self.cfg.lostburstRL)
+			res.append(self.cfg.lostburst)
+		else:
+			if len(self.cfg.lostburstLR) > 0:
+				res.append("-L")
+				res.append("LR" + self.cfg.lostburstLR)
+			if len(self.cfg.lostburstRL) > 0:
+				res.append("-L")
+				res.append("RL" + self.cfg.lostburstRL)
 
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
