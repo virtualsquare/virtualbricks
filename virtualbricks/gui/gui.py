@@ -1256,7 +1256,21 @@ class VBGUI(Logger, gobject.GObject):
 			text.set_text("")
 			frame_LR.set_sensitive(True)
 			frame_RL.set_sensitive(True)
-			
+	
+	def on_percent_insert_text(self, editable, new_text, new_text_length, position):
+		import re
+		text = editable.get_text() + new_text
+		print text
+		if not re.match("^(?:[1-9]+\.?[0-9]{0,3}|0\.[0-9]{0,3}|0)$", text ):
+			editable.emit_stop_by_name('insert-text')
+	
+	def on_non_negative_insert_text(self, editable, new_text, new_text_length, position):
+		import re
+		text = editable.get_text() + new_text
+		print text
+		if not re.match("^(?:[1-9][0-9]*|0)$", text ):
+			editable.emit_stop_by_name('insert-text')
+	
 	def on_item_quit_activate(self, widget=None, data=""):
 		self.quit()
 

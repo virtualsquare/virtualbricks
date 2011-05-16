@@ -1265,7 +1265,7 @@ class Wirefilter(Wire):
 		res.append('-v')
 		res.append(self.cfg.sock0 + ":" + self.cfg.sock1)
 
-		if len(self.cfg.delay) > 0:
+		if len(self.cfg.delay) > 0 and int(self.cfg.delay) > 0:
 			res.append("-d")
 			res.append(self.cfg.delay)
 		else:
@@ -1276,7 +1276,7 @@ class Wirefilter(Wire):
 				res.append("-d")
 				res.append("RL" + self.cfg.delayRL)
 
-		if len(self.cfg.loss) > 0:
+		if len(self.cfg.loss) > 0 and int(self.cfg.loss) > 0:
 			res.append("-l")
 			res.append(self.cfg.loss)
 		else:
@@ -1287,7 +1287,7 @@ class Wirefilter(Wire):
 				res.append("-l")
 				res.append("RL" + self.cfg.lossRL)
 
-		if len(self.cfg.dup) > 0:
+		if len(self.cfg.dup) > 0 and int(self.cfg.dup) > 0:
 			res.append("-D")
 			res.append(self.cfg.dup)
 		else:
@@ -1298,7 +1298,7 @@ class Wirefilter(Wire):
 				res.append("-D")
 				res.append("RL" + self.cfg.dupRL)
 
-		if len(self.cfg.speed) > 0:
+		if len(self.cfg.speed) > 0 and int(self.cfg.speed) > 0:
 			res.append("-s")
 			res.append(self.cfg.speed)
 		else:
@@ -1309,7 +1309,7 @@ class Wirefilter(Wire):
 				res.append("-s")
 				res.append("RL" + self.cfg.speedRL)
 
-		if len(self.cfg.bandwidth) >0:
+		if len(self.cfg.bandwidth) > 0 and int(self.cfg.bandwidth) > 0:
 			res.append("-b")
 			res.append(self.cfg.bandwidth)
 		else:
@@ -1320,7 +1320,7 @@ class Wirefilter(Wire):
 				res.append("-b")
 				res.append("RL" + self.cfg.bandwidthRL)
 
-		if len(self.cfg.chanbufsize) > 0:
+		if len(self.cfg.chanbufsize) > 0 and int(self.cfg.chanbufsize) > 0:
 			res.append("-c")
 			res.append(self.cfg.chanbufsize)
 		else:
@@ -1331,7 +1331,7 @@ class Wirefilter(Wire):
 				res.append("-c")
 				res.append("RL" + self.cfg.chanbufsizeRL)
 
-		if len(self.cfg.noise) > 0:
+		if len(self.cfg.noise) > 0 and int(self.cfg.noise) > 0:
 			res.append("-n")
 			res.append(self.cfg.noise)
 		else:
@@ -1342,7 +1342,7 @@ class Wirefilter(Wire):
 				res.append("-n")
 				res.append("RL" + self.cfg.noiseRL)
 
-		if len(self.cfg.mtu) > 0:
+		if len(self.cfg.mtu) > 0 and int(self.cfg.mtu) > 0:
 			res.append("-m")
 			res.append(self.cfg.mtu)
 		else:			
@@ -1353,7 +1353,7 @@ class Wirefilter(Wire):
 				res.append("-m")
 				res.append("RL" + self.cfg.mtuRL)
 
-		if len(self.cfg.lostburst) > 0:
+		if len(self.cfg.lostburst) > 0 and int(self.cfg.lostburst) > 0:
 			res.append("-L")
 			res.append(self.cfg.lostburst)
 		else:

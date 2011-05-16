@@ -3642,6 +3642,7 @@ byte/s</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -3701,6 +3702,7 @@ byte/s</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -3827,6 +3829,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -3886,6 +3889,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4022,6 +4026,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4081,6 +4086,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4361,6 +4367,7 @@ byte/s</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4420,6 +4427,7 @@ byte/s</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4546,6 +4554,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4605,6 +4614,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4741,6 +4751,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -4800,6 +4811,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5121,6 +5133,7 @@ milli</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5180,6 +5193,7 @@ milli</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5306,6 +5320,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5365,6 +5380,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5501,6 +5517,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5560,6 +5577,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5840,6 +5858,7 @@ byte/s</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -5899,6 +5918,7 @@ byte/s</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6025,6 +6045,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6084,6 +6105,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6220,6 +6242,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6279,6 +6302,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6576,6 +6600,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6635,6 +6660,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6761,6 +6787,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6820,6 +6847,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -6956,6 +6984,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -7015,6 +7044,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -7292,6 +7322,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -7351,6 +7382,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -7477,6 +7509,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -7536,6 +7569,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -7672,6 +7706,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -7731,6 +7766,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8031,6 +8067,7 @@ byte</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8090,6 +8127,7 @@ byte</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8216,6 +8254,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8275,6 +8314,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8411,6 +8451,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8470,6 +8511,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8747,6 +8789,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8806,6 +8849,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8932,6 +8976,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -8991,6 +9036,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -9127,6 +9173,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -9186,6 +9233,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_percent_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -9496,6 +9544,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -9565,6 +9614,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -9643,6 +9693,7 @@ Gaussian</property>
                                                     <property name="visible">True</property>
                                                     <property name="can_focus">True</property>
                                                     <property name="invisible_char">&#x2022;</property>
+                                                    <signal name="insert_text" handler="on_non_negative_insert_text"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
