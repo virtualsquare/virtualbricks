@@ -29,6 +29,7 @@ import sys
 from threading import Thread
 import time
 from traceback import format_exception
+import re
 
 from virtualbricks import tools
 from virtualbricks.brickfactory import BrickFactory, ValidName, VbShellCommand, RemoteHost
@@ -452,6 +453,13 @@ class VBGUI(Logger, gobject.GObject):
 					if key is "kvm" and self.config.kvm: widget.set_active(True)
 					elif key is not "kvm": widget.set_active(True)
 				else: widget.set_active(False)
+				if b.get_type() == 'Wirefilter':
+					#Trigger wirefilter "symmetrical" checkbox management
+					if key is "speedenable":
+						self.on_wf_speed_checkbox_toggle(widget)
+					#Trigger wirefilter "speed" section management
+					else:
+						self.on_symm_toggle(widget)
 
 		for key in b.cfg.keys():
 			t = b.get_type()
@@ -537,8 +545,7 @@ class VBGUI(Logger, gobject.GObject):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
 			if (widget is not None):
 				txt = widget.get_active_text()
-				if (txt):
-					parameters[key] = txt
+				parameters[key] = txt
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
@@ -1234,24 +1241,56 @@ class VBGUI(Logger, gobject.GObject):
 		text = self.gladefile.get_widget('cfg_' + base_name + '_text')
 		text_LR = self.gladefile.get_widget('cfg_' + base_name + 'LR_text')
 		text_RL = self.gladefile.get_widget('cfg_' + base_name + 'RL_text')
+		text_jitter = self.gladefile.get_widget('cfg_' + base_name + 'J_text')
+		text_jitter_LR = self.gladefile.get_widget('cfg_' + base_name + 'LRJ_text')
+		text_jitter_RL = self.gladefile.get_widget('cfg_' + base_name + 'RLJ_text')
 		frame = self.gladefile.get_widget(base_name + '_frame')
 		frame_LR = self.gladefile.get_widget(base_name + 'LR_frame')
 		frame_RL = self.gladefile.get_widget(base_name + 'RL_frame')
 		if widget.get_active():
 			frame_LR.set_sensitive(False)
 			text_LR.set_text("")
+			if text_jitter_LR: text_jitter_LR.set_text("")
 			frame_RL.set_sensitive(False)
 			text_RL.set_text("")
+			if text_jitter_RL: text_jitter_RL.set_text("")
 			frame.set_sensitive(True)
 			text.set_text("")
+			if text_jitter: text_jitter.set_text("")
 		else:
 			frame.set_sensitive(False)
 			text.set_text("")
+			if text_jitter: text_jitter.set_text("")
 			frame_LR.set_sensitive(True)
 			frame_RL.set_sensitive(True)
-	
+
+	def on_wf_speed_checkbox_toggle(self, widget=None, data=""):
+		frame = self.gladefile.get_widget('Wirefilter_speed_frame')
+		frame_GP = self.gladefile.get_widget('Speed_General_Parameters_Frame')
+		frame_LR = self.gladefile.get_widget('Wirefilter_speedLR_frame')
+		frame_RL = self.gladefile.get_widget('Wirefilter_speedRL_frame')
+		if not widget.get_active():
+			text = self.gladefile.get_widget('cfg_Wirefilter_speed_text')
+			text_LR = self.gladefile.get_widget('cfg_Wirefilter_speedLR_text')
+			text_RL = self.gladefile.get_widget('cfg_Wirefilter_speedRL_text')
+			text_jitter = self.gladefile.get_widget('cfg_Wirefilter_speedJ_text')
+			text_jitter_LR = self.gladefile.get_widget('cfg_Wirefilter_speedLRJ_text')
+			text_jitter_RL = self.gladefile.get_widget('cfg_Wirefilter_speedRLJ_text')
+			text.set_text("")
+			text_LR.set_text("")
+			text_RL.set_text("")
+			text_jitter.set_text("")
+			text_jitter_LR.set_text("")
+			text_jitter_RL.set_text("")
+			frame.set_sensitive(False)
+			frame_LR.set_sensitive(False)
+			frame_RL.set_sensitive(False)
+			frame_GP.set_sensitive(False)
+		else:
+			frame_GP.set_sensitive(True)
+			self.on_symm_toggle(self.gladefile.get_widget('cfg_Wirefilter_speedsymm_check'))
+			
 	def on_percent_insert_text(self, editable, new_text, new_text_length, position):
-		import re
 		text = editable.get_text() + new_text
 		if not re.match("^(?:[1-9]+\.?[0-9]{0,3}|0\.[0-9]{0,3}|0)$", text ):
 			editable.emit_stop_by_name('insert-text')

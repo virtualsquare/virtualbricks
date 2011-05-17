@@ -1193,6 +1193,9 @@ class Wirefilter(Wire):
 		self.cfg.bandwidthLR = ""
 		self.cfg.bandwidthRL = ""
 		self.cfg.bandwidth = ""
+		self.cfg.bandwidthLRJ = ""
+		self.cfg.bandwidthRLJ = ""
+		self.cfg.bandwidthJ = ""
 		self.cfg.bandwidthmult = "Mega"
 		self.cfg.bandwidthunit = "bit/s"
 		self.cfg.bandwidthdistribLR = "Uniform"
@@ -1203,16 +1206,23 @@ class Wirefilter(Wire):
 		self.cfg.speedLR = ""
 		self.cfg.speedRL = ""
 		self.cfg.speed = ""
+		self.cfg.speedLRJ = ""
+		self.cfg.speedRLJ = ""
+		self.cfg.speedJ = ""
 		self.cfg.speedmult = "Mega"
-		self.cfg.speedunit = "byte/s"
+		self.cfg.speedunit = "bit/s"
 		self.cfg.speeddistribLR = "Uniform"
 		self.cfg.speeddistribRL = "Uniform"
 		self.cfg.speeddistrib = "Uniform"
 		self.cfg.speedsymm = "*"
+		self.cfg.speedenable = ""
 		
 		self.cfg.delayLR = ""
 		self.cfg.delayRL = ""
 		self.cfg.delay = ""
+		self.cfg.delayLRJ = ""
+		self.cfg.delayRLJ = ""
+		self.cfg.delayJ = ""
 		self.cfg.delaymult = "milli"
 		self.cfg.delayunit = "seconds"
 		self.cfg.delaydistribLR = "Uniform"
@@ -1223,8 +1233,11 @@ class Wirefilter(Wire):
 		self.cfg.chanbufsizeLR = ""
 		self.cfg.chanbufsizeRL = ""
 		self.cfg.chanbufsize = ""
-		self.cfg.chanbufsizemult = "Mega"
-		self.cfg.chanbufsizeunit = "bit/s"
+		self.cfg.chanbufsizeLRJ = ""
+		self.cfg.chanbufsizeRLJ = ""
+		self.cfg.chanbufsizeJ = ""
+		self.cfg.chanbufsizemult = "Kilo"
+		self.cfg.chanbufsizeunit = "bytes"
 		self.cfg.chanbufsizedistribLR = "Uniform"
 		self.cfg.chanbufsizedistribRL = "Uniform"
 		self.cfg.chanbufsizedistrib = "Uniform"
@@ -1233,6 +1246,9 @@ class Wirefilter(Wire):
 		self.cfg.lossLR = ""
 		self.cfg.lossRL = ""
 		self.cfg.loss = ""
+		self.cfg.lossLRJ = ""
+		self.cfg.lossRLJ = ""
+		self.cfg.lossJ = ""
 		self.cfg.lossmult = ""
 		self.cfg.lossunit = "%"
 		self.cfg.lossdistribLR = "Uniform"
@@ -1243,6 +1259,9 @@ class Wirefilter(Wire):
 		self.cfg.dupLR = ""
 		self.cfg.dupRL = ""
 		self.cfg.dup = ""
+		self.cfg.dupLRJ = ""
+		self.cfg.dupRLJ = ""
+		self.cfg.dupJ = ""
 		self.cfg.dupmult = ""
 		self.cfg.dupunit = "%"
 		self.cfg.dupdistribLR = "Uniform"
@@ -1253,6 +1272,9 @@ class Wirefilter(Wire):
 		self.cfg.noiseLR = ""
 		self.cfg.noiseRL = ""
 		self.cfg.noise = ""
+		self.cfg.noiseLRJ = ""
+		self.cfg.noiseRLJ = ""
+		self.cfg.noiseJ = ""
 		self.cfg.noisemult = "Mega"
 		self.cfg.noiseunit = "bit"
 		self.cfg.noisedistribLR = "Uniform"
@@ -1263,6 +1285,9 @@ class Wirefilter(Wire):
 		self.cfg.lostburstLR = ""
 		self.cfg.lostburstRL = ""
 		self.cfg.lostburst = ""
+		self.cfg.lostburstLRJ = ""
+		self.cfg.lostburstRLJ = ""
+		self.cfg.lostburstJ = ""
 		self.cfg.lostburstmult = ""
 		self.cfg.lostburstunit = "seconds"
 		self.cfg.lostburstdistribLR = "Uniform"
@@ -1277,110 +1302,292 @@ class Wirefilter(Wire):
 		self.cfg.mtuunit = "bytes"
 		self.cfg.mtusymm = "*"
 
+	def gui_to_wf_value(self, base, jitter, distrib, mult, unit, def_mult="", def_unit=""):
+		#print (base,jitter,distrib,mult,unit,def_mult,def_unit)
+		b = base
+		if not b: return "0"
+
+		u = unit
+		if u != def_unit:
+			if def_unit.startswith("byte"):
+				b = float(b) / 8
+			else: b = float(b) * 8
+
+		value = str(round(float(b), 6)) # f.e. 50
+
+		if mult != def_mult:
+			if mult is "milli" and def_mult is "": m = "K"
+			else: m = mult[0]
+		else: m = ""
+
+		j = jitter
+		if j is not "":
+			if def_unit is not "%":
+				j = str(round((float(b) * float(j)/100), 6)) + m # GUI=100K(+-)10% becomes WF=100+20K
+			else: j = str(round(float(j), 6))
+
+		if distrib and distrib[0] is ("G" or "N"):
+			d = "N"
+		else: d = "U"
+
+		if j is not "":
+			value = value + "+" + j # f.e. 50+5K
+			value = value + d # f.e. 50+5KU/N
+		else: value = value + m # f.e. 50K
+
+		return str(value)
+		
+	def compute_bandwidth(self):
+		return self.gui_to_wf_value(self.cfg.bandwidth, self.cfg.bandwidthJ,\
+								self.cfg.bandwidthdistrib, self.cfg.bandwidthmult,\
+								self.cfg.bandwidthunit, "", "byte/s")
+
+	def compute_bandwidthLR(self):
+	 	return self.gui_to_wf_value(self.cfg.bandwidthLR, self.cfg.bandwidthLRJ,\
+									self.cfg.bandwidthdistribLR, self.cfg.bandwidthmult,\
+									self.cfg.bandwidthunit, "", "byte/s")
+
+	def compute_bandwidthRL(self):
+	 	return self.gui_to_wf_value(self.cfg.bandwidthRL, self.cfg.bandwidthRLJ, self.cfg.bandwidthdistribRL, self.cfg.bandwidthmult, 
+									self.cfg.bandwidthunit, "", "byte/s")
+
+	def compute_speed(self):
+		return self.gui_to_wf_value(self.cfg.speed, self.cfg.speedJ, self.cfg.speeddistrib, self.cfg.speedmult, 
+									self.cfg.speedunit, "", "byte/s")
+
+	def compute_speedLR(self):
+		return self.gui_to_wf_value(self.cfg.speedLR, self.cfg.speedLRJ, self.cfg.speeddistribLR, self.cfg.speedmult, 
+									self.cfg.speedunit, "", "byte/s")
+
+	def compute_speedRL(self):
+		return self.gui_to_wf_value(self.cfg.speedRL, self.cfg.speedRLJ, self.cfg.speeddistribRL, self.cfg.speedmult, 
+									self.cfg.speedunit, "", "byte/s")
+
+	def compute_delay(self):
+		return self.gui_to_wf_value(self.cfg.delay, self.cfg.delayJ, self.cfg.delaydistrib, self.cfg.delaymult, 
+									self.cfg.delayunit, "milli", "seconds")
+
+	def compute_delayLR(self):
+		return self.gui_to_wf_value(self.cfg.delayLR, self.cfg.delayLRJ, self.cfg.delaydistribLR, self.cfg.delaymult, 
+									self.cfg.delayunit, "milli", "seconds")
+
+	def compute_delayRL(self):
+		return self.gui_to_wf_value(self.cfg.delayRL, self.cfg.delayRLJ, self.cfg.delaydistribRL, self.cfg.delaymult, 
+									self.cfg.delayunit, "milli", "seconds")
+
+	def compute_chanbufsize(self):
+		return self.gui_to_wf_value(self.cfg.chanbufsize, self.cfg.chanbufsizeJ, self.cfg.chanbufsizedistrib, self.cfg.chanbufsizemult, 
+									self.cfg.chanbufsizeunit, "", "bytes")
+
+	def compute_chanbufsizeLR(self):
+		return self.gui_to_wf_value(self.cfg.chanbufsizeLR, self.cfg.chanbufsizeLRJ, self.cfg.chanbufsizedistribLR, self.cfg.chanbufsizemult, 
+									self.cfg.chanbufsizeunit, "", "bytes")
+
+
+	def compute_chanbufsizeRL(self):
+		return self.gui_to_wf_value(self.cfg.chanbufsizeRL, self.cfg.chanbufsizeRLJ, self.cfg.chanbufsizedistribRL, self.cfg.chanbufsizemult, 
+									self.cfg.chanbufsizeunit, "", "bytes")
+
+	def compute_loss(self):
+		return self.gui_to_wf_value(self.cfg.loss, self.cfg.lossJ, self.cfg.lossdistrib, self.cfg.lossmult, 
+									self.cfg.lossunit, "", "%")
+
+	def compute_lossLR(self):
+		return self.gui_to_wf_value(self.cfg.lossLR, self.cfg.lossLRJ, self.cfg.lossdistribLR, self.cfg.lossmult, 
+									self.cfg.lossunit, "", "%")
+
+	def compute_lossRL(self):
+		return self.gui_to_wf_value(self.cfg.lossRL, self.cfg.lossRLJ, self.cfg.lossdistribRL, self.cfg.lossmult, 
+									self.cfg.lossunit, "", "%")
+
+	def compute_dup(self):
+		return self.gui_to_wf_value(self.cfg.dup, self.cfg.dupJ, self.cfg.dupdistrib, self.cfg.dupmult, 
+									self.cfg.dupunit, "", "%")
+
+	def compute_dupLR(self):
+		return self.gui_to_wf_value(self.cfg.dupLR, self.cfg.dupLRJ, self.cfg.dupdistribLR, self.cfg.dupmult, 
+									self.cfg.dupunit, "", "%")
+
+	def compute_dupRL(self):
+		return self.gui_to_wf_value(self.cfg.dupRL, self.cfg.dupRLJ, self.cfg.dupdistribRL, self.cfg.dupmult, 
+									self.cfg.dupunit, "", "%")
+
+	def compute_noise(self):
+		return self.gui_to_wf_value(self.cfg.noise, self.cfg.noiseJ, self.cfg.noisedistrib, self.cfg.noisemult, 
+									self.cfg.noiseunit, "Mega", "bit")
+
+	def compute_noiseLR(self):
+		return self.gui_to_wf_value(self.cfg.noiseLR, self.cfg.noiseLRJ, self.cfg.noisedistribLR, self.cfg.noisemult, 
+									self.cfg.noiseunit, "Mega", "bit")
+
+	def compute_noiseRL(self):
+		return self.gui_to_wf_value(self.cfg.noiseRL, self.cfg.noiseRLJ, self.cfg.noisedistribRL, self.cfg.noisemult, 
+									self.cfg.noiseunit, "Mega", "bit")
+
+	def compute_lostburst(self):
+		return self.gui_to_wf_value(self.cfg.lostburst, self.cfg.lostburstJ, self.cfg.lostburstdistrib, self.cfg.lostburstmult, 
+									self.cfg.lostburstunit, "", "seconds")
+
+	def compute_lostburstLR(self):
+		return self.gui_to_wf_value(self.cfg.lostburstLR, self.cfg.lostburstLRJ, self.cfg.lostburstdistribLR, self.cfg.lostburstmult, 
+									self.cfg.lostburstunit, "", "seconds")
+
+	def compute_lostburstRL(self):
+		return self.gui_to_wf_value(self.cfg.lostburstRL, self.cfg.lostburstRLJ, self.cfg.lostburstdistribRL, self.cfg.lostburstmult, 
+									self.cfg.lostburstunit, "", "seconds")
+
+	def compute_mtu(self):
+		return self.gui_to_wf_value(self.cfg.mtu, "", "", self.cfg.mtumult, 
+									self.cfg.mtuunit, "", "bytes")
+
+	def compute_mtuLR(self):
+		return self.gui_to_wf_value(self.cfg.mtuLR, "", "", self.cfg.mtumult, 
+									self.cfg.mtuunit, "", "bytes")
+
+	def compute_mtuRL(self):
+		return self.gui_to_wf_value(self.cfg.mtuRL, "", "", self.cfg.mtumult, 
+									self.cfg.mtuunit, "", "bytes")
+
 	def args(self):
 		res = []
 		res.append(self.prog())
 		res.append('-v')
 		res.append(self.cfg.sock0 + ":" + self.cfg.sock1)
 
-		if len(self.cfg.delay) > 0 and int(self.cfg.delay) > 0:
-			res.append("-d")
-			res.append(self.cfg.delay)
-		else:
-			if len(self.cfg.delayLR) > 0:
-				res.append("-d")
-				res.append("LR" + self.cfg.delayLR)
-			if len(self.cfg.delayRL) > 0:
-				res.append("-d")
-				res.append("RL" + self.cfg.delayRL)
-
-		if len(self.cfg.loss) > 0 and int(self.cfg.loss) > 0:
-			res.append("-l")
-			res.append(self.cfg.loss)
-		else:
-			if len(self.cfg.lossLR) > 0:
-				res.append("-l")
-				res.append("LR" + self.cfg.lossLR)
-			if len(self.cfg.lossRL) > 0:
-				res.append("-l")
-				res.append("RL" + self.cfg.lossRL)
-
-		if len(self.cfg.dup) > 0 and int(self.cfg.dup) > 0:
-			res.append("-D")
-			res.append(self.cfg.dup)
-		else:
-			if len(self.cfg.dupLR) > 0:
-				res.append("-D")
-				res.append("LR" + self.cfg.dupLR)
-			if len(self.cfg.dupRL) > 0:
-				res.append("-D")
-				res.append("RL" + self.cfg.dupRL)
-
-		if len(self.cfg.speed) > 0 and int(self.cfg.speed) > 0:
-			res.append("-s")
-			res.append(self.cfg.speed)
-		else:
-			if len(self.cfg.speedLR) > 0:
-				res.append("-s")
-				res.append("LR" + self.cfg.speedLR)
-			if len(self.cfg.speedRL) > 0:
-				res.append("-s")
-				res.append("RL" + self.cfg.speedRL)
-
+		#Bandwidth
 		if len(self.cfg.bandwidth) > 0 and int(self.cfg.bandwidth) > 0:
 			res.append("-b")
-			res.append(self.cfg.bandwidth)
+			value = self.compute_bandwidth()
+			res.append(value)
 		else:
 			if len(self.cfg.bandwidthLR) > 0:
 				res.append("-b")
-				res.append("LR" + self.cfg.bandwidthLR)
+				value = self.compute_bandwidthLR()
+				res.append("LR" + value)
 			if len(self.cfg.bandwidthRL) > 0:
 				res.append("-b")
-				res.append("RL" + self.cfg.bandwidthRL)
+				value = self.compute_bandwidthRL()
+				res.append("RL" + value)
 
+		#Speed
+		if len(self.cfg.speed) > 0 and int(self.cfg.speed) > 0:
+			res.append("-s")
+			value = self.compute_speed()
+			res.append(value)
+		else:
+			if len(self.cfg.speedLR) > 0:
+				res.append("-s")
+				value = self.compute_speedLR()
+				res.append("LR" + value)
+			if len(self.cfg.speedRL) > 0:
+				res.append("-s")
+				value = self.compute_speedRL()
+				res.append("RL" + value)
+
+		#Delay
+		if len(self.cfg.delay) > 0 and int(self.cfg.delay) > 0:
+			res.append("-d")
+			value = self.compute_delay()
+			res.append(value)
+		else:
+			if len(self.cfg.delayLR) > 0:
+				res.append("-d")
+				value = self.compute_delayLR()
+				res.append("LR" + value)
+			if len(self.cfg.delayRL) > 0:
+				res.append("-d")
+				value = self.compute_delayRL()
+				res.append("RL" + value)
+
+		#Chanbufsize
 		if len(self.cfg.chanbufsize) > 0 and int(self.cfg.chanbufsize) > 0:
 			res.append("-c")
-			res.append(self.cfg.chanbufsize)
+			value = self.compute_chanbufsize()
+			res.append(value)
 		else:
 			if len(self.cfg.chanbufsizeLR) > 0:
 				res.append("-c")
-				res.append("LR" + self.cfg.chanbufsizeLR)
+				value = self.compute_chanbufsizeLR()
+				res.append("LR" + value)
 			if len(self.cfg.chanbufsizeRL) > 0:
 				res.append("-c")
-				res.append("RL" + self.cfg.chanbufsizeRL)
+				value = self.compute_chanbufsizeRL()
+				res.append("RL" + value)
 
+		#Loss
+		if len(self.cfg.loss) > 0 and int(self.cfg.loss) > 0:
+			res.append("-l")
+			value = self.compute_loss()
+			res.append(value)
+		else:
+			if len(self.cfg.lossLR) > 0:
+				res.append("-l")
+				value = self.compute_lossLR()
+				res.append("LR" + value)
+			if len(self.cfg.lossRL) > 0:
+				res.append("-l")
+				value = self.compute_lossRL()
+				res.append("RL" + value)
+
+		#Dup
+		if len(self.cfg.dup) > 0 and int(self.cfg.dup) > 0:
+			res.append("-D")
+			value = self.compute_dup()
+			res.append(value)
+		else:
+			if len(self.cfg.dupLR) > 0:
+				res.append("-D")
+				value = self.compute_dupLR()
+				res.append("LR" + value)
+			if len(self.cfg.dupRL) > 0:
+				res.append("-D")
+				value = self.compute_dupRL()
+				res.append("RL" + value)
+
+		#Noise
 		if len(self.cfg.noise) > 0 and int(self.cfg.noise) > 0:
 			res.append("-n")
-			res.append(self.cfg.noise)
+			value = self.compute_noise()
+			res.append(value)
 		else:
 			if len(self.cfg.noiseLR) > 0:
 				res.append("-n")
-				res.append("LR" + self.cfg.noiseLR)
+				value = self.compute_noiseLR()
+				res.append("LR" + value)
 			if len(self.cfg.noiseRL) > 0:
 				res.append("-n")
-				res.append("RL" + self.cfg.noiseRL)
+				value = self.compute_noiseRL()
+				res.append("RL" + value)
 
-		if len(self.cfg.mtu) > 0 and int(self.cfg.mtu) > 0:
-			res.append("-m")
-			res.append(self.cfg.mtu)
-		else:			
-			if len(self.cfg.mtuLR) > 0:
-				res.append("-m")
-				res.append("LR" + self.cfg.mtuLR)
-			if len(self.cfg.mtuRL) > 0:
-				res.append("-m")
-				res.append("RL" + self.cfg.mtuRL)
-
+		#Lostburst
 		if len(self.cfg.lostburst) > 0 and int(self.cfg.lostburst) > 0:
 			res.append("-L")
-			res.append(self.cfg.lostburst)
+			value = self.compute_lostburst()
+			res.append(value)
 		else:
 			if len(self.cfg.lostburstLR) > 0:
 				res.append("-L")
-				res.append("LR" + self.cfg.lostburstLR)
+				value = self.compute_lostburstLR()
+				res.append("LR" + value)
 			if len(self.cfg.lostburstRL) > 0:
 				res.append("-L")
-				res.append("RL" + self.cfg.lostburstRL)
+				value = self.compute_lostburstRL()
+				res.append("RL" + value)
+
+		#MTU
+		if len(self.cfg.mtu) > 0 and int(self.cfg.mtu) > 0:
+			res.append("-m")
+			value = self.compute_mtu()
+			res.append(value)
+		else:			
+			if len(self.cfg.mtuLR) > 0:
+				res.append("-m")
+				value = self.compute_mtuLR()
+				res.append("LR" + value)
+			if len(self.cfg.mtuRL) > 0:
+				res.append("-m")
+				value = self.compute_mtuRL()
+				res.append("RL" + value)
 
 		for param in Brick.build_cmd_line(self):
 			res.append(param)
@@ -1393,152 +1600,203 @@ class Wirefilter(Wire):
 		return 'Wirefilter'
 
 	#callbacks for live-management
-	def cbset_lossLR(self, arg=0):
-		self.debug(self.name + ": callback 'loss LR' with argument " + arg)
-		self.send("loss LR " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_lossRL(self, arg=0):
-		self.debug(self.name + ": callback 'loss RL' with argument " + arg)
-		self.send("loss RL " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_loss(self, arg=0):
-		self.debug(self.name + ": callback 'loss LR&RL' with argument " + arg)
-		self.send("loss " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_speedLR(self, arg=0):
-		self.debug(self.name + ": callback 'speed LR' with argument " + arg)
-		self.send("speed LR " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_speedRL(self, arg=0):
-		self.debug(self.name + ": callback 'speed RL' with argument " + arg)
-		self.send("speed RL " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_speed(self, arg=0):
-		self.debug(self.name + ": callback 'speed LR&RL' with argument " + arg)
-		self.send("speed " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_noiseLR(self, arg=0):
-		self.debug(self.name + ": callback 'noise LR' with argument " + arg)
-		self.send("noise LR " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_noiseRL(self, arg=0):
-		self.debug(self.name + ": callback 'noise RL' with argument " + arg)
-		self.send("noise RL " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_noise(self, arg=0):
-		self.debug(self.name + ": callback 'noise LR&RL' with argument " + arg)
-		self.send("noise " + arg + "\n")
-		self.debug(self.recv())
-
 	def cbset_bandwidthLR(self, arg=0):
-		self.debug(self.name + ": callback 'bandwidth LR' with argument " + arg)
-		self.send("bandwidth LR " + arg + "\n")
+		if not self.active: return
+		value = self.compute_bandwidthLR()
+		self.debug(self.name + ": callback 'bandwidth LR' with argument " + value)
+		self.send("bandwidth LR " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_bandwidthRL(self, arg=0):
-		self.debug(self.name + ": callback 'bandwidth RL' with argument " + arg)
-		self.send("bandwidth RL " + arg + "\n")
+		if not self.active: return
+		value = self.compute_bandwidthRL()
+		self.debug(self.name + ": callback 'bandwidth RL' with argument " + value)
+		self.send("bandwidth RL " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_bandwidth(self, arg=0):
-		self.debug(self.name + ": callback 'bandwidth RL&LR' with argument " + arg)
-		self.send("bandwidth " + arg + "\n")
+		if not self.active: return
+		if self.cfg.bandwidthsymm != "*": return
+		value = self.compute_bandwidth()
+		self.debug(self.name + ": callback 'bandwidth RL&LR' with argument " + value)
+		self.send("bandwidth " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_speedLR(self, arg=0):
+		if not self.active: return
+		value = self.compute_speedLR()
+		self.debug(self.name + ": callback 'speed LR' with argument " + value)
+		self.send("speed LR " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_speedRL(self, arg=0):
+		if not self.active: return
+		value = self.compute_speedRL()
+		self.debug(self.name + ": callback 'speed RL' with argument " + value)
+		self.send("speed RL " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_speed(self, arg=0):
+		if not self.active: return
+		if self.cfg.speedsymm != "*": return
+		value = self.compute_speed()
+		self.debug(self.name + ": callback 'speed LR&RL' with argument " + value)
+		self.send("speed " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_delayLR(self, arg=0):
-		self.debug(self.name + ": callback 'delay LR' with argument " + arg)
-		self.send("delay LR " + arg + "\n")
+		if not self.active: return
+		value = self.compute_delayLR()
+		self.debug(self.name + ": callback 'delay LR' with argument " + value)
+		self.send("delay LR " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_delayRL(self, arg=0):
-		self.debug(self.name + ": callback 'delay RL' with argument " + arg)
-		self.send("delay RL " + arg + "\n")
+		if not self.active: return
+		value = self.compute_delayRL()
+		self.debug(self.name + ": callback 'delay RL' with argument " + value)
+		self.send("delay RL " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_delay(self, arg=0):
-		self.debug(self.name + ": callback 'delay LR&RL' with argument " + arg)
-		self.send("delay " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_dupLR(self, arg=0):
-		self.debug(self.name + ": callback 'dup LR' with argument " + arg)
-		self.send("dup LR " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_dupRL(self, arg=0):
-		self.debug(self.name + ": callback 'dup RL' with argument " + arg)
-		self.send("dup RL " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_dup(self, arg=0):
-		self.debug(self.name + ": callback 'dup RL&LR' with argument " + arg)
-		self.send("dup " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_mtuLR(self, arg=0):
-		self.debug(self.name + ": callback 'mtu LR' with argument " + arg)
-		self.send("mtu LR " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_mtuRL(self, arg=0):
-		self.debug(self.name + ": callback 'mtu RL' with argument " + arg)
-		self.send("mtu RL " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_mtu(self, arg=0):
-		self.debug(self.name + ": callback 'mtu LR&RL' with argument " + arg)
-		self.send("mtu " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_lostburstLR(self, arg=0):
-		self.debug(self.name + ": callback 'lostburst LR' with argument " + arg)
-		self.send("lostburst LR " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_lostburstRL(self, arg=0):
-		self.debug(self.name + ": callback 'lostburst RL' with argument " + arg)
-		self.send("lostburst RL " + arg + "\n")
-		self.debug(self.recv())
-
-	def cbset_lostburst(self, arg=0):
-		self.debug(self.name + ": callback 'lostburst RL&RL' with argument " + arg)
-		self.send("lostburst " + arg + "\n")
+		if not self.active: return
+		if self.cfg.delaysymm != "*": return
+		value = self.compute_delay()
+		self.debug(self.name + ": callback 'delay LR&RL' with argument " + value)
+		self.send("delay " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_chanbufsizeLR(self, arg=0):
-		self.debug(self.name + ": callback 'chanbufsize (capacity) LR' with argument " + arg)
-		self.send("chanbufsize LR " + arg + "\n")
+		if not self.active: return
+		value = self.compute_chanbufsizeLR()
+		self.debug(self.name + ": callback 'chanbufsize (capacity) LR' with argument " + value)
+		self.send("chanbufsize LR " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_chanbufsizeRL(self, arg=0):
-		self.debug(self.name + ": callback 'chanbufsize (capacity) RL' with argument " + arg)
-		self.send("chanbufsize RL " + arg + "\n")
+		if not self.active: return
+		value = self.compute_chanbufsizeRL()
+		self.debug(self.name + ": callback 'chanbufsize (capacity) RL' with argument " + value)
+		self.send("chanbufsize RL " + value + "\n")
 		self.debug(self.recv())
 
 	def cbset_chanbufsize(self, arg=0):
-		self.debug(self.name + ": callback 'chanbufsize (capacity) LR&RL' with argument " + arg)
-		self.send("chanbufsize " + arg + "\n")
+		if not self.active: return
+		if self.cfg.chanbufsizesymm != "*": return
+		value = self.compute_chanbufsize()
+		self.debug(self.name + ": callback 'chanbufsize (capacity) LR&RL' with argument " + value)
+		self.send("chanbufsize " + value + "\n")
 		self.debug(self.recv())
 
-	#Follows a "duplicate" code of "chanbufsizeXX", because chanbufsize was called
-	#capacity before. Justo to be sure...
-	#Remove when will be sure that "capacity" will not be used anymore.
-	def cbset_capacityLR(self, arg=0):
-		self.cbset_chanbufsizeLR(arg)
+	def cbset_lossLR(self, arg=0):
+		if not self.active: return
+		value = self.compute_lossLR()
+		self.debug(self.name + ": callback 'loss LR' with argument " + value)
+		self.send("loss LR " + value + "\n")
+		self.debug(self.recv())
 
-	def cbset_capacityRL(self, arg=0):
-		self.cbset_chanbufsizeRL(arg)
+	def cbset_lossRL(self, arg=0):
+		if not self.active: return
+		value = self.compute_lossRL()
+		self.debug(self.name + ": callback 'loss RL' with argument " + value)
+		self.send("loss RL " + value + "\n")
+		self.debug(self.recv())
 
-	def cbset_capacity(self, arg=0):
-		self.cbset_chanbufsize(arg)
+	def cbset_loss(self, arg=0):
+		if not self.active: return
+		if self.cfg.losssymm != "*": return
+		value = self.compute_loss()
+		self.debug(self.name + ": callback 'loss LR&RL' with argument " + value)
+		self.send("loss " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_dupLR(self, arg=0):
+		if not self.active: return
+		value = self.compute_dupLR()
+		self.debug(self.name + ": callback 'dup LR' with argument " + value)
+		self.send("dup LR " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_dupRL(self, arg=0):
+		if not self.active: return
+		value = self.compute_dupRL()
+		self.debug(self.name + ": callback 'dup RL' with argument " + value)
+		self.send("dup RL " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_dup(self, arg=0):
+		if not self.active: return
+		if self.cfg.dupsymm != "*": return
+		value = self.compute_dup()
+		self.debug(self.name + ": callback 'dup RL&LR' with argument " + value)
+		self.send("dup " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_noiseLR(self, arg=0):
+		if not self.active: return
+		value = self.compute_noiseLR()
+		self.debug(self.name + ": callback 'noise LR' with argument " + value)
+		self.send("noise LR " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_noiseRL(self, arg=0):
+		if not self.active: return
+		value = self.compute_noiseRL()
+		self.debug(self.name + ": callback 'noise RL' with argument " + value)
+		self.send("noise RL " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_noise(self, arg=0):
+		if not self.active: return
+		if self.cfg.noisesymm != "*": return
+		value = self.compute_noise()
+		self.debug(self.name + ": callback 'noise LR&RL' with argument " + value)
+		self.send("noise " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_lostburstLR(self, arg=0):
+		if not self.active: return
+		value = self.compute_lostburstLR()
+		self.debug(self.name + ": callback 'lostburst LR' with argument " + value)
+		self.send("lostburst LR " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_lostburstRL(self, arg=0):
+		if not self.active: return
+		value = self.compute_lostburstRL()
+		self.debug(self.name + ": callback 'lostburst RL' with argument " + value)
+		self.send("lostburst RL " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_lostburst(self, arg=0):
+		if not self.active: return
+		if self.cfg.lostburstsymm != "*": return
+		value = self.compute_lostburst()
+		self.debug(self.name + ": callback 'lostburst RL&RL' with argument " + value)
+		self.send("lostburst " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_mtuLR(self, arg=0):
+		if not self.active: return
+		value = self.compute_mtuLR()
+		self.debug(self.name + ": callback 'mtu LR' with argument " + value)
+		self.send("mtu LR " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_mtuRL(self, arg=0):
+		if not self.active: return
+		value = self.compute_mtuRL()
+		self.debug(self.name + ": callback 'mtu RL' with argument " + value)
+		self.send("mtu RL " + value + "\n")
+		self.debug(self.recv())
+
+	def cbset_mtu(self, arg=0):
+		if not self.active: return
+		if self.cfg.mtusymm != "*": return
+		value = self.compute_mtu()
+		self.debug(self.name + ": callback 'mtu LR&RL' with argument " + value)
+		self.send("mtu " + value + "\n")
+		self.debug(self.recv())
 
 class TunnelListen(Brick):
 	def __init__(self, _factory, _name):
