@@ -100,7 +100,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.topology_active = False
 
 		self.sockscombo = dict()
-		self.set_nonsensitivegroup(['cfg_Wirefilter_lostburst_text', 'cfg_Wirefilter_mtu_text'])
 
 		self.running_bricks = self.treestore('treeview_joblist', [gtk.gdk.Pixbuf,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
@@ -442,8 +441,6 @@ class VBGUI(Logger, gobject.GObject):
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled from Properties"))
 				b.cfg.kvm=""
 
-
-
 		self.update_vmplugs_tree()
 
 		for key in b.cfg.keys():
@@ -476,6 +473,20 @@ class VBGUI(Logger, gobject.GObject):
 				for k, v in dicts[key].iteritems():
 					if (v==b.cfg[key]):
 						ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
+
+			#what a mess...
+			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
+			if (widget is not None):
+				model = widget.get_model()
+				iter = model.get_iter_first()
+				i = 0
+				while iter:
+					if model.get_value(iter,0)==b.cfg[key]:
+						widget.set_active(i)
+						break
+					else:
+						iter=model.iter_next(iter)
+						i = i + 1
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if (widget is not None and len(b.cfg[key]) > 0):
@@ -527,7 +538,7 @@ class VBGUI(Logger, gobject.GObject):
 			if (widget is not None):
 				txt = widget.get_active_text()
 				if (txt):
-					parameters[key] = txt[0]
+					parameters[key] = txt
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None):
@@ -1218,26 +1229,8 @@ class VBGUI(Logger, gobject.GObject):
 			w = self.gladefile.get_widget(i)
 			w.set_sensitive(False)
 
-	def on_gilbert_toggle(self, widget=None, data=""):
-		currentwidget = self.gladefile.get_widget('cfg_Wirefilter_lostburst_text')
-		if widget.get_active():
-			currentwidget.set_sensitive(True)
-			currentwidget.set_text("0")
-		else:
-			currentwidget.set_text("")
-			currentwidget.set_sensitive(False)
-
-	def on_mtu_toggle(self, widget=None, data=""):
-		currentwidget = self.gladefile.get_widget('cfg_Wirefilter_mtu_text')
-		if widget.get_active():
-			currentwidget.set_sensitive(True)
-			currentwidget.set_text("1024")
-		else:
-			currentwidget.set_text("")
-			currentwidget.set_sensitive(False)
-
 	def on_symm_toggle(self, widget=None, data=""):
-		base_name = widget.name.rstrip("check").rstrip("_")
+		base_name = widget.name.replace("cfg_","").replace("symm_check","")
 		text = self.gladefile.get_widget('cfg_' + base_name + '_text')
 		text_LR = self.gladefile.get_widget('cfg_' + base_name + 'LR_text')
 		text_RL = self.gladefile.get_widget('cfg_' + base_name + 'RL_text')
@@ -1260,14 +1253,12 @@ class VBGUI(Logger, gobject.GObject):
 	def on_percent_insert_text(self, editable, new_text, new_text_length, position):
 		import re
 		text = editable.get_text() + new_text
-		print text
 		if not re.match("^(?:[1-9]+\.?[0-9]{0,3}|0\.[0-9]{0,3}|0)$", text ):
 			editable.emit_stop_by_name('insert-text')
 	
 	def on_non_negative_insert_text(self, editable, new_text, new_text_length, position):
 		import re
 		text = editable.get_text() + new_text
-		print text
 		if not re.match("^(?:[1-9][0-9]*|0)$", text ):
 			editable.emit_stop_by_name('insert-text')
 	

@@ -312,8 +312,9 @@ class BrickConfig(dict):
 		#else: self.debug("callback not found for key: %s" % (key))
 
 	def dump(self):
-		for (k, v) in self.iteritems():
-			print "%s=%s" % (k, v)
+		keys = sorted(self.keys())
+		for k in keys:
+			print "%s=%s" % (k, self[k])
 
 class Brick(ChildLogger):
 	def __init__(self, _factory, _name, homehost=""):
@@ -1192,72 +1193,89 @@ class Wirefilter(Wire):
 		self.cfg.bandwidthLR = ""
 		self.cfg.bandwidthRL = ""
 		self.cfg.bandwidth = ""
-		self.cfg.bandwidthLRunit = ""
-		self.cfg.bandwidthRLunit = ""
-		self.cfg.bandwidthLRdistribution = ""
-		self.cfg.bandwidthRLdistribution = ""
+		self.cfg.bandwidthmult = "Mega"
+		self.cfg.bandwidthunit = "bit/s"
+		self.cfg.bandwidthdistribLR = "Uniform"
+		self.cfg.bandwidthdistribRL = "Uniform"
+		self.cfg.bandwidthdistrib = "Uniform"
+		self.cfg.bandwidthsymm = "*"
 		
 		self.cfg.speedLR = ""
 		self.cfg.speedRL = ""
 		self.cfg.speed = ""
-		self.cfg.speedLRunit = ""
-		self.cfg.speedRLunit = ""
-		self.cfg.speedLRdistribution = ""
-		self.cfg.speedRLdistribution = ""
+		self.cfg.speedmult = "Mega"
+		self.cfg.speedunit = "byte/s"
+		self.cfg.speeddistribLR = "Uniform"
+		self.cfg.speeddistribRL = "Uniform"
+		self.cfg.speeddistrib = "Uniform"
+		self.cfg.speedsymm = "*"
 		
 		self.cfg.delayLR = ""
 		self.cfg.delayRL = ""
 		self.cfg.delay = ""
-		self.cfg.delayLRunit = ""
-		self.cfg.delayRLunit = ""
-		self.cfg.delayLRdistribution = ""
-		self.cfg.delayRLdistribution = ""
-
+		self.cfg.delaymult = "milli"
+		self.cfg.delayunit = "seconds"
+		self.cfg.delaydistribLR = "Uniform"
+		self.cfg.delaydistribRL = "Uniform"
+		self.cfg.delaydistrib = "Uniform"
+		self.cfg.delaysymm = "*"
+		
 		self.cfg.chanbufsizeLR = ""
 		self.cfg.chanbufsizeRL = ""
 		self.cfg.chanbufsize = ""
-		self.cfg.chanbufsizeLRunit = ""
-		self.cfg.chanbufsizeRLunit = ""
-		self.cfg.chanbufsizeLRdistribution = ""
-		self.cfg.chanbufsizeRLdistribution = ""
-
+		self.cfg.chanbufsizemult = "Mega"
+		self.cfg.chanbufsizeunit = "bit/s"
+		self.cfg.chanbufsizedistribLR = "Uniform"
+		self.cfg.chanbufsizedistribRL = "Uniform"
+		self.cfg.chanbufsizedistrib = "Uniform"
+		self.cfg.chanbufsizesymm = "*"
+		
 		self.cfg.lossLR = ""
 		self.cfg.lossRL = ""
 		self.cfg.loss = ""
-		self.cfg.lossLRunit = ""
-		self.cfg.lossRLunit = ""
-		self.cfg.lossLRdistribution = ""
-		self.cfg.lossRLdistribution = ""
+		self.cfg.lossmult = ""
+		self.cfg.lossunit = "%"
+		self.cfg.lossdistribLR = "Uniform"
+		self.cfg.lossdistribRL = "Uniform"
+		self.cfg.lossdistrib = "Uniform"
+		self.cfg.losssymm = "*"
 
 		self.cfg.dupLR = ""
 		self.cfg.dupRL = ""
 		self.cfg.dup = ""
-		self.cfg.dupLRunit = ""
-		self.cfg.dupRLunit = ""
-		self.cfg.dupLRdistribution = ""
-		self.cfg.dupRLdistribution = ""
+		self.cfg.dupmult = ""
+		self.cfg.dupunit = "%"
+		self.cfg.dupdistribLR = "Uniform"
+		self.cfg.dupdistribRL = "Uniform"
+		self.cfg.dupdistrib = "Uniform"
+		self.cfg.dupsymm = "*"
 
 		self.cfg.noiseLR = ""
 		self.cfg.noiseRL = ""
 		self.cfg.noise = ""
-		self.cfg.noiseLRunit = ""
-		self.cfg.noiseRLunit = ""
-		self.cfg.noiseLRdistribution = ""
-		self.cfg.noiseRLdistribution = ""
+		self.cfg.noisemult = "Mega"
+		self.cfg.noiseunit = "bit"
+		self.cfg.noisedistribLR = "Uniform"
+		self.cfg.noisedistribRL = "Uniform"
+		self.cfg.noisedistrib = "Uniform"
+		self.cfg.noisesymm = "*"
 
-		self.cfg.gilbertck = ""
 		self.cfg.lostburstLR = ""
 		self.cfg.lostburstRL = ""
 		self.cfg.lostburst = ""
-		self.cfg.lostburstLRunit = ""
-		self.cfg.lostburstRLunit = ""
-		self.cfg.lostburstLRdistribution = ""
-		self.cfg.lostburstRLdistribution = ""
-
+		self.cfg.lostburstmult = ""
+		self.cfg.lostburstunit = "seconds"
+		self.cfg.lostburstdistribLR = "Uniform"
+		self.cfg.lostburstdistribRL = "Uniform"
+		self.cfg.lostburstdistrib = "Uniform"
+		self.cfg.lostburstsymm = "*"
+		
 		self.cfg.mtuLR = ""
 		self.cfg.mtuRL = ""
 		self.cfg.mtu = ""
-		self.cfg.mtuck = ""
+		self.cfg.mtumult = "Kilo"
+		self.cfg.mtuunit = "bytes"
+		self.cfg.mtusymm = "*"
 
 	def args(self):
 		res = []

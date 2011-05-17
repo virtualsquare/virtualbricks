@@ -3528,7 +3528,7 @@ ne2k_isa
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_bandwidth_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_bandwidthsymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -3554,7 +3554,7 @@ ne2k_isa
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox2">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_bandwidthmult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items">
 Kilo
@@ -3583,7 +3583,7 @@ Giga</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox3">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_bandwidthunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items">bit/s
 byte/s</property>
@@ -3618,7 +3618,6 @@ byte/s</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_bandwidthLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox66">
@@ -3756,7 +3755,7 @@ byte/s</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox1">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_bandwidthdistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -3943,7 +3942,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox4">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_bandwidthdistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -4002,7 +4001,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_bandwidthRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox69">
@@ -4140,7 +4138,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox5">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_bandwidthdistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -4253,7 +4251,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_speed_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_speedsymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -4279,7 +4277,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox6">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_speedmult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items">
 Kilo
@@ -4308,7 +4306,7 @@ Giga</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox7">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_speedunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items">bit/s
 byte/s</property>
@@ -4343,7 +4341,6 @@ byte/s</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_speedLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox75">
@@ -4481,7 +4478,7 @@ byte/s</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox8">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_speeddistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -4668,7 +4665,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox9">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_speeddistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -4727,7 +4724,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_speedRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox78">
@@ -4865,7 +4861,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox10">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_speeddistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -5021,7 +5017,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_delay_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_delaysymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -5047,7 +5043,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox11">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_delaymult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="sensitive">False</property>
                                                     <property name="items" translatable="yes">unit
@@ -5075,7 +5071,7 @@ milli</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox12">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_delayunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">seconds</property>
                                                   </widget>
@@ -5109,7 +5105,6 @@ milli</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_delayLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox8">
@@ -5247,7 +5242,7 @@ milli</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox13">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_delaydistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -5434,7 +5429,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox14">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_delaydistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -5493,7 +5488,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_delayRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox65">
@@ -5631,7 +5625,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox15">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_delaydistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -5744,7 +5738,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_chanbufsize_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_chanbufsizesymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -5770,7 +5764,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox16">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_chanbufsizemult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items">
 Kilo
@@ -5799,7 +5793,7 @@ Giga</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox17">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_chanbufsizeunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items">bit/s
 byte/s</property>
@@ -5834,7 +5828,6 @@ byte/s</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_chanbufsizeLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox85">
@@ -5972,7 +5965,7 @@ byte/s</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox18">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_chanbufsizedistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -6159,7 +6152,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox19">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_chanbufsizedistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -6218,7 +6211,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_chanbufsizeRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox89">
@@ -6356,7 +6348,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox20">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_chanbufsizedistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -6489,7 +6481,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_loss_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_losssymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -6515,7 +6507,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox21">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lossmult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="sensitive">False</property>
                                                     <property name="items"></property>
@@ -6542,7 +6534,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox22">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lossunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">%</property>
                                                   </widget>
@@ -6576,7 +6568,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_lossLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox13">
@@ -6714,7 +6705,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox23">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lossdistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -6901,7 +6892,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox24">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lossdistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -6960,7 +6951,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_lossRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox17">
@@ -7098,7 +7088,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox25">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lossdistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -7211,7 +7201,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_dup_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_dupsymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -7237,7 +7227,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox26">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_dupmult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="sensitive">False</property>
                                                     <property name="items"></property>
@@ -7264,7 +7254,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox27">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_dupunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">%</property>
                                                   </widget>
@@ -7298,7 +7288,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_dupLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox94">
@@ -7436,7 +7425,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox28">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_dupdistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -7623,7 +7612,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox29">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_dupdistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -7682,7 +7671,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_dupRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox98">
@@ -7820,7 +7808,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox30">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_dupdistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -7953,7 +7941,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_noise_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_noisesymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -7979,7 +7967,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox31">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_noisemult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="sensitive">False</property>
                                                     <property name="items">Kilo
@@ -8008,7 +7996,7 @@ Giga</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox32">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_noiseunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items">bit
 byte</property>
@@ -8043,7 +8031,6 @@ byte</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_noiseLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox102">
@@ -8181,7 +8168,7 @@ byte</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox33">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_noisedistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -8368,7 +8355,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox34">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_noisedistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -8427,7 +8414,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_noiseRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox106">
@@ -8565,7 +8551,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox35">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_noisedistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -8678,7 +8664,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_lostburst_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_lostburstsymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -8704,7 +8690,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox36">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lostburstmult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="sensitive">False</property>
                                                     <property name="items"></property>
@@ -8731,7 +8717,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox37">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lostburstunit_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">seconds</property>
                                                   </widget>
@@ -8765,7 +8751,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_lostburstLR_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">0</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox110">
@@ -8903,7 +8888,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox38">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lostburstdistribLR_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -9090,7 +9075,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox39">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lostburstdistrib_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -9149,7 +9134,6 @@ Gaussian</property>
                                     <child>
                                       <widget class="GtkFrame" id="Wirefilter_lostburstRL_frame">
                                         <property name="visible">True</property>
-                                        <property name="sensitive">False</property>
                                         <property name="label_xalign">1</property>
                                         <child>
                                           <widget class="GtkHBox" id="hbox114">
@@ -9287,7 +9271,7 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox40">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_lostburstdistribRL_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="items" translatable="yes">Uniform
 Gaussian</property>
@@ -9352,29 +9336,6 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkCheckButton" id="cfg_Wirefilter_gilbertck_check">
-                                        <property name="label" translatable="yes">Use</property>
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <property name="receives_default">False</property>
-                                        <property name="draw_indicator">True</property>
-                                        <signal name="toggled" handler="on_gilbert_toggle"/>
-                                      </widget>
-                                      <packing>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <widget class="GtkVSeparator" id="vseparator10">
-                                        <property name="visible">True</property>
-                                        <property name="orientation">vertical</property>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="position">2</property>
-                                      </packing>
-                                    </child>
-                                    <child>
                                       <widget class="GtkButton" id="button12">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
@@ -9383,7 +9344,7 @@ Gaussian</property>
                                         <property name="use_stock">True</property>
                                       </widget>
                                       <packing>
-                                        <property name="position">3</property>
+                                        <property name="position">1</property>
                                       </packing>
                                     </child>
                                   </widget>
@@ -9434,7 +9395,7 @@ Gaussian</property>
                                             <property name="visible">True</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <widget class="GtkCheckButton" id="Wirefilter_mtu_check">
+                                              <widget class="GtkCheckButton" id="cfg_Wirefilter_mtusymm_check">
                                                 <property name="label" translatable="yes">Symmetrical</property>
                                                 <property name="visible">True</property>
                                                 <property name="can_focus">True</property>
@@ -9460,10 +9421,12 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox41">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_mtumult_comboinitial">
                                                     <property name="visible">True</property>
                                                     <property name="sensitive">False</property>
-                                                    <property name="items"></property>
+                                                    <property name="items">Kilo
+Mega
+Giga</property>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -9487,9 +9450,9 @@ Gaussian</property>
                                                   </packing>
                                                 </child>
                                                 <child>
-                                                  <widget class="GtkComboBox" id="combobox42">
+                                                  <widget class="GtkComboBox" id="cfg_Wirefilter_mtuunit_comboinitial">
                                                     <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">byte</property>
+                                                    <property name="items" translatable="yes">bytes</property>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">1</property>
@@ -9755,29 +9718,6 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkCheckButton" id="cfg_Wirefilter_mtuck_check">
-                                        <property name="label" translatable="yes">Use</property>
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <property name="receives_default">False</property>
-                                        <property name="draw_indicator">True</property>
-                                        <signal name="toggled" handler="on_mtu_toggle"/>
-                                      </widget>
-                                      <packing>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <widget class="GtkVSeparator" id="vseparator11">
-                                        <property name="visible">True</property>
-                                        <property name="orientation">vertical</property>
-                                      </widget>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="position">2</property>
-                                      </packing>
-                                    </child>
-                                    <child>
                                       <widget class="GtkButton" id="button13">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
@@ -9786,7 +9726,7 @@ Gaussian</property>
                                         <property name="use_stock">True</property>
                                       </widget>
                                       <packing>
-                                        <property name="position">3</property>
+                                        <property name="position">1</property>
                                       </packing>
                                     </child>
                                   </widget>
