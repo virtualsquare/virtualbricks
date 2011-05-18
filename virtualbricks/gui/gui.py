@@ -1301,6 +1301,93 @@ class VBGUI(Logger, gobject.GObject):
 		if not re.match("^(?:[1-9][0-9]*|0)$", text ):
 			editable.emit_stop_by_name('insert-text')
 	
+	def on_Wirefilter_help_button_clicked(self, widget=None, data=""):
+		paramname = widget.name.replace("Wirefilter_","").replace("_help_button","")
+		f_name = getattr(self, paramname + "_help")
+		if not f_name: return
+		text = self.gladefile.get_widget('textview_messages')
+		window = self.gladefile.get_widget('dialog_messages')
+		window.set_title(_("Help for parameter:") + " " + paramname)
+		text.get_buffer().set_text(f_name())
+		window.show_all()
+
+	def bandwidth_help(self):
+		return _("\t\tCHANNEL BANDWIDTH\n" +
+				"Sender is not prevented from sending packets, " +
+				"delivery is delayed to limit the bandwidth to the desired value " +
+				"(like a bottleneck along the path).\n" +
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def speed_help(self):
+		return _("\t\tINTERFACE SPEED\n" +
+				"Input is blocked for the tramission time of the packet, thus the " +
+				"sender is prevented from sending too fast.\n" +
+				"This feature can be confusing, consider using bandwidth.\n" +
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def delay_help(self):
+		return _("\t\tDELAY\n" +
+				"Extra delay (in milliseconds). This delay is added to the real " +
+				"communication delay. Packets are temporarily stored and resent " +
+				"after the delay.\n" +
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def chanbufsize_help(self):
+		return _("\t\tCHANNEL BUFFER SIZE\n" +
+				"Maximum size of the packet " +
+				"queue. Exceeding packets are discarded.\n" +
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def loss_help(self):
+		return _("\t\tPACKET LOSS\n" +
+				"Percentage of loss as a floating point number.\n" +
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def dup_help(self):
+		return _("\t\tPACKET DUPLICATION\n" +
+				"Percentage of dup packet. Do not use dup factor 100% because it " +
+				"means that each packet is sent infinite times.\n"
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def noise_help(self):
+		return _("\t\tNOISE\n" +
+				"Number of bits damaged/one megabyte (megabit).\n"
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def lostburst_help(self):
+		return _("\t\tLOST BURST\n" +
+				"When this is not zero, wirefilter uses the Gilbert model for " +
+				"bursty errors. This is the mean length of lost packet bursts.\n" +
+				"Jitter is the variation from the base value. Jitter 10% for a base " +
+				"value of 100 means the final value goes from 90 to 110. The distribution " +
+				"can be Uniform or Gaussian normal "+
+				"(more than 98% of the values are inside the limits).")
+
+	def mtu_help(self):
+		return _("\t\tMTU: MAXIMUM TRANSMISSION UNIT\n" +
+				"Packets longer than specified size are discarded.")
+
 	def on_item_quit_activate(self, widget=None, data=""):
 		self.quit()
 
@@ -2607,6 +2694,15 @@ class VBGUI(Logger, gobject.GObject):
 		"""we could use deletable property but deletable is only available in
 		GTK+ 2.10 and above"""
 		widget.hide()
+		return True
+
+	def on_dialog_messages_close_event(self, widget=None, event=None, data=""):
+		self.on_dialog_messages_delete_event(self)
+		return True
+
+	def on_dialog_messages_delete_event(self, widget=None, event=None, data=""):
+		messages = self.gladefile.get_widget("dialog_messages")
+		messages.hide()
 		return True
 
 	def on_messages_dialog_close_event(self, widget=None, event=None, data=""):
