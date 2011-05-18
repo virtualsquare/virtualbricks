@@ -366,7 +366,8 @@ class VBGUI(Logger, gobject.GObject):
 				opt['Vde socket']='_sock'
 
 			for so in self.brickfactory.socks:
-				if so.brick.get_type() == 'Switch' or self.config.femaleplugs:
+				if (so.brick.homehost == b.homehost or (b.get_type() == 'Wire' and self.config.python)) and \
+				(so.brick.get_type() == 'Switch' or self.config.femaleplugs):
 					opt[so.nickname] = so.nickname
 			combo.populate(opt)
 			t = b.get_type()

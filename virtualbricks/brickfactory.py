@@ -1019,7 +1019,7 @@ class Tap(Brick):
 		return _("disconnected")
 
 	def prog(self):
-		return "/sbin/modprobe tun && " + self.settings.get("vdepath") + "/vde_plug2tap"
+		return self.settings.get("vdepath") + "/vde_plug2tap"
 
 	def get_type(self):
 		return 'Tap'
@@ -1202,7 +1202,7 @@ class Wirefilter(Wire):
 		self.cfg.bandwidthdistribRL = "Uniform"
 		self.cfg.bandwidthdistrib = "Uniform"
 		self.cfg.bandwidthsymm = "*"
-		
+
 		self.cfg.speedLR = ""
 		self.cfg.speedRL = ""
 		self.cfg.speed = ""
@@ -1216,7 +1216,7 @@ class Wirefilter(Wire):
 		self.cfg.speeddistrib = "Uniform"
 		self.cfg.speedsymm = "*"
 		self.cfg.speedenable = ""
-		
+
 		self.cfg.delayLR = ""
 		self.cfg.delayRL = ""
 		self.cfg.delay = ""
@@ -1229,7 +1229,7 @@ class Wirefilter(Wire):
 		self.cfg.delaydistribRL = "Uniform"
 		self.cfg.delaydistrib = "Uniform"
 		self.cfg.delaysymm = "*"
-		
+
 		self.cfg.chanbufsizeLR = ""
 		self.cfg.chanbufsizeRL = ""
 		self.cfg.chanbufsize = ""
@@ -1242,7 +1242,7 @@ class Wirefilter(Wire):
 		self.cfg.chanbufsizedistribRL = "Uniform"
 		self.cfg.chanbufsizedistrib = "Uniform"
 		self.cfg.chanbufsizesymm = "*"
-		
+
 		self.cfg.lossLR = ""
 		self.cfg.lossRL = ""
 		self.cfg.loss = ""
@@ -1294,7 +1294,7 @@ class Wirefilter(Wire):
 		self.cfg.lostburstdistribRL = "Uniform"
 		self.cfg.lostburstdistrib = "Uniform"
 		self.cfg.lostburstsymm = "*"
-		
+
 		self.cfg.mtuLR = ""
 		self.cfg.mtuRL = ""
 		self.cfg.mtu = ""
@@ -1336,7 +1336,7 @@ class Wirefilter(Wire):
 		else: value = value + m # f.e. 50K
 
 		return str(value)
-		
+
 	def compute_bandwidth(self):
 		return self.gui_to_wf_value(self.cfg.bandwidth, self.cfg.bandwidthJ,\
 								self.cfg.bandwidthdistrib, self.cfg.bandwidthmult,\
@@ -1348,104 +1348,104 @@ class Wirefilter(Wire):
 									self.cfg.bandwidthunit, "", "byte/s")
 
 	def compute_bandwidthRL(self):
-	 	return self.gui_to_wf_value(self.cfg.bandwidthRL, self.cfg.bandwidthRLJ, self.cfg.bandwidthdistribRL, self.cfg.bandwidthmult, 
+	 	return self.gui_to_wf_value(self.cfg.bandwidthRL, self.cfg.bandwidthRLJ, self.cfg.bandwidthdistribRL, self.cfg.bandwidthmult,
 									self.cfg.bandwidthunit, "", "byte/s")
 
 	def compute_speed(self):
-		return self.gui_to_wf_value(self.cfg.speed, self.cfg.speedJ, self.cfg.speeddistrib, self.cfg.speedmult, 
+		return self.gui_to_wf_value(self.cfg.speed, self.cfg.speedJ, self.cfg.speeddistrib, self.cfg.speedmult,
 									self.cfg.speedunit, "", "byte/s")
 
 	def compute_speedLR(self):
-		return self.gui_to_wf_value(self.cfg.speedLR, self.cfg.speedLRJ, self.cfg.speeddistribLR, self.cfg.speedmult, 
+		return self.gui_to_wf_value(self.cfg.speedLR, self.cfg.speedLRJ, self.cfg.speeddistribLR, self.cfg.speedmult,
 									self.cfg.speedunit, "", "byte/s")
 
 	def compute_speedRL(self):
-		return self.gui_to_wf_value(self.cfg.speedRL, self.cfg.speedRLJ, self.cfg.speeddistribRL, self.cfg.speedmult, 
+		return self.gui_to_wf_value(self.cfg.speedRL, self.cfg.speedRLJ, self.cfg.speeddistribRL, self.cfg.speedmult,
 									self.cfg.speedunit, "", "byte/s")
 
 	def compute_delay(self):
-		return self.gui_to_wf_value(self.cfg.delay, self.cfg.delayJ, self.cfg.delaydistrib, self.cfg.delaymult, 
+		return self.gui_to_wf_value(self.cfg.delay, self.cfg.delayJ, self.cfg.delaydistrib, self.cfg.delaymult,
 									self.cfg.delayunit, "milli", "seconds")
 
 	def compute_delayLR(self):
-		return self.gui_to_wf_value(self.cfg.delayLR, self.cfg.delayLRJ, self.cfg.delaydistribLR, self.cfg.delaymult, 
+		return self.gui_to_wf_value(self.cfg.delayLR, self.cfg.delayLRJ, self.cfg.delaydistribLR, self.cfg.delaymult,
 									self.cfg.delayunit, "milli", "seconds")
 
 	def compute_delayRL(self):
-		return self.gui_to_wf_value(self.cfg.delayRL, self.cfg.delayRLJ, self.cfg.delaydistribRL, self.cfg.delaymult, 
+		return self.gui_to_wf_value(self.cfg.delayRL, self.cfg.delayRLJ, self.cfg.delaydistribRL, self.cfg.delaymult,
 									self.cfg.delayunit, "milli", "seconds")
 
 	def compute_chanbufsize(self):
-		return self.gui_to_wf_value(self.cfg.chanbufsize, self.cfg.chanbufsizeJ, self.cfg.chanbufsizedistrib, self.cfg.chanbufsizemult, 
+		return self.gui_to_wf_value(self.cfg.chanbufsize, self.cfg.chanbufsizeJ, self.cfg.chanbufsizedistrib, self.cfg.chanbufsizemult,
 									self.cfg.chanbufsizeunit, "", "bytes")
 
 	def compute_chanbufsizeLR(self):
-		return self.gui_to_wf_value(self.cfg.chanbufsizeLR, self.cfg.chanbufsizeLRJ, self.cfg.chanbufsizedistribLR, self.cfg.chanbufsizemult, 
+		return self.gui_to_wf_value(self.cfg.chanbufsizeLR, self.cfg.chanbufsizeLRJ, self.cfg.chanbufsizedistribLR, self.cfg.chanbufsizemult,
 									self.cfg.chanbufsizeunit, "", "bytes")
 
 
 	def compute_chanbufsizeRL(self):
-		return self.gui_to_wf_value(self.cfg.chanbufsizeRL, self.cfg.chanbufsizeRLJ, self.cfg.chanbufsizedistribRL, self.cfg.chanbufsizemult, 
+		return self.gui_to_wf_value(self.cfg.chanbufsizeRL, self.cfg.chanbufsizeRLJ, self.cfg.chanbufsizedistribRL, self.cfg.chanbufsizemult,
 									self.cfg.chanbufsizeunit, "", "bytes")
 
 	def compute_loss(self):
-		return self.gui_to_wf_value(self.cfg.loss, self.cfg.lossJ, self.cfg.lossdistrib, self.cfg.lossmult, 
+		return self.gui_to_wf_value(self.cfg.loss, self.cfg.lossJ, self.cfg.lossdistrib, self.cfg.lossmult,
 									self.cfg.lossunit, "", "%")
 
 	def compute_lossLR(self):
-		return self.gui_to_wf_value(self.cfg.lossLR, self.cfg.lossLRJ, self.cfg.lossdistribLR, self.cfg.lossmult, 
+		return self.gui_to_wf_value(self.cfg.lossLR, self.cfg.lossLRJ, self.cfg.lossdistribLR, self.cfg.lossmult,
 									self.cfg.lossunit, "", "%")
 
 	def compute_lossRL(self):
-		return self.gui_to_wf_value(self.cfg.lossRL, self.cfg.lossRLJ, self.cfg.lossdistribRL, self.cfg.lossmult, 
+		return self.gui_to_wf_value(self.cfg.lossRL, self.cfg.lossRLJ, self.cfg.lossdistribRL, self.cfg.lossmult,
 									self.cfg.lossunit, "", "%")
 
 	def compute_dup(self):
-		return self.gui_to_wf_value(self.cfg.dup, self.cfg.dupJ, self.cfg.dupdistrib, self.cfg.dupmult, 
+		return self.gui_to_wf_value(self.cfg.dup, self.cfg.dupJ, self.cfg.dupdistrib, self.cfg.dupmult,
 									self.cfg.dupunit, "", "%")
 
 	def compute_dupLR(self):
-		return self.gui_to_wf_value(self.cfg.dupLR, self.cfg.dupLRJ, self.cfg.dupdistribLR, self.cfg.dupmult, 
+		return self.gui_to_wf_value(self.cfg.dupLR, self.cfg.dupLRJ, self.cfg.dupdistribLR, self.cfg.dupmult,
 									self.cfg.dupunit, "", "%")
 
 	def compute_dupRL(self):
-		return self.gui_to_wf_value(self.cfg.dupRL, self.cfg.dupRLJ, self.cfg.dupdistribRL, self.cfg.dupmult, 
+		return self.gui_to_wf_value(self.cfg.dupRL, self.cfg.dupRLJ, self.cfg.dupdistribRL, self.cfg.dupmult,
 									self.cfg.dupunit, "", "%")
 
 	def compute_noise(self):
-		return self.gui_to_wf_value(self.cfg.noise, self.cfg.noiseJ, self.cfg.noisedistrib, self.cfg.noisemult, 
+		return self.gui_to_wf_value(self.cfg.noise, self.cfg.noiseJ, self.cfg.noisedistrib, self.cfg.noisemult,
 									self.cfg.noiseunit, "Mega", "bit")
 
 	def compute_noiseLR(self):
-		return self.gui_to_wf_value(self.cfg.noiseLR, self.cfg.noiseLRJ, self.cfg.noisedistribLR, self.cfg.noisemult, 
+		return self.gui_to_wf_value(self.cfg.noiseLR, self.cfg.noiseLRJ, self.cfg.noisedistribLR, self.cfg.noisemult,
 									self.cfg.noiseunit, "Mega", "bit")
 
 	def compute_noiseRL(self):
-		return self.gui_to_wf_value(self.cfg.noiseRL, self.cfg.noiseRLJ, self.cfg.noisedistribRL, self.cfg.noisemult, 
+		return self.gui_to_wf_value(self.cfg.noiseRL, self.cfg.noiseRLJ, self.cfg.noisedistribRL, self.cfg.noisemult,
 									self.cfg.noiseunit, "Mega", "bit")
 
 	def compute_lostburst(self):
-		return self.gui_to_wf_value(self.cfg.lostburst, self.cfg.lostburstJ, self.cfg.lostburstdistrib, self.cfg.lostburstmult, 
+		return self.gui_to_wf_value(self.cfg.lostburst, self.cfg.lostburstJ, self.cfg.lostburstdistrib, self.cfg.lostburstmult,
 									self.cfg.lostburstunit, "", "seconds")
 
 	def compute_lostburstLR(self):
-		return self.gui_to_wf_value(self.cfg.lostburstLR, self.cfg.lostburstLRJ, self.cfg.lostburstdistribLR, self.cfg.lostburstmult, 
+		return self.gui_to_wf_value(self.cfg.lostburstLR, self.cfg.lostburstLRJ, self.cfg.lostburstdistribLR, self.cfg.lostburstmult,
 									self.cfg.lostburstunit, "", "seconds")
 
 	def compute_lostburstRL(self):
-		return self.gui_to_wf_value(self.cfg.lostburstRL, self.cfg.lostburstRLJ, self.cfg.lostburstdistribRL, self.cfg.lostburstmult, 
+		return self.gui_to_wf_value(self.cfg.lostburstRL, self.cfg.lostburstRLJ, self.cfg.lostburstdistribRL, self.cfg.lostburstmult,
 									self.cfg.lostburstunit, "", "seconds")
 
 	def compute_mtu(self):
-		return self.gui_to_wf_value(self.cfg.mtu, "", "", self.cfg.mtumult, 
+		return self.gui_to_wf_value(self.cfg.mtu, "", "", self.cfg.mtumult,
 									self.cfg.mtuunit, "", "bytes")
 
 	def compute_mtuLR(self):
-		return self.gui_to_wf_value(self.cfg.mtuLR, "", "", self.cfg.mtumult, 
+		return self.gui_to_wf_value(self.cfg.mtuLR, "", "", self.cfg.mtumult,
 									self.cfg.mtuunit, "", "bytes")
 
 	def compute_mtuRL(self):
-		return self.gui_to_wf_value(self.cfg.mtuRL, "", "", self.cfg.mtumult, 
+		return self.gui_to_wf_value(self.cfg.mtuRL, "", "", self.cfg.mtumult,
 									self.cfg.mtuunit, "", "bytes")
 
 	def args(self):
@@ -1579,7 +1579,7 @@ class Wirefilter(Wire):
 			res.append("-m")
 			value = self.compute_mtu()
 			res.append(value)
-		else:			
+		else:
 			if len(self.cfg.mtuLR) > 0:
 				res.append("-m")
 				value = self.compute_mtuLR()
