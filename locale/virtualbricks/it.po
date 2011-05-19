@@ -3,13 +3,14 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
+#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.4\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-05-19 15:35+0200\n"
-"PO-Revision-Date: 2011-05-19 15:40+0100\n"
-"Last-Translator: \n"
+"POT-Creation-Date: 2011-05-19 16:59+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
@@ -113,11 +114,14 @@ msgid "Stop All Bricks"
 msgstr "Ferma Tutti i Mattoni"
 
 #: share/virtualbricks.template.glade:361
-msgid "You can use drag and drop to connect bricks and double click to start/stop them."
-msgstr "Si può usare il drag and drop per connettere i mattoni e il doppio click per avviarli/fermarli."
+msgid ""
+"You can use drag and drop to connect bricks and double click to start/stop "
+"them."
+msgstr ""
+"Si può usare il drag and drop per connettere i mattoni e il doppio click per "
+"avviarli/fermarli."
 
-#: share/virtualbricks.template.glade:378
-#: virtualbricks/gui/gui.py:115
+#: share/virtualbricks.template.glade:378 virtualbricks/gui/gui.py:115
 msgid "Bricks"
 msgstr "Mattoni"
 
@@ -134,16 +138,24 @@ msgid "Stop All Events"
 msgstr "Ferma Tutti gli Eventi"
 
 #: share/virtualbricks.template.glade:459
-msgid "You can use drag and drop to add an event to events collation and double click to start/stop them."
-msgstr "Si può usare il drag and drop per aggiungere un evento ad una collezione di eventi e il doppio click per per avviarli/fermarli."
+msgid ""
+"You can use drag and drop to add an event to events collation and double "
+"click to start/stop them."
+msgstr ""
+"Si può usare il drag and drop per aggiungere un evento ad una collezione di "
+"eventi e il doppio click per per avviarli/fermarli."
 
 #: share/virtualbricks.template.glade:477
 msgid "Events"
 msgstr "Eventi"
 
 #: share/virtualbricks.template.glade:494
-msgid "Click to select an enty for use or edit its configuration, rightclick for more."
-msgstr "Clicca per selezionare un elemento da usare o configurare, tasto destro per altro."
+msgid ""
+"Click to select an enty for use or edit its configuration, rightclick for "
+"more."
+msgstr ""
+"Clicca per selezionare un elemento da usare o configurare, tasto destro per "
+"altro."
 
 #: share/virtualbricks.template.glade:508
 msgid "Running"
@@ -205,7 +217,9 @@ msgstr "usa immagine come cdrom"
 
 #: share/virtualbricks.template.glade:936
 msgid "use one of the image files in the default folder as cdrom device"
-msgstr "usa uno di questi file immagine nella cartella di default come dispositivo cdrom"
+msgstr ""
+"usa uno di questi file immagine nella cartella di default come dispositivo "
+"cdrom"
 
 #: share/virtualbricks.template.glade:951
 msgid "mount cdrom"
@@ -330,8 +344,12 @@ msgid "Use VGA instead of Default"
 msgstr "Usa VGA invece del Default"
 
 #: share/virtualbricks.template.glade:1928
-msgid "simulate a standard VGA card with VESA Bochs Extensions (default is CL-GD5446 PCI VGA)"
-msgstr "simula una VGA standard con l'estensione VESA Bochs (il default è CL-GD5446 PCI VGA)"
+msgid ""
+"simulate a standard VGA card with VESA Bochs Extensions (default is CL-"
+"GD5446 PCI VGA)"
+msgstr ""
+"simula una VGA standard con l'estensione VESA Bochs (il default è CL-GD5446 "
+"PCI VGA)"
 
 #: share/virtualbricks.template.glade:1943
 msgid "Start in vncserver"
@@ -832,8 +850,7 @@ msgstr ""
 msgid "<b>Channel Buffer Size</b>"
 msgstr ""
 
-#: share/virtualbricks.template.glade:6458
-#: virtualbricks/brickfactory.py:822
+#: share/virtualbricks.template.glade:6458 virtualbricks/brickfactory.py:822
 msgid "Delay"
 msgstr "Ritardo"
 
@@ -940,8 +957,7 @@ msgstr "<b>Configurazione Tap</b>"
 msgid "Delay:"
 msgstr "Ritardo:"
 
-#: share/virtualbricks.template.glade:10209
-#: virtualbricks/brickfactory.py:825
+#: share/virtualbricks.template.glade:10209 virtualbricks/brickfactory.py:825
 msgid "Actions"
 msgstr "Azioni"
 
@@ -1083,8 +1099,12 @@ msgid "Network topology loop detection"
 msgstr "Rileva loop della topologia di rete"
 
 #: share/virtualbricks.template.glade:10949
-msgid "If enabled, detect network loops when starting the bricks, and generate an error."
-msgstr "Se abilitato, rileva loop di rete quando si avviano i mattoni, e genera un errore."
+msgid ""
+"If enabled, detect network loops when starting the bricks, and generate an "
+"error."
+msgstr ""
+"Se abilitato, rileva loop di rete quando si avviano i mattoni, e genera un "
+"errore."
 
 #: share/virtualbricks.template.glade:10963
 msgid "<b>Vde</b>"
@@ -1132,7 +1152,9 @@ msgstr "Abilita KSM"
 
 #: share/virtualbricks.template.glade:11158
 msgid "Allow using the Kernel SamePage Merging support to enhance scalability"
-msgstr "Permetti l'uso del supporto a Kernel SamePage Merging per potenziare la scalabilità"
+msgstr ""
+"Permetti l'uso del supporto a Kernel SamePage Merging per potenziare la "
+"scalabilità"
 
 #: share/virtualbricks.template.glade:11173
 msgid "Use kqemu"
@@ -1151,8 +1173,12 @@ msgid "CD-Rom/DVD/Floppy Devices"
 msgstr "Dispositivi CD-Rom/DVD/Floppy "
 
 #: share/virtualbricks.template.glade:11228
-msgid "Add your \"real\" physical drive volumes like CDR, DVD or Floppy devices here."
-msgstr "Aggiungi qui il tuo supporto drive fisico \"reale\" come CDR, DVD o dispositivi Floppy."
+msgid ""
+"Add your \"real\" physical drive volumes like CDR, DVD or Floppy devices "
+"here."
+msgstr ""
+"Aggiungi qui il tuo supporto drive fisico \"reale\" come CDR, DVD o "
+"dispositivi Floppy."
 
 #: share/virtualbricks.template.glade:11245
 msgid "Name: "
@@ -1205,18 +1231,23 @@ msgstr "Informazioni su: Virtualbricks"
 
 #: share/virtualbricks.template.glade:11656
 msgid ""
-"Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.\n"
+"Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual "
+"Distributed Ethernet.\n"
 "\n"
-"Virtualbricks is licensed under the terms of the GPL (General Public Licence) Version 2.\n"
-"© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. \n"
+"Virtualbricks is licensed under the terms of the GPL (General Public "
+"Licence) Version 2.\n"
+"© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on "
+"Launchpad. \n"
 "\n"
 "VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.\n"
 "QEMU - Copyright © 2005-2011 Fabrice Bellard.\n"
 "QEMU is a trademark of Fabrice Bellard.\n"
 "\n"
-"Icons for remote hosts are Copyleft David Vignoni - http://www.icon-king.com/ License: LGPL\n"
+"Icons for remote hosts are Copyleft David Vignoni - http://www.icon-king."
+"com/ License: LGPL\n"
 "\n"
-"If you find virtualbricks useful for your business, please consider making a donation."
+"If you find virtualbricks useful for your business, please consider making a "
+"donation."
 msgstr ""
 
 #: share/virtualbricks.template.glade:11713
@@ -1326,10 +1357,13 @@ msgid "<b>Available block devices</b>"
 msgstr "<b>Dispositivi a blocchi disponibili</b>"
 
 #: share/virtualbricks.template.glade:12208
-msgid "This is a list of all blockdevices used by the emulation. Rightclick an entry to eject. (hd volumes normally can not be ejected)"
+msgid ""
+"This is a list of all blockdevices used by the emulation. Rightclick an "
+"entry to eject. (hd volumes normally can not be ejected)"
 msgstr ""
 "Questa è una lista di tutti i dispositivi a blocchi usati dall'emulazione.\n"
-"Tasto destro su una voce per espellerla. (i supporti hd normalmente non possono essere espulsi)"
+"Tasto destro su una voce per espellerla. (i supporti hd normalmente non "
+"possono essere espulsi)"
 
 #: share/virtualbricks.template.glade:12222
 msgid "<b>change soure of block devices</b>"
@@ -1343,15 +1377,23 @@ msgstr "Cambia"
 
 #: share/virtualbricks.template.glade:12242
 msgid "change the source for qemu cdrom device to the selected image or drive"
-msgstr "cambia la sorgente del dispositivo cdrom qemu con l'immagine o il drive selezionato"
+msgstr ""
+"cambia la sorgente del dispositivo cdrom qemu con l'immagine o il drive "
+"selezionato"
 
 #: share/virtualbricks.template.glade:12257
-msgid "change the source for qemu floppy A device to the selected image or drive"
-msgstr "cambia la sorgente per il dispositivo floppy A qemu con l'immagine o il drive selezionato"
+msgid ""
+"change the source for qemu floppy A device to the selected image or drive"
+msgstr ""
+"cambia la sorgente per il dispositivo floppy A qemu con l'immagine o il "
+"drive selezionato"
 
 #: share/virtualbricks.template.glade:12274
-msgid "change the source for qemu floppy B device to the selected image or drive"
-msgstr "cambia la sorgente per il dispositivo floppy B qemu con l'immagine o il drive selezionato"
+msgid ""
+"change the source for qemu floppy B device to the selected image or drive"
+msgstr ""
+"cambia la sorgente per il dispositivo floppy B qemu con l'immagine o il "
+"drive selezionato"
 
 #: share/virtualbricks.template.glade:12289
 msgid "cdrom"
@@ -1368,18 +1410,25 @@ msgid "<b>Available host usb devices</b>"
 msgstr "<b>Dispositivi usb host disponibili</b>"
 
 #: share/virtualbricks.template.glade:12415
-msgid "All available host usb-devices. rightclick to attach a device to the virtual engine (you must have write access to /proc/bus/usb to attach devices)"
+msgid ""
+"All available host usb-devices. rightclick to attach a device to the virtual "
+"engine (you must have write access to /proc/bus/usb to attach devices)"
 msgstr ""
-"Tutti i dispositivi usb host disponibili. Tasto destro per collegare un dispositivo al motore virtuale\n"
-"(devi avere l'accesso in scrittura su /proc/bus/usb per collegare un dispositivo)"
+"Tutti i dispositivi usb host disponibili. Tasto destro per collegare un "
+"dispositivo al motore virtuale\n"
+"(devi avere l'accesso in scrittura su /proc/bus/usb per collegare un "
+"dispositivo)"
 
 #: share/virtualbricks.template.glade:12429
 msgid "<b>Attached guest usb devices</b>"
 msgstr "<b>Dispositivi usb guest collegati</b>"
 
 #: share/virtualbricks.template.glade:12447
-msgid "All attached usb devices for this emulation. Rightclick to detach a device"
-msgstr "Tutti i dispositivi usb collegati per questa emulazione. Tasto destro per scollegare un dispositivo"
+msgid ""
+"All attached usb devices for this emulation. Rightclick to detach a device"
+msgstr ""
+"Tutti i dispositivi usb collegati per questa emulazione. Tasto destro per "
+"scollegare un dispositivo"
 
 #: share/virtualbricks.template.glade:12466
 msgid "USB"
@@ -1781,23 +1830,18 @@ msgstr "non ha una console"
 msgid "error opening internal console"
 msgstr "errore nell'apertura della console interna"
 
-#: virtualbricks/brickfactory.py:714
-#: virtualbricks/brickfactory.py:771
+#: virtualbricks/brickfactory.py:714 virtualbricks/brickfactory.py:771
 msgid "running"
 msgstr "acceso"
 
-#: virtualbricks/brickfactory.py:716
-#: virtualbricks/brickfactory.py:1019
-#: virtualbricks/brickfactory.py:1081
-#: virtualbricks/brickfactory.py:1086
-#: virtualbricks/brickfactory.py:1088
-#: virtualbricks/brickfactory.py:1825
+#: virtualbricks/brickfactory.py:716 virtualbricks/brickfactory.py:1019
+#: virtualbricks/brickfactory.py:1081 virtualbricks/brickfactory.py:1086
+#: virtualbricks/brickfactory.py:1088 virtualbricks/brickfactory.py:1825
 #: virtualbricks/brickfactory.py:1877
 msgid "disconnected"
 msgstr "disconnesso"
 
-#: virtualbricks/brickfactory.py:718
-#: virtualbricks/brickfactory.py:775
+#: virtualbricks/brickfactory.py:718 virtualbricks/brickfactory.py:775
 msgid "off"
 msgstr "spento"
 
@@ -1844,8 +1888,7 @@ msgstr "Il plug sinistro è"
 msgid "and right plug is"
 msgstr "e il plug destro è"
 
-#: virtualbricks/brickfactory.py:1823
-#: virtualbricks/brickfactory.py:1874
+#: virtualbricks/brickfactory.py:1823 virtualbricks/brickfactory.py:1874
 msgid "plugged to"
 msgstr "connesso a"
 
@@ -1869,52 +1912,36 @@ msgstr "Motore: Arrivederci!"
 msgid "PID"
 msgstr "PID"
 
-#: virtualbricks/gui/gui.py:107
-#: virtualbricks/gui/gui.py:109
-#: virtualbricks/gui/gui.py:199
-#: virtualbricks/gui/gui.py:221
-#: virtualbricks/gui/gui.py:1138
-#: virtualbricks/gui/gui.py:1160
-#: virtualbricks/gui/gui.py:2753
-#: virtualbricks/gui/gui.py:2775
+#: virtualbricks/gui/gui.py:107 virtualbricks/gui/gui.py:109
+#: virtualbricks/gui/gui.py:199 virtualbricks/gui/gui.py:221
+#: virtualbricks/gui/gui.py:1138 virtualbricks/gui/gui.py:1160
+#: virtualbricks/gui/gui.py:2753 virtualbricks/gui/gui.py:2775
 msgid "Type"
 msgstr "Tipo"
 
-#: virtualbricks/gui/gui.py:107
-#: virtualbricks/gui/gui.py:109
-#: virtualbricks/gui/gui.py:204
-#: virtualbricks/gui/gui.py:223
-#: virtualbricks/gui/gui.py:1140
-#: virtualbricks/gui/gui.py:1162
-#: virtualbricks/gui/gui.py:2755
-#: virtualbricks/gui/gui.py:2777
+#: virtualbricks/gui/gui.py:107 virtualbricks/gui/gui.py:109
+#: virtualbricks/gui/gui.py:204 virtualbricks/gui/gui.py:223
+#: virtualbricks/gui/gui.py:1140 virtualbricks/gui/gui.py:1162
+#: virtualbricks/gui/gui.py:2755 virtualbricks/gui/gui.py:2777
 msgid "Name"
 msgstr "Nome"
 
-#: virtualbricks/gui/gui.py:109
-#: virtualbricks/gui/gui.py:119
-#: virtualbricks/gui/gui.py:132
-#: virtualbricks/gui/gui.py:181
-#: virtualbricks/gui/gui.py:214
-#: virtualbricks/gui/gui.py:1136
-#: virtualbricks/gui/gui.py:1158
-#: virtualbricks/gui/gui.py:2751
+#: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:119
+#: virtualbricks/gui/gui.py:132 virtualbricks/gui/gui.py:181
+#: virtualbricks/gui/gui.py:214 virtualbricks/gui/gui.py:1136
+#: virtualbricks/gui/gui.py:1158 virtualbricks/gui/gui.py:2751
 #: virtualbricks/gui/gui.py:2773
 msgid "Icon"
 msgstr "Icona"
 
-#: virtualbricks/gui/gui.py:109
-#: virtualbricks/gui/gui.py:197
+#: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:197
 #: virtualbricks/gui/gui.py:219
 msgid "Status"
 msgstr "Stato"
 
-#: virtualbricks/gui/gui.py:109
-#: virtualbricks/gui/gui.py:206
-#: virtualbricks/gui/gui.py:225
-#: virtualbricks/gui/gui.py:1142
-#: virtualbricks/gui/gui.py:1164
-#: virtualbricks/gui/gui.py:2757
+#: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:206
+#: virtualbricks/gui/gui.py:225 virtualbricks/gui/gui.py:1142
+#: virtualbricks/gui/gui.py:1164 virtualbricks/gui/gui.py:2757
 #: virtualbricks/gui/gui.py:2779
 msgid "Parameters"
 msgstr "Parametri"
@@ -1927,13 +1954,11 @@ msgstr ""
 msgid "Autoconnect"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:332
-#: virtualbricks/gui/gui.py:1091
+#: virtualbricks/gui/gui.py:332 virtualbricks/gui/gui.py:1091
 msgid "Command"
 msgstr "Comando"
 
-#: virtualbricks/gui/gui.py:336
-#: virtualbricks/gui/gui.py:1095
+#: virtualbricks/gui/gui.py:336 virtualbricks/gui/gui.py:1095
 msgid "Host shell command"
 msgstr "Comando della shell Host"
 
@@ -1945,18 +1970,15 @@ msgstr "KVM è disabilitato nelle Impostazioni"
 msgid "Show Settings"
 msgstr "Mostra Impostazioni"
 
-#: virtualbricks/gui/gui.py:755
-#: virtualbricks/gui/gui.py:792
+#: virtualbricks/gui/gui.py:755 virtualbricks/gui/gui.py:792
 msgid "Hide Settings"
 msgstr "Nascondi Impostazioni"
 
-#: virtualbricks/gui/gui.py:1038
-#: virtualbricks/gui/gui.py:1045
+#: virtualbricks/gui/gui.py:1038 virtualbricks/gui/gui.py:1045
 msgid "Cannot create brick: Invalid name."
 msgstr "Impossibile creare mattone: nome non valido."
 
-#: virtualbricks/gui/gui.py:1062
-#: virtualbricks/gui/gui.py:1066
+#: virtualbricks/gui/gui.py:1062 virtualbricks/gui/gui.py:1066
 msgid "The name \""
 msgstr "Il nome \""
 
@@ -2043,8 +2065,13 @@ msgid "Cannot start '%s': not connected"
 msgstr "Impossibile avviare '%s': non connesso"
 
 #: virtualbricks/gui/gui.py:1624
-msgid "Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings"
-msgstr "Loop di collegamento rilevato: annullamento delle operazioni. Se vuoi avviare una rete con loop, modifica la configurazione nelle impostazioni generali"
+msgid ""
+"Loop link detected: aborting operation. If you want to start a looped "
+"network, disable the check loop feature in the general settings"
+msgstr ""
+"Loop di collegamento rilevato: annullamento delle operazioni. Se vuoi "
+"avviare una rete con loop, modifica la configurazione nelle impostazioni "
+"generali"
 
 #: virtualbricks/gui/gui.py:1632
 msgid "Disk used by the VM is locked by another machine"
@@ -2058,13 +2085,11 @@ msgstr "Scegliere prima un nome di file!"
 msgid "No KVM binary found"
 msgstr "Binari KVM non trovati"
 
-#: virtualbricks/gui/gui.py:2095
-#: virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2095 virtualbricks/gui/gui.py:2098
 msgid "Check your active configuration"
 msgstr "Controlla la configurazione attiva"
 
-#: virtualbricks/gui/gui.py:2095
-#: virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2095 virtualbricks/gui/gui.py:2098
 msgid "KVM will stay disabled"
 msgstr "KVM rimmarrà disabilitato"
 
@@ -2086,7 +2111,9 @@ msgstr "KSM rimarrà disabilitato"
 
 #: virtualbricks/gui/gui.py:2120
 msgid "The brick is still running, it will be killed before being deleted!\n"
-msgstr "Il mattone è ancora in esecuzione, sarà arrestato prima di essere cancellato!\n"
+msgstr ""
+"Il mattone è ancora in esecuzione, sarà arrestato prima di essere "
+"cancellato!\n"
 
 #: virtualbricks/gui/gui.py:2122
 msgid "Do you really want to delete "
@@ -2104,8 +2131,7 @@ msgstr "Vuoi davvero cancellare"
 msgid "Cannot rename Brick: it is in use."
 msgstr "Impossibile rinominare Mattone: è in uso."
 
-#: virtualbricks/gui/gui.py:2169
-#: virtualbricks/gui/gui.py:2181
+#: virtualbricks/gui/gui.py:2169 virtualbricks/gui/gui.py:2181
 #: virtualbricks/gui/gui.py:2240
 msgid "Invalid name!"
 msgstr "Nome invalido!"
@@ -2114,8 +2140,7 @@ msgstr "Nome invalido!"
 msgid "Cannot rename Event: it is in use."
 msgstr "Impossibile rinominare Evento: è in uso."
 
-#: virtualbricks/gui/gui.py:2286
-#: virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2286 virtualbricks/gui/gui.py:2295
 #: virtualbricks/gui/gui.py:2325
 msgid "Error"
 msgstr "Errore"
@@ -2128,8 +2153,7 @@ msgstr "percorso non valido per i binari di qemu"
 msgid "cannot find neither qemu nor kvm in this path"
 msgstr "né qemu né kvm sono stati trovati in questo percorso"
 
-#: virtualbricks/gui/gui.py:2299
-#: virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2299 virtualbricks/gui/gui.py:2302
 msgid "Warning"
 msgstr "Attenzione"
 
@@ -2166,12 +2190,19 @@ msgid "All VDE components detected"
 msgstr "Tutti i componenti VDE rilevati"
 
 #: virtualbricks/gui/gui.py:2398
-msgid "No KVM binary found. Check your active configuration. KVM will stay disabled."
-msgstr "Binari di KVM non trovati. Controlla la configurazione attiva. KVM rimarrà disabilitato."
+msgid ""
+"No KVM binary found. Check your active configuration. KVM will stay disabled."
+msgstr ""
+"Binari di KVM non trovati. Controlla la configurazione attiva. KVM rimarrà "
+"disabilitato."
 
 #: virtualbricks/gui/gui.py:2401
-msgid "No KVM support found on the system. Check your active configuration. KVM will stay disabled."
-msgstr "Supporto a KVM non trovato nel sistema. Controlla la configurazione attiva. KVM rimarrà disabilitato."
+msgid ""
+"No KVM support found on the system. Check your active configuration. KVM "
+"will stay disabled."
+msgstr ""
+"Supporto a KVM non trovato nel sistema. Controlla la configurazione attiva. "
+"KVM rimarrà disabilitato."
 
 #: virtualbricks/gui/gui.py:2572
 msgid "Suspend/Resume not supported on this disk."
@@ -2195,7 +2226,8 @@ msgstr "Errore nel salvataggio della topologia: errore sconosciuto"
 
 #: virtualbricks/gui/gui.py:2788
 msgid "Virtualbricks-Events to attach to the start/stop Brick Events"
-msgstr "Eventi di Virtualbricks da agganciare all'evento di avvio/arresto del Mattone"
+msgstr ""
+"Eventi di Virtualbricks da agganciare all'evento di avvio/arresto del Mattone"
 
 #: virtualbricks/gui/gui.py:2794
 msgid "Save current project?"
@@ -2205,14 +2237,12 @@ msgstr "Salvare il progetto corrente?"
 msgid "Open a project"
 msgstr "Apertura progetto"
 
-#: virtualbricks/gui/gui.py:2800
-#: virtualbricks/gui/gui.py:2820
+#: virtualbricks/gui/gui.py:2800 virtualbricks/gui/gui.py:2820
 #: virtualbricks/gui/gui.py:2850
 msgid "Virtualbricks Bricks List"
 msgstr "Lista Mattoni di Virtualbricks"
 
-#: virtualbricks/gui/gui.py:2804
-#: virtualbricks/gui/gui.py:2824
+#: virtualbricks/gui/gui.py:2804 virtualbricks/gui/gui.py:2824
 #: virtualbricks/gui/gui.py:2854
 msgid "All files"
 msgstr "Tutti i file"
@@ -2246,185 +2276,3 @@ msgstr "Salvata configurazione di default ('%s')"
 #: virtualbricks/settings.py:97
 msgid "Cannot save default configuration"
 msgstr "Impossibile salvare la configurazione di default"
-
-#~ msgid "Running Components"
-#~ msgstr "Componenti in esecuzione"
-
-#~ msgid "Interface Speed (Left to Right)"
-#~ msgstr "Velocità interfaccia (da sinistra a destra)"
-
-#~ msgid ""
-#~ "B/s\n"
-#~ "KB/s\n"
-#~ "MB/s\n"
-#~ "GB/s"
-#~ msgstr ""
-#~ "B/s\n"
-#~ "KB/s\n"
-#~ "MB/s\n"
-#~ "GB/s"
-
-#~ msgid ""
-#~ "Uniform Distribution\n"
-#~ "Normal Distribution"
-#~ msgstr ""
-#~ "Distribuzione Uniforme\n"
-#~ "Distribuzione Normale"
-
-#~ msgid "Interface Speed (Right to Left)"
-#~ msgstr "Velocità interfaccia (da destra a sinistra)"
-
-#~ msgid "Bandwidth Restriction (Left to Right)"
-#~ msgstr "Restrizione di Banda (da sinistra a destra)"
-
-#~ msgid "Bandwidth Restriction (Right to Left)"
-#~ msgstr "Restrizione di Banda (da destra a sinistra)"
-
-#~ msgid "Delay (Left to Right)"
-#~ msgstr "Ritardo (da sinistra a destra)"
-
-#~ msgid "ms"
-#~ msgstr "ms"
-
-#~ msgid "Delay (Right to Left)"
-#~ msgstr "Ritardo (da destra a sinistra)"
-
-#~ msgid "Buffer size"
-#~ msgstr "Dimensione Buffer"
-
-#~ msgid "Bytes"
-#~ msgstr "Bytes"
-
-#~ msgid "Packet loss (Left to Right)"
-#~ msgstr "Perdita pacchetti (da sinistra a destra)"
-
-#~ msgid "percent"
-#~ msgstr "percentuale"
-
-#~ msgid "Packet loss (Right to Left)"
-#~ msgstr "Perdita pacchetti (da destra a sinistra)"
-
-#~ msgid "Duplicate packets (Left to Right)"
-#~ msgstr "Pacchetti duplicati (da sinistra a destra)"
-
-#~ msgid "Duplicate Packets (Right to Left)"
-#~ msgstr "Pacchetti duplicati (da destra a sinistra)"
-
-#~ msgid "Noise Factor [swapped bits/MB]"
-#~ msgstr "Fattore di rumore [bits/MB scambiati]"
-
-#~ msgid "Gilbert model"
-#~ msgstr "Modello di Gilbert"
-
-#~ msgid "Mean loss Lenght:"
-#~ msgstr "Lunghezza media perdita:"
-
-#~ msgid "Discard packets larger than:"
-#~ msgstr "Rigetta pacchetti più grandi di:"
-
-#~ msgid "Disruptions"
-#~ msgstr "Interruzioni"
-
-#~ msgid ""
-#~ "FAKE EVENT CONFIG...\n"
-#~ "BE PATIENT...\n"
-#~ "Number of ports: "
-#~ msgstr ""
-#~ "FAKE EVENT CONFIG...\n"
-#~ "BE PATIENT...\n"
-#~ "Number of ports: "
-
-#~ msgid "About Virtualbricks and Qemu"
-#~ msgstr "Informazioni su Virtualbricks e Qemu"
-
-#~ msgid ""
-#~ "\n"
-#~ "Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual "
-#~ "Distributed Ethernet.\n"
-#~ "\n"
-#~ "Virtualbricks is licensed under the terms of the GPL (General Public "
-#~ "Licence) Version 2.\n"
-#~ "© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on "
-#~ "Launchpad. \n"
-#~ "\n"
-#~ "VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.\n"
-#~ "QEMU - Copyright © 2005-2011 Fabrice Bellard.\n"
-#~ "QEMU is a trademark of Fabrice Bellard.\n"
-#~ "\n"
-#~ "If you find virtualbricks useful for your business, please consider "
-#~ "making a donation. \n"
-#~ "\n"
-#~ msgstr ""
-#~ "\n"
-#~ "Virtualbricks è una GUI GNU/Linux per Qemu/KVM e Virtual Distributed "
-#~ "Ethernet.\n"
-#~ "\n"
-#~ "Virtualbricks è rilasciato sotto licenza GPL (General Public Licence) "
-#~ "Versione 2.\n"
-#~ "© 2011 Daniele Lacamera, Rainer Haage il team di virtualbricks su "
-#~ "Launchpad. \n"
-#~ "\n"
-#~ "VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.\n"
-#~ "QEMU - Copyright © 2005-2011 Fabrice Bellard.\n"
-#~ "QEMU è un trademark di Fabrice Bellard.\n"
-#~ "\n"
-#~ "Se trovi virtualbricks utile per la tua attività commerciale, per favore\n"
-#~ "considera la possibilità di fare una donazione.\n"
-#~ "\n"
-
-#~ msgid "Show Main Window"
-#~ msgstr "Mostra Finestra Principale"
-
-#~ msgid "Hide Main Window"
-#~ msgstr "Nascondi Finestra Principale"
-
-#~ msgid ""
-#~ "Insert virtualbricks-shell\n"
-#~ "commands here.\n"
-#~ "You can add multiple lines."
-#~ msgstr ""
-#~ "Inserire qui un comando\n"
-#~ "della shell di virtualbricks\n"
-#~ "Si possono aggiungere più\n"
-#~ "righe."
-
-#~ msgid "Hello world!"
-#~ msgstr "Ciao mondo!"
-
-#~ msgid ""
-#~ "Bricks\n"
-#~ "available"
-#~ msgstr ""
-#~ "Mattoni\n"
-#~ "disponibili"
-
-#~ msgid "-->"
-#~ msgstr "-->"
-
-#~ msgid ""
-#~ "Bricks\n"
-#~ "added"
-#~ msgstr ""
-#~ "Mattoni\n"
-#~ "aggiunti"
-
-#~ msgid "This event is in use. "
-#~ msgstr "Questo evento è un uso. "
-
-#~ msgid "Cannot delete Brick: it is in use"
-#~ msgstr "Non posso cancellare il Mattone: è in uso"
-
-#~ msgid "Current project is %s"
-#~ msgstr "Il progetto corrente è %s"
-
-#~ msgid "Cannot read config file '%s': '%s'!"
-#~ msgstr "Impossibile leggere il file di configurazione '%s': '%s'!"
-
-#~ msgid "Cannot read config file"
-#~ msgstr "Impossibile leggere il file di configurazione"
-
-#~ msgid "Ports:%d%s%s"
-#~ msgstr "Porte:%d%s%s"
-
-#~ msgid "plugged to %s, connecting to udp://%s"
-#~ msgstr "connesso a %s, connessione a udp://%s"
