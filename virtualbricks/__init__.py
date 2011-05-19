@@ -25,6 +25,7 @@ try:
 	import locale
 except:
 	print "locale and/or gettext for language support not installed"
+	import sys
 	sys.exit(1)
 
 import gtk.glade

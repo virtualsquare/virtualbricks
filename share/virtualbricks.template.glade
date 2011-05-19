@@ -4213,12 +4213,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button3">
+                                      <widget class="GtkButton" id="Wirefilter_bandwidth_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">2</property>
@@ -4959,12 +4960,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button4">
+                                      <widget class="GtkButton" id="Wirefilter_speed_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">4</property>
@@ -5700,12 +5702,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button5">
+                                      <widget class="GtkButton" id="Wirefilter_delay_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">2</property>
@@ -6422,12 +6425,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button6">
+                                      <widget class="GtkButton" id="Wirefilter_chanbufsize_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">2</property>
@@ -7162,12 +7166,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button7">
+                                      <widget class="GtkButton" id="Wirefilter_loss_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">2</property>
@@ -7882,12 +7887,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button10">
+                                      <widget class="GtkButton" id="Wirefilter_dup_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">2</property>
@@ -8626,12 +8632,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button11">
+                                      <widget class="GtkButton" id="Wirefilter_noise_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">2</property>
@@ -9336,12 +9343,13 @@ Gaussian</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button12">
+                                      <widget class="GtkButton" id="Wirefilter_lostburst_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">1</property>
@@ -9719,12 +9727,13 @@ bytes</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <widget class="GtkButton" id="button13">
+                                      <widget class="GtkButton" id="Wirefilter_mtu_help_button">
                                         <property name="label">gtk-help</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
                                         <property name="use_stock">True</property>
+                                        <signal name="clicked" handler="on_Wirefilter_help_button_clicked"/>
                                       </widget>
                                       <packing>
                                         <property name="position">1</property>
@@ -11988,7 +11997,9 @@ GB</property>
     <property name="width_request">400</property>
     <property name="height_request">300</property>
     <property name="title" translatable="yes">message</property>
+    <property name="window_position">center</property>
     <property name="type_hint">dialog</property>
+    <signal name="delete_event" handler="on_dialog_messages_delete_event"/>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox6">
         <property name="visible">True</property>
@@ -11997,12 +12008,15 @@ GB</property>
           <widget class="GtkScrolledWindow" id="scrolledwindow6">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="hscrollbar_policy">never</property>
+            <property name="vscrollbar_policy">automatic</property>
             <property name="shadow_type">in</property>
             <child>
               <widget class="GtkTextView" id="textview_messages">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="editable">False</property>
+                <property name="wrap_mode">word</property>
               </widget>
             </child>
           </widget>
@@ -12012,6 +12026,7 @@ GB</property>
         </child>
         <child internal-child="action_area">
           <widget class="GtkHButtonBox" id="dialog-action_area6">
+            <property name="width_request">400</property>
             <property name="visible">True</property>
             <property name="layout_style">end</property>
             <child>
@@ -12023,6 +12038,7 @@ GB</property>
                 <property name="can_default">True</property>
                 <property name="receives_default">False</property>
                 <property name="use_stock">True</property>
+                <signal name="clicked" handler="on_dialog_messages_close_event"/>
               </widget>
               <packing>
                 <property name="expand">False</property>

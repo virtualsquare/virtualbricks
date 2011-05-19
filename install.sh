@@ -22,9 +22,9 @@ if [ -d .bzr ]; then
   echo "What follows can be useful for developers."
   echo "If you are user please ignore it."
   echo "-------pyflakes---------"
-  pyflakes virtualbricks
+  pyflakes virtualbricks|grep -v "undefined name '_'"
   echo "-------pylint---------"
-  pylint --errors virtualbricks
+  pylint --errors --additional-builtins=_ virtualbricks
   echo "----------------"
 fi
 
