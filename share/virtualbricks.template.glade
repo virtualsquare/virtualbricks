@@ -1809,13 +1809,50 @@ fda</property>
                                           </packing>
                                         </child>
                                         <child>
-                                          <widget class="GtkCheckButton" id="cfg_Qemu_kvm_check">
-                                            <property name="label" translatable="yes">KVM</property>
+                                          <widget class="GtkHBox" id="hbox124">
                                             <property name="visible">True</property>
-                                            <property name="can_focus">True</property>
-                                            <property name="receives_default">False</property>
-                                            <property name="draw_indicator">True</property>
-                                            <signal name="toggled" handler="on_check_kvm_toggled"/>
+                                            <child>
+                                              <widget class="GtkCheckButton" id="cfg_Qemu_kvm_check">
+                                                <property name="label" translatable="yes">KVM</property>
+                                                <property name="visible">True</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="receives_default">False</property>
+                                                <property name="draw_indicator">True</property>
+                                                <signal name="toggled" handler="on_check_kvm_toggled"/>
+                                              </widget>
+                                              <packing>
+                                                <property name="expand">False</property>
+                                                <property name="fill">False</property>
+                                                <property name="position">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <widget class="GtkLabel" id="label295">
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1</property>
+                                                <property name="label" translatable="yes">Number of CPUs:</property>
+                                              </widget>
+                                              <packing>
+                                                <property name="padding">2</property>
+                                                <property name="position">1</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <widget class="GtkSpinButton" id="cfg_Qemu_smp_spinint">
+                                                <property name="visible">True</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="max_length">2</property>
+                                                <property name="invisible_char">&#x25CF;</property>
+                                                <property name="adjustment">1 1 64 1 8 8</property>
+                                                <property name="numeric">True</property>
+                                                <property name="update_policy">if-valid</property>
+                                              </widget>
+                                              <packing>
+                                                <property name="expand">False</property>
+                                                <property name="fill">False</property>
+                                                <property name="position">2</property>
+                                              </packing>
+                                            </child>
                                           </widget>
                                           <packing>
                                             <property name="expand">False</property>
