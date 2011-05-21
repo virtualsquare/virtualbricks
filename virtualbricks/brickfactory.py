@@ -583,7 +583,7 @@ class Brick(ChildLogger):
 					self.proc.terminate()
 				except Exception, err:
 					self.factory.err(self, _("can not send SIGTERM: '%s'"), err)
-				ret = os.system(self.settings.get('sudo') + ' "kill ' + str(pid) + '"')
+				ret = os.system('kill ' + str(pid))
 			if ret != 0:
 				self.factory.err(self, _("can not stop brick error code:"), str(ret))
 				return
