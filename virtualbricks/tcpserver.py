@@ -14,6 +14,10 @@ class TcpServer(ChildLogger, Thread):
 		ChildLogger.__init__(self, self.logger)
 		self.password = password
 		Thread.__init__(self)
+		self.factory.connect("brick-stopped", self.cb_brick_stopped)
+
+	def cb_brick_stopped(self, model, name=""):
+		print "BRICK STOPPEEEEDDD!!!"
 
 	def run(self):
 		self.info("TCP server started.")
@@ -68,5 +72,9 @@ class TcpServer(ChildLogger, Thread):
 					sock.send("OK\n")
 				else:
 					sock.send("FAIL\n")
-
-
+			for b in self.factory.bricks:
+				if b.proc:
+					pz = b.proc.poll()
+					if pz is not None:
+						print "POWEROFF"
+						b.poweroff()

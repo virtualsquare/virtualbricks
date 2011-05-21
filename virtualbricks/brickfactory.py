@@ -58,14 +58,37 @@ def CommandLineOutput(outf, data):
 	else:
 		return outf.send(data + '\n')
 
+class RemoteHostConnectionInstance(Thread):
+	def __init__(self,remotehost,factory):
+		self.host = remotehost
+		self.factory = factory
+		Thread.__init__(self)
+	def run(self):
+		if not self.host.connected:
+			return
+		p = select.poll()
+		p.register(self.host.sock, select.POLLIN | select.POLLERR | select.POLLHUP | select.POLLNVAL)
+		while self.host.sock and self.host.connected:
+			for fd,ev in p.poll(100):
+				if ev != select.POLLIN:
+					self.host.disconnect()
+				else:
+					event = self.host.recv(200)
+					if len(event) == 0:
+						self.host.disconnect()
+
+
 class RemoteHost():
 	def __init__(self, factory, address):
+		self.sock = None
 		self.factory = factory
 		self.addr = (address,1050)
 		self.connected=False
+		self.connection = None
 		self.password=""
 		self.factory.remotehosts_changed=True
 		self.autoconnect=False
+
 
 	def num_bricks(self):
 		r = 0
@@ -102,6 +125,8 @@ class RemoteHost():
 				self.connected=True
 				self.post_connect_init()
 				self.factory.remotehosts_changed=True
+				self.connection = RemoteHostConnectionInstance(self, self.factory)
+				self.connection.start()
 				return True,"Success"
 		self.factory.remotehosts_changed=True
 		return False,"Authentication Failed."
@@ -113,6 +138,7 @@ class RemoteHost():
 					b.poweroff()
 			self.send("reset all")
 			self.sock.close()
+			self.sock = None
 			self.connected=False
 		self.factory.remotehosts_changed=True
 
@@ -2520,6 +2546,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					sys.stdout.flush()
 			else:
 				time.sleep(1)
+			if self.remotehosts_changed:
+				for rh in self.remote_hosts:
+					if rh.connection and rh.connection.isAlive():
+						rh.connection.join(0.001)
+						if not rh.connection.isAlive():
+							rh.connected = False
+							rh.connection = None
 		sys.exit(0)
 
 	def config_dump(self, f):
