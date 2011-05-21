@@ -3,14 +3,13 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.4\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-05-19 16:59+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2011-05-20 23:06+0200\n"
+"PO-Revision-Date: 2011-05-21 21:51+0100\n"
+"Last-Translator: \n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
@@ -110,12 +109,11 @@ msgid "Stop All Bricks"
 msgstr ""
 
 #: share/virtualbricks.template.glade:361
-msgid ""
-"You can use drag and drop to connect bricks and double click to start/stop "
-"them."
+msgid "You can use drag and drop to connect bricks and double click to start/stop them."
 msgstr ""
 
-#: share/virtualbricks.template.glade:378 virtualbricks/gui/gui.py:115
+#: share/virtualbricks.template.glade:378
+#: virtualbricks/gui/gui.py:115
 msgid "Bricks"
 msgstr ""
 
@@ -132,9 +130,7 @@ msgid "Stop All Events"
 msgstr ""
 
 #: share/virtualbricks.template.glade:459
-msgid ""
-"You can use drag and drop to add an event to events collation and double "
-"click to start/stop them."
+msgid "You can use drag and drop to add an event to events collation and double click to start/stop them."
 msgstr ""
 
 #: share/virtualbricks.template.glade:477
@@ -142,9 +138,7 @@ msgid "Events"
 msgstr ""
 
 #: share/virtualbricks.template.glade:494
-msgid ""
-"Click to select an enty for use or edit its configuration, rightclick for "
-"more."
+msgid "Click to select an enty for use or edit its configuration, rightclick for more."
 msgstr ""
 
 #: share/virtualbricks.template.glade:508
@@ -238,28 +232,28 @@ msgstr ""
 #: share/virtualbricks.template.glade:1134
 #: share/virtualbricks.template.glade:12317
 msgid "fdb"
-msgstr ""
+msgstr "fdb"
 
 #: share/virtualbricks.template.glade:1148
 #: share/virtualbricks.template.glade:12302
 msgid "fda"
-msgstr ""
+msgstr "fda"
 
 #: share/virtualbricks.template.glade:1162
 msgid "hdd"
-msgstr ""
+msgstr "hdd"
 
 #: share/virtualbricks.template.glade:1176
 msgid "hdc"
-msgstr ""
+msgstr "hdc"
 
 #: share/virtualbricks.template.glade:1190
 msgid "hdb"
-msgstr ""
+msgstr "hdb"
 
 #: share/virtualbricks.template.glade:1204
 msgid "hda"
-msgstr ""
+msgstr "hda"
 
 #: share/virtualbricks.template.glade:1315
 msgid "mtdblock"
@@ -328,9 +322,7 @@ msgid "Use VGA instead of Default"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1928
-msgid ""
-"simulate a standard VGA card with VESA Bochs Extensions (default is CL-"
-"GD5446 PCI VGA)"
+msgid "simulate a standard VGA card with VESA Bochs Extensions (default is CL-GD5446 PCI VGA)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1943
@@ -820,7 +812,8 @@ msgstr ""
 msgid "<b>Channel Buffer Size</b>"
 msgstr ""
 
-#: share/virtualbricks.template.glade:6458 virtualbricks/brickfactory.py:822
+#: share/virtualbricks.template.glade:6458
+#: virtualbricks/brickfactory.py:822
 msgid "Delay"
 msgstr ""
 
@@ -925,7 +918,8 @@ msgstr ""
 msgid "Delay:"
 msgstr ""
 
-#: share/virtualbricks.template.glade:10209 virtualbricks/brickfactory.py:825
+#: share/virtualbricks.template.glade:10209
+#: virtualbricks/brickfactory.py:825
 msgid "Actions"
 msgstr ""
 
@@ -1059,9 +1053,7 @@ msgid "Network topology loop detection"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10949
-msgid ""
-"If enabled, detect network loops when starting the bricks, and generate an "
-"error."
+msgid "If enabled, detect network loops when starting the bricks, and generate an error."
 msgstr ""
 
 #: share/virtualbricks.template.glade:10963
@@ -1127,9 +1119,7 @@ msgid "CD-Rom/DVD/Floppy Devices"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11228
-msgid ""
-"Add your \"real\" physical drive volumes like CDR, DVD or Floppy devices "
-"here."
+msgid "Add your \"real\" physical drive volumes like CDR, DVD or Floppy devices here."
 msgstr ""
 
 #: share/virtualbricks.template.glade:11245
@@ -1183,23 +1173,18 @@ msgstr ""
 
 #: share/virtualbricks.template.glade:11656
 msgid ""
-"Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual "
-"Distributed Ethernet.\n"
+"Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.\n"
 "\n"
-"Virtualbricks is licensed under the terms of the GPL (General Public "
-"Licence) Version 2.\n"
-"© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on "
-"Launchpad. \n"
+"Virtualbricks is licensed under the terms of the GPL (General Public Licence) Version 2.\n"
+"© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. \n"
 "\n"
 "VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.\n"
 "QEMU - Copyright © 2005-2011 Fabrice Bellard.\n"
 "QEMU is a trademark of Fabrice Bellard.\n"
 "\n"
-"Icons for remote hosts are Copyleft David Vignoni - http://www.icon-king."
-"com/ License: LGPL\n"
+"Icons for remote hosts are Copyleft David Vignoni - http://www.icon-king.com/ License: LGPL\n"
 "\n"
-"If you find virtualbricks useful for your business, please consider making a "
-"donation."
+"If you find virtualbricks useful for your business, please consider making a donation."
 msgstr ""
 
 #: share/virtualbricks.template.glade:11713
@@ -1297,9 +1282,7 @@ msgid "<b>Available block devices</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12208
-msgid ""
-"This is a list of all blockdevices used by the emulation. Rightclick an "
-"entry to eject. (hd volumes normally can not be ejected)"
+msgid "This is a list of all blockdevices used by the emulation. Rightclick an entry to eject. (hd volumes normally can not be ejected)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12222
@@ -1317,13 +1300,11 @@ msgid "change the source for qemu cdrom device to the selected image or drive"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12257
-msgid ""
-"change the source for qemu floppy A device to the selected image or drive"
+msgid "change the source for qemu floppy A device to the selected image or drive"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12274
-msgid ""
-"change the source for qemu floppy B device to the selected image or drive"
+msgid "change the source for qemu floppy B device to the selected image or drive"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12289
@@ -1341,9 +1322,7 @@ msgid "<b>Available host usb devices</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12415
-msgid ""
-"All available host usb-devices. rightclick to attach a device to the virtual "
-"engine (you must have write access to /proc/bus/usb to attach devices)"
+msgid "All available host usb-devices. rightclick to attach a device to the virtual engine (you must have write access to /proc/bus/usb to attach devices)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12429
@@ -1351,8 +1330,7 @@ msgid "<b>Attached guest usb devices</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12447
-msgid ""
-"All attached usb devices for this emulation. Rightclick to detach a device"
+msgid "All attached usb devices for this emulation. Rightclick to detach a device"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12466
@@ -1742,18 +1720,23 @@ msgstr ""
 msgid "error opening internal console"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:714 virtualbricks/brickfactory.py:771
+#: virtualbricks/brickfactory.py:714
+#: virtualbricks/brickfactory.py:771
 msgid "running"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:716 virtualbricks/brickfactory.py:1019
-#: virtualbricks/brickfactory.py:1081 virtualbricks/brickfactory.py:1086
-#: virtualbricks/brickfactory.py:1088 virtualbricks/brickfactory.py:1825
+#: virtualbricks/brickfactory.py:716
+#: virtualbricks/brickfactory.py:1019
+#: virtualbricks/brickfactory.py:1081
+#: virtualbricks/brickfactory.py:1086
+#: virtualbricks/brickfactory.py:1088
+#: virtualbricks/brickfactory.py:1825
 #: virtualbricks/brickfactory.py:1877
 msgid "disconnected"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:718 virtualbricks/brickfactory.py:775
+#: virtualbricks/brickfactory.py:718
+#: virtualbricks/brickfactory.py:775
 msgid "off"
 msgstr ""
 
@@ -1800,7 +1783,8 @@ msgstr ""
 msgid "and right plug is"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1823 virtualbricks/brickfactory.py:1874
+#: virtualbricks/brickfactory.py:1823
+#: virtualbricks/brickfactory.py:1874
 msgid "plugged to"
 msgstr ""
 
@@ -1824,37 +1808,85 @@ msgstr ""
 msgid "PID"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:107 virtualbricks/gui/gui.py:109
-#: virtualbricks/gui/gui.py:199 virtualbricks/gui/gui.py:221
-#: virtualbricks/gui/gui.py:1138 virtualbricks/gui/gui.py:1160
-#: virtualbricks/gui/gui.py:2753 virtualbricks/gui/gui.py:2775
+#: virtualbricks/gui/gui.py:107
+#: virtualbricks/gui/gui.py:109
+#: virtualbricks/gui/gui.py:199
+#: virtualbricks/gui/gui.py:221
+#: virtualbricks/gui/gui.py:1138
+#: virtualbricks/gui/gui.py:1160
+#: virtualbricks/gui/gui.py:2753
+#: virtualbricks/gui/gui.py:2775
+#: virtualbricks/gui/gui.py:2726
+#: virtualbricks/gui/gui.py:2748
+#: virtualbricks/gui/gui.py:2746
+#: virtualbricks/gui/gui.py:2768
+#: virtualbricks/gui/gui.py:2754
+#: virtualbricks/gui/gui.py:2776
+#: virtualbricks/gui/gui.py:2761
+#: virtualbricks/gui/gui.py:2783
 msgid "Type"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:107 virtualbricks/gui/gui.py:109
-#: virtualbricks/gui/gui.py:204 virtualbricks/gui/gui.py:223
-#: virtualbricks/gui/gui.py:1140 virtualbricks/gui/gui.py:1162
-#: virtualbricks/gui/gui.py:2755 virtualbricks/gui/gui.py:2777
+#: virtualbricks/gui/gui.py:107
+#: virtualbricks/gui/gui.py:109
+#: virtualbricks/gui/gui.py:204
+#: virtualbricks/gui/gui.py:223
+#: virtualbricks/gui/gui.py:1140
+#: virtualbricks/gui/gui.py:1162
+#: virtualbricks/gui/gui.py:2755
+#: virtualbricks/gui/gui.py:2777
+#: virtualbricks/gui/gui.py:2728
+#: virtualbricks/gui/gui.py:2750
+#: virtualbricks/gui/gui.py:2748
+#: virtualbricks/gui/gui.py:2770
+#: virtualbricks/gui/gui.py:2756
+#: virtualbricks/gui/gui.py:2778
+#: virtualbricks/gui/gui.py:2763
+#: virtualbricks/gui/gui.py:2785
 msgid "Name"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:119
-#: virtualbricks/gui/gui.py:132 virtualbricks/gui/gui.py:181
-#: virtualbricks/gui/gui.py:214 virtualbricks/gui/gui.py:1136
-#: virtualbricks/gui/gui.py:1158 virtualbricks/gui/gui.py:2751
+#: virtualbricks/gui/gui.py:109
+#: virtualbricks/gui/gui.py:119
+#: virtualbricks/gui/gui.py:132
+#: virtualbricks/gui/gui.py:181
+#: virtualbricks/gui/gui.py:214
+#: virtualbricks/gui/gui.py:1136
+#: virtualbricks/gui/gui.py:1158
+#: virtualbricks/gui/gui.py:2751
 #: virtualbricks/gui/gui.py:2773
+#: virtualbricks/gui/gui.py:2724
+#: virtualbricks/gui/gui.py:2746
+#: virtualbricks/gui/gui.py:2744
+#: virtualbricks/gui/gui.py:2766
+#: virtualbricks/gui/gui.py:2752
+#: virtualbricks/gui/gui.py:2774
+#: virtualbricks/gui/gui.py:2759
+#: virtualbricks/gui/gui.py:2781
 msgid "Icon"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:197
+#: virtualbricks/gui/gui.py:109
+#: virtualbricks/gui/gui.py:197
 #: virtualbricks/gui/gui.py:219
 msgid "Status"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:206
-#: virtualbricks/gui/gui.py:225 virtualbricks/gui/gui.py:1142
-#: virtualbricks/gui/gui.py:1164 virtualbricks/gui/gui.py:2757
+#: virtualbricks/gui/gui.py:109
+#: virtualbricks/gui/gui.py:206
+#: virtualbricks/gui/gui.py:225
+#: virtualbricks/gui/gui.py:1142
+#: virtualbricks/gui/gui.py:1164
+#: virtualbricks/gui/gui.py:2757
 #: virtualbricks/gui/gui.py:2779
+#: virtualbricks/gui/gui.py:2730
+#: virtualbricks/gui/gui.py:2752
+#: virtualbricks/gui/gui.py:2750
+#: virtualbricks/gui/gui.py:2772
+#: virtualbricks/gui/gui.py:2758
+#: virtualbricks/gui/gui.py:2780
+#: virtualbricks/gui/gui.py:2765
+#: virtualbricks/gui/gui.py:2787
 msgid "Parameters"
 msgstr ""
 
@@ -1866,11 +1898,13 @@ msgstr ""
 msgid "Autoconnect"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:332 virtualbricks/gui/gui.py:1091
+#: virtualbricks/gui/gui.py:332
+#: virtualbricks/gui/gui.py:1091
 msgid "Command"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:336 virtualbricks/gui/gui.py:1095
+#: virtualbricks/gui/gui.py:336
+#: virtualbricks/gui/gui.py:1095
 msgid "Host shell command"
 msgstr ""
 
@@ -1882,15 +1916,18 @@ msgstr ""
 msgid "Show Settings"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:755 virtualbricks/gui/gui.py:792
+#: virtualbricks/gui/gui.py:755
+#: virtualbricks/gui/gui.py:792
 msgid "Hide Settings"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1038 virtualbricks/gui/gui.py:1045
+#: virtualbricks/gui/gui.py:1038
+#: virtualbricks/gui/gui.py:1045
 msgid "Cannot create brick: Invalid name."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1062 virtualbricks/gui/gui.py:1066
+#: virtualbricks/gui/gui.py:1062
+#: virtualbricks/gui/gui.py:1066
 msgid "The name \""
 msgstr ""
 
@@ -1943,217 +1980,452 @@ msgid "\t\tDELAY\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1346
+#: virtualbricks/gui/gui.py:1339
 msgid "\t\tCHANNEL BUFFER SIZE\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1355
+#: virtualbricks/gui/gui.py:1328
+#: virtualbricks/gui/gui.py:1348
 msgid "\t\tPACKET LOSS\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1363
+#: virtualbricks/gui/gui.py:1336
+#: virtualbricks/gui/gui.py:1356
 msgid "\t\tPACKET DUPLICATION\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1372
+#: virtualbricks/gui/gui.py:1345
+#: virtualbricks/gui/gui.py:1365
 msgid "\t\tNOISE\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1380
+#: virtualbricks/gui/gui.py:1353
+#: virtualbricks/gui/gui.py:1373
 msgid "\t\tLOST BURST\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1389
+#: virtualbricks/gui/gui.py:1362
+#: virtualbricks/gui/gui.py:1382
 msgid "\t\tMTU: MAXIMUM TRANSMISSION UNIT\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1613
+#: virtualbricks/gui/gui.py:1586
+#: virtualbricks/gui/gui.py:1606
+#: virtualbricks/gui/gui.py:1614
+#: virtualbricks/gui/gui.py:1621
 #, python-format
 msgid "Cannot start '%s': not configured"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1618
+#: virtualbricks/gui/gui.py:1591
+#: virtualbricks/gui/gui.py:1611
+#: virtualbricks/gui/gui.py:1619
+#: virtualbricks/gui/gui.py:1626
 #, python-format
 msgid "Cannot start '%s': not connected"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1624
-msgid ""
-"Loop link detected: aborting operation. If you want to start a looped "
-"network, disable the check loop feature in the general settings"
+#: virtualbricks/gui/gui.py:1597
+#: virtualbricks/gui/gui.py:1617
+#: virtualbricks/gui/gui.py:1625
+#: virtualbricks/gui/gui.py:1632
+msgid "Loop link detected: aborting operation. If you want to start a looped network, disable the check loop feature in the general settings"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1632
+#: virtualbricks/gui/gui.py:1605
+#: virtualbricks/gui/gui.py:1625
+#: virtualbricks/gui/gui.py:1633
+#: virtualbricks/gui/gui.py:1640
 msgid "Disk used by the VM is locked by another machine"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1906
+#: virtualbricks/gui/gui.py:1879
+#: virtualbricks/gui/gui.py:1899
+#: virtualbricks/gui/gui.py:1907
+#: virtualbricks/gui/gui.py:1914
 msgid "Choose a filename first!"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2095
+#: virtualbricks/gui/gui.py:2068
+#: virtualbricks/gui/gui.py:2088
+#: virtualbricks/gui/gui.py:2096
+#: virtualbricks/gui/gui.py:2103
 msgid "No KVM binary found"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2095 virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2095
+#: virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2068
+#: virtualbricks/gui/gui.py:2071
+#: virtualbricks/gui/gui.py:2088
+#: virtualbricks/gui/gui.py:2091
+#: virtualbricks/gui/gui.py:2096
+#: virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2103
+#: virtualbricks/gui/gui.py:2106
 msgid "Check your active configuration"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2095 virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2095
+#: virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2068
+#: virtualbricks/gui/gui.py:2071
+#: virtualbricks/gui/gui.py:2088
+#: virtualbricks/gui/gui.py:2091
+#: virtualbricks/gui/gui.py:2096
+#: virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2103
+#: virtualbricks/gui/gui.py:2106
 msgid "KVM will stay disabled"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2071
+#: virtualbricks/gui/gui.py:2091
+#: virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2106
 msgid "No KVM support found on the system"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2079
+#: virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2107
+#: virtualbricks/gui/gui.py:2114
 msgid "No KSM support found on the system"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2079
+#: virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2107
+#: virtualbricks/gui/gui.py:2114
 msgid "Check your configuration"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2079
+#: virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2107
+#: virtualbricks/gui/gui.py:2114
 msgid "KSM will stay disabled"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2120
+#: virtualbricks/gui/gui.py:2093
+#: virtualbricks/gui/gui.py:2113
+#: virtualbricks/gui/gui.py:2121
+#: virtualbricks/gui/gui.py:2128
 msgid "The brick is still running, it will be killed before being deleted!\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2122
+#: virtualbricks/gui/gui.py:2095
+#: virtualbricks/gui/gui.py:2115
+#: virtualbricks/gui/gui.py:2123
+#: virtualbricks/gui/gui.py:2130
 msgid "Do you really want to delete "
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2131
+#: virtualbricks/gui/gui.py:2104
+#: virtualbricks/gui/gui.py:2124
+#: virtualbricks/gui/gui.py:2132
+#: virtualbricks/gui/gui.py:2139
 msgid "This event is in use"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2133
+#: virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2126
+#: virtualbricks/gui/gui.py:2134
+#: virtualbricks/gui/gui.py:2141
 msgid "Do you really want to delete"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2143
+#: virtualbricks/gui/gui.py:2116
+#: virtualbricks/gui/gui.py:2136
+#: virtualbricks/gui/gui.py:2144
+#: virtualbricks/gui/gui.py:2151
 msgid "Cannot rename Brick: it is in use."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2169 virtualbricks/gui/gui.py:2181
+#: virtualbricks/gui/gui.py:2169
+#: virtualbricks/gui/gui.py:2181
 #: virtualbricks/gui/gui.py:2240
+#: virtualbricks/gui/gui.py:2142
+#: virtualbricks/gui/gui.py:2154
+#: virtualbricks/gui/gui.py:2213
+#: virtualbricks/gui/gui.py:2162
+#: virtualbricks/gui/gui.py:2174
+#: virtualbricks/gui/gui.py:2233
+#: virtualbricks/gui/gui.py:2170
+#: virtualbricks/gui/gui.py:2182
+#: virtualbricks/gui/gui.py:2241
+#: virtualbricks/gui/gui.py:2177
+#: virtualbricks/gui/gui.py:2189
+#: virtualbricks/gui/gui.py:2248
 msgid "Invalid name!"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2175
+#: virtualbricks/gui/gui.py:2148
+#: virtualbricks/gui/gui.py:2168
+#: virtualbricks/gui/gui.py:2176
+#: virtualbricks/gui/gui.py:2183
 msgid "Cannot rename Event: it is in use."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2286 virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2286
+#: virtualbricks/gui/gui.py:2295
 #: virtualbricks/gui/gui.py:2325
+#: virtualbricks/gui/gui.py:2259
+#: virtualbricks/gui/gui.py:2268
+#: virtualbricks/gui/gui.py:2298
+#: virtualbricks/gui/gui.py:2279
+#: virtualbricks/gui/gui.py:2288
+#: virtualbricks/gui/gui.py:2318
+#: virtualbricks/gui/gui.py:2287
+#: virtualbricks/gui/gui.py:2296
+#: virtualbricks/gui/gui.py:2326
+#: virtualbricks/gui/gui.py:2294
+#: virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2333
 msgid "Error"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2286
+#: virtualbricks/gui/gui.py:2259
+#: virtualbricks/gui/gui.py:2279
+#: virtualbricks/gui/gui.py:2287
+#: virtualbricks/gui/gui.py:2294
 msgid "invalid path for qemu binaries"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2268
+#: virtualbricks/gui/gui.py:2288
+#: virtualbricks/gui/gui.py:2296
+#: virtualbricks/gui/gui.py:2303
 msgid "cannot find neither qemu nor kvm in this path"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2299 virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2299
+#: virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2272
+#: virtualbricks/gui/gui.py:2275
+#: virtualbricks/gui/gui.py:2292
+#: virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2300
+#: virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2307
+#: virtualbricks/gui/gui.py:2310
 msgid "Warning"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2299
+#: virtualbricks/gui/gui.py:2272
+#: virtualbricks/gui/gui.py:2292
+#: virtualbricks/gui/gui.py:2300
+#: virtualbricks/gui/gui.py:2307
 msgid "cannot find qemu, using kvm only\n"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2275
+#: virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2310
 msgid "kvm not found"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2275
+#: virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2310
 msgid "KVM support disabled"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2304
+#: virtualbricks/gui/gui.py:2277
+#: virtualbricks/gui/gui.py:2297
+#: virtualbricks/gui/gui.py:2305
+#: virtualbricks/gui/gui.py:2312
 msgid "KVM and Qemu detected"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2316
+#: virtualbricks/gui/gui.py:2289
+#: virtualbricks/gui/gui.py:2309
+#: virtualbricks/gui/gui.py:2317
+#: virtualbricks/gui/gui.py:2324
 msgid "additional targets supported"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2325
+#: virtualbricks/gui/gui.py:2298
+#: virtualbricks/gui/gui.py:2318
+#: virtualbricks/gui/gui.py:2326
+#: virtualbricks/gui/gui.py:2333
 msgid "invalid path for vde binaries"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2327
+#: virtualbricks/gui/gui.py:2300
+#: virtualbricks/gui/gui.py:2320
+#: virtualbricks/gui/gui.py:2328
+#: virtualbricks/gui/gui.py:2335
 msgid "Warning, missing modules"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2332
+#: virtualbricks/gui/gui.py:2305
+#: virtualbricks/gui/gui.py:2325
+#: virtualbricks/gui/gui.py:2333
+#: virtualbricks/gui/gui.py:2340
 msgid "All VDE components detected"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2398
-msgid ""
-"No KVM binary found. Check your active configuration. KVM will stay disabled."
+#: virtualbricks/gui/gui.py:2371
+#: virtualbricks/gui/gui.py:2391
+#: virtualbricks/gui/gui.py:2399
+#: virtualbricks/gui/gui.py:2406
+msgid "No KVM binary found. Check your active configuration. KVM will stay disabled."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2401
-msgid ""
-"No KVM support found on the system. Check your active configuration. KVM "
-"will stay disabled."
+#: virtualbricks/gui/gui.py:2374
+#: virtualbricks/gui/gui.py:2394
+#: virtualbricks/gui/gui.py:2402
+#: virtualbricks/gui/gui.py:2409
+msgid "No KVM support found on the system. Check your active configuration. KVM will stay disabled."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2572
+#: virtualbricks/gui/gui.py:2545
+#: virtualbricks/gui/gui.py:2565
+#: virtualbricks/gui/gui.py:2573
+#: virtualbricks/gui/gui.py:2580
 msgid "Suspend/Resume not supported on this disk."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2597
+#: virtualbricks/gui/gui.py:2570
+#: virtualbricks/gui/gui.py:2590
+#: virtualbricks/gui/gui.py:2598
+#: virtualbricks/gui/gui.py:2605
 msgid "Cannot find suspend point."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2629
+#: virtualbricks/gui/gui.py:2602
+#: virtualbricks/gui/gui.py:2622
+#: virtualbricks/gui/gui.py:2630
+#: virtualbricks/gui/gui.py:2637
 msgid "Error saving topology: Invalid image format"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2631
+#: virtualbricks/gui/gui.py:2604
+#: virtualbricks/gui/gui.py:2624
+#: virtualbricks/gui/gui.py:2632
+#: virtualbricks/gui/gui.py:2639
 msgid "Error saving topology: Could not write file"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2633
+#: virtualbricks/gui/gui.py:2606
+#: virtualbricks/gui/gui.py:2626
+#: virtualbricks/gui/gui.py:2634
+#: virtualbricks/gui/gui.py:2641
 msgid "Error saving topology: Unknown error"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2788
+#: virtualbricks/gui/gui.py:2761
+#: virtualbricks/gui/gui.py:2781
+#: virtualbricks/gui/gui.py:2789
+#: virtualbricks/gui/gui.py:2796
 msgid "Virtualbricks-Events to attach to the start/stop Brick Events"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2794
+#: virtualbricks/gui/gui.py:2767
+#: virtualbricks/gui/gui.py:2787
+#: virtualbricks/gui/gui.py:2795
+#: virtualbricks/gui/gui.py:2802
 msgid "Save current project?"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2797
+#: virtualbricks/gui/gui.py:2770
+#: virtualbricks/gui/gui.py:2790
+#: virtualbricks/gui/gui.py:2798
+#: virtualbricks/gui/gui.py:2805
 msgid "Open a project"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2800 virtualbricks/gui/gui.py:2820
+#: virtualbricks/gui/gui.py:2800
+#: virtualbricks/gui/gui.py:2820
 #: virtualbricks/gui/gui.py:2850
+#: virtualbricks/gui/gui.py:2773
+#: virtualbricks/gui/gui.py:2793
+#: virtualbricks/gui/gui.py:2823
+#: virtualbricks/gui/gui.py:2813
+#: virtualbricks/gui/gui.py:2843
+#: virtualbricks/gui/gui.py:2801
+#: virtualbricks/gui/gui.py:2821
+#: virtualbricks/gui/gui.py:2851
+#: virtualbricks/gui/gui.py:2808
+#: virtualbricks/gui/gui.py:2828
+#: virtualbricks/gui/gui.py:2858
 msgid "Virtualbricks Bricks List"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2804 virtualbricks/gui/gui.py:2824
+#: virtualbricks/gui/gui.py:2804
+#: virtualbricks/gui/gui.py:2824
 #: virtualbricks/gui/gui.py:2854
+#: virtualbricks/gui/gui.py:2777
+#: virtualbricks/gui/gui.py:2797
+#: virtualbricks/gui/gui.py:2827
+#: virtualbricks/gui/gui.py:2817
+#: virtualbricks/gui/gui.py:2847
+#: virtualbricks/gui/gui.py:2805
+#: virtualbricks/gui/gui.py:2825
+#: virtualbricks/gui/gui.py:2855
+#: virtualbricks/gui/gui.py:2812
+#: virtualbricks/gui/gui.py:2832
+#: virtualbricks/gui/gui.py:2862
 msgid "All files"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2816
+#: virtualbricks/gui/gui.py:2789
+#: virtualbricks/gui/gui.py:2809
+#: virtualbricks/gui/gui.py:2817
+#: virtualbricks/gui/gui.py:2824
 msgid "Save as..."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2846
+#: virtualbricks/gui/gui.py:2819
+#: virtualbricks/gui/gui.py:2839
+#: virtualbricks/gui/gui.py:2847
+#: virtualbricks/gui/gui.py:2854
 msgid "New project"
 msgstr ""
 
@@ -2178,3 +2450,145 @@ msgstr ""
 #: virtualbricks/settings.py:97
 msgid "Cannot save default configuration"
 msgstr ""
+
+#: virtualbricks/gui/gui.py:1316
+#, python-format
+msgid ""
+"\t\tCHANNEL BANDWIDTH\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1326
+#: virtualbricks/gui/gui.py:1319
+#, python-format
+msgid ""
+"\t\tINTERFACE SPEED\n"
+"Input is blocked for the tramission time of the packet, thus the sender is prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1336
+#: virtualbricks/gui/gui.py:1322
+#, python-format
+msgid ""
+"\t\tDELAY\n"
+"Extra delay (in milliseconds). This delay is added to the real communication delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1325
+#, python-format
+msgid ""
+"\t\tCHANNEL BUFFER SIZE\n"
+"Maximum size of the packet queue. Exceeding packets are discarded.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1316
+#, python-format
+msgid ""
+"\t\tCHANNEL BANDWIDTH\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10\\% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98\\% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1319
+#, python-format
+msgid ""
+"\t\tINTERFACE SPEED\n"
+"Input is blocked for the tramission time of the packet, thus the sender is prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10\\% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98\\% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1329
+#, python-format
+msgid ""
+"\t\tDELAY\n"
+"Extra delay (in milliseconds). This delay is added to the real communication delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10\\% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98\\% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1316
+#, python-format
+msgid ""
+"\t\tCHANNEL BANDWIDTH\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1319
+#: virtualbricks/gui/gui.py:1320
+#: virtualbricks/gui/gui.py:1327
+#, python-format
+msgid ""
+"\t\tINTERFACE SPEED\n"
+"Input is blocked for the tramission time of the packet, thus the sender is prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1329
+#: virtualbricks/gui/gui.py:1331
+#: virtualbricks/gui/gui.py:1338
+#, python-format
+msgid ""
+"\t\tDELAY\n"
+"Extra delay (in milliseconds). This delay is added to the real communication delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1342
+#: virtualbricks/gui/gui.py:1349
+#, python-format
+msgid ""
+"\t\tCHANNEL BUFFER SIZE\n"
+"Maximum size of the packet queue. Exceeding packets are discarded.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1352
+#: virtualbricks/gui/gui.py:1359
+#, python-format
+msgid ""
+"\t\tPACKET LOSS\n"
+"Percentage of loss as a floating point number.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1361
+#: virtualbricks/gui/gui.py:1368
+#, python-format
+msgid ""
+"\t\tPACKET DUPLICATION\n"
+"Percentage of dup packet. Do not use dup factor 100%% because it means that each packet is sent infinite times.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1371
+#: virtualbricks/gui/gui.py:1378
+#, python-format
+msgid ""
+"\t\tNOISE\n"
+"Number of bits damaged/one megabyte (megabit).\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1380
+#: virtualbricks/gui/gui.py:1387
+#, python-format
+msgid ""
+"\t\tLOST BURST\n"
+"When this is not zero, wirefilter uses the Gilbert model for bursty errors. This is the mean length of lost packet bursts.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of 100 means the final value goes from 90 to 110. The distribution can be Uniform or Gaussian normal (more than 98%% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1390
+#: virtualbricks/gui/gui.py:1397
+msgid ""
+"\t\tMTU: MAXIMUM TRANSMISSION UNIT\n"
+"Packets longer than specified size are discarded."
+msgstr ""
+
