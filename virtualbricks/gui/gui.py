@@ -281,7 +281,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.draw_topology()
 		self.check_joblist(force=True)
 
-	def cb_brickfactory_error(self, model, name=""):
+	def cb_brickfactory_error(self, model, name="Unnamed"):
 		gtk.gdk.threads_enter()
 		self.error(name)
 		gtk.gdk.threads_leave()
@@ -927,7 +927,9 @@ class VBGUI(Logger, gobject.GObject):
 
 	def error(self, text, *args, **kwargs):
 		Logger.error(self, text, *args, **kwargs)
-		text = text % args
+		if args:
+			text = text % args
+
 		#gtk.gdk.threads_enter()
 		#try:
 		self.show_error(text)
@@ -1290,18 +1292,18 @@ class VBGUI(Logger, gobject.GObject):
 		else:
 			frame_GP.set_sensitive(True)
 			self.on_symm_toggle(self.gladefile.get_widget('cfg_Wirefilter_speedsymm_check'))
-			
+
 	def on_percent_insert_text(self, editable, new_text, new_text_length, position):
 		text = editable.get_text() + new_text
 		if not re.match("^(?:[1-9]+\.?[0-9]{0,3}|0\.[0-9]{0,3}|0)$", text ):
 			editable.emit_stop_by_name('insert-text')
-	
+
 	def on_non_negative_insert_text(self, editable, new_text, new_text_length, position):
 		import re
 		text = editable.get_text() + new_text
 		if not re.match("^(?:[1-9][0-9]*|0)$", text ):
 			editable.emit_stop_by_name('insert-text')
-	
+
 	def on_Wirefilter_help_button_clicked(self, widget=None, data=""):
 		paramname = widget.name.replace("Wirefilter_","").replace("_help_button","")
 		f_name = getattr(self, paramname + "_help")

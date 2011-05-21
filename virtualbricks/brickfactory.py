@@ -323,6 +323,7 @@ class Brick(ChildLogger):
 		self.settings = self.factory.settings
 		self.project_parms = self.factory.project_parms
 		self.active = False
+		self.run_condition = False
 		self.name = _name
 		self.plugs = []
 		self.socks = []
@@ -552,11 +553,15 @@ class Brick(ChildLogger):
 				self.internal_console = self.open_internal_console()
 
 		self.factory.emit("brick-started")
+		self.run_condition = True
 		self.post_poweron()
 
 	def poweroff(self):
 		if self.proc is None:
 			return
+		if self.run_condition is False:
+			return
+		self.run_condition = False
 		if self.homehost:
 			self.proc = None
 			self.homehost.send(self.name+" off")
@@ -568,22 +573,25 @@ class Brick(ChildLogger):
 			if self.needsudo():
 				with open(self.pidfile) as pidfile:
 					pid = pidfile.readline().rstrip("\n")
-
-				command=[self.settings.get('sudo'), 'kill', pid]
-				proc = subprocess.Popen([self.settings.get('sudo'),'kill', pid])
-				ret = proc.wait()
-				if ret != 0:
-					self.factory.err(self, _("can not stop brick (error code: '%s')"), ret)
-					return
+					ret = os.system(self.settings.get('sudo') + ' "kill ' + pid + '"')
 			else:
+				if self.proc.pid <= 1:
+					return
+
+				pid = self.proc.pid
 				try:
 					self.proc.terminate()
 				except Exception, err:
 					self.factory.err(self, _("can not send SIGTERM: '%s'"), err)
+				ret = os.system(self.settings.get('sudo') + ' "kill ' + str(pid) + '"')
+			if ret != 0:
+				self.factory.err(self, _("can not stop brick error code:"), str(ret))
+				return
 
 		ret = None
 		while ret is None:
 			ret = self.proc.poll()
+			time.sleep(0.2)
 
 		self.proc = None
 		self.need_restart_to_apply_changes = False
@@ -624,11 +632,13 @@ class Brick(ChildLogger):
 	#############################
 	# Console related operations.
 	#############################
-	def has_console(self):
+	def has_console(self, closing = False):
 		for i in range(1, 10):
 			if self.proc != None and self.console() and os.path.exists(self.console()):
 				return True
 			else:
+				if closing:
+					return False
 				time.sleep(0.5)
 		return False
 
@@ -696,7 +706,7 @@ class Brick(ChildLogger):
 		return res
 
 	def close_internal_console(self):
-		if not self.has_console():
+		if not self.has_console(closing=True):
 			return
 		self.internal_console.close()
 
