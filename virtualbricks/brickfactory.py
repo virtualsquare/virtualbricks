@@ -66,16 +66,41 @@ class RemoteHostConnectionInstance(Thread):
 	def run(self):
 		if not self.host.connected:
 			return
+		self.host.post_connect_init()
 		p = select.poll()
 		p.register(self.host.sock, select.POLLIN | select.POLLERR | select.POLLHUP | select.POLLNVAL)
 		while self.host.sock and self.host.connected:
-			for fd,ev in p.poll(100):
+			pollret = p.poll(100)
+			if (len(pollret)) == 1:
+				(fd,ev) = pollret[0]
 				if ev != select.POLLIN:
 					self.host.disconnect()
 				else:
-					event = self.host.recv(200)
+					event = self.host.sock.recv(200)
 					if len(event) == 0:
-						self.host.disconnect()
+						event = self.host.sock.recv(200)
+						if len(event) == 0:
+							self.host.disconnect()
+							return
+					args = event.rstrip('\n').split(' ')
+
+					if len(args) > 0 and args[0] == 'brick-started':
+						for br in self.factory.bricks:
+							if br.name == args[1]:
+								br.proc = True
+								br.factory.emit("brick-started", br.name)
+								#print "Started %s" % br.name
+								br.run_condition = True
+								br.post_poweron()
+
+				if len(args) > 0 and args[0] == 'brick-stopped':
+						for br in self.factory.bricks:
+							if br.name == args[1]:
+								br.proc = None
+								br.factory.emit("brick-stopped", br.name)
+								#print "Stopped %s" % br.name
+								br.run_condition = False
+								br.post_poweroff()
 
 
 class RemoteHost():
@@ -119,11 +144,11 @@ class RemoteHost():
 		self.sock.send(hashed)
 		p = select.poll()
 		p.register(self.sock, select.POLLIN)
-		if p.poll(2000):
+		pollret = p.poll(2000)
+		if pollret is not None and len(pollret) != 0:
 			rec = self.sock.recv(4)
 			if rec.startswith("OK"):
 				self.connected=True
-				self.post_connect_init()
 				self.factory.remotehosts_changed=True
 				self.connection = RemoteHostConnectionInstance(self, self.factory)
 				self.connection.start()
@@ -133,35 +158,39 @@ class RemoteHost():
 
 	def disconnect(self):
 		if self.connected:
+			self.connected=False
 			for b in self.factory.bricks:
 				if b.homehost and b.homehost.addr[0] == self.addr[0]:
 					b.poweroff()
 			self.send("reset all")
 			self.sock.close()
 			self.sock = None
-			self.connected=False
 		self.factory.remotehosts_changed=True
 
+	def expect_OK(self):
+		p = select.poll()
+		p.register(self.sock, select.POLLIN)
+		if (p.poll(5000)):
+				rec = self.sock.recv(4)
+				if rec.startswith("OK"):
+					return True
+		return False
+
+
 	def upload(self,b):
-		try:
-			self.send("new "+b.get_type()+" "+b.name)
-			self.putconfig(b)
-			self.factory.remotehosts_changed=True
-		except:
-			return False
-		else:
-			return True
+		self.send("new "+b.get_type()+" "+b.name)
+		self.putconfig(b)
+		self.expect_OK()
+		self.factory.remotehosts_changed=True
 
 	def putconfig(self,b):
-		try:
-			for (k, v) in b.cfg.iteritems():
-				if k != 'homehost':
-					self.send(b.name + ' config ' + "%s=%s" % (k, v))
-			self.factory.remotehosts_changed=True
-		except:
-			return False
-		else:
-			return True
+		for (k, v) in b.cfg.iteritems():
+			if k != 'homehost':
+				#print "sending "+ b.name+ " config " + "%s=%s" % (k, v)
+				self.sock.send(b.name + ' config ' + "%s=%s" % (k, v)+'\n')
+				self.expect_OK()
+				time.sleep(0.1)
+		self.factory.remotehosts_changed=True
 
 	def post_connect_init(self):
 		self.send('reset all')
@@ -169,23 +198,19 @@ class RemoteHost():
 		for b in self.factory.bricks:
 			if b.homehost and b.homehost.addr == self.addr:
 					self.upload(b)
-					self.putconfig(b)
 
 	def send(self, cmd):
+		ret = False
 		if self.connected:
 			self.sock.send(cmd + '\n')
-			p = select.poll()
-			p.register(self.sock, select.POLLIN)
-			if (p.poll(5000)):
-				rec = self.sock.recv(4)
-				if rec.startswith("OK"):
-					return True
-		return False
+		return ret
 
 	def recv(self, size):
 		if not self.connected:
 			return ""
-		return self.sock.recv(size)
+		ret = ""
+		ret = self.sock.recv(size)
+		return ret
 
 
 
@@ -562,7 +587,9 @@ class Brick(ChildLogger):
 				self.factory.err(self, "Error: You must be connected to the host to perform this action")
 				return
 			else:
-				self.proc = self.homehost.send(self.name+" on")
+				# Initiate RemoteHost startup:
+				self.homehost.send(self.name+" on")
+				return
 		else:
 			# LOCAL BRICK
 			try:
@@ -578,7 +605,7 @@ class Brick(ChildLogger):
 			if self.open_internal_console and callable(self.open_internal_console):
 				self.internal_console = self.open_internal_console()
 
-		self.factory.emit("brick-started")
+		self.factory.emit("brick-started", self.name)
 		self.run_condition = True
 		self.post_poweron()
 
@@ -624,7 +651,7 @@ class Brick(ChildLogger):
 		if self.close_internal_console and callable(self.close_internal_console):
 			self.close_internal_console()
 		self.internal_console = None
-		self.factory.emit("brick-stopped")
+		self.factory.emit("brick-stopped", self.name)
 		self.post_poweroff()
 
 	def post_poweron(self):
@@ -2433,8 +2460,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'brick-error'   : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
-		'brick-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
-		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'brick-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
+		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
 		'event-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'event-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'event-accomplished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
@@ -2511,7 +2538,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 	def start_tcp_server(self, password):
 		self.TCP = TcpServer(self, password)
-		self.TCP.start()
+		try:
+			self.TCP.start()
+		except:
+			print "Error starting TCP server."
+			self.quit()
 
 	def getbrickbyname(self, name):
 		for b in self.bricks:
@@ -2821,6 +2852,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for b in self.bricks:
 			if b.proc is not None:
 				b.poweroff()
+		for h in self.remote_hosts:
+			h.disconnect()
 		self.info(_('Engine: Bye!'))
 		self.config_dump(self.settings.get('current_project'))
 		self.running_condition = False
