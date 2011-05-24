@@ -4705,7 +4705,7 @@ Gaussian</property>
                                                 <child>
                                                   <widget class="GtkComboBox" id="cfg_Wirefilter_speeddistrib_comboinitial">
                                                     <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">Uniform
+                                                    <property name="items">Uniform
 Gaussian</property>
                                                   </widget>
                                                   <packing>
@@ -9497,7 +9497,7 @@ Giga</property>
                                                 <child>
                                                   <widget class="GtkComboBox" id="cfg_Wirefilter_mtuunit_comboinitial">
                                                     <property name="visible">True</property>
-                                                    <property name="items" translatable="yes">bits
+                                                    <property name="items">bits
 bytes</property>
                                                   </widget>
                                                   <packing>

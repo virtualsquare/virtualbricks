@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: virtualbricks 0.4\n"
 "Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-05-19 16:59+0200\n"
+"POT-Creation-Date: 2011-05-24 14:31+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -237,29 +237,31 @@ msgstr ""
 
 #: share/virtualbricks.template.glade:1134
 #: share/virtualbricks.template.glade:12317
+#: share/virtualbricks.template.glade:12354
 msgid "fdb"
-msgstr ""
+msgstr "fdb"
 
 #: share/virtualbricks.template.glade:1148
 #: share/virtualbricks.template.glade:12302
+#: share/virtualbricks.template.glade:12339
 msgid "fda"
-msgstr ""
+msgstr "fda"
 
 #: share/virtualbricks.template.glade:1162
 msgid "hdd"
-msgstr ""
+msgstr "hdd"
 
 #: share/virtualbricks.template.glade:1176
 msgid "hdc"
-msgstr ""
+msgstr "hdc"
 
 #: share/virtualbricks.template.glade:1190
 msgid "hdb"
-msgstr ""
+msgstr "hdb"
 
 #: share/virtualbricks.template.glade:1204
 msgid "hda"
-msgstr ""
+msgstr "hda"
 
 #: share/virtualbricks.template.glade:1315
 msgid "mtdblock"
@@ -281,6 +283,7 @@ msgstr ""
 
 #: share/virtualbricks.template.glade:1685
 #: share/virtualbricks.template.glade:12383
+#: share/virtualbricks.template.glade:12420
 msgid "Drives"
 msgstr ""
 
@@ -308,96 +311,119 @@ msgid "Machine type"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1813
+#: share/virtualbricks.template.glade:1816
 msgid "KVM"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1833
+#: share/virtualbricks.template.glade:1870
 msgid "<b>System and machine</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1891
+#: share/virtualbricks.template.glade:1928
 msgid "disable graphical output"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1896
+#: share/virtualbricks.template.glade:1933
 msgid "disable graphical output and redirect serial I/Os to console"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1923
+#: share/virtualbricks.template.glade:1960
 msgid "Use VGA instead of Default"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1928
+#: share/virtualbricks.template.glade:1965
 msgid ""
 "simulate a standard VGA card with VESA Bochs Extensions (default is CL-"
 "GD5446 PCI VGA)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1943
+#: share/virtualbricks.template.glade:1980
 msgid "Start in vncserver"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1948
+#: share/virtualbricks.template.glade:1985
 msgid "start emulation in a VNC server on display"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1962
+#: share/virtualbricks.template.glade:1999
 msgid "on Display: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:1974
+#: share/virtualbricks.template.glade:2011
 msgid "select Dsiplay for VNC server"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1992
+#: share/virtualbricks.template.glade:2029
 msgid "SDL"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2004
+#: share/virtualbricks.template.glade:2041
 msgid "Portrait"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2026
+#: share/virtualbricks.template.glade:2063
 msgid "<b>Display Options</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2055
+#: share/virtualbricks.template.glade:2092
 msgid "enable usb"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2060
+#: share/virtualbricks.template.glade:2097
 msgid "enable access to usb"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2091
+#: share/virtualbricks.template.glade:2128
 msgid "<b>USB settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2128
+#: share/virtualbricks.template.glade:2165
 msgid "Set realtime clock to local time"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2133
+#: share/virtualbricks.template.glade:2170
 msgid "set the real time clock to local time [default=utc]"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2145
+#: share/virtualbricks.template.glade:2182
 msgid "Guest time drift compensation (TDF)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2163
+#: share/virtualbricks.template.glade:2200
 msgid "Keyboard: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:2193
+#: share/virtualbricks.template.glade:2230
 msgid "Serial"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2210
+#: share/virtualbricks.template.glade:2247
 msgid "<b>Extra Settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2256
+#: share/virtualbricks.template.glade:2293
 msgid "select emulated Soundcard "
 msgstr ""
 
@@ -409,60 +435,83 @@ msgstr ""
 #: share/virtualbricks.template.glade:10137
 #: share/virtualbricks.template.glade:10289
 #: share/virtualbricks.template.glade:10508
+#: share/virtualbricks.template.glade:2321
+#: share/virtualbricks.template.glade:2663
+#: share/virtualbricks.template.glade:3500
+#: share/virtualbricks.template.glade:3521
+#: share/virtualbricks.template.glade:10153
+#: share/virtualbricks.template.glade:10174
+#: share/virtualbricks.template.glade:10326
+#: share/virtualbricks.template.glade:10545
 msgid " \n"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2300
+#: share/virtualbricks.template.glade:2337
 msgid "<b>Audio Device Settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2329
+#: share/virtualbricks.template.glade:2366
 msgid "Used RAM:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2355
 #: share/virtualbricks.template.glade:2402
+#: share/virtualbricks.template.glade:2392
+#: share/virtualbricks.template.glade:2439
 msgid " MB"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2373
+#: share/virtualbricks.template.glade:2410
 msgid "KVM Shadow Memory: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:2420
+#: share/virtualbricks.template.glade:2457
 msgid "<b>Memory Settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2481
+#: share/virtualbricks.template.glade:2518
 msgid "System"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2507
+#: share/virtualbricks.template.glade:2544
 msgid "Disable networking"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2534
+#: share/virtualbricks.template.glade:2571
 msgid "<b>No Network</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2561
+#: share/virtualbricks.template.glade:2598
 msgid "Start with usermode network (default)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2587
+#: share/virtualbricks.template.glade:2624
 msgid "<b>Connect to network</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2613
 #: share/virtualbricks.template.glade:9901
+#: share/virtualbricks.template.glade:2650
+#: share/virtualbricks.template.glade:9938
 msgid "Connect to:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2637
+#: share/virtualbricks.template.glade:2674
 msgid "Virtual ethernet model:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2648
+#: share/virtualbricks.template.glade:2685
 msgid ""
 "\n"
 "rtl8139\n"
@@ -477,96 +526,121 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:2668
+#: share/virtualbricks.template.glade:2705
 msgid "Mac address:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2689
+#: share/virtualbricks.template.glade:2726
 msgid "Randomize"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2719
+#: share/virtualbricks.template.glade:2756
 msgid "Set up a new network card"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2746
+#: share/virtualbricks.template.glade:2783
 msgid "Add Network card"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2772
+#: share/virtualbricks.template.glade:2809
 msgid "Edit selected network card or redirection"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2799
+#: share/virtualbricks.template.glade:2836
 msgid "Edit"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2825
+#: share/virtualbricks.template.glade:2862
 msgid "Remove selected network card or redirection"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2853
 #: share/virtualbricks.template.glade:11302
+#: share/virtualbricks.template.glade:2890
+#: share/virtualbricks.template.glade:11339
 msgid "Remove"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2913
+#: share/virtualbricks.template.glade:2950
 msgid "<b>SMB share</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2938
+#: share/virtualbricks.template.glade:2975
 msgid "SMB Share"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2994
+#: share/virtualbricks.template.glade:3031
 msgid "<b>Network cards</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3027
+#: share/virtualbricks.template.glade:3064
 msgid "Network"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3055
+#: share/virtualbricks.template.glade:3092
 msgid "Use a custom kernel"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3068
+#: share/virtualbricks.template.glade:3105
 msgid "Specify initial ramdisk"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3099
+#: share/virtualbricks.template.glade:3136
 msgid "Parameters to append to command line:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3211
+#: share/virtualbricks.template.glade:3248
 msgid "Enable kernel debugging"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3226
+#: share/virtualbricks.template.glade:3263
 msgid "GNU debugger TCP port:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3259
+#: share/virtualbricks.template.glade:3296
 msgid "<b>Booting Linux</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3286
+#: share/virtualbricks.template.glade:3323
 msgid "Customize Linux Boot"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3379
+#: share/virtualbricks.template.glade:3416
 msgid "<b>Virtual Machine Icon</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3419
+#: share/virtualbricks.template.glade:3456
 msgid "Others"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3473
 #: share/virtualbricks.template.glade:10126
+#: share/virtualbricks.template.glade:3510
+#: share/virtualbricks.template.glade:10163
 msgid "<=== connect ===>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3502
+#: share/virtualbricks.template.glade:3539
 msgid "Plugs"
 msgstr ""
 
@@ -579,6 +653,15 @@ msgstr ""
 #: share/virtualbricks.template.glade:7950
 #: share/virtualbricks.template.glade:8675
 #: share/virtualbricks.template.glade:9407
+#: share/virtualbricks.template.glade:3569
+#: share/virtualbricks.template.glade:4293
+#: share/virtualbricks.template.glade:5061
+#: share/virtualbricks.template.glade:5782
+#: share/virtualbricks.template.glade:6525
+#: share/virtualbricks.template.glade:7246
+#: share/virtualbricks.template.glade:7987
+#: share/virtualbricks.template.glade:8712
+#: share/virtualbricks.template.glade:9444
 msgid "Symmetrical"
 msgstr ""
 
@@ -590,6 +673,14 @@ msgstr ""
 #: share/virtualbricks.template.glade:7968
 #: share/virtualbricks.template.glade:8693
 #: share/virtualbricks.template.glade:9425
+#: share/virtualbricks.template.glade:3587
+#: share/virtualbricks.template.glade:5079
+#: share/virtualbricks.template.glade:5800
+#: share/virtualbricks.template.glade:6543
+#: share/virtualbricks.template.glade:7264
+#: share/virtualbricks.template.glade:8005
+#: share/virtualbricks.template.glade:8730
+#: share/virtualbricks.template.glade:9462
 msgid "Multiplier"
 msgstr ""
 
@@ -602,6 +693,15 @@ msgstr ""
 #: share/virtualbricks.template.glade:7998
 #: share/virtualbricks.template.glade:8720
 #: share/virtualbricks.template.glade:9454
+#: share/virtualbricks.template.glade:3616
+#: share/virtualbricks.template.glade:4340
+#: share/virtualbricks.template.glade:5106
+#: share/virtualbricks.template.glade:5829
+#: share/virtualbricks.template.glade:6570
+#: share/virtualbricks.template.glade:7291
+#: share/virtualbricks.template.glade:8035
+#: share/virtualbricks.template.glade:8757
+#: share/virtualbricks.template.glade:9491
 msgid "UM"
 msgstr ""
 
@@ -614,6 +714,15 @@ msgstr ""
 #: share/virtualbricks.template.glade:8024
 #: share/virtualbricks.template.glade:8745
 #: share/virtualbricks.template.glade:9480
+#: share/virtualbricks.template.glade:3642
+#: share/virtualbricks.template.glade:4366
+#: share/virtualbricks.template.glade:5131
+#: share/virtualbricks.template.glade:5854
+#: share/virtualbricks.template.glade:6595
+#: share/virtualbricks.template.glade:7316
+#: share/virtualbricks.template.glade:8061
+#: share/virtualbricks.template.glade:8782
+#: share/virtualbricks.template.glade:9517
 msgid "General parameters"
 msgstr ""
 
@@ -644,6 +753,33 @@ msgstr ""
 #: share/virtualbricks.template.glade:9507
 #: share/virtualbricks.template.glade:9577
 #: share/virtualbricks.template.glade:9656
+#: share/virtualbricks.template.glade:3669
+#: share/virtualbricks.template.glade:3856
+#: share/virtualbricks.template.glade:4052
+#: share/virtualbricks.template.glade:4393
+#: share/virtualbricks.template.glade:4580
+#: share/virtualbricks.template.glade:4776
+#: share/virtualbricks.template.glade:5158
+#: share/virtualbricks.template.glade:5345
+#: share/virtualbricks.template.glade:5541
+#: share/virtualbricks.template.glade:5881
+#: share/virtualbricks.template.glade:6068
+#: share/virtualbricks.template.glade:6264
+#: share/virtualbricks.template.glade:6622
+#: share/virtualbricks.template.glade:6809
+#: share/virtualbricks.template.glade:7005
+#: share/virtualbricks.template.glade:7343
+#: share/virtualbricks.template.glade:7530
+#: share/virtualbricks.template.glade:7726
+#: share/virtualbricks.template.glade:8088
+#: share/virtualbricks.template.glade:8275
+#: share/virtualbricks.template.glade:8471
+#: share/virtualbricks.template.glade:8809
+#: share/virtualbricks.template.glade:8996
+#: share/virtualbricks.template.glade:9192
+#: share/virtualbricks.template.glade:9544
+#: share/virtualbricks.template.glade:9614
+#: share/virtualbricks.template.glade:9693
 msgid "Base"
 msgstr ""
 
@@ -671,6 +807,30 @@ msgstr ""
 #: share/virtualbricks.template.glade:8811
 #: share/virtualbricks.template.glade:8998
 #: share/virtualbricks.template.glade:9194
+#: share/virtualbricks.template.glade:3708
+#: share/virtualbricks.template.glade:3895
+#: share/virtualbricks.template.glade:4091
+#: share/virtualbricks.template.glade:4432
+#: share/virtualbricks.template.glade:4619
+#: share/virtualbricks.template.glade:4815
+#: share/virtualbricks.template.glade:5197
+#: share/virtualbricks.template.glade:5384
+#: share/virtualbricks.template.glade:5580
+#: share/virtualbricks.template.glade:5920
+#: share/virtualbricks.template.glade:6107
+#: share/virtualbricks.template.glade:6303
+#: share/virtualbricks.template.glade:6661
+#: share/virtualbricks.template.glade:6848
+#: share/virtualbricks.template.glade:7044
+#: share/virtualbricks.template.glade:7382
+#: share/virtualbricks.template.glade:7569
+#: share/virtualbricks.template.glade:7765
+#: share/virtualbricks.template.glade:8127
+#: share/virtualbricks.template.glade:8314
+#: share/virtualbricks.template.glade:8510
+#: share/virtualbricks.template.glade:8848
+#: share/virtualbricks.template.glade:9035
+#: share/virtualbricks.template.glade:9231
 msgid "<b>±</b>"
 msgstr ""
 
@@ -698,6 +858,30 @@ msgstr ""
 #: share/virtualbricks.template.glade:8832
 #: share/virtualbricks.template.glade:9019
 #: share/virtualbricks.template.glade:9215
+#: share/virtualbricks.template.glade:3729
+#: share/virtualbricks.template.glade:3916
+#: share/virtualbricks.template.glade:4112
+#: share/virtualbricks.template.glade:4453
+#: share/virtualbricks.template.glade:4640
+#: share/virtualbricks.template.glade:4836
+#: share/virtualbricks.template.glade:5218
+#: share/virtualbricks.template.glade:5405
+#: share/virtualbricks.template.glade:5601
+#: share/virtualbricks.template.glade:5941
+#: share/virtualbricks.template.glade:6128
+#: share/virtualbricks.template.glade:6324
+#: share/virtualbricks.template.glade:6682
+#: share/virtualbricks.template.glade:6869
+#: share/virtualbricks.template.glade:7065
+#: share/virtualbricks.template.glade:7403
+#: share/virtualbricks.template.glade:7590
+#: share/virtualbricks.template.glade:7786
+#: share/virtualbricks.template.glade:8148
+#: share/virtualbricks.template.glade:8335
+#: share/virtualbricks.template.glade:8531
+#: share/virtualbricks.template.glade:8869
+#: share/virtualbricks.template.glade:9056
+#: share/virtualbricks.template.glade:9252
 msgid "Jitter"
 msgstr ""
 
@@ -725,6 +909,30 @@ msgstr ""
 #: share/virtualbricks.template.glade:8871
 #: share/virtualbricks.template.glade:9058
 #: share/virtualbricks.template.glade:9254
+#: share/virtualbricks.template.glade:3768
+#: share/virtualbricks.template.glade:3955
+#: share/virtualbricks.template.glade:4151
+#: share/virtualbricks.template.glade:4492
+#: share/virtualbricks.template.glade:4679
+#: share/virtualbricks.template.glade:4875
+#: share/virtualbricks.template.glade:5257
+#: share/virtualbricks.template.glade:5444
+#: share/virtualbricks.template.glade:5640
+#: share/virtualbricks.template.glade:5980
+#: share/virtualbricks.template.glade:6167
+#: share/virtualbricks.template.glade:6363
+#: share/virtualbricks.template.glade:6721
+#: share/virtualbricks.template.glade:6908
+#: share/virtualbricks.template.glade:7104
+#: share/virtualbricks.template.glade:7442
+#: share/virtualbricks.template.glade:7629
+#: share/virtualbricks.template.glade:7825
+#: share/virtualbricks.template.glade:8187
+#: share/virtualbricks.template.glade:8374
+#: share/virtualbricks.template.glade:8570
+#: share/virtualbricks.template.glade:8908
+#: share/virtualbricks.template.glade:9095
+#: share/virtualbricks.template.glade:9291
 msgid "%"
 msgstr ""
 
@@ -750,6 +958,28 @@ msgstr ""
 #: share/virtualbricks.template.glade:8891
 #: share/virtualbricks.template.glade:9078
 #: share/virtualbricks.template.glade:9274
+#: share/virtualbricks.template.glade:3788
+#: share/virtualbricks.template.glade:3975
+#: share/virtualbricks.template.glade:4171
+#: share/virtualbricks.template.glade:4895
+#: share/virtualbricks.template.glade:5277
+#: share/virtualbricks.template.glade:5464
+#: share/virtualbricks.template.glade:5660
+#: share/virtualbricks.template.glade:6000
+#: share/virtualbricks.template.glade:6187
+#: share/virtualbricks.template.glade:6383
+#: share/virtualbricks.template.glade:6741
+#: share/virtualbricks.template.glade:6928
+#: share/virtualbricks.template.glade:7124
+#: share/virtualbricks.template.glade:7462
+#: share/virtualbricks.template.glade:7649
+#: share/virtualbricks.template.glade:7845
+#: share/virtualbricks.template.glade:8207
+#: share/virtualbricks.template.glade:8394
+#: share/virtualbricks.template.glade:8590
+#: share/virtualbricks.template.glade:8928
+#: share/virtualbricks.template.glade:9115
+#: share/virtualbricks.template.glade:9311
 msgid "Distrib."
 msgstr ""
 
@@ -762,6 +992,15 @@ msgstr ""
 #: share/virtualbricks.template.glade:8199
 #: share/virtualbricks.template.glade:8920
 #: share/virtualbricks.template.glade:9538
+#: share/virtualbricks.template.glade:3817
+#: share/virtualbricks.template.glade:4541
+#: share/virtualbricks.template.glade:5306
+#: share/virtualbricks.template.glade:6029
+#: share/virtualbricks.template.glade:6770
+#: share/virtualbricks.template.glade:7491
+#: share/virtualbricks.template.glade:8236
+#: share/virtualbricks.template.glade:8957
+#: share/virtualbricks.template.glade:9575
 msgid "Left to Right"
 msgstr ""
 
@@ -774,6 +1013,15 @@ msgstr ""
 #: share/virtualbricks.template.glade:8394
 #: share/virtualbricks.template.glade:9115
 #: share/virtualbricks.template.glade:9616
+#: share/virtualbricks.template.glade:4012
+#: share/virtualbricks.template.glade:4736
+#: share/virtualbricks.template.glade:5501
+#: share/virtualbricks.template.glade:6224
+#: share/virtualbricks.template.glade:6965
+#: share/virtualbricks.template.glade:7686
+#: share/virtualbricks.template.glade:8431
+#: share/virtualbricks.template.glade:9152
+#: share/virtualbricks.template.glade:9653
 msgid "Both Directions"
 msgstr ""
 
@@ -786,65 +1034,88 @@ msgstr ""
 #: share/virtualbricks.template.glade:8591
 #: share/virtualbricks.template.glade:9312
 #: share/virtualbricks.template.glade:9696
+#: share/virtualbricks.template.glade:4209
+#: share/virtualbricks.template.glade:4933
+#: share/virtualbricks.template.glade:5698
+#: share/virtualbricks.template.glade:6421
+#: share/virtualbricks.template.glade:7162
+#: share/virtualbricks.template.glade:7883
+#: share/virtualbricks.template.glade:8628
+#: share/virtualbricks.template.glade:9349
+#: share/virtualbricks.template.glade:9733
 msgid "Right to Left"
 msgstr ""
 
 #: share/virtualbricks.template.glade:4198
+#: share/virtualbricks.template.glade:4235
 msgid "<b>Bandwidth Restriction</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:4484
 #: share/virtualbricks.template.glade:4671
+#: share/virtualbricks.template.glade:4521
 msgid ""
 "Uniform\n"
 "Gaussian"
 msgstr ""
 
 #: share/virtualbricks.template.glade:4922
+#: share/virtualbricks.template.glade:4959
 msgid "<b>Interface Speed</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:4941
+#: share/virtualbricks.template.glade:4978
 msgid "Enable(advanced)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:4993
+#: share/virtualbricks.template.glade:5030
 msgid "Bandwidth"
 msgstr ""
 
 #: share/virtualbricks.template.glade:5687
+#: share/virtualbricks.template.glade:5724
 msgid "<b>Packet Delay</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:6410
+#: share/virtualbricks.template.glade:6447
 msgid "<b>Channel Buffer Size</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:6458 virtualbricks/brickfactory.py:822
+#: share/virtualbricks.template.glade:6495 virtualbricks/brickfactory.py:885
 msgid "Delay"
 msgstr ""
 
 #: share/virtualbricks.template.glade:7151
+#: share/virtualbricks.template.glade:7188
 msgid "<b>Packet Loss</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:7872
+#: share/virtualbricks.template.glade:7909
 msgid "<b>Packet Duplication</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:7920
+#: share/virtualbricks.template.glade:7957
 msgid "Disruptions 1/3"
 msgstr ""
 
 #: share/virtualbricks.template.glade:8617
+#: share/virtualbricks.template.glade:8654
 msgid "<b>Noise</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9338
+#: share/virtualbricks.template.glade:9375
 msgid "<b>Lost Burst</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9376
+#: share/virtualbricks.template.glade:9413
 msgid "Disruptions 2/3"
 msgstr ""
 
@@ -855,136 +1126,172 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:9722
+#: share/virtualbricks.template.glade:9759
 msgid "<b>Maximum Transmission Unit (MTU)</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9764
+#: share/virtualbricks.template.glade:9801
 msgid "Disruptions 3/3"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9800
+#: share/virtualbricks.template.glade:9837
 msgid "Number of ports: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:9826
+#: share/virtualbricks.template.glade:9863
 msgid "Use FSTP"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9838
+#: share/virtualbricks.template.glade:9875
 msgid "Hub mode"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9860
+#: share/virtualbricks.template.glade:9897
 msgid "<b>Switch Configuration</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9910
+#: share/virtualbricks.template.glade:9947
 msgid ""
 " \n"
 "\n"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9941
+#: share/virtualbricks.template.glade:9978
 msgid "Don't touch interface settings"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9951
+#: share/virtualbricks.template.glade:9988
 msgid "Use DHCP"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9966
+#: share/virtualbricks.template.glade:10003
 msgid "Manual settings"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9996
+#: share/virtualbricks.template.glade:10033
 msgid "IP Address:  "
 msgstr ""
 
 #: share/virtualbricks.template.glade:10003
+#: share/virtualbricks.template.glade:10040
 msgid "Netmask:  "
 msgstr ""
 
 #: share/virtualbricks.template.glade:10014
+#: share/virtualbricks.template.glade:10051
 msgid "Gateway:  "
 msgstr ""
 
 #: share/virtualbricks.template.glade:10028
+#: share/virtualbricks.template.glade:10065
 msgid "10.0.0.1"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10043
+#: share/virtualbricks.template.glade:10080
 msgid "255.0.0.0"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10084
+#: share/virtualbricks.template.glade:10121
 msgid "<b>Tap Configuration</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10177
 #: share/virtualbricks.template.glade:14202
+#: share/virtualbricks.template.glade:10214
+#: share/virtualbricks.template.glade:14239
 msgid "Delay:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10209 virtualbricks/brickfactory.py:825
+#: share/virtualbricks.template.glade:10246 virtualbricks/brickfactory.py:888
 msgid "Actions"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10248
+#: share/virtualbricks.template.glade:10285
 msgid "<b>Event Configuration</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10283
 #: share/virtualbricks.template.glade:10398
+#: share/virtualbricks.template.glade:10320
+#: share/virtualbricks.template.glade:10435
 msgid "Connect to"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10315
+#: share/virtualbricks.template.glade:10352
 msgid "Listen to port:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10325
+#: share/virtualbricks.template.glade:10362
 msgid "Expect password:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10364
+#: share/virtualbricks.template.glade:10401
 msgid "<b>Tunnel server Configuration</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10418
 #: share/virtualbricks.template.glade:12758
+#: share/virtualbricks.template.glade:10455
+#: share/virtualbricks.template.glade:12795
 msgid "port:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10448
 #: share/virtualbricks.template.glade:13780
+#: share/virtualbricks.template.glade:10485
+#: share/virtualbricks.template.glade:13817
 msgid "Tunnel Server"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10473
+#: share/virtualbricks.template.glade:10510
 msgid "Password:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10484
+#: share/virtualbricks.template.glade:10521
 msgid "Local port:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10527
+#: share/virtualbricks.template.glade:10564
 msgid "<b>Tunnel client Configuration</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10566
+#: share/virtualbricks.template.glade:10603
 msgid "<b>WAIT...</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10671
+#: share/virtualbricks.template.glade:10708
 msgid "Virtualbricks Settings"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10684
+#: share/virtualbricks.template.glade:10721
 msgid "<b>System Settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10719
+#: share/virtualbricks.template.glade:10756
 msgid "Bricks directory"
 msgstr ""
 
@@ -992,196 +1299,247 @@ msgstr ""
 #: share/virtualbricks.template.glade:10863
 #: share/virtualbricks.template.glade:11012
 #: share/virtualbricks.template.glade:11096
+#: share/virtualbricks.template.glade:10764
+#: share/virtualbricks.template.glade:10900
+#: share/virtualbricks.template.glade:11049
+#: share/virtualbricks.template.glade:11133
 msgid "Select A Folder"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10738
+#: share/virtualbricks.template.glade:10775
 msgid "X-window terminal command"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10749
+#: share/virtualbricks.template.glade:10786
 msgid "X-window sudo command"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10760
+#: share/virtualbricks.template.glade:10797
 msgid "your favorite x-terminal-emulator"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10774
+#: share/virtualbricks.template.glade:10811
 msgid "command to perform administrative actions on your system"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10798
+#: share/virtualbricks.template.glade:10835
 msgid "Enable SysTray"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10819
+#: share/virtualbricks.template.glade:10856
 msgid "<b>General</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10855
+#: share/virtualbricks.template.glade:10892
 msgid "VDE binaries path"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10861
+#: share/virtualbricks.template.glade:10898
 msgid "Path for vde components installed on the system"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10876
 #: share/virtualbricks.template.glade:11025
+#: share/virtualbricks.template.glade:10913
+#: share/virtualbricks.template.glade:11062
 msgid "Status:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10892
+#: share/virtualbricks.template.glade:10929
 msgid ""
 "<span color=\"red\">Error:</span>\n"
 "invalid path for vde binaries"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10919
+#: share/virtualbricks.template.glade:10956
 msgid "Use python support"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10923
+#: share/virtualbricks.template.glade:10960
 msgid "Use native python support from libvdeplug"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10932
+#: share/virtualbricks.template.glade:10969
 msgid "Allow female plugs on devices"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10936
+#: share/virtualbricks.template.glade:10973
 msgid "Allow use of female plugs with all brick types"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10945
+#: share/virtualbricks.template.glade:10982
 msgid "Network topology loop detection"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10949
+#: share/virtualbricks.template.glade:10986
 msgid ""
 "If enabled, detect network loops when starting the bricks, and generate an "
 "error."
 msgstr ""
 
 #: share/virtualbricks.template.glade:10963
+#: share/virtualbricks.template.glade:11000
 msgid "<b>Vde</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11004
+#: share/virtualbricks.template.glade:11041
 msgid "Qemu/KVM binaries path"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11010
+#: share/virtualbricks.template.glade:11047
 msgid "Path for qemu and kvm binaries"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11041
+#: share/virtualbricks.template.glade:11078
 msgid ""
 "<span color=\"red\">Error:</span>\n"
 "invalid path for qemu/kvm binaries"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11088
+#: share/virtualbricks.template.glade:11125
 msgid "Disk images repository"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11094
+#: share/virtualbricks.template.glade:11131
 msgid "Directory that contains hard disk images"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11112
+#: share/virtualbricks.template.glade:11149
 msgid "Disk Images"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11140
+#: share/virtualbricks.template.glade:11177
 msgid "Use KVM"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11144
+#: share/virtualbricks.template.glade:11181
 msgid "Allow the use of kernel-based virtual machine (recommended)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11154
+#: share/virtualbricks.template.glade:11191
 msgid "Enable KSM"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11158
+#: share/virtualbricks.template.glade:11195
 msgid "Allow using the Kernel SamePage Merging support to enhance scalability"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11173
+#: share/virtualbricks.template.glade:11210
 msgid "Use kqemu"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11177
+#: share/virtualbricks.template.glade:11214
 msgid "Use old kqemu support"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11191
+#: share/virtualbricks.template.glade:11228
 msgid "X86 optimizations"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11208
+#: share/virtualbricks.template.glade:11245
 msgid "CD-Rom/DVD/Floppy Devices"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11228
+#: share/virtualbricks.template.glade:11265
 msgid ""
 "Add your \"real\" physical drive volumes like CDR, DVD or Floppy devices "
 "here."
 msgstr ""
 
 #: share/virtualbricks.template.glade:11245
+#: share/virtualbricks.template.glade:11282
 msgid "Name: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:11266
+#: share/virtualbricks.template.glade:11303
 msgid "Device Path: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:11286
+#: share/virtualbricks.template.glade:11323
 msgid "Add"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11330
+#: share/virtualbricks.template.glade:11367
 msgid "<b>Qemu/KVM </b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11417
+#: share/virtualbricks.template.glade:11454
 msgid "Add Bookmark"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11431
+#: share/virtualbricks.template.glade:11468
 msgid "Name:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11456
+#: share/virtualbricks.template.glade:11493
 msgid "Path:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11485
+#: share/virtualbricks.template.glade:11522
 msgid "Select A Icon"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11495
+#: share/virtualbricks.template.glade:11532
 msgid "Icon for this Machine"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11575
 #: share/virtualbricks.template.glade:12064
+#: share/virtualbricks.template.glade:11612
+#: share/virtualbricks.template.glade:12101
 msgid "show qemu volume info for selected image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11590
+#: share/virtualbricks.template.glade:11627
 msgid "remove this entry from My Machines"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11600
+#: share/virtualbricks.template.glade:11637
 msgid "About: Virtualbricks"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11656
+#: share/virtualbricks.template.glade:11693
 msgid ""
 "Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual "
 "Distributed Ethernet.\n"
@@ -1203,34 +1561,42 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:11713
+#: share/virtualbricks.template.glade:11750
 msgid "create new empty image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11730
+#: share/virtualbricks.template.glade:11767
 msgid "<b>create new empty Disk image</b>\n"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11743
+#: share/virtualbricks.template.glade:11780
 msgid "Target Folder for the new image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11753
+#: share/virtualbricks.template.glade:11790
 msgid "Select A Directory"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11776
+#: share/virtualbricks.template.glade:11813
 msgid "Name of the new image (or base image)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11791
+#: share/virtualbricks.template.glade:11828
 msgid "Enter a filename for the new image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11822
+#: share/virtualbricks.template.glade:11859
 msgid "Image format"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11833
+#: share/virtualbricks.template.glade:11870
 msgid ""
 "Auto\n"
 "raw\n"
@@ -1242,14 +1608,17 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:11860
+#: share/virtualbricks.template.glade:11897
 msgid "Size"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11875
+#: share/virtualbricks.template.glade:11912
 msgid "Size of the new image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11889
+#: share/virtualbricks.template.glade:11926
 msgid ""
 "KB\n"
 "MB\n"
@@ -1257,145 +1626,182 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:11949
+#: share/virtualbricks.template.glade:11986
 msgid "Create"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11999
+#: share/virtualbricks.template.glade:12036
 msgid "message"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12074
+#: share/virtualbricks.template.glade:12111
 msgid "add this image to bookmarks"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12084
+#: share/virtualbricks.template.glade:12121
 msgid "Control monitor"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12099
+#: share/virtualbricks.template.glade:12136
 msgid "<b>control monitor for selected qemu job</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12115
+#: share/virtualbricks.template.glade:12152
 msgid "kill emulation immediately"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12128
+#: share/virtualbricks.template.glade:12165
 msgid "reset emulation"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12149
+#: share/virtualbricks.template.glade:12186
 msgid "pause emulation"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12162
+#: share/virtualbricks.template.glade:12199
 msgid "resume emulation"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12190
+#: share/virtualbricks.template.glade:12227
 msgid "<b>Available block devices</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12208
+#: share/virtualbricks.template.glade:12245
 msgid ""
 "This is a list of all blockdevices used by the emulation. Rightclick an "
 "entry to eject. (hd volumes normally can not be ejected)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12222
+#: share/virtualbricks.template.glade:12259
 msgid "<b>change soure of block devices</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12238
 #: share/virtualbricks.template.glade:12253
 #: share/virtualbricks.template.glade:12270
+#: share/virtualbricks.template.glade:12275
+#: share/virtualbricks.template.glade:12290
+#: share/virtualbricks.template.glade:12307
 msgid "Change"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12242
+#: share/virtualbricks.template.glade:12279
 msgid "change the source for qemu cdrom device to the selected image or drive"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12257
+#: share/virtualbricks.template.glade:12294
 msgid ""
 "change the source for qemu floppy A device to the selected image or drive"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12274
+#: share/virtualbricks.template.glade:12311
 msgid ""
 "change the source for qemu floppy B device to the selected image or drive"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12289
+#: share/virtualbricks.template.glade:12326
 msgid "cdrom"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12332
 #: share/virtualbricks.template.glade:12345
 #: share/virtualbricks.template.glade:12361
+#: share/virtualbricks.template.glade:12369
+#: share/virtualbricks.template.glade:12382
+#: share/virtualbricks.template.glade:12398
 msgid "None"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12397
+#: share/virtualbricks.template.glade:12434
 msgid "<b>Available host usb devices</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12415
+#: share/virtualbricks.template.glade:12452
 msgid ""
 "All available host usb-devices. rightclick to attach a device to the virtual "
 "engine (you must have write access to /proc/bus/usb to attach devices)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12429
+#: share/virtualbricks.template.glade:12466
 msgid "<b>Attached guest usb devices</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12447
+#: share/virtualbricks.template.glade:12484
 msgid ""
 "All attached usb devices for this emulation. Rightclick to detach a device"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12466
+#: share/virtualbricks.template.glade:12503
 msgid "USB"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12478
+#: share/virtualbricks.template.glade:12515
 msgid "coming soon..."
 msgstr ""
 
 #: share/virtualbricks.template.glade:12488
+#: share/virtualbricks.template.glade:12525
 msgid "Emulation"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12540
+#: share/virtualbricks.template.glade:12577
 msgid "open control monitor"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12577
+#: share/virtualbricks.template.glade:12614
 msgid "Suspend Qemu"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12586
+#: share/virtualbricks.template.glade:12623
 msgid "Send ACPI poweroff"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12595
+#: share/virtualbricks.template.glade:12632
 msgid "Send ACPI hard reset"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12651
+#: share/virtualbricks.template.glade:12688
 msgid "eject / unmount selected device"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12659
+#: share/virtualbricks.template.glade:12696
 msgid "Setup new network card"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12672
+#: share/virtualbricks.template.glade:12709
 msgid "<b>Network Type</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12684
+#: share/virtualbricks.template.glade:12721
 msgid ""
 "Open a TUN/TAP interface\n"
 "Use an already open TUN/TAP interface\n"
@@ -1407,311 +1813,395 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:12719
+#: share/virtualbricks.template.glade:12756
 msgid "IP address: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:12730
+#: share/virtualbricks.template.glade:12767
 msgid "MAC address: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:12771
+#: share/virtualbricks.template.glade:12808
 msgid "VLAN:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12852
+#: share/virtualbricks.template.glade:12889
 msgid "TUN/TAP configuration script:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12863
+#: share/virtualbricks.template.glade:12900
 msgid "Name of network interface:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:12947
+#: share/virtualbricks.template.glade:12984
 msgid "File descriptor: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:13026
+#: share/virtualbricks.template.glade:13063
 msgid "Request"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13054
 #: share/virtualbricks.template.glade:14382
+#: share/virtualbricks.template.glade:13091
+#: share/virtualbricks.template.glade:14419
 msgid "Are you sure?"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13113
+#: share/virtualbricks.template.glade:13150
 msgid "Add redirect"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13138
+#: share/virtualbricks.template.glade:13175
 msgid "TCP"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13154
+#: share/virtualbricks.template.glade:13191
 msgid "UDP"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13177
 #: share/virtualbricks.template.glade:13225
+#: share/virtualbricks.template.glade:13214
+#: share/virtualbricks.template.glade:13262
 msgid "port "
 msgstr ""
 
 #: share/virtualbricks.template.glade:13202
+#: share/virtualbricks.template.glade:13239
 msgid "to guest IP "
 msgstr ""
 
 #: share/virtualbricks.template.glade:13254
+#: share/virtualbricks.template.glade:13291
 msgid "<b>Add redirect(s)</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13324
+#: share/virtualbricks.template.glade:13361
 msgid "Mode:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13336
+#: share/virtualbricks.template.glade:13373
 msgid "DHCP"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13349
+#: share/virtualbricks.template.glade:13386
 msgid "Manual"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13387
+#: share/virtualbricks.template.glade:13424
 msgid "Address:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13393
+#: share/virtualbricks.template.glade:13430
 msgid "Netmask:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13437
+#: share/virtualbricks.template.glade:13474
 msgid "Advanced"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13458
 #: share/virtualbricks.template.glade:13887
 #: share/virtualbricks.template.glade:14242
+#: share/virtualbricks.template.glade:13495
+#: share/virtualbricks.template.glade:13924
+#: share/virtualbricks.template.glade:14279
 msgid "Cancel"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13471
 #: share/virtualbricks.template.glade:13902
 #: share/virtualbricks.template.glade:14257
+#: share/virtualbricks.template.glade:13508
+#: share/virtualbricks.template.glade:13939
+#: share/virtualbricks.template.glade:14294
 msgid "Ok"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13537
+#: share/virtualbricks.template.glade:13574
 msgid "Switch"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13576
+#: share/virtualbricks.template.glade:13613
 msgid "Wire"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13615
+#: share/virtualbricks.template.glade:13652
 msgid "Wirefilter"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13654
+#: share/virtualbricks.template.glade:13691
 msgid "Tap"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13702
+#: share/virtualbricks.template.glade:13739
 msgid "Tunnel Client"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13741
+#: share/virtualbricks.template.glade:13778
 msgid "Virtual Machine"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13805
+#: share/virtualbricks.template.glade:13842
 msgid "Run on remote host:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13853
+#: share/virtualbricks.template.glade:13890
 msgid "Brick name:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13931
+#: share/virtualbricks.template.glade:13968
 msgid "Event type selection"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13978
+#: share/virtualbricks.template.glade:14015
 msgid "Brick Start"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14016
+#: share/virtualbricks.template.glade:14053
 msgid "Brick Stop"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14055
+#: share/virtualbricks.template.glade:14092
 msgid "Brick Config"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14093
+#: share/virtualbricks.template.glade:14130
 msgid ""
 "Free\n"
 "Shell Command"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14141
+#: share/virtualbricks.template.glade:14178
 msgid "Events Collation"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14184
+#: share/virtualbricks.template.glade:14221
 msgid "Event name:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14214
+#: share/virtualbricks.template.glade:14251
 msgid "10"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14290
 #: share/virtualbricks.template.glade:14745
+#: share/virtualbricks.template.glade:14327
+#: share/virtualbricks.template.glade:14782
 msgid " "
 msgstr ""
 
 #: share/virtualbricks.template.glade:14301
 #: share/virtualbricks.template.glade:14756
+#: share/virtualbricks.template.glade:14338
+#: share/virtualbricks.template.glade:14793
 msgid "_Start/Stop"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14309
 #: share/virtualbricks.template.glade:14764
+#: share/virtualbricks.template.glade:14346
+#: share/virtualbricks.template.glade:14801
 msgid "_Delete"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14317
 #: share/virtualbricks.template.glade:14772
+#: share/virtualbricks.template.glade:14354
+#: share/virtualbricks.template.glade:14809
 msgid "Make a C_opy"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14325
 #: share/virtualbricks.template.glade:14780
+#: share/virtualbricks.template.glade:14362
+#: share/virtualbricks.template.glade:14817
 msgid "Re_name"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14333
 #: share/virtualbricks.template.glade:14788
+#: share/virtualbricks.template.glade:14370
+#: share/virtualbricks.template.glade:14825
 msgid "_Configure"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14342
+#: share/virtualbricks.template.glade:14379
 msgid "_Resume VM"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14350
+#: share/virtualbricks.template.glade:14387
 msgid "_Attach Event"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14390
+#: share/virtualbricks.template.glade:14427
 msgid "<b>Confirm Action</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14465
 #: share/virtualbricks.template.glade:14813
+#: share/virtualbricks.template.glade:14502
+#: share/virtualbricks.template.glade:14850
 msgid "Choose a new name:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14532
+#: share/virtualbricks.template.glade:14569
 msgid "Virtualbricks: action in progress"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14547
+#: share/virtualbricks.template.glade:14584
 msgid "Please wait"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14576
+#: share/virtualbricks.template.glade:14613
 msgid "Select Image file"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14637
+#: share/virtualbricks.template.glade:14674
 msgid "Toggle window"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14650
+#: share/virtualbricks.template.glade:14687
 msgid "Close VB"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14658
+#: share/virtualbricks.template.glade:14695
 msgid "Shell command actions"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14675
+#: share/virtualbricks.template.glade:14712
 msgid ""
 "Enter shell command:\n"
 "(each line is an action)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14796
+#: share/virtualbricks.template.glade:14833
 msgid "New event name"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14881
+#: share/virtualbricks.template.glade:14918
 msgid "Bricks to add to the event"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14917
+#: share/virtualbricks.template.glade:14954
 msgid "<b>Bricks available</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14942
+#: share/virtualbricks.template.glade:14979
 msgid ""
 "--->\n"
 "<---"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15013
+#: share/virtualbricks.template.glade:15050
 msgid "<b>Bricks added</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15077
+#: share/virtualbricks.template.glade:15114
 msgid "Messages"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15203
+#: share/virtualbricks.template.glade:15240
 msgid "<b>Start Event selection</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15217
 #: share/virtualbricks.template.glade:15282
+#: share/virtualbricks.template.glade:15254
+#: share/virtualbricks.template.glade:15319
 msgid "Assign Nothing"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15268
+#: share/virtualbricks.template.glade:15305
 msgid "<b>Stop Event selection</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15354
+#: share/virtualbricks.template.glade:15391
 msgid "Connect/Disconnect"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15362
+#: share/virtualbricks.template.glade:15399
 msgid "Change Password"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15370
+#: share/virtualbricks.template.glade:15407
 msgid "Auto-connect at startup"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15378
+#: share/virtualbricks.template.glade:15415
 msgid "Delete"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15384
+#: share/virtualbricks.template.glade:15421
 msgid "Authentication"
 msgstr ""
 
 #: share/virtualbricks.template.glade:15397
+#: share/virtualbricks.template.glade:15434
 msgid "<b>Password for remote virtualbricks session:</b>"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:532
+#: virtualbricks/brickfactory.py:532 virtualbricks/brickfactory.py:584
 #, python-format
 msgid "Starting: '%s'"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:565
+#: virtualbricks/brickfactory.py:565 virtualbricks/brickfactory.py:623
 #, python-format
 msgid "Shutting down %s"
 msgstr ""
@@ -1721,102 +2211,108 @@ msgstr ""
 msgid "can not stop brick (error code: '%s')"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:582
+#: virtualbricks/brickfactory.py:582 virtualbricks/brickfactory.py:638
 #, python-format
 msgid "can not send SIGTERM: '%s'"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:646
+#: virtualbricks/brickfactory.py:646 virtualbricks/brickfactory.py:709
 msgid "Error: cannot start a terminal emulator"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:651
+#: virtualbricks/brickfactory.py:651 virtualbricks/brickfactory.py:714
 msgid "Error running command line"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:658
+#: virtualbricks/brickfactory.py:658 virtualbricks/brickfactory.py:721
 msgid "does not have a console"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:669
+#: virtualbricks/brickfactory.py:669 virtualbricks/brickfactory.py:732
 msgid "error opening internal console"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:714 virtualbricks/brickfactory.py:771
+#: virtualbricks/brickfactory.py:777 virtualbricks/brickfactory.py:834
 msgid "running"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:716 virtualbricks/brickfactory.py:1019
 #: virtualbricks/brickfactory.py:1081 virtualbricks/brickfactory.py:1086
 #: virtualbricks/brickfactory.py:1088 virtualbricks/brickfactory.py:1825
-#: virtualbricks/brickfactory.py:1877
+#: virtualbricks/brickfactory.py:1877 virtualbricks/brickfactory.py:779
+#: virtualbricks/brickfactory.py:1082 virtualbricks/brickfactory.py:1144
+#: virtualbricks/brickfactory.py:1149 virtualbricks/brickfactory.py:1151
+#: virtualbricks/brickfactory.py:1888 virtualbricks/brickfactory.py:1940
 msgid "disconnected"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:718 virtualbricks/brickfactory.py:775
+#: virtualbricks/brickfactory.py:781 virtualbricks/brickfactory.py:838
 msgid "off"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:773
+#: virtualbricks/brickfactory.py:773 virtualbricks/brickfactory.py:836
 msgid "unconfigured"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:798
+#: virtualbricks/brickfactory.py:798 virtualbricks/brickfactory.py:861
 msgid "Error: config line must contain add OR addsh."
 msgstr ""
 
-#: virtualbricks/brickfactory.py:806
+#: virtualbricks/brickfactory.py:806 virtualbricks/brickfactory.py:869
 #, python-format
 msgid "Added vb-shell command: '%s'"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:813
+#: virtualbricks/brickfactory.py:813 virtualbricks/brickfactory.py:876
 #, python-format
 msgid "Added host-shell command: '%s'"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:956
+#: virtualbricks/brickfactory.py:956 virtualbricks/brickfactory.py:1019
 msgid "Ports:"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1017
+#: virtualbricks/brickfactory.py:1017 virtualbricks/brickfactory.py:1080
 #, python-format
 msgid "plugged to %s "
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1089
+#: virtualbricks/brickfactory.py:1089 virtualbricks/brickfactory.py:1152
 msgid "Configured to connect"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1091
+#: virtualbricks/brickfactory.py:1091 virtualbricks/brickfactory.py:1154
 msgid "Not yet configured."
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1092
+#: virtualbricks/brickfactory.py:1092 virtualbricks/brickfactory.py:1155
 msgid "Left plug is"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1092
+#: virtualbricks/brickfactory.py:1092 virtualbricks/brickfactory.py:1155
 msgid "and right plug is"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:1823 virtualbricks/brickfactory.py:1874
+#: virtualbricks/brickfactory.py:1886 virtualbricks/brickfactory.py:1937
 msgid "plugged to"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1824
+#: virtualbricks/brickfactory.py:1824 virtualbricks/brickfactory.py:1887
 msgid "listening to udp:"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1875
+#: virtualbricks/brickfactory.py:1875 virtualbricks/brickfactory.py:1938
 msgid ", connecting to udp://"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:2146
+#: virtualbricks/brickfactory.py:2146 virtualbricks/brickfactory.py:2209
 msgid "command:"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:2781
+#: virtualbricks/brickfactory.py:2781 virtualbricks/brickfactory.py:2857
 msgid "Engine: Bye!"
 msgstr ""
 
@@ -1828,6 +2324,14 @@ msgstr ""
 #: virtualbricks/gui/gui.py:199 virtualbricks/gui/gui.py:221
 #: virtualbricks/gui/gui.py:1138 virtualbricks/gui/gui.py:1160
 #: virtualbricks/gui/gui.py:2753 virtualbricks/gui/gui.py:2775
+#: virtualbricks/gui/gui.py:2726 virtualbricks/gui/gui.py:2748
+#: virtualbricks/gui/gui.py:2746 virtualbricks/gui/gui.py:2768
+#: virtualbricks/gui/gui.py:2754 virtualbricks/gui/gui.py:2776
+#: virtualbricks/gui/gui.py:2761 virtualbricks/gui/gui.py:2783
+#: virtualbricks/gui/gui.py:1140 virtualbricks/gui/gui.py:1162
+#: virtualbricks/gui/gui.py:2763 virtualbricks/gui/gui.py:2785
+#: virtualbricks/gui/gui.py:2765 virtualbricks/gui/gui.py:2787
+#: virtualbricks/gui/gui.py:2739
 msgid "Type"
 msgstr ""
 
@@ -1835,6 +2339,14 @@ msgstr ""
 #: virtualbricks/gui/gui.py:204 virtualbricks/gui/gui.py:223
 #: virtualbricks/gui/gui.py:1140 virtualbricks/gui/gui.py:1162
 #: virtualbricks/gui/gui.py:2755 virtualbricks/gui/gui.py:2777
+#: virtualbricks/gui/gui.py:2728 virtualbricks/gui/gui.py:2750
+#: virtualbricks/gui/gui.py:2748 virtualbricks/gui/gui.py:2770
+#: virtualbricks/gui/gui.py:2756 virtualbricks/gui/gui.py:2778
+#: virtualbricks/gui/gui.py:2763 virtualbricks/gui/gui.py:2785
+#: virtualbricks/gui/gui.py:1142 virtualbricks/gui/gui.py:1164
+#: virtualbricks/gui/gui.py:2765 virtualbricks/gui/gui.py:2787
+#: virtualbricks/gui/gui.py:2767 virtualbricks/gui/gui.py:2789
+#: virtualbricks/gui/gui.py:2741
 msgid "Name"
 msgstr ""
 
@@ -1842,7 +2354,14 @@ msgstr ""
 #: virtualbricks/gui/gui.py:132 virtualbricks/gui/gui.py:181
 #: virtualbricks/gui/gui.py:214 virtualbricks/gui/gui.py:1136
 #: virtualbricks/gui/gui.py:1158 virtualbricks/gui/gui.py:2751
-#: virtualbricks/gui/gui.py:2773
+#: virtualbricks/gui/gui.py:2773 virtualbricks/gui/gui.py:2724
+#: virtualbricks/gui/gui.py:2746 virtualbricks/gui/gui.py:2744
+#: virtualbricks/gui/gui.py:2766 virtualbricks/gui/gui.py:2752
+#: virtualbricks/gui/gui.py:2774 virtualbricks/gui/gui.py:2759
+#: virtualbricks/gui/gui.py:2781 virtualbricks/gui/gui.py:1138
+#: virtualbricks/gui/gui.py:1160 virtualbricks/gui/gui.py:2761
+#: virtualbricks/gui/gui.py:2783 virtualbricks/gui/gui.py:2763
+#: virtualbricks/gui/gui.py:2785 virtualbricks/gui/gui.py:2737
 msgid "Icon"
 msgstr ""
 
@@ -1854,7 +2373,14 @@ msgstr ""
 #: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:206
 #: virtualbricks/gui/gui.py:225 virtualbricks/gui/gui.py:1142
 #: virtualbricks/gui/gui.py:1164 virtualbricks/gui/gui.py:2757
-#: virtualbricks/gui/gui.py:2779
+#: virtualbricks/gui/gui.py:2779 virtualbricks/gui/gui.py:2730
+#: virtualbricks/gui/gui.py:2752 virtualbricks/gui/gui.py:2750
+#: virtualbricks/gui/gui.py:2772 virtualbricks/gui/gui.py:2758
+#: virtualbricks/gui/gui.py:2780 virtualbricks/gui/gui.py:2765
+#: virtualbricks/gui/gui.py:2787 virtualbricks/gui/gui.py:1144
+#: virtualbricks/gui/gui.py:1166 virtualbricks/gui/gui.py:2767
+#: virtualbricks/gui/gui.py:2789 virtualbricks/gui/gui.py:2769
+#: virtualbricks/gui/gui.py:2791 virtualbricks/gui/gui.py:2743
 msgid "Parameters"
 msgstr ""
 
@@ -1867,10 +2393,12 @@ msgid "Autoconnect"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:332 virtualbricks/gui/gui.py:1091
+#: virtualbricks/gui/gui.py:1093
 msgid "Command"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:336 virtualbricks/gui/gui.py:1095
+#: virtualbricks/gui/gui.py:1097
 msgid "Host shell command"
 msgstr ""
 
@@ -1887,46 +2415,48 @@ msgid "Hide Settings"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1038 virtualbricks/gui/gui.py:1045
+#: virtualbricks/gui/gui.py:1040 virtualbricks/gui/gui.py:1047
 msgid "Cannot create brick: Invalid name."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:1062 virtualbricks/gui/gui.py:1066
+#: virtualbricks/gui/gui.py:1064 virtualbricks/gui/gui.py:1068
 msgid "The name \""
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1062
+#: virtualbricks/gui/gui.py:1062 virtualbricks/gui/gui.py:1064
 msgid "\" has forbidden format."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1066
+#: virtualbricks/gui/gui.py:1066 virtualbricks/gui/gui.py:1068
 msgid "\" has been adapted to \""
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1070
+#: virtualbricks/gui/gui.py:1070 virtualbricks/gui/gui.py:1072
 msgid "An event named \""
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1070
+#: virtualbricks/gui/gui.py:1070 virtualbricks/gui/gui.py:1072
 msgid "\" already exist."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1174
+#: virtualbricks/gui/gui.py:1174 virtualbricks/gui/gui.py:1176
 msgid "Bricks to add to the event to be started"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1178
+#: virtualbricks/gui/gui.py:1178 virtualbricks/gui/gui.py:1180
 msgid "Bricks to add to the event to be stopped"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1182
+#: virtualbricks/gui/gui.py:1182 virtualbricks/gui/gui.py:1184
 msgid "Events to add to the event to be started"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1187
+#: virtualbricks/gui/gui.py:1187 virtualbricks/gui/gui.py:1189
 msgid "Cannot create event: Invalid name."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1311
+#: virtualbricks/gui/gui.py:1311 virtualbricks/gui/gui.py:1313
 msgid "Help for parameter:"
 msgstr ""
 
@@ -1942,218 +2472,397 @@ msgstr ""
 msgid "\t\tDELAY\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1346
+#: virtualbricks/gui/gui.py:1346 virtualbricks/gui/gui.py:1339
 msgid "\t\tCHANNEL BUFFER SIZE\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1355
+#: virtualbricks/gui/gui.py:1355 virtualbricks/gui/gui.py:1328
+#: virtualbricks/gui/gui.py:1348
 msgid "\t\tPACKET LOSS\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1363
+#: virtualbricks/gui/gui.py:1363 virtualbricks/gui/gui.py:1336
+#: virtualbricks/gui/gui.py:1356
 msgid "\t\tPACKET DUPLICATION\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1372
+#: virtualbricks/gui/gui.py:1372 virtualbricks/gui/gui.py:1345
+#: virtualbricks/gui/gui.py:1365
 msgid "\t\tNOISE\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1380
+#: virtualbricks/gui/gui.py:1380 virtualbricks/gui/gui.py:1353
+#: virtualbricks/gui/gui.py:1373
 msgid "\t\tLOST BURST\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1389
+#: virtualbricks/gui/gui.py:1389 virtualbricks/gui/gui.py:1362
+#: virtualbricks/gui/gui.py:1382
 msgid "\t\tMTU: MAXIMUM TRANSMISSION UNIT\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1613
+#: virtualbricks/gui/gui.py:1613 virtualbricks/gui/gui.py:1586
+#: virtualbricks/gui/gui.py:1606 virtualbricks/gui/gui.py:1614
+#: virtualbricks/gui/gui.py:1621 virtualbricks/gui/gui.py:1623
+#: virtualbricks/gui/gui.py:1625 virtualbricks/gui/gui.py:1599
 #, python-format
 msgid "Cannot start '%s': not configured"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1618
+#: virtualbricks/gui/gui.py:1618 virtualbricks/gui/gui.py:1591
+#: virtualbricks/gui/gui.py:1611 virtualbricks/gui/gui.py:1619
+#: virtualbricks/gui/gui.py:1626 virtualbricks/gui/gui.py:1628
+#: virtualbricks/gui/gui.py:1630 virtualbricks/gui/gui.py:1604
 #, python-format
 msgid "Cannot start '%s': not connected"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1624
+#: virtualbricks/gui/gui.py:1624 virtualbricks/gui/gui.py:1597
+#: virtualbricks/gui/gui.py:1617 virtualbricks/gui/gui.py:1625
+#: virtualbricks/gui/gui.py:1632 virtualbricks/gui/gui.py:1634
+#: virtualbricks/gui/gui.py:1636 virtualbricks/gui/gui.py:1610
 msgid ""
 "Loop link detected: aborting operation. If you want to start a looped "
 "network, disable the check loop feature in the general settings"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1632
+#: virtualbricks/gui/gui.py:1632 virtualbricks/gui/gui.py:1605
+#: virtualbricks/gui/gui.py:1625 virtualbricks/gui/gui.py:1633
+#: virtualbricks/gui/gui.py:1640 virtualbricks/gui/gui.py:1642
+#: virtualbricks/gui/gui.py:1644 virtualbricks/gui/gui.py:1618
 msgid "Disk used by the VM is locked by another machine"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1906
+#: virtualbricks/gui/gui.py:1906 virtualbricks/gui/gui.py:1879
+#: virtualbricks/gui/gui.py:1899 virtualbricks/gui/gui.py:1907
+#: virtualbricks/gui/gui.py:1914 virtualbricks/gui/gui.py:1916
+#: virtualbricks/gui/gui.py:1918 virtualbricks/gui/gui.py:1892
 msgid "Choose a filename first!"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2095
+#: virtualbricks/gui/gui.py:2095 virtualbricks/gui/gui.py:2068
+#: virtualbricks/gui/gui.py:2088 virtualbricks/gui/gui.py:2096
+#: virtualbricks/gui/gui.py:2103 virtualbricks/gui/gui.py:2105
+#: virtualbricks/gui/gui.py:2107 virtualbricks/gui/gui.py:2081
 msgid "No KVM binary found"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2095 virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2068 virtualbricks/gui/gui.py:2071
+#: virtualbricks/gui/gui.py:2088 virtualbricks/gui/gui.py:2091
+#: virtualbricks/gui/gui.py:2096 virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2103 virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2105 virtualbricks/gui/gui.py:2108
+#: virtualbricks/gui/gui.py:2107 virtualbricks/gui/gui.py:2110
+#: virtualbricks/gui/gui.py:2081 virtualbricks/gui/gui.py:2084
 msgid "Check your active configuration"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2095 virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2068 virtualbricks/gui/gui.py:2071
+#: virtualbricks/gui/gui.py:2088 virtualbricks/gui/gui.py:2091
+#: virtualbricks/gui/gui.py:2096 virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2103 virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2105 virtualbricks/gui/gui.py:2108
+#: virtualbricks/gui/gui.py:2107 virtualbricks/gui/gui.py:2110
+#: virtualbricks/gui/gui.py:2081 virtualbricks/gui/gui.py:2084
 msgid "KVM will stay disabled"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2098
+#: virtualbricks/gui/gui.py:2098 virtualbricks/gui/gui.py:2071
+#: virtualbricks/gui/gui.py:2091 virtualbricks/gui/gui.py:2099
+#: virtualbricks/gui/gui.py:2106 virtualbricks/gui/gui.py:2108
+#: virtualbricks/gui/gui.py:2110 virtualbricks/gui/gui.py:2084
 msgid "No KVM support found on the system"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2106 virtualbricks/gui/gui.py:2079
+#: virtualbricks/gui/gui.py:2099 virtualbricks/gui/gui.py:2107
+#: virtualbricks/gui/gui.py:2114 virtualbricks/gui/gui.py:2116
+#: virtualbricks/gui/gui.py:2118 virtualbricks/gui/gui.py:2092
 msgid "No KSM support found on the system"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2106 virtualbricks/gui/gui.py:2079
+#: virtualbricks/gui/gui.py:2099 virtualbricks/gui/gui.py:2107
+#: virtualbricks/gui/gui.py:2114 virtualbricks/gui/gui.py:2116
+#: virtualbricks/gui/gui.py:2118 virtualbricks/gui/gui.py:2092
 msgid "Check your configuration"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2106 virtualbricks/gui/gui.py:2079
+#: virtualbricks/gui/gui.py:2099 virtualbricks/gui/gui.py:2107
+#: virtualbricks/gui/gui.py:2114 virtualbricks/gui/gui.py:2116
+#: virtualbricks/gui/gui.py:2118 virtualbricks/gui/gui.py:2092
 msgid "KSM will stay disabled"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2120
+#: virtualbricks/gui/gui.py:2120 virtualbricks/gui/gui.py:2093
+#: virtualbricks/gui/gui.py:2113 virtualbricks/gui/gui.py:2121
+#: virtualbricks/gui/gui.py:2128 virtualbricks/gui/gui.py:2130
+#: virtualbricks/gui/gui.py:2132 virtualbricks/gui/gui.py:2106
 msgid "The brick is still running, it will be killed before being deleted!\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2122
+#: virtualbricks/gui/gui.py:2122 virtualbricks/gui/gui.py:2095
+#: virtualbricks/gui/gui.py:2115 virtualbricks/gui/gui.py:2123
+#: virtualbricks/gui/gui.py:2130 virtualbricks/gui/gui.py:2132
+#: virtualbricks/gui/gui.py:2134 virtualbricks/gui/gui.py:2108
 msgid "Do you really want to delete "
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2131
+#: virtualbricks/gui/gui.py:2131 virtualbricks/gui/gui.py:2104
+#: virtualbricks/gui/gui.py:2124 virtualbricks/gui/gui.py:2132
+#: virtualbricks/gui/gui.py:2139 virtualbricks/gui/gui.py:2141
+#: virtualbricks/gui/gui.py:2143 virtualbricks/gui/gui.py:2117
 msgid "This event is in use"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2133
+#: virtualbricks/gui/gui.py:2133 virtualbricks/gui/gui.py:2106
+#: virtualbricks/gui/gui.py:2126 virtualbricks/gui/gui.py:2134
+#: virtualbricks/gui/gui.py:2141 virtualbricks/gui/gui.py:2143
+#: virtualbricks/gui/gui.py:2145 virtualbricks/gui/gui.py:2119
 msgid "Do you really want to delete"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2143
+#: virtualbricks/gui/gui.py:2143 virtualbricks/gui/gui.py:2116
+#: virtualbricks/gui/gui.py:2136 virtualbricks/gui/gui.py:2144
+#: virtualbricks/gui/gui.py:2151 virtualbricks/gui/gui.py:2153
+#: virtualbricks/gui/gui.py:2155 virtualbricks/gui/gui.py:2129
 msgid "Cannot rename Brick: it is in use."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2169 virtualbricks/gui/gui.py:2181
-#: virtualbricks/gui/gui.py:2240
+#: virtualbricks/gui/gui.py:2240 virtualbricks/gui/gui.py:2142
+#: virtualbricks/gui/gui.py:2154 virtualbricks/gui/gui.py:2213
+#: virtualbricks/gui/gui.py:2162 virtualbricks/gui/gui.py:2174
+#: virtualbricks/gui/gui.py:2233 virtualbricks/gui/gui.py:2170
+#: virtualbricks/gui/gui.py:2182 virtualbricks/gui/gui.py:2241
+#: virtualbricks/gui/gui.py:2177 virtualbricks/gui/gui.py:2189
+#: virtualbricks/gui/gui.py:2248 virtualbricks/gui/gui.py:2179
+#: virtualbricks/gui/gui.py:2191 virtualbricks/gui/gui.py:2250
+#: virtualbricks/gui/gui.py:2193 virtualbricks/gui/gui.py:2252
+#: virtualbricks/gui/gui.py:2155 virtualbricks/gui/gui.py:2167
+#: virtualbricks/gui/gui.py:2226
 msgid "Invalid name!"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2175
+#: virtualbricks/gui/gui.py:2175 virtualbricks/gui/gui.py:2148
+#: virtualbricks/gui/gui.py:2168 virtualbricks/gui/gui.py:2176
+#: virtualbricks/gui/gui.py:2183 virtualbricks/gui/gui.py:2185
+#: virtualbricks/gui/gui.py:2187 virtualbricks/gui/gui.py:2161
 msgid "Cannot rename Event: it is in use."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2286 virtualbricks/gui/gui.py:2295
-#: virtualbricks/gui/gui.py:2325
+#: virtualbricks/gui/gui.py:2325 virtualbricks/gui/gui.py:2259
+#: virtualbricks/gui/gui.py:2268 virtualbricks/gui/gui.py:2298
+#: virtualbricks/gui/gui.py:2279 virtualbricks/gui/gui.py:2288
+#: virtualbricks/gui/gui.py:2318 virtualbricks/gui/gui.py:2287
+#: virtualbricks/gui/gui.py:2296 virtualbricks/gui/gui.py:2326
+#: virtualbricks/gui/gui.py:2294 virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2333 virtualbricks/gui/gui.py:2305
+#: virtualbricks/gui/gui.py:2335 virtualbricks/gui/gui.py:2307
+#: virtualbricks/gui/gui.py:2337 virtualbricks/gui/gui.py:2272
+#: virtualbricks/gui/gui.py:2281 virtualbricks/gui/gui.py:2311
 msgid "Error"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2286
+#: virtualbricks/gui/gui.py:2286 virtualbricks/gui/gui.py:2259
+#: virtualbricks/gui/gui.py:2279 virtualbricks/gui/gui.py:2287
+#: virtualbricks/gui/gui.py:2294 virtualbricks/gui/gui.py:2296
+#: virtualbricks/gui/gui.py:2298 virtualbricks/gui/gui.py:2272
 msgid "invalid path for qemu binaries"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2295 virtualbricks/gui/gui.py:2268
+#: virtualbricks/gui/gui.py:2288 virtualbricks/gui/gui.py:2296
+#: virtualbricks/gui/gui.py:2303 virtualbricks/gui/gui.py:2305
+#: virtualbricks/gui/gui.py:2307 virtualbricks/gui/gui.py:2281
 msgid "cannot find neither qemu nor kvm in this path"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2299 virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2272 virtualbricks/gui/gui.py:2275
+#: virtualbricks/gui/gui.py:2292 virtualbricks/gui/gui.py:2295
+#: virtualbricks/gui/gui.py:2300 virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2307 virtualbricks/gui/gui.py:2310
+#: virtualbricks/gui/gui.py:2309 virtualbricks/gui/gui.py:2312
+#: virtualbricks/gui/gui.py:2311 virtualbricks/gui/gui.py:2314
+#: virtualbricks/gui/gui.py:2285 virtualbricks/gui/gui.py:2288
 msgid "Warning"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2299
+#: virtualbricks/gui/gui.py:2299 virtualbricks/gui/gui.py:2272
+#: virtualbricks/gui/gui.py:2292 virtualbricks/gui/gui.py:2300
+#: virtualbricks/gui/gui.py:2307 virtualbricks/gui/gui.py:2309
+#: virtualbricks/gui/gui.py:2311 virtualbricks/gui/gui.py:2285
 msgid "cannot find qemu, using kvm only\n"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2302 virtualbricks/gui/gui.py:2275
+#: virtualbricks/gui/gui.py:2295 virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2310 virtualbricks/gui/gui.py:2312
+#: virtualbricks/gui/gui.py:2314 virtualbricks/gui/gui.py:2288
 msgid "kvm not found"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2302 virtualbricks/gui/gui.py:2275
+#: virtualbricks/gui/gui.py:2295 virtualbricks/gui/gui.py:2303
+#: virtualbricks/gui/gui.py:2310 virtualbricks/gui/gui.py:2312
+#: virtualbricks/gui/gui.py:2314 virtualbricks/gui/gui.py:2288
 msgid "KVM support disabled"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2304
+#: virtualbricks/gui/gui.py:2304 virtualbricks/gui/gui.py:2277
+#: virtualbricks/gui/gui.py:2297 virtualbricks/gui/gui.py:2305
+#: virtualbricks/gui/gui.py:2312 virtualbricks/gui/gui.py:2314
+#: virtualbricks/gui/gui.py:2316 virtualbricks/gui/gui.py:2290
 msgid "KVM and Qemu detected"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2316
+#: virtualbricks/gui/gui.py:2316 virtualbricks/gui/gui.py:2289
+#: virtualbricks/gui/gui.py:2309 virtualbricks/gui/gui.py:2317
+#: virtualbricks/gui/gui.py:2324 virtualbricks/gui/gui.py:2326
+#: virtualbricks/gui/gui.py:2328 virtualbricks/gui/gui.py:2302
 msgid "additional targets supported"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2325
+#: virtualbricks/gui/gui.py:2325 virtualbricks/gui/gui.py:2298
+#: virtualbricks/gui/gui.py:2318 virtualbricks/gui/gui.py:2326
+#: virtualbricks/gui/gui.py:2333 virtualbricks/gui/gui.py:2335
+#: virtualbricks/gui/gui.py:2337 virtualbricks/gui/gui.py:2311
 msgid "invalid path for vde binaries"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2327
+#: virtualbricks/gui/gui.py:2327 virtualbricks/gui/gui.py:2300
+#: virtualbricks/gui/gui.py:2320 virtualbricks/gui/gui.py:2328
+#: virtualbricks/gui/gui.py:2335 virtualbricks/gui/gui.py:2337
+#: virtualbricks/gui/gui.py:2339 virtualbricks/gui/gui.py:2313
 msgid "Warning, missing modules"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2332
+#: virtualbricks/gui/gui.py:2332 virtualbricks/gui/gui.py:2305
+#: virtualbricks/gui/gui.py:2325 virtualbricks/gui/gui.py:2333
+#: virtualbricks/gui/gui.py:2340 virtualbricks/gui/gui.py:2342
+#: virtualbricks/gui/gui.py:2344 virtualbricks/gui/gui.py:2318
 msgid "All VDE components detected"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2398
+#: virtualbricks/gui/gui.py:2398 virtualbricks/gui/gui.py:2371
+#: virtualbricks/gui/gui.py:2391 virtualbricks/gui/gui.py:2399
+#: virtualbricks/gui/gui.py:2406 virtualbricks/gui/gui.py:2408
+#: virtualbricks/gui/gui.py:2410 virtualbricks/gui/gui.py:2384
 msgid ""
 "No KVM binary found. Check your active configuration. KVM will stay disabled."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2401
+#: virtualbricks/gui/gui.py:2401 virtualbricks/gui/gui.py:2374
+#: virtualbricks/gui/gui.py:2394 virtualbricks/gui/gui.py:2402
+#: virtualbricks/gui/gui.py:2409 virtualbricks/gui/gui.py:2411
+#: virtualbricks/gui/gui.py:2413 virtualbricks/gui/gui.py:2387
 msgid ""
 "No KVM support found on the system. Check your active configuration. KVM "
 "will stay disabled."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2572
+#: virtualbricks/gui/gui.py:2572 virtualbricks/gui/gui.py:2545
+#: virtualbricks/gui/gui.py:2565 virtualbricks/gui/gui.py:2573
+#: virtualbricks/gui/gui.py:2580 virtualbricks/gui/gui.py:2582
+#: virtualbricks/gui/gui.py:2584 virtualbricks/gui/gui.py:2558
 msgid "Suspend/Resume not supported on this disk."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2597
+#: virtualbricks/gui/gui.py:2597 virtualbricks/gui/gui.py:2570
+#: virtualbricks/gui/gui.py:2590 virtualbricks/gui/gui.py:2598
+#: virtualbricks/gui/gui.py:2605 virtualbricks/gui/gui.py:2607
+#: virtualbricks/gui/gui.py:2609 virtualbricks/gui/gui.py:2583
 msgid "Cannot find suspend point."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2629
+#: virtualbricks/gui/gui.py:2629 virtualbricks/gui/gui.py:2602
+#: virtualbricks/gui/gui.py:2622 virtualbricks/gui/gui.py:2630
+#: virtualbricks/gui/gui.py:2637 virtualbricks/gui/gui.py:2639
+#: virtualbricks/gui/gui.py:2641 virtualbricks/gui/gui.py:2615
 msgid "Error saving topology: Invalid image format"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2631
+#: virtualbricks/gui/gui.py:2631 virtualbricks/gui/gui.py:2604
+#: virtualbricks/gui/gui.py:2624 virtualbricks/gui/gui.py:2632
+#: virtualbricks/gui/gui.py:2639 virtualbricks/gui/gui.py:2641
+#: virtualbricks/gui/gui.py:2643 virtualbricks/gui/gui.py:2617
 msgid "Error saving topology: Could not write file"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2633
+#: virtualbricks/gui/gui.py:2633 virtualbricks/gui/gui.py:2606
+#: virtualbricks/gui/gui.py:2626 virtualbricks/gui/gui.py:2634
+#: virtualbricks/gui/gui.py:2641 virtualbricks/gui/gui.py:2643
+#: virtualbricks/gui/gui.py:2645 virtualbricks/gui/gui.py:2619
 msgid "Error saving topology: Unknown error"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2788
+#: virtualbricks/gui/gui.py:2788 virtualbricks/gui/gui.py:2761
+#: virtualbricks/gui/gui.py:2781 virtualbricks/gui/gui.py:2789
+#: virtualbricks/gui/gui.py:2796 virtualbricks/gui/gui.py:2798
+#: virtualbricks/gui/gui.py:2800 virtualbricks/gui/gui.py:2774
 msgid "Virtualbricks-Events to attach to the start/stop Brick Events"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2794
+#: virtualbricks/gui/gui.py:2794 virtualbricks/gui/gui.py:2767
+#: virtualbricks/gui/gui.py:2787 virtualbricks/gui/gui.py:2795
+#: virtualbricks/gui/gui.py:2802 virtualbricks/gui/gui.py:2804
+#: virtualbricks/gui/gui.py:2806 virtualbricks/gui/gui.py:2780
 msgid "Save current project?"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2797
+#: virtualbricks/gui/gui.py:2797 virtualbricks/gui/gui.py:2770
+#: virtualbricks/gui/gui.py:2790 virtualbricks/gui/gui.py:2798
+#: virtualbricks/gui/gui.py:2805 virtualbricks/gui/gui.py:2807
+#: virtualbricks/gui/gui.py:2809 virtualbricks/gui/gui.py:2783
 msgid "Open a project"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2800 virtualbricks/gui/gui.py:2820
-#: virtualbricks/gui/gui.py:2850
+#: virtualbricks/gui/gui.py:2850 virtualbricks/gui/gui.py:2773
+#: virtualbricks/gui/gui.py:2793 virtualbricks/gui/gui.py:2823
+#: virtualbricks/gui/gui.py:2813 virtualbricks/gui/gui.py:2843
+#: virtualbricks/gui/gui.py:2801 virtualbricks/gui/gui.py:2821
+#: virtualbricks/gui/gui.py:2851 virtualbricks/gui/gui.py:2808
+#: virtualbricks/gui/gui.py:2828 virtualbricks/gui/gui.py:2858
+#: virtualbricks/gui/gui.py:2810 virtualbricks/gui/gui.py:2830
+#: virtualbricks/gui/gui.py:2860 virtualbricks/gui/gui.py:2812
+#: virtualbricks/gui/gui.py:2832 virtualbricks/gui/gui.py:2862
+#: virtualbricks/gui/gui.py:2786 virtualbricks/gui/gui.py:2806
+#: virtualbricks/gui/gui.py:2836
 msgid "Virtualbricks Bricks List"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2804 virtualbricks/gui/gui.py:2824
-#: virtualbricks/gui/gui.py:2854
+#: virtualbricks/gui/gui.py:2854 virtualbricks/gui/gui.py:2777
+#: virtualbricks/gui/gui.py:2797 virtualbricks/gui/gui.py:2827
+#: virtualbricks/gui/gui.py:2817 virtualbricks/gui/gui.py:2847
+#: virtualbricks/gui/gui.py:2805 virtualbricks/gui/gui.py:2825
+#: virtualbricks/gui/gui.py:2855 virtualbricks/gui/gui.py:2812
+#: virtualbricks/gui/gui.py:2832 virtualbricks/gui/gui.py:2862
+#: virtualbricks/gui/gui.py:2814 virtualbricks/gui/gui.py:2834
+#: virtualbricks/gui/gui.py:2864 virtualbricks/gui/gui.py:2816
+#: virtualbricks/gui/gui.py:2836 virtualbricks/gui/gui.py:2866
+#: virtualbricks/gui/gui.py:2790 virtualbricks/gui/gui.py:2810
+#: virtualbricks/gui/gui.py:2840
 msgid "All files"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2816
+#: virtualbricks/gui/gui.py:2816 virtualbricks/gui/gui.py:2789
+#: virtualbricks/gui/gui.py:2809 virtualbricks/gui/gui.py:2817
+#: virtualbricks/gui/gui.py:2824 virtualbricks/gui/gui.py:2826
+#: virtualbricks/gui/gui.py:2828 virtualbricks/gui/gui.py:2802
 msgid "Save as..."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2846
+#: virtualbricks/gui/gui.py:2846 virtualbricks/gui/gui.py:2819
+#: virtualbricks/gui/gui.py:2839 virtualbricks/gui/gui.py:2847
+#: virtualbricks/gui/gui.py:2854 virtualbricks/gui/gui.py:2856
+#: virtualbricks/gui/gui.py:2858 virtualbricks/gui/gui.py:2832
 msgid "New project"
 msgstr ""
 
@@ -2177,4 +2886,596 @@ msgstr ""
 
 #: virtualbricks/settings.py:97
 msgid "Cannot save default configuration"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1316
+#, python-format
+msgid ""
+"\t\tCHANNEL BANDWIDTH\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1326 virtualbricks/gui/gui.py:1319
+#, python-format
+msgid ""
+"\t\tINTERFACE SPEED\n"
+"Input is blocked for the tramission time of the packet, thus the sender is "
+"prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1336 virtualbricks/gui/gui.py:1322
+#, python-format
+msgid ""
+"\t\tDELAY\n"
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1325
+#, python-format
+msgid ""
+"\t\tCHANNEL BUFFER SIZE\n"
+"Maximum size of the packet queue. Exceeding packets are discarded.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1316
+#, python-format
+msgid ""
+"\t\tCHANNEL BANDWIDTH\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10\\% for a base value "
+"of 100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98\\% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1319
+#, python-format
+msgid ""
+"\t\tINTERFACE SPEED\n"
+"Input is blocked for the tramission time of the packet, thus the sender is "
+"prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10\\% for a base value "
+"of 100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98\\% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1329
+#, python-format
+msgid ""
+"\t\tDELAY\n"
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10\\% for a base value "
+"of 100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98\\% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1316
+#, python-format
+msgid ""
+"\t\tCHANNEL BANDWIDTH\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1319 virtualbricks/gui/gui.py:1320
+#: virtualbricks/gui/gui.py:1327
+#, python-format
+msgid ""
+"\t\tINTERFACE SPEED\n"
+"Input is blocked for the tramission time of the packet, thus the sender is "
+"prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1329 virtualbricks/gui/gui.py:1331
+#: virtualbricks/gui/gui.py:1338
+#, python-format
+msgid ""
+"\t\tDELAY\n"
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1342 virtualbricks/gui/gui.py:1349
+#, python-format
+msgid ""
+"\t\tCHANNEL BUFFER SIZE\n"
+"Maximum size of the packet queue. Exceeding packets are discarded.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1352 virtualbricks/gui/gui.py:1359
+#, python-format
+msgid ""
+"\t\tPACKET LOSS\n"
+"Percentage of loss as a floating point number.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1361 virtualbricks/gui/gui.py:1368
+#, python-format
+msgid ""
+"\t\tPACKET DUPLICATION\n"
+"Percentage of dup packet. Do not use dup factor 100%% because it means that "
+"each packet is sent infinite times.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1371 virtualbricks/gui/gui.py:1378
+#, python-format
+msgid ""
+"\t\tNOISE\n"
+"Number of bits damaged/one megabyte (megabit).\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1380 virtualbricks/gui/gui.py:1387
+#, python-format
+msgid ""
+"\t\tLOST BURST\n"
+"When this is not zero, wirefilter uses the Gilbert model for bursty errors. "
+"This is the mean length of lost packet bursts.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1390 virtualbricks/gui/gui.py:1397
+msgid ""
+"\t\tMTU: MAXIMUM TRANSMISSION UNIT\n"
+"Packets longer than specified size are discarded."
+msgstr ""
+
+#: share/virtualbricks.template.glade:1833
+msgid "Number of CPUs:"
+msgstr ""
+
+#: virtualbricks/brickfactory.py:641
+msgid "can not stop brick error code:"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"\t\t\tCHANNEL BANDWIDTH\n"
+"\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1329
+#, python-format
+msgid ""
+"\t\t\tINTERFACE SPEED\n"
+"\n"
+"Input is blocked for the tramission time of the packet, thus the sender is "
+"prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1340
+#, python-format
+msgid ""
+"\t\t\tDELAY\n"
+"\n"
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1351
+#, python-format
+msgid ""
+"\t\t\tCHANNEL BUFFER SIZE\n"
+"\n"
+"Maximum size of the packet queue. Exceeding packets are discarded.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1361 virtualbricks/gui/gui.py:1363
+#, python-format
+msgid ""
+"\t\t\tPACKET LOSS\n"
+"\n"
+"Percentage of loss as a floating point number.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1370 virtualbricks/gui/gui.py:1372
+msgid ""
+"\t\t\tPACKET DUPLICATION\n"
+"\n"
+"Percentage of dup packet. Do not use dup factor 100% because it means that "
+"each packet is sent infinite times.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1380 virtualbricks/gui/gui.py:1382
+#, python-format
+msgid ""
+"\t\t\tNOISE\n"
+"\n"
+"Number of bits damaged/one megabyte (megabit).\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1389 virtualbricks/gui/gui.py:1391
+#, python-format
+msgid ""
+"\t\t\tLOST BURST\n"
+"\n"
+"When this is not zero, wirefilter uses the Gilbert model for bursty errors. "
+"This is the mean length of lost packet bursts.\n"
+"Jitter is the variation from the base value. Jitter 10% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1399 virtualbricks/gui/gui.py:1401
+#: virtualbricks/gui/gui.py:1382 virtualbricks/gui/gui.py:1375
+msgid ""
+"\t\t\tMTU: MAXIMUM TRANSMISSION UNIT\n"
+"\n"
+"Packets longer than specified size are discarded."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"\t\t\tCHANNEL BANDWIDTH\n"
+"\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1329 virtualbricks/gui/gui.py:1331
+#, python-format
+msgid ""
+"\t\t\tINTERFACE SPEED\n"
+"\n"
+"Input is blocked for the tramission time of the packet, thus the sender is "
+"prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1340 virtualbricks/gui/gui.py:1342
+#, python-format
+msgid ""
+"\t\t\tDELAY\n"
+"\n"
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1351 virtualbricks/gui/gui.py:1353
+#, python-format
+msgid ""
+"\t\t\tCHANNEL BUFFER SIZE\n"
+"\n"
+"Maximum size of the packet queue. Exceeding packets are discarded.\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98%% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"\t\t\tCHANNEL BANDWIDTH\n"
+"\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10\\% for a base value "
+"of 100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98\\% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"\t\t\tCHANNEL BANDWIDTH\n"
+"\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10\\u0025 for a base "
+"value of 100 means the final value goes from 90 to 110. The distribution can "
+"be Uniform or Gaussian normal (more than 98\\% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"\t\t\tCHANNEL BANDWIDTH\n"
+"\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value. Jitter 10%% for a base value of "
+"100 means the final value goes from 90 to 110. The distribution can be "
+"Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1317
+#, python-format
+msgid ""
+"Jitter 10% for a base value of 100 means the final value goes from 90 to "
+"110. The distribution can be Uniform or Gaussian normal (more than 98% of "
+"the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1323 virtualbricks/gui/gui.py:1325
+msgid ""
+"\t\t\tCHANNEL BANDWIDTH\n"
+"\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path).\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1317
+#, python-format
+msgid ""
+"Jitter 10%% for a base value of 100 means the final value goes from 90 to "
+"110. The distribution can be Uniform or Gaussian normal (more than 98%% of "
+"the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"Jitter 10 percent for a base value of 100 means the final value goes from 90 "
+"to 110. The distribution can be Uniform or Gaussian normal (more than 98% of "
+"the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1333
+msgid ""
+"\t\t\tINTERFACE SPEED\n"
+"\n"
+"Input is blocked for the tramission time of the packet, thus the sender is "
+"prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth.\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1341
+msgid ""
+"\t\t\tDELAY\n"
+"\n"
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay.\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1349
+msgid ""
+"\t\t\tCHANNEL BUFFER SIZE\n"
+"\n"
+"Maximum size of the packet queue. Exceeding packets are discarded.\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1356
+msgid ""
+"\t\t\tPACKET LOSS\n"
+"\n"
+"Percentage of loss as a floating point number.\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1362
+msgid ""
+"\t\t\tPACKET DUPLICATION\n"
+"\n"
+"Percentage of dup packet. Do not use dup factor 100% because it means that "
+"each packet is sent infinite times.\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1369
+msgid ""
+"\t\t\tNOISE\n"
+"\n"
+"Number of bits damaged/one megabyte (megabit).\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1375
+msgid ""
+"\t\t\tLOST BURST\n"
+"\n"
+"When this is not zero, wirefilter uses the Gilbert model for bursty errors. "
+"This is the mean length of lost packet bursts.\n"
+"Jitter is the variation from the base value."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"Jitter 10 %% percent for a base value of 100 means the final value goes from "
+"90 to 110. The distribution can be Uniform or Gaussian normal (more than "
+"98% of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+msgid ""
+"Jitter 10 % percent for a base value of 100 means the final value goes from "
+"90 to 110. The distribution can be Uniform or Gaussian normal (more than 98% "
+"of the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"Jitter 10 % for a base value of 100 means the final value goes from 90 to "
+"110. The distribution can be Uniform or Gaussian normal (more than 98 % of "
+"the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"Jitter 10 %% for a base value of 100 means the final value goes from 90 to "
+"110. The distribution can be Uniform or Gaussian normal (more than 98 %% of "
+"the values are inside the limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1318
+#, python-format
+msgid ""
+"\n"
+"Jitter is the variation from the base value. Jitter 10 percent for a base "
+"value of 100 means the final value goes from 90 to 110. The distribution can "
+"be Uniform or Gaussian normal (more than 98% of the values are inside the "
+"limits)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1326
+msgid ""
+"\t\t\tCHANNEL BANDWIDTH\n"
+"\n"
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1333
+msgid ""
+"\t\t\tINTERFACE SPEED\n"
+"\n"
+"Input is blocked for the tramission time of the packet, thus the sender is "
+"prevented from sending too fast.\n"
+"This feature can be confusing, consider using bandwidth."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1340
+msgid ""
+"\t\t\tDELAY\n"
+"\n"
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1347
+msgid ""
+"\t\t\tCHANNEL BUFFER SIZE\n"
+"\n"
+"Maximum size of the packet queue. Exceeding packets are discarded."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1353
+msgid ""
+"\t\t\tPACKET LOSS\n"
+"\n"
+"Percentage of loss as a floating point number."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1358
+msgid ""
+"\t\t\tPACKET DUPLICATION\n"
+"\n"
+"Percentage of dup packet. Do not use dup factor 100% because it means that "
+"each packet is sent infinite times."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1364
+msgid ""
+"\t\t\tNOISE\n"
+"\n"
+"Number of bits damaged/one megabyte (megabit)."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1369
+msgid ""
+"\t\t\tLOST BURST\n"
+"\n"
+"When this is not zero, wirefilter uses the Gilbert model for bursty errors. "
+"This is the mean length of lost packet bursts."
 msgstr ""
