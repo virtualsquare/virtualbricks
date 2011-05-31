@@ -1245,7 +1245,7 @@ fda</property>
                                                   <widget class="GtkEventBox" id="eventbox_filechooserbutton_hdc">
                                                     <property name="visible">True</property>
                                                     <child>
-                                                      <widget class="GtkFileChooserButton" id="config_Qemu_basehdc_filechooser">
+                                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_basehdc_filechooser">
                                                         <property name="visible">True</property>
                                                       </widget>
                                                     </child>
