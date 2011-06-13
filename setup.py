@@ -61,7 +61,7 @@ for l in SUPPORTED_LANGS:
 	os.system(command)
 	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', [directory_name + '/virtualbricks.mo']))
 
-setup( data_files=FILES, name='virtualbricks', version='0.4',
+setup( data_files=FILES, name='virtualbricks', version='0.5',
 	description='Virtualbricks Virtualization Tools',
 	license='GPL2',
 	author='Daniele Lacamera, Rainer Haage, Francesco Apollonio, Pierre-Louis Bonicoli, Simone Abbati',

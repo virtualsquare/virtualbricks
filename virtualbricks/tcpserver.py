@@ -25,7 +25,6 @@ class TcpServer(ChildLogger, Thread):
 	def cb_brick_stopped(self, model, name=""):
 		if (self.sock):
 			self.sock.send("brick-stopped " + name + '\n')
-
 	def run(self):
 		self.info("TCP server started.")
 		try:
@@ -51,6 +50,7 @@ class TcpServer(ChildLogger, Thread):
 							sys.exit(1)
 						self.info("Connection from %s" % str(addr))
 						self.sock = sock
+						self.sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
 						randfile = open("/dev/urandom", "r")
 						challenge = randfile.read(256)
 						sha = hashlib.sha256()
@@ -61,40 +61,70 @@ class TcpServer(ChildLogger, Thread):
 						sock.send(challenge)
 						p_cha = select.poll()
 						p_cha.register(sock, select.POLLIN)
-						try:
-							if len(p_cha.poll(5000)) > 0:
-								rec = sock.recv(len(hashed))
-								if rec == hashed:
-									self.info("%s: Client authenticated.", str(addr))
-									sock.send("OK\n")
-									self.serve_connection(sock)
-								else:
-									self.info("%s: Authentication failed. " % str(addr))
-									sock.send("FAIL\n")
+						if len(p_cha.poll(5000)) > 0:
+							rec = sock.recv(len(hashed))
+							if rec == hashed:
+								self.info("%s: Client authenticated.", str(addr))
+								sock.send("OK\n")
+								self.master_address = addr
+								self.serve_connection(sock)
 							else:
-								self.info("%s: Challenge timeout", str(addr))
-						except:
-							pass
+								self.info("%s: Authentication failed. " % str(addr))
+								sock.send("FAIL\n")
+						else:
+							self.info("%s: Challenge timeout", str(addr))
 
 						sock.close()
 						self.sock = None
+						self.info("Connection from %s closed.", str(addr))
+			self.listening.close()
+	def remote_wire_request(self, req):
+		if (len(req) == 0):
+			return False
+		args = req.rstrip('\n').split(' ')
+		if len(args) != 4 or args[0] != 'udp':
+			print "Len args: %d" % len(args)
+			print "Args[0]=%s" % args[0]
+			return False
+		for b in self.factory.bricks:
+			if b.name == args[2]:
+				w = PyWire(self.factory, args[1])
+				w.set_remoteport(args[3])
+				w.connect(b)
+				w.poweron()
+				return True
+		print "Brick not found: " + args[2]
+		return False
+
 
 	def serve_connection(self, sock):
 		p = select.poll()
 		p.register(sock, select.POLLIN)
 		rec=''
 		while(self.factory.running_condition):
-			while(p.poll(100)):
-				recs = sock.recv(4000)
+			if len(p.poll(100)) > 0:
+				try:
+					recs = sock.recv(4000)
+				except:
+					print "RECV error."
+					return
+				print recs
 				for rec in recs.split('\n'):
-				#	self.factory.parse(rec.rstrip('\n'), console=sock)
 					if self.factory.parse(rec.rstrip('\n'), console=sock):
-						sock.send("OK\n")
+						try:
+							sock.send("OK\n")
+						except:
+							print "Send error"
+							return
 					else:
-						sock.send("FAIL\n")
+						try:
+							sock.send("FAIL\n")
+						except:
+							print "Send error"
+							return
 
-			for b in self.factory.bricks:
-				if b.proc:
-					pz = b.proc.poll()
-					if pz is not None:
-						b.poweroff()
+		for b in self.factory.bricks:
+			if b.proc is not None:
+				pz = b.proc.poll()
+				if pz is not None:
+					b.poweroff()

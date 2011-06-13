@@ -82,26 +82,32 @@ class RemoteHostConnectionInstance(Thread):
 						if len(event) == 0:
 							self.host.disconnect()
 							return
-					args = event.rstrip('\n').split(' ')
+					for eventline in event.split('\n'):
+						args = eventline.rstrip('\n').split(' ')
 
-					if len(args) > 0 and args[0] == 'brick-started':
-						for br in self.factory.bricks:
-							if br.name == args[1]:
-								br.proc = True
-								br.factory.emit("brick-started", br.name)
-								#print "Started %s" % br.name
-								br.run_condition = True
-								br.post_poweron()
 
-				if len(args) > 0 and args[0] == 'brick-stopped':
-						for br in self.factory.bricks:
-							if br.name == args[1]:
-								br.proc = None
-								br.factory.emit("brick-stopped", br.name)
-								#print "Stopped %s" % br.name
-								br.run_condition = False
-								br.post_poweroff()
+						if len(args) > 0 and args[0] == 'brick-started':
+							for br in self.factory.bricks:
+								if br.name == args[1]:
+									br.proc = True
+									br.factory.emit("brick-started", br.name)
+									#print "Started %s" % br.name
+									br.run_condition = True
+									br.post_poweron()
 
+						if len(args) > 0 and args[0] == 'brick-stopped':
+							for br in self.factory.bricks:
+								if br.name == args[1]:
+									br.proc = None
+									br.factory.emit("brick-stopped", br.name)
+									#print "Stopped %s" % br.name
+									br.run_condition = False
+									br.post_poweroff()
+
+						if len(args) > 0 and args[0] == 'udp':
+							for br in self.factory.bricks:
+								if br.name == args[1] and br.get_type() == 'Wire' and args[2] == 'remoteport':
+									br.set_remoteport(args[3])
 
 class RemoteHost():
 	def __init__(self, factory, address):
@@ -134,6 +140,7 @@ class RemoteHost():
 			except:
 				return False,"Error reading from socket"
 
+		self.sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
 		if (not rec.startswith('HELO')):
 			return False,"Invalid server response"
 		rec = self.sock.recv(256)
@@ -183,11 +190,13 @@ class RemoteHost():
 		self.expect_OK()
 		self.factory.remotehosts_changed=True
 
+
+
 	def putconfig(self,b):
 		for (k, v) in b.cfg.iteritems():
 			if k != 'homehost':
 				#print "sending "+ b.name+ " config " + "%s=%s" % (k, v)
-				self.sock.send(b.name + ' config ' + "%s=%s" % (k, v)+'\n')
+				self.send(b.name + ' config ' + "%s=%s" % (k, v))
 				self.expect_OK()
 				time.sleep(0.1)
 		self.factory.remotehosts_changed=True
@@ -253,7 +262,7 @@ class Plug(ChildLogger):
 			return False
 		self.sock.brick.poweron()
 
-		if self.sock.brick.proc is None:
+		if self.sock.brick.homehost is None and self.sock.brick.proc is None:
 			self.antiloop = False
 			return False
 		for p in self.sock.brick.plugs:
@@ -403,6 +412,11 @@ class Brick(ChildLogger):
 	def needsudo(self):
 		return self.factory.TCP is None and self._needsudo
 
+	def rewrite_sock_server(self, v):
+		f = os.path.basename(v)
+		return MYPATH + "/" + f
+
+
 	def set_host(self,host):
 		self.cfg.homehost=host
 		self.homehost = None
@@ -486,6 +500,9 @@ class Brick(ChildLogger):
 			k=attr.split("=")[0]
 			if k == 'homehost':
 				self.set_host(attr.split('=')[1])
+			if k == 'sock':
+				s = self.rewrite_sock_server(attr.split('=')[1])
+				self.cfg.sock = s
 
 	def configure(self, attrlist):
 		"""TODO attrs : dict attr => value"""
@@ -533,15 +550,16 @@ class Brick(ChildLogger):
 	############################
 
 	def poweron(self):
-		if not self.configured():
-			print "bad config"
-			raise BadConfig()
-		if not self.properly_connected():
-			print "not connected"
-			raise NotConnected()
-		if not self.check_links():
-			print "link down"
-			raise Linkloop()
+		if self.factory.TCP is None:
+			if not self.configured():
+				print "bad config - TCP IS NONE"
+				raise BadConfig()
+			if not self.properly_connected():
+				print "not connected"
+				raise NotConnected()
+			if not self.check_links():
+				print "link down"
+				raise Linkloop()
 		self._poweron()
 		self.factory.bricksmodel.change_brick(self)
 
@@ -593,6 +611,7 @@ class Brick(ChildLogger):
 		else:
 			# LOCAL BRICK
 			try:
+				#print command_line
 				self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			except OSError:
 				self.factory.err(self,"OSError: Brick startup failed. Check your configuration!")
@@ -617,7 +636,7 @@ class Brick(ChildLogger):
 		self.run_condition = False
 		if self.homehost:
 			self.proc = None
-			self.homehost.send(self.name+" off")
+			self.homehost.send(self.name+" off\n")
 			return
 
 		self.debug(_("Shutting down %s"), self.name)
@@ -1102,13 +1121,22 @@ class Tap(Brick):
 	def post_poweron(self):
 		self.start_related_events(on=True)
 		if self.cfg.mode == 'dhcp':
-			ret = os.system(self.settings.get('sudo') + ' "dhclient ' + self.name + '"')
+			if self.needsudo():
+				ret = os.system(self.settings.get('sudo') + ' "dhclient ' + self.name + '"')
+			else:
+				ret = os.system('dhclient ' + self.name )
+
 
 		elif self.cfg.mode == 'manual':
-			# XXX Ugly, can't we ioctls?
-			ret0 = os.system(self.settings.get('sudo') + ' "/sbin/ifconfig ' + self.name + ' ' + self.cfg.ip + ' netmask ' + self.cfg.nm + '"')
-			if (len(self.cfg.gw) > 0):
-				ret1 = os.system(self.settings.get('sudo') + ' "/sbin/route add default gw ' + self.cfg.gw + ' dev ' + self.name + '"')
+			if self.needsudo():
+					# XXX Ugly, can't we ioctls?
+					ret0 = os.system(self.settings.get('sudo') + ' "/sbin/ifconfig ' + self.name + ' ' + self.cfg.ip + ' netmask ' + self.cfg.nm + '"')
+					if (len(self.cfg.gw) > 0):
+						ret1 = os.system(self.settings.get('sudo') + ' "/sbin/route add default gw ' + self.cfg.gw + ' dev ' + self.name + '"')
+			else:
+					ret0 = os.system('/sbin/ifconfig ' + self.name + ' ' + self.cfg.ip + ' netmask ' + self.cfg.nm )
+					if (len(self.cfg.gw) > 0):
+						ret1 = os.system('/sbin/route add default gw ' + self.cfg.gw + ' dev ' + self.name)
 		else:
 			return
 
@@ -1188,13 +1216,39 @@ class PyWireThread(Thread):
 		self.run_condition=False
 		Thread.__init__(self)
 
+
+
 	def run(self):
-		host0 = self.wire.plugs[0].sock.brick.homehost
-		host1 = self.wire.plugs[1].sock.brick.homehost
 		self.run_condition=True
 		self.wire.pid = -10
-		if host0 == host1:
-			print "on the same host"
+		host1 = self.wire.factory.TCP
+		host0 = None
+		if self.wire.factory.TCP is not None:
+		# ON TCP SERVER SIDE OF REMOTE WIRE
+			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			for port in range(32400, 32500):
+				try:
+					s.bind(('', port))
+				except:
+					continue
+				else:
+					self.wire.factory.TCP.sock.send("udp "+self.wire.name+" remoteport " + str(port) + '\n')
+			v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
+			p = select.poll()
+			p.register(v.datafd().fileno(), select.POLLIN)
+			p.register(s.fileno(), select.POLLIN)
+			while self.run_condition:
+				res = p.poll(250)
+				for (f,e) in res:
+					if f == v.datafd().fileno() and (e & select.POLLIN):
+						buf = v.recv(2000)
+						s.sendto(buf, (self.wire.factory.TCP.master_address[0],self.wire.remoteport))
+					if f == s.fileno() and (e & select.POLLIN):
+						buf = s.recv(2000)
+						v.send(buf)
+
+		elif self.wire.plugs[1].sock.brick.homehost == self.wire.plugs[0].sock.brick.homehost:
+		# LOCAL WIRE
 			v0 = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
 			v1 = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
 			p = select.epoll()
@@ -1210,11 +1264,41 @@ class PyWireThread(Thread):
 						buf = v1.recv(2000)
 						v0.send(buf)
 		else:
-			print "on different hosts"
-			print "Not yet implemented"
+		# ON GUI SIDE OF REMOTE WIRE
+			if host0:
+				v = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
+				remote = self.wire.plugs[0].sock.brick
+			else:
+				v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
+				remote = self.wire.plugs[1].sock.brick
+			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			for port in range(32400, 32500):
+				try:
+					s.bind(('', port))
+				except:
+					continue
+				if self.wire.remoteport == 0:
+					remote.homehost.send("udp "+self.wire.name+" " + remote.name + " " +str(port))
+			while self.run_condition:
+				if self.wire.remoteport == 0:
+					time.sleep(1)
+					continue
+				p = select.poll()
+				p.register(v.datafd().fileno(), select.POLLIN)
+				p.register(s.fileno(), select.POLLIN)
+				res = p.poll(250)
+				for (f,e) in res:
+					if f == v.datafd().fileno() and (e & select.POLLIN):
+						buf = v.recv(2000)
+						s.sendto(buf, (remote.homehost.addr[0],self.wire.remoteport))
+					if f == s.fileno() and (e & select.POLLIN):
+						buf = s.recv(2000)
+						v.send(buf)
+			remote.homehost.send(self.wire.name+" off")
 
-		print "bye!"
-		self.wire.pid = -1
+			print "bye!"
+			self.wire.pid = -1
+
 
 	def poll(self):
 		if self.isAlive():
@@ -1235,6 +1319,16 @@ class PyWireThread(Thread):
 
 class PyWire(Wire):
 
+	def __init__(self,factory, name, remoteport = 0):
+		self.remoteport = remoteport
+		Wire.__init__(self, factory, name)
+
+	def on_config_changed(self):
+		pass
+
+	def set_remoteport(self, port):
+		self.remoteport = int(port)
+
 	def prog(self):
 		return ''
 
@@ -1244,6 +1338,25 @@ class PyWire(Wire):
 		self.proc = PyWireThread(self)
 		self.proc.start()
 
+	def poweroff(self):
+		self.remoteport = 0
+		if self.proc:
+			self.proc.terminate()
+			self.proc.join()
+			del(self.proc)
+			self.proc=None
+
+
+
+#	def configured(self):
+#		if self.factory.TCP is not None:
+#			return len(self.plugs) != 0 and self.plugs[0].sock is not None
+#		else:
+#			return (self.plugs[0].sock is not None and self.plugs[1].sock is not None)
+
+#	def connected(self):
+#		self.debug( "CALLED PyWire connected" )
+#		return True
 
 class Wirefilter(Wire):
 	def __init__(self, _factory, _name):
@@ -2854,6 +2967,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				b.poweroff()
 		for h in self.remote_hosts:
 			h.disconnect()
+		if self.TCP:
+			#XXX
+			pass
 		self.info(_('Engine: Bye!'))
 		self.config_dump(self.settings.get('current_project'))
 		self.running_condition = False
@@ -2958,7 +3074,21 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				CommandLineOutput(console, "Connection OK\n")
 			else:
 				CommandLineOutput(console, "Connection Failed.\n")
+			return True
 
+		elif command.startswith("udp ") and self.TCP:
+			args = command.split(" ")
+			if len(args) != 4 or args[0] != 'udp':
+				CommandLineOutput(console,  "FAIL udp arguments \n")
+				return False
+			for b in self.bricks:
+				if b.name == args[2]:
+					w = PyWire(self, args[1])
+					w.set_remoteport(args[3])
+					w.connect(b.socks[0])
+					w.poweron()
+					return True
+				CommandLineOutput(console,  "FAIL Brick not found: " + args[2] + "\n")
 		elif command == '':
 			return True
 
@@ -2978,7 +3108,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				self.brickAction(found, command.split(" ")[1:])
 				return True
 			else:
-				print 'Invalid command "%s"' % command
+				print 'Invalid console command "%s"' % command
 				return False
 
 	def brickAction(self, obj, cmd):
@@ -3168,7 +3298,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick = Event(self, name)
 			self.debug("new event %s OK", brick.name)
 		else:
-			self.err(self,"Invalid command '%s'", name)
+			self.err(self,"Invalid console command '%s'", name)
 			return False
 		if len(host) > 0:
 			brick.set_host(host)
@@ -3196,7 +3326,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			brick = Event(self, name)
 			self.debug("new event %s OK", brick.name)
 		else:
-			self.err(self, "Invalid command '%s'", name)
+			self.err(self, "Invalid event command '%s'", name)
 			return False
 
 		return True
