@@ -666,7 +666,7 @@ class VBGUI(Logger, gobject.GObject):
 						b.plugs[1].connect(so)
 
 		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
-		b.configure(fmt_params)
+		self.user_wait_action(b.configure, fmt_params)
 
 	def config_brick_cancel(self):
 		self.curtain_down()
@@ -1313,7 +1313,7 @@ class VBGUI(Logger, gobject.GObject):
 		window.set_title(_("Help for parameter:") + " " + paramname)
 		text.get_buffer().set_text(f_name())
 		window.show_all()
-		
+
 	#Do NOT change string layout please
 	jitter_str = " " + _("""\nJitter is the variation from the \
 base value. Jitter 10 percent for a \
@@ -2888,6 +2888,14 @@ Packets longer than specified size are discarded.")
 
 	def on_remote_autoconnect(self, widget, event=None, data=None):
 		self.remotehost_selected.autoconnect = widget.get_active()
+
+	def on_remote_delete(self, widget, event=None, data=None):
+		for existing in self.brickfactory.remote_hosts:
+			if (existing.addr[0] == self.remotehost_selected.addr[0]):
+				self.ask_confirm(_("Do you really want to delete remote host ") +
+					" \"" + existing.addr[0] + "\" and all the bricks related?",
+					on_yes = self.brickfactory.delremote, arg = self.remotehost_selected.addr[0])
+
 
 	def signals(self):
 		self.gladefile.signal_autoconnect(self)

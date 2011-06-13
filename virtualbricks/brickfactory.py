@@ -108,6 +108,7 @@ class RemoteHostConnectionInstance(Thread):
 							for br in self.factory.bricks:
 								if br.name == args[1] and br.get_type() == 'Wire' and args[2] == 'remoteport':
 									br.set_remoteport(args[3])
+						self.remotehosts_changed=True
 
 class RemoteHost():
 	def __init__(self, factory, address):
@@ -177,7 +178,7 @@ class RemoteHost():
 	def expect_OK(self):
 		p = select.poll()
 		p.register(self.sock, select.POLLIN)
-		if (p.poll(5000)):
+		if (p.poll(10)):
 				rec = self.sock.recv(4)
 				if rec.startswith("OK"):
 					return True
@@ -377,7 +378,7 @@ class BrickConfig(dict):
 			print "%s=%s" % (k, self[k])
 
 class Brick(ChildLogger):
-	def __init__(self, _factory, _name, homehost=""):
+	def __init__(self, _factory, _name, homehost=None):
 		ChildLogger.__init__(self, _factory)
 		self.factory = _factory
 		self.settings = self.factory.settings
@@ -402,10 +403,10 @@ class Brick(ChildLogger):
 		self.config_socks = []
 		self.cfg.pon_vbevent = ""
 		self.cfg.poff_vbevent = ""
-		self.cfg.homehost=homehost
-		self.homehost = None
 		if (homehost):
 			self.set_host(homehost)
+		else:
+			self.homehost = None
 
 		self.factory.bricksmodel.add_brick(self)
 
@@ -424,10 +425,13 @@ class Brick(ChildLogger):
 			for existing in self.factory.remote_hosts:
 				if existing.addr[0] == host:
 					self.homehost = existing
+					print "Attached to existing " + existing.addr[0]
 					break
 			if not self.homehost:
 				self.homehost = RemoteHost(self.factory, host)
 				self.factory.remote_hosts.append(self.homehost)
+				print "created new " + host
+			self.factory.remotehosts_changed=True
 
 	def restore_self_plugs(self): # DO NOT REMOVE
 		pass
@@ -3069,6 +3073,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if not remote:
 				remote = RemoteHost(self, host)
 			remote.password = password
+			self.factory.remotehosts_changed=True
 
 			if remote.connect():
 				CommandLineOutput(console, "Connection OK\n")
@@ -3172,6 +3177,22 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		self.bricksmodel.del_brick(bricktodel)
 
+	def delremote(self, address):
+
+		# Deferred removal: fill the list first, then call delbrick(b)
+		# in sequence.
+
+		mybricks = []
+		for r in self.remote_hosts:
+			if r.addr[0] == address:
+				for br in self.bricks:
+					if br.homehost and br.homehost.addr[0] == address:
+						mybricks.append(br)
+				for br in mybricks:
+					self.delbrick(br)
+				self.remote_hosts.remove(r)
+		self.remotehosts_changed=True
+
 	def delevent(self, eventtodel):
 		# XXX check me
 		for e in self.events:
@@ -3253,7 +3274,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 	def newbrick(self, arg1="", arg2="",arg3="",arg4="", arg5=""):
 		host=""
+		remote=False
 		if arg1 == "remote":
+			print "remote brick"
 			remote=True
 			ntype=arg2
 			name=arg3
@@ -3300,8 +3323,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		else:
 			self.err(self,"Invalid console command '%s'", name)
 			return False
-		if len(host) > 0:
+		if remote:
 			brick.set_host(host)
+			if brick.homehost.connected:
+				brick.homehost.send("new "+brick.get_type()+" "+brick.name)
 
 		return True
 

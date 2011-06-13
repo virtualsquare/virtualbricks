@@ -15414,6 +15414,7 @@ Shell Command</property>
         <property name="visible">True</property>
         <property name="label" translatable="yes">Delete</property>
         <property name="use_underline">True</property>
+        <signal name="activate" handler="on_remote_delete"/>
       </widget>
     </child>
   </widget>
