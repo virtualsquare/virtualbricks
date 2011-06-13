@@ -425,12 +425,10 @@ class Brick(ChildLogger):
 			for existing in self.factory.remote_hosts:
 				if existing.addr[0] == host:
 					self.homehost = existing
-					print "Attached to existing " + existing.addr[0]
 					break
 			if not self.homehost:
 				self.homehost = RemoteHost(self.factory, host)
 				self.factory.remote_hosts.append(self.homehost)
-				print "created new " + host
 			self.factory.remotehosts_changed=True
 
 	def restore_self_plugs(self): # DO NOT REMOVE
@@ -2113,15 +2111,64 @@ class VMPlugHostonly(VMPlug):
 		self.debug( "CALLED hostonly connected" )
 		return True
 
+class DiskImage():
+	''' Class DiskImage '''
+	''' locked if already in use as read/write non-cow. '''
+	''' VMDisk must associate to this, and must check the locked flag
+		before use '''
+
+	def __init__(self, name, path, description=""):
+		self.name = name
+		self.path = path
+		self.description = description
+		self.vmdisks = []
+		self.master = None
+
+	def rename(self, newname):
+		self.name = newname
+		for vmd in self.vmdisks:
+			vmd.VM.cfg.set("base"+vmd.device +'='+ self.name)
+
+	def set_master(self, vmdisk):
+		if self.master is None:
+			self.master = vmdisk
+			return True
+		else:
+			return False
+
+	def add_vmdisk(self, vmdisk):
+		for vmd in self.vmdisks:
+			if vmd == vmdisk:
+				return
+		self.vmdisks.append(vmdisk)
+
+	def del_vmdisk(self, vmdisk):
+		self.vmdisks.remove(vmdisk)
+		if len(self.vmdisks) == 0 or self.master == vmdisk:
+			self.master = None
+
+	def set_description(self,descr):
+		self.description = descr
+
+	def get_cows(self):
+		count = 0
+		for vmd in self.vmdisks:
+			if vmd.cow:
+				count+=1
+		return count
+
+	def get_users(self):
+		return len(self.vmdisks)
+
+
+
 class VMDisk():
-	def __init__(self, name, dev, basefolder=""):
-		self.Name = name
-		self.base = ""
+	def __init__(self, VM, dev, basefolder=""):
+		self.VM = VM
 		self.cow = False
 		self.device = dev
-		#self.snapshot = False
-		self.real_disk_name=""
 		self.basefolder = basefolder
+		self.image = None
 
 	def args(self, k):
 		ret = []
@@ -2133,21 +2180,65 @@ class VMDisk():
 		ret.append(diskname)
 		return ret
 
+	def set_image(self, image):
+		''' Old virtualbricks (0.4) will pass a full path here, new behavior
+			is to pass the image nickname '''
+
+		if len(image) == 0:
+			img = None
+			return
+
+		''' Try to look for image by nickname '''
+		img = self.VM.factory.get_image_by_name(image)
+		if img:
+			self.image = img
+			img.add_vmdisk(self)
+			return True
+
+		''' If that fails: rollback to old behavior, and search for an already
+			registered image under that path. '''
+		if img is None:
+			img = self.VM.factory.get_image_by_path(image)
+
+		''' If that fails: check for path existence and create a new image based
+			there. It may be that we are using new method for the first time. '''
+		if img is None:
+			if os.access(image, os.R_OK):
+				img = self.VM.factory.new_disk_image(os.path.basename(image), image)
+		if img is None:
+			return False
+
+		self.image = img
+		img.add_vmdisk(self)
+		self.VM.cfg.set("base"+self.device +'='+ img.name)
+		return True
+
+
+	def get_base(self):
+		return self.image.path
+
 	def get_real_disk_name(self):
+		if self.image == None:
+			return ""
 		if self.cow:
 			if not os.path.exists(self.basefolder):
 				os.makedirs(self.basefolder)
 			cowname = self.basefolder + "/" + self.Name + "_" + self.device + ".cow"
 			if not os.access(cowname, os.R_OK):
-				os.system('qemu-img create -b %s -f cow %s' % (self.base, cowname))
+				os.system('qemu-img create -b %s -f cow %s' % (self.get_base(), cowname))
 				os.system('sync')
 				time.sleep(2)
 			return cowname
 		else:
-			return self.base
+			return self.image.path
+
+	def readonly(self):
+		if (self.VM.cfg.snapshot == "*"):
+			return True
+		else:
+			return False
 
 class VM(Brick):
-	DISKS_LOCKED = set()
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
@@ -2167,25 +2258,25 @@ class VM(Brick):
 		self.cfg.basehda = ""
 		# PRIVATE COW IMAGES MUST BE CREATED IN A DIFFERENT DIRECTORY FOR EACH PROJECT
 		self.basepath = self.settings.get("baseimages") + "/." + self.project_parms['id']
-		self.cfg.set_obj("hda", VMDisk(_name, "hda", self.basepath))
+		self.cfg.set_obj("hda", VMDisk(self, "hda", self.basepath))
 		self.cfg.privatehda = ""
 		self.cfg.basehdb = ""
-		self.cfg.set_obj("hdb", VMDisk(_name, "hdb", self.basepath))
+		self.cfg.set_obj("hdb", VMDisk(self, "hdb", self.basepath))
 		self.cfg.privatehdb = ""
 		self.cfg.basehdc = ""
-		self.cfg.set_obj("hdc", VMDisk(_name, "hdc", self.basepath))
+		self.cfg.set_obj("hdc", VMDisk(self, "hdc", self.basepath))
 		self.cfg.privatehdc = ""
 		self.cfg.basehdd = ""
-		self.cfg.set_obj("hdd", VMDisk(_name, "hdd", self.basepath))
+		self.cfg.set_obj("hdd", VMDisk(self, "hdd", self.basepath))
 		self.cfg.privatehdd = ""
 		self.cfg.basefda = ""
-		self.cfg.set_obj("fda", VMDisk(_name, "fda", self.basepath))
+		self.cfg.set_obj("fda", VMDisk(self, "fda", self.basepath))
 		self.cfg.privatefda = ""
 		self.cfg.basefdb = ""
-		self.cfg.set_obj("fdb", VMDisk(_name, "fdb", self.basepath))
+		self.cfg.set_obj("fdb", VMDisk(self, "fdb", self.basepath))
 		self.cfg.privatefdb = ""
 		self.cfg.basemtdblock = ""
-		self.cfg.set_obj("mtdblock", VMDisk(_name, "mtdblock", self.basepath))
+		self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock", self.basepath))
 		self.cfg.privatemtdblock = ""
 		self.cfg.cdrom = ""
 		self.cfg.device = ""
@@ -2334,6 +2425,14 @@ class VM(Brick):
 	def get_type(self):
 		return "Qemu"
 
+	def on_config_changed(self):
+		for hd in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
+			disk = getattr(self.cfg,hd)
+			if disk.image and self.cfg.get('base'+hd) != disk.image.name:
+				disk.set_image(self.cfg.get('base'+hd))
+			elif disk.image == None and len(self.cfg.get('base'+hd)) > 0:
+				disk.set_image(self.cfg.get('base'+hd))
+
 	def configured(self):
 		cfg_ok = True
 		for p in self.plugs:
@@ -2368,26 +2467,31 @@ class VM(Brick):
 
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			if self.cfg.get("base" + dev) != "":
+				master = False
 				disk = getattr(self.cfg, dev)
-				disk.base = self.cfg.get("base" + dev)
-				disk.cow = False
+				disk.set_image(self.cfg.get("base"+dev))
 				if self.cfg.get("private" + dev) == "*":
 					disk.cow = True
+				else:
+					disk.cow = False
 				real_disk = disk.get_real_disk_name()
 
-				d_lock = real_disk in VM.DISKS_LOCKED
-				if not d_lock and self.cfg.snapshot == "":
-					VM.DISKS_LOCKED.add(real_disk)
-					args = disk.args(True)
-					res.append(args[0])
-					res.append(args[1])
-				elif self.cfg.snapshot=="*" or disk.cow==True:
+				if disk.cow == False and disk.readonly() == False:
+					if disk.image.set_master(disk):
+						print "Machine "+self.name+" acquired master lock on image "+disk.image.name
+						master = True
+					else:
+						raise DiskLocked("Disk image %s already in use" % disk.base)
+						return
+
+				if master:
 					args = disk.args(True)
 					res.append(args[0])
 					res.append(args[1])
 				else:
-					raise DiskLocked("Disk base %s already used" %
-						disk.base)
+					args = disk.args(True)
+					res.append(args[0])
+					res.append(args[1])
 
 		if self.cfg.kernelenbl == "*" and self.cfg.kernel!="":
 			res.append("-kernel")
@@ -2476,21 +2580,21 @@ class VM(Brick):
 		new_brick = type(self)(self.factory, newname)
 		new_brick.cfg = copy.deepcopy(self.cfg, memo)
 
-		new_brick.newname_changes(newname)
+		new_brick.newbrick_changes()
 
 		return new_brick
 
-	def newname_changes(self, newname):
+	def newbrick_changes(self):
 
 		basepath = self.basepath
 
-		self.cfg.set_obj("hda", VMDisk(newname, "hda", basepath))
-		self.cfg.set_obj("hdb", VMDisk(newname, "hdb", basepath))
-		self.cfg.set_obj("hdc", VMDisk(newname, "hdc", basepath))
-		self.cfg.set_obj("hdd", VMDisk(newname, "hdd", basepath))
-		self.cfg.set_obj("fda", VMDisk(newname, "fda", basepath))
-		self.cfg.set_obj("fdb", VMDisk(newname, "fdb", basepath))
-		self.cfg.set_obj("mtdblock", VMDisk(newname, "mtdblock", basepath))
+		self.cfg.set_obj("hda", VMDisk(self, "hda", basepath))
+		self.cfg.set_obj("hdb", VMDisk(self, "hdb", basepath))
+		self.cfg.set_obj("hdc", VMDisk(self, "hdc", basepath))
+		self.cfg.set_obj("hdd", VMDisk(self, "hdd", basepath))
+		self.cfg.set_obj("fda", VMDisk(self, "fda", basepath))
+		self.cfg.set_obj("fdb", VMDisk(self, "fdb", basepath))
+		self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock", basepath))
 
 	def console(self):
 		return "%s/%s_cons.mgmt" % (MYPATH, self.name)
@@ -2567,11 +2671,6 @@ class VM(Brick):
 	def post_poweroff(self):
 		self.active = False
 		self.start_related_events(off=True)
-		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-			if self.cfg.get("base" + dev):
-				base = self.cfg.get("base" + dev)
-				if base in VM.DISKS_LOCKED:
-					VM.DISKS_LOCKED.remove(base)
 
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
@@ -2594,6 +2693,25 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		return parms
 
+
+	def get_image_by_name(self, name):
+		for img in self.disk_images:
+			if img.name == name:
+				return img
+		return None
+
+	def get_image_by_path(self,path):
+		for img in self.disk_images:
+			if img.path == path:
+				return img
+		return None
+
+	def new_disk_image(self, name, path, description=""):
+		img = DiskImage(name, path, description)
+		self.disk_images.append(img)
+		return img
+
+
 	def __init__(self, logger=None, showconsole=True, nogui=False, server=False):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
@@ -2603,6 +2721,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.bricks = []
 		self.events = []
 		self.socks = []
+		self.disk_images = []
 		self.bricksmodel = BricksModel()
 		self.eventsmodel = EventsModel()
 		self.showconsole = showconsole
@@ -2737,7 +2856,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			else:
 				p.write('autoconnect=False\n')
 
-
+		# Disk Images
+		for img in self.disk_images:
+			p.write('[DiskImage:'+img.name+']\n')
+			p.write('path='+img.path +'\n')
+			p.write('description='+img.description +'\n')
 
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
@@ -2899,6 +3022,21 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 								self.project_parms[values[0]]=values[1]
 							l = p.readline()
 						continue
+					elif ntype == 'DiskImage':
+						self.debug("Found Disk image %s" % name)
+						path = ""
+						description = ""
+						l = p.readline()
+						while l and not l.startswith('['):
+							k,v = l.rstrip("\n").split("=")
+							if k == 'path':
+								path = str(v)
+							elif k == 'description':
+								description = str(v)
+							l = p.readline()
+						self.new_disk_image(name,path,description)
+						continue
+
 					elif ntype == 'RemoteHost':
 						self.debug("Found remote host %s" % name)
 						newr=None
@@ -3230,7 +3368,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			for so in b.socks:
 				so.nickname = b.name + "_port"
 		elif b.get_type() == "Qemu":
-			b.newname_changes(newname)
+			b.newbrick_changes()
 
 		b.gui_changed = True
 

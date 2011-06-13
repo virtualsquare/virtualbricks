@@ -114,6 +114,10 @@ class VBGUI(Logger, gobject.GObject):
 			 gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Status',_('Address'),_('Bricks'),_('Autoconnect')])
 
+		self.image_tree = self.treestore('treeview_diskimages', [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+			[_('Image name'),_('Used by'),_('Master Brick'),_('COWs')])
+
+
 		for name in columns:
 			col = gtk.TreeViewColumn(name)
 			if name != _('Icon'):
@@ -420,6 +424,19 @@ class VBGUI(Logger, gobject.GObject):
 		dicts['boot']=opt
 		boot_c.populate(opt, "")
 		ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo")).select('HD1')
+
+		#images COMBO
+		for hd in ['hda','hdb','hdc','hdd','fda','fdb','mtdblock']:
+			images = ComboBox(self.gladefile.get_widget("cfg_Qemu_base"+hd+"_combo"))
+			opt = dict()
+			opt['Off'] = ""
+			for img in self.brickfactory.disk_images:
+				opt[img.name] = img.name
+			images.populate(opt,"")
+			if len(b.cfg.get('base'+hd)) > 0 and (getattr(b.cfg, hd)).set_image(b.cfg.get('base'+hd)):
+				images.select(b.cfg.get("base"+hd))
+			else:
+				images.select("Off")
 
 		# Qemu VMplugs:
 		ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
@@ -893,7 +910,8 @@ class VBGUI(Logger, gobject.GObject):
 		'menu_eventactions',
 		'dialog_confirm',
 		'menu_popup_remotehosts',
-		'dialog_remote_password'
+		'dialog_remote_password',
+		'dialog_diskimage'
 		]
 	def sockscombo_names(self):
 		return [
@@ -1697,15 +1715,6 @@ Packets longer than specified size are discarded.")
 			self.curtain_down()
 			self.debug("down")
 
-	def on_filechooserdialog_openimage_response(self, widget=None, data=""):
-		raise NotImplementedError()
-
-	def on_button_openimage_cancel_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
-
-	def on_button_openimage_open_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
-
 	def on_dialog_settings_delete_event(self, widget=None, event=None, data=""):
 		"""we could use deletable property but deletable is only available in
 		GTK+ 2.10 and above"""
@@ -1872,11 +1881,97 @@ Packets longer than specified size are discarded.")
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
 		raise NotImplementedError()
 
-	def on_item_create_image_activate(self, widget=None, data=""):
+	def on_diskimage_selected(self, widget=None, event=None, data=""):
+		tree = self.gladefile.get_widget('treeview_diskimages');
+		store = self.image_tree
+		x = int(event.x)
+		y = int(event.y)
+		pthinfo = tree.get_path_at_pos(x, y)
+		name = self.get_treeselected(tree, store, pthinfo, 0)
+		self.diskimage_show(name)
+
+	def diskimage_show(self, name):
+		img = self.brickfactory.get_image_by_name(name)
+		if (img):
+			self.gladefile.get_widget('diskimage_path_text').set_text(img.path)
+			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
+			self.gladefile.get_widget('diskimage_description_text').set_text(img.description)
+
+	def on_diskimage_save(self, widget=None, event=None, data=""):
+		path = self.gladefile.get_widget('diskimage_path_text').get_text()
+		img = self.brickfactory.get_image_by_path(path)
+		if (img):
+			name = ValidName(self.gladefile.get_widget('diskimage_name_text').get_text())
+			if name:
+				img.rename(self.gladefile.get_widget('diskimage_name_text').get_text())
+				img.set_description(self.gladefile.get_widget('diskimage_description_text').get_text())
+				self.diskimage_show(img.name)
+			else:
+				self.error("Invalid Name.")
+
+	def on_diskimage_revert(self, widget=None, event=None, data=""):
+		path = self.gladefile.get_widget('diskimage_path_text').get_text()
+		img = self.brickfactory.get_image_by_path(path)
+		if (img):
+			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
+			self.gladefile.get_widget('diskimage_description_text').set_text(img.description)
+
+	def browse_diskimage(self):
+		self.curtain_down()
+		self.show_window('filechooserdialog_openimage')
+
+	def show_diskimage(self):
+		self.curtain_down()
+
+		self.image_tree.clear()
+		for img in self.brickfactory.disk_images:
+			iter = self.image_tree.append(None, None)
+			self.image_tree.set_value(iter, 0, img.name)
+			self.image_tree.set_value(iter,1, img.get_users())
+			master = "None."
+			if img.master:
+				master = img.master.name
+			self.image_tree.set_value(iter,2,master)
+			self.image_tree.set_value(iter,3,img.get_cows())
+
+		self.show_window('dialog_diskimage')
+
+	def show_createimage(self):
 		self.curtain_down()
 		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
 		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
 		self.show_window('dialog_create_image')
+
+	def on_filechooserdialog_openimage_response(self, widget=None, data=""):
+		self.show_window('')
+		return True
+
+	def on_button_openimage_cancel_clicked(self, widget=None, data=""):
+		self.show_window('')
+		return True
+
+	def on_button_openimage_open_clicked(self, widget=None, data=""):
+		self.show_window('')
+		path = self.gladefile.get_widget('filechooserdialog_openimage').get_filename()
+		name = os.path.basename(path)
+		self.brickfactory.new_disk_image(name,path)
+		return True
+
+	def on_dialog_diskimage_close(self, widget=None, data=""):
+		self.show_window('')
+		return True
+
+	def on_image_newfromfile(self, widget=None, data=""):
+		self.browse_diskimage()
+
+	def on_image_library(self, widget=None, data=""):
+		self.show_diskimage()
+
+	def on_image_newempty(self, widget=None, data=""):
+		self.show_createimage()
+
+	def on_item_create_image_activate(self, widget=None, data=""):
+		self.show_createimage()
 
 	def image_create (self):
 		self.debug("Image creating.. ",)
@@ -1894,9 +1989,11 @@ Packets longer than specified size are discarded.")
 
 		if img_format == "Auto":
 			img_format = "raw"
-		os.system('%s -f %s %s %s' % (cmd, img_format, path+filename+"."+img_format, img_size+img_sizeunit))
+		fullname = path+filename+"."+img_format
+		os.system('%s -f %s %s %s' % (cmd, img_format, fullname, img_size+img_sizeunit))
 		os.system('sync')
 		time.sleep(2)
+		self.brickfactory.new_disk_image(filename,fullname)
 
 	def on_button_create_image_clicked(self, widget=None, data=""):
 		self.curtain_down()
@@ -2662,12 +2759,18 @@ Packets longer than specified size are discarded.")
 		self.gladefile.get_widget(filechooser).unselect_all()
 
 	def on_filechooser_hd_clear(self, widget=None, event=None, data=""):
-		self.on_filechooser_clear(widget)
+		#self.on_filechooser_clear(widget)
 		hd = widget.name[21:]
 		check = self.gladefile.get_widget("cfg_Qemu_private"+hd+"_check")
 		check.set_active(False)
-		filechooser = widget.name[8:] + "_filechooser"
-		self.gladefile.get_widget(filechooser).set_current_folder(self.config.get('baseimages'))
+		imgcombo = widget.name[8:] + "_combo"
+		images = ComboBox(self.gladefile.get_widget(imgcombo))
+		opt = dict()
+		opt['Off'] = ""
+		for img in self.brickfactory.disk_images:
+			opt[img.name] = img.name
+		images.populate(opt,"")
+		images.select("Off")
 
 	def on_filechooser_image_clear(self, widget=None, event=None, data=""):
 		self.on_filechooser_clear(widget)
