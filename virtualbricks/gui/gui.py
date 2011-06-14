@@ -1930,7 +1930,7 @@ Packets longer than specified size are discarded.")
 			self.image_tree.set_value(iter,1, img.get_users())
 			master = "None."
 			if img.master:
-				master = img.master.name
+				master = img.master.VM.name
 			self.image_tree.set_value(iter,2,master)
 			self.image_tree.set_value(iter,3,img.get_cows())
 
