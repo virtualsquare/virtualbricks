@@ -2120,7 +2120,8 @@ class DiskImage():
 	def __init__(self, name, path, description=""):
 		self.name = name
 		self.path = path
-		self.description = description
+		if description!="":
+			self.set_description(description)
 		self.vmdisks = []
 		self.master = None
 
@@ -2132,6 +2133,7 @@ class DiskImage():
 	def set_master(self, vmdisk):
 		if self.master is None:
 			self.master = vmdisk
+		if self.master == vmdisk:
 			return True
 		else:
 			return False
@@ -2147,8 +2149,30 @@ class DiskImage():
 		if len(self.vmdisks) == 0 or self.master == vmdisk:
 			self.master = None
 
+	def description_file(self):
+		return self.path + ".vbdescr"
+
 	def set_description(self,descr):
-		self.description = descr
+		try:
+			f = open(self.description_file(), "w+")
+		except:
+			return False
+		f.write(str(descr))
+		f.flush()
+		f.close()
+		return True
+
+	def get_description(self):
+		try:
+			f = open(self.description_file(), "r")
+		except:
+			return ""
+		try:
+			descr = f.read()
+		except:
+			return ""
+		f.close()
+		return descr
 
 	def get_cows(self):
 		count = 0
@@ -2186,6 +2210,9 @@ class VMDisk():
 
 		if len(image) == 0:
 			img = None
+			if self.image:
+				self.image.vmdisks.remove(self)
+				self.image = None
 			return
 
 		''' Try to look for image by nickname '''
@@ -2193,6 +2220,9 @@ class VMDisk():
 		if img:
 			self.image = img
 			img.add_vmdisk(self)
+			self.VM.cfg.set("base"+self.device +'='+ img.name)
+			if not self.cow and self.VM.cfg.get("snapshot")=="" and self.image.set_master(self):
+				print "Machine "+self.VM.name+" acquired master lock on image " + self.image.name
 			return True
 
 		''' If that fails: rollback to old behavior, and search for an already
@@ -2211,6 +2241,11 @@ class VMDisk():
 		self.image = img
 		img.add_vmdisk(self)
 		self.VM.cfg.set("base"+self.device +'='+ img.name)
+		if not self.cow and self.VM.cfg.get("snapshot")=="":
+			if self.image.set_master(self):
+				print "Machine "+self.VM.name+" acquired master lock on image " + self.image.name
+			else:
+				print "ERROR SETTING MASTER!!"
 		return True
 
 
@@ -2482,6 +2517,7 @@ class VM(Brick):
 						master = True
 					else:
 						raise DiskLocked("Disk image %s already in use" % disk.base)
+						print "ERROR SETTING MASTER!!"
 						return
 
 				if master:
@@ -2860,7 +2896,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for img in self.disk_images:
 			p.write('[DiskImage:'+img.name+']\n')
 			p.write('path='+img.path +'\n')
-			p.write('description='+img.description +'\n')
 
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
@@ -3025,16 +3060,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					elif ntype == 'DiskImage':
 						self.debug("Found Disk image %s" % name)
 						path = ""
-						description = ""
 						l = p.readline()
 						while l and not l.startswith('['):
 							k,v = l.rstrip("\n").split("=")
 							if k == 'path':
 								path = str(v)
-							elif k == 'description':
-								description = str(v)
 							l = p.readline()
-						self.new_disk_image(name,path,description)
+						self.new_disk_image(name,path)
 						continue
 
 					elif ntype == 'RemoteHost':

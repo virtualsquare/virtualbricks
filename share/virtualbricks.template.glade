@@ -188,7 +188,7 @@
             <child>
               <widget class="GtkMenuItem" id="menuitem_images">
                 <property name="visible">True</property>
-                <property name="label" translatable="yes">_Image creation</property>
+                <property name="label" translatable="yes">_Disk Images</property>
                 <property name="use_underline">True</property>
                 <child>
                   <widget class="GtkMenu" id="menuitem_images_menu">
@@ -199,6 +199,22 @@
                         <property name="label" translatable="yes">_Create new image</property>
                         <property name="use_underline">True</property>
                         <signal name="activate" handler="on_item_create_image_activate"/>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkMenuItem" id="menuitem3">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">_New Image from File</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_image_newfromfile"/>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkMenuItem" id="menuitem4">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Image _Library</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_image_library"/>
                       </widget>
                     </child>
                   </widget>
@@ -15584,7 +15600,7 @@ Shell Command</property>
     </child>
   </widget>
   <widget class="GtkWindow" id="dialog_diskimage">
-    <property name="width_request">600</property>
+    <property name="width_request">800</property>
     <property name="height_request">350</property>
     <property name="title" translatable="yes">Virtualbricks - Configure Disk Images</property>
     <property name="window_position">center</property>
@@ -15599,6 +15615,7 @@ Shell Command</property>
             <property name="visible">True</property>
             <child>
               <widget class="GtkScrolledWindow" id="scrolledwindow1">
+                <property name="width_request">500</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hscrollbar_policy">automatic</property>
@@ -15616,6 +15633,7 @@ Shell Command</property>
             </child>
             <child>
               <widget class="GtkFrame" id="frame1">
+                <property name="width_request">300</property>
                 <property name="visible">True</property>
                 <property name="label_xalign">0</property>
                 <child>
@@ -15681,6 +15699,7 @@ Shell Command</property>
                           </widget>
                           <packing>
                             <property name="expand">False</property>
+                            <property name="padding">6</property>
                             <property name="position">4</property>
                           </packing>
                         </child>
@@ -15711,6 +15730,9 @@ Shell Command</property>
                             <property name="invisible_char">&#x25CF;</property>
                           </widget>
                           <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="padding">6</property>
                             <property name="position">7</property>
                           </packing>
                         </child>

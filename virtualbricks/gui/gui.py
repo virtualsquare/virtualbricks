@@ -1896,7 +1896,7 @@ Packets longer than specified size are discarded.")
 		if (img):
 			self.gladefile.get_widget('diskimage_path_text').set_text(img.path)
 			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
-			self.gladefile.get_widget('diskimage_description_text').set_text(img.description)
+			self.gladefile.get_widget('diskimage_description_text').set_text(img.get_description())
 
 	def on_diskimage_save(self, widget=None, event=None, data=""):
 		path = self.gladefile.get_widget('diskimage_path_text').get_text()
@@ -1905,17 +1905,17 @@ Packets longer than specified size are discarded.")
 			name = ValidName(self.gladefile.get_widget('diskimage_name_text').get_text())
 			if name:
 				img.rename(self.gladefile.get_widget('diskimage_name_text').get_text())
-				img.set_description(self.gladefile.get_widget('diskimage_description_text').get_text())
-				self.diskimage_show(img.name)
 			else:
 				self.error("Invalid Name.")
+			img.set_description(self.gladefile.get_widget('diskimage_description_text').get_text())
+			self.diskimage_show(img.name)
 
 	def on_diskimage_revert(self, widget=None, event=None, data=""):
 		path = self.gladefile.get_widget('diskimage_path_text').get_text()
 		img = self.brickfactory.get_image_by_path(path)
 		if (img):
 			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
-			self.gladefile.get_widget('diskimage_description_text').set_text(img.description)
+			self.gladefile.get_widget('diskimage_description_text').set_text(img.get_description())
 
 	def browse_diskimage(self):
 		self.curtain_down()
@@ -1929,7 +1929,7 @@ Packets longer than specified size are discarded.")
 			iter = self.image_tree.append(None, None)
 			self.image_tree.set_value(iter, 0, img.name)
 			self.image_tree.set_value(iter,1, img.get_users())
-			master = "None."
+			master = ""
 			if img.master:
 				master = img.master.VM.name
 			self.image_tree.set_value(iter,2,master)
