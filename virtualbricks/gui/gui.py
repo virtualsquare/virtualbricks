@@ -426,17 +426,18 @@ class VBGUI(Logger, gobject.GObject):
 		ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo")).select('HD1')
 
 		#images COMBO
-		for hd in ['hda','hdb','hdc','hdd','fda','fdb','mtdblock']:
-			images = ComboBox(self.gladefile.get_widget("cfg_Qemu_base"+hd+"_combo"))
-			opt = dict()
-			opt['Off'] = ""
-			for img in self.brickfactory.disk_images:
-				opt[img.name] = img.name
-			images.populate(opt,"")
-			if len(b.cfg.get('base'+hd)) > 0 and (getattr(b.cfg, hd)).set_image(b.cfg.get('base'+hd)):
-				images.select(b.cfg.get("base"+hd))
-			else:
-				images.select("Off")
+		if b.get_type() == "Qemu":
+			for hd in ['hda','hdb','hdc','hdd','fda','fdb','mtdblock']:
+				images = ComboBox(self.gladefile.get_widget("cfg_Qemu_base"+hd+"_combo"))
+				opt = dict()
+				opt['Off'] = ""
+				for img in self.brickfactory.disk_images:
+					opt[img.name] = img.name
+				images.populate(opt,"")
+				if len(b.cfg.get('base'+hd)) > 0 and (getattr(b.cfg, hd)).set_image(b.cfg.get('base'+hd)):
+					images.select(b.cfg.get("base"+hd))
+				else:
+					images.select("Off")
 
 		# Qemu VMplugs:
 		ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
