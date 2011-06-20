@@ -2258,7 +2258,7 @@ class VMDisk():
 		if self.cow:
 			if not os.path.exists(self.basefolder):
 				os.makedirs(self.basefolder)
-			cowname = self.basefolder + "/" + self.Name + "_" + self.device + ".cow"
+			cowname = self.basefolder + "/" + self.VM.name + "_" + self.device + ".cow"
 			if not os.access(cowname, os.R_OK):
 				os.system('qemu-img create -b %s -f cow %s' % (self.get_base(), cowname))
 				os.system('sync')

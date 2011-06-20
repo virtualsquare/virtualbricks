@@ -18,14 +18,16 @@ python setup.py install --record .filesinstalled
 rm -f share/virtualbricks.glade
 
 if [ -d .bzr ]; then
-  echo
-  echo "What follows can be useful for developers."
-  echo "If you are user please ignore it."
-  echo "-------pyflakes---------"
-  pyflakes virtualbricks|grep -v "undefined name '_'"
-  echo "-------pylint---------"
-  pylint --errors --additional-builtins=_ virtualbricks
-  echo "----------------"
+  if [[ $1 != "-notest" ]]; then 
+	  echo
+	  echo "What follows can be useful for developers."
+	  echo "If you are user please ignore it."
+	  echo "-------pyflakes---------"
+	  pyflakes virtualbricks|grep -v "undefined name '_'"
+	  echo "-------pylint---------"
+	  pylint --errors --additional-builtins=_ virtualbricks
+  	echo "----------------"
+  fi
 fi
 
 echo "Installation finished."
