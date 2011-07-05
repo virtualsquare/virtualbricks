@@ -2202,9 +2202,23 @@ disk images</property>
                                                     <property name="tooltip" translatable="yes">enable access to usb</property>
                                                     <property name="use_underline">True</property>
                                                     <property name="draw_indicator">True</property>
+                                                    <signal name="toggled" handler="on_usbmode_onoff"/>
                                                   </widget>
                                                   <packing>
                                                     <property name="position">0</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <widget class="GtkButton" id="vm_usb_show">
+                                                    <property name="label" translatable="yes">Bind devices</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can_focus">True</property>
+                                                    <property name="receives_default">True</property>
+                                                    <signal name="clicked" handler="on_usb_show"/>
+                                                  </widget>
+                                                  <packing>
+                                                    <property name="padding">9</property>
+                                                    <property name="position">1</property>
                                                   </packing>
                                                 </child>
                                                 <child>
@@ -2215,7 +2229,7 @@ disk images</property>
                                                   <packing>
                                                     <property name="expand">False</property>
                                                     <property name="fill">False</property>
-                                                    <property name="position">1</property>
+                                                    <property name="position">2</property>
                                                   </packing>
                                                 </child>
                                               </widget>
@@ -15811,6 +15825,67 @@ Shell Command</property>
           </widget>
           <packing>
             <property name="position">0</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkWindow" id="dialog_usbdev">
+    <property name="width_request">250</property>
+    <property name="height_request">500</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-always</property>
+    <signal name="delete_event" handler="on_usbdev_close"/>
+    <child>
+      <widget class="GtkVBox" id="vbox1">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <widget class="GtkLabel" id="label1">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">&lt;b&gt;Use CTRL+Click to select
+multiple devices&lt;/b&gt;</property>
+            <property name="use_markup">True</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="padding">8</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkScrolledWindow" id="scrolledwindow2">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hscrollbar_policy">automatic</property>
+            <property name="vscrollbar_policy">automatic</property>
+            <child>
+              <widget class="GtkTreeView" id="treeview_usbdev">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="rubber_banding">True</property>
+              </widget>
+            </child>
+          </widget>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkButton" id="usbdev_close_button">
+            <property name="label">gtk-ok</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_stock">True</property>
+            <signal name="clicked" handler="on_usbdev_close"/>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="padding">7</property>
+            <property name="position">2</property>
           </packing>
         </child>
       </widget>

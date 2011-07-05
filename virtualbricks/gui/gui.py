@@ -117,6 +117,9 @@ class VBGUI(Logger, gobject.GObject):
 		self.image_tree = self.treestore('treeview_diskimages', [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			[_('Image name'),_('Used by'),_('Master Brick'),_('COWs')])
 
+		self.usbdev_tree = self.treestore('treeview_usbdev', [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
+		self.gladefile.get_widget('treeview_usbdev').get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+
 
 		for name in columns:
 			col = gtk.TreeViewColumn(name)
@@ -450,6 +453,15 @@ class VBGUI(Logger, gobject.GObject):
 			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+
+		# Qemu: usb devices bind button
+		if (b.get_type() == "Qemu"):
+			if b.cfg.get('usbmode')=='*':
+				self.gladefile.get_widget('vm_usb_show').set_sensitive(True)
+			else:
+				self.gladefile.get_widget('vm_usb_show').set_sensitive(False)
+				self.brick_selected.cfg.set('usbdevlist=')
+
 
 		# Qemu: check if KVM is checkable
 		if (b.get_type()=="Qemu"):
@@ -912,7 +924,8 @@ class VBGUI(Logger, gobject.GObject):
 		'dialog_confirm',
 		'menu_popup_remotehosts',
 		'dialog_remote_password',
-		'dialog_diskimage'
+		'dialog_diskimage',
+		'dialog_usbdev'
 		]
 	def sockscombo_names(self):
 		return [
@@ -2999,6 +3012,60 @@ Packets longer than specified size are discarded.")
 				self.ask_confirm(_("Do you really want to delete remote host ") +
 					" \"" + existing.addr[0] + "\" and all the bricks related?",
 					on_yes = self.brickfactory.delremote, arg = self.remotehost_selected.addr[0])
+
+	def on_usbmode_onoff(self, w, event=None, data=None):
+		if (w.get_active()):
+			self.brick_selected.cfg.set('usbmode=*')
+		else:
+			self.brick_selected.cfg.set('usbmode=')
+			self.brick_selected.cfg.set('usbdevlist=')
+		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
+
+	def on_usb_show(self, w, event=None, data=None):
+		self.curtain_down()
+		os.system("lsusb >" + MYPATH + "/.usbdev")
+
+		self.usbdev_tree.clear()
+		self.show_window('dialog_usbdev')
+		try:
+			f = open(MYPATH + "/.usbdev")
+		except:
+			return
+		for l in f:
+			info = l.split(" ID ")[1]
+			if re.search(' ', info):
+				code = info.split(' ')[0]
+				descr = info.split(' ')[1]
+				iter = self.usbdev_tree.append(None, None)
+				self.usbdev_tree.set_value(iter, 0, code)
+				self.usbdev_tree.set_value(iter, 1, descr)
+
+	def on_usbdev_close(self, w, event=None, data=None):
+		tree = self.gladefile.get_widget('treeview_usbdev')
+		model,paths = tree.get_selection().get_selected_rows()
+		devlist = ''
+		for p in paths:
+			new_id = model[p[0]][0]
+			devlist += new_id + ' '
+
+		if len(devlist) > 0 and not os.access("/dev/bus/usb", os.W_OK):
+				self.show_window('')
+				self.curtain_up()
+				self.error(_("Cannot access /dev/bus/usb. Check user privileges."))
+				self.gladefile.get_widget('cfg_Qemu_usbmode_check').set_active(False)
+				return True
+
+		self.show_window('')
+		self.curtain_up()
+		return True
+		self.brick_selected.cfg.set('usbdevlist='+devlist.rstrip(' '))
+		#print self.brick_selected.cfg.get('usbdevlist')
+
+
+
+
+
+
 
 
 	def signals(self):

@@ -2368,6 +2368,7 @@ class VM(Brick):
 			##extended drive: TBD
 			#'-mtdblock':'mtdblock', ## TODO 0.3
 			'#keyboard':'keyboard',
+			'#usbdevlist':'usbdevlist',
 			'-soundhw':'soundhw',
 			'-usb':'usbmode',
 			##usbdevice to be implemented as a collection
@@ -2550,6 +2551,13 @@ class VM(Brick):
 		if self.cfg.vga:
 			res.append('-vga')
 			res.append('std')
+
+		if self.cfg.usbmode and self.cfg.usbdevlist:
+			for dev in self.cfg.usbdevlist.split(' '):
+				res.append('-usbdevice')
+				res.append('host:'+dev)
+		else:
+			self._needsudo = False
 
 		res.append('-name')
 		res.append(self.name)
