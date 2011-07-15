@@ -46,6 +46,7 @@ FILES = [
 			('/usr/share/pixmaps', ['images/Qemu.png']),
 			('/usr/share/pixmaps', ['images/Switch.png']),
 			('/usr/share/pixmaps', ['images/Tap.png']),
+			('/usr/share/pixmaps', ['images/Capture.png']),
 			('/usr/share/pixmaps', ['images/TunnelConnect.png']),
 			('/usr/share/pixmaps', ['images/TunnelListen.png']),
 			('/usr/share/pixmaps', ['images/Wirefilter.png']),

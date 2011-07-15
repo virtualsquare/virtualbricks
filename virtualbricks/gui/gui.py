@@ -282,7 +282,7 @@ class VBGUI(Logger, gobject.GObject):
 
 	def cb_brick_deleted(self, model, name):
 		self.draw_topology()
-		
+
 	def cb_brick_changed(self, model, name, startup):
 		if not startup:
 			self.draw_topology()
@@ -327,6 +327,7 @@ class VBGUI(Logger, gobject.GObject):
 		for key in e.cfg.keys():
 			t = e.get_type()
 
+
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
 				widget.set_text(str(e.cfg[key]))
@@ -370,8 +371,31 @@ class VBGUI(Logger, gobject.GObject):
 	"""														  """
 	""" ******************************************************** """
 
+	def prepare_ifcombo(self, b):
+		combo = ComboBox(self.gladefile.get_widget('ifcombo_capture'))
+		opt = dict()
+		try:
+			netdev = open("/proc/net/dev", "r")
+		except:
+			pass
+		for line in netdev.readlines():
+			if ":" in line:
+				while line.startswith(" "):
+					line = line.strip(" ")
+				name = line.split(":")[0]
+				if name != 'lo':
+					opt[name] = name
+		combo.populate(opt)
+		for n,s in opt.iteritems():
+			if n == b.cfg.iface:
+				combo.select(n)
+
+
+
+
 	def config_brick_prepare(self):
 		b = self.brick_selected
+		self.prepare_ifcombo(b)
 		# Fill socks combobox
 		for k in self.sockscombo_names():
 			combo = ComboBox(self.gladefile.get_widget(k))
@@ -675,6 +699,17 @@ class VBGUI(Logger, gobject.GObject):
 				else:
 					b.cfg.mode = 'manual'
 
+			elif t == 'Capture':
+				sel = ComboBox(self.gladefile.get_widget('sockscombo_capture')).get_selected()
+				for so in self.brickfactory.socks:
+					if sel == so.nickname:
+						b.plugs[0].connect(so)
+				sel = ComboBox(self.gladefile.get_widget('ifcombo_capture')).get_selected()
+				if sel:
+					b.cfg.set("iface="+str(sel))
+				else:
+					b.cfg.set("iface=")
+
 
 			elif t == 'TunnelConnect':
 				sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
@@ -777,6 +812,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('box_wireconfig').hide()
 		self.gladefile.get_widget('box_wirefilterconfig').hide()
 		self.gladefile.get_widget('box_switchconfig').hide()
+		self.gladefile.get_widget('box_captureconfig').hide()
 		self.gladefile.get_widget('box_eventconfig').hide()
 
 		wg = self.curtain
@@ -826,6 +862,10 @@ class VBGUI(Logger, gobject.GObject):
 			self.debug("tunnell config")
 			ww = self.gladefile.get_widget('box_tunnellconfig')
 			wg.set_position(524)
+		elif self.brick_selected.get_type() == 'Capture':
+			self.debug("capture config")
+			ww = self.gladefile.get_widget('box_captureconfig')
+			wg.set_position(500)
 		self.config_brick_prepare()
 		ww.show_all()
 		self.gladefile.get_widget("wait_label").hide()
@@ -941,6 +981,7 @@ class VBGUI(Logger, gobject.GObject):
 		return [
 		'sockscombo_vmethernet',
 		'sockscombo_tap',
+		'sockscombo_capture',
 		'sockscombo_wire0',
 		'sockscombo_wire1',
 		'sockscombo_wirefilter0',
@@ -1057,7 +1098,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.show_window('')
 
 	def selected_type(self):
-		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu']:
+		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu','Capture']:
 			if self.gladefile.get_widget('typebutton_'+ntype).get_active():
 				return ntype
 		return 'Switch'

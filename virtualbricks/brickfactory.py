@@ -989,6 +989,8 @@ class Event(ChildLogger):
 	def close_tty(self):
 		return
 
+
+
 class Switch(Brick):
 	"""
 	>>> # bug #730812
@@ -1077,6 +1079,49 @@ class Switch(Brick):
 		self.debug( self.name + ": callback 'numports' with argument " + str(arg))
 		self.send("port/setnumports " + str(arg))
 		self.debug(self.recv())
+
+class Capture(Brick):
+	def __init__(self, _factory, _name):
+		Brick.__init__(self, _factory, _name)
+		self.pid = -1
+		self.cfg.name = _name
+		self.command_builder = {"-s":'sock', "*iface":"iface"}
+		self.cfg.sock = ""
+		self.cfg.iface=""
+		self.plugs.append(Plug(self))
+		self._needsudo = True
+
+	def restore_self_plugs(self):
+		self.plugs.append(Plug(self))
+
+	def clear_self_socks(self, sock=None):
+		self.cfg.sock=""
+
+	def get_parameters(self):
+		if (self.cfg.iface == ""):
+			return _("No interface selected")
+		if self.plugs[0].sock:
+			return _("Interface %s plugged to %s ") % (self.cfg.iface, self.plugs[0].sock.brick.name)
+		return _("Interface %s disconnected") % self.cfg.iface
+
+	def prog(self):
+		return self.settings.get("vdepath") + "/vde_pcapplug"
+
+	def get_type(self):
+		return 'Capture'
+
+	def console(self):
+		return None
+
+	def on_config_changed(self):
+		if (self.plugs[0].sock is not None):
+			self.cfg.sock = self.plugs[0].sock.path.rstrip("[]")
+		if (self.proc is not None):
+			self.need_restart_to_apply_changes = True
+		Brick.on_config_changed(self)
+
+	def configured(self):
+		return (self.plugs[0].sock is not None and self.cfg.iface != "")
 
 class Tap(Brick):
 	def __init__(self, _factory, _name):
@@ -2073,7 +2118,7 @@ class TunnelConnect(TunnelListen):
 
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
-		
+
 		Brick.on_config_changed(self)
 
 	def configured(self):
@@ -2729,7 +2774,7 @@ class AutoSaveTimer(Thread):
 		Thread.__init__(self)
 		self.autosave_timeout = 180
 		self.factory = factory
-		
+
 	def run(self):
 		print "Autosaver started"
 		while (self.factory.running_condition):
@@ -2845,7 +2890,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			self.config_restore(self.settings.get('current_project'))
 		else:
 			self.config_restore('/tmp/TCP_controlled.vb')
-		
+
 		self.startup = False
 
 
@@ -2902,7 +2947,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def config_dump(self, f):
 		if self.TCP:
 			return
-			
+
 		self.projectsave_sema.acquire()
 		try:
 			p = open(f, "w+")
@@ -3514,6 +3559,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		elif ntype == "tap" or ntype == "Tap":
 			brick = Tap(self, name)
 			self.debug("new tap %s OK", brick.name)
+		elif ntype == "capture" or ntype == "Capture":
+			brick = Capture(self, name)
+			self.debug("new capture %s OK", brick.name)
 		elif ntype == "vm" or ntype == "Qemu":
 			brick = VM(self, name)
 			self.debug("new vm %s OK", brick.name)
@@ -3536,6 +3584,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		elif ntype == "event" or ntype == "Event":
 			brick = Event(self, name)
 			self.debug("new event %s OK", brick.name)
+		elif ntype == "capture" or ntype == "Capture Interface":
+			brick = Capture(self, name)
+			self.debug("new capture %s OK", brick.name)
 		else:
 			self.err(self,"Invalid console command '%s'", name)
 			return False
