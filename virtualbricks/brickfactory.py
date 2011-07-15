@@ -28,7 +28,7 @@ import select
 import socket
 import subprocess
 import sys
-from threading import Thread, Timer
+from threading import Thread, Timer, Semaphore
 import time, socket, hashlib
 from virtualbricks import tools
 from virtualbricks.gui.graphics import *
@@ -462,7 +462,7 @@ class Brick(ChildLogger):
 		return self.name
 
 	def on_config_changed(self):
-		return
+		self.factory.emit("brick-changed", self.name, self.factory.startup)
 
 	def help(self):
 		print "Object type: " + self.get_type()
@@ -927,6 +927,7 @@ class Event(ChildLogger):
 		self.initialize(attrlist)
 		# TODO brick should be gobject and a signal should be launched
 		self.factory.eventsmodel.change_event(self)
+		self.timer = Timer(float(self.cfg.delay), self.doactions, ())
 		self.on_config_changed()
 
 	############################
@@ -939,14 +940,14 @@ class Event(ChildLogger):
 		if self.active:
 			self.timer.cancel()
 			self.active=False
-			self.factory.emit("event-stopped")
-			self.on_config_changed()
+			self.factory.emit("event-stopped", self.name)
+			self.timer = Timer(float(self.cfg.delay), self.doactions, ())
 		try:
 			self.timer.start()
 		except RuntimeError:
 			pass
 		self.active = True
-		self.factory.emit("event-started")
+		self.factory.emit("event-started", self.name)
 
 	def poweroff(self):
 		if not self.active:
@@ -954,8 +955,8 @@ class Event(ChildLogger):
 		self.timer.cancel()
 		self.active = False
 		#We get ready for new poweron
-		self.on_config_changed()
-		self.factory.emit("event-stopped")
+		self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+		self.factory.emit("event-stopped", self.name)
 
 	def doactions(self):
 		for action in self.cfg.actions:
@@ -973,11 +974,11 @@ class Event(ChildLogger):
 
 		self.active = False
 		#We get ready for new poweron
-		self.on_config_changed()
-		self.factory.emit("event-accomplished")
+		self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+		self.factory.emit("event-accomplished", self.name)
 
 	def on_config_changed(self):
-		self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+		self.factory.emit("event-changed", self.name, self.factory.startup)
 
 	#############################
 	# Console related operations.
@@ -1050,6 +1051,7 @@ class Switch(Brick):
 
 		if self.proc is not None:
 			self.need_restart_to_apply_changes = True
+		Brick.on_config_changed(self)
 
 	def configured(self):
 		return self.socks[0].has_valid_path()
@@ -1116,6 +1118,7 @@ class Tap(Brick):
 			self.cfg.sock = self.plugs[0].sock.path.rstrip("[]")
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
+		Brick.on_config_changed(self)
 
 	def configured(self):
 		return (self.plugs[0].sock is not None)
@@ -1192,6 +1195,7 @@ class Wire(Brick):
 			self.cfg.sock1 = self.plugs[1].sock.path.rstrip('[]')
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
+		Brick.on_config_changed(self)
 
 	def configured(self):
 		return (self.plugs[0].sock is not None and self.plugs[1].sock is not None)
@@ -2013,6 +2017,7 @@ class TunnelListen(Brick):
 			self.cfg.sock = self.plugs[0].sock.path.rstrip('[]')
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
+		Brick.on_config_changed(self)
 
 	def configured(self):
 		return (self.plugs[0].sock is not None)
@@ -2068,6 +2073,8 @@ class TunnelConnect(TunnelListen):
 
 		if (self.proc is not None):
 			self.need_restart_to_apply_changes = True
+		
+		Brick.on_config_changed(self)
 
 	def configured(self):
 		return (self.plugs[0].sock is not None) and self.cfg.get("host") and len(self.cfg.host) > 0
@@ -2468,6 +2475,7 @@ class VM(Brick):
 				disk.set_image(self.cfg.get('base'+hd))
 			elif disk.image == None and len(self.cfg.get('base'+hd)) > 0:
 				disk.set_image(self.cfg.get('base'+hd))
+		Brick.on_config_changed(self)
 
 	def configured(self):
 		cfg_ok = True
@@ -2716,15 +2724,34 @@ class VM(Brick):
 		self.active = False
 		self.start_related_events(off=True)
 
+class AutoSaveTimer(Thread):
+	def __init__(self, factory):
+		Thread.__init__(self)
+		self.autosave_timeout = 180
+		self.factory = factory
+		
+	def run(self):
+		print "Autosaver started"
+		while (self.factory.running_condition):
+			for t in range(self.autosave_timeout):
+				time.sleep(1)
+				if not self.factory.running_condition:
+					sys.exit()
+			self.factory.config_dump(self.factory.settings.get('current_project'))
+
+
+
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
 		'brick-error'   : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
 		'brick-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
 		'brick-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
-		'event-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
-		'event-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
-		'event-accomplished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
+		'brick-changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str, bool,)),
+		'event-started' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
+		'event-stopped' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
+		'event-changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str, bool,)),
+		'event-accomplished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
 	}
 
 	def clear_project_parms(self):
@@ -2768,12 +2795,16 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.disk_images = []
 		self.bricksmodel = BricksModel()
 		self.eventsmodel = EventsModel()
+		self.startup = True
 		self.showconsole = showconsole
 		self.remotehosts_changed=False
 		self.TCP = None
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings(CONFIGFILE, self)
+		self.projectsave_sema = Semaphore()
+		self.autosave_timer = AutoSaveTimer(self)
+		self.autosave_timer.start()
 
 		if server:
 			if os.getuid() != 0:
@@ -2814,6 +2845,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			self.config_restore(self.settings.get('current_project'))
 		else:
 			self.config_restore('/tmp/TCP_controlled.vb')
+		
+		self.startup = False
 
 
 	def start_tcp_server(self, password):
@@ -2869,12 +2902,14 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def config_dump(self, f):
 		if self.TCP:
 			return
+			
+		self.projectsave_sema.acquire()
 		try:
 			p = open(f, "w+")
 		except:
 			self.factory.err(self, "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
+			self.projectsave_sema.release()
 			return
-
 		self.debug("CONFIG DUMP on " + f)
 
 		# If project hasn't an ID we need to calculate it
@@ -2947,6 +2982,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 						p.write('userlink|' + b.name + '||' + pl.model + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
 				elif (pl.sock is not None):
 					p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
+		self.projectsave_sema.release()
 
 
 
@@ -3152,9 +3188,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if self.TCP:
 			#XXX
 			pass
+
 		self.info(_('Engine: Bye!'))
 		self.config_dump(self.settings.get('current_project'))
 		self.running_condition = False
+		self.autosave_timer.join()
 		self.emit("engine-closed")
 		sys.exit(0)
 

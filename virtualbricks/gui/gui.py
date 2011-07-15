@@ -70,8 +70,11 @@ class VBGUI(Logger, gobject.GObject):
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
 		self.brickfactory.connect("brick-error", self.cb_brickfactory_error)
+		self.brickfactory.connect("brick-changed", self.cb_brick_changed)
 
+		self.brickfactory.connect("event-started", self.cb_event_started)
 		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
+		self.brickfactory.connect("event-changed", self.cb_event_changed)
 
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
@@ -279,6 +282,10 @@ class VBGUI(Logger, gobject.GObject):
 
 	def cb_brick_deleted(self, model, name):
 		self.draw_topology()
+		
+	def cb_brick_changed(self, model, name, startup):
+		if not startup:
+			self.draw_topology()
 
 	def cb_brick_stopped(self, model, name=""):
 		self.draw_topology()
@@ -297,6 +304,9 @@ class VBGUI(Logger, gobject.GObject):
 		pass
 
 	def cb_event_deleted(self, model, name):
+		pass
+
+	def cb_event_changed(self, model, name, startup):
 		pass
 
 	def cb_event_stopped(self, model, name=""):
