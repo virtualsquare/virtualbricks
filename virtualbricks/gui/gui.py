@@ -395,7 +395,8 @@ class VBGUI(Logger, gobject.GObject):
 
 	def config_brick_prepare(self):
 		b = self.brick_selected
-		self.prepare_ifcombo(b)
+		if b.get_type() == 'Capture':
+			self.prepare_ifcombo(b)
 		# Fill socks combobox
 		for k in self.sockscombo_names():
 			combo = ComboBox(self.gladefile.get_widget(k))
@@ -487,6 +488,11 @@ class VBGUI(Logger, gobject.GObject):
 			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+		self.gladefile.get_widget('button_network_edit').hide()
+		self.gladefile.get_widget('button_network_remove').hide()
+		self.gladefile.get_widget('macaddr_label').hide()
+		self.gladefile.get_widget('macaddr_widgets').hide()
+		self.gladefile.get_widget('netcard_combo_type').set_active(0)
 
 		# Qemu: usb devices bind button
 		if (b.get_type() == "Qemu"):
@@ -2656,14 +2662,33 @@ Packets longer than specified size are discarded.")
 					break
 		pl = self.vmplug_selected
 
-		ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
-		self.gladefile.get_widget('vmplug_macaddr').set_text(pl.mac)
-		if (pl.mode == 'sock'):
-			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Vde socket')
-		elif (pl.mode == 'hostonly'):
-			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Host-only ad hoc network')
-		elif (pl.sock):
-			ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
+		if pl:
+			ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
+			self.gladefile.get_widget('vmplug_macaddr').set_text(pl.mac)
+			if (pl.mode == 'sock'):
+				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Vde socket')
+			elif (pl.mode == 'hostonly'):
+				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Host-only ad hoc network')
+			elif (pl.sock):
+				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
+			self.gladefile.get_widget('button_network_netcard_add').hide()
+			self.gladefile.get_widget('button_network_edit').show()
+			self.gladefile.get_widget('button_network_remove').show()
+			self.gladefile.get_widget('macaddr_label').show()
+			self.gladefile.get_widget('macaddr_widgets').show()
+			self.gladefile.get_widget('netcard_label_type').hide()
+			self.gladefile.get_widget('netcard_combo_type').hide()
+		else:
+			self.gladefile.get_widget('button_network_netcard_add').show()
+			self.gladefile.get_widget('treeview_networkcards').get_selection().unselect_all()
+			self.gladefile.get_widget('button_network_netcard_add').grab_focus()
+			self.gladefile.get_widget('button_network_edit').hide()
+			self.gladefile.get_widget('button_network_remove').hide()
+			self.gladefile.get_widget('macaddr_label').hide()
+			self.gladefile.get_widget('macaddr_widgets').hide()
+			self.gladefile.get_widget('netcard_label_type').show()
+			self.gladefile.get_widget('netcard_combo_type').show()
+			self.gladefile.get_widget('netcard_combo_type').set_active(0)
 
 	def on_vmplug_edit(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
