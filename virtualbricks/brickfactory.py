@@ -2136,6 +2136,22 @@ class VMPlug(Plug, BrickConfig):
 		self.vlan = len(self.brick.plugs) + len(self.brick.socks)
 		self.mode = 'vde'
 
+	def get_model_driver(self):
+		if self.model == 'virtio':
+			return "virtio-net-pci"
+		return self.model
+
+	def hotadd(self):
+		driver = self.get_model_driver()
+		self.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" % (str(driver), str(self.mac), str(self.vlan), str(self.vlan)))
+		self.brick.send("host_net_add vde sock=%s,vlan=%s\n" % (self.sock.path.rstrip('[]'), str(self.vlan)))
+
+	def hotdel(self):
+		self.brick.send("host_net_remove %s vde.%s\n" % (str(self.vlan), str(self.vlan)))
+		self.brick.send("device_del eth%s\n" % str(self.vlan))
+
+
+
 class VMSock(Sock, BrickConfig):
 	def __init__(self,brick):
 		Sock.__init__(self, brick)
@@ -2619,8 +2635,8 @@ class VM(Brick):
 			res.append('none')
 		else:
 			for pl in self.plugs:
-				res.append("-net")
-				res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
+				res.append("-device")
+				res.append("%s,vlan=%d,mac=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
 				if (pl.mode == 'vde'):
 					res.append("-net")
 					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path.rstrip('[]')))
@@ -2628,8 +2644,8 @@ class VM(Brick):
 					res.append("-net")
 					res.append("user")
 			for pl in self.socks:
-				res.append("-net")
-				res.append("nic,model=%s,vlan=%d,macaddr=%s" % (pl.model, pl.vlan, pl.mac))
+				res.append("-device")
+				res.append("%s,vlan=%d,macaddr=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
 				res.append("-net")
 				res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.path))
 

@@ -490,8 +490,6 @@ class VBGUI(Logger, gobject.GObject):
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
 		self.gladefile.get_widget('button_network_edit').hide()
 		self.gladefile.get_widget('button_network_remove').hide()
-		self.gladefile.get_widget('macaddr_label').hide()
-		self.gladefile.get_widget('macaddr_widgets').hide()
 		self.gladefile.get_widget('netcard_combo_type').set_active(0)
 
 		# Qemu: usb devices bind button
@@ -2598,6 +2596,12 @@ Packets longer than specified size are discarded.")
 	def on_random_macaddr(self, widget=None, event=None, data=""):
 		self.gladefile.get_widget('vmplug_macaddr').set_text(tools.RandMac())
 
+	def valid_mac(self, mac):
+		test = re.match("[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}", mac)
+		if test:
+			return True
+		return False
+
 	def on_vmplug_add(self, widget=None, event=None, data=""):
 		if self.brick_selected is None:
 			return
@@ -2612,7 +2616,11 @@ Packets longer than specified size are discarded.")
 				if so.nickname == sockname:
 					pl.connect(so)
 		pl.model = self.gladefile.get_widget('vmplug_model').get_active_text()
-		pl.macaddr = self.gladefile.get_widget('vmplug_macaddr').get_text()
+		mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
+		if not self.valid_mac(mac):
+			mac = tools.RandMac()
+		if pl.brick.proc and pl.hotadd:
+			pl.hotadd()
 		self.update_vmplugs_tree()
 
 	def update_vmplugs_tree(self):
@@ -2674,8 +2682,6 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('button_network_netcard_add').hide()
 			self.gladefile.get_widget('button_network_edit').show()
 			self.gladefile.get_widget('button_network_remove').show()
-			self.gladefile.get_widget('macaddr_label').show()
-			self.gladefile.get_widget('macaddr_widgets').show()
 			self.gladefile.get_widget('netcard_label_type').hide()
 			self.gladefile.get_widget('netcard_combo_type').hide()
 		else:
@@ -2684,8 +2690,6 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('button_network_netcard_add').grab_focus()
 			self.gladefile.get_widget('button_network_edit').hide()
 			self.gladefile.get_widget('button_network_remove').hide()
-			self.gladefile.get_widget('macaddr_label').hide()
-			self.gladefile.get_widget('macaddr_widgets').hide()
 			self.gladefile.get_widget('netcard_label_type').show()
 			self.gladefile.get_widget('netcard_combo_type').show()
 			self.gladefile.get_widget('netcard_combo_type').set_active(0)
@@ -2717,11 +2721,16 @@ Packets longer than specified size are discarded.")
 					pl = self.brick_selected.add_plug(so)
 		pl.vlan = vlan
 		pl.model = model
-		pl.mac = mac
+		if (self.valid_mac(pl.mac)):
+			pl.mac = mac
+		else:
+			pl.mac = tools.RandMac()
 		self.update_vmplugs_tree()
 
 	def on_vmplug_remove(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
+		if pl.brick.proc and pl.hotdel:
+			pl.hotdel()
 		self.brick_selected.remove_plug(pl.vlan)
 		self.update_vmplugs_tree()
 
