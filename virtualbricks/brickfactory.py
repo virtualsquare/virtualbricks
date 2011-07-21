@@ -589,6 +589,11 @@ class Brick(ChildLogger):
 			res.append(c)
 		return res
 
+	def escape(self, arg):
+		arg = re.sub('"','\\"',arg)
+		#arg = '"' + arg + '"'
+		return arg
+
 	def _poweron(self):
 		if self.proc != None:
 			return
@@ -596,11 +601,20 @@ class Brick(ChildLogger):
 
 		if self.needsudo():
 			sudoarg = ""
-			for cmdarg in command_line:
-				sudoarg += cmdarg + " "
-			sudoarg += "-P %s" % self.pidfile
-			command_line[0] = self.settings.get("sudo")
-			command_line[1] = sudoarg
+			if self.get_type() == 'Qemu':
+				command_line = []
+				command_line.append(self.settings.get("sudo"))
+				for cmdarg in self.args():
+					command_line.append(self.escape(cmdarg))
+				command_line.append('-pidfile')
+				command_line.append(self.pidfile)
+
+			else:
+				for cmdarg in command_line:
+					sudoarg += cmdarg + " "
+				sudoarg += "-P %s" % self.pidfile
+				command_line[0] = self.settings.get("sudo")
+				command_line[1] = self.escape(sudoarg)
 		self.debug(_("Starting: '%s'"), ' '.join(command_line))
 		if self.homehost:
 			if not self.homehost.connected:
@@ -2345,6 +2359,7 @@ class VM(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
 		self.pid = -1
+		self._needsudo = False
 		self.cfg.name = _name
 		self.cfg.argv0 = "i386"
 		self.cfg.machine = ""
@@ -2526,6 +2541,15 @@ class VM(Brick):
 				txt += ', eth %s: %s' % (unicode(p.vlan), p.sock.nickname)
 		return txt
 
+	def update_usbdevlist(self, dev, old):
+		print "update_usbdevlist: old [%s] - new[%s]" % (old,dev)
+		for d in dev.split(' '):
+			if not d in old.split(' '):
+				self.send("usb_add host:"+d+"\n")
+		# FIXME: Don't know how to remove old devices, due to the ugly syntax of
+		# usb_del command.
+
+
 	def get_type(self):
 		return "Qemu"
 
@@ -2625,6 +2649,8 @@ class VM(Brick):
 			for dev in self.cfg.usbdevlist.split(' '):
 				res.append('-usbdevice')
 				res.append('host:'+dev)
+			''' The world is not ready for this, do chown /dev/bus/usb instead. '''
+			#self._needsudo = True
 		else:
 			self._needsudo = False
 

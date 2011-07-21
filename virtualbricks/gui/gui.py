@@ -3107,6 +3107,8 @@ Packets longer than specified size are discarded.")
 		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
 
 	def on_usb_show(self, w, event=None, data=None):
+		vm = self.brick_selected
+		current_usbview = dict()
 		self.curtain_down()
 		os.system("lsusb >" + MYPATH + "/.usbdev")
 
@@ -3124,6 +3126,16 @@ Packets longer than specified size are discarded.")
 				iter = self.usbdev_tree.append(None, None)
 				self.usbdev_tree.set_value(iter, 0, code)
 				self.usbdev_tree.set_value(iter, 1, descr)
+				current_usbview[iter] = code
+		selection = self.gladefile.get_widget('treeview_usbdev').get_selection()
+		for selected in vm.cfg.usbdevlist.split(' '):
+			for iter,dev in current_usbview.iteritems():
+				if dev == selected:
+					selection.select_iter(iter)
+					print "found " + dev
+
+
+
 
 	def on_usbdev_close(self, w, event=None, data=None):
 		tree = self.gladefile.get_widget('treeview_usbdev')
@@ -3142,9 +3154,10 @@ Packets longer than specified size are discarded.")
 
 		self.show_window('')
 		self.curtain_up()
-		return True
+		old_val = self.brick_selected.cfg.usbdevlist
 		self.brick_selected.cfg.set('usbdevlist='+devlist.rstrip(' '))
-		#print self.brick_selected.cfg.get('usbdevlist')
+		self.brick_selected.update_usbdevlist(devlist.rstrip(' '), old_val)
+		return True
 
 
 
