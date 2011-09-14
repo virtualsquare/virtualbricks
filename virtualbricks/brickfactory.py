@@ -2155,6 +2155,7 @@ class VMPlug(Plug, BrickConfig):
 			return "virtio-net-pci"
 		return self.model
 
+
 	def hotadd(self):
 		driver = self.get_model_driver()
 		self.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" % (str(driver), str(self.mac), str(self.vlan), str(self.vlan)))
@@ -2176,6 +2177,11 @@ class VMSock(Sock, BrickConfig):
 		self.nickname = self.path.split('/')[-1].rstrip('[]')
 	def connect(self, endpoint):
 		return
+
+	def get_model_driver(self):
+		if self.model == 'virtio':
+			return "virtio-net-pci"
+		return self.model
 
 
 class VMPlugHostonly(VMPlug):
@@ -2671,7 +2677,7 @@ class VM(Brick):
 					res.append("user")
 			for pl in self.socks:
 				res.append("-device")
-				res.append("%s,vlan=%d,macaddr=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
+				res.append("%s,vlan=%d,mac=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
 				res.append("-net")
 				res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.path))
 
