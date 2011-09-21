@@ -121,7 +121,6 @@ class RemoteHost():
 		self.factory.remotehosts_changed=True
 		self.autoconnect=False
 
-
 	def num_bricks(self):
 		r = 0
 		for b in self.factory.bricks:
@@ -184,14 +183,11 @@ class RemoteHost():
 					return True
 		return False
 
-
 	def upload(self,b):
 		self.send("new "+b.get_type()+" "+b.name)
 		self.putconfig(b)
 		self.expect_OK()
 		self.factory.remotehosts_changed=True
-
-
 
 	def putconfig(self,b):
 		for (k, v) in b.cfg.iteritems():
@@ -221,9 +217,6 @@ class RemoteHost():
 		ret = ""
 		ret = self.sock.recv(size)
 		return ret
-
-
-
 
 def ValidName(name):
 	name=str(name)
@@ -3345,7 +3338,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			CommandLineOutput(console,  "End of list.")
 			CommandLineOutput(console, "" )
 			return True
-
+		elif command == 'disk_images':
+			for img in self.disk_images:
+				CommandLineOutput(console, "%s" % (img.name))
 		elif command == 'socks':
 			for s in self.socks:
 				CommandLineOutput(console,  "%s" % s.nickname,)
