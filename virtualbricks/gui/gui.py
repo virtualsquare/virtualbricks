@@ -1316,6 +1316,9 @@ class VBGUI(Logger, gobject.GObject):
 		self.config_brick_confirm()
 		self.curtain_down()
 
+	def on_config_save(self, widget=None, data=""):
+		self.config_brick_confirm()
+
 	def set_sensitivegroup(self,l):
 		for i in l:
 			w = self.gladefile.get_widget(i)
