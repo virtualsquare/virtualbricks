@@ -396,6 +396,7 @@ class Brick(ChildLogger):
 		self.config_socks = []
 		self.cfg.pon_vbevent = ""
 		self.cfg.poff_vbevent = ""
+
 		if (homehost):
 			self.set_host(homehost)
 		else:
@@ -2168,6 +2169,7 @@ class VMSock(Sock, BrickConfig):
 		self.vlan = len(self.brick.plugs) + len(self.brick.socks)
 		self.path = MYPATH + "/" + self.brick.name+ "_sock_eth" + str(self.vlan) + "[]"
 		self.nickname = self.path.split('/')[-1].rstrip('[]')
+
 	def connect(self, endpoint):
 		return
 
@@ -2420,7 +2422,6 @@ class VM(Brick):
 		self.cfg.kvmsm = ""
 		self.cfg.kvmsmem = ""
 		self.cfg.serial = ""
-
 		self.command_builder = {
 			'#argv0':'argv0',
 			'#M':'machine',
@@ -2659,21 +2660,19 @@ class VM(Brick):
 			res.append('-net')
 			res.append('none')
 		else:
-			for pl in self.plugs:
+			for pl in sorted(self.plugs + self.socks, key= lambda plug: plug.vlan):
+				print "%s %s" % (pl.vlan, pl.mode)
 				res.append("-device")
 				res.append("%s,vlan=%d,mac=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
 				if (pl.mode == 'vde'):
 					res.append("-net")
 					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path.rstrip('[]')))
+				elif (pl.mode == 'sock'):
+					res.append("-net")
+					res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.path))
 				else:
 					res.append("-net")
 					res.append("user")
-			for pl in self.socks:
-				res.append("-device")
-				res.append("%s,vlan=%d,mac=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
-				res.append("-net")
-				res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.path))
-
 		if (self.cfg.cdromen == "*"):
 			if (self.cfg.cdrom != ""):
 				res.append('-cdrom')
