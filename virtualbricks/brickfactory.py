@@ -39,6 +39,8 @@ from virtualbricks.errors import (BadConfig, DiskLocked, InvalidAction,
 	InvalidName, Linkloop, NotConnected, UnmanagedType)
 from virtualbricks.tcpserver import TcpServer
 import getpass
+from shutil import move
+from datetime import datetime
 
 global VDESUPPORT
 try:
@@ -2342,6 +2344,20 @@ class VMDisk():
 			if not os.path.exists(self.basefolder):
 				os.makedirs(self.basefolder)
 			cowname = self.basefolder + "/" + self.VM.name + "_" + self.device + ".cow"
+			if os.access(cowname, os.R_OK):
+				f = open(cowname)
+				f.read(8)
+				buff = f.read(1)
+				base = ""
+				while buff != '\x00':
+					base += buff
+					buff = f.read(1)
+				f.close()
+				if base != self.get_base():
+					dt = datetime.now()
+					cowback = cowname + ".back-" + dt.strftime("%Y-%m-%d_%H-%M-%S")
+					print "%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback)
+					move(cowname, cowback)
 			if not os.access(cowname, os.R_OK):
 				os.system('qemu-img create -b %s -f cow %s' % (self.get_base(), cowname))
 				os.system('sync')
