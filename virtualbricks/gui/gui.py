@@ -302,7 +302,35 @@ class VBGUI(Logger, gobject.GObject):
 		itr = model.get_iter_first()
 		moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
 		while moved:
+			itr = model.get_iter_first()
 			moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
+
+	def _treeorder_continue(self, _tree, model, itr, field, asc, moved = False):
+		nxt = model.iter_next(itr)
+		if (nxt):
+			val_itr = model.get_value(itr, field)
+			val_nxt = model.get_value(nxt, field)
+			if asc:
+				if val_nxt <  val_itr:
+					model.swap(itr,nxt)
+					moved = True
+			else:
+				if val_nxt >  val_itr:
+					model.swap(itr,nxt)
+					moved = True
+
+			return self._treeorder_continue(_tree, model, nxt, field, asc, moved)
+		else:
+			return moved
+
+
+	def treeview_order(self, treeview, model, field=0, ascending=True):
+		tree = self.gladefile.get_widget(treeview)
+		itr = model.get_iter_first()
+		moved = self._treeorder_continue(tree, model, itr, field, ascending)
+		while moved:
+			itr = model.get_iter_first()
+			moved = self._treeorder_continue(tree, model, itr, field, ascending)
 
 
 
@@ -2681,6 +2709,7 @@ Packets longer than specified size are discarded.")
 					self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
 					self.vmplugs.set_value(iter,2,sk.model)
 					self.vmplugs.set_value(iter,3,sk.mac)
+			self.treeview_order('treeview_networkcards', self.vmplugs, 0)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
 		if self.brick_selected is None:
