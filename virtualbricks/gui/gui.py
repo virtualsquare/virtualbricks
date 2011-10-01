@@ -273,6 +273,39 @@ class VBGUI(Logger, gobject.GObject):
 		self.last_known_selected_event = self.brickfactory.geteventbyname(name)
 		return self.last_known_selected_event
 
+	""" Ordering bricks treeview. """
+	def _bricks_treeorder_continue(self, _tree, model, itr, field, asc, moved = False):
+		nxt = model.iter_next(itr)
+		if (nxt):
+			br_itr = model.get_value(itr, field)
+			br_nxt = model.get_value(nxt, field)
+			if asc:
+				if br_nxt.get_type() <  br_itr.get_type():
+					model.swap(itr,nxt)
+					moved = True
+			else:
+				if br_nxt.get_type() >  br_itr.get_type():
+					model.swap(itr,nxt)
+					moved = True
+			if br_nxt.get_type() ==  br_itr.get_type():
+				if br_itr.name > br_nxt.name:
+					model.swap(itr,nxt)
+					moved = True
+
+			return self._bricks_treeorder_continue(_tree, model, nxt, field, asc, moved)
+		else:
+			return moved
+
+
+	def bricks_treeview_order(self, treeview, model, field=0, ascending=True):
+		tree = self.gladefile.get_widget(treeview)
+		itr = model.get_iter_first()
+		moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
+		while moved:
+			moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
+
+
+
 	""" ******************************************************** """
 	""" Signal handlers										  """
 	""" ******************************************************** """
@@ -3243,6 +3276,7 @@ Packets longer than specified size are discarded.")
 		return True
 
 	def draw_topology(self):
+		self.bricks_treeview_order("treeview_bookmarks", self.brickfactory.bricksmodel, 0)
 		if self.gladefile.get_widget('topology_tb').get_active():
 			orientation = "TB"
 		else:
