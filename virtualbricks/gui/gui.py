@@ -1151,6 +1151,12 @@ class VBGUI(Logger, gobject.GObject):
 		if column == self.bricks_order:
 			direction = not self.bricks_order_last_direction
 		self.bricks_treeview_order("treeview_bookmarks", self.brickfactory.bricksmodel, column, direction)
+
+	def on_bricks_keypressed(self, widget, event="", data=""):
+		if event.keyval == 65288 or event.keyval == 65535:
+			self.on_brick_delete()
+
+
 	def on_systray_menu_toggle(self, widget=None, data=""):
 		if self.statusicon.get_blinking():
 			self.systray_blinking(None, True)

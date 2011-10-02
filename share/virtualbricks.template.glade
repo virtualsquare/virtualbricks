@@ -379,6 +379,7 @@
                                 <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
                                 <signal name="row_activated" handler="on_treeview_bookmarks_row_activated_event"/>
                                 <signal name="button_release_event" handler="on_treeview_bookmarks_button_release_event"/>
+                                <signal name="key_press_event" handler="on_bricks_keypressed"/>
                               </widget>
                             </child>
                           </widget>
@@ -391,7 +392,8 @@
                     <child>
                       <widget class="GtkLabel" id="bricksLabel">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Bricks</property>
+                        <property name="label" translatable="yes">_Bricks</property>
+                        <property name="use_underline">True</property>
                       </widget>
                       <packing>
                         <property name="tab_fill">False</property>
@@ -490,7 +492,8 @@
                     <child>
                       <widget class="GtkLabel" id="eventLabel">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Events</property>
+                        <property name="label" translatable="yes">_Events</property>
+                        <property name="use_underline">True</property>
                       </widget>
                       <packing>
                         <property name="position">1</property>
@@ -521,7 +524,9 @@
                     <child>
                       <widget class="GtkLabel" id="runningComponentsLabel">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Running</property>
+                        <property name="yalign">0.47999998927116394</property>
+                        <property name="label" translatable="yes">R_unning</property>
+                        <property name="use_underline">True</property>
                       </widget>
                       <packing>
                         <property name="position">2</property>
@@ -614,7 +619,8 @@
                       <widget class="GtkLabel" id="label76">
                         <property name="visible">True</property>
                         <property name="yalign">0.44999998807907104</property>
-                        <property name="label" translatable="yes">Remote Sessions</property>
+                        <property name="label" translatable="yes">_Remote Sessions</property>
+                        <property name="use_underline">True</property>
                       </widget>
                       <packing>
                         <property name="position">3</property>
@@ -738,7 +744,8 @@
                     <child>
                       <widget class="GtkLabel" id="label20">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Topology</property>
+                        <property name="label" translatable="yes">_Topology</property>
+                        <property name="use_underline">True</property>
                       </widget>
                       <packing>
                         <property name="position">2</property>
