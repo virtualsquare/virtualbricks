@@ -330,6 +330,8 @@ class VBGUI(Logger, gobject.GObject):
 			moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
 
 	def _treeorder_continue(self, _tree, model, itr, field, asc, moved = False):
+		if itr is None:
+			return
 		nxt = model.iter_next(itr)
 		if (nxt):
 			val_itr = model.get_value(itr, field)
