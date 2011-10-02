@@ -324,6 +324,8 @@ class VBGUI(Logger, gobject.GObject):
 		self.bricks_order_last_direction = ascending
 		tree = self.gladefile.get_widget(treeview)
 		itr = model.get_iter_first()
+		if itr is None:
+			return
 		moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
 		while moved:
 			itr = model.get_iter_first()
