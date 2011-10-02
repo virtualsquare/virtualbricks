@@ -84,6 +84,9 @@ class VBGUI(Logger, gobject.GObject):
 		self.eventsmodel = None
 		self.shcommandsmodel = None
 
+		self.bricks_order = _('Type')
+		self.bricks_order_last_direction = True
+
 		self.config = self.brickfactory.settings
 		self.draw_topology()
 		self.brickfactory.start()
@@ -133,6 +136,8 @@ class VBGUI(Logger, gobject.GObject):
 				elem = gtk.CellRendererPixbuf()
 				col.pack_start(elem, False)
 			col.set_cell_data_func(elem, self.brick_to_cell)
+			col.set_clickable(True)
+			col.connect("clicked",self.brick_header_clicked)
 			tree.append_column(col)
 
 		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
@@ -146,6 +151,7 @@ class VBGUI(Logger, gobject.GObject):
 				elem = gtk.CellRendererPixbuf()
 				col.pack_start(elem, False)
 			col.set_cell_data_func(elem, self.event_to_cell)
+			col.set_clickable(True)
 			eventstree.append_column(col)
 
 		# associate Drag and Drop action
@@ -274,20 +280,36 @@ class VBGUI(Logger, gobject.GObject):
 		return self.last_known_selected_event
 
 	""" Ordering bricks treeview. """
-	def _bricks_treeorder_continue(self, _tree, model, itr, field, asc, moved = False):
+	def _bricks_treeorder_continue(self, _tree, model, itr, field=_('Type'), asc=True, moved = False):
 		nxt = model.iter_next(itr)
 		if (nxt):
-			br_itr = model.get_value(itr, field)
-			br_nxt = model.get_value(nxt, field)
+			br_itr = model.get_value(itr, BricksModel.BRICK_IDX)
+			br_nxt = model.get_value(nxt, BricksModel.BRICK_IDX)
+			if field == _('Icon') or field == _('Type'):
+				x = br_nxt.get_type()
+				y = br_itr.get_type()
+			elif field == _('Status'):
+				x = br_nxt.proc
+				y = br_itr.proc
+			elif field == _('Name'):
+				x = br_nxt.name
+				y = br_itr.name
+			elif field == _('Parameters'):
+				x = br_nxt.get_parameters()
+				y = br_itr.get_parameters()
+			else:
+				x = 0
+				y = 0
+
 			if asc:
-				if br_nxt.get_type() <  br_itr.get_type():
+				if x < y:
 					model.swap(itr,nxt)
 					moved = True
 			else:
-				if br_nxt.get_type() >  br_itr.get_type():
+				if x > y:
 					model.swap(itr,nxt)
 					moved = True
-			if br_nxt.get_type() ==  br_itr.get_type():
+			if x == y:
 				if br_itr.name > br_nxt.name:
 					model.swap(itr,nxt)
 					moved = True
@@ -297,7 +319,9 @@ class VBGUI(Logger, gobject.GObject):
 			return moved
 
 
-	def bricks_treeview_order(self, treeview, model, field=0, ascending=True):
+	def bricks_treeview_order(self, treeview, model, field=_('Type'), ascending=True):
+		self.bricks_order = field
+		self.bricks_order_last_direction = ascending
 		tree = self.gladefile.get_widget(treeview)
 		itr = model.get_iter_first()
 		moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
@@ -1121,7 +1145,12 @@ class VBGUI(Logger, gobject.GObject):
 	"""														  """
 	"""														  """
 	""" ******************************************************** """
-
+	def brick_header_clicked(self, widget, event=None, data=""):
+		column = widget.get_title()
+		direction = True
+		if column == self.bricks_order:
+			direction = not self.bricks_order_last_direction
+		self.bricks_treeview_order("treeview_bookmarks", self.brickfactory.bricksmodel, column, direction)
 	def on_systray_menu_toggle(self, widget=None, data=""):
 		if self.statusicon.get_blinking():
 			self.systray_blinking(None, True)
@@ -3305,7 +3334,8 @@ Packets longer than specified size are discarded.")
 		return True
 
 	def draw_topology(self):
-		self.bricks_treeview_order("treeview_bookmarks", self.brickfactory.bricksmodel, 0)
+		self.bricks_treeview_order("treeview_bookmarks", self.brickfactory.bricksmodel,
+				self.bricks_order, self.bricks_order_last_direction)
 		if self.gladefile.get_widget('topology_tb').get_active():
 			orientation = "TB"
 		else:
