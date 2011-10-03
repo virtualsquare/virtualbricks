@@ -3177,6 +3177,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				self.delevent(e)
 			del self.events[:]
 
+			self.socks = []
+
 			# RESET PROJECT PARMS TO DEFAULT
 			self.project_parms = self.clear_project_parms()
 			if create_if_not_found:

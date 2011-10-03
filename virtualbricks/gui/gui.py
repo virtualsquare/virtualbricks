@@ -1207,7 +1207,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.show_window('')
 
 	def selected_type(self):
-		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu','Capture']:
+		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu','Capture', 'SwitchWrapper']:
 			if self.gladefile.get_widget('typebutton_'+ntype).get_active():
 				return ntype
 		return 'Switch'
