@@ -1091,8 +1091,8 @@ class Switch(Brick):
 		self.debug(self.recv())
 
 class FakeProcess():
-		def __init__(self, pid):
-			self.pid=pid
+		def __init__(self, brick):
+			self.brick=brick
 
 		def poll(self):
 			return True
@@ -1107,7 +1107,7 @@ class SwitchWrapper(Brick):
 		self.socks.append(Sock(self, portname))
 		self.on_config_changed()
 		self.has_console = False
-		self.proc = FakeProcess(self.pid)
+		self.proc = None
 		self.cfg.numports = 32
 
 	def get_parameters(self):
@@ -1127,7 +1127,7 @@ class SwitchWrapper(Brick):
 		return self.socks[0].has_valid_path()
 
 	def path(self):
-		return self.path
+		return self.cfg.path
 
 	def pidfile(self):
 		return "/tmp/%s.pid" % self.name
@@ -1135,12 +1135,12 @@ class SwitchWrapper(Brick):
 	pidfile = property(pidfile)
 
 	def poweron(self):
-		pass
+		if os.path.exists(self.cfg.path):
+			self.proc = FakeProcess(self)
+		else:
+			self.proc = None
 
 	def _poweron(self):
-		pass
-
-	def poweroff(self):
 		pass
 
 	def poweroff(self):
@@ -2733,7 +2733,6 @@ class VM(Brick):
 			res.append('none')
 		else:
 			for pl in sorted(self.plugs + self.socks, key= lambda plug: plug.vlan):
-				print "%s %s" % (pl.vlan, pl.mode)
 				res.append("-device")
 				res.append("%s,vlan=%d,mac=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
 				if (pl.mode == 'vde'):
