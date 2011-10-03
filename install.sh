@@ -18,7 +18,7 @@ python setup.py install --record .filesinstalled
 rm -f share/virtualbricks.glade
 
 if [ -d .bzr ]; then
-  if [[ $1 != "-notest" ]]; then 
+  if [[ $1 == "-test" ]]; then 
 	  echo
 	  echo "What follows can be useful for developers."
 	  echo "If you are user please ignore it."

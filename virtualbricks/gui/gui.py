@@ -198,7 +198,6 @@ class VBGUI(Logger, gobject.GObject):
 			if brick.homehost is not None and not brick.homehost.connected:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48)
 				cell.set_property('pixbuf', icon)
-
 			elif brick.proc is not None:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
 					48)
@@ -907,6 +906,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('box_switchconfig').hide()
 		self.gladefile.get_widget('box_captureconfig').hide()
 		self.gladefile.get_widget('box_eventconfig').hide()
+		self.gladefile.get_widget('box_switchwrapperconfig').hide()
 
 		wg = self.curtain
 		notebook=self.gladefile.get_widget('main_notebook')
@@ -959,6 +959,11 @@ class VBGUI(Logger, gobject.GObject):
 			self.debug("capture config")
 			ww = self.gladefile.get_widget('box_captureconfig')
 			wg.set_position(500)
+		elif self.brick_selected.get_type() == 'SwitchWrapper':
+			self.debug("switchwrapper config")
+			ww = self.gladefile.get_widget('box_switchwrapperconfig')
+			wg.set_position(580)
+
 		self.config_brick_prepare()
 		ww.show_all()
 		self.gladefile.get_widget("wait_label").hide()

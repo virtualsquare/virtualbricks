@@ -10854,6 +10854,101 @@ bytes</property>
                   </packing>
                 </child>
                 <child>
+                  <widget class="GtkVBox" id="box_switchwrapperconfig">
+                    <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <widget class="GtkFrame" id="frame20">
+                        <property name="visible">True</property>
+                        <property name="label_xalign">0</property>
+                        <child>
+                          <widget class="GtkVBox" id="vbox165">
+                            <property name="visible">True</property>
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <widget class="GtkHBox" id="hbox20">
+                                <property name="visible">True</property>
+                                <child>
+                                  <widget class="GtkLabel" id="label42">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                    <property name="label" translatable="yes">Path to switch:</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkEntry" id="cfg_switchwrapper_path_text">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="invisible_char">&#x25CF;</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkHBox" id="hbox127">
+                                <property name="visible">True</property>
+                                <child>
+                                  <widget class="GtkLabel" id="label298">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                    <property name="label" translatable="yes">Pid of Switch:</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkSpinButton" id="cfg_switchwrapper_pid_spinint">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="invisible_char">&#x25CF;</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                        <child>
+                          <widget class="GtkLabel" id="Tapconfiguration2">
+                            <property name="visible">True</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Fake Switch Configuration&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
+                          </widget>
+                          <packing>
+                            <property name="type">label_item</property>
+                          </packing>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="position">9</property>
+                  </packing>
+                </child>
+                <child>
                   <widget class="GtkHButtonBox" id="hbuttonbox4">
                     <property name="visible">True</property>
                     <child>
@@ -10930,7 +11025,7 @@ bytes</property>
                     </child>
                   </widget>
                   <packing>
-                    <property name="position">9</property>
+                    <property name="position">10</property>
                   </packing>
                 </child>
               </widget>

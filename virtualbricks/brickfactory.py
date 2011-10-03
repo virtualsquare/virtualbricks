@@ -1090,6 +1090,62 @@ class Switch(Brick):
 		self.send("port/setnumports " + str(arg))
 		self.debug(self.recv())
 
+class FakeProcess():
+		def __init__(self, pid):
+			self.pid=pid
+
+		def poll(self):
+			return True
+
+class SwitchWrapper(Brick):
+	def __init__(self, _factory, _name):
+		Brick.__init__(self, _factory, _name)
+		self.pid = -1
+		self.command_builder = {}
+		self.cfg.path=""
+		portname = self.name + "_port"
+		self.socks.append(Sock(self, portname))
+		self.on_config_changed()
+		self.has_console = False
+		self.proc = FakeProcess(self.pid)
+		self.cfg.numports = 32
+
+	def get_parameters(self):
+		return ""
+
+	def prog(self):
+		return ""
+
+	def get_type(self):
+		return 'SwitchWrapper'
+
+	def on_config_changed(self):
+		self.socks[0].path = self.cfg.path
+		Brick.on_config_changed(self)
+
+	def configured(self):
+		return self.socks[0].has_valid_path()
+
+	def path(self):
+		return self.path
+
+	def pidfile(self):
+		return "/tmp/%s.pid" % self.name
+
+	pidfile = property(pidfile)
+
+	def poweron(self):
+		pass
+
+	def _poweron(self):
+		pass
+
+	def poweroff(self):
+		pass
+
+	def poweroff(self):
+		pass
+
 class Capture(Brick):
 	def __init__(self, _factory, _name):
 		Brick.__init__(self, _factory, _name)
@@ -3645,6 +3701,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		elif ntype == "capture" or ntype == "Capture Interface":
 			brick = Capture(self, name)
 			self.debug("new capture %s OK", brick.name)
+		elif ntype == "switchwrapper" or ntype == "SwitchWrapper":
+			brick = SwitchWrapper(self, name)
+			self.debug("new SwitchWrapper %s OK", brick.name)
 		else:
 			self.err(self,"Invalid console command '%s'", name)
 			return False

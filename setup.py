@@ -50,7 +50,8 @@ FILES = [
 			('/usr/share/pixmaps', ['images/TunnelConnect.png']),
 			('/usr/share/pixmaps', ['images/TunnelListen.png']),
 			('/usr/share/pixmaps', ['images/Wirefilter.png']),
-			('/usr/share/pixmaps', ['images/Wire.png'])
+			('/usr/share/pixmaps', ['images/Wire.png']),
+			('/usr/share/pixmaps', ['images/SwitchWrapper.png'])
 ]
 
 tempdirs = []
