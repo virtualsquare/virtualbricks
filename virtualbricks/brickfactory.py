@@ -2669,6 +2669,7 @@ class VM(Brick):
 		for c in self.build_cmd_line():
 			res.append(c)
 
+		self.factory.clear_machine_vmdisks(self)
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			if self.cfg.get("base" + dev) != "":
 				master = False
@@ -2940,6 +2941,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		img = DiskImage(name, path, description)
 		self.disk_images.append(img)
 		return img
+
+	def clear_machine_vmdisks(self, machine):
+		for img in self.disk_images:
+			for vmd in img.vmdisks:
+				if vmd.VM == machine:
+					img.del_vmdisk(vmd)
+					self.debug("Vmdisk lock released")
 
 
 	def __init__(self, logger=None, showconsole=True, nogui=False, server=False):
