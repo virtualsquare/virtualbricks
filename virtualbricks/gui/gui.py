@@ -478,9 +478,6 @@ class VBGUI(Logger, gobject.GObject):
 			if n == b.cfg.iface:
 				combo.select(n)
 
-
-
-
 	def config_brick_prepare(self):
 		b = self.brick_selected
 		if b.get_type() == 'Capture':
@@ -553,6 +550,11 @@ class VBGUI(Logger, gobject.GObject):
 
 		#images COMBO
 		if b.get_type() == "Qemu":
+			images_list=None
+			if b.homehost is None:
+				images_list = self.brickfactory.disk_images
+			else:
+				images_list = b.homehost.send_and_recv("disk_images")
 			for hd in ['hda','hdb','hdc','hdd','fda','fdb','mtdblock']:
 				images = ComboBox(self.gladefile.get_widget("cfg_Qemu_base"+hd+"_combo"))
 				opt = dict()

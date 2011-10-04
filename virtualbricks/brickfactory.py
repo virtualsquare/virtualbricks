@@ -207,6 +207,31 @@ class RemoteHost():
 			if b.homehost and b.homehost.addr == self.addr:
 					self.upload(b)
 
+	def send_and_recv(self, cmd):
+		p = select.poll()
+                p.register(self.sock, select.POLLIN)
+		# clear the socket input
+		while (p.poll(10)):
+			self.sock.recv(4)
+		self.send(cmd)
+		buff=""
+		rec=""
+		OK=0
+                while (p.poll(10)):
+			buff = self.sock.recv(1)
+			rec=rec+buff
+		if rec.rstrip().endswith("OK"):
+			rec = rec.split("\n")
+			#delete all blank lines
+			while "" in rec:
+				rec.remove("")
+			while "OK" in rec:
+				rec.remove("OK")
+			return rec
+		else:
+			# NO "OK" AT THE END OF THE COMMAND OUTPUT
+			return []
+
 	def send(self, cmd):
 		ret = False
 		if self.connected:
@@ -3423,7 +3448,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return True
 		elif command == 'disk_images':
 			for img in self.disk_images:
-				CommandLineOutput(console, "%s" % (img.name))
+				CommandLineOutput(console, "%s,%s" % (img.name, img.path))
 		elif command == 'socks':
 			for s in self.socks:
 				CommandLineOutput(console,  "%s" % s.nickname,)
