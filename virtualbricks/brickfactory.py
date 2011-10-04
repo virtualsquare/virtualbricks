@@ -2628,10 +2628,13 @@ class VM(Brick):
 	def on_config_changed(self):
 		for hd in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			disk = getattr(self.cfg,hd)
-			if disk.image and self.cfg.get('base'+hd) != disk.image.name:
-				disk.set_image(self.cfg.get('base'+hd))
-			elif disk.image == None and len(self.cfg.get('base'+hd)) > 0:
-				disk.set_image(self.cfg.get('base'+hd))
+			if hasattr(disk, "image"):
+				if disk.image is not None and self.cfg.get('base'+hd) != disk.image.name:
+					disk.set_image(self.cfg.get('base'+hd))
+				elif disk.image == None and len(self.cfg.get('base'+hd)) > 0:
+					disk.set_image(self.cfg.get('base'+hd))
+			else:
+				return
 		Brick.on_config_changed(self)
 
 	def configured(self):
