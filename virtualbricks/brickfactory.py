@@ -2446,9 +2446,9 @@ class VM(Brick):
 		self.cfg.usbmode = ""
 		self.cfg.snapshot = ""
 		self.cfg.boot = ""
-		self.cfg.basehda = ""
 		# PRIVATE COW IMAGES MUST BE CREATED IN A DIFFERENT DIRECTORY FOR EACH PROJECT
 		self.basepath = self.settings.get("baseimages") + "/." + self.project_parms['id']
+		self.cfg.basehda = ""
 		self.cfg.set_obj("hda", VMDisk(self, "hda", self.basepath))
 		self.cfg.privatehda = ""
 		self.cfg.basehdb = ""
@@ -2685,7 +2685,7 @@ class VM(Brick):
 						print "Machine "+self.name+" acquired master lock on image "+disk.image.name
 						master = True
 					else:
-						raise DiskLocked("Disk image %s already in use" % disk.base)
+						raise DiskLocked("Disk image %s already in use" % disk.image.name)
 						print "ERROR SETTING MASTER!!"
 						return
 
