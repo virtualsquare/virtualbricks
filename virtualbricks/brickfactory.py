@@ -208,11 +208,12 @@ class RemoteHost():
 			if b.homehost and b.homehost.addr == self.addr:
 					self.upload(b)
 
-		#images_list_file = self.send_and_recv("image_files")
-		#for image in images_list_file:
-		#	print image
-		#	self.factory.new_disk_image(self.basepath+"/"+image, image)
-		#	print self.factory.disk_images
+		basepath = self.send_and_recv("i base")
+		if len(basepath) == 1:
+			self.basepath = basepath[0]
+
+	def get_files_list(self):
+		return self.send_and_recv("i files")
 
 	def send_and_recv(self, cmd):
 		p = select.poll()
@@ -232,7 +233,7 @@ class RemoteHost():
 			#delete all blank lines
 			while "" in rec:
 				rec.remove("")
-			while "OK" in rec:
+			while "OK" in rec: ###TODO need a control for FAIL
 				rec.remove("OK")
 			return rec
 		else:
@@ -3130,6 +3131,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			p.write('[RemoteHost:'+r.addr[0]+']\n')
 			p.write('port='+str(r.addr[1])+'\n')
 			p.write('password='+r.password+'\n')
+			p.write('basepath='+r.basepath+'\n')
 			if r.autoconnect:
 				p.write('autoconnect=True\n')
 			else:
@@ -3337,6 +3339,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 								newr.password = str(v)
 							elif k == 'autoconnect' and v == 'True':
 								newr.autoconnect = True
+							elif k == 'basepath':
+								newr.basepath = str(v)
 							l = p.readline()
 						if newr.autoconnect:
 							newr.connect()
@@ -3468,6 +3472,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return True
 		elif command.startswith('images') or command.startswith("i"):
 			self.images_manager(console, *command.split(" ")[1:])
+			return True
 		elif command == 'socks':
 			for s in self.socks:
 				CommandLineOutput(console,  "%s" % s.nickname,)
@@ -3554,7 +3559,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			command = cmd
 			cmd = []
 		if command == "list":
-			#cmd[1] is host
 			host = None
 			if len(cmd)>1:
 				host = self.get_host_by_name(cmd[1])
@@ -3570,12 +3574,35 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				if os.path.isfile(self.settings.get("baseimages")+"/"+image_file):
 					CommandLineOutput(console, "%s" % (image_file))
 		elif command == "add":
-			if len(cmd) > 1 and cmd[2] is not None and cmd[1] is not None and os.path.isfile(cmd[2]):
-				img = self.new_disk_image(cmd[1], cmd[2])
-				if len(cmd) > 2:
-					host = self.get_host_by_name(cmd[3])
+			if len(cmd) > 1 and cmd[2] is not None and cmd[1] is not None: # and os.path.isfile(cmd[2]):
+				basepath = self.settings.get("baseimages")
+				host = None
+				if len(cmd) == 3:
+					host = self.get_host_by_name(cmd[2])
 					if host is not None:
-							img.host = host
+						basepath = host.basepath
+				img = self.new_disk_image(cmd[1], basepath+ "/" + cmd[1])
+				if host is not None:
+					img.host = host
+		elif command == "del":
+			if len(cmd) > 1:
+				image = self.get_image_by_name(cmd[1])
+				if image is not None:
+					if len(cmd) == 3:
+						host = self.get_host_by_name(cmd[2])
+						if host is None:
+							return
+						if host is not None and image.host != host:
+							return
+						self.disk_images.remove(image)
+					if image.host is not None:
+						return
+					self.disk_images.remove(image)
+		elif command == "base":
+			if len(cmd) > 1:
+				self.settings.set("baseimages", cmd[1])
+			CommandLineOutput(console, "%s" % (self.settings.get("baseimages")))
+
 
 	def brickAction(self, obj, cmd):
 		if (cmd[0] == 'on'):
