@@ -550,17 +550,15 @@ class VBGUI(Logger, gobject.GObject):
 
 		#images COMBO
 		if b.get_type() == "Qemu":
-			images_list=None
-			if b.homehost is None:
-				images_list = self.brickfactory.disk_images
-			else:
-				images_list = b.homehost.send_and_recv("disk_images")
 			for hd in ['hda','hdb','hdc','hdd','fda','fdb','mtdblock']:
 				images = ComboBox(self.gladefile.get_widget("cfg_Qemu_base"+hd+"_combo"))
 				opt = dict()
 				opt['Off'] = ""
 				for img in self.brickfactory.disk_images:
-					opt[img.name] = img.name
+					if b.homehost is None and img.host is None:
+						opt[img.name] = img.name
+					elif b.homehost is not None and img.host is not None and img.host.addr[0] == b.homehost.addr[0]:
+						opt[img.name] = img.name
 				images.populate(opt,"")
 				if len(b.cfg.get('base'+hd)) > 0 and (getattr(b.cfg, hd)).set_image(b.cfg.get('base'+hd)):
 					images.select(b.cfg.get("base"+hd))
@@ -2075,10 +2073,16 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('diskimage_path_text').set_text(img.path)
 			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
 			self.gladefile.get_widget('diskimage_description_text').set_text(img.get_description())
+			if img.host is None:
+				host = ""
+			else:
+				host = img.host.addr[0]
+			self.gladefile.get_widget('diskimage_host_text').set_text(str(host))
 
 	def on_diskimage_save(self, widget=None, event=None, data=""):
 		path = self.gladefile.get_widget('diskimage_path_text').get_text()
 		img = self.brickfactory.get_image_by_path(path)
+		host = self.gladefile.get_widget('diskimage_host_text').get_text()
 		if (img):
 			name = ValidName(self.gladefile.get_widget('diskimage_name_text').get_text())
 			if name:
@@ -2086,7 +2090,11 @@ Packets longer than specified size are discarded.")
 			else:
 				self.error("Invalid Name.")
 			img.set_description(self.gladefile.get_widget('diskimage_description_text').get_text())
-			self.diskimage_show(img.name)
+		if (host != ""):
+			host = self.brickfactory.get_host_by_name(host)
+			if host is not None:
+				img.host = host
+		self.diskimage_show(img.name)
 
 	def on_diskimage_revert(self, widget=None, event=None, data=""):
 		path = self.gladefile.get_widget('diskimage_path_text').get_text()

@@ -122,6 +122,7 @@ class RemoteHost():
 		self.password=""
 		self.factory.remotehosts_changed=True
 		self.autoconnect=False
+		self.basepath=os.path.expanduser("~")+"/VM"
 
 	def num_bricks(self):
 		r = 0
@@ -206,6 +207,12 @@ class RemoteHost():
 		for b in self.factory.bricks:
 			if b.homehost and b.homehost.addr == self.addr:
 					self.upload(b)
+
+		#images_list_file = self.send_and_recv("image_files")
+		#for image in images_list_file:
+		#	print image
+		#	self.factory.new_disk_image(self.basepath+"/"+image, image)
+		#	print self.factory.disk_images
 
 	def send_and_recv(self, cmd):
 		p = select.poll()
@@ -2283,13 +2290,14 @@ class DiskImage():
 	''' VMDisk must associate to this, and must check the locked flag
 		before use '''
 
-	def __init__(self, name, path, description=""):
+	def __init__(self, name, path, description="", host=None):
 		self.name = name
 		self.path = path
 		if description!="":
 			self.set_description(description)
 		self.vmdisks = []
 		self.master = None
+		self.host = host
 
 	def rename(self, newname):
 		self.name = newname
@@ -2962,8 +2970,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				return img
 		return None
 
-	def new_disk_image(self, name, path, description=""):
-		img = DiskImage(name, path, description)
+	def new_disk_image(self, name, path, description="", host=None):
+		img = DiskImage(name, path, description, host)
 		self.disk_images.append(img)
 		return img
 
@@ -3131,6 +3139,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for img in self.disk_images:
 			p.write('[DiskImage:'+img.name+']\n')
 			p.write('path='+img.path +'\n')
+			if img.host is not None:
+				p.write('host='+img.host.addr[0]+'\n')
 
 		for e in self.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
@@ -3298,13 +3308,16 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					elif ntype == 'DiskImage':
 						self.debug("Found Disk image %s" % name)
 						path = ""
+						host=None
 						l = p.readline()
 						while l and not l.startswith('['):
 							k,v = l.rstrip("\n").split("=")
 							if k == 'path':
 								path = str(v)
+							elif k == 'host':
+								host = self.get_host_by_name(str(v))
 							l = p.readline()
-						self.new_disk_image(name,path)
+						img = self.new_disk_image(name,path, host=host)
 						continue
 
 					elif ntype == 'RemoteHost':
@@ -3404,6 +3417,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		else:
 			print "No process running"
 
+	def get_host_by_name(self, host):
+		for h in self.remote_hosts:
+			if h.addr[0] == host:
+				return h
+		return None
+
+
 	def parse(self, command, console=sys.stdout):
 		if (command == 'q' or command == 'quit'):
 			self.quit()
@@ -3446,9 +3466,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			CommandLineOutput(console,  "End of list.")
 			CommandLineOutput(console, "" )
 			return True
-		elif command == 'disk_images':
-			for img in self.disk_images:
-				CommandLineOutput(console, "%s,%s" % (img.name, img.path))
+		elif command.startswith('images') or command.startswith("i"):
+			self.images_manager(console, *command.split(" ")[1:])
 		elif command == 'socks':
 			for s in self.socks:
 				CommandLineOutput(console,  "%s" % s.nickname,)
@@ -3527,6 +3546,36 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			else:
 				print 'Invalid console command "%s"' % command
 				return False
+
+	def images_manager(self, console, *cmd):
+		if isinstance(cmd, basestring) is False:
+			command = cmd[0]
+		else:
+			command = cmd
+			cmd = []
+		if command == "list":
+			#cmd[1] is host
+			host = None
+			if len(cmd)>1:
+				host = self.get_host_by_name(cmd[1])
+			for img in self.disk_images:
+				if (len(cmd)==1 and img.host is None):
+					CommandLineOutput(console, "%s,%s" % (img.name, img.path))
+				if (host is not None and img.host is not None and img.host.addr[0] == host.addr[0]):
+					CommandLineOutput(console, "%s,%s" % (img.name, img.path))
+				else:
+					continue
+		elif command == "files":
+			for image_file in os.listdir(self.settings.get("baseimages")):
+				if os.path.isfile(self.settings.get("baseimages")+"/"+image_file):
+					CommandLineOutput(console, "%s" % (image_file))
+		elif command == "add":
+			if len(cmd) > 1 and cmd[2] is not None and cmd[1] is not None and os.path.isfile(cmd[2]):
+				img = self.new_disk_image(cmd[1], cmd[2])
+				if len(cmd) > 2:
+					host = self.get_host_by_name(cmd[3])
+					if host is not None:
+							img.host = host
 
 	def brickAction(self, obj, cmd):
 		if (cmd[0] == 'on'):
