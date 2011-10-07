@@ -40,6 +40,166 @@ from virtualbricks.gui.logger import Logger
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
 
+class VBTree(gtk.TreeStore):
+	def __init__(self, gui, tree_name, model, fields, names):
+		self.model = model
+		if model is None:
+			gtk.TreeStore.__init__(self, *fields)
+		self.gui = gui
+		self.tree = self.gui.gladefile.get_widget(tree_name)
+		self.tree.set_model(self)
+		self.last_order = 0
+		self.order_last_direction = True
+		if model:
+			self.tree.set_model(model)
+			for name in names:
+				col = gtk.TreeViewColumn(name)
+				''' Todo: use something different to find pixbuf '''
+				if name != _('Icon'):
+					elem = gtk.CellRendererText()
+					col.pack_start(elem, False)
+				else:
+					elem = gtk.CellRendererPixbuf()
+					col.pack_start(elem, False)
+				col.set_cell_data_func(elem, self.cell_render)
+				col.set_clickable(True)
+				col.connect("clicked",self.header_clicked)
+				self.tree.append_column(col)
+		else:
+			for idx, name in enumerate(names):
+				col = gtk.TreeViewColumn(name)
+				if fields[idx] == gtk.gdk.Pixbuf:
+					elem = gtk.CellRendererPixbuf()
+					col.pack_start(elem, False)
+					col.add_attribute(elem, 'pixbuf', idx)
+				else:
+		 			elem = gtk.CellRendererText()
+					col.pack_start(elem, False)
+					col.add_attribute(elem, 'text', idx)
+				self.tree.append_column(col)
+
+	def _treeorder_continue(self, itr, field, asc, moved = False):
+		if itr is None:
+			return
+		nxt = self.iter_next(itr)
+		if (nxt):
+			val_itr = self.get_value(itr, field)
+			val_nxt = self.get_value(nxt, field)
+			if asc:
+				if val_nxt <  val_itr:
+					self.swap(itr,nxt)
+					moved = True
+			else:
+				if val_nxt >  val_itr:
+					self.swap(itr,nxt)
+					moved = True
+
+			return self._treeorder_continue(nxt, field, asc, moved)
+		else:
+			return moved
+
+
+	def order(self, field=_('Type'), ascending=True):
+		itr = self.get_iter_first()
+		moved = self._treeorder_continue(itr, field, ascending)
+		while moved:
+			itr = self.get_iter_first()
+			moved = self._treeorder_continue( itr, field, ascending)
+
+	def cell_render(self, column, cell, model, iter):
+		raise NotImplemented()
+
+class BricksTree(VBTree):
+	""" Ordering bricks treeview. """
+	def _bricks_treeorder_continue(self, itr, field=_('Type'), asc=True, moved = False):
+		nxt = self.model.iter_next(itr)
+		if (nxt):
+			br_itr = self.model.get_value(itr, BricksModel.BRICK_IDX)
+			br_nxt = self.model.get_value(nxt, BricksModel.BRICK_IDX)
+			if field == _('Icon') or field == _('Type'):
+				x = br_nxt.get_type()
+				y = br_itr.get_type()
+			elif field == _('Status'):
+				x = br_nxt.proc
+				y = br_itr.proc
+			elif field == _('Name'):
+				x = br_nxt.name
+				y = br_itr.name
+			elif field == _('Parameters'):
+				x = br_nxt.get_parameters()
+				y = br_itr.get_parameters()
+			else:
+				x = 0
+				y = 0
+
+			if asc:
+				if x < y:
+					self.model.swap(itr,nxt)
+					moved = True
+			else:
+				if x > y:
+					self.model.swap(itr,nxt)
+					moved = True
+			if x == y:
+				if br_itr.name > br_nxt.name:
+					self.model.swap(itr,nxt)
+					moved = True
+
+			return self._bricks_treeorder_continue(nxt, field, asc, moved)
+		else:
+			return moved
+
+
+	def order(self, field=_('Type'), ascending=True):
+		self.last_order = field
+		self.order_last_direction = ascending
+		itr = self.model.get_iter_first()
+		if itr is None:
+			return
+		moved = self._bricks_treeorder_continue(itr, field, ascending)
+		while moved:
+			itr = self.model.get_iter_first()
+			moved = self._bricks_treeorder_continue(itr, field, ascending)
+
+	def cell_render(self, column, cell, mod, iter):
+		brick = mod.get_value(iter, BricksModel.BRICK_IDX)
+		assert brick is not None
+		if column.get_title() == _('Icon'):
+			if brick.homehost is not None and not brick.homehost.connected:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48)
+				cell.set_property('pixbuf', icon)
+			elif brick.proc is not None:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
+					48)
+				cell.set_property('pixbuf', icon)
+			elif not brick.properly_connected():
+				cell.set_property('stock-id', gtk.STOCK_DIALOG_ERROR)
+				cell.set_property('stock-size', gtk.ICON_SIZE_LARGE_TOOLBAR)
+			else:
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
+						48)
+				cell.set_property('pixbuf', icon)
+		elif column.get_title() == _('Status'):
+			cell.set_property('text', brick.get_state())
+		elif column.get_title() == _('Type'):
+			if brick.homehost:
+				cell.set_property('text', "Remote " + brick.get_type() +" on " + brick.homehost.addr[0])
+			else:
+				cell.set_property('text', brick.get_type())
+		elif column.get_title() == _('Name'):
+			cell.set_property('text', brick.name)
+		elif column.get_title() == _('Parameters'):
+			cell.set_property('text', brick.get_parameters())
+		else:
+			raise NotImplemented()
+
+	def header_clicked(self, widget, event=None, data=""):
+		column = widget.get_title()
+		direction = True
+		if column == self.last_order:
+			direction = not self.order_last_direction
+		self.order(column, direction)
+
 class VBGUI(Logger, gobject.GObject):
 	def __init__(self, noterm=False):
 		gobject.GObject.__init__(self)
@@ -84,12 +244,8 @@ class VBGUI(Logger, gobject.GObject):
 		self.eventsmodel = None
 		self.shcommandsmodel = None
 
-		self.bricks_order = _('Type')
-		self.bricks_order_last_direction = True
 
 		self.config = self.brickfactory.settings
-		self.draw_topology()
-		self.brickfactory.start()
 
 		self.gladefile.get_widget("messages_textview").set_buffer(self.messages_buffer)
 
@@ -102,57 +258,30 @@ class VBGUI(Logger, gobject.GObject):
 		self.last_known_selected_brick = None
 		self.last_known_selected_event = None
 		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
-		self.signals()
-		self.timers()
 		self.topology_active = False
 
 		self.sockscombo = dict()
 
-		self.running_bricks = self.treestore('treeview_joblist', [gtk.gdk.Pixbuf,
+		self.running_bricks = VBTree(self, 'treeview_joblist', None, [gtk.gdk.Pixbuf,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['',_('PID'),_('Type'),_('Name')])
 
-		columns = [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')]
-		tree = self.gladefile.get_widget('treeview_bookmarks')
-		tree.set_model(self.brickfactory.bricksmodel)
+		''' Main Treeview '''
+		self.maintree = BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
-		self.remote_hosts_tree = self.treestore('treeview_remotehosts', [gtk.gdk.Pixbuf,
+		self.remote_hosts_tree = VBTree(self, 'treeview_remotehosts', None, [gtk.gdk.Pixbuf,
 			 gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Status',_('Address'),_('Bricks'),_('Autoconnect')])
 
-		self.image_tree = self.treestore('treeview_diskimages', [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+		self.image_tree = VBTree(self, 'treeview_diskimages', None, [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			[_('Image name'),_('Used by'),_('Master Brick'),_('COWs')])
 
-		self.usbdev_tree = self.treestore('treeview_usbdev', [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
+		self.usbdev_tree = VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
 		self.gladefile.get_widget('treeview_usbdev').get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
 
-		for name in columns:
-			col = gtk.TreeViewColumn(name)
-			if name != _('Icon'):
-				elem = gtk.CellRendererText()
-				col.pack_start(elem, False)
-			else:
-				elem = gtk.CellRendererPixbuf()
-				col.pack_start(elem, False)
-			col.set_cell_data_func(elem, self.brick_to_cell)
-			col.set_clickable(True)
-			col.connect("clicked",self.brick_header_clicked)
-			tree.append_column(col)
-
 		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
 		eventstree.set_model(self.brickfactory.eventsmodel)
-		for name in columns:
-			col = gtk.TreeViewColumn(name)
-			if name != _('Icon'):
-				elem = gtk.CellRendererText()
-				col.pack_start(elem, False)
-			else:
-				elem = gtk.CellRendererPixbuf()
-				col.pack_start(elem, False)
-			col.set_cell_data_func(elem, self.event_to_cell)
-			col.set_clickable(True)
-			eventstree.append_column(col)
 
 		# associate Drag and Drop action
 		tree = self.gladefile.get_widget('treeview_bookmarks')
@@ -163,7 +292,7 @@ class VBGUI(Logger, gobject.GObject):
 		eventstree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		eventstree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
-		self.vmplugs = self.treestore('treeview_networkcards', [gobject.TYPE_STRING,
+		self.vmplugs = VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Eth','connection','model','macaddr'])
 
@@ -184,6 +313,10 @@ class VBGUI(Logger, gobject.GObject):
 		self.remotehost_selected = None
 
 		gtk.gdk.threads_enter()
+		self.draw_topology()
+		self.brickfactory.start()
+		self.signals()
+		self.timers()
 		try:
 			gtk.main()
 		except KeyboardInterrupt:
@@ -277,88 +410,6 @@ class VBGUI(Logger, gobject.GObject):
 		name = model.get_value(iter, EventsModel.EVENT_IDX).name
 		self.last_known_selected_event = self.brickfactory.geteventbyname(name)
 		return self.last_known_selected_event
-
-	""" Ordering bricks treeview. """
-	def _bricks_treeorder_continue(self, _tree, model, itr, field=_('Type'), asc=True, moved = False):
-		nxt = model.iter_next(itr)
-		if (nxt):
-			br_itr = model.get_value(itr, BricksModel.BRICK_IDX)
-			br_nxt = model.get_value(nxt, BricksModel.BRICK_IDX)
-			if field == _('Icon') or field == _('Type'):
-				x = br_nxt.get_type()
-				y = br_itr.get_type()
-			elif field == _('Status'):
-				x = br_nxt.proc
-				y = br_itr.proc
-			elif field == _('Name'):
-				x = br_nxt.name
-				y = br_itr.name
-			elif field == _('Parameters'):
-				x = br_nxt.get_parameters()
-				y = br_itr.get_parameters()
-			else:
-				x = 0
-				y = 0
-
-			if asc:
-				if x < y:
-					model.swap(itr,nxt)
-					moved = True
-			else:
-				if x > y:
-					model.swap(itr,nxt)
-					moved = True
-			if x == y:
-				if br_itr.name > br_nxt.name:
-					model.swap(itr,nxt)
-					moved = True
-
-			return self._bricks_treeorder_continue(_tree, model, nxt, field, asc, moved)
-		else:
-			return moved
-
-
-	def bricks_treeview_order(self, treeview, model, field=_('Type'), ascending=True):
-		self.bricks_order = field
-		self.bricks_order_last_direction = ascending
-		tree = self.gladefile.get_widget(treeview)
-		itr = model.get_iter_first()
-		if itr is None:
-			return
-		moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
-		while moved:
-			itr = model.get_iter_first()
-			moved = self._bricks_treeorder_continue(tree, model, itr, field, ascending)
-
-	def _treeorder_continue(self, _tree, model, itr, field, asc, moved = False):
-		if itr is None:
-			return
-		nxt = model.iter_next(itr)
-		if (nxt):
-			val_itr = model.get_value(itr, field)
-			val_nxt = model.get_value(nxt, field)
-			if asc:
-				if val_nxt <  val_itr:
-					model.swap(itr,nxt)
-					moved = True
-			else:
-				if val_nxt >  val_itr:
-					model.swap(itr,nxt)
-					moved = True
-
-			return self._treeorder_continue(_tree, model, nxt, field, asc, moved)
-		else:
-			return moved
-
-
-	def treeview_order(self, treeview, model, field=0, ascending=True):
-		tree = self.gladefile.get_widget(treeview)
-		itr = model.get_iter_first()
-		moved = self._treeorder_continue(tree, model, itr, field, ascending)
-		while moved:
-			itr = model.get_iter_first()
-			moved = self._treeorder_continue(tree, model, itr, field, ascending)
-
 
 
 	""" ******************************************************** """
@@ -1015,22 +1066,6 @@ class VBGUI(Logger, gobject.GObject):
 			r[i].hide()
 		return r
 
-	def treestore(self, tree_name, fields, names):
-		tree = self.gladefile.get_widget(tree_name)
-		ret = gtk.TreeStore(*fields)
-		tree.set_model(ret)
-		for idx, name in enumerate(names):
-			col = gtk.TreeViewColumn(name)
-			if fields[idx] == gtk.gdk.Pixbuf:
-				elem = gtk.CellRendererPixbuf()
-				col.pack_start(elem, False)
-				col.add_attribute(elem, 'pixbuf', idx)
-			else:
-	 			elem = gtk.CellRendererText()
-				col.pack_start(elem, False)
-				col.add_attribute(elem, 'text', idx)
-			tree.append_column(col)
-		return ret
 
 	def qemu_eth_model(self):
 		res = dict()
@@ -1154,12 +1189,6 @@ class VBGUI(Logger, gobject.GObject):
 	"""														  """
 	"""														  """
 	""" ******************************************************** """
-	def brick_header_clicked(self, widget, event=None, data=""):
-		column = widget.get_title()
-		direction = True
-		if column == self.bricks_order:
-			direction = not self.bricks_order_last_direction
-		self.bricks_treeview_order("treeview_bookmarks", self.brickfactory.bricksmodel, column, direction)
 
 	def on_bricks_keypressed(self, widget, event="", data=""):
 		if event.keyval == 65288 or event.keyval == 65535:
@@ -2047,10 +2076,10 @@ Packets longer than specified size are discarded.")
 		raise NotImplementedError()
 
 	def on_entry_newimage_name_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		pass
 
 	def on_combobox_newimage_format_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		pass
 
 	def on_spinbutton_newimage_size_changed(self, widget=None, data=""):
 		raise NotImplementedError()
@@ -2763,7 +2792,7 @@ Packets longer than specified size are discarded.")
 					self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
 					self.vmplugs.set_value(iter,2,sk.model)
 					self.vmplugs.set_value(iter,3,sk.mac)
-			self.treeview_order('treeview_networkcards', self.vmplugs, 0)
+			self.vmplugs.order(0, True)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
 		if self.brick_selected is None:
@@ -3359,8 +3388,7 @@ Packets longer than specified size are discarded.")
 		return True
 
 	def draw_topology(self):
-		self.bricks_treeview_order("treeview_bookmarks", self.brickfactory.bricksmodel,
-				self.bricks_order, self.bricks_order_last_direction)
+		self.maintree.order()
 		if self.gladefile.get_widget('topology_tb').get_active():
 			orientation = "TB"
 		else:
