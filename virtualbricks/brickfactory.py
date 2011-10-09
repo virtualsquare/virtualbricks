@@ -7,8 +7,7 @@ Copyright (C) 2011 Virtualbricks team
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+as published by the Free Software Foundation; version 2.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -2405,7 +2404,7 @@ class VMDisk():
 			img.add_vmdisk(self)
 			self.VM.cfg.set("base"+self.device +'='+ img.name)
 			if not self.cow and self.VM.cfg.get("snapshot")=="" and self.image.set_master(self):
-				print "Machine "+self.VM.name+" acquired master lock on image " + self.image.name
+				self.VM.factory.debug("Machine "+self.VM.name+" acquired master lock on image " + self.image.name)
 			return True
 
 		''' If that fails: rollback to old behavior, and search for an already
@@ -2426,7 +2425,7 @@ class VMDisk():
 		self.VM.cfg.set("base"+self.device +'='+ img.name)
 		if not self.cow and self.VM.cfg.get("snapshot")=="":
 			if self.image.set_master(self):
-				print "Machine "+self.VM.name+" acquired master lock on image " + self.image.name
+				self.VM.factory.debug("Machine "+self.VM.name+" acquired master lock on image " + self.image.name)
 			else:
 				print "ERROR SETTING MASTER!!"
 		return True
@@ -2723,7 +2722,7 @@ class VM(Brick):
 				real_disk = disk.get_real_disk_name()
 				if disk.cow == False and disk.readonly() == False:
 					if disk.image.set_master(disk):
-						print "Machine "+self.name+" acquired master lock on image "+disk.image.name
+						self.factory.debug( "Machine "+self.name+" acquired master lock on image "+disk.image.name)
 						master = True
 					else:
 						raise DiskLocked("Disk image %s already in use" % disk.image.name)
@@ -2931,7 +2930,7 @@ class AutoSaveTimer(Thread):
 		self.factory = factory
 
 	def run(self):
-		print "Autosaver started"
+		self.factory.debug( "Autosaver started")
 		while (self.factory.running_condition):
 			for t in range(self.autosave_timeout):
 				time.sleep(1)
