@@ -180,10 +180,15 @@ class RemoteHost():
 	def expect_OK(self):
 		p = select.poll()
 		p.register(self.sock, select.POLLIN)
-		if (p.poll(10)):
-				rec = self.sock.recv(4)
-				if rec.startswith("OK"):
-					return True
+		buff=""
+		rec=""
+                while (p.poll(100)):
+			buff = self.sock.recv(1)
+			rec=rec+buff
+			if rec.endswith("OK\n"):
+				return True
+			elif rec.endswith("\nFAIL\n"):
+				return "FAIL\n"
 		return False
 
 	def upload(self,b):
@@ -195,10 +200,11 @@ class RemoteHost():
 	def putconfig(self,b):
 		for (k, v) in b.cfg.iteritems():
 			if k != 'homehost':
-				#print "sending "+ b.name+ " config " + "%s=%s" % (k, v)
-				self.send(b.name + ' config ' + "%s=%s" % (k, v))
-				self.expect_OK()
-				time.sleep(0.1)
+				# ONLY SEND TO SERVER STRING PARAMETERS, OBJECT WON'T BE SENT TO SERVER AS A STRING!
+				if isinstance(v, basestring) is True:
+					self.send(b.name + ' config ' + "%s=%s" % (k, v))
+					self.expect_OK()
+					time.sleep(0.1)
 		self.factory.remotehosts_changed=True
 
 	def post_connect_init(self):
@@ -208,14 +214,20 @@ class RemoteHost():
 			if b.homehost and b.homehost.addr == self.addr:
 					self.upload(b)
 
-		basepath = self.send_and_recv("i base")
+		basepath = self.send_and_recv("i base show")
 		if len(basepath) == 1:
 			self.basepath = basepath[0]
+
+		for img in self.factory.disk_images:
+			if img.host is not None and img.host.addr[0] == self.addr[0]:
+				self.send("i add " + img.name + " " + self.basepath + "/" + img.name)
+				self.expect_OK()
 
 	def get_files_list(self):
 		return self.send_and_recv("i files")
 
 	def send_and_recv(self, cmd):
+		#print "send_and_recv starting: %s" % cmd
 		p = select.poll()
                 p.register(self.sock, select.POLLIN)
 		# clear the socket input
@@ -224,21 +236,16 @@ class RemoteHost():
 		self.send(cmd)
 		buff=""
 		rec=""
-		OK=0
                 while (p.poll(10)):
 			buff = self.sock.recv(1)
 			rec=rec+buff
-		if rec.rstrip().endswith("OK"):
-			rec = rec.split("\n")
-			#delete all blank lines
-			while "" in rec:
-				rec.remove("")
-			while "OK" in rec: ###TODO need a control for FAIL
-				rec.remove("OK")
-			return rec
-		else:
-			# NO "OK" AT THE END OF THE COMMAND OUTPUT
-			return []
+			if rec.endswith("\nOK\n"):
+				rec = rec.split("\n")
+				rec = rec[:len(rec)-2]
+				#print "send_and_recv finished"
+				return rec
+			elif rec.endswith("FAIL\n"):
+				return []
 
 	def send(self, cmd):
 		ret = False
@@ -527,8 +534,8 @@ class Brick(ChildLogger):
 	def initialize(self, attrlist):
 		"""TODO attrs : dict attr => value"""
 		for attr in attrlist:
-			self.cfg.set(attr)
 			k=attr.split("=")[0]
+			self.cfg.set(attr)
 			if k == 'homehost':
 				self.set_host(attr.split('=')[1])
 			if k == 'sock':
@@ -2708,13 +2715,11 @@ class VM(Brick):
 			if self.cfg.get("base" + dev) != "":
 				master = False
 				disk = getattr(self.cfg, dev)
-				disk.set_image(self.cfg.get("base"+dev))
 				if self.cfg.get("private" + dev) == "*":
 					disk.cow = True
 				else:
 					disk.cow = False
 				real_disk = disk.get_real_disk_name()
-
 				if disk.cow == False and disk.readonly() == False:
 					if disk.image.set_master(disk):
 						print "Machine "+self.name+" acquired master lock on image "+disk.image.name
@@ -3453,6 +3458,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return True
 		elif command.startswith('reset all'):
 			self.reset_config()
+			return True
 		elif command.startswith('n ') or command.startswith('new '):
 			if(command.startswith('n event') or (command.startswith('new event'))):
 				self.newevent(*command.split(" ")[1:])
@@ -3532,7 +3538,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				CommandLineOutput(console,  "FAIL Brick not found: " + args[2] + "\n")
 		elif command == '':
 			return True
-
 		else:
 			found = None
 			for obj in self.bricks:
@@ -3558,10 +3563,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		else:
 			command = cmd
 			cmd = []
+		host = None
+		remote = False
 		if command == "list":
-			host = None
 			if len(cmd)>1:
-				host = self.get_host_by_name(cmd[1])
+				host=self.get_host_by_name(cmd[1])
 			for img in self.disk_images:
 				if (len(cmd)==1 and img.host is None):
 					CommandLineOutput(console, "%s,%s" % (img.name, img.path))
@@ -3570,11 +3576,20 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				else:
 					continue
 		elif command == "files":
+			if len(cmd)>1:
+				host=self.get_host_by_name(cmd[1])
+				if host is not None and host.connected is True:
+					files = host.get_files_list()
+					for f in files:
+						print f
+				else:
+					CommandLineOutput(console, "Not connected to %s" % cmd[1])
+				return
 			for image_file in os.listdir(self.settings.get("baseimages")):
 				if os.path.isfile(self.settings.get("baseimages")+"/"+image_file):
 					CommandLineOutput(console, "%s" % (image_file))
 		elif command == "add":
-			if len(cmd) > 1 and cmd[2] is not None and cmd[1] is not None: # and os.path.isfile(cmd[2]):
+			if len(cmd) > 1 and cmd[2] is not None and cmd[1] is not None:
 				basepath = self.settings.get("baseimages")
 				host = None
 				if len(cmd) == 3:
@@ -3584,25 +3599,34 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				img = self.new_disk_image(cmd[1], basepath+ "/" + cmd[1])
 				if host is not None:
 					img.host = host
+					if host.connected is True:
+						host.send("i add " + cmd[1])
+						host.expect_OK()
 		elif command == "del":
 			if len(cmd) > 1:
 				image = self.get_image_by_name(cmd[1])
 				if image is not None:
 					if len(cmd) == 3:
 						host = self.get_host_by_name(cmd[2])
+						if host.connected is False:
+							host = None
 						if host is None:
 							return
 						if host is not None and image.host != host:
 							return
 						self.disk_images.remove(image)
+						if host.connected is True:
+							host.send("i del " + cmd[1])
+							host.expect_OK()
 					if image.host is not None:
 						return
 					self.disk_images.remove(image)
 		elif command == "base":
-			if len(cmd) > 1:
-				self.settings.set("baseimages", cmd[1])
-			CommandLineOutput(console, "%s" % (self.settings.get("baseimages")))
-
+			if len(cmd) == 1 or (len(cmd) > 1 and cmd[1] == "show"):
+				CommandLineOutput(console, "%s" % (self.settings.get("baseimages")))
+			elif cmd[1] == "set" and len(cmd)>2:
+				self.settings.set("baseimages", cmd[2])
+		return
 
 	def brickAction(self, obj, cmd):
 		if (cmd[0] == 'on'):

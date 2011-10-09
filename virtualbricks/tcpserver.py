@@ -32,7 +32,7 @@ class TcpServer(ChildLogger, Thread):
 			self.listening.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			self.listening.listen(1)
 		except Exception:
-			print "socket error"
+			print "socket error (1)"
 			self.factory.quit()
 			sys.exit(1)
 
@@ -45,7 +45,7 @@ class TcpServer(ChildLogger, Thread):
 							(sock, addr) = self.listening.accept()
 
 						except Exception:
-							print "socket error"
+							print "socket error (2)"
 							self.factory.quit()
 							sys.exit(1)
 						self.info("Connection from %s" % str(addr))
@@ -78,6 +78,7 @@ class TcpServer(ChildLogger, Thread):
 						self.sock = None
 						self.info("Connection from %s closed.", str(addr))
 			self.listening.close()
+
 	def remote_wire_request(self, req):
 		if (len(req) == 0):
 			return False
@@ -108,7 +109,7 @@ class TcpServer(ChildLogger, Thread):
 				except:
 					print "RECV error."
 					return
-				print recs
+				print recs,
 				for rec in recs.split('\n'):
 					if self.factory.parse(rec.rstrip('\n'), console=sock):
 						try:
