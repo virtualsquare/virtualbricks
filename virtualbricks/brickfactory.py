@@ -210,10 +210,6 @@ class RemoteHost():
 	def post_connect_init(self):
 		self.send('reset all')
 
-		for b in self.factory.bricks:
-			if b.homehost and b.homehost.addr == self.addr:
-					self.upload(b)
-
 		basepath = self.send_and_recv("i base show")
 		if len(basepath) == 1:
 			self.basepath = basepath[0]
@@ -222,6 +218,12 @@ class RemoteHost():
 			if img.host is not None and img.host.addr[0] == self.addr[0]:
 				self.send("i add " + img.name + " " + self.basepath + "/" + img.name)
 				self.expect_OK()
+
+		for b in self.factory.bricks:
+			if b.homehost and b.homehost.addr == self.addr:
+					self.upload(b)
+
+
 
 	def get_files_list(self):
 		return self.send_and_recv("i files")
@@ -2389,7 +2391,6 @@ class VMDisk():
 	def set_image(self, image):
 		''' Old virtualbricks (0.4) will pass a full path here, new behavior
 			is to pass the image nickname '''
-
 		if len(image) == 0:
 			img = None
 			if self.image:
@@ -2672,7 +2673,7 @@ class VM(Brick):
 			if hasattr(disk, "image"):
 				if disk.image is not None and self.cfg.get('base'+hd) != disk.image.name:
 					disk.set_image(self.cfg.get('base'+hd))
-				elif disk.image == None and len(self.cfg.get('base'+hd)) > 0:
+				elif disk.image is None and len(self.cfg.get('base'+hd)) > 0:
 					disk.set_image(self.cfg.get('base'+hd))
 			else:
 				return
