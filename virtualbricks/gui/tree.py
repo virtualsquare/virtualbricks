@@ -26,6 +26,7 @@ class VBTree():
 		self.tree = self.gui.gladefile.get_widget(tree_name)
 		self.last_order = 0
 		self.order_last_direction = True
+		self.last_known_selection = None
 		if model:
 			self.model = model
 			self.tree.set_model(self.model)
@@ -53,6 +54,18 @@ class VBTree():
 	def new_row(self):
 		ret = self.model.append(None, None)
 		return ret
+
+	def get_selection_at(self, xx, yy):
+		x = int(xx)
+		y = int(yy)
+		pthinfo = self.tree.get_path_at_pos(x, y)
+		return pthinfo
+
+	def get_info_at(self, xx, yy):
+		x = int(xx)
+		y = int(yy)
+		return self.tree.get_dest_row_at_pos(x, y)
+
 
 	def set_value(self, itr, col, val):
 		return self.model.set_value(itr, col, val)
@@ -89,6 +102,11 @@ class VBTree():
 
 	def cell_render(self, column, cell, model, iter):
 		raise NotImplemented()
+
+	def get_selection(self, path=None, idx=0):
+		return None
+	def set_selection(self,item):
+		self.last_known_selection = item
 
 	def associate_drag_and_drop(self, target):
 		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
@@ -136,6 +154,25 @@ class BricksTree(VBTree):
 
 	def redraw(self):
 		self.model.clear()
+
+	def get_selection(self, pthinfo=None, idx=0):
+		if pthinfo is not None:
+			path, col, cellx, celly = pthinfo
+			self.tree.grab_focus()
+			self.tree.set_cursor(path, col, 0)
+		else:
+			path = self.tree.get_cursor()[0]
+		if path is None:
+			'''
+			' Default to something that makes sense,
+			' otherwise on_config_ok will be broken
+			' when treeviews lose their selections.
+			'''
+			return self.last_known_selection
+
+		iter = self.model.get_iter(path)
+		self.last_known_selection = self.model.get_value(iter, idx)
+		return self.last_known_selection
 
 	def order(self, field=_('Type'), ascending=True):
 		self.last_order = field

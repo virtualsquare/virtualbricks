@@ -148,7 +148,6 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.vmplug_selected = None
 		self.joblist_selected = None
-		self.brick_selected = None
 		self.event_selected = None
 		self.remotehost_selected = None
 
@@ -182,24 +181,6 @@ class VBGUI(Logger, gobject.GObject):
 			cell.set_property('text', event.get_parameters())
 		else:
 			raise NotImplemented()
-
-	def get_selected_bookmark(self):
-		tree = self.gladefile.get_widget('treeview_bookmarks');
-		path = tree.get_cursor()[0]
-
-		if path is None:
-			'''
-			' Default to something that makes sense,
-			' otherwise on_config_ok will be broken
-			' when treeviews lose their selections.
-			'''
-			return self.last_known_selected_brick
-
-		model = tree.get_model()
-		iter = model.get_iter(path)
-		name = model.get_value(iter, BricksModel.BRICK_IDX).name
-		self.last_known_selected_brick = self.brickfactory.getbrickbyname(name)
-		return self.last_known_selected_brick
 
 	def get_event_selected_bookmark(self):
 		tree = self.gladefile.get_widget('treeview_events_bookmarks');
@@ -338,7 +319,7 @@ class VBGUI(Logger, gobject.GObject):
 				combo.select(n)
 
 	def config_brick_prepare(self):
-		b = self.brick_selected
+		b = self.maintree.get_selection()
 		if b.get_type() == 'Capture':
 			self.prepare_ifcombo(b)
 		# Fill socks combobox
@@ -445,7 +426,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.gladefile.get_widget('vm_usb_show').set_sensitive(True)
 			else:
 				self.gladefile.get_widget('vm_usb_show').set_sensitive(False)
-				self.brick_selected.cfg.set('usbdevlist=')
+				self.maintree.get_selection().cfg.set('usbdevlist=')
 
 
 		# Qemu: check if KVM is checkable
@@ -543,7 +524,7 @@ class VBGUI(Logger, gobject.GObject):
 		if notebook.get_current_page() == 1:
 			b = self.event_selected
 		else:
-			b = self.brick_selected
+			b = self.maintree.get_selection()
 		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
@@ -783,42 +764,42 @@ class VBGUI(Logger, gobject.GObject):
 				self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
 			return
 
-		if self.brick_selected is None:
+		if self.maintree.get_selection() is None:
 			return
 
-		if self.brick_selected.get_type() == 'Switch':
+		if self.maintree.get_selection().get_type() == 'Switch':
 			self.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
 			wg.set_position(575)
-		elif self.brick_selected.get_type() == 'Qemu':
+		elif self.maintree.get_selection().get_type() == 'Qemu':
 			self.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')
 			wg.set_position(245)
-		elif self.brick_selected.get_type() == 'Tap':
+		elif self.maintree.get_selection().get_type() == 'Tap':
 			self.debug("tap config")
 			ww = self.gladefile.get_widget('box_tapconfig')
 			wg.set_position(500)
-		elif self.brick_selected.get_type() == 'Wire':
+		elif self.maintree.get_selection().get_type() == 'Wire':
 			self.debug("wire config")
 			ww = self.gladefile.get_widget('box_wireconfig')
 			wg.set_position(606)
-		elif self.brick_selected.get_type() == 'Wirefilter':
+		elif self.maintree.get_selection().get_type() == 'Wirefilter':
 			self.debug("wirefilter config")
 			ww = self.gladefile.get_widget('box_wirefilterconfig')
 			wg.set_position(344)
-		elif self.brick_selected.get_type() == 'TunnelConnect':
+		elif self.maintree.get_selection().get_type() == 'TunnelConnect':
 			self.debug("tunnelc config")
 			ww = self.gladefile.get_widget('box_tunnelcconfig')
 			wg.set_position(500)
-		elif self.brick_selected.get_type() == 'TunnelListen':
+		elif self.maintree.get_selection().get_type() == 'TunnelListen':
 			self.debug("tunnell config")
 			ww = self.gladefile.get_widget('box_tunnellconfig')
 			wg.set_position(524)
-		elif self.brick_selected.get_type() == 'Capture':
+		elif self.maintree.get_selection().get_type() == 'Capture':
 			self.debug("capture config")
 			ww = self.gladefile.get_widget('box_captureconfig')
 			wg.set_position(500)
-		elif self.brick_selected.get_type() == 'SwitchWrapper':
+		elif self.maintree.get_selection().get_type() == 'SwitchWrapper':
 			self.debug("switchwrapper config")
 			ww = self.gladefile.get_widget('box_switchwrapperconfig')
 			wg.set_position(580)
@@ -1494,14 +1475,9 @@ Packets longer than specified size are discarded.")
 				e.poweroff()
 
 	def on_mainwindow_dropaction(self, widget, drag_context, x, y, selection_data, info, timestamp):
-		tree = self.gladefile.get_widget('treeview_bookmarks');
-		x = int(x)
-		y = int(y)
-		pthinfo = tree.get_path_at_pos(x, y)
-		dropbrick = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
-			pthinfo, BricksModel.BRICK_IDX)
-
-		drop_info = tree.get_dest_row_at_pos(x, y)
+		pth = self.maintree.get_selection_at(x,y)
+		dropbrick = self.maintree.get_selection(pth)
+		drop_info = self.maintree.get_info_at(x,y)
 		if drop_info:
 			pth, pos = drop_info
 
@@ -1515,7 +1491,7 @@ Packets longer than specified size are discarded.")
 			self.debug('dropped after')
 			return False
 
-		if dropbrick and dropbrick != self.Dragging:
+		if dropbrick and (dropbrick != self.Dragging):
 			self.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
 			res = False
 			if len(dropbrick.socks) > 0:
@@ -1532,12 +1508,12 @@ Packets longer than specified size are discarded.")
 		self.Dragging = None
 
 	def show_brickactions(self):
-		if self.brick_selected.get_type() == "Qemu":
+		if self.maintree.get_selection().get_type() == "Qemu":
 			self.set_sensitivegroup(['vmresume'])
 		else:
 			self.set_nonsensitivegroup(['vmresume'])
 
-		self.gladefile.get_widget("brickaction_name").set_label(self.brick_selected.name)
+		self.gladefile.get_widget("brickaction_name").set_label(self.maintree.get_selection().name)
 		self.show_window('menu_brickactions')
 
 	def show_eventactions(self):
@@ -1545,8 +1521,8 @@ Packets longer than specified size are discarded.")
 		self.show_window('menu_eventactions')
 
 	def on_treeview_bookmarks_button_release_event(self, widget=None, event=None, data=""):
-		self.brick_selected = self.get_selected_bookmark()
-		if self.brick_selected is None:
+		b = self.maintree.get_selection()
+		if b is None:
 			return
 
 		self.curtain_down()
@@ -1554,10 +1530,7 @@ Packets longer than specified size are discarded.")
 		path = tree.get_cursor()[0]
 		if path is None:
 			return
-
-		iter = tree.get_model().get_iter(path)
-		name = tree.get_model().get_value(iter, BricksModel.BRICK_IDX).name
-		self.Dragging = self.brickfactory.getbrickbyname(name)
+		self.Dragging = b
 		if event.button == 3:
 			self.show_brickactions()
 
@@ -1601,7 +1574,7 @@ Packets longer than specified size are discarded.")
 
 	def on_brick_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		self.user_wait_action(self.startstop_brick, self.brick_selected)
+		self.user_wait_action(self.startstop_brick, self.maintree.get_selection())
 
 	def on_event_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
@@ -1819,14 +1792,14 @@ Packets longer than specified size are discarded.")
 			stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
 			model, iter = startevents.get_selection().get_selected()
 			if iter:
-				self.brick_selected.cfg.pon_vbevent = model[iter][2]
+				self.maintree.get_selection().cfg.pon_vbevent = model[iter][2]
 			else:
-				self.brick_selected.cfg.pon_vbevent = ""
+				self.maintree.get_selection().cfg.pon_vbevent = ""
 			model, iter = stopevents.get_selection().get_selected()
 			if iter:
-				self.brick_selected.cfg.poff_vbevent = model[iter][2]
+				self.maintree.get_selection().cfg.poff_vbevent = model[iter][2]
 			else:
-				self.brick_selected.cfg.poff_vbevent = ""
+				self.maintree.get_selection().cfg.poff_vbevent = ""
 
 		return True
 
@@ -2223,12 +2196,12 @@ Packets longer than specified size are discarded.")
 		self.curtain_down()
 
 		message=""
-		if self.brick_selected.proc is not None:
+		if self.maintree.get_selection().proc is not None:
 			message = _("The brick is still running, it will be killed before being deleted!\n")
 
 		self.ask_confirm(message + _("Do you really want to delete ") +
-				self.brick_selected.get_type() + " \"" + self.brick_selected.name + "\" ?",
-				on_yes = self.brickfactory.delbrick, arg = self.brick_selected)
+				self.maintree.get_selection().get_type() + " \"" + self.maintree.get_selection().name + "\" ?",
+				on_yes = self.brickfactory.delbrick, arg = self.maintree.get_selection())
 
 	def on_event_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
@@ -2243,14 +2216,14 @@ Packets longer than specified size are discarded.")
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
-		self.brickfactory.dupbrick(self.brick_selected)
+		self.brickfactory.dupbrick(self.maintree.get_selection())
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
-		if self.brick_selected.proc != None:
+		if self.maintree.get_selection().proc != None:
 			self.error(_("Cannot rename Brick: it is in use."))
 			return
 
-		self.gladefile.get_widget('entry_brick_newname').set_text(self.brick_selected.name)
+		self.gladefile.get_widget('entry_brick_newname').set_text(self.maintree.get_selection().name)
 		self.gladefile.get_widget('dialog_rename').show_all()
 		self.curtain_down()
 
@@ -2271,7 +2244,7 @@ Packets longer than specified size are discarded.")
 		widget.hide()
 		if response == 1:
 			try:
-				self.brickfactory.renamebrick(self.brick_selected, self.gladefile.get_widget('entry_brick_newname').get_text())
+				self.brickfactory.renamebrick(self.maintree.get_selection(), self.gladefile.get_widget('entry_brick_newname').get_text())
 			except InvalidName:
 				self.error(_("Invalid name!"))
 
@@ -2439,7 +2412,7 @@ Packets longer than specified size are discarded.")
 			lbl.set_markup('<span color="darkgreen">'+_("All VDE components detected")+'.</span>\n')
 
 	def on_arch_changed(self, widget, data=None):
-		if self.brick_selected.get_type() != 'Qemu':
+		if self.maintree.get_selection().get_type() != 'Qemu':
 			return
 
 		combo = ComboBox(widget)
@@ -2458,7 +2431,7 @@ Packets longer than specified size are discarded.")
 				opt_m[v]=v
 		toSelect=""
 		for k, v in opt_m.iteritems():
-			if v.strip() == self.brick_selected.cfg.machine.strip():
+			if v.strip() == self.maintree.get_selection().cfg.machine.strip():
 				toSelect=k
 		machine_c.populate(opt_m, toSelect)
 		os.unlink(MYPATH+"/.vmachines")
@@ -2493,7 +2466,7 @@ Packets longer than specified size are discarded.")
 						if val.endswith(']'):
 							val = val.rstrip(']')
 						opt_c[val]=val
-		cpu_c.populate(opt_c, self.brick_selected.cfg.cpu)
+		cpu_c.populate(opt_c, self.maintree.get_selection().cfg.cpu)
 		os.unlink(MYPATH+"/.cpus")
 
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
@@ -2558,15 +2531,16 @@ Packets longer than specified size are discarded.")
 		return False
 
 	def on_vmplug_add(self, widget=None, event=None, data=""):
-		if self.brick_selected is None:
+		b = self.maintree.get_selection()
+		if b is None:
 			return
 		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
 		if sockname == '_sock':
-			pl = self.brick_selected.add_sock()
+			pl = b.add_sock()
 		elif (sockname == '_hostonly'):
-			pl = self.brick_selected.add_plug('_hostonly')
+			pl = b.add_plug('_hostonly')
 		else:
-			pl = self.brick_selected.add_plug()
+			pl = b.add_plug()
 			for so in self.brickfactory.socks:
 				if so.nickname == sockname:
 					pl.connect(so)
@@ -2579,12 +2553,13 @@ Packets longer than specified size are discarded.")
 		self.update_vmplugs_tree()
 
 	def update_vmplugs_tree(self):
-		if self.brick_selected is None:
+		b = self.maintree.get_selection()
+		if b is None:
 			return
 
-		if (self.brick_selected.get_type() == 'Qemu'):
+		if (b.get_type() == 'Qemu'):
 			self.vmplugs.model.clear()
-			for pl in self.brick_selected.plugs:
+			for pl in b.plugs:
 				iter = self.vmplugs.new_row()
 				self.vmplugs.set_value(iter,0,pl.vlan)
 				if pl.mode == 'hostonly':
@@ -2594,7 +2569,7 @@ Packets longer than specified size are discarded.")
 				self.vmplugs.set_value(iter,2,pl.model)
 				self.vmplugs.set_value(iter,3,pl.mac)
 			if self.config.femaleplugs:
-				for sk in self.brick_selected.socks:
+				for sk in b.socks:
 					iter = self.vmplugs.new_row()
 					self.vmplugs.set_value(iter,0,sk.vlan)
 					self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
@@ -2603,9 +2578,9 @@ Packets longer than specified size are discarded.")
 			self.vmplugs.order(0, True)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
-		if self.brick_selected is None:
+		b = self.maintree.get_selection()
+		if b is None:
 			return
-
 		tree = self.gladefile.get_widget('treeview_networkcards');
 		store = self.vmplugs
 		x = int(event.x)
@@ -2614,12 +2589,12 @@ Packets longer than specified size are discarded.")
 		number = self.get_treeselected(tree, store, pthinfo, 0)
 		self.vmplug_selected = None
 		vmsock = False
-		for pl in self.brick_selected.plugs:
+		for pl in b.plugs:
 			if str(pl.vlan) == number:
 				self.vmplug_selected = pl
 				break
 		if not self.vmplug_selected:
-			for pl in self.brick_selected.socks:
+			for pl in b.socks:
 				if str(pl.vlan) == number:
 					self.vmplug_selected = pl
 					vmsock=True
@@ -2655,26 +2630,26 @@ Packets longer than specified size are discarded.")
 		if pl == None:
 			return
 		vlan = pl.vlan
-
-		if self.brick_selected is None:
+		b = self.maintree.get_selection()
+		if b is None:
 			return
 
 		if (pl.mode == 'sock'):
-			self.brick_selected.socks.remove(pl)
+			b.socks.remove(pl)
 		else:
-			self.brick_selected.plugs.remove(pl)
+			b.plugs.remove(pl)
 		del(pl)
 		model = ComboBox(self.gladefile.get_widget('vmplug_model')).get_selected()
 		mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
 		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
 		if (sockname == '_sock'):
-			pl = self.brick_selected.add_sock()
+			pl = b.add_sock()
 		if (sockname == '_hostonly'):
-			pl = self.brick_selected.add_plug(sockname)
+			pl = b.add_plug(sockname)
 		else:
 			for so in self.brickfactory.socks:
 				if so.nickname == sockname:
-					pl = self.brick_selected.add_plug(so)
+					pl = b.add_plug(so)
 		pl.vlan = vlan
 		pl.model = model
 		if (self.valid_mac(pl.mac)):
@@ -2684,10 +2659,13 @@ Packets longer than specified size are discarded.")
 		self.update_vmplugs_tree()
 
 	def on_vmplug_remove(self, widget=None, event=None, data=""):
+		b = self.maintree.get_selection()
+		if b is None:
+			return
 		pl = self.vmplug_selected
 		if pl.brick.proc and pl.hotdel:
 			pl.hotdel()
-		self.brick_selected.remove_plug(pl.vlan)
+		b.remove_plug(pl.vlan)
 		self.update_vmplugs_tree()
 
 	def on_vmplug_onoff(self, widget=None, event=None, data=""):
@@ -2718,19 +2696,20 @@ Packets longer than specified size are discarded.")
 		self.joblist_selected.poweroff()
 
 	def on_vm_resume(self, widget=None, event=None, data=""):
-		if self.brick_selected is None:
+		b = self.maintree.get_selection()
+		if b is None:
 			return
 
-		hda = self.brick_selected.cfg.get('basehda')
+		hda = b.cfg.get('basehda')
 		self.debug("resume")
 		if os.system("qemu-img snapshot -l "+hda+" |grep virtualbricks") == 0:
-			if self.brick_selected.proc is not None:
-				self.brick_selected.send("loadvm virtualbricks\n")
-				self.brick_selected.recv()
+			if b.proc is not None:
+				b.send("loadvm virtualbricks\n")
+				b.recv()
 				return
 			else:
-				self.brick_selected.cfg.set("loadvm=virtualbricks")
-				self.brick_selected.poweron()
+				b.cfg.set("loadvm=virtualbricks")
+				b.poweron()
 		else:
 			self.error(_("Cannot find suspend point."))
 
@@ -2779,12 +2758,12 @@ Packets longer than specified size are discarded.")
 				if n.here(event.x,event.y) and event.button == 3:
 					brick = self.brickfactory.getbrickbyname(n.name)
 					if brick is not None:
-						self.brick_selected = brick
+						self.maintree.set_selection(brick)
 						self.show_brickactions()
 				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
 					brick = self.brickfactory.getbrickbyname(n.name)
 					if brick is not None:
-						self.brick_selected = brick
+						self.maintree.set_selection(brick)
 						self.user_wait_action(self.startstop_brick, brick)
 		self.curtain_down()
 
@@ -2886,9 +2865,9 @@ Packets longer than specified size are discarded.")
 					parameters = "%s..." % parameters[:30]
 				image = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.base, 48, 48)
 				iter = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
-				if self.brick_selected.cfg.pon_vbevent == event.name:
+				if self.maintree.get_selection().cfg.pon_vbevent == event.name:
 					treeviewselectionstart.select_iter(iter)
-				if self.brick_selected.cfg.poff_vbevent == event.name:
+				if self.maintree.get_selection().cfg.poff_vbevent == event.name:
 					treeviewselectionstop.select_iter(iter)
 
 		cell = gtk.CellRendererPixbuf ()
@@ -3056,14 +3035,14 @@ Packets longer than specified size are discarded.")
 
 	def on_usbmode_onoff(self, w, event=None, data=None):
 		if (w.get_active()):
-			self.brick_selected.cfg.set('usbmode=*')
+			self.maintree.get_selection().cfg.set('usbmode=*')
 		else:
-			self.brick_selected.cfg.set('usbmode=')
-			self.brick_selected.cfg.set('usbdevlist=')
+			self.maintree.get_selection().cfg.set('usbmode=')
+			self.maintree.get_selection().cfg.set('usbdevlist=')
 		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
 
 	def on_usb_show(self, w, event=None, data=None):
-		vm = self.brick_selected
+		vm = self.maintree.get_selection()
 		current_usbview = dict()
 		self.curtain_down()
 		os.system("lsusb >" + MYPATH + "/.usbdev")
@@ -3110,9 +3089,9 @@ Packets longer than specified size are discarded.")
 
 		self.show_window('')
 		self.curtain_up()
-		old_val = self.brick_selected.cfg.usbdevlist
-		self.brick_selected.cfg.set('usbdevlist='+devlist.rstrip(' '))
-		self.brick_selected.update_usbdevlist(devlist.rstrip(' '), old_val)
+		old_val = self.maintree.get_selection().cfg.usbdevlist
+		self.maintree.get_selection().cfg.set('usbdevlist='+devlist.rstrip(' '))
+		self.maintree.get_selection().update_usbdevlist(devlist.rstrip(' '), old_val)
 		return True
 
 
