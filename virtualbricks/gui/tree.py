@@ -20,51 +20,50 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
-class VBTree(gtk.TreeStore):
+class VBTree():
 	def __init__(self, gui, tree_name, model, fields, names):
-		self.model = model
-		if model is None:
-			gtk.TreeStore.__init__(self, *fields)
 		self.gui = gui
 		self.tree = self.gui.gladefile.get_widget(tree_name)
-		self.tree.set_model(self)
 		self.last_order = 0
 		self.order_last_direction = True
 		if model:
-			self.tree.set_model(model)
-			for name in names:
-				col = gtk.TreeViewColumn(name)
-				''' Todo: use something different to find pixbuf '''
-				if name != _('Icon'):
-					elem = gtk.CellRendererText()
-					col.pack_start(elem, False)
-				else:
-					elem = gtk.CellRendererPixbuf()
-					col.pack_start(elem, False)
-				col.set_cell_data_func(elem, self.cell_render)
-				col.set_clickable(True)
-				col.connect("clicked",self.header_clicked)
-				self.tree.append_column(col)
+			self.model = model
+			self.tree.set_model(self.model)
 		else:
-			for idx, name in enumerate(names):
-				col = gtk.TreeViewColumn(name)
-				if fields[idx] == gtk.gdk.Pixbuf:
-					elem = gtk.CellRendererPixbuf()
-					col.pack_start(elem, False)
+			self.model = gtk.TreeStore(*fields)
+			self.tree.set_model(self.model)
+		for idx, name in enumerate(names):
+			col = gtk.TreeViewColumn(name)
+			if fields[idx] == gtk.gdk.Pixbuf:
+				elem = gtk.CellRendererPixbuf()
+				col.pack_start(elem, False)
+				if model is None:
 					col.add_attribute(elem, 'pixbuf', idx)
-				else:
-		 			elem = gtk.CellRendererText()
-					col.pack_start(elem, False)
+			else:
+	 			elem = gtk.CellRendererText()
+				col.pack_start(elem, False)
+				if model is None:
 					col.add_attribute(elem, 'text', idx)
-				self.tree.append_column(col)
+			if model is not None:
+				col.set_cell_data_func(elem, self.cell_render)
+			col.set_clickable(True)
+			col.connect("clicked",self.header_clicked)
+			self.tree.append_column(col)
+
+	def new_row(self):
+		ret = self.model.append(None, None)
+		return ret
+
+	def set_value(self, itr, col, val):
+		return self.model.set_value(itr, col, val)
 
 	def _treeorder_continue(self, itr, field, asc, moved = False):
 		if itr is None:
 			return
-		nxt = self.iter_next(itr)
+		nxt = self.model.iter_next(itr)
 		if (nxt):
-			val_itr = self.get_value(itr, field)
-			val_nxt = self.get_value(nxt, field)
+			val_itr = self.model.get_value(itr, field)
+			val_nxt = self.model.get_value(nxt, field)
 			if asc:
 				if val_nxt <  val_itr:
 					self.swap(itr,nxt)
@@ -78,16 +77,22 @@ class VBTree(gtk.TreeStore):
 		else:
 			return moved
 
+	def header_clicked(self, widget, event=None, data=""):
+		pass
 
 	def order(self, field=_('Type'), ascending=True):
-		itr = self.get_iter_first()
+		itr = self.model.get_iter_first()
 		moved = self._treeorder_continue(itr, field, ascending)
 		while moved:
-			itr = self.get_iter_first()
+			itr = self.model.get_iter_first()
 			moved = self._treeorder_continue( itr, field, ascending)
 
 	def cell_render(self, column, cell, model, iter):
 		raise NotImplemented()
+
+	def associate_drag_and_drop(self, target):
+		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		self.tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
 class BricksTree(VBTree):
 	""" Ordering bricks treeview. """
@@ -129,6 +134,8 @@ class BricksTree(VBTree):
 		else:
 			return moved
 
+	def redraw(self):
+		self.model.clear()
 
 	def order(self, field=_('Type'), ascending=True):
 		self.last_order = field

@@ -108,7 +108,7 @@ class VBGUI(Logger, gobject.GObject):
 			['',_('PID'),_('Type'),_('Name')])
 
 		''' Main Treeview '''
-		self.maintree = BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
+		self.maintree = BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		self.remote_hosts_tree = VBTree(self, 'treeview_remotehosts', None, [gtk.gdk.Pixbuf,
 			 gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
@@ -124,11 +124,10 @@ class VBGUI(Logger, gobject.GObject):
 		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
 		eventstree.set_model(self.brickfactory.eventsmodel)
 
-		# associate Drag and Drop action
-		tree = self.gladefile.get_widget('treeview_bookmarks')
-		tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
+		# associate Drag and Drop action for main tree
+		self.maintree.associate_drag_and_drop('BRICK')
 
+		# associate Drag and Drop action for events tree
 		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
 		eventstree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		eventstree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
@@ -164,38 +163,6 @@ class VBGUI(Logger, gobject.GObject):
 			self.quit()
 		finally:
 			gtk.gdk.threads_leave()
-
-	def brick_to_cell(self, column, cell, model, iter):
-		brick = model.get_value(iter, BricksModel.BRICK_IDX)
-		assert brick is not None
-		if column.get_title() == _('Icon'):
-			if brick.homehost is not None and not brick.homehost.connected:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48)
-				cell.set_property('pixbuf', icon)
-			elif brick.proc is not None:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
-					48)
-				cell.set_property('pixbuf', icon)
-			elif not brick.properly_connected():
-				cell.set_property('stock-id', gtk.STOCK_DIALOG_ERROR)
-				cell.set_property('stock-size', gtk.ICON_SIZE_LARGE_TOOLBAR)
-			else:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
-						48)
-				cell.set_property('pixbuf', icon)
-		elif column.get_title() == _('Status'):
-			cell.set_property('text', brick.get_state())
-		elif column.get_title() == _('Type'):
-			if brick.homehost:
-				cell.set_property('text', "Remote " + brick.get_type() +" on " + brick.homehost.addr[0])
-			else:
-				cell.set_property('text', brick.get_type())
-		elif column.get_title() == _('Name'):
-			cell.set_property('text', brick.name)
-		elif column.get_title() == _('Parameters'):
-			cell.set_property('text', brick.get_parameters())
-		else:
-			raise NotImplemented()
 
 	def event_to_cell(self, column, cell, model, iter):
 		event = model.get_value(iter, EventsModel.EVENT_IDX)
@@ -867,8 +834,8 @@ class VBGUI(Logger, gobject.GObject):
 			path, col, cellx, celly = pthinfo
 			tree.grab_focus()
 			tree.set_cursor(path, col, 0)
-			iter = store.get_iter(path)
-			brick = store.get_value(iter, idx)
+			iter = store.model.get_iter(path)
+			brick = store.model.get_value(iter, idx)
 			self.config_last_iter = iter
 			return brick
 
@@ -877,8 +844,8 @@ class VBGUI(Logger, gobject.GObject):
 			path, col, cellx, celly = pthinfo
 			tree.grab_focus()
 			tree.set_cursor(path, col, 0)
-			iter = store.get_iter(path)
-			name = store.get_value(iter, c)
+			iter = store.model.get_iter(path)
+			name = store.model.get_value(iter, c)
 			self.config_last_iter = iter
 			return name
 		return ""
@@ -1980,9 +1947,9 @@ Packets longer than specified size are discarded.")
 	def show_diskimage(self):
 		self.curtain_down()
 
-		self.image_tree.clear()
+		self.image_tree.model.clear()
 		for img in self.brickfactory.disk_images:
-			iter = self.image_tree.append(None, None)
+			iter = self.image_tree.new_row()
 			self.image_tree.set_value(iter, 0, img.name)
 			self.image_tree.set_value(iter,1, img.get_users())
 			master = ""
@@ -2615,10 +2582,10 @@ Packets longer than specified size are discarded.")
 		if self.brick_selected is None:
 			return
 
-		self.vmplugs.clear()
 		if (self.brick_selected.get_type() == 'Qemu'):
+			self.vmplugs.model.clear()
 			for pl in self.brick_selected.plugs:
-				iter = self.vmplugs.append(None, None)
+				iter = self.vmplugs.new_row()
 				self.vmplugs.set_value(iter,0,pl.vlan)
 				if pl.mode == 'hostonly':
 					self.vmplugs.set_value(iter,1,'Host')
@@ -2628,7 +2595,7 @@ Packets longer than specified size are discarded.")
 				self.vmplugs.set_value(iter,3,pl.mac)
 			if self.config.femaleplugs:
 				for sk in self.brick_selected.socks:
-					iter = self.vmplugs.append(None, None)
+					iter = self.vmplugs.new_row()
 					self.vmplugs.set_value(iter,0,sk.vlan)
 					self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
 					self.vmplugs.set_value(iter,2,sk.model)
@@ -3101,7 +3068,7 @@ Packets longer than specified size are discarded.")
 		self.curtain_down()
 		os.system("lsusb >" + MYPATH + "/.usbdev")
 
-		self.usbdev_tree.clear()
+		self.usbdev_tree.model.clear()
 		self.show_window('dialog_usbdev')
 		try:
 			f = open(MYPATH + "/.usbdev")
@@ -3112,7 +3079,7 @@ Packets longer than specified size are discarded.")
 			if re.search(' ', info):
 				code = info.split(' ')[0]
 				descr = info.split(' ')[1]
-				iter = self.usbdev_tree.append(None, None)
+				iter = self.usbdev_tree.new_row()
 				self.usbdev_tree.set_value(iter, 0, code)
 				self.usbdev_tree.set_value(iter, 1, descr)
 				current_usbview[iter] = code
@@ -3192,9 +3159,9 @@ Packets longer than specified size are discarded.")
 		if self.ps != new_ps or force==True:
 			self.ps = new_ps
 			self.bricks = []
-			self.running_bricks.clear()
+			self.running_bricks.model.clear()
 			for b in self.ps:
-				iter = self.running_bricks.append(None, None)
+				iter = self.running_bricks.new_row()
 				if (b.pid == -10):
 					pid = "python-thread   "
 				elif b.homehost:
@@ -3208,9 +3175,10 @@ Packets longer than specified size are discarded.")
 			self.debug("proc list updated")
 		new_rhosts = []
 		if self.brickfactory.remotehosts_changed:
-			self.remote_hosts_tree.clear()
+			#TODO: define/Use VBTree.redraw() for this
+			self.remote_hosts_tree.model.clear()
 			for r in self.brickfactory.remote_hosts:
-				iter = self.remote_hosts_tree.append(None,None)
+				iter = self.remote_hosts_tree.new_row()
 				if (r.connected):
 					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Connect.png", 48, 48) )
 				else:
