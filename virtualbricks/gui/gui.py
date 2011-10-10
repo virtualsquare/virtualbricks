@@ -80,6 +80,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
 
+
 		self.availmodel = None
 		self.addedmodel = None
 		self.eventsmodel = None
@@ -123,6 +124,20 @@ class VBGUI(Logger, gobject.GObject):
 
 		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
 		eventstree.set_model(self.brickfactory.eventsmodel)
+
+		''' This is the association to the events model. TODO: move it to its class '''
+		columns = [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')]
+		for name in columns:
+			col = gtk.TreeViewColumn(name)
+			if name != _('Icon'):
+				elem = gtk.CellRendererText()
+				col.pack_start(elem, False)
+			else:
+				elem = gtk.CellRendererPixbuf()
+				col.pack_start(elem, False)
+			col.set_cell_data_func(elem, self.event_to_cell)
+			col.set_clickable(True)
+			eventstree.append_column(col)
 
 		# associate Drag and Drop action for main tree
 		self.maintree.associate_drag_and_drop('BRICK')
@@ -736,6 +751,10 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Show Settings'))
 
 	def curtain_up(self):
+		notebook=self.gladefile.get_widget('main_notebook')
+
+		if (notebook.get_current_page() != 1) and (notebook.get_current_page() != 0):
+			return
 		self.debug("Old position: %d", self.curtain.get_position())
 		self.gladefile.get_widget('box_vmconfig').hide()
 		self.gladefile.get_widget('box_tapconfig').hide()
@@ -808,17 +827,6 @@ class VBGUI(Logger, gobject.GObject):
 		ww.show_all()
 		self.gladefile.get_widget("wait_label").hide()
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
-
-	def get_tree_selected(self, tree, store, pthinfo, idx):
-		"""TODO replace get_treeselected by get_tree_selected"""
-		if pthinfo is not None:
-			path, col, cellx, celly = pthinfo
-			tree.grab_focus()
-			tree.set_cursor(path, col, 0)
-			iter = store.model.get_iter(path)
-			brick = store.model.get_value(iter, idx)
-			self.config_last_iter = iter
-			return brick
 
 	def get_treeselected(self, tree, store, pthinfo, c):
 		if pthinfo is not None:
@@ -1552,11 +1560,6 @@ Packets longer than specified size are discarded.")
 		self.Dragging = self.brickfactory.geteventbyname(name)
 		if event.button == 3:
 			self.show_eventactions()
-
-	def on_treeview_drag_get_data(self, tree, context, selection, target_id, etime):
-		self.debug("in get data?!")
-		self.Dragging = self.get_tree_selected(tree, self.brickfactory.bricksmodel,
-				pthinfo, BricksModel.BRICK_IDX)
 
 	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
 		self.curtain_down()
