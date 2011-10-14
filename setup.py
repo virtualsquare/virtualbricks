@@ -19,38 +19,48 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
+CURRENT_VERSION="0.5"
 SUPPORTED_LANGS = ['it','nl','fr','de','es']
 
 from distutils.core import setup
 import os
 import sys
 import tempfile
+import re
 
-if not os.access('/usr/share/virtualbricks/', os.X_OK):
-	try:
-		os.mkdir('/usr/share/virtualbricks')
-	except:
-		print "Cannot create directory. Bye."
-		sys.exit(1)
+for arg in sys.argv:
+	if arg.startswith('--build-base='):
+		sys.prefix=arg.split('=')[1]
+
+glade = open('share/virtualbricks.template.glade','r').read()
+micro = open('.bzr/branch/last-revision','r').read().split(' ')[0]
+if micro == '':
+	micro = '000'
+
+virtualbricks_version=CURRENT_VERSION+'.'+micro
+
+open('share/virtualbricks.glade','w+').write(re.sub('___VERSION___', virtualbricks_version, glade))
+
+
 
 
 FILES = [
-			('/usr/bin', ['main/virtualbricks']),
-			('/usr/share/virtualbricks/', ['share/virtualbricks.glade']),
-			('/usr/share/applications', ['share/virtualbricks.desktop']),
-			('/usr/share/pixmaps', ['share/virtualbricks.png']),
-			('/usr/share/pixmaps', ['images/Connect.png']),
-			('/usr/share/pixmaps', ['images/Disconnect.png']),
-			('/usr/share/pixmaps', ['images/Event.png']),
-			('/usr/share/pixmaps', ['images/Qemu.png']),
-			('/usr/share/pixmaps', ['images/Switch.png']),
-			('/usr/share/pixmaps', ['images/Tap.png']),
-			('/usr/share/pixmaps', ['images/Capture.png']),
-			('/usr/share/pixmaps', ['images/TunnelConnect.png']),
-			('/usr/share/pixmaps', ['images/TunnelListen.png']),
-			('/usr/share/pixmaps', ['images/Wirefilter.png']),
-			('/usr/share/pixmaps', ['images/Wire.png']),
-			('/usr/share/pixmaps', ['images/SwitchWrapper.png'])
+			( 'bin', ['main/virtualbricks']),
+			( 'share/virtualbricks/', ['share/virtualbricks.glade']),
+			( 'share/applications', ['share/virtualbricks.desktop']),
+			( 'share/pixmaps', ['share/virtualbricks.png']),
+			( 'share/pixmaps', ['images/Connect.png']),
+			( 'share/pixmaps', ['images/Disconnect.png']),
+			( 'share/pixmaps', ['images/Event.png']),
+			( 'share/pixmaps', ['images/Qemu.png']),
+			( 'share/pixmaps', ['images/Switch.png']),
+			( 'share/pixmaps', ['images/Tap.png']),
+			( 'share/pixmaps', ['images/Capture.png']),
+			( 'share/pixmaps', ['images/TunnelConnect.png']),
+			( 'share/pixmaps', ['images/TunnelListen.png']),
+			( 'share/pixmaps', ['images/Wirefilter.png']),
+			( 'share/pixmaps', ['images/Wire.png']),
+			( 'share/pixmaps', ['images/SwitchWrapper.png'])
 ]
 
 tempdirs = []
@@ -60,9 +70,9 @@ for l in SUPPORTED_LANGS:
 	tempdirs.append(directory_name)
 	command = 'msgfmt -o ' + directory_name + '/virtualbricks.mo ' + 'locale/virtualbricks/' + l + '.po'
 	os.system(command)
-	FILES.append(('/usr/share/locale/'+l+'/LC_MESSAGES/', [directory_name + '/virtualbricks.mo']))
+	FILES.append(('share/locale/'+l+'/LC_MESSAGES/', [directory_name + '/virtualbricks.mo']))
 
-setup( data_files=FILES, name='virtualbricks', version='0.5',
+setup( data_files=FILES, name='virtualbricks', version=virtualbricks_version,
 	description='Virtualbricks Virtualization Tools',
 	license='GPL2',
 	author='Daniele Lacamera, Rainer Haage, Francesco Apollonio, Pierre-Louis Bonicoli, Simone Abbati',

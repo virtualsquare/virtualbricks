@@ -53,7 +53,15 @@ class VBGUI(Logger, gobject.GObject):
 		try:
 			self.gladefile = gtk.glade.XML('/usr/share/virtualbricks/virtualbricks.glade')
 		except:
-			self.critical("Cannot open required file 'virtualbricks.glade'")
+			try:
+				self.gladefile = gtk.glade.XML(os.path.join(sys.prefix, '/share/virtualbricks/virtualbricks.glade'))
+			except:
+				# FTFY, distutils!
+				try:
+					self.gladefile = gtk.glade.XML(os.path.join(sys.prefix,'local')+ '/share/virtualbricks/virtualbricks.glade')
+				except:
+					self.critical("Cannot open required file 'virtualbricks.glade'")
+
 
 		self.widg = self.get_widgets(self.widgetnames())
 
