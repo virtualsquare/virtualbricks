@@ -2752,7 +2752,7 @@ Packets longer than specified size are discarded.")
 
 	def topology_export(self, fname):
 		try:
-			Image.open('/tmp/vde_topology.png').save(fname)
+			self.draw_topology(fname)
 		except KeyError:
 			self.error(_("Error saving topology: Invalid image format"))
 		except IOError:
@@ -3186,14 +3186,14 @@ Packets longer than specified size are discarded.")
 
 		return True
 
-	def draw_topology(self):
+	def draw_topology(self, export=None):
 		self.maintree.order()
 		if self.gladefile.get_widget('topology_tb').get_active():
 			orientation = "TB"
 		else:
 			orientation = "LR"
 
-		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation, None, self.brickfactory.settings.get("bricksdirectory")+"/")
+		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation, export, self.brickfactory.settings.get("bricksdirectory")+"/")
 
 	def user_wait_action(self, action, *args):
 		self.gladefile.get_widget("window_userwait").show_all()
