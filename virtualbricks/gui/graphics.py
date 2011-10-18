@@ -25,7 +25,10 @@ import re
 from virtualbricks.settings import MYPATH
 
 def ImgPrefix():
-	return "/usr/share/pixmaps/"
+	if os.access("/usr/share/pixmaps/Switch.png", os.R_OK):
+		return "/usr/share/pixmaps/"
+	else:
+		return "/usr/local/share/pixmaps/"
 
 class Icon:
 

@@ -713,7 +713,7 @@ class VBGUI(Logger, gobject.GObject):
 	def start_systray(self):
 		if self.statusicon is None:
 			self.statusicon = gtk.StatusIcon()
-			self.statusicon.set_from_file("/usr/share/pixmaps/virtualbricks.png")
+			self.statusicon.set_from_file(ImgPrefix() + "virtualbricks.png")
 			self.statusicon.set_tooltip("VirtualBricks Visible")
 			self.statusicon.connect('activate', self.on_systray_menu_toggle)
 			systray_menu = self.gladefile.get_widget("systray_menu")
@@ -3170,9 +3170,9 @@ Packets longer than specified size are discarded.")
 			for r in self.brickfactory.remote_hosts:
 				iter = self.remote_hosts_tree.new_row()
 				if (r.connected):
-					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Connect.png", 48, 48) )
+					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size(ImgPrefix() + "Connect.png", 48, 48) )
 				else:
-					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48) )
+					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size(ImgPrefix() + "Disconnect.png", 48, 48) )
 				self.remote_hosts_tree.set_value(iter, 1, r.addr[0]+":"+str(r.addr[1]))
 				self.remote_hosts_tree.set_value(iter, 2, str(r.num_bricks()))
 				if r.autoconnect:

@@ -190,7 +190,7 @@ class BricksTree(VBTree):
 		assert brick is not None
 		if column.get_title() == _('Icon'):
 			if brick.homehost is not None and not brick.homehost.connected:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size("/usr/share/pixmaps/Disconnect.png", 48, 48)
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(ImgPrefix()+"Disconnect.png", 48, 48)
 				cell.set_property('pixbuf', icon)
 			elif brick.proc is not None:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
