@@ -2,6 +2,7 @@
 # coding: utf-8
 import gtk
 from virtualbricks.models import BricksModel, EventsModel
+from virtualbricks.gui.graphics import *
 """
 Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 Copyright (C) 2011 Virtualbricks team
