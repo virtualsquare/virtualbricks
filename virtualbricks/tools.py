@@ -20,9 +20,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
 import random
+from threading import Thread
+import time
+import sys
+import re
 
 def RandMac():
-	""" put me into VM utilities, please. """
 	random.seed()
 	mac = "00:aa:"
 	mac = mac +"%02x:" % random.getrandbits(8)
@@ -30,4 +33,34 @@ def RandMac():
 	mac = mac +"%02x:" % random.getrandbits(8)
 	mac = mac +"%02x" % random.getrandbits(8)
 	return mac
+
+class AutoSaveTimer(Thread):
+	def __init__(self, factory):
+		Thread.__init__(self)
+		self.autosave_timeout = 180
+		self.factory = factory
+
+	def run(self):
+		self.factory.debug( "Autosaver started")
+		while (self.factory.running_condition):
+			for t in range(self.autosave_timeout):
+				time.sleep(1)
+				if not self.factory.running_condition:
+					sys.exit()
+			self.factory.config_dump(self.factory.settings.get('current_project'))
+
+
+def ValidName(name):
+	name=str(name)
+	if not re.search("\A[a-zA-Z]", name):
+		return None
+	while(name.startswith(' ')):
+		name = name.lstrip(' ')
+	while(name.endswith(' ')):
+		name = name.rstrip(' ')
+
+	name = re.sub(' ', '_', name)
+	if not re.search("\A\w+\Z", name):
+		return None
+	return name
 

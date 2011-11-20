@@ -1,8 +1,7 @@
-from threading import Thread, Timer
 from virtualbricks.logger import ChildLogger
-from virtualbricks.brickfactory import *
 from virtualbricks.tcpproto import *
 import time, socket, sys, hashlib, select
+from threading import Thread
 
 class TcpServer(ChildLogger, Thread):
 	def __init__(self, factory, password, port=1050):

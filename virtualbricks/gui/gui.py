@@ -31,7 +31,8 @@ from traceback import format_exception
 import re
 
 from virtualbricks import tools
-from virtualbricks.brickfactory import BrickFactory, ValidName, VbShellCommand, RemoteHost
+from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.gui.combo import ComboBox
 from virtualbricks.gui.graphics import *
@@ -1085,7 +1086,7 @@ class VBGUI(Logger, gobject.GObject):
 		if eventname == '':
 			return
 
-		validname = ValidName(eventname)
+		validname = tools.ValidName(eventname)
 		if validname is None:
 			self.error(_("The name \"")+eventname+_("\" has forbidden format."))
 			return
@@ -1905,7 +1906,7 @@ Packets longer than specified size are discarded.")
 		img = self.brickfactory.get_image_by_path(path)
 		host = self.gladefile.get_widget('diskimage_host_text').get_text()
 		if (img):
-			name = ValidName(self.gladefile.get_widget('diskimage_name_text').get_text())
+			name = tools.ValidName(self.gladefile.get_widget('diskimage_name_text').get_text())
 			if name:
 				img.rename(self.gladefile.get_widget('diskimage_name_text').get_text())
 			else:
