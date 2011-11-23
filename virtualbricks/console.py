@@ -239,3 +239,126 @@ def CommandLineOutput(outf, data):
 	else:
 		return outf.send(data + '\n')
 
+def Parse(factory, command, console=sys.stdout):
+	if (command == 'q' or command == 'quit'):
+		factory.quit()
+	elif (command == 'h' or command == 'help'):
+		CommandLineOutput(console,  'Base command -------------------------------------------------')
+		CommandLineOutput(console,  'ps				List of active process')
+		CommandLineOutput(console,  'n[ew]				Create a new brick')
+		CommandLineOutput(console,  'list				List of bricks already created')
+		CommandLineOutput(console,  'socks				List of connections available for bricks')
+		CommandLineOutput(console,  'conn[ections]			List of connections for each bricks')
+		CommandLineOutput(console,  '\nBrick configuration command ----------------------------------')
+		CommandLineOutput(console,  'BRICK_NAME show			List parameters of BRICK_NAME brick')
+		CommandLineOutput(console,  'BRICK_NAME on			Starts BRICK_NAME')
+		CommandLineOutput(console,  'BRICK_NAME off			Stops BRICK_NAME')
+		CommandLineOutput(console,  'BRICK_NAME remove		Delete BRICK_NAME')
+		CommandLineOutput(console,  'BRICK_NAME config PARM=VALUE	Configure a parameter of BRICK_NAME.')
+		CommandLineOutput(console,  'BRICK_NAME connect NICK		Connect BRICK_NAME to a Sock')
+		CommandLineOutput(console,  'BRICK_NAME disconnect		Disconnect BRICK_NAME to a sock')
+		CommandLineOutput(console,  'BRICK_NAME help			Help about parameters of BRICK_NAME')
+		return True
+	elif (command == 'ps'):
+		factory.proclist()
+		return True
+	elif command.startswith('reset all'):
+		factory.reset_config()
+		return True
+	elif command.startswith('n ') or command.startswith('new '):
+		if(command.startswith('n event') or (command.startswith('new event'))):
+			factory.newevent(*command.split(" ")[1:])
+		else:
+			factory.newbrick(*command.split(" ")[1:])
+		return True
+	elif command == 'list':
+		CommandLineOutput(console,  "Bricks:")
+		for obj in factory.bricks:
+			CommandLineOutput(console,  "%s %s" % (obj.get_type(), obj.name))
+		CommandLineOutput(console,"" )
+		CommandLineOutput(console,  "Events:")
+		for obj in factory.events:
+			CommandLineOutput(console,  "%s %s" % (obj.get_type(), obj.name))
+		CommandLineOutput(console,  "End of list.")
+		CommandLineOutput(console, "" )
+		return True
+	elif command.startswith('images') or command.startswith("i"):
+		factory.images_manager(console, *command.split(" ")[1:])
+		return True
+	elif command == 'socks':
+		for s in factory.socks:
+			CommandLineOutput(console,  "%s" % s.nickname,)
+			if s.brick is not None:
+				CommandLineOutput(console,  " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports()))
+			else:
+				CommandLineOutput(console,  "not configured.")
+		return True
+
+	elif command.startswith("conn") or command.startswith("connections"):
+		for b in factory.bricks:
+			CommandLineOutput(console,  "Connections from " + b.name + " brick:\n")
+			for sk in b.socks:
+				if b.get_type() == 'Qemu':
+					CommandLineOutput(console,  '\tsock connected to ' + sk.nickname + ' with an ' + sk.model + ' (' + sk.mac + ') card\n')
+			for pl in b.plugs:
+				if b.get_type() == 'Qemu':
+					if pl.mode == 'vde':
+						CommandLineOutput(console,  '\tlink connected to ' + pl.sock.nickname + ' with a ' + pl.model + ' (' + pl.mac + ') card\n')
+					else:
+						CommandLineOutput(console,  '\tuserlink connected with a ' + pl.model + ' (' + pl.mac + ') card\n')
+				elif (pl.sock is not None):
+					CommandLineOutput(console,  '\tlink: ' + pl.sock.nickname + '\n')
+		return True
+
+	elif command.startswith("control ") and len(command.split(" "))==3:
+		host=command.split(" ")[1]
+		password = command.split(" ")[2]
+		remote = None
+		for h in factory.remote_hosts:
+			if h.addr == host:
+				remote = h
+				break
+		if not remote:
+			remote = RemoteHost(factory, host)
+		remote.password = password
+		factory.factory.remotehosts_changed=True
+
+		if remote.connect():
+			CommandLineOutput(console, "Connection OK\n")
+		else:
+			CommandLineOutput(console, "Connection Failed.\n")
+		return True
+
+	elif command.startswith("udp ") and factory.TCP:
+		args = command.split(" ")
+		if len(args) != 4 or args[0] != 'udp':
+			CommandLineOutput(console,  "FAIL udp arguments \n")
+			return False
+		for b in factory.bricks:
+			if b.name == args[2]:
+				w = PyWire(factory, args[1])
+				w.set_remoteport(args[3])
+				w.connect(b.socks[0])
+				w.poweron()
+				return True
+			CommandLineOutput(console,  "FAIL Brick not found: " + args[2] + "\n")
+	elif command == '':
+		return True
+	else:
+		found = None
+		for obj in factory.bricks:
+			if obj.name == command.split(" ")[0]:
+				found = obj
+				break
+		if found is None:
+			for obj in factory.events:
+				if obj.name == command.split(" ")[0]:
+					found = obj
+					break
+
+		if found is not None and len(command.split(" ")) > 1:
+			factory.brickAction(found, command.split(" ")[1:])
+			return True
+		else:
+			print 'Invalid console command "%s"' % command
+			return False
