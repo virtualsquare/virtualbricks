@@ -65,42 +65,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		'event-accomplished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
 	}
 
-	def clear_project_parms(self):
-		DEFAULT_PARMS = {
-			"id": "0",
-		}
-		parms={}
-		for key, value in DEFAULT_PARMS.items():
-			parms[key]=value
-
-		return parms
-
-
-	def get_image_by_name(self, name):
-		for img in self.disk_images:
-			if img.name == name:
-				return img
-		return None
-
-	def get_image_by_path(self,path):
-		for img in self.disk_images:
-			if img.path == path:
-				return img
-		return None
-
-	def new_disk_image(self, name, path, description="", host=None):
-		img = DiskImage(name, path, description, host)
-		self.disk_images.append(img)
-		return img
-
-	def clear_machine_vmdisks(self, machine):
-		for img in self.disk_images:
-			for vmd in img.vmdisks:
-				if vmd.VM == machine:
-					img.del_vmdisk(vmd)
-					self.debug("Vmdisk lock released")
-
-
+	''' Init '''
 	def __init__(self, logger=None, showconsole=True, nogui=False, server=False):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
@@ -167,33 +132,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		self.startup = False
 
-
-	def start_tcp_server(self, password):
-		self.TCP = TcpServer(self, password)
-		try:
-			self.TCP.start()
-		except:
-			print "Error starting TCP server."
-			self.quit()
-
-	def getbrickbyname(self, name):
-		for b in self.bricks:
-			if b.name == name:
-				return b
-		return None
-
-	def geteventbyname(self, name):
-		for e in self.events:
-			if e.name == name:
-				return e
-		return None
-
-	def err(self, caller_obj, *args, **kargv):
-		txt = ''
-		for a in args:
-			txt+=a
-		self.emit("brick-error", txt)
-
+	''' threading.Thread.run() '''
 	def run(self):
 		print "virtualbricks> ",
 		sys.stdout.flush()
@@ -218,6 +157,21 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							rh.connection = None
 		sys.exit(0)
 
+	def start_tcp_server(self, password):
+		self.TCP = TcpServer(self, password)
+		try:
+			self.TCP.start()
+		except:
+			print "Error starting TCP server."
+			self.quit()
+
+	def err(self, caller_obj, *args, **kargv):
+		txt = ''
+		for a in args:
+			txt+=a
+		self.emit("brick-error", txt)
+
+
 	def quit(self):
 		for e in self.events:
 			e.poweroff()
@@ -236,6 +190,67 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.autosave_timer.join()
 		self.emit("engine-closed")
 		sys.exit(0)
+
+	def clear_project_parms(self):
+		DEFAULT_PARMS = {
+			"id": "0",
+		}
+		parms={}
+		for key, value in DEFAULT_PARMS.items():
+			parms[key]=value
+
+		return parms
+
+	def reset_config(self):
+		for b in self.bricks:
+			b.poweroff()
+			self.delbrick(b)
+		for e in self.events:
+			self.delevents(e)
+		self.bricks=[]
+		self.events=[]
+
+	''' Disk images wrapper '''
+	def get_image_by_name(self, name):
+		for img in self.disk_images:
+			if img.name == name:
+				return img
+		return None
+
+	def get_image_by_path(self,path):
+		for img in self.disk_images:
+			if img.path == path:
+				return img
+		return None
+
+	def new_disk_image(self, name, path, description="", host=None):
+		img = DiskImage(name, path, description, host)
+		self.disk_images.append(img)
+		return img
+
+
+
+	def clear_machine_vmdisks(self, machine):
+		for img in self.disk_images:
+			for vmd in img.vmdisks:
+				if vmd.VM == machine:
+					img.del_vmdisk(vmd)
+					self.debug("Vmdisk lock released")
+					return
+
+	''' Getbyname helpers '''
+	def getbrickbyname(self, name):
+		for b in self.bricks:
+			if b.name == name:
+				return b
+		return None
+
+	def geteventbyname(self, name):
+		for e in self.events:
+			if e.name == name:
+				return e
+		return None
+
 
 	def proclist(self):
 		procs = 0
@@ -256,8 +271,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if h.addr[0] == host:
 				return h
 		return None
-
-
 
 	def images_manager(self, console, *cmd):
 		if isinstance(cmd, basestring) is False:
@@ -330,108 +343,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				self.settings.set("baseimages", cmd[2])
 		return
 
-	def brickAction(self, obj, cmd):
-		if (cmd[0] == 'on'):
-			obj.poweron()
-		if (cmd[0] == 'off'):
-			obj.poweroff()
-		if (cmd[0] == 'remove'):
-			if obj.get_type() == 'Event':
-				self.delevent(obj)
-			elif isinstance(obj, Brick):
-				self.delbrick(obj)
-			else:
-				raise UnmanagedType()
-		if (cmd[0] == 'config'):
-			obj.configure(cmd[1:])
-		if (cmd[0] == 'show'):
-			obj.cfg.dump()
-		if (cmd[0] == 'connect' and len(cmd) == 2):
-			if(self.connect_to(obj, cmd[1].rstrip('\n'))):
-				print ("Connection ok")
-			else:
-				print ("Connection failed")
-		if (cmd[0] == 'disconnect'):
-			obj.disconnect()
-		if (cmd[0] == 'help'):
-			obj.help()
 
-	def connect_to(self, brick, nick):
-		endpoint = None
-		if not nick:
-			return False
-		for n in self.socks:
-			if n.nickname == nick:
-				endpoint = n
-		if endpoint is not None:
-			return brick.connect(endpoint)
-		else:
-			print "cannot find " + nick
-			print self.socks
+	'''[[[[[[[[[]]]]]]]]]'''
+	'''[ Bricks, Events ]'''
+	'''[[[[[[[[[]]]]]]]]]'''
 
-	def delbrick(self, bricktodel):
-		# XXX check me
-
-		if bricktodel.proc is not None:
-			bricktodel.poweroff()
-
-		for b in self.bricks:
-			if b == bricktodel:
-				for so in b.socks:
-					self.socks.remove(so)
-				self.bricks.remove(b)
-			else: # connections to bricktodel must be deleted too
-				for pl in reversed(b.plugs):
-					if pl.sock:
-						if pl.sock.nickname.startswith(bricktodel.name):
-							self.debug( "Deleting plug to " + pl.sock.nickname )
-							b.plugs.remove(pl)
-							b.clear_self_socks(pl.sock.path)
-							b.restore_self_plugs() # recreate Plug(self) of some objects
-
-		self.bricksmodel.del_brick(bricktodel)
-
-	def delremote(self, address):
-
-		# Deferred removal: fill the list first, then call delbrick(b)
-		# in sequence.
-
-		mybricks = []
-		for r in self.remote_hosts:
-			if r.addr[0] == address:
-				for br in self.bricks:
-					if br.homehost and br.homehost.addr[0] == address:
-						mybricks.append(br)
-				for br in mybricks:
-					self.delbrick(br)
-				self.remote_hosts.remove(r)
-		self.remotehosts_changed=True
-
-	def delevent(self, eventtodel):
-		# XXX check me
-		for e in self.events:
-			if e == eventtodel:
-				e.poweroff()
-				self.events.remove(e)
-		self.eventsmodel.del_event(eventtodel)
-
-	def dupbrick(self, bricktodup):
-		new_brick = copy.deepcopy(bricktodup)
-		new_brick.on_config_changed()
-		return new_brick
-
-	def dupevent(self, eventtodup):
-		newname = self.nextValidName("Copy_of_"+eventtodup.name)
-		if newname == None:
-			self.debug( "Name error duplicating event." )
-			return
-		self.newevent("Event", newname)
-		event = self.geteventbyname(eventtodup.name)
-		newevent = self.geteventbyname(newname)
-		newevent.cfg = copy.deepcopy(event.cfg)
-		newevent.active = False
-		newevent.on_config_changed()
-
+	'''naming'''
 	def renamebrick(self, b, newname):
 		newname = tools.ValidName(newname)
 		if newname == None:
@@ -486,6 +403,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				newname += toappend
 		return newname
 
+	''' construction functions '''
 	def newbrick(self, arg1="", arg2="",arg3="",arg4="", arg5=""):
 		host=""
 		remote=False
@@ -553,14 +471,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		return True
 
-	def reset_config(self):
-		for b in self.bricks:
-			b.poweroff()
-			self.delbrick(b)
-		for e in self.events:
-			self.delevents(e)
-		self.bricks=[]
-		self.events=[]
 
 	def newevent(self, ntype="", name=""):
 		name = tools.ValidName(name)
@@ -578,6 +488,118 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return False
 
 		return True
+
+
+	''' brick action dispatcher '''
+	def brickAction(self, obj, cmd):
+		if (cmd[0] == 'on'):
+			obj.poweron()
+		if (cmd[0] == 'off'):
+			obj.poweroff()
+		if (cmd[0] == 'remove'):
+			if obj.get_type() == 'Event':
+				self.delevent(obj)
+			elif isinstance(obj, Brick):
+				self.delbrick(obj)
+			else:
+				raise UnmanagedType()
+		if (cmd[0] == 'config'):
+			obj.configure(cmd[1:])
+		if (cmd[0] == 'show'):
+			obj.cfg.dump()
+		if (cmd[0] == 'connect' and len(cmd) == 2):
+			if(self.connect_to(obj, cmd[1].rstrip('\n'))):
+				print ("Connection ok")
+			else:
+				print ("Connection failed")
+		if (cmd[0] == 'disconnect'):
+			obj.disconnect()
+		if (cmd[0] == 'help'):
+			obj.help()
+
+	''' connect bricks together '''
+	def connect_to(self, brick, nick):
+		endpoint = None
+		if not nick:
+			return False
+		for n in self.socks:
+			if n.nickname == nick:
+				endpoint = n
+		if endpoint is not None:
+			return brick.connect(endpoint)
+		else:
+			print "cannot find " + nick
+			print self.socks
+
+
+	''' duplication functions '''
+
+	# FIXME
+	def dupbrick(self, bricktodup):
+		new_brick = copy.deepcopy(bricktodup)
+		new_brick.on_config_changed()
+		return new_brick
+
+	# FIXME
+	def dupevent(self, eventtodup):
+		newname = self.nextValidName("Copy_of_"+eventtodup.name)
+		if newname == None:
+			self.debug( "Name error duplicating event." )
+			return
+		self.newevent("Event", newname)
+		event = self.geteventbyname(eventtodup.name)
+		newevent = self.geteventbyname(newname)
+		newevent.cfg = copy.deepcopy(event.cfg)
+		newevent.active = False
+		newevent.on_config_changed()
+
+	''' delete functions '''
+	def delbrick(self, bricktodel):
+		# XXX check me
+
+		if bricktodel.proc is not None:
+			bricktodel.poweroff()
+
+		for b in self.bricks:
+			if b == bricktodel:
+				for so in b.socks:
+					self.socks.remove(so)
+				self.bricks.remove(b)
+			else: # connections to bricktodel must be deleted too
+				for pl in reversed(b.plugs):
+					if pl.sock:
+						if pl.sock.nickname.startswith(bricktodel.name):
+							self.debug( "Deleting plug to " + pl.sock.nickname )
+							b.plugs.remove(pl)
+							b.clear_self_socks(pl.sock.path)
+							b.restore_self_plugs() # recreate Plug(self) of some objects
+
+		self.bricksmodel.del_brick(bricktodel)
+
+	def delremote(self, address):
+
+		# Deferred removal: fill the list first, then call delbrick(b)
+		# in sequence.
+
+		mybricks = []
+		for r in self.remote_hosts:
+			if r.addr[0] == address:
+				for br in self.bricks:
+					if br.homehost and br.homehost.addr[0] == address:
+						mybricks.append(br)
+				for br in mybricks:
+					self.delbrick(br)
+				self.remote_hosts.remove(r)
+		self.remotehosts_changed=True
+
+	def delevent(self, eventtodel):
+		# XXX check me
+		for e in self.events:
+			if e == eventtodel:
+				e.poweroff()
+				self.events.remove(e)
+		self.eventsmodel.del_event(eventtodel)
+
 
 gobject.type_register(BrickFactory)
 
