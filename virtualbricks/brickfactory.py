@@ -44,8 +44,9 @@ from virtualbricks.virtualmachines import VM, DiskImage, DiskLocked
 from virtualbricks.tunnels import TunnelListen, TunnelConnect
 from virtualbricks.tuntaps import Capture, Tap
 from virtualbricks.wires import Wire, Wirefilter, PyWire, VDESUPPORT
-from virtualbricks.console import (Parse, ShellCommand, RemoteHostConnectionInstance,
-	RemoteHost, CommandLineOutput, VbShellCommand)
+from virtualbricks.console import Parse, CommandLineOutput
+
+from virtualbricks.configfile import ConfigFile
 
 
 
@@ -119,6 +120,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		Thread.__init__(self)
 		self.running_condition = True
 		self.settings = Settings(CONFIGFILE, self)
+		self.configfile = ConfigFile(self)
 		self.projectsave_sema = Semaphore()
 		self.autosave_timer = tools.AutoSaveTimer(self)
 		self.autosave_timer.start()
@@ -159,9 +161,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		if not self.TCP:
 			self.info("Current project is %s" % self.settings.get('current_project'))
-			self.config_restore(self.settings.get('current_project'))
+			self.configfile.restore(self.settings.get('current_project'))
 		else:
-			self.config_restore('/tmp/TCP_controlled.vb')
+			self.configfile.restore('/tmp/TCP_controlled.vb')
 
 		self.startup = False
 
@@ -216,294 +218,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 							rh.connection = None
 		sys.exit(0)
 
-	def config_dump(self, f):
-		if self.TCP:
-			return
-
-		self.projectsave_sema.acquire()
-		try:
-			p = open(f, "w+")
-		except:
-			self.factory.err(self, "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
-			self.projectsave_sema.release()
-			return
-		self.debug("CONFIG DUMP on " + f)
-
-		# If project hasn't an ID we need to calculate it
-		if self.project_parms['id'] == "0":
-			projects = int(self.settings.get('projects'))
-			self.settings.set("projects", projects+1)
-			self.project_parms['id']=str(projects+1)
-			self.debug("Project no= " + str(projects+1) + ", Projects: " + self.settings.get("projects"))
-			self.settings.store()
-
-		# DUMP PROJECT PARMS
-		p.write('[Project:'+f+']\n')
-		for key, value in self.project_parms.items():
-			p.write( key + "=" + value+"\n")
-
-		# Remote hosts
-		for r in self.remote_hosts:
-			p.write('[RemoteHost:'+r.addr[0]+']\n')
-			p.write('port='+str(r.addr[1])+'\n')
-			p.write('password='+r.password+'\n')
-			p.write('basepath='+r.basepath+'\n')
-			if r.autoconnect:
-				p.write('autoconnect=True\n')
-			else:
-				p.write('autoconnect=False\n')
-
-		# Disk Images
-		for img in self.disk_images:
-			p.write('[DiskImage:'+img.name+']\n')
-			p.write('path='+img.path +'\n')
-			if img.host is not None:
-				p.write('host='+img.host.addr[0]+'\n')
-
-		for e in self.events:
-			p.write('[' + e.get_type() + ':' + e.name + ']\n')
-			for k, v in e.cfg.iteritems():
-				#Special management for actions parameter
-				if k == 'actions':
-					tempactions=list()
-					for action in e.cfg.actions:
-						#It's an host shell command
-						if isinstance(action, ShellCommand):
-							tempactions.append("addsh "+action)
-						#It's a vb shell command
-						elif isinstance(action, VbShellCommand):
-							tempactions.append("add "+action)
-						else:
-							self.factory.err(self, "Error: unmanaged action type."+\
-							"Will not be saved!" )
-							continue
-					p.write(k + '=' + str(tempactions) + '\n')
-				#Standard management for other parameters
-				else:
-					p.write(k + '=' + str(v) + '\n')
-
-		for b in self.bricks:
-			p.write('[' + b.get_type() + ':' + b.name + ']\n')
-			for k, v in b.cfg.iteritems():
-				# VMDisk objects don't need to be saved
-				if b.get_type() != "Qemu" or (b.get_type() == "Qemu" and k not in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']):
-					p.write(k + '=' + str(v) + '\n')
-
-		for b in self.bricks:
-			for sk in b.socks:
-				if b.get_type() == 'Qemu':
-					p.write('sock|' + b.name + "|" + sk.nickname + '|' + sk.model + '|' + sk.mac + '|' + str(sk.vlan) + '\n')
-		for b in self.bricks:
-			for pl in b.plugs:
-				if b.get_type() == 'Qemu':
-					if pl.mode == 'vde':
-						p.write('link|' + b.name + "|" + pl.sock.nickname + '|' + pl.model + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
-					else:
-						p.write('userlink|' + b.name + '||' + pl.model + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
-				elif (pl.sock is not None):
-					p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
-		self.projectsave_sema.release()
-
-
-
-
-	def config_restore(self, f, create_if_not_found=True, start_from_scratch=False):
-		"""
-		ACTIONS flags for this:
-		Initial restore of latest open: True,False (default)
-		Open or Open Recent: False, True
-		Import: False, False
-		New: True, True (missing check for existing file, must be check from caller)
-		"""
-
-		try:
-			p = open(f, "r")
-		except:
-			if create_if_not_found:
-				p = open(f, "w+")
-				self.info("Current project file" + f + " doesn't exist. Creating a new file.")
-				self.current_project = f
-			else:
-				raise BadConfig()
-			#return
-
-		self.info("Open " + f + " project")
-
-
-		if start_from_scratch:
-			self.bricksmodel.clear()
-			self.eventsmodel.clear()
-			for b in self.bricks:
-				self.delbrick(b)
-			del self.bricks[:]
-
-			for e in self.events:
-				self.delevent(e)
-			del self.events[:]
-
-			self.socks = []
-
-			# RESET PROJECT PARMS TO DEFAULT
-			self.project_parms = self.clear_project_parms()
-			if create_if_not_found:
-				# UPDATE PROJECT ID
-				projects = int(self.settings.get('projects'))
-				self.settings.set("projects", projects+1)
-				self.project_parms['id']=str(projects+1)
-				self.debug("Project no= " + str(projects+1) + ", Projects: " + self.settings.get("projects"))
-				self.settings.store()
-				return
-
-		l = p.readline()
-		b = None
-		while (l):
-			l = re.sub(' ', '', l)
-			if re.search("\A.*sock\|", l) and len(l.split("|")) >= 3:
-				l.rstrip('\n')
-				self.debug( "************************* sock detected" )
-				for bb in self.bricks:
-					if bb.name == l.split("|")[1]:
-						if (bb.get_type() == 'Qemu'):
-							sockname = l.split('|')[2]
-							model = l.split("|")[3]
-							macaddr = l.split("|")[4]
-							vlan = l.split("|")[5]
-							pl = bb.add_sock(macaddr, model)
-
-							pl.vlan = int(vlan)
-							self.debug( "added eth%d" % pl.vlan )
-
-			if re.search("\A.*link\|", l) and len(l.split("|")) >= 3:
-				l.rstrip('\n')
-				self.debug( "************************* link detected" )
-				for bb in self.bricks:
-					if bb.name == l.split("|")[1]:
-						if (bb.get_type() == 'Qemu'):
-							sockname = l.split('|')[2]
-							model = l.split("|")[3]
-							macaddr = l.split("|")[4]
-							vlan = l.split("|")[5]
-							this_sock = "?"
-							if l.split("|")[0] == 'userlink':
-								this_sock = '_hostonly'
-							else:
-								for s in self.socks:
-									if s.nickname == sockname:
-										this_sock = s
-										break
-							if this_sock == '?':
-								self.warning( "socket '" + sockname + \
-											"' not found while parsing following line: " +\
-											l + "\n. Skipping." )
-								continue
-							pl = bb.add_plug(this_sock, macaddr, model)
-
-							pl.vlan = int(vlan)
-							self.debug( "added eth%d" % pl.vlan )
-						else:
-							bb.config_socks.append(l.split('|')[2].rstrip('\n'))
-
-			if l.startswith('['):
-				ntype = l.lstrip('[').split(':')[0]
-				name = l.split(':')[1].rstrip(']\n')
-
-				self.info("new %s : %s", ntype, name)
-				try:
-					if ntype == 'Event':
-						self.newevent(ntype, name)
-						component = self.geteventbyname(name)
-					# READ PROJECT PARMS
-					elif ntype == 'Project':
-						self.debug( "Found Project " + name  + " Sections" )
-						l = p.readline()
-						while l and not l.startswith('['):
-							values= l.rstrip("\n").split("=")
-							if len(values)>1 and values[0] in self.project_parms:
-								self.debug( "Add " + values[0] )
-								self.project_parms[values[0]]=values[1]
-							l = p.readline()
-						continue
-					elif ntype == 'DiskImage':
-						self.debug("Found Disk image %s" % name)
-						path = ""
-						host=None
-						l = p.readline()
-						while l and not l.startswith('['):
-							k,v = l.rstrip("\n").split("=")
-							if k == 'path':
-								path = str(v)
-							elif k == 'host':
-								host = self.get_host_by_name(str(v))
-							l = p.readline()
-						img = self.new_disk_image(name,path, host=host)
-						continue
-
-					elif ntype == 'RemoteHost':
-						self.debug("Found remote host %s" % name)
-						newr=None
-						for existing in self.remote_hosts:
-							if existing.addr[0] == name:
-								newr = existing
-								break
-						if not newr:
-							newr = RemoteHost(self,name)
-							self.remote_hosts.append(newr)
-						l = p.readline()
-						while l and not l.startswith('['):
-							k,v = l.rstrip("\n").split("=")
-							if k == 'password':
-								newr.password = str(v)
-							elif k == 'autoconnect' and v == 'True':
-								newr.autoconnect = True
-							elif k == 'basepath':
-								newr.basepath = str(v)
-							l = p.readline()
-						if newr.autoconnect:
-							newr.connect()
-						continue
-					else: #elif ntype == 'Brick'
-						self.newbrick(ntype, name)
-						component = self.getbrickbyname(name)
-
-				except Exception, err:
-					import traceback,sys
-					self.exception ( "--------- Bad config line:" + str(err))
-					traceback.print_exc(file=sys.stdout)
-
-					l = p.readline()
-					continue
-
-				l = p.readline()
-				parameters = []
-				while component and l and not l.startswith('[') and not re.search("\A.*link\|",l) and not re.search("\A.*sock\|", l):
-					if len(l.split('=')) > 1:
-						#Special management for event actions
-						if l.split('=')[0] == "actions" and ntype == 'Event':
-							actions=eval(''.join(l.rstrip('\n').split('=',1)[1:]))
-							for action in actions:
-								#Initialize one by one
-								component.configure(action.split(' '))
-							l = p.readline()
-							continue
-						parameters.append(l.rstrip('\n'))
-					l = p.readline()
-				if parameters:
-					component.configure(parameters)
-
-				continue
-			l = p.readline()
-
-		for b in self.bricks:
-			for c in b.config_socks:
-				self.connect_to(b,c)
-
-		if self.project_parms['id']=="0":
-			projects = int(self.settings.get('projects'))
-			self.settings.set("projects", projects+1)
-			self.project_parms['id']=str(projects+1)
-			self.debug("Project no= " + str(projects+1) + ", Projects: " + self.settings.get("projects"))
-			self.settings.store()
-
 	def quit(self):
 		for e in self.events:
 			e.poweroff()
@@ -517,7 +231,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			pass
 
 		self.info(_('Engine: Bye!'))
-		self.config_dump(self.settings.get('current_project'))
+		self.configfile.save(self.settings.get('current_project'))
 		self.running_condition = False
 		self.autosave_timer.join()
 		self.emit("engine-closed")
