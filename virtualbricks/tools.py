@@ -47,7 +47,7 @@ class AutoSaveTimer(Thread):
 				time.sleep(1)
 				if not self.factory.running_condition:
 					sys.exit()
-			self.factory.config.save(self.factory.settings.get('current_project'))
+			self.factory.configfile.save(self.factory.settings.get('current_project'))
 
 
 def ValidName(name):

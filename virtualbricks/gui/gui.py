@@ -2927,7 +2927,7 @@ Packets longer than specified size are discarded.")
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm(_("Save current project?"))==True:
-			self.brickfactory.config.save(self.config.get('current_project'))
+			self.brickfactory.configfile.save(self.config.get('current_project'))
 
 		chooser = gtk.FileChooserDialog(title=_("Open a project"),action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
@@ -2943,7 +2943,7 @@ Packets longer than specified size are discarded.")
 		if resp == gtk.RESPONSE_OK:
 			filename = chooser.get_filename()
 			self.config.set('current_project', filename)
-			self.brickfactory.config.restore(filename, False, True)
+			self.brickfactory.configfile.restore(filename, False, True)
 			self.config.store()
 		chooser.destroy()
 
@@ -2967,7 +2967,7 @@ Packets longer than specified size are discarded.")
 			self.config.set('current_project', filename)
 			# FORCE CONFIG_DUMP TO CALCULATE A NEW PROJECT ID
 			self.brickfactory.project_parms['id'] = "0"
-			self.brickfactory.config.save(filename)
+			self.brickfactory.configfile.save(filename)
 			self.config.store()
 		chooser.destroy()
 
@@ -2976,7 +2976,7 @@ Packets longer than specified size are discarded.")
 
 	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?")==True:
-			self.brickfactory.config.save(self.config.get('current_project'))
+			self.brickfactory.configfile.save(self.config.get('current_project'))
 
 		chooser = gtk.FileChooserDialog(title=_("New project"),action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)
@@ -2995,7 +2995,7 @@ Packets longer than specified size are discarded.")
 			if filename[len(filename)-4:] != ".vbl":
 				filename+=".vbl"
 			self.config.set('current_project', filename)
-			self.brickfactory.config.restore(filename, True, True)
+			self.brickfactory.configfile.restore(filename, True, True)
 			self.config.store()
 		chooser.destroy()
 

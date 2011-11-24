@@ -186,7 +186,7 @@ class Event(ChildLogger):
 	def doactions(self):
 		for action in self.cfg.actions:
 			if (isinstance(action, VbShellCommand)):
-				self.factory.parse(action)
+				Parse(self.factory, action)
 			elif (isinstance(action, ShellCommand)):
 				try:
 					subprocess.Popen(action, shell = True)

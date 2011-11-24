@@ -110,7 +110,7 @@ class TcpServer(ChildLogger, Thread):
 					return
 				print recs,
 				for rec in recs.split('\n'):
-					if self.factory.parse(rec.rstrip('\n'), console=sock):
+					if Parse(self.factory, rec.rstrip('\n'), console=sock):
 						try:
 							sock.send("OK\n")
 						except:
