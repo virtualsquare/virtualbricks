@@ -252,19 +252,19 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		return None
 
 
-	def proclist(self):
+	def proclist(self, console):
 		procs = 0
 		for b in self.bricks:
 			if b.proc is not None:
 				procs += 1
 
 		if procs > 0:
-			print "PID\tType\tname"
+			CommandLineOutput(console, "PID\tType\tName")
 			for b in self.bricks:
 				if b.proc is not None:
-					print "%d\t%s\t%s" % (b.pid, b.get_type(), b.name)
+					CommandLineOutput(console, "%d\t%s\t%s" % (b.pid, b.get_type(), b.name))
 		else:
-			print "No process running"
+			CommandLineOutput(console, "No process running")
 
 	def get_host_by_name(self, host):
 		for h in self.remote_hosts:

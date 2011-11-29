@@ -260,7 +260,7 @@ def Parse(factory, command, console=sys.stdout):
 		CommandLineOutput(console,  'BRICK_NAME help			Help about parameters of BRICK_NAME')
 		return True
 	elif (command == 'ps'):
-		factory.proclist()
+		factory.proclist(console)
 		return True
 	elif command.startswith('reset all'):
 		factory.reset_config()
