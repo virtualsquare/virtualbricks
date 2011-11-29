@@ -182,7 +182,7 @@ class RemoteHost():
 		self.send('reset all')
 
 		basepath = self.send_and_recv("i base show")
-		if len(basepath) == 1:
+		if basepath and len(basepath) == 1:
 			self.basepath = basepath[0]
 
 		for img in self.factory.disk_images:

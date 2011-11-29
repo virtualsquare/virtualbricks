@@ -1,6 +1,7 @@
 from virtualbricks.logger import ChildLogger
 from virtualbricks.tcpproto import *
 import time, socket, sys, hashlib, select
+from virtualbricks.console import Parse
 from threading import Thread
 
 class TcpServer(ChildLogger, Thread):
