@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
 CURRENT_VERSION="0.5"
+CURRENT_MICRO_VERSION="349"
 SUPPORTED_LANGS = ['it','nl','fr','de','es']
 
 from distutils.core import setup
@@ -35,7 +36,7 @@ for arg in sys.argv:
 glade = open('share/virtualbricks.template.glade','r').read()
 micro = open('.bzr/branch/last-revision','r').read().split(' ')[0]
 if micro == '':
-	micro = '000'
+	micro = CURRENT_MICRO_VERSION
 
 virtualbricks_version=CURRENT_VERSION+'.'+micro
 
