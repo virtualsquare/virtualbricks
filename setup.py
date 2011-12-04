@@ -89,6 +89,7 @@ setup( data_files=FILES, name='virtualbricks', version=virtualbricks_version,
 	package_dir = {'': '.'}
 	)
 
+print "Cleaning..",
 #Remove compiled l10n files
 for d in tempdirs:
 	try:
@@ -99,3 +100,10 @@ for d in tempdirs:
 	except:
 		print "Not critical error while removing: %s(.virtualbricks.mo)" %d
 		continue
+
+#Remove .glade file created in setup process
+try:
+	os.unlink('share/virtualbricks.glade')
+	print "Done"
+except:
+	print "Not critical error while removing glade file"
