@@ -12059,18 +12059,34 @@ invalid path for qemu/kvm binaries</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="editable">False</property>
-                    <property name="text" translatable="yes">Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.
+                    <property name="text" translatable="yes">Virtualbricks is a GNU/Linux desktop gui
+for Qemu/KVM and Virtual Distributed Ethernet.
 
-Virtualbricks is licensed under the terms of the GPL (General Public Licence) Version 2.
-&#xA9; 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. 
+Virtualbricks is licensed under the terms
+of the GPL (General Public Licence) Version 2 only.
+
+&#xA9; 2011 Daniele Lacamera, Rainer Haage and
+the virtualbricks team on Launchpad.
+
+- CREDITS -
+Original idea by: Carlo Caini
+Interface design: Rainer Haage
+Team Management: Daniele Lacamera
+
+Main contributors: Daniele Lacamera, Francesco Apollonio, 
+Simone Abbati and Pierre-Louis Bonicoli.
 
 VDE - Virtual Distributed Ethernet -  &#xA9; 2003-2011 Renzo Davoli.
 QEMU - Copyright &#xA9; 2005-2011 Fabrice Bellard.
 QEMU is a trademark of Fabrice Bellard.
 
-Icons for remote hosts are Copyleft David Vignoni - http://www.icon-king.com/ License: LGPL
+Icons for remote hosts are Copyleft David Vignoni 
+http://www.icon-king.com/ License: LGPL
 
-If you find virtualbricks useful for your business, please consider making a donation.</property>
+If you find virtualbricks useful for your business,
+please consider making a donation.
+
+</property>
                   </widget>
                 </child>
               </widget>
