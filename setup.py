@@ -28,10 +28,11 @@ import os
 import sys
 import tempfile
 import re
-
+sys.prefix="/usr/local"
 for arg in sys.argv:
 	if arg.startswith('--build-base='):
 		sys.prefix=arg.split('=')[1]
+
 
 glade = open('share/virtualbricks.template.glade','r').read()
 try:
@@ -46,7 +47,9 @@ virtualbricks_version=CURRENT_VERSION+'.'+micro
 
 print "Setup Virtualbricks " + virtualbricks_version
 
-open('share/virtualbricks.glade','w+').write(re.sub('___VERSION___', virtualbricks_version, glade))
+open('/tmp/virtualbricks.glade.step1','w+').write(re.sub('___VERSION___', virtualbricks_version, glade))
+glade = open('/tmp/virtualbricks.glade.step1','r').read()
+open('share/virtualbricks.glade','w+').write(re.sub('__IMAGES_PATH__', sys.prefix + '/share', glade))
 
 
 
