@@ -1,0 +1,4 @@
+version=3
+
+http://qemulator.createweb.de/plugins/downloads/ \
+dodownload.php\?file=Qemulator-(.*)\.tar\.gz

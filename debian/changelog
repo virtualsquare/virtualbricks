@@ -1,0 +1,73 @@
+virtualbricks (0.5-5) unstable; urgency=low
+
+  * Renamed the package; after the decision of the VNM project team
+    (http://sourceforge.net/projects/virtualnetmgr/) and the qemulator
+    developer to merge the projects, the project now is called
+    virtualbricks.
+  * Fixed all the files involved in the renaming.
+  * Switch to dpkg-source 3.0 (quilt) format.
+  * debian/control: changed the email of the maintainer field. 
+  * debian/control: bumped standards version to 3.9.2. 
+  * debian/control: added a qemulator dummy bin transition package.
+  * debian/copyright: updated the copyright information.
+  * added virtualbricks.install.
+  * fixed watch file.
+  * Made the transition to dh_python2. (Closes: #617047)
+  * debian/control: removed build-dep on patchutils. 
+  * debian/control: changed suggess from python-gnome2-extras to
+    python-eggtrayicon (thanks to Bilal Akhtar <bilal.akhtar96@gmail.com>)
+  * Fixed typos. (Closes: #594581, 546152) 
+  * added debian/copyright_hints. 
+
+ -- Francesco Namuri <franam@debian.org>  Sun, 08 Jan 2012 13:06:24 +0100
+
+qemulator (0.5-3.2) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Replace the libmagickcore2-extra build-dependency with the new
+    libmagickcore-extra virtual package.  (Closes: #573973)
+
+ -- Adam D. Barratt <adam@adam-barratt.org.uk>  Fri, 19 Mar 2010 18:28:15 +0000
+
+qemulator (0.5-3.1) unstable; urgency=low
+
+  * Non-maintainer upload
+  * Add libmagickcore2-extra as build-depends since imagemagick has
+    reorganised the plugin packages (thanks to Stuart Prescott)
+    (Closes: #560604)
+
+ -- Steffen Joeris <white@debian.org>  Wed, 23 Dec 2009 22:19:35 +0100
+
+qemulator (0.5-3) unstable; urgency=low
+
+  * debian/patches/fix_python_dir.patch: fixed to avoid patching of
+    usr/bin/qemulator symlink. (Closes: #442717)
+  * debian/copyright: fixed email of author.
+  * debian/menu: updated to fit to new debian menu structure.
+
+ -- Francesco Namuri <francesco@namuri.it>  Sun, 16 Sep 2007 21:23:56 +0200
+
+qemulator (0.5-2) unstable; urgency=low
+
+  * debian/rules: added rules to fit to the debian python policy.
+  * debian/copyright: fixed some typos.
+  * debian/docs: removed "README".
+  * debian/control: made some changes to fit to the debian python policy.
+  * debian/control: added dependency on python-glade2. (Closes: #434542)
+  * Added debian/watch.
+  * Moved arch-indep python files to /usr/share/qemulator.
+  * Added debian/patches/fix_python_dir.patch to fix calls to old python
+    directory, see previous entry.
+  * Include debian/links to generate the link from
+    /usr/share/qemulator/qemulator.py to /usr/bin/qemulator
+
+ -- Francesco Namuri <francesco@namuri.it>  Sun, 29 Jul 2007 16:47:00 +0200
+
+qemulator (0.5-1) unstable; urgency=low
+
+  * Initial release. (Closes: #429818: ITP: qemulator -- it's a free
+    solution for easy setup and management of qemu - Debian Bug report
+    logs)
+
+ -- Francesco Namuri <francesco@namuri.it>  Wed, 20 Jun 2007 16:11:22 +0200
+
