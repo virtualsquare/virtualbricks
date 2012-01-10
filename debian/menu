@@ -1,0 +1,6 @@
+?package(virtualbricks):needs="X11"\
+	section="Applications/Emulators"\
+	title="Virtualbricks"\
+	longtitle="a solution for easy setup and management of qemu"\
+	icon="virtualbricks.xpm"\
+	command="/usr/bin/virtualbricks"
