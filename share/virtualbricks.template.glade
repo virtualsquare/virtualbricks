@@ -11,7 +11,7 @@
     <property name="window_position">center</property>
     <property name="default_width">850</property>
     <property name="default_height">700</property>
-    <property name="icon">/usr/share/pixmaps/virtualbricks.png</property>
+    <property name="icon">__IMAGES_PATH__/pixmaps/virtualbricks.png</property>
     <signal name="delete_event" handler="on_systray_exit"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
@@ -12036,7 +12036,7 @@ invalid path for qemu/kvm binaries</property>
                 <child>
                   <widget class="GtkImage" id="image12">
                     <property name="visible">True</property>
-                    <property name="pixbuf">/usr/share/pixmaps/virtualbricks.png</property>
+                    <property name="pixbuf">__IMAGES_PATH__/pixmaps/virtualbricks.png</property>
                   </widget>
                   <packing>
                     <property name="position">1</property>
@@ -13930,7 +13930,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image1">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Switch.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Switch.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -13969,7 +13969,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image2">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Wire.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Wire.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14008,7 +14008,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image3">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Wirefilter.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Wirefilter.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14047,7 +14047,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image4">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Tap.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Tap.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14086,7 +14086,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image9">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/SwitchWrapper.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/SwitchWrapper.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14134,7 +14134,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image5">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/TunnelConnect.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/TunnelConnect.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14173,7 +14173,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image6">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Qemu.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Qemu.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14212,7 +14212,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image7">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/TunnelListen.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/TunnelListen.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14251,7 +14251,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image8">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Capture.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Capture.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14449,7 +14449,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image1">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Event.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14487,7 +14487,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image2">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Event.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14526,7 +14526,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image3">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Event.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14564,7 +14564,7 @@ Use an already open UDP multicast socket</property>
                             <child>
                               <widget class="GtkImage" id="image4">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Event.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
@@ -14612,7 +14612,7 @@ Shell Command</property>
                             <child>
                               <widget class="GtkImage" id="image5">
                                 <property name="visible">True</property>
-                                <property name="pixbuf">/usr/share/pixmaps/Event.png</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
                               </widget>
                               <packing>
                                 <property name="position">0</property>
