@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
 CURRENT_VERSION="1.0"
+CURRENT_MICRO_VERSION="0"
 SUPPORTED_LANGS = ['it','nl','fr','de','es']
 
 from distutils.core import setup
@@ -34,18 +35,19 @@ for arg in sys.argv:
 
 
 glade = open('share/virtualbricks.template.glade','r').read()
-micro = open('.bzr/branch/last-revision','r').read().split(' ')[0]
+try:
+	micro = open('.bzr/branch/last-revision','r').read().split(' ')[0]
+except:
+	micro = CURRENT_MICRO_VERSION
+
 if micro == '':
-	micro = '000'
+	micro = CURRENT_MICRO_VERSION
 
 virtualbricks_version=CURRENT_VERSION+'.'+micro
 
 open('/tmp/virtualbricks.glade.step1','w+').write(re.sub('___VERSION___', virtualbricks_version, glade))
 glade = open('/tmp/virtualbricks.glade.step1','r').read()
 open('share/virtualbricks.glade','w+').write(re.sub('__IMAGES_PATH__', sys.prefix + '/share', glade))
-
-
-
 
 FILES = [
 			( 'bin', ['main/virtualbricks']),
@@ -85,6 +87,7 @@ setup( data_files=FILES, name='virtualbricks', version=virtualbricks_version,
 	package_dir = {'': '.'}
 	)
 
+print "Cleaning..",
 #Remove compiled l10n files
 for d in tempdirs:
 	try:
@@ -95,3 +98,10 @@ for d in tempdirs:
 	except:
 		print "Not critical error while removing: %s(.virtualbricks.mo)" %d
 		continue
+
+#Remove .glade file created in setup process
+try:
+	os.unlink('share/virtualbricks.glade')
+	print "Done"
+except:
+	print "Not critical error while removing glade file"
