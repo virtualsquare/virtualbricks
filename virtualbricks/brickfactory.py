@@ -69,6 +69,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def __init__(self, logger=None, showconsole=True, nogui=False, server=False):
 		gobject.GObject.__init__(self)
 		ChildLogger.__init__(self, logger)
+		self.nogui = nogui
+		self.server = server
 		# DEFINE PROJECT PARMS
 		self.project_parms = self.clear_project_parms()
 		self.remote_hosts = []

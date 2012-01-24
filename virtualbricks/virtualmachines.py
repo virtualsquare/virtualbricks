@@ -507,6 +507,9 @@ class VM(Brick):
 		for c in self.build_cmd_line():
 			res.append(c)
 
+		if self.factory.nogui == True or self.factory.server == True:
+			res.append("-nographic")
+
 		self.factory.clear_machine_vmdisks(self)
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			if self.cfg.get("base" + dev) != "":
@@ -618,7 +621,6 @@ class VM(Brick):
 		res.append("chardev=mon_cons")
 		res.append("-chardev")
 		res.append('socket,id=mon,path=%s,server,nowait' % self.console())
-
 		return res
 
 	def __deepcopy__(self, memo):

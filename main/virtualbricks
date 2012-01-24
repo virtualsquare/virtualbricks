@@ -23,20 +23,27 @@ from virtualbricks.gui import VBGUI
 from virtualbricks.brickfactory import BrickFactory
 
 #Main.
-
-if len(sys.argv) > 1 and sys.argv[1] == '-nogui':
-	VB = BrickFactory(nogui=True, server=False)
-	VB.start()
-	#while True:
-	#	time.sleep(100)
-elif len(sys.argv) > 1 and sys.argv[1] == '-server':
-	VB = BrickFactory(nogui=True, server=True)
-	VB.start()
-	#while True:
-	#	time.sleep(100)
-else:
-	if len(sys.argv) > 1 and sys.argv[1] == '-noterm':
-		VB = VBGUI(True)
+try:
+	if len(sys.argv) > 1 and sys.argv[1] == '-nogui':
+		VB = BrickFactory(nogui=True, server=False)
+		VB.start()
+		#while True:
+		#	time.sleep(100)
+	elif len(sys.argv) > 1 and sys.argv[1] == '-server':
+		VB = BrickFactory(nogui=True, server=True)
+		VB.start()
+		#while True:
+		#	time.sleep(100)
 	else:
-		VB = VBGUI()
-
+		if len(sys.argv) > 1 and sys.argv[1] == '-noterm':
+			VB = VBGUI(True)
+		else:
+			VB = VBGUI()
+except Exception as ex:
+	now = time.time();
+	print "An exception occurred in Virtualbricks: " + ex
+	fp = open("/tmp/virtualbricks_report_"+str(now), "w");
+	fp.write(ex)
+	fp.close()
+	print "Please report it. A file with useful informations has been written in /tmp/virtualbricks_report_"+str(now)
+	print "You can attach it to the bugfix/mail"

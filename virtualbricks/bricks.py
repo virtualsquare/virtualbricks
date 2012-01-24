@@ -258,7 +258,6 @@ class Brick(ChildLogger):
 		if self.proc != None:
 			return
 		command_line = self.args()
-
 		if self.needsudo():
 			sudoarg = ""
 			if self.get_type() == 'Qemu':
