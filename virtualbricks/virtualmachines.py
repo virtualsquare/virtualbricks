@@ -715,7 +715,7 @@ class VM(Brick):
 			c.connect(self.console2())
 			return c
 		except Exception, err:
-			self.factory.err(self, "Virtual Machine startup failed. Check your configuration!")
+			self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
 			return None
 
 	def post_poweroff(self):

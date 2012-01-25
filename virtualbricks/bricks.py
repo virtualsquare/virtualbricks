@@ -294,7 +294,7 @@ class Brick(ChildLogger):
 			if self.proc:
 				self.pid = self.proc.pid
 			else:
-				self.factory.err(self, "Brick startup failed. Check your configuration!")
+				self.factory.err(self, "Brick startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
 
 			if self.open_internal_console and callable(self.open_internal_console):
 				self.internal_console = self.open_internal_console()
