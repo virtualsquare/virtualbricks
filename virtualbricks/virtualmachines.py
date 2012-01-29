@@ -629,7 +629,6 @@ class VM(Brick):
 			raise InvalidName("'%s' (was '%s')" % newname)
 		new_brick = type(self)(self.factory, newname)
 		new_brick.cfg = copy.deepcopy(self.cfg, memo)
-
 		new_brick.newbrick_changes()
 
 		return new_brick

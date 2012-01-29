@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import re
 from virtualbricks.console import (ShellCommand, RemoteHost,  VbShellCommand)
+from virtualbricks.errors import BadConfig
 
 class ConfigFile():
 	def __init__(self, factory):

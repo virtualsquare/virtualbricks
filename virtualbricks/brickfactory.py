@@ -208,7 +208,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			b.poweroff()
 			self.delbrick(b)
 		for e in self.events:
-			self.delevents(e)
+			self.delevent(e)
 		self.bricks=[]
 		self.events=[]
 
@@ -410,7 +410,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		host=""
 		remote=False
 		if arg1 == "remote":
-			print "remote brick"
+			self.debug( "remote brick" )
 			remote=True
 			ntype=arg2
 			name=arg3

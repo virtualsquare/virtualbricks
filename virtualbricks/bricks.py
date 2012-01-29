@@ -34,7 +34,7 @@ from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.link import Sock, Plug
 from virtualbricks.errors import (BadConfig,
 	InvalidName, Linkloop, NotConnected)
-
+from virtualbricks.console import RemoteHost
 
 class Brick(ChildLogger):
 	def __init__(self, _factory, _name, homehost=None):
@@ -70,6 +70,14 @@ class Brick(ChildLogger):
 
 		self.factory.bricksmodel.add_brick(self)
 
+	# each brick must overwrite this method
+	def get_type(self):
+		pass
+	
+	# each brick must overwrite this method
+	def prog(self):
+		pass
+	
 	def needsudo(self):
 		return self.factory.TCP is None and self._needsudo
 
