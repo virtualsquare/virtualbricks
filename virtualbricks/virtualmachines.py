@@ -332,7 +332,7 @@ class VM(Brick):
 		self.cfg.kvmsm = ""
 		self.cfg.kvmsmem = ""
 		self.cfg.serial = ""
-		self.cfg.use_virtio=False
+		self.cfg.use_virtio=""
 		self.command_builder = {
 			'#argv0':'argv0',
 			'#M':'machine',
@@ -525,7 +525,7 @@ class VM(Brick):
 						raise DiskLocked("Disk image %s already in use" % disk.image.name)
 						print "ERROR SETTING MASTER!!"
 						return
-				if self.cfg.get('use_virtio'):
+				if self.cfg.get('use_virtio') == "*":
 					res.append('-drive')
 					diskname = disk.get_real_disk_name()
 					res.append('file='+diskname+',if=virtio,index='+str(idx))
