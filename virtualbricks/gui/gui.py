@@ -45,7 +45,6 @@ from virtualbricks.settings import MYPATH
 class VBGUI(Logger, gobject.GObject):
 	def __init__(self, noterm=False):
 		gobject.GObject.__init__(self)
-		Logger.__init__(self)
 
 		if not os.access(MYPATH, os.X_OK):
 			os.mkdir(MYPATH)
@@ -63,7 +62,7 @@ class VBGUI(Logger, gobject.GObject):
 				except:
 					self.critical("Cannot open required file 'virtualbricks.glade'")
 
-
+		Logger.__init__(self, self.gladefile)
 		self.widg = self.get_widgets(self.widgetnames())
 
 		self.info("Starting VirtualBricks!")
@@ -802,7 +801,7 @@ class VBGUI(Logger, gobject.GObject):
 		elif self.maintree.get_selection().get_type() == 'Qemu':
 			self.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')
-			wg.set_position(245)
+			wg.set_position(0)
 		elif self.maintree.get_selection().get_type() == 'Tap':
 			self.debug("tap config")
 			ww = self.gladefile.get_widget('box_tapconfig')
@@ -2824,6 +2823,7 @@ Packets longer than specified size are discarded.")
 
 	def on_show_messages_activate(self, menuitem, data=None):
 		messages = self.gladefile.get_widget("messages_dialog")
+		scroll = self.gladefile.get_widget("message_scroller")
 		messages.show_all()
 
 	def on_messages_dialog_delete_event(self, widget=None, event=None, data=""):

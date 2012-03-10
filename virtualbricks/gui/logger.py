@@ -26,8 +26,9 @@ import new
 from virtualbricks.logger import ChildLogger
 
 class Logger(ChildLogger):
-	def __init__(self):
+	def __init__(self, glade):
 		ChildLogger.__init__(self)
+		self.glade = glade
 
 		self.messages_buffer = gtk.TextBuffer()
 
@@ -57,4 +58,8 @@ class Logger(ChildLogger):
 		#	text = "[unknown message]"
 		pos = self.messages_buffer.get_end_iter()
 		self.messages_buffer.insert_with_tags_by_name(pos, "%s\n" % text, level)
+		txtbox = self.glade.get_widget('messages_textview')
+		txtbox.scroll_mark_onscreen(txtbox.get_buffer().get_insert())
+		# OR:
+		#self.glade.get_widget('messages_textview').scroll_to_mark(self.messages_buffer.get_insert(), 0)
 

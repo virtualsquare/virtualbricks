@@ -41,7 +41,7 @@ try:
 			VB = VBGUI()
 except Exception as ex:
 	now = time.time();
-	print "An exception occurred in Virtualbricks: " + ex
+	print "An exception occurred in Virtualbricks: " + str(ex)
 	fp = open("/tmp/virtualbricks_report_"+str(now), "w");
 	fp.write(ex)
 	fp.close()
