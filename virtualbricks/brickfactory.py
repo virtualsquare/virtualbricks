@@ -536,7 +536,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 	''' duplication functions '''
 
-	# FIXME
 	def dupbrick(self, bricktodup):
 		name = self.nextValidName("Copy_of_"+bricktodup.name)
 		ty = bricktodup.get_type()
@@ -547,8 +546,12 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		# Copy only strings, and not objects, into new vm config
 		for c in bricktodup.cfg:
 			val = bricktodup.cfg.get(c)
-			if ty != "Qemu" or isinstance(val, str):
+			if isinstance(val, str):
 				new_brick.cfg.set(c+'='+val)
+
+		for p in bricktodup.plugs:
+			if p.sock is not None:
+				new_brick.connect(p.sock)
 		new_brick.on_config_changed()
 		return new_brick
 
