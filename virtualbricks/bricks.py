@@ -49,7 +49,6 @@ class Brick(ChildLogger):
 		self.socks = []
 		self.proc = None
 		self.cfg = BrickConfig()
-		#self.cfg.numports = 0 #Why is it needed here!?!
 		self.command_builder = dict()
 		self.factory.bricks.append(self)
 		self.gui_changed = False
@@ -73,11 +72,11 @@ class Brick(ChildLogger):
 	# each brick must overwrite this method
 	def get_type(self):
 		pass
-	
+
 	# each brick must overwrite this method
 	def prog(self):
 		pass
-	
+
 	def needsudo(self):
 		return self.factory.TCP is None and self._needsudo
 

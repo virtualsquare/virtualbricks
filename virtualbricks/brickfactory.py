@@ -465,13 +465,13 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			self.debug("new SwitchWrapper %s OK", brick.name)
 		else:
 			self.err(self,"Invalid console command '%s'", name)
-			return False
+			return None
 		if remote:
 			brick.set_host(host)
 			if brick.homehost.connected:
 				brick.homehost.send("new "+brick.get_type()+" "+brick.name)
 
-		return True
+		return brick
 
 
 	def newevent(self, ntype="", name=""):
@@ -538,7 +538,17 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 	# FIXME
 	def dupbrick(self, bricktodup):
-		new_brick = copy.deepcopy(bricktodup)
+		name = self.nextValidName("Copy_of_"+bricktodup.name)
+		ty = bricktodup.get_type()
+		if (bricktodup.homehost):
+			new_brick = self.newbrick("remote", ty, name, bricktodup.cfg.homehost)
+		else:
+			new_brick = self.newbrick(ty, name)
+		# Copy only strings, and not objects, into new vm config
+		for c in bricktodup.cfg:
+			val = bricktodup.cfg.get(c)
+			if ty != "Qemu" or isinstance(val, str):
+				new_brick.cfg.set(c+'='+val)
 		new_brick.on_config_changed()
 		return new_brick
 
