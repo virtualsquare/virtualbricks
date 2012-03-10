@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import copy
 import os
+import re
 import socket
 import time
 from datetime import datetime
@@ -551,7 +552,7 @@ class VM(Brick):
 
 		if self.cfg.kopt != "" and self.cfg.kernelenbl =="*" and self.cfg.kernel != "":
 			res.append("-append")
-			res.append(self.cfg.kopt)
+			res.append(re.sub('"','',self.cfg.kopt));
 
 		if self.cfg.gdb:
 			res.append('-gdb')
