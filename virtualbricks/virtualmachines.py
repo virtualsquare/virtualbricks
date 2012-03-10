@@ -332,6 +332,7 @@ class VM(Brick):
 		self.cfg.kvmsm = ""
 		self.cfg.kvmsmem = ""
 		self.cfg.serial = ""
+		self.cfg.use_virtio=False
 		self.command_builder = {
 			'#argv0':'argv0',
 			'#M':'machine',
@@ -358,15 +359,10 @@ class VM(Brick):
 			'#device':'device',
 			'#cdromen': 'cdromen',
 			'#deviceen': 'deviceen',
-			##extended drive: TBD
-			#'-mtdblock':'mtdblock', ## TODO 0.3
 			'#keyboard':'keyboard',
 			'#usbdevlist':'usbdevlist',
 			'-soundhw':'soundhw',
 			'-usb':'usbmode',
-			##usbdevice to be implemented as a collection
-			##device to be implemented as a collection
-			####'-name':'name', for NAME, BRINCKNAME is used.
 			#'-uuid':'uuid',
 			'-nographic':'novga',
 			#'-curses':'curses', ## not implemented
@@ -511,6 +507,7 @@ class VM(Brick):
 			res.append("-nographic")
 
 		self.factory.clear_machine_vmdisks(self)
+		idx = 0
 		for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			if self.cfg.get("base" + dev) != "":
 				master = False
@@ -528,15 +525,21 @@ class VM(Brick):
 						raise DiskLocked("Disk image %s already in use" % disk.image.name)
 						print "ERROR SETTING MASTER!!"
 						return
-
-				if master:
-					args = disk.args(True)
-					res.append(args[0])
-					res.append(args[1])
+				if self.cfg.get('use_virtio'):
+					res.append('-drive')
+					diskname = disk.get_real_disk_name()
+					res.append('file='+diskname+',if=virtio,index='+str(idx))
+					idx += 1
 				else:
-					args = disk.args(True)
-					res.append(args[0])
-					res.append(args[1])
+
+					if master:
+						args = disk.args(True)
+						res.append(args[0])
+						res.append(args[1])
+					else:
+						args = disk.args(True)
+						res.append(args[0])
+						res.append(args[1])
 
 		if self.cfg.kernelenbl == "*" and self.cfg.kernel!="":
 			res.append("-kernel")
