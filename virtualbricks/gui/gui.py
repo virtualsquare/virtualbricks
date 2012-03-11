@@ -41,7 +41,10 @@ from virtualbricks.gui.tree import *
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
 
-
+''' class VBGUI '''
+''' The main GUI object for virtualbricks, containing all the '''
+''' configuration for the widgets and the connections to the  '''
+''' main engine. '''
 class VBGUI(Logger, gobject.GObject):
 	def __init__(self, noterm=False):
 		gobject.GObject.__init__(self)
@@ -69,22 +72,20 @@ class VBGUI(Logger, gobject.GObject):
 
 		gtk.gdk.threads_init()
 
+		''' Creation of the main BrickFactory engine '''
 		self.brickfactory = BrickFactory(self, not noterm)
 
+		''' Connect all the signal from the factory to specific callbacks'''
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
-
 		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit_from_commandline)
-
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
 		self.brickfactory.connect("brick-error", self.cb_brickfactory_error)
 		self.brickfactory.connect("brick-changed", self.cb_brick_changed)
-
 		self.brickfactory.connect("event-started", self.cb_event_started)
 		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
 		self.brickfactory.connect("event-changed", self.cb_event_changed)
-
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
 
@@ -94,13 +95,14 @@ class VBGUI(Logger, gobject.GObject):
 		self.eventsmodel = None
 		self.shcommandsmodel = None
 
-
+		''' General settings (system properties) '''
 		self.config = self.brickfactory.settings
 
+		''' Logging window '''
 		self.gladefile.get_widget("messages_textview").set_buffer(self.messages_buffer)
 
+		''' Show the main window '''
 		self.widg['main_win'].show()
-
 		self.ps = []
 		self.bricks = []
 
@@ -112,6 +114,8 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.sockscombo = dict()
 
+		''' Treeview creation, using the VBTree class '''
+		''' Joblist treeview (Running bricks window)'''
 		self.running_bricks = VBTree(self, 'treeview_joblist', None, [gtk.gdk.Pixbuf,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['',_('PID'),_('Type'),_('Name')])
@@ -119,17 +123,21 @@ class VBGUI(Logger, gobject.GObject):
 		''' Main Treeview '''
 		self.maintree = BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
+		''' Remotehosts TW'''
 		self.remote_hosts_tree = VBTree(self, 'treeview_remotehosts', None, [gtk.gdk.Pixbuf,
 			 gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Status',_('Address'),_('Bricks'),_('Autoconnect')])
 
+		''' TW containing the disk images, visible from disk images dialog'''
 		self.image_tree = VBTree(self, 'treeview_diskimages', None, [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			[_('Image name'),_('Used by'),_('Master Brick'),_('COWs')])
 
+		''' TW containing the USB devices, visible from its dialog'''
 		self.usbdev_tree = VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
 		self.gladefile.get_widget('treeview_usbdev').get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
 
+		''' TW with the events '''
 		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
 		eventstree.set_model(self.brickfactory.eventsmodel)
 
@@ -161,19 +169,22 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.statusicon = None
 
-		#TRAYICON
+		''' Tray icon '''
 		if self.config.systray:
 			self.start_systray()
 
+		''' Set the settings panel to bottom '''
 		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
 		self.Dragging = None
 		self.curtain_down()
 
+		''' Reset the selections for the TWs'''
 		self.vmplug_selected = None
 		self.joblist_selected = None
 		self.event_selected = None
 		self.remotehost_selected = None
 
+		''' Initialize threads, timers etc., then start the main loop'''
 		gtk.gdk.threads_enter()
 		self.draw_topology()
 		self.brickfactory.start()
@@ -186,6 +197,11 @@ class VBGUI(Logger, gobject.GObject):
 		finally:
 			gtk.gdk.threads_leave()
 
+	'''
+	' Legacy method to set the Events TW values.
+	' TODO: The procedure must be rewritten using the
+	' generic VBTree() class
+	'''
 	def event_to_cell(self, column, cell, model, iter):
 		event = model.get_value(iter, EventsModel.EVENT_IDX)
 		assert event is not None
@@ -205,6 +221,9 @@ class VBGUI(Logger, gobject.GObject):
 		else:
 			raise NotImplemented()
 
+	'''
+	' Method to get the current selection from main TW.
+	'''
 	def get_event_selected_bookmark(self):
 		tree = self.gladefile.get_widget('treeview_events_bookmarks');
 		path = tree.get_cursor()[0]
@@ -224,9 +243,9 @@ class VBGUI(Logger, gobject.GObject):
 		return self.last_known_selected_event
 
 
-	""" ******************************************************** """
-	""" Signal handlers										  """
-	""" ******************************************************** """
+	""" ******************************************************** 	"""
+	""" Signal handlers												"""
+	""" ******************************************************** 	"""
 
 	def cb_brick_added(self, model, name):
 		self.draw_topology()
@@ -273,11 +292,15 @@ class VBGUI(Logger, gobject.GObject):
 	"""														  """
 	""" ******************************************************** """
 
+	'''
+	' The config_event_prepare is responsible for filling the
+	' configuration panel with the current configuration in the
+	' selected event object.
+	'''
 	def config_event_prepare(self):
 		e = self.event_selected
 		for key in e.cfg.keys():
 			t = e.get_type()
-
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
@@ -315,13 +338,25 @@ class VBGUI(Logger, gobject.GObject):
 				actions.append_column (column_bool)
 		return
 
-	""" ******************************************************** """
-	"""														  """
-	""" BRICK CONFIGURATION									  """
-	"""														  """
-	"""														  """
-	""" ******************************************************** """
-
+	"""
+	" ******************************************************** "
+	" ******************************************************** "
+	" ******************************************************** "
+	" BRICK CONFIGURATION
+	"	'PREPARE' METHODS
+	"			--  fill panel form with current brick/event
+	"				configuration
+	"""
+	'''
+	' prepare_ifcombo()
+	' Fill the interfaces combo in the capture configuration
+	' in order to show all the existing network interfaces
+	' in the host system
+	' @param b is the selected Capture brick, so the selection
+	' for the combo is set to the current selected real device.
+	' This helper method is specific for the capture brick,
+	' and it is called from the global "config_brick_prepare" below.
+	'''
 	def prepare_ifcombo(self, b):
 		combo = ComboBox(self.gladefile.get_widget('ifcombo_capture'))
 		opt = dict()
@@ -341,6 +376,11 @@ class VBGUI(Logger, gobject.GObject):
 			if n == b.cfg.iface:
 				combo.select(n)
 
+	'''
+	' fill the current configuration in the config interface.
+	' This is the global method to fill in all the forms
+	' in the configuration panel for bricks and events
+	'''
 	def config_brick_prepare(self):
 		b = self.maintree.get_selection()
 		if b.get_type() == 'Capture':
@@ -502,7 +542,6 @@ class VBGUI(Logger, gobject.GObject):
 					if (v==b.cfg[key]):
 						ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
 
-			#what a mess...
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
 			if (widget is not None):
 				model = widget.get_model()
@@ -538,16 +577,25 @@ class VBGUI(Logger, gobject.GObject):
 			if b.cfg.mode == 'manual':
 				self.gladefile.get_widget('radio_tap_manual').set_active(True)
 
-	def config_brick_confirm(self):
-		# TODO merge in on_config_ok
-
+	"""
+	" ******************************************************** "
+	" ******************************************************** "
+	" ******************************************************** "
+	" BRICK CONFIGURATION
+	"	'CONFIRM' METHODS
+	"			--  store new parameters from the form into the
+	"				brick configuration if the modifies are
+	"				confirmed.
+	"""
+	'''
+	' Widget to params reads the config directly from
+	' gtk widgets.
+	' If the widget name is in the format:
+	' 	- cfg_<type>_<variablename>_<widgettype>
+	' the configuration will be read automatically.
+	'''
+	def widget_to_params(self, b):
 		parameters = {}
-		notebook=self.gladefile.get_widget('main_notebook')
-		# It's an event
-		if notebook.get_current_page() == 1:
-			b = self.event_selected
-		else:
-			b = self.maintree.get_selection()
 		for key in b.cfg.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
@@ -589,111 +637,135 @@ class VBGUI(Logger, gobject.GObject):
 					parameters[key] = f
 				else:
 					parameters[key] = ''
+		return parameters
 
-			b.gui_changed = True
-			t = b.get_type()
+	'''
+	' Specific per-type confirm methods
+	'''
+	def config_Event_confirm(self, b):
+		actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
+		iter = self.shcommandsmodel.get_iter_first()
+		#Do not hide window
+		#if not iter:
+		#	return
+		currevent = None
+		columns = (COL_COMMAND, COL_BOOL) = range(2)
+		currevent = self.event_selected
+		currevent.cfg.actions=list()
+		while iter:
+			linecommand = self.shcommandsmodel.get_value(iter, COL_COMMAND)
+			shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
+			linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
+			"""
+			Can be multiline command.
+			CTRL+ENTER does not send "enter" inside
+			the field but confirms the field instead, exiting edit mode.
+			That feature is managed anyway.
+			Example:
+			sw1 config fstp=False
+			wf1 config xxx=yyy
+			....
+			will be transformed into:
+			[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...
+			"""
+	 		commands = linecommand.split("\n")
+	 		commandtype = 'addsh' if shbool else 'add'
 
-			if t == 'Event':
+	 		if not commands[0]:
+	 			iter = self.shcommandsmodel.iter_next(iter)
+	 			continue
 
+	 		commands[0] = 'config %s %s' % (commandtype, commands[0])
+	 		c = unicode(' %s ' % commandtype).join(commands)
 
-				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
-
-				iter = self.shcommandsmodel.get_iter_first()
-
-				#Do not hide window
-				#if not iter:
-				#	return
-
-				currevent = None
-				columns = (COL_COMMAND, COL_BOOL) = range(2)
-				currevent = self.event_selected
-
-				currevent.cfg.actions=list()
-
-				while iter:
-					linecommand = self.shcommandsmodel.get_value(iter, COL_COMMAND)
-					shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
-
-					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
-					"""
-					Can be multiline command.
-					CTRL+ENTER does not send "enter" inside
-					the field but confirms the field instead, exiting edit mode.
-					That feature is managed anyway.
-					Example:
-					sw1 config fstp=False
-					wf1 config xxx=yyy
-					....
-					will be transformed into:
-					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...
-					"""
-		 			commands = linecommand.split("\n")
-		 			commandtype = 'addsh' if shbool else 'add'
-
-		 			if not commands[0]:
-		 				iter = self.shcommandsmodel.iter_next(iter)
-		 				continue
-
-		 			commands[0] = 'config %s %s' % (commandtype, commands[0])
-		 			c = unicode(' %s ' % commandtype).join(commands)
-
-		 			self.brickfactory.brickAction(currevent, c.split(" "))
-		 			iter = self.shcommandsmodel.iter_next(iter)
-
-			elif t == 'Tap':
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[0].connect(so)
-
-				# Address mode radio
-				if (self.gladefile.get_widget('radio_tap_no').get_active()):
-					b.cfg.mode = 'off'
-				elif (self.gladefile.get_widget('radio_tap_dhcp').get_active()):
-					b.cfg.mode = 'dhcp'
-				else:
-					b.cfg.mode = 'manual'
-
-			elif t == 'Capture':
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_capture')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[0].connect(so)
-				sel = ComboBox(self.gladefile.get_widget('ifcombo_capture')).get_selected()
-				if sel:
-					b.cfg.set("iface="+str(sel))
-				else:
-					b.cfg.set("iface=")
+	 		self.brickfactory.brickAction(currevent, c.split(" "))
+	 		iter = self.shcommandsmodel.iter_next(iter)
 
 
-			elif t == 'TunnelConnect':
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[0].connect(so)
-			elif t == 'TunnelListen':
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[0].connect(so)
-			elif t == 'Wire':
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[0].connect(so)
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_wire1')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[1].connect(so)
-			elif t == 'Wirefilter':
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[0].connect(so)
-				sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
-				for so in self.brickfactory.socks:
-					if sel == so.nickname:
-						b.plugs[1].connect(so)
+	def config_Tap_confirm(self,b):
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[0].connect(so)
+
+		# Address mode radio
+		if (self.gladefile.get_widget('radio_tap_no').get_active()):
+			b.cfg.mode = 'off'
+		elif (self.gladefile.get_widget('radio_tap_dhcp').get_active()):
+			b.cfg.mode = 'dhcp'
+		else:
+			b.cfg.mode = 'manual'
+
+	def config_Capture_confirm(self,b):
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_capture')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[0].connect(so)
+		sel = ComboBox(self.gladefile.get_widget('ifcombo_capture')).get_selected()
+		if sel:
+			b.cfg.set("iface="+str(sel))
+		else:
+			b.cfg.set("iface=")
+
+	def config_TunnelConnect_confirm(self,b):
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[0].connect(so)
+	def config_TunnelListen_confirm(self,b):
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[0].connect(so)
+	def config_Wire_confirm(self,b):
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[0].connect(so)
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_wire1')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[1].connect(so)
+	def config_Wirefilter_confirm(self,b):
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[0].connect(so)
+		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
+		for so in self.brickfactory.socks:
+			if sel == so.nickname:
+				b.plugs[1].connect(so)
+
+
+	'''
+	'	Main configuration confirm method.
+	'	called from on_config_ok
+	'''
+	def config_brick_confirm(self):
+		notebook=self.gladefile.get_widget('main_notebook')
+		# is it an event?
+		if notebook.get_current_page() == 1:
+			b = self.event_selected
+		else:
+			b = self.maintree.get_selection()
+			parameters = self.widget_to_params(b)
+		t = b.get_type()
+		b.gui_changed = True
+
+		if t == 'Event':
+			self.config_Event_confirm(b)
+		elif t == 'Tap':
+			self.config_Tap_confirm(b)
+		elif t == 'Capture':
+			self.config_Capture_confirm(b)
+		elif t == 'TunnelConnect':
+			self.config_TunnelConnect_confirm(b)
+		elif t == 'TunnelListen':
+			self.config_TunnelListen_confirm(b)
+		elif t == 'Wire':
+			self.config_Wire_confirm(b)
+		elif t == 'Wirefilter':
+			self.config_Wirefilter_confirm(b)
 
 		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
 		self.user_wait_action(b.configure, fmt_params)
@@ -701,15 +773,17 @@ class VBGUI(Logger, gobject.GObject):
 	def config_brick_cancel(self):
 		self.curtain_down()
 
+	"""
+	" ******************************************************** "
+	" ******************************************************** "
+	" ******************************************************** "
+	" MISC GUI FUNCTIONS
+	"
+	"""
 
-	""" ******************************************************** """
-	"""														  """
-	""" MISC / WINDOWS BEHAVIOR								  """
-	"""														  """
-	"""														  """
-	""" ******************************************************** """
-
-
+	'''
+	'	Systray management
+	'''
 	def start_systray(self):
 		if self.statusicon is None:
 			self.statusicon = gtk.StatusIcon()
@@ -741,6 +815,12 @@ class VBGUI(Logger, gobject.GObject):
 		elif not self.statusicon.get_blinking():
 			self.statusicon.set_blinking(True)
 
+
+	'''
+	'	Method to catch delete event from dialog windows.
+	'	Hide the main window into systray.
+	'''
+
 	def delete_event(self,window,event):
 		#don't delete; hide instead
 		if self.config.systray and self.statusicon is not None:
@@ -750,6 +830,9 @@ class VBGUI(Logger, gobject.GObject):
 			self.quit()
 		return True
 
+	'''
+	'	Curtain functions, to hide/show the configuration panel
+	'''
 	def curtain_is_down(self):
 		self.debug(self.curtain.get_position())
 		return (self.curtain.get_position()>660)
@@ -836,6 +919,11 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget("wait_label").hide()
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
 
+
+	'''
+	'	Methods to access treestore elements
+	'''
+
 	def get_treeselected(self, tree, store, pthinfo, c):
 		if pthinfo is not None:
 			path, col, cellx, celly = pthinfo
@@ -853,17 +941,28 @@ class VBGUI(Logger, gobject.GObject):
 	def get_treeselected_type(self, t, s, p):
 		return self.get_treeselected(t, s, p, 2)
 
+	'''
+	'	Quit function invoked from the GUI.
+	'''
 	def quit(self, args=None):
 		self.info("GUI: Goodbye!")
 		self.brickfactory.disconnect(self._engine_closed)
 		self.brickfactory.quit()
 		sys.exit(0)
 
+	'''
+	'	Quit function invoked from the commandline.
+	'''
 	def quit_from_commandline(self, args=None):
 		self.info("GUI: Goodbye!")
 		gtk.main_quit()
 		#sys.exit(0)
 
+
+	'''
+	'	populate a list of all the widget whose names
+	'	are listed in parameter l
+	'''
 	def get_widgets(self, l):
 		r = dict()
 		for i in l:
@@ -871,7 +970,11 @@ class VBGUI(Logger, gobject.GObject):
 			r[i].hide()
 		return r
 
-
+	'''
+	'	method that returns a dictionary
+	'	containing the eth models, to fill in the
+	'	model selection combobox
+	'''
 	def qemu_eth_model(self):
 		res = dict()
 		for k in [ "rtl8139",
@@ -886,6 +989,10 @@ class VBGUI(Logger, gobject.GObject):
 			res[k]=k
 		return res
 
+	'''
+	'	Returns a list with all the
+	'	dialog windows names
+	'''
 	def widgetnames(self):
 		return ['main_win',
 		'filechooserdialog_openimage',
@@ -915,6 +1022,10 @@ class VBGUI(Logger, gobject.GObject):
 		'dialog_diskimage',
 		'dialog_usbdev'
 		]
+	'''
+	'	Returns a list with all the combos
+	'	that provide a list of vde socks nicknames
+	'''
 	def sockscombo_names(self):
 		return [
 		'sockscombo_vmethernet',
