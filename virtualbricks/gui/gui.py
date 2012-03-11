@@ -184,18 +184,47 @@ class VBGUI(Logger, gobject.GObject):
 		self.event_selected = None
 		self.remotehost_selected = None
 
-		''' Initialize threads, timers etc., then start the main loop'''
+
+		''' Initialize threads, timers etc.'''
 		gtk.gdk.threads_enter()
 		self.draw_topology()
 		self.brickfactory.start()
 		self.signals()
 		self.timers()
+
+		''' Check GUI prerequisites '''
+		missing = self.check_gui_prerequisites()
+		self.disable_config_kvm = False
+		self.disable_config_ksm = False
+		if (len(missing) > 0):
+			for m in missing:
+				if m == "kvm":
+					self.config.kvm = False
+					self.disable_config_kvm = True
+					self.error("KVM not found: kvm support will be disabled.")
+				elif m == "ksm":
+					self.config.ksm = False
+					self.disable_config_ksm = True
+					self.error("KSM not found in Linux. Samepage memory will not work on this system.")
+				else:
+					self.error('Component "%s" not found, some functionalities my not be available.' % m)
+
+		''' start the main loop'''
 		try:
 			gtk.main()
 		except KeyboardInterrupt:
 			self.quit()
 		finally:
 			gtk.gdk.threads_leave()
+
+	def check_gui_prerequisites(self):
+		qmissing,qfound = self.config.check_missing_qemupath(self.config.get("qemupath"))
+		vmissing = self.config.check_missing_vdepath(self.config.get("vdepath"))
+		ksmissing=[]
+		if not os.access("/sys/kernel/mm/ksm",os.X_OK):
+			ksmissing.add("ksm")
+		return vmissing + qmissing + ksmissing
+
 
 	'''
 	' Legacy method to set the Events TW values.
@@ -500,7 +529,7 @@ class VBGUI(Logger, gobject.GObject):
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM")
 			else:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(False)
-				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled from Properties"))
+				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled"))
 				b.cfg.kvm=""
 
 		self.update_vmplugs_tree()
@@ -1524,6 +1553,16 @@ Packets longer than specified size are discarded.")
 		self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(self.config.get('qemupath'))
 		self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(self.config.get('vdepath'))
 		self.gladefile.get_widget('filechooserbutton_baseimages').set_current_folder(self.config.get('baseimages'))
+
+		if self.disable_config_kvm:
+			self.gladefile.get_widget('check_kvm').set_sensitive(False)
+		else:
+			self.gladefile.get_widget('check_kvm').set_sensitive(True)
+
+		if self.disable_config_ksm:
+			self.gladefile.get_widget('check_ksm').set_sensitive(False)
+		else:
+			self.gladefile.get_widget('check_ksm').set_sensitive(True)
 
 		if self.config.kvm:
 			self.gladefile.get_widget('check_kvm').set_active(True)
