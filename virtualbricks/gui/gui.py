@@ -200,7 +200,8 @@ class VBGUI(Logger, gobject.GObject):
 	'''
 	' Legacy method to set the Events TW values.
 	' TODO: The procedure must be rewritten using the
-	' generic VBTree() class
+	' generic VBTree() class. This model must be moved
+	' to tree.py
 	'''
 	def event_to_cell(self, column, cell, model, iter):
 		event = model.get_value(iter, EventsModel.EVENT_IDX)
