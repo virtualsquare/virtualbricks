@@ -52,6 +52,7 @@ class Settings(ChildLogger):
 			"systray": True,
 			"current_project": HOME + "/.virtualbricks/.virtualbricks.vbl",
 			"projects": 0,
+			"cowfmt":"cow",
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()

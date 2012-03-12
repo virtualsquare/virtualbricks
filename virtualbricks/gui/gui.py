@@ -1577,6 +1577,15 @@ Packets longer than specified size are discarded.")
 		self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(self.config.get('vdepath'))
 		self.gladefile.get_widget('filechooserbutton_baseimages').set_current_folder(self.config.get('baseimages'))
 
+		cowfmt = self.config.get('cowfmt')
+
+		if cowfmt == 'qcow2':
+			self.gladefile.get_widget('combo_cowfmt').set_active(2)
+		elif cowfmt == 'qcow':
+			self.gladefile.get_widget('combo_cowfmt').set_active(1)
+		else: #default to cow
+			self.gladefile.get_widget('combo_cowfmt').set_active(0)
+
 		if self.disable_config_kvm:
 			self.gladefile.get_widget('check_kvm').set_sensitive(False)
 		else:
@@ -1907,6 +1916,8 @@ Packets longer than specified size are discarded.")
 			self.debug("Apply settings...")
 			for k in ['bricksdirectory', 'qemupath', 'vdepath', 'baseimages']:
 				self.config.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
+
+			self.config.set('cowfmt', self.gladefile.get_widget('combo_cowfmt').get_active_text())
 
 			if self.gladefile.get_widget('check_kvm').get_active():
 				self.config.set("kvm", True)

@@ -4539,6 +4539,7 @@ invalid path for qemu/kvm binaries</property>
                           <widget class="GtkTable" id="table6">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="n_rows">2</property>
                             <property name="n_columns">2</property>
                             <child>
                               <widget class="GtkLabel" id="label17">
@@ -4561,6 +4562,34 @@ invalid path for qemu/kvm binaries</property>
                               <packing>
                                 <property name="left_attach">1</property>
                                 <property name="right_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label1">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="xalign">0</property>
+                                <property name="label" translatable="yes">Private COW format</property>
+                              </widget>
+                              <packing>
+                                <property name="top_attach">1</property>
+                                <property name="bottom_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkComboBox" id="combo_cowfmt">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="items" translatable="yes">cow
+qcow
+qcow2
+</property>
+                              </widget>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">1</property>
+                                <property name="bottom_attach">2</property>
                               </packing>
                             </child>
                           </widget>

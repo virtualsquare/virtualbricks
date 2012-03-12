@@ -254,7 +254,7 @@ class VMDisk():
 					print "%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback)
 					move(cowname, cowback)
 			if not os.access(cowname, os.R_OK):
-				os.system('qemu-img create -b %s -f cow %s' % (self.get_base(), cowname))
+				os.system('qemu-img create -b %s -f %s %s' % (self.get_base(), self.VM.settings.get('cowfmt'), cowname))
 				os.system('sync')
 				time.sleep(2)
 			return cowname
