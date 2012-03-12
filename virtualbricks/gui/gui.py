@@ -540,9 +540,12 @@ class VBGUI(Logger, gobject.GObject):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
 				if (b.cfg[key] == "*" or b.cfg[key] == 'True' or b.cfg[key] == True):
-					if key is "kvm" and self.config.kvm: widget.set_active(True)
-					elif key is not "kvm": widget.set_active(True)
-				else: widget.set_active(False)
+					if key is "kvm" and self.config.kvm:
+						widget.set_active(True)
+					elif key is not "kvm":
+						widget.set_active(True)
+				else:
+					widget.set_active(False)
 				if b.get_type() == 'Wirefilter':
 					#Trigger wirefilter "symmetrical" checkbox management
 					if key is "speedenable":
@@ -945,7 +948,7 @@ class VBGUI(Logger, gobject.GObject):
 			wg.set_position(580)
 
 		self.config_brick_prepare()
-		ww.show_all()
+		ww.show()
 		self.gladefile.get_widget("wait_label").hide()
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
 
@@ -1420,22 +1423,28 @@ class VBGUI(Logger, gobject.GObject):
 		frame = self.gladefile.get_widget(base_name + '_frame')
 		frame_LR = self.gladefile.get_widget(base_name + 'LR_frame')
 		frame_RL = self.gladefile.get_widget(base_name + 'RL_frame')
+
+		frame.hide()
+		frame_LR.hide()
+		frame_RL.hide()
 		if widget.get_active():
-			frame_LR.set_sensitive(False)
 			text_LR.set_text("")
-			if text_jitter_LR: text_jitter_LR.set_text("")
-			frame_RL.set_sensitive(False)
+			if text_jitter_LR:
+				text_jitter_LR.set_text("")
 			text_RL.set_text("")
-			if text_jitter_RL: text_jitter_RL.set_text("")
-			frame.set_sensitive(True)
+			if text_jitter_RL:
+				text_jitter_RL.set_text("")
+			frame.show_all()
 			text.set_text("")
-			if text_jitter: text_jitter.set_text("")
+			if text_jitter:
+				text_jitter.set_text("")
 		else:
-			frame.set_sensitive(False)
 			text.set_text("")
-			if text_jitter: text_jitter.set_text("")
-			frame_LR.set_sensitive(True)
-			frame_RL.set_sensitive(True)
+			if text_jitter:
+				text_jitter.set_text("")
+			frame_LR.show_all()
+			frame_RL.show_all()
+
 
 	def on_wf_speed_checkbox_toggle(self, widget=None, data=""):
 		frame = self.gladefile.get_widget('Wirefilter_speed_frame')
@@ -1455,9 +1464,12 @@ class VBGUI(Logger, gobject.GObject):
 			text_jitter.set_text("")
 			text_jitter_LR.set_text("")
 			text_jitter_RL.set_text("")
-			frame.set_sensitive(False)
-			frame_LR.set_sensitive(False)
-			frame_RL.set_sensitive(False)
+			#frame.set_sensitive(False)
+			#frame_LR.set_sensitive(False)
+			#frame_RL.set_sensitive(False)
+			frame.show_all()
+			frame_LR.hide()
+			frame_RL.hide()
 			frame_GP.set_sensitive(False)
 		else:
 			frame_GP.set_sensitive(True)
