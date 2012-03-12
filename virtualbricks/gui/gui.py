@@ -564,6 +564,17 @@ class VBGUI(Logger, gobject.GObject):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
 			if (widget is not None and len(b.cfg[key]) > 0):
 				widget.set_value(int(b.cfg[key]))
+			if t == "Switch" and key == 'numports':
+				nports = 0
+				for it in self.brickfactory.bricks:
+					for p in it.plugs:
+						if p.sock.nickname == b.socks[0].nickname:
+							nports += 1
+				if nports > 0:
+					widget.set_range(nports, 128)
+				else:
+					widget.set_range(1,128)
+
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
