@@ -136,36 +136,24 @@ class VBGUI(Logger, gobject.GObject):
 		self.usbdev_tree = VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
 		self.gladefile.get_widget('treeview_usbdev').get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
-
 		''' TW with the events '''
-		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
-		eventstree.set_model(self.brickfactory.eventsmodel)
+		self.eventstree = EventsTree(self, 'treeview_events_bookmarks', self.brickfactory.eventsmodel,
+			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+			[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
-		''' This is the association to the events model. TODO: move it to its class '''
-		columns = [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')]
-		for name in columns:
-			col = gtk.TreeViewColumn(name)
-			if name != _('Icon'):
-				elem = gtk.CellRendererText()
-				col.pack_start(elem, False)
-			else:
-				elem = gtk.CellRendererPixbuf()
-				col.pack_start(elem, False)
-			col.set_cell_data_func(elem, self.event_to_cell)
-			col.set_clickable(True)
-			eventstree.append_column(col)
+		''' TW with network cards '''
+		self.vmplugs = VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
+			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+			['Eth','connection','model','macaddr'])
+
+
 
 		# associate Drag and Drop action for main tree
 		self.maintree.associate_drag_and_drop('BRICK')
 
 		# associate Drag and Drop action for events tree
-		eventstree = self.gladefile.get_widget('treeview_events_bookmarks')
-		eventstree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		eventstree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
+		self.eventstree.associate_drag_and_drop('EVENT')
 
-		self.vmplugs = VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
-			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			['Eth','connection','model','macaddr'])
 
 		self.statusicon = None
 
@@ -181,7 +169,6 @@ class VBGUI(Logger, gobject.GObject):
 		''' Reset the selections for the TWs'''
 		self.vmplug_selected = None
 		self.joblist_selected = None
-		self.event_selected = None
 		self.remotehost_selected = None
 
 
@@ -224,54 +211,6 @@ class VBGUI(Logger, gobject.GObject):
 		if not os.access("/sys/kernel/mm/ksm",os.X_OK):
 			ksmissing.add("ksm")
 		return vmissing + qmissing + ksmissing
-
-
-	'''
-	' Legacy method to set the Events TW values.
-	' TODO: The procedure must be rewritten using the
-	' generic VBTree() class. This model must be moved
-	' to tree.py
-	'''
-	def event_to_cell(self, column, cell, model, iter):
-		event = model.get_value(iter, EventsModel.EVENT_IDX)
-		assert event is not None
-		if column.get_title() == _('Icon'):
-			#print "base: %s, grey: %s" % (event.icon.base,event.icon.grey)
-			icon = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.get_img(), 48,
-				48)
-			cell.set_property('pixbuf', icon)
-		elif column.get_title() == _('Status'):
-			cell.set_property('text', event.get_state())
-		elif column.get_title() == _('Type'):
-			cell.set_property('text', event.get_type())
-		elif column.get_title() == _('Name'):
-			cell.set_property('text', event.name)
-		elif column.get_title() == _('Parameters'):
-			cell.set_property('text', event.get_parameters())
-		else:
-			raise NotImplemented()
-
-	'''
-	' Method to get the current selection from main TW.
-	'''
-	def get_event_selected_bookmark(self):
-		tree = self.gladefile.get_widget('treeview_events_bookmarks');
-		path = tree.get_cursor()[0]
-
-		if path is None:
-			'''
-			' Default to something that makes sense,
-			' otherwise on_config_ok will be broken
-			' when treeviews lose their selections.
-			'''
-			return self.last_known_selected_event
-
-		model = tree.get_model()
-		iter = model.get_iter(path)
-		name = model.get_value(iter, EventsModel.EVENT_IDX).name
-		self.last_known_selected_event = self.brickfactory.geteventbyname(name)
-		return self.last_known_selected_event
-
 
 	""" ******************************************************** 	"""
 	""" Signal handlers												"""
@@ -328,7 +267,7 @@ class VBGUI(Logger, gobject.GObject):
 	' selected event object.
 	'''
 	def config_event_prepare(self):
-		e = self.event_selected
+		e = self.eventstree.get_selection()
 		for key in e.cfg.keys():
 			t = e.get_type()
 
@@ -694,7 +633,7 @@ class VBGUI(Logger, gobject.GObject):
 		#	return
 		currevent = None
 		columns = (COL_COMMAND, COL_BOOL) = range(2)
-		currevent = self.event_selected
+		currevent = self.eventstree.get_selection()
 		currevent.cfg.actions=list()
 		while iter:
 			linecommand = self.shcommandsmodel.get_value(iter, COL_COMMAND)
@@ -789,7 +728,7 @@ class VBGUI(Logger, gobject.GObject):
 		notebook=self.gladefile.get_widget('main_notebook')
 		# is it an event?
 		if notebook.get_current_page() == 1:
-			b = self.event_selected
+			b = self.eventstree.get_selection()
 		else:
 			b = self.maintree.get_selection()
 			parameters = self.widget_to_params(b)
@@ -906,9 +845,9 @@ class VBGUI(Logger, gobject.GObject):
 		notebook=self.gladefile.get_widget('main_notebook')
 
 		if notebook.get_current_page() == 1:
-			if self.event_selected is None:
+			if self.eventstree.get_selection() is None:
 				return
-			if self.event_selected.get_type() == 'Event':
+			if self.eventstree.get_selection().get_type() == 'Event':
 				self.debug("event config")
 				ww = self.gladefile.get_widget('box_eventconfig')
 				wg.set_position(430)
@@ -1716,7 +1655,7 @@ Packets longer than specified size are discarded.")
 		self.show_window('menu_brickactions')
 
 	def show_eventactions(self):
-		self.gladefile.get_widget("eventaction_name").set_label(self.event_selected.name)
+		self.gladefile.get_widget("eventaction_name").set_label(self.eventstree.get_selection().name)
 		self.show_window('menu_eventactions')
 
 	def on_treeview_bookmarks_button_release_event(self, widget=None, event=None, data=""):
@@ -1734,8 +1673,8 @@ Packets longer than specified size are discarded.")
 			self.show_brickactions()
 
 	def on_treeview_events_bookmarks_button_release_event(self, widget=None, event=None, data=""):
-		self.event_selected = self.get_event_selected_bookmark()
-		if self.event_selected is None:
+		e = self.eventstree.get_selection()
+		if e is None:
 			return
 
 		self.curtain_down()
@@ -1748,7 +1687,7 @@ Packets longer than specified size are discarded.")
 
 		iter = tree.get_model().get_iter(path)
 		name = tree.get_model().get_value(iter, EventsModel.EVENT_IDX).name
-		self.Dragging = self.brickfactory.geteventbyname(name)
+		self.Dragging = e
 		if event.button == 3:
 			self.show_eventactions()
 
@@ -1772,7 +1711,7 @@ Packets longer than specified size are discarded.")
 
 	def on_event_startstop(self, widget=None, event=None, data=""):
 		self.curtain_down()
-		self.user_wait_action(self.event_startstop_brick, self.event_selected)
+		self.user_wait_action(self.event_startstop_brick, self.eventstree.get_selection())
 
 	def event_startstop_brick(self, e):
 		if e.get_type() == 'Event':
@@ -2403,12 +2342,12 @@ Packets longer than specified size are discarded.")
 		self.curtain_down()
 
 		msg=""
-		if self.event_selected.active:
+		if self.eventstree.get_selection().active:
 			msg=_("This event is in use")+". "
 
 		self.ask_confirm(msg + _("Do you really want to delete") + " "+
-				_(self.event_selected.get_type()) + " \"" + self.event_selected.name + "\" ?",
-				on_yes = self.brickfactory.delevent, arg = self.event_selected)
+				_(self.eventstree.get_selection().get_type()) + " \"" + self.eventstree.get_selection().name + "\" ?",
+				on_yes = self.brickfactory.delevent, arg = self.eventstree.get_selection())
 
 	def on_brick_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
@@ -2425,14 +2364,14 @@ Packets longer than specified size are discarded.")
 
 	def on_event_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
-		self.brickfactory.dupevent(self.event_selected)
+		self.brickfactory.dupevent(self.eventstree.get_selection())
 
 	def on_event_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
 		return
 
 	def on_event_rename(self,widget=None, event=None, data=""):
-		self.gladefile.get_widget('entry_event_newname').set_text(self.event_selected.name)
+		self.gladefile.get_widget('entry_event_newname').set_text(self.eventstree.get_selection().name)
 		self.gladefile.get_widget('dialog_event_rename').show_all()
 		self.curtain_down()
 
@@ -2447,12 +2386,12 @@ Packets longer than specified size are discarded.")
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if response == 1:
-			if self.event_selected.active:
+			if self.eventstree.get_selection().active:
 				self.error(_("Cannot rename Event: it is in use."))
 				return
 
 			try:
-				self.brickfactory.renameevent(self.event_selected, self.gladefile.get_widget('entry_event_newname').get_text())
+				self.brickfactory.renameevent(self.eventstree.get_selection(), self.gladefile.get_widget('entry_event_newname').get_text())
 			except InvalidName:
 				self.error(_("Invalid name!"))
 

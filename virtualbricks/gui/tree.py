@@ -224,3 +224,104 @@ class BricksTree(VBTree):
 		if column == self.last_order:
 			direction = not self.order_last_direction
 		self.order(column, direction)
+
+
+
+class EventsTree(VBTree):
+	""" Ordering events treeview. """
+	def _events_treeorder_continue(self, itr, field=_('Type'), asc=True, moved = False):
+		nxt = self.model.iter_next(itr)
+		if (nxt):
+			br_itr = self.model.get_value(itr, EventsModel.EVENT_IDX)
+			br_nxt = self.model.get_value(nxt, EventsModel.EVENT_IDX)
+			if field == _('Icon') or field == _('Type'):
+				x = br_nxt.get_type()
+				y = br_itr.get_type()
+			elif field == _('Status'):
+				x = br_nxt.get_state()
+				y = br_itr.get_state()
+			elif field == _('Name'):
+				x = br_nxt.name
+				y = br_itr.name
+			elif field == _('Parameters'):
+				x = br_nxt.get_parameters()
+				y = br_itr.get_parameters()
+			else:
+				x = 0
+				y = 0
+
+			if asc:
+				if x < y:
+					self.model.swap(itr,nxt)
+					moved = True
+			else:
+				if x > y:
+					self.model.swap(itr,nxt)
+					moved = True
+			if x == y:
+				if br_itr.name > br_nxt.name:
+					self.model.swap(itr,nxt)
+					moved = True
+
+			return self._events_treeorder_continue(nxt, field, asc, moved)
+		else:
+			return moved
+
+	def redraw(self):
+		self.model.clear()
+
+	def get_selection(self, pthinfo=None, idx=0):
+		if pthinfo is not None:
+			path, col, cellx, celly = pthinfo
+			self.tree.grab_focus()
+			self.tree.set_cursor(path, col, 0)
+		else:
+			path = self.tree.get_cursor()[0]
+		if path is None:
+			'''
+			' Default to something that makes sense,
+			' otherwise on_config_ok will be broken
+			' when treeviews lose their selections.
+			'''
+			return self.last_known_selection
+
+		iter = self.model.get_iter(path)
+		self.last_known_selection = self.model.get_value(iter, idx)
+		return self.last_known_selection
+
+	def order(self, field=_('Type'), ascending=True):
+		self.last_order = field
+		self.order_last_direction = ascending
+		itr = self.model.get_iter_first()
+		if itr is None:
+			return
+		moved = self._events_treeorder_continue(itr, field, ascending)
+		while moved:
+			itr = self.model.get_iter_first()
+			moved = self._events_treeorder_continue(itr, field, ascending)
+
+	def cell_render(self, column, cell, mod, iter):
+		event = mod.get_value(iter, EventsModel.EVENT_IDX)
+		assert event is not None
+		if column.get_title() == _('Icon'):
+			#print "base: %s, grey: %s" % (event.icon.base,event.icon.grey)
+			icon = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.get_img(), 48,
+				48)
+			cell.set_property('pixbuf', icon)
+		elif column.get_title() == _('Status'):
+			cell.set_property('text', event.get_state())
+		elif column.get_title() == _('Type'):
+			cell.set_property('text', event.get_type())
+		elif column.get_title() == _('Name'):
+			cell.set_property('text', event.name)
+		elif column.get_title() == _('Parameters'):
+			cell.set_property('text', event.get_parameters())
+		else:
+			raise NotImplemented()
+
+	def header_clicked(self, widget, event=None, data=""):
+		column = widget.get_title()
+		direction = True
+		if column == self.last_order:
+			direction = not self.order_last_direction
+		self.order(column, direction)
