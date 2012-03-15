@@ -142,7 +142,7 @@ class VBGUI(Logger, gobject.GObject):
 			[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		''' TW with network cards '''
-		self.vmplugs = VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
+		self.vmplugs = VMPlugsTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Eth','connection','model','macaddr'])
 
@@ -2710,7 +2710,7 @@ Packets longer than specified size are discarded.")
 					self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
 					self.vmplugs.set_value(iter,2,sk.model)
 					self.vmplugs.set_value(iter,3,sk.mac)
-			self.vmplugs.order(0, True)
+			self.vmplugs.order('Eth', True)
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
 		b = self.maintree.get_selection()
