@@ -168,6 +168,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.vmplug_selected = None
 		self.joblist_selected = None
 		self.remotehost_selected = None
+		self.curtain_is_down = True
 
 
 		''' Initialize threads, timers etc.'''
@@ -176,6 +177,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.brickfactory.start()
 		self.signals()
 		self.timers()
+
 
 		''' Check GUI prerequisites '''
 		missing = self.check_gui_prerequisites()
@@ -811,15 +813,10 @@ class VBGUI(Logger, gobject.GObject):
 			self.quit()
 		return True
 
-	'''
-	'	Curtain functions, to hide/show the configuration panel
-	'''
-	def curtain_is_down(self):
-		self.debug(self.curtain.get_position())
-		return (self.curtain.get_position()>660)
-
 	def curtain_down(self):
-		self.curtain.set_position(99999)
+		self.gladefile.get_widget('top_panel').show_all()
+		self.gladefile.get_widget('config_panel').hide()
+		self.gladefile.get_widget('padding_panel').hide()
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Show Settings'))
 
 	def curtain_up(self):
@@ -827,7 +824,6 @@ class VBGUI(Logger, gobject.GObject):
 
 		if (notebook.get_current_page() != 1) and (notebook.get_current_page() != 0):
 			return
-		self.debug("Old position: %d", self.curtain.get_position())
 		self.gladefile.get_widget('box_vmconfig').hide()
 		self.gladefile.get_widget('box_tapconfig').hide()
 		self.gladefile.get_widget('box_tunnellconfig').hide()
@@ -839,7 +835,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('box_eventconfig').hide()
 		self.gladefile.get_widget('box_switchwrapperconfig').hide()
 
-		wg = self.curtain
 		notebook=self.gladefile.get_widget('main_notebook')
 
 		if notebook.get_current_page() == 1:
@@ -848,11 +843,14 @@ class VBGUI(Logger, gobject.GObject):
 			if self.eventstree.get_selection().get_type() == 'Event':
 				self.debug("event config")
 				ww = self.gladefile.get_widget('box_eventconfig')
-				wg.set_position(430)
 				self.config_event_prepare()
 				ww.show_all()
+				self.gladefile.get_widget('top_panel').hide()
+				self.gladefile.get_widget('config_panel').show()
+				self.gladefile.get_widget('padding_panel').show()
 				self.gladefile.get_widget("wait_label").hide()
 				self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
+				self.widg['main_win'].set_title("Virtualbricks (Configuring Event " + self.eventstree.get_selection().name+ " )")
 			return
 
 		if self.maintree.get_selection() is None:
@@ -861,44 +859,40 @@ class VBGUI(Logger, gobject.GObject):
 		if self.maintree.get_selection().get_type() == 'Switch':
 			self.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
-			wg.set_position(575)
 		elif self.maintree.get_selection().get_type() == 'Qemu':
 			self.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')
-			wg.set_position(0)
 		elif self.maintree.get_selection().get_type() == 'Tap':
 			self.debug("tap config")
 			ww = self.gladefile.get_widget('box_tapconfig')
-			wg.set_position(500)
 		elif self.maintree.get_selection().get_type() == 'Wire':
 			self.debug("wire config")
 			ww = self.gladefile.get_widget('box_wireconfig')
-			wg.set_position(606)
 		elif self.maintree.get_selection().get_type() == 'Wirefilter':
 			self.debug("wirefilter config")
 			ww = self.gladefile.get_widget('box_wirefilterconfig')
-			wg.set_position(344)
 		elif self.maintree.get_selection().get_type() == 'TunnelConnect':
 			self.debug("tunnelc config")
 			ww = self.gladefile.get_widget('box_tunnelcconfig')
-			wg.set_position(500)
 		elif self.maintree.get_selection().get_type() == 'TunnelListen':
 			self.debug("tunnell config")
 			ww = self.gladefile.get_widget('box_tunnellconfig')
-			wg.set_position(524)
 		elif self.maintree.get_selection().get_type() == 'Capture':
 			self.debug("capture config")
 			ww = self.gladefile.get_widget('box_captureconfig')
-			wg.set_position(500)
 		elif self.maintree.get_selection().get_type() == 'SwitchWrapper':
 			self.debug("switchwrapper config")
 			ww = self.gladefile.get_widget('box_switchwrapperconfig')
-			wg.set_position(580)
 
 		self.config_brick_prepare()
+		self.gladefile.get_widget('top_panel').hide()
+		self.gladefile.get_widget('config_panel').show()
+		self.gladefile.get_widget('padding_panel').show()
 		ww.show()
 		self.gladefile.get_widget("wait_label").hide()
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
+		self.curtain_is_down = False
+		self.widg['main_win'].set_title("Virtualbricks (Configuring Brick " + self.maintree.get_selection().name+ " )")
 
 
 	'''
@@ -1826,12 +1820,12 @@ Packets longer than specified size are discarded.")
 		raise NotImplementedError()
 
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
-		if self.curtain_is_down():
+		if self.curtain_is_down:
 			self.curtain_up()
-			self.debug("up")
+			self.curtain_is_down = False
 		else:
 			self.curtain_down()
-			self.debug("down")
+			self.curtain_is_down = True
 
 	def on_dialog_settings_delete_event(self, widget=None, event=None, data=""):
 		"""we could use deletable property but deletable is only available in
@@ -3304,8 +3298,8 @@ Packets longer than specified size are discarded.")
 					self.remote_hosts_tree.set_value(iter, 3, "No")
 				self.brickfactory.remotehosts_changed=False
 
-
-		self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+ " ID: " + self.brickfactory.project_parms["id"] + " )")
+		if self.curtain_is_down:
+			self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+ " ID: " + self.brickfactory.project_parms["id"] + " )")
 
 		return True
 
