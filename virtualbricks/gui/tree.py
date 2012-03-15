@@ -109,9 +109,6 @@ class VBTree():
 	def set_selection(self,item):
 		self.last_known_selection = item
 
-	def associate_drag_and_drop(self, target):
-		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		self.tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
 class BricksTree(VBTree):
 	""" Ordering bricks treeview. """
@@ -218,6 +215,10 @@ class BricksTree(VBTree):
 		else:
 			raise NotImplemented()
 
+	def associate_drag_and_drop(self, target):
+		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		self.tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
+
 	def header_clicked(self, widget, event=None, data=""):
 		column = widget.get_title()
 		direction = True
@@ -318,6 +319,11 @@ class EventsTree(VBTree):
 			cell.set_property('text', event.get_parameters())
 		else:
 			raise NotImplemented()
+
+
+	def associate_drag_and_drop(self, target):
+		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		self.tree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
 	def header_clicked(self, widget, event=None, data=""):
 		column = widget.get_title()

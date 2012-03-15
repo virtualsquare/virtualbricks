@@ -731,7 +731,7 @@ class VBGUI(Logger, gobject.GObject):
 			b = self.eventstree.get_selection()
 		else:
 			b = self.maintree.get_selection()
-			parameters = self.widget_to_params(b)
+		parameters = self.widget_to_params(b)
 		t = b.get_type()
 		b.gui_changed = True
 
