@@ -19,6 +19,7 @@
 
 import sys
 import time
+import traceback
 from virtualbricks.gui import VBGUI
 from virtualbricks.brickfactory import BrickFactory
 
@@ -41,9 +42,24 @@ try:
 			VB = VBGUI()
 except Exception as ex:
 	now = time.time();
-	print "An exception occurred in Virtualbricks: " + str(ex)
+	print "An exception occurred in Virtualbricks."
+	exc_type, exc_value, exc_traceback = sys.exc_info()
+	print "*** print_tb:"
+	traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
+	print "*** print_exception:"
+	traceback.print_exception(exc_type, exc_value, exc_traceback,
+							  limit=2, file=sys.stdout)
+	print "*** print_exc:"
+	traceback.print_exc()
+	print "*** format_exc, first and last line:"
+	formatted_lines = traceback.format_exc().splitlines()
+	print formatted_lines[0]
+	print formatted_lines[-1]
+	''' To file?
 	fp = open("/tmp/virtualbricks_report_"+str(now), "w");
-	fp.write(ex)
+	traceback.print_tb(ex, fp)
+	traceback.print_tb(ex)
 	fp.close()
 	print "Please report it. A file with useful informations has been written in /tmp/virtualbricks_report_"+str(now)
 	print "You can attach it to the bugfix/mail"
+	'''
