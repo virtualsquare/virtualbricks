@@ -1093,6 +1093,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		if not self.gladefile.get_widget("main_win").get_visible():
 			self.gladefile.get_widget("main_win").show_all()
+			self.curtain_down()
 			self.statusicon.set_tooltip("the window is visible")
 		else:
 			self.gladefile.get_widget("main_win").hide()
