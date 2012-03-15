@@ -94,14 +94,8 @@ class VBTree():
 		else:
 			return moved
 
-	''' Override me as explained in the next comment, and
-	' ' I will call your order_header_clicked
-	'''
 	def header_clicked(self, widget, event=None, data=""):
-		pass
-		# To override and enable ordering:
-		# return self.order_header_clicked(widget, event, data)
-		# _treeview
+		return self.order_header_clicked(widget, event, data)
 
 	def get_column_from_fieldname(self, name):
 		column = -1
@@ -124,6 +118,8 @@ class VBTree():
 		field = self.get_column_from_fieldname(_field)
 		self.last_order = _field
 		itr = self.model.get_iter_first()
+		if self.fields[field] == gtk.gdk.Pixbuf:
+			return
 		moved = self._treeorder_continue(itr, field, ascending)
 		while moved:
 			itr = self.model.get_iter_first()
@@ -247,8 +243,6 @@ class BricksTree(VBTree):
 		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		self.tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
-	def header_clicked(self, widget, event=None, data=""):
-		return self.order_header_clicked(widget, event, data)
 
 class EventsTree(VBTree):
 	""" Ordering events treeview. """
@@ -346,14 +340,4 @@ class EventsTree(VBTree):
 	def associate_drag_and_drop(self, target):
 		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		self.tree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
-
-	def header_clicked(self, widget, event=None, data=""):
-		return self.order_header_clicked(widget, event, data)
-
-
-
-class VMPlugsTree(VBTree):
-
-	def header_clicked(self, widget, event=None, data=""):
-		return self.order_header_clicked(widget, event, data)
 

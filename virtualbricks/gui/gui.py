@@ -115,13 +115,18 @@ class VBGUI(Logger, gobject.GObject):
 		self.sockscombo = dict()
 
 		''' Treeview creation, using the VBTree class '''
+		''' Main Treeview '''
+		self.maintree = BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
+
+		''' TW with the events '''
+		self.eventstree = EventsTree(self, 'treeview_events_bookmarks', self.brickfactory.eventsmodel,
+			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+			[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
+
 		''' Joblist treeview (Running bricks window)'''
 		self.running_bricks = VBTree(self, 'treeview_joblist', None, [gtk.gdk.Pixbuf,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['',_('PID'),_('Type'),_('Name')])
-
-		''' Main Treeview '''
-		self.maintree = BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		''' Remotehosts TW'''
 		self.remote_hosts_tree = VBTree(self, 'treeview_remotehosts', None, [gtk.gdk.Pixbuf,
@@ -136,17 +141,10 @@ class VBGUI(Logger, gobject.GObject):
 		self.usbdev_tree = VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
 		self.gladefile.get_widget('treeview_usbdev').get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
-		''' TW with the events '''
-		self.eventstree = EventsTree(self, 'treeview_events_bookmarks', self.brickfactory.eventsmodel,
-			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
-
 		''' TW with network cards '''
-		self.vmplugs = VMPlugsTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
+		self.vmplugs = VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Eth','connection','model','macaddr'])
-
-
 
 		# associate Drag and Drop action for main tree
 		self.maintree.associate_drag_and_drop('BRICK')
