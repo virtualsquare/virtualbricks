@@ -818,6 +818,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('config_panel').hide()
 		self.gladefile.get_widget('padding_panel').hide()
 		self.gladefile.get_widget('label_showhidesettings').set_text(_('Show Settings'))
+		self.curtain_is_down = True
 
 	def curtain_up(self):
 		notebook=self.gladefile.get_widget('main_notebook')
