@@ -1016,12 +1016,13 @@ class VBGUI(Logger, gobject.GObject):
 		]
 
 	def show_window(self, name):
+		self.curtain_down()
 		for w in self.widg.keys():
 			if name == w or w == 'main_win':
 				if w.startswith('menu'):
 					self.widg[w].popup(None, None, None, 3, 0)
 				else:
-					self.widg[w].show_all()
+					self.widg[w].show()
 			elif not name.startswith('menu'):
 				self.widg[w].hide()
 
