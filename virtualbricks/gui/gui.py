@@ -996,7 +996,8 @@ class VBGUI(Logger, gobject.GObject):
 		'menu_popup_remotehosts',
 		'dialog_remote_password',
 		'dialog_diskimage',
-		'dialog_usbdev'
+		'dialog_usbdev',
+		'dialog_imagename'
 		]
 	'''
 	'	Returns a list with all the combos
@@ -2081,8 +2082,27 @@ Packets longer than specified size are discarded.")
 		self.show_window('')
 		path = self.gladefile.get_widget('filechooserdialog_openimage').get_filename()
 		name = os.path.basename(path)
-		self.brickfactory.new_disk_image(name,path)
+		self.gladefile.get_widget('text_imagename_name').set_text(re.sub("\.","_",name))
+		self.gladefile.get_widget('text_imagename_path').set_text(path)
+		self.gladefile.get_widget('text_imagename_description').set_text('')
+		self.show_window('dialog_imagename')
 		return True
+
+	def on_imagename_save(self, widget=None, data=""):
+		name = self.gladefile.get_widget('text_imagename_name').get_text()
+		path = self.gladefile.get_widget('text_imagename_path').get_text()
+		description = self.gladefile.get_widget('text_imagename_description').get_text()
+		if not tools.ValidName(name):
+			self.error("Invalid name")
+		else:
+			self.brickfactory.new_disk_image(name, path, description)
+		self.show_window('')
+		return True
+
+	def on_imagename_cancel(self, widget=None, data=""):
+		self.show_window('')
+		return True
+
 
 	def on_dialog_diskimage_close(self, widget=None, data=""):
 		self.show_window('')
