@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
 import re
+from virtualbricks import tools
 from virtualbricks.console import (ShellCommand, RemoteHost,  VbShellCommand)
 from virtualbricks.errors import BadConfig
 
@@ -246,6 +247,8 @@ class ConfigFile():
 							elif k == 'host':
 								host = self.factory.get_host_by_name(str(v))
 							l = p.readline()
+						if not tools.NameNotInUse(self.factory, name):
+							continue
 						img = self.factory.new_disk_image(name,path, host=host)
 						continue
 

@@ -1070,7 +1070,7 @@ GB</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <widget class="GtkScrolledWindow" id="scrolledwindow1">
+              <widget class="GtkScrolledWindow" id="diskimages_tree_panel">
                 <property name="width_request">500</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -1079,7 +1079,8 @@ GB</property>
                   <widget class="GtkTreeView" id="treeview_diskimages">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <signal name="button_release_event" handler="on_diskimage_selected" swapped="no"/>
+                    <signal name="button_release_event" handler="on_treeview_diskimages_selected" swapped="no"/>
+                    <signal name="row_activated" handler="on_treeview_diskimages_row_activated" swapped="no"/>
                   </widget>
                 </child>
               </widget>
@@ -1090,7 +1091,7 @@ GB</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkFrame" id="frame1">
+              <widget class="GtkFrame" id="diskimages_config_panel">
                 <property name="width_request">300</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -1302,19 +1303,7 @@ GB</property>
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkButton" id="button1">
-                            <property name="label">gtk-close</property>
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                            <property name="use_stock">True</property>
-                            <signal name="clicked" handler="on_dialog_diskimage_close" swapped="no"/>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">False</property>
-                            <property name="position">12</property>
-                          </packing>
+                          <placeholder/>
                         </child>
                       </widget>
                     </child>
@@ -1343,6 +1332,21 @@ GB</property>
             <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkButton" id="button1">
+            <property name="label">gtk-close</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_stock">True</property>
+            <signal name="clicked" handler="on_dialog_diskimage_close" swapped="no"/>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">1</property>
           </packing>
         </child>
       </widget>

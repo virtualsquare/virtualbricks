@@ -64,3 +64,19 @@ def ValidName(name):
 		return None
 	return name
 
+	''' used to determine whether the chosen name can be used or
+	'	it has already a duplicate among bricks or events
+	'''
+def NameNotInUse(factory, name):
+	for b in factory.bricks:
+		if b.name == name:
+			return False
+
+	for e in factory.events:
+		if e.name == name:
+			return False
+
+	for i in factory.disk_images:
+		if i.name == name:
+			return False
+	return True

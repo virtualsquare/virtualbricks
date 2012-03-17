@@ -111,6 +111,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.last_known_selected_event = None
 		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
 		self.topology_active = False
+		self.selected_diskimage = None
 
 		self.sockscombo = dict()
 
@@ -1184,8 +1185,8 @@ class VBGUI(Logger, gobject.GObject):
 			self.error(_("The name \"")+eventname+_("\" has been adapted to \"")+validname+"\".")
 			eventname = validname
 
-		if not self.brickfactory.isNameFree(eventname):
-			self.error(_("An event named \"")+eventname+_("\" already exist."))
+		if not tools.NameNotInUse(self.brickfactory, eventname):
+			self.error(_("An object named \"")+eventname+_("\" already exist."))
 			return
 
 		self.show_window('')
@@ -1754,14 +1755,6 @@ Packets longer than specified size are discarded.")
 				gtk.gdk.threads_leave()
 				b.poweroff()
 
-	def on_treeview_bootimages_button_press_event(self, widget=None, data=""):
-		raise NotImplementedError()
-
-	def on_treeview_bootimages_cursor_changed(self, widget=None, data=""):
-		raise NotImplementedError()
-
-	def on_treeview_bootimages_row_activated_event(self, widget=None, data=""):
-		raise NotImplementedError()
 
 	def getremotehost(self, addr):
 		for r in self.brickfactory.remote_hosts:
@@ -1819,9 +1812,6 @@ Packets longer than specified size are discarded.")
 				self.set_nonsensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
 
 			self.show_window('menu_popup_joblist')
-
-	def on_treeview_joblist_row_activated_event(self, widget=None, data=""):
-		raise NotImplementedError()
 
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
 		if self.curtain_is_down:
@@ -1999,17 +1989,22 @@ Packets longer than specified size are discarded.")
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
 		raise NotImplementedError()
 
-	def on_diskimage_selected(self, widget=None, event=None, data=""):
+	def on_treeview_diskimages_row_activated(self, widget=None, event=None, data=""):
+		self.gladefile.get_widget('diskimages_tree_panel').hide()
+		self.gladefile.get_widget('diskimages_config_panel').show_all()
+		self.diskimage_show()
+
+	def on_treeview_diskimages_selected(self, widget=None, event=None, data=""):
 		tree = self.gladefile.get_widget('treeview_diskimages');
 		store = self.image_tree
 		x = int(event.x)
 		y = int(event.y)
 		pthinfo = tree.get_path_at_pos(x, y)
 		name = self.get_treeselected(tree, store, pthinfo, 0)
-		self.diskimage_show(name)
+		self.selected_diskimage = self.brickfactory.get_image_by_name(name)
 
-	def diskimage_show(self, name):
-		img = self.brickfactory.get_image_by_name(name)
+	def diskimage_show(self):
+		img = self.selected_diskimage
 		if (img):
 			self.gladefile.get_widget('diskimage_path_text').set_text(img.path)
 			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
@@ -2027,7 +2022,8 @@ Packets longer than specified size are discarded.")
 		if (img):
 			name = tools.ValidName(self.gladefile.get_widget('diskimage_name_text').get_text())
 			if name:
-				img.rename(self.gladefile.get_widget('diskimage_name_text').get_text())
+				if not name in self.brickfactory.disk_images:
+					img.rename(self.gladefile.get_widget('diskimage_name_text').get_text())
 			else:
 				self.error("Invalid Name.")
 			img.set_description(self.gladefile.get_widget('diskimage_description_text').get_text())
@@ -2035,9 +2031,13 @@ Packets longer than specified size are discarded.")
 			host = self.brickfactory.get_host_by_name(host)
 			if host is not None:
 				img.host = host
-		self.diskimage_show(img.name)
+		self.gladefile.get_widget('diskimages_tree_panel').show_all()
+		self.gladefile.get_widget('diskimages_config_panel').hide()
+		self.show_diskimage()
 
 	def on_diskimage_revert(self, widget=None, event=None, data=""):
+		self.gladefile.get_widget('diskimages_tree_panel').show_all()
+		self.gladefile.get_widget('diskimages_config_panel').hide()
 		path = self.gladefile.get_widget('diskimage_path_text').get_text()
 		img = self.brickfactory.get_image_by_path(path)
 		if (img):
@@ -2062,6 +2062,8 @@ Packets longer than specified size are discarded.")
 			self.image_tree.set_value(iter,2,master)
 			self.image_tree.set_value(iter,3,img.get_cows())
 
+		self.gladefile.get_widget('diskimages_config_panel').hide()
+		self.gladefile.get_widget('diskimages_tree_panel').show_all()
 		self.show_window('dialog_diskimage')
 
 	def show_createimage(self):
@@ -2094,6 +2096,8 @@ Packets longer than specified size are discarded.")
 		description = self.gladefile.get_widget('text_imagename_description').get_text()
 		if not tools.ValidName(name):
 			self.error("Invalid name")
+		elif not tools.NameNotInUse(self.brickfactory, name):
+			self.error("Name already in use")
 		else:
 			self.brickfactory.new_disk_image(name, path, description)
 		self.show_window('')
@@ -3244,6 +3248,8 @@ Packets longer than specified size are discarded.")
 		self.maintree.get_selection().cfg.set('usbdevlist='+devlist.rstrip(' '))
 		self.maintree.get_selection().update_usbdevlist(devlist.rstrip(' '), old_val)
 		return True
+
+
 
 
 

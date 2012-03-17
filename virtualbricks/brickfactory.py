@@ -399,8 +399,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		newname = tools.ValidName(newname)
 		if newname == None:
 			raise InvalidName()
+			return
 
-		self.isNameFree(newname)
+		if not tools.NameNotInUse(self,newname):
+			raise InvalidName()
+			return
 
 		b.name = newname
 		if b.get_type() == "Switch":
@@ -408,15 +411,17 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				so.nickname = b.name + "_port"
 		elif b.get_type() == "Qemu":
 			b.newbrick_changes()
-
 		b.gui_changed = True
 
 	def renameevent(self, e, newname):
 		newname = tools.ValidName(newname)
 		if newname == None:
 			raise InvalidName()
+			return
 
-		self.isNameFree(newname)
+		if not tools.NameNotInUse(self,newname):
+			raise InvalidName()
+			return
 
 		e.name = newname
 		if e.get_type() == "Event":
@@ -427,19 +432,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		#e.gui_changed = True
 
 
-	''' used to determine whether the chosen name can be used or
-	'	it has already a duplicate among bricks or events
-	'''
-	def isNameFree(self, name):
-		for b in self.bricks:
-			if b.name == name:
-				return False
-
-		for e in self.events:
-			if e.name == name:
-				return False
-
-		return True
 
 	'''
  	'	used to generate a potential next valid name
@@ -449,12 +441,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		newname = tools.ValidName(name)
 		if not newname:
 			return None
-		for e in self.events:
-			if newname == e.name:
-				newname += toappend
-		for b in self.bricks:
-			if newname == b.name:
-				newname += toappend
+		while(not tools.NameNotInUse(self, newname)):
+			newname += toappend
 		return newname
 
 	''' construction functions '''
@@ -475,7 +463,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if not name:
 			raise InvalidName()
 
-		if not self.isNameFree(name):
+		if not tools.NameNotInUse(self,name):
 			raise InvalidName()
 
 		if ntype.lower() in self.BRICKTYPES:
@@ -496,7 +484,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if not name:
 			raise InvalidName()
 
-		if not self.isNameFree(name):
+		if not tools.NameNotInUse(self,name):
 			raise InvalidName()
 
 		if ntype == "event" or ntype == "Event":

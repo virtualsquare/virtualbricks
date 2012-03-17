@@ -20,6 +20,11 @@
 import gobject
 import gtk
 
+'''
+' Models are used to raise signals upon brick/event creation,
+' modification and deletion.
+'''
+
 class BricksModel(gtk.ListStore):
 	"""we create brick_added and brick_deleted because row-inserted and
 	row-deleted don't allow to fetch the item added/deleted. See entry
