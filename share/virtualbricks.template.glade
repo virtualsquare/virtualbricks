@@ -1096,6 +1096,18 @@ GB</property>
                           </packing>
                         </child>
                         <child>
+                          <widget class="GtkCheckButton" id="diskimage_readonly">
+                            <property name="label" translatable="yes">Readonly</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="draw_indicator">True</property>
+                          </widget>
+                          <packing>
+                            <property name="position">11</property>
+                          </packing>
+                        </child>
+                        <child>
                           <widget class="GtkHButtonBox" id="hbuttonbox2">
                             <property name="visible">True</property>
                             <child>
@@ -1114,6 +1126,21 @@ GB</property>
                               </packing>
                             </child>
                             <child>
+                              <widget class="GtkButton" id="diskimage_del_button">
+                                <property name="label">gtk-remove</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <property name="use_stock">True</property>
+                                <signal name="clicked" handler="on_diskimage_del"/>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
                               <widget class="GtkButton" id="diskimage_save_button">
                                 <property name="label">gtk-save</property>
                                 <property name="visible">True</property>
@@ -1125,16 +1152,13 @@ GB</property>
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">False</property>
-                                <property name="position">1</property>
+                                <property name="position">2</property>
                               </packing>
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">11</property>
+                            <property name="position">12</property>
                           </packing>
-                        </child>
-                        <child>
-                          <placeholder/>
                         </child>
                       </widget>
                     </child>

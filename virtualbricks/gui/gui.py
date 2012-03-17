@@ -2057,6 +2057,13 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
 			self.gladefile.get_widget('diskimage_description_text').set_text(img.get_description())
 
+	def on_diskimage_del(self, widget=None, event=None, data=""):
+		name = self.gladefile.get_widget('diskimage_name_text').get_text()
+		self.brickfactory.images_manager(self, "del", name)
+		self.gladefile.get_widget('diskimages_tree_panel').show_all()
+		self.gladefile.get_widget('diskimages_config_panel').hide()
+		self.show_diskimage()
+
 	def browse_diskimage(self):
 		self.curtain_down()
 		self.show_window('filechooserdialog_openimage')
