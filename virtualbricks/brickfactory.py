@@ -50,8 +50,11 @@ from virtualbricks.configfile import ConfigFile
 
 
 
-
-
+""" Class BrickFactory
+"	This is the main class for the core engine.
+"   All the bricks are created and stored in the factory.
+"   It also contains a thread to manage the command console.
+"""
 class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	__gsignals__ = {
 		'engine-closed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
@@ -64,6 +67,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		'event-changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str, bool,)),
 		'event-accomplished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (str,)),
 	}
+
+
 
 	''' Init '''
 	def __init__(self, logger=None, showconsole=True, nogui=False, server=False):
@@ -92,6 +97,36 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.autosave_timer = tools.AutoSaveTimer(self)
 		self.autosave_timer.start()
 
+
+		''' Brick types
+		'   dictionary 'name':class
+		'   name must be lowercase here!!
+		'   multiple names for one class type are allowed
+		'''
+		self.BRICKTYPES = {
+			'switch':Switch,
+			'tap':Tap,
+			'capture':Capture,
+			'vm':VM,
+			'qemu':VM,
+			'wirefilter':Wirefilter,
+			'tunnelc':TunnelConnect,
+			'tunnel client':TunnelConnect,
+			'tunnelconnect':TunnelConnect,
+			'tunnell':TunnelListen,
+			'tunnel server':TunnelListen,
+			'tunnellisten':TunnelListen,
+			'event':Event,
+			'switchwrapper':SwitchWrapper,
+		}
+		if VDESUPPORT and self.settings.python:
+			self.BRICKTYPES['Wire'] = PyWire
+		else:
+			self.BRICKTYPES['Wire'] = Wire
+
+		'''
+		'	Initialize server, ask access password if necessary
+		'''
 		if server:
 			if os.getuid() != 0:
 				print ("ERROR: -server requires to be run by root.")
@@ -135,6 +170,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.startup = False
 
 	''' threading.Thread.run() '''
+	""" Main thread start """
 	def run(self):
 		print "virtualbricks> ",
 		sys.stdout.flush()
@@ -173,7 +209,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			txt+=a
 		self.emit("brick-error", txt)
 
-
+	""" Explicit quit was invoked. """
 	def quit(self):
 		for e in self.events:
 			e.poweroff()
@@ -193,6 +229,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.emit("engine-closed")
 		sys.exit(0)
 
+	""" Clear parameters, and reset project counter """
 	def clear_project_parms(self):
 		DEFAULT_PARMS = {
 			"id": "0",
@@ -203,6 +240,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		return parms
 
+	""" Power off and kickout all bricks and events """
 	def reset_config(self):
 		for b in self.bricks:
 			b.poweroff()
@@ -212,26 +250,31 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.bricks=[]
 		self.events=[]
 
-	''' Disk images wrapper '''
+	'''[[[[[[[[[]]]]]]]]]'''
+	'''[ Disk Images    ]'''
+	'''[[[[[[[[[]]]]]]]]]'''
+
+	""" Get disk image object from the image library by its name """
 	def get_image_by_name(self, name):
 		for img in self.disk_images:
 			if img.name == name:
 				return img
 		return None
 
+	""" Get disk image object from the image library by its path """
 	def get_image_by_path(self,path):
 		for img in self.disk_images:
 			if img.path == path:
 				return img
 		return None
 
+	""" Add one disk image to the library """
 	def new_disk_image(self, name, path, description="", host=None):
 		img = DiskImage(name, path, description, host)
 		self.disk_images.append(img)
 		return img
 
-
-
+	""" Release lock from disk image """
 	def clear_machine_vmdisks(self, machine):
 		for img in self.disk_images:
 			for vmd in img.vmdisks:
@@ -240,40 +283,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					self.debug("Vmdisk lock released")
 					return
 
-	''' Getbyname helpers '''
-	def getbrickbyname(self, name):
-		for b in self.bricks:
-			if b.name == name:
-				return b
-		return None
-
-	def geteventbyname(self, name):
-		for e in self.events:
-			if e.name == name:
-				return e
-		return None
-
-
-	def proclist(self, console):
-		procs = 0
-		for b in self.bricks:
-			if b.proc is not None:
-				procs += 1
-
-		if procs > 0:
-			CommandLineOutput(console, "PID\tType\tName")
-			for b in self.bricks:
-				if b.proc is not None:
-					CommandLineOutput(console, "%d\t%s\t%s" % (b.pid, b.get_type(), b.name))
-		else:
-			CommandLineOutput(console, "No process running")
-
-	def get_host_by_name(self, host):
-		for h in self.remote_hosts:
-			if h.addr[0] == host:
-				return h
-		return None
-
+	''' Console function to manage disk images. '''
 	def images_manager(self, console, *cmd):
 		if isinstance(cmd, basestring) is False:
 			command = cmd[0]
@@ -350,6 +360,40 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	'''[ Bricks, Events ]'''
 	'''[[[[[[[[[]]]]]]]]]'''
 
+	''' Getbyname helpers '''
+	def getbrickbyname(self, name):
+		for b in self.bricks:
+			if b.name == name:
+				return b
+		return None
+
+	def geteventbyname(self, name):
+		for e in self.events:
+			if e.name == name:
+				return e
+		return None
+
+	def proclist(self, console):
+		procs = 0
+		for b in self.bricks:
+			if b.proc is not None:
+				procs += 1
+
+		if procs > 0:
+			CommandLineOutput(console, "PID\tType\tName")
+			for b in self.bricks:
+				if b.proc is not None:
+					CommandLineOutput(console, "%d\t%s\t%s" % (b.pid, b.get_type(), b.name))
+		else:
+			CommandLineOutput(console, "No process running")
+
+	def get_host_by_name(self, host):
+		for h in self.remote_hosts:
+			if h.addr[0] == host:
+				return h
+		return None
+
+
 	'''naming'''
 	def renamebrick(self, b, newname):
 		newname = tools.ValidName(newname)
@@ -382,6 +426,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			pass
 		#e.gui_changed = True
 
+
+	''' used to determine whether the chosen name can be used or
+	'	it has already a duplicate among bricks or events
+	'''
 	def isNameFree(self, name):
 		for b in self.bricks:
 			if b.name == name:
@@ -393,6 +441,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		return True
 
+	'''
+ 	'	used to generate a potential next valid name
+	'	by appending _new
+	'''
 	def nextValidName(self, name, toappend="_new"):
 		newname = tools.ValidName(name)
 		if not newname:
@@ -426,43 +478,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if not self.isNameFree(name):
 			raise InvalidName()
 
-		if ntype == "switch" or ntype == "Switch":
-			brick = Switch(self, name)
-			self.debug("new switch %s OK", brick.name)
-		elif ntype == "tap" or ntype == "Tap":
-			brick = Tap(self, name)
-			self.debug("new tap %s OK", brick.name)
-		elif ntype == "capture" or ntype == "Capture":
-			brick = Capture(self, name)
-			self.debug("new capture %s OK", brick.name)
-		elif ntype == "vm" or ntype == "Qemu":
-			brick = VM(self, name)
-			self.debug("new vm %s OK", brick.name)
-		elif ntype == "wire" or ntype == "Wire" or ntype == "Cable":
-			if VDESUPPORT and self.settings.python:
-				brick = PyWire(self, name)
-				self.debug("new cable %s OK - Type: Python-VdePlug.", brick.name)
-			else:
-				brick = Wire(self, name)
-				self.debug("new cable %s OK - Type: Traditional.", brick.name)
-		elif ntype == "wirefilter" or ntype == "Wirefilter":
-			brick = Wirefilter(self, name)
-			self.debug("new wirefilter %s OK", brick.name)
-		elif ntype == "tunnell" or ntype == "Tunnel Server" or ntype == "TunnelListen":
-			brick = TunnelListen(self, name)
-			self.debug("new tunnel server %s OK", brick.name)
-		elif ntype == "tunnelc" or ntype == "Tunnel Client" or ntype == "TunnelConnect":
-			brick = TunnelConnect(self, name)
-			self.debug("new tunnel client %s OK", brick.name)
-		elif ntype == "event" or ntype == "Event":
-			brick = Event(self, name)
-			self.debug("new event %s OK", brick.name)
-		elif ntype == "capture" or ntype == "Capture Interface":
-			brick = Capture(self, name)
-			self.debug("new capture %s OK", brick.name)
-		elif ntype == "switchwrapper" or ntype == "SwitchWrapper":
-			brick = SwitchWrapper(self, name)
-			self.debug("new SwitchWrapper %s OK", brick.name)
+		if ntype.lower() in self.BRICKTYPES:
+			brick = self.BRICKTYPES[ntype.lower()](self, name)
 		else:
 			self.err(self,"Invalid console command '%s'", name)
 			return None
@@ -535,7 +552,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 
 	''' duplication functions '''
-
 	def dupbrick(self, bricktodup):
 		name = self.nextValidName("Copy_of_"+bricktodup.name)
 		ty = bricktodup.get_type()
@@ -555,7 +571,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		new_brick.on_config_changed()
 		return new_brick
 
-	# FIXME
 	def dupevent(self, eventtodup):
 		newname = self.nextValidName("Copy_of_"+eventtodup.name)
 		if newname == None:
