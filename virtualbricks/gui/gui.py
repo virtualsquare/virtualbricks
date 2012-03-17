@@ -154,7 +154,6 @@ class VBGUI(Logger, gobject.GObject):
 		# associate Drag and Drop action for events tree
 		self.eventstree.associate_drag_and_drop('EVENT')
 
-
 		self.statusicon = None
 
 		''' Tray icon '''
@@ -172,7 +171,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.remotehost_selected = None
 		self.curtain_is_down = True
 
-
 		''' Initialize threads, timers etc.'''
 		gtk.gdk.threads_enter()
 		self.draw_topology()
@@ -180,23 +178,25 @@ class VBGUI(Logger, gobject.GObject):
 		self.signals()
 		self.timers()
 
-
 		''' Check GUI prerequisites '''
 		missing = self.check_gui_prerequisites()
 		self.disable_config_kvm = False
 		self.disable_config_ksm = False
-		if (len(missing) > 0):
+		missing_text=""
+		missing_components=""
+		if (len(missing) > 0 and self.config.show_missing == True):
 			for m in missing:
 				if m == "kvm":
 					self.config.kvm = False
 					self.disable_config_kvm = True
-					self.error("KVM not found: kvm support will be disabled.")
+					missing_text = missing_text + "KVM not found: kvm support will be disabled.\n"
 				elif m == "ksm":
 					self.config.ksm = False
 					self.disable_config_ksm = True
-					self.error("KSM not found in Linux. Samepage memory will not work on this system.")
+					missing_text = missing_text + "KSM not found in Linux. Samepage memory will not work on this system.\n"
 				else:
-					self.error('Component "%s" not found, some functionalities my not be available.' % m)
+					missing_components = missing_components + ('%s ' % m)
+			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert using the config window.")
 
 		''' start the main loop'''
 		try:
@@ -1568,6 +1568,11 @@ Packets longer than specified size are discarded.")
 		else:
 			self.gladefile.get_widget('check_systray').set_active(False)
 
+		if self.config.show_missing:
+			self.gladefile.get_widget('check_show_missing').set_active(True)
+		else:
+			self.gladefile.get_widget('check_show_missing').set_active(False)
+
 		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
 		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
 		self.curtain_down()
@@ -1888,6 +1893,13 @@ Packets longer than specified size are discarded.")
 				self.start_systray()
 			else:
 				self.config.set('systray', False)
+				self.stop_systray()
+
+			if self.gladefile.get_widget('check_show_missing').get_active():
+				self.config.set('show_missing', True)
+				self.start_systray()
+			else:
+				self.config.set('show_missing', False)
 				self.stop_systray()
 
 			self.config.set("term", self.gladefile.get_widget('entry_term').get_text())

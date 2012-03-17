@@ -53,6 +53,7 @@ class Settings(ChildLogger):
 			"current_project": HOME + "/.virtualbricks/.virtualbricks.vbl",
 			"projects": 0,
 			"cowfmt":"cow",
+			"show_missing": True,
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
@@ -69,7 +70,7 @@ class Settings(ChildLogger):
 				unicode(enabled))
 
 		for attr in ['kvm', 'ksm', 'kqemu', 'python', 'femaleplugs',
-				'erroronloop', 'systray']:
+				'erroronloop', 'systray', 'show_missing']:
 			m_get = new.instancemethod(create_get(attr), self, Settings)
 			m_set = new.instancemethod(create_set(attr), self, Settings)
 			setattr(self, 'get_%s' % attr, m_get)
