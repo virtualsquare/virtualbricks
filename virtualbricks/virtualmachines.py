@@ -165,6 +165,13 @@ class DiskImage():
 	def get_users(self):
 		return len(self.vmdisks)
 
+	def get_size(self):
+		size = os.path.getsize(self.path)
+		if (size > 1000000):
+			return (str(size/1000000))
+		else:
+			return (str(size / 1000000.0))
+
 
 
 class VMDisk():

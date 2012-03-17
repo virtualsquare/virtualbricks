@@ -135,8 +135,9 @@ class VBGUI(Logger, gobject.GObject):
 			['Status',_('Address'),_('Bricks'),_('Autoconnect')])
 
 		''' TW containing the disk images, visible from disk images dialog'''
-		self.image_tree = VBTree(self, 'treeview_diskimages', None, [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			[_('Image name'),_('Used by'),_('Master Brick'),_('COWs')])
+		self.image_tree = VBTree(self, 'treeview_diskimages', None,
+			[gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+			[_('Image name'),_('Used by'),_('Master Brick'),_('COWs'), _('Size in MB')])
 
 		''' TW containing the USB devices, visible from its dialog'''
 		self.usbdev_tree = VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
@@ -2061,6 +2062,7 @@ Packets longer than specified size are discarded.")
 				master = img.master.VM.name
 			self.image_tree.set_value(iter,2,master)
 			self.image_tree.set_value(iter,3,img.get_cows())
+			self.image_tree.set_value(iter,4,img.get_size())
 
 		self.gladefile.get_widget('diskimages_config_panel').hide()
 		self.gladefile.get_widget('diskimages_tree_panel').show_all()

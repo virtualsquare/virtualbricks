@@ -19,7 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
-import re
+import re, os
 from virtualbricks import tools
 from virtualbricks.console import (ShellCommand, RemoteHost,  VbShellCommand)
 from virtualbricks.errors import BadConfig
@@ -248,6 +248,8 @@ class ConfigFile():
 								host = self.factory.get_host_by_name(str(v))
 							l = p.readline()
 						if not tools.NameNotInUse(self.factory, name):
+							continue
+						if not os.access(path,os.R_OK):
 							continue
 						img = self.factory.new_disk_image(name,path, host=host)
 						continue
