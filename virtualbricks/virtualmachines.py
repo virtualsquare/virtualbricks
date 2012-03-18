@@ -105,6 +105,10 @@ class DiskImage():
 		self.vmdisks = []
 		self.master = None
 		self.host = host
+		self.readonly=False
+
+	def set_readonly(self, value):
+		self.readonly=value
 
 	def rename(self, newname):
 		self.name = newname
@@ -171,7 +175,6 @@ class DiskImage():
 			return (str(size/1000000))
 		else:
 			return (str(size / 1000000.0))
-
 
 
 class VMDisk():
@@ -526,12 +529,15 @@ class VM(Brick):
 					disk.cow = False
 				real_disk = disk.get_real_disk_name()
 				if disk.cow == False and disk.readonly() == False:
-					if disk.image.set_master(disk):
-						self.factory.debug( "Machine "+self.name+" acquired master lock on image "+disk.image.name)
-						master = True
+					if disk.image.readonly is not True:
+						if disk.image.set_master(disk):
+							self.factory.debug( "Machine "+self.name+" acquired master lock on image "+disk.image.name)
+							master = True
+						else:
+							raise DiskLocked("Disk image %s already in use." % disk.image.name)
+							return
 					else:
-						raise DiskLocked("Disk image %s already in use" % disk.image.name)
-						print "ERROR SETTING MASTER!!"
+						raise DiskLocked("Disk image %s is marked as readonly and you are not using private cow or snapshot mode." % disk.image.name)
 						return
 				if self.cfg.get('use_virtio') == "*":
 					res.append('-drive')

@@ -71,6 +71,8 @@ class ConfigFile():
 			p.write('path='+img.path +'\n')
 			if img.host is not None:
 				p.write('host='+img.host.addr[0]+'\n')
+			if img.readonly is not False:
+				p.write('readonly=True\n')
 
 		for e in self.factory.events:
 			p.write('[' + e.get_type() + ':' + e.name + ']\n')
@@ -239,6 +241,7 @@ class ConfigFile():
 						self.factory.debug("Found Disk image %s" % name)
 						path = ""
 						host=None
+						readonly=False
 						l = p.readline()
 						while l and not l.startswith('['):
 							k,v = l.rstrip("\n").split("=")
@@ -246,12 +249,15 @@ class ConfigFile():
 								path = str(v)
 							elif k == 'host':
 								host = self.factory.get_host_by_name(str(v))
+							elif k == 'readonly' and v == 'True':
+								readonly=True
 							l = p.readline()
 						if not tools.NameNotInUse(self.factory, name):
 							continue
 						if not os.access(path,os.R_OK):
 							continue
 						img = self.factory.new_disk_image(name,path, host=host)
+						img.set_readonly(readonly)
 						continue
 
 					elif ntype == 'RemoteHost':

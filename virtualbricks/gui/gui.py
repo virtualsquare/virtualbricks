@@ -2022,6 +2022,7 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('diskimage_path_text').set_text(img.path)
 			self.gladefile.get_widget('diskimage_name_text').set_text(img.name)
 			self.gladefile.get_widget('diskimage_description_text').set_text(img.get_description())
+			self.gladefile.get_widget('diskimage_readonly').set_active(img.readonly)
 			if img.host is None:
 				host = ""
 			else:
@@ -2039,11 +2040,13 @@ Packets longer than specified size are discarded.")
 					img.rename(self.gladefile.get_widget('diskimage_name_text').get_text())
 			else:
 				self.error("Invalid Name.")
+			img.set_readonly(self.gladefile.get_widget("diskimage_readonly").get_active())
 			img.set_description(self.gladefile.get_widget('diskimage_description_text').get_text())
 		if (host != ""):
 			host = self.brickfactory.get_host_by_name(host)
 			if host is not None:
 				img.host = host
+
 		self.gladefile.get_widget('diskimages_tree_panel').show_all()
 		self.gladefile.get_widget('diskimages_config_panel').hide()
 		self.show_diskimage()
