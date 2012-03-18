@@ -179,7 +179,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.timers()
 
 		''' FIXME: re-enable when implemented '''
-		self.gladefile.get_widget('convert_image_menuitem').set_sensitive(False)
+		#self.gladefile.get_widget('convert_image_menuitem').set_sensitive(False)
 
 
 		''' Check GUI prerequisites '''
@@ -1132,6 +1132,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.on_confirm_response_yes = on_yes
 		self.on_confirm_response_no = on_no
 		self.on_confirm_response_arg = arg
+		print "SHOW"
 		self.gladefile.get_widget('dialog_confirm').show_all()
 
 	def on_newbrick_cancel(self, widget=None, data=""):
@@ -3287,14 +3288,14 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(False)
 			self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(True)
 
-	def exec_image_commit(self, path):
+	def do_image_commit(self, path):
+		if (not os.access(path, os.R_OK)):
+			self.error('Unable to read image')
+			return False
 		if 0 != subprocess.Popen(["qemu-img","commit",path]).wait():
 			self.error('Failed to commit image')
 			return False
 		return True
-
-	def do_image_commit(self, path):
-		self.user_wait_action(self.exec_image_commit, path)
 
 
 	def on_commitimage_commit(self, widget, event=None, data=None):
@@ -3317,7 +3318,34 @@ Packets longer than specified size are discarded.")
 						" This operation cannot be undone. \nAre you sure?", on_yes=self.do_image_commit, arg=path)
 		return True
 
+	def exec_image_convert(self, arg=None):
+		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
+		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
+		dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
+		if 0 != subprocess.Popen(["qemu-img", "convert","-O",fmt,src,dst]).wait():
+			return False
+		else:
+			return True
+
+	def do_image_convert(self, arg=None):
+		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
+		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
+		dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
+		self.user_wait_action(self.exec_image_convert)
+		return True
+
 	def on_convertimage_convert(self, widget, event=None, data=None):
+		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
+			self.error("Select a file")
+			return
+
+		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
+		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
+		if not os.access(os.path.dirname(self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()), os.W_OK):
+			self.error("Cannot write to the specified location")
+		else:
+			self.do_image_convert()
+
 		self.show_window('')
 		return True
 
@@ -3346,6 +3374,7 @@ Packets longer than specified size are discarded.")
 
 	def on_filechooser_commitimage_changed(self, widget, event=None, data=None):
 		sel = self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').get_filename()
+		path=''
 		if sel:
 			outfile = open('/tmp/virtualbricks_cow_info', 'w+')
 			if 0 != subprocess.Popen(['qemu-img', 'info', sel], stdout = outfile).wait():
@@ -3357,9 +3386,14 @@ Packets longer than specified size are discarded.")
 				for l in outfile:
 					if l.startswith('backing file: '):
 						path = l.strip('backing file: ').split()[0]
-				self.gladefile.get_widget('entry_commitimage_base').set_text(path)
+				if (path == ''):
+					self.gladefile.get_widget('entry_commitimage_base').set_text('base not found (invalid cow?)')
+				else:
+					self.gladefile.get_widget('entry_commitimage_base').set_text(path)
+			os.unlink('/tmp/virtualbricks_cow_info')
 
 	def on_convert_image(self,widget,event=None, data=None):
+		self.gladefile.get_widget('combobox_imageconvert_format').set_active(2)
 		self.show_window('dialog_convertimage')
 
 
