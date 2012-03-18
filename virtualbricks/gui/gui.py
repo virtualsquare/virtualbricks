@@ -178,6 +178,10 @@ class VBGUI(Logger, gobject.GObject):
 		self.signals()
 		self.timers()
 
+		''' FIXME: re-enable when implemented '''
+		self.gladefile.get_widget('convert_image_menuitem').set_sensitive(False)
+
+
 		''' Check GUI prerequisites '''
 		missing = self.check_gui_prerequisites()
 		self.disable_config_kvm = False
@@ -999,7 +1003,9 @@ class VBGUI(Logger, gobject.GObject):
 		'dialog_remote_password',
 		'dialog_diskimage',
 		'dialog_usbdev',
-		'dialog_imagename'
+		'dialog_imagename',
+		'dialog_commitimage',
+		'dialog_convertimage'
 		]
 	'''
 	'	Returns a list with all the combos
@@ -1835,6 +1841,10 @@ Packets longer than specified size are discarded.")
 
 	def on_button_newimage_close_clicked(self, widget=None, data=""):
 		self.gladefile.get_widget('dialog_create_image').hide()
+		return True
+
+	def on_dialog_close(self, widget=None, data=""):
+		self.show_window('')
 		return True
 
 
@@ -3248,9 +3258,6 @@ Packets longer than specified size are discarded.")
 					selection.select_iter(iter)
 					print "found " + dev
 
-
-
-
 	def on_usbdev_close(self, w, event=None, data=None):
 		tree = self.gladefile.get_widget('treeview_usbdev')
 		model,paths = tree.get_selection().get_selected_rows()
@@ -3273,13 +3280,88 @@ Packets longer than specified size are discarded.")
 		self.maintree.get_selection().update_usbdevlist(devlist.rstrip(' '), old_val)
 		return True
 
+	def on_commitimage_mode(self, widget, event=None, data=None):
+		if widget.get_active():
+			self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(True)
+			self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(False)
+		else:
+			self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(False)
+			self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(True)
+
+	def exec_image_commit(self, path):
+		if 0 != subprocess.Popen(["qemu-img","commit",path]).wait():
+			self.error('Failed to commit image')
+			return False
+		return True
+
+	def do_image_commit(self, path):
+		self.user_wait_action(self.exec_image_commit, path)
 
 
+	def on_commitimage_commit(self, widget, event=None, data=None):
+		self.show_window('')
+		path = ''
+		if not self.gladefile.get_widget('radio_commitimage_file').get_active():
+			img = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
+			if (img):
+				path = img.basefolder + "/" + img.VM.name + "_" + img.device + ".cow"
+			else:
+				self.error("Invalid image")
+				return False
+		else:
+			path = self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').get_filename()
 
+		if (not os.access(path, os.R_OK)):
+			self.error("Error: "+path+" is not a valid COW image")
+			return True
+		self.ask_confirm("Warning: the base image, will be updated to the changes contained in the COW.\n"+
+						" This operation cannot be undone. \nAre you sure?", on_yes=self.do_image_commit, arg=path)
+		return True
 
+	def on_convertimage_convert(self, widget, event=None, data=None):
+		self.show_window('')
+		return True
 
+	def on_commit_image(self,widget,event=None, data=None):
+		self.gladefile.get_widget('radio_commitimage_file').set_active(True)
+		self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(True)
+		self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(False)
+		combo = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk'))
+		using_cow = dict()
+		for b in self.brickfactory.bricks:
+			if b.get_type() == "Qemu":
+				for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
+					disk = getattr(b.cfg, dev)
+					if disk.cow:
+						using_cow[dev + ' on ' + b.name] = disk
 
+		combo.populate(using_cow)
+		self.show_window('dialog_commitimage')
 
+	def on_combo_commitimage_changed(self, widget, event=None, data=None):
+		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
+		if sel and sel.get_base():
+			self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_base())
+		else:
+			self.gladefile.get_widget('entry_commitimage_base').set_text('base not found')
+
+	def on_filechooser_commitimage_changed(self, widget, event=None, data=None):
+		sel = self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').get_filename()
+		if sel:
+			outfile = open('/tmp/virtualbricks_cow_info', 'w+')
+			if 0 != subprocess.Popen(['qemu-img', 'info', sel], stdout = outfile).wait():
+				self.gladefile.get_widget('entry_commitimage_base').set_text('base not found (invalid cow?)')
+				outfile.close()
+			else:
+				outfile.close()
+				outfile = open('/tmp/virtualbricks_cow_info','r')
+				for l in outfile:
+					if l.startswith('backing file: '):
+						path = l.strip('backing file: ').split()[0]
+				self.gladefile.get_widget('entry_commitimage_base').set_text(path)
+
+	def on_convert_image(self,widget,event=None, data=None):
+		self.show_window('dialog_convertimage')
 
 
 	def signals(self):
@@ -3362,7 +3444,6 @@ Packets longer than specified size are discarded.")
 			orientation = "TB"
 		else:
 			orientation = "LR"
-
 		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation, export, self.brickfactory.settings.get("bricksdirectory")+"/")
 
 	def user_wait_action(self, action, *args):
