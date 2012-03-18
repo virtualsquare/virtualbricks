@@ -531,13 +531,13 @@ class VM(Brick):
 				if disk.cow == False and disk.readonly() == False:
 					if disk.image.readonly is not True:
 						if disk.image.set_master(disk):
-							self.factory.debug( "Machine "+self.name+" acquired master lock on image "+disk.image.name)
+							self.factory.debug(_("Machine ")+self.name+_(" acquired master lock on image ")+disk.image.name)
 							master = True
 						else:
-							raise DiskLocked("Disk image %s already in use." % disk.image.name)
+							raise DiskLocked(_("Disk image %s already in use." % disk.image.name))
 							return
 					else:
-						raise DiskLocked("Disk image %s is marked as readonly and you are not using private cow or snapshot mode." % disk.image.name)
+						raise DiskLocked(_("Disk image %s is marked as readonly and you are not using private cow or snapshot mode." % disk.image.name))
 						return
 				if self.cfg.get('use_virtio') == "*":
 					res.append('-drive')

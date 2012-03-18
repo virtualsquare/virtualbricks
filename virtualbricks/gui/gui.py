@@ -1759,11 +1759,10 @@ Packets longer than specified size are discarded.")
 						"settings"))
 					gtk.gdk.threads_leave()
 					b.poweroff()
-			except DiskLocked:
+			except DiskLocked as ex:
 				b.gui_changed=True
 				gtk.gdk.threads_enter()
-				self.error(_("Disk used by the VM is locked by another "
-					"machine"))
+				self.error(_("Disk used by the VM is locked:\n")+str(ex))
 				gtk.gdk.threads_leave()
 				b.poweroff()
 
