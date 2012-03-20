@@ -454,9 +454,7 @@ class VBGUI(Logger, gobject.GObject):
 			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
 				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
-		self.gladefile.get_widget('button_network_edit').hide()
-		self.gladefile.get_widget('button_network_remove').hide()
-		self.gladefile.get_widget('netcard_combo_type').set_active(0)
+		self.gladefile.get_widget('vmeth_config_panel').hide()
 
 		# Qemu: usb devices bind button
 		if (b.get_type() == "Qemu"):
@@ -1005,7 +1003,8 @@ class VBGUI(Logger, gobject.GObject):
 		'dialog_usbdev',
 		'dialog_imagename',
 		'dialog_commitimage',
-		'dialog_convertimage'
+		'dialog_convertimage',
+		'dialog_newvmplug'
 		]
 	'''
 	'	Returns a list with all the combos
@@ -1021,7 +1020,8 @@ class VBGUI(Logger, gobject.GObject):
 		'sockscombo_wirefilter0',
 		'sockscombo_wirefilter1',
 		'sockscombo_tunnell',
-		'sockscombo_tunnelc'
+		'sockscombo_tunnelc',
+		'sockscombo_newvmplug'
 		]
 
 	def show_window(self, name):
@@ -2718,11 +2718,26 @@ Packets longer than specified size are discarded.")
 			return True
 		return False
 
+	def on_newvmplug_randmac(self, widget=None, event=None, data=""):
+		self.gladefile.get_widget('entry_newvmplug_mac').set_text(tools.RandMac())
+
 	def on_vmplug_add(self, widget=None, event=None, data=""):
+		ComboBox(self.gladefile.get_widget("combo_newvmplug_model")).populate(self.qemu_eth_model())
+		ComboBox(self.gladefile.get_widget("combo_newvmplug_model")).select('rtl8139')
+		self.show_window('dialog_newvmplug')
+		self.curtain_up()
+
+
+	def on_newvmplug_cancel(self, widget=None, event=None, data=""):
+		self.show_window('')
+		self.curtain_up()
+		return True
+
+	def on_newvmplug_add(self, widget=None, event=None, data=""):
 		b = self.maintree.get_selection()
 		if b is None:
 			return
-		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
+		sockname = ComboBox(self.gladefile.get_widget('sockscombo_newvmplug')).get_selected()
 		if sockname == '_sock':
 			pl = b.add_sock()
 		elif (sockname == '_hostonly'):
@@ -2732,13 +2747,15 @@ Packets longer than specified size are discarded.")
 			for so in self.brickfactory.socks:
 				if so.nickname == sockname:
 					pl.connect(so)
-		pl.model = self.gladefile.get_widget('vmplug_model').get_active_text()
-		mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
+		pl.model = self.gladefile.get_widget('combo_newvmplug_model').get_active_text()
+		mac = self.gladefile.get_widget('entry_newvmplug_mac').get_text()
 		if not self.valid_mac(mac):
 			mac = tools.RandMac()
 		if pl.brick.proc and pl.hotadd:
 			pl.hotadd()
 		self.update_vmplugs_tree()
+		self.show_window('')
+		self.curtain_up()
 
 	def update_vmplugs_tree(self):
 		b = self.maintree.get_selection()
@@ -2764,6 +2781,8 @@ Packets longer than specified size are discarded.")
 					self.vmplugs.set_value(iter,2,sk.model)
 					self.vmplugs.set_value(iter,3,sk.mac)
 			self.vmplugs.order('Eth', True)
+
+			self.gladefile.get_widget('vmeth_config_panel').hide()
 
 	def on_vmplug_selected(self, widget=None, event=None, data=""):
 		b = self.maintree.get_selection()
@@ -2798,20 +2817,11 @@ Packets longer than specified size are discarded.")
 				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Host-only ad hoc network')
 			elif (pl.sock):
 				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
-			self.gladefile.get_widget('button_network_netcard_add').hide()
-			self.gladefile.get_widget('button_network_edit').show()
-			self.gladefile.get_widget('button_network_remove').show()
-			self.gladefile.get_widget('netcard_label_type').hide()
-			self.gladefile.get_widget('netcard_combo_type').hide()
+
+			self.gladefile.get_widget('vmeth_config_panel').show_all()
 		else:
-			self.gladefile.get_widget('button_network_netcard_add').show()
+			self.gladefile.get_widget('vmeth_config_panel').hide()
 			self.gladefile.get_widget('treeview_networkcards').get_selection().unselect_all()
-			self.gladefile.get_widget('button_network_netcard_add').grab_focus()
-			self.gladefile.get_widget('button_network_edit').hide()
-			self.gladefile.get_widget('button_network_remove').hide()
-			self.gladefile.get_widget('netcard_label_type').show()
-			self.gladefile.get_widget('netcard_combo_type').show()
-			self.gladefile.get_widget('netcard_combo_type').set_active(0)
 
 	def on_vmplug_edit(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
