@@ -116,7 +116,7 @@ class Settings(ChildLogger):
 			self.config.write(configfile)
 
 	def check_missing_vdepath(self, path):
-		vdebin_template = ['vde_switch', 'vde_plug', 'vde_cryptcab', 'dpipe', 'vdeterm', 'vde_plug2tap', 'wirefilter']
+		vdebin_template = ['vde_switch', 'vde_plug', 'vde_cryptcab', 'dpipe', 'vdeterm', 'vde_plug2tap', 'wirefilter', 'vde_router']
 		res = []
 		for v in vdebin_template:
 			if not os.access(os.path.join(path, v), os.X_OK):

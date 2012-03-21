@@ -45,6 +45,7 @@ from virtualbricks.tunnels import TunnelListen, TunnelConnect
 from virtualbricks.tuntaps import Capture, Tap
 from virtualbricks.wires import Wire, Wirefilter, PyWire, VDESUPPORT
 from virtualbricks.console import Parse, CommandLineOutput
+from virtualbricks.router import Router
 
 from virtualbricks.configfile import ConfigFile
 
@@ -118,6 +119,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			'tunnellisten':TunnelListen,
 			'event':Event,
 			'switchwrapper':SwitchWrapper,
+			'router':Router,
 		}
 		if VDESUPPORT and self.settings.python:
 			self.BRICKTYPES['Wire'] = PyWire

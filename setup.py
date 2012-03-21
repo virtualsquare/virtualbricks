@@ -65,6 +65,7 @@ FILES = [
 			( 'share/pixmaps', ['images/TunnelListen.png']),
 			( 'share/pixmaps', ['images/Wirefilter.png']),
 			( 'share/pixmaps', ['images/Wire.png']),
+			( 'share/pixmaps', ['images/Router.png']),
 			( 'share/pixmaps', ['images/SwitchWrapper.png'])
 ]
 

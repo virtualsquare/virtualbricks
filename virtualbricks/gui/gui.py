@@ -200,7 +200,7 @@ class VBGUI(Logger, gobject.GObject):
 					missing_text = missing_text + "KSM not found in Linux. Samepage memory will not work on this system.\n"
 				else:
 					missing_components = missing_components + ('%s ' % m)
-			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert using the config window.")
+			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert from the general settings.")
 
 		''' start the main loop'''
 		try:
@@ -839,6 +839,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.gladefile.get_widget('box_captureconfig').hide()
 		self.gladefile.get_widget('box_eventconfig').hide()
 		self.gladefile.get_widget('box_switchwrapperconfig').hide()
+		self.gladefile.get_widget('box_routerconfig').hide()
 
 		notebook=self.gladefile.get_widget('main_notebook')
 
@@ -888,6 +889,14 @@ class VBGUI(Logger, gobject.GObject):
 		elif self.maintree.get_selection().get_type() == 'SwitchWrapper':
 			self.debug("switchwrapper config")
 			ww = self.gladefile.get_widget('box_switchwrapperconfig')
+		elif self.maintree.get_selection().get_type() == 'Router':
+			self.debug("router config")
+			ww = self.gladefile.get_widget('box_routerconfig')
+
+		else:
+			self.debug("Error: invalid brick type")
+			self.curtain_down()
+			return
 
 		self.config_brick_prepare()
 		self.gladefile.get_widget('top_panel').hide()
@@ -1140,7 +1149,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.show_window('')
 
 	def selected_type(self):
-		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu','Capture', 'SwitchWrapper']:
+		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu','Capture', 'SwitchWrapper', 'Router']:
 			if self.gladefile.get_widget('typebutton_'+ntype).get_active():
 				return ntype
 		return 'Switch'

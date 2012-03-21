@@ -3642,6 +3642,50 @@ GB</property>
                         <property name="position">3</property>
                       </packing>
                     </child>
+                    <child>
+                      <widget class="GtkRadioButton" id="typebutton_Router">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="draw_indicator">False</property>
+                        <property name="group">typebutton_Switch</property>
+                        <child>
+                          <widget class="GtkVBox" id="vbox12">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <widget class="GtkImage" id="image10">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Router.png</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label8">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Router</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">4</property>
+                      </packing>
+                    </child>
                   </widget>
                   <packing>
                     <property name="expand">True</property>
@@ -3782,415 +3826,6 @@ GB</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
                 <signal name="clicked" handler="on_newbrick_ok" swapped="no"/>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="pack_type">end</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkWindow" id="dialog_newevent">
-    <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Event type selection</property>
-    <property name="modal">True</property>
-    <property name="window_position">mouse</property>
-    <property name="default_height">5</property>
-    <property name="type_hint">dialog</property>
-    <property name="urgency_hint">True</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event" swapped="no"/>
-    <child>
-      <widget class="GtkVBox" id="vbox1">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <child>
-          <widget class="GtkAspectFrame" id="aspectframe1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label_xalign">0</property>
-            <property name="shadow_type">none</property>
-            <child>
-              <widget class="GtkVBox" id="vbox2">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child>
-                  <widget class="GtkHButtonBox" id="hbuttonbox4">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="layout_style">center</property>
-                    <child>
-                      <widget class="GtkRadioButton" id="typebutton_BrickStart">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">False</property>
-                        <property name="active">True</property>
-                        <property name="draw_indicator">True</property>
-                        <child>
-                          <widget class="GtkVBox" id="vbox3">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <widget class="GtkImage" id="image1">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label3">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Brick Start</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkRadioButton" id="typebutton_BrickStop">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
-                        <property name="group">typebutton_BrickStart</property>
-                        <child>
-                          <widget class="GtkVBox" id="vbox4">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <widget class="GtkImage" id="image2">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label4">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Brick Stop</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkRadioButton" id="typebutton_BrickConfig">
-                        <property name="visible">True</property>
-                        <property name="sensitive">False</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
-                        <property name="group">typebutton_BrickStart</property>
-                        <child>
-                          <widget class="GtkVBox" id="vbox5">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <widget class="GtkImage" id="image3">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label5">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Brick Config</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkRadioButton" id="typebutton_ShellCommand">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
-                        <property name="group">typebutton_BrickStart</property>
-                        <child>
-                          <widget class="GtkVBox" id="vbox6">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <widget class="GtkImage" id="image4">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label6">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Free
-Shell Command</property>
-                                <property name="justify">center</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">3</property>
-                      </packing>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkHButtonBox" id="hbuttonbox2">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <child>
-                      <widget class="GtkRadioButton" id="typebutton_EventsCollation">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
-                        <property name="group">typebutton_BrickStart</property>
-                        <child>
-                          <widget class="GtkVBox" id="vbox7">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <widget class="GtkImage" id="image5">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label1">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Events Collation</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <widget class="GtkHSeparator" id="hseparator1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">4</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkTable" id="table1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="n_rows">2</property>
-                    <property name="n_columns">2</property>
-                    <child>
-                      <widget class="GtkLabel" id="label2">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Event name:</property>
-                      </widget>
-                    </child>
-                    <child>
-                      <widget class="GtkEntry" id="text_neweventname">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="invisible_char">●</property>
-                        <property name="activates_default">True</property>
-                        <property name="primary_icon_activatable">False</property>
-                        <property name="secondary_icon_activatable">False</property>
-                        <property name="primary_icon_sensitive">True</property>
-                        <property name="secondary_icon_sensitive">True</property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkLabel" id="label7">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Delay:</property>
-                      </widget>
-                      <packing>
-                        <property name="top_attach">1</property>
-                        <property name="bottom_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkEntry" id="text_neweventdelay">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="invisible_char">•</property>
-                        <property name="text" translatable="yes">10</property>
-                        <property name="primary_icon_activatable">False</property>
-                        <property name="secondary_icon_activatable">False</property>
-                        <property name="primary_icon_sensitive">True</property>
-                        <property name="secondary_icon_sensitive">True</property>
-                      </widget>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="top_attach">1</property>
-                        <property name="bottom_attach">2</property>
-                      </packing>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">5</property>
-                  </packing>
-                </child>
-              </widget>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <widget class="GtkHButtonBox" id="hbuttonbox1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <widget class="GtkButton" id="button1">
-                <property name="label" translatable="yes">Cancel</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <signal name="released" handler="on_newevent_cancel" swapped="no"/>
-                <signal name="clicked" handler="on_newevent_cancel" swapped="no"/>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkButton" id="button2">
-                <property name="label" translatable="yes">Ok</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="has_focus">True</property>
-                <property name="is_focus">True</property>
-                <property name="can_default">True</property>
-                <property name="has_default">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_underline">True</property>
-                <signal name="clicked" handler="on_newevent_ok" swapped="no"/>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -5174,15 +4809,15 @@ Use an already open UDP multicast socket</property>
                         </child>
                         <child>
                           <widget class="GtkCheckButton" id="check_show_missing">
-                            <property name="label" translatable="yes">Show Missing Components</property>
+                            <property name="label" translatable="yes">Warn about Missing Components at Startup</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
                             <property name="draw_indicator">True</property>
                           </widget>
                           <packing>
-                            <property name="expand">True</property>
-                            <property name="fill">True</property>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
@@ -19328,6 +18963,183 @@ bytes</property>
               </packing>
             </child>
             <child>
+              <widget class="GtkVBox" id="box_routerconfig">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="spacing">2</property>
+                <child>
+                  <widget class="GtkNotebook" id="router_notebook">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <child>
+                      <widget class="GtkVBox" id="vbox164">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <widget class="GtkLabel" id="label167">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Network Interfaces&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="label29">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Interfaces</property>
+                      </widget>
+                      <packing>
+                        <property name="tab_fill">False</property>
+                        <property name="type">tab</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkVBox" id="vbox166">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <widget class="GtkLabel" id="label298">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Routes&lt;/b&gt;</property>
+                            <property name="use_markup">True</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="label30">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Routes</property>
+                      </widget>
+                      <packing>
+                        <property name="position">1</property>
+                        <property name="tab_fill">False</property>
+                        <property name="type">tab</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkVBox" id="vbox167">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <widget class="GtkLabel" id="label299">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">filters</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="label100">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">IP Filters</property>
+                      </widget>
+                      <packing>
+                        <property name="position">2</property>
+                        <property name="tab_fill">False</property>
+                        <property name="type">tab</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkVBox" id="vbox169">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <widget class="GtkLabel" id="label300">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">extra</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="position">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="label166">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Extra</property>
+                      </widget>
+                      <packing>
+                        <property name="position">3</property>
+                        <property name="tab_fill">False</property>
+                        <property name="type">tab</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">10</property>
+              </packing>
+            </child>
+            <child>
               <widget class="GtkHButtonBox" id="hbuttonbox4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -19932,7 +19744,7 @@ bytes</property>
           <widget class="GtkScrolledWindow" id="message_scroller">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="vadjustment">0 0 346 34.600000000000001 311.40000000000003 346</property>
+            <property name="vadjustment">0 0 200 20 180 346</property>
             <property name="hscrollbar_policy">automatic</property>
             <property name="vscrollbar_policy">automatic</property>
             <child>
@@ -20037,6 +19849,415 @@ bytes</property>
         </child>
         <child>
           <placeholder/>
+        </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkWindow" id="dialog_newevent">
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Event type selection</property>
+    <property name="modal">True</property>
+    <property name="window_position">mouse</property>
+    <property name="default_height">5</property>
+    <property name="type_hint">dialog</property>
+    <property name="urgency_hint">True</property>
+    <signal name="delete_event" handler="on_dialog_settings_delete_event" swapped="no"/>
+    <child>
+      <widget class="GtkVBox" id="vbox1">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <child>
+          <widget class="GtkAspectFrame" id="aspectframe1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label_xalign">0</property>
+            <property name="shadow_type">none</property>
+            <child>
+              <widget class="GtkVBox" id="vbox2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <widget class="GtkHButtonBox" id="hbuttonbox4">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="layout_style">center</property>
+                    <child>
+                      <widget class="GtkRadioButton" id="typebutton_BrickStart">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="active">True</property>
+                        <property name="draw_indicator">True</property>
+                        <child>
+                          <widget class="GtkVBox" id="vbox3">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <widget class="GtkImage" id="image1">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label3">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Brick Start</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkRadioButton" id="typebutton_BrickStop">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="draw_indicator">True</property>
+                        <property name="group">typebutton_BrickStart</property>
+                        <child>
+                          <widget class="GtkVBox" id="vbox4">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <widget class="GtkImage" id="image2">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label4">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Brick Stop</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkRadioButton" id="typebutton_BrickConfig">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="draw_indicator">True</property>
+                        <property name="group">typebutton_BrickStart</property>
+                        <child>
+                          <widget class="GtkVBox" id="vbox5">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <widget class="GtkImage" id="image3">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label5">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Brick Config</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkRadioButton" id="typebutton_ShellCommand">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="draw_indicator">True</property>
+                        <property name="group">typebutton_BrickStart</property>
+                        <child>
+                          <widget class="GtkVBox" id="vbox6">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <widget class="GtkImage" id="image4">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label6">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Free
+Shell Command</property>
+                                <property name="justify">center</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">3</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkHButtonBox" id="hbuttonbox2">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <widget class="GtkRadioButton" id="typebutton_EventsCollation">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="draw_indicator">True</property>
+                        <property name="group">typebutton_BrickStart</property>
+                        <child>
+                          <widget class="GtkVBox" id="vbox7">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <widget class="GtkImage" id="image5">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="pixbuf">__IMAGES_PATH__/pixmaps/Event.png</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label1">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Events Collation</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <widget class="GtkHSeparator" id="hseparator1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                  </widget>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkTable" id="table1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="n_rows">2</property>
+                    <property name="n_columns">2</property>
+                    <child>
+                      <widget class="GtkLabel" id="label2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Event name:</property>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="text_neweventname">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="invisible_char">●</property>
+                        <property name="activates_default">True</property>
+                        <property name="primary_icon_activatable">False</property>
+                        <property name="secondary_icon_activatable">False</property>
+                        <property name="primary_icon_sensitive">True</property>
+                        <property name="secondary_icon_sensitive">True</property>
+                      </widget>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="right_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkLabel" id="label7">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Delay:</property>
+                      </widget>
+                      <packing>
+                        <property name="top_attach">1</property>
+                        <property name="bottom_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkEntry" id="text_neweventdelay">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="invisible_char">•</property>
+                        <property name="text" translatable="yes">10</property>
+                        <property name="primary_icon_activatable">False</property>
+                        <property name="secondary_icon_activatable">False</property>
+                        <property name="primary_icon_sensitive">True</property>
+                        <property name="secondary_icon_sensitive">True</property>
+                      </widget>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="right_attach">2</property>
+                        <property name="top_attach">1</property>
+                        <property name="bottom_attach">2</property>
+                      </packing>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">5</property>
+                  </packing>
+                </child>
+              </widget>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkHButtonBox" id="hbuttonbox1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <widget class="GtkButton" id="button1">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="released" handler="on_newevent_cancel" swapped="no"/>
+                <signal name="clicked" handler="on_newevent_cancel" swapped="no"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkButton" id="button2">
+                <property name="label" translatable="yes">Ok</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="has_focus">True</property>
+                <property name="is_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="has_default">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_underline">True</property>
+                <signal name="clicked" handler="on_newevent_ok" swapped="no"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">1</property>
+          </packing>
         </child>
       </widget>
     </child>
