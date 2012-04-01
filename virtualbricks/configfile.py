@@ -349,7 +349,7 @@ class ConfigFile():
 			if path_array[len(path_array)-1] == "vbl":
 				index = path_array[len(path_array)-2]
 			else:
-				path_array[len(path_array)-1]
+				index =	path_array[len(path_array)-1]
 			self.factory.project_parms['name'] = index
 			self.factory.debug("Project no= " + self.factory.project_parms['id'] + ", name:" + self.factory.project_parms['name']  + ", projects: " + self.factory.settings.get("projects"))
 			self.factory.settings.store()
