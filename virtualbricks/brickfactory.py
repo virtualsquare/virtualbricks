@@ -26,6 +26,7 @@ import re
 import select
 import subprocess
 import sys
+import shutil
 from threading import Thread, Semaphore
 import time, socket
 from virtualbricks import tools
@@ -164,7 +165,16 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			self.start_tcp_server(password)
 
 		if not self.TCP:
+			backup_project_file = self.settings.get("bricksdirectory")+"/.vb_current_project.vbl"
 			self.info("Current project is %s" % self.settings.get('current_project'))
+			self.info("Checking for a project to restore.")
+			'''check if there's a project backup to restore and if its size is different from current project file'''
+			if os.path.isfile(backup_project_file):
+				if os.path.getsize(backup_project_file) != os.path.getsize(self.settings.get("current_project")):
+					self.info("Restore backup project file!")
+					shutil.copyfile(backup_project_file, self.settings.get("current_project"))
+
+			shutil.copyfile(self.settings.get("current_project"), backup_project_file)
 			self.configfile.restore(self.settings.get('current_project'))
 		else:
 			self.configfile.restore('/tmp/TCP_controlled.vb')
@@ -231,6 +241,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if self.TCP:
 			#XXX
 			pass
+		else:
+			# remove the project backup file
+			os.remove (self.settings.get("bricksdirectory")+"/.vb_current_project.vbl")
 
 		self.info(_('Engine: Bye!'))
 		self.configfile.save(self.settings.get('current_project'))
