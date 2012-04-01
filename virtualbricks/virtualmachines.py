@@ -344,6 +344,8 @@ class VM(Brick):
 		self.cfg.kvmsmem = ""
 		self.cfg.serial = ""
 		self.cfg.use_virtio=""
+		self.cfg.stderr=""
+		self.cfg.stdout=""
 		self.command_builder = {
 			'#argv0':'argv0',
 			'#M':'machine',
@@ -446,7 +448,9 @@ class VM(Brick):
 			#'-mem-path':'',
 			#'-mem-prealloc':'',
 			'#icon': 'icon',
-			'#serial': 'serial'
+			'#serial': 'serial',
+			'#stdout': '',
+			'#stderr': ''
 		}
 
 	def get_parameters(self):

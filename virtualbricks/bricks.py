@@ -293,8 +293,15 @@ class Brick(ChildLogger):
 		else:
 			# LOCAL BRICK
 			try:
-				#print command_line
-				self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+				# out and err files (if configured) for saving VM output
+				out = subprocess.PIPE
+				err = subprocess.PIPE
+				if self.get_type() == 'Qemu':
+					if self.cfg.stdout != "":
+						out = open(self.cfg.stdout,"wb")
+					if self.cfg.stderr != "":
+						err = open(self.cfg.stderr,"wb")
+				self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=out, stderr=err)
 			except OSError:
 				self.factory.err(self,"OSError: Brick startup failed. Check your configuration!")
 
