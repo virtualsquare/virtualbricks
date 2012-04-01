@@ -23,6 +23,7 @@ import re, os
 from virtualbricks import tools
 from virtualbricks.console import (ShellCommand, RemoteHost,  VbShellCommand)
 from virtualbricks.errors import BadConfig
+from virtualbricks.project import VBProject
 
 class ConfigFile():
 	def __init__(self, factory):
@@ -48,6 +49,16 @@ class ConfigFile():
 			self.factory.project_parms['id']=str(projects+1)
 			self.factory.debug("Project no= " + str(projects+1) + ", Projects: " + self.factory.settings.get("projects"))
 			self.factory.settings.store()
+		if self.factory.project_parms['name'] == "":
+			path_array=f.split("/")
+			path_array = path_array[len(path_array)-1].split(".")
+			if path_array[len(path_array)-1] == "vbl":
+				index = path_array[len(path_array)-2]
+			else:
+				path_array[len(path_array)-1]
+			self.factory.project_parms['name'] = index
+
+		self.factory.project_parms['filename'] = f
 
 		# DUMP PROJECT PARMS
 		p.write('[Project:'+f+']\n')
@@ -164,7 +175,14 @@ class ConfigFile():
 				projects = int(self.factory.settings.get('projects'))
 				self.factory.settings.set("projects", projects+1)
 				self.factory.project_parms['id']=str(projects+1)
-				self.factory.debug("Project no= " + str(projects+1) + ", Projects: " + self.factory.settings.get("projects"))
+				path_array=f.split("/")
+				path_array = path_array[len(path_array)-1].split(".")
+				if path_array[len(path_array)-1] == "vbl":
+					index = path_array[len(path_array)-2]
+				else:
+					path_array[len(path_array)-1]
+				self.factory.project_parms['name'] = index
+				self.factory.debug("Project no= " + self.factory.project_parms['id'] + ", name: " + self.factory.project_parms['name']  + ", projects: " + self.factory.settings.get("projects"))
 				self.factory.settings.store()
 				return
 
@@ -324,5 +342,18 @@ class ConfigFile():
 			self.factory.settings.set("projects", projects+1)
 			self.factory.project_parms['id']=str(projects+1)
 			self.factory.debug("Project no= " + str(projects+1) + ", Projects: " + self.factory.settings.get("projects"))
+
+		if self.factory.project_parms['name'] == "":
+			path_array=f.split("/")
+			path_array = path_array[len(path_array)-1].split(".")
+			if path_array[len(path_array)-1] == "vbl":
+				index = path_array[len(path_array)-2]
+			else:
+				path_array[len(path_array)-1]
+			self.factory.project_parms['name'] = index
+			self.factory.debug("Project no= " + self.factory.project_parms['id'] + ", name:" + self.factory.project_parms['name']  + ", projects: " + self.factory.settings.get("projects"))
 			self.factory.settings.store()
+
+		self.factory.project_parms['filename'] = f
+		self.factory.settings.store()
 

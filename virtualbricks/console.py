@@ -245,7 +245,7 @@ def Parse(factory, command, console=sys.stdout):
 	elif (command == 'h' or command == 'help'):
 		CommandLineOutput(console,  'Base command -------------------------------------------------')
 		CommandLineOutput(console,  'ps				List of active process')
-		CommandLineOutput(console,  'n[ew]				Create a new brick')
+		CommandLineOutput(console,  'n[ew] TYPE NAME			Create a new TYPE brick with NAME')
 		CommandLineOutput(console,  'list				List of bricks already created')
 		CommandLineOutput(console,  'socks				List of connections available for bricks')
 		CommandLineOutput(console,  'conn[ections]			List of connections for each bricks')

@@ -47,9 +47,8 @@ from virtualbricks.wires import Wire, Wirefilter, PyWire, VDESUPPORT
 from virtualbricks.console import Parse, CommandLineOutput
 from virtualbricks.router import Router
 
+from virtualbricks.project import VBProject
 from virtualbricks.configfile import ConfigFile
-
-
 
 """ Class BrickFactory
 "	This is the main class for the core engine.
@@ -84,6 +83,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.events = []
 		self.socks = []
 		self.disk_images = []
+		self.projects = []
 		self.bricksmodel = BricksModel()
 		self.eventsmodel = EventsModel()
 		self.startup = True
@@ -174,17 +174,25 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	''' threading.Thread.run() '''
 	""" Main thread start """
 	def run(self):
-		print "virtualbricks> ",
+		print "\nvirtualbricks> ",
 		sys.stdout.flush()
 		p = select.poll()
 		p.register(sys.stdin, select.POLLIN)
 		while self.running_condition:
 			if (self.showconsole):
 				if (len(p.poll(10)) > 0):
-					command = sys.stdin.readline()
-					Parse(self, command.rstrip('\n'))
-					print ""
-					print "virtualbricks> ",
+					try:
+						command = sys.stdin.readline()
+						Parse(self, command.rstrip('\n'))
+					except Exception as e:
+						msg=""
+						errno=""
+						if len(e.args) == 2:
+							msg, errno = e.args
+						elif len(e.args) == 1:
+							msg = e.args[0]
+						print _("Exception:\n\tType: %s\n\tErrno: %s\n\tMessage: %s\n" %  (type(e), errno, msg))
+					print "\nvirtualbricks> ",
 					sys.stdout.flush()
 			else:
 				time.sleep(1)
@@ -235,6 +243,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def clear_project_parms(self):
 		DEFAULT_PARMS = {
 			"id": "0",
+			"name": "",
+			"filename": ""
 		}
 		parms={}
 		for key, value in DEFAULT_PARMS.items():
@@ -252,8 +262,44 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		self.bricks=[]
 		self.events=[]
 
+	'''PROJECTS'''
+
+	def add_project(self, id , name, filename):
+		if get_project_by_filename(filename):
+			if get_project_by_name(name) is None:
+				proj = VBProject(id, name, filename)
+				self.projects.append(proj)
+				print self.projects
+			else:
+				raise Exception("Project name already in VB database.")
+		else:
+			raise Exception("Project file already in VB database.!")
+
+	def del_project(self, id):
+		pj = self.get_project_by_id(id)
+		if pj is not None:
+			self.projects.remove(pj)
+
+	def get_project_by_id(self, id):
+		for proj in self.projects:
+			if proj.id == id:
+				return proj
+		return None
+
+	def get_project_by_name(self, name):
+		for proj in self.projects:
+			if proj.name == name:
+				return proj
+		return None
+
+	def get_project_by_file(self, filename):
+		for proj in self.projects:
+			if proj.filename == filename:
+				return proj
+		return None
+
 	'''[[[[[[[[[]]]]]]]]]'''
-	'''[ Disk Images    ]'''
+	'''[   Disk Images  ]'''
 	'''[[[[[[[[[]]]]]]]]]'''
 
 	""" Get disk image object from the image library by its name """
@@ -400,7 +446,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def renamebrick(self, b, newname):
 		newname = tools.ValidName(newname)
 		if newname == None:
-			raise InvalidName()
+			raise InvalidName("No name given!")
 			return
 
 		if not tools.NameNotInUse(self,newname):
@@ -463,7 +509,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 		name = tools.ValidName(name)
 		if not name:
-			raise InvalidName()
+			raise InvalidName("No name given!")
 
 		if not tools.NameNotInUse(self,name):
 			raise InvalidName()
@@ -476,7 +522,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if remote:
 			brick.set_host(host)
 			if brick.homehost.connected:
-				brick.homehost.send("new "+brick.get_type()+" "+brick.name)
+				brick.homehost.send("new "+brick.get_type() + " " + brick.name)
 
 		return brick
 
