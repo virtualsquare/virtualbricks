@@ -86,6 +86,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.brickfactory.connect("event-started", self.cb_event_started)
 		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
 		self.brickfactory.connect("event-changed", self.cb_event_changed)
+		self.brickfactory.connect("backup-restored", self.cb_backup_restored)
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
 
@@ -178,6 +179,11 @@ class VBGUI(Logger, gobject.GObject):
 		self.signals()
 		self.timers()
 
+		'''check if a backup has been restored while booting'''
+		if self.brickfactory.backup_restore is True:
+			self.brickfactory.backup_restore = False
+			self.error(_("A backup file for the current project has been restored.\nYou can find more informations looking in View->Messages."))
+
 		''' FIXME: re-enable when implemented '''
 		#self.gladefile.get_widget('convert_image_menuitem').set_sensitive(False)
 
@@ -227,6 +233,12 @@ class VBGUI(Logger, gobject.GObject):
 
 	def cb_brick_deleted(self, model, name):
 		self.draw_topology()
+
+	def cb_backup_restored(self, model, name=""):
+		# THREADS_ENTER AND LEAVE ARE STILL BUGGY!!
+		#gtk.gdk.threads_enter()
+		self.error(name)
+		#gtk.gdk.threads_leave()
 
 	def cb_brick_changed(self, model, name, startup):
 		if not startup:
@@ -1141,7 +1153,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.on_confirm_response_yes = on_yes
 		self.on_confirm_response_no = on_no
 		self.on_confirm_response_arg = arg
-		print "SHOW"
 		self.gladefile.get_widget('dialog_confirm').show_all()
 
 	def on_newbrick_cancel(self, widget=None, data=""):

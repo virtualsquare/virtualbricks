@@ -19,7 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
-import re, os
+import re, os, shutil
 from virtualbricks import tools
 from virtualbricks.console import (ShellCommand, RemoteHost,  VbShellCommand)
 from virtualbricks.errors import BadConfig
@@ -34,10 +34,16 @@ class ConfigFile():
 			return
 
 		self.factory.projectsave_sema.acquire()
+
+		backup_project_file = self.factory.settings.get("bricksdirectory")+"/.vb_current_project.vbl"
+		if os.path.isfile(f):
+			'''create a new backup file of the project'''
+			shutil.copyfile(f, backup_project_file)
+
 		try:
 			p = open(f, "w+")
 		except:
-			self.factory.factory.err(self.factory, "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
+			self.factory.err(self.factory, "ERROR WRITING CONFIGURATION!\nProbably file doesn't exist or you can't write it.")
 			self.factory.projectsave_sema.release()
 			return
 		self.factory.debug("CONFIG DUMP on " + f)
@@ -127,6 +133,11 @@ class ConfigFile():
 						p.write('userlink|' + b.name + '||' + pl.model + '|' + pl.mac + '|' + str(pl.vlan) + '\n')
 				elif (pl.sock is not None):
 					p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
+
+		# remove the project backup file
+		if os.path.isfile(backup_project_file):
+			os.remove (backup_project_file)
+
 		self.factory.projectsave_sema.release()
 
 
@@ -140,7 +151,19 @@ class ConfigFile():
 		Import: False, False
 		New: True, True (missing check for existing file, must be check from caller)
 		"""
-
+		backup_project_file = self.factory.settings.get("bricksdirectory")+"/.vb_current_project.vbl"
+		'''check if there's a project backup to restore and if its size is different from current project file'''
+		if os.path.isfile(backup_project_file):
+			self.factory.info("I found a backup project file, I'm going to restore it!")
+			if os.path.isfile(f):
+				self.factory.info("Corrupted file moved to " + f + ".back")
+				shutil.copyfile(f, f+".back")
+			''' restore backup file'''
+			shutil.copyfile(backup_project_file, f)
+			os.remove(backup_project_file)
+			self.factory.info("Backup project file restored.")
+			self.factory.backup_restore=True
+			self.factory.emit("backup-restored", "A backup project has been restored.\nIf you want more informations please read View->Messages.")
 		try:
 			p = open(f, "r")
 		except:
