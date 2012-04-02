@@ -344,7 +344,6 @@ class VM(Brick):
 		self.cfg.kvmsmem = ""
 		self.cfg.serial = ""
 		self.cfg.use_virtio=""
-		self.cfg.stderr=""
 		self.cfg.stdout=""
 		self.command_builder = {
 			'#argv0':'argv0',
@@ -449,8 +448,7 @@ class VM(Brick):
 			#'-mem-prealloc':'',
 			'#icon': 'icon',
 			'#serial': 'serial',
-			'#stdout': '',
-			'#stderr': ''
+			'#stdout': ''
 		}
 
 	def get_parameters(self):
@@ -735,7 +733,10 @@ class VM(Brick):
 			c.connect(self.console2())
 			return c
 		except Exception, err:
-			self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
+			if self.proc.stdout is not None:
+				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
+			else:
+				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\n")
 			return None
 
 	def post_poweroff(self):

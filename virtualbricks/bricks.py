@@ -284,7 +284,7 @@ class Brick(ChildLogger):
 		self.debug(_("Starting: '%s'"), ' '.join(command_line))
 		if self.homehost:
 			if not self.homehost.connected:
-				self.factory.err(self, "Error: You must be connected to the host to perform this action")
+				self.factory.err(self, _("Error: You must be connected to the host to perform this action"))
 				return
 			else:
 				# Initiate RemoteHost startup:
@@ -295,24 +295,21 @@ class Brick(ChildLogger):
 			try:
 				# out and err files (if configured) for saving VM output
 				out = subprocess.PIPE
-				err = subprocess.PIPE
 				if self.get_type() == 'Qemu':
 					if self.cfg.stdout != "":
 						out = open(self.cfg.stdout,"wb")
-					if self.cfg.stderr != "":
-						err = open(self.cfg.stderr,"wb")
-				self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=out, stderr=err)
+				self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=out, stderr=subprocess.STDOUT)
 			except OSError:
-				self.factory.err(self,"OSError: Brick startup failed. Check your configuration!")
+				self.factory.err(self,_("OSError: Brick startup failed. Check your configuration!"))
 				return
 
 			if self.proc:
 				self.pid = self.proc.pid
 			else:
-				errstr=_("Brick startup failed. Check your configuration!\n")
 				if self.proc is not None:
-					errstr.join("Message:\n\n"+self.proc.stdout.readlines())
-				self.factory.err(self, errstr)
+					self.factory.err(self, _("Brick startup failed. Check your configuration!\nMessage:\n")+"\n".join(self.proc.stdout.readlines()))
+				else:
+					self.factory.err(self, _("Brick startup failed. Check your configuration!\n"))
 				return
 
 			if self.open_internal_console and callable(self.open_internal_console):
