@@ -735,8 +735,12 @@ class VM(Brick):
 		except Exception, err:
 			if self.proc.stdout is not None:
 				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
+			elif self.cfg.stdout != "":
+				stdout = open(self.cfg.stdout, "r")
+				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(stdout.readlines()))
 			else:
-				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\n")
+				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!")
+
 			return None
 
 	def post_poweroff(self):
