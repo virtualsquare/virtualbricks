@@ -187,7 +187,9 @@ class RemoteHost():
 
 		for img in self.factory.disk_images:
 			if img.host is not None and img.host.addr[0] == self.addr[0]:
-				self.send("i add " + img.name + " " + self.basepath + "/" + img.name)
+				name = img.path.split("/")
+				name = name[len(name)-1]
+				self.send("i add " + img.name + " " + self.basepath + "/" + name)
 				self.expect_OK()
 
 		for b in self.factory.bricks:

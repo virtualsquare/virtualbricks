@@ -370,7 +370,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					host = self.get_host_by_name(cmd[2])
 					if host is not None:
 						basepath = host.basepath
-				img = self.new_disk_image(cmd[1], basepath+ "/" + cmd[1])
+				if len(cmd) == 3 and cmd[2].find("/") > -1:
+					img = self.new_disk_image(cmd[1], cmd[2])
+				else:
+					img = self.new_disk_image(cmd[1], basepath+ "/" + cmd[1])
 				if host is not None:
 					img.host = host
 					if host.connected is True:
