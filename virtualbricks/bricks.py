@@ -304,11 +304,16 @@ class Brick(ChildLogger):
 				self.proc = subprocess.Popen(command_line, stdin=subprocess.PIPE, stdout=out, stderr=err)
 			except OSError:
 				self.factory.err(self,"OSError: Brick startup failed. Check your configuration!")
+				return
 
 			if self.proc:
 				self.pid = self.proc.pid
 			else:
-				self.factory.err(self, "Brick startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
+				errstr=_("Brick startup failed. Check your configuration!\n")
+				if self.proc is not None:
+					errstr.join("Message:\n\n"+self.proc.stdout.readlines())
+				self.factory.err(self, errstr)
+				return
 
 			if self.open_internal_console and callable(self.open_internal_console):
 				self.internal_console = self.open_internal_console()
