@@ -174,7 +174,8 @@ class RemoteHost():
 				# ONLY SEND TO SERVER STRING PARAMETERS, OBJECT WON'T BE SENT TO SERVER AS A STRING!
 				if isinstance(v, basestring) is True:
 					self.send(b.name + ' config ' + "%s=%s" % (k, v))
-					self.expect_OK()
+					# I CAN'T WAIT AN OK FOR EACH CONFIG COMMAND
+					#self.expect_OK()
 					time.sleep(0.1)
 		self.factory.remotehosts_changed=True
 
@@ -195,8 +196,6 @@ class RemoteHost():
 		for b in self.factory.bricks:
 			if b.homehost and b.homehost.addr == self.addr:
 					self.upload(b)
-
-
 
 	def get_files_list(self):
 		return self.send_and_recv("i files")

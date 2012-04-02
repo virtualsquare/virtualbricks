@@ -40,7 +40,7 @@ class TcpServer(ChildLogger, Thread):
 			while(self.factory.running_condition):
 				p = select.poll()
 				p.register(self.listening, select.POLLIN)
-				if len(p.poll(1000)) > 0:
+				if len(p.poll(100)) > 0:
 						try:
 							(sock, addr) = self.listening.accept()
 
@@ -61,7 +61,7 @@ class TcpServer(ChildLogger, Thread):
 						sock.send(challenge)
 						p_cha = select.poll()
 						p_cha.register(sock, select.POLLIN)
-						if len(p_cha.poll(5000)) > 0:
+						if len(p_cha.poll(100)) > 0:
 							rec = sock.recv(len(hashed))
 							if rec == hashed:
 								self.info("%s: Client authenticated.", str(addr))
