@@ -565,7 +565,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		if (cmd[0] == 'show'):
 			obj.cfg.dump()
 		if (cmd[0] == 'connect' and len(cmd) == 2):
-			if(self.connect_to(obj, cmd[1].rstrip('\n'))):
+			if(self.connect_to(obj, cmd[1].rstrip('\n')) is not None):
 				print ("Connection ok")
 			else:
 				print ("Connection failed")
@@ -578,16 +578,15 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 	def connect_to(self, brick, nick):
 		endpoint = None
 		if not nick:
-			return False
+			return None
 		for n in self.socks:
 			if n.nickname == nick:
 				endpoint = n
 		if endpoint is not None:
 			return brick.connect(endpoint)
 		else:
-			print "cannot find " + nick
-			print self.socks
-
+			self.debug("Endpoint %s not found." % nick)
+			return None
 
 	''' duplication functions '''
 	def dupbrick(self, bricktodup):

@@ -177,6 +177,15 @@ class RemoteHost():
 					# I CAN'T WAIT AN OK FOR EACH CONFIG COMMAND
 					#self.expect_OK()
 					time.sleep(0.1)
+		for pl in b.plugs:
+			if b.get_type() == 'Qemu':
+				if pl.mode == 'vde':
+					self.send(b.name + " connect " + pl.sock.nickname)
+				else:
+					print "Qemu but not VDE plug"
+			elif (pl.sock is not None):
+				print "Not a Qemu Plug"
+
 		self.factory.remotehosts_changed=True
 
 	def post_connect_init(self):
