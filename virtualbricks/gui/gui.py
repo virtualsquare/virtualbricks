@@ -2744,8 +2744,8 @@ Packets longer than specified size are discarded.")
 	def on_vmplug_add(self, widget=None, event=None, data=""):
 		ComboBox(self.gladefile.get_widget("combo_newvmplug_model")).populate(self.qemu_eth_model())
 		ComboBox(self.gladefile.get_widget("combo_newvmplug_model")).select('rtl8139')
-		self.show_window('dialog_newvmplug')
-		self.curtain_up()
+		self.config_brick_confirm()
+		self.gladefile.get_widget('dialog_newvmplug').show()
 
 
 	def on_newvmplug_cancel(self, widget=None, event=None, data=""):
