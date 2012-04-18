@@ -20,19 +20,19 @@ class TcpServer(ChildLogger, Thread):
 
 	def cb_brick_started(self, model, name=""):
 		if (self.sock):
-			self.sock.send("brick-started " + name + '\n')
+			self.sock.sendall("brick-started " + name + '\n')
 
 	def cb_brick_stopped(self, model, name=""):
 		if (self.sock):
-			self.sock.send("brick-stopped " + name + '\n')
+			self.sock.sendall("brick-stopped " + name + '\n')
 	def run(self):
 		self.info("TCP server started.")
 		try:
 			self.listening.bind(("0.0.0.0", self.port))
 			self.listening.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			self.listening.listen(1)
-		except Exception:
-			print "socket error (1)"
+		except Exception as e:
+			print "socket error (1): " + str(e)
 			self.factory.quit()
 			sys.exit(1)
 
@@ -44,8 +44,8 @@ class TcpServer(ChildLogger, Thread):
 						try:
 							(sock, addr) = self.listening.accept()
 
-						except Exception:
-							print "socket error (2)"
+						except Exception as e:
+							print "socket error (2): " + str(e) 
 							self.factory.quit()
 							sys.exit(1)
 						self.info("Connection from %s" % str(addr))
@@ -57,20 +57,20 @@ class TcpServer(ChildLogger, Thread):
 						sha.update(self.password)
 						sha.update(challenge)
 						hashed = sha.digest()
-						sock.send(self.proto.HELO())
-						sock.send(challenge)
+						sock.sendall(self.proto.HELO())
+						sock.sendall(challenge)
 						p_cha = select.poll()
 						p_cha.register(sock, select.POLLIN)
 						if len(p_cha.poll(100)) > 0:
 							rec = sock.recv(len(hashed))
 							if rec == hashed:
 								self.info("%s: Client authenticated.", str(addr))
-								sock.send("OK\n")
+								sock.sendall("OK\n")
 								self.master_address = addr
 								self.serve_connection(sock)
 							else:
 								self.info("%s: Authentication failed. " % str(addr))
-								sock.send("FAIL\n")
+								sock.sendall("FAIL\n")
 						else:
 							self.info("%s: Challenge timeout", str(addr))
 
@@ -109,17 +109,18 @@ class TcpServer(ChildLogger, Thread):
 				except:
 					print "RECV error."
 					return
-				print recs,
+				print "RECV: " + recs,
+				
 				for rec in recs.split('\n'):
 					if Parse(self.factory, rec.rstrip('\n'), console=sock):
 						try:
-							sock.send("OK\n")
+							sock.sendall("OK\n")
 						except:
 							print "Send error"
 							return
 					else:
 						try:
-							sock.send("FAIL\n")
+							sock.sendall("FAIL\n")
 						except:
 							print "Send error"
 							return

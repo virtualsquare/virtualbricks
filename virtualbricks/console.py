@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
-from threading import Thread
+from threading import Thread, Lock
 import select, sys, os, re, socket, hashlib, time
 
 class VbShellCommand(str):
@@ -94,6 +94,7 @@ class RemoteHost():
 		self.factory.remotehosts_changed=True
 		self.autoconnect=False
 		self.basepath=os.path.expanduser("~")+"/VM"
+		self.lock = Lock()
 
 	def num_bricks(self):
 		r = 0
@@ -122,7 +123,7 @@ class RemoteHost():
 		sha.update(self.password)
 		sha.update(rec)
 		hashed = sha.digest()
-		self.sock.send(hashed)
+		self.sock.sendall(hashed)
 		p = select.poll()
 		p.register(self.sock, select.POLLIN)
 		pollret = p.poll(2000)
@@ -163,24 +164,26 @@ class RemoteHost():
 		return False
 
 	def upload(self,b):
-		self.send("new "+b.get_type()+" "+b.name)
+		self.lock.acquire()
+		self.send_nolock("new "+b.get_type()+" "+b.name)
 		self.putconfig(b)
 		self.expect_OK()
 		self.factory.remotehosts_changed=True
+		self.lock.release()
 
 	def putconfig(self,b):
 		for (k, v) in b.cfg.iteritems():
 			if k != 'homehost':
 				# ONLY SEND TO SERVER STRING PARAMETERS, OBJECT WON'T BE SENT TO SERVER AS A STRING!
 				if isinstance(v, basestring) is True:
-					self.send(b.name + ' config ' + "%s=%s" % (k, v))
+					self.send_nolock(b.name + ' config ' + "%s=%s" % (k, v))
 					# I CAN'T WAIT AN OK FOR EACH CONFIG COMMAND
 					#self.expect_OK()
 					time.sleep(0.1)
 		for pl in b.plugs:
 			if b.get_type() == 'Qemu':
 				if pl.mode == 'vde':
-					self.send(b.name + " connect " + pl.sock.nickname)
+					self.send_nolock(b.name + " connect " + pl.sock.nickname)
 				else:
 					print "Qemu but not VDE plug"
 			elif (pl.sock is not None):
@@ -231,9 +234,17 @@ class RemoteHost():
 				return []
 
 	def send(self, cmd):
+		self.lock.acquire()
 		ret = False
 		if self.connected:
-			self.sock.send(cmd + '\n')
+			self.sock.sendall(cmd + '\n')
+		self.lock.release()
+		return ret
+
+	def send_nolock(self, cmd):
+		ret = False
+		if self.connected:
+			self.sock.sendall(cmd + "\n")
 		return ret
 
 	def recv(self, size):
