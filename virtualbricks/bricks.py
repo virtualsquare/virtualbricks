@@ -264,7 +264,12 @@ class Brick(ChildLogger):
 	def _poweron(self):
 		if self.proc != None:
 			return
-		command_line = self.args()
+		try:
+			command_line = self.args()
+		except Exception as e:
+			self.factory.err(self, str(e))
+			return
+
 		if self.needsudo():
 			sudoarg = ""
 			if self.get_type() == 'Qemu':

@@ -479,7 +479,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		# Qemu: check if KVM is checkable
 		if (b.get_type()=="Qemu"):
-			if self.config.kvm:
+			if self.config.kvm or b.homehost:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(True)
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM")
 			else:
@@ -2383,7 +2383,7 @@ Packets longer than specified size are discarded.")
 				self.error(_("No KVM binary found")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
 				widget.set_active(False)
 			except NotImplementedError:
-				self.error(_("No KVM support found on the system")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
+				self.error(_("No KVM support found on the local system")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
 				widget.set_active(False)
 
 	def on_check_ksm(self, widget=None, event=None, data=""):
@@ -2391,7 +2391,7 @@ Packets longer than specified size are discarded.")
 			self.config.check_ksm(True)
 		except NotImplementedError:
 			self.debug("no support")
-			self.error(_("No KSM support found on the system")+". "+_("Check your configuration")+". "+_("KSM will stay disabled")+".")
+			self.error(_("No KSM support found on the local system")+". "+_("Check your configuration")+". "+_("KSM will stay disabled")+".")
 			widget.set_active(False)
 
 	def on_add_cdrom(self, widget=None, event=None, data=""):
@@ -2679,15 +2679,18 @@ Packets longer than specified size are discarded.")
 
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
-			try:
-				self.config.check_kvm()
+			if not self.maintree.get_selection().homehost:
+				try:
+					self.config.check_kvm()
+					self.kvm_toggle_all(True)
+				except IOError:
+					self.error(_("No KVM binary found. Check your active configuration. KVM will stay disabled."))
+					widget.set_active(False)
+				except NotImplementedError:
+					self.error(_("No KVM support found on the system. Check your active configuration. KVM will stay disabled."))
+					widget.set_active(False)
+			else:
 				self.kvm_toggle_all(True)
-			except IOError:
-				self.error(_("No KVM binary found. Check your active configuration. KVM will stay disabled."))
-				widget.set_active(False)
-			except NotImplementedError:
-				self.error(_("No KVM support found on the system. Check your active configuration. KVM will stay disabled."))
-				widget.set_active(False)
 		else:
 			self.kvm_toggle_all(False)
 

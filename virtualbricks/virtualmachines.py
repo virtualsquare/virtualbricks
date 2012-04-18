@@ -29,7 +29,7 @@ from shutil import move
 from virtualbricks.bricks import Brick
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.link import Sock, Plug
-from virtualbricks.errors import DiskLocked, InvalidName
+from virtualbricks.errors import DiskLocked, InvalidName, BadConfig
 from virtualbricks.settings import CONFIGFILE, MYPATH, Settings
 from virtualbricks import tools
 
@@ -492,14 +492,24 @@ class VM(Brick):
 		return cfg_ok
 	# QEMU PROGRAM SELECTION
 	def prog(self):
+		#IF IS IN A SERVER, CHECK IF KVM WORKS
+		if self.factory.server:
+			try:
+				self.settings.check_kvm()
+			except IOError:
+				raise BadConfig(_("KVM not found! Please change VM configuration."))
+				return
+			except NotImplementedError:
+				raise BadConfig(_("KVM not found! Please change VM configuration."))
+				return	
+		
 		if (len(self.cfg.argv0) > 0 and self.cfg.kvm != "*"):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
 			cmd = self.settings.get("qemupath") + "/qemu"
-		if self.cfg.kvm :
+		if self.cfg.kvm == "*":
 			cmd = self.settings.get("qemupath") + "/kvm"
 		return cmd
-
 
 	def args(self):
 		res = []

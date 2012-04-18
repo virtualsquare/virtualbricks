@@ -53,7 +53,7 @@ class Settings(ChildLogger):
 			"current_project": HOME + "/.virtualbricks/.virtualbricks.vbl",
 			"projects": 0,
 			"cowfmt":"cow",
-			"show_missing": True,
+			"show_missing": True
 		}
 		self.filename = filename
 		self.config = ConfigParser.SafeConfigParser()
@@ -154,6 +154,7 @@ class Settings(ChildLogger):
 		return res0, res1
 
 	def check_kvm(self):
+
 		for b in self.check_missing_qemupath(self.get("qemupath")):
 			if b == 'kvm':
 				raise IOError()
