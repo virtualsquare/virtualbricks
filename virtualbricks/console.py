@@ -150,24 +150,21 @@ class RemoteHost():
 		self.factory.remotehosts_changed=True
 
 	def expect_OK(self):
-		p = select.poll()
-		p.register(self.sock, select.POLLIN)
-		buff=""
-		rec=""
-                while (p.poll(100)):
-			buff = self.sock.recv(1)
-			rec=rec+buff
-			if rec.endswith("OK\n"):
-				return True
-			elif rec.endswith("\nFAIL\n"):
-				return "FAIL\n"
-		return False
+		rec = self.recv()
+		if rec is not None and rec.endswith("OK"):
+			return True
+		elif rec is not None and rec.endswith("FAIL"):
+			return "FAIL\n"
+			return False
+		else:
+			return "ERROR"
+			return False
 
 	def upload(self,b):
 		self.lock.acquire()
 		self.send_nolock("new "+b.get_type()+" "+b.name)
 		self.putconfig(b)
-		self.expect_OK()
+		self.send_nolock("ACK")
 		self.factory.remotehosts_changed=True
 		self.lock.release()
 
@@ -177,9 +174,6 @@ class RemoteHost():
 				# ONLY SEND TO SERVER STRING PARAMETERS, OBJECT WON'T BE SENT TO SERVER AS A STRING!
 				if isinstance(v, basestring) is True:
 					self.send_nolock(b.name + ' config ' + "%s=%s" % (k, v))
-					# I CAN'T WAIT AN OK FOR EACH CONFIG COMMAND
-					#self.expect_OK()
-					time.sleep(0.1)
 		for pl in b.plugs:
 			if b.get_type() == 'Qemu':
 				if pl.mode == 'vde':
@@ -203,7 +197,6 @@ class RemoteHost():
 				name = img.path.split("/")
 				name = name[len(name)-1]
 				self.send("i add " + img.name + " " + self.basepath + "/" + name)
-				self.expect_OK()
 
 		for b in self.factory.bricks:
 			if b.homehost and b.homehost.addr == self.addr:
@@ -213,45 +206,68 @@ class RemoteHost():
 		return self.send_and_recv("i files")
 
 	def send_and_recv(self, cmd):
-		#print "send_and_recv starting: %s" % cmd
-		p = select.poll()
-                p.register(self.sock, select.POLLIN)
-		# clear the socket input
-		while (p.poll(10)):
-			self.sock.recv(4)
-		self.send(cmd)
+		self.lock.acquire()
+		self.send_nolock(cmd, norecv=True)
+		rec = self.recv()
 		buff=""
-		rec=""
-                while (p.poll(10)):
-			buff = self.sock.recv(1)
-			rec=rec+buff
-			if rec.endswith("\nOK\n"):
-				rec = rec.split("\n")
-				rec = rec[:len(rec)-2]
-				#print "send_and_recv finished"
-				return rec
-			elif rec.endswith("FAIL\n"):
-				return []
+		while rec is not None and rec != "OK":
+			buff=buff+rec
+			print buff
+			rec = self.recv()
+		self.lock.release()
+		return buff
 
-	def send(self, cmd):
+	def recv(self, size=1):
+
+		if not self.connected:
+			return ""
+
+		if size==1:
+			p = select.poll()
+        	        p.register(self.sock, select.POLLIN)
+			buff=""
+			rec=""
+               		while (p.poll(100)):
+				buff = self.sock.recv(1)
+				rec=rec+buff
+				if buff == "\n":
+					rec = rec.rstrip("\n")
+					return rec
+		#old version
+		else:
+			ret = ""
+			ret = self.sock.recv(size)
+			return ret
+
+	def empty_socket(self):
+		"""remove the data present on the socket"""
+    		while 1:
+		        inputready, o, e = select.select([self.sock],[],[], 0.0)
+		        if len(inputready)==0: break
+			for s in inputready: s.recv(1)
+
+	def send(self, cmd, norecv=False):
 		self.lock.acquire()
 		ret = False
 		if self.connected:
 			self.sock.sendall(cmd + '\n')
+			if not norecv:
+				if cmd != "ACK":
+					self.expect_OK()
+				else:
+					self.recv()
 		self.lock.release()
 		return ret
 
-	def send_nolock(self, cmd):
+	def send_nolock(self, cmd, norecv=False):
 		ret = False
 		if self.connected:
 			self.sock.sendall(cmd + "\n")
-		return ret
-
-	def recv(self, size):
-		if not self.connected:
-			return ""
-		ret = ""
-		ret = self.sock.recv(size)
+			if not norecv:
+				if cmd != "ACK":
+					self.expect_OK()
+				else:
+					self.recv()
 		return ret
 
 def CommandLineOutput(outf, data):

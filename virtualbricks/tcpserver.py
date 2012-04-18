@@ -45,7 +45,7 @@ class TcpServer(ChildLogger, Thread):
 							(sock, addr) = self.listening.accept()
 
 						except Exception as e:
-							print "socket error (2): " + str(e) 
+							print "socket error (2): " + str(e)
 							self.factory.quit()
 							sys.exit(1)
 						self.info("Connection from %s" % str(addr))
@@ -97,33 +97,49 @@ class TcpServer(ChildLogger, Thread):
 		print "Brick not found: " + args[2]
 		return False
 
+	def recv(self, sock):
+		p = select.poll()
+        	p.register(sock, select.POLLIN)
+		buff=""
+		rec=""
+               	while (p.poll(100)):
+			if not self.factory.running_condition:
+				return
+			try:
+				sock.setblocking(0)
+				buff = sock.recv(1)
+				sock.setblocking(1)
+			except:
+				return
+			rec=rec+buff
+			if buff == "\n":
+				rec = rec.rstrip("\n")
+				return rec
 
 	def serve_connection(self, sock):
-		p = select.poll()
-		p.register(sock, select.POLLIN)
-		rec=''
 		while(self.factory.running_condition):
-			if len(p.poll(100)) > 0:
+			rec = self.recv(sock)
+			if rec is not None and rec.rstrip("\n") == "ACK":
+				print "ACK"
 				try:
-					recs = sock.recv(4000)
+					sock.sendall("ACKOK\n")
+					continue
 				except:
-					print "RECV error."
+					print "Send Error"
 					return
-				print "RECV: " + recs,
-				
-				for rec in recs.split('\n'):
-					if Parse(self.factory, rec.rstrip('\n'), console=sock):
-						try:
-							sock.sendall("OK\n")
-						except:
-							print "Send error"
-							return
-					else:
-						try:
-							sock.sendall("FAIL\n")
-						except:
-							print "Send error"
-							return
+			if rec is not None and Parse(self.factory, rec.rstrip('\n'), console=sock):
+				print "RECV: " + rec
+				try:
+					sock.sendall("OK\n")
+				except:
+					print "Send error"
+					return
+			else:
+				try:
+					sock.sendall("FAIL\n")
+				except:
+					print "Send error"
+					return
 
 		for b in self.factory.bricks:
 			if b.proc is not None:

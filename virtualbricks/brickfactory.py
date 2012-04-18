@@ -354,8 +354,11 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				host=self.get_host_by_name(cmd[1])
 				if host is not None and host.connected is True:
 					files = host.get_files_list()
+					if files is None:
+						CommandLineOutput(console, "No files found.")
+						return
 					for f in files:
-						print f
+						CommandLineOutput(console, f)
 				else:
 					CommandLineOutput(console, "Not connected to %s" % cmd[1])
 				return
