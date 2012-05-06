@@ -235,7 +235,7 @@ class VBGUI(Logger, gobject.GObject):
 		vmissing = self.config.check_missing_vdepath(self.config.get("vdepath"))
 		ksmissing=[]
 		if not os.access("/sys/kernel/mm/ksm",os.X_OK):
-			ksmissing.add("ksm")
+			ksmissing.append("ksm")
 		return vmissing + qmissing + ksmissing
 
 	""" ******************************************************** 	"""
