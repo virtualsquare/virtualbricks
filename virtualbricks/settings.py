@@ -141,7 +141,8 @@ class Settings(ChildLogger):
 			'qemu-system-sh4eb',
 			'qemu-system-sparc',
 			'qemu-system-sparc64',
-			'qemu-system-x86_64'
+			'qemu-system-x86_64',
+			'qemu-img'
 		]
 
 		res0 = []

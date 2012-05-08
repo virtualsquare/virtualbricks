@@ -264,9 +264,13 @@ class VMDisk():
 					print "%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback)
 					move(cowname, cowback)
 			if not os.access(cowname, os.R_OK):
-				os.system('qemu-img create -b %s -f %s %s' % (self.get_base(), self.VM.settings.get('cowfmt'), cowname))
-				os.system('sync')
-				time.sleep(2)
+				qmissing,qfound = self.VM.settings.check_missing_qemupath(self.VM.settings.get("qemupath"))
+				if "qemu-img" in qmissing:
+					raise BadConfig(_("qemu-img not found! I can't create a new image."))
+				else:
+					os.system('qemu-img create -b %s -f %s %s' % (self.get_base(), self.VM.settings.get('cowfmt'), cowname))
+					os.system('sync')
+					time.sleep(2)
 			return cowname
 		else:
 			return self.image.path
@@ -501,8 +505,8 @@ class VM(Brick):
 				return
 			except NotImplementedError:
 				raise BadConfig(_("KVM not found! Please change VM configuration."))
-				return	
-		
+				return
+
 		if (len(self.cfg.argv0) > 0 and self.cfg.kvm != "*"):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
