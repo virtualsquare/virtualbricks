@@ -251,8 +251,9 @@ class VMDisk():
 			cowname = self.basefolder + "/" + self.VM.name + "_" + self.device + ".cow"
 			if os.access(cowname, os.R_OK):
 				f = open(cowname)
-				f.read(8)
 				buff = f.read(1)
+				while buff != '/':
+					buff=f.read(1)
 				base = ""
 				while buff != '\x00':
 					base += buff
