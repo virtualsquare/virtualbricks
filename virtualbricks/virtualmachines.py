@@ -189,7 +189,6 @@ class VMDisk():
 		ret = []
 
 		diskname = self.get_real_disk_name()
-
 		if k:
 			ret.append("-" + self.device)
 		ret.append(diskname)
@@ -477,7 +476,7 @@ class VM(Brick):
 	def get_type(self):
 		return "Qemu"
 
-	def on_config_changed(self):
+	def associate_disk(self):
 		for hd in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			disk = getattr(self.cfg,hd)
 			if hasattr(disk, "image"):
@@ -487,6 +486,9 @@ class VM(Brick):
 					disk.set_image(self.cfg.get('base'+hd))
 			else:
 				return
+
+	def on_config_changed(self):
+		self.associate_disk()
 		Brick.on_config_changed(self)
 
 	def configured(self):
@@ -670,7 +672,6 @@ class VM(Brick):
 	def newbrick_changes(self):
 
 		basepath = self.basepath
-
 		self.cfg.set_obj("hda", VMDisk(self, "hda", basepath))
 		self.cfg.set_obj("hdb", VMDisk(self, "hdb", basepath))
 		self.cfg.set_obj("hdc", VMDisk(self, "hdc", basepath))
@@ -678,6 +679,7 @@ class VM(Brick):
 		self.cfg.set_obj("fda", VMDisk(self, "fda", basepath))
 		self.cfg.set_obj("fdb", VMDisk(self, "fdb", basepath))
 		self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock", basepath))
+		self.associate_disk()
 
 	def console(self):
 		return "%s/%s_cons.mgmt" % (MYPATH, self.name)

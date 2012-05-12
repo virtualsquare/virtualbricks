@@ -608,6 +608,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 		for p in bricktodup.plugs:
 			if p.sock is not None:
 				new_brick.connect(p.sock)
+
 		new_brick.on_config_changed()
 		return new_brick
 
