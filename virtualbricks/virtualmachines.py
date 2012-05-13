@@ -487,6 +487,9 @@ class VM(Brick):
 			else:
 				return
 
+	def post_rename(self, newname):
+		self.newbrick_changes()
+
 	def on_config_changed(self):
 		self.associate_disk()
 		Brick.on_config_changed(self)

@@ -87,6 +87,12 @@ class Switch(Brick):
 	def get_type(self):
 		return 'Switch'
 
+	def post_rename(self, newname):
+		for so in self.socks:
+			so.nickname = newname+"_port"
+			print so.path
+			so.path= self.settings.get("bricksdirectory")+"/"+newname+".ctl"
+
 	def on_config_changed(self):
 		self.socks[0].path = self.path()
 

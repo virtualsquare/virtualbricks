@@ -459,11 +459,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return
 
 		b.name = newname
-		if b.get_type() == "Switch":
-			for so in b.socks:
-				so.nickname = b.name + "_port"
-		elif b.get_type() == "Qemu":
-			b.newbrick_changes()
+		#some bricks need to do some extra operations 
+		b.post_rename(newname)
 		b.gui_changed = True
 
 	def renameevent(self, e, newname):
