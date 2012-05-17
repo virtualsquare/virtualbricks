@@ -131,6 +131,9 @@ class Brick(ChildLogger):
 	def on_config_changed(self):
 		self.factory.emit("brick-changed", self.name, self.factory.startup)
 
+	def post_rename(self, newname):
+		pass
+
 	def help(self):
 		print "Object type: " + self.get_type()
 		print "Possible configuration parameter: "

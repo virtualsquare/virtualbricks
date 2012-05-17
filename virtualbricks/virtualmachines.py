@@ -189,7 +189,6 @@ class VMDisk():
 		ret = []
 
 		diskname = self.get_real_disk_name()
-
 		if k:
 			ret.append("-" + self.device)
 		ret.append(diskname)
@@ -251,8 +250,9 @@ class VMDisk():
 			cowname = self.basefolder + "/" + self.VM.name + "_" + self.device + ".cow"
 			if os.access(cowname, os.R_OK):
 				f = open(cowname)
-				f.read(8)
 				buff = f.read(1)
+				while buff != '/':
+					buff=f.read(1)
 				base = ""
 				while buff != '\x00':
 					base += buff
@@ -264,9 +264,13 @@ class VMDisk():
 					print "%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback)
 					move(cowname, cowback)
 			if not os.access(cowname, os.R_OK):
-				os.system('qemu-img create -b %s -f %s %s' % (self.get_base(), self.VM.settings.get('cowfmt'), cowname))
-				os.system('sync')
-				time.sleep(2)
+				qmissing,qfound = self.VM.settings.check_missing_qemupath(self.VM.settings.get("qemupath"))
+				if "qemu-img" in qmissing:
+					raise BadConfig(_("qemu-img not found! I can't create a new image."))
+				else:
+					os.system('qemu-img create -b %s -f %s %s' % (self.get_base(), self.VM.settings.get('cowfmt'), cowname))
+					os.system('sync')
+					time.sleep(2)
 			return cowname
 		else:
 			return self.image.path
@@ -472,7 +476,7 @@ class VM(Brick):
 	def get_type(self):
 		return "Qemu"
 
-	def on_config_changed(self):
+	def associate_disk(self):
 		for hd in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 			disk = getattr(self.cfg,hd)
 			if hasattr(disk, "image"):
@@ -482,6 +486,12 @@ class VM(Brick):
 					disk.set_image(self.cfg.get('base'+hd))
 			else:
 				return
+
+	def post_rename(self, newname):
+		self.newbrick_changes()
+
+	def on_config_changed(self):
+		self.associate_disk()
 		Brick.on_config_changed(self)
 
 	def configured(self):
@@ -501,8 +511,8 @@ class VM(Brick):
 				return
 			except NotImplementedError:
 				raise BadConfig(_("KVM not found! Please change VM configuration."))
-				return	
-		
+				return
+
 		if (len(self.cfg.argv0) > 0 and self.cfg.kvm != "*"):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
 		else:
@@ -665,7 +675,6 @@ class VM(Brick):
 	def newbrick_changes(self):
 
 		basepath = self.basepath
-
 		self.cfg.set_obj("hda", VMDisk(self, "hda", basepath))
 		self.cfg.set_obj("hdb", VMDisk(self, "hdb", basepath))
 		self.cfg.set_obj("hdc", VMDisk(self, "hdc", basepath))
@@ -673,6 +682,7 @@ class VM(Brick):
 		self.cfg.set_obj("fda", VMDisk(self, "fda", basepath))
 		self.cfg.set_obj("fdb", VMDisk(self, "fdb", basepath))
 		self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock", basepath))
+		self.associate_disk()
 
 	def console(self):
 		return "%s/%s_cons.mgmt" % (MYPATH, self.name)

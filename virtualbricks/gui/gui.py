@@ -149,6 +149,20 @@ class VBGUI(Logger, gobject.GObject):
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Eth','connection','model','macaddr'])
 
+		''' TW with Router interfaces '''
+		self.routerdevs = VBTree(self, 'treeview_router_netdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+		[ 'Eth','connection','macaddr'])
+
+		''' TW with Router routes '''
+		self.routerroutes = VBTree(self, 'treeview_router_routes', None,
+    [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+		[ 'Destination','Netmask','Gateway','Via','metric'])
+
+		''' TW with Router filters '''
+		self.routerfilters = VBTree(self, 'treeview_router_filters', None,
+    [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+		[ 'Dev','Source','Destination','Protocol','TOS','Action'])
+
 		# associate Drag and Drop action for main tree
 		self.maintree.associate_drag_and_drop('BRICK')
 
@@ -221,11 +235,11 @@ class VBGUI(Logger, gobject.GObject):
 		vmissing = self.config.check_missing_vdepath(self.config.get("vdepath"))
 		ksmissing=[]
 		if not os.access("/sys/kernel/mm/ksm",os.X_OK):
-			ksmissing.add("ksm")
+			ksmissing.append("ksm")
 		return vmissing + qmissing + ksmissing
 
 	""" ******************************************************** 	"""
-	""" Signal handlers												"""
+	""" Signal handlers                                           """
 	""" ******************************************************** 	"""
 
 	def cb_brick_added(self, model, name):
@@ -273,10 +287,10 @@ class VBGUI(Logger, gobject.GObject):
 		pass
 
 	""" ******************************************************** """
-	"""														  """
-	""" EVENT CONFIGURATION									  """
-	"""														  """
-	"""														  """
+	"""                                                          """
+	""" EVENT CONFIGURATION                                      """
+	"""                                                          """
+	"""                                                          """
 	""" ******************************************************** """
 
 	'''
@@ -680,7 +694,6 @@ class VBGUI(Logger, gobject.GObject):
 	 		self.brickfactory.brickAction(currevent, c.split(" "))
 	 		iter = self.shcommandsmodel.iter_next(iter)
 
-
 	def config_Tap_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
 		for so in self.brickfactory.socks:
@@ -711,11 +724,13 @@ class VBGUI(Logger, gobject.GObject):
 		for so in self.brickfactory.socks:
 			if sel == so.nickname:
 				b.plugs[0].connect(so)
+
 	def config_TunnelListen_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
 		for so in self.brickfactory.socks:
 			if sel == so.nickname:
 				b.plugs[0].connect(so)
+
 	def config_Wire_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
 		for so in self.brickfactory.socks:
@@ -725,6 +740,7 @@ class VBGUI(Logger, gobject.GObject):
 		for so in self.brickfactory.socks:
 			if sel == so.nickname:
 				b.plugs[1].connect(so)
+
 	def config_Wirefilter_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
 		for so in self.brickfactory.socks:
@@ -1042,7 +1058,8 @@ class VBGUI(Logger, gobject.GObject):
 		'sockscombo_wirefilter1',
 		'sockscombo_tunnell',
 		'sockscombo_tunnelc',
-		'sockscombo_newvmplug'
+		'sockscombo_newvmplug',
+    'sockscombo_router_netconf'
 		]
 
 	def show_window(self, name):
@@ -1107,10 +1124,10 @@ class VBGUI(Logger, gobject.GObject):
 
 
 	""" ******************************************************** """
-	"""														  """
-	""" EVENTS / SIGNALS										 """
-	"""														  """
-	"""														  """
+	"""                                                          """
+	""" EVENTS / SIGNALS                                         """
+	"""                                                          """
+	"""                                                          """
 	""" ******************************************************** """
 
 	def on_bricks_keypressed(self, widget, event="", data=""):
@@ -3430,14 +3447,66 @@ Packets longer than specified size are discarded.")
 		self.show_window('dialog_convertimage')
 
 
+	def on_router_netconf_auto_mac_checked(self, widget, event=None, data=None):
+		macaddr_txtfield = self.gladefile.get_widget('entry_router_netconf_mac')
+		if widget.get_active():
+			macaddr_txtfield.set_sensitive(False)
+			macaddr_txtfield.set_text('')
+		else:
+			macaddr_txtfield.set_sensitive(True)
+
+	def on_router_netconf_dhcpd_onoff(self, widget, event=None, data=None):
+		group = ['label_dhcpserv0', 'label_dhcpserv1', 'entry_router_netconf_dhcp_start', 'entry_router_netconf_dhcp_end']
+		if widget.get_active():
+			self.set_sensitivegroup(group)
+		else:
+			self.set_nonsensitivegroup(group)
+
+	def on_router_filter_src_onoff(self, widget, event=None, data=None):
+		group = ['hbox_filter_src_iface']
+		if widget.get_active():
+			self.set_sensitivegroup(group)
+		else:
+			self.set_nonsensitivegroup(group)
+
+	def on_router_filter_from_onoff(self, widget, event=None, data=None):
+		group = ['table_filter_srcaddr']
+		if widget.get_active():
+			self.set_sensitivegroup(group)
+		else:
+			self.set_nonsensitivegroup(group)
+
+	def on_router_filter_to_onoff(self, widget, event=None, data=None):
+		group = ['table_filter_dstaddr']
+		if widget.get_active():
+			self.set_sensitivegroup(group)
+		else:
+			self.set_nonsensitivegroup(group)
+
+	def on_router_filter_proto_onoff(self, widget, event=None, data=None):
+		group = ['table_filter_proto']
+		if widget.get_active():
+			self.set_sensitivegroup(group)
+		else:
+			self.set_nonsensitivegroup(group)
+
+	def on_router_filter_tos_onoff(self, widget, event=None, data=None):
+		group = ['hbox_filter_tos']
+		if widget.get_active():
+			self.set_sensitivegroup(group)
+		else:
+			self.set_nonsensitivegroup(group)
+
+
+
 	def signals(self):
 		self.gladefile.signal_autoconnect(self)
 
 	""" ******************************************************** """
-	"""							     """
-	""" TIMERS						     """
-	"""							     """
-	"""							     """
+	"""                                                          """
+	""" TIMERS                                                   """
+	"""                                                          """
+	"""                                                          """
 	""" ******************************************************** """
 
 	def timers(self):
