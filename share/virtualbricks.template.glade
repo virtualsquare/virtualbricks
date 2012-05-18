@@ -92,20 +92,24 @@
                 <property name="can_focus">True</property>
                 <property name="shadow_type">in</property>
                 <child>
-                  <widget class="GtkTextView" id="textview1">
+                  <widget class="GtkTextView" id="about_text">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="editable">False</property>
                     <property name="text" translatable="yes">Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.
 
-Virtualbricks is licensed under the terms of the GPL (General Public Licence) Version 2.
+Virtualbricks is licensed under the terms of the GPL (General Public License) Version 2.
 © 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad. 
+
+Virtualbricks Team: Daniele Lacamera, Francesco Apollonio, Simone Abbati, Pierre-Louis Bonicoli, Rainer Haage, Fabio Viola.
 
 VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.
 QEMU - Copyright © 2005-2011 Fabrice Bellard.
 QEMU is a trademark of Fabrice Bellard.
 
-Icons for remote hosts are Copyleft David Vignoni - http://www.icon-king.com/ License: LGPL
+Icons by Fabio Viola, Licensed under CC BY-NC-SA 3.0. See COPYING for more details.
+
+Debian package created and maintained by Francesco Namuri (franam@debian.org).
 
 If you find virtualbricks useful for your business, please consider making a donation.</property>
                   </widget>

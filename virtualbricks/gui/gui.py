@@ -1629,6 +1629,7 @@ Packets longer than specified size are discarded.")
 		raise NotImplementedError()
 
 	def on_item_about_activate(self, widget=None, data=""):
+		self.gladefile.get_widget('about_text').set_wrap_mode(gtk.WRAP_WORD)
 		self.show_window('dialog_about1')
 		self.curtain_down()
 
