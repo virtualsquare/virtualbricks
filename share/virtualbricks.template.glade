@@ -10582,6 +10582,75 @@ ne2k_isa
                             <property name="position">0</property>
                           </packing>
                         </child>
+                        <child>
+                          <widget class="GtkHBox" id="hbox134">
+                            <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkVBox" id="vbox170">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <widget class="GtkHBox" id="hbox135">
+                                    <property name="visible">True</property>
+                                    <child>
+                                      <widget class="GtkLabel" id="label325">
+                                        <property name="visible">True</property>
+                                        <property name="label" translatable="yes">Save VM's output in the file: </property>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFileChooserButton" id="cfg_Qemu_stdout_filechooser">
+                                        <property name="width_request">200</property>
+                                        <property name="visible">True</property>
+                                        <property name="action">save</property>
+                                        <property name="do_overwrite_confirmation">True</property>
+                                        <property name="show_hidden">True</property>
+                                        <property name="title" translatable="yes">Select A File</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkButton" id="cfg_qemu_del_stdout">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">True</property>
+                                        <property name="receives_default">True</property>
+                                        <signal name="clicked" handler="on_cfg_qemu_del_stdout_clicked"/>
+                                        <child>
+                                          <widget class="GtkImage" id="image35">
+                                            <property name="visible">True</property>
+                                            <property name="stock">gtk-delete</property>
+                                          </widget>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">2</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">False</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
                       </widget>
                       <packing>
                         <property name="position">1</property>

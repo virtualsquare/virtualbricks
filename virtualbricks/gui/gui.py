@@ -573,6 +573,8 @@ class VBGUI(Logger, gobject.GObject):
 				widget.set_filename(b.cfg[key])
 			elif (widget is not None and t=='Qemu' and (key[0:4]=='base' or key=='cdrom')):
 				widget.set_current_folder(self.config.get('baseimages'))
+			elif widget is not None:
+				widget.unselect_all()
 
 			if 'icon' in b.cfg.keys() and b.cfg['icon'] != "":
 				self.gladefile.get_widget("qemuicon").set_from_pixbuf(self.pixbuf_scaled(b.cfg['icon']))
@@ -3401,6 +3403,9 @@ Packets longer than specified size are discarded.")
 		dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
 		self.user_wait_action(self.exec_image_convert)
 		return True
+
+	def on_cfg_qemu_del_stdout_clicked(self, widget, event=None, data=None):
+		self.gladefile.get_widget("cfg_Qemu_stdout_filechooser").unselect_all()
 
 	def on_convertimage_convert(self, widget, event=None, data=None):
 		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
