@@ -46,7 +46,6 @@ class VMPlug(Plug, BrickConfig):
 			return "virtio-net-pci"
 		return self.model
 
-
 	def hotadd(self):
 		driver = self.get_model_driver()
 		self.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" % (str(driver), str(self.mac), str(self.vlan), str(self.vlan)))
@@ -762,6 +761,9 @@ class VM(Brick):
 				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!")
 
 			return None
+
+	def commit_disks(self, args):
+		self.send("commit all\n")
 
 	def post_poweroff(self):
 		self.active = False
