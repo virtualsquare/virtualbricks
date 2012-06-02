@@ -24,6 +24,7 @@ import os
 import re
 import socket
 import time
+import subprocess
 from datetime import datetime
 from shutil import move
 from virtualbricks.bricks import Brick
@@ -45,7 +46,6 @@ class VMPlug(Plug, BrickConfig):
 		if self.model == 'virtio':
 			return "virtio-net-pci"
 		return self.model
-
 
 	def hotadd(self):
 		driver = self.get_model_driver()
@@ -261,16 +261,19 @@ class VMDisk():
 				if base != self.get_base():
 					dt = datetime.now()
 					cowback = cowname + ".back-" + dt.strftime("%Y-%m-%d_%H-%M-%S")
-					print "%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback)
+					self.VM.factory.debug("%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback))
 					move(cowname, cowback)
 			if not os.access(cowname, os.R_OK):
 				qmissing,qfound = self.VM.settings.check_missing_qemupath(self.VM.settings.get("qemupath"))
 				if "qemu-img" in qmissing:
 					raise BadConfig(_("qemu-img not found! I can't create a new image."))
 				else:
-					os.system('qemu-img create -b %s -f %s %s' % (self.get_base(), self.VM.settings.get('cowfmt'), cowname))
-					os.system('sync')
-					time.sleep(2)
+					self.VM.factory.debug("Creating a new private COW from %s base image." % self.get_base())
+					command=[self.VM.settings.get("qemupath")+"/qemu-img","create","-b",self.get_base(),"-f",self.VM.settings.get('cowfmt'),cowname]
+					proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					proc.wait()
+					proc = subprocess.Popen(["/bin/sync"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					proc.wait()
 			return cowname
 		else:
 			return self.image.path
@@ -762,6 +765,9 @@ class VM(Brick):
 				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!")
 
 			return None
+
+	def commit_disks(self, args):
+		self.send("commit all\n")
 
 	def post_poweroff(self):
 		self.active = False

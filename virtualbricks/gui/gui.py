@@ -573,6 +573,8 @@ class VBGUI(Logger, gobject.GObject):
 				widget.set_filename(b.cfg[key])
 			elif (widget is not None and t=='Qemu' and (key[0:4]=='base' or key=='cdrom')):
 				widget.set_current_folder(self.config.get('baseimages'))
+			elif widget is not None:
+				widget.unselect_all()
 
 			if 'icon' in b.cfg.keys() and b.cfg['icon'] != "":
 				self.gladefile.get_widget("qemuicon").set_from_pixbuf(self.pixbuf_scaled(b.cfg['icon']))
@@ -1629,6 +1631,7 @@ Packets longer than specified size are discarded.")
 		raise NotImplementedError()
 
 	def on_item_about_activate(self, widget=None, data=""):
+		self.gladefile.get_widget('about_text').set_wrap_mode(gtk.WRAP_WORD)
 		self.show_window('dialog_about1')
 		self.curtain_down()
 
@@ -3330,13 +3333,25 @@ Packets longer than specified size are discarded.")
 		self.maintree.get_selection().update_usbdevlist(devlist.rstrip(' '), old_val)
 		return True
 
+	def on_check_commit_privatecow_toggled(self, widget, event=None, data=None):
+		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
+		if not sel:
+			return
+		if widget.get_active():
+			self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_real_disk_name())
+		else:
+			self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_base())
+
 	def on_commitimage_mode(self, widget, event=None, data=None):
 		if widget.get_active():
 			self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(True)
 			self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(False)
+			self.gladefile.get_widget("check_commit_privatecow").set_sensitive(False)
 		else:
 			self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(False)
 			self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(True)
+			self.gladefile.get_widget("check_commit_privatecow").set_sensitive(True)
+		self.gladefile.get_widget("entry_commitimage_base").set_text("")
 
 	def do_image_commit(self, path):
 		if (not os.access(path, os.R_OK)):
@@ -3354,7 +3369,12 @@ Packets longer than specified size are discarded.")
 		if not self.gladefile.get_widget('radio_commitimage_file').get_active():
 			img = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
 			if (img):
-				path = img.basefolder + "/" + img.VM.name + "_" + img.device + ".cow"
+				if self.gladefile.get_widget("check_commit_privatecow").get_active():
+					self.ask_confirm("Warning: the private COW image will be updated.\n"+
+							" This operation cannot be undone. \nAre you sure?", on_yes=img.VM.commit_disks)
+					return True
+				else:
+					path = img.basefolder + "/" + img.VM.name + "_" + img.device + ".cow"
 			else:
 				self.error("Invalid image")
 				return False
@@ -3364,7 +3384,7 @@ Packets longer than specified size are discarded.")
 		if (not os.access(path, os.R_OK)):
 			self.error("Error: "+path+" is not a valid COW image")
 			return True
-		self.ask_confirm("Warning: the base image, will be updated to the changes contained in the COW.\n"+
+		self.ask_confirm("Warning: the base image will be updated to the changes contained in the COW.\n"+
 						" This operation cannot be undone. \nAre you sure?", on_yes=self.do_image_commit, arg=path)
 		return True
 
@@ -3383,6 +3403,9 @@ Packets longer than specified size are discarded.")
 		dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
 		self.user_wait_action(self.exec_image_convert)
 		return True
+
+	def on_cfg_qemu_del_stdout_clicked(self, widget, event=None, data=None):
+		self.gladefile.get_widget("cfg_Qemu_stdout_filechooser").unselect_all()
 
 	def on_convertimage_convert(self, widget, event=None, data=None):
 		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
@@ -3403,6 +3426,7 @@ Packets longer than specified size are discarded.")
 		self.gladefile.get_widget('radio_commitimage_file').set_active(True)
 		self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(True)
 		self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(False)
+		self.gladefile.get_widget("check_commit_privatecow").set_sensitive(False)
 		combo = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk'))
 		using_cow = dict()
 		for b in self.brickfactory.bricks:
@@ -3418,7 +3442,10 @@ Packets longer than specified size are discarded.")
 	def on_combo_commitimage_changed(self, widget, event=None, data=None):
 		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
 		if sel and sel.get_base():
-			self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_base())
+			if self.glade.get_widget("check_commit_privatecow").get_active():
+				self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_real_disk_name())
+			else:
+				self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_base())
 		else:
 			self.gladefile.get_widget('entry_commitimage_base').set_text('base not found')
 
