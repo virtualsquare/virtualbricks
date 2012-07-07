@@ -353,7 +353,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if len(cmd)>1:
 				host=self.get_host_by_name(cmd[1])
 				if host is not None and host.connected is True:
+					CommandLineOutput(console, "files not works for remote hosts.")
+					return
 					files = host.get_files_list()
+					print files
 					if files is None:
 						CommandLineOutput(console, "No files found.")
 						return
@@ -366,17 +369,19 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				if os.path.isfile(self.settings.get("baseimages")+"/"+image_file):
 					CommandLineOutput(console, "%s" % (image_file))
 		elif command == "add":
-			if len(cmd) > 1 and cmd[2] is not None and cmd[1] is not None:
+			if len(cmd) > 1 and cmd[1] is not None:
 				basepath = self.settings.get("baseimages")
 				host = None
+				name=cmd[1].replace(".", "_")
+				name=name.replace("/", "_")
 				if len(cmd) == 3:
 					host = self.get_host_by_name(cmd[2])
 					if host is not None:
 						basepath = host.basepath
 				if len(cmd) == 3 and cmd[2].find("/") > -1:
-					img = self.new_disk_image(cmd[1], cmd[2])
+					img = self.new_disk_image(name, cmd[2])
 				else:
-					img = self.new_disk_image(cmd[1], basepath+ "/" + cmd[1])
+					img = self.new_disk_image(name, basepath+ "/" + cmd[1])
 				if host is not None:
 					img.host = host
 					if host.connected is True:
