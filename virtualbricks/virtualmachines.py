@@ -170,6 +170,8 @@ class DiskImage():
 		return len(self.vmdisks)
 
 	def get_size(self):
+		if not os.path.exists(self.path):
+			return 
 		size = os.path.getsize(self.path)
 		if (size > 1000000):
 			return (str(size/1000000))

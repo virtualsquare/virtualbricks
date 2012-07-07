@@ -212,7 +212,7 @@ class RemoteHost():
 		buff=""
 		while rec is not None and rec != "OK":
 			buff=buff+rec
-			print buff
+			#print buff
 			rec = self.recv()
 		self.lock.release()
 		return buff
