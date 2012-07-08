@@ -410,7 +410,14 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if len(cmd) == 1 or (len(cmd) > 1 and cmd[1] == "show"):
 				CommandLineOutput(console, "%s" % (self.settings.get("baseimages")))
 			elif cmd[1] == "set" and len(cmd)>2:
-				self.settings.set("baseimages", cmd[2])
+				if len(cmd)==4:	
+					host = None
+					host = self.get_host_by_name(cmd[3])
+					if host is None:
+						return
+					host.basepath=str(cmd[2])
+				else:
+					self.settings.set("baseimages", cmd[2])
 		return
 
 
