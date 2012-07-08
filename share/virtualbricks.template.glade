@@ -2304,7 +2304,7 @@ GB</property>
                           </widget>
                           <packing>
                             <property name="x_options">GTK_FILL</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                         <child>
@@ -2321,7 +2321,7 @@ GB</property>
                             <property name="top_attach">1</property>
                             <property name="bottom_attach">2</property>
                             <property name="x_options">GTK_FILL</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                         <child>
@@ -2338,7 +2338,7 @@ GB</property>
                             <property name="top_attach">2</property>
                             <property name="bottom_attach">3</property>
                             <property name="x_options">GTK_FILL</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                         <child>
@@ -2351,7 +2351,7 @@ GB</property>
                             <property name="left_attach">1</property>
                             <property name="right_attach">2</property>
                             <property name="x_options">GTK_FILL</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                         <child>
@@ -2366,7 +2366,7 @@ GB</property>
                             <property name="top_attach">1</property>
                             <property name="bottom_attach">2</property>
                             <property name="x_options">GTK_FILL</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                         <child>
@@ -2381,7 +2381,7 @@ GB</property>
                             <property name="top_attach">2</property>
                             <property name="bottom_attach">3</property>
                             <property name="x_options">GTK_FILL</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                         <child>
@@ -3822,7 +3822,7 @@ Use an already open UDP multicast socket</property>
                   </widget>
                   <packing>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3835,7 +3835,7 @@ Use an already open UDP multicast socket</property>
                     <property name="top_attach">1</property>
                     <property name="bottom_attach">2</property>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3852,7 +3852,7 @@ Use an already open UDP multicast socket</property>
                     <property name="right_attach">2</property>
                     <property name="top_attach">1</property>
                     <property name="bottom_attach">2</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3865,7 +3865,7 @@ Use an already open UDP multicast socket</property>
                     <property name="left_attach">2</property>
                     <property name="right_attach">3</property>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3880,7 +3880,7 @@ Use an already open UDP multicast socket</property>
                     <property name="top_attach">1</property>
                     <property name="bottom_attach">2</property>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3895,7 +3895,7 @@ Use an already open UDP multicast socket</property>
                   <packing>
                     <property name="left_attach">1</property>
                     <property name="right_attach">2</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3912,7 +3912,7 @@ Use an already open UDP multicast socket</property>
                     <property name="left_attach">3</property>
                     <property name="right_attach">4</property>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3931,7 +3931,7 @@ Use an already open UDP multicast socket</property>
                     <property name="top_attach">1</property>
                     <property name="bottom_attach">2</property>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
               </widget>
@@ -3963,7 +3963,7 @@ Use an already open UDP multicast socket</property>
                   </widget>
                   <packing>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3976,7 +3976,7 @@ Use an already open UDP multicast socket</property>
                     <property name="top_attach">1</property>
                     <property name="bottom_attach">2</property>
                     <property name="x_options">GTK_FILL</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -3993,7 +3993,7 @@ Use an already open UDP multicast socket</property>
                     <property name="right_attach">2</property>
                     <property name="top_attach">1</property>
                     <property name="bottom_attach">2</property>
-                    <property name="y_options"></property>
+                    <property name="y_options"/>
                   </packing>
                 </child>
                 <child>
@@ -4172,7 +4172,7 @@ Use an already open UDP multicast socket</property>
                 <property name="label" translatable="yes">Model:</property>
               </widget>
               <packing>
-                <property name="y_options"></property>
+                <property name="y_options"/>
               </packing>
             </child>
             <child>
@@ -4184,7 +4184,7 @@ Use an already open UDP multicast socket</property>
               <packing>
                 <property name="top_attach">1</property>
                 <property name="bottom_attach">2</property>
-                <property name="y_options"></property>
+                <property name="y_options"/>
               </packing>
             </child>
             <child>
@@ -4221,7 +4221,7 @@ Use an already open UDP multicast socket</property>
               <packing>
                 <property name="top_attach">2</property>
                 <property name="bottom_attach">3</property>
-                <property name="y_options"></property>
+                <property name="y_options"/>
               </packing>
             </child>
             <child>
@@ -4237,7 +4237,7 @@ Use an already open UDP multicast socket</property>
                 <property name="right_attach">2</property>
                 <property name="top_attach">2</property>
                 <property name="bottom_attach">3</property>
-                <property name="y_options"></property>
+                <property name="y_options"/>
                 <property name="y_padding">5</property>
               </packing>
             </child>
@@ -4252,7 +4252,7 @@ Use an already open UDP multicast socket</property>
                 <property name="right_attach">2</property>
                 <property name="top_attach">1</property>
                 <property name="bottom_attach">2</property>
-                <property name="y_options"></property>
+                <property name="y_options"/>
                 <property name="y_padding">5</property>
               </packing>
             </child>
@@ -4266,7 +4266,7 @@ Use an already open UDP multicast socket</property>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
-                <property name="y_options"></property>
+                <property name="y_options"/>
                 <property name="y_padding">5</property>
               </packing>
             </child>
@@ -4526,7 +4526,7 @@ Use an already open UDP multicast socket</property>
                           <packing>
                             <property name="left_attach">1</property>
                             <property name="right_attach">2</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                         <child>
@@ -4704,7 +4704,7 @@ Use an already open UDP multicast socket</property>
                               <packing>
                                 <property name="left_attach">1</property>
                                 <property name="right_attach">2</property>
-                                <property name="y_options"></property>
+                                <property name="y_options"/>
                               </packing>
                             </child>
                             <child>
@@ -4867,7 +4867,7 @@ invalid path for vde binaries</property>
                               <packing>
                                 <property name="left_attach">1</property>
                                 <property name="right_attach">2</property>
-                                <property name="y_options"></property>
+                                <property name="y_options"/>
                               </packing>
                             </child>
                             <child>
@@ -6566,7 +6566,7 @@ multiple devices&lt;/b&gt;</property>
                                           </widget>
                                           <packing>
                                             <property name="right_attach">2</property>
-                                            <property name="x_options"></property>
+                                            <property name="x_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -6579,7 +6579,7 @@ multiple devices&lt;/b&gt;</property>
                                           <packing>
                                             <property name="top_attach">1</property>
                                             <property name="bottom_attach">2</property>
-                                            <property name="x_options"></property>
+                                            <property name="x_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -6592,7 +6592,7 @@ multiple devices&lt;/b&gt;</property>
                                           <packing>
                                             <property name="top_attach">2</property>
                                             <property name="bottom_attach">3</property>
-                                            <property name="x_options"></property>
+                                            <property name="x_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -6610,7 +6610,7 @@ multiple devices&lt;/b&gt;</property>
                                             <property name="right_attach">2</property>
                                             <property name="top_attach">1</property>
                                             <property name="bottom_attach">2</property>
-                                            <property name="x_options"></property>
+                                            <property name="x_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -6628,7 +6628,7 @@ multiple devices&lt;/b&gt;</property>
                                             <property name="right_attach">2</property>
                                             <property name="top_attach">2</property>
                                             <property name="bottom_attach">3</property>
-                                            <property name="x_options"></property>
+                                            <property name="x_options"/>
                                           </packing>
                                         </child>
                                       </widget>
@@ -7006,7 +7006,7 @@ output queue</property>
                                         <property name="right_attach">5</property>
                                         <property name="top_attach">1</property>
                                         <property name="bottom_attach">2</property>
-                                        <property name="x_options"></property>
+                                        <property name="x_options"/>
                                       </packing>
                                     </child>
                                     <child>
@@ -7015,7 +7015,7 @@ output queue</property>
                                         <property name="label" translatable="yes">Destination</property>
                                       </widget>
                                       <packing>
-                                        <property name="x_options"></property>
+                                        <property name="x_options"/>
                                       </packing>
                                     </child>
                                     <child>
@@ -7026,7 +7026,7 @@ output queue</property>
                                       <packing>
                                         <property name="left_attach">1</property>
                                         <property name="right_attach">2</property>
-                                        <property name="x_options"></property>
+                                        <property name="x_options"/>
                                       </packing>
                                     </child>
                                     <child>
@@ -7037,7 +7037,7 @@ output queue</property>
                                       <packing>
                                         <property name="left_attach">2</property>
                                         <property name="right_attach">3</property>
-                                        <property name="x_options"></property>
+                                        <property name="x_options"/>
                                       </packing>
                                     </child>
                                     <child>
@@ -7052,7 +7052,7 @@ output queue</property>
                                         <property name="top_attach">1</property>
                                         <property name="bottom_attach">2</property>
                                         <property name="x_options">GTK_FILL</property>
-                                        <property name="y_options"></property>
+                                        <property name="y_options"/>
                                         <property name="x_padding">6</property>
                                       </packing>
                                     </child>
@@ -7064,7 +7064,7 @@ output queue</property>
                                       <packing>
                                         <property name="left_attach">3</property>
                                         <property name="right_attach">4</property>
-                                        <property name="x_options"></property>
+                                        <property name="x_options"/>
                                       </packing>
                                     </child>
                                     <child>
@@ -7075,7 +7075,7 @@ output queue</property>
                                       <packing>
                                         <property name="left_attach">4</property>
                                         <property name="right_attach">5</property>
-                                        <property name="x_options"></property>
+                                        <property name="x_options"/>
                                       </packing>
                                     </child>
                                   </widget>
@@ -7275,7 +7275,7 @@ output queue</property>
                                               <packing>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -7293,7 +7293,7 @@ output queue</property>
                                                 <property name="right_attach">2</property>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                               </packing>
                                             </child>
                                           </widget>
@@ -7361,7 +7361,7 @@ output queue</property>
                                               <packing>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -7380,7 +7380,7 @@ output queue</property>
                                                 <property name="right_attach">2</property>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                               </packing>
                                             </child>
                                           </widget>
@@ -7460,7 +7460,7 @@ TCP</property>
                                               <packing>
                                                 <property name="left_attach">1</property>
                                                 <property name="right_attach">2</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -7477,7 +7477,7 @@ TCP</property>
                                                 <property name="right_attach">2</property>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -7494,7 +7494,7 @@ TCP</property>
                                                 <property name="right_attach">2</property>
                                                 <property name="top_attach">2</property>
                                                 <property name="bottom_attach">3</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                               </packing>
                                             </child>
                                           </widget>
@@ -7988,8 +7988,8 @@ fda</property>
                                           <packing>
                                             <property name="top_attach">2</property>
                                             <property name="bottom_attach">3</property>
-                                            <property name="x_options"></property>
-                                            <property name="y_options"></property>
+                                            <property name="x_options"/>
+                                            <property name="y_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -8008,7 +8008,7 @@ fda</property>
                                             <property name="top_attach">1</property>
                                             <property name="bottom_attach">2</property>
                                             <property name="x_options">GTK_FILL</property>
-                                            <property name="y_options"></property>
+                                            <property name="y_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -8026,7 +8026,7 @@ fda</property>
                                           </widget>
                                           <packing>
                                             <property name="x_options">GTK_FILL</property>
-                                            <property name="y_options"></property>
+                                            <property name="y_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -8041,7 +8041,7 @@ fda</property>
                                             <property name="right_attach">2</property>
                                             <property name="top_attach">1</property>
                                             <property name="bottom_attach">2</property>
-                                            <property name="y_options"></property>
+                                            <property name="y_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -8054,8 +8054,8 @@ fda</property>
                                           <packing>
                                             <property name="left_attach">1</property>
                                             <property name="right_attach">2</property>
-                                            <property name="x_options"></property>
-                                            <property name="y_options"></property>
+                                            <property name="x_options"/>
+                                            <property name="y_options"/>
                                           </packing>
                                         </child>
                                         <child>
@@ -8206,7 +8206,7 @@ fda</property>
                                                 <property name="top_attach">5</property>
                                                 <property name="bottom_attach">6</property>
                                                 <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8220,7 +8220,7 @@ fda</property>
                                                 <property name="top_attach">4</property>
                                                 <property name="bottom_attach">5</property>
                                                 <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8234,7 +8234,7 @@ fda</property>
                                                 <property name="top_attach">3</property>
                                                 <property name="bottom_attach">4</property>
                                                 <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8248,7 +8248,7 @@ fda</property>
                                                 <property name="top_attach">2</property>
                                                 <property name="bottom_attach">3</property>
                                                 <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8262,7 +8262,7 @@ fda</property>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
                                                 <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8274,7 +8274,7 @@ fda</property>
                                               </widget>
                                               <packing>
                                                 <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8291,7 +8291,7 @@ fda</property>
                                               <packing>
                                                 <property name="left_attach">1</property>
                                                 <property name="right_attach">2</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8310,7 +8310,7 @@ fda</property>
                                                 <property name="right_attach">2</property>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="y_options"></property>
+                                                <property name="y_options"/>
                                               </packing>
                                             </child>
                                             <child>
@@ -8397,7 +8397,7 @@ fda</property>
                                               <packing>
                                                 <property name="top_attach">6</property>
                                                 <property name="bottom_attach">7</property>
-                                                <property name="x_options"></property>
+                                                <property name="x_options"/>
                                                 <property name="y_options">GTK_FILL</property>
                                               </packing>
                                             </child>
@@ -9315,7 +9315,7 @@ disk images</property>
                           <packing>
                             <property name="left_attach">1</property>
                             <property name="right_attach">2</property>
-                            <property name="x_options"></property>
+                            <property name="x_options"/>
                             <property name="y_options">GTK_FILL</property>
                           </packing>
                         </child>
@@ -9648,7 +9648,7 @@ disk images</property>
                           <packing>
                             <property name="top_attach">1</property>
                             <property name="bottom_attach">2</property>
-                            <property name="x_options"></property>
+                            <property name="x_options"/>
                           </packing>
                         </child>
                         <child>
@@ -9670,7 +9670,7 @@ disk images</property>
                             <property name="top_attach">2</property>
                             <property name="bottom_attach">3</property>
                             <property name="x_options">GTK_FILL</property>
-                            <property name="y_options"></property>
+                            <property name="y_options"/>
                           </packing>
                         </child>
                       </widget>
@@ -10122,7 +10122,7 @@ ne2k_isa
                                   </widget>
                                   <packing>
                                     <property name="x_options">GTK_FILL</property>
-                                    <property name="y_options"></property>
+                                    <property name="y_options"/>
                                   </packing>
                                 </child>
                               </widget>
@@ -10243,7 +10243,7 @@ ne2k_isa
                                     <signal name="toggled" handler="on_check_customkernel_toggled"/>
                                   </widget>
                                   <packing>
-                                    <property name="y_options"></property>
+                                    <property name="y_options"/>
                                   </packing>
                                 </child>
                                 <child>
@@ -10258,7 +10258,7 @@ ne2k_isa
                                   <packing>
                                     <property name="top_attach">1</property>
                                     <property name="bottom_attach">2</property>
-                                    <property name="y_options"></property>
+                                    <property name="y_options"/>
                                   </packing>
                                 </child>
                                 <child>
@@ -10288,7 +10288,7 @@ ne2k_isa
                                     <property name="top_attach">2</property>
                                     <property name="bottom_attach">3</property>
                                     <property name="x_options">GTK_FILL</property>
-                                    <property name="y_options"></property>
+                                    <property name="y_options"/>
                                   </packing>
                                 </child>
                                 <child>
@@ -13676,7 +13676,7 @@ Gaussian</property>
                                               <widget class="GtkComboBox" id="cfg_Wirefilter_lossmult_comboinitial">
                                                 <property name="visible">True</property>
                                                 <property name="sensitive">False</property>
-                                                <property name="items"></property>
+                                                <property name="items"/>
                                               </widget>
                                               <packing>
                                                 <property name="position">1</property>
@@ -14398,7 +14398,7 @@ Gaussian</property>
                                               <widget class="GtkComboBox" id="cfg_Wirefilter_dupmult_comboinitial">
                                                 <property name="visible">True</property>
                                                 <property name="sensitive">False</property>
-                                                <property name="items"></property>
+                                                <property name="items"/>
                                               </widget>
                                               <packing>
                                                 <property name="position">1</property>
@@ -15865,7 +15865,7 @@ Gaussian</property>
                                               <widget class="GtkComboBox" id="cfg_Wirefilter_lostburstmult_comboinitial">
                                                 <property name="visible">True</property>
                                                 <property name="sensitive">False</property>
-                                                <property name="items"></property>
+                                                <property name="items"/>
                                               </widget>
                                               <packing>
                                                 <property name="position">1</property>
@@ -17202,7 +17202,7 @@ bytes</property>
                                   <packing>
                                     <property name="left_attach">1</property>
                                     <property name="right_attach">2</property>
-                                    <property name="x_options"></property>
+                                    <property name="x_options"/>
                                   </packing>
                                 </child>
                                 <child>
@@ -17222,7 +17222,7 @@ bytes</property>
                                     <property name="right_attach">2</property>
                                     <property name="top_attach">1</property>
                                     <property name="bottom_attach">2</property>
-                                    <property name="x_options"></property>
+                                    <property name="x_options"/>
                                   </packing>
                                 </child>
                                 <child>
@@ -17241,7 +17241,7 @@ bytes</property>
                                     <property name="right_attach">2</property>
                                     <property name="top_attach">2</property>
                                     <property name="bottom_attach">3</property>
-                                    <property name="x_options"></property>
+                                    <property name="x_options"/>
                                   </packing>
                                 </child>
                               </widget>
@@ -18179,7 +18179,7 @@ bytes</property>
     <property name="visible">True</property>
     <child>
       <widget class="GtkImageMenuItem" id="item_edit_bookmark">
-        <property name="label">edit</property>
+        <property name="label">gtk-edit</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
@@ -18188,7 +18188,7 @@ bytes</property>
     </child>
     <child>
       <widget class="GtkImageMenuItem" id="item_bookmark_info">
-        <property name="label">info</property>
+        <property name="label">gtk-dialog-question</property>
         <property name="visible">True</property>
         <property name="tooltip" translatable="yes">show qemu volume info for selected image</property>
         <property name="use_underline">True</property>
@@ -18203,7 +18203,7 @@ bytes</property>
     </child>
     <child>
       <widget class="GtkImageMenuItem" id="item_delete_bookmark">
-        <property name="label">remove</property>
+        <property name="label">gtk-remove</property>
         <property name="visible">True</property>
         <property name="tooltip" translatable="yes">remove this entry from My Machines</property>
         <property name="use_underline">True</property>
@@ -18215,7 +18215,7 @@ bytes</property>
   <widget class="GtkMenu" id="menu_popup_imagelist">
     <child>
       <widget class="GtkImageMenuItem" id="item_info">
-        <property name="label">info</property>
+        <property name="label">gtk-dialog-info</property>
         <property name="visible">True</property>
         <property name="tooltip" translatable="yes">show qemu volume info for selected image</property>
         <property name="use_underline">True</property>
@@ -18225,7 +18225,7 @@ bytes</property>
     </child>
     <child>
       <widget class="GtkImageMenuItem" id="item_bookmark">
-        <property name="label">Add to My machines</property>
+        <property name="label">gtk-add</property>
         <property name="visible">True</property>
         <property name="tooltip" translatable="yes">add this image to bookmarks</property>
         <property name="use_underline">True</property>
@@ -18250,7 +18250,7 @@ bytes</property>
     </child>
     <child>
       <widget class="GtkImageMenuItem" id="item_stop_job">
-        <property name="label">stop job</property>
+        <property name="label">gtk-stop</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
@@ -18259,7 +18259,7 @@ bytes</property>
     </child>
     <child>
       <widget class="GtkImageMenuItem" id="item_cont_job">
-        <property name="label">continue job</property>
+        <property name="label">gtk-media-play</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
@@ -18305,7 +18305,7 @@ bytes</property>
     </child>
     <child>
       <widget class="GtkImageMenuItem" id="item_reset_job">
-        <property name="label">reset job</property>
+        <property name="label">gtk-redo</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
@@ -18314,7 +18314,7 @@ bytes</property>
     </child>
     <child>
       <widget class="GtkImageMenuItem" id="item_kill_job">
-        <property name="label">kill job</property>
+        <property name="label">gtk-delete</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
@@ -18360,7 +18360,7 @@ bytes</property>
   <widget class="GtkMenu" id="menu_popup_usbguest">
     <child>
       <widget class="GtkImageMenuItem" id="item_detach_device">
-        <property name="label">detach device</property>
+        <property name="label">gtk-disconnect</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
@@ -18371,7 +18371,7 @@ bytes</property>
   <widget class="GtkMenu" id="menu_popup_usbhost">
     <child>
       <widget class="GtkImageMenuItem" id="item_attach_device">
-        <property name="label">attach device</property>
+        <property name="label">gtk-connect</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
@@ -18382,7 +18382,7 @@ bytes</property>
   <widget class="GtkMenu" id="menu_popup_volumes">
     <child>
       <widget class="GtkImageMenuItem" id="item_eject">
-        <property name="label">eject</property>
+        <property name="label">gtk-goto-top</property>
         <property name="visible">True</property>
         <property name="tooltip" translatable="yes">eject / unmount selected device</property>
         <property name="use_underline">True</property>
