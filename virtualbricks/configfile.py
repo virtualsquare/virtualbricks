@@ -295,7 +295,7 @@ class ConfigFile():
 							l = p.readline()
 						if not tools.NameNotInUse(self.factory, name):
 							continue
-						if not os.access(path,os.R_OK):
+						if host is None and not os.access(path,os.R_OK):
 							continue
 						img = self.factory.new_disk_image(name,path, host=host)
 						img.set_readonly(readonly)
