@@ -93,7 +93,10 @@ class RemoteHost():
 		self.password=""
 		self.factory.remotehosts_changed=True
 		self.autoconnect=False
-		self.basepath=os.path.expanduser("~")+"/VM"
+		self.baseimages="/root/VM"
+		self.vdepath="/usr/bin"
+		self.qemupath="/usr/bin"
+		self.bricksdirectory="/root"
 		self.lock = Lock()
 
 	def num_bricks(self):

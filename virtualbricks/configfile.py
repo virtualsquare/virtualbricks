@@ -76,7 +76,10 @@ class ConfigFile():
 			p.write('[RemoteHost:'+r.addr[0]+']\n')
 			p.write('port='+str(r.addr[1])+'\n')
 			p.write('password='+r.password+'\n')
-			p.write('basepath='+r.basepath+'\n')
+			p.write('baseimages='+r.baseimages+'\n')
+			p.write('qemupath='+r.qemupath+'\n')
+			p.write('vdepath='+r.vdepath+'\n')
+			p.write('bricksdirectory='+r.bricksdirectory+'\n')
 			if r.autoconnect:
 				p.write('autoconnect=True\n')
 			else:
@@ -318,8 +321,14 @@ class ConfigFile():
 								newr.password = str(v)
 							elif k == 'autoconnect' and v == 'True':
 								newr.autoconnect = True
-							elif k == 'basepath':
-								newr.basepath = str(v)
+							elif k == 'baseimages':
+								newr.baseimage = str(v)
+							elif k == 'vdepath':
+								newr.vdepath = str(v)
+							elif k == 'qemupath':
+								newr.qemupath = str(v)
+							elif k == 'bricksdirectory':
+								newr.bricksdirectory = str(v)
 							l = p.readline()
 						if newr.autoconnect:
 							newr.connect()

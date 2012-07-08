@@ -330,6 +330,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					self.debug("Vmdisk lock released")
 					return
 
+	''' console function to manage local o remote vb settings '''
+	def changesettings(self, console *cmd):
+		pass
+
 	''' Console function to manage disk images. '''
 	def images_manager(self, console, *cmd):
 		if isinstance(cmd, basestring) is False:
@@ -377,7 +381,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 				if len(cmd) == 3:
 					host = self.get_host_by_name(cmd[2])
 					if host is not None:
-						basepath = host.basepath
+						basepath = host.baseimages
 				if len(cmd) == 3 and cmd[2].find("/") > -1:
 					img = self.new_disk_image(name, cmd[2])
 				else:
@@ -415,7 +419,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					host = self.get_host_by_name(cmd[3])
 					if host is None:
 						return
-					host.basepath=str(cmd[2])
+					host.baseimages=str(cmd[2])
 				else:
 					self.settings.set("baseimages", cmd[2])
 		return
