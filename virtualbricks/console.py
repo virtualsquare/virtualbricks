@@ -321,11 +321,11 @@ def Parse(factory, command, console=sys.stdout):
 		CommandLineOutput(console,  "End of list.")
 		CommandLineOutput(console, "" )
 		return True
+	elif command.startswith('config') or command.startswith('cfg'):
+		factory.set_configuration(console, *command.split(" ")[1:])
+		return True
 	elif command.startswith('images') or command.startswith("i"):
 		factory.images_manager(console, *command.split(" ")[1:])
-		return True
-	elif command.startswith("settings") or command.startswith("s"):
-		factory.changesetting(console, *command.split(" ")[1:])
 		return True
 	elif command == 'socks':
 		for s in factory.socks:

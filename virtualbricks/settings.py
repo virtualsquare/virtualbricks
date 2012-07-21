@@ -100,6 +100,9 @@ class Settings(ChildLogger):
 		self.check_ksm(self.ksm)
 		self.ksm = self.ksm
 
+	def has_option(self, value):
+		return self.config.has_option(self.DEFAULT_SECTION, value)
+
 	def get(self, attr):
 		val = self.config.get(self.DEFAULT_SECTION, unicode(attr))
 		if attr == 'sudo' and os.getuid()==0:

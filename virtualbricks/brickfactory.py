@@ -330,9 +330,23 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 					self.debug("Vmdisk lock released")
 					return
 
-	''' console function to manage local o remote vb settings '''
-	def changesettings(self, console *cmd):
-		pass
+	''' Console function to set VB's configuration parameters (local or remote) '''
+	def set_configuration(self, console, *cmd):
+		if isinstance(cmd, basestring) is False:
+			command = cmd[0]
+		else:
+			command = cmd
+			cmd = []
+		if command == "set" and len(cmd)>2:
+			if self.settings.has_option(cmd[1]):
+				host=None
+				if len(cmd)==4:
+					host=self.get_host_by_name(cmd[3])
+					if host is not None and host.connected is True:
+						host.send("cfg "+cmd[1] + " " + cmd[2])
+				else:
+					self.settings.set(cmd[1], cmd[2])
+		return
 
 	''' Console function to manage disk images. '''
 	def images_manager(self, console, *cmd):
@@ -414,7 +428,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			if len(cmd) == 1 or (len(cmd) > 1 and cmd[1] == "show"):
 				CommandLineOutput(console, "%s" % (self.settings.get("baseimages")))
 			elif cmd[1] == "set" and len(cmd)>2:
-				if len(cmd)==4:	
+				if len(cmd)==4:
 					host = None
 					host = self.get_host_by_name(cmd[3])
 					if host is None:
@@ -475,7 +489,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 			return
 
 		b.name = newname
-		#some bricks need to do some extra operations 
+		#some bricks need to do some extra operations
 		b.post_rename(newname)
 		b.gui_changed = True
 
