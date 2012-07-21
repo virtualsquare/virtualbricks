@@ -185,7 +185,6 @@ class RemoteHost():
 					print "Qemu but not VDE plug"
 			elif (pl.sock is not None):
 				print "Not a Qemu Plug"
-
 		self.factory.remotehosts_changed=True
 
 	def post_connect_init(self):
@@ -204,6 +203,8 @@ class RemoteHost():
 		for b in self.factory.bricks:
 			if b.homehost and b.homehost.addr == self.addr:
 					self.upload(b)
+
+		self.send("cfg set projects " + self.factory.settings.get("projects"))
 
 	def get_files_list(self):
 		return self.send_and_recv("i files")
