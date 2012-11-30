@@ -60,7 +60,7 @@ def ValidName(name):
 		name = name.rstrip(' ')
 
 	name = re.sub(' ', '_', name)
-	if not re.search("\A\w+\Z", name):
+	if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
 		return None
 	return name
 
