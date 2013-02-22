@@ -26,7 +26,6 @@ _ = __builtin__._
 from virtualbricks.logger import ChildLogger
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.console import VbShellCommand, ShellCommand, Parse
-from virtualbricks.gui.graphics import Icon
 from threading import Timer
 from virtualbricks.errors import BadConfig, InvalidAction
 
@@ -34,6 +33,8 @@ from virtualbricks.errors import BadConfig, InvalidAction
 class Event(ChildLogger):
 
     def __init__(self, _factory, _name):
+        from virtualbricks.gui.graphics import Icon  # XXX: avoid cyclic imports
+
         ChildLogger.__init__(self, _factory)
         self.factory = _factory
         self.settings = self.factory.settings

@@ -32,7 +32,6 @@ _ = __builtin__._
 
 from virtualbricks.logger import ChildLogger
 from virtualbricks.settings import MYPATH
-from virtualbricks.gui.graphics import Icon
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.errors import (BadConfig,
     InvalidName, Linkloop, NotConnected)
@@ -42,6 +41,8 @@ from virtualbricks.console import RemoteHost
 class Brick(ChildLogger):
 
     def __init__(self, _factory, _name, homehost=None):
+        from virtualbricks.gui.graphics import Icon  # XXX: avoid cyclic imports
+
         ChildLogger.__init__(self, _factory)
         self.factory = _factory
         self.settings = self.factory.settings
