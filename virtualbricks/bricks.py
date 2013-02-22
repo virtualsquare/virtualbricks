@@ -41,7 +41,8 @@ from virtualbricks.console import RemoteHost
 class Brick(ChildLogger):
 
     def __init__(self, _factory, _name, homehost=None):
-        from virtualbricks.gui.graphics import Icon  # XXX: avoid cyclic imports
+        # XXX: avoid cyclic imports
+        from virtualbricks.gui.graphics import Icon
 
         ChildLogger.__init__(self, _factory)
         self.factory = _factory
@@ -209,12 +210,18 @@ class Brick(ChildLogger):
         cb = None
         try:
             if self.get_type() == 'Switch':
+                # avoid cyclic imports
+                from virtualbricks.switches import Switch
                 cb = Switch.__dict__["cbset_" + key]
 
             elif self.get_type() == 'Wirefilter':
+                # avoid cyclic imports
+                from virtualbricks.wires import Wirefilter
                 cb = Wirefilter.__dict__["cbset_" + key]
 
             elif self.get_type() == 'Qemu':
+                # avoid cyclic imports
+                from virtualbricks.virtualmachines import VM
                 cb = VM.__dict__["cbset_" + key]
 
         except:
@@ -522,8 +529,3 @@ class Brick(ChildLogger):
         else:
             state = _('off')
         return state
-
-
-from virtualbricks.switches import Switch
-from virtualbricks.virtualmachines import VM
-from virtualbricks.wires import Wirefilter

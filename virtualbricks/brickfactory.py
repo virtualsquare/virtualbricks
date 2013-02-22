@@ -27,8 +27,8 @@ import sys
 from threading import Thread, Semaphore
 import time
 import getpass
-# import __builtin__
-# _ = __builtin__._
+import __builtin__
+_ = __builtin__._
 
 from virtualbricks import tools
 from virtualbricks.logger import ChildLogger
@@ -36,8 +36,6 @@ from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
 from virtualbricks.errors import InvalidName, UnmanagedType
 from virtualbricks.tcpserver import TcpServer
-from virtualbricks.bricks import Brick
-from virtualbricks.events import Event
 from virtualbricks.switches import Switch, SwitchWrapper
 from virtualbricks.virtualmachines import VM, DiskImage
 from virtualbricks.tunnels import TunnelListen, TunnelConnect
@@ -103,6 +101,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
         '   name must be lowercase here!!
         '   multiple names for one class type are allowed
         '''
+        from virtualbricks import events  # cyclic imports
         self.BRICKTYPES = {
             'switch': Switch,
             'tap': Tap,
@@ -116,7 +115,7 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
             'tunnell': TunnelListen,
             'tunnel server': TunnelListen,
             'tunnellisten': TunnelListen,
-            'event': Event,
+            'event': events.Event,
             'switchwrapper': SwitchWrapper,
             'router': Router,
         }
@@ -578,7 +577,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
             raise InvalidName()
 
         if ntype == "event" or ntype == "Event":
-            brick = Event(self, name)
+            from virtualbricks import events  # cyclic imports
+            brick = events.Event(self, name)
             self.debug("new event %s OK", brick.name)
         else:
             self.err(self, "Invalid event command '%s'", name)
@@ -593,9 +593,10 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
         if (cmd[0] == 'off'):
             obj.poweroff()
         if (cmd[0] == 'remove'):
+            from virtualbricks import bricks  # cyclic imports
             if obj.get_type() == 'Event':
                 self.delevent(obj)
-            elif isinstance(obj, Brick):
+            elif isinstance(obj, bricks.Brick):
                 self.delbrick(obj)
             else:
                 raise UnmanagedType()
