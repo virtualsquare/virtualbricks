@@ -29,6 +29,7 @@ import time
 import socket
 from virtualbricks.logger import ChildLogger
 from virtualbricks.settings import CONFIGFILE, MYPATH, Settings
+# XXX: import loop
 from virtualbricks.gui.graphics import Icon, Topology
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.link import Sock, Plug
