@@ -25,58 +25,63 @@ import time
 import sys
 import re
 
+
 def RandMac():
-	random.seed()
-	mac = "00:aa:"
-	mac = mac +"%02x:" % random.getrandbits(8)
-	mac = mac +"%02x:" % random.getrandbits(8)
-	mac = mac +"%02x:" % random.getrandbits(8)
-	mac = mac +"%02x" % random.getrandbits(8)
-	return mac
+    random.seed()
+    mac = "00:aa:"
+    mac = mac + "%02x:" % random.getrandbits(8)
+    mac = mac + "%02x:" % random.getrandbits(8)
+    mac = mac + "%02x:" % random.getrandbits(8)
+    mac = mac + "%02x" % random.getrandbits(8)
+    return mac
+
 
 class AutoSaveTimer(Thread):
-	def __init__(self, factory):
-		Thread.__init__(self)
-		self.autosave_timeout = 180
-		self.factory = factory
 
-	def run(self):
-		self.factory.debug( "Autosaver started")
-		while (self.factory.running_condition):
-			for t in range(self.autosave_timeout):
-				time.sleep(1)
-				if not self.factory.running_condition:
-					sys.exit()
-			self.factory.configfile.save(self.factory.settings.get('current_project'))
+    def __init__(self, factory):
+        Thread.__init__(self)
+        self.autosave_timeout = 180
+        self.factory = factory
+
+    def run(self):
+        self.factory.debug("Autosaver started")
+        while (self.factory.running_condition):
+            for t in range(self.autosave_timeout):
+                time.sleep(1)
+                if not self.factory.running_condition:
+                    sys.exit()
+            self.factory.configfile.save(self.factory.settings.get(
+                'current_project'))
 
 
 def ValidName(name):
-	name=str(name)
-	if not re.search("\A[a-zA-Z]", name):
-		return None
-	while(name.startswith(' ')):
-		name = name.lstrip(' ')
-	while(name.endswith(' ')):
-		name = name.rstrip(' ')
+    name = str(name)
+    if not re.search("\A[a-zA-Z]", name):
+        return None
+    while(name.startswith(' ')):
+        name = name.lstrip(' ')
+    while(name.endswith(' ')):
+        name = name.rstrip(' ')
 
-	name = re.sub(' ', '_', name)
-	if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
-		return None
-	return name
+    name = re.sub(' ', '_', name)
+    if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
+        return None
+    return name
 
-	''' used to determine whether the chosen name can be used or
-	'	it has already a duplicate among bricks or events
-	'''
+
 def NameNotInUse(factory, name):
-	for b in factory.bricks:
-		if b.name == name:
-			return False
+    """used to determine whether the chosen name can be used or
+    it has already a duplicate among bricks or events."""
 
-	for e in factory.events:
-		if e.name == name:
-			return False
+    for b in factory.bricks:
+        if b.name == name:
+            return False
 
-	for i in factory.disk_images:
-		if i.name == name:
-			return False
-	return True
+    for e in factory.events:
+        if e.name == name:
+            return False
+
+    for i in factory.disk_images:
+        if i.name == name:
+            return False
+    return True

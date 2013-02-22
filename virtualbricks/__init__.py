@@ -20,12 +20,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #Gettext stuff
 try:
-	import gettext
-	import locale
+    import gettext
+    import locale
 except:
-	print "locale and/or gettext for language support not installed"
-	import sys
-	sys.exit(1)
+    print "locale and/or gettext for language support not installed"
+    import sys
+    sys.exit(1)
 
 import gtk.glade
 
@@ -33,9 +33,8 @@ APP = 'virtualbricks'
 DIR = '/usr/share/locale'
 locale.setlocale(locale.LC_ALL, '')
 for module in gtk.glade, gettext:
-	module.bindtextdomain(APP, DIR)
-	module.textdomain(APP)
+    module.bindtextdomain(APP, DIR)
+    module.textdomain(APP)
 
 import __builtin__
 __builtin__._ = gettext.gettext
-

@@ -19,167 +19,167 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
-import copy
-import gobject
 import os
-import re
-import select
-import socket
-import subprocess
-import sys
+import __builtin__
+_ = __builtin__._
+
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Sock
 
+
 class Switch(Brick):
-	"""
-	>>> # bug #730812
-	>>> from copy import deepcopy
-	>>> factory = BrickFactory()
-	>>> sw1 = Switch(factory, 'sw1')
-	>>> sw2 = factory.dupbrick(sw1)
-	>>> id(sw1) != id(sw2)
-	True
-	>>> sw1 is not sw2
-	True
-	>>> sw1.cfg is not sw2.cfg
-	True
-	>>> sw1.icon is not sw2.icon
-	True
-	"""
-	def __init__(self, _factory, _name):
-		Brick.__init__(self, _factory, _name)
-		self.pid = -1
-		self.cfg.numports = "32"
-		self.cfg.hub = ""
-		self.cfg.fstp = ""
-		self.ports_used = 0
-		self.command_builder = {"-s":self.path,
-					"-M":self.console,
-					"-x":"hubmode",
-					"-n":"numports",
-					"-F":"fstp",
-					"--macaddr":"macaddr",
-					"-m":"mode",
-					"-g":"group",
-					"--priority":"priority",
-					"--mgmtmode":"mgmtmode",
-					"--mgmtgroup":"mgmtgroup"
+    """
+    >>> # bug #730812
+    >>> from copy import deepcopy
+    >>> factory = BrickFactory()
+    >>> sw1 = Switch(factory, 'sw1')
+    >>> sw2 = factory.dupbrick(sw1)
+    >>> id(sw1) != id(sw2)
+    True
+    >>> sw1 is not sw2
+    True
+    >>> sw1.cfg is not sw2.cfg
+    True
+    >>> sw1.icon is not sw2.icon
+    True
+    """
 
-					}
-		portname = self.name + "_port"
-		self.socks.append(Sock(self, portname))
-		self.on_config_changed()
+    def __init__(self, _factory, _name):
+        Brick.__init__(self, _factory, _name)
+        self.pid = -1
+        self.cfg.numports = "32"
+        self.cfg.hub = ""
+        self.cfg.fstp = ""
+        self.ports_used = 0
+        self.command_builder = {"-s": self.path,
+                                "-M": self.console,
+                                "-x": "hubmode",
+                                "-n": "numports",
+                                "-F": "fstp",
+                                "--macaddr": "macaddr",
+                                "-m": "mode",
+                                "-g": "group",
+                                "--priority": "priority",
+                                "--mgmtmode": "mgmtmode",
+                                "--mgmtgroup": "mgmtgroup"}
+        portname = self.name + "_port"
+        self.socks.append(Sock(self, portname))
+        self.on_config_changed()
 
-	def get_parameters(self):
-		fstp = ""
-		hub = ""
-		if (self.cfg.get('fstp',False)):
-			if self.cfg.fstp == '*':
-				fstp = ", FSTP"
-		if (self.cfg.get('hub',False)):
-			if self.cfg.hub == '*':
-				hub = ", HUB"
-		return _("Ports:") + "%d%s%s" % ((int(unicode(self.cfg.get('numports','32')))), fstp, hub)
+    def get_parameters(self):
+        fstp = ""
+        hub = ""
+        if (self.cfg.get('fstp', False)):
+            if self.cfg.fstp == '*':
+                fstp = ", FSTP"
+        if (self.cfg.get('hub', False)):
+            if self.cfg.hub == '*':
+                hub = ", HUB"
+        return _("Ports:") + "%d%s%s" % ((int(unicode(
+            self.cfg.get('numports', '32')))), fstp, hub)
 
-	def prog(self):
-		return self.settings.get("vdepath") + "/vde_switch"
+    def prog(self):
+        return self.settings.get("vdepath") + "/vde_switch"
 
-	def get_type(self):
-		return 'Switch'
+    def get_type(self):
+        return 'Switch'
 
-	def post_rename(self, newname):
-		for so in self.socks:
-			so.nickname = newname+"_port"
-			print so.path
-			so.path= self.settings.get("bricksdirectory")+"/"+newname+".ctl"
+    def post_rename(self, newname):
+        for so in self.socks:
+            so.nickname = newname + "_port"
+            print so.path
+            so.path = self.settings.get("bricksdirectory") + "/" + newname + \
+                    ".ctl"
 
-	def on_config_changed(self):
-		self.socks[0].path = self.path()
+    def on_config_changed(self):
+        self.socks[0].path = self.path()
 
-		if self.proc is not None:
-			self.need_restart_to_apply_changes = True
-		Brick.on_config_changed(self)
+        if self.proc is not None:
+            self.need_restart_to_apply_changes = True
+        Brick.on_config_changed(self)
 
-	def configured(self):
-		return self.socks[0].has_valid_path()
+    def configured(self):
+        return self.socks[0].has_valid_path()
 
-	# live-management callbacks
-	def cbset_fstp(self, arg=False):
-		self.debug( self.name + ": callback 'fstp' with argument " + arg)
-		if arg:
-			self.send("fstp/setfstp 1\n")
-		else:
-			self.send("fstp/setfstp 0\n")
-		self.debug(self.recv())
+    # live-management callbacks
+    def cbset_fstp(self, arg=False):
+        self.debug(self.name + ": callback 'fstp' with argument " + arg)
+        if arg:
+            self.send("fstp/setfstp 1\n")
+        else:
+            self.send("fstp/setfstp 0\n")
+        self.debug(self.recv())
 
-	def cbset_hub(self, arg=False):
-		self.debug( self.name + ": callback 'hub' with argument " + arg)
-		if arg:
-			self.send("port/sethub 1\n")
-		else:
-			self.send("port/sethub 0\n")
-		self.debug(self.recv())
+    def cbset_hub(self, arg=False):
+        self.debug(self.name + ": callback 'hub' with argument " + arg)
+        if arg:
+            self.send("port/sethub 1\n")
+        else:
+            self.send("port/sethub 0\n")
+        self.debug(self.recv())
 
-	def cbset_numports(self, arg="32"):
-		self.debug( self.name + ": callback 'numports' with argument " + str(arg))
-		self.send("port/setnumports " + str(arg))
-		self.debug(self.recv())
+    def cbset_numports(self, arg="32"):
+        self.debug(self.name + ": callback 'numports' with argument " +
+                   str(arg))
+        self.send("port/setnumports " + str(arg))
+        self.debug(self.recv())
 
-class FakeProcess():
-		def __init__(self, brick):
-			self.brick=brick
 
-		def poll(self):
-			return True
+class FakeProcess:
+
+        def __init__(self, brick):
+            self.brick = brick
+
+        def poll(self):
+            return True
+
 
 class SwitchWrapper(Brick):
-	def __init__(self, _factory, _name):
-		Brick.__init__(self, _factory, _name)
-		self.pid = -1
-		self.command_builder = {}
-		self.cfg.path=""
-		portname = self.name + "_port"
-		self.socks.append(Sock(self, portname))
-		self.on_config_changed()
-		self.has_console = False
-		self.proc = None
-		self.cfg.numports = 32
 
-	def get_parameters(self):
-		return ""
+    def __init__(self, _factory, _name):
+        Brick.__init__(self, _factory, _name)
+        self.pid = -1
+        self.command_builder = {}
+        self.cfg.path = ""
+        portname = self.name + "_port"
+        self.socks.append(Sock(self, portname))
+        self.on_config_changed()
+        self.has_console = False
+        self.proc = None
+        self.cfg.numports = 32
 
-	def prog(self):
-		return ""
+    def get_parameters(self):
+        return ""
 
-	def get_type(self):
-		return 'SwitchWrapper'
+    def prog(self):
+        return ""
 
-	def on_config_changed(self):
-		self.socks[0].path = self.cfg.path
-		Brick.on_config_changed(self)
+    def get_type(self):
+        return 'SwitchWrapper'
 
-	def configured(self):
-		return self.socks[0].has_valid_path()
+    def on_config_changed(self):
+        self.socks[0].path = self.cfg.path
+        Brick.on_config_changed(self)
 
-	def path(self):
-		return self.cfg.path
+    def configured(self):
+        return self.socks[0].has_valid_path()
 
-	def pidfile(self):
-		return "/tmp/%s.pid" % self.name
+    def path(self):
+        return self.cfg.path
 
-	pidfile = property(pidfile)
+    def pidfile(self):
+        return "/tmp/%s.pid" % self.name
 
-	def poweron(self):
-		if os.path.exists(self.cfg.path):
-			self.proc = FakeProcess(self)
-		else:
-			self.proc = None
+    pidfile = property(pidfile)
 
-	def _poweron(self):
-		pass
+    def poweron(self):
+        if os.path.exists(self.cfg.path):
+            self.proc = FakeProcess(self)
+        else:
+            self.proc = None
 
-	def poweroff(self):
-		pass
+    def _poweron(self):
+        pass
 
-
-
+    def poweroff(self):
+        pass
