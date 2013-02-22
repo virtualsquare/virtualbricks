@@ -5,7 +5,7 @@ import select
 from threading import Thread
 
 from virtualbricks.logger import ChildLogger
-from virtualbricks.tcpproto import VirtualbricksTCPPROTO, PyWire
+from virtualbricks.tcpproto import VirtualbricksTCPPROTO
 from virtualbricks.wires import PyWire
 from virtualbricks.console import Parse
 
