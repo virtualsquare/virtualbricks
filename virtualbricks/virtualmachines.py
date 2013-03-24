@@ -541,7 +541,7 @@ class VM(Brick):
 		for c in self.build_cmd_line():
 			res.append(c)
 
-		if self.factory.nogui == True or self.factory.server == True:
+		if self.factory.nogui == True or self.homehost is not None:
 			res.append("-nographic")
 
 		self.factory.clear_machine_vmdisks(self)
