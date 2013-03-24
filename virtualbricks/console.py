@@ -198,7 +198,7 @@ class RemoteHost():
 			if img.host is not None and img.host.addr[0] == self.addr[0]:
 				name = img.path.split("/")
 				name = name[len(name)-1]
-				self.send("i add " + img.name + " " + self.basepath + "/" + name)
+				self.send("i add " + img.name + " " + self.baseimages + "/" + name)
 
 		for b in self.factory.bricks:
 			if b.homehost and b.homehost.addr == self.addr:
