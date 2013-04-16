@@ -16,6 +16,8 @@
 ##	along with this program; if not, write to the Free Software
 ##	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import logging
+
 import Image
 import ImageEnhance
 import os
@@ -23,6 +25,8 @@ import pygraphviz as pgv
 import re
 
 from virtualbricks.settings import MYPATH
+
+logger = logging.getLogger('virtualbricks.gui')
 
 def ImgPrefix():
 	if os.access("/usr/share/pixmaps/Switch.png", os.R_OK):
@@ -70,7 +74,7 @@ class Icon:
 				bri = ImageEnhance.Brightness(src)
 				bri.enhance(2.0).save(self.grey, transparency = 0)
 			except:
-				self.debug("Cannot create grey image: defaulting to base")
+				logger.debug("Cannot create grey image: defaulting to base")
 				self.grey = self.base
 		self.ready = True
 
