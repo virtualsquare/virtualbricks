@@ -50,7 +50,9 @@ glade = open('/tmp/virtualbricks.glade.step1','r').read()
 open('share/virtualbricks.glade','w+').write(re.sub('__IMAGES_PATH__', sys.prefix + '/share', glade))
 
 FILES = [
-			( 'bin', ['main/virtualbricks']),
+			( 'bin', ['bin/virtualbricks']),
+			( 'bin', ['bin/vbgui']),
+			( 'bin', ['bin/vbserver']),
 			( 'share/virtualbricks/', ['share/virtualbricks.glade']),
 			( 'share/applications', ['share/virtualbricks.desktop']),
 			( 'share/pixmaps', ['share/virtualbricks.png']),
@@ -84,7 +86,7 @@ setup( data_files=FILES, name='virtualbricks', version=virtualbricks_version,
 	author='Daniele Lacamera, Rainer Haage, Francesco Apollonio, Pierre-Louis Bonicoli, Simone Abbati',
 	author_email='qemulator-list@createweb.de',
 	url='http://www.virtualbricks.eu/',
-	packages=['virtualbricks', 'virtualbricks.gui'],
+	packages=['virtualbricks', 'virtualbricks.gui', "virtualbricks.scripts"],
 	package_dir = {'': '.'}
 	)
 
