@@ -26,7 +26,7 @@ import re
 
 from virtualbricks.settings import MYPATH
 
-logger = logging.getLogger('virtualbricks.gui')
+log = logging.getLogger('virtualbricks.gui')
 
 def ImgPrefix():
 	if os.access("/usr/share/pixmaps/Switch.png", os.R_OK):
@@ -74,7 +74,7 @@ class Icon:
 				bri = ImageEnhance.Brightness(src)
 				bri.enhance(2.0).save(self.grey, transparency = 0)
 			except:
-				logger.debug("Cannot create grey image: defaulting to base")
+				log.debug("Cannot create grey image: defaulting to base")
 				self.grey = self.base
 		self.ready = True
 
