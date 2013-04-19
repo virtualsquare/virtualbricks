@@ -31,12 +31,11 @@ MYPATH = os.path.join(HOME, ".virtualbricks")
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
 
 
-class Settings(ChildLogger):
+class Settings(ChildLogger(__name__)):
 
     DEFAULT_SECTION = "Main"
 
     def __init__(self, filename, logger):
-        ChildLogger.__init__(self, logger)
         # default config
         default_conf = {
             "bricksdirectory": HOME + "/.virtualbricks",

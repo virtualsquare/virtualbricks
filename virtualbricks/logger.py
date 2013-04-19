@@ -21,40 +21,15 @@
 import logging
 
 
-class Logger(object):
+def ChildLogger(name):
+    log = logging.getLogger(name)
 
-    def __init__(self, logger):
-        self.logger = logger
+    class Logger:
+        debug = log.debug
+        info = log.info
+        warning = log.warning
+        error = err = log.error
+        critical = log.critical
+        exception = log.exception
 
-    def debug(self, *args, **kwargs):
-        self.logger.debug(*args, **kwargs)
-
-    def info(self, *args, **kwargs):
-        self.logger.info(*args, **kwargs)
-
-    def warning(self, *args, **kwargs):
-        self.logger.warning(*args, **kwargs)
-
-    def error(self, *args, **kwargs):
-        self.logger.error(*args, **kwargs)
-
-    def critical(self, *args, **kwargs):
-        self.logger.critical(*args, **kwargs)
-
-    def exception(self, *args, **kwargs):
-        self.logger.exception(*args, **kwargs)
-
-
-class ChildLogger(Logger):
-
-    def __init__(self, logger=None, name=None):
-        if logger is None:
-            logger = logging.getLogger()
-            logger.setLevel(logging.INFO)
-            handler = logging.StreamHandler()
-            logger.addHandler(handler)
-
-        if name is not None:
-            logger = logging.getLogger('%s.%s' % (logger.name, name))
-
-        Logger.__init__(self, logger)
+    return Logger
