@@ -120,9 +120,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
             'router': Router,
         }
         if VDESUPPORT and self.settings.python:
-            self.BRICKTYPES['Wire'] = PyWire
+            self.BRICKTYPES['wire'] = PyWire
         else:
-            self.BRICKTYPES['Wire'] = Wire
+            self.BRICKTYPES['wire'] = Wire
 
         '''
         '    Initialize server, ask access password if necessary
