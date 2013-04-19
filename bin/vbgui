@@ -1,0 +1,7 @@
+#!/usr/bin/python
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) Virtualbricks team
+
+from __future__ import absolute_import
+from virtualbricks.scripts import vbgui
+vbgui.run()

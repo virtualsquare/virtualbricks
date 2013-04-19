@@ -23,8 +23,6 @@ import select
 import socket
 import time
 from threading import Thread
-import __builtin__
-_ = __builtin__._
 
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Plug

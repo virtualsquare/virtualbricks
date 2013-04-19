@@ -27,8 +27,6 @@ import subprocess
 import sys
 import time
 import socket
-import __builtin__
-_ = __builtin__._
 
 from virtualbricks.logger import ChildLogger
 from virtualbricks.settings import MYPATH

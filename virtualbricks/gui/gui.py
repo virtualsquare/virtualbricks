@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import gobject
 import gtk
+import gtk.glade
 import os
 import re
 import subprocess
@@ -30,7 +31,7 @@ import time
 from traceback import format_exception
 import re
 
-from virtualbricks import tools
+from virtualbricks import tools, brickfactory
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
@@ -41,12 +42,15 @@ from virtualbricks.gui.tree import *
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
 
+_ = str  # temporary hack because its use in class definition
+
 ''' class VBGUI '''
 ''' The main GUI object for virtualbricks, containing all the '''
 ''' configuration for the widgets and the connections to the  '''
 ''' main engine. '''
 class VBGUI(Logger, gobject.GObject):
-	def __init__(self, noterm=False):
+
+	def __init__(self, textbuffer=None, noterm=False):
 		gobject.GObject.__init__(self)
 
 		if not os.access(MYPATH, os.X_OK):
@@ -70,7 +74,7 @@ class VBGUI(Logger, gobject.GObject):
 
 		self.info("Starting VirtualBricks!")
 
-		gtk.gdk.threads_init()
+		# gtk.gdk.threads_init()
 
 		''' Creation of the main BrickFactory engine '''
 		self.brickfactory = BrickFactory(self, not noterm)
@@ -187,7 +191,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_is_down = True
 
 		''' Initialize threads, timers etc.'''
-		gtk.gdk.threads_enter()
+		# gtk.gdk.threads_enter()
 		self.draw_topology()
 		self.brickfactory.start()
 		self.signals()
@@ -223,12 +227,13 @@ class VBGUI(Logger, gobject.GObject):
 			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert from the general settings.")
 
 		''' start the main loop'''
-		try:
-			gtk.main()
-		except KeyboardInterrupt:
-			self.quit()
-		finally:
-			gtk.gdk.threads_leave()
+		# try:
+		# 	gtk.main()
+		# except KeyboardInterrupt:
+		# 	self.quit()
+		# finally:
+		# 	gtk.gdk.threads_leave()
+		# gtk.main()
 
 	def check_gui_prerequisites(self):
 		qmissing,qfound = self.config.check_missing_qemupath(self.config.get("qemupath"))
@@ -965,7 +970,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.info("GUI: Goodbye!")
 		self.brickfactory.disconnect(self._engine_closed)
 		self.brickfactory.quit()
-		sys.exit(0)
+		# sys.exit(0)
 
 	'''
 	'	Quit function invoked from the commandline.
@@ -1059,7 +1064,7 @@ class VBGUI(Logger, gobject.GObject):
 		'sockscombo_tunnell',
 		'sockscombo_tunnelc',
 		'sockscombo_newvmplug',
-    'sockscombo_router_netconf'
+		'sockscombo_router_netconf'
 		]
 
 	def show_window(self, name):
@@ -1094,7 +1099,7 @@ class VBGUI(Logger, gobject.GObject):
 
 	def show_error(self, text):
 		def on_response(widget, response_id=None, data=None):
-			gtk.gdk.threads_leave()
+			# gtk.gdk.threads_leave()
 			widget.destroy()
 			return True
 
@@ -3621,3 +3626,57 @@ Packets longer than specified size are discarded.")
 		else:
 			self.gladefile.get_widget("userwait_progressbar").pulse()
 		return is_alive
+
+
+class TextBufferHandler(logging.Handler):
+
+	def __init__(self, textbuffer):
+		logging.Handler.__init__(self)
+		self.textbuffer = textbuffer
+
+	def emit(self, record):
+		try:
+			self.textbuffer.insert_with_tags_by_name(self.textbuffer.get_end_iter(),
+													self.format(record),
+													record.levelname)
+		except Exception:
+			self.handleError(record)
+
+
+class Application(brickfactory.Application):
+
+	tags = [('DEBUG', {'foreground': '#a29898'}),
+			('INFO', {}),
+			('WARNING', {'foreground': '#ff9500'}),
+			('ERROR', {'foreground': '#b8032e'}),
+			('CRITICAL', {'foreground': '#b8032e', 'background': '#000'}),
+			('EXCEPTION', {'foreground': '#000', 'background': '#b8032e'})]
+
+	def __init__(self, config):
+		brickfactory.Application.__init__(self, config)
+		self.textbuffer = tb = gtk.TextBuffer()
+		for name, attrs in self.tags:
+			tb.create_tag(name, **attrs)
+
+	def get_logging_handler(self):
+		return TextBufferHandler(self.textbuffer)
+
+	def install_locale(self):
+		brickfactory.Application.install_locale(self)
+		gtk.glade.bindtextdomain("virtualbricks", "/usr/share/locale")
+		gtk.glade.textdomain("virtualbricks")
+
+	def start(self):
+		import gobject
+		gobject.threads_init()
+		gtk.gdk.threads_init()
+		gtk.gdk.threads_enter()
+		noterm = self.config.get('noterm', False)
+		self.gui = VBGUI(self.textbuffer, noterm)
+		gtk.main()
+
+	def quit(self):
+		gtk.gdk.threads_leave()
+		self.gui.quit()
+
+# vim: se noet :

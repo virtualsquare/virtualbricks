@@ -19,6 +19,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
+import locale
+locale.setlocale(locale.LC_ALL, '')
+import gettext
 import copy
 import gobject
 import os
@@ -27,8 +30,6 @@ import sys
 from threading import Thread, Semaphore
 import time
 import getpass
-import __builtin__
-_ = __builtin__._
 
 from virtualbricks import tools
 from virtualbricks.logger import ChildLogger
@@ -713,9 +714,23 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
 gobject.type_register(BrickFactory)
 
-if __name__ == "__main__":
-    """
-    run tests with 'python BrickFactory.py -v'
-    """
-    import doctest
-    doctest.testmod()
+
+class Application:
+
+    def __init__(self, config):
+        self.config = config
+
+    def get_logging_handler(self):
+        pass
+
+    def install_locale(self):
+        gettext.install('virtualbricks', codeset='utf8')
+
+    def start(self):
+        server = self.config.get('server', False)
+        self.factory = BrickFactory(nogui=True, server=server)
+        self.factory.start()
+        self.factory.join()
+
+    def quit(self):
+        self.factory.quit()

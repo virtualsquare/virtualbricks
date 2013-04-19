@@ -21,6 +21,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
+_ = str  # temporary hack because its use in class definition
+
 class VBTree():
 	def __init__(self, gui, tree_name, model, fields, names):
 		self.gui = gui

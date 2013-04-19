@@ -20,8 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
 import os
-import __builtin__
-_ = __builtin__._
 
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Plug

@@ -20,8 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
 
 import subprocess
-import __builtin__
-_ = __builtin__._
 
 from virtualbricks.logger import ChildLogger
 from virtualbricks.brickconfig import BrickConfig
