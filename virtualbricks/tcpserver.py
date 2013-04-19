@@ -10,14 +10,13 @@ from virtualbricks.wires import PyWire
 from virtualbricks.console import Parse
 
 
-class TcpServer(ChildLogger, Thread):
+class TcpServer(ChildLogger(__name__), Thread):
     def __init__(self, factory, password, port=1050):
         self.port = port
         self.factory = factory
         self.logger = factory.logger
         self.listening = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.proto = VirtualbricksTCPPROTO()
-        ChildLogger.__init__(self, self.logger)
         self.password = password
         Thread.__init__(self)
         self.factory.connect("brick-stopped", self.cb_brick_stopped)

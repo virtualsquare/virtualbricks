@@ -48,7 +48,7 @@ from virtualbricks.project import VBProject
 from virtualbricks.configfile import ConfigFile
 
 
-class BrickFactory(ChildLogger, Thread, gobject.GObject):
+class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
     """This is the main class for the core engine.
 
     All the bricks are created and stored in the factory.
@@ -57,7 +57,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
 
     __gsignals__ = {
         'engine-closed': (gobject.SIGNAL_RUN_LAST, None, ()),
-        'brick-error': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'brick-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'brick-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str, bool,)),
@@ -68,10 +67,8 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
         'backup-restored': (gobject.SIGNAL_RUN_LAST, None, (str,)),
     }
 
-    def __init__(self, logger=None, showconsole=True, nogui=False,
-                 server=False):
+    def __init__(self, showconsole=True, nogui=False, server=False):
         gobject.GObject.__init__(self)
-        ChildLogger.__init__(self, logger)
         self.nogui = nogui
         self.server = server
         # DEFINE PROJECT PARMS
@@ -214,12 +211,6 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
             print "Error starting TCP server."
             self.quit()
 
-    def err(self, caller_obj, *args, **kargv):
-        txt = ''
-        for a in args:
-            txt += a
-        self.emit("brick-error", txt)
-
     """ Explicit quit was invoked. """
     def quit(self):
         for e in self.events:
@@ -239,6 +230,9 @@ class BrickFactory(ChildLogger, Thread, gobject.GObject):
         self.autosave_timer.join()
         self.emit("engine-closed")
         sys.exit(0)
+
+    def err(self, _, *args, **kwds):
+        self.error(*args, **kwds)
 
     """ Clear parameters, and reset project counter """
     def clear_project_parms(self):

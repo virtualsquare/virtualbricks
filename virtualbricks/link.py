@@ -4,10 +4,9 @@ from virtualbricks.logger import ChildLogger
 from virtualbricks import errors
 
 
-class Plug(ChildLogger):
+class Plug(ChildLogger(__name__)):
 
     def __init__(self, brick):
-        ChildLogger.__init__(self, brick)
         self.brick = brick
         self.sock = None
         self.antiloop = False

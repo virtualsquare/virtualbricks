@@ -36,13 +36,12 @@ from virtualbricks.errors import (BadConfig,
 from virtualbricks.console import RemoteHost
 
 
-class Brick(ChildLogger):
+class Brick(ChildLogger(__name__)):
 
     def __init__(self, _factory, _name, homehost=None):
         # XXX: avoid cyclic imports
         from virtualbricks.gui.graphics import Icon
 
-        ChildLogger.__init__(self, _factory)
         self.factory = _factory
         self.settings = self.factory.settings
         self.project_parms = self.factory.project_parms

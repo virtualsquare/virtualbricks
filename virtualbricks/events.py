@@ -28,12 +28,11 @@ from threading import Timer
 from virtualbricks.errors import BadConfig, InvalidAction
 
 
-class Event(ChildLogger):
+class Event(ChildLogger(__name__)):
 
     def __init__(self, _factory, _name):
         from virtualbricks.gui.graphics import Icon  # XXX: avoid cyclic imports
 
-        ChildLogger.__init__(self, _factory)
         self.factory = _factory
         self.settings = self.factory.settings
         self.active = False

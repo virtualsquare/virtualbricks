@@ -31,13 +31,12 @@ import time
 from traceback import format_exception
 import re
 
-from virtualbricks import tools, brickfactory
+from virtualbricks import tools, brickfactory, logger
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.gui.combo import ComboBox
 from virtualbricks.gui.graphics import *
-from virtualbricks.gui.logger import Logger
 from virtualbricks.gui.tree import *
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
@@ -48,10 +47,11 @@ _ = str  # temporary hack because its use in class definition
 ''' The main GUI object for virtualbricks, containing all the '''
 ''' configuration for the widgets and the connections to the  '''
 ''' main engine. '''
-class VBGUI(Logger, gobject.GObject):
+class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def __init__(self, textbuffer=None, noterm=False):
 		gobject.GObject.__init__(self)
+		self.messages_buffer = textbuffer
 
 		if not os.access(MYPATH, os.X_OK):
 			os.mkdir(MYPATH)
@@ -68,16 +68,14 @@ class VBGUI(Logger, gobject.GObject):
 					self.gladefile = gtk.glade.XML(os.path.join(sys.prefix,'local')+ '/share/virtualbricks/virtualbricks.glade')
 				except:
 					self.critical("Cannot open required file 'virtualbricks.glade'")
+					sys.exit(1)
 
-		Logger.__init__(self, self.gladefile)
 		self.widg = self.get_widgets(self.widgetnames())
 
 		self.info("Starting VirtualBricks!")
 
-		# gtk.gdk.threads_init()
-
 		''' Creation of the main BrickFactory engine '''
-		self.brickfactory = BrickFactory(self, not noterm)
+		self.brickfactory = BrickFactory(not noterm)
 
 		''' Connect all the signal from the factory to specific callbacks'''
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
@@ -85,7 +83,6 @@ class VBGUI(Logger, gobject.GObject):
 		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit_from_commandline)
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
-		self.brickfactory.connect("brick-error", self.cb_brickfactory_error)
 		self.brickfactory.connect("brick-changed", self.cb_brick_changed)
 		self.brickfactory.connect("event-started", self.cb_event_started)
 		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
@@ -191,7 +188,6 @@ class VBGUI(Logger, gobject.GObject):
 		self.curtain_is_down = True
 
 		''' Initialize threads, timers etc.'''
-		# gtk.gdk.threads_enter()
 		self.draw_topology()
 		self.brickfactory.start()
 		self.signals()
@@ -226,15 +222,6 @@ class VBGUI(Logger, gobject.GObject):
 					missing_components = missing_components + ('%s ' % m)
 			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert from the general settings.")
 
-		''' start the main loop'''
-		# try:
-		# 	gtk.main()
-		# except KeyboardInterrupt:
-		# 	self.quit()
-		# finally:
-		# 	gtk.gdk.threads_leave()
-		# gtk.main()
-
 	def check_gui_prerequisites(self):
 		qmissing,qfound = self.config.check_missing_qemupath(self.config.get("qemupath"))
 		vmissing = self.config.check_missing_vdepath(self.config.get("vdepath"))
@@ -254,10 +241,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.draw_topology()
 
 	def cb_backup_restored(self, model, name=""):
-		# THREADS_ENTER AND LEAVE ARE STILL BUGGY!!
-		#gtk.gdk.threads_enter()
 		self.error(name)
-		#gtk.gdk.threads_leave()
 
 	def cb_brick_changed(self, model, name, startup):
 		if not startup:
@@ -270,9 +254,6 @@ class VBGUI(Logger, gobject.GObject):
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
 		self.check_joblist(force=True)
-
-	def cb_brickfactory_error(self, model, name="Unnamed"):
-		self.error(name)
 
 	def cb_event_added(self, model, name):
 		pass
@@ -1078,38 +1059,20 @@ class VBGUI(Logger, gobject.GObject):
 			elif not name.startswith('menu'):
 				self.widg[w].hide()
 
-	def critical(self, text, *args, **kwargs):
-		exc_type, exc_value, exc_traceback = sys.exc_info()
-		traceback = format_exception(exc_type, exc_value, exc_traceback)
-		Logger.critical(self, text, *args, **kwargs)
-		for line in traceback:
-			Logger.critical(self, line.rstrip('\n'))
-		sys.exit(1)
-
-	def error(self, text, *args, **kwargs):
-		Logger.error(self, text, *args, **kwargs)
+	def error(self, text, *args, **kwds):
+		super(VBGUI, self).error(*args, **kwds)
 		if args:
 			text = text % args
-
-		#gtk.gdk.threads_enter()
-		#try:
 		self.show_error(text)
-		#finally:
-		#	gtk.gdk.threads_leave()
 
 	def show_error(self, text):
-		def on_response(widget, response_id=None, data=None):
-			# gtk.gdk.threads_leave()
-			widget.destroy()
-			return True
-
 		parent = self.gladefile.get_widget("main_win")
 		dlg = gtk.MessageDialog(parent=parent, flags=gtk.DIALOG_MODAL,
 			type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE,
 			message_format=None)
 		dlg.set_property('message-type', gtk.MESSAGE_ERROR)
 		dlg.set_property('text', text)
-		dlg.connect("response", on_response)
+		dlg.connect("response", lambda w, r: w.destroy())
 		dlg.run()
 
 	def pixbuf_scaled(self, filename):
@@ -1786,28 +1749,20 @@ Packets longer than specified size are discarded.")
 				b.poweron()
 			except BadConfig:
 				b.gui_changed=True
-				gtk.gdk.threads_enter()
 				self.error(_("Cannot start '%s': not configured"),
 					b.name)
-				gtk.gdk.threads_leave()
 			except NotConnected:
-				gtk.gdk.threads_enter()
 				self.error(_("Cannot start '%s': not connected"),
 					b.name)
-				gtk.gdk.threads_leave()
 			except Linkloop:
 				if self.config.erroronloop:
-					gtk.gdk.threads_enter()
 					self.error(_("Loop link detected: aborting operation. If you want to start "
 						"a looped network, disable the check loop feature in the general "
 						"settings"))
-					gtk.gdk.threads_leave()
 					b.poweroff()
 			except DiskLocked as ex:
 				b.gui_changed=True
-				gtk.gdk.threads_enter()
 				self.error(_("Disk used by the VM is locked:\n")+str(ex))
-				gtk.gdk.threads_leave()
 				b.poweroff()
 
 
@@ -3637,7 +3592,7 @@ class TextBufferHandler(logging.Handler):
 	def emit(self, record):
 		try:
 			self.textbuffer.insert_with_tags_by_name(self.textbuffer.get_end_iter(),
-													self.format(record),
+													"%s\n" % self.format(record),
 													record.levelname)
 		except Exception:
 			self.handleError(record)
@@ -3651,6 +3606,8 @@ class Application(brickfactory.Application):
 			('ERROR', {'foreground': '#b8032e'}),
 			('CRITICAL', {'foreground': '#b8032e', 'background': '#000'}),
 			('EXCEPTION', {'foreground': '#000', 'background': '#b8032e'})]
+
+	gui = None
 
 	def __init__(self, config):
 		brickfactory.Application.__init__(self, config)
@@ -3667,16 +3624,14 @@ class Application(brickfactory.Application):
 		gtk.glade.textdomain("virtualbricks")
 
 	def start(self):
-		import gobject
 		gobject.threads_init()
 		gtk.gdk.threads_init()
-		gtk.gdk.threads_enter()
 		noterm = self.config.get('noterm', False)
 		self.gui = VBGUI(self.textbuffer, noterm)
 		gtk.main()
 
 	def quit(self):
-		gtk.gdk.threads_leave()
-		self.gui.quit()
+		if self.gui:  # TODO: when all bugs will be resolved get rid of this
+			self.gui.quit()
 
 # vim: se noet :
