@@ -267,9 +267,7 @@ class VBGUI(Logger, gobject.GObject):
 		self.check_joblist(force=True)
 
 	def cb_brickfactory_error(self, model, name="Unnamed"):
-		gtk.gdk.threads_enter()
 		self.error(name)
-		gtk.gdk.threads_leave()
 
 	def cb_event_added(self, model, name):
 		pass
