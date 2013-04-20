@@ -50,7 +50,7 @@ open('share/virtualbricks.glade','w+').write(re.sub('__IMAGES_PATH__', sys.prefi
 FILES = [
 			( 'bin', ['bin/virtualbricks']),
 			( 'bin', ['bin/vbgui']),
-			( 'bin', ['bin/vbserver']),
+			( 'bin', ['bin/vbd']),
 			( 'share/virtualbricks/', ['share/virtualbricks.glade']),
 			( 'share/applications', ['share/virtualbricks.desktop']),
 			( 'share/pixmaps', ['share/virtualbricks.png']),
