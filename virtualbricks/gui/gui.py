@@ -1055,22 +1055,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			elif not name.startswith('menu'):
 				self.widg[w].hide()
 
-	def error(self, text, *args, **kwds):
-		super(VBGUI, self).error(*args, **kwds)
-		if args:
-			text = text % args
-		self.show_error(text)
-
-	def show_error(self, text):
-		parent = self.gladefile.get_widget("main_win")
-		dlg = gtk.MessageDialog(parent=parent, flags=gtk.DIALOG_MODAL,
-			type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE,
-			message_format=None)
-		dlg.set_property('message-type', gtk.MESSAGE_ERROR)
-		dlg.set_property('text', text)
-		dlg.connect("response", lambda w, r: w.destroy())
-		dlg.run()
-
 	def pixbuf_scaled(self, filename):
 		if filename is None or filename == "":
 				return None
@@ -3594,6 +3578,26 @@ class TextBufferHandler(logging.Handler):
 			self.handleError(record)
 
 
+class MessageDialogHandler(logging.Handler):
+
+	def __init__(self, parent=None):
+		logging.Handler.__init__(self, logging.ERROR)
+		self.parent = parent
+
+	def set_parent(self, parent):
+		self.parent = parent
+
+	def emit(self, record):
+		try:
+			dialog = gtk.MessageDialog(self.parent, gtk.DIALOG_MODAL,
+					gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
+			dialog.set_property('text', self.format(record))
+			dialog.connect("response", lambda d, r: d.destroy())
+			dialog.run()
+		except Exception:
+			self.handleError(record)
+
+
 class Application(brickfactory.Application):
 
 	tags = [('DEBUG', {'foreground': '#a29898'}),
@@ -3622,8 +3626,12 @@ class Application(brickfactory.Application):
 	def start(self):
 		gobject.threads_init()
 		gtk.gdk.threads_init()
+		handler = MessageDialogHandler()
+		logger = logging.getLogger("virtualbricks")
+		logger.addHandler(handler)
 		noterm = self.config.get('noterm', False)
 		self.gui = VBGUI(self.textbuffer, noterm)
+		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
 		gtk.main()
 
 	def quit(self):
