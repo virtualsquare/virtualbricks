@@ -32,7 +32,7 @@ Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 Copyright (C) Virtualbricks team
 """
 
-from __future__ import print_function, absolute_import
+from __future__ import print_function
 import sys
 
 
@@ -42,19 +42,21 @@ def main(argv=None):
     if "-h" in argv or "--help" in argv:
         print(__doc__)
         return 0
+    if "-d" not in argv or "--debug" not in argv:
+        argv.append("-d")
     try:
         idx = argv.index("-nogui")
-        from virtualbricks.scripts import vbserver
+        from virtualbricks.scripts import vbd
         del argv[idx]
-        return vbserver.main(argv)
+        return vbd.main(argv)
     except ValueError:
         pass
 
     try:
         idx = argv.index("-server")
-        from virtualbricks.scripts import vbserver
+        from virtualbricks.scripts import vbd
         argv[idx] = "--server"
-        return vbserver.main(argv)
+        return vbd.main(argv)
     except ValueError:
         pass
 
