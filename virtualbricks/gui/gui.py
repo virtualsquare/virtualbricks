@@ -3570,32 +3570,42 @@ class TextBufferHandler(logging.Handler):
 		self.textbuffer = textbuffer
 
 	def emit(self, record):
-		try:
-			self.textbuffer.insert_with_tags_by_name(self.textbuffer.get_end_iter(),
-													"%s\n" % self.format(record),
-													record.levelname)
-		except Exception:
-			self.handleError(record)
+		gobject.idle_add(self._emit, record)
+		# try:
+		# 	with gtk.gdk.lock:
+		# 		self._emit(record)
+		# except Exception:
+		# 	self.handleError(record)
+
+	def _emit(self, record):
+		eiter = self.textbuffer.get_end_iter()
+		msg = "%s\n" % self.format(record)
+		self.textbuffer.insert_with_tags_by_name(eiter, msg, record.levelname)
 
 
 class MessageDialogHandler(logging.Handler):
 
 	def __init__(self, parent=None):
 		logging.Handler.__init__(self, logging.ERROR)
-		self.parent = parent
+		self.__parent = parent
 
 	def set_parent(self, parent):
-		self.parent = parent
+		self.__parent = parent
 
 	def emit(self, record):
-		try:
-			dialog = gtk.MessageDialog(self.parent, gtk.DIALOG_MODAL,
-					gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
-			dialog.set_property('text', self.format(record))
-			dialog.connect("response", lambda d, r: d.destroy())
-			dialog.run()
-		except Exception:
-			self.handleError(record)
+		gobject.idle_add(self._emit, record)
+		# try:
+		# 	with gtk.gdk.lock:
+		# 		self._emit(record)
+		# except Exception:
+		# 	self.handleError(record)
+
+	def _emit(self, record):
+		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
+				gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
+		dialog.set_property('text', self.format(record))
+		dialog.run()
+		dialog.destroy()
 
 
 class Application(brickfactory.Application):
@@ -3625,7 +3635,6 @@ class Application(brickfactory.Application):
 
 	def start(self):
 		gobject.threads_init()
-		gtk.gdk.threads_init()
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
