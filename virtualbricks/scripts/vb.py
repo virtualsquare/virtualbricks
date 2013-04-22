@@ -63,6 +63,7 @@ def main(argv=None):
     from virtualbricks.scripts import vbgui
     try:
         idx = argv.index("-noterm")
+        argv[idx] = "--noterm"
     except ValueError:
         pass
     return vbgui.main(argv)
