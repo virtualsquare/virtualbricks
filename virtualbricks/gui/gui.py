@@ -22,6 +22,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from threading import Thread
 import time
 from traceback import format_exception
@@ -71,7 +72,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.info("Starting VirtualBricks!")
 
 		''' Creation of the main BrickFactory engine '''
-		self.brickfactory = BrickFactory(not noterm)
+		self.brickfactory = BrickFactory()
 
 		''' Connect all the signal from the factory to specific callbacks'''
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
@@ -185,7 +186,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		''' Initialize threads, timers etc.'''
 		self.draw_topology()
-		self.brickfactory.start()
+		# if not noterm:
+		if term:
+			console_thread = brickfactory.ConsoleThread(self.brickfactory)
+			console_thread.start()
 		self.signals()
 		self.timers()
 
@@ -3571,11 +3575,6 @@ class TextBufferHandler(logging.Handler):
 
 	def emit(self, record):
 		gobject.idle_add(self._emit, record)
-		# try:
-		# 	with gtk.gdk.lock:
-		# 		self._emit(record)
-		# except Exception:
-		# 	self.handleError(record)
 
 	def _emit(self, record):
 		eiter = self.textbuffer.get_end_iter()
@@ -3594,11 +3593,6 @@ class MessageDialogHandler(logging.Handler):
 
 	def emit(self, record):
 		gobject.idle_add(self._emit, record)
-		# try:
-		# 	with gtk.gdk.lock:
-		# 		self._emit(record)
-		# except Exception:
-		# 	self.handleError(record)
 
 	def _emit(self, record):
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
