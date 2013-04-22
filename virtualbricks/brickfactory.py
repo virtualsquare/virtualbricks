@@ -118,7 +118,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.startup = False
 
     def restore_configfile(self):
-            # self.configfile.restore('/tmp/TCP_controlled.vb')
         log.info("Current project is %s" %
                   self.settings.get('current_project'))
         self.configfile.restore(self.settings.get('current_project'))
@@ -135,9 +134,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 b.poweroff()
         for h in self.remote_hosts:
             h.disconnect()
-        if self.TCP:
-            #XXX
-            pass
 
         self.info(_('Engine: Bye!'))
         self.configfile.save(self.settings.get('current_project'))
