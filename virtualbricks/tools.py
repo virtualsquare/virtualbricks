@@ -113,7 +113,7 @@ class LoopingCall:
 
 def AutosaveTimer(factory, timeout=180):
     t = LoopingCall(timeout, factory.configfile.save,
-                    factory.settings.get( 'current_project'))
+                    (factory.settings.get( 'current_project'),))
     t.set_name("AutosaveTimer_%d" % timeout)
     return t
 
