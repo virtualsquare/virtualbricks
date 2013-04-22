@@ -15,21 +15,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
 
-import locale
-locale.setlocale(locale.LC_ALL, '')
-import gettext
-import copy
-import gobject
 import os
-import select
 import sys
-from threading import Thread, Semaphore
-import time
+import copy
+import select
 import getpass
+import logging
+import threading
 
-from virtualbricks import tools
-from virtualbricks.logger import ChildLogger
+import gobject
+
+from virtualbricks import tools, logger
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
 from virtualbricks.errors import InvalidName, UnmanagedType
@@ -41,11 +39,16 @@ from virtualbricks.tuntaps import Capture, Tap
 from virtualbricks.wires import Wire, Wirefilter, PyWire, VDESUPPORT
 from virtualbricks.console import Parse, CommandLineOutput
 from virtualbricks.router import Router
-from virtualbricks.project import VBProject
 from virtualbricks.configfile import ConfigFile
 
 
-class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
+log = logging.getLogger(__name__)
+
+if False:  # pyflakes
+    _ = str
+
+
+class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     """This is the main class for the core engine.
 
     All the bricks are created and stored in the factory.
@@ -64,7 +67,7 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
         'backup-restored': (gobject.SIGNAL_RUN_LAST, None, (str,)),
     }
 
-    def __init__(self, showconsole=True, nogui=False, server=False):
+    def __init__(self, nogui=False, server=False):
         gobject.GObject.__init__(self)
         self.nogui = nogui
         self.server = server
@@ -79,14 +82,12 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
         self.bricksmodel = BricksModel()
         self.eventsmodel = EventsModel()
         self.startup = True
-        self.showconsole = showconsole
         self.remotehosts_changed = False
         self.TCP = None
-        Thread.__init__(self)
         self.running_condition = True
         self.settings = Settings(CONFIGFILE, self)
         self.configfile = ConfigFile(self)
-        self.projectsave_sema = Semaphore()
+        self.projectsave_sema = threading.Semaphore()
         self.autosave_timer = tools.AutoSaveTimer(self)
         self.autosave_timer.start()
         self.backup_restore = False
@@ -124,12 +125,12 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
         '''
         if server:
             if os.getuid() != 0:
-                print ("ERROR: -server requires to be run by root.")
+                print("ERROR: -server requires to be run by root.")
                 sys.exit(5)
             try:
                 pwdfile = open("/etc/virtualbricks-passwd", "r")
             except:
-                print "Password not set."
+                print("Password not set.")
                 while True:
                     password = getpass.getpass("Insert password:")
                     repeat = getpass.getpass("Confirm:")
@@ -137,14 +138,14 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
                         try:
                             pwdfile = open('/etc/virtualbricks-passwd', 'w+')
                         except:
-                            print "Could not save password."
+                            print("Could not save password.")
                         else:
                             pwdfile.write(password)
                             pwdfile.close()
-                            print "Password saved."
+                            print("Password saved.")
                         break
                     else:
-                        print "Passwords don't match. Retry."
+                        print("Passwords don't match. Retry.")
             else:
                 password = pwdfile.readline()
                 pwdfile.close()
@@ -165,47 +166,12 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
 
         self.startup = False
 
-    def run(self):
-        """Main thread start."""
-
-        print "\nvirtualbricks> ",
-        sys.stdout.flush()
-        p = select.poll()
-        p.register(sys.stdin, select.POLLIN)
-        while self.running_condition:
-            if (self.showconsole):
-                if (len(p.poll(10)) > 0):
-                    try:
-                        command = sys.stdin.readline()
-                        Parse(self, command.rstrip('\n'))
-                    except Exception as e:
-                        msg = ""
-                        errno = ""
-                        if len(e.args) == 2:
-                            msg, errno = e.args
-                        elif len(e.args) == 1:
-                            msg = e.args[0]
-                        print _("Exception:\n\tType: %s\n\tErrno: %s\n\t"
-                                "Message: %s\n" % (type(e), errno, msg))
-                    print "\nvirtualbricks> ",
-                    sys.stdout.flush()
-            else:
-                time.sleep(1)
-            if self.remotehosts_changed:
-                for rh in self.remote_hosts:
-                    if rh.connection and rh.connection.isAlive():
-                        rh.connection.join(0.001)
-                        if not rh.connection.isAlive():
-                            rh.connected = False
-                            rh.connection = None
-        sys.exit(0)
-
     def start_tcp_server(self, password):
         self.TCP = TcpServer(self, password)
         try:
             self.TCP.start()
         except:
-            print "Error starting TCP server."
+            print("Error starting TCP server.")
             self.quit()
 
     """ Explicit quit was invoked. """
@@ -256,16 +222,16 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
 
     '''PROJECTS'''
 
-    def add_project(self, id, name, filename):
-        if get_project_by_filename(filename):
-            if get_project_by_name(name) is None:
-                proj = VBProject(id, name, filename)
-                self.projects.append(proj)
-                print self.projects
-            else:
-                raise Exception("Project name already in VB database.")
-        else:
-            raise Exception("Project file already in VB database.!")
+    # def add_project(self, id, name, filename):
+    #     if get_project_by_filename(filename):
+    #         if get_project_by_name(name) is None:
+    #             proj = VBProject(id, name, filename)
+    #             self.projects.append(proj)
+    #             print self.projects
+    #         else:
+    #             raise Exception("Project name already in VB database.")
+    #     else:
+    #         raise Exception("Project file already in VB database.!")
 
     def del_project(self, id):
         pj = self.get_project_by_id(id)
@@ -376,7 +342,7 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
                                       "files not works for remote hosts.")
                     return
                     files = host.get_files_list()
-                    print files
+                    # print files
                     if files is None:
                         CommandLineOutput(console, "No files found.")
                         return
@@ -598,9 +564,9 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
             obj.cfg.dump()
         if (cmd[0] == 'connect' and len(cmd) == 2):
             if(self.connect_to(obj, cmd[1].rstrip('\n')) is not None):
-                print ("Connection ok")
+                print("Connection ok")
             else:
-                print ("Connection failed")
+                print("Connection failed")
         if (cmd[0] == 'disconnect'):
             obj.disconnect()
         if (cmd[0] == 'help'):
@@ -706,6 +672,45 @@ class BrickFactory(ChildLogger(__name__), Thread, gobject.GObject):
 gobject.type_register(BrickFactory)
 
 
+class ConsoleThread(threading.Thread):
+
+    def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
+        threading.Thread(self, name="Console")
+        self.factory = factory
+        self.stdout = stdout
+        self.stdin = stdin
+
+    def run(self):
+        print("\nvirtualbricks> ", end="", file=self.stdout)
+        self.stdout.flush()
+        p = select.poll()
+        p.register(self.stdin, select.POLLIN)
+        while self.factory.running_condition:
+            if len(p.poll(10)) > 0:
+                try:
+                    command = self.stdin.readline()
+                    Parse(self.factory, command.rstrip('\n'))
+                except Exception as e:
+                    msg = ""
+                    errno = ""
+                    if len(e.args) == 2:
+                        msg, errno = e.args
+                    elif len(e.args) == 1:
+                        msg = e.args[0]
+                    print (_("Exception:\n\tType: %s\n\tErrno: %s\n\t"
+                            "Message: %s\n" % (type(e), errno, msg)),
+                           file=self.stdout)
+                print("\nvirtualbricks> ", end="", file=self.stdout)
+                self.stdout.flush()
+            if self.factory.remotehosts_changed:
+                for rh in self.factory.remote_hosts:
+                    if rh.connection and rh.connection.isAlive():
+                        rh.connection.join(0.001)
+                        if not rh.connection.isAlive():
+                            rh.connected = False
+                            rh.connection = None
+
+
 class Application:
 
     def __init__(self, config):
@@ -715,6 +720,10 @@ class Application:
         pass
 
     def install_locale(self):
+        import locale
+        locale.setlocale(locale.LC_ALL, '')
+        import gettext
+
         gettext.install('virtualbricks', codeset='utf8')
 
     def start(self):
