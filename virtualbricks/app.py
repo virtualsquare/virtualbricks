@@ -71,8 +71,6 @@ class Runner:
         application.install_locale()
         try:
             application.start()
-        except StandardError:
-            log.exception('Someting bad happened')
         finally:
             application.quit()
             self.logger.stop()
