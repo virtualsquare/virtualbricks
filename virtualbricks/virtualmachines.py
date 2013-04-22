@@ -27,8 +27,12 @@ from virtualbricks.bricks import Brick
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.link import Sock, Plug
 from virtualbricks.errors import DiskLocked, InvalidName, BadConfig
-from virtualbricks.settings import CONFIGFILE, MYPATH, Settings
+from virtualbricks.settings import MYPATH
 from virtualbricks import tools
+
+
+if False:
+	_ = str
 
 class VMPlug(Plug, BrickConfig):
 	def __init__(self, brick):
@@ -504,15 +508,16 @@ class VM(Brick):
 	# QEMU PROGRAM SELECTION
 	def prog(self):
 		#IF IS IN A SERVER, CHECK IF KVM WORKS
-		if self.factory.server:
-			try:
-				self.settings.check_kvm()
-			except IOError:
-				raise BadConfig(_("KVM not found! Please change VM configuration."))
-				return
-			except NotImplementedError:
-				raise BadConfig(_("KVM not found! Please change VM configuration."))
-				return
+		# XXX: I disabled this, how can be renabled?
+		# if self.factory.server:
+		# 	try:
+		# 		self.settings.check_kvm()
+		# 	except IOError:
+		# 		raise BadConfig(_("KVM not found! Please change VM configuration."))
+		# 		return
+		# 	except NotImplementedError:
+		# 		raise BadConfig(_("KVM not found! Please change VM configuration."))
+		# 		return
 
 		if (len(self.cfg.argv0) > 0 and self.cfg.kvm != "*"):
 			cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
@@ -537,7 +542,7 @@ class VM(Brick):
 		for c in self.build_cmd_line():
 			res.append(c)
 
-		if self.factory.nogui == True or self.homehost is not None:
+		if not self.has_graphic():
 			res.append("-nographic")
 
 		self.factory.clear_machine_vmdisks(self)
@@ -663,6 +668,9 @@ class VM(Brick):
 		res.append('socket,id=mon,path=%s,server,nowait' % self.console())
 		return res
 
+	def has_graphic(self):
+		return self.homehost is not None
+
 	def __deepcopy__(self, memo):
 		newname = self.factory.nextValidName("Copy_of_%s" % self.name)
 		if newname is None:
@@ -753,7 +761,7 @@ class VM(Brick):
 			c = socket.socket(socket.AF_UNIX)
 			c.connect(self.console2())
 			return c
-		except Exception, err:
+		except Exception:
 			if self.proc.stdout is not None:
 				self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
 			elif self.cfg.stdout != "":
@@ -770,3 +778,10 @@ class VM(Brick):
 	def post_poweroff(self):
 		self.active = False
 		self.start_related_events(off=True)
+
+
+class VMGui(VM):
+
+	def has_graphic(self):
+		return True
+
