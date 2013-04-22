@@ -15,8 +15,27 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
+
+import sys
+import getopt
 import logging
+
+
 log = logging.getLogger('virtualbricks')
+
+
+class UsageError(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+
+class QuitError(Exception):
+
+    def __init__(self, msg, exit_code):
+        self.msg = msg
+        self.exit_code = exit_code
 
 
 class Logger:
@@ -74,3 +93,32 @@ class Runner:
         finally:
             application.quit()
             self.logger.stop()
+
+
+def usage_wrapper(func, short_opts, long_opts):
+    def main(argv=None):
+        if argv is None:
+            argv = sys.argv
+        try:
+            try:
+                opts, args = getopt.getopt(argv[1:], short_opts, long_opts)
+            except getopt.error, msg:
+                raise UsageError(msg)
+
+            return func(opts, args)
+        except UsageError, err:
+            print(err.msg, file=sys.stderr)
+            print("for help use --help", file=sys.stderr)
+            return 2
+    return main
+
+
+def run(application, config):
+    runner = Runner(config)
+    runner.application_factory = application
+    try:
+        runner.run()
+    except QuitError, err:
+        print(err.msg, file=sys.stderr)
+        return err.exit_code
+    return 0

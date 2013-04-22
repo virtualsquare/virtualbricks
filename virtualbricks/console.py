@@ -15,17 +15,17 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
+import select
+import socket
+import hashlib
+import threading
 from threading import Thread, Lock
-import select, sys, os, re, socket, hashlib, time
 
 class VbShellCommand(str):
-	def __init__(self, mystr):
-		self=mystr
 	pass
 
 class ShellCommand(str):
-	def __init__(self, mystr):
-		self=mystr
 	pass
 
 class RemoteHostConnectionInstance(Thread):
@@ -384,6 +384,10 @@ def Parse(factory, command, console=sys.stdout):
 			CommandLineOutput(console,  "FAIL Brick not found: " + args[2] + "\n")
 	elif command == '':
 		return True
+	elif command.lower() == "threads":
+		CommandLineOutput(console, "Threads:")
+		for i, thread in enumerate(threading.enumerate()):
+			CommandLineOutput(console, "  %d: %s" % (i, repr(thread)))
 	else:
 		found = None
 		for obj in factory.bricks:

@@ -27,18 +27,12 @@ import threading
 
 import gobject
 
-from virtualbricks import tools, logger
+from virtualbricks import app, tools, logger, wires, virtualmachines
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
 from virtualbricks.errors import InvalidName, UnmanagedType
 from virtualbricks.tcpserver import TcpServer
-from virtualbricks.switches import Switch, SwitchWrapper
-from virtualbricks.virtualmachines import VM, DiskImage
-from virtualbricks.tunnels import TunnelListen, TunnelConnect
-from virtualbricks.tuntaps import Capture, Tap
-from virtualbricks.wires import Wire, Wirefilter, PyWire, VDESUPPORT
 from virtualbricks.console import Parse, CommandLineOutput
-from virtualbricks.router import Router
 from virtualbricks.configfile import ConfigFile
 
 
@@ -46,6 +40,37 @@ log = logging.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
+
+
+def install_brick_types(registry=None, vde_support=False):
+    if registry is None:
+        registry = {}
+
+    # avoid cyclic imports
+    from virtualbricks import events, switches, tuntaps, tunnels, router
+
+    registry.update({
+        'switch': switches.Switch,
+        'tap': tuntaps.Tap,
+        'capture': tuntaps.Capture,
+        'vm': virtualmachines.VM,
+        'qemu': virtualmachines.VM,
+        'wirefilter': wires.Wirefilter,
+        'tunnelc': tunnels.TunnelConnect,
+        'tunnel client': tunnels.TunnelConnect,
+        'tunnelconnect': tunnels.TunnelConnect,
+        'tunnell': tunnels.TunnelListen,
+        'tunnel server': tunnels.TunnelListen,
+        'tunnellisten': tunnels.TunnelListen,
+        'event': events.Event,
+        'switchwrapper': switches.SwitchWrapper,
+        'router': router.Router,
+    })
+    if vde_support:
+        registry['wire'] = wires.PyWire
+    else:
+        registry['wire'] = wires.Wire
+    return registry
 
 
 class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
@@ -67,10 +92,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         'backup-restored': (gobject.SIGNAL_RUN_LAST, None, (str,)),
     }
 
-    def __init__(self, nogui=False, server=False):
+    def __init__(self):
         gobject.GObject.__init__(self)
-        self.nogui = nogui
-        self.server = server
         # DEFINE PROJECT PARMS
         self.project_parms = self.clear_project_parms()
         self.remote_hosts = []
@@ -88,91 +111,20 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.settings = Settings(CONFIGFILE, self)
         self.configfile = ConfigFile(self)
         self.projectsave_sema = threading.Semaphore()
-        self.autosave_timer = tools.AutoSaveTimer(self)
-        self.autosave_timer.start()
         self.backup_restore = False
-
-        ''' Brick types
-        '   dictionary 'name': class
-        '   name must be lowercase here!!
-        '   multiple names for one class type are allowed
-        '''
-        from virtualbricks import events  # cyclic imports
-        self.BRICKTYPES = {
-            'switch': Switch,
-            'tap': Tap,
-            'capture': Capture,
-            'vm': VM,
-            'qemu': VM,
-            'wirefilter': Wirefilter,
-            'tunnelc': TunnelConnect,
-            'tunnel client': TunnelConnect,
-            'tunnelconnect': TunnelConnect,
-            'tunnell': TunnelListen,
-            'tunnel server': TunnelListen,
-            'tunnellisten': TunnelListen,
-            'event': events.Event,
-            'switchwrapper': SwitchWrapper,
-            'router': Router,
-        }
-        if VDESUPPORT and self.settings.python:
-            self.BRICKTYPES['wire'] = PyWire
-        else:
-            self.BRICKTYPES['wire'] = Wire
-
-        '''
-        '    Initialize server, ask access password if necessary
-        '''
-        if server:
-            if os.getuid() != 0:
-                print("ERROR: -server requires to be run by root.")
-                sys.exit(5)
-            try:
-                pwdfile = open("/etc/virtualbricks-passwd", "r")
-            except:
-                print("Password not set.")
-                while True:
-                    password = getpass.getpass("Insert password:")
-                    repeat = getpass.getpass("Confirm:")
-                    if password == repeat:
-                        try:
-                            pwdfile = open('/etc/virtualbricks-passwd', 'w+')
-                        except:
-                            print("Could not save password.")
-                        else:
-                            pwdfile.write(password)
-                            pwdfile.close()
-                            print("Password saved.")
-                        break
-                    else:
-                        print("Passwords don't match. Retry.")
-            else:
-                password = pwdfile.readline()
-                pwdfile.close()
-
-            try:
-                os.chmod('/etc/virtualbricks-passwd', 0600)
-            except:
-                os.unlink('/etc/virtualbricks-passwd')
-
-            self.start_tcp_server(password)
-
-        if not self.TCP:
-            self.info("Current project is %s" %
-                      self.settings.get('current_project'))
-            self.configfile.restore(self.settings.get('current_project'))
-        else:
-            self.configfile.restore('/tmp/TCP_controlled.vb')
-
+        self.BRICKTYPES = install_brick_types(
+            None, wires.VDESUPPORT and self.settings.python)
+        self.restore_configfile()
         self.startup = False
 
-    def start_tcp_server(self, password):
-        self.TCP = TcpServer(self, password)
-        try:
-            self.TCP.start()
-        except:
-            print("Error starting TCP server.")
-            self.quit()
+    def restore_configfile(self):
+            # self.configfile.restore('/tmp/TCP_controlled.vb')
+        log.info("Current project is %s" %
+                  self.settings.get('current_project'))
+        self.configfile.restore(self.settings.get('current_project'))
+
+    def save_configfile(self):
+        self.configfile.save(self.settings.get('current_project'))
 
     """ Explicit quit was invoked. """
     def quit(self):
@@ -190,9 +142,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.info(_('Engine: Bye!'))
         self.configfile.save(self.settings.get('current_project'))
         self.running_condition = False
-        self.autosave_timer.join()
         self.emit("engine-closed")
-        sys.exit(0)
 
     def err(self, _, *args, **kwds):
         self.error(*args, **kwds)
@@ -220,66 +170,31 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.bricks = []
         self.events = []
 
-    '''PROJECTS'''
+    # [[[[[[[[[]]]]]]]]]
+    # [   Disk Images  ]
+    # [[[[[[[[[]]]]]]]]]
 
-    # def add_project(self, id, name, filename):
-    #     if get_project_by_filename(filename):
-    #         if get_project_by_name(name) is None:
-    #             proj = VBProject(id, name, filename)
-    #             self.projects.append(proj)
-    #             print self.projects
-    #         else:
-    #             raise Exception("Project name already in VB database.")
-    #     else:
-    #         raise Exception("Project file already in VB database.!")
-
-    def del_project(self, id):
-        pj = self.get_project_by_id(id)
-        if pj is not None:
-            self.projects.remove(pj)
-
-    def get_project_by_id(self, id):
-        for proj in self.projects:
-            if proj.id == id:
-                return proj
-        return None
-
-    def get_project_by_name(self, name):
-        for proj in self.projects:
-            if proj.name == name:
-                return proj
-        return None
-
-    def get_project_by_file(self, filename):
-        for proj in self.projects:
-            if proj.filename == filename:
-                return proj
-        return None
-
-    '''[[[[[[[[[]]]]]]]]]'''
-    '''[   Disk Images  ]'''
-    '''[[[[[[[[[]]]]]]]]]'''
-
+    @tools.synchronized
     def get_image_by_name(self, name):
         """Get disk image object from the image library by its name."""
 
         for img in self.disk_images:
             if img.name == name:
                 return img
-        return None
 
+    @tools.synchronized
     def get_image_by_path(self, path):
         """Get disk image object from the image library by its path."""
 
         for img in self.disk_images:
             if img.path == path:
                 return img
-        return None
 
+    @tools.synchronized
     def new_disk_image(self, name, path, description="", host=None):
         """Add one disk image to the library."""
 
-        img = DiskImage(name, path, description, host)
+        img = virtualmachines.DiskImage(name, path, description, host)
         self.disk_images.append(img)
         return img
 
@@ -412,18 +327,19 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     '''[ Bricks, Events ]'''
     '''[[[[[[[[[]]]]]]]]]'''
 
-    ''' Getbyname helpers '''
-    def getbrickbyname(self, name):
+    @tools.synchronized
+    def get_brick_by_name(self, name):
         for b in self.bricks:
             if b.name == name:
                 return b
-        return None
+    getbrickbyname = get_brick_by_name
 
-    def geteventbyname(self, name):
+    @tools.synchronized
+    def get_event_by_name(self, name):
         for e in self.events:
             if e.name == name:
                 return e
-        return None
+    geteventbyname = get_event_by_name
 
     def proclist(self, console):
         procs = 0
@@ -669,49 +585,139 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.eventsmodel.del_event(eventtodel)
 
 
-gobject.type_register(BrickFactory)
+def readline(filename):
+    with open(filename) as fp:
+        return fp.readline()
 
 
-class ConsoleThread(threading.Thread):
+def write(filename, data):
+    with open(filename, "w") as fp:
+        fp.write(data)
+
+
+def writesafe(filename, data):
+    write(filename, data)
+    try:
+        os.chmod(filename, 0600)
+    except Exception, err:
+        try:
+            os.unlink(filename)
+        except OSError:
+            pass
+        raise IOError(*err.args)
+
+
+class PermissionError(Exception):
+    pass
+
+
+class BrickFactoryServer(BrickFactory):
+
+    password_file = "/etc/virtualbricks-passwd"
+
+    def __init__(self):
+        if os.getuid() != 0:
+            raise PermissionError("server requires to be run by root.")
+        BrickFactory.__init__(self)
+        # password = self._get_password()
+        # self._start_tcp_server(password)
+        # self.configfile.restore('/tmp/TCP_controlled.vb')
+
+    def _start_tcp_server(self, password):
+        self.TCP = TcpServer(self, password)
+        try:
+            self.TCP.start()
+        except Exception:
+            print("Error starting TCP server.")
+            self.quit()
+
+    def get_password(self):
+        try:
+            return readline(self.password_file)
+        except IOError:
+            while True:
+                pwd = getpass.getpass("Insert password:")
+                pwd2 = getpass.getpass("Confirm:")
+                if pwd == pwd2:
+                    try:
+                        write(self.password_file, pwd)
+                    except IOError:
+                        print("Could not save password.")
+                    else:
+                        print("Password saved.")
+                    return pwd
+                else:
+                    print("Passwords don't match. Retry.")
+
+    def restore_configfile(self):
+        self.configfile.restore('/tmp/TCP_controlled.vb')
+
+
+class Console(object):
+
+    interval = 10
 
     def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
-        threading.Thread(self, name="Console")
         self.factory = factory
         self.stdout = stdout
         self.stdin = stdin
 
+    def _check_changed(self):
+        if self.factory.remotehosts_changed:
+            for rh in self.factory.remote_hosts:
+                if rh.connection and rh.connection.isAlive():
+                    rh.connection.join(0.001)
+                    if not rh.connection.isAlive():
+                        rh.connected = False
+                        rh.connection = None
+
+    def _poll(self):
+        try:
+            command = self.stdin.readline()
+            Parse(self.factory, command.rstrip('\n'))
+        except Exception as e:
+            msg = ""
+            errno = ""
+            if len(e.args) == 2:
+                msg, errno = e.args
+            elif len(e.args) == 1:
+                msg = e.args[0]
+            print(_("Exception:\n\tType: %s\n\tErrno: %s\n\t"
+                    "Message: %s\n" % (type(e), errno, msg)),
+                  file=self.stdout)
+
     def run(self):
-        print("\nvirtualbricks> ", end="", file=self.stdout)
-        self.stdout.flush()
         p = select.poll()
         p.register(self.stdin, select.POLLIN)
+        print("\nvirtualbricks> ", end="", file=self.stdout)
+        self.stdout.flush()
         while self.factory.running_condition:
-            if len(p.poll(10)) > 0:
-                try:
-                    command = self.stdin.readline()
-                    Parse(self.factory, command.rstrip('\n'))
-                except Exception as e:
-                    msg = ""
-                    errno = ""
-                    if len(e.args) == 2:
-                        msg, errno = e.args
-                    elif len(e.args) == 1:
-                        msg = e.args[0]
-                    print (_("Exception:\n\tType: %s\n\tErrno: %s\n\t"
-                            "Message: %s\n" % (type(e), errno, msg)),
-                           file=self.stdout)
+            if len(p.poll(self.interval)) > 0:
+                self._poll()
                 print("\nvirtualbricks> ", end="", file=self.stdout)
                 self.stdout.flush()
-            if self.factory.remotehosts_changed:
-                for rh in self.factory.remote_hosts:
-                    if rh.connection and rh.connection.isAlive():
-                        rh.connection.join(0.001)
-                        if not rh.connection.isAlive():
-                            rh.connected = False
-                            rh.connection = None
+            self._check_changed()
+        print("", file=self.stdout)
+        self.stdout.flush()
+
+
+def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
+    console = Console(factory, stdout, stdin)
+    thread = threading.Thread(target=console.run, name="Console")
+    return thread
+
+
+def AutosaveTimer(factory, timeout=180):
+    t = tools.LoopingCall(timeout, factory.save_configfile)
+    t.set_name("AutosaveTimer_%d" % timeout)
+    t.start()
+    return t
 
 
 class Application:
+
+    factory = None
+    autosave_timer = None
 
     def __init__(self, config):
         self.config = config
@@ -727,10 +733,26 @@ class Application:
         gettext.install('virtualbricks', codeset='utf8')
 
     def start(self):
-        server = self.config.get('server', False)
-        self.factory = BrickFactory(nogui=True, server=server)
-        self.factory.start()
-        self.factory.join()
+        self.factory = BrickFactory()
+        self.autosave_timer = AutosaveTimer(self.factory)
+        console = Console(self.factory)
+        console.run()
 
     def quit(self):
-        self.factory.quit()
+        if self.factory:
+            self.factory.quit()
+        if self.autosave_timer:
+            self.autosave_timer.stop()
+            self.autosave_timer = None
+
+
+class ApplicationServer(Application):
+
+    def start(self):
+        if os.getuid() != 0:
+            raise app.QuitError("server requires to be run by root.", 5)
+        self.factory = factory = BrickFactoryServer()
+        server_t = TcpServer(factory, factory.get_password())
+        factory.TCP = server_t
+        server_t.start()
+        Console(factory).run()

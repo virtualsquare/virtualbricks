@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_tools -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -15,11 +16,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import re
 import random
 import threading
-import time
-import sys
-import re
 
 
 def RandMac():
@@ -111,11 +110,24 @@ class LoopingCall:
                                                             self.__kwds)
 
 
-def AutosaveTimer(factory, timeout=180):
-    t = LoopingCall(timeout, factory.configfile.save,
-                    (factory.settings.get( 'current_project'),))
-    t.set_name("AutosaveTimer_%d" % timeout)
-    return t
+def _synchronize(func, lock):
+    def wrapper(*args, **kwds):
+        with lock:
+            return func(*args, **kwds)
+    return wrapper
 
 
-AutoSaveTimer = AutosaveTimer  # backward compatibility
+def synchronize_with(lock):
+    def wrap(func):
+        return _synchronize(func, lock)
+    return wrap
+
+
+_lock = threading.Lock()
+
+
+def synchronized(lock_or_func):
+    if callable(lock_or_func):
+        return _synchronize(lock_or_func, _lock)
+    else:
+        return synchronize_with(lock_or_func)

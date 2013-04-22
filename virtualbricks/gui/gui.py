@@ -15,20 +15,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
+import sys
+import time
+import re
+import subprocess
+import threading
+from threading import Thread
+
 import gobject
 import gtk
 import gtk.glade
-import os
-import re
-import subprocess
-import sys
-import threading
-from threading import Thread
-import time
-from traceback import format_exception
-import re
 
-from virtualbricks import tools, brickfactory, logger
+from virtualbricks import tools, brickfactory, logger, virtualmachines
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
@@ -38,15 +37,17 @@ from virtualbricks.gui.tree import *
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import MYPATH
 
+
 _ = str  # temporary hack because its use in class definition
 
-''' class VBGUI '''
-''' The main GUI object for virtualbricks, containing all the '''
-''' configuration for the widgets and the connections to the  '''
-''' main engine. '''
-class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
-	def __init__(self, textbuffer=None, noterm=False):
+class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
+	"""
+	The main GUI object for virtualbricks, containing all the configuration for
+	the widgets and the connections to the main engine.
+	"""
+
+	def __init__(self, textbuffer=None, term=True):
 		gobject.GObject.__init__(self)
 		self.messages_buffer = textbuffer
 
@@ -73,6 +74,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		''' Creation of the main BrickFactory engine '''
 		self.brickfactory = BrickFactory()
+		self.brickfactory.BRICKTYPES['vm'] = virtualmachines.VMGui
+		self.brickfactory.BRICKTYPES['qemu'] = virtualmachines.VMGui
 
 		''' Connect all the signal from the factory to specific callbacks'''
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
@@ -186,8 +189,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		''' Initialize threads, timers etc.'''
 		self.draw_topology()
-		if not noterm:
-			console_thread = brickfactory.ConsoleThread(self.brickfactory)
+		if term:
+			console_thread = brickfactory.console_thread(self.brickfactory)
 			console_thread.start()
 		self.signals()
 		self.timers()
@@ -3631,8 +3634,8 @@ class Application(brickfactory.Application):
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
-		noterm = self.config.get('noterm', False)
-		self.gui = VBGUI(self.textbuffer, noterm)
+		term = self.config.get('term', True)
+		self.gui = VBGUI(self.textbuffer, term)
 		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
 		gtk.main()
 

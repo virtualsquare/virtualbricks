@@ -31,7 +31,6 @@ class TcpServer(ChildLogger(__name__), Thread):
     def __init__(self, factory, password, port=1050):
         self.port = port
         self.factory = factory
-        self.logger = factory.logger
         self.listening = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.proto = VirtualbricksTCPPROTO()
         self.password = password
