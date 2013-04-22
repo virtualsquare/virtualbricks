@@ -186,8 +186,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		''' Initialize threads, timers etc.'''
 		self.draw_topology()
-		# if not noterm:
-		if term:
+		if not noterm:
 			console_thread = brickfactory.ConsoleThread(self.brickfactory)
 			console_thread.start()
 		self.signals()
