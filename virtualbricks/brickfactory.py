@@ -615,22 +615,6 @@ class BrickFactoryServer(BrickFactory):
 
     password_file = "/etc/virtualbricks-passwd"
 
-    def __init__(self):
-        if os.getuid() != 0:
-            raise PermissionError("server requires to be run by root.")
-        BrickFactory.__init__(self)
-        # password = self._get_password()
-        # self._start_tcp_server(password)
-        # self.configfile.restore('/tmp/TCP_controlled.vb')
-
-    def _start_tcp_server(self, password):
-        self.TCP = TcpServer(self, password)
-        try:
-            self.TCP.start()
-        except Exception:
-            print("Error starting TCP server.")
-            self.quit()
-
     def get_password(self):
         try:
             return readline(self.password_file)
@@ -699,12 +683,6 @@ class Console(object):
             self._check_changed()
         print("", file=self.stdout)
         self.stdout.flush()
-
-
-def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
-    console = Console(factory, stdout, stdin)
-    thread = threading.Thread(target=console.run, name="Console")
-    return thread
 
 
 def AutosaveTimer(factory, timeout=180):

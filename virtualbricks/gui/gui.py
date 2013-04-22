@@ -47,9 +47,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	the widgets and the connections to the main engine.
 	"""
 
-	def __init__(self, textbuffer=None, term=True):
+	def __init__(self, brickfactory, textbuffer=None):
 		gobject.GObject.__init__(self)
 		self.messages_buffer = textbuffer
+		self.brickfactory = brickfactory
 
 		if not os.access(MYPATH, os.X_OK):
 			os.mkdir(MYPATH)
@@ -73,14 +74,13 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.info("Starting VirtualBricks!")
 
 		''' Creation of the main BrickFactory engine '''
-		self.brickfactory = BrickFactory()
 		self.brickfactory.BRICKTYPES['vm'] = virtualmachines.VMGui
 		self.brickfactory.BRICKTYPES['qemu'] = virtualmachines.VMGui
 
 		''' Connect all the signal from the factory to specific callbacks'''
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
-		self._engine_closed = self.brickfactory.connect("engine-closed", self.quit_from_commandline)
+		self.brickfactory.connect("engine-closed", self.on_engine_closed)
 		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
 		self.brickfactory.connect("brick-started", self.cb_brick_started)
 		self.brickfactory.connect("brick-changed", self.cb_brick_changed)
@@ -189,9 +189,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		''' Initialize threads, timers etc.'''
 		self.draw_topology()
-		if term:
-			console_thread = brickfactory.console_thread(self.brickfactory)
-			console_thread.start()
 		self.signals()
 		self.timers()
 
@@ -235,6 +232,9 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	""" ******************************************************** 	"""
 	""" Signal handlers                                           """
 	""" ******************************************************** 	"""
+
+	def on_engine_closed(self, factory):
+		gobject.idle_add(gtk.main_quit)
 
 	def cb_brick_added(self, model, name):
 		self.draw_topology()
@@ -830,7 +830,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			self.gladefile.get_widget("main_win").hide_on_delete()
 			self.statusicon.set_tooltip("VirtualBricks Hidden")
 		else:
-			self.quit()
+			gtk.main_quit()
 		return True
 
 	def curtain_down(self):
@@ -945,24 +945,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def get_treeselected_type(self, t, s, p):
 		return self.get_treeselected(t, s, p, 2)
-
-	'''
-	'	Quit function invoked from the GUI.
-	'''
-	def quit(self, args=None):
-		self.info("GUI: Goodbye!")
-		self.brickfactory.disconnect(self._engine_closed)
-		self.brickfactory.quit()
-		# sys.exit(0)
-
-	'''
-	'	Quit function invoked from the commandline.
-	'''
-	def quit_from_commandline(self, args=None):
-		self.info("GUI: Goodbye!")
-		gtk.main_quit()
-		#sys.exit(0)
-
 
 	'''
 	'	populate a list of all the widget whose names
@@ -1102,7 +1084,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			self.gladefile.get_widget("main_win").hide()
 
 	def on_systray_exit(self, widget=None, data=""):
-		self.quit()
+		gtk.main_quit()
 
 	def on_windown_destroy(self, widget=None, data=""):
 		widget.hide()
@@ -1504,7 +1486,7 @@ bursty errors. This is the mean length of lost packet bursts.") + self.jitter_st
 Packets longer than specified size are discarded.")
 
 	def on_item_quit_activate(self, widget=None, data=""):
-		self.quit()
+		gtk.main_quit()
 
 	def on_item_settings_activate(self, widget=None, data=""):
 		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_current_folder(self.config.get('bricksdirectory'))
@@ -3569,6 +3551,13 @@ Packets longer than specified size are discarded.")
 		return is_alive
 
 
+def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
+	console = brickfactory.Console(factory, stdout, stdin)
+	thread = threading.Thread(target=console.run, name="Console")
+	thread.start()
+	return thread
+
+
 class TextBufferHandler(logging.Handler):
 
 	def __init__(self, textbuffer):
@@ -3614,6 +3603,7 @@ class Application(brickfactory.Application):
 			('EXCEPTION', {'foreground': '#000', 'background': '#b8032e'})]
 
 	gui = None
+	console = None
 
 	def __init__(self, config):
 		brickfactory.Application.__init__(self, config)
@@ -3634,13 +3624,12 @@ class Application(brickfactory.Application):
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
-		term = self.config.get('term', True)
-		self.gui = VBGUI(self.textbuffer, term)
+		self.factory = BrickFactory()
+		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
+		if self.config.get('term', True):
+			self.console = console_thread(self.factory)
+		self.gui = VBGUI(self.factory, self.textbuffer)
 		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
 		gtk.main()
-
-	def quit(self):
-		if self.gui:  # TODO: when all bugs will be resolved get rid of this
-			self.gui.quit()
 
 # vim: se noet :

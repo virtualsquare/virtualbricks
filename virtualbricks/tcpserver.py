@@ -15,98 +15,106 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 import hashlib
 import socket
 import select
+import logging
 from threading import Thread
 
-from virtualbricks.logger import ChildLogger
-from virtualbricks.tcpproto import VirtualbricksTCPPROTO
-from virtualbricks.wires import PyWire
-from virtualbricks.console import Parse
+from virtualbricks import logger, console, wires
 
 
-class TcpServer(ChildLogger(__name__), Thread):
+log = logging.getLogger(__name__)
+
+
+class TcpServer(logger.ChildLogger(__name__), Thread):
+
+    sock = None
+
     def __init__(self, factory, password, port=1050):
+        Thread.__init__(self, name="TcpServer")
         self.port = port
         self.factory = factory
-        self.listening = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.proto = VirtualbricksTCPPROTO()
         self.password = password
-        Thread.__init__(self)
+        self.listening = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.factory.connect("brick-stopped", self.cb_brick_stopped)
         self.factory.connect("brick-started", self.cb_brick_started)
-        self.sock = None
+        self._thread_call_queue = []
 
-    def cb_brick_started(self, model, name=""):
-        if (self.sock):
+    def call_from_thread(self, f, *args, **kwds):
+        self._thread_call_queue.append((f, args, kwds))
+
+    def _cb_brick_started(self, model, name):
+        if self.sock:
             self.sock.sendall("brick-started " + name + '\n')
 
-    def cb_brick_stopped(self, model, name=""):
-        if (self.sock):
+    def cb_brick_started(self, model, name):
+        self.call_from_thread(self._cb_brick_started, model, name)
+
+    def _cb_brick_stopped(self, model, name):
+        if self.sock:
             self.sock.sendall("brick-stopped " + name + '\n')
 
+    def cb_brick_stopped(self, model, name):
+        self.call_from_thread(self._cb_brick_stopped, model, name)
+
     def run(self):
-        self.info("TCP server started.")
+        log.info("TCP server started.")
+        listening = self.listening
         try:
-            self.listening.bind(("0.0.0.0", self.port))
-            self.listening.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,
-                                      1)
-            self.listening.listen(1)
-        except Exception as e:
-            print "socket error (1): " + str(e)
-            self.factory.quit()
-            sys.exit(1)
-
+            listening.bind(("0.0.0.0", self.port))
+            listening.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listening.listen(1)
+            self._run()
+        except Exception:
+            log.exception("Exception in server thread")
         finally:
-            while(self.factory.running_condition):
-                p = select.poll()
-                p.register(self.listening, select.POLLIN)
-                if len(p.poll(100)) > 0:
-                        try:
-                            (sock, addr) = self.listening.accept()
+            listening.close()
 
-                        except Exception as e:
-                            print "socket error (2): " + str(e)
-                            self.factory.quit()
-                            sys.exit(1)
-                        self.info("Connection from %s" % str(addr))
-                        self.sock = sock
-                        self.sock.setsockopt(socket.SOL_TCP,
-                                             socket.TCP_NODELAY, 1)
-                        randfile = open("/dev/urandom", "r")
-                        challenge = randfile.read(256)
-                        sha = hashlib.sha256()
-                        sha.update(self.password)
-                        sha.update(challenge)
-                        hashed = sha.digest()
-                        sock.sendall(self.proto.HELO())
-                        sock.sendall(challenge)
-                        p_cha = select.poll()
-                        p_cha.register(sock, select.POLLIN)
-                        if len(p_cha.poll(100)) > 0:
-                            rec = sock.recv(len(hashed))
-                            if rec == hashed:
-                                self.info("%s: Client authenticated.",
-                                          str(addr))
-                                sock.sendall("OK\n")
-                                self.master_address = addr
-                                self.serve_connection(sock)
-                            else:
-                                self.info("%s: Authentication failed. " %
-                                          str(addr))
-                                sock.sendall("FAIL\n")
-                        else:
-                            self.info("%s: Challenge timeout", str(addr))
-
-                        sock.close()
+    def _run(self):
+        poll = select.poll()
+        poll.register(self.listening, select.POLLIN)
+        while self.factory.running_condition:
+            if len(poll.poll(100)) > 0:
+                try:
+                    self.sock, addr = self.listening.accept()
+                    self._serve(self.sock, addr)
+                finally:
+                    if self.sock:
+                        self.sock.close()
                         self.sock = None
-                        self.info("Connection from %s closed.", str(addr))
-            self.listening.close()
+                        log.info("Connection from %s closed.", str(addr))
+
+    def _serve(self, sock, addr):
+        log.debug("Connection from %s" % str(addr))
+        self.cb1 = self.factory.connect("brick-stopped", self.cb_brick_stopped)
+        self.cb2 = self.factory.connect("brick-started", self.cb_brick_started)
+        sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+        randfile = open("/dev/urandom", "r")
+        challenge = randfile.read(256)
+        sha = hashlib.sha256()
+        sha.update(self.password)
+        sha.update(challenge)
+        hashed = sha.digest()
+        sock.sendall("HELO\n")
+        sock.sendall(challenge)
+        p_cha = select.poll()
+        p_cha.register(sock, select.POLLIN)
+        if len(p_cha.poll(100)) > 0:
+            rec = sock.recv(len(hashed))
+            if rec == hashed:
+                self.info("%s: Client authenticated.", str(addr))
+                sock.sendall("OK\n")
+                self.master_address = addr
+                self.serve_connection(sock)
+            else:
+                self.info("%s: Authentication failed. " % str(addr))
+                sock.sendall("FAIL\n")
+        else:
+            self.info("%s: Challenge timeout", str(addr))
 
     def remote_wire_request(self, req):
-        if (len(req) == 0):
+        if len(req) == 0:
             return False
         args = req.rstrip('\n').split(' ')
         if len(args) != 4 or args[0] != 'udp':
@@ -115,7 +123,7 @@ class TcpServer(ChildLogger(__name__), Thread):
             return False
         for b in self.factory.bricks:
             if b.name == args[2]:
-                w = PyWire(self.factory, args[1])
+                w = wires.PyWire(self.factory, args[1])
                 w.set_remoteport(args[3])
                 w.connect(b)
                 w.poweron()
@@ -146,26 +154,26 @@ class TcpServer(ChildLogger(__name__), Thread):
         while(self.factory.running_condition):
             rec = self.recv(sock)
             if rec is not None and rec.rstrip("\n") == "ACK":
-                print "ACK"
+                log.debug("ACK")
                 try:
                     sock.sendall("ACKOK\n")
                     continue
-                except:
-                    print "Send Error"
+                except Exception:
+                    log.exception("Send Error")
                     return
-            if rec is not None and Parse(self.factory, rec.rstrip('\n'),
-                                         console=sock):
-                print "RECV: " + rec
+            if (rec is not None and console.Parse(self.factory,
+                    rec.rstrip('\n'), console=sock)):
+                log.debug("RECV: " + rec)
                 try:
                     sock.sendall("OK\n")
-                except:
-                    print "Send error"
+                except Exception:
+                    log.exception("Send error")
                     return
             else:
                 try:
                     sock.sendall("FAIL\n")
-                except:
-                    print "Send error"
+                except Exception:
+                    log.exception("Send error")
                     return
 
         for b in self.factory.bricks:
