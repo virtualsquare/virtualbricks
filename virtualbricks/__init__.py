@@ -15,5 +15,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-__version_info__ = (0, 7, 0)
-__version__ = ".".join(map(str, __version_info__))
+from virtualbricks import versions
+
+version = versions.Version("virtualbricks", 0, 7, 0, None)
