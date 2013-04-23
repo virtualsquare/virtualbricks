@@ -11,3 +11,4 @@ MANIFEST
 dist/
 tmp/
 build/
+share/virtualbricks.glade
