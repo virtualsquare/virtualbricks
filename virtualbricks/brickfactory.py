@@ -31,7 +31,6 @@ from virtualbricks import app, tools, logger, wires, virtualmachines
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
 from virtualbricks.errors import InvalidName, UnmanagedType
-from virtualbricks.tcpserver import TcpServer
 from virtualbricks.console import Parse, CommandLineOutput
 from virtualbricks.configfile import ConfigFile
 
@@ -125,7 +124,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def save_configfile(self):
         self.configfile.save(self.settings.get('current_project'))
 
-    """ Explicit quit was invoked. """
     def quit(self):
         for e in self.events:
             e.poweroff()
@@ -726,7 +724,8 @@ class ApplicationServer(Application):
         if os.getuid() != 0:
             raise app.QuitError("server requires to be run by root.", 5)
         self.factory = factory = BrickFactoryServer()
-        server_t = TcpServer(factory, factory.get_password())
+        from virtualbricks import tcpserver
+        server_t = tcpserver.TcpServer(factory, factory.get_password())
         factory.TCP = server_t
         server_t.start()
         Console(factory).run()

@@ -19,26 +19,28 @@ import os
 import sys
 import time
 import re
+import logging
 import subprocess
 import threading
-from threading import Thread
 
 import gobject
 import gtk
 import gtk.glade
 
-from virtualbricks import tools, brickfactory, logger, virtualmachines
+from virtualbricks import brickfactory, logger, tools, virtualmachines, app
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
+from virtualbricks.gui import tree, graphics
 from virtualbricks.gui.combo import ComboBox
-from virtualbricks.gui.graphics import *
-from virtualbricks.gui.tree import *
-from virtualbricks.models import BricksModel, EventsModel
+from virtualbricks.models import EventsModel
 from virtualbricks.settings import MYPATH
 
 
 _ = str  # temporary hack because its use in class definition
+
+
+log = logging.getLogger(__name__)
 
 
 class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
@@ -47,28 +49,12 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	the widgets and the connections to the main engine.
 	"""
 
-	def __init__(self, brickfactory, textbuffer=None):
+	def __init__(self, brickfactory, gladefile, textbuffer=None):
 		gobject.GObject.__init__(self)
-		self.messages_buffer = textbuffer
 		self.brickfactory = brickfactory
-
-		if not os.access(MYPATH, os.X_OK):
-			os.mkdir(MYPATH)
-
+		self.gladefile = gladefile
+		self.messages_buffer = textbuffer
 		self.topology = None
-		try:
-			self.gladefile = gtk.glade.XML('/usr/share/virtualbricks/virtualbricks.glade')
-		except:
-			try:
-				self.gladefile = gtk.glade.XML(os.path.join(sys.prefix, '/share/virtualbricks/virtualbricks.glade'))
-			except:
-				# FTFY, distutils!
-				try:
-					self.gladefile = gtk.glade.XML(os.path.join(sys.prefix,'local')+ '/share/virtualbricks/virtualbricks.glade')
-				except:
-					self.critical("Cannot open required file 'virtualbricks.glade'")
-					sys.exit(1)
-
 		self.widg = self.get_widgets(self.widgetnames())
 
 		self.info("Starting VirtualBricks!")
@@ -119,48 +105,48 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		''' Treeview creation, using the VBTree class '''
 		''' Main Treeview '''
-		self.maintree = BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
+		self.maintree = tree.BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		''' TW with the events '''
-		self.eventstree = EventsTree(self, 'treeview_events_bookmarks', self.brickfactory.eventsmodel,
+		self.eventstree = tree.EventsTree(self, 'treeview_events_bookmarks', self.brickfactory.eventsmodel,
 			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		''' Joblist treeview (Running bricks window)'''
-		self.running_bricks = VBTree(self, 'treeview_joblist', None, [gtk.gdk.Pixbuf,
+		self.running_bricks = tree.VBTree(self, 'treeview_joblist', None, [gtk.gdk.Pixbuf,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['',_('PID'),_('Type'),_('Name')])
 
 		''' Remotehosts TW'''
-		self.remote_hosts_tree = VBTree(self, 'treeview_remotehosts', None, [gtk.gdk.Pixbuf,
+		self.remote_hosts_tree = tree.VBTree(self, 'treeview_remotehosts', None, [gtk.gdk.Pixbuf,
 			 gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Status',_('Address'),_('Bricks'),_('Autoconnect')])
 
 		''' TW containing the disk images, visible from disk images dialog'''
-		self.image_tree = VBTree(self, 'treeview_diskimages', None,
+		self.image_tree = tree.VBTree(self, 'treeview_diskimages', None,
 			[gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			[_('Image name'),_('Used by'),_('Master Brick'),_('COWs'), _('Size in MB')])
 
 		''' TW containing the USB devices, visible from its dialog'''
-		self.usbdev_tree = VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
+		self.usbdev_tree = tree.VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
 		self.gladefile.get_widget('treeview_usbdev').get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
 		''' TW with network cards '''
-		self.vmplugs = VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
+		self.vmplugs = tree.VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
 			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			['Eth','connection','model','macaddr'])
 
 		''' TW with Router interfaces '''
-		self.routerdevs = VBTree(self, 'treeview_router_netdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+		self.routerdevs = tree.VBTree(self, 'treeview_router_netdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 		[ 'Eth','connection','macaddr'])
 
 		''' TW with Router routes '''
-		self.routerroutes = VBTree(self, 'treeview_router_routes', None,
+		self.routerroutes = tree.VBTree(self, 'treeview_router_routes', None,
     [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 		[ 'Destination','Netmask','Gateway','Via','metric'])
 
 		''' TW with Router filters '''
-		self.routerfilters = VBTree(self, 'treeview_router_filters', None,
+		self.routerfilters = tree.VBTree(self, 'treeview_router_filters', None,
     [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 		[ 'Dev','Source','Destination','Protocol','TOS','Action'])
 
@@ -790,7 +776,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	def start_systray(self):
 		if self.statusicon is None:
 			self.statusicon = gtk.StatusIcon()
-			self.statusicon.set_from_file(ImgPrefix() + "virtualbricks.png")
+			self.statusicon.set_from_file(graphics.ImgPrefix() + "virtualbricks.png")
 			self.statusicon.set_tooltip("VirtualBricks Visible")
 			self.statusicon.connect('activate', self.on_systray_menu_toggle)
 			systray_menu = self.gladefile.get_widget("systray_menu")
@@ -3510,9 +3496,11 @@ Packets longer than specified size are discarded.")
 			for r in self.brickfactory.remote_hosts:
 				iter = self.remote_hosts_tree.new_row()
 				if (r.connected):
-					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size(ImgPrefix() + "Connect.png", 48, 48) )
+					self.remote_hosts_tree.set_value(iter, 0,
+									  gtk.gdk.pixbuf_new_from_file_at_size(graphics.ImgPrefix() + "Connect.png", 48, 48) )
 				else:
-					self.remote_hosts_tree.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size(ImgPrefix() + "Disconnect.png", 48, 48) )
+					self.remote_hosts_tree.set_value(iter, 0,
+									  gtk.gdk.pixbuf_new_from_file_at_size(graphics.ImgPrefix() + "Disconnect.png", 48, 48) )
 				self.remote_hosts_tree.set_value(iter, 1, r.addr[0]+":"+str(r.addr[1]))
 				self.remote_hosts_tree.set_value(iter, 2, str(r.num_bricks()))
 				if r.autoconnect:
@@ -3532,12 +3520,12 @@ Packets longer than specified size are discarded.")
 			orientation = "TB"
 		else:
 			orientation = "LR"
-		self.topology = Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation, export, self.brickfactory.settings.get("bricksdirectory")+"/")
+		self.topology = graphics.Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation, export, self.brickfactory.settings.get("bricksdirectory")+"/")
 
 	def user_wait_action(self, action, *args):
 		self.gladefile.get_widget("window_userwait").show_all()
 		self.gladefile.get_widget("main_win").set_sensitive(False)
-		thread = Thread(target=action, args=args)
+		thread = threading.Thread(target=action, args=args)
 		gobject.timeout_add(200, self.user_wait_action_timer, thread)
 		thread.start()
 
@@ -3619,7 +3607,17 @@ class Application(brickfactory.Application):
 		gtk.glade.bindtextdomain("virtualbricks", "/usr/share/locale")
 		gtk.glade.textdomain("virtualbricks")
 
+	def load_gladefile(self):
+		try:
+			return gtk.glade.XML(os.path.join(sys.prefix, "share",
+				"virtualbricks", "virtualbricks.glade"))
+		except Exception:
+			raise app.QuitError("Cannot load gladefile", 1)
+
 	def start(self):
+		if not os.access(MYPATH, os.X_OK):
+			os.mkdir(MYPATH)
+		gladefile = self.load_gladefile()
 		gobject.threads_init()
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
@@ -3628,7 +3626,7 @@ class Application(brickfactory.Application):
 		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
 		if self.config.get('term', True):
 			self.console = console_thread(self.factory)
-		self.gui = VBGUI(self.factory, self.textbuffer)
+		self.gui = VBGUI(self.factory, gladefile, self.textbuffer)
 		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
 		gtk.main()
 
