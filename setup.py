@@ -27,16 +27,7 @@ import glob
 from distutils.command import install_data
 from distutils.core import setup
 
-from virtualbricks import __version__, __version_info__
-
-
-try:
-    with open(".bzr/branch/last-revision") as fp:
-        micro = fp.readline().split()[0]
-    __version_info__ = __version_info__ + (micro,)
-    __version__ = __version__ + "-r" + micro
-except IOError:
-    pass
+from virtualbricks import version
 
 
 class InstallData(install_data.install_data):
@@ -80,7 +71,7 @@ class InstallData(install_data.install_data):
 
 
 setup(name="virtualbricks",
-      version=__version__,
+      version=version.short(),
       description="Virtualbricks Virtualization Tools",
       author="Daniele Lacamera, Rainer Haage, Francesco Apollonio, "
             "Pierre-Louis Bonicoli, Simone Abbati",
