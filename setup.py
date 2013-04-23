@@ -42,11 +42,10 @@ class InstallData(install_data.install_data):
     def write_glade(self):
         with open(self.GLADEFILE_TEMPLATE) as fp:
             data = fp.read()
-            step1 = re.sub("___VERSION___", __version__, data)
-            step2 = re.sub("__IMAGES_PATH__",
-                           os.path.join(sys.prefix, "share"), step1)
+            out = re.sub("__IMAGES_PATH__",
+                           os.path.join(sys.prefix, "share"), data)
             with open(self.GLADEFILE, "w") as fp:
-                fp.write(step2)
+                fp.write(out)
         self.data_files.append(("share/virtualbricks", [self.GLADEFILE]))
 
     def compile_mo(self):
@@ -83,6 +82,7 @@ setup(name="virtualbricks",
                "virtualbricks.tests"],
       package_data={"virtualbricks.gui": ["virtualbricks.glade"]},
       data_files=[("share/applications", ["share/virtualbricks.desktop"]),
+                  ("share/virtualbricks", ["share/about.ui"]),
                   ("share/pixmaps", ["share/virtualbricks.png",
                                      "images/Connect.png",
                                      "images/Disconnect.png",

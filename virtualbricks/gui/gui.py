@@ -31,10 +31,11 @@ from virtualbricks import brickfactory, logger, tools, virtualmachines, app
 from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
-from virtualbricks.gui import tree, graphics
-from virtualbricks.gui.combo import ComboBox
 from virtualbricks.models import EventsModel
 from virtualbricks.settings import MYPATH
+
+from virtualbricks.gui import tree, graphics, dialogs
+from virtualbricks.gui.combo import ComboBox
 
 
 _ = str  # temporary hack because its use in class definition
@@ -972,7 +973,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		'dialog_settings',
 		'dialog_bookmarks',
 		'menu_popup_bookmarks',
-		'dialog_about1',
 		'dialog_create_image',
 		'dialog_messages',
 		'menu_popup_imagelist',
@@ -1551,9 +1551,7 @@ Packets longer than specified size are discarded.")
 		raise NotImplementedError()
 
 	def on_item_about_activate(self, widget=None, data=""):
-		self.gladefile.get_widget('about_text').set_wrap_mode(gtk.WRAP_WORD)
-		self.show_window('dialog_about1')
-		self.curtain_down()
+		dialogs.AboutDialog().run()
 
 	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
 		raise NotImplementedError()
@@ -1938,10 +1936,6 @@ Packets longer than specified size are discarded.")
 
 	def on_delete_bookmark_activate(self, widget=None, data=""):
 		raise NotImplementedError()
-
-	def on_dialog_about_response(self, widget=None, data=""):
-		self.widg['dialog_about1'].hide()
-		return True
 
 	def on_dialog_create_image_response(self, widget=None, data=""):
 		raise NotImplementedError()
