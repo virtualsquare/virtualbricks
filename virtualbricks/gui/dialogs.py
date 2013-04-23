@@ -162,3 +162,11 @@ class Dialog(Base):
         self.widget.destroy()
 
 
+class AboutDialog(Dialog):
+
+    resource = 'about.ui'
+
+    def __init__(self):
+        Dialog.__init__(self)
+        self.window.set_logo(get_pixbuf("virtualbricks.png"))
+        self.window.set_version(version.short())
