@@ -16,93 +16,93 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
-CURRENT_VERSION="1.0"
-CURRENT_MICRO_VERSION="0"
-SUPPORTED_LANGS = ['it','nl','fr','de','es']
-
-from distutils.core import setup
 import os
+import os.path
 import sys
-import tempfile
 import re
-sys.prefix="/usr/local"
-for arg in sys.argv:
-	if arg.startswith('--build-base='):
-		sys.prefix=arg.split('=')[1]
+import tempfile
+import shutil
+import glob
+
+from distutils.command import install_data
+from distutils.core import setup
+
+from virtualbricks import __version__, __version_info__
 
 
-glade = open('share/virtualbricks.template.glade','r').read()
 try:
-	micro = open('.bzr/branch/last-revision','r').read().split(' ')[0]
-except:
-	micro = CURRENT_MICRO_VERSION
+    with open(".bzr/branch/last-revision") as fp:
+        micro = fp.readline().split()[0]
+    __version_info__ = __version_info__ + (micro,)
+    __version__ = __version__ + "-" + micro
+except IOError:
+    pass
 
-if micro == '':
-	micro = CURRENT_MICRO_VERSION
 
-virtualbricks_version=CURRENT_VERSION+'.'+micro
+class InstallData(install_data.install_data):
 
-open('/tmp/virtualbricks.glade.step1','w+').write(re.sub('___VERSION___', virtualbricks_version, glade))
-glade = open('/tmp/virtualbricks.glade.step1','r').read()
-open('share/virtualbricks.glade','w+').write(re.sub('__IMAGES_PATH__', sys.prefix + '/share', glade))
+    GLADEFILE_TEMPLATE = "share/virtualbricks.template.glade"
+    GLADEFILE = "share/virtualbricks.glade"
 
-FILES = [
-			( 'bin', ['bin/virtualbricks']),
-			( 'bin', ['bin/vbgui']),
-			( 'bin', ['bin/vbd']),
-			( 'share/virtualbricks/', ['share/virtualbricks.glade']),
-			( 'share/applications', ['share/virtualbricks.desktop']),
-			( 'share/pixmaps', ['share/virtualbricks.png']),
-			( 'share/pixmaps', ['images/Connect.png']),
-			( 'share/pixmaps', ['images/Disconnect.png']),
-			( 'share/pixmaps', ['images/Event.png']),
-			( 'share/pixmaps', ['images/Qemu.png']),
-			( 'share/pixmaps', ['images/Switch.png']),
-			( 'share/pixmaps', ['images/Tap.png']),
-			( 'share/pixmaps', ['images/Capture.png']),
-			( 'share/pixmaps', ['images/TunnelConnect.png']),
-			( 'share/pixmaps', ['images/TunnelListen.png']),
-			( 'share/pixmaps', ['images/Wirefilter.png']),
-			( 'share/pixmaps', ['images/Wire.png']),
-			( 'share/pixmaps', ['images/Router.png']),
-			( 'share/pixmaps', ['images/SwitchWrapper.png'])
-]
+    def initialize_options(self):
+        install_data.install_data.initialize_options(self)
+        self.tmpdirs = []
 
-tempdirs = []
+    def write_glade(self):
+        with open(self.GLADEFILE_TEMPLATE) as fp:
+            data = fp.read()
+            step1 = re.sub("___VERSION___", __version__, data)
+            step2 = re.sub("__IMAGES_PATH__",
+                           os.path.join(sys.prefix, "share"), step1)
+            with open(self.GLADEFILE, "w") as fp:
+                fp.write(step2)
+        self.data_files.append(("share/virtualbricks", [self.GLADEFILE]))
 
-for l in SUPPORTED_LANGS:
-	directory_name = tempfile.mkdtemp()
-	tempdirs.append(directory_name)
-	command = 'msgfmt -o ' + directory_name + '/virtualbricks.mo ' + 'locale/virtualbricks/' + l + '.po'
-	os.system(command)
-	FILES.append(('share/locale/'+l+'/LC_MESSAGES/', [directory_name + '/virtualbricks.mo']))
+    def compile_mo(self):
+        for filename in glob.iglob("locale/virtualbricks/??.po"):
+            l, _ = os.path.basename(filename).split(".")
+            tmpdir = tempfile.mkdtemp()
+            self.tmpdirs.append(tmpdir)
+            outfile = "%s/virtualbricks.mo" % tmpdir
+            self.spawn(["msgfmt", "-o", outfile, filename])
+            self.data_files.append(("share/locale/%s/LC_MESSAGES" % l,
+                                    [outfile]))
 
-setup( data_files=FILES, name='virtualbricks', version=virtualbricks_version,
-	description='Virtualbricks Virtualization Tools',
-	license='GPL2',
-	author='Daniele Lacamera, Rainer Haage, Francesco Apollonio, Pierre-Louis Bonicoli, Simone Abbati',
-	author_email='qemulator-list@createweb.de',
-	url='http://www.virtualbricks.eu/',
-	packages=['virtualbricks', 'virtualbricks.gui', "virtualbricks.scripts"],
-	package_dir = {'': '.'}
-	)
+    def remove_temps(self):
+        for tmpdir in self.tmpdirs:
+            shutil.rmtree(tmpdir)
 
-print "Cleaning..",
-#Remove compiled l10n files
-for d in tempdirs:
-	try:
-		#Remove the compiled file
-		os.unlink(d + '/virtualbricks.mo')
-		# Clean up the directory
-		os.removedirs(d)
-	except:
-		print "Not critical error while removing: %s(.virtualbricks.mo)" %d
-		continue
+    def run(self):
+        self.execute(self.write_glade, ())
+        self.execute(self.compile_mo, ())
+        install_data.install_data.run(self)
+        self.execute(self.remove_temps, ())
 
-#Remove .glade file created in setup process
-try:
-	os.unlink('share/virtualbricks.glade')
-	print "Done"
-except:
-	print "Not critical error while removing glade file"
+
+setup(name="virtualbricks",
+      version=__version__,
+      description="Virtualbricks Virtualization Tools",
+      author="Daniele Lacamera, Rainer Haage, Francesco Apollonio, "
+            "Pierre-Louis Bonicoli, Simone Abbati",
+      author_email="qemulator-list@createweb.de",
+      url="http://www.virtualbricks.eu/",
+      license="GPLv2",
+      platform="linux",
+      packages=["virtualbricks", "virtualbricks.gui", "virtualbricks.scripts",
+               "virtualbricks.tests"],
+      package_data={"virtualbricks.gui": ["virtualbricks.glade"]},
+      data_files=[("share/applications", ["share/virtualbricks.desktop"]),
+                  ("share/pixmaps", ["share/virtualbricks.png",
+                                     "images/Connect.png",
+                                     "images/Disconnect.png",
+                                     "images/Event.png", "images/Qemu.png",
+                                     "images/Switch.png", "images/Tap.png",
+                                     "images/Capture.png",
+                                     "images/TunnelConnect.png",
+                                     "images/TunnelListen.png",
+                                     "images/Wirefilter.png",
+                                     "images/Wire.png", "images/Router.png",
+                                     "images/SwitchWrapper.png"])],
+      scripts=["bin/virtualbricks", "bin/vbgui", "bin/vbd"],
+      cmdclass={"install_data": InstallData}
+     )
