@@ -15,23 +15,26 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
+import sys
+import re
 import logging
 
 import Image
 import ImageEnhance
-import os
 import pygraphviz as pgv
-import re
 
 from virtualbricks.settings import MYPATH
 
 log = logging.getLogger('virtualbricks.gui')
 
 def ImgPrefix():
-	if os.access("/usr/share/pixmaps/Switch.png", os.R_OK):
-		return "/usr/share/pixmaps/"
-	else:
-		return "/usr/local/share/pixmaps/"
+	# NOTE: add the trailing slash
+	return os.path.join(sys.prefix, "share", "pixmaps", "")
+	# if os.access("/usr/share/pixmaps/Switch.png", os.R_OK):
+	# 	return "/usr/share/pixmaps/"
+	# else:
+	# 	return "/usr/local/share/pixmaps/"
 
 class Icon:
 
