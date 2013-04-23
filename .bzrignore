@@ -7,3 +7,7 @@ Wire_grey.png
 .project
 .pydevproject
 .settings
+MANIFEST
+dist/
+tmp/
+build/
