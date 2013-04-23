@@ -34,7 +34,7 @@ try:
     with open(".bzr/branch/last-revision") as fp:
         micro = fp.readline().split()[0]
     __version_info__ = __version_info__ + (micro,)
-    __version__ = __version__ + "-" + micro
+    __version__ = __version__ + "-r" + micro
 except IOError:
     pass
 
@@ -87,7 +87,7 @@ setup(name="virtualbricks",
       author_email="qemulator-list@createweb.de",
       url="http://www.virtualbricks.eu/",
       license="GPLv2",
-      platform="linux",
+      platforms=["linux2", "linux"],
       packages=["virtualbricks", "virtualbricks.gui", "virtualbricks.scripts",
                "virtualbricks.tests"],
       package_data={"virtualbricks.gui": ["virtualbricks.glade"]},
