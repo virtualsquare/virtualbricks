@@ -16,9 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
 import os.path
-import sys
 import re
 import tempfile
 import shutil
@@ -43,7 +41,7 @@ class InstallData(install_data.install_data):
         with open(self.GLADEFILE_TEMPLATE) as fp:
             data = fp.read()
             out = re.sub("__IMAGES_PATH__",
-                           os.path.join(sys.prefix, "share"), data)
+                           os.path.join(self.install_dir, "share"), data)
             with open(self.GLADEFILE, "w") as fp:
                 fp.write(out)
         self.data_files.append(("share/virtualbricks", [self.GLADEFILE]))

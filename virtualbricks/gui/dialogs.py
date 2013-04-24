@@ -99,12 +99,18 @@ log = logging.getLogger(__name__)
 
 def get_pixbuf(resource):
     filename = os.path.join(sys.prefix, "share", "pixmaps", resource)
+    if not os.path.exists(filename):
+        filename = os.path.join(sys.prefix, "local", "share", "pixmaps",
+                                resource)
     return gtk.gdk.pixbuf_new_from_file(filename)
 
 
 def get_data(resource):
     log.debug("Loading resource from %s", resource)
     filename = os.path.join(sys.prefix, "share", "virtualbricks", resource)
+    if not os.path.exists(filename):
+        filename = os.path.join(sys.prefix, "local", "share", "virtualbricks",
+                                resource)
     with open(filename) as fp:
         return fp.read()
 

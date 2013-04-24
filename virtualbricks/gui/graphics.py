@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import os.path
 import sys
 import re
 import logging
@@ -30,7 +31,10 @@ log = logging.getLogger('virtualbricks.gui')
 
 def ImgPrefix():
 	# NOTE: add the trailing slash
-	return os.path.join(sys.prefix, "share", "pixmaps", "")
+	dirname = os.path.join(sys.prefix, "share", "pixmaps", "")
+	if not os.path.exists(dirname):
+		dirname = os.path.join(sys.prefix, "local", "share", "pixmaps", "")
+	return os.path.join(dirname)
 	# if os.access("/usr/share/pixmaps/Switch.png", os.R_OK):
 	# 	return "/usr/share/pixmaps/"
 	# else:
@@ -197,3 +201,5 @@ class Topology():
 		self.topowidget.set_from_file(tempdir+"vde_topology.png")
 		if export:
 			img.save(export)
+
+# vim: se noet :
