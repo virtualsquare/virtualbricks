@@ -3509,8 +3509,13 @@ class Application(brickfactory.Application):
 
 	def load_gladefile(self):
 		try:
-			return gtk.glade.XML(os.path.join(sys.prefix, "share",
-				"virtualbricks", "virtualbricks.glade"))
+			parts = [sys.prefix, "share", "virtualbricks",
+					"virtualbricks.glade"]
+			gladefile = os.path.join(*parts)
+			if not os.path.exists(gladefile):
+				parts.insert(1, "local")
+				gladefile = os.path.join(*parts)
+			return gtk.glade.XML(gladefile)
 		except Exception:
 			raise app.QuitError("Cannot load gladefile", 1)
 
