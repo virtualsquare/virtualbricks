@@ -89,6 +89,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         'event-changed': (gobject.SIGNAL_RUN_LAST, None, (str, bool,)),
         'event-accomplished': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'backup-restored': (gobject.SIGNAL_RUN_LAST, None, (str,)),
+        "image_added": (gobject.SIGNAL_RUN_LAST, None, (object,)),
+        "image_removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
     }
 
     def __init__(self):
@@ -190,7 +192,13 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
         img = virtualmachines.DiskImage(name, path, description, host)
         self.disk_images.append(img)
+        self.emit("image_added", img)
         return img
+
+    @tools.synchronized
+    def remove_disk_image(self, image):
+        self.disk_images.remove(image)
+        self.emit("image_removed", image)
 
     def clear_machine_vmdisks(self, machine):
         """Release lock from disk image."""
@@ -295,13 +303,15 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                             return
                         if host is not None and image.host != host:
                             return
-                        self.disk_images.remove(image)
+                        self.remove_disk_image(image)
+                        # self.disk_images.remove(image)
                         if host.connected is True:
                             host.send("i del " + cmd[1])
                             host.expect_OK()
                     if image.host is not None:
                         return
-                    self.disk_images.remove(image)
+                    self.remove_disk_image(image)
+                    # self.disk_images.remove(image)
         elif command == "base":
             if len(cmd) == 1 or (len(cmd) > 1 and cmd[1] == "show"):
                 CommandLineOutput(console, "%s" %
@@ -577,7 +587,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 e.poweroff()
                 self.events.remove(e)
         self.eventsmodel.del_event(eventtodel)
-
 
 def readline(filename):
     with open(filename) as fp:
