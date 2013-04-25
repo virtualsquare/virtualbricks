@@ -104,15 +104,16 @@ class DiskImage:
     before use.
     """
 
+    master = None
+    readonly = False
+
     def __init__(self, name, path, description=None, host=None):
         self.name = name
         self.path = path
         if description is not None:
             self.set_description(description)
         self.vmdisks = []
-        self.master = None
         self.host = host
-        self.readonly = False
 
     def set_readonly(self, value):
         self.readonly = value
@@ -126,6 +127,7 @@ class DiskImage:
             vmd.VM.cfg.set("base"+vmd.device +'='+ self.name)
 
     def set_master(self, vmdisk):
+       # XXX: Change name to something more useful
         if self.master is None:
             self.master = vmdisk
         if self.master == vmdisk:
@@ -139,10 +141,13 @@ class DiskImage:
         return ""
 
     def add_vmdisk(self, vmdisk):
-        for vmd in self.vmdisks:
-            if vmd == vmdisk:
-                return
-        self.vmdisks.append(vmdisk)
+        # XXX: O(n) complexity, a dict could fit?
+        if vmdisk not in self.vmdisks:
+           self.vmdisks.append(vmdisk)
+        # for vmd in self.vmdisks:
+        #     if vmd == vmdisk:
+        #         return
+        # self.vmdisks.append(vmdisk)
 
     def del_vmdisk(self, vmdisk):
         self.vmdisks.remove(vmdisk)
@@ -152,27 +157,40 @@ class DiskImage:
     def description_file(self):
         return self.path + ".vbdescr"
 
-    def set_description(self,descr):
+    def set_description(self, descr):
         try:
-            f = open(self.description_file(), "w+")
-        except:
+            with open(self.description_file(), "w") as fp:
+                fp.write(descr)
+        except IOError:
             return False
-        f.write(str(descr))
-        f.flush()
-        f.close()
         return True
+
+        # try:
+        #     f = open(self.description_file(), "w+")
+        # except:
+        #     return False
+        # f.write(str(descr))
+        # f.flush()
+        # f.close()
+        # return True
 
     def get_description(self):
         try:
-            f = open(self.description_file(), "r")
-        except:
+            with open(self.description_file()) as fp:
+                return fp.read()
+        except IOError:
             return ""
-        try:
-            descr = f.read()
-        except:
-            return ""
-        f.close()
-        return descr
+
+        # try:
+        #     f = open(self.description_file(), "r")
+        # except:
+        #     return ""
+        # try:
+        #     descr = f.read()
+        # except:
+        #     return ""
+        # f.close()
+        # return descr
 
     def get_cows(self):
         return len([vmd for vmd in self.vmdisks if vmd.cow])
@@ -190,9 +208,9 @@ class DiskImage:
             return "0"
         size = os.path.getsize(self.path)
         if size > 1000000:
-            return (str(size / 1000000))
+            return str(size / 1000000)
         else:
-            return (str(size / 1000000.0))
+            return str(size / 1000000.0)
 
     def exists(self):
         return os.path.exists(self.path)
@@ -568,7 +586,7 @@ class VM(Brick):
         if not self.has_graphic():
             res.append("-nographic")
 
-        self.factory.clear_machine_vmdisks(self)
+        self.__clear_machine_vmdisks()
         idx = 0
         for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
             if self.cfg.get("base" + dev) != "":
@@ -690,6 +708,14 @@ class VM(Brick):
         res.append("-chardev")
         res.append('socket,id=mon,path=%s,server,nowait' % self.console())
         return res
+
+    def __clear_machine_vmdisks(self):
+        for image in self.factory.disk_images:
+            for vmdisk in image.vmdisks:
+                if vmdisk.VM is self:
+                    image.del_vmdisk(vmdisk)
+                    log.debug("VM disk lock released")
+                    return
 
     def has_graphic(self):
         return self.homehost is not None
