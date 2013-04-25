@@ -350,7 +350,22 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         else:
             return self.new_brick(type, name, host, remote)
 
+    @tools.synchronized
     def new_brick(self, type, name, host="", remote=False):
+        """Return a new brick.
+
+        @param type: The type of new brick. Must be known.
+        @type type: C{str}
+        @param name: The name for the new brick. Must contains only letters,
+            numbers, underscores, hyphens and points. Must not be already in
+            use.
+        @type name: C{str}
+        @param host: The host for the brick. Default: "".
+        @type type: C{str}
+        @param remote: If this brick is a remote brick. Default = False.
+        @type remote: C{bool}
+        """
+
         nname = self.normalize(name)  # raises InvalidNameError
         if self.is_in_use(nname):
             raise InvalidName("Normalized name %s already in use" % nname)
@@ -364,39 +379,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 brick.homehost.send("new " + brick.get_type() + " " +
                                     brick.name)
         return brick
-
-    # def newbrick(self, arg1="", arg2="", arg3="", arg4="", arg5=""):
-    #     host = ""
-    #     remote = False
-    #     if arg1 == "remote":
-    #         self.debug("remote brick")
-    #         remote = True
-    #         ntype = arg2
-    #         name = arg3
-    #         host = arg4
-    #     else:
-    #         ntype = arg1
-    #         name = arg2
-
-    #     name = tools.ValidName(name)
-    #     if not name:
-    #         raise InvalidName("No name given!")
-
-    #     if not tools.NameNotInUse(self, name):
-    #         raise InvalidName()
-
-    #     if ntype.lower() in self.BRICKTYPES:
-    #         brick = self.BRICKTYPES[ntype.lower()](self, name)
-    #     else:
-    #         self.err(self, "Invalid console command '%s'", name)
-    #         return None
-    #     if remote:
-    #         brick.set_host(host)
-    #         if brick.homehost.connected:
-    #             brick.homehost.send("new " + brick.get_type() + " " +
-    #                                 brick.name)
-
-    #     return brick
 
     def newevent(self, ntype="", name=""):
         name = tools.ValidName(name)
