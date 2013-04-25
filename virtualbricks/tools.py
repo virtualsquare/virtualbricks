@@ -123,7 +123,7 @@ def synchronize_with(lock):
     return wrap
 
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 
 def synchronized(lock_or_func):
