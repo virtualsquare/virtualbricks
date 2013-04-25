@@ -963,7 +963,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	'''
 	def widgetnames(self):
 		return ['main_win',
-		'filechooserdialog_openimage',
 		'dialog_settings',
 		'dialog_bookmarks',
 		'menu_popup_bookmarks',
@@ -1951,11 +1950,6 @@ Packets longer than specified size are discarded.")
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
 		raise NotImplementedError()
 
-	# XXX
-	def browse_diskimage(self):
-		self.curtain_down()
-		self.show_window('filechooserdialog_openimage')
-
 	def show_createimage(self):
 		self.curtain_down()
 		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
@@ -1963,23 +1957,13 @@ Packets longer than specified size are discarded.")
 		self.show_window('dialog_create_image')
 
 	def on_filechooserdialog_openimage_response(self, dialog, response):
-		self.show_window('')
-		return True
+		pass
 
 	def on_button_openimage_cancel_clicked(self, widget=None, data=""):
-		self.show_window('')
-		return True
+		pass
 
 	def on_button_openimage_open_clicked(self, button):
-		self.show_window('')
-		path = self.gladefile.get_widget('filechooserdialog_openimage'
-								).get_filename()
-		if path is not None:
-			name = os.path.basename(path)
-			self.gladefile.get_widget('text_imagename_name').set_text(re.sub("\.","_",name))
-			self.gladefile.get_widget('text_imagename_path').set_text(path)
-			self.gladefile.get_widget('text_imagename_description').set_text('')
-			self.show_window('dialog_imagename')
+		pass
 
 	def on_imagename_save(self, widget=None, data=""):
 		name = self.gladefile.get_widget('text_imagename_name').get_text()
@@ -1998,9 +1982,21 @@ Packets longer than specified size are discarded.")
 		self.show_window('')
 		return True
 
-
 	def on_image_newfromfile(self, menuitem):
-		self.browse_diskimage()
+		dialog = gtk.FileChooserDialog(_("Open a disk image"),
+								self.widg['main_win'],
+								gtk.FILE_CHOOSER_ACTION_OPEN,
+								(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+									gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+
+		if dialog.run() == gtk.RESPONSE_OK:
+			path = dialog.get_filename()
+			name = os.path.basename(path)
+			self.gladefile.get_widget('text_imagename_name').set_text(re.sub("\.","_",name))
+			self.gladefile.get_widget('text_imagename_path').set_text(path)
+			self.gladefile.get_widget('text_imagename_description').set_text('')
+			self.show_window('dialog_imagename')
+		dialog.destroy()
 
 	def on_image_library(self, widget=None, data=""):
 		dialogs.DisksLibraryDialog(self.brickfactory).show()
@@ -3440,6 +3436,8 @@ Packets longer than specified size are discarded.")
 def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
 	console = brickfactory.Console(factory, stdout, stdin)
 	thread = threading.Thread(target=console.run, name="Console")
+	# needed otherwise a new line should be read from console to exit the
+	# application
 	thread.daemon = True
 	thread.start()
 	return thread
