@@ -1962,7 +1962,7 @@ Packets longer than specified size are discarded.")
 		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
 		self.show_window('dialog_create_image')
 
-	def on_filechooserdialog_openimage_response(self, widget=None, data=""):
+	def on_filechooserdialog_openimage_response(self, dialog, response):
 		self.show_window('')
 		return True
 
@@ -1970,15 +1970,16 @@ Packets longer than specified size are discarded.")
 		self.show_window('')
 		return True
 
-	def on_button_openimage_open_clicked(self, widget=None, data=""):
+	def on_button_openimage_open_clicked(self, button):
 		self.show_window('')
-		path = self.gladefile.get_widget('filechooserdialog_openimage').get_filename()
-		name = os.path.basename(path)
-		self.gladefile.get_widget('text_imagename_name').set_text(re.sub("\.","_",name))
-		self.gladefile.get_widget('text_imagename_path').set_text(path)
-		self.gladefile.get_widget('text_imagename_description').set_text('')
-		self.show_window('dialog_imagename')
-		return True
+		path = self.gladefile.get_widget('filechooserdialog_openimage'
+								).get_filename()
+		if path is not None:
+			name = os.path.basename(path)
+			self.gladefile.get_widget('text_imagename_name').set_text(re.sub("\.","_",name))
+			self.gladefile.get_widget('text_imagename_path').set_text(path)
+			self.gladefile.get_widget('text_imagename_description').set_text('')
+			self.show_window('dialog_imagename')
 
 	def on_imagename_save(self, widget=None, data=""):
 		name = self.gladefile.get_widget('text_imagename_name').get_text()
@@ -1998,7 +1999,7 @@ Packets longer than specified size are discarded.")
 		return True
 
 
-	def on_image_newfromfile(self, widget=None, data=""):
+	def on_image_newfromfile(self, menuitem):
 		self.browse_diskimage()
 
 	def on_image_library(self, widget=None, data=""):
