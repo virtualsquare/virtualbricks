@@ -334,7 +334,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         return False
 
     def newbrick(self, type, name, host="", remote=False):
-        """Old interface, use the new one.
+        """Old interface, use new_brick instead.
 
         Two possible method invocations:
 
@@ -364,6 +364,10 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         @type type: C{str}
         @param remote: If this brick is a remote brick. Default = False.
         @type remote: C{bool}
+
+        @return: the new brick.
+
+        @raises: InvalidNameError, InvalidTypeError
         """
 
         nname = self.normalize(name)  # raises InvalidNameError
@@ -381,22 +385,32 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         return brick
 
     def newevent(self, ntype="", name=""):
-        name = tools.ValidName(name)
-        if not name:
-            raise InvalidName()
-
-        if not tools.NameNotInUse(self, name):
-            raise InvalidName()
-
-        if ntype == "event" or ntype == "Event":
-            from virtualbricks import events  # cyclic imports
-            brick = events.Event(self, name)
-            self.debug("new event %s OK", brick.name)
-        else:
-            self.err(self, "Invalid event command '%s'", name)
+        """Old interface, use new_event instead."""
+        if ntype not in ("event", "Event"):
+            log.error("Invalid event command '%s %s'", ntype, name)
             return False
-
+        self.new_event(name)
         return True
+
+    @tools.synchronized
+    def new_event(self, name):
+        """Create a new event.
+
+        @arg name: The event name.
+        @type name: C{str}
+
+        @return: The new created event.
+
+        @raises: InvalidNameError, InvalidTypeError
+        """
+
+        nname = self.normalize(name)  # raises InvalidNameError
+        if self.is_in_use(nname):
+            raise InvalidName("Normalized name %s already in use" % nname)
+        from virtualbricks import events  # cyclic imports
+        event = events.Event(self, name)
+        log.debug("New event %s OK", event.name)
+        return event
 
     ''' brick action dispatcher '''
     def brickAction(self, obj, cmd):
@@ -522,6 +536,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 self.events.remove(e)
         self.eventsmodel.del_event(eventtodel)
 
+
 def readline(filename):
     with open(filename) as fp:
         return fp.readline()
@@ -584,7 +599,6 @@ There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or
 FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.
 
 """
-
 
     def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
         self.factory = factory
