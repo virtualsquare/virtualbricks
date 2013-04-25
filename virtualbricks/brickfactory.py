@@ -632,8 +632,6 @@ class BrickFactoryServer(BrickFactory):
 
 class Console(object):
 
-    interval = 10
-
     def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
         self.factory = factory
         self.stdout = stdout
@@ -649,10 +647,14 @@ class Console(object):
                         rh.connection = None
 
     def _poll(self):
+        command = ""    # because if stdin.readline raise an exception,
+                        # command is not defined
         try:
             command = self.stdin.readline()
-            Parse(self.factory, command.rstrip('\n'))
+            Parse(self.factory, command)
         except Exception as e:
+            log.exception("An exception is occurred while processing "
+                          "command %s", command)
             msg = ""
             errno = ""
             if len(e.args) == 2:
@@ -664,17 +666,12 @@ class Console(object):
                   file=self.stdout)
 
     def run(self):
-        p = select.poll()
-        p.register(self.stdin, select.POLLIN)
-        print("\nvirtualbricks> ", end="", file=self.stdout)
-        self.stdout.flush()
         while self.factory.running_condition:
-            if len(p.poll(self.interval)) > 0:
-                self._poll()
-                print("\nvirtualbricks> ", end="", file=self.stdout)
-                self.stdout.flush()
+            print("virtualbricks> ", end="", file=self.stdout)
+            self.stdout.flush()
+            self._poll()
             self._check_changed()
-        print("", file=self.stdout)
+        # print("", file=self.stdout)
         self.stdout.flush()
 
 

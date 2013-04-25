@@ -277,8 +277,15 @@ def CommandLineOutput(outf, data):
 		return outf.send(data + '\n')
 
 def Parse(factory, command, console=sys.stdout):
+	if command == '':  # EOF char
+		CommandLineOutput(console, "")
+		factory.quit()
+		return True
+	command = command.strip()
 	if (command == 'q' or command == 'quit'):
 		factory.quit()
+	elif command == "":
+		return True
 	elif (command == 'h' or command == 'help'):
 		CommandLineOutput(console,  'Base command -------------------------------------------------')
 		CommandLineOutput(console,  'ps				List of active process')
@@ -382,8 +389,6 @@ def Parse(factory, command, console=sys.stdout):
 				w.poweron()
 				return True
 			CommandLineOutput(console,  "FAIL Brick not found: " + args[2] + "\n")
-	elif command == '':
-		return True
 	elif command.lower() == "threads":
 		CommandLineOutput(console, "Threads:")
 		for i, thread in enumerate(threading.enumerate()):
