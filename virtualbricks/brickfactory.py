@@ -42,6 +42,12 @@ log = logging.getLogger(__name__)
 if False:  # pyflakes
     _ = str
 
+# synchronized is a decorator that serializes methods invocation. Don't use
+# outside the BrickFactory if not needed. The lock is a reentrant one because
+# one synchronized method could call another synchronized method and we allow
+# this (in the same thread). The quit method is on example.
+synchronized = tools.synchronize_with(threading.RLock())
+
 
 class Error(Exception):
     pass
@@ -136,17 +142,17 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.restore_configfile()
         self.startup = False
 
-    @tools.synchronized
+    @synchronized
     def restore_configfile(self):
         log.info("Current project is %s" %
                   self.settings.get('current_project'))
         self.configfile.restore(self.settings.get('current_project'))
 
-    @tools.synchronized
+    @synchronized
     def save_configfile(self):
         self.configfile.save(self.settings.get('current_project'))
 
-    @tools.synchronized
+    @synchronized
     def quit(self):
         for e in self.events:
             e.poweroff()
@@ -177,8 +183,9 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
         return parms
 
-    """ Power off and kickout all bricks and events """
+    @synchronized
     def reset_config(self):
+        """ Power off and kickout all bricks and events """
         for b in self.bricks:
             b.poweroff()
             self.delbrick(b)
@@ -205,7 +212,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             if img.path == path:
                 return img
 
-    @tools.synchronized
+    @synchronized
     def new_disk_image(self, name, path, description="", host=None):
         """Add one disk image to the library."""
 
@@ -214,7 +221,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.emit("image_added", img)
         return img
 
-    @tools.synchronized
+    @synchronized
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
         self.emit("image_removed", image)
@@ -223,14 +230,12 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     '''[ Bricks, Events ]'''
     '''[[[[[[[[[]]]]]]]]]'''
 
-    @tools.synchronized
     def get_brick_by_name(self, name):
         for b in self.bricks:
             if b.name == name:
                 return b
     getbrickbyname = get_brick_by_name
 
-    @tools.synchronized
     def get_event_by_name(self, name):
         for e in self.events:
             if e.name == name:
@@ -238,6 +243,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     geteventbyname = get_event_by_name
 
     def proclist(self, console):
+        # XXX: move into Protocol class
         procs = 0
         for b in self.bricks:
             if b.proc is not None:
@@ -259,6 +265,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         return None
 
     '''naming'''
+    @synchronized
     def renamebrick(self, b, newname):
         newname = tools.ValidName(newname)
         if newname is None:
@@ -274,6 +281,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         b.post_rename(newname)
         b.gui_changed = True
 
+    @synchronized
     def renameevent(self, e, newname):
         newname = tools.ValidName(newname)
         if newname is None:
@@ -353,7 +361,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         else:
             return self.new_brick(type, name, host, remote)
 
-    @tools.synchronized
+    @synchronized
     def new_brick(self, type, name, host="", remote=False):
         """Return a new brick.
 
@@ -395,7 +403,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.new_event(name)
         return True
 
-    @tools.synchronized
+    @synchronized
     def new_event(self, name):
         """Create a new event.
 
@@ -492,6 +500,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         newevent.on_config_changed()
 
     ''' delete functions '''
+    @synchronized
     def delbrick(self, bricktodel):
         # XXX check me
 
@@ -515,6 +524,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
         self.bricksmodel.del_brick(bricktodel)
 
+    @synchronized
     def delremote(self, address):
 
         # Deferred removal: fill the list first, then call delbrick(b)
@@ -531,6 +541,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 self.remote_hosts.remove(r)
         self.remotehosts_changed = True
 
+    @synchronized
     def delevent(self, eventtodel):
         # XXX check me
         for e in self.events:

@@ -110,7 +110,7 @@ class LoopingCall:
                                                             self.__kwds)
 
 
-def _synchronize(func, lock):
+def synchronize(func, lock):
     def wrapper(*args, **kwds):
         with lock:
             return func(*args, **kwds)
@@ -119,15 +119,5 @@ def _synchronize(func, lock):
 
 def synchronize_with(lock):
     def wrap(func):
-        return _synchronize(func, lock)
+        return synchronize(func, lock)
     return wrap
-
-
-_lock = threading.RLock()
-
-
-def synchronized(lock_or_func):
-    if callable(lock_or_func):
-        return _synchronize(lock_or_func, _lock)
-    else:
-        return synchronize_with(lock_or_func)
