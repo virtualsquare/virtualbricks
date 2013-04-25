@@ -3216,9 +3216,6 @@ Packets longer than specified size are discarded.")
 		self.user_wait_action(self.exec_image_convert)
 		return True
 
-	def on_cfg_qemu_del_stdout_clicked(self, widget, event=None, data=None):
-		self.gladefile.get_widget("cfg_Qemu_stdout_filechooser").unselect_all()
-
 	def on_convertimage_convert(self, widget, event=None, data=None):
 		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
 			self.error("Select a file")
