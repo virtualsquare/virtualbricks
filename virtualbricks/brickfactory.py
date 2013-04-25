@@ -136,14 +136,17 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.restore_configfile()
         self.startup = False
 
+    @tools.synchronized
     def restore_configfile(self):
         log.info("Current project is %s" %
                   self.settings.get('current_project'))
         self.configfile.restore(self.settings.get('current_project'))
 
+    @tools.synchronized
     def save_configfile(self):
         self.configfile.save(self.settings.get('current_project'))
 
+    @tools.synchronized
     def quit(self):
         for e in self.events:
             e.poweroff()
