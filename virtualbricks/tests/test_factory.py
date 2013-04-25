@@ -1,4 +1,4 @@
-from virtualbricks import brickfactory, bricks
+from virtualbricks import brickfactory, bricks, errors
 from virtualbricks.tests import unittest
 
 
@@ -19,8 +19,6 @@ class FactoryStub(brickfactory.BrickFactory):
     def restore_configfile(self):
         if self.restore_configfile_real:
             brickfactory.BrickFactory.restore_configfile(self)
-
-    new_brick = brickfactory.BrickFactory.newbrick
 
 class TestFactory(unittest.TestCase):
 
@@ -44,3 +42,13 @@ class TestFactory(unittest.TestCase):
         self.factory.reset_config()
         self.assertEquals(self.factory.bricks, [])
         self.assertEquals(self.factory.events, [])
+
+    def test_newbrick(self):
+        self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
+                          "")
+        self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
+                          " brick")
+        brick = self.factory.newbrick("stub", "test_brick")
+        self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
+                          "test_brick")
+

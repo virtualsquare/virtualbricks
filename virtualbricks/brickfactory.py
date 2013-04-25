@@ -20,8 +20,8 @@ from __future__ import print_function
 
 import os
 import sys
+import re
 import copy
-import select
 import getpass
 import logging
 import threading
@@ -29,7 +29,7 @@ import threading
 import gobject
 
 import virtualbricks
-from virtualbricks import app, tools, logger, wires, virtualmachines
+from virtualbricks import app, tools, logger, wires, virtualmachines, errors
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
 from virtualbricks.errors import InvalidName, UnmanagedType
@@ -41,6 +41,22 @@ log = logging.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
+
+
+class Error(Exception):
+    pass
+
+
+class InvalidNameError(Error, errors.InvalidName):
+    """Inherit from errors.InvalidName for backward compatibility."""
+
+
+class NameAlreadyInUseError(InvalidNameError):
+    pass
+
+
+class InvalidTypeError(Error):
+    pass
 
 
 def install_brick_types(registry=None, vde_support=False):
@@ -286,38 +302,101 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         return newname
 
     ''' construction functions '''
-    def newbrick(self, arg1="", arg2="", arg3="", arg4="", arg5=""):
-        host = ""
-        remote = False
-        if arg1 == "remote":
-            self.debug("remote brick")
-            remote = True
-            ntype = arg2
-            name = arg3
-            host = arg4
+
+    def normalize(self, name):
+        """Return the normalized name or raise an InvalidNameError."""
+        if not isinstance(name, str):
+            raise InvalidNameError("Name must be a string")
+        if not re.search("\A[a-zA-Z]", name):
+            raise InvalidNameError("Name does not start with a letter, %s" %
+                                   name)
+        nname = name.strip()
+        nname = re.sub(' ', '_', nname)
+        if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
+            raise InvalidNameError("Name must contains only letters, numbers,"
+                                   " underscores, hyphens and points, %s" %
+                                   name)
+        return name
+
+    def is_in_use(self, name):
+        """used to determine whether the chosen name can be used or
+        it has already a duplicate among bricks or events."""
+
+        for b in self.bricks:
+            if b.name == name:
+                return True
+        for e in self.events:
+            if e.name == name:
+                return True
+        for i in self.disk_images:
+            if i.name == name:
+                return True
+        return False
+
+    def newbrick(self, type, name, host="", remote=False):
+        """Old interface, use the new one.
+
+        Two possible method invocations:
+
+        arg1 == "remote"  |  arg1 = ntype
+        arg2 == type      |  arg2 = name
+        arg3 = name       |  arg3 = host
+        arg4 = host       |  arg4 = remote (boolean)
+        """
+
+        if name == "remote":
+            return self.new_brick(type=name, name=host, host=remote,
+                                   remote=True)
         else:
-            ntype = arg1
-            name = arg2
+            return self.new_brick(type, name, host, remote)
 
-        name = tools.ValidName(name)
-        if not name:
-            raise InvalidName("No name given!")
-
-        if not tools.NameNotInUse(self, name):
-            raise InvalidName()
-
-        if ntype.lower() in self.BRICKTYPES:
-            brick = self.BRICKTYPES[ntype.lower()](self, name)
-        else:
-            self.err(self, "Invalid console command '%s'", name)
-            return None
+    def new_brick(self, type, name, host="", remote=False):
+        nname = self.normalize(name)  # raises InvalidNameError
+        if self.is_in_use(nname):
+            raise InvalidName("Normalized name %s already in use" % nname)
+        ltype = type.lower()
+        if ltype not in self.BRICKTYPES:
+            raise InvalidTypeError("Invalid type %s" % type)
+        brick = self.BRICKTYPES[ltype](self, name)
         if remote:
             brick.set_host(host)
             if brick.homehost.connected:
                 brick.homehost.send("new " + brick.get_type() + " " +
                                     brick.name)
-
         return brick
+
+    # def newbrick(self, arg1="", arg2="", arg3="", arg4="", arg5=""):
+    #     host = ""
+    #     remote = False
+    #     if arg1 == "remote":
+    #         self.debug("remote brick")
+    #         remote = True
+    #         ntype = arg2
+    #         name = arg3
+    #         host = arg4
+    #     else:
+    #         ntype = arg1
+    #         name = arg2
+
+    #     name = tools.ValidName(name)
+    #     if not name:
+    #         raise InvalidName("No name given!")
+
+    #     if not tools.NameNotInUse(self, name):
+    #         raise InvalidName()
+
+    #     if ntype.lower() in self.BRICKTYPES:
+    #         brick = self.BRICKTYPES[ntype.lower()](self, name)
+    #     else:
+    #         self.err(self, "Invalid console command '%s'", name)
+    #         return None
+    #     if remote:
+    #         brick.set_host(host)
+    #         if brick.homehost.connected:
+    #             brick.homehost.send("new " + brick.get_type() + " " +
+    #                                 brick.name)
+
+    #     return brick
 
     def newevent(self, ntype="", name=""):
         name = tools.ValidName(name)

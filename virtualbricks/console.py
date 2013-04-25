@@ -525,7 +525,10 @@ class VBProtocol(Protocol):
         if args[0] == 'event':
             self.factory.newevent(*args[1:])
         else:
-            self.factory.newbrick(*args[1:])
+            try:
+                self.factory.newbrick(*args[1:])
+            except brickfactory.Error, e:
+                self.sendLine(str(e))
     do_n = do_new
 
     def do_list(self, args):
