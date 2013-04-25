@@ -30,15 +30,15 @@ from virtualbricks import version
 
 class InstallData(install_data.install_data):
 
-    GLADEFILE_TEMPLATE = "share/virtualbricks.template.glade"
-    GLADEFILE = "share/virtualbricks.glade"
+    TEMPLATE = "virtualbricks/gui/data/virtualbricks.template.glade"
+    GLADEFILE = "virtualbricks/gui/data/virtualbricks.glade"
 
     def initialize_options(self):
         install_data.install_data.initialize_options(self)
         self.tmpdirs = []
 
     def write_glade(self):
-        with open(self.GLADEFILE_TEMPLATE) as fp:
+        with open(self.TEMPLATE) as fp:
             data = fp.read()
             out = re.sub("__IMAGES_PATH__",
                            os.path.join(self.install_dir, "share"), data)

@@ -2966,7 +2966,7 @@ Packets longer than specified size are discarded.")
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm(_("Save current project?"))==True:
-			self.brickfactory.configfile.save(self.config.get('current_project'))
+			self.brickfactory.save_configfile()
 
 		chooser = gtk.FileChooserDialog(title=_("Open a project"),action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
@@ -3015,7 +3015,7 @@ Packets longer than specified size are discarded.")
 
 	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?")==True:
-			self.brickfactory.configfile.save(self.config.get('current_project'))
+			self.brickfactory.save_configfile()
 
 		chooser = gtk.FileChooserDialog(title=_("New project"),action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)

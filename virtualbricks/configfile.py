@@ -22,7 +22,7 @@ import shutil
 import traceback
 
 from virtualbricks import tools
-from virtualbricks.console import (ShellCommand, RemoteHost,  VbShellCommand)
+from virtualbricks.console import ShellCommand, RemoteHost,  VbShellCommand
 from virtualbricks.errors import BadConfig
 
 

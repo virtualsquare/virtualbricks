@@ -117,6 +117,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         "image_removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
     }
 
+    TCP = None
+
     def __init__(self):
         gobject.GObject.__init__(self)
         # DEFINE PROJECT PARMS
@@ -131,7 +133,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.eventsmodel = EventsModel()
         self.startup = True
         self.remotehosts_changed = False
-        self.TCP = None
         self.running_condition = True
         self.settings = Settings(CONFIGFILE, self)
         self.configfile = ConfigFile(self)
@@ -163,7 +164,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             h.disconnect()
 
         self.info(_('Engine: Bye!'))
-        self.configfile.save(self.settings.get('current_project'))
+        self.save_configfile()
         self.running_condition = False
         self.emit("engine-closed")
 
@@ -549,6 +550,10 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 e.poweroff()
                 self.events.remove(e)
         self.eventsmodel.del_event(eventtodel)
+
+    @synchronized
+    def save(self, fileobj):
+        pass
 
 
 def readline(filename):
