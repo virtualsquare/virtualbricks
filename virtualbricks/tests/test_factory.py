@@ -52,3 +52,15 @@ class TestFactory(unittest.TestCase):
         self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
                           "test_brick")
 
+    def test_newevent(self):
+        self.assertRaises(errors.InvalidName, self.factory.newevent, "event",
+                          "")
+        self.assertRaises(errors.InvalidName, self.factory.newbrick, "event",
+                          " event")
+        event = self.factory.newevent("event", "test_event")
+        self.assertRaises(errors.InvalidName, self.factory.newevent, "event",
+                          "test_event")
+        self.assertTrue(self.factory.newevent("Event", "event1"))
+        self.assertFalse(self.factory.newevent("eVeNt", "event2"))
+
+
