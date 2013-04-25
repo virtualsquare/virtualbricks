@@ -3439,6 +3439,7 @@ Packets longer than specified size are discarded.")
 def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
 	console = brickfactory.Console(factory, stdout, stdin)
 	thread = threading.Thread(target=console.run, name="Console")
+	thread.daemon = True
 	thread.start()
 	return thread
 

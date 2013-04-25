@@ -27,6 +27,7 @@ import threading
 
 import gobject
 
+import virtualbricks
 from virtualbricks import app, tools, logger, wires, virtualmachines
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
@@ -170,7 +171,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     # [   Disk Images  ]
     # [[[[[[[[[]]]]]]]]]
 
-    @tools.synchronized
     def get_image_by_name(self, name):
         """Get disk image object from the image library by its name."""
 
@@ -178,7 +178,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             if img.name == name:
                 return img
 
-    @tools.synchronized
     def get_image_by_path(self, path):
         """Get disk image object from the image library by its path."""
 
@@ -199,123 +198,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
         self.emit("image_removed", image)
-
-    def set_configuration(self, console, *cmd):
-        '''Console function to set VB's configuration parameters
-        (local or remote).'''
-
-        if isinstance(cmd, basestring) is False:
-            command = cmd[0]
-        else:
-            command = cmd
-            cmd = []
-        if command == "set" and len(cmd) > 2:
-            if self.settings.has_option(cmd[1]):
-                host = None
-                if len(cmd) == 4:
-                    host = self.get_host_by_name(cmd[3])
-                    if host is not None and host.connected is True:
-                        host.send("cfg " + cmd[1] + " " + cmd[2])
-                else:
-                    self.settings.set(cmd[1], cmd[2])
-        return
-
-    def images_manager(self, console, *cmd):
-        '''Console function to manage disk images.'''
-
-        if isinstance(cmd, basestring) is False:
-            command = cmd[0]
-        else:
-            command = cmd
-            cmd = []
-        host = None
-        # remote = False
-        if command == "list":
-            if len(cmd) > 1:
-                host = self.get_host_by_name(cmd[1])
-            for img in self.disk_images:
-                if len(cmd) == 1 and img.host is None:
-                    CommandLineOutput(console, "%s,%s" % (img.name, img.path))
-                if (host is not None and img.host is not None
-                    and img.host.addr[0] == host.addr[0]):
-                    CommandLineOutput(console, "%s,%s" % (img.name, img.path))
-                else:
-                    continue
-        elif command == "files":
-            if len(cmd) > 1:
-                host = self.get_host_by_name(cmd[1])
-                if host is not None and host.connected is True:
-                    CommandLineOutput(console,
-                                      "files not works for remote hosts.")
-                    return
-                    files = host.get_files_list()
-                    # print files
-                    if files is None:
-                        CommandLineOutput(console, "No files found.")
-                        return
-                    for f in files:
-                        CommandLineOutput(console, f)
-                else:
-                    CommandLineOutput(console, "Not connected to %s" % cmd[1])
-                return
-            for image_file in os.listdir(self.settings.get("baseimages")):
-                if os.path.isfile(self.settings.get("baseimages") + "/" +
-                                  image_file):
-                    CommandLineOutput(console, "%s" % (image_file))
-        elif command == "add":
-            if len(cmd) > 1 and cmd[1] is not None:
-                basepath = self.settings.get("baseimages")
-                host = None
-                name = cmd[1].replace(".", "_")
-                name = name.replace("/", "_")
-                if len(cmd) == 3:
-                    host = self.get_host_by_name(cmd[2])
-                    if host is not None:
-                        basepath = host.baseimages
-                if len(cmd) == 3 and cmd[2].find("/") > -1:
-                    img = self.new_disk_image(name, cmd[2])
-                else:
-                    img = self.new_disk_image(name, basepath + "/" + cmd[1])
-                if host is not None:
-                    img.host = host
-                    if host.connected is True:
-                        host.send("i add " + cmd[1])
-                        host.expect_OK()
-        elif command == "del":
-            if len(cmd) > 1:
-                image = self.get_image_by_name(cmd[1])
-                if image is not None:
-                    if len(cmd) == 3:
-                        host = self.get_host_by_name(cmd[2])
-                        if host.connected is False:
-                            host = None
-                        if host is None:
-                            return
-                        if host is not None and image.host != host:
-                            return
-                        self.remove_disk_image(image)
-                        # self.disk_images.remove(image)
-                        if host.connected is True:
-                            host.send("i del " + cmd[1])
-                            host.expect_OK()
-                    if image.host is not None:
-                        return
-                    self.remove_disk_image(image)
-                    # self.disk_images.remove(image)
-        elif command == "base":
-            if len(cmd) == 1 or (len(cmd) > 1 and cmd[1] == "show"):
-                CommandLineOutput(console, "%s" %
-                                  self.settings.get("baseimages"))
-            elif cmd[1] == "set" and len(cmd) > 2:
-                if len(cmd) == 4:
-                    host = None
-                    host = self.get_host_by_name(cmd[3])
-                    if host is None:
-                        return
-                    host.baseimages = str(cmd[2])
-                else:
-                    self.settings.set("baseimages", cmd[2])
-        return
 
     '''[[[[[[[[[]]]]]]]]]'''
     '''[ Bricks, Events ]'''
@@ -632,6 +514,16 @@ class BrickFactoryServer(BrickFactory):
 
 class Console(object):
 
+    prompt = "virtualbricks> "
+    intro = """Virtualbricks, version {version}
+Copyright (C) 2013 Virtualbricks team
+This is free software; see the source code for copying conditions.
+There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.
+
+"""
+
+
     def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
         self.factory = factory
         self.stdout = stdout
@@ -666,8 +558,10 @@ class Console(object):
                   file=self.stdout)
 
     def run(self):
+        intro = self.intro.format(version=virtualbricks.version.short())
+        print(intro, end="", file=self.stdout)
         while self.factory.running_condition:
-            print("virtualbricks> ", end="", file=self.stdout)
+            print(self.prompt, end="", file=self.stdout)
             self.stdout.flush()
             self._poll()
             self._check_changed()
