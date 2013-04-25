@@ -15,23 +15,29 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import time
 import select
 import socket
-import time
 from threading import Thread
+import logging
 
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Plug
 
-global VDESUPPORT
+log = logging.getLogger(__name__)
+
+VDESUPPORT = True
 try:
     import VdePlug
-except:
-    print "VdePlug support not found. I will disable native VDE python support."
+    log.info("VdePlug support ENABLED.")
+except ImportError:
+    log.info("VdePlug support not found. I will disable native VDE python "
+             "support.")
     VDESUPPORT = False
-else:
-    VDESUPPORT = True
-    print "VdePlug support ENABLED."
+
+
+if False:  # pyflakes
+    _ = str
 
 
 class Wire(Brick):
