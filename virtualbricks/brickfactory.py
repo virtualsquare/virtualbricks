@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_factory -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -164,8 +165,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             self.delbrick(b)
         for e in self.events:
             self.delevent(e)
-        self.bricks = []
-        self.events = []
+        self.bricks[:] = []
+        self.events[:] = []
 
     # [[[[[[[[[]]]]]]]]]
     # [   Disk Images  ]
