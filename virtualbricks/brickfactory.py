@@ -200,16 +200,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.disk_images.remove(image)
         self.emit("image_removed", image)
 
-    def clear_machine_vmdisks(self, machine):
-        """Release lock from disk image."""
-
-        for img in self.disk_images:
-            for vmd in img.vmdisks:
-                if vmd.VM == machine:
-                    img.del_vmdisk(vmd)
-                    self.debug("Vmdisk lock released")
-                    return
-
     def set_configuration(self, console, *cmd):
         '''Console function to set VB's configuration parameters
         (local or remote).'''
