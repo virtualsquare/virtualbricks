@@ -15,29 +15,55 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-class InvalidName(Exception):
+class Error(Exception):
     pass
 
 
-class BadConfig(Exception):
+class InvalidNameError(Error):
+    """Inherit from errors.InvalidName for backward compatibility."""
+
+InvalidName = InvalidNameError
+
+
+class NameAlreadyInUseError(InvalidNameError):
     pass
 
 
-class NotConnected(Exception):
+class InvalidTypeError(Error):
     pass
 
 
-class Linkloop(Exception):
+class BadConfigError(Error):
     pass
 
+BadConfig = BadConfigError
 
-class UnmanagedType(Exception):
+
+class NotConnectedError(Error):
     pass
 
+NotConnected = NotConnectedError
 
-class InvalidAction(Exception):
+
+class LinkloopError(Error):
     pass
 
+Linkloop = LinkloopError
 
-class DiskLocked(Exception):
+
+class UnmanagedTypeError(Error):
     pass
+
+UnmanagedType = UnmanagedTypeError
+
+
+class InvalidActionError(Error):
+    pass
+
+InvalidAction = InvalidActionError
+
+
+class DiskLockedError(Error):
+    pass
+
+DiskLocked = DiskLockedError

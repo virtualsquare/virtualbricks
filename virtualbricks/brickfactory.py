@@ -29,11 +29,11 @@ import threading
 import gobject
 
 import virtualbricks
-from virtualbricks import app, tools, logger, wires, virtualmachines, errors
+from virtualbricks import (app, tools, logger, wires, virtualmachines, errors,
+                           console)
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
 from virtualbricks.errors import InvalidName, UnmanagedType
-from virtualbricks.console import Parse, CommandLineOutput
 from virtualbricks.configfile import ConfigFile
 
 
@@ -47,22 +47,6 @@ if False:  # pyflakes
 # one synchronized method could call another synchronized method and we allow
 # this (in the same thread). The quit method is on example.
 synchronized = tools.synchronize_with(threading.RLock())
-
-
-class Error(Exception):
-    pass
-
-
-class InvalidNameError(Error, errors.InvalidName):
-    """Inherit from errors.InvalidName for backward compatibility."""
-
-
-class NameAlreadyInUseError(InvalidNameError):
-    pass
-
-
-class InvalidTypeError(Error):
-    pass
 
 
 def install_brick_types(registry=None, vde_support=False):
@@ -250,22 +234,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 return e
     geteventbyname = get_event_by_name
 
-    def proclist(self, console):
-        # XXX: move into Protocol class
-        procs = 0
-        for b in self.bricks:
-            if b.proc is not None:
-                procs += 1
-
-        if procs > 0:
-            CommandLineOutput(console, "PID\tType\tName")
-            for b in self.bricks:
-                if b.proc is not None:
-                    CommandLineOutput(console, "%d\t%s\t%s" %
-                                      (b.pid, b.get_type(), b.name))
-        else:
-            CommandLineOutput(console, "No process running")
-
     def get_host_by_name(self, host):
         for h in self.remote_hosts:
             if h.addr[0] == host:
@@ -325,16 +293,15 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def normalize(self, name):
         """Return the normalized name or raise an InvalidNameError."""
         if not isinstance(name, str):
-            raise InvalidNameError("Name must be a string")
+            raise errors.InvalidNameError("Name must be a string")
         if not re.search("\A[a-zA-Z]", name):
-            raise InvalidNameError("Name does not start with a letter, %s" %
+            raise errors.InvalidNameError("Name does not start with a letter, %s" %
                                    name)
         nname = name.strip()
         nname = re.sub(' ', '_', nname)
         if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
-            raise InvalidNameError("Name must contains only letters, numbers,"
-                                   " underscores, hyphens and points, %s" %
-                                   name)
+            raise errors.InvalidNameError("Name must contains only letters, "
+                    "numbers, underscores, hyphens and points, %s" % name)
         return name
 
     def is_in_use(self, name):
@@ -394,7 +361,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             raise InvalidName("Normalized name %s already in use" % nname)
         ltype = type.lower()
         if ltype not in self.BRICKTYPES:
-            raise InvalidTypeError("Invalid type %s" % type)
+            raise errors.InvalidTypeError("Invalid type %s" % type)
         brick = self.BRICKTYPES[ltype](self, name)
         if remote:
             brick.set_host(host)
@@ -645,7 +612,7 @@ FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.
                         # command is not defined
         try:
             command = self.stdin.readline()
-            Parse(self.factory, command)
+            console.parse(self.factory, command)
         except Exception as e:
             log.exception("An exception is occurred while processing "
                           "command %s", command)

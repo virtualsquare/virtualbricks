@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_console -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -23,6 +24,8 @@ import hashlib
 import threading
 from threading import Thread, Lock
 import logging
+
+from virtualbricks import errors
 
 
 log = logging.getLogger(__name__)
@@ -276,149 +279,6 @@ class RemoteHost():
 					self.recv()
 		return ret
 
-def CommandLineOutput(outf, data):
-	if outf == sys.stdout:
-		return outf.write(data + '\n')
-	else:
-		return outf.send(data + '\n')
-
-def Parse(factory, command, console=sys.stdout):
-	if command == '':  # EOF char
-		CommandLineOutput(console, "")
-		factory.quit()
-		return True
-	command = command.strip()
-	if (command == 'q' or command == 'quit'):
-		factory.quit()
-	elif command == "":
-		return True
-	elif (command == 'h' or command == 'help'):
-		CommandLineOutput(console,  'Base command -------------------------------------------------')
-		CommandLineOutput(console,  'ps				List of active process')
-		CommandLineOutput(console,  'n[ew] TYPE NAME			Create a new TYPE brick with NAME')
-		CommandLineOutput(console,  'list				List of bricks already created')
-		CommandLineOutput(console,  'socks				List of connections available for bricks')
-		CommandLineOutput(console,  'conn[ections]			List of connections for each bricks')
-		CommandLineOutput(console,  '\nBrick configuration command ----------------------------------')
-		CommandLineOutput(console,  'BRICK_NAME show			List parameters of BRICK_NAME brick')
-		CommandLineOutput(console,  'BRICK_NAME on			Starts BRICK_NAME')
-		CommandLineOutput(console,  'BRICK_NAME off			Stops BRICK_NAME')
-		CommandLineOutput(console,  'BRICK_NAME remove		Delete BRICK_NAME')
-		CommandLineOutput(console,  'BRICK_NAME config PARM=VALUE	Configure a parameter of BRICK_NAME.')
-		CommandLineOutput(console,  'BRICK_NAME connect NICK		Connect BRICK_NAME to a Sock')
-		CommandLineOutput(console,  'BRICK_NAME disconnect		Disconnect BRICK_NAME to a sock')
-		CommandLineOutput(console,  'BRICK_NAME help			Help about parameters of BRICK_NAME')
-		return True
-	elif (command == 'ps'):
-		factory.proclist(console)
-		return True
-	elif command.startswith('reset all'):
-		factory.reset_config()
-		return True
-	elif command.startswith('n ') or command.startswith('new '):
-		if(command.startswith('n event') or (command.startswith('new event'))):
-			factory.newevent(*command.split(" ")[1:])
-		else:
-			factory.newbrick(*command.split(" ")[1:])
-		return True
-	elif command == 'list':
-		CommandLineOutput(console,  "Bricks:")
-		for obj in factory.bricks:
-			CommandLineOutput(console,  "%s %s" % (obj.get_type(), obj.name))
-		CommandLineOutput(console,"" )
-		CommandLineOutput(console,  "Events:")
-		for obj in factory.events:
-			CommandLineOutput(console,  "%s %s" % (obj.get_type(), obj.name))
-		CommandLineOutput(console,  "End of list.")
-		CommandLineOutput(console, "" )
-		return True
-	elif command.startswith('config') or command.startswith('cfg'):
-		factory.set_configuration(console, *command.split(" ")[1:])
-		return True
-	elif command.startswith('images') or command.startswith("i"):
-		factory.images_manager(console, *command.split(" ")[1:])
-		return True
-	elif command == 'socks':
-		for s in factory.socks:
-			CommandLineOutput(console,  "%s" % s.nickname,)
-			if s.brick is not None:
-				CommandLineOutput(console,  " - port on %s %s - %d available" % (s.brick.get_type(), s.brick.name, s.get_free_ports()))
-			else:
-				CommandLineOutput(console,  "not configured.")
-		return True
-
-	elif command.startswith("conn") or command.startswith("connections"):
-		for b in factory.bricks:
-			CommandLineOutput(console,  "Connections from " + b.name + " brick:\n")
-			for sk in b.socks:
-				if b.get_type() == 'Qemu':
-					CommandLineOutput(console,  '\tsock connected to ' + sk.nickname + ' with an ' + sk.model + ' (' + sk.mac + ') card\n')
-			for pl in b.plugs:
-				if b.get_type() == 'Qemu':
-					if pl.mode == 'vde':
-						CommandLineOutput(console,  '\tlink connected to ' + pl.sock.nickname + ' with a ' + pl.model + ' (' + pl.mac + ') card\n')
-					else:
-						CommandLineOutput(console,  '\tuserlink connected with a ' + pl.model + ' (' + pl.mac + ') card\n')
-				elif (pl.sock is not None):
-					CommandLineOutput(console,  '\tlink: ' + pl.sock.nickname + '\n')
-		return True
-
-	elif command.startswith("control ") and len(command.split(" "))==3:
-		host=command.split(" ")[1]
-		password = command.split(" ")[2]
-		remote = None
-		for h in factory.remote_hosts:
-			if h.addr == host:
-				remote = h
-				break
-		if not remote:
-			remote = RemoteHost(factory, host)
-		remote.password = password
-		factory.factory.remotehosts_changed=True
-
-		if remote.connect():
-			CommandLineOutput(console, "Connection OK\n")
-		else:
-			CommandLineOutput(console, "Connection Failed.\n")
-		return True
-
-	elif command.startswith("udp ") and factory.TCP:
-		args = command.split(" ")
-		if len(args) != 4 or args[0] != 'udp':
-			CommandLineOutput(console,  "FAIL udp arguments \n")
-			return False
-		for b in factory.bricks:
-			if b.name == args[2]:
-				w = PyWire(factory, args[1])
-				w.set_remoteport(args[3])
-				w.connect(b.socks[0])
-				w.poweron()
-				return True
-			CommandLineOutput(console,  "FAIL Brick not found: " + args[2] + "\n")
-	elif command.lower() == "threads":
-		CommandLineOutput(console, "Threads:")
-		for i, thread in enumerate(threading.enumerate()):
-			CommandLineOutput(console, "  %d: %s" % (i, repr(thread)))
-	else:
-		found = None
-		for obj in factory.bricks:
-			if obj.name == command.split(" ")[0]:
-				found = obj
-				break
-		if found is None:
-			for obj in factory.events:
-				if obj.name == command.split(" ")[0]:
-					found = obj
-					break
-
-		if found is not None and len(command.split(" ")) > 1:
-			factory.brickAction(found, command.split(" ")[1:])
-			return True
-		else:
-			print 'Invalid console command "%s"' % command
-			return False
-
-
 class SocketWrapper:
 
     def __init__(self, socket):
@@ -428,19 +288,16 @@ class SocketWrapper:
         self.socket.send(data)
 
 
-class Parser:
+def parse(factory, command, console=sys.stdout):
+    if isinstance(console, socket.socket):
+        console = SocketWrapper(console)
 
-    def parse(self, factory, command, console=sys.stdout):
-        if not console is sys.stdout:
-            console = SocketWrapper(console)
+    protocol = VBProtocol(factory, console)
+    protocol.sub_protocols["images"] = ImagesProtocol(factory, console)
+    protocol.sub_protocols['config']= ConfigurationProtocol(factory, console)
+    return protocol.lineReceived(command)
 
-        protocol = VBProtocol(factory, console)
-        protocol.sub_protocols["images"] = ImagesProtocol(factory, console)
-        protocol.sub_protocols['config']= ConfigurationProtocol(factory,
-                                                                console)
-        return protocol.lineReceived(command)
-
-Parse = Parser().parse
+Parse = parse
 
 
 class Protocol:
@@ -512,8 +369,17 @@ class VBProtocol(Protocol):
 
     def do_ps(self, args):
         """List of active processes"""
-        # XXX
-        self.factory.proclist(self.stdout)
+
+        procs = len([b for b in self.factory.bricks if b.proc is not None])
+        if not procs:
+            self.sendLine("No process running")
+            return
+
+        self.sendLine("PID\tType\tName")
+        self.sendLine("-"*24)
+        for b in self.factory.bricks:
+            if b.proc is not None:
+                self.sendLine("%d\t%s\t%s" % (b.pid, b.get_type(), b.name))
 
     def do_reset(self, args):
         if args and args[0] == 'all':  # backward compatibility
@@ -524,23 +390,25 @@ class VBProtocol(Protocol):
         if not args:
             return  # XXX
         if args[0] == 'event':
-            self.factory.newevent(*args[1:])
+            self.factory.newevent(*args)
         else:
             try:
-                self.factory.newbrick(*args[1:])
-            except brickfactory.Error, e:
+                self.factory.newbrick(*args)
+            except (errors.InvalidTypeError, errors.InvalidNameError), e:
                 self.sendLine(str(e))
     do_n = do_new
 
     def do_list(self, args):
         """List of bricks already created"""
-        self.sendLine("Bricks:")
+        self.sendLine("Bricks")
+        self.sendLine("-"*20)
         for obj in self.factory.bricks:
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
-        self.sendLine("\nEvents:")
+        self.sendLine("\nEvents")
+        self.sendLine("-"*20)
         for obj in self.factory.events:
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
-        self.sendLine("End of list.")
+        # self.sendLine("End of list.")
 
     def do_config(self, args):
         self.sub_protocols["config"].lineReceived("".join(args))
@@ -600,17 +468,19 @@ class VBProtocol(Protocol):
                 self.sendLine("Connection Failed.")
 
     def do_udp(self, args):
-        if self.factory.TCP:
-            if len(args) != 4:
-                self.sendLine("FAIL udp arguments")
-            for b in self.factory.bricks:
-                if b.name == args[2]:
-                    w = PyWire(self.factory, args[1])
-                    w.set_remoteport(args[3])
-                    w.connect(b.socks[0])
-                    w.poweron()
-                    break
-                self.sendLine("FAIL Brick not found: %s" % args[2])
+        self.sendLine("udp command does not work at the moment")
+        return
+        # if self.factory.TCP:
+        #     if len(args) != 4:
+        #         self.sendLine("FAIL udp arguments")
+        #     for b in self.factory.bricks:
+        #         if b.name == args[2]:
+        #             w = PyWire(self.factory, args[1])
+        #             w.set_remoteport(args[3])
+        #             w.connect(b.socks[0])
+        #             w.poweron()
+        #             break
+        #         self.sendLine("FAIL Brick not found: %s" % args[2])
 
     # easter eggs
     def do_python(self, args):
@@ -647,21 +517,21 @@ class ImagesProtocol(Protocol):
                 self.sendLine("%s,%s" % (img.name, img.path))
 
     def do_files(self, parts):
-        # XXX
         if parts:
-            host = self.get_host_by_name(parts[0])
+            host = self.factory.get_host_by_name(parts[0])
             if host is not None and host.connected:
                 self.sendLine("files not works for remote hosts.")
                 return
-                files = host.get_files_list()
-                # print files
-                if files is None:
-                    CommandLineOutput(console, "No files found.")
-                    return
-                for f in files:
-                    CommandLineOutput(console, f)
+                # XXX
+                # files = host.get_files_list()
+                # log.debug(files)
+                # if files is None:
+                #     self.sendLine("No files found.")
+                # else:
+                #     for f in files:
+                #         self.sendLine(f)
             else:
-                CommandLineOutput(console, "Not connected to %s" % parts[0])
+                self.sendLine("Not connected to %s" % parts[0])
             return
         dirname = self.factory.settings.get("baseimages")
         for image_file in os.listdir(dirname):
@@ -670,12 +540,12 @@ class ImagesProtocol(Protocol):
 
     def do_add(self, parts):
         if parts:
-            basepath = self.settings.get("baseimages")
+            basepath = self.factory.settings.get("baseimages")
             host = None
             name = parts[0].replace(".", "_")
             name = name.replace("/", "_")
             if len(parts) == 2:
-                host = self.get_host_by_name(parts[1])
+                host = self.factory.get_host_by_name(parts[1])
                 if host is not None:
                     basepath = host.baseimages
             if len(parts) == 2 and parts[1].find("/") > -1:
@@ -693,7 +563,7 @@ class ImagesProtocol(Protocol):
             image = self.factory.get_image_by_name(parts[0])
             if image is not None:
                 if len(parts) == 2:
-                    host = self.get_host_by_name(parts[1])
+                    host = self.factory.get_host_by_name(parts[1])
                     if host.connected is False:
                         host = None
                     if host is None:
@@ -712,16 +582,16 @@ class ImagesProtocol(Protocol):
 
     def do_base(self, parts):
         if not parts or parts[0] == "show":
-            self.sendLine("%s" % self.settings.get("baseimages"))
+            self.sendLine("%s" % self.factory.settings.get("baseimages"))
         elif parts[0] == "set" and len(parts) > 1:
             if len(parts) == 3:
                 host = None
-                host = self.get_host_by_name(parts[2])
+                host = self.factory.get_host_by_name(parts[2])
                 if host is None:
                     return
                 host.baseimages = str(parts[1])
             else:
-                self.settings.set("baseimages", parts[1])
+                self.factory.settings.set("baseimages", parts[1])
 
 
 class ConfigurationProtocol(Protocol):
@@ -731,8 +601,8 @@ class ConfigurationProtocol(Protocol):
             if self.factory.settings.has_option(parts[0]):
                 host = None
                 if len(parts) == 3:
-                    host = self.get_host_by_name(parts[2])
+                    host = self.factory.get_host_by_name(parts[2])
                     if host is not None and host.connected is True:
                         host.send("cfg " + parts[0] + " " + parts[1])
                 else:
-                    self.settings.set(parts[0], parts[1])
+                    self.factory.settings.set(parts[0], parts[1])
