@@ -1,48 +1,14 @@
 import time
 import threading
 
-from virtualbricks import brickfactory, bricks, errors
-from virtualbricks.tests import unittest, must_test_threads
-
-
-class BrickStub(bricks.Brick):
-
-    def get_type(self):
-        return "Stub"
-
-
-class ConfigFileStub:
-
-    def __init__(self, save=None, restore=None):
-        self._save = save
-        self._restore = restore
-
-    def restore(self, arg):
-        if self._restore:
-            self._restore(arg)
-
-    def save(self, arg):
-        if self._save:
-            self._save(arg)
-
-
-class FactoryStub(brickfactory.BrickFactory):
-
-    restore_configfile_real = False
-
-    def __init__(self):
-        brickfactory.BrickFactory.__init__(self)
-        self.BRICKTYPES["stub"] = BrickStub
-
-    def restore_configfile(self):
-        if self.restore_configfile_real:
-            brickfactory.BrickFactory.restore_configfile(self)
+from virtualbricks import errors
+from virtualbricks.tests import unittest, must_test_threads, stubs
 
 
 class TestFactory(unittest.TestCase):
 
     def setUp(self):
-        self.factory = FactoryStub()
+        self.factory = stubs.FactoryStub()
 
     def test_creation(self):
         defaults = {
@@ -86,7 +52,7 @@ class TestFactory(unittest.TestCase):
 class TestThreadingLocking(unittest.TestCase):
 
     def setUp(self):
-        self.factory = FactoryStub()
+        self.factory = stubs.FactoryStub()
 
     def test_configfile_synchronized(self):
         st1 = [False]
@@ -97,7 +63,7 @@ class TestThreadingLocking(unittest.TestCase):
             time.sleep(0.2)
             st1[0] = False
 
-        cfs = ConfigFileStub(save1)
+        cfs = stubs.ConfigFileStub(save1)
         self.factory.configfile = cfs
         self.factory.restore_configfile_real = True
 
