@@ -118,6 +118,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     }
 
     TCP = None
+    quitting = False
 
     def __init__(self):
         gobject.GObject.__init__(self)
@@ -155,18 +156,24 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
     @synchronized
     def quit(self):
-        for e in self.events:
-            e.poweroff()
-        for b in self.bricks:
-            if b.proc is not None:
-                b.poweroff()
-        for h in self.remote_hosts:
-            h.disconnect()
+        if not self.quitting:
+            # because factory quit can be called twice from the console:
+            # vb> quit
+            # factory.quit() send "engine-closed"
+            # the gui termine and the application calls factory.quit() again
+            self.quitting = True
+            for e in self.events:
+                e.poweroff()
+            for b in self.bricks:
+                if b.proc is not None:
+                    b.poweroff()
+            for h in self.remote_hosts:
+                h.disconnect()
 
-        self.info(_('Engine: Bye!'))
-        self.save_configfile()
-        self.running_condition = False
-        self.emit("engine-closed")
+            self.info(_('Engine: Bye!'))
+            self.save_configfile()
+            self.running_condition = False
+            self.emit("engine-closed")
 
     def err(self, _, *args, **kwds):
         self.error(*args, **kwds)
