@@ -33,7 +33,7 @@ from virtualbricks import (app, tools, logger, wires, virtualmachines, errors,
                            console)
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.settings import CONFIGFILE, Settings
-from virtualbricks.errors import InvalidName, UnmanagedType
+from virtualbricks.errors import UnmanagedType
 from virtualbricks.configfile import ConfigFile
 
 
@@ -245,11 +245,11 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def renamebrick(self, b, newname):
         newname = tools.ValidName(newname)
         if newname is None:
-            raise InvalidName("No name given!")
+            raise errors.InvalidNameError("No name given!")
             return
 
         if not tools.NameNotInUse(self, newname):
-            raise InvalidName()
+            raise errors.InvalidNameError()
             return
 
         b.name = newname
@@ -261,11 +261,11 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def renameevent(self, e, newname):
         newname = tools.ValidName(newname)
         if newname is None:
-            raise InvalidName()
+            raise errors.InvalidNameError()
             return
 
         if not tools.NameNotInUse(self, newname):
-            raise InvalidName()
+            raise errors.InvalidNameError()
             return
 
         e.name = newname
@@ -295,8 +295,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         if not isinstance(name, str):
             raise errors.InvalidNameError("Name must be a string")
         if not re.search("\A[a-zA-Z]", name):
-            raise errors.InvalidNameError("Name does not start with a letter, %s" %
-                                   name)
+            raise errors.InvalidNameError("Name does not start with a letter, "
+                                          "%s" % name)
         nname = name.strip()
         nname = re.sub(' ', '_', nname)
         if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
@@ -358,7 +358,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
         nname = self.normalize(name)  # raises InvalidNameError
         if self.is_in_use(nname):
-            raise InvalidName("Normalized name %s already in use" % nname)
+            raise errors.InvalidNameError("Normalized name %s already in use" %
+                                     nname)
         ltype = type.lower()
         if ltype not in self.BRICKTYPES:
             raise errors.InvalidTypeError("Invalid type %s" % type)
@@ -392,7 +393,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
         nname = self.normalize(name)  # raises InvalidNameError
         if self.is_in_use(nname):
-            raise InvalidName("Normalized name %s already in use" % nname)
+            raise errors.InvalidNameError("Normalized name %s already in use" %
+                                          nname)
         from virtualbricks import events  # cyclic imports
         event = events.Event(self, name)
         log.debug("New event %s OK", event.name)
