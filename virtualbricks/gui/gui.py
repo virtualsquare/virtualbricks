@@ -3478,6 +3478,15 @@ class MessageDialogHandler(logging.Handler):
 		dialog.destroy()
 
 
+def my_raw_input(prompt=""):
+	sys.stdout.write(prompt)
+	sys.stdout.flush()
+	line = sys.stdin.readline()
+	if line == "":
+		raise EOFError
+	return line.rstrip("\n")
+
+
 class Application(brickfactory.Application):
 
 	tags = [('DEBUG', {'foreground': '#a29898'}),
@@ -3504,6 +3513,12 @@ class Application(brickfactory.Application):
 		gtk.glade.bindtextdomain("virtualbricks", "/usr/share/locale")
 		gtk.glade.textdomain("virtualbricks")
 
+	def install_raw_input(self):
+		# actually there is a bug with builtin raw_input and pygtk that cause a
+		# deadlock
+		import __builtin__
+		__builtin__.raw_input = my_raw_input
+
 	def load_gladefile(self):
 		try:
 			parts = [sys.prefix, "share", "virtualbricks",
@@ -3519,6 +3534,7 @@ class Application(brickfactory.Application):
 	def start(self):
 		if not os.access(MYPATH, os.X_OK):
 			os.mkdir(MYPATH)
+		self.install_raw_input()
 		gladefile = self.load_gladefile()
 		gobject.threads_init()
 		handler = MessageDialogHandler()
