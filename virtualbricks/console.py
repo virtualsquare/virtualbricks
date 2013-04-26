@@ -314,7 +314,13 @@ class Protocol:
         if parts:
             handler = getattr(self, "do_" + parts[0], None)
             if handler is not None:
-                handler(parts[1:])
+                try:
+                    handler(parts[1:])
+                except TypeError, e:
+                    if "argument" in str(e):  # XXX: a better check?
+                        self.sendLine("invalid command %s" % line)
+                except IndexError:  # args[0] where no args are given
+                        self.sendLine("invalid command %s" % line)
                 return True
             self.default(line)
             return False
@@ -387,10 +393,9 @@ class VBProtocol(Protocol):
 
     def do_new(self, args):
         """Create a new brick or event"""
-        if not args:
-            return  # XXX
+
         if args[0] == 'event':
-            self.factory.newevent(*args)
+            self.factory.new_event(args[1])
         else:
             try:
                 self.factory.newbrick(*args)
