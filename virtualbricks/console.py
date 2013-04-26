@@ -615,6 +615,8 @@ class VBProtocol(Protocol):
     # easter eggs
     def do_python(self, args):
         """Open a python interpreter. Use ^D (^Z on windows) to exit."""
+        self.sendLine("Does not work, don not use it")
+        return
         # actually the code itself works but breaks gettext because the global
         # _ is assigned to the result of last command
         import code
