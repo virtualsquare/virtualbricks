@@ -162,8 +162,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def err(self, _, *args, **kwds):
         self.error(*args, **kwds)
 
-    """ Clear parameters, and reset project counter """
     def clear_project_parms(self):
+        """Clear parameters, and reset project counter."""
         DEFAULT_PARMS = {
             "id": "0",
             "name": "",
@@ -276,11 +276,9 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             pass
         #e.gui_changed = True
 
-    '''
-     '    used to generate a potential next valid name
-    '    by appending _new
-    '''
     def nextValidName(self, name, toappend="_new"):
+        """Generate a potential next valid name by appending _new"""
+
         newname = tools.ValidName(name)
         if not newname:
             return None

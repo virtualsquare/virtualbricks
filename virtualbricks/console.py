@@ -22,7 +22,6 @@ import select
 import socket
 import hashlib
 import threading
-from threading import Thread, Lock
 import logging
 
 from virtualbricks import errors
@@ -32,252 +31,266 @@ log = logging.getLogger(__name__)
 
 
 class VbShellCommand(str):
-	pass
+    pass
+
 
 class ShellCommand(str):
-	pass
-
-class RemoteHostConnectionInstance(Thread):
-	def __init__(self,remotehost,factory):
-		self.host = remotehost
-		self.factory = factory
-		Thread.__init__(self)
-	def run(self):
-		if not self.host.connected:
-			return
-		self.host.post_connect_init()
-		p = select.poll()
-		p.register(self.host.sock, select.POLLIN | select.POLLERR | select.POLLHUP | select.POLLNVAL)
-		while self.host.sock and self.host.connected:
-			pollret = p.poll(100)
-			if (len(pollret)) == 1:
-				(fd,ev) = pollret[0]
-				if ev != select.POLLIN:
-					self.host.disconnect()
-				else:
-					event = self.host.sock.recv(200)
-					if len(event) == 0:
-						event = self.host.sock.recv(200)
-						if len(event) == 0:
-							self.host.disconnect()
-							return
-					for eventline in event.split('\n'):
-						args = eventline.rstrip('\n').split(' ')
+    pass
 
 
-						if len(args) > 0 and args[0] == 'brick-started':
-							for br in self.factory.bricks:
-								if br.name == args[1]:
-									br.proc = True
-									br.factory.emit("brick-started", br.name)
-									#print "Started %s" % br.name
-									br.run_condition = True
-									br.post_poweron()
+class RemoteHostConnectionInstance(threading.Thread):
 
-						if len(args) > 0 and args[0] == 'brick-stopped':
-							for br in self.factory.bricks:
-								if br.name == args[1]:
-									br.proc = None
-									br.factory.emit("brick-stopped", br.name)
-									#print "Stopped %s" % br.name
-									br.run_condition = False
-									br.post_poweroff()
+    def __init__(self, remotehost, factory):
+        self.host = remotehost
+        self.factory = factory
+        threading.Thread.__init__(self)
 
-						if len(args) > 0 and args[0] == 'udp':
-							for br in self.factory.bricks:
-								if br.name == args[1] and br.get_type() == 'Wire' and args[2] == 'remoteport':
-									br.set_remoteport(args[3])
-						self.remotehosts_changed=True
+    def run(self):
+        if not self.host.connected:
+            return
 
-class RemoteHost():
-	def __init__(self, factory, address):
-		self.sock = None
-		self.factory = factory
-		self.addr = (address,1050)
-		self.connected=False
-		self.connection = None
-		self.password=""
-		self.factory.remotehosts_changed=True
-		self.autoconnect=False
-		self.baseimages="/root/VM"
-		self.vdepath="/usr/bin"
-		self.qemupath="/usr/bin"
-		self.bricksdirectory="/root"
-		self.lock = Lock()
+        self.host.post_connect_init()
+        p = select.poll()
+        p.register(self.host.sock, select.POLLIN | select.POLLERR |
+                   select.POLLHUP | select.POLLNVAL)
+        while self.host.sock and self.host.connected:
+            pollret = p.poll(100)
+            if (len(pollret)) == 1:
+                (fd, ev) = pollret[0]
+                if ev != select.POLLIN:
+                    self.host.disconnect()
+                else:
+                    event = self.host.sock.recv(200)
+                    if len(event) == 0:
+                        event = self.host.sock.recv(200)
+                        if len(event) == 0:
+                            self.host.disconnect()
+                            return
+                    for eventline in event.split('\n'):
+                        args = eventline.rstrip('\n').split(' ')
 
-	def num_bricks(self):
-		r = 0
-		for b in self.factory.bricks:
-			if b.homehost and b.homehost.addr[0] == self.addr[0]:
-				r+=1
-		return r
+                        if len(args) > 0 and args[0] == 'brick-started':
+                            for br in self.factory.bricks:
+                                if br.name == args[1]:
+                                    br.proc = True
+                                    br.factory.emit("brick-started", br.name)
+                                    #print "Started %s" % br.name
+                                    br.run_condition = True
+                                    br.post_poweron()
 
-	def connect(self):
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		try:
-			self.sock.connect(self.addr)
-		except:
-			return False,"Error connecting to host"
-		else:
-			try:
-				rec = self.sock.recv(5)
-			except:
-				return False,"Error reading from socket"
+                        if len(args) > 0 and args[0] == 'brick-stopped':
+                            for br in self.factory.bricks:
+                                if br.name == args[1]:
+                                    br.proc = None
+                                    br.factory.emit("brick-stopped", br.name)
+                                    #print "Stopped %s" % br.name
+                                    br.run_condition = False
+                                    br.post_poweroff()
 
-		self.sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-		if (not rec.startswith('HELO')):
-			return False,"Invalid server response"
-		rec = self.sock.recv(256)
-		sha = hashlib.sha256()
-		sha.update(self.password)
-		sha.update(rec)
-		hashed = sha.digest()
-		self.sock.sendall(hashed)
-		p = select.poll()
-		p.register(self.sock, select.POLLIN)
-		pollret = p.poll(2000)
-		if pollret is not None and len(pollret) != 0:
-			rec = self.sock.recv(4)
-			if rec.startswith("OK"):
-				self.connected=True
-				self.factory.remotehosts_changed=True
-				self.connection = RemoteHostConnectionInstance(self, self.factory)
-				self.connection.start()
-				return True,"Success"
-		self.factory.remotehosts_changed=True
-		return False,"Authentication Failed."
+                        if len(args) > 0 and args[0] == 'udp':
+                            for br in self.factory.bricks:
+                                if (br.name == args[1] and
+                                        br.get_type() == 'Wire'
+                                        and args[2] == 'remoteport'):
+                                    br.set_remoteport(args[3])
+                        self.remotehosts_changed = True
 
-	def disconnect(self):
-		if self.connected:
-			self.connected=False
-			for b in self.factory.bricks:
-				if b.homehost and b.homehost.addr[0] == self.addr[0]:
-					b.poweroff()
-			self.send("reset all")
-			self.sock.close()
-			self.sock = None
-		self.factory.remotehosts_changed=True
 
-	def expect_OK(self):
-		rec = self.recv()
-		if rec is not None and rec.endswith("OK"):
-			return True
-		elif rec is not None and rec.endswith("FAIL"):
-			return "FAIL\n"
-			return False
-		else:
-			return "ERROR"
-			return False
+class RemoteHost:
 
-	def upload(self,b):
-		self.lock.acquire()
-		self.send_nolock("new "+b.get_type()+" "+b.name)
-		self.putconfig(b)
-		self.send_nolock("ACK")
-		self.factory.remotehosts_changed=True
-		self.lock.release()
+    def __init__(self, factory, address):
+        self.sock = None
+        self.factory = factory
+        self.addr = (address, 1050)
+        self.connected = False
+        self.connection = None
+        self.password = ""
+        self.factory.remotehosts_changed = True
+        self.autoconnect = False
+        self.baseimages = "/root/VM"
+        self.vdepath = "/usr/bin"
+        self.qemupath = "/usr/bin"
+        self.bricksdirectory = "/root"
+        self.lock = threading.Lock()
 
-	def putconfig(self,b):
-		for (k, v) in b.cfg.iteritems():
-			if k != 'homehost':
-				# ONLY SEND TO SERVER STRING PARAMETERS, OBJECT WON'T BE SENT TO SERVER AS A STRING!
-				if isinstance(v, basestring) is True:
-					self.send_nolock(b.name + ' config ' + "%s=%s" % (k, v))
-		for pl in b.plugs:
-			if b.get_type() == 'Qemu':
-				if pl.mode == 'vde':
-					self.send_nolock(b.name + " connect " + pl.sock.nickname)
-				else:
-					print "Qemu but not VDE plug"
-			elif (pl.sock is not None):
-				print "Not a Qemu Plug"
-		self.factory.remotehosts_changed=True
+    def num_bricks(self):
+        r = 0
+        for b in self.factory.bricks:
+            if b.homehost and b.homehost.addr[0] == self.addr[0]:
+                r += 1
+        return r
 
-	def post_connect_init(self):
-		self.send('reset all')
+    def connect(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.sock.connect(self.addr)
+        except:  # XXX don't catch all errors
+            return False, "Error connecting to host"
+        else:
+            try:
+                rec = self.sock.recv(5)
+            except:  # XXX: don't catch all errors
+                return False, "Error reading from socket"
 
-		basepath = self.send_and_recv("i base show")
-		if basepath and len(basepath) == 1:
-			self.basepath = basepath[0]
+        self.sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+        if not rec.startswith('HELO'):
+            return False, "Invalid server response"
+        rec = self.sock.recv(256)
+        sha = hashlib.sha256()
+        sha.update(self.password)
+        sha.update(rec)
+        hashed = sha.digest()
+        self.sock.sendall(hashed)
+        p = select.poll()
+        p.register(self.sock, select.POLLIN)
+        pollret = p.poll(2000)
+        if pollret is not None and len(pollret) != 0:
+            rec = self.sock.recv(4)
+            if rec.startswith("OK"):
+                self.connected = True
+                self.factory.remotehosts_changed = True
+                self.connection = RemoteHostConnectionInstance(self,
+                                                               self.factory)
+                self.connection.start()
+                return True, "Success"
+        self.factory.remotehosts_changed = True
+        return False, "Authentication Failed."
 
-		for img in self.factory.disk_images:
-			if img.host is not None and img.host.addr[0] == self.addr[0]:
-				name = img.path.split("/")
-				name = name[len(name)-1]
-				self.send("i add " + img.name + " " + self.baseimages + "/" + name)
+    def disconnect(self):
+        if self.connected:
+            self.connected = False
+            for b in self.factory.bricks:
+                if b.homehost and b.homehost.addr[0] == self.addr[0]:
+                    b.poweroff()
+            self.send("reset all")
+            self.sock.close()
+            self.sock = None
+        self.factory.remotehosts_changed = True
 
-		for b in self.factory.bricks:
-			if b.homehost and b.homehost.addr == self.addr:
-					self.upload(b)
+    def expect_OK(self):
+        rec = self.recv()
+        if rec is not None and rec.endswith("OK"):
+            return True
+        elif rec is not None and rec.endswith("FAIL"):
+            return "FAIL\n"
+            return False
+        else:
+            return "ERROR"
+            return False
 
-		self.send("cfg set projects " + self.factory.settings.get("projects"))
+    def upload(self, b):
+        self.lock.acquire()
+        self.send_nolock("new " + b.get_type() + " " + b.name)
+        self.putconfig(b)
+        self.send_nolock("ACK")
+        self.factory.remotehosts_changed = True
+        self.lock.release()
 
-	def get_files_list(self):
-		return self.send_and_recv("i files")
+    def putconfig(self, b):
+        for (k, v) in b.cfg.iteritems():
+            if k != 'homehost':
+                # ONLY SEND TO SERVER STRING PARAMETERS,
+                # OBJECT WON'T BE SENT TO SERVER AS A STRING!
+                if isinstance(v, basestring) is True:
+                    self.send_nolock(b.name + ' config ' + "%s=%s" % (k, v))
+        for pl in b.plugs:
+            if b.get_type() == 'Qemu':
+                if pl.mode == 'vde':
+                    self.send_nolock(b.name + " connect " + pl.sock.nickname)
+                else:
+                    print "Qemu but not VDE plug"
+            elif (pl.sock is not None):
+                print "Not a Qemu Plug"
+        self.factory.remotehosts_changed = True
 
-	def send_and_recv(self, cmd):
-		self.lock.acquire()
-		self.send_nolock(cmd, norecv=True)
-		rec = self.recv()
-		buff=""
-		while rec is not None and rec != "OK":
-			buff=buff+rec
-			rec = self.recv()
-		self.lock.release()
-		return buff
+    def post_connect_init(self):
+        self.send('reset all')
 
-	def recv(self, size=1):
+        basepath = self.send_and_recv("i base show")
+        if basepath and len(basepath) == 1:
+            self.basepath = basepath[0]
 
-		if not self.connected:
-			return ""
+        for img in self.factory.disk_images:
+            if img.host is not None and img.host.addr[0] == self.addr[0]:
+                name = img.path.split("/")
+                name = name[len(name) - 1]
+                self.send("i add %s %s/%s" % (img.name, self.baseimagesname))
 
-		if size==1:
-			p = select.poll()
-        	        p.register(self.sock, select.POLLIN)
-			buff=""
-			rec=""
-               		while (p.poll(100)):
-				buff = self.sock.recv(1)
-				rec=rec+buff
-				if buff == "\n":
-					rec = rec.rstrip("\n")
-					return rec
-		#old version
-		else:
-			ret = ""
-			ret = self.sock.recv(size)
-			return ret
+        for b in self.factory.bricks:
+            if b.homehost and b.homehost.addr == self.addr:
+                    self.upload(b)
 
-	def empty_socket(self):
-		"""remove the data present on the socket"""
-    		while 1:
-		        inputready, o, e = select.select([self.sock],[],[], 0.0)
-		        if len(inputready)==0: break
-			for s in inputready: s.recv(1)
+        self.send("cfg set projects " + self.factory.settings.get("projects"))
 
-	def send(self, cmd, norecv=False):
-		self.lock.acquire()
-		ret = False
-		if self.connected:
-			self.sock.sendall(cmd + '\n')
-			if not norecv:
-				if cmd != "ACK":
-					self.expect_OK()
-				else:
-					self.recv()
-		self.lock.release()
-		return ret
+    def get_files_list(self):
+        return self.send_and_recv("i files")
 
-	def send_nolock(self, cmd, norecv=False):
-		ret = False
-		if self.connected:
-			self.sock.sendall(cmd + "\n")
-			if not norecv:
-				if cmd != "ACK":
-					self.expect_OK()
-				else:
-					self.recv()
-		return ret
+    def send_and_recv(self, cmd):
+        self.lock.acquire()
+        self.send_nolock(cmd, norecv=True)
+        rec = self.recv()
+        buff = ""
+        while rec is not None and rec != "OK":
+            buff = buff + rec
+            rec = self.recv()
+        self.lock.release()
+        return buff
+
+    def recv(self, size=1):
+        if not self.connected:
+            return ""
+
+        if size == 1:
+            p = select.poll()
+            p.register(self.sock, select.POLLIN)
+            buff = ""
+            rec = ""
+            while p.poll(100):
+                buff = self.sock.recv(1)
+                rec += buff
+                if buff == "\n":
+                    rec = rec.rstrip("\n")
+                    return rec
+        #old version
+        else:
+            ret = ""
+            ret = self.sock.recv(size)
+            return ret
+
+    def empty_socket(self):
+        """remove the data present on the socket"""
+
+        while 1:
+            inputready, o, e = select.select([self.sock], [], [], 0.0)
+            if not inputready:
+                break
+            for s in inputready:
+                s.recv(1)
+
+    def send(self, cmd, norecv=False):
+        self.lock.acquire()
+        ret = False
+        if self.connected:
+            self.sock.sendall(cmd + '\n')
+            if not norecv:
+                if cmd != "ACK":
+                    self.expect_OK()
+                else:
+                    self.recv()
+        self.lock.release()
+        return ret
+
+    def send_nolock(self, cmd, norecv=False):
+        ret = False
+        if self.connected:
+            self.sock.sendall(cmd + "\n")
+            if not norecv:
+                if cmd != "ACK":
+                    self.expect_OK()
+                else:
+                    self.recv()
+        return ret
+
 
 class SocketWrapper:
 
@@ -294,7 +307,7 @@ def parse(factory, command, console=sys.stdout):
 
     protocol = VBProtocol(factory, console)
     protocol.sub_protocols["images"] = ImagesProtocol(factory, console)
-    protocol.sub_protocols['config']= ConfigurationProtocol(factory, console)
+    protocol.sub_protocols["config"] = ConfigurationProtocol(factory, console)
     return protocol.lineReceived(command)
 
 Parse = parse
@@ -331,11 +344,12 @@ class Protocol:
     def default(self, parts):
         pass
 
+
 class VBProtocol(Protocol):
 
     def default(self, line):
         if not line:
-            self.sendLine('Invalid console command "%s"' % line)
+            self.sendLine("Invalid console command '%s'" % line)
             return False
         line = line.strip()
         args = line.split()
@@ -343,34 +357,34 @@ class VBProtocol(Protocol):
         if obj is None:
             obj = self.factory.get_event_by_name(args[0])
             if obj is None:
-                self.sendLine('Invalid console command "%s"' % line)
+                self.sendLine("Invalid console command '%s'" % line)
                 return False
         self.factory.brickAction(obj, args[1:])
         return True
 
     def do_quit(self, args):
-        log.info('Quitting command loop')
+        log.info("Quitting command loop")
         self.factory.quit()
         return True
     do_q = do_EOF = do_quit
 
     def do_help(self, args):
-        self.sendLine('Base command -------------------------------------------------')
-        self.sendLine('ps                List of active process')
-        self.sendLine('n[ew] TYPE NAME            Create a new TYPE brick with NAME')
-        self.sendLine('list                List of bricks already created')
-        self.sendLine('socks                List of connections available for bricks')
-        self.sendLine('conn[ections]            List of connections for each bricks')
+        self.sendLine("Base command " + "-" * 40)
+        self.sendLine("ps               List of active process")
+        self.sendLine("n[ew] TYPE NAME  Create a new TYPE brick with NAME")
+        self.sendLine("list             List of bricks already created")
+        self.sendLine("socks            List of connections available for bricks")
+        self.sendLine("conn[ections]    List of connections for each bricks")
         self.sendLine("")
-        self.sendLine('Brick configuration command ----------------------------------')
-        self.sendLine('BRICK_NAME show            List parameters of BRICK_NAME brick')
-        self.sendLine('BRICK_NAME on            Starts BRICK_NAME')
-        self.sendLine('BRICK_NAME off            Stops BRICK_NAME')
-        self.sendLine('BRICK_NAME remove        Delete BRICK_NAME')
-        self.sendLine('BRICK_NAME config PARM=VALUE    Configure a parameter of BRICK_NAME.')
-        self.sendLine('BRICK_NAME connect NICK        Connect BRICK_NAME to a Sock')
-        self.sendLine('BRICK_NAME disconnect        Disconnect BRICK_NAME to a sock')
-        self.sendLine('BRICK_NAME help            Help about parameters of BRICK_NAME')
+        self.sendLine("Brick configuration command " + "-" * 25)
+        self.sendLine("BRICK_NAME show      List parameters of BRICK_NAME brick")
+        self.sendLine("BRICK_NAME on        Starts BRICK_NAME")
+        self.sendLine("BRICK_NAME off       Stops BRICK_NAME")
+        self.sendLine("BRICK_NAME remove    Delete BRICK_NAME")
+        self.sendLine("BRICK_NAME config PARM=VALUE     Configure a parameter of BRICK_NAME.")
+        self.sendLine("BRICK_NAME connect NICK  Connect BRICK_NAME to a Sock")
+        self.sendLine("BRICK_NAME disconnect    Disconnect BRICK_NAME to a sock")
+        self.sendLine("BRICK_NAME help      Help about parameters of BRICK_NAME")
     do_h = do_help
 
     def do_ps(self, args):
@@ -382,19 +396,19 @@ class VBProtocol(Protocol):
             return
 
         self.sendLine("PID\tType\tName")
-        self.sendLine("-"*24)
+        self.sendLine("-" * 24)
         for b in self.factory.bricks:
             if b.proc is not None:
                 self.sendLine("%d\t%s\t%s" % (b.pid, b.get_type(), b.name))
 
     def do_reset(self, args):
-        if args and args[0] == 'all':  # backward compatibility
+        if args and args[0] == "all":  # backward compatibility
             self.factory.reset_config()
 
     def do_new(self, args):
         """Create a new brick or event"""
 
-        if args[0] == 'event':
+        if args[0] == "event":
             self.factory.new_event(args[1])
         else:
             try:
@@ -406,11 +420,11 @@ class VBProtocol(Protocol):
     def do_list(self, args):
         """List of bricks already created"""
         self.sendLine("Bricks")
-        self.sendLine("-"*20)
+        self.sendLine("-" * 20)
         for obj in self.factory.bricks:
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         self.sendLine("\nEvents")
-        self.sendLine("-"*20)
+        self.sendLine("-" * 20)
         for obj in self.factory.events:
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         # self.sendLine("End of list.")
@@ -438,20 +452,20 @@ class VBProtocol(Protocol):
         for b in self.factory.bricks:
             self.sendLine("Connections from %s brick:" % b.name)
             for sk in b.socks:
-                if b.get_type() == 'Qemu':
-                    s = '\tsock connected to %s with an %s (%s) card'
+                if b.get_type() == "Qemu":
+                    s = "\tsock connected to %s with an %s (%s) card"
                     self.sendLine(s % (sk.nickname, sk.model, sk.mac))
             for pl in b.plugs:
-                if b.get_type() == 'Qemu':
-                    if pl.mode == 'vde':
-                        s = '\tlink connected to %s with a %s (%s) card'
+                if b.get_type() == "Qemu":
+                    if pl.mode == "vde":
+                        s = "\tlink connected to %s with a %s (%s) card"
                         self.sendLine(s % (pl.sock.nickname, pl.model,
                                                pl.mac))
                     else:
-                        s = '\tuserlink connected with a %s (%s) card'
+                        s = "\tuserlink connected with a %s (%s) card"
                         self.sendLine(s % (pl.model, pl.mac))
                 elif (pl.sock is not None):
-                    self.sendLine('\tlink: %s ' % pl.sock.nickname)
+                    self.sendLine("\tlink: %s " % pl.sock.nickname)
     do_conn = do_connections
 
     def do_control(self, args):
@@ -497,8 +511,8 @@ class VBProtocol(Protocol):
         import code
         import __builtin__
 
-        local = {'__name__': '__console__', '__doc__': None,
-                 'factory': self.factory}
+        local = {"__name__": "__console__", "__doc__": None,
+                 "factory": self.factory}
         code.interact(local=local)
         __builtin__._ = __builtin__.gettext
 
