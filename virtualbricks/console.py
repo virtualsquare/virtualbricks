@@ -471,9 +471,10 @@ class Protocol:
 class VBProtocol(Protocol):
 
     def default(self, line):
-        if not args:
+        if not line:
             self.sendLine('Invalid console command "%s"' % line)
             return False
+        line = line.strip()
         args = line.split()
         obj = self.factory.get_brick_by_name(args[0])
         if obj is None:
@@ -614,11 +615,15 @@ class VBProtocol(Protocol):
     # easter eggs
     def do_python(self, args):
         """Open a python interpreter. Use ^D (^Z on windows) to exit."""
+        # actually the code itself works but breaks gettext because the global
+        # _ is assigned to the result of last command
         import code
+        import __builtin__
 
         local = {'__name__': '__console__', '__doc__': None,
                  'factory': self.factory}
         code.interact(local=local)
+        __builtin__._ = __builtin__.gettext
 
     def do_threads(self, args):
         self.sendLine("Threads:")
