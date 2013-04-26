@@ -30,8 +30,8 @@ from virtualbricks import version
 
 class InstallData(install_data.install_data):
 
-    TEMPLATE = "virtualbricks/gui/data/virtualbricks.template.glade"
-    GLADEFILE = "virtualbricks/gui/data/virtualbricks.glade"
+    TEMPLATE = "share/virtualbricks.template.glade"
+    GLADEFILE = "share/virtualbricks.glade"
 
     def initialize_options(self):
         install_data.install_data.initialize_options(self)
