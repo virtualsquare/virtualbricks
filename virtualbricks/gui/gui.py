@@ -44,6 +44,86 @@ _ = str  # temporary hack because its use in class definition
 log = logging.getLogger(__name__)
 
 
+def get_data(resource):
+	# XXX duplicated from virtualbricks.gui.dialogs
+    log.debug("Loading resource from %s", resource)
+    filename = os.path.join(sys.prefix, "share", "virtualbricks", resource)
+    if not os.path.exists(filename):
+        filename = os.path.join(sys.prefix, "local", "share", "virtualbricks",
+                                resource)
+    with open(filename) as fp:
+        return fp.read()
+
+def get_treeselected(gui, tree, model, pthinfo, c):
+	if pthinfo is not None:
+		path, col, cellx, celly = pthinfo
+		tree.grab_focus()
+		tree.set_cursor(path, col, 0)
+		iter = model.get_iter(path)
+		name = model.get_value(iter, c)
+		gui.config_last_iter = iter
+		return name
+	return ""
+
+def get_treeselected_name(gui, tree, model, pathinfo):
+	return get_treeselected(gui, tree, model, pathinfo, 3)
+
+
+def check_joblist(gui, force=False):
+	new_ps = []
+	for b in gui.brickfactory.bricks:
+		if b.proc is not None:
+			if b.homehost and b.homehost.connected:
+				ret = None
+			else:
+				ret = b.proc.poll()
+			if ret is None:
+				new_ps.append(b)
+			else:
+				b.poweroff()
+				b.gui_changed = True
+
+	if gui.ps != new_ps or force==True:
+		gui.ps = new_ps
+		gui.bricks = []
+		gui.running_bricks.clear()
+		for b in gui.ps:
+			iter = gui.running_bricks.append()
+			if (b.pid == -10):
+				pid = "python-thread   "
+			elif b.homehost:
+				pid = "Remote"
+			else:
+				pid = str(b.pid)
+			gui.running_bricks.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
+			gui.running_bricks.set_value(iter, 1, pid)
+			gui.running_bricks.set_value(iter, 2, b.get_type())
+			gui.running_bricks.set_value(iter, 3, b.name)
+		gui.debug("proc list updated")
+	if gui.brickfactory.remotehosts_changed:
+		#TODO: define/Use VBTree.redraw() for this
+		gui.remote_hosts_tree.clear()
+		for r in gui.brickfactory.remote_hosts:
+			if r.connected:
+				img = gtk.gdk.pixbuf_new_from_file_at_size(
+					graphics.ImgPrefix() + "Connect.png", 48, 48)
+			else:
+				img = gtk.gdk.pixbuf_new_from_file_at_size(
+					graphics.ImgPrefix() + "Disconnect.png", 48, 48)
+			gui.remote_hosts_tree.set_value(iter, 1, r.addr[0]+":"+str(r.addr[1]))
+			gui.remote_hosts_tree.set_value(iter, 2, str(r.num_bricks()))
+			ac = "Yes" if r.autoconnect else "No"
+			row = [img, r.addr[0] + ":" + str(r.addr[1]),
+					str(r.num_bricks()), ac]
+			gui.remote_hosts_tree.append(row)
+			gui.brickfactory.remotehosts_changed = False
+
+	if gui.curtain_is_down:
+		gui.widg['main_win'].set_title("Virtualbricks ( "+gui.brickfactory.settings.get('current_project')+ " ID: " + gui.brickfactory.project_parms["id"] + " )")
+
+	return True
+
+
 class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	"""
 	The main GUI object for virtualbricks, containing all the configuration for
@@ -60,11 +140,11 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		self.info("Starting VirtualBricks!")
 
-		''' Creation of the main BrickFactory engine '''
+		# Creation of the main BrickFactory engine
 		self.brickfactory.BRICKTYPES['vm'] = virtualmachines.VMGui
 		self.brickfactory.BRICKTYPES['qemu'] = virtualmachines.VMGui
 
-		''' Connect all the signal from the factory to specific callbacks'''
+		# Connect all the signal from the factory to specific callbacks
 		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
 		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
 		self.brickfactory.connect("engine-closed", self.on_engine_closed)
@@ -78,24 +158,23 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
 		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
 
-
 		self.availmodel = None
 		self.addedmodel = None
 		self.eventsmodel = None
 		self.shcommandsmodel = None
 
-		''' General settings (system properties) '''
+		# General settings (system properties)
 		self.config = self.brickfactory.settings
 
-		''' Logging window '''
+		# Logging window
 		self.gladefile.get_widget("messages_textview").set_buffer(self.messages_buffer)
 
-		''' Show the main window '''
+		# Show the main window
 		self.widg['main_win'].show()
 		self.ps = []
 		self.bricks = []
 
-		''' Don't remove me, I am useful after config, when treeview may lose focus and selection. '''
+		# Don't remove me, I am useful after config, when treeview may lose focus and selection.
 		self.last_known_selected_brick = None
 		self.last_known_selected_event = None
 		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
@@ -112,38 +191,12 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
 			[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
-		''' Joblist treeview (Running bricks window)'''
-		self.running_bricks = tree.VBTree(self, 'treeview_joblist', None, [gtk.gdk.Pixbuf,
-			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			['',_('PID'),_('Type'),_('Name')])
-
-		''' Remotehosts TW'''
-		self.remote_hosts_tree = tree.VBTree(self, 'treeview_remotehosts', None, [gtk.gdk.Pixbuf,
-			 gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			['Status',_('Address'),_('Bricks'),_('Autoconnect')])
-
-		''' TW containing the USB devices, visible from its dialog'''
-		self.usbdev_tree = tree.VBTree(self, 'treeview_usbdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING], [ _('ID'), _('Description')])
-		self.gladefile.get_widget('treeview_usbdev').get_selection().set_mode(gtk.SELECTION_MULTIPLE)
-
-		''' TW with network cards '''
-		self.vmplugs = tree.VBTree(self, 'treeview_networkcards', None, [gobject.TYPE_STRING,
-			gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			['Eth','connection','model','macaddr'])
-
-		''' TW with Router interfaces '''
-		self.routerdevs = tree.VBTree(self, 'treeview_router_netdev', None, [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-		[ 'Eth','connection','macaddr'])
-
-		''' TW with Router routes '''
-		self.routerroutes = tree.VBTree(self, 'treeview_router_routes', None,
-    [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-		[ 'Destination','Netmask','Gateway','Via','metric'])
-
-		''' TW with Router filters '''
-		self.routerfilters = tree.VBTree(self, 'treeview_router_filters', None,
-    [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-		[ 'Dev','Source','Destination','Protocol','TOS','Action'])
+		self.setup_joblist()
+		self.setup_remotehosts()
+		self.setup_netwoks_cards()
+		self.setup_router_devs()
+		self.setup_router_routes()
+		self.setup_router_filters()
 
 		# associate Drag and Drop action for main tree
 		self.maintree.associate_drag_and_drop('BRICK')
@@ -201,6 +254,56 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				else:
 					missing_components = missing_components + ('%s ' % m)
 			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert from the general settings.")
+
+	def __setup_treeview(self, resource, window_name, widget_name):
+		ui = get_data(resource)
+		builder = gtk.Builder()
+		builder.add_from_string(ui)
+		builder.connect_signals(self)
+		window = self.gladefile.get_widget(window_name)
+		# child = window.get_child()
+		# if child is not None:
+		# 	window.remove(child)
+		widget = builder.get_object(widget_name)
+		widget.reparent(window)
+		return builder
+		self.running_bricks = builder.get_object("liststore1")
+
+	def setup_joblist(self):
+		builder = self.__setup_treeview("joblist.ui", "scrolledwindow1",
+								"joblist_treeview")
+		self.running_bricks = builder.get_object("liststore1")
+
+	def setup_remotehosts(self):
+		builder = self.__setup_treeview("remotehosts.ui", "scrolledwindow5",
+								"remotehosts_treeview")
+		self.remote_hosts_tree = builder.get_object("liststore1")
+
+	def setup_netwoks_cards(self):
+		builder = self.__setup_treeview("networkcards.ui", "scrolledwindow12",
+								"networkcards_treeview")
+		self.vmplugs = builder.get_object("liststore1")
+
+	def setup_router_devs(self):
+		pass
+		# self.routerdevs = tree.VBTree(self, "treeview_router_netdev", None,
+		# 						[str, str, str],
+		# 						["Eth", "connection", "macaddr"])
+
+	def setup_router_routes(self):
+		pass
+
+		# ''' TW with Router routes '''
+		# self.routerroutes = tree.VBTree(self, 'treeview_router_routes', None,
+    # [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+		# [ 'Destination','Netmask','Gateway','Via','metric'])
+
+	def setup_router_filters(self):
+		pass
+		# ''' TW with Router filters '''
+		# self.routerfilters = tree.VBTree(self, 'treeview_router_filters', None,
+    # [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
+		# [ 'Dev','Source','Destination','Protocol','TOS','Action'])
 
 	def check_gui_prerequisites(self):
 		qmissing,qfound = self.config.check_missing_qemupath(self.config.get("qemupath"))
@@ -442,11 +545,13 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		if len(b.plugs)+ len(b.socks) == 0:
 			self.gladefile.get_widget('radiobutton_network_nonet').set_active(True)
 			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+				'button_network_netcard_add','button_network_edit','button_network_remove',
+							   'scrolledwindow12'])
 		else:
 			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+				'button_network_netcard_add','button_network_edit','button_network_remove',
+							'scrolledwindow12'])
 		self.gladefile.get_widget('vmeth_config_panel').hide()
 
 		# Qemu: usb devices bind button
@@ -985,7 +1090,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		'dialog_confirm',
 		'menu_popup_remotehosts',
 		'dialog_remote_password',
-		'dialog_usbdev',
 		'dialog_imagename',
 		'dialog_commitimage',
 		'dialog_convertimage',
@@ -1403,65 +1507,72 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		window.show_all()
 
 	#Do NOT change string layout please
-	jitter_str = " " + _("""\nJitter is the variation from the \
-base value. Jitter 10 percent for a \
-base value of 100 means the final value goes from 90 to 110. \
-The distribution can be Uniform or Gaussian normal \
-(more than 98% of the values are inside the limits).""")
+	def jitter_str(self):
+		return " " + _("\nJitter is the variation from the "
+			"base value. Jitter 10 percent for a "
+			"base value of 100 means the final value goes from 90 to 110. "
+			"The distribution can be Uniform or Gaussian normal "
+			"(more than 98% of the values are inside the limits).")
 
 	def bandwidth_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tCHANNEL BANDWIDTH\n\n\
-Sender is not prevented \
-from sending packets, delivery is delayed to limit the bandwidth \
-to the desired value (like a bottleneck along the path).") + self.jitter_str
+		return _("\t\t\tCHANNEL BANDWIDTH\n\n"
+			"Sender is not prevented "
+			"from sending packets, delivery is delayed to limit the bandwidth "
+			"to the desired value (like a bottleneck along the path)."
+			) + self.jitter_str()
 
 	def speed_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tINTERFACE SPEED\n\n\
-Input is blocked for the tramission time of the packet, thus the \
-sender is prevented from sending too fast.\n\
-This feature can be confusing, consider using bandwidth.") + self.jitter_str
+		return _("\t\t\tINTERFACE SPEED\n\n"
+			"Input is blocked for the tramission time of the packet, thus the "
+			"sender is prevented from sending too fast.\n"
+			"This feature can be confusing, consider using bandwidth."
+			) + self.jitter_str()
 
 	def delay_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tDELAY\n\n\
-Extra delay (in milliseconds). This delay is added to the real \
-communication delay. Packets are temporarily stored and resent \
-after the delay.") + self.jitter_str
+		return _("\t\t\tDELAY\n\n"
+			"Extra delay (in milliseconds). This delay is added to the real "
+			"communication delay. Packets are temporarily stored and resent "
+			"after the delay.") + self.jitter_str()
 
 	def chanbufsize_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tCHANNEL BUFFER SIZE\n\n\
-Maximum size of the packet \
-queue. Exceeding packets are discarded.") + self.jitter_str
+		return _("\t\t\tCHANNEL BUFFER SIZE\n\n"
+			"Maximum size of the packet "
+			"queue. Exceeding packets are discarded.") + self.jitter_str()
 
 	def loss_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tPACKET LOSS\n\n\
-Percentage of loss as a floating point number.") + self.jitter_str
+		return _("\t\t\tPACKET LOSS\n\n"
+			"Percentage of loss as a floating point number."
+			) + self.jitter_str()
 
 	def dup_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tPACKET DUPLICATION\n\n\
-Percentage of dup packet. Do not use dup factor 100% because it \
-means that each packet is sent infinite times.") + self.jitter_str
+		return _("\t\t\tPACKET DUPLICATION\n\n"
+			"Percentage of dup packet. Do not use dup factor 100% because it "
+			"means that each packet is sent infinite times."
+			) + self.jitter_str()
 
 	def noise_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tNOISE\n\n\
-Number of bits damaged/one megabyte (megabit).") + self.jitter_str
+		return _("\t\t\tNOISE\n\n"
+			"Number of bits damaged/one megabyte (megabit)."
+			) + self.jitter_str()
 
 	def lostburst_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tLOST BURST\n\n\
-When this is not zero, wirefilter uses the Gilbert model for \
-bursty errors. This is the mean length of lost packet bursts.") + self.jitter_str
+		return _("\t\t\tLOST BURST\n\n"
+			"When this is not zero, wirefilter uses the Gilbert model for "
+			"bursty errors. This is the mean length of lost packet bursts."
+			) + self.jitter_str()
 
 	def mtu_help(self):
 		#Do NOT change string layout please
-		return _("\t\t\tMTU: MAXIMUM TRANSMISSION UNIT\n\n\
-Packets longer than specified size are discarded.")
+		return _("\t\t\tMTU: MAXIMUM TRANSMISSION UNIT\n\n"
+			"Packets longer than specified size are discarded.")
 
 	def on_item_quit_activate(self, widget=None, data=""):
 		gtk.main_quit()
@@ -1716,13 +1827,13 @@ Packets longer than specified size are discarded.")
 				return r
 		return None
 
-	def on_treeview_remotehosts_button_release_event(self, widget=None, event=None, data=""):
-		tree = self.gladefile.get_widget('treeview_remotehosts');
+	def on_remotehosts_treeview_button_release_event(self, widget=None, event=None, data=""):
+		treeview = self.gladefile.get_widget('scrolledwindow5').get_child()
 		store = self.remote_hosts_tree
 		x = int(event.x)
 		y = int(event.y)
-		pthinfo = tree.get_path_at_pos(x, y)
-		addr = self.get_treeselected(tree, store, pthinfo, 1)
+		pthinfo = treeview.get_path_at_pos(x, y)
+		addr = get_treeselected(self, treeview, store, pthinfo, 1)
 		self.remotehost_selected = self.getremotehost(addr)
 		if not self.remotehost_selected:
 			return
@@ -1730,13 +1841,13 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('popupcheck_autoconnect').set_active(self.remotehost_selected.autoconnect)
 			self.show_window('menu_popup_remotehosts')
 
-	def on_treeview_remotehosts_button_press_event(self, widget=None, event=None, data=""):
-		tree = self.gladefile.get_widget('treeview_remotehosts');
+	def on_remotehosts_treeview_button_press_event(self, widget=None, event=None, data=""):
+		treeview = self.gladefile.get_widget('scrolledwindow5').get_child()
 		store = self.remote_hosts_tree
 		x = int(event.x)
 		y = int(event.y)
-		pthinfo = tree.get_path_at_pos(x, y)
-		addr = self.get_treeselected(tree, store, pthinfo, 1)
+		pthinfo = treeview.get_path_at_pos(x, y)
+		addr = get_treeselected(self, treeview, store, pthinfo, 1)
 		self.remotehost_selected = self.getremotehost(addr)
 		if not self.remotehost_selected:
 			return
@@ -1748,13 +1859,13 @@ Packets longer than specified size are discarded.")
 				if not conn_ok:
 					self.error("Error connecting to remote host %s: %s" % (self.remotehost_selected.addr[0], msg))
 
-	def on_treeview_joblist_button_press_event(self, widget=None, event=None, data=""):
-		tree = self.gladefile.get_widget('treeview_joblist');
+	def on_joblist_treeview_button_release_event(self, widget=None, event=None, data=""):
+		treeview = self.gladefile.get_widget("scrolledwindow1").get_child()
 		store = self.running_bricks
 		x = int(event.x)
 		y = int(event.y)
-		pthinfo = tree.get_path_at_pos(x, y)
-		name = self.get_treeselected_name(tree, store, pthinfo)
+		pthinfo = treeview.get_path_at_pos(x, y)
+		name = get_treeselected_name(self, treeview, store, pthinfo)
 		if event.button == 3:
 			self.joblist_selected = self.brickfactory.getbrickbyname(name)
 			if not self.joblist_selected:
@@ -2614,38 +2725,35 @@ Packets longer than specified size are discarded.")
 		if b is None:
 			return
 
-		if (b.get_type() == 'Qemu'):
-			self.vmplugs.model.clear()
+		if b.get_type() == 'Qemu':
+			self.vmplugs.clear()
 			for pl in b.plugs:
-				iter = self.vmplugs.new_row()
-				self.vmplugs.set_value(iter,0,pl.vlan)
+				conn = None
 				if pl.mode == 'hostonly':
-					self.vmplugs.set_value(iter,1,'Host')
+					conn = "Host"
 				elif pl.sock:
-					self.vmplugs.set_value(iter,1,pl.sock.brick.name)
-				self.vmplugs.set_value(iter,2,pl.model)
-				self.vmplugs.set_value(iter,3,pl.mac)
+					conn = pl.sock.brick.name
+				row = [pl.vlan, conn, pl.model, pl.mac]
+				self.vmplugs.append(row)
+
 			if self.config.femaleplugs:
 				for sk in b.socks:
-					iter = self.vmplugs.new_row()
-					self.vmplugs.set_value(iter,0,sk.vlan)
-					self.vmplugs.set_value(iter,1,'Vde socket (female plug)')
-					self.vmplugs.set_value(iter,2,sk.model)
-					self.vmplugs.set_value(iter,3,sk.mac)
-			self.vmplugs.order('Eth', True)
+					row = [sk.vlan, "Vde socket (female plug)", sk.model, sk.mac]
+					self.vmplugs.append(row)
+			self.vmplugs.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
 			self.gladefile.get_widget('vmeth_config_panel').hide()
 
-	def on_vmplug_selected(self, widget=None, event=None, data=""):
+	def on_networkcards_treeview_button_release_event(self, widget, event):
 		b = self.maintree.get_selection()
 		if b is None:
 			return
-		tree = self.gladefile.get_widget('treeview_networkcards');
+		treeview = self.gladefile.get_widget('scrolledwindow12').get_child()
 		store = self.vmplugs
 		x = int(event.x)
 		y = int(event.y)
-		pthinfo = tree.get_path_at_pos(x, y)
-		number = self.get_treeselected(tree, store, pthinfo, 0)
+		pthinfo = treeview.get_path_at_pos(x, y)
+		number = get_treeselected(self, treeview, store, pthinfo, 0)
 		self.vmplug_selected = None
 		vmsock = False
 		for pl in b.plugs:
@@ -2673,7 +2781,7 @@ Packets longer than specified size are discarded.")
 			self.gladefile.get_widget('vmeth_config_panel').show_all()
 		else:
 			self.gladefile.get_widget('vmeth_config_panel').hide()
-			self.gladefile.get_widget('treeview_networkcards').get_selection().unselect_all()
+			treeview.get_selection().unselect_all()
 
 	def on_vmplug_edit(self, widget=None, event=None, data=""):
 		pl = self.vmplug_selected
@@ -2721,10 +2829,12 @@ Packets longer than specified size are discarded.")
 	def on_vmplug_onoff(self, widget=None, event=None, data=""):
 		if self.gladefile.get_widget('radiobutton_network_nonet').get_active():
 			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+				'button_network_netcard_add','button_network_edit','button_network_remove',
+							   'scrolledwindow12'])
 		else:
 			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove', 'treeview_networkcards'])
+				'button_network_netcard_add','button_network_edit','button_network_remove',
+							'scrolledwindow12'])
 
 	def on_tap_config_manual(self, widget=None, event=None, data=""):
 		if widget.get_active():
@@ -3092,55 +3202,8 @@ Packets longer than specified size are discarded.")
 			self.maintree.get_selection().cfg.set('usbdevlist=')
 		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
 
-	def on_usb_show(self, w, event=None, data=None):
-		vm = self.maintree.get_selection()
-		current_usbview = dict()
-		self.curtain_down()
-		os.system("lsusb >" + MYPATH + "/.usbdev")
-
-		self.usbdev_tree.model.clear()
-		self.show_window('dialog_usbdev')
-		try:
-			f = open(MYPATH + "/.usbdev")
-		except:
-			return
-		for l in f:
-			info = l.split(" ID ")[1]
-			if re.search(' ', info):
-				code = info.split(' ')[0]
-				descr = info.split(' ')[1]
-				iter = self.usbdev_tree.new_row()
-				self.usbdev_tree.set_value(iter, 0, code)
-				self.usbdev_tree.set_value(iter, 1, descr)
-				current_usbview[iter] = code
-		selection = self.gladefile.get_widget('treeview_usbdev').get_selection()
-		for selected in vm.cfg.usbdevlist.split(' '):
-			for iter,dev in current_usbview.iteritems():
-				if dev == selected:
-					selection.select_iter(iter)
-					print "found " + dev
-
-	def on_usbdev_close(self, w, event=None, data=None):
-		tree = self.gladefile.get_widget('treeview_usbdev')
-		model,paths = tree.get_selection().get_selected_rows()
-		devlist = ''
-		for p in paths:
-			new_id = model[p[0]][0]
-			devlist += new_id + ' '
-
-		if len(devlist) > 0 and not os.access("/dev/bus/usb", os.W_OK):
-				self.show_window('')
-				self.curtain_up()
-				self.error(_("Cannot access /dev/bus/usb. Check user privileges."))
-				self.gladefile.get_widget('cfg_Qemu_usbmode_check').set_active(False)
-				return True
-
-		self.show_window('')
-		self.curtain_up()
-		old_val = self.maintree.get_selection().cfg.usbdevlist
-		self.maintree.get_selection().cfg.set('usbdevlist='+devlist.rstrip(' '))
-		self.maintree.get_selection().update_usbdevlist(devlist.rstrip(' '), old_val)
-		return True
+	def on_usb_show(self, button):
+		dialogs.UsbDevWindow(self).show()
 
 	def on_check_commit_privatecow_toggled(self, widget, event=None, data=None):
 		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
@@ -3353,60 +3416,7 @@ Packets longer than specified size are discarded.")
 			return True
 
 	def check_joblist(self, force=False):
-		new_ps = []
-		for b in self.brickfactory.bricks:
-			if b.proc is not None:
-				if b.homehost and b.homehost.connected:
-					ret = None
-				else:
-					ret = b.proc.poll()
-				if ret is None:
-					new_ps.append(b)
-				else:
-					b.poweroff()
-					b.gui_changed = True
-
-		if self.ps != new_ps or force==True:
-			self.ps = new_ps
-			self.bricks = []
-			self.running_bricks.model.clear()
-			for b in self.ps:
-				iter = self.running_bricks.new_row()
-				if (b.pid == -10):
-					pid = "python-thread   "
-				elif b.homehost:
-					pid = "Remote"
-				else:
-					pid = str(b.pid)
-				self.running_bricks.set_value(iter, 0,gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
-				self.running_bricks.set_value(iter,1,pid)
-				self.running_bricks.set_value(iter,2,b.get_type())
-				self.running_bricks.set_value(iter,3,b.name)
-			self.debug("proc list updated")
-		new_rhosts = []
-		if self.brickfactory.remotehosts_changed:
-			#TODO: define/Use VBTree.redraw() for this
-			self.remote_hosts_tree.model.clear()
-			for r in self.brickfactory.remote_hosts:
-				iter = self.remote_hosts_tree.new_row()
-				if (r.connected):
-					self.remote_hosts_tree.set_value(iter, 0,
-									  gtk.gdk.pixbuf_new_from_file_at_size(graphics.ImgPrefix() + "Connect.png", 48, 48) )
-				else:
-					self.remote_hosts_tree.set_value(iter, 0,
-									  gtk.gdk.pixbuf_new_from_file_at_size(graphics.ImgPrefix() + "Disconnect.png", 48, 48) )
-				self.remote_hosts_tree.set_value(iter, 1, r.addr[0]+":"+str(r.addr[1]))
-				self.remote_hosts_tree.set_value(iter, 2, str(r.num_bricks()))
-				if r.autoconnect:
-					self.remote_hosts_tree.set_value(iter, 3, "Yes")
-				else:
-					self.remote_hosts_tree.set_value(iter, 3, "No")
-				self.brickfactory.remotehosts_changed=False
-
-		if self.curtain_is_down:
-			self.widg['main_win'].set_title("Virtualbricks ( "+self.brickfactory.settings.get('current_project')+ " ID: " + self.brickfactory.project_parms["id"] + " )")
-
-		return True
+		return check_joblist(self, force)
 
 	def draw_topology(self, export=None):
 		self.maintree.order()

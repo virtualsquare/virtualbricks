@@ -5873,17 +5873,13 @@ multiple devices&lt;/b&gt;</property>
           </packing>
         </child>
         <child>
-          <widget class="GtkScrolledWindow" id="scrolledwindow2">
+          <widget class="GtkScrolledWindow" id="usbdev_scrolledwindow">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="hscrollbar_policy">automatic</property>
             <property name="vscrollbar_policy">automatic</property>
             <child>
-              <widget class="GtkTreeView" id="treeview_usbdev">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="rubber_banding">True</property>
-              </widget>
+              <placeholder/>
             </child>
           </widget>
           <packing>
@@ -6117,478 +6113,6 @@ multiple devices&lt;/b&gt;</property>
             <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">4</property>
-          </packing>
-        </child>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_brickactions">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkMenuItem" id="brickaction_name">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes"> </property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkSeparatorMenuItem" id="menuitem_separator">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="startstop_brick_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Start/Stop</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_brick_startstop"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="delete_brick_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Delete</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_brick_delete"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="copy_brick_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Make a C_opy</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_brick_copy"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="rename">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Re_name</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_brick_rename"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="configure_brick_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Configure</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_brick_configure"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="vmresume">
-        <property name="visible">True</property>
-        <property name="sensitive">False</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Resume VM</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_vm_resume"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="attach_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Attach Event</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_brick_attach_event"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_eventactions">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkMenuItem" id="eventaction_name">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes"> </property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkSeparatorMenuItem" id="menuitem_separator">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="startstop_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Start/Stop</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_startstop"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="delete_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Delete</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_delete"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="copy_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Make a C_opy</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_copy"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="rename">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Re_name</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_rename"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="configure_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Configure</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_configure"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_popup_bookmarks">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_edit_bookmark">
-        <property name="label">gtk-edit</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_edit_bookmark_activate"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_bookmark_info">
-        <property name="label">gtk-dialog-question</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="tooltip" translatable="yes">show qemu volume info for selected image</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_bookmark_info_activate"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkSeparatorMenuItem" id="separator1">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_delete_bookmark">
-        <property name="label">gtk-remove</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="tooltip" translatable="yes">remove this entry from My Machines</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_delete_bookmark_activate"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_popup_imagelist">
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_info">
-        <property name="label">gtk-dialog-info</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="tooltip" translatable="yes">show qemu volume info for selected image</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_item_info_activate"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_bookmark">
-        <property name="label">gtk-add</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="tooltip" translatable="yes">add this image to bookmarks</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_item_bookmark_activate"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_popup_joblist">
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkMenuItem" id="item_jobmonoitor">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">open control monitor</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_item_jobmonoitor_activate"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkSeparatorMenuItem" id="separator3">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_stop_job">
-        <property name="label">gtk-stop</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_item_stop_job_activate"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_cont_job">
-        <property name="label">gtk-media-play</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_item_cont_job_activate"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkSeparatorMenuItem" id="separator2">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="vmsuspend">
-        <property name="visible">True</property>
-        <property name="sensitive">False</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Suspend Qemu</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_vm_suspend"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="vmpoweroff">
-        <property name="visible">True</property>
-        <property name="sensitive">False</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Send ACPI poweroff</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_vm_powerbutton"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="vmhardreset">
-        <property name="visible">True</property>
-        <property name="sensitive">False</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Send ACPI hard reset</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_vm_hardreset"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkSeparatorMenuItem" id="&lt;separator&gt;">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_reset_job">
-        <property name="label">gtk-redo</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_item_reset_job_activate"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_kill_job">
-        <property name="label">gtk-delete</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_item_kill_job_activate"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_popup_remotehosts">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkMenuItem" id="m_co">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Connect/Disconnect</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_remote_connect"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="menuitem2">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Change Password</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_remote_password"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkCheckMenuItem" id="popupcheck_autoconnect">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Auto-connect at startup</property>
-        <property name="use_underline">True</property>
-        <signal name="toggled" handler="on_remote_autoconnect"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="menuitem4">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Delete</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_remote_delete"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_popup_usbguest">
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_detach_device">
-        <property name="label">gtk-disconnect</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_detach_device_activate"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_popup_usbhost">
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_attach_device">
-        <property name="label">gtk-connect</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_attach_device_activate"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_popup_volumes">
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkImageMenuItem" id="item_eject">
-        <property name="label">gtk-goto-top</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="tooltip" translatable="yes">eject / unmount selected device</property>
-        <property name="use_underline">True</property>
-        <property name="use_stock">True</property>
-        <signal name="activate" handler="on_item_eject_activate"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkDialog" id="messages_dialog">
-    <property name="width_request">400</property>
-    <property name="height_request">400</property>
-    <property name="can_focus">False</property>
-    <property name="border_width">5</property>
-    <property name="title" translatable="yes">Messages</property>
-    <property name="window_position">center-on-parent</property>
-    <property name="type_hint">normal</property>
-    <property name="transient_for">main_win</property>
-    <signal name="delete_event" handler="on_messages_dialog_delete_event"/>
-    <child internal-child="vbox">
-      <widget class="GtkVBox" id="messages_box">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="spacing">2</property>
-        <child internal-child="action_area">
-          <widget class="GtkHButtonBox" id="messages_dialog_action">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
-            <child>
-              <widget class="GtkButton" id="messages_dialog_clear">
-                <property name="label">gtk-clear</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-                <signal name="clicked" handler="on_messages_dialog_clear_clicked"/>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkButton" id="messages_dialog_close">
-                <property name="label">gtk-close</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-                <signal name="clicked" handler="on_messages_dialog_close_event"/>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="pack_type">end</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <widget class="GtkScrolledWindow" id="message_scroller">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="vadjustment">0 0 200 20 180 346</property>
-            <property name="hscrollbar_policy">automatic</property>
-            <property name="vscrollbar_policy">automatic</property>
-            <child>
-              <widget class="GtkTextView" id="messages_textview">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="editable">False</property>
-              </widget>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
           </packing>
         </child>
       </widget>
@@ -7161,15 +6685,7 @@ multiple devices&lt;/b&gt;</property>
                     <property name="can_focus">True</property>
                     <property name="shadow_type">in</property>
                     <child>
-                      <widget class="GtkTreeView" id="treeview_joblist">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="has_tooltip">True</property>
-                        <property name="tooltip" translatable="yes">Click to select an enty for use or edit its configuration, rightclick for more.</property>
-                        <signal name="cursor_changed" handler="on_treeview_joblist_cursor_changed"/>
-                        <signal name="row_activated" handler="on_treeview_joblilst_row_activated_event"/>
-                        <signal name="button_release_event" handler="on_treeview_joblist_button_press_event"/>
-                      </widget>
+                      <placeholder/>
                     </child>
                   </widget>
                   <packing>
@@ -7263,12 +6779,7 @@ multiple devices&lt;/b&gt;</property>
                         <property name="hscrollbar_policy">automatic</property>
                         <property name="vscrollbar_policy">automatic</property>
                         <child>
-                          <widget class="GtkTreeView" id="treeview_remotehosts">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <signal name="button_press_event" handler="on_treeview_remotehosts_button_press_event"/>
-                            <signal name="button_release_event" handler="on_treeview_remotehosts_button_release_event"/>
-                          </widget>
+                          <placeholder/>
                         </child>
                       </widget>
                       <packing>
@@ -11707,11 +11218,7 @@ ne2k_isa
                                     <property name="can_focus">True</property>
                                     <property name="shadow_type">in</property>
                                     <child>
-                                      <widget class="GtkTreeView" id="treeview_networkcards">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <signal name="button_release_event" handler="on_vmplug_selected"/>
-                                      </widget>
+                                      <placeholder/>
                                     </child>
                                   </widget>
                                   <packing>
@@ -21546,6 +21053,477 @@ bytes</property>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">4</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_brickactions">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkMenuItem" id="brickaction_name">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes"> </property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="menuitem_separator">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="startstop_brick_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Start/Stop</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_startstop"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="delete_brick_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Delete</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_delete"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="copy_brick_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Make a C_opy</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_copy"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="rename">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Re_name</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_rename"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="configure_brick_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Configure</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_configure"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmresume">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Resume VM</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_resume"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="attach_event_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Attach Event</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_brick_attach_event"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_eventactions">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkMenuItem" id="eventaction_name">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes"> </property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="menuitem_separator">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="startstop_event_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Start/Stop</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_event_startstop"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="delete_event_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Delete</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_event_delete"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="copy_event_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Make a C_opy</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_event_copy"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="rename">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Re_name</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_event_rename"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="configure_event_action">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">_Configure</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_event_configure"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_popup_bookmarks">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_edit_bookmark">
+        <property name="label">gtk-edit</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_edit_bookmark_activate"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_bookmark_info">
+        <property name="label">gtk-dialog-question</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="tooltip" translatable="yes">show qemu volume info for selected image</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_bookmark_info_activate"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separator1">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_delete_bookmark">
+        <property name="label">gtk-remove</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="tooltip" translatable="yes">remove this entry from My Machines</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_delete_bookmark_activate"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_popup_imagelist">
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_info">
+        <property name="label">gtk-dialog-info</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="tooltip" translatable="yes">show qemu volume info for selected image</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_item_info_activate"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_bookmark">
+        <property name="label">gtk-add</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="tooltip" translatable="yes">add this image to bookmarks</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_item_bookmark_activate"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_popup_joblist">
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkMenuItem" id="item_jobmonoitor">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">open control monitor</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_item_jobmonoitor_activate"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separator3">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_stop_job">
+        <property name="label">gtk-stop</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_item_stop_job_activate"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_cont_job">
+        <property name="label">gtk-media-play</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_item_cont_job_activate"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="separator2">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmsuspend">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Suspend Qemu</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_suspend"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmpoweroff">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Send ACPI poweroff</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_powerbutton"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="vmhardreset">
+        <property name="visible">True</property>
+        <property name="sensitive">False</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Send ACPI hard reset</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_vm_hardreset"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkSeparatorMenuItem" id="&lt;separator&gt;">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_reset_job">
+        <property name="label">gtk-redo</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_item_reset_job_activate"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_kill_job">
+        <property name="label">gtk-delete</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_item_kill_job_activate"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_popup_remotehosts">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkMenuItem" id="m_co">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Connect/Disconnect</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_remote_connect"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="menuitem2">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Change Password</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_remote_password"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkCheckMenuItem" id="popupcheck_autoconnect">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Auto-connect at startup</property>
+        <property name="use_underline">True</property>
+        <signal name="toggled" handler="on_remote_autoconnect"/>
+      </widget>
+    </child>
+    <child>
+      <widget class="GtkMenuItem" id="menuitem4">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Delete</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_remote_delete"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_popup_usbguest">
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_detach_device">
+        <property name="label">gtk-disconnect</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_detach_device_activate"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_popup_usbhost">
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_attach_device">
+        <property name="label">gtk-connect</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_attach_device_activate"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkMenu" id="menu_popup_volumes">
+    <property name="can_focus">False</property>
+    <child>
+      <widget class="GtkImageMenuItem" id="item_eject">
+        <property name="label">gtk-goto-top</property>
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="tooltip" translatable="yes">eject / unmount selected device</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="on_item_eject_activate"/>
+      </widget>
+    </child>
+  </widget>
+  <widget class="GtkDialog" id="messages_dialog">
+    <property name="width_request">700</property>
+    <property name="height_request">400</property>
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Messages</property>
+    <property name="window_position">center-on-parent</property>
+    <property name="type_hint">normal</property>
+    <signal name="delete_event" handler="on_messages_dialog_delete_event"/>
+    <child internal-child="vbox">
+      <widget class="GtkVBox" id="messages_box">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <widget class="GtkHButtonBox" id="messages_dialog_action">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <widget class="GtkButton" id="messages_dialog_clear">
+                <property name="label">gtk-clear</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <signal name="clicked" handler="on_messages_dialog_clear_clicked"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkButton" id="messages_dialog_close">
+                <property name="label">gtk-close</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <signal name="clicked" handler="on_messages_dialog_close_event"/>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkScrolledWindow" id="message_scroller">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="vadjustment">0 0 204 20.400000000000002 183.59999999999999 204</property>
+            <property name="hscrollbar_policy">automatic</property>
+            <property name="vscrollbar_policy">automatic</property>
+            <child>
+              <widget class="GtkTextView" id="messages_textview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="editable">False</property>
+              </widget>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
           </packing>
         </child>
       </widget>

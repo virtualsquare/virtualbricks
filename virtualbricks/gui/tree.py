@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_tree -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -17,11 +18,14 @@
 
 import gtk
 from virtualbricks.models import BricksModel, EventsModel
-from virtualbricks.gui.graphics import *
+from virtualbricks.gui import graphics
+
 
 _ = str  # temporary hack because its use in class definition
 
-class VBTree():
+
+class VBTree:
+
 	def __init__(self, gui, tree_name, model, fields, names):
 		self.gui = gui
 		self.tree = self.gui.gladefile.get_widget(tree_name)
@@ -36,6 +40,7 @@ class VBTree():
 		else:
 			self.model = gtk.TreeStore(*fields)
 			self.tree.set_model(self.model)
+
 		for idx, name in enumerate(names):
 			col = gtk.TreeViewColumn(name)
 			if fields[idx] == gtk.gdk.Pixbuf:
@@ -212,7 +217,8 @@ class BricksTree(VBTree):
 		assert brick is not None
 		if column.get_title() == _('Icon'):
 			if brick.homehost is not None and not brick.homehost.connected:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(ImgPrefix()+"Disconnect.png", 48, 48)
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(
+					graphics.ImgPrefix() + "Disconnect.png", 48, 48)
 				cell.set_property('pixbuf', icon)
 			elif brick.proc is not None:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
@@ -341,3 +347,4 @@ class EventsTree(VBTree):
 		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
 		self.tree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
+# vim: set noet :
