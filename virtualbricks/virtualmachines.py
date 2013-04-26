@@ -511,7 +511,7 @@ class VM(Brick):
         return txt
 
     def update_usbdevlist(self, dev, old):
-        print "update_usbdevlist: old [%s] - new[%s]" % (old,dev)
+        log.debug("update_usbdevlist: old [%s] - new[%s]", old, dev)
         for d in dev.split(' '):
             if not d in old.split(' '):
                 self.send("usb_add host:"+d+"\n")

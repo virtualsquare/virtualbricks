@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_dialogs -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -88,6 +89,7 @@ advised and possible with gtk-builder-convert.
 import os
 import sys
 import logging
+import subprocess
 
 import gtk
 
@@ -95,6 +97,10 @@ from virtualbricks import version
 
 
 log = logging.getLogger(__name__)
+
+
+if False:  # pyflakes
+    _ = str
 
 
 def get_pixbuf(resource):
@@ -153,7 +159,7 @@ class Base(object):
         self.widget.show()
 
 
-class Dialog(Base):
+class Window(Base):
     """Base class for all dialogs."""
 
     @property
@@ -162,6 +168,9 @@ class Dialog(Base):
 
     def show(self):
         self.widget.show()
+
+
+class Dialog(Window):
 
     def run(self):
         self.widget.run()
@@ -178,7 +187,7 @@ class AboutDialog(Dialog):
         self.window.set_version(version.short())
 
 
-class DisksLibraryDialog(Dialog):
+class DisksLibraryDialog(Window):
 
     resource = "disklibrary.ui"
     cols_cell = (
@@ -193,7 +202,7 @@ class DisksLibraryDialog(Dialog):
     image = None
 
     def __init__(self, factory):
-        Dialog.__init__(self)
+        Window.__init__(self)
         self.factory = factory
         model = self.get_object("liststore1")
         self.__add_handler_id = factory.connect("image_added",
@@ -218,7 +227,7 @@ class DisksLibraryDialog(Dialog):
         cell_renderer.set_property("foreground", color)
 
     def show(self):
-        Dialog.show(self)
+        Window.show(self)
         self.config_panel.hide()
 
     def on_window_destroy(self, widget):
@@ -289,3 +298,71 @@ class DisksLibraryDialog(Dialog):
         w("description_entry").set_text(i.get_description())
         w("readonly_checkbutton").set_active(i.is_readonly())
         w("host_entry").set_text(i.host or "")
+
+
+def get_usb_devices():
+    try:
+        return subprocess.check_output("lsusb")
+    except subprocess.CalledProcessError, e:
+        log.exception("lsusb returned with error code %d\n%s",
+                      e.returncode, e.output)
+    except OSError, e:
+        log.exception("cannot launch lsusb")
+
+
+class UsbDevWindow(Window):
+
+    resource = "usbdev.ui"
+
+    def __init__(self, gui):
+        Window.__init__(self)
+        self.gui = gui
+
+        output = get_usb_devices().strip()
+        if output is None:
+            self.window.destroy()
+            return
+        log.debug("lsusb output:\n%s", output)
+        model = self.get_object("liststore1")
+        self._populate_model(model, output)
+
+    def _populate_model(self, model, output):
+        for line in output.split("\n"):
+            info = line.split(" ID ")[1]
+            if " " in info:
+                code, descr = info.split(" ", 1)
+                model.append([code, descr])
+        treeview = self.get_object("treeview1")
+        selection = treeview.get_selection()
+        selection.set_mode(gtk.SELECTION_MULTIPLE)
+        vm = self.gui.maintree.get_selection()
+        currents = vm.cfg.usbdevlist.split()
+        # if currents:
+        iter = model.get_iter_first()
+        while iter:
+            for dev in currents:
+                ndev = model.get_value(iter, 0)
+                if ndev == dev:
+                    selection.select_iter(iter)
+                    log.debug("found %s", dev)
+                    break
+            iter = model.iter_next(iter)
+
+    def on_ok_button_clicked(self, button):
+        treeview = self.get_object("treeview1")
+        selection = treeview.get_selection()
+        if selection:
+            model, paths = selection.get_selected_rows()
+            devs = " ".join(model[p[0]][0] for p in paths)
+
+            if devs and not os.access("/dev/bus/usb", os.W_OK):
+                log.error(_("Cannot access /dev/bus/usb. "
+                            "Check user privileges."))
+                self.gui.gladefile.get_widget("cfg_Qemu_usbmode_check"
+                                             ).set_active(False)
+
+            vm = self.gui.maintree.get_selection()
+            old = vm.cfg.usbdevlist
+            vm.cfg.set('usbdevlist=' + devs)
+            vm.update_usbdevlist(devs, old)
+        self.window.destroy()
