@@ -88,6 +88,7 @@ class Runner:
         application = self.application_factory(self.config)
         self.logger.start(application)
         application.install_locale()
+        application.install_sys_hooks()
         try:
             application.start()
         finally:

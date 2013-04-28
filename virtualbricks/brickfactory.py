@@ -663,6 +663,21 @@ class Application:
 
         gettext.install('virtualbricks', codeset='utf8', names=["gettext"])
 
+    def install_sys_hooks(self):
+        # displayhook is necessary because otherwise the python console sets
+        # __builtin__._ to the result of the last command and this breaks
+        # gettext. excepthook is useful to not show traceback on the console
+        # but to log it.
+        sys.displayhook = print
+        sys.excepthook = self.excepthook
+
+    def excepthook(self, exc_type, exc_value, traceback):
+        if exc_type in (SystemExit, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, traceback)
+        else:
+            log.error("Uncaught exception", exc_info=(exc_type, exc_value,
+                                                      traceback))
+
     def start(self):
         self.factory = BrickFactory()
         self.autosave_timer = AutosaveTimer(self.factory)
