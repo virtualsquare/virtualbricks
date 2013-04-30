@@ -292,12 +292,12 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         """Return the normalized name or raise an InvalidNameError."""
         if not isinstance(name, str):
             raise errors.InvalidNameError("Name must be a string")
-        if not re.search("\A[a-zA-Z]", name):
+        nname = name.strip()
+        if not re.search("\A[a-zA-Z]", nname):
             raise errors.InvalidNameError("Name does not start with a letter, "
                                           "%s" % name)
-        nname = name.strip()
         nname = re.sub(' ', '_', nname)
-        if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
+        if not re.search("\A[a-zA-Z0-9_\.-]+\Z", nname):
             raise errors.InvalidNameError("Name must contains only letters, "
                     "numbers, underscores, hyphens and points, %s" % name)
         return name
@@ -525,10 +525,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 self.events.remove(e)
         self.eventsmodel.del_event(eventtodel)
 
-    @synchronized
-    def save(self, fileobj):
-        pass
-
 
 def readline(filename):
     with open(filename) as fp:
@@ -585,13 +581,11 @@ class BrickFactoryServer(BrickFactory):
 class Console(object):
 
     prompt = "virtualbricks> "
-    intro = """Virtualbricks, version {version}
-Copyright (C) 2013 Virtualbricks team
-This is free software; see the source code for copying conditions.
-There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.
-
-"""
+    intro = ("Virtualbricks, version {version}\n"
+        "Copyright (C) 2013 Virtualbricks team\n"
+        "This is free software; see the source code for copying conditions.\n"
+        "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
+        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
 
     def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
         self.factory = factory
