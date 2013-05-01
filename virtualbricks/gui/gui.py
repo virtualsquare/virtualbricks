@@ -29,7 +29,6 @@ import gtk
 import gtk.glade
 
 from virtualbricks import brickfactory, logger, tools, virtualmachines, app
-from virtualbricks.brickfactory import BrickFactory
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.models import EventsModel
@@ -3551,7 +3550,7 @@ class Application(brickfactory.Application):
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
-		self.factory = BrickFactory()
+		self.factory = brickfactory.BrickFactory.make()
 		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
 		if self.config.get('term', True):
 			self.console = console_thread(self.factory)
