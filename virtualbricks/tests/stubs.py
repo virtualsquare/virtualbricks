@@ -27,12 +27,6 @@ class ConfigFileStub:
 
 class FactoryStub(brickfactory.BrickFactory):
 
-    restore_configfile_real = False
-
     def __init__(self):
         brickfactory.BrickFactory.__init__(self)
         self.BRICKTYPES["stub"] = BrickStub
-
-    def restore_configfile(self):
-        if self.restore_configfile_real:
-            brickfactory.BrickFactory.restore_configfile(self)

@@ -10,15 +10,6 @@ class TestFactory(unittest.TestCase):
     def setUp(self):
         self.factory = stubs.FactoryStub()
 
-    def test_creation(self):
-        defaults = {
-            "id": "0",
-            "name": "",
-            "filename": ""
-        }
-        self.assertEquals(self.factory.project_parms, defaults)
-        self.assertTrue(hasattr(self.factory, "BRICKTYPES"))
-
     def test_reset_config(self):
         self.factory.reset_config()
         self.assertEquals(self.factory.bricks, [])
@@ -31,8 +22,6 @@ class TestFactory(unittest.TestCase):
     def test_newbrick(self):
         self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
                           "")
-        self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
-                          " brick")
         self.factory.newbrick("stub", "test_brick")
         self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
                           "test_brick")
@@ -40,8 +29,6 @@ class TestFactory(unittest.TestCase):
     def test_newevent(self):
         self.assertRaises(errors.InvalidName, self.factory.newevent, "event",
                           "")
-        self.assertRaises(errors.InvalidName, self.factory.newbrick, "event",
-                          " event")
         self.factory.newevent("event", "test_event")
         self.assertRaises(errors.InvalidName, self.factory.newevent, "event",
                           "test_event")
@@ -49,6 +36,7 @@ class TestFactory(unittest.TestCase):
         self.assertFalse(self.factory.newevent("eVeNt", "event2"))
 
 
+@unittest.skipUnless(must_test_threads(), "threads tests non enabled")
 class TestThreadingLocking(unittest.TestCase):
 
     def setUp(self):
@@ -77,6 +65,3 @@ class TestThreadingLocking(unittest.TestCase):
         self.factory.save_configfile()
         t.join()
         self.assertFalse(st2[0])
-
-TestThreadingLocking = unittest.skipUnless(
-    must_test_threads(), "threads tests non enabled")(TestThreadingLocking)
