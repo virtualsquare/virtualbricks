@@ -22,6 +22,7 @@ import re
 import logging
 import subprocess
 import threading
+import __builtin__
 
 import gobject
 import gtk
@@ -3512,6 +3513,7 @@ class Application(brickfactory.Application):
 	def __init__(self, config):
 		brickfactory.Application.__init__(self, config)
 		self.textbuffer = tb = gtk.TextBuffer()
+		self.builtin_raw_input = raw_input
 		for name, attrs in self.tags:
 			tb.create_tag(name, **attrs)
 
@@ -3526,7 +3528,6 @@ class Application(brickfactory.Application):
 	def install_raw_input(self):
 		# actually there is a bug with builtin raw_input and pygtk that cause a
 		# deadlock
-		import __builtin__
 		__builtin__.raw_input = my_raw_input
 
 	def load_gladefile(self):
@@ -3543,7 +3544,7 @@ class Application(brickfactory.Application):
 
 	def start(self):
 		if not os.access(MYPATH, os.X_OK):
-			os.mkdir(MYPATH)
+			os.mkdir(MYPATH)  # XXX: should I check for exceptions?
 		self.install_raw_input()
 		gladefile = self.load_gladefile()
 		gobject.threads_init()
@@ -3557,5 +3558,7 @@ class Application(brickfactory.Application):
 		self.gui = VBGUI(self.factory, gladefile, self.textbuffer)
 		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
 		gtk.main()
+		__builtin__.raw_input = self.builtin_raw_input
+
 
 # vim: se noet :
