@@ -221,11 +221,16 @@ class DiskImage:
 
 class VMDisk:
 
-    def __init__(self, VM, dev, basefolder=""):
+    @property
+    def basefolder(self):
+        return self.VM.get_basefolder()
+
+    # def __init__(self, VM, dev, basefolder=""):
+    def __init__(self, VM, dev):
         self.VM = VM
         self.cow = False
         self.device = dev
-        self.basefolder = basefolder
+        # self.basefolder = basefolder
         self.image = None
 
     def args(self, k):
@@ -328,6 +333,7 @@ class VMDisk:
             return False
 
 class VM(Brick):
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
@@ -346,27 +352,26 @@ class VM(Brick):
         self.cfg.snapshot = ""
         self.cfg.boot = ""
         # PRIVATE COW IMAGES MUST BE CREATED IN A DIFFERENT DIRECTORY FOR EACH PROJECT
-        self.basepath = self.settings.get("baseimages") + "/." + self.project_parms['id']
         self.cfg.basehda = ""
-        self.cfg.set_obj("hda", VMDisk(self, "hda", self.basepath))
+        self.cfg.set_obj("hda", VMDisk(self, "hda"))
         self.cfg.privatehda = ""
         self.cfg.basehdb = ""
-        self.cfg.set_obj("hdb", VMDisk(self, "hdb", self.basepath))
+        self.cfg.set_obj("hdb", VMDisk(self, "hdb"))
         self.cfg.privatehdb = ""
         self.cfg.basehdc = ""
-        self.cfg.set_obj("hdc", VMDisk(self, "hdc", self.basepath))
+        self.cfg.set_obj("hdc", VMDisk(self, "hdc"))
         self.cfg.privatehdc = ""
         self.cfg.basehdd = ""
-        self.cfg.set_obj("hdd", VMDisk(self, "hdd", self.basepath))
+        self.cfg.set_obj("hdd", VMDisk(self, "hdd"))
         self.cfg.privatehdd = ""
         self.cfg.basefda = ""
-        self.cfg.set_obj("fda", VMDisk(self, "fda", self.basepath))
+        self.cfg.set_obj("fda", VMDisk(self, "fda"))
         self.cfg.privatefda = ""
         self.cfg.basefdb = ""
-        self.cfg.set_obj("fdb", VMDisk(self, "fdb", self.basepath))
+        self.cfg.set_obj("fdb", VMDisk(self, "fdb"))
         self.cfg.privatefdb = ""
         self.cfg.basemtdblock = ""
-        self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock", self.basepath))
+        self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock"))
         self.cfg.privatemtdblock = ""
         self.cfg.cdrom = ""
         self.cfg.device = ""
@@ -500,6 +505,9 @@ class VM(Brick):
             '#serial': 'serial',
             '#stdout': ''
         }
+
+    def get_basefolder(self):
+        return self.factory.get_basefolder()
 
     def get_parameters(self):
         txt = _("command:") + " %s, ram: %s" % (self.prog(), self.cfg.ram)
@@ -731,15 +739,13 @@ class VM(Brick):
         return new_brick
 
     def newbrick_changes(self):
-
-        basepath = self.basepath
-        self.cfg.set_obj("hda", VMDisk(self, "hda", basepath))
-        self.cfg.set_obj("hdb", VMDisk(self, "hdb", basepath))
-        self.cfg.set_obj("hdc", VMDisk(self, "hdc", basepath))
-        self.cfg.set_obj("hdd", VMDisk(self, "hdd", basepath))
-        self.cfg.set_obj("fda", VMDisk(self, "fda", basepath))
-        self.cfg.set_obj("fdb", VMDisk(self, "fdb", basepath))
-        self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock", basepath))
+        self.cfg.set_obj("hda", VMDisk(self, "hda"))
+        self.cfg.set_obj("hdb", VMDisk(self, "hdb"))
+        self.cfg.set_obj("hdc", VMDisk(self, "hdc"))
+        self.cfg.set_obj("hdd", VMDisk(self, "hdd"))
+        self.cfg.set_obj("fda", VMDisk(self, "fda"))
+        self.cfg.set_obj("fdb", VMDisk(self, "fdb"))
+        self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock"))
         self.associate_disk()
 
     def console(self):

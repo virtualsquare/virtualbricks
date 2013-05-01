@@ -46,13 +46,13 @@ log = logging.getLogger(__name__)
 
 def get_data(resource):
 	# XXX duplicated from virtualbricks.gui.dialogs
-    log.debug("Loading resource from %s", resource)
-    filename = os.path.join(sys.prefix, "share", "virtualbricks", resource)
-    if not os.path.exists(filename):
-        filename = os.path.join(sys.prefix, "local", "share", "virtualbricks",
-                                resource)
-    with open(filename) as fp:
-        return fp.read()
+	log.debug("Loading resource from %s", resource)
+	filename = os.path.join(sys.prefix, "share", "virtualbricks", resource)
+	if not os.path.exists(filename):
+		filename = os.path.join(sys.prefix, "local", "share", "virtualbricks",
+								resource)
+	with open(filename) as fp:
+		return fp.read()
 
 def get_treeselected(gui, tree, model, pthinfo, c):
 	if pthinfo is not None:
@@ -119,7 +119,8 @@ def check_joblist(gui, force=False):
 			gui.brickfactory.remotehosts_changed = False
 
 	if gui.curtain_is_down:
-		gui.widg['main_win'].set_title("Virtualbricks ( "+gui.brickfactory.settings.get('current_project')+ " ID: " + gui.brickfactory.project_parms["id"] + " )")
+		# XXX: if project is changed, the title remain the same
+		gui.widg['main_win'].set_title("Virtualbricks ( "+gui.brickfactory.settings.get('current_project')+ ")")
 
 	return True
 
@@ -172,6 +173,14 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.ps = []
 		self.bricks = []
 
+		# Set two useful file filters
+		self.vbl_filter = gtk.FileFilter()
+		self.vbl_filter.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
+		self.vbl_filter.add_pattern("*.vbl")
+		self.all_files_filter = gtk.FileFilter()
+		self.all_files_filter.set_name(_("All files"))
+		self.all_files_filter.add_pattern("*")
+
 		# Don't remove me, I am useful after config, when treeview may lose focus and selection.
 		self.last_known_selected_brick = None
 		self.last_known_selected_event = None
@@ -223,11 +232,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.draw_topology()
 		self.signals()
 		self.timers()
-
-		'''check if a backup has been restored while booting'''
-		if self.brickfactory.backup_restore is True:
-			self.brickfactory.backup_restore = False
-			self.error(_("A backup file for the current project has been restored.\nYou can find more informations looking in View->Messages."))
 
 		''' FIXME: re-enable when implemented '''
 		#self.gladefile.get_widget('convert_image_menuitem').set_sensitive(False)
@@ -3065,79 +3069,100 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		attach_event_window.show_all()
 		return True
 
+	def __on_dialog_response(self, dialog, response_id, do_action):
+		try:
+			if response_id == gtk.RESPONSE_OK:
+				filename = dialog.get_filename()
+				if dialog.get_action() == gtk.FILE_CHOOSER_ACTION_SAVE:
+					ext = ".vbl"
+					if not filename.endswith(ext):
+						filename += ext
+				current_project = self.config.get("current_project")
+				self.config.set("current_project", filename)
+				try:
+					do_action(filename)
+				except IOError, e:
+					self.config.set("current_project", current_project)
+				else:
+					try:
+						self.config.store()
+					except IOError:
+						log.exception("Cannot save settings")
+		finally:
+			dialog.destroy()
+
+	def __open_project(self, filename):
+		try:
+			self.brickfactory.reset()
+			self.brickfactory.configfile.restore(filename)
+		except IOError:
+			log.exception("Exception occurred while loading project")
+			raise
+
 	def on_open_project(self, widget, data=None):
-		if self.confirm(_("Save current project?"))==True:
+		if self.confirm(_("Save current project?")):
 			self.brickfactory.save_configfile()
 
-		chooser = gtk.FileChooserDialog(title=_("Open a project"),action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+		chooser = gtk.FileChooserDialog(title=_("Open a project"),
+				action=gtk.FILE_CHOOSER_ACTION_OPEN,
+				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+						gtk.STOCK_OPEN, gtk.RESPONSE_OK))
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
-		filt = gtk.FileFilter()
-		filt.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
-		filt.add_pattern("*.vbl")
-		chooser.add_filter(filt)
-		filt = gtk.FileFilter()
-		filt.set_name(_("All files"))
-		filt.add_pattern("*")
-		chooser.add_filter(filt)
-		resp = chooser.run()
-		if resp == gtk.RESPONSE_OK:
-			filename = chooser.get_filename()
-			self.config.set('current_project', filename)
-			self.brickfactory.configfile.restore(filename, False, True)
-			self.config.store()
-		chooser.destroy()
+		chooser.add_filter(self.vbl_filter)
+		chooser.add_filter(self.all_files_filter)
+		chooser.connect("response", self.__on_dialog_response,
+				self.__open_project)
+		chooser.show()
 
-	def on_save_project(self, widget, data=None):
-		chooser = gtk.FileChooserDialog(title=_("Save as..."),action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
+	def __save_project(self, filename):
+		try:
+			self.brickfactory.configfile.save(filename)
+		except IOError, e:
+			log.exception("Exception occurred while saving project.\n"
+					"Probably file doesn't exist or you can't write "
+					"it.\n" + str(e))
+			raise
+
+	def on_save_project(self, menuitem):
+		chooser = gtk.FileChooserDialog(title=_("Save as..."),
+				action=gtk.FILE_CHOOSER_ACTION_SAVE,
+				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+						gtk.STOCK_SAVE,gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
-		filt = gtk.FileFilter()
-		filt.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
-		filt.add_pattern("*.vbl")
-		chooser.add_filter(filt)
-		filt = gtk.FileFilter()
-		filt.set_name(_("All files"))
-		filt.add_pattern("*")
-		chooser.add_filter(filt)
-		resp = chooser.run()
-		if resp == gtk.RESPONSE_OK:
-			filename = chooser.get_filename()
-			if filename[len(filename)-4:] != ".vbl":
-				filename+=".vbl"
-			self.config.set('current_project', filename)
-			# FORCE CONFIG_DUMP TO CALCULATE A NEW PROJECT ID
-			self.brickfactory.project_parms['id'] = "0"
-			self.brickfactory.configfile.save(filename)
-			self.config.store()
-		chooser.destroy()
+		chooser.add_filter(self.vbl_filter)
+		chooser.add_filter(self.all_files_filter)
+		chooser.connect("response", self.__on_dialog_response,
+				self.__save_project)
+		chooser.show()
 
 	def on_import_project(self, widget, data=None):
-		self.debug( "IMPORT PROJECT undefined" )
+		raise NotImplementedError()
+
+	def __new_project(self, filename):
+		try:
+			self.brickfactory.reset()
+			with open(filename, "w+"):
+				pass
+		except IOError:
+			log.exception("Exception occurred while starting new project")
+			raise
 
 	def on_new_project(self, widget, data=None):
-		if self.confirm("Save current project?")==True:
+		if self.confirm("Save current project?"):
 			self.brickfactory.save_configfile()
 
-		chooser = gtk.FileChooserDialog(title=_("New project"),action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_SAVE,gtk.RESPONSE_OK))
+		chooser = gtk.FileChooserDialog(title=_("New project"),
+				action=gtk.FILE_CHOOSER_ACTION_SAVE,
+				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+						gtk.STOCK_SAVE, gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)
 		chooser.set_current_folder(self.config.get('bricksdirectory'))
-		filt = gtk.FileFilter()
-		filt.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
-		filt.add_pattern("*.vbl")
-		chooser.add_filter(filt)
-		filt = gtk.FileFilter()
-		filt.set_name(_("All files"))
-		filt.add_pattern("*")
-		chooser.add_filter(filt)
-		resp = chooser.run()
-		if resp == gtk.RESPONSE_OK:
-			filename = chooser.get_filename()
-			if filename[len(filename)-4:] != ".vbl":
-				filename+=".vbl"
-			self.config.set('current_project', filename)
-			self.brickfactory.configfile.restore(filename, True, True)
-			self.config.store()
-		chooser.destroy()
+		chooser.add_filter(self.vbl_filter)
+		chooser.add_filter(self.all_files_filter)
+		chooser.connect("response", self.__on_dialog_response,
+				self.__new_project)
+		chooser.show()
 
 	def on_open_recent_project(self, widget, data=None):
 		raise NotImplementedError()
@@ -3520,6 +3545,10 @@ class Application(brickfactory.Application):
 		# deadlock
 		__builtin__.raw_input = my_raw_input
 
+	def install_sys_hooks(self):
+		# delay install sys hooks
+		pass
+
 	def load_gladefile(self):
 		try:
 			parts = [sys.prefix, "share", "virtualbricks",
@@ -3541,13 +3570,19 @@ class Application(brickfactory.Application):
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
-		self.factory = brickfactory.BrickFactory.make()
+		self.factory = brickfactory.BrickFactory()
+        self.factory.configfile.restore(self.factory.settings.get(
+            "current_project"))
 		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
 		if self.config.get('term', True):
 			self.console = console_thread(self.factory)
 		self.gui = VBGUI(self.factory, gladefile, self.textbuffer)
 		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
+		brickfactory.Application.install_sys_hooks(self)  # :(
 		gtk.main()
+
+	def quit(self):
+		brickfactory.Application.quit(self)
 		__builtin__.raw_input = self.builtin_raw_input
 
 

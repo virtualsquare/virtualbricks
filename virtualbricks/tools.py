@@ -16,6 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
 import re
 import random
 import threading
@@ -121,3 +122,12 @@ def synchronize_with(lock):
     def wrap(func):
         return synchronize(func, lock)
     return wrap
+
+
+def stack_trace():
+    out = []
+    f = sys._getframe(2)
+    while f:
+        out.append("{0.f_code.co_filename}:{0.f_lineno}".format(f))
+        f = f.f_back
+    return "\n".join(out)

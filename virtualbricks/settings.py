@@ -18,49 +18,54 @@
 import os
 import new
 import ConfigParser
+import logging
 
-from virtualbricks.logger import ChildLogger
+
+if False:  # pyflakes
+    _ = str
+
+
+log = logging.getLogger(__name__)
 
 
 VDEPATH = "/usr/bin"
 HOME = os.path.expanduser("~")
 MYPATH = os.path.join(HOME, ".virtualbricks")
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
+DEFAULT_CONF = {
+    "bricksdirectory": HOME + "/.virtualbricks",
+    "term": "/usr/bin/xterm",
+    "alt-term": "/usr/bin/gnome-terminal",
+    "sudo": "/usr/bin/gksu",
+    "qemupath": "/usr/bin",
+    "baseimages": HOME + "/.virtualbricks/img",
+    "kvm": False,
+    "ksm": False,
+    "kqemu": False,
+    "cdroms": "",
+    "vdepath": "/usr/bin",
+    "python": False,
+    "femaleplugs": False,
+    "erroronloop": False,
+    "systray": True,
+    "current_project": HOME + "/.virtualbricks/.virtualbricks.vbl",
+    "cowfmt": "cow",
+    "show_missing": True
+}
 
 
-class Settings(ChildLogger(__name__)):
+class Settings:
 
     DEFAULT_SECTION = "Main"
 
-    def __init__(self, filename, logger):
-        # default config
-        default_conf = {
-            "bricksdirectory": HOME + "/.virtualbricks",
-            "term": "/usr/bin/xterm",
-            "alt-term": "/usr/bin/gnome-terminal",
-            "sudo": "/usr/bin/gksu",
-            "qemupath": "/usr/bin",
-            "baseimages": HOME + "/.virtualbricks/img",
-            "kvm": False,
-            "ksm": False,
-            "kqemu": False,
-            "cdroms": "",
-            "vdepath": "/usr/bin",
-            "python": False,
-            "femaleplugs": False,
-            "erroronloop": False,
-            "systray": True,
-            "current_project": HOME + "/.virtualbricks/.virtualbricks.vbl",
-            "projects": 0,
-            "cowfmt": "cow",
-            "show_missing": True
-        }
+    def __init__(self, filename):
         self.filename = filename
         self.config = ConfigParser.SafeConfigParser()
-        try:
-            os.mkdir(MYPATH)
-        except:
-            pass
+        if not os.path.isdir(MYPATH):
+            try:
+                os.mkdir(MYPATH)
+            except OSError:  # TODO: maybe IOError?
+                pass
 
         def create_get(attr):
             def get(inst, x):
@@ -82,25 +87,25 @@ class Settings(ChildLogger(__name__)):
             setattr(Settings, attr, property(m_get, m_set))
 
         self.config.add_section(self.DEFAULT_SECTION)
-        for key, value in default_conf.items():
+        for key, value in DEFAULT_CONF.items():
             self.config.set(self.DEFAULT_SECTION, key, unicode(value))
 
         if os.path.exists(self.filename):
             try:
                 self.config.read(self.filename)
-                self.info(_("Configuration loaded ('%s')"), self.filename)
+                log.info(_("Configuration loaded ('%s')"), self.filename)
             except Exception, err:
-                self.error(_("Cannot read config file ") + "'" +
+                log.error(_("Cannot read config file ") + "'" +
                            self.filename + "':" + "'" + err + "'!")
         else:
-            self.info(_("Default configuration loaded"))
+            log.info(_("Default configuration loaded"))
             try:
                 with open(self.filename, 'wb') as configfile:
                     self.config.write(configfile)
-                self.info(_("Default configuration saved ('%s')"),
+                log.info(_("Default configuration saved ('%s')"),
                         self.filename)
-            except Exception, err:
-                self.error(_("Cannot save default configuration"))
+            except Exception:
+                log.error(_("Cannot save default configuration"))
 
         self.check_ksm(self.ksm)
         self.ksm = self.ksm
@@ -191,7 +196,7 @@ class Settings(ChildLogger(__name__)):
             cmd = "echo 0 > %s" % ksm_path
 
         if cmd and self.sudo_system(cmd) != 0:
-            self.error("Can not change ksm state. (failed command: %s)" % cmd)
+            log.error("Can not change ksm state. (failed command: %s)" % cmd)
 
     def sudo_system(self, cmd):
         sudo = self.get("sudo")
