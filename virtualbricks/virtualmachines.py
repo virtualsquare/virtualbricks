@@ -166,15 +166,6 @@ class DiskImage:
             return False
         return True
 
-        # try:
-        #     f = open(self.description_file(), "w+")
-        # except:
-        #     return False
-        # f.write(str(descr))
-        # f.flush()
-        # f.close()
-        # return True
-
     def get_description(self):
         try:
             with open(self.description_file()) as fp:
@@ -182,24 +173,8 @@ class DiskImage:
         except IOError:
             return ""
 
-        # try:
-        #     f = open(self.description_file(), "r")
-        # except:
-        #     return ""
-        # try:
-        #     descr = f.read()
-        # except:
-        #     return ""
-        # f.close()
-        # return descr
-
     def get_cows(self):
         return len([vmd for vmd in self.vmdisks if vmd.cow])
-        # count = 0
-        # for vmd in self.vmdisks:
-        #     if vmd.cow:
-        #         count+=1
-        # return count
 
     def get_users(self):
         return len(self.vmdisks)
