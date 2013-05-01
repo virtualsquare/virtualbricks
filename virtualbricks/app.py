@@ -122,4 +122,11 @@ def run(application, config):
     except QuitError, err:
         print(err.msg, file=sys.stderr)
         return err.exit_code
+    except KeyboardInterrupt:
+        # I don't wanna catch SystemExit exception because is raised only
+        # programmatically, so if someone thinks that is a good idea to
+        # raise it I think he knows what he is doing. KeyboardInterrupt is
+        # different because by default python translate SIG_INT into
+        # KeyboardInterrupt
+        pass
     return 0
