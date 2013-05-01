@@ -505,22 +505,19 @@ class VBProtocol(Protocol):
     # easter eggs
     def do_python(self, args):
         """Open a python interpreter. Use ^D (^Z on windows) to exit."""
-        self.sendLine("Does not work, don not use it")
-        return
-        # actually the code itself works but breaks gettext because the global
-        # _ is assigned to the result of last command
         import code
-        import __builtin__
 
         local = {"__name__": "__console__", "__doc__": None,
                  "factory": self.factory}
         code.interact(local=local)
-        __builtin__._ = __builtin__.gettext
 
     def do_threads(self, args):
         self.sendLine("Threads:")
         for i, thread in enumerate(threading.enumerate()):
             self.sendLine("  %d: %s" % (i, repr(thread)))
+
+    def do_warranty(self):
+        self.sendLine("NotImplementedError")
 
 
 class ImagesProtocol(Protocol):
@@ -616,6 +613,16 @@ class ImagesProtocol(Protocol):
 
 class ConfigurationProtocol(Protocol):
 
+    def do_get(self, args):
+        if len(args) == 1:
+            if self.factory.settings.has_option(args[0]):
+                self.sendLine("%s = %s" % (args[0],
+                                           self.factory.settings.get(args[0])))
+            else:
+                self.sendLine("No such option %s" % args[0])
+        # elif len(args) == 0:
+        #     pass  # TODO: show all settings
+
     def do_set(self, args):
         if len(args) > 1:
             if self.factory.settings.has_option(args[0]):
@@ -626,11 +633,3 @@ class ConfigurationProtocol(Protocol):
                         host.send("cfg " + args[0] + " " + args[1])
                 else:
                     self.factory.settings.set(args[0], args[1])
-        elif len(args) == 1:
-            if self.factory.settings.has_option(args[0]):
-                self.sendLine("%s = %s" % (args[0],
-                                           self.factory.settings.get(args[0])))
-            else:
-                self.sendLine("No such option %s" % args[0])
-        # else:  # len(args) == 0
-        #     pass  # TODO: show all settings
