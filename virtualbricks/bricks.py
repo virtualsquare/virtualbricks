@@ -128,7 +128,7 @@ class Brick(ChildLogger(__name__)):
         return self.name
 
     def on_config_changed(self):
-        self.factory.emit("brick-changed", self.name, self.factory.startup)
+        self.factory.emit("brick-changed", self.name)
 
     def post_rename(self, newname):
         pass

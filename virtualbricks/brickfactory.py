@@ -91,7 +91,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         'engine-closed': (gobject.SIGNAL_RUN_LAST, None, ()),
         'brick-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'brick-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str, bool,)),
+        'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str)),
         'event-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-changed': (gobject.SIGNAL_RUN_LAST, None, (str, bool,)),
@@ -102,7 +102,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
     TCP = None
     quitting = False
-    startup = False
 
     def __init__(self):
         gobject.GObject.__init__(self)
@@ -133,9 +132,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         """
 
         factory = cls()
-        factory.startup = True
         factory.restore_configfile()
-        factory.startup = False
         return factory
 
     @synchronized

@@ -195,7 +195,7 @@ class Event(ChildLogger(__name__)):
         self.factory.emit("event-accomplished", self.name)
 
     def on_config_changed(self):
-        self.factory.emit("event-changed", self.name, self.factory.startup)
+        self.factory.emit("event-changed", self.name)
 
     #############################
     # Console related operations.
