@@ -91,10 +91,10 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         'engine-closed': (gobject.SIGNAL_RUN_LAST, None, ()),
         'brick-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'brick-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str)),
+        'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'event-changed': (gobject.SIGNAL_RUN_LAST, None, (str, bool,)),
+        'event-changed': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-accomplished': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         "image_added": (gobject.SIGNAL_RUN_LAST, None, (object,)),
         "image_removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
@@ -125,7 +125,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
     @classmethod
     def make(cls):
-        """Build a new factory.
+        """Build and configure a new factory.
 
         This would be a temporary utility method until the startup thing is
         gone.
