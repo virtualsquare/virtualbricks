@@ -96,13 +96,13 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         'event-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-changed': (gobject.SIGNAL_RUN_LAST, None, (str, bool,)),
         'event-accomplished': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'backup-restored': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         "image_added": (gobject.SIGNAL_RUN_LAST, None, (object,)),
         "image_removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
     }
 
     TCP = None
     quitting = False
+    startup = False
 
     def __init__(self):
         gobject.GObject.__init__(self)
@@ -116,17 +116,27 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.projects = []
         self.bricksmodel = BricksModel()
         self.eventsmodel = EventsModel()
-        self.startup = True
         self.remotehosts_changed = False
         self.running_condition = True
         self.settings = Settings(CONFIGFILE, self)
         self.configfile = ConfigFile(self)
-        self.projectsave_sema = threading.Semaphore()
         self.backup_restore = False
         self.BRICKTYPES = install_brick_types(
             None, wires.VDESUPPORT and self.settings.python)
-        self.restore_configfile()
-        self.startup = False
+
+    @classmethod
+    def make(cls):
+        """Build a new factory.
+
+        This would be a temporary utility method until the startup thing is
+        gone.
+        """
+
+        factory = cls()
+        factory.startup = True
+        factory.restore_configfile()
+        factory.startup = False
+        return factory
 
     @synchronized
     def restore_configfile(self):
@@ -673,7 +683,7 @@ class Application:
                                                       traceback))
 
     def start(self):
-        self.factory = BrickFactory()
+        self.factory = BrickFactory.make()
         self.autosave_timer = AutosaveTimer(self.factory)
         console = Console(self.factory)
         console.run()
@@ -691,7 +701,7 @@ class ApplicationServer(Application):
     def start(self):
         if os.getuid() != 0:
             raise app.QuitError("server requires to be run by root.", 5)
-        self.factory = factory = BrickFactoryServer()
+        self.factory = factory = BrickFactoryServer.make()
         from virtualbricks import tcpserver
         server_t = tcpserver.TcpServer(factory, factory.get_password())
         factory.TCP = server_t
