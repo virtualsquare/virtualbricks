@@ -3571,8 +3571,8 @@ class Application(brickfactory.Application):
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
 		self.factory = brickfactory.BrickFactory()
-        self.factory.configfile.restore(self.factory.settings.get(
-            "current_project"))
+		self.factory.configfile.restore(self.factory.settings.get(
+			"current_project"))
 		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
 		if self.config.get('term', True):
 			self.console = console_thread(self.factory)
