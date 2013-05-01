@@ -30,9 +30,8 @@ import gobject
 
 import virtualbricks
 from virtualbricks import (app, tools, logger, wires, virtualmachines, errors,
-                           console)
+                           console, settings)
 from virtualbricks.models import BricksModel, EventsModel
-from virtualbricks.settings import CONFIGFILE, Settings
 from virtualbricks.errors import UnmanagedType
 from virtualbricks.configfile import ConfigFile
 
@@ -106,43 +105,23 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def __init__(self):
         gobject.GObject.__init__(self)
         # DEFINE PROJECT PARMS
-        self.project_parms = self.clear_project_parms()
         self.remote_hosts = []
         self.bricks = []
         self.events = []
         self.socks = []
         self.disk_images = []
-        self.projects = []
         self.bricksmodel = BricksModel()
         self.eventsmodel = EventsModel()
         self.remotehosts_changed = False
         self.running_condition = True
-        self.settings = Settings(CONFIGFILE, self)
+        self.settings = settings.Settings(settings.CONFIGFILE)
         self.configfile = ConfigFile(self)
-        self.backup_restore = False
         self.BRICKTYPES = install_brick_types(
             None, wires.VDESUPPORT and self.settings.python)
 
-    @classmethod
-    def make(cls):
-        """Build and configure a new factory.
-
-        This would be a temporary utility method until the startup thing is
-        gone.
-        """
-
-        factory = cls()
-        factory.restore_configfile()
-        return factory
-
-    @synchronized
-    def restore_configfile(self):
-        log.info("Current project is %s" %
-                  self.settings.get('current_project'))
-        self.configfile.restore(self.settings.get('current_project'))
-
-    @synchronized
     def save_configfile(self):
+        # This method is not synchronized because configfile take care of
+        # synchonize itself
         self.configfile.save(self.settings.get('current_project'))
 
     @synchronized
@@ -166,25 +145,34 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             self.running_condition = False
             self.emit("engine-closed")
 
+    @synchronized
+    def reset(self):
+        # hard reset
+        self.bricksmodel.clear()
+        self.eventsmodel.clear()
+        for b in self.bricks:
+            self.delbrick(b)
+        del self.bricks[:]
+
+        for e in self.events:
+            self.delevent(e)
+        del self.events[:]
+
+        self.socks = []
+
     def err(self, _, *args, **kwds):
         self.error(*args, **kwds)
 
-    def clear_project_parms(self):
-        """Clear parameters, and reset project counter."""
-        DEFAULT_PARMS = {
-            "id": "0",
-            "name": "",
-            "filename": ""
-        }
-        parms = {}
-        for key, value in DEFAULT_PARMS.items():
-            parms[key] = value
-
-        return parms
+    def get_basefolder(self):
+        baseimages = self.settings.get("baseimages")
+        project_file = self.settings.get("current_project")
+        project_name = os.path.splitext(os.path.basename(project_file))[0]
+        return os.path.join(baseimages, project_name)
 
     @synchronized
     def reset_config(self):
         """ Power off and kickout all bricks and events """
+        # XXX: what about socks?
         for b in self.bricks:
             b.poweroff()
             self.delbrick(b)
@@ -581,8 +569,10 @@ class BrickFactoryServer(BrickFactory):
                 else:
                     print("Passwords don't match. Retry.")
 
-    def restore_configfile(self):
-        self.configfile.restore('/tmp/TCP_controlled.vb')
+    def save_configfile(self):
+        log.warning("BrickFactory does not support save_configfile when in "
+                    "server mode. This should be considerated a code bug.\n"
+                    + "Stack trace:\n" + tools.stack_trace())
 
 
 class Console(object):
@@ -680,7 +670,9 @@ class Application:
                                                       traceback))
 
     def start(self):
-        self.factory = BrickFactory.make()
+        self.factory = BrickFactory()
+        self.factory.configfile.restore(self.factory.settings.get(
+            "current_project"))
         self.autosave_timer = AutosaveTimer(self.factory)
         console = Console(self.factory)
         console.run()
@@ -698,7 +690,7 @@ class ApplicationServer(Application):
     def start(self):
         if os.getuid() != 0:
             raise app.QuitError("server requires to be run by root.", 5)
-        self.factory = factory = BrickFactoryServer.make()
+        self.factory = factory = BrickFactoryServer()
         from virtualbricks import tcpserver
         server_t = tcpserver.TcpServer(factory, factory.get_password())
         factory.TCP = server_t

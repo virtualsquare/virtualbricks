@@ -220,7 +220,8 @@ class RemoteHost:
             if b.homehost and b.homehost.addr == self.addr:
                     self.upload(b)
 
-        self.send("cfg set projects " + self.factory.settings.get("projects"))
+        # XXX: this is a bug, for sure
+        # self.send("cfg set projects " + self.factory.settings.get("projects"))
 
     def get_files_list(self):
         return self.send_and_recv("i files")
@@ -430,11 +431,11 @@ class VBProtocol(Protocol):
         # self.sendLine("End of list.")
 
     def do_config(self, args):
-        self.sub_protocols["config"].lineReceived("".join(args))
+        self.sub_protocols["config"].lineReceived(" ".join(args))
     do_cfg = do_config
 
     def do_images(self, args):
-        self.sub_protocols["images"].lineReceived("".join(args))
+        self.sub_protocols["images"].lineReceived(" ".join(args))
     do_i = do_images
 
     def do_socks(self, args):
@@ -615,13 +616,21 @@ class ImagesProtocol(Protocol):
 
 class ConfigurationProtocol(Protocol):
 
-    def do_set(self, parts):
-        if len(parts) > 1:
-            if self.factory.settings.has_option(parts[0]):
+    def do_set(self, args):
+        if len(args) > 1:
+            if self.factory.settings.has_option(args[0]):
                 host = None
-                if len(parts) == 3:
-                    host = self.factory.get_host_by_name(parts[2])
+                if len(args) == 3:
+                    host = self.factory.get_host_by_name(args[2])
                     if host is not None and host.connected is True:
-                        host.send("cfg " + parts[0] + " " + parts[1])
+                        host.send("cfg " + args[0] + " " + args[1])
                 else:
-                    self.factory.settings.set(parts[0], parts[1])
+                    self.factory.settings.set(args[0], args[1])
+        elif len(args) == 1:
+            if self.factory.settings.has_option(args[0]):
+                self.sendLine("%s = %s" % (args[0],
+                                           self.factory.settings.get(args[0])))
+            else:
+                self.sendLine("No such option %s" % args[0])
+        # else:  # len(args) == 0
+        #     pass  # TODO: show all settings

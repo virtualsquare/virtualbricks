@@ -16,14 +16,58 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import os.path
 import sys
 import re
 import shutil
 import traceback
+import contextlib
+import threading
+import logging
 
 from virtualbricks import tools
 from virtualbricks.console import ShellCommand, RemoteHost,  VbShellCommand
-from virtualbricks.errors import BadConfig
+
+
+if False:  # pyflakes
+    _ = str
+
+
+log = logging.getLogger(__name__)
+
+# this is a brand new lock, different from the one in
+# virtualbricks.brickfactory
+synchronized = tools.synchronize_with(threading.RLock())
+
+
+@contextlib.contextmanager
+def backup(original, filename):
+    created = False
+    # create a new backup file of the project
+    if os.path.isfile(original):
+        shutil.copyfile(original, filename)
+        created = True
+    yield
+    if created:
+        # remove the project backup file
+        if os.path.isfile(filename):
+            os.remove(filename)
+
+
+def restore_backup(filename, fbackup, factory):
+    # check if there's a project backup to restore and if its size is
+    # different from current project file
+    if os.path.isfile(fbackup):
+        log.info("I found a backup project file, I'm going to restore it!")
+        if os.path.isfile(filename):
+            log.info("Corrupted file moved to %s.back", filename)
+            shutil.copyfile(filename, filename + ".back")
+        # restore backup file
+        shutil.copyfile(fbackup, filename)
+        os.remove(fbackup)
+        log.error(_("A backup file for the current project has been restored."
+                    "\nYou can find more informations looking in "
+                    "View->Messages."))
 
 
 class ConfigFile:
@@ -31,78 +75,72 @@ class ConfigFile:
     def __init__(self, factory):
         self.factory = factory
 
-    def save(self, f):
-        if self.factory.TCP:
+    @synchronized
+    def save(self, obj_or_str):
+        """Save the current project.
+
+        @param obj_or_str: The filename of file object where to save the
+                           project.
+        @type obj_or_str: C{str} or an object that implements the file
+                          interface.
+        """
+
+        if self.factory.TCP:  # XXX:
+            log.warning("configfile.save called when on server mode. "
+                        "This must be considerated a bug in the code.\n"
+                        + "Stack trace:\n" + tools.stack_trace())
             return
 
-        self.factory.projectsave_sema.acquire()
+        if isinstance(obj_or_str, basestring):
+            filename = obj_or_str
+            log.debug("CONFIG DUMP on " + filename)
+            fp = None
+            fbackup = os.path.join(self.factory.settings.get(
+                "bricksdirectory"), ".vb_current_project.vbl")
 
-        backup_project_file = self.factory.settings.get("bricksdirectory") + \
-                "/.vb_current_project.vbl"
-        if os.path.isfile(f):
-            '''create a new backup file of the project'''
-            shutil.copyfile(f, backup_project_file)
+            with backup(filename, fbackup):
+                try:
+                    with open(filename, "w+") as fp:
+                        self.save_to(fp)
+                except IOError, e:
+                    log.err("ERROR WRITING CONFIGURATION!\n"
+                            "Probably file doesn't exist or you can't write "
+                            "it.\n" + str(e))
+        else:
+            self.save_to(obj_or_str)
 
-        try:
-            p = open(f, "w+")
-        except:
-            self.factory.err(self.factory, "ERROR WRITING CONFIGURATION!\n"
-                             "Probably file doesn't exist or you can't write "
-                             "it.")
-            self.factory.projectsave_sema.release()
+    @synchronized
+    def save_to(self, fileobj):
+        if self.factory.TCP:  # XXX:
+            log.warning("configfile.save called when on server mode. "
+                        "This must be considerated a bug in the code.")
             return
-        self.factory.debug("CONFIG DUMP on " + f)
-
-        # If project hasn't an ID we need to calculate it
-        if self.factory.project_parms['id'] == "0":
-            projects = int(self.factory.settings.get('projects'))
-            self.factory.settings.set("projects", projects + 1)
-            self.factory.project_parms['id'] = str(projects + 1)
-            self.factory.debug("Project no= " + str(projects + 1) +
-                               ", Projects: " + self.factory.settings.get(
-                                   "projects"))
-            self.factory.settings.store()
-        if self.factory.project_parms['name'] == "":
-            path_array = f.split("/")
-            path_array = path_array[len(path_array) - 1].split(".")
-            if path_array[len(path_array) - 1] == "vbl":
-                index = path_array[len(path_array) - 2]
-            else:
-                path_array[len(path_array) - 1]
-            self.factory.project_parms['name'] = index
-
-        self.factory.project_parms['filename'] = f
-
-        # DUMP PROJECT PARMS
-        p.write('[Project:' + f + ']\n')
-        for key, value in self.factory.project_parms.items():
-            p.write(key + "=" + value + "\n")
 
         # Remote hosts
         for r in self.factory.remote_hosts:
-            p.write('[RemoteHost:' + r.addr[0] + ']\n')
-            p.write('port=' + str(r.addr[1]) + '\n')
-            p.write('password=' + r.password + '\n')
-            p.write('baseimages=' + r.baseimages + '\n')
-            p.write('qemupath=' + r.qemupath + '\n')
-            p.write('vdepath=' + r.vdepath + '\n')
-            p.write('bricksdirectory=' + r.bricksdirectory + '\n')
+            fileobj.write('[RemoteHost:' + r.addr[0] + ']\n')
+            fileobj.write('port=' + str(r.addr[1]) + '\n')
+            fileobj.write('password=' + r.password + '\n')
+            fileobj.write('baseimages=' + r.baseimages + '\n')
+            fileobj.write('qemupath=' + r.qemupath + '\n')
+            fileobj.write('vdepath=' + r.vdepath + '\n')
+            fileobj.write('bricksdirectory=' + r.bricksdirectory + '\n')
             if r.autoconnect:
-                p.write('autoconnect=True\n')
+                fileobj.write('autoconnect=True\n')
             else:
-                p.write('autoconnect=False\n')
+                fileobj.write('autoconnect=False\n')
 
         # Disk Images
         for img in self.factory.disk_images:
-            p.write('[DiskImage:' + img.name + ']\n')
-            p.write('path=' + img.path + '\n')
+            fileobj.write('[DiskImage:' + img.name + ']\n')
+            fileobj.write('path=' + img.path + '\n')
             if img.host is not None:
-                p.write('host=' + img.host.addr[0] + '\n')
+                fileobj.write('host=' + img.host.addr[0] + '\n')
             if img.readonly is not False:
-                p.write('readonly=True\n')
+                fileobj.write('readonly=True\n')
 
         for e in self.factory.events:
-            p.write('[' + e.get_type() + ':' + e.name + ']\n')
+            fileobj.write('[' + e.get_type() + ':' + e.name + ']\n')
             for k, v in e.cfg.iteritems():
                 #Special management for actions parameter
                 if k == 'actions':
@@ -119,125 +157,55 @@ class ConfigFile:
                                     "Error: unmanaged action type. "
                                     "Will not be saved!")
                             continue
-                    p.write(k + '=' + str(tempactions) + '\n')
+                    fileobj.write(k + '=' + str(tempactions) + '\n')
                 #Standard management for other parameters
                 else:
-                    p.write(k + '=' + str(v) + '\n')
+                    fileobj.write(k + '=' + str(v) + '\n')
 
         for b in self.factory.bricks:
-            p.write('[' + b.get_type() + ':' + b.name + ']\n')
+            fileobj.write('[' + b.get_type() + ':' + b.name + ']\n')
             for k, v in b.cfg.iteritems():
                 # VMDisk objects don't need to be saved
                 types = set(['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb',
                              'mtdblock'])
                 if (b.get_type() != "Qemu" or (b.get_type() == "Qemu" and k not
                                                in types)):
-                    p.write(k + '=' + str(v) + '\n')
+                    fileobj.write(k + '=' + str(v) + '\n')
 
         for b in self.factory.bricks:
             for sk in b.socks:
                 if b.get_type() == 'Qemu':
-                    p.write('sock|' + b.name + "|" + sk.nickname + '|' +
+                    fileobj.write('sock|' + b.name + "|" + sk.nickname + '|' +
                             sk.model + '|' + sk.mac + '|' + str(sk.vlan) +
                             '\n')
         for b in self.factory.bricks:
             for pl in b.plugs:
                 if b.get_type() == 'Qemu':
                     if pl.mode == 'vde':
-                        p.write('link|' + b.name + "|" + pl.sock.nickname + '|'
-                                + pl.model + '|' + pl.mac + '|' + str(pl.vlan)
-                                + '\n')
+                        fileobj.write('link|' + b.name + "|" + pl.sock.nickname
+                                      + '|' + pl.model + '|' + pl.mac + '|' +
+                                      str(pl.vlan) + '\n')
                     else:
-                        p.write('userlink|' + b.name + '||' + pl.model + '|' +
-                                pl.mac + '|' + str(pl.vlan) + '\n')
+                        fileobj.write('userlink|' + b.name + '||' + pl.model +
+                                      '|' + pl.mac + '|' + str(pl.vlan) + '\n')
                 elif (pl.sock is not None):
-                    p.write('link|' + b.name + "|" + pl.sock.nickname + '\n')
+                    fileobj.write('link|' + b.name + "|" + pl.sock.nickname +
+                                  '\n')
 
-        # remove the project backup file
-        if os.path.isfile(backup_project_file):
-            os.remove(backup_project_file)
+    def restore(self, str_or_obj):
+        if isinstance(str_or_obj, basestring):
+            filename = str_or_obj
+            fbackup = os.path.join(self.factory.settings.get(
+                "bricksdirectory"), ".vb_current_project.vbl")
+            restore_backup(filename, fbackup, self.factory)
+            log.info("Open %s project", filename)
+            with open(filename) as fp:
+                self.restore_from(fp)
+        else:
+            self.restore_from(str_or_obj)
 
-        self.factory.projectsave_sema.release()
-
-    def restore(self, f, create_if_not_found=True, start_from_scratch=False):
-        """
-        ACTIONS flags for this:
-        Initial restore of latest open: True,False (default)
-        Open or Open Recent: False, True
-        Import: False, False
-        New: True, True (missing check for existing file,
-                must be check from caller)
-        """
-
-        backup_project_file = self.factory.settings.get("bricksdirectory") + \
-                "/.vb_current_project.vbl"
-        # check if there's a project backup to restore and if its size is
-        # different from current project file
-        if os.path.isfile(backup_project_file):
-            self.factory.info("I found a backup project file, I'm going to "
-                              "restore it!")
-            if os.path.isfile(f):
-                self.factory.info("Corrupted file moved to " + f + ".back")
-                shutil.copyfile(f, f + ".back")
-            # restore backup file
-            shutil.copyfile(backup_project_file, f)
-            os.remove(backup_project_file)
-            self.factory.info("Backup project file restored.")
-            self.factory.backup_restore = True
-            self.factory.emit("backup-restored", "A backup project has been "
-                              "restored.\nIf you want more informations please"
-                              "read View->Messages.")
-        try:
-            p = open(f, "r")
-        except:
-            if create_if_not_found:
-                p = open(f, "w+")
-                self.factory.info("Current project file" + f +
-                                  " doesn't exist. Creating a new file.")
-                self.factory.current_project = f
-            else:
-                raise BadConfig()
-            #return
-
-        self.factory.info("Open " + f + " project")
-
-        if start_from_scratch:
-            self.factory.bricksmodel.clear()
-            self.factory.eventsmodel.clear()
-            for b in self.factory.bricks:
-                self.factory.delbrick(b)
-            del self.factory.bricks[:]
-
-            for e in self.factory.events:
-                self.factory.delevent(e)
-            del self.factory.events[:]
-
-            self.factory.socks = []
-
-            # RESET PROJECT PARMS TO DEFAULT
-            self.factory.project_parms = self.factory.clear_project_parms()
-            if create_if_not_found:
-                # UPDATE PROJECT ID
-                projects = int(self.factory.settings.get('projects'))
-                self.factory.settings.set("projects", projects + 1)
-                self.factory.project_parms['id'] = str(projects + 1)
-                path_array = f.split("/")
-                path_array = path_array[len(path_array) - 1].split(".")
-                if path_array[len(path_array) - 1] == "vbl":
-                    index = path_array[len(path_array) - 2]
-                else:
-                    path_array[len(path_array) - 1]
-                self.factory.project_parms['name'] = index
-                self.factory.debug("Project no= " +
-                                   self.factory.project_parms['id'] +
-                                   ", name: " +
-                                   self.factory.project_parms['name'] +
-                                   ", projects: " +
-                                   self.factory.settings.get("projects"))
-                self.factory.settings.store()
-                return
-
-        l = p.readline()
+    def restore_from(self, fileobj):
+        l = fileobj.readline()
         b = None
         while (l):
             l = re.sub(' ', '', l)
@@ -296,26 +264,12 @@ class ConfigFile:
                     if ntype == 'Event':
                         self.factory.newevent(ntype, name)
                         component = self.factory.geteventbyname(name)
-                    # READ PROJECT PARMS
-                    elif ntype == 'Project':
-                        self.factory.debug("Found Project " + name +
-                                           " Sections")
-                        l = p.readline()
-                        while l and not l.startswith('['):
-                            values = l.rstrip("\n").split("=")
-                            if (len(values) > 1 and values[0] in
-                                self.factory.project_parms):
-                                self.factory.debug("Add " + values[0])
-                                self.factory.project_parms[values[0]] = \
-                                        values[1]
-                            l = p.readline()
-                        continue
                     elif ntype == 'DiskImage':
                         self.factory.debug("Found Disk image %s" % name)
                         path = ""
                         host = None
                         readonly = False
-                        l = p.readline()
+                        l = fileobj.readline()
                         while l and not l.startswith('['):
                             k, v = l.rstrip("\n").split("=")
                             if k == 'path':
@@ -324,7 +278,7 @@ class ConfigFile:
                                 host = self.factory.get_host_by_name(str(v))
                             elif k == 'readonly' and v == 'True':
                                 readonly = True
-                            l = p.readline()
+                            l = fileobj.readline()
                         if not tools.NameNotInUse(self.factory, name):
                             continue
                         if host is None and not os.access(path, os.R_OK):
@@ -344,7 +298,7 @@ class ConfigFile:
                         if not newr:
                             newr = RemoteHost(self.factory, name)
                             self.factory.remote_hosts.append(newr)
-                        l = p.readline()
+                        l = fileobj.readline()
                         while l and not l.startswith('['):
                             k, v = l.rstrip("\n").split("=")
                             if k == 'password':
@@ -359,7 +313,7 @@ class ConfigFile:
                                 newr.qemupath = str(v)
                             elif k == 'bricksdirectory':
                                 newr.bricksdirectory = str(v)
-                            l = p.readline()
+                            l = fileobj.readline()
                         if newr.autoconnect:
                             newr.connect()
                         continue
@@ -372,10 +326,10 @@ class ConfigFile:
                                             str(err))
                     traceback.print_exc(file=sys.stdout)
 
-                    l = p.readline()
+                    l = fileobj.readline()
                     continue
 
-                l = p.readline()
+                l = fileobj.readline()
                 parameters = []
                 while (component and l and not l.startswith('[') and
                        not re.search("\A.*link\|", l) and
@@ -388,42 +342,16 @@ class ConfigFile:
                             for action in actions:
                                 #Initialize one by one
                                 component.configure(action.split(' '))
-                            l = p.readline()
+                            l = fileobj.readline()
                             continue
                         parameters.append(l.rstrip('\n'))
-                    l = p.readline()
+                    l = fileobj.readline()
                 if parameters:
                     component.configure(parameters)
 
                 continue
-            l = p.readline()
+            l = fileobj.readline()
 
         for b in self.factory.bricks:
             for c in b.config_socks:
                 self.factory.connect_to(b, c)
-
-        if self.factory.project_parms['id'] == "0":
-            projects = int(self.factory.settings.get('projects'))
-            self.factory.settings.set("projects", projects + 1)
-            self.factory.project_parms['id'] = str(projects + 1)
-            self.factory.debug("Project no= " + str(projects + 1) +
-                               ", Projects: " +
-                               self.factory.settings.get("projects"))
-
-        if self.factory.project_parms['name'] == "":
-            path_array = f.split("/")
-            path_array = path_array[len(path_array) - 1].split(".")
-            if path_array[len(path_array) - 1] == "vbl":
-                index = path_array[len(path_array) - 2]
-            else:
-                index = path_array[len(path_array) - 1]
-            self.factory.project_parms['name'] = index
-            self.factory.debug("Project no= " +
-                               self.factory.project_parms['id'] +
-                               ", name:" + self.factory.project_parms['name'] +
-                               ", projects: " +
-                               self.factory.settings.get("projects"))
-            self.factory.settings.store()
-
-        self.factory.project_parms['filename'] = f
-        self.factory.settings.store()

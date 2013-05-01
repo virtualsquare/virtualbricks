@@ -16,21 +16,25 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-import copy
 import os
-import re
-import select
-import subprocess
 import sys
 import time
 import socket
+import select
+import re
+import copy
+import subprocess
+import logging
 
 from virtualbricks.logger import ChildLogger
 from virtualbricks.settings import MYPATH
 from virtualbricks.brickconfig import BrickConfig
-from virtualbricks.errors import (BadConfig,
-    InvalidName, Linkloop, NotConnected)
+from virtualbricks.errors import (BadConfig, InvalidName, Linkloop,
+                                  NotConnected)
 from virtualbricks.console import RemoteHost
+
+
+log = logging.getLogger(__name__)
 
 
 class Brick(ChildLogger(__name__)):
@@ -41,7 +45,6 @@ class Brick(ChildLogger(__name__)):
 
         self.factory = _factory
         self.settings = self.factory.settings
-        self.project_parms = self.factory.project_parms
         self.active = False
         self.run_condition = False
         self.name = _name
@@ -274,8 +277,8 @@ class Brick(ChildLogger(__name__)):
             return
         try:
             command_line = self.args()
-        except Exception as e:
-            self.factory.err(self, str(e))
+        except Exception:
+            log.exception("Error while retrieving the list of arguments.")
             return
 
         if self.needsudo():
