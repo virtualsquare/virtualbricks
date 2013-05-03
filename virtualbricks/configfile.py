@@ -103,9 +103,9 @@ class ConfigFile:
                     with open(filename, "w+") as fp:
                         self.save_to(fp)
                 except IOError, e:
-                    log.err("ERROR WRITING CONFIGURATION!\n"
-                            "Probably file doesn't exist or you can't write "
-                            "it.\n" + str(e))
+                    log.error("ERROR WRITING CONFIGURATION!\n"
+                              "Probably file doesn't exist or you can't write "
+                              "it.\n" + str(e))
         else:
             self.save_to(obj_or_str)
 
