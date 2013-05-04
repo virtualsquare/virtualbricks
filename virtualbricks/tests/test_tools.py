@@ -14,22 +14,7 @@ class MockLock(object):
         pass
 
 
-class TestSynchronize(unittest.TestCase):
-
-    def setUp(self):
-        self.lock = MockLock()
-        old, tools._lock = tools._lock, self.lock
-        def unpatch_lock():
-            tools._lock = old
-        self.addCleanup(unpatch_lock)
-
-    def test_sincronized(self):
-        foo_s = tools.synchronized(lambda: None)
-        foo_s()
-        self.assertEqual(self.lock.c, 1)
-        foo_s = tools.synchronized(tools._lock)(lambda: None)
-        foo_s()
-        self.assertEqual(self.lock.c, 2)
+class TestTools(unittest.TestCase):
 
     def test_sincronize_with(self):
         lock = MockLock()
@@ -38,4 +23,22 @@ class TestSynchronize(unittest.TestCase):
         self.assertEqual(lock.c, 1)
         foo_s()
         self.assertEqual(lock.c, 2)
+
+    def test_looping_call_function_raise_error(self):
+        """Test that if a function raise an error, it is not called again."""
+
+        stop = [False]
+        event = [False]
+
+        def func():
+            if stop[0]:
+                lc.stop()
+                event[0] = True
+            else:
+                stop[0] = True
+                raise RuntimeError("BOOM")
+
+        lc = tools.LoopingCall(0.001, self.assertRaises, (RuntimeError, func, ))
+        lc._LoopingCall__timer.join()
+        self.assertFalse(event[0])
 
