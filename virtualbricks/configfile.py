@@ -99,13 +99,8 @@ class ConfigFile:
                 "bricksdirectory"), ".vb_current_project.vbl")
 
             with backup(filename, fbackup):
-                try:
-                    with open(filename, "w+") as fp:
-                        self.save_to(fp)
-                except IOError, e:
-                    log.error("ERROR WRITING CONFIGURATION!\n"
-                              "Probably file doesn't exist or you can't write "
-                              "it.\n" + str(e))
+                with open(filename, "w+") as fp:
+                    self.save_to(fp)
         else:
             self.save_to(obj_or_str)
 
