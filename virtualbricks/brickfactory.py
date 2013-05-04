@@ -122,7 +122,13 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def save_configfile(self):
         # This method is not synchronized because configfile take care of
         # synchonize itself
-        self.configfile.save(self.settings.get('current_project'))
+        try:
+            self.configfile.save(self.settings.get('current_project'))
+        # except Exception:
+        except (IOError, OSError):
+            log.exception("ERROR WRITING CONFIGURATION!\n"
+                          "Probably file doesn't exist or you can't write "
+                          "it.\n")
 
     @synchronized
     def quit(self):
@@ -669,10 +675,20 @@ class Application:
             log.error("Uncaught exception", exc_info=(exc_type, exc_value,
                                                       traceback))
 
+    def restore_last_project(self):
+        try:
+            self.factory.configfile.restore(self.factory.settings.get(
+                "current_project"))
+        except (IOError, OSError, errors.Error):
+            # NOTE: I don't think OSError is really necessary
+            # XXX: what kind of errors could be raised on factory restoring?
+            log.exception("Error while restoring the last project")
+            # XXX: what to do? Should I reset the factory?
+            self.factory.reset()
+
     def start(self):
         self.factory = BrickFactory()
-        self.factory.configfile.restore(self.factory.settings.get(
-            "current_project"))
+        self.restore_last_project()
         self.autosave_timer = AutosaveTimer(self.factory)
         console = Console(self.factory)
         console.run()
