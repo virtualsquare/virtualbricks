@@ -633,7 +633,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				widget.unselect_all()
 
 			self.gladefile.get_widget("qemuicon").set_from_file(
-				graphics.get_brick_icon(brick))
+				graphics.get_brick_icon(b))
 
 		# Tap mode:
 		if b.get_type() == 'Tap':
@@ -3540,33 +3540,11 @@ class Application(brickfactory.Application):
 		# delay install sys hooks
 		pass
 
-	def fix_images(self, glade):
-		gw = glade.get_widget
-		gi = graphics.get_image
-		gw("main_win").set_icon(gi("virtualbricks.png"))
-		gw("typebutton_BrickStart").set_image(gi("event.png"))
-		gw("typebutton_BrickStop").set_image(gi("event.png"))
-		gw("typebutton_BrickConfig").set_image(gi("event.png"))
-		gw("typebutton_ShellCommand").set_image(gi("event.png"))
-		gw("typebutton_EventsCollation").set_image(gi("event.png"))
-		gw("typebutton_Switch").set_image(gi("switch.png"))
-		gw("typebutton_Wire").set_image(gi("wire.png"))
-		gw("typebutton_Wirefilter").set_image(gi("wirefilter.png"))
-		gw("typebutton_Tap").set_image(gi("tap.png"))
-		gw("typebutton_SwitchWrapper").set_image(gi("switchwrapper.png"))
-		gw("typebutton_TunnelConnect").set_image(gi("tunnelconnect.png"))
-		gw("typebutton_Qemu").set_image(gi("qemu.png"))
-		gw("typebutton_TunnelListen").set_image(gi("tunnellisten.png"))
-		gw("typebutton_Capture").set_image(gi("capture.png"))
-		gw("typebutton_Router").set_image(gi("router.png"))
-
 	def load_gladefile(self):
 		try:
 			gladefile = graphics.get_filename("virtualbricks.gui",
 										"data/virtualbricks.glade")
-			glade = gtk.glade.XML(gladefile)
-			self.fix_images(glade)
-			return glade
+			return gtk.glade.XML(gladefile)
 		except Exception:
 			raise app.QuitError("Cannot load gladefile", 1)
 
