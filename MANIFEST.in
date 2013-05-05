@@ -4,5 +4,4 @@ include l10nextract.sh
 include install.sh
 include uninstall.sh
 include locale/virtualbricks/virtualbricks.pot
-include share/virtualbricks.template.glade
 recursive-include locale/virtualbricks *.po
