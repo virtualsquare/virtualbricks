@@ -44,16 +44,6 @@ _ = str  # temporary hack because its use in class definition
 log = logging.getLogger(__name__)
 
 
-def get_data(resource):
-	# XXX duplicated from virtualbricks.gui.dialogs
-	log.debug("Loading resource from %s", resource)
-	filename = os.path.join(sys.prefix, "share", "virtualbricks", resource)
-	if not os.path.exists(filename):
-		filename = os.path.join(sys.prefix, "local", "share", "virtualbricks",
-								resource)
-	with open(filename) as fp:
-		return fp.read()
-
 def get_treeselected(gui, tree, model, pthinfo, c):
 	if pthinfo is not None:
 		path, col, cellx, celly = pthinfo
@@ -95,7 +85,9 @@ def check_joblist(gui, force=False):
 				pid = "Remote"
 			else:
 				pid = str(b.pid)
-			gui.running_bricks.set_value(iter, 0, gtk.gdk.pixbuf_new_from_file_at_size(b.icon.get_img(), 48, 48))
+			gui.running_bricks.set_value(iter, 0,
+					gtk.gdk.pixbuf_new_from_file_at_size(
+						graphics.get_brick_icon(b), 48, 48))
 			gui.running_bricks.set_value(iter, 1, pid)
 			gui.running_bricks.set_value(iter, 2, b.get_type())
 			gui.running_bricks.set_value(iter, 3, b.name)
@@ -106,10 +98,10 @@ def check_joblist(gui, force=False):
 		for r in gui.brickfactory.remote_hosts:
 			if r.connected:
 				img = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.ImgPrefix() + "Connect.png", 48, 48)
+					graphics.get_image("Connect.png"), 48, 48)
 			else:
 				img = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.ImgPrefix() + "Disconnect.png", 48, 48)
+					graphics.get_image("Disconnect.png"), 48, 48)
 			gui.remote_hosts_tree.set_value(iter, 1, r.addr[0]+":"+str(r.addr[1]))
 			gui.remote_hosts_tree.set_value(iter, 2, str(r.num_bricks()))
 			ac = "Yes" if r.autoconnect else "No"
@@ -258,32 +250,29 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert from the general settings.")
 
 	def __setup_treeview(self, resource, window_name, widget_name):
-		ui = get_data(resource)
+		ui = graphics.get_data("virtualbricks.gui", resource)
 		builder = gtk.Builder()
 		builder.add_from_string(ui)
 		builder.connect_signals(self)
 		window = self.gladefile.get_widget(window_name)
-		# child = window.get_child()
-		# if child is not None:
-		# 	window.remove(child)
 		widget = builder.get_object(widget_name)
 		widget.reparent(window)
 		return builder
 		self.running_bricks = builder.get_object("liststore1")
 
 	def setup_joblist(self):
-		builder = self.__setup_treeview("joblist.ui", "scrolledwindow1",
+		builder = self.__setup_treeview("data/joblist.ui", "scrolledwindow1",
 								"joblist_treeview")
 		self.running_bricks = builder.get_object("liststore1")
 
 	def setup_remotehosts(self):
-		builder = self.__setup_treeview("remotehosts.ui", "scrolledwindow5",
-								"remotehosts_treeview")
+		builder = self.__setup_treeview("data/remotehosts.ui",
+								"scrolledwindow5", "remotehosts_treeview")
 		self.remote_hosts_tree = builder.get_object("liststore1")
 
 	def setup_netwoks_cards(self):
-		builder = self.__setup_treeview("networkcards.ui", "scrolledwindow12",
-								"networkcards_treeview")
+		builder = self.__setup_treeview("data/networkcards.ui",
+								"scrolledwindow12", "networkcards_treeview")
 		self.vmplugs = builder.get_object("liststore1")
 
 	def setup_router_devs(self):
@@ -643,10 +632,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			elif widget is not None:
 				widget.unselect_all()
 
-			if 'icon' in b.cfg.keys() and b.cfg['icon'] != "":
-				self.gladefile.get_widget("qemuicon").set_from_pixbuf(self.pixbuf_scaled(b.cfg['icon']))
-			else:
-				self.gladefile.get_widget("qemuicon").set_from_file(b.icon.get_img())
+			self.gladefile.get_widget("qemuicon").set_from_file(
+				graphics.get_brick_icon(brick))
 
 		# Tap mode:
 		if b.get_type() == 'Tap':
@@ -871,7 +858,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	def start_systray(self):
 		if self.statusicon is None:
 			self.statusicon = gtk.StatusIcon()
-			self.statusicon.set_from_file(graphics.ImgPrefix() + "virtualbricks.png")
+			self.statusicon.set_from_file(graphics.get_image("virtualbricks.png"))
 			self.statusicon.set_tooltip("VirtualBricks Visible")
 			self.statusicon.connect('activate', self.on_systray_menu_toggle)
 			systray_menu = self.gladefile.get_widget("systray_menu")
@@ -1303,13 +1290,15 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 					if len(parameters) > 30:
 						parameters = "%s..." % parameters[:30]
 					iter = self.availmodel.append(
-						[gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.base, 48, 48),
-						brick.get_type(), brick.name, parameters])
+						[gtk.gdk.pixbuf_new_from_file_at_size(
+							graphics.running_brick_icon(brick), 48, 48),
+							brick.get_type(), brick.name, parameters])
 
 				availbricks.set_model(self.availmodel)
 				addedbricks.set_model(self.addedmodel)
 
 				cell = gtk.CellRendererPixbuf ()
+
 				column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
 				cell = gtk.CellRendererText ()
 				column_type = gtk.TreeViewColumn (_("Type"), cell, text = COL_TYPE)
@@ -2963,7 +2952,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def on_filechooser_image_clear(self, widget=None, event=None, data=""):
 		self.on_filechooser_clear(widget)
-		self.gladefile.get_widget("qemuicon").set_from_file("Qemu.png")
+		self.gladefile.get_widget("qemuicon").set_from_file(
+			graphics.get_brick_icon("Qemu.png"))
 
 	def on_show_messages_activate(self, menuitem, data=None):
 		messages = self.gladefile.get_widget("messages_dialog")
@@ -3019,7 +3009,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				parameters = event.get_parameters()
 				if len(parameters) > 30:
 					parameters = "%s..." % parameters[:30]
-				image = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.base, 48, 48)
+				image = gtk.gdk.pixbuf_new_from_file_at_size(
+					graphics.running_brick_icon(event), 48, 48)
 				iter = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
 				if self.maintree.get_selection().cfg.pon_vbevent == event.name:
 					treeviewselectionstart.select_iter(iter)
@@ -3549,15 +3540,33 @@ class Application(brickfactory.Application):
 		# delay install sys hooks
 		pass
 
+	def fix_images(self, glade):
+		gw = glade.get_widget
+		gi = graphics.get_image
+		gw("main_win").set_icon(gi("virtualbricks.png"))
+		gw("typebutton_BrickStart").set_image(gi("event.png"))
+		gw("typebutton_BrickStop").set_image(gi("event.png"))
+		gw("typebutton_BrickConfig").set_image(gi("event.png"))
+		gw("typebutton_ShellCommand").set_image(gi("event.png"))
+		gw("typebutton_EventsCollation").set_image(gi("event.png"))
+		gw("typebutton_Switch").set_image(gi("switch.png"))
+		gw("typebutton_Wire").set_image(gi("wire.png"))
+		gw("typebutton_Wirefilter").set_image(gi("wirefilter.png"))
+		gw("typebutton_Tap").set_image(gi("tap.png"))
+		gw("typebutton_SwitchWrapper").set_image(gi("switchwrapper.png"))
+		gw("typebutton_TunnelConnect").set_image(gi("tunnelconnect.png"))
+		gw("typebutton_Qemu").set_image(gi("qemu.png"))
+		gw("typebutton_TunnelListen").set_image(gi("tunnellisten.png"))
+		gw("typebutton_Capture").set_image(gi("capture.png"))
+		gw("typebutton_Router").set_image(gi("router.png"))
+
 	def load_gladefile(self):
 		try:
-			parts = [sys.prefix, "share", "virtualbricks",
-					"virtualbricks.glade"]
-			gladefile = os.path.join(*parts)
-			if not os.path.exists(gladefile):
-				parts.insert(1, "local")
-				gladefile = os.path.join(*parts)
-			return gtk.glade.XML(gladefile)
+			gladefile = graphics.get_filename("virtualbricks.gui",
+										"data/virtualbricks.glade")
+			glade = gtk.glade.XML(gladefile)
+			self.fix_images(glade)
+			return glade
 		except Exception:
 			raise app.QuitError("Cannot load gladefile", 1)
 

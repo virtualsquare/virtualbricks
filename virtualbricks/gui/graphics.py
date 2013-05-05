@@ -15,93 +15,75 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
 import os
 import os.path
-import sys
 import re
 import logging
+import pkgutil
 
 import Image
-import ImageEnhance
 import pygraphviz as pgv
 
-from virtualbricks.settings import MYPATH
 
 log = logging.getLogger('virtualbricks.gui')
 
-def ImgPrefix():
-	# NOTE: add the trailing slash
-	dirname = os.path.join(sys.prefix, "share", "pixmaps", "")
-	if not os.path.exists(dirname):
-		dirname = os.path.join(sys.prefix, "local", "share", "pixmaps", "")
-	return os.path.join(dirname)
-	# if os.access("/usr/share/pixmaps/Switch.png", os.R_OK):
-	# 	return "/usr/share/pixmaps/"
-	# else:
-	# 	return "/usr/local/share/pixmaps/"
 
-class Icon:
-
-	def __init__(self, component):
-	#if component.get_type()!="Qemu":
-		self.component = component
-		self.ready = False
-		self.base = ""
-		self.grey = ""
-
-	def has_custom_icon(self):
-		return ('icon' in self.component.cfg.keys()) and self.component.cfg.icon != ""
-
-	def set_from_file(self, filename):
-
-		newname = MYPATH + "/qemuicon_" + self.component.name + ".png"
-		if self.has_custom_icon() and self.component.cfg.icon != newname:
-			src = Image.open(filename).resize((48,48),Image.ANTIALIAS)
-			src.convert('RGBA').save(newname)
-			filename = self.component.cfg.icon = newname
-
-		self.base = filename
-		self.grey = "/tmp/"+os.path.basename(filename).split('.')[0]+"_grey.png"
-		try:
-			os.unlink(self.grey)
-		except:
-			pass
-		self.make_grey()
-
-	def set_from_bricktype(self):
-		self.set_from_file(ImgPrefix() + self.component.get_type() + ".png")
-
-	def make_grey(self):
-		if not os.access(self.base, os.R_OK):
-			return
-		if not os.access(self.grey, os.R_OK):
-			try:
-				src = Image.open(self.base).convert('RGB', palette=Image.ADAPTIVE).convert('L')
-				bri = ImageEnhance.Brightness(src)
-				bri.enhance(2.0).save(self.grey, transparency = 0)
-			except:
-				log.debug("Cannot create grey image: defaulting to base")
-				self.grey = self.base
-		self.ready = True
+def get_filename(package, resource):
+	loader = pkgutil.get_loader(package)
+	mod = sys.modules.get(package) or loader.load_module(package)
+	if mod is None or not hasattr(mod, "__file__"):
+		return None
+	parts = resource.split("/")
+	parts.insert(0, os.path.dirname(mod.__file__))
+	return os.path.join(*parts)
 
 
-	def get_img(self):
-		if self.has_custom_icon():
-			self.set_from_file(self.component.cfg.icon)
-		if not self.ready:
-			self.set_from_bricktype()
-		if hasattr(self.component,"proc"):
-			if self.component.proc is not None:
-				return self.base
-			else:
-				return self.grey
-		elif hasattr(self.component,"active"):
-			if self.component.active:
-				return self.base
-			else:
-				return self.grey
-		else:
-			return self.base
+get_data = pkgutil.get_data
+
+
+def has_custom_icon(brick):
+	return "icon" in brick.cfg and brick.cfg.icon != ""
+
+
+def running_brick_icon(brick):
+	if not has_custom_icon(brick):
+		return get_filename("virtualbricks.gui",
+						"data/" + brick.get_type().lower() + ".png")
+	else:
+		return brick.cfg.icon
+
+
+def stopped_brick_icon(brick):
+	if not has_custom_icon(brick):
+		return get_filename("virtualbricks.gui",
+						"data/" + brick.get_type().lower() + "_gray.png")
+	else:
+		if "icon_gray" in brick.cfg and brick.cfg.icon_gray is not None:
+			return brick.cfg.icon_gray
+		if "icon" in brick.cfg and brick.cfg.icon is not None:
+			return brick.cfg.icon
+		return stopped_brick_icon(brick)
+
+
+def is_running(brick):
+	if hasattr(brick, "proc"):
+		return brick.proc is not None
+	elif hasattr(brick, "active"):
+		return brick.active
+	return True
+
+
+def get_brick_icon(brick):
+	if is_running(brick):
+		return running_brick_icon(brick)
+	else:
+		return stopped_brick_icon(brick)
+
+
+def get_image(name):
+	return get_filename("virtualbricks.gui", "data/" + name)
+
 
 class Node:
 	def __init__(self, topology, name, x, y, thresh = 50):
@@ -139,7 +121,7 @@ class Topology():
 			n = self.topo.get_node(b.name)
 			n.attr['shape']='none'
 			n.attr['fontsize']='9'
-			n.attr['image'] = b.icon.get_img()
+			n.attr['image'] = get_brick_icon(b)
 
 		for row in bricks_model:
 			b = row[0]

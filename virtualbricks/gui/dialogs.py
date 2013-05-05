@@ -20,18 +20,19 @@
 Utility module to work with gtkbuilder.
 
 When a new dialog is created a new glade project must be created. All the UI
-definitions must live inside the `share/` package source directory and a new
-entry must be added to setup.py's data_file.
+definitions must live inside the `virtualbricks/gui/` package source
+directory.
 
 Then a new class should subclass the `Dialog` class and define at least the
-`resource` class attribute with the name of the file in `share/` directory. If
+`resource` class attribute with the name of the file (`data/resourcefile`). If
 the `name` class attribute is not defined, the name of the new class should be
 same of the main window in the ui definition.
 
 Here the about dialog example.
 
-    1. First of all the UI definition. The file is `about.ui` in the `share/`
-        directory. In this case the main widget/window is called "AboutDialog".
+    1. First of all the UI definition. The file is `about.ui` in the
+       `virtualbricks/gui/data` directory. In this case the main widget/window
+       is called "AboutDialog".
 
     2. Class definition. In `virtualbricks.gui.dialogs` the class `AboutDialog`
         is defined. The `resource` class attribute points to the UI definition
@@ -43,16 +44,7 @@ Here the about dialog example.
         switch to another tools in the future. For example `pkgutil` in the
         standard library offer the `get_data()` function.
 
-    4. Add an entry in the setup.py, in this case:
-
-        setup(...
-            data_files=[...
-                ("share/virtualbricks", ["share/about.ui"]),
-                ...],
-            ...
-            )
-
-    5. Use the new code:
+    4. Use the new code:
 
         dialogs.AboutDialog().run()
 
@@ -87,13 +79,13 @@ advised and possible with gtk-builder-convert.
 """
 
 import os
-import sys
 import logging
 import subprocess
 
 import gtk
 
 from virtualbricks import version
+from virtualbricks.gui import graphics
 
 
 log = logging.getLogger(__name__)
@@ -101,24 +93,6 @@ log = logging.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
-
-
-def get_pixbuf(resource):
-    filename = os.path.join(sys.prefix, "share", "pixmaps", resource)
-    if not os.path.exists(filename):
-        filename = os.path.join(sys.prefix, "local", "share", "pixmaps",
-                                resource)
-    return gtk.gdk.pixbuf_new_from_file(filename)
-
-
-def get_data(resource):
-    log.debug("Loading resource from %s", resource)
-    filename = os.path.join(sys.prefix, "share", "virtualbricks", resource)
-    if not os.path.exists(filename):
-        filename = os.path.join(sys.prefix, "local", "share", "virtualbricks",
-                                resource)
-    with open(filename) as fp:
-        return fp.read()
 
 
 class Base(object):
@@ -142,7 +116,8 @@ class Base(object):
     def __init__(self):
         self.builder = builder = gtk.Builder()
         builder.set_translation_domain(self.domain)
-        builder.add_from_string(get_data(self.resource))
+        builder.add_from_string(graphics.get_data("virtualbricks.gui",
+                                                  self.resource))
         name = self.get_name()
         self.widget = builder.get_object(name)
         builder.connect_signals(self)
@@ -179,17 +154,17 @@ class Dialog(Window):
 
 class AboutDialog(Dialog):
 
-    resource = "about.ui"
+    resource = "data/about.ui"
 
     def __init__(self):
         Dialog.__init__(self)
-        self.window.set_logo(get_pixbuf("virtualbricks.png"))
+        self.window.set_logo(graphics.get_filename("data/virtualbricks.png"))
         self.window.set_version(version.short())
 
 
 class DisksLibraryDialog(Window):
 
-    resource = "disklibrary.ui"
+    resource = "data/disklibrary.ui"
     cols_cell = (
         ("treeviewcolumn1", "cellrenderertext1", lambda i: i.name),
         ("treeviewcolumn2", "cellrenderertext2", lambda i: i.get_users()),
@@ -312,7 +287,7 @@ def get_usb_devices():
 
 class UsbDevWindow(Window):
 
-    resource = "usbdev.ui"
+    resource = "data/usbdev.ui"
 
     def __init__(self, gui):
         Window.__init__(self)

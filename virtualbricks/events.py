@@ -24,11 +24,13 @@ from threading import Timer
 from virtualbricks.errors import BadConfig, InvalidAction
 
 
+if False:  # pyflakes
+    _ = str
+
+
 class Event(ChildLogger(__name__)):
 
     def __init__(self, _factory, _name):
-        from virtualbricks.gui.graphics import Icon  # XXX: avoid cyclic imports
-
         self.factory = _factory
         self.settings = self.factory.settings
         self.active = False
@@ -41,8 +43,6 @@ class Event(ChildLogger(__name__)):
         self.need_restart_to_apply_changes = False
         self._needsudo = False
         self.internal_console = None
-        self.icon = Icon(self)
-        self.icon.get_img()  # sic
         self.factory.eventsmodel.add_event(self)
         self.on_config_changed()
         self.timer = None
