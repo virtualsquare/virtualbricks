@@ -19,8 +19,8 @@ class TestGraphics(unittest.TestCase):
 
     def test_running_brick_icon(self):
         self.assertEqual(graphics.running_brick_icon(self.brick),
-                         GUI_PATH + "/data/Stub.png")
+                         GUI_PATH + "/data/stub.png")
 
     def test_stopped_brick_icon(self):
         self.assertEqual(graphics.stopped_brick_icon(self.brick),
-                         GUI_PATH + "/data/Stub_grey.png")
+                         GUI_PATH + "/data/stub_gray.png")
