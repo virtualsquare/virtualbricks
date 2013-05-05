@@ -50,8 +50,7 @@ def backup(original, filename):
     yield
     if created:
         # remove the project backup file
-        if os.path.isfile(filename):
-            os.remove(filename)
+        os.remove(filename)
 
 
 def restore_backup(filename, fbackup, factory):
@@ -95,12 +94,12 @@ class ConfigFile:
             filename = obj_or_str
             log.debug("CONFIG DUMP on " + filename)
             fp = None
-            fbackup = os.path.join(self.factory.settings.get(
-                "bricksdirectory"), ".vb_current_project.vbl")
-
+            fbackup = filename + "~"
             with backup(filename, fbackup):
-                with open(filename, "w+") as fp:
+                tmpfile = "." + filename + ".sav"
+                with open(tmpfile, "w") as fp:
                     self.save_to(fp)
+                os.rename(tmpfile, filename)
         else:
             self.save_to(obj_or_str)
 
@@ -190,8 +189,7 @@ class ConfigFile:
     def restore(self, str_or_obj):
         if isinstance(str_or_obj, basestring):
             filename = str_or_obj
-            fbackup = os.path.join(self.factory.settings.get(
-                "bricksdirectory"), ".vb_current_project.vbl")
+            fbackup = filename + "~"
             restore_backup(filename, fbackup, self.factory)
             log.info("Open %s project", filename)
             with open(filename) as fp:
