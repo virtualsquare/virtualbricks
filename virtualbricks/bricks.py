@@ -135,23 +135,6 @@ class Brick(ChildLogger(__name__)):
     def post_rename(self, newname):
         pass
 
-    def help(self):
-        print "Object type: " + self.get_type()
-        print "Possible configuration parameter: "
-        for (switch, v) in self.command_builder.items():
-            if not switch.startswith("*"):
-                if callable(v):
-                    print v.__name__,
-                else:
-                    print v,
-                print "  ",
-                print "\t(like %s %s)" % (self.prog(), switch)
-            else:
-                print "%s %s\tset '%s' to append this value to the command " \
-                        "line with no argument prefix" % (switch, v, v)
-        print "END of help"
-        print
-
     def configured(self):
         return False
 
@@ -231,13 +214,10 @@ class Brick(ChildLogger(__name__)):
     def poweron(self):
         if self.factory.TCP is None:
             if not self.configured():
-                print "bad config - TCP IS NONE"
                 raise BadConfig()
             if not self.properly_connected():
-                print "not connected"
                 raise NotConnected()
             if not self.check_links():
-                print "link down"
                 raise Linkloop()
         self._poweron()
         self.factory.bricksmodel.change_brick(self)

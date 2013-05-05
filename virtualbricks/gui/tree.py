@@ -328,7 +328,6 @@ class EventsTree(VBTree):
 		event = mod.get_value(iter, EventsModel.EVENT_IDX)
 		assert event is not None
 		if column.get_title() == _('Icon'):
-			#print "base: %s, grey: %s" % (event.icon.base,event.icon.grey)
 			icon = gtk.gdk.pixbuf_new_from_file_at_size(
 				graphics.get_brick_icon(event), 48, 48)
 			cell.set_property('pixbuf', icon)

@@ -59,7 +59,6 @@ class BrickConfig(dict):
                 val = val.rstrip('=') + '"'
             else:
                 val += kv[1]
-            #print "setting %s to '%s'" % (kv[0], val)
             self[kv[0]] = val
             #Set value for running brick
             self.set_running(kv[0], val)

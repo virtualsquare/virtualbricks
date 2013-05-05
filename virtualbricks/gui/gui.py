@@ -1735,9 +1735,9 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.curtain_down()
 		tree = self.gladefile.get_widget('treeview_events_bookmarks');
 		path = tree.get_cursor()[0]
-		#print "on_treeview_events_bookmarks_button_release_event"
+		# "on_treeview_events_bookmarks_button_release_event"
 		if path is None:
-			#print "nothing selected!"
+			# "nothing selected!"
 			return
 
 		iter = tree.get_model().get_iter(path)
@@ -3179,7 +3179,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		return True
 
 	def on_remote_connect(self, widget, event=None, data=None):
-		print "connect"
 		if self.remotehost_selected.connected:
 			self.remotehost_selected.disconnect()
 		else:
