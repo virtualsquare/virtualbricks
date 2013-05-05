@@ -37,12 +37,13 @@ from virtualbricks.console import RemoteHost
 log = logging.getLogger(__name__)
 
 
+if False:  # pyflakes
+    _ = str
+
+
 class Brick(ChildLogger(__name__)):
 
     def __init__(self, _factory, _name, homehost=None):
-        # XXX: avoid cyclic imports
-        from virtualbricks.gui.graphics import Icon
-
         self.factory = _factory
         self.settings = self.factory.settings
         self.active = False
@@ -58,8 +59,6 @@ class Brick(ChildLogger(__name__)):
         self.need_restart_to_apply_changes = False
         self._needsudo = False
         self.internal_console = None
-        self.icon = Icon(self)
-        self.icon.get_img()  # sic
         self.terminal = "vdeterm"
         self.config_socks = []
         self.cfg.pon_vbevent = ""

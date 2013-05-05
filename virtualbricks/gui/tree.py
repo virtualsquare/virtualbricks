@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import gtk
+
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.gui import graphics
 
@@ -218,18 +219,18 @@ class BricksTree(VBTree):
 		if column.get_title() == _('Icon'):
 			if brick.homehost is not None and not brick.homehost.connected:
 				icon = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.ImgPrefix() + "Disconnect.png", 48, 48)
+					graphics.get_image("Disconnect.png"), 48, 48)
 				cell.set_property('pixbuf', icon)
 			elif brick.proc is not None:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
-					48)
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(
+					graphics.get_brick_icon(brick), 48, 48)
 				cell.set_property('pixbuf', icon)
 			elif not brick.properly_connected():
 				cell.set_property('stock-id', gtk.STOCK_DIALOG_ERROR)
 				cell.set_property('stock-size', gtk.ICON_SIZE_LARGE_TOOLBAR)
 			else:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(brick.icon.get_img(), 48,
-						48)
+				icon = gtk.gdk.pixbuf_new_from_file_at_size(
+					graphics.get_brick_icon(brick), 48, 48)
 				cell.set_property('pixbuf', icon)
 		elif column.get_title() == _('Status'):
 			cell.set_property('text', brick.get_state())
@@ -328,8 +329,8 @@ class EventsTree(VBTree):
 		assert event is not None
 		if column.get_title() == _('Icon'):
 			#print "base: %s, grey: %s" % (event.icon.base,event.icon.grey)
-			icon = gtk.gdk.pixbuf_new_from_file_at_size(event.icon.get_img(), 48,
-				48)
+			icon = gtk.gdk.pixbuf_new_from_file_at_size(
+				graphics.get_brick_icon(event), 48, 48)
 			cell.set_property('pixbuf', icon)
 		elif column.get_title() == _('Status'):
 			cell.set_property('text', event.get_state())
