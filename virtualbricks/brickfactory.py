@@ -30,7 +30,8 @@ import gobject
 
 import virtualbricks
 from virtualbricks import (app, tools, logger, wires, virtualmachines, errors,
-                           console, settings)
+                           console, settings, events, switches, tuntaps,
+                           tunnels, router, bricks)
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.errors import UnmanagedType
 from virtualbricks.configfile import ConfigFile
@@ -51,9 +52,6 @@ synchronized = tools.synchronize_with(threading.RLock())
 def install_brick_types(registry=None, vde_support=False):
     if registry is None:
         registry = {}
-
-    # avoid cyclic imports
-    from virtualbricks import events, switches, tuntaps, tunnels, router
 
     registry.update({
         'switch': switches.Switch,
@@ -394,10 +392,19 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         if self.is_in_use(nname):
             raise errors.InvalidNameError("Normalized name %s already in use" %
                                           nname)
-        from virtualbricks import events  # cyclic imports
         event = events.Event(self, name)
         log.debug("New event %s OK", event.name)
         return event
+
+    @synchronized
+    def new_plug(self, brick):
+        return link.Plug(brick)
+
+    # @synchronized
+    # def new_sock(self, brick, name=""):
+    #     sock = link.Sock(brick, name)
+    #     self.socks.append(sock)
+    #     return sock
 
     ''' brick action dispatcher '''
     def brickAction(self, obj, cmd):
@@ -406,7 +413,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         if (cmd[0] == 'off'):
             obj.poweroff()
         if (cmd[0] == 'remove'):
-            from virtualbricks import bricks  # cyclic imports
             if obj.get_type() == 'Event':
                 self.delevent(obj)
             elif isinstance(obj, bricks.Brick):

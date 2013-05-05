@@ -41,6 +41,54 @@ if False:
     _ = str
 
 
+class _VMPlug:
+
+    model = "rtl8139"
+    mode = "vde"
+
+    @property
+    def brick(self):
+        return self.__plug.brick
+
+    @property
+    def sock(self):
+        return self.__plug.sock
+
+    def __init__(self, plug):
+        self.__plug = plug
+        self.mac = tools.random_mac()
+        self.vlan = len(plug.brick.plugs) + len(plug.brick.socks)
+
+    def configured(self):
+        return self.__plug.configured()
+
+    def connected(self):
+        return self.__plug.connected()
+
+    def connect(self, sock):
+        return self.__plug.connect(sock)
+
+    def disconnect(self):
+        return self.__plug.disconnect()
+
+    def get_model_driver(self):
+        if self.model == 'virtio':
+            return "virtio-net-pci"
+        return self.model
+
+    def hotadd(self):
+        driver = self.get_model_driver()
+        self.__plug.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" %
+                             (driver, self.mac, self.vlan, self.vlan))
+        self.__plug.brick.send("host_net_add vde sock=%s,vlan=%s\n" %
+                             (self.__plug.sock.path.rstrip('[]'), self.vlan))
+
+    def hotdel(self):
+        self.__plug.brick.send("host_net_remove %s vde.%s\n" %
+                             (self.vlan, self.vlan))
+        self.__plug.brick.send("device_del eth%s\n" % self.vlan)
+
+
 class VMPlug(Plug, BrickConfig):
     def __init__(self, brick):
         Plug.__init__(self, brick)
@@ -64,6 +112,45 @@ class VMPlug(Plug, BrickConfig):
         self.brick.send("device_del eth%s\n" % str(self.vlan))
 
 
+class _VMSock:
+
+    model = "rtl8139"
+
+    @property
+    def brick(self):
+        return self.__sock.brick
+
+    @property
+    def plugs(self):
+        return self.__sock.plugs
+
+    @property
+    def mode(self):
+        return self.__sock.mode
+
+    def __init__(self, sock):
+        self.__sock = sock
+        self.mac = tools.random_mac()
+        self.vlan = len(self.brick.plugs) + len(self.brick.socks)
+        self.path = "{MYPATH}/{sock.brick.name}_sock_eth{self.vlan}[]".format(
+            self=self, MYPATH=MYPATH, sock=sock)
+        self.nickname = "{sock.brick.name}_sock_eth{self.vlan}".format(
+            self=self, sock=sock)
+
+    def connect(self, endpoint):
+        return
+
+    def get_model_driver(self):
+        if self.model == "virtio":
+            return "virtio-net-pci"
+        return self.model
+
+    def get_free_ports(self):
+        return int(self.__sock.brick.cfg.numports) - len(self.__sock.plugs)
+
+    def has_valid_path(self):
+        return os.access(os.path.dirname(self.path), os.W_OK)
+
 
 class VMSock(Sock, BrickConfig):
     def __init__(self,brick):
@@ -83,6 +170,21 @@ class VMSock(Sock, BrickConfig):
         return self.model
 
 
+class _VMPlugHostonly(_VMPlug):
+
+    mode = "hostonly"
+
+    def connect(self, endpoint):
+        pass
+
+    def configured(self):
+        return True
+
+    def connected(self):
+        log.debug("CALLED hostonly connected")
+        return True
+
+
 class VMPlugHostonly(VMPlug):
     def __init__(self, _brick):
         VMPlug.__init__(self, _brick)
@@ -97,6 +199,7 @@ class VMPlugHostonly(VMPlug):
     def connected(self):
         self.debug( "CALLED hostonly connected" )
         return True
+
 
 class DiskImage:
     """
@@ -365,6 +468,7 @@ class VM(Brick):
         self.cfg.gdbport = ""
         self.cfg.kopt = ""
         self.cfg.icon = ""
+        self.cfg.icon_gray = ""
         self.terminal = "unixterm"
         self.cfg.keyboard = ""
         self.cfg.noacpi = ""
@@ -730,6 +834,17 @@ class VM(Brick):
     def console2(self):
         return "%s/%s.mgmt" % (MYPATH, self.name)
 
+    def __add_sock(self, mac=None, model=None):
+        s = self.brickfactory.new_sock(self)
+        sock = _VMSock(s)
+        self.socks.append(sock)
+        if mac:
+            sock.mac = mac
+        if model:
+            sock.model = model
+        self.gui_changed = True
+        return sock
+
     def add_sock(self, mac=None, model=None):
         sk = VMSock(self)
         self.socks.append(sk)
@@ -739,6 +854,19 @@ class VM(Brick):
             sk.model = model
         self.gui_changed = True
         return sk
+
+    def __add_plug(self, sock=None, mac=None, model=None):
+        p = self.brickfactory.new_plug(self)
+        plug = _VMPlugHostonly(p) if sock == "_hostonly" else _VMPlug(p)
+        self.plugs.append(plug)
+        # if pl.mode == 'vde':
+        #     pl.connect(sock)
+        if mac:
+            plug.mac = mac
+        if model:
+            plug.model = model
+        self.gui_changed = True
+        return plug
 
     def add_plug(self, sock=None, mac=None, model=None):
         if sock and sock == '_hostonly':
