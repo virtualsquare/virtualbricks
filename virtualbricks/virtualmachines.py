@@ -361,7 +361,7 @@ class VMDisk:
             if self.image.set_master(self):
                 self.VM.factory.debug("Machine "+self.VM.name+" acquired master lock on image " + self.image.name)
             else:
-                print "ERROR SETTING MASTER!!"
+                log.warning("ERROR SETTING MASTER!!")
         return True
 
 
@@ -871,7 +871,6 @@ class VM(Brick):
     def add_plug(self, sock=None, mac=None, model=None):
         if sock and sock == '_hostonly':
             pl = VMPlugHostonly(self)
-#            print "hostonly added"
             pl.mode = "hostonly"
         else:
             pl = VMPlug(self)

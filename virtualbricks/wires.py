@@ -196,7 +196,6 @@ class PyWireThread(Thread):
                         v.send(buf)
             remote.homehost.send(self.wire.name + " off")
 
-            print "bye!"
             self.wire.pid = -1
 
     def poll(self):
@@ -378,7 +377,6 @@ class Wirefilter(Wire):
         self.cfg.mtusymm = "*"
 
     def gui_to_wf_value(self, base, jitter, distrib, mult, unit, def_mult="", def_unit=""):
-        #print (base,jitter,distrib,mult,unit,def_mult,def_unit)
         b = base
         if not b:
             return "0"

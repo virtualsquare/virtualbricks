@@ -50,18 +50,6 @@ class Event(ChildLogger(__name__)):
     def needsudo(self):
         return self.factory.TCP is None and self._needsudo
 
-    def help(self):
-        print "Object type: " + self.get_type()
-        print "Possible configuration parameter: "
-        print "delay=n OR add [vb-shell command] OR addsh [host-shell command]"
-        print "Example: <eventname> config delay=5"
-        print "Example: <eventname> config add new switch myswitch add n " \
-                "wirefilter wf"
-        print "Example: <eventname> config addsh touch /tmp/vbshcmd addsh " \
-                "cp /tmp/vbshcmd /tmp/vbshcmd1"
-        print "END of help"
-        print
-
     def get_type(self):
         return 'Event'
 
@@ -151,7 +139,6 @@ class Event(ChildLogger(__name__)):
     ############################
     def poweron(self):
         if not self.configured():
-            print "bad config"
             raise BadConfig()
         if self.active:
             self.timer.cancel()

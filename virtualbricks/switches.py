@@ -81,7 +81,6 @@ class Switch(Brick):
     def post_rename(self, newname):
         for so in self.socks:
             so.nickname = newname + "_port"
-            print so.path
             so.path = self.settings.get("bricksdirectory") + "/" + newname + \
                     ".ctl"
 

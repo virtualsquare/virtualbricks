@@ -74,7 +74,6 @@ class RemoteHostConnectionInstance(threading.Thread):
                                 if br.name == args[1]:
                                     br.proc = True
                                     br.factory.emit("brick-started", br.name)
-                                    #print "Started %s" % br.name
                                     br.run_condition = True
                                     br.post_poweron()
 
@@ -83,7 +82,6 @@ class RemoteHostConnectionInstance(threading.Thread):
                                 if br.name == args[1]:
                                     br.proc = None
                                     br.factory.emit("brick-stopped", br.name)
-                                    #print "Stopped %s" % br.name
                                     br.run_condition = False
                                     br.post_poweroff()
 
@@ -198,9 +196,9 @@ class RemoteHost:
                 if pl.mode == 'vde':
                     self.send_nolock(b.name + " connect " + pl.sock.nickname)
                 else:
-                    print "Qemu but not VDE plug"
+                    log.info("Qemu but not VDE plug")
             elif (pl.sock is not None):
-                print "Not a Qemu Plug"
+                log.info("Not a Qemu Plug")
         self.factory.remotehosts_changed = True
 
     def post_connect_init(self):

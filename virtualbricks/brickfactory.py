@@ -425,13 +425,11 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             obj.cfg.dump()
         if (cmd[0] == 'connect' and len(cmd) == 2):
             if(self.connect_to(obj, cmd[1].rstrip('\n')) is not None):
-                print("Connection ok")
+                log.info("Connection ok")
             else:
-                print("Connection failed")
+                log.info("Connection failed")
         if (cmd[0] == 'disconnect'):
             obj.disconnect()
-        if (cmd[0] == 'help'):
-            obj.help()
 
     ''' connect bricks together '''
     def connect_to(self, brick, nick):
@@ -637,7 +635,6 @@ class Console(object):
             self.stdout.flush()
             self._poll()
             self._check_changed()
-        # print("", file=self.stdout)
         self.stdout.flush()
 
 
