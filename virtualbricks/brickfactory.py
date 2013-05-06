@@ -20,6 +20,7 @@ from __future__ import print_function
 
 import os
 import sys
+import errno
 import re
 import copy
 import getpass
@@ -685,14 +686,22 @@ class Application:
 
     def restore_last_project(self):
         try:
+            os.mkdir(settings.MYPATH)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        try:
             self.factory.configfile.restore(self.factory.settings.get(
                 "current_project"))
-        except (IOError, OSError, errors.Error):
-            # NOTE: I don't think OSError is really necessary
-            # XXX: what kind of errors could be raised on factory restoring?
-            log.exception("Error while restoring the last project")
-            # XXX: what to do? Should I reset the factory?
-            self.factory.reset()
+        except IOError as e:
+            if e.errno != errno.ENOENT:
+                raise
+        # except (IOError, OSError, errors.Error):
+        #     # NOTE: I don't think OSError is really necessary
+        #     # XXX: what kind of errors could be raised on factory restoring?
+        #     log.exception("Error while restoring the last project")
+        #     # XXX: what to do? Should I reset the factory?
+        #     self.factory.reset()
 
     def start(self):
         self.factory = BrickFactory()

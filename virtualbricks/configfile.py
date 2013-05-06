@@ -96,7 +96,8 @@ class ConfigFile:
             fp = None
             fbackup = filename + "~"
             with backup(filename, fbackup):
-                tmpfile = "." + filename + ".sav"
+                head, tail = os.path.split(filename)
+                tmpfile = os.path.join(head, "." + tail + ".sav")
                 with open(tmpfile, "w") as fp:
                     self.save_to(fp)
                 os.rename(tmpfile, filename)
