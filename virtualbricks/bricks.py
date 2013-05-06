@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_bricks -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -41,43 +42,44 @@ if False:  # pyflakes
     _ = str
 
 
-class Brick(ChildLogger(__name__)):
+class _Brick(ChildLogger(__name__)):
 
-    def __init__(self, _factory, _name, homehost=None):
-        self.factory = _factory
+    active = False
+    run_condition = False
+    proc = None
+    gui_changed = False
+    need_restart_to_apply_changes = False
+    _needsudo = False
+    internal_console = None
+    terminal = "vdeterm"
+
+    def __init__(self, factory, name, homehost=None):
+        self.factory = factory
+        self.name = name
         self.settings = self.factory.settings
-        self.active = False
-        self.run_condition = False
-        self.name = _name
         self.plugs = []
         self.socks = []
-        self.proc = None
         self.cfg = BrickConfig()
-        self.command_builder = dict()
-        self.factory.bricks.append(self)
-        self.gui_changed = False
-        self.need_restart_to_apply_changes = False
-        self._needsudo = False
-        self.internal_console = None
-        self.terminal = "vdeterm"
-        self.config_socks = []
         self.cfg.pon_vbevent = ""
         self.cfg.poff_vbevent = ""
+        self.command_builder = dict()
+        self.config_socks = []
 
         if (homehost):
             self.set_host(homehost)
         else:
             self.homehost = None
 
-        self.factory.bricksmodel.add_brick(self)
-
     # each brick must overwrite this method
     def get_type(self):
-        pass
+        try:
+            return self.model
+        except AttributeError:
+            raise NotImplementedError("Brick.get_type()")
 
     # each brick must overwrite this method
     def prog(self):
-        pass
+        raise NotImplementedError("Brick.prog()")
 
     def needsudo(self):
         return self.factory.TCP is None and self._needsudo
@@ -505,3 +507,11 @@ class Brick(ChildLogger(__name__)):
         else:
             state = _('off')
         return state
+
+
+class Brick(_Brick):
+
+    def __init__(self, factory, name, homehost=None):
+        _Brick.__init__(self, factory, homehost)
+        self.factory.bricks.append(self)
+        self.factory.bricksmodel.add_brick(self)

@@ -368,6 +368,11 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                                     brick.name)
         return brick
 
+    # def __new_brick(self, type, name, host="", remote=False):
+    #     brick = self.new_brick(type, name, host, remote)
+    #     self.bricks.append(brick)
+    #     self.bricksmodel.append(brick)
+
     def newevent(self, ntype="", name=""):
         """Old interface, use new_event instead."""
         if ntype not in ("event", "Event"):
