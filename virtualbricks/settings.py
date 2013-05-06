@@ -30,15 +30,16 @@ log = logging.getLogger(__name__)
 
 VDEPATH = "/usr/bin"
 HOME = os.path.expanduser("~")
-MYPATH = os.path.join(HOME, ".virtualbricks")
+VIRTUALBRICKS_HOME = os.path.join(HOME, ".virtualbricks")
+MYPATH = VIRTUALBRICKS_HOME  # backward compatibility
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
 DEFAULT_CONF = {
-    "bricksdirectory": HOME + "/.virtualbricks",
+    "bricksdirectory": VIRTUALBRICKS_HOME,
     "term": "/usr/bin/xterm",
     "alt-term": "/usr/bin/gnome-terminal",
     "sudo": "/usr/bin/gksu",
     "qemupath": "/usr/bin",
-    "baseimages": HOME + "/.virtualbricks/img",
+    "baseimages": os.path.join(VIRTUALBRICKS_HOME, "img"),
     "kvm": False,
     "ksm": False,
     "kqemu": False,
@@ -48,7 +49,7 @@ DEFAULT_CONF = {
     "femaleplugs": False,
     "erroronloop": False,
     "systray": True,
-    "current_project": HOME + "/.virtualbricks/.virtualbricks.vbl",
+    "current_project": os.path.join(VIRTUALBRICKS_HOME, "virtualbricks.vbl"),
     "cowfmt": "cow",
     "show_missing": True
 }
@@ -61,11 +62,6 @@ class Settings:
     def __init__(self, filename):
         self.filename = filename
         self.config = ConfigParser.SafeConfigParser()
-        if not os.path.isdir(MYPATH):
-            try:
-                os.mkdir(MYPATH)
-            except OSError:  # TODO: maybe IOError?
-                pass
 
         def create_get(attr):
             def get(inst, x):
