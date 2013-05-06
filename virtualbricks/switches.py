@@ -17,6 +17,7 @@
 
 import os
 
+from virtualbricks import settings
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Sock
 
@@ -78,11 +79,10 @@ class Switch(Brick):
     def get_type(self):
         return 'Switch'
 
-    def post_rename(self, newname):
+    def post_rename(self, name):
         for so in self.socks:
-            so.nickname = newname + "_port"
-            so.path = self.settings.get("bricksdirectory") + "/" + newname + \
-                    ".ctl"
+            so.nickname = name + "_port"
+            so.path = os.path.join(settings.VIRTUALBRICKS_HOME, name + ".ctl")
 
     def on_config_changed(self):
         self.socks[0].path = self.path()

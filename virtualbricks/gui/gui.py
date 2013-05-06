@@ -28,7 +28,8 @@ import gobject
 import gtk
 import gtk.glade
 
-from virtualbricks import brickfactory, logger, tools, virtualmachines, app
+from virtualbricks import (brickfactory, logger, tools, virtualmachines, app,
+						settings)
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.models import EventsModel
@@ -1562,7 +1563,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		gtk.main_quit()
 
 	def on_item_settings_activate(self, widget=None, data=""):
-		self.gladefile.get_widget('filechooserbutton_bricksdirectory').set_current_folder(self.config.get('bricksdirectory'))
 		self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(self.config.get('qemupath'))
 		self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(self.config.get('vdepath'))
 		self.gladefile.get_widget('filechooserbutton_baseimages').set_current_folder(self.config.get('baseimages'))
@@ -1892,7 +1892,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		if response in [gtk.RESPONSE_APPLY, gtk.RESPONSE_OK]:
 			self.debug("Apply settings...")
-			for k in ['bricksdirectory', 'qemupath', 'vdepath', 'baseimages']:
+			for k in ['qemupath', 'vdepath', 'baseimages']:
 				self.config.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
 
 			self.config.set('cowfmt', self.gladefile.get_widget('combo_cowfmt').get_active_text())
@@ -3098,7 +3098,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				action=gtk.FILE_CHOOSER_ACTION_OPEN,
 				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
 						gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-		chooser.set_current_folder(self.config.get('bricksdirectory'))
+		chooser.set_current_folder(settings.VIRTUALBRICKS_HOME)
 		chooser.add_filter(self.vbl_filter)
 		chooser.add_filter(self.all_files_filter)
 		chooser.connect("response", self.__on_dialog_response,
@@ -3120,7 +3120,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
 						gtk.STOCK_SAVE,gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)
-		chooser.set_current_folder(self.config.get('bricksdirectory'))
+		chooser.set_current_folder(settings.VIRTUALBRICKS_HOME)
 		chooser.add_filter(self.vbl_filter)
 		chooser.add_filter(self.all_files_filter)
 		chooser.connect("response", self.__on_dialog_response,
@@ -3148,7 +3148,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
 						gtk.STOCK_SAVE, gtk.RESPONSE_OK))
 		chooser.set_do_overwrite_confirmation(True)
-		chooser.set_current_folder(self.config.get('bricksdirectory'))
+		chooser.set_current_folder(settings.VIRTUALBRICKS_HOME)
 		chooser.add_filter(self.vbl_filter)
 		chooser.add_filter(self.all_files_filter)
 		chooser.connect("response", self.__on_dialog_response,
@@ -3430,7 +3430,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			orientation = "TB"
 		else:
 			orientation = "LR"
-		self.topology = graphics.Topology(self.gladefile.get_widget('image_topology'), self.brickfactory.bricksmodel, 1.00, orientation, export, self.brickfactory.settings.get("bricksdirectory")+"/")
+		self.topology = graphics.Topology(
+			self.gladefile.get_widget('image_topology'),
+			self.brickfactory.bricksmodel, 1.00, orientation, export,
+			settings.VIRTUALBRICKS_HOME + "/")
 
 	def user_wait_action(self, action, *args):
 		self.gladefile.get_widget("window_userwait").show_all()

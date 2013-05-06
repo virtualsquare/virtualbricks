@@ -34,7 +34,6 @@ VIRTUALBRICKS_HOME = os.path.join(HOME, ".virtualbricks")
 MYPATH = VIRTUALBRICKS_HOME  # backward compatibility
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
 DEFAULT_CONF = {
-    "bricksdirectory": VIRTUALBRICKS_HOME,
     "term": "/usr/bin/xterm",
     "alt-term": "/usr/bin/gnome-terminal",
     "sudo": "/usr/bin/gksu",
