@@ -16,20 +16,26 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+
+import os
 import sys
 import re
 import random
 import threading
+import logging
 
 
-def RandMac():
+log = logging.getLogger(__name__)
+
+
+def random_mac():
     random.seed()
-    mac = "00:aa:"
-    mac = mac + "%02x:" % random.getrandbits(8)
-    mac = mac + "%02x:" % random.getrandbits(8)
-    mac = mac + "%02x:" % random.getrandbits(8)
-    mac = mac + "%02x" % random.getrandbits(8)
-    return mac
+    return "00:aa:{:02x}:{:02x}:{:02x}:{:02x}".format(random.getrandbits(8),
+                                                      random.getrandbits(8),
+                                                      random.getrandbits(8),
+                                                      random.getrandbits(8))
+
+RandMac = random_mac
 
 
 def ValidName(name):
@@ -126,8 +132,54 @@ def synchronize_with(lock):
 
 def stack_trace():
     out = []
-    f = sys._getframe(2)
+    f = sys._getframe(1)
     while f:
         out.append("{0.f_code.co_filename}:{0.f_lineno}".format(f))
         f = f.f_back
     return "\n".join(out)
+
+
+def check_missing(path, files):
+    return [f for f in files if not os.access(os.path.join(path, f), os.X_OK)]
+
+
+def check_missing_vde(path):
+    bins = ["vde_switch", "vde_plug", "vde_cryptcab", "dpipe", "vdeterm",
+            "vde_plug2tap", "wirefilter", "vde_router"]
+    return check_missing(path, bins)
+
+
+def check_missing_qemu(path):
+    bins = ["qemu", "kvm", "qemu-system-arm", "qemu-system-cris",
+            "qemu-system-i386", "qemu-system-m68k", "qemu-system-microblaze",
+            "qemu-system-mips", "qemu-system-mips64", "qemu-system-mips64el",
+            "qemu-system-mipsel", "qemu-system-ppc", "qemu-system-ppc64",
+            "qemu-system-ppcemb", "qemu-system-sh4", "qemu-system-sh4eb",
+            "qemu-system-sparc", "qemu-system-sparc64", "qemu-system-x86_64",
+            "qemu-img"]
+    missing = check_missing(path, bins)
+    return missing, list(set(bins) - set(missing))
+
+
+def check_kvm(path):
+    if not os.access(os.path.join(path, "kvm"), os.X_OK):
+        return False
+    if not os.access("/sys/class/misc/kvm", os.X_OK):
+        return False
+    return True
+
+
+def check_ksm():
+    try:
+        with open("/sys/kernel/mm/ksm/run") as fp:
+            return int(fp.readline())
+    except IOError:
+        return False
+
+
+def enable_ksm(enable, use_sudo):
+    if enable ^ check_ksm():
+        cmd = "echo %d > %s" % (enable, "/sys/kernel/mm/ksm/run")
+        exit = os.system("sudo %s" % cmd) if use_sudo else os.system(cmd)
+        if exit:  # exit state != 0
+            log.error("Can not change ksm state. (failed command: %s)" % cmd)

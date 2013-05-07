@@ -298,9 +298,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		# [ 'Dev','Source','Destination','Protocol','TOS','Action'])
 
 	def check_gui_prerequisites(self):
-		qmissing,qfound = self.config.check_missing_qemupath(self.config.get("qemupath"))
-		vmissing = self.config.check_missing_vdepath(self.config.get("vdepath"))
-		ksmissing=[]
+		qmissing, _ = tools.check_missing_qemu(
+			self.config.get("qemupath"))
+		vmissing = tools.check_missing_vde(self.config.get("vdepath"))
+		ksmissing = []
 		if not os.access("/sys/kernel/mm/ksm",os.X_OK):
 			ksmissing.append("ksm")
 		return vmissing + qmissing + ksmissing
@@ -467,7 +468,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		dicts=dict()
 		#QEMU COMMAND COMBO
-		missing,found = self.config.check_missing_qemupath(self.config.get("qemupath"))
+		_, found = tools.check_missing_qemu(
+			self.config.get("qemupath"))
 		qemuarch = ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
 		opt = dict()
 		for arch in found:
@@ -1902,18 +1904,9 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			else:
 				self.config.set("kvm", False)
 
-			if self.gladefile.get_widget('check_ksm').get_active():
-				self.config.set("ksm", True)
-				try:
-					self.config.check_ksm(True)
-				except:
-					pass
-			else:
-				try:
-					self.config.check_ksm(False)
-				except:
-					pass
-				self.config.set("ksm", False)
+			ksm = self.gladefile.get_widget('check_ksm').get_active()
+			self.config.set("ksm", ksm)
+			tools.enable_ksm(ksm, self.config.get("sudo"))
 
 			if self.gladefile.get_widget('check_kqemu').get_active():
 				self.config.set("kqemu", True)
@@ -2301,28 +2294,18 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def on_check_kvm(self, widget=None, event=None, data=""):
 		if widget.get_active():
-			try:
-				self.config.check_kvm()
-			except IOError:
-				self.error(_("No KVM binary found")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
-				widget.set_active(False)
-			except NotImplementedError:
-				self.error(_("No KVM support found on the local system")+". "+_("Check your active configuration")+". "+_("KVM will stay disabled")+".")
-				widget.set_active(False)
-
-	def on_check_ksm(self, widget=None, event=None, data=""):
-		try:
-			self.config.check_ksm(True)
-		except NotImplementedError:
-			self.debug("no support")
-			self.error(_("No KSM support found on the local system")+". "+_("Check your configuration")+". "+_("KSM will stay disabled")+".")
-			widget.set_active(False)
+			kvm = tools.check_kvm(self.config.get("qemupath"))
+			if not kvm:
+				log.error(_("No KVM support found on the local system. "
+					"Check your active configuration. "
+					"KVM will stay disabled."))
+			widget.set_active(kvm)
 
 	def on_add_cdrom(self, widget=None, event=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("VBGUI.on_add_cdrom()")
 
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("VBGUI.on_remove_cdrom()")
 
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
@@ -2492,7 +2475,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		newpath = widget.get_filename()
 		missing_qemu = False
 		missing_kvm = False
-		missing,found = self.config.check_missing_qemupath(newpath)
+		missing, found = tools.check_missing_qemu(newpath)
 		lbl = self.gladefile.get_widget("label_qemupath_status")
 		if not os.access(newpath,os.X_OK):
 			lbl.set_markup('<span color="red">'+_("Error")+':</span>\n'+_("invalid path for qemu binaries"))
@@ -2531,7 +2514,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def on_vdepath_changed(self, widget, data=None):
 		newpath = widget.get_filename()
-		missing = self.config.check_missing_vdepath(newpath)
+		missing = tools.check_missing_vde(newpath)
 		lbl = self.gladefile.get_widget("label_vdepath_status")
 		if not os.access(newpath,os.X_OK):
 			lbl.set_markup('<span color="red">'+_("Error")+':</span>\n'+_("invalid path for vde binaries"))
@@ -2604,15 +2587,13 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			if not self.maintree.get_selection().homehost:
-				try:
-					self.config.check_kvm()
-					self.kvm_toggle_all(True)
-				except IOError:
-					self.error(_("No KVM binary found. Check your active configuration. KVM will stay disabled."))
-					widget.set_active(False)
-				except NotImplementedError:
-					self.error(_("No KVM support found on the system. Check your active configuration. KVM will stay disabled."))
-					widget.set_active(False)
+				kvm = tools.check_kvm(self.config.get("qemupath"))
+				self.kvm_toggle_all(True)
+				if not kvm:
+					self.error(_("No KVM support found on the system. "
+						"Check your active configuration. "
+						"KVM will stay disabled."))
+				widget.set_active(kvm)
 			else:
 				self.kvm_toggle_all(True)
 		else:
