@@ -391,7 +391,8 @@ class VMDisk:
                     self.VM.factory.debug("%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback))
                     move(cowname, cowback)
             if not os.access(cowname, os.R_OK):
-                qmissing,qfound = self.VM.settings.check_missing_qemupath(self.VM.settings.get("qemupath"))
+                qmissing, qfound = tools.check_missing_qemu(
+                    self.VM.settings.get("qemupath"))
                 if "qemu-img" in qmissing:
                     raise BadConfig(_("qemu-img not found! I can't create a new image."))
                 else:
