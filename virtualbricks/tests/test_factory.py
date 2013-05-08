@@ -44,7 +44,7 @@ class TestThreadingLocking(unittest.TestCase):
 
     def test_configfile_synchronized(self):
         st1 = [False]
-        st2 = []
+        st2 = [None]
 
         def save1(_):
             st1[0] = True
@@ -53,15 +53,14 @@ class TestThreadingLocking(unittest.TestCase):
 
         cfs = stubs.ConfigFileStub(save1)
         self.factory.configfile = cfs
-        self.factory.restore_configfile_real = True
 
         def save2():
             time.sleep(0.1)
             self.factory.restore_configfile()
-            st2.append(st1[0])
+            st2[0] = st1[0]
 
         t = threading.Thread(target=save2)
         t.start()
         self.factory.save_configfile()
         t.join()
-        self.assertFalse(st2[0])
+        self.assertIs(st2[0], False)

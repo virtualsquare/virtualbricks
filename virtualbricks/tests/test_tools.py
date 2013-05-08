@@ -1,5 +1,5 @@
 from virtualbricks import tools
-from virtualbricks.tests import unittest
+from virtualbricks.tests import unittest, must_test_threads
 
 
 class MockLock(object):
@@ -24,6 +24,7 @@ class TestTools(unittest.TestCase):
         foo_s()
         self.assertEqual(lock.c, 2)
 
+    @unittest.skipUnless(must_test_threads(), "threads tests non enabled")
     def test_looping_call_function_raise_error(self):
         """Test that if a function raise an error, it is not called again."""
 
@@ -38,7 +39,8 @@ class TestTools(unittest.TestCase):
                 stop[0] = True
                 raise RuntimeError("BOOM")
 
-        lc = tools.LoopingCall(0.001, self.assertRaises, (RuntimeError, func, ))
+        lc = tools.LoopingCall(0.2, self.assertRaises, (RuntimeError, func))
+        # lc = tools.LoopingCall(0.001, func)
         lc._LoopingCall__timer.join()
         self.assertFalse(event[0])
 
