@@ -57,7 +57,7 @@ DEFAULT_CONF = {
 
 class SettingsMeta(type):
 
-    def __init__(cls, name, bases, dct):
+    def __new__(cls, name, bases, dct):
 
         def make_property(opt):
 
@@ -71,21 +71,20 @@ class SettingsMeta(type):
             dct["set_" + opt] = set
             dct[opt] = property(get, set)
 
-        try:
-            for opt in dct.pop("__boolean_values__"):
-                make_property(opt)
-        except KeyError:
-            pass
+        for opt in dct["__boolean_values__"]:
+            make_property(opt)
 
-        return type.__init__(cls, name, bases, dct)
-
-    def __call__(self, filename):
-        pass
+        return type.__new__(cls, name, bases, dct)
 
 
-class Settings:
+class SettingsBase:
 
     __metaclass__ = SettingsMeta
+    __boolean_values__ = ()
+
+
+class Settings(SettingsBase):
+
     __boolean_values__ = ('kvm', 'ksm', 'kqemu', 'python', 'femaleplugs',
                           'erroronloop', 'systray', 'show_missing')
     DEFAULT_SECTION = "Main"
