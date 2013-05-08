@@ -468,8 +468,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		dicts=dict()
 		#QEMU COMMAND COMBO
-		_, found = tools.check_missing_qemu(
-			self.config.get("qemupath"))
+		__, found = tools.check_missing_qemu(self.config.get("qemupath"))
 		qemuarch = ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
 		opt = dict()
 		for arch in found:

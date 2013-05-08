@@ -132,7 +132,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def restore_configfile(self, filename=None):
         if filename is None:
             filename = self.settings.get("current_project")
-		self.reset()
+        self.reset()
         self.configfile.restore(filename)
 
     @synchronized
