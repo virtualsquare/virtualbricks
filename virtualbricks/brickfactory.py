@@ -118,9 +118,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.BRICKTYPES = install_brick_types(
             None, wires.VDESUPPORT and self.settings.python)
 
+    @synchronized
     def save_configfile(self):
-        # This method is not synchronized because configfile take care of
-        # synchonize itself
         try:
             self.configfile.save(self.settings.get('current_project'))
         # except Exception:
@@ -128,6 +127,13 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             log.exception("ERROR WRITING CONFIGURATION!\n"
                           "Probably file doesn't exist or you can't write "
                           "it.\n")
+
+    @synchronized
+    def restore_configfile(self, filename=None):
+        if filename is None:
+            filename = self.settings.get("current_project")
+		self.reset()
+        self.configfile.restore(filename)
 
     @synchronized
     def quit(self):
@@ -691,8 +697,7 @@ class Application:
             if e.errno != errno.EEXIST:
                 raise
         try:
-            self.factory.configfile.restore(self.factory.settings.get(
-                "current_project"))
+            self.factory.restore_configfile()
         except IOError as e:
             if e.errno != errno.ENOENT:
                 raise

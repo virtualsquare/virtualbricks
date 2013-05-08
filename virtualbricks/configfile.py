@@ -22,7 +22,6 @@ import re
 import shutil
 import traceback
 import contextlib
-import threading
 import logging
 
 from virtualbricks import tools
@@ -34,10 +33,6 @@ if False:  # pyflakes
 
 
 log = logging.getLogger(__name__)
-
-# this is a brand new lock, different from the one in
-# virtualbricks.brickfactory
-synchronized = tools.synchronize_with(threading.RLock())
 
 
 @contextlib.contextmanager
@@ -74,7 +69,6 @@ class ConfigFile:
     def __init__(self, factory):
         self.factory = factory
 
-    @synchronized
     def save(self, obj_or_str):
         """Save the current project.
 
@@ -104,7 +98,6 @@ class ConfigFile:
         else:
             self.save_to(obj_or_str)
 
-    @synchronized
     def save_to(self, fileobj):
         if self.factory.TCP:  # XXX:
             log.warning("configfile.save called when on server mode. "

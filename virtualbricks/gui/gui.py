@@ -3064,12 +3064,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			dialog.destroy()
 
 	def __open_project(self, filename):
-		try:
-			self.brickfactory.reset()
-			self.brickfactory.configfile.restore(filename)
-		except IOError:
-			log.exception("Exception occurred while loading project")
-			raise
+		self.brickfactory.restore_configfile(filename)
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm(_("Save current project?")):
