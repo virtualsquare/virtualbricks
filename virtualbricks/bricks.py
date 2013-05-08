@@ -512,6 +512,6 @@ class _Brick(ChildLogger(__name__)):
 class Brick(_Brick):
 
     def __init__(self, factory, name, homehost=None):
-        _Brick.__init__(self, factory, homehost)
+        _Brick.__init__(self, factory, name, homehost)
         self.factory.bricks.append(self)
         self.factory.bricksmodel.add_brick(self)
