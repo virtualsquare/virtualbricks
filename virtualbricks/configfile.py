@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_configfile -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -17,6 +18,7 @@
 
 import os
 import os.path
+import errno
 import sys
 import re
 import shutil
@@ -48,20 +50,58 @@ def backup(original, filename):
         os.remove(filename)
 
 
-def restore_backup(filename, fbackup, factory):
+def restore_backup(filename, fbackup):
     # check if there's a project backup to restore and if its size is
     # different from current project file
+    filename_back = filename + ".back"
     if os.path.isfile(fbackup):
         log.info("I found a backup project file, I'm going to restore it!")
-        if os.path.isfile(filename):
-            log.info("Corrupted file moved to %s.back", filename)
-            shutil.copyfile(filename, filename + ".back")
+        try:
+            os.rename(filename, filename_back)
+            log.info("Saved project to %s.", filename_back)
+        except OSError, e:
+            if e.errno == errno.EXDEV:
+                try:
+                    shutil.copyfile(filename, filename_back)
+                except IOError:
+                    log.warning("Cannot save to backup file %s.\n%s",
+                                filename_back, traceback.format_exc())
+                    log.error("Cannot create a backup of the broject.")
+            elif e.errno == errno.ENOENT:
+                pass
+            else:
+                log.warning("Cannot save to backup file %s.\n%s",
+                            filename_back, traceback.format_exc())
+                log.error("Cannot create a backup of the broject.")
         # restore backup file
-        shutil.copyfile(fbackup, filename)
-        os.remove(fbackup)
-        log.error(_("A backup file for the current project has been restored."
-                    "\nYou can find more informations looking in "
-                    "View->Messages."))
+        log.info("I found a backup project file, I'm going to restore it!")
+
+        try:
+            os.rename(fbackup, filename)
+            log.info("Saved project to %s.", filename_back)
+            log.error(_("A backup file for the current project has been "
+                        "restored.\nYou can find more informations looking in "
+                        "View->Messages."))
+        except OSError, e:
+            if e.errno == errno.EXDEV:
+                try:
+                    shutil.copyfile(fbackup, filename)
+                    os.remove(fbackup)
+                except IOError:
+                    log.warning("Cannot restore backup file %s.\n%s",
+                                fbackup, traceback.format_exc())
+                    log.error("Cannot restore backup of the broject.")
+                finally:
+                    try:
+                        os.remove(fbackup)
+                    except OSError:
+                        pass
+            elif e.errno == errno.ENOENT:
+                pass
+            else:
+                log.warning("Cannot restore backup file %s.\n%s",
+                            fbackup, traceback.format_exc())
+                log.error("Cannot restore backup of the broject.")
 
 
 class ConfigFile:
@@ -88,8 +128,7 @@ class ConfigFile:
             filename = obj_or_str
             log.debug("CONFIG DUMP on " + filename)
             fp = None
-            fbackup = filename + "~"
-            with backup(filename, fbackup):
+            with backup(filename, filename + "~"):
                 head, tail = os.path.split(filename)
                 tmpfile = os.path.join(head, "." + tail + ".sav")
                 with open(tmpfile, "w") as fp:
@@ -187,8 +226,7 @@ class ConfigFile:
     def restore(self, str_or_obj):
         if isinstance(str_or_obj, basestring):
             filename = str_or_obj
-            fbackup = filename + "~"
-            restore_backup(filename, fbackup, self.factory)
+            restore_backup(filename, filename + "~")
             log.info("Open %s project", filename)
             with open(filename) as fp:
                 self.restore_from(fp)

@@ -1,3 +1,5 @@
+import logging
+
 from virtualbricks import brickfactory, bricks
 
 
@@ -30,3 +32,13 @@ class FactoryStub(brickfactory.BrickFactory):
     def __init__(self):
         brickfactory.BrickFactory.__init__(self)
         self.BRICKTYPES["stub"] = BrickStub
+
+
+class LoggingHandlerStub(logging.Handler):
+
+    def __init__(self):
+        logging.Handler.__init__(self)
+        self._records = {}
+
+    def emit(self, record):
+        self._records.setdefault(record.levelno, []).append(record)
