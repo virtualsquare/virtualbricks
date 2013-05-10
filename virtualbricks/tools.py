@@ -23,6 +23,7 @@ import re
 import random
 import threading
 import logging
+import functools
 
 
 log = logging.getLogger(__name__)
@@ -118,6 +119,7 @@ class LoopingCall:
 
 
 def synchronize(func, lock):
+    @functools.wraps(func)
     def wrapper(*args, **kwds):
         with lock:
             return func(*args, **kwds)

@@ -706,7 +706,11 @@ class Application:
         try:
             self.factory.restore_configfile()
         except IOError as e:
-            if e.errno != errno.ENOENT:
+            if e.errno == errno.ENOENT:
+                log.error("Cannot find last project '%s': file not found. A "
+                          "new project will be created with that path.",
+                          self.factory.settings.get("current_project"))
+            else:
                 raise
         # except (IOError, OSError, errors.Error):
         #     # NOTE: I don't think OSError is really necessary
