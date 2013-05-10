@@ -43,12 +43,6 @@ log = logging.getLogger(__name__)
 if False:  # pyflakes
     _ = str
 
-# synchronized is a decorator that serializes methods invocation. Don't use
-# outside the BrickFactory if not needed. The lock is a reentrant one because
-# one synchronized method could call another synchronized method and we allow
-# this (in the same thread). The quit method is on example.
-synchronized = tools.synchronize_with(threading.RLock())
-
 
 def install_brick_types(registry=None, vde_support=False):
     if registry is None:
@@ -84,6 +78,16 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     All the bricks are created and stored in the factory.
     It also contains a thread to manage the command console.
     """
+
+
+    # synchronized is a decorator that serializes methods invocation. Don't use
+    # outside the BrickFactory if not needed. The lock is a reentrant one
+    # because one synchronized method could call another synchronized method
+    # and we allow this (in the same thread). The quit method is on example.
+    # NOTE: this is a class variable but should not be a problem because
+    # BrickFactory is a singleton
+    _lock = threading.RLock()
+    synchronized = tools.synchronize_with(_lock)
 
     __gsignals__ = {
         'engine-closed': (gobject.SIGNAL_RUN_LAST, None, ()),
@@ -134,6 +138,9 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             filename = self.settings.get("current_project")
         self.reset()
         self.configfile.restore(filename)
+
+    def lock(self):
+        return self._lock
 
     @synchronized
     def quit(self):
