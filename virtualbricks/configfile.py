@@ -99,6 +99,10 @@ class ConfigFile:
             self.save_to(obj_or_str)
 
     def save_to(self, fileobj):
+        with self.factory.lock():
+            return self.__save_to(fileobj)
+
+    def __save_to(self, fileobj):
         if self.factory.TCP:  # XXX:
             log.warning("configfile.save called when on server mode. "
                         "This must be considerated a bug in the code.")
@@ -192,6 +196,10 @@ class ConfigFile:
             self.restore_from(str_or_obj)
 
     def restore_from(self, fileobj):
+        with self.factory.lock():
+            return self.__restore_from(fileobj)
+
+    def __restore_from(self, fileobj):
         l = fileobj.readline()
         b = None
         while (l):

@@ -64,3 +64,14 @@ class TestThreadingLocking(unittest.TestCase):
         self.factory.save_configfile()
         t.join()
         self.assertIs(st2[0], False)
+
+    def test_lock(self):
+        lock = self.factory.lock()
+        try:
+            acquired = lock.acquire()
+            self.assertTrue(acquired)
+            self.assertEqual(lock._RLock__count, 1)
+        finally:
+            lock.release()
+        with self.factory.lock():
+            self.assertEqual(lock._RLock__count, 1)
