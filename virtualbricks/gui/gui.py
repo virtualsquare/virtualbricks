@@ -139,16 +139,21 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.brickfactory.BRICKTYPES['qemu'] = virtualmachines.VMGui
 
 		# Connect all the signal from the factory to specific callbacks
-		self.brickfactory.bricksmodel.connect("brick-added", self.cb_brick_added)
-		self.brickfactory.bricksmodel.connect("brick-deleted", self.cb_brick_deleted)
-		self.brickfactory.connect("engine-closed", self.on_engine_closed)
-		self.brickfactory.connect("brick-stopped", self.cb_brick_stopped)
-		self.brickfactory.connect("brick-started", self.cb_brick_started)
-		self.brickfactory.connect("brick-changed", self.cb_brick_changed)
-		self.brickfactory.connect("event-started", self.cb_event_started)
-		self.brickfactory.connect("event-stopped", self.cb_event_stopped)
-		self.brickfactory.eventsmodel.connect("event-added", self.cb_event_added)
-		self.brickfactory.eventsmodel.connect("event-deleted", self.cb_event_deleted)
+		self.__event_handlers = eh = []
+		self.__brick_handlers = bh = []
+		self.__factory_handlers = fh = []
+		f = self.brickfactory
+		bm, em = f.bricksmodel, f.eventsmodel
+		bh.append(bm.connect("brick-added", self.cb_brick_added))
+		bh.append(bm.connect("brick-deleted", self.cb_brick_deleted))
+		eh.append(em.connect("event-added", self.cb_event_added))
+		eh.append(em.connect("event-deleted", self.cb_event_deleted))
+		fh.append(f.connect("engine-closed", self.on_engine_closed))
+		fh.append(f.connect("brick-stopped", self.cb_brick_stopped))
+		fh.append(f.connect("brick-started", self.cb_brick_started))
+		fh.append(f.connect("brick-changed", self.cb_brick_changed))
+		fh.append(f.connect("event-started", self.cb_event_started))
+		fh.append(f.connect("event-stopped", self.cb_event_stopped))
 
 		self.availmodel = None
 		self.addedmodel = None
@@ -178,9 +183,9 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.last_known_selected_brick = None
 		self.last_known_selected_event = None
 		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
-		self.topology_active = False
+		# self.topology_active = False
 
-		self.sockscombo = dict()
+		# self.sockscombo = dict()
 
 		''' Treeview creation, using the VBTree class '''
 		''' Main Treeview '''
@@ -341,6 +346,28 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def cb_event_started(self, model, name=""):
 		pass
+
+	def _stop_listening(self):
+		for model, handlers in ((self.brickfactory, self.__factory_handlers),
+					(self.brickfactory.bricksmodel, self.__brick_handlers),
+					(self.brickfactory.eventsmodel, self.__event_handlers)):
+			for handler in handlers:
+				if not model.handler_is_connected(handler):
+					log.warning("handler %d is not connected to model %s",
+							handler, model)
+				else:
+					model.handler_block(handler)
+
+	def _start_listening(self):
+		for model, handlers in ((self.brickfactory, self.__factory_handlers),
+					(self.brickfactory.bricksmodel, self.__brick_handlers),
+					(self.brickfactory.eventsmodel, self.__event_handlers)):
+			for handler in handlers:
+				if not model.handler_is_connected(handler):
+					log.warning("handler %d is not connected to model %s",
+							handler, model)
+				else:
+					model.handler_unblock(handler)
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -3063,7 +3090,13 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			dialog.destroy()
 
 	def __open_project(self, filename):
-		self.brickfactory.restore_configfile(filename)
+		self._stop_listening()
+		try:
+			self.brickfactory.restore_configfile(filename)
+		finally:
+			self._start_listening()
+			self.draw_topology()
+			self.check_joblist(force=True)
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm(_("Save current project?")):
@@ -3106,6 +3139,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		raise NotImplementedError()
 
 	def __new_project(self, filename):
+		self._stop_listening()
 		try:
 			self.brickfactory.reset()
 			with open(filename, "w+"):
@@ -3113,6 +3147,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		except IOError:
 			log.exception("Exception occurred while starting new project")
 			raise
+		finally:
+			self._start_listening()
+			self.draw_topology()
+			self.check_joblist(force=True)
 
 	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?"):
