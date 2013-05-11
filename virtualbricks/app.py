@@ -52,7 +52,7 @@ class Logger:
         if handler is None:
             handler = self._get_handler()
         formatter = logging.Formatter("%(asctime)s [%(levelname)s] "
-                "[%(threadName)s] %(module)s.py:%(lineno)s %(message)s")
+                "[%(threadName)s] %(name)s:%(lineno)s %(message)s")
         handler.setFormatter(formatter)
         log.addHandler(handler)
         log.info('Start logging')
