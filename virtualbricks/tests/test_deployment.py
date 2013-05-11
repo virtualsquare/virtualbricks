@@ -22,6 +22,7 @@ FILES = [
     "event_gray.png",
     "event.png",
     "joblist.ui",
+    "logging.ui",
     "networkcards.ui",
     "qemu_gray.png",
     "qemu.png",
@@ -47,6 +48,12 @@ FILES = [
     "wire.png",
 ]
 
+SCRIPTS = [
+    "virtualbricks",
+    "vbgui",
+    "vbd",
+]
+
 
 class TestDeployment(unittest.TestCase):
 
@@ -55,3 +62,11 @@ class TestDeployment(unittest.TestCase):
         for filename in FILES:
             self.assertTrue(os.access(os.path.join(data_path, filename),
                                       os.R_OK), "File %s not found" % filename)
+
+    def test_scrips(self):
+        for filename in SCRIPTS:
+            for path in os.environ.get("PATH", "").split(":"):
+                if os.access(os.path.join(path, filename), os.X_OK):
+                    break
+            else:
+                self.fail("Could not find script %s in PATH" % filename)
