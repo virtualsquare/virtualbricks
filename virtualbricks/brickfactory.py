@@ -32,7 +32,7 @@ import gobject
 import virtualbricks
 from virtualbricks import (app, tools, logger, wires, virtualmachines, errors,
                            console, settings, events, switches, tuntaps,
-                           tunnels, router, bricks)
+                           tunnels, router, bricks, link)
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.errors import UnmanagedType
 from virtualbricks.configfile import ConfigFile
@@ -631,17 +631,17 @@ class Console(object):
         try:
             command = self.stdin.readline()
             console.parse(self.factory, command, **self.local)
+        except EnvironmentError, e:
+            log.exception("An exception is occurred while processing "
+                          "command %s", command)
+            print(_("Exception:\n\tType: %s\n\tErrno: %s\n\t"
+                    "Message: %s\n" % (type(e), e.errno, e.strerror)),
+                  file=self.stdout)
         except Exception as e:
             log.exception("An exception is occurred while processing "
                           "command %s", command)
-            msg = ""
-            errno = ""
-            if len(e.args) == 2:
-                msg, errno = e.args
-            elif len(e.args) == 1:
-                msg = e.args[0]
             print(_("Exception:\n\tType: %s\n\tErrno: %s\n\t"
-                    "Message: %s\n" % (type(e), errno, msg)),
+                    "Message: %s\n" % (type(e), "", str(e))),
                   file=self.stdout)
 
     def run(self):
@@ -687,6 +687,22 @@ class Application:
         # but to log it.
         sys.displayhook = print
         sys.excepthook = self.excepthook
+
+        # Workaround for sys.excepthook thread bug
+        # See: http://bugs.python.org/issue1230540#msg91244
+        old_init = threading.Thread.__init__
+        def init(self, *args, **kwargs):
+            old_init(self, *args, **kwargs)
+            run_old = self.run
+            def run_with_except_hook(*args, **kw):
+                try:
+                    run_old(*args, **kw)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except:
+                    sys.excepthook(*sys.exc_info())
+            self.run = run_with_except_hook
+        threading.Thread.__init__ = init
 
     def excepthook(self, exc_type, exc_value, traceback):
         if exc_type in (SystemExit, KeyboardInterrupt):
