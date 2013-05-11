@@ -613,10 +613,12 @@ class Console(object):
         "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
         "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
 
-    def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
+    def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__,
+                 **local):
         self.factory = factory
         self.stdout = stdout
         self.stdin = stdin
+        self.local = local
 
     def _check_changed(self):
         if self.factory.remotehosts_changed:
@@ -632,7 +634,7 @@ class Console(object):
                         # command is not defined
         try:
             command = self.stdin.readline()
-            console.parse(self.factory, command)
+            console.parse(self.factory, command, **self.local)
         except Exception as e:
             log.exception("An exception is occurred while processing "
                           "command %s", command)

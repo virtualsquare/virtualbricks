@@ -24,6 +24,7 @@ import random
 import threading
 import logging
 import functools
+import tempfile
 
 
 log = logging.getLogger(__name__)
@@ -185,3 +186,19 @@ def enable_ksm(enable, use_sudo):
         exit = os.system("sudo %s" % cmd) if use_sudo else os.system(cmd)
         if exit:  # exit state != 0
             log.error("Can not change ksm state. (failed command: %s)" % cmd)
+
+
+class Tempfile:
+
+    def __enter__(self):
+        self.fd, self.filename = tempfile.mkstemp()
+        return self.fd, self.filename
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.fd:
+            os.close(self.fd)
+        try:
+            os.remove(self.filename)
+        except OSError, e:
+            if e.errno != errno.ENOENT:
+                raise

@@ -81,10 +81,11 @@ advised and possible with gtk-builder-convert.
 import os
 import logging
 import subprocess
+import threading
 
 import gtk
 
-from virtualbricks import version
+from virtualbricks import version, tools
 from virtualbricks.gui import graphics
 
 
@@ -93,6 +94,15 @@ log = logging.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
+
+
+BUG_REPORT_ERRORS = {
+    1: "Error in command line syntax.",
+    2: "One of the files passed on the command line did not exist.",
+    3: "A required tool could not be found.",
+    4: "The action failed.",
+    5: "No permission to read one of the files passed on the command line."
+}
 
 
 class Base(object):
@@ -160,6 +170,91 @@ class AboutDialog(Dialog):
         Dialog.__init__(self)
         self.window.set_logo(graphics.get_filename("data/virtualbricks.png"))
         self.window.set_version(version.short())
+
+
+class LoggingWindow(Window):
+
+    resource = "data/logging.ui"
+
+    def __init__(self, textbuffer):
+        Window.__init__(self)
+        self.textbuffer = textbuffer
+        self.__bottom = True
+        label = gtk.Label()
+        label.set_markup('<span foreground="blue"><u>report bug</u></span>')
+        button = self.get_object("reportbugbutton")
+        old_label = button.get_child()
+        button.remove(old_label)
+        button.add(label)
+        label.show()
+        textview = self.get_object("textview1")
+        textview.set_buffer(textbuffer)
+        self.__insert_text_h = textbuffer.connect("changed",
+                self.on_textbuffer_changed, textview)
+        vadjustment = self.get_object("scrolledwindow1").get_vadjustment()
+        self.__vadjustment_h = vadjustment.connect("value-changed",
+                self.on_vadjustment_value_changed)
+        textview.scroll_mark_onscreen(textbuffer.get_insert())
+
+    def on_textbuffer_changed(self, textbuffer, textview):
+        if self.__bottom:
+            textview.scroll_mark_onscreen(textbuffer.get_insert())
+
+    def on_vadjustment_value_changed(self, adj):
+        self.__bottom = adj.get_value() + adj.get_page_size() == \
+                adj.get_upper()
+
+    def on_LoggingWindow_destroy(self, window):
+        self.textbuffer.disconnect(self.__insert_text_h)
+        vadjustment = self.get_object("scrolledwindow1").get_vadjustment()
+        vadjustment.disconnect(self.__vadjustment_h)
+
+    def on_closebutton_clicked(self, button):
+        self.window.destroy()
+
+    def on_cleanbutton_clicked(self, button):
+        self.textbuffer.set_text("")
+
+    def on_savebutton_clicked(self, button):
+        chooser = gtk.FileChooserDialog(title=_("Save as..."),
+                action=gtk.FILE_CHOOSER_ACTION_SAVE,
+                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                        gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        chooser.set_do_overwrite_confirmation(True)
+        chooser.connect("response", self.__on_dialog_response)
+        chooser.show()
+
+    def __on_dialog_response(self, dialog, response_id):
+        try:
+            if response_id == gtk.RESPONSE_OK:
+                with open(dialog.get_filename(), "w") as fp:
+                    self.save_to(fp)
+        finally:
+            dialog.destroy()
+
+    def on_reportbugbutton_clicked(self, button):
+        td = threading.Thread(target=self.send_bug_report, name="bug-report")
+        td.daemon = True
+        td.start()
+
+    def send_bug_report(self):
+        log.info("Sending report bug")
+        with tools.Tempfile() as (fd, filename):
+            fp = os.fdopen(fd, "w")
+            self.save_to(fp)
+            try:
+                subprocess.call(["vb-report-bug", filename])
+                log.info("Report bug sent succefully")
+            except subprocess.CalledProcessError, e:
+                msg = _("Bug report not sent because of an error")
+                if e.returncode in BUG_REPORT_ERRORS:
+                    err = _(BUG_REPORT_ERRORS[e.returncode])
+                else:
+                    err = _("Unknown error.")
+                log.error("%s: %s\nCommand output:\n%s", msg, err, e.output)
+
+    def save_to(self, fileobj):
+        fileobj.write(self.textbuffer.get_property("text"))
 
 
 class DisksLibraryDialog(Window):

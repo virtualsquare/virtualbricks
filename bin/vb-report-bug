@@ -1,0 +1,5 @@
+#!/bin/sh
+
+trap 'rm -f "$1"' EXIT
+
+xdg-email --utf8 --body " affects virtualbrick" --attach "$1" new@bugs.launchpad.net
