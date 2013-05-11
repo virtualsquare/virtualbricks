@@ -163,9 +163,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		# General settings (system properties)
 		self.config = self.brickfactory.settings
 
-		# Logging window
-		self.gladefile.get_widget("messages_textview").set_buffer(self.messages_buffer)
-
 		# Show the main window
 		self.widg['main_win'].show()
 		self.ps = []
@@ -254,6 +251,18 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				else:
 					missing_components = missing_components + ('%s ' % m)
 			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert from the general settings.")
+
+	def quit(self):
+		for model, handlers in ((self.brickfactory, self.__factory_handlers),
+					(self.brickfactory.bricksmodel, self.__brick_handlers),
+					(self.brickfactory.eventsmodel, self.__event_handlers)):
+			for handler in handlers:
+				if not model.handler_is_connected(handler):
+					log.warning("handler %d is not connected to model %s",
+							handler, model)
+				else:
+					model.disconnect(handler)
+				del handlers[:]
 
 	def __setup_treeview(self, resource, window_name, widget_name):
 		ui = graphics.get_data("virtualbricks.gui", resource)
@@ -1083,7 +1092,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		'dialog_bookmarks',
 		'menu_popup_bookmarks',
 		'dialog_create_image',
-		'dialog_messages',
 		'menu_popup_imagelist',
 		'dialog_jobmonitor',
 		'menu_popup_joblist',
@@ -2963,15 +2971,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			graphics.get_brick_icon("Qemu.png"))
 
 	def on_show_messages_activate(self, menuitem, data=None):
-		messages = self.gladefile.get_widget("messages_dialog")
-		scroll = self.gladefile.get_widget("message_scroller")
-		messages.show_all()
-
-	def on_messages_dialog_delete_event(self, widget=None, event=None, data=""):
-		"""we could use deletable property but deletable is only available in
-		GTK+ 2.10 and above"""
-		widget.hide()
-		return True
+		dialogs.LoggingWindow(self.messages_buffer).show()
 
 	def on_dialog_messages_close_event(self, widget=None, event=None, data=""):
 		self.on_dialog_messages_delete_event(self)
@@ -2980,15 +2980,6 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	def on_dialog_messages_delete_event(self, widget=None, event=None, data=""):
 		messages = self.gladefile.get_widget("dialog_messages")
 		messages.hide()
-		return True
-
-	def on_messages_dialog_close_event(self, widget=None, event=None, data=""):
-		messages = self.gladefile.get_widget("messages_dialog")
-		messages.hide()
-		return True
-
-	def on_messages_dialog_clear_clicked(self, button, data=None):
-		self.messages_buffer.set_text("")
 		return True
 
 	def on_brick_attach_event(self, menuitem, data=None):
@@ -3465,8 +3456,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		return is_alive
 
 
-def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__):
-	console = brickfactory.Console(factory, stdout, stdin)
+def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__, **local):
+	console = brickfactory.Console(factory, stdout, stdin, **local)
 	thread = threading.Thread(target=console.run, name="Console")
 	# needed otherwise a new line should be read from console to exit the
 	# application
@@ -3575,14 +3566,15 @@ class Application(brickfactory.Application):
 		self.factory = brickfactory.BrickFactory()
 		self.restore_last_project()
 		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
-		if self.config.get('term', True):
-			self.console = console_thread(self.factory)
 		self.gui = VBGUI(self.factory, gladefile, self.textbuffer)
+		if self.config.get('term', True):
+			self.console = console_thread(self.factory, gui=self.gui)
 		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
 		brickfactory.Application.install_sys_hooks(self)  # :(
 		gtk.main()
 
 	def quit(self):
+		self.gui.quit()
 		brickfactory.Application.quit(self)
 		__builtin__.raw_input = self.builtin_raw_input
 

@@ -66,6 +66,6 @@ setup(name="virtualbricks",
                "virtualbricks.tests"],
       package_data={"virtualbricks.gui": ["data/*"]},
       data_files=[("share/applications", ["share/virtualbricks.desktop"])],
-      scripts=["bin/virtualbricks", "bin/vbgui", "bin/vbd"],
+      scripts=["bin/virtualbricks", "bin/vbgui", "bin/vbd", "bin/vb-report-bug"],
       cmdclass={"install_data": InstallData}
      )

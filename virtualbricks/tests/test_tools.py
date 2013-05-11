@@ -1,3 +1,6 @@
+import os
+import os.path
+
 from virtualbricks import tools
 from virtualbricks.tests import unittest, must_test_threads
 
@@ -43,4 +46,18 @@ class TestTools(unittest.TestCase):
         # lc = tools.LoopingCall(0.001, func)
         lc._LoopingCall__timer.join()
         self.assertFalse(event[0])
+
+    def test_tempfile_context(self):
+        with tools.Tempfile() as (fd, filename):
+            self.assertTrue(os.path.isfile(filename))
+        try:
+            with tools.Tempfile() as (fd, filename):
+                raise RuntimeError
+        except RuntimeError:
+            self.assertFalse(os.path.isfile(filename))
+        with tools.Tempfile() as (fd, filename):
+            fp = os.fdopen(fd)
+        with self.assertRaises(IOError) as cm:
+            fp.close()
+        self.assertEqual(cm.exception.errno, 9)
 
