@@ -233,17 +233,18 @@ class LoggingWindow(Window):
             dialog.destroy()
 
     def on_reportbugbutton_clicked(self, button):
-        td = threading.Thread(target=self.send_bug_report, name="bug-report")
+        td = threading.Thread(target=self.send_bug_report,
+                              name="BugReportThread")
         td.daemon = True
         td.start()
 
     def send_bug_report(self):
         log.info("Sending report bug")
         with tools.Tempfile() as (fd, filename):
-            fp = os.fdopen(fd, "w")
-            self.save_to(fp)
+            with os.fdopen(fd, "w") as fp:
+                self.save_to(fp)
             try:
-                subprocess.call(["vb-report-bug", filename])
+                subprocess.call(["vb-report-bugs", filename])
                 log.info("Report bug sent succefully")
             except subprocess.CalledProcessError, e:
                 msg = _("Bug report not sent because of an error")

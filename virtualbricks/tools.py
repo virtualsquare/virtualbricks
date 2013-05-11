@@ -195,8 +195,6 @@ class Tempfile:
         return self.fd, self.filename
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if self.fd:
-            os.close(self.fd)
         try:
             os.remove(self.filename)
         except OSError, e:
