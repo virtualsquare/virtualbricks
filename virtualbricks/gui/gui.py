@@ -3491,7 +3491,8 @@ class MessageDialogHandler(logging.Handler):
 		self.__parent = parent
 
 	def emit(self, record):
-		gobject.idle_add(self._emit, record)
+		if not "not_report" in record.__dict__:
+			gobject.idle_add(self._emit, record)
 
 	def _emit(self, record):
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
