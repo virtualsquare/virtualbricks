@@ -572,10 +572,6 @@ def writesafe(filename, data):
         raise IOError(*err.args)
 
 
-class PermissionError(Exception):
-    pass
-
-
 class BrickFactoryServer(BrickFactory):
 
     password_file = "/etc/virtualbricks-passwd"
@@ -589,7 +585,7 @@ class BrickFactoryServer(BrickFactory):
                 pwd2 = getpass.getpass("Confirm:")
                 if pwd == pwd2:
                     try:
-                        write(self.password_file, pwd)
+                        writesafe(self.password_file, pwd)
                     except IOError:
                         print("Could not save password.")
                     else:
