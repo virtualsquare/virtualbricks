@@ -79,6 +79,7 @@ advised and possible with gtk-builder-convert.
 """
 
 import os
+import errno
 import logging
 import subprocess
 import threading
@@ -244,8 +245,17 @@ class LoggingWindow(Window):
             with os.fdopen(fd, "w") as fp:
                 self.save_to(fp)
             try:
-                subprocess.call(["vb-report-bugs", filename])
+                subprocess.call(["xdg-email", "--utf8", "--body",
+                                 " affects virtualbrick", "--attach", filename,
+                                 "new@bugs.launchpad.net"])
                 log.info("Report bug sent succefully")
+            except OSError, e:
+                if e.errno == errno.ENOENT:
+                    log.exception("Cannot find xdg-open utility",
+                                  extra={"not_report": True})
+                    log.error("Cannot find xdg-open utility")
+                else:
+                    raise
             except subprocess.CalledProcessError, e:
                 msg = _("Bug report not sent because of an error")
                 if e.returncode in BUG_REPORT_ERRORS:
