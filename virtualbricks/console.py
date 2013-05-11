@@ -300,11 +300,11 @@ class SocketWrapper:
         self.socket.send(data)
 
 
-def parse(factory, command, console=sys.stdout):
+def parse(factory, command, console=sys.stdout, **local):
     if isinstance(console, socket.socket):
         console = SocketWrapper(console)
 
-    protocol = VBProtocol(factory, console)
+    protocol = VBProtocol(factory, console, local)
     protocol.sub_protocols["images"] = ImagesProtocol(factory, console)
     protocol.sub_protocols["config"] = ConfigurationProtocol(factory, console)
     return protocol.lineReceived(command)
@@ -314,10 +314,14 @@ Parse = parse
 
 class Protocol:
 
-    def __init__(self, factory, sender):
+    def __init__(self, factory, sender, local=None):
         self.factory = factory
         self.sender = sender
         self.sub_protocols = {}
+        if local is None:
+            self.extra_local = {}
+        else:
+            self.extra_local = local
 
     def lineReceived(self, line):
         if not line:
@@ -507,6 +511,7 @@ class VBProtocol(Protocol):
 
         local = {"__name__": "__console__", "__doc__": None,
                  "factory": self.factory}
+        local.update(self.extra_local)
         code.interact(local=local)
 
     def do_threads(self, args):
