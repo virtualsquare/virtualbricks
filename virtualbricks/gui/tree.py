@@ -132,7 +132,7 @@ class VBTree:
 			moved = self._treeorder_continue( itr, field, ascending)
 
 	def cell_render(self, column, cell, model, iter):
-		raise NotImplemented()
+		raise NotImplementedError("cell_render")
 
 	def get_selection(self, path=None, idx=0):
 		return None
@@ -244,7 +244,7 @@ class BricksTree(VBTree):
 		elif column.get_title() == _('Parameters'):
 			cell.set_property('text', brick.get_parameters())
 		else:
-			raise NotImplemented()
+			raise NotImplemented("cell_render")
 
 	def associate_drag_and_drop(self, target):
 		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
@@ -340,7 +340,7 @@ class EventsTree(VBTree):
 		elif column.get_title() == _('Parameters'):
 			cell.set_property('text', event.get_parameters())
 		else:
-			raise NotImplemented()
+			raise NotImplementedError("cell_render")
 
 
 	def associate_drag_and_drop(self, target):

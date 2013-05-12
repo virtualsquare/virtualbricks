@@ -245,22 +245,18 @@ class LoggingWindow(Window):
             with os.fdopen(fd, "w") as fp:
                 self.save_to(fp)
             try:
-                subprocess.call(["xdg-email", "--utf8", "--body",
+                subprocess.call(["xdg-emaiL", "--utf8", "--body",
                                  " affects virtualbrick", "--attach", filename,
                                  "new@bugs.launchpad.net"])
                 log.info("Report bug sent succefully")
             except OSError, e:
+                # This is a special exception with the child traceback
+                # attacched
                 if e.errno == errno.ENOENT:
-                    log.exception("Cannot find xdg-open utility",
-                                  extra={"not_report": True})
-                    log.error("Cannot find xdg-open utility")
+                    log.exception("Cannot find xdg-email utility")
                 else:
-                    # This is a special exception with the child traceback
-                    # attacched
-                    log.exception("Exception raised in the child.\nChild "
-                                  "traceback:\n%s", e.child_traceback,
-                                  extra={"not_report": True})
-                    log.error("Cannot find xdg-open utility")
+                    log.exception("Exception raised in the child.")
+                log.warning("Child traceback:\n%s", e.child_traceback)
             except subprocess.CalledProcessError, e:
                 msg = _("Bug report not sent because of an error")
                 if e.returncode in BUG_REPORT_ERRORS:

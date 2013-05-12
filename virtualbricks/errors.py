@@ -21,9 +21,7 @@ class Error(Exception):
 
 
 class InvalidNameError(Error):
-    """Inherit from errors.InvalidName for backward compatibility."""
-
-InvalidName = InvalidNameError
+    pass
 
 
 class NameAlreadyInUseError(InvalidNameError):
@@ -37,34 +35,22 @@ class InvalidTypeError(Error):
 class BadConfigError(Error):
     pass
 
-BadConfig = BadConfigError
-
 
 class NotConnectedError(Error):
     pass
 
-NotConnected = NotConnectedError
 
-
-class LinkloopError(Error):
+class LinkLoopError(Error):
     pass
-
-Linkloop = LinkloopError
 
 
 class UnmanagedTypeError(Error):
     pass
 
-UnmanagedType = UnmanagedTypeError
-
 
 class InvalidActionError(Error):
     pass
 
-InvalidAction = InvalidActionError
-
 
 class DiskLockedError(Error):
     pass
-
-DiskLocked = DiskLockedError

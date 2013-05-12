@@ -173,8 +173,8 @@ class ConfigFile:
                         elif isinstance(action, console.VbShellCommand):
                             tempactions.append("add " + action)
                         else:
-                            log.err("Error: unmanaged action type. "
-                                    "Will not be saved!")
+                            log.error("Error: unmanaged action type. Will not "
+                                      "be saved!")
                             continue
                     fileobj.write(k + '=' + str(tempactions) + '\n')
                 #Standard management for other parameters
@@ -342,8 +342,8 @@ class ConfigFile:
                         factory.newbrick(ntype, name)
                         component = factory.getbrickbyname(name)
 
-                except Exception, err:
-                    log.exception("Bad config line: %s", err)
+                except Exception, e:
+                    log.exception("Bad config line: %s", l)
                     l = fileobj.readline()
                     continue
 

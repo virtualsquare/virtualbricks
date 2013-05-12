@@ -27,11 +27,9 @@ import copy
 import subprocess
 import logging
 
-from virtualbricks import base
+from virtualbricks import base, errors
 from virtualbricks.settings import MYPATH
 from virtualbricks.brickconfig import BrickConfig
-from virtualbricks.errors import (BadConfig, InvalidName, Linkloop,
-                                  NotConnected)
 from virtualbricks.console import RemoteHost
 
 
@@ -71,7 +69,7 @@ class Brick(base.Base):
 
     # each brick must overwrite this method
     def prog(self):
-        raise NotImplementedError("Brick.prog()")
+        raise NotImplementedError("Brick.prog")
 
     def rewrite_sock_server(self, v):
         f = os.path.basename(v)
@@ -99,7 +97,7 @@ class Brick(base.Base):
     def __deepcopy__(self, memo):
         newname = self.factory.nextValidName("Copy_of_%s" % self.name)
         if newname is None:
-            raise InvalidName("'%s' (was '%s')" % newname)
+            raise errors.InvalidNameError("'%s' (was '%s')" % newname)
         new_brick = type(self)(self.factory, newname)
         new_brick.cfg = copy.deepcopy(self.cfg, memo)
         return new_brick
@@ -183,11 +181,13 @@ class Brick(base.Base):
     def poweron(self):
         if self.factory.TCP is None:
             if not self.configured():
-                raise BadConfig()
+                raise errors.BadConfigError("Brick %s not configured",
+                                            self.name)
             if not self.properly_connected():
-                raise NotConnected()
+                raise errors.NotConnectedError("Brick %s not properly "
+                                               "connected", self.name)
             if not self.check_links():
-                raise Linkloop()
+                raise errors.LinkLoopError("Link loop detected")
         self._poweron()
         self.factory.bricksmodel.change_brick(self)
 
@@ -317,8 +317,8 @@ class Brick(base.Base):
                 pid = self.proc.pid
                 try:
                     self.proc.terminate()
-                except Exception, err:
-                    log.error(_("can not send SIGTERM: '%s'"), err)
+                except Exception, e:
+                    log.error(_("can not send SIGTERM: '%s'"), e)
                 ret = os.system('kill ' + str(pid))
             if ret != 0:
                 log.error(_("can not stop brick error code: %s"), ret)

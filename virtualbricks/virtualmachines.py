@@ -26,12 +26,11 @@ from datetime import datetime
 from shutil import move
 import logging
 
+from virtualbricks import errors, tools
 from virtualbricks.bricks import Brick
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.link import Sock, Plug
-from virtualbricks.errors import DiskLocked, InvalidName, BadConfig
 from virtualbricks.settings import MYPATH
-from virtualbricks import tools
 
 
 log = logging.getLogger(__name__)
@@ -58,6 +57,12 @@ class _VMPlug:
         self.__plug = plug
         self.mac = tools.random_mac()
         self.vlan = len(plug.brick.plugs) + len(plug.brick.socks)
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.__plug, name)
+        except AttributeError:
+            raise AttributeError("_VMPlug." + name)
 
     def configured(self):
         return self.__plug.configured()
@@ -136,6 +141,12 @@ class _VMSock:
             self=self, MYPATH=MYPATH, sock=sock)
         self.nickname = "{sock.brick.name}_sock_eth{self.vlan}".format(
             self=self, sock=sock)
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.__sock, name)
+        except AttributeError:
+            raise AttributeError("_VMSock." + name)
 
     def connect(self, endpoint):
         return
@@ -398,7 +409,8 @@ class VMDisk:
                 qmissing, qfound = tools.check_missing_qemu(
                     self.VM.settings.get("qemupath"))
                 if "qemu-img" in qmissing:
-                    raise BadConfig(_("qemu-img not found! I can't create a new image."))
+                    raise errors.BadConfigError(_("qemu-img not found! I can't"
+                                                  "create a new image."))
                 else:
                     log.debug("Creating a new private COW from %s base image.",
                               self.get_base())
@@ -646,10 +658,10 @@ class VM(Brick):
         #     try:
         #         self.settings.check_kvm()
         #     except IOError:
-        #         raise BadConfig(_("KVM not found! Please change VM configuration."))
+        #         raise errors.BadConfigError(_("KVM not found! Please change VM configuration."))
         #         return
         #     except NotImplementedError:
-        #         raise BadConfig(_("KVM not found! Please change VM configuration."))
+        #         raise errors.BadConfigError(_("KVM not found! Please change VM configuration."))
         #         return
 
         if (len(self.cfg.argv0) > 0 and self.cfg.kvm != "*"):
@@ -696,9 +708,14 @@ class VM(Brick):
                                         "image %s"), self.name, disk.image.name)
                             master = True
                         else:
-                            raise DiskLocked(_("Disk image %s already in use." % disk.image.name))
+                            raise errors.DiskLockedError(
+                                _("Disk image %s already in use."),
+                                disk.image.name)
                     else:
-                        raise DiskLocked(_("Disk image %s is marked as readonly and you are not using private cow or snapshot mode." % disk.image.name))
+                        raise errors.DiskLockedError(
+                            _("Disk image %s is marked as readonly and you are"
+                              "not using private cow or snapshot mode."),
+                            disk.image.name)
                 if self.cfg.get('use_virtio') == "*":
                     res.append('-drive')
                     diskname = disk.get_real_disk_name()
@@ -814,7 +831,7 @@ class VM(Brick):
     def __deepcopy__(self, memo):
         newname = self.factory.nextValidName("Copy_of_%s" % self.name)
         if newname is None:
-            raise InvalidName("'%s' (was '%s')" % newname)
+            raise errors.InvalidNameError("'%s' (was '%s')" % newname)
         new_brick = type(self)(self.factory, newname)
         new_brick.cfg = copy.deepcopy(self.cfg, memo)
         new_brick.newbrick_changes()
@@ -924,19 +941,17 @@ class VM(Brick):
             return c
         except Exception:
             if self.proc.stdout is not None:
-                log.err("Virtual Machine startup failed. Check your "
-                        "configuration!\nMessage:\n" +
-                        "\n".join(self.proc.stdout.readlines()))
+                log.error("Virtual Machine startup failed. Check your "
+                          "configuration!\nMessage:\n" +
+                          "\n".join(self.proc.stdout.readlines()))
             elif self.cfg.stdout != "":
                 stdout = open(self.cfg.stdout, "r")
-                log.err("Virtual Machine startup failed. Check your "
-                        "configuration!\nMessage:\n" +
-                        "\n".join(stdout.readlines()))
+                log.error("Virtual Machine startup failed. Check your "
+                          "configuration!\nMessage:\n" +
+                          "\n".join(stdout.readlines()))
             else:
-                log.exception("Virtual Machine startup failed.",
-                              extra={"not_report": True})
-                log.err("Virtual Machine startup failed. Check your "
-                        "configuration!")
+                log.exception("Virtual Machine startup failed. Check your "
+                              "configuration!")
 
             return None
 

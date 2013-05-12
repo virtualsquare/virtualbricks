@@ -33,7 +33,6 @@ from virtualbricks import app, tools, errors, settings, configfile, console
 from virtualbricks import (bricks, events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
 from virtualbricks.models import BricksModel, EventsModel
-from virtualbricks.errors import UnmanagedType
 
 
 log = logging.getLogger(__name__)
@@ -158,9 +157,6 @@ class BrickFactory(gobject.GObject):
 
         del self.socks[:]
 
-    def err(self, _, *args, **kwds):
-        log.error(*args, **kwds)
-
     def get_basefolder(self):
         baseimages = self.settings.get("baseimages")
         project_file = self.settings.get("current_project")
@@ -189,6 +185,7 @@ class BrickFactory(gobject.GObject):
     def new_disk_image(self, name, path, description="", host=None):
         """Add one disk image to the library."""
 
+        # XXX: assert that name and path are unique
         img = virtualmachines.DiskImage(name, path, description, host)
         self.disk_images.append(img)
         self.emit("image_added", img)
@@ -230,7 +227,7 @@ class BrickFactory(gobject.GObject):
             return
 
         if not tools.NameNotInUse(self, newname):
-            raise errors.InvalidNameError()
+            raise errors.InvalidNameError("Name %s already in use", newname)
             return
 
         b.name = newname
@@ -242,12 +239,10 @@ class BrickFactory(gobject.GObject):
     def renameevent(self, e, newname):
         newname = tools.ValidName(newname)
         if newname is None:
-            raise errors.InvalidNameError()
-            return
+            raise errors.InvalidNameError("Invalid name %s", newname)
 
         if not tools.NameNotInUse(self, newname):
-            raise errors.InvalidNameError()
-            return
+            raise errors.InvalidNameError("Name %s already in use", newname)
 
         e.name = newname
         if e.get_type() == "Event":
@@ -412,7 +407,8 @@ class BrickFactory(gobject.GObject):
             elif isinstance(obj, bricks.Brick):
                 self.delbrick(obj)
             else:
-                raise UnmanagedType()
+                raise errors.UnmanagedTypeError("Unknown type %s",
+                                                obj.__class__.__name__)
         if (cmd[0] == 'config'):
             obj.configure(cmd[1:])
         if (cmd[0] == 'show'):
@@ -539,12 +535,12 @@ def writesafe(filename, data):
     write(filename, data)
     try:
         os.chmod(filename, 0600)
-    except Exception, err:
+    except Exception, e:
         try:
             os.unlink(filename)
         except OSError:
             pass
-        raise IOError(*err.args)
+        raise IOError(*e.args)
 
 
 class BrickFactoryServer(BrickFactory):
@@ -680,8 +676,8 @@ class Application:
         if exc_type in (SystemExit, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, traceback)
         else:
-            log.error("Uncaught exception", exc_info=(exc_type, exc_value,
-                                                      traceback))
+            log.error(str(exc_value), exc_info=(exc_type, exc_value,
+                                                traceback))
 
     def start(self):
         self.factory = BrickFactory()
