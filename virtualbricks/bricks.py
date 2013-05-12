@@ -27,6 +27,7 @@ import copy
 import subprocess
 import logging
 
+from virtualbricks import base
 from virtualbricks.settings import MYPATH
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.errors import (BadConfig, InvalidName, Linkloop,
@@ -41,14 +42,13 @@ if False:  # pyflakes
     _ = str
 
 
-class Brick:
+class Brick(base.Base):
 
     active = False
     run_condition = False
     proc = None
     gui_changed = False
     need_restart_to_apply_changes = False
-    _needsudo = False
     internal_console = None
     terminal = "vdeterm"
 
@@ -70,18 +70,8 @@ class Brick:
             self.homehost = None
 
     # each brick must overwrite this method
-    def get_type(self):
-        try:
-            return self.model
-        except AttributeError:
-            raise NotImplementedError("Brick.get_type()")
-
-    # each brick must overwrite this method
     def prog(self):
         raise NotImplementedError("Brick.prog()")
-
-    def needsudo(self):
-        return self.factory.TCP is None and self._needsudo
 
     def rewrite_sock_server(self, v):
         f = os.path.basename(v)

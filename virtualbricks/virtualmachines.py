@@ -419,10 +419,11 @@ class VMDisk:
 
 class VM(Brick):
 
+    type = "Qemu"
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
-        self._needsudo = False
         self.cfg.name = _name
         self.cfg.argv0 = "i386"
         self.cfg.machine = ""
@@ -612,9 +613,6 @@ class VM(Brick):
         # FIXME: Don't know how to remove old devices, due to the ugly syntax of
         # usb_del command.
 
-
-    def get_type(self):
-        return "Qemu"
 
     def associate_disk(self):
         for hd in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:

@@ -23,6 +23,10 @@ from virtualbricks.link import Plug
 
 class Capture(Brick):
 
+    type = "Capture"
+    _needsudo = True
+
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
@@ -31,7 +35,6 @@ class Capture(Brick):
         self.cfg.sock = ""
         self.cfg.iface = ""
         self.plugs.append(Plug(self))
-        self._needsudo = True
 
     def restore_self_plugs(self):
         self.plugs.append(Plug(self))
@@ -50,9 +53,6 @@ class Capture(Brick):
     def prog(self):
         return self.settings.get("vdepath") + "/vde_pcapplug"
 
-    def get_type(self):
-        return 'Capture'
-
     def console(self):
         return None
 
@@ -69,6 +69,9 @@ class Capture(Brick):
 
 class Tap(Brick):
 
+    type = "Tap"
+    _needsudo = True
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
@@ -76,7 +79,6 @@ class Tap(Brick):
         self.command_builder = {"-s": 'sock', "*tap": "name"}
         self.cfg.sock = ""
         self.plugs.append(Plug(self))
-        self._needsudo = True
         self.cfg.ip = "10.0.0.1"
         self.cfg.nm = "255.255.255.0"
         self.cfg.gw = ""
@@ -96,9 +98,6 @@ class Tap(Brick):
 
     def prog(self):
         return self.settings.get("vdepath") + "/vde_plug2tap"
-
-    def get_type(self):
-        return 'Tap'
 
     def console(self):
         return None

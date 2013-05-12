@@ -15,31 +15,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from virtualbricks.bricks import Brick
 
+class Base:
 
-class Router(Brick):
+    # type = None  # if not set in a subclass will raise an AttributeError
+    _needsudo = False
 
-    type = "Router"
+    def get_type(self):
+        return self.type
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.pid = -1
-        self.cfg.name = _name
-        self.command_builder = {
-                    "-M": self.console,
-                    "-c": "configfile",
-                    }
-        self.on_config_changed()
+    def needsudo(self):
+        return self.factory.TCP is None and self._needsudo
 
-    def get_parameters(self):
-        return "Work in progress..."
-
-    def prog(self):
-        return self.settings.get("vdepath") + "/vde_router"
-
-    def on_config_changed(self):
-        Brick.on_config_changed(self)
-
-    def configured(self):
-        return True

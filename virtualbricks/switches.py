@@ -43,6 +43,8 @@ class Switch(Brick):
     True
     """
 
+    type = "Switch"
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
@@ -79,9 +81,6 @@ class Switch(Brick):
 
     def prog(self):
         return self.settings.get("vdepath") + "/vde_switch"
-
-    def get_type(self):
-        return 'Switch'
 
     def post_rename(self, name):
         for so in self.socks:
@@ -132,6 +131,8 @@ class FakeProcess:
 
 class SwitchWrapper(Brick):
 
+    type = "SwitchWrapper"
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
@@ -149,9 +150,6 @@ class SwitchWrapper(Brick):
 
     def prog(self):
         return ""
-
-    def get_type(self):
-        return 'SwitchWrapper'
 
     def on_config_changed(self):
         self.socks[0].path = self.cfg.path
