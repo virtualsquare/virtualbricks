@@ -406,7 +406,7 @@ class VBProtocol(Protocol):
 
     def do_reset(self, args):
         if args and args[0] == "all":  # backward compatibility
-            self.factory.reset_config()
+            self.factory.reset()
 
     def do_new(self, args):
         """Create a new brick or event"""

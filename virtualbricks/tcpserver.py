@@ -103,15 +103,15 @@ class TcpServer(logger.ChildLogger(__name__), Thread):
         if len(p_cha.poll(100)) > 0:
             rec = sock.recv(len(hashed))
             if rec == hashed:
-                self.info("%s: Client authenticated.", str(addr))
+                log.info("%s: Client authenticated.", addr)
                 sock.sendall("OK\n")
                 self.master_address = addr
                 self.serve_connection(sock)
             else:
-                self.info("%s: Authentication failed. " % str(addr))
+                log.info("%s: Authentication failed. ", addr)
                 sock.sendall("FAIL\n")
         else:
-            self.info("%s: Challenge timeout", str(addr))
+            log.info("%s: Challenge timeout", addr)
 
     def remote_wire_request(self, req):
         if len(req) == 0:

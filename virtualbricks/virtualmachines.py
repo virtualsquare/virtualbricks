@@ -197,7 +197,7 @@ class VMPlugHostonly(VMPlug):
         return True
 
     def connected(self):
-        self.debug( "CALLED hostonly connected" )
+        log.debug("CALLED hostonly connected")
         return True
 
 
@@ -338,7 +338,8 @@ class VMDisk:
             img.add_vmdisk(self)
             self.VM.cfg.set("base"+self.device +'='+ img.name)
             if not self.cow and self.VM.cfg.get("snapshot")=="" and self.image.set_master(self):
-                self.VM.factory.debug("Machine "+self.VM.name+" acquired master lock on image " + self.image.name)
+                log.debug("Machine %s acquired master lock on image %s",
+                          self.VM.name, self.image.name)
             return True
 
         ''' If that fails: rollback to old behavior, and search for an already
@@ -359,7 +360,8 @@ class VMDisk:
         self.VM.cfg.set("base"+self.device +'='+ img.name)
         if not self.cow and self.VM.cfg.get("snapshot")=="":
             if self.image.set_master(self):
-                self.VM.factory.debug("Machine "+self.VM.name+" acquired master lock on image " + self.image.name)
+                log.debug("Machine %s acquired master lock on image %s",
+                          self.VM.name, self.image.name)
             else:
                 log.warning("ERROR SETTING MASTER!!")
         return True
@@ -388,7 +390,9 @@ class VMDisk:
                 if base != self.get_base():
                     dt = datetime.now()
                     cowback = cowname + ".back-" + dt.strftime("%Y-%m-%d_%H-%M-%S")
-                    self.VM.factory.debug("%s private cow found with a different base image (%s): moving it in %s" % (cowname, base, cowback))
+                    log.debug("%s private cow found with a different base "
+                              "image (%s): moving it in %s", cowname, base,
+                              cowback)
                     move(cowname, cowback)
             if not os.access(cowname, os.R_OK):
                 qmissing, qfound = tools.check_missing_qemu(
@@ -396,7 +400,8 @@ class VMDisk:
                 if "qemu-img" in qmissing:
                     raise BadConfig(_("qemu-img not found! I can't create a new image."))
                 else:
-                    self.VM.factory.debug("Creating a new private COW from %s base image." % self.get_base())
+                    log.debug("Creating a new private COW from %s base image.",
+                              self.get_base())
                     command=[self.VM.settings.get("qemupath")+"/qemu-img","create","-b",self.get_base(),"-f",self.VM.settings.get('cowfmt'),cowname]
                     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     proc.wait()
@@ -689,14 +694,13 @@ class VM(Brick):
                 if disk.cow == False and disk.readonly() == False:
                     if disk.image.readonly is not True:
                         if disk.image.set_master(disk):
-                            self.factory.debug(_("Machine ")+self.name+_(" acquired master lock on image ")+disk.image.name)
+                            log.debug(_("Machine %s acquired master lock on "
+                                        "image %s"), self.name, disk.image.name)
                             master = True
                         else:
                             raise DiskLocked(_("Disk image %s already in use." % disk.image.name))
-                            return
                     else:
                         raise DiskLocked(_("Disk image %s is marked as readonly and you are not using private cow or snapshot mode." % disk.image.name))
-                        return
                 if self.cfg.get('use_virtio') == "*":
                     res.append('-drive')
                     diskname = disk.get_real_disk_name()
@@ -912,7 +916,7 @@ class VM(Brick):
     def open_internal_console(self):
 
         if not self.has_console():
-            self.factory.err(self, "No console detected.")
+            log.error("No console detected.")
             return None
 
         try:
@@ -922,12 +926,19 @@ class VM(Brick):
             return c
         except Exception:
             if self.proc.stdout is not None:
-                self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(self.proc.stdout.readlines()))
+                log.err("Virtual Machine startup failed. Check your "
+                        "configuration!\nMessage:\n" +
+                        "\n".join(self.proc.stdout.readlines()))
             elif self.cfg.stdout != "":
                 stdout = open(self.cfg.stdout, "r")
-                self.factory.err(self, "Virtual Machine startup failed. Check your configuration!\nMessage:\n"+"\n".join(stdout.readlines()))
+                log.err("Virtual Machine startup failed. Check your "
+                        "configuration!\nMessage:\n" +
+                        "\n".join(stdout.readlines()))
             else:
-                self.factory.err(self, "Virtual Machine startup failed. Check your configuration!")
+                log.exception("Virtual Machine startup failed.",
+                              extra={"not_report": True})
+                log.err("Virtual Machine startup failed. Check your "
+                        "configuration!")
 
             return None
 

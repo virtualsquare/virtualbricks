@@ -278,11 +278,11 @@ class _Brick(ChildLogger(__name__)):
                 sudoarg += "-P %s" % self.pidfile
                 command_line[0] = self.settings.get("sudo")
                 command_line[1] = self.escape(sudoarg)
-        self.debug(_("Starting: '%s'"), ' '.join(command_line))
+        log.debug(_("Starting: '%s'"), ' '.join(command_line))
         if self.homehost:
             if not self.homehost.connected:
-                self.factory.err(self, _("Error: You must be connected to the "
-                                         "host to perform this action"))
+                log.error(_("Error: You must be connected to the "
+                            "host to perform this action"))
                 return
             else:
                 # Initiate RemoteHost startup:
@@ -300,24 +300,24 @@ class _Brick(ChildLogger(__name__)):
                                              stdin=subprocess.PIPE, stdout=out,
                                              stderr=subprocess.STDOUT)
             except OSError:
-                self.factory.err(self, _("OSError: Brick startup failed. Check"
-                                         " your configuration!"))
+                log.error(_("OSError: Brick startup failed. Check your "
+                            "configuration!"))
                 return
 
             if self.proc:
                 self.pid = self.proc.pid
             else:
                 if self.proc is not None:
-                    self.factory.err(self, _("Brick startup failed. Check your"
-                                             " configuration!\nMessage:\n") +
-                                     "\n".join(self.proc.stdout.readlines()))
+                    log.error(_("Brick startup failed. Check your"
+                              " configuration!\nMessage:\n%s"),
+                            "\n".join(self.proc.stdout.readlines()))
                 else:
-                    self.factory.err(self, _("Brick startup failed. Check your"
-                                             "configuration!\n"))
+                    log.error(_("Brick startup failed. Check your"
+                                "configuration!\n"))
                 return
 
             if (self.open_internal_console and
-                callable(self.open_internal_console)):
+                    callable(self.open_internal_console)):
                 self.internal_console = self.open_internal_console()
 
         self.factory.emit("brick-started", self.name)
@@ -335,7 +335,7 @@ class _Brick(ChildLogger(__name__)):
             self.homehost.send(self.name + " off\n")
             return
 
-        self.debug(_("Shutting down %s"), self.name)
+        log.debug(_("Shutting down %s"), self.name)
         is_running = self.proc.poll() is None
         if is_running:
             if self.needsudo():
@@ -351,12 +351,10 @@ class _Brick(ChildLogger(__name__)):
                 try:
                     self.proc.terminate()
                 except Exception, err:
-                    self.factory.err(self, _("can not send SIGTERM: '%s'"),
-                                     err)
+                    log.error(_("can not send SIGTERM: '%s'"), err)
                 ret = os.system('kill ' + str(pid))
             if ret != 0:
-                self.factory.err(self, _("can not stop brick error code:"),
-                                 str(ret))
+                log.error(_("can not stop brick error code: %s"), ret)
                 return
 
         ret = None
@@ -398,9 +396,9 @@ class _Brick(ChildLogger(__name__)):
         if ev:
             ev.poweron()
         else:
-            self.warning("Warning. The Event '" + self.cfg.poff_vbevent +
-                         "' attached to Brick '" + self.name +
-                         "' is not available. Skipping execution.")
+            log.warning("Warning. The Event '%s' attached to Brick '%s' is "
+                        "not available. Skipping execution.",
+                        self.cfg.poff_vbevent, self.name)
 
     #############################
     # Console related operations.
@@ -417,7 +415,7 @@ class _Brick(ChildLogger(__name__)):
         return False
 
     def open_console(self):
-        self.debug("open_console")
+        log.debug("open_console")
         if not self.has_console():
             return
 
@@ -428,23 +426,21 @@ class _Brick(ChildLogger(__name__)):
             cmdline = [self.settings.get('alt-term'), '-t', self.name, '-e',
                        self.terminal + " " + self.console()]
         else:
-            self.factory.err(self, _("Error: cannot start a terminal"
-                                     " emulator"))
+            log.error(_("Error: cannot start a terminal emulator"))
             return
         try:
             # console = subprocess.Popen(cmdline)
             subprocess.Popen(cmdline)
         except:
-            self.exception(_("Error running command line") +
-                           " '" + cmdline + " '")
+            log.exception(_("Error running command line %s"), cmdline)
             return
 
     # Must be overridden in Qemu to use appropriate console as internal
     # (stdin, stdout?)
     def open_internal_console(self):
-        self.debug("open_internal_console")
+        log.debug("open_internal_console")
         if not self.has_console():
-            self.debug(self.get_type() + " " + _("does not have a console"))
+            log.debug(_("%s does not have a console"), self.get_type())
             return None
         for i in range(1, 10):
             try:
@@ -455,22 +451,21 @@ class _Brick(ChildLogger(__name__)):
                 pass
             else:
                 return c
-        self.factory.err(self, self.get_type() + ": " +
-                         _("error opening internal console"))
+        log.error(_("%s: error opening internal console"), self.get_type())
         return None
 
     def send(self, msg):
         if self.internal_console is None or not self.active:
-            self.debug(self.get_type() + ": cancel send")
+            log.debug("%s: cancel send", self.get_type())
             return
         try:
-            self.debug(self.get_type() + ": sending '%s'", msg)
+            log.debug("%s: sending '%s'", self.get_type(), msg)
             self.internal_console.send(msg)
-        except Exception, err:
-            self.exception(self.get_type() + ": send failed : %s", err)
+        except Exception:
+            log.exception("%s: send failed", self.get_type())
 
     def recv(self):
-        self.debug("recv")
+        log.debug("recv")
         if self.internal_console is None:
             return ''
         res = ''

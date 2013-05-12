@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import logging
 import subprocess
 
 from virtualbricks.logger import ChildLogger
@@ -26,6 +27,9 @@ from virtualbricks.errors import BadConfig, InvalidAction
 
 if False:  # pyflakes
     _ = str
+
+
+log = logging.getLogger(__name__)
 
 
 class Event(ChildLogger(__name__)):
@@ -91,14 +95,14 @@ class Event(ChildLogger(__name__)):
             for action in configactions[1:]:
                 action = action.strip()
                 self.cfg.actions.append(VbShellCommand(action))
-                self.info(_("Added vb-shell command: '%s'"), unicode(action))
+                log.info(_("Added vb-shell command: '%s'"), action)
         elif('addsh' in attrlist):
             configactions = list()
             configactions = (' '.join(attrlist)).split('addsh')
             for action in configactions[1:]:
                 action = action.strip()
                 self.cfg.actions.append(ShellCommand(action))
-                self.info(_("Added host-shell command: '%s'"), unicode(action))
+                log.info(_("Added host-shell command: '%s'"), action)
         else:
             for attr in attrlist:
                 self.cfg.set(attr)
@@ -169,8 +173,7 @@ class Event(ChildLogger(__name__)):
                 try:
                     subprocess.Popen(action, shell=True)
                 except:
-                    self.factory.err(self, "Error: cannot execute shell "
-                                     "command \"%s\"" % action)
+                    log.error("Error: cannot execute shell command %s", action)
                     continue
 #            else:
 #                #it is an event
