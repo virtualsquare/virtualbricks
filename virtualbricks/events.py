@@ -33,22 +33,21 @@ log = logging.getLogger(__name__)
 
 class Event:
 
-    def __init__(self, _factory, _name):
-        self.factory = _factory
+    active = False
+    gui_changed = False
+    need_restart_to_apply_changes = False
+    internal_console = None
+    timer = None
+
+    def __init__(self, factory, name):
+        self.factory = factory
+        self.name = name
         self.settings = self.factory.settings
-        self.active = False
-        self.name = _name
         self.cfg = BrickConfig()
         self.cfg.actions = list()
         self.cfg.delay = 0
-        self.factory.events.append(self)
-        self.gui_changed = False
-        self.need_restart_to_apply_changes = False
         self._needsudo = False
-        self.internal_console = None
-        self.factory.eventsmodel.add_event(self)
         self.on_config_changed()
-        self.timer = None
 
     def needsudo(self):
         return self.factory.TCP is None and self._needsudo

@@ -299,7 +299,7 @@ class BrickFactory(gobject.GObject):
         return False
 
     def newbrick(self, type, name, host="", remote=False):
-        """Old interface, use new_brick instead.
+        """Old interface, use brickfactory.new_brick() instead.
 
         Two possible method invocations:
 
@@ -315,8 +315,14 @@ class BrickFactory(gobject.GObject):
         else:
             return self.new_brick(type, name, host, remote)
 
-    @synchronized
     def new_brick(self, type, name, host="", remote=False):
+        brick = self._new_brick(type, name, host, remote)
+        self.bricks.append(brick)
+        self.bricksmodel.append((brick,))
+        return brick
+
+    @synchronized
+    def _new_brick(self, type, name, host, remote):
         """Return a new brick.
 
         @param type: The type of new brick. Must be known.
@@ -350,21 +356,22 @@ class BrickFactory(gobject.GObject):
                                     brick.name)
         return brick
 
-    # def __new_brick(self, type, name, host="", remote=False):
-    #     brick = self.new_brick(type, name, host, remote)
-    #     self.bricks.append(brick)
-    #     self.bricksmodel.append(brick)
-
     def newevent(self, ntype="", name=""):
-        """Old interface, use new_event instead."""
+        """Old interface, use brickfactory.new_event() instead."""
         if ntype not in ("event", "Event"):
             log.error("Invalid event command '%s %s'", ntype, name)
             return False
         self.new_event(name)
         return True
 
-    @synchronized
     def new_event(self, name):
+        event = self._new_event(name)
+        self.events.append(event)
+        self.eventsmodel.append((event,))
+        return event
+
+    @synchronized
+    def _new_event(self, name):
         """Create a new event.
 
         @arg name: The event name.
