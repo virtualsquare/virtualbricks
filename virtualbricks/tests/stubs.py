@@ -11,7 +11,8 @@ class BrickStub(bricks.Brick):
 
 class ConfigFileStub:
 
-    def __init__(self, save=None, restore=None):
+    def __init__(self, factory, save=None, restore=None):
+        self.factory = factory
         self._save = save
         self._restore = restore
 
@@ -19,12 +20,14 @@ class ConfigFileStub:
         return "Stub"
 
     def restore(self, arg):
-        if self._restore:
-            self._restore(arg)
+        with self.factory.lock():
+            if self._restore:
+                self._restore(arg)
 
     def save(self, arg):
-        if self._save:
-            self._save(arg)
+        with self.factory.lock():
+            if self._save:
+                self._save(arg)
 
 
 class FactoryStub(brickfactory.BrickFactory):

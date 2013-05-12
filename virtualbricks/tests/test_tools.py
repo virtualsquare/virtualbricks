@@ -49,15 +49,11 @@ class TestTools(unittest.TestCase):
 
     def test_tempfile_context(self):
         with tools.Tempfile() as (fd, filename):
+            os.close(fd)
             self.assertTrue(os.path.isfile(filename))
         try:
             with tools.Tempfile() as (fd, filename):
+                os.close(fd)
                 raise RuntimeError
         except RuntimeError:
             self.assertFalse(os.path.isfile(filename))
-        with tools.Tempfile() as (fd, filename):
-            fp = os.fdopen(fd)
-        with self.assertRaises(IOError) as cm:
-            fp.close()
-        self.assertEqual(cm.exception.errno, 9)
-
