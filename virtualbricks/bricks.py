@@ -27,7 +27,6 @@ import copy
 import subprocess
 import logging
 
-from virtualbricks.logger import ChildLogger
 from virtualbricks.settings import MYPATH
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.errors import (BadConfig, InvalidName, Linkloop,
@@ -42,7 +41,7 @@ if False:  # pyflakes
     _ = str
 
 
-class _Brick(ChildLogger(__name__)):
+class _Brick:
 
     active = False
     run_condition = False

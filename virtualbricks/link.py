@@ -17,11 +17,10 @@
 
 import os
 
-from virtualbricks.logger import ChildLogger
 from virtualbricks import errors
 
 
-class Plug(ChildLogger(__name__)):
+class Plug:
 
     def __init__(self, brick):
         self.brick = brick

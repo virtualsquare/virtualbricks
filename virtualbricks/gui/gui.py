@@ -28,8 +28,8 @@ import gobject
 import gtk
 import gtk.glade
 
-from virtualbricks import (brickfactory, logger, tools, virtualmachines, app,
-						settings, configfile)
+from virtualbricks import (app, tools, settings, configfile, brickfactory,
+		virtualmachines)
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.models import EventsModel
@@ -118,7 +118,7 @@ def check_joblist(gui, force=False):
 	return True
 
 
-class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
+class VBGUI(gobject.GObject):
 	"""
 	The main GUI object for virtualbricks, containing all the configuration for
 	the widgets and the connections to the main engine.
@@ -132,7 +132,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.topology = None
 		self.widg = self.get_widgets(self.widgetnames())
 
-		self.info("Starting VirtualBricks!")
+		log.info("Starting VirtualBricks!")
 
 		# Creation of the main BrickFactory engine
 		self.brickfactory.BRICKTYPES['vm'] = virtualmachines.VMGui
@@ -250,7 +250,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 					missing_text = missing_text + "KSM not found in Linux. Samepage memory will not work on this system.\n"
 				else:
 					missing_components = missing_components + ('%s ' % m)
-			self.error(missing_text + "\nThere are some components not found: " + missing_components + " some functionalities may not be available.\nYou can disable this alert from the general settings.")
+			log.error("%s\nThere are some components not found: %s some "
+					"functionalities may not be available.\nYou can disable "
+					"this alert from the general settings.", missing_text,
+					missing_components)
 
 	def quit(self):
 		for model, handlers in ((self.brickfactory, self.__factory_handlers),
@@ -969,7 +972,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			if self.eventstree.get_selection() is None:
 				return
 			if self.eventstree.get_selection().get_type() == 'Event':
-				self.debug("event config")
+				log.debug("event config")
 				ww = self.gladefile.get_widget('box_eventconfig')
 				self.config_event_prepare()
 				ww.show_all()
@@ -985,38 +988,38 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			return
 
 		if self.maintree.get_selection().get_type() == 'Switch':
-			self.debug("switch config")
+			log.debug("switch config")
 			ww = self.gladefile.get_widget('box_switchconfig')
 		elif self.maintree.get_selection().get_type() == 'Qemu':
-			self.debug("qemu config")
+			log.debug("qemu config")
 			ww = self.gladefile.get_widget('box_vmconfig')
 		elif self.maintree.get_selection().get_type() == 'Tap':
-			self.debug("tap config")
+			log.debug("tap config")
 			ww = self.gladefile.get_widget('box_tapconfig')
 		elif self.maintree.get_selection().get_type() == 'Wire':
-			self.debug("wire config")
+			log.debug("wire config")
 			ww = self.gladefile.get_widget('box_wireconfig')
 		elif self.maintree.get_selection().get_type() == 'Wirefilter':
-			self.debug("wirefilter config")
+			log.debug("wirefilter config")
 			ww = self.gladefile.get_widget('box_wirefilterconfig')
 		elif self.maintree.get_selection().get_type() == 'TunnelConnect':
-			self.debug("tunnelc config")
+			log.debug("tunnelc config")
 			ww = self.gladefile.get_widget('box_tunnelcconfig')
 		elif self.maintree.get_selection().get_type() == 'TunnelListen':
-			self.debug("tunnell config")
+			log.debug("tunnell config")
 			ww = self.gladefile.get_widget('box_tunnellconfig')
 		elif self.maintree.get_selection().get_type() == 'Capture':
-			self.debug("capture config")
+			log.debug("capture config")
 			ww = self.gladefile.get_widget('box_captureconfig')
 		elif self.maintree.get_selection().get_type() == 'SwitchWrapper':
-			self.debug("switchwrapper config")
+			log.debug("switchwrapper config")
 			ww = self.gladefile.get_widget('box_switchwrapperconfig')
 		elif self.maintree.get_selection().get_type() == 'Router':
-			self.debug("router config")
+			log.debug("router config")
 			ww = self.gladefile.get_widget('box_routerconfig')
 
 		else:
-			self.debug("Error: invalid brick type")
+			log.debug("Error: invalid brick type")
 			self.curtain_down()
 			return
 
@@ -1236,16 +1239,16 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			try:
 				self.brickfactory.newbrick('remote', ntype, name, remotehost, "")
 			except InvalidName:
-				self.error(_("Cannot create brick: Invalid name."))
+				log.error(_("Cannot create brick: Invalid name."))
 			else:
-				self.debug("Created successfully")
+				log.debug("Created successfully")
 		else:
 			try:
 				self.brickfactory.newbrick(ntype, name)
 			except InvalidName:
-				self.error(_("Cannot create brick: Invalid name."))
+				log.error(_("Cannot create brick: Invalid name."))
 			else:
-				self.debug("Created successfully")
+				log.debug("Created successfully")
 
 
 	def on_newevent_cancel(self, widget=None, data=""):
@@ -1260,15 +1263,16 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		validname = tools.ValidName(eventname)
 		if validname is None:
-			self.error(_("The name \"")+eventname+_("\" has forbidden format."))
+			log.error(_("The name '%s' has forbidden format."), eventname)
 			return
 		elif validname != eventname:
 			self.gladefile.get_widget('text_neweventname').set_text(validname)
-			self.error(_("The name \"")+eventname+_("\" has been adapted to \"")+validname+"\".")
+			log.error(_("The name '%s' has been adapted to '%s'."), eventname,
+					validname)
 			eventname = validname
 
 		if not tools.NameNotInUse(self.brickfactory, eventname):
-			self.error(_("An object named \"")+eventname+_("\" already exist."))
+			log.error(_("An object named '%s' already exist."), eventname)
 			return
 
 		self.show_window('')
@@ -1387,7 +1391,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
 
 		except InvalidName:
-			self.error(_("Cannot create event: Invalid name."))
+			log.error(_("Cannot create event: Invalid name."))
 
 	def edited_callback (self, cell, rowpath, new_text, user_data):
 		model, col_id = user_data
@@ -1711,17 +1715,17 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			pth, pos = drop_info
 
 		if pos == gtk.TREE_VIEW_DROP_BEFORE:
-			self.debug('dropped before')
+			log.debug('dropped before')
 			drag_context.finish(False, False, timestamp)
 			return False
 
 		if pos == gtk.TREE_VIEW_DROP_AFTER:
 			drag_context.finish(False, False, timestamp)
-			self.debug('dropped after')
+			log.debug('dropped after')
 			return False
 
 		if dropbrick and (dropbrick != self.Dragging):
-			self.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
+			log.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
 			res = False
 			if len(dropbrick.socks) > 0:
 				res = self.Dragging.connect(dropbrick.socks[0])
@@ -1807,10 +1811,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	def event_startstop_brick(self, e):
 		if e.get_type() == 'Event':
 			if e.active:
-				self.debug( "Power OFF" )
+				log.debug("Power OFF")
 				e.poweroff()
 			else:
-				self.debug ( "Power ON" )
+				log.debug("Power ON")
 				e.poweron()
 			return
 
@@ -1824,20 +1828,20 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				b.poweron()
 			except BadConfig:
 				b.gui_changed=True
-				self.error(_("Cannot start '%s': not configured"),
+				log.error(_("Cannot start '%s': not configured"),
 					b.name)
 			except NotConnected:
-				self.error(_("Cannot start '%s': not connected"),
+				log.error(_("Cannot start '%s': not connected"),
 					b.name)
 			except Linkloop:
 				if self.config.erroronloop:
-					self.error(_("Loop link detected: aborting operation. If you want to start "
-						"a looped network, disable the check loop feature in the general "
-						"settings"))
+					log.error(_("Loop link detected: aborting operation. If "
+							"you want to start a looped network, disable the "
+							"check loop feature in the general settings"))
 					b.poweroff()
 			except DiskLocked as ex:
 				b.gui_changed=True
-				self.error(_("Disk used by the VM is locked:\n")+str(ex))
+				log.error(_("Disk used by the VM is locked:\n%s"), ex)
 				b.poweroff()
 
 
@@ -1877,7 +1881,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			else:
 				conn_ok, msg = self.remotehost_selected.connect()
 				if not conn_ok:
-					self.error("Error connecting to remote host %s: %s" % (self.remotehost_selected.addr[0], msg))
+					log.error("Error connecting to remote host %s: %s",
+							self.remotehost_selected.addr[0], msg)
 
 	def on_joblist_treeview_button_release_event(self, widget=None, event=None, data=""):
 		treeview = self.gladefile.get_widget("scrolledwindow1").get_child()
@@ -1927,7 +1932,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			return
 
 		if response in [gtk.RESPONSE_APPLY, gtk.RESPONSE_OK]:
-			self.debug("Apply settings...")
+			log.debug("Apply settings...")
 			for k in ['qemupath', 'vdepath', 'baseimages']:
 				self.config.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
 
@@ -2092,9 +2097,9 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		path = self.gladefile.get_widget('text_imagename_path').get_text()
 		description = self.gladefile.get_widget('text_imagename_description').get_text()
 		if not tools.ValidName(name):
-			self.error("Invalid name")
+			log.error("Invalid name")
 		elif not tools.NameNotInUse(self.brickfactory, name):
-			self.error("Name already in use")
+			log.error("Name already in use")
 		else:
 			self.brickfactory.new_disk_image(name, path, description)
 		self.show_window('')
@@ -2130,7 +2135,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		self.show_createimage()
 
 	def image_create (self):
-		self.debug("Image creating.. ",)
+		log.debug("Image creating.. ",)
 		path = self.gladefile.get_widget('filechooserbutton_newimage_dest').get_filename() + "/"
 		filename = self.gladefile.get_widget('entry_newimage_name').get_text()
 		img_format = self.gladefile.get_widget('combobox_newimage_format').get_active_text()
@@ -2140,7 +2145,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()[:-1]
 		cmd='qemu-img create'
 		if not filename:
-			self.error(_("Choose a filename first!"))
+			log.error(_("Choose a filename first!"))
 			return
 
 		if img_format == "Auto":
@@ -2227,22 +2232,22 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			self.debug("Sending to process signal 19!")
+			log.debug("Sending to process signal 19!")
 			self.joblist_selected.proc.send_signal(19)
 
 	def on_item_cont_job_activate(self, widget=None, data=""):
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			self.debug("Sending to process signal 18!")
+			log.debug("Sending to process signal 18!")
 			self.joblist_selected.proc.send_signal(18)
 
 	def on_item_reset_job_activate(self, widget=None, data=""):
-		self.debug(self.joblist_selected)
+		log.debug(self.joblist_selected)
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			self.debug("Restarting process!")
+			log.debug("Restarting process!")
 			self.joblist_selected.poweroff()
 			self.joblist_selected.poweron()
 
@@ -2250,7 +2255,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		if self.joblist_selected is None:
 			return
 		if self.joblist_selected.proc != None:
-			self.debug("Sending to process signal 9!")
+			log.debug("Sending to process signal 9!")
 			self.joblist_selected.proc.send_signal(9)
 
 	def on_attach_device_activate(self, widget=None, data=""):
@@ -2369,7 +2374,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def on_brick_rename(self,widget=None, event=None, data=""):
 		if self.maintree.get_selection().proc != None:
-			self.error(_("Cannot rename Brick: it is in use."))
+			log.error(_("Cannot rename Brick: it is in use."))
 			return
 
 		self.gladefile.get_widget('entry_brick_newname').set_text(self.maintree.get_selection().name)
@@ -2395,19 +2400,19 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			try:
 				self.brickfactory.renamebrick(self.maintree.get_selection(), self.gladefile.get_widget('entry_brick_newname').get_text())
 			except InvalidName:
-				self.error(_("Invalid name!"))
+				log.error(_("Invalid name!"))
 
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if response == 1:
 			if self.eventstree.get_selection().active:
-				self.error(_("Cannot rename Event: it is in use."))
+				log.error(_("Cannot rename Event: it is in use."))
 				return
 
 			try:
 				self.brickfactory.renameevent(self.eventstree.get_selection(), self.gladefile.get_widget('entry_event_newname').get_text())
 			except InvalidName:
-				self.error(_("Invalid name!"))
+				log.error(_("Invalid name!"))
 
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
 		if response == 1:
@@ -2463,10 +2468,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 		 		if currevent is not None:
 					#If at least one element added
-					self.debug("Event created successfully")
+					log.debug("Event created successfully")
 		 			widget.hide()
 			except InvalidName:
-				self.error(_("Invalid name!"))
+				log.error(_("Invalid name!"))
 				widget.hide()
 		#Dialog window canceled
 		else:
@@ -2500,7 +2505,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 										split(" "))
 			iter = self.addedmodel.iter_next(iter)
 
-		self.debug("Event created successfully")
+		log.debug("Event created successfully")
 
 	def on_brick_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
@@ -2624,7 +2629,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				kvm = tools.check_kvm(self.config.get("qemupath"))
 				self.kvm_toggle_all(True)
 				if not kvm:
-					self.error(_("No KVM support found on the system. "
+					log.error(_("No KVM support found on the system. "
 						"Check your active configuration. "
 						"KVM will stay disabled."))
 				widget.set_active(kvm)
@@ -2844,7 +2849,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	def on_vm_suspend(self, widget=None, event=None, data=""):
 		hda = self.joblist_selected.cfg.get('basehda')
 		if hda is None or 0 != subprocess.Popen(["qemu-img","snapshot","-c","virtualbricks",hda]).wait():
-			self.error(_("Suspend/Resume not supported on this disk."))
+			log.error(_("Suspend/Resume not supported on this disk."))
 			return
 		self.joblist_selected.recv()
 		self.joblist_selected.send("savevm virtualbricks\n")
@@ -2860,7 +2865,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			return
 
 		hda = b.cfg.get('basehda')
-		self.debug("resume")
+		log.debug("resume")
 		if os.system("qemu-img snapshot -l "+hda+" |grep virtualbricks") == 0:
 			if b.proc is not None:
 				b.send("loadvm virtualbricks\n")
@@ -2870,7 +2875,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				b.cfg.set("loadvm=virtualbricks")
 				b.poweron()
 		else:
-			self.error(_("Cannot find suspend point."))
+			log.error(_("Cannot find suspend point."))
 
 	def on_vm_powerbutton(self, widget=None, event=None, data=""):
 		self.joblist_selected.send("system_powerdown\n")
@@ -2902,11 +2907,11 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		try:
 			self.draw_topology(fname)
 		except KeyError:
-			self.error(_("Error saving topology: Invalid image format"))
+			log.error(_("Error saving topology: Invalid image format"))
 		except IOError:
-			self.error(_("Error saving topology: Could not write file"))
+			log.error(_("Error saving topology: Could not write file"))
 		except:
-			self.error(_("Error saving topology: Unknown error"))
+			log.error(_("Error saving topology: Unknown error"))
 
 	def on_topology_export_cancel(self, widget=None, event=None, data=""):
 		self.gladefile.get_widget('topology_export_dialog').hide()
@@ -3182,7 +3187,8 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		else:
 			conn_ok, msg = self.remotehost_selected.connect()
 			if not conn_ok:
-				self.error("Error connecting to remote host %s: %s" % (self.remotehost_selected.addr[0], msg))
+				log.error("Error connecting to remote host %s: %s",
+						self.remotehost_selected.addr[0], msg)
 
 	def on_remote_password(self, widget, event=None, data=None):
 		self.gladefile.get_widget('text_remote_password').set_text(self.remotehost_selected.password)
@@ -3231,10 +3237,10 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def do_image_commit(self, path):
 		if (not os.access(path, os.R_OK)):
-			self.error('Unable to read image')
+			log.error('Unable to read image')
 			return False
 		if 0 != subprocess.Popen(["qemu-img","commit",path]).wait():
-			self.error('Failed to commit image')
+			log.error('Failed to commit image')
 			return False
 		return True
 
@@ -3252,13 +3258,13 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 				else:
 					path = img.basefolder + "/" + img.VM.name + "_" + img.device + ".cow"
 			else:
-				self.error("Invalid image")
+				log.error("Invalid image")
 				return False
 		else:
 			path = self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').get_filename()
 
-		if (not os.access(path, os.R_OK)):
-			self.error("Error: "+path+" is not a valid COW image")
+		if not os.access(path, os.R_OK):
+			log.error("Error: %s is not a valid COW image", path)
 			return True
 		self.ask_confirm("Warning: the base image will be updated to the changes contained in the COW.\n"+
 						" This operation cannot be undone. \nAre you sure?", on_yes=self.do_image_commit, arg=path)
@@ -3282,13 +3288,13 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def on_convertimage_convert(self, widget, event=None, data=None):
 		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
-			self.error("Select a file")
+			log.error("Select a file")
 			return
 
 		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
 		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
 		if not os.access(os.path.dirname(self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()), os.W_OK):
-			self.error("Cannot write to the specified location")
+			log.error("Cannot write to the specified location")
 		else:
 			self.do_image_convert()
 

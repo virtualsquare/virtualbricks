@@ -21,6 +21,7 @@ import socket
 from threading import Thread
 import logging
 
+from virtualbricks import logger
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Plug
 
@@ -40,7 +41,7 @@ if False:  # pyflakes
     _ = str
 
 
-class Wire(Brick):
+class Wire(logger.ChildLogger(__name__), Brick):
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
