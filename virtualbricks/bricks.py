@@ -41,7 +41,7 @@ if False:  # pyflakes
     _ = str
 
 
-class _Brick:
+class Brick:
 
     active = False
     run_condition = False
@@ -501,11 +501,3 @@ class _Brick:
         else:
             state = _('off')
         return state
-
-
-class Brick(_Brick):
-
-    def __init__(self, factory, name, homehost=None):
-        _Brick.__init__(self, factory, name, homehost)
-        self.factory.bricks.append(self)
-        self.factory.bricksmodel.add_brick(self)
