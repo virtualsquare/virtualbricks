@@ -92,7 +92,7 @@ def check_joblist(gui, force=False):
 			gui.running_bricks.set_value(iter, 1, pid)
 			gui.running_bricks.set_value(iter, 2, b.get_type())
 			gui.running_bricks.set_value(iter, 3, b.name)
-		gui.debug("proc list updated")
+		log.debug("proc list updated")
 	if gui.brickfactory.remotehosts_changed:
 		#TODO: define/Use VBTree.redraw() for this
 		gui.remote_hosts_tree.clear()
