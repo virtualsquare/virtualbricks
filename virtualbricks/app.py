@@ -110,8 +110,8 @@ def usage_wrapper(func, short_opts, long_opts):
                 raise UsageError(msg)
 
             return func(opts, args)
-        except UsageError, err:
-            print(err.msg, file=sys.stderr)
+        except UsageError, e:
+            print(e.msg, file=sys.stderr)
             print("for help use --help", file=sys.stderr)
             return 2
     return main
@@ -122,9 +122,9 @@ def run(application, config):
     runner.application_factory = application
     try:
         runner.run()
-    except QuitError, err:
-        print(err.msg, file=sys.stderr)
-        return err.exit_code
+    except QuitError, e:
+        print(e.msg, file=sys.stderr)
+        return e.exit_code
     except KeyboardInterrupt:
         # I don't wanna catch SystemExit exception because is raised only
         # programmatically, so if someone thinks that is a good idea to

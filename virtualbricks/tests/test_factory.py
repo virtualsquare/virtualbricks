@@ -20,17 +20,17 @@ class TestFactory(unittest.TestCase):
         self.assertEquals(self.factory.events, [])
 
     def test_newbrick(self):
-        self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
+        self.assertRaises(errors.InvalidNameError, self.factory.newbrick, "stub",
                           "")
         self.factory.newbrick("stub", "test_brick")
-        self.assertRaises(errors.InvalidName, self.factory.newbrick, "stub",
+        self.assertRaises(errors.InvalidNameError, self.factory.newbrick, "stub",
                           "test_brick")
 
     def test_newevent(self):
-        self.assertRaises(errors.InvalidName, self.factory.newevent, "event",
+        self.assertRaises(errors.InvalidNameError, self.factory.newevent, "event",
                           "")
         self.factory.newevent("event", "test_event")
-        self.assertRaises(errors.InvalidName, self.factory.newevent, "event",
+        self.assertRaises(errors.InvalidNameError, self.factory.newevent, "event",
                           "test_event")
         self.assertTrue(self.factory.newevent("Event", "event1"))
         self.assertFalse(self.factory.newevent("eVeNt", "event2"))

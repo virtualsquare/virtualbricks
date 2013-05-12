@@ -68,8 +68,8 @@ class Event(base.Base):
 
     def initialize(self, attrlist):
         if 'add' in attrlist and 'addsh' in attrlist:
-            raise errors.InvalidAction(_("Error: config line must contain add "
-                                         "OR addsh."))
+            raise errors.InvalidActionError(_("Error: config line must "
+                                              "contain add OR addsh."))
         elif('add' in attrlist):
             configactions = list()
             configactions = (' '.join(attrlist)).split('add')
@@ -124,7 +124,7 @@ class Event(base.Base):
     ############################
     def poweron(self):
         if not self.configured():
-            raise errors.BadConfig()
+            raise errors.BadConfigError("Event %s not configured", self.name)
         if self.active:
             self.timer.cancel()
             self.active = False

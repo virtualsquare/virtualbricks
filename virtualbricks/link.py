@@ -34,7 +34,7 @@ class Plug:
     def connected(self):
         if self.antiloop:
             if self.settings.get('erroronloop'):
-                raise errors.NotConnected('Network loop detected!')
+                raise errors.NotConnectedError('Network loop detected!')
             self.antiloop = False
             return False
 

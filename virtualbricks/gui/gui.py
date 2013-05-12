@@ -28,10 +28,9 @@ import gobject
 import gtk
 import gtk.glade
 
-from virtualbricks import (app, tools, settings, configfile, brickfactory,
-		virtualmachines)
+from virtualbricks import (app, tools, errors, settings, configfile,
+						brickfactory, virtualmachines)
 from virtualbricks.console import VbShellCommand, RemoteHost
-from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.models import EventsModel
 from virtualbricks.settings import MYPATH
 
@@ -1234,14 +1233,14 @@ class VBGUI(gobject.GObject):
 			remotehost = self.gladefile.get_widget('text_newbrick_runremote').get_text()
 			try:
 				self.brickfactory.newbrick('remote', ntype, name, remotehost, "")
-			except InvalidName:
+			except errors.InvalidNameError:
 				log.error(_("Cannot create brick: Invalid name."))
 			else:
 				log.debug("Created successfully")
 		else:
 			try:
 				self.brickfactory.newbrick(ntype, name)
-			except InvalidName:
+			except errors.InvalidNameError:
 				log.error(_("Cannot create brick: Invalid name."))
 			else:
 				log.debug("Created successfully")
@@ -1386,7 +1385,7 @@ class VBGUI(gobject.GObject):
 
 				self.gladefile.get_widget('dialog_event_bricks_select').show_all()
 
-		except InvalidName:
+		except errors.InvalidNameError:
 			log.error(_("Cannot create event: Invalid name."))
 
 	def edited_callback (self, cell, rowpath, new_text, user_data):
@@ -1668,16 +1667,16 @@ class VBGUI(gobject.GObject):
 		self.show_window('dialog_settings')
 
 	def on_item_settings_autoshow_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_item_settings_autoshow_activate not implemented")
 
 	def on_item_settings_autohide_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_item_settings_autohide_activate not implemented")
 
 	def on_item_about_activate(self, widget=None, data=""):
 		dialogs.AboutDialog().run()
 
 	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_toolbutton_launchxterm_clicked not implemented")
 
 	def on_toolbutton_start_all_clicked(self, widget=None, data=""):
 		self.curtain_down()
@@ -1822,22 +1821,22 @@ class VBGUI(gobject.GObject):
 				b.cfg.loadvm = '' #prevent restore from saved state
 			try:
 				b.poweron()
-			except BadConfig:
+			except errors.BadConfigError:
 				b.gui_changed=True
 				log.error(_("Cannot start '%s': not configured"),
 					b.name)
-			except NotConnected:
+			except errors.NotConnectedError:
 				log.error(_("Cannot start '%s': not connected"),
 					b.name)
-			except Linkloop:
+			except errors.LinkLoopError:
 				if self.config.erroronloop:
 					log.error(_("Loop link detected: aborting operation. If "
 							"you want to start a looped network, disable the "
 							"check loop feature in the general settings"))
 					b.poweroff()
-			except DiskLocked as ex:
+			except errors.DiskLockedError as e:
 				b.gui_changed=True
-				log.error(_("Disk used by the VM is locked:\n%s"), ex)
+				log.error(_("Disk used by the VM is locked:\n%s"), e)
 				b.poweroff()
 
 
@@ -2023,43 +2022,43 @@ class VBGUI(gobject.GObject):
 		treeselection.unselect_all()
 
 	def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_cdromdrives_row_activated not implemented")
 
 	def on_button_settings_add_cdevice_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button_settings_add_cdevice_clicked not implemented")
 
 	def on_button_settings_rem_cdevice_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button_settings_rem_cdevice_clicked not implemented")
 
 	def on_treeview_qemupaths_row_activated(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_qemupaths_row_activated not implemented")
 
 	def on_button_settings_add_qemubin_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button_settings_add_qemubin_clicked not implemented")
 
 	def on_button_settings_rem_qemubin_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button_settings_rem_qemubin_clicked not implemented")
 
 	def on_dialog_bookmarks_response(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_dialog_bookmarks_response not implemented")
 
 	def on_edit_bookmark_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_edit_bookmark_activate not implemented")
 
 	def on_bookmark_info_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_bookmark_info_activate not implemented")
 
 	def on_delete_bookmark_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_delete_bookmark_activate not implemented")
 
 	def on_dialog_create_image_response(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_dialog_create_image_response not implemented")
 
 	def on_filechooserbutton_newimage_dest_selection_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_filechooserbutton_newimage_dest_selection_changed not implemented")
 
 	def on_filechooserbutton_newimage_dest_current_folder_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_filechooserbutton_newimage_dest_current_folder_changed not implemented")
 
 	def on_entry_newimage_name_changed(self, widget=None, data=""):
 		pass
@@ -2068,10 +2067,10 @@ class VBGUI(gobject.GObject):
 		pass
 
 	def on_spinbutton_newimage_size_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_spinbutton_newimage_size_changed not implemented")
 
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_combobox_newimage_sizeunit_changed not implemented")
 
 	def show_createimage(self):
 		self.curtain_down()
@@ -2162,64 +2161,64 @@ class VBGUI(gobject.GObject):
 		return True
 
 	def on_dialog_messages_response(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_dialog_messages_response not implemented")
 
 	def on_item_info_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_item_info_activate not implemented")
 
 	def on_item_bookmark_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_item_bookmark_activate not implemented")
 
 	def on_dialog_jobmonitor_response(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_dialog_jobmonitor_response not implemented")
 
 	def on_toolbutton_stop_job_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_toolbutton_stop_job_clicked not implemented")
 
 	def on_toolbutton_reset_job_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_toolbutton_reset_job_clicked not implemented")
 
 	def on_toolbutton_pause_job_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_toolbutton_pause_job_clicked not implemented")
 
 	def on_toolbutton_rerun_job_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_toolbutton_rerun_job_clicked not implemented")
 
 	def on_treeview_jobmon_volumes_button_press_event(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_jobmon_volumes_button_press_event not implemented")
 
 	def on_treeview_jobmon_volumes_row_activated(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_jobmon_volumes_row_activated not implemented")
 
 	def on_button_jobmon_apply_cdrom_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button_jobmon_apply_cdrom_clicked not implemented")
 
 	def on_button_jobmon_apply_fda_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button_jobmon_apply_fda_clicked not implemented")
 
 	def on_button_jobmon_apply_fdb_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button_jobmon_apply_fdb_clicked not implemented")
 
 	def on_combobox_jobmon_cdrom_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_combobox_jobmon_cdrom_changed not implemented")
 
 	def on_combobox_jobmon_fda_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_combobox_jobmon_fda_changed not implemented")
 
 	def on_combobox_jobmon_fdb_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_combobox_jobmon_fdb_changed not implemented")
 
 	def on_treeview_usbhost_button_press_event(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_usbhost_button_press_event not implemented")
 
 	def on_treeview_usbhost_row_activated(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_usbhost_row_activated not implemented")
 
 	def on_treeview_usbguest_button_press_event(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_usbguest_button_press_event not implemented")
 
 	def on_treeview_usbguest_row_activated(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_treeview_usbguest_row_activated not implemented")
 
 	def on_item_jobmonoitor_activate(self, widget=None, data=""):
 		self.joblist_selected.open_console()
@@ -2255,61 +2254,61 @@ class VBGUI(gobject.GObject):
 			self.joblist_selected.proc.send_signal(9)
 
 	def on_attach_device_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_attach_device_activate not implemented")
 
 	def on_detach_device_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_detach_device_activate not implemented")
 
 	def on_item_eject_activate(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_item_eject_activate not implemented")
 
 	def on_dialog_newnetcard_response(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_dialog_newnetcard_response not implemented")
 
 	def on_combobox_networktype_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_combobox_networktype_changed not implemented")
 
 	def on_entry_network_macaddr_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_entry_network_macaddr_changed not implemented")
 
 	def on_entry_network_ip_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_entry_network_ip_changed not implemented")
 
 	def on_spinbutton_network_port_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_spinbutton_network_port_changed not implemented")
 
 	def on_spinbutton_network_vlan_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_spinbutton_network_vlan_changed not implemented")
 
 	def on_entry_network_ifacename_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_entry_network_ifacename_changed not implemented")
 
 	def on_entry_network_tuntapscript_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_entry_network_tuntapscript_changed not implemented")
 
 	def on_button__network_open_tuntap_file_clicked(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_button__network_open_tuntap_file_clicked not implemented")
 
 	def on_spinbutton_network_filedescriptor_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_spinbutton_network_filedescriptor_changed not implemented")
 
 	def on_dialog_new_redirect_response(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_dialog_new_redirect_response not implemented")
 
 	def on_radiobutton_redirect_TCP_toggled(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_radiobutton_redirect_TCP_toggled not implemented")
 
 	def on_radiobutton_redirect_UDP_toggled(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_radiobutton_redirect_UDP_toggled not implemented")
 
 	def on_spinbutton_redirect_sport_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_spinbutton_redirect_sport_changed not implemented")
 
 	def on_entry_redirect_gIP_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_entry_redirect_gIP_changed not implemented")
 
 	def on_spinbutton_redirect_dport_changed(self, widget=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_spinbutton_redirect_dport_changed not implemented")
 
 	def on_newbrick(self, widget=None, event=None, data=""):
 		self.curtain_down()
@@ -2322,10 +2321,10 @@ class VBGUI(gobject.GObject):
 		self.show_window('dialog_newevent')
 
 	def on_testconfig(self, widget=None, event=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_testconfig not implemented")
 
 	def on_autodetectsettings(self, widget=None, event=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_autodetectsettings not implemented")
 
 	def on_check_kvm(self, widget=None, event=None, data=""):
 		if widget.get_active():
@@ -2337,10 +2336,10 @@ class VBGUI(gobject.GObject):
 			widget.set_active(kvm)
 
 	def on_add_cdrom(self, widget=None, event=None, data=""):
-		raise NotImplementedError("VBGUI.on_add_cdrom()")
+		raise NotImplementedError("on_add_cdrom not implemented")
 
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
-		raise NotImplementedError("VBGUI.on_remove_cdrom()")
+		raise NotImplementedError("on_remove_cdrom not implemented")
 
 	def on_brick_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
@@ -2395,7 +2394,7 @@ class VBGUI(gobject.GObject):
 		if response == 1:
 			try:
 				self.brickfactory.renamebrick(self.maintree.get_selection(), self.gladefile.get_widget('entry_brick_newname').get_text())
-			except InvalidName:
+			except errors.InvalidNameError:
 				log.error(_("Invalid name!"))
 
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
@@ -2407,7 +2406,7 @@ class VBGUI(gobject.GObject):
 
 			try:
 				self.brickfactory.renameevent(self.eventstree.get_selection(), self.gladefile.get_widget('entry_event_newname').get_text())
-			except InvalidName:
+			except errors.InvalidNameError:
 				log.error(_("Invalid name!"))
 
 	def on_dialog_shellcommand_response(self, widget=None, response=0, data=""):
@@ -2466,7 +2465,7 @@ class VBGUI(gobject.GObject):
 					#If at least one element added
 					log.debug("Event created successfully")
 		 			widget.hide()
-			except InvalidName:
+			except errors.InvalidNameError:
 				log.error(_("Invalid name!"))
 				widget.hide()
 		#Dialog window canceled
@@ -2882,7 +2881,7 @@ class VBGUI(gobject.GObject):
 		self.joblist_selected.recv()
 
 	def on_topology_drag(self, widget=None, event=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_topology_drag not implemented")
 
 	def on_topology_redraw(self, widget=None, event=None, data=""):
 		self.draw_topology()
@@ -2928,7 +2927,7 @@ class VBGUI(gobject.GObject):
 		self.curtain_down()
 
 	def on_topology_scroll(self, widget=None, event=None, data=""):
-		raise NotImplementedError()
+		raise NotImplementedError("on_topology_scroll not implemented")
 
 	def on_vnc_novga_toggled(self, widget=None, event=None, data=""):
 		novga = self.gladefile.get_widget('cfg_Qemu_novga_check')
@@ -3122,7 +3121,7 @@ class VBGUI(gobject.GObject):
 		chooser.show()
 
 	def on_import_project(self, widget, data=None):
-		raise NotImplementedError()
+		raise NotImplementedError("on_import_project not implemented")
 
 	def __new_project(self, filename):
 		self._stop_listening()
@@ -3155,7 +3154,7 @@ class VBGUI(gobject.GObject):
 		chooser.show()
 
 	def on_open_recent_project(self, widget, data=None):
-		raise NotImplementedError()
+		raise NotImplementedError("on_open_recent_project not implemented")
 
 	def on_add_remotehost(self, widget, data=None):
 		txt = self.gladefile.get_widget("newhost_text").get_text()
@@ -3487,13 +3486,12 @@ class MessageDialogHandler(logging.Handler):
 		self.__parent = parent
 
 	def emit(self, record):
-		if not "not_report" in record.__dict__:
-			gobject.idle_add(self._emit, record)
+		gobject.idle_add(self._emit, record)
 
 	def _emit(self, record):
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
 				gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
-		dialog.set_property('text', self.format(record))
+		dialog.set_property('text', record.getMessage())
 		dialog.run()
 		dialog.destroy()
 
