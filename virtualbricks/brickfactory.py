@@ -167,31 +167,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         project_name = os.path.splitext(os.path.basename(project_file))[0]
         return os.path.join(baseimages, project_name)
 
-    def restore_last_project(self):
-        """Restore the last project if found or create a new one."""
-
-        try:
-            os.mkdir(settings.VIRTUALBRICKS_HOME)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        try:
-            os.mkdir(self.settings.get("baseimages"))
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        try:
-            configfile.restore(self)
-        except IOError as e:
-            if e.errno == errno.ENOENT:
-                if (self.settings.get("current_project") !=
-                        settings.DEFAULT_PROJECT):
-                    log.error("Cannot find last project '%s': file not found. "
-                              "A new project will be created with that path.",
-                              self.settings.get("current_project"))
-            else:
-                raise
-
     @synchronized
     def reset_config(self):
         """ Power off and kickout all bricks and events """
