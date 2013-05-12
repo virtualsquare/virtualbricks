@@ -176,28 +176,6 @@ class Brick(base.Base):
                 p.disconnect()
         self.on_config_changed()
 
-    def get_cbset(self, key):
-        cb = None
-        try:
-            if self.get_type() == 'Switch':
-                # avoid cyclic imports
-                from virtualbricks.switches import Switch
-                cb = Switch.__dict__["cbset_" + key]
-
-            elif self.get_type() == 'Wirefilter':
-                # avoid cyclic imports
-                from virtualbricks.wires import Wirefilter
-                cb = Wirefilter.__dict__["cbset_" + key]
-
-            elif self.get_type() == 'Qemu':
-                # avoid cyclic imports
-                from virtualbricks.virtualmachines import VM
-                cb = VM.__dict__["cbset_" + key]
-
-        except:
-            cb = None
-        return cb
-
     ############################
     ########### Poweron/Poweroff
     ############################

@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_bricks -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -26,4 +27,7 @@ class Base:
 
     def needsudo(self):
         return self.factory.TCP is None and self._needsudo
+
+    def get_cbset(self, key):
+        return getattr(self, "cbset_" + key, None)
 

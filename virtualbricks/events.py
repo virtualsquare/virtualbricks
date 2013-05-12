@@ -57,15 +57,6 @@ class Event(base.Base):
             state = _('off')
         return state
 
-    def get_cbset(self, key):
-        cb = None
-        try:
-            if self.get_type() == 'Event':
-                cb = Event.__dict__["cbset_" + key]
-        except:
-            cb = None
-        return cb
-
     def change_state(self):
         if self.active:
             self.poweroff()
