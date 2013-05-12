@@ -18,7 +18,6 @@
 import logging
 import subprocess
 
-from virtualbricks.logger import ChildLogger
 from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.console import VbShellCommand, ShellCommand, Parse
 from threading import Timer
@@ -32,7 +31,7 @@ if False:  # pyflakes
 log = logging.getLogger(__name__)
 
 
-class Event(ChildLogger(__name__)):
+class Event:
 
     def __init__(self, _factory, _name):
         self.factory = _factory

@@ -21,13 +21,13 @@ import select
 import logging
 from threading import Thread
 
-from virtualbricks import logger, console, wires
+from virtualbricks import console, wires
 
 
 log = logging.getLogger(__name__)
 
 
-class TcpServer(logger.ChildLogger(__name__), Thread):
+class TcpServer(Thread):
 
     sock = None
 
