@@ -118,8 +118,8 @@ class TcpServer(Thread):
             return False
         args = req.rstrip('\n').split(' ')
         if len(args) != 4 or args[0] != 'udp':
-            print "Len args: %d" % len(args)
-            print "Args[0]=%s" % args[0]
+            log.warning("Len args: %d" % len(args))
+            log.warning("Args[0]=%s" % args[0])
             return False
         for b in self.factory.bricks:
             if b.name == args[2]:
@@ -128,7 +128,7 @@ class TcpServer(Thread):
                 w.connect(b)
                 w.poweron()
                 return True
-        print "Brick not found: " + args[2]
+        log.warning("Brick not found: " + args[2])
         return False
 
     def recv(self, sock):
