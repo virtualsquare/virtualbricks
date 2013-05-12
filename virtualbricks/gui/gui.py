@@ -29,7 +29,7 @@ import gtk
 import gtk.glade
 
 from virtualbricks import (brickfactory, logger, tools, virtualmachines, app,
-						settings)
+						settings, configfile)
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.errors import BadConfig, DiskLocked, InvalidName, Linkloop, NotConnected
 from virtualbricks.models import EventsModel
@@ -775,18 +775,18 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 			will be transformed into:
 			[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...
 			"""
-	 		commands = linecommand.split("\n")
-	 		commandtype = 'addsh' if shbool else 'add'
+			commands = linecommand.split("\n")
+			commandtype = 'addsh' if shbool else 'add'
 
-	 		if not commands[0]:
-	 			iter = self.shcommandsmodel.iter_next(iter)
-	 			continue
+			if not commands[0]:
+				iter = self.shcommandsmodel.iter_next(iter)
+				continue
 
-	 		commands[0] = 'config %s %s' % (commandtype, commands[0])
-	 		c = unicode(' %s ' % commandtype).join(commands)
+			commands[0] = 'config %s %s' % (commandtype, commands[0])
+			c = unicode(' %s ' % commandtype).join(commands)
 
-	 		self.brickfactory.brickAction(currevent, c.split(" "))
-	 		iter = self.shcommandsmodel.iter_next(iter)
+			self.brickfactory.brickAction(currevent, c.split(" "))
+			iter = self.shcommandsmodel.iter_next(iter)
 
 	def config_Tap_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
@@ -3083,7 +3083,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 	def __open_project(self, filename):
 		self._stop_listening()
 		try:
-			self.brickfactory.restore_configfile(filename)
+			configfile.restore(self.brickfactory, filename)
 		finally:
 			self._start_listening()
 			self.draw_topology()
@@ -3091,7 +3091,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm(_("Save current project?")):
-			self.brickfactory.save_configfile()
+			configfile.safe_save(self.brickfactory)
 
 		chooser = gtk.FileChooserDialog(title=_("Open a project"),
 				action=gtk.FILE_CHOOSER_ACTION_OPEN,
@@ -3105,13 +3105,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 		chooser.show()
 
 	def __save_project(self, filename):
-		try:
-			self.brickfactory.configfile.save(filename)
-		except IOError, e:
-			log.exception("Exception occurred while saving project.\n"
-					"Probably file doesn't exist or you can't write "
-					"it.\n" + str(e))
-			raise
+		configfile.safe_save(self.brickfactory, filename)
 
 	def on_save_project(self, menuitem):
 		chooser = gtk.FileChooserDialog(title=_("Save as..."),
@@ -3145,7 +3139,7 @@ class VBGUI(logger.ChildLogger(__name__), gobject.GObject):
 
 	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?"):
-			self.brickfactory.save_configfile()
+			configfile.safe_save(self.brickfactory)
 
 		chooser = gtk.FileChooserDialog(title=_("New project"),
 				action=gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -3565,7 +3559,7 @@ class Application(brickfactory.Application):
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
 		self.factory = brickfactory.BrickFactory()
-		self.restore_last_project()
+		configfile.restore_last_project(self.factory)
 		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
 		self.gui = VBGUI(self.factory, gladefile, self.textbuffer)
 		if self.config.get('term', True):
@@ -3575,7 +3569,10 @@ class Application(brickfactory.Application):
 		gtk.main()
 
 	def quit(self):
-		self.gui.quit()
+		if self.gui:
+			# if there is an error and self.gui is not setted, calling quit()
+			# on None everride the exception
+			self.gui.quit()
 		brickfactory.Application.quit(self)
 		__builtin__.raw_input = self.builtin_raw_input
 

@@ -34,6 +34,7 @@ HOME = os.path.expanduser("~")
 VIRTUALBRICKS_HOME = os.path.join(HOME, ".virtualbricks")
 MYPATH = VIRTUALBRICKS_HOME  # backward compatibility
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
+DEFAULT_PROJECT = os.path.join(VIRTUALBRICKS_HOME, "virtualbricks.vbl")
 DEFAULT_CONF = {
     "term": "/usr/bin/xterm",
     "alt-term": "/usr/bin/gnome-terminal",
@@ -49,7 +50,7 @@ DEFAULT_CONF = {
     "femaleplugs": False,
     "erroronloop": False,
     "systray": True,
-    "current_project": os.path.join(VIRTUALBRICKS_HOME, "virtualbricks.vbl"),
+    "current_project": DEFAULT_PROJECT,
     "cowfmt": "cow",
     "show_missing": True
 }

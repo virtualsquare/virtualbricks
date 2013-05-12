@@ -255,7 +255,12 @@ class LoggingWindow(Window):
                                   extra={"not_report": True})
                     log.error("Cannot find xdg-open utility")
                 else:
-                    raise
+                    # This is a special exception with the child traceback
+                    # attacched
+                    log.exception("Exception raised in the child.\nChild "
+                                  "traceback:\n%s", e.child_traceback,
+                                  extra={"not_report": True})
+                    log.error("Cannot find xdg-open utility")
             except subprocess.CalledProcessError, e:
                 msg = _("Bug report not sent because of an error")
                 if e.returncode in BUG_REPORT_ERRORS:

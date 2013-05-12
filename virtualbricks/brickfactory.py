@@ -32,10 +32,9 @@ import gobject
 import virtualbricks
 from virtualbricks import (app, tools, logger, wires, virtualmachines, errors,
                            console, settings, events, switches, tuntaps,
-                           tunnels, router, bricks, link)
+                           tunnels, router, bricks, link, configfile)
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.errors import UnmanagedType
-from virtualbricks.configfile import ConfigFile
 
 
 log = logging.getLogger(__name__)
@@ -79,7 +78,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     It also contains a thread to manage the command console.
     """
 
-
     # synchronized is a decorator that serializes methods invocation. Don't use
     # outside the BrickFactory if not needed. The lock is a reentrant one
     # because one synchronized method could call another synchronized method
@@ -118,26 +116,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.remotehosts_changed = False
         self.running_condition = True
         self.settings = settings.Settings(settings.CONFIGFILE)
-        self.configfile = ConfigFile(self)
         self.BRICKTYPES = install_brick_types(
             None, wires.VDESUPPORT and self.settings.python)
-
-    @synchronized
-    def save_configfile(self):
-        try:
-            self.configfile.save(self.settings.get('current_project'))
-        # except Exception:
-        except (IOError, OSError):
-            log.exception("ERROR WRITING CONFIGURATION!\n"
-                          "Probably file doesn't exist or you can't write "
-                          "it.\n")
-
-    @synchronized
-    def restore_configfile(self, filename=None):
-        if filename is None:
-            filename = self.settings.get("current_project")
-        self.reset()
-        self.configfile.restore(filename)
 
     def lock(self):
         return self._lock
@@ -159,7 +139,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 h.disconnect()
 
             self.info(_('Engine: Bye!'))
-            self.save_configfile()
+            configfile.safe_save(self)
             self.running_condition = False
             self.emit("engine-closed")
 
@@ -179,13 +159,38 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.socks = []
 
     def err(self, _, *args, **kwds):
-        self.error(*args, **kwds)
+        log.error(*args, **kwds)
 
     def get_basefolder(self):
         baseimages = self.settings.get("baseimages")
         project_file = self.settings.get("current_project")
         project_name = os.path.splitext(os.path.basename(project_file))[0]
         return os.path.join(baseimages, project_name)
+
+    def restore_last_project(self):
+        """Restore the last project if found or create a new one."""
+
+        try:
+            os.mkdir(settings.VIRTUALBRICKS_HOME)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        try:
+            os.mkdir(self.settings.get("baseimages"))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        try:
+            configfile.restore(self)
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                if (self.settings.get("current_project") !=
+                        settings.DEFAULT_PROJECT):
+                    log.error("Cannot find last project '%s': file not found. "
+                              "A new project will be created with that path.",
+                              self.settings.get("current_project"))
+            else:
+                raise
 
     @synchronized
     def reset_config(self):
@@ -594,11 +599,6 @@ class BrickFactoryServer(BrickFactory):
                 else:
                     print("Passwords don't match. Retry.")
 
-    def save_configfile(self):
-        log.warning("BrickFactory does not support save_configfile when in "
-                    "server mode. This should be considerated a code bug.\n"
-                    + "Stack trace:\n" + tools.stack_trace())
-
 
 class Console(object):
 
@@ -656,7 +656,7 @@ class Console(object):
 
 
 def AutosaveTimer(factory, timeout=180):
-    t = tools.LoopingCall(timeout, factory.save_configfile)
+    t = tools.LoopingCall(timeout, configfile.safe_save, (factory,))
     t.set_name("AutosaveTimer_%d" % timeout)
     t.start()
     return t
@@ -691,9 +691,11 @@ class Application:
         # Workaround for sys.excepthook thread bug
         # See: http://bugs.python.org/issue1230540#msg91244
         old_init = threading.Thread.__init__
+
         def init(self, *args, **kwargs):
             old_init(self, *args, **kwargs)
             run_old = self.run
+
             def run_with_except_hook(*args, **kw):
                 try:
                     run_old(*args, **kw)
@@ -711,31 +713,9 @@ class Application:
             log.error("Uncaught exception", exc_info=(exc_type, exc_value,
                                                       traceback))
 
-    def restore_last_project(self):
-        try:
-            os.mkdir(settings.MYPATH)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        try:
-            self.factory.restore_configfile()
-        except IOError as e:
-            if e.errno == errno.ENOENT:
-                log.error("Cannot find last project '%s': file not found. A "
-                          "new project will be created with that path.",
-                          self.factory.settings.get("current_project"))
-            else:
-                raise
-        # except (IOError, OSError, errors.Error):
-        #     # NOTE: I don't think OSError is really necessary
-        #     # XXX: what kind of errors could be raised on factory restoring?
-        #     log.exception("Error while restoring the last project")
-        #     # XXX: what to do? Should I reset the factory?
-        #     self.factory.reset()
-
     def start(self):
         self.factory = BrickFactory()
-        self.restore_last_project()
+        configfile.restore_last_project(self.factory)
         self.autosave_timer = AutosaveTimer(self.factory)
         console = Console(self.factory)
         console.run()
