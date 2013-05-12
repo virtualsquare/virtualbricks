@@ -42,6 +42,9 @@ if False:  # pyflakes
 
 
 class Wire(logger.ChildLogger(__name__), Brick):
+
+    type = "Wire"
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
@@ -97,9 +100,6 @@ class Wire(logger.ChildLogger(__name__), Brick):
 
     def prog(self):
         return self.settings.get("vdepath") + "/dpipe"
-
-    def get_type(self):
-        return 'Wire'
 
     def args(self):
         res = []
@@ -257,6 +257,8 @@ class PyWire(Wire):
 
 
 class Wirefilter(Wire):
+
+    type = "Wirefilter"
 
     def __init__(self, _factory, _name):
         Wire.__init__(self, _factory, _name)
@@ -676,9 +678,6 @@ class Wirefilter(Wire):
 
     def prog(self):
         return self.settings.get("vdepath") + "/wirefilter"
-
-    def get_type(self):
-        return 'Wirefilter'
 
     #callbacks for live-management
     def cbset_bandwidthLR(self, arg=0):

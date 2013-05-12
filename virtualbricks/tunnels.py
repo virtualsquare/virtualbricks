@@ -23,6 +23,8 @@ from virtualbricks.link import Plug
 
 class TunnelListen(Brick):
 
+    type = "TunnelListen"
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
         self.pid = -1
@@ -50,9 +52,6 @@ class TunnelListen(Brick):
 
     def prog(self):
         return self.settings.get("vdepath") + "/vde_cryptcab"
-
-    def get_type(self):
-        return 'TunnelListen'
 
     def on_config_changed(self):
         if (self.plugs[0].sock is not None):
@@ -82,6 +81,8 @@ class TunnelListen(Brick):
 
 
 class TunnelConnect(TunnelListen):
+
+    type = "TunnelConnect"
 
     def __init__(self, _factory, _name):
         TunnelListen.__init__(self, _factory, _name)
@@ -123,6 +124,3 @@ class TunnelConnect(TunnelListen):
     def configured(self):
         return ((self.plugs[0].sock is not None) and self.cfg.get("host") and
                 len(self.cfg.host) > 0)
-
-    def get_type(self):
-        return 'TunnelConnect'

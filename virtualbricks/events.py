@@ -17,11 +17,9 @@
 
 import logging
 import subprocess
+import threading
 
-from virtualbricks.brickconfig import BrickConfig
-from virtualbricks.console import VbShellCommand, ShellCommand, Parse
-from threading import Timer
-from virtualbricks.errors import BadConfig, InvalidAction
+from virtualbricks import base, errors, brickconfig, console
 
 
 if False:  # pyflakes
@@ -31,8 +29,9 @@ if False:  # pyflakes
 log = logging.getLogger(__name__)
 
 
-class Event:
+class Event(base.Base):
 
+    type = "Event"
     active = False
     gui_changed = False
     need_restart_to_apply_changes = False
@@ -43,17 +42,10 @@ class Event:
         self.factory = factory
         self.name = name
         self.settings = self.factory.settings
-        self.cfg = BrickConfig()
+        self.cfg = brickconfig.BrickConfig()
         self.cfg.actions = list()
         self.cfg.delay = 0
-        self._needsudo = False
         self.on_config_changed()
-
-    def needsudo(self):
-        return self.factory.TCP is None and self._needsudo
-
-    def get_type(self):
-        return 'Event'
 
     def get_state(self):
         """return state of the event"""
@@ -85,21 +77,21 @@ class Event:
 
     def initialize(self, attrlist):
         if 'add' in attrlist and 'addsh' in attrlist:
-            raise InvalidAction(_("Error: config line must contain add OR "
-                "addsh."))
+            raise errors.InvalidAction(_("Error: config line must contain add "
+                                         "OR addsh."))
         elif('add' in attrlist):
             configactions = list()
             configactions = (' '.join(attrlist)).split('add')
             for action in configactions[1:]:
                 action = action.strip()
-                self.cfg.actions.append(VbShellCommand(action))
+                self.cfg.actions.append(console.VbShellCommand(action))
                 log.info(_("Added vb-shell command: '%s'"), action)
         elif('addsh' in attrlist):
             configactions = list()
             configactions = (' '.join(attrlist)).split('addsh')
             for action in configactions[1:]:
                 action = action.strip()
-                self.cfg.actions.append(ShellCommand(action))
+                self.cfg.actions.append(console.ShellCommand(action))
                 log.info(_("Added host-shell command: '%s'"), action)
         else:
             for attr in attrlist:
@@ -115,7 +107,7 @@ class Event:
             tempstr += "; " + _("Actions") + ":"
             #Add actions cutting the tail if it's too long
             for s in self.cfg.actions:
-                if isinstance(s, ShellCommand):
+                if isinstance(s, console.ShellCommand):
                     tempstr += " \"*%s\"," % s
                 else:
                     tempstr += " \"%s\"," % s
@@ -133,7 +125,7 @@ class Event:
         self.initialize(attrlist)
         # TODO brick should be gobject and a signal should be launched
         self.factory.eventsmodel.change_event(self)
-        self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+        self.timer = threading.Timer(float(self.cfg.delay), self.doactions)
         self.on_config_changed()
 
     ############################
@@ -141,12 +133,12 @@ class Event:
     ############################
     def poweron(self):
         if not self.configured():
-            raise BadConfig()
+            raise errors.BadConfig()
         if self.active:
             self.timer.cancel()
             self.active = False
             self.factory.emit("event-stopped", self.name)
-            self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+            self.timer = threading.Timer(float(self.cfg.delay), self.doactions)
         try:
             self.timer.start()
         except RuntimeError:
@@ -160,14 +152,14 @@ class Event:
         self.timer.cancel()
         self.active = False
         #We get ready for new poweron
-        self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+        self.timer = threading.Timer(float(self.cfg.delay), self.doactions)
         self.factory.emit("event-stopped", self.name)
 
     def doactions(self):
         for action in self.cfg.actions:
-            if (isinstance(action, VbShellCommand)):
-                Parse(self.factory, action)
-            elif (isinstance(action, ShellCommand)):
+            if (isinstance(action, console.VbShellCommand)):
+                console.Parse(self.factory, action)
+            elif (isinstance(action, console.ShellCommand)):
                 try:
                     subprocess.Popen(action, shell=True)
                 except:
@@ -179,7 +171,7 @@ class Event:
 
         self.active = False
         #We get ready for new poweron
-        self.timer = Timer(float(self.cfg.delay), self.doactions, ())
+        self.timer = threading.Timer(float(self.cfg.delay), self.doactions, ())
         self.factory.emit("event-accomplished", self.name)
 
     def on_config_changed(self):

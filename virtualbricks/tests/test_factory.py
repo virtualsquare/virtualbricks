@@ -11,11 +11,11 @@ class TestFactory(unittest.TestCase):
         self.factory = stubs.FactoryStub()
 
     def test_reset_config(self):
-        self.factory.reset_config()
+        self.factory.reset()
         self.assertEquals(self.factory.bricks, [])
         self.assertEquals(self.factory.events, [])
         self.factory.new_brick("stub", "test_brick")
-        self.factory.reset_config()
+        self.factory.reset()
         self.assertEquals(self.factory.bricks, [])
         self.assertEquals(self.factory.events, [])
 
