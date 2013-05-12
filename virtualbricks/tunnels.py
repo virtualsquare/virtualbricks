@@ -66,7 +66,8 @@ class TunnelListen(Brick):
     def args(self):
         pwdgen = "echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (
             self.cfg.password, self.name)
-        print "System= %d" % os.system(pwdgen)
+        exitstatus = os.system(pwdgen)
+        log.info("Command pwdgen exited with code %d", exitstatus)
         res = []
         res.append(self.prog())
         res.append("-P")

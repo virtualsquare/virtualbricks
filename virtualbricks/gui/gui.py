@@ -2849,9 +2849,7 @@ class VBGUI(gobject.GObject):
 		self.joblist_selected.recv()
 		self.joblist_selected.send("savevm virtualbricks\n")
 		while(not self.joblist_selected.recv().startswith("(qemu")):
-			print ".",
 			time.sleep(1)
-		print
 		self.joblist_selected.poweroff()
 
 	def on_vm_resume(self, widget=None, event=None, data=""):
