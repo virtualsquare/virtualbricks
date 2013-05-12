@@ -245,7 +245,7 @@ class LoggingWindow(Window):
             with os.fdopen(fd, "w") as fp:
                 self.save_to(fp)
             try:
-                subprocess.call(["xdg-emaiL", "--utf8", "--body",
+                subprocess.call(["xdg-email", "--utf8", "--body",
                                  " affects virtualbrick", "--attach", filename,
                                  "new@bugs.launchpad.net"])
                 log.info("Report bug sent succefully")
