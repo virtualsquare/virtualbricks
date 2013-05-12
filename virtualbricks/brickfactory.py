@@ -20,7 +20,6 @@ from __future__ import print_function
 
 import os
 import sys
-import errno
 import re
 import copy
 import getpass
@@ -30,9 +29,9 @@ import threading
 import gobject
 
 import virtualbricks
-from virtualbricks import (app, tools, logger, wires, virtualmachines, errors,
-                           console, settings, events, switches, tuntaps,
-                           tunnels, router, bricks, link, configfile)
+from virtualbricks import app, tools, errors, settings, configfile, console
+from virtualbricks import (bricks, events, link, router, switches, tunnels,
+                           tuntaps, virtualmachines, wires)
 from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.errors import UnmanagedType
 
@@ -71,7 +70,7 @@ def install_brick_types(registry=None, vde_support=False):
     return registry
 
 
-class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
+class BrickFactory(gobject.GObject):
     """This is the main class for the core engine.
 
     All the bricks are created and stored in the factory.
@@ -102,10 +101,11 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
 
     TCP = None
     quitting = False
+    remotehosts_changed = False
+    running_condition = True
 
     def __init__(self):
         gobject.GObject.__init__(self)
-        # DEFINE PROJECT PARMS
         self.remote_hosts = []
         self.bricks = []
         self.events = []
@@ -113,8 +113,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         self.disk_images = []
         self.bricksmodel = BricksModel()
         self.eventsmodel = EventsModel()
-        self.remotehosts_changed = False
-        self.running_condition = True
         self.settings = settings.Settings(settings.CONFIGFILE)
         self.BRICKTYPES = install_brick_types(
             None, wires.VDESUPPORT and self.settings.python)
@@ -138,7 +136,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             for h in self.remote_hosts:
                 h.disconnect()
 
-            self.info(_('Engine: Bye!'))
+            log.info(_('Engine: Bye!'))
             configfile.safe_save(self)
             self.running_condition = False
             self.emit("engine-closed")
@@ -146,6 +144,8 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     @synchronized
     def reset(self):
         # hard reset
+        # XXX: what about remote hosts?
+        # XXX: what about disk images?
         self.bricksmodel.clear()
         self.eventsmodel.clear()
         for b in self.bricks:
@@ -156,7 +156,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
             self.delevent(e)
         del self.events[:]
 
-        self.socks = []
+        del self.socks[:]
 
     def err(self, _, *args, **kwds):
         log.error(*args, **kwds)
@@ -166,18 +166,6 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         project_file = self.settings.get("current_project")
         project_name = os.path.splitext(os.path.basename(project_file))[0]
         return os.path.join(baseimages, project_name)
-
-    @synchronized
-    def reset_config(self):
-        """ Power off and kickout all bricks and events """
-        # XXX: what about socks?
-        for b in self.bricks:
-            b.poweroff()
-            self.delbrick(b)
-        for e in self.events:
-            self.delevent(e)
-        self.bricks[:] = []
-        self.events[:] = []
 
     # [[[[[[[[[]]]]]]]]]
     # [   Disk Images  ]
@@ -441,7 +429,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
         if endpoint is not None:
             return brick.connect(endpoint)
         else:
-            self.debug("Endpoint %s not found." % nick)
+            log.debug("Endpoint %s not found.", nick)
             return None
 
     ''' duplication functions '''
@@ -469,7 +457,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
     def dupevent(self, eventtodup):
         newname = self.nextValidName("Copy_of_" + eventtodup.name)
         if newname is None:
-            self.debug("Name error duplicating event.")
+            log.debug("Name error duplicating event.")
             return
         self.newevent("Event", newname)
         event = self.geteventbyname(eventtodup.name)
@@ -495,7 +483,7 @@ class BrickFactory(logger.ChildLogger(__name__), gobject.GObject):
                 for pl in reversed(b.plugs):
                     if pl.sock:
                         if pl.sock.nickname.startswith(bricktodel.name):
-                            self.debug("Deleting plug to " + pl.sock.nickname)
+                            log.debug("Deleting plug to %s", pl.sock.nickname)
                             b.plugs.remove(pl)
                             b.clear_self_socks(pl.sock.path)
                             # recreate Plug(self) of some objects

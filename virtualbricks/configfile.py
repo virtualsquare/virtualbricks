@@ -217,9 +217,9 @@ class ConfigFile:
             restore_backup(filename, filename + "~")
             log.info("Open %s project", filename)
             with open(filename) as fp:
-                self.restore_from(fp)
+                self.restore_from(factory, fp)
         else:
-            self.restore_from(str_or_obj)
+            self.restore_from(factory, str_or_obj)
 
     def restore_from(self, factory, fileobj):
         with factory.lock():

@@ -16,10 +16,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import logging
 
 from virtualbricks import settings
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Sock
+
+
+log = logging.getLogger(__name__)
 
 
 class Switch(Brick):
@@ -96,26 +100,25 @@ class Switch(Brick):
 
     # live-management callbacks
     def cbset_fstp(self, arg=False):
-        self.debug(self.name + ": callback 'fstp' with argument " + arg)
+        log.debug("%s: callback 'fstp' with argument %s", self.name, arg)
         if arg:
             self.send("fstp/setfstp 1\n")
         else:
             self.send("fstp/setfstp 0\n")
-        self.debug(self.recv())
+        log.debug(self.recv())
 
     def cbset_hub(self, arg=False):
-        self.debug(self.name + ": callback 'hub' with argument " + arg)
+        log.debug("%s: callback 'hub' with argument %s", self.name, arg)
         if arg:
             self.send("port/sethub 1\n")
         else:
             self.send("port/sethub 0\n")
-        self.debug(self.recv())
+        log.debug(self.recv())
 
     def cbset_numports(self, arg="32"):
-        self.debug(self.name + ": callback 'numports' with argument " +
-                   str(arg))
+        log.debug("%s: callback 'numports' with argument %s", self.name, arg)
         self.send("port/setnumports " + str(arg))
-        self.debug(self.recv())
+        log.debug(self.recv())
 
 
 class FakeProcess:

@@ -15,6 +15,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+
+import logging
+
+
+log = logging.getLogger(__name__)
+
 class BrickConfig(dict):
     """Generic configuration for Brick
 
@@ -85,9 +91,8 @@ class BrickConfig(dict):
         except:
             return
         if callable(callback):
-            #self.debug("Callback: setting value %s for key %s" %(value,key))
+            log.debug("Callback: setting value %s for key %s", value, key)
             callback(caller, value)
-        #else: self.debug("callback not found for key: %s" % (key))
 
     def dump(self):
         keys = sorted(self.keys())
