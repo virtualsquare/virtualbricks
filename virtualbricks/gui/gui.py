@@ -134,10 +134,6 @@ class VBGUI(gobject.GObject):
 
 		log.info("Starting VirtualBricks!")
 
-		# Creation of the main BrickFactory engine
-		self.brickfactory.BRICKTYPES['vm'] = virtualmachines.VMGui
-		self.brickfactory.BRICKTYPES['qemu'] = virtualmachines.VMGui
-
 		# Connect all the signal from the factory to specific callbacks
 		self.__event_handlers = eh = []
 		self.__brick_handlers = bh = []
@@ -3564,13 +3560,15 @@ class Application(brickfactory.Application):
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
-		self.factory = brickfactory.BrickFactory()
+		self.factory = factory = brickfactory.BrickFactory()
+		factory.BRICKTYPES['vm'] = virtualmachines.VMGui
+		factory.BRICKTYPES['qemu'] = virtualmachines.VMGui
 		configfile.restore_last_project(self.factory)
-		self.autosave_timer = brickfactory.AutosaveTimer(self.factory)
-		self.gui = VBGUI(self.factory, gladefile, self.textbuffer)
+		self.autosave_timer = brickfactory.AutosaveTimer(factory)
+		self.gui = gui = VBGUI(factory, gladefile, self.textbuffer)
 		if self.config.get('term', True):
-			self.console = console_thread(self.factory, gui=self.gui)
-		handler.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
+			self.console = console_thread(factory, gui=gui)
+		handler.set_parent(gui.widg["main_win"])  #XXX: ugly hack
 		brickfactory.Application.install_sys_hooks(self)  # :(
 		gtk.main()
 
