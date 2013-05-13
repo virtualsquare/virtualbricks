@@ -81,18 +81,12 @@ class BrickConfig(dict):
         import inspect
         stack = inspect.stack()
         frame = stack[2][0]
-        caller = frame.f_locals.get('self', None)
-        #if not isinstance(caller, Brick):
-        #    return
-        try:
-            if not callable(caller.get_cbset):
-                return
-            callback = caller.get_cbset(key)
-        except:
-            return
-        if callable(callback):
-            log.debug("Callback: setting value %s for key %s", value, key)
-            callback(caller, value)
+        obj = frame.f_locals.get('self', None)
+        if obj is not None:
+            setter = obj.get_cbset(key)
+            if setter is not None:
+                log.debug(_("setter: setting value %s for key %s"), value, key)
+                setter(value)
 
     def dump(self):
         keys = sorted(self.keys())
