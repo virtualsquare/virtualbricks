@@ -22,9 +22,6 @@ from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.gui import graphics
 
 
-_ = str  # temporary hack because its use in class definition
-
-
 class VBTree:
 
 	def __init__(self, gui, tree_name, model, fields, names):
@@ -103,10 +100,12 @@ class VBTree:
 			direction = not self.order_last_direction
 		self.order(column, direction)
 
-	def order(self, _field=_('Type'), ascending=True):
+	def order(self, field=None, ascending=True):
+		if fiels is None:
+			field = _("Type")
 		self.order_last_direction = ascending
-		field = self.get_column_from_fieldname(_field)
-		self.last_order = _field
+		field = self.get_column_from_fieldname(field)
+		self.last_order = field
 		itr = self.model.get_iter_first()
 		if self.fields[field] == gtk.gdk.Pixbuf:
 			return
@@ -115,18 +114,18 @@ class VBTree:
 			itr = self.model.get_iter_first()
 			moved = self._treeorder_continue( itr, field, ascending)
 
-	def cell_render(self, column, cell, model, iter):
-		raise NotImplementedError("cell_render")
-
 	def get_selection(self, path=None, idx=0):
 		return None
+
 	def set_selection(self,item):
 		self.last_known_selection = item
 
 
 class BricksTree(VBTree):
 	""" Ordering bricks treeview. """
-	def _bricks_treeorder_continue(self, itr, field=_('Type'), asc=True, moved = False):
+	def _bricks_treeorder_continue(self, itr, field=None, asc=True, moved = False):
+		if field is None:
+			field = _("Type")
 		nxt = self.model.iter_next(itr)
 		if (nxt):
 			br_itr = self.model.get_value(itr, BricksModel.BRICK_IDX)
@@ -183,7 +182,9 @@ class BricksTree(VBTree):
 		self.last_known_selection = self.model.get_value(iter, idx)
 		return self.last_known_selection
 
-	def order(self, field=_('Type'), ascending=True):
+	def order(self, field=None, ascending=True):
+		if field is None:
+			field = _("Type")
 		self.last_order = field
 		self.order_last_direction = ascending
 		itr = self.model.get_iter_first()
@@ -225,12 +226,15 @@ class BricksTree(VBTree):
 		elif column.get_title() == _('Parameters'):
 			cell.set_property('text', brick.get_parameters())
 		else:
-			raise NotImplemented("cell_render")
+			raise NotImplementedError("cell_render not implemented for "
+							"column %s" % column.get_title())
 
 
 class EventsTree(VBTree):
 	""" Ordering events treeview. """
-	def _events_treeorder_continue(self, itr, field=_('Type'), asc=True, moved = False):
+	def _events_treeorder_continue(self, itr, field=None, asc=True, moved = False):
+		if field is None:
+			field = _("Type")
 		nxt = self.model.iter_next(itr)
 		if (nxt):
 			br_itr = self.model.get_value(itr, EventsModel.EVENT_IDX)
@@ -287,7 +291,9 @@ class EventsTree(VBTree):
 		self.last_known_selection = self.model.get_value(iter, idx)
 		return self.last_known_selection
 
-	def order(self, field=_('Type'), ascending=True):
+	def order(self, field=None, ascending=True):
+		if field is None:
+			field = _("Type")
 		self.last_order = field
 		self.order_last_direction = ascending
 		itr = self.model.get_iter_first()
