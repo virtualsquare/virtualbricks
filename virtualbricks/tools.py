@@ -19,7 +19,7 @@
 
 import os
 import sys
-import re
+import errno
 import random
 import threading
 import logging
@@ -38,39 +38,6 @@ def random_mac():
                                                       random.getrandbits(8))
 
 RandMac = random_mac
-
-
-def ValidName(name):
-    name = str(name)
-    if not re.search("\A[a-zA-Z]", name):
-        return None
-    while(name.startswith(' ')):
-        name = name.lstrip(' ')
-    while(name.endswith(' ')):
-        name = name.rstrip(' ')
-
-    name = re.sub(' ', '_', name)
-    if not re.search("\A[a-zA-Z0-9_\.-]+\Z", name):
-        return None
-    return name
-
-
-def NameNotInUse(factory, name):
-    """used to determine whether the chosen name can be used or
-    it has already a duplicate among bricks or events."""
-
-    for b in factory.bricks:
-        if b.name == name:
-            return False
-
-    for e in factory.events:
-        if e.name == name:
-            return False
-
-    for i in factory.disk_images:
-        if i.name == name:
-            return False
-    return True
 
 
 class LoopingCall:

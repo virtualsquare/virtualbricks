@@ -300,7 +300,9 @@ class ConfigFile:
                             elif k == 'readonly' and v == 'True':
                                 readonly = True
                             l = fileobj.readline()
-                        if not tools.NameNotInUse(factory, name):
+                        if factory.is_in_use(name):
+                            log.info("Skipping disk image, name %s already in "
+                                     "use", name)
                             continue
                         if host is None and not os.access(path, os.R_OK):
                             continue

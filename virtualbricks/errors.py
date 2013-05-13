@@ -25,7 +25,13 @@ class InvalidNameError(Error):
 
 
 class NameAlreadyInUseError(InvalidNameError):
-    pass
+
+    def __init__(self, name):
+        InvalidNameError.__init__(self, name)
+        self.name = name
+
+    def __str__(self):
+        return _("Normalized name %s already in use") % self.name
 
 
 class InvalidTypeError(Error):

@@ -44,6 +44,18 @@ class Switch(Brick):
     """
 
     type = "Switch"
+    _name = None
+
+    def get_name(self):
+        return self._name
+
+    def set_name(self, name):
+        self._name = name
+        for so in self.socks:
+            so.nickname = name + "_port"
+            so.path = os.path.join(settings.VIRTUALBRICKS_HOME, name + ".ctl")
+
+    name = property(get_name, set_name)
 
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
@@ -81,11 +93,6 @@ class Switch(Brick):
 
     def prog(self):
         return self.settings.get("vdepath") + "/vde_switch"
-
-    def post_rename(self, name):
-        for so in self.socks:
-            so.nickname = name + "_port"
-            so.path = os.path.join(settings.VIRTUALBRICKS_HOME, name + ".ctl")
 
     def on_config_changed(self):
         self.socks[0].path = self.path()

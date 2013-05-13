@@ -432,6 +432,16 @@ class VMDisk:
 class VM(Brick):
 
     type = "Qemu"
+    _name = None
+
+    def get_name(self):
+        return self._name
+
+    def set_name(self, name):
+        self._name = name
+        self.newbrick_changes()
+
+    name = property(get_name, set_name)
 
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
@@ -637,9 +647,6 @@ class VM(Brick):
             else:
                 return
 
-    def post_rename(self, newname):
-        self.newbrick_changes()
-
     def on_config_changed(self):
         self.associate_disk()
         Brick.on_config_changed(self)
@@ -829,13 +836,11 @@ class VM(Brick):
         return self.homehost is not None
 
     def __deepcopy__(self, memo):
-        newname = self.factory.nextValidName("Copy_of_%s" % self.name)
-        if newname is None:
-            raise errors.InvalidNameError("'%s' (was '%s')" % newname)
+        newname = self.factory.normalize(self.factory.next_name(
+            "Copy_of_%s" % self.name))
         new_brick = type(self)(self.factory, newname)
         new_brick.cfg = copy.deepcopy(self.cfg, memo)
         new_brick.newbrick_changes()
-
         return new_brick
 
     def newbrick_changes(self):
