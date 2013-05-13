@@ -39,9 +39,6 @@ from virtualbricks.gui import tree, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
 
 
-_ = str  # temporary hack because its use in class definition
-
-
 log = logging.getLogger(__name__)
 
 
@@ -197,10 +194,20 @@ class VBGUI(gobject.GObject):
 		self.setup_router_filters()
 
 		# associate Drag and Drop action for main tree
-		self.maintree.associate_drag_and_drop('BRICK')
+		self.maintree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
+				[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+				gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		self.maintree.tree.enable_model_drag_dest(
+				[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+				gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
 
 		# associate Drag and Drop action for events tree
-		self.eventstree.associate_drag_and_drop('EVENT')
+		self.eventstree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
+				[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+				gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		self.eventstree.tree.enable_model_drag_dest(
+			[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+			gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
 
 		self.statusicon = None
 
@@ -2516,7 +2523,7 @@ class VBGUI(gobject.GObject):
 		self.__action_command("event %s config delay=%s" % (currevent.name,
 															delay))
 
-		action = ' on' if self.selected_event_type() in ['BrickStart', 'EventsCollation'] else ' off'
+		# action = ' on' if self.selected_event_type() in ['BrickStart', 'EventsCollation'] else ' off'
 
 		# XXX: I think this is broken, this is why i commented it
 		# while iter:

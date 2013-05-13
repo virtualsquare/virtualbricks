@@ -246,10 +246,6 @@ class BricksTree(VBTree):
 		else:
 			raise NotImplemented("cell_render")
 
-	def associate_drag_and_drop(self, target):
-		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		self.tree.enable_model_drag_dest([('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
-
 
 class EventsTree(VBTree):
 	""" Ordering events treeview. """
@@ -342,9 +338,5 @@ class EventsTree(VBTree):
 		else:
 			raise NotImplementedError("cell_render")
 
-
-	def associate_drag_and_drop(self, target):
-		self.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, [('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		self.tree.enable_model_drag_dest([('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)], gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE )
 
 # vim: set noet :
