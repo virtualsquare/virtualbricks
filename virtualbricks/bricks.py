@@ -95,9 +95,8 @@ class Brick(base.Base):
         pass
 
     def __deepcopy__(self, memo):
-        newname = self.factory.nextValidName("Copy_of_%s" % self.name)
-        if newname is None:
-            raise errors.InvalidNameError("'%s' (was '%s')" % newname)
+        newname = self.factory.normalize(self.factory.next_name(
+            "Copy_of_%s" % self.name))
         new_brick = type(self)(self.factory, newname)
         new_brick.cfg = copy.deepcopy(self.cfg, memo)
         return new_brick
@@ -120,9 +119,6 @@ class Brick(base.Base):
 
     def on_config_changed(self):
         self.factory.emit("brick-changed", self.name)
-
-    def post_rename(self, newname):
-        pass
 
     def configured(self):
         return False

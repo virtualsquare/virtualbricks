@@ -25,6 +25,7 @@ import copy
 import getpass
 import logging
 import threading
+import itertools
 
 import gobject
 
@@ -172,6 +173,9 @@ class BrickFactory(gobject.GObject):
         """Add one disk image to the library."""
 
         # XXX: assert that name and path are unique
+        nname = self.normalize(name)
+        if self.is_in_use(nname):
+            raise errors.NameAlreadyInUseError(nname)
         img = virtualmachines.DiskImage(name, path, description, host)
         self.disk_images.append(img)
         self.emit("image_added", img)
@@ -245,11 +249,10 @@ class BrickFactory(gobject.GObject):
 
         nname = self.normalize(name)  # raises InvalidNameError
         if self.is_in_use(nname):
-            raise errors.InvalidNameError("Normalized name %s already in use" %
-                                     nname)
+            raise errors.NameAlreadyInUseError(nname)
         ltype = type.lower()
         if ltype not in self.BRICKTYPES:
-            raise errors.InvalidTypeError("Invalid type %s" % type)
+            raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
         brick = self.BRICKTYPES[ltype](self, name)
         if remote:
             brick.set_host(host)
@@ -258,26 +261,27 @@ class BrickFactory(gobject.GObject):
                                     brick.name)
         return brick
 
-    def dupbrick(self, bricktodup):
-        name = self.nextValidName("Copy_of_" + bricktodup.name)
-        ty = bricktodup.get_type()
-        if (bricktodup.homehost):
+    def dup_brick(self, brick):
+        name = self.normalize(self.next_name("copy_of_" + brick.name))
+        ty = brick.get_type()
+        if (brick.homehost):
             new_brick = self.newbrick("remote", ty, name,
-                                      bricktodup.cfg.homehost)
+                                      brick.cfg.homehost)
         else:
             new_brick = self.newbrick(ty, name)
         # Copy only strings, and not objects, into new vm config
-        for c in bricktodup.cfg:
-            val = bricktodup.cfg.get(c)
+        for c in brick.cfg:
+            val = brick.cfg.get(c)
             if isinstance(val, str):
                 new_brick.cfg.set(c + '=' + val)
 
-        for p in bricktodup.plugs:
+        for p in brick.plugs:
             if p.sock is not None:
                 new_brick.connect(p.sock)
 
         new_brick.on_config_changed()
         return new_brick
+    dupbrick = dup_brick
 
     @synchronized
     def delbrick(self, bricktodel):
@@ -309,21 +313,17 @@ class BrickFactory(gobject.GObject):
                 return b
 
     @synchronized
-    def renamebrick(self, b, newname):
-        # TODO: check me
-        newname = tools.ValidName(newname)
-        if newname is None:
-            raise errors.InvalidNameError("No name given!")
-            return
+    def rename_brick(self, brick, name):
+        nname = self.normalize(name)
+        if self.is_in_use(nname):
+            raise errors.NameAlreadyInUseError(nname)
+        brick.name = nname
+        # b.gui_changed = True
 
-        if not tools.NameNotInUse(self, newname):
-            raise errors.InvalidNameError("Name %s already in use", newname)
-            return
+    renamebrick = rename_brick
 
-        b.name = newname
-        #some bricks need to do some extra operations
-        b.post_rename(newname)
-        b.gui_changed = True
+    def iter_bricks(self):
+        return iter(self.bricks)
 
     # [[[[[[[[[]]]]]]]]]
     # [     Events     ]
@@ -357,32 +357,29 @@ class BrickFactory(gobject.GObject):
 
         nname = self.normalize(name)  # raises InvalidNameError
         if self.is_in_use(nname):
-            raise errors.InvalidNameError("Normalized name %s already in use" %
-                                          nname)
+            raise errors.NameAlreadyInUseError(nname)
         event = events.Event(self, name)
         log.debug("New event %s OK", event.name)
         return event
 
-    def dupevent(self, eventtodup):
-        newname = self.nextValidName("Copy_of_" + eventtodup.name)
-        if newname is None:
-            log.debug("Name error duplicating event.")
-            return
-        self.newevent("Event", newname)
-        event = self.get_event_by_name(eventtodup.name)
-        newevent = self.get_event_by_name(newname)
-        newevent.cfg = copy.deepcopy(event.cfg)
-        newevent.active = False
-        newevent.on_config_changed()
+    def dupevent(self, event):
+        name = self.normalize(self.next_name("copy_of_" + event.name))
+        self.new_event(name)
+        new_event = self.get_event_by_name(name)
+        new_event.cfg = copy.deepcopy(event.cfg)
+        new_event.active = False
+        new_event.on_config_changed()
+        return new_event
 
     @synchronized
-    def delevent(self, eventtodel):
-        # XXX check me
+    def del_event(self, event):
         for e in self.events:
-            if e == eventtodel:
+            if e == event:
                 e.poweroff()
                 self.events.remove(e)
-        self.eventsmodel.del_event(eventtodel)
+        self.eventsmodel.del_event(event)
+
+    delevent = del_event
 
     def get_event_by_name(self, name):
         for e in self.events:
@@ -390,22 +387,13 @@ class BrickFactory(gobject.GObject):
                 return e
 
     @synchronized
-    def renameevent(self, e, newname):
-        # TODO: check me
-        newname = tools.ValidName(newname)
-        if newname is None:
-            raise errors.InvalidNameError("Invalid name %s", newname)
+    def rename_event(self, event, name):
+        name = self.normalize(name)
+        if self.is_in_use(name):
+            raise errors.NameAlreadyInUseError(name)
+        event.name = name
 
-        if not tools.NameNotInUse(self, newname):
-            raise errors.InvalidNameError("Name %s already in use", newname)
-
-        e.name = newname
-        if e.get_type() == "Event":
-            #It's a little comlicated here, if we are renaming
-            #an event we have to rename it in all command of other
-            #events...
-            pass
-        #e.gui_changed = True
+    renameevent = rename_event
 
     ############################################
 
@@ -415,42 +403,32 @@ class BrickFactory(gobject.GObject):
                 return h
         return None
 
-    def nextValidName(self, name, toappend="_new"):
-        """Generate a potential next valid name by appending _new"""
-
-        newname = tools.ValidName(name)
-        if not newname:
-            return None
-        while(not tools.NameNotInUse(self, newname)):
-            newname += toappend
-        return newname
+    def next_name(self, name, suffix="_new"):
+        while self.is_in_use(name):
+            name += suffix
+        return name
 
     def normalize(self, name):
         """Return the normalized name or raise an InvalidNameError."""
+
         if not isinstance(name, str):
-            raise errors.InvalidNameError("Name must be a string")
+            raise errors.InvalidNameError(_("Name must be a string"))
         nname = name.strip()
         if not re.search("\A[a-zA-Z]", nname):
-            raise errors.InvalidNameError("Name does not start with a letter, "
-                                          "%s" % name)
+            raise errors.InvalidNameError(_("Name %s does not start with a "
+                                            "letter") % name)
         nname = re.sub(' ', '_', nname)
         if not re.search("\A[a-zA-Z0-9_\.-]+\Z", nname):
-            raise errors.InvalidNameError("Name must contains only letters, "
-                    "numbers, underscores, hyphens and points, %s" % name)
-        return name
+            raise errors.InvalidNameError(_("Name must contains only letters, "
+                    "numbers, underscores, hyphens and points, %s") % name)
+        return nname
 
     def is_in_use(self, name):
         """used to determine whether the chosen name can be used or
         it has already a duplicate among bricks or events."""
 
-        for b in self.bricks:
-            if b.name == name:
-                return True
-        for e in self.events:
-            if e.name == name:
-                return True
-        for i in self.disk_images:
-            if i.name == name:
+        for o in itertools.chain(self.bricks, self.events, self.disk_images):
+            if o.name == name:
                 return True
         return False
 

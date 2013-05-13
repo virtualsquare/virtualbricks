@@ -15,9 +15,9 @@ class GuiStub:
     gladefile = GladefileStub()
 
 
-class TestVBTree(unittest.TestCase):
+# class TestVBTree(unittest.TestCase):
 
-    def test_custom_model(self):
-        model = gtk.ListStore(str)
-        vbtree = tree.VBTree(GuiStub(), None, model, [str], ["test"])
+#     def test_custom_model(self):
+#         model = gtk.ListStore(str)
+#         vbtree = tree.VBTree(GuiStub(), None, model, [str], ["test"])
 

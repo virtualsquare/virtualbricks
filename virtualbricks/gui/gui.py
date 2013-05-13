@@ -41,6 +41,9 @@ from virtualbricks.gui.combo import ComboBox
 
 log = logging.getLogger(__name__)
 
+if False:  # pyflakes
+    _ = str
+
 
 def get_treeselected(gui, tree, model, pthinfo, c):
 	if pthinfo is not None:
@@ -193,21 +196,22 @@ class VBGUI(gobject.GObject):
 		self.setup_router_routes()
 		self.setup_router_filters()
 
+		# XXX: drag and drop does not work
 		# associate Drag and Drop action for main tree
-		self.maintree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
-				[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-				gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		self.maintree.tree.enable_model_drag_dest(
-				[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-				gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
+		# self.maintree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
+		# 		[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+		# 		gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		# self.maintree.tree.enable_model_drag_dest(
+		# 		[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+		# 		gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
 
 		# associate Drag and Drop action for events tree
-		self.eventstree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
-				[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-				gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		self.eventstree.tree.enable_model_drag_dest(
-			[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-			gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
+		# self.eventstree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
+		# 		[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+		# 		gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
+		# self.eventstree.tree.enable_model_drag_dest(
+		# 	[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
+		# 	gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
 
 		self.statusicon = None
 
@@ -1275,19 +1279,19 @@ class VBGUI(gobject.GObject):
 		if eventname == '':
 			return
 
-		validname = tools.ValidName(eventname)
-		if validname is None:
-			log.error(_("The name '%s' has forbidden format."), eventname)
+		try:
+			validname = self.brickfactory.normalize(eventname)
+		except errors.InvalidNameError:
+			log.exception(_("Invalid name %s"), eventname)
 			return
-		elif validname != eventname:
+		if validname != eventname:
 			self.gladefile.get_widget('text_neweventname').set_text(validname)
 			log.error(_("The name '%s' has been adapted to '%s'."), eventname,
 					validname)
 			eventname = validname
 
-		if not tools.NameNotInUse(self.brickfactory, eventname):
-			log.error(_("An object named '%s' already exist."), eventname)
-			return
+		if self.brickfactory.is_in_use(eventname):
+			raise errors.NameAlreadyInUseError(eventname)
 
 		self.show_window('')
 		self.curtain_down()
@@ -1726,38 +1730,39 @@ class VBGUI(gobject.GObject):
 			if e.active:
 				e.poweroff()
 
-	def on_mainwindow_dropaction(self, treeview, drag_context, x, y, selection_data, info, timestamp):
-		pth = treeview.get_path_at_pos(x, y)
-		dropbrick = self.maintree.get_selection(pth)
-		drop_info = treeview.get_dest_row_at_pos(x, y)
-		if drop_info:
-			pth, pos = drop_info
+	# XXX: drag and drop does not work
+	# def on_mainwindow_dropaction(self, treeview, drag_context, x, y, selection_data, info, timestamp):
+	# 	pth = treeview.get_path_at_pos(x, y)
+	# 	dropbrick = self.maintree.get_selection(pth)
+	# 	drop_info = treeview.get_dest_row_at_pos(x, y)
+	# 	if drop_info:
+	# 		pth, pos = drop_info
 
-		if pos == gtk.TREE_VIEW_DROP_BEFORE:
-			log.debug('dropped before')
-			drag_context.finish(False, False, timestamp)
-			return False
+	# 	if pos == gtk.TREE_VIEW_DROP_BEFORE:
+	# 		log.debug('dropped before')
+	# 		drag_context.finish(False, False, timestamp)
+	# 		return False
 
-		if pos == gtk.TREE_VIEW_DROP_AFTER:
-			drag_context.finish(False, False, timestamp)
-			log.debug('dropped after')
-			return False
+	# 	if pos == gtk.TREE_VIEW_DROP_AFTER:
+	# 		drag_context.finish(False, False, timestamp)
+	# 		log.debug('dropped after')
+	# 		return False
 
-		if dropbrick and (dropbrick != self.Dragging):
-			log.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
-			res = False
-			if len(dropbrick.socks) > 0:
-				res = self.Dragging.connect(dropbrick.socks[0])
-			elif len(self.Dragging.socks) > 0:
-				res = dropbrick.connect(self.Dragging.socks[0])
+	# 	if dropbrick and (dropbrick != self.Dragging):
+	# 		log.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
+	# 		res = False
+	# 		if len(dropbrick.socks) > 0:
+	# 			res = self.Dragging.connect(dropbrick.socks[0])
+	# 		elif len(self.Dragging.socks) > 0:
+	# 			res = dropbrick.connect(self.Dragging.socks[0])
 
-			if res:
-				drag_context.finish(True, False, timestamp)
-			else:
-				drag_context.finish(False, False, timestamp)
-		else:
-			drag_context.finish(False, False, timestamp)
-		self.Dragging = None
+	# 		if res:
+	# 			drag_context.finish(True, False, timestamp)
+	# 		else:
+	# 			drag_context.finish(False, False, timestamp)
+	# 	else:
+	# 		drag_context.finish(False, False, timestamp)
+	# 	self.Dragging = None
 
 	def show_brickactions(self):
 		if self.maintree.get_selection().get_type() == "Qemu":
@@ -2116,14 +2121,10 @@ class VBGUI(gobject.GObject):
 		name = self.gladefile.get_widget('text_imagename_name').get_text()
 		path = self.gladefile.get_widget('text_imagename_path').get_text()
 		description = self.gladefile.get_widget('text_imagename_description').get_text()
-		if not tools.ValidName(name):
-			log.error("Invalid name")
-		elif not tools.NameNotInUse(self.brickfactory, name):
-			log.error("Name already in use")
-		else:
+		try:
 			self.brickfactory.new_disk_image(name, path, description)
-		self.show_window('')
-		return True
+		finally:
+			self.show_window("")
 
 	def on_imagename_cancel(self, widget=None, data=""):
 		self.show_window('')
