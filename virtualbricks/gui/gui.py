@@ -42,6 +42,13 @@ from virtualbricks.gui.combo import ComboBox
 log = logging.getLogger(__name__)
 
 
+def get_selection_at(model, x, y):
+	return model.get_path_at_pos(int(x), int(y))
+
+def get_info_at(model, x, y):
+	return model.get_dest_row_at_pos(int(x), int(y))
+
+
 def get_treeselected(gui, tree, model, pthinfo, c):
 	if pthinfo is not None:
 		path, col, cellx, celly = pthinfo
@@ -1726,10 +1733,10 @@ class VBGUI(gobject.GObject):
 			if e.active:
 				e.poweroff()
 
-	def on_mainwindow_dropaction(self, widget, drag_context, x, y, selection_data, info, timestamp):
-		pth = self.maintree.get_selection_at(x,y)
+	def on_mainwindow_dropaction(self, treeview, drag_context, x, y, selection_data, info, timestamp):
+		pth = get_selection_at(treeview.get_model(), x,y)
 		dropbrick = self.maintree.get_selection(pth)
-		drop_info = self.maintree.get_info_at(x,y)
+		drop_info = get_info_at(treeview.get_model(), x,y)
 		if drop_info:
 			pth, pos = drop_info
 

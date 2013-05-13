@@ -60,22 +60,6 @@ class VBTree:
 			col.connect("clicked",self.header_clicked)
 			self.tree.append_column(col)
 
-	def new_row(self):
-		ret = self.model.append(None, None)
-		return ret
-
-	def get_selection_at(self, xx, yy):
-		x = int(xx)
-		y = int(yy)
-		pthinfo = self.tree.get_path_at_pos(x, y)
-		return pthinfo
-
-	def get_info_at(self, xx, yy):
-		x = int(xx)
-		y = int(yy)
-		return self.tree.get_dest_row_at_pos(x, y)
-
-
 	def set_value(self, itr, col, val):
 		return self.model.set_value(itr, col, val)
 
@@ -180,9 +164,6 @@ class BricksTree(VBTree):
 		else:
 			return moved
 
-	def redraw(self):
-		self.model.clear()
-
 	def get_selection(self, pthinfo=None, idx=0):
 		if pthinfo is not None:
 			path, col, cellx, celly = pthinfo
@@ -286,9 +267,6 @@ class EventsTree(VBTree):
 			return self._events_treeorder_continue(nxt, field, asc, moved)
 		else:
 			return moved
-
-	def redraw(self):
-		self.model.clear()
 
 	def get_selection(self, pthinfo=None, idx=0):
 		if pthinfo is not None:
