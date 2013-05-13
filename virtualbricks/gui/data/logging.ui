@@ -57,13 +57,14 @@
             <property name="spacing">5</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="reportbugbutton">
+              <object class="GtkLinkButton" id="reportbugbutton">
                 <property name="label" translatable="yes">report bug</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="has_tooltip">True</property>
                 <property name="relief">none</property>
-                <property name="focus_on_click">False</property>
+                <property name="uri">mailto:new@bugs.launchpad.net</property>
                 <signal name="clicked" handler="on_reportbugbutton_clicked" swapped="no"/>
               </object>
               <packing>
