@@ -127,8 +127,8 @@ class Base(object):
     def __init__(self):
         self.builder = builder = gtk.Builder()
         builder.set_translation_domain(self.domain)
-        builder.add_from_string(graphics.get_data("virtualbricks.gui",
-                                                  self.resource))
+        builder.add_from_file(graphics.get_filename("virtualbricks.gui",
+                                                    self.resource))
         name = self.get_name()
         self.widget = builder.get_object(name)
         builder.connect_signals(self)
@@ -156,21 +156,15 @@ class Window(Base):
         self.widget.show()
 
 
-class Dialog(Window):
-
-    def run(self):
-        self.widget.run()
-        self.widget.destroy()
-
-
-class AboutDialog(Dialog):
+class AboutDialog(Window):
 
     resource = "data/about.ui"
 
     def __init__(self):
-        Dialog.__init__(self)
-        self.window.set_logo(graphics.get_filename("data/virtualbricks.png"))
+        Window.__init__(self)
         self.window.set_version(version.short())
+        # to handle show() instead of run()
+        self.window.connect("response", lambda d, r: d.destroy())
 
 
 class LoggingWindow(Window):
@@ -181,13 +175,6 @@ class LoggingWindow(Window):
         Window.__init__(self)
         self.textbuffer = textbuffer
         self.__bottom = True
-        label = gtk.Label()
-        label.set_markup('<span foreground="blue"><u>report bug</u></span>')
-        button = self.get_object("reportbugbutton")
-        old_label = button.get_child()
-        button.remove(old_label)
-        button.add(label)
-        label.show()
         textview = self.get_object("textview1")
         textview.set_buffer(textbuffer)
         self.__insert_text_h = textbuffer.connect("changed",
