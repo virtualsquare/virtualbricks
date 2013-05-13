@@ -42,13 +42,6 @@ from virtualbricks.gui.combo import ComboBox
 log = logging.getLogger(__name__)
 
 
-def get_selection_at(model, x, y):
-	return model.get_path_at_pos(int(x), int(y))
-
-def get_info_at(model, x, y):
-	return model.get_dest_row_at_pos(int(x), int(y))
-
-
 def get_treeselected(gui, tree, model, pthinfo, c):
 	if pthinfo is not None:
 		path, col, cellx, celly = pthinfo
@@ -1734,9 +1727,9 @@ class VBGUI(gobject.GObject):
 				e.poweroff()
 
 	def on_mainwindow_dropaction(self, treeview, drag_context, x, y, selection_data, info, timestamp):
-		pth = get_selection_at(treeview.get_model(), x,y)
+		pth = treeview.get_path_at_pos(x, y)
 		dropbrick = self.maintree.get_selection(pth)
-		drop_info = get_info_at(treeview.get_model(), x,y)
+		drop_info = treeview.get_dest_row_at_pos(x, y)
 		if drop_info:
 			pth, pos = drop_info
 
@@ -1919,7 +1912,7 @@ class VBGUI(gobject.GObject):
 		pthinfo = treeview.get_path_at_pos(x, y)
 		name = get_treeselected_name(self, treeview, store, pthinfo)
 		if event.button == 3:
-			self.joblist_selected = self.brickfactory.getbrickbyname(name)
+			self.joblist_selected = self.brickfactory.get_brick_by_name(name)
 			if not self.joblist_selected:
 				return
 
@@ -2525,7 +2518,7 @@ class VBGUI(gobject.GObject):
 		evname = self.gladefile.get_widget('text_neweventname').get_text()
 		delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 		self.brickfactory.newevent("event", evname)
-		currevent = self.brickfactory.geteventbyname(evname)
+		currevent = self.brickfactory.get_event_by_name(evname)
 		# self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
 		self.__action_command("event %s config delay=%s" % (currevent.name,
 															delay))
@@ -2953,12 +2946,12 @@ class VBGUI(gobject.GObject):
 		if self.topology:
 			for n in self.topology.nodes:
 				if n.here(event.x,event.y) and event.button == 3:
-					brick = self.brickfactory.getbrickbyname(n.name)
+					brick = self.brickfactory.get_brick_by_name(n.name)
 					if brick is not None:
 						self.maintree.set_selection(brick)
 						self.show_brickactions()
 				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
-					brick = self.brickfactory.getbrickbyname(n.name)
+					brick = self.brickfactory.get_brick_by_name(n.name)
 					if brick is not None:
 						self.maintree.set_selection(brick)
 						self.user_wait_action(self.startstop_brick, brick)
