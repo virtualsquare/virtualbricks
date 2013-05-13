@@ -356,9 +356,9 @@ class Brick(base.Base):
             return
 
         if off:
-            ev = self.factory.geteventbyname(self.cfg.poff_vbevent)
+            ev = self.factory.get_event_by_name(self.cfg.poff_vbevent)
         elif on:
-            ev = self.factory.geteventbyname(self.cfg.pon_vbevent)
+            ev = self.factory.get_event_by_name(self.cfg.pon_vbevent)
 
         if ev:
             ev.poweron()
@@ -458,7 +458,7 @@ class Brick(base.Base):
         sys.stderr.close()
 
     def get_parameters(self):
-        raise NotImplemented('get_parameters')
+        raise NotImplementedError('Bricks.get_parameters() not implemented')
 
     def get_state(self):
         """return state of the brick"""

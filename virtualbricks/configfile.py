@@ -284,7 +284,7 @@ class ConfigFile:
                 try:
                     if ntype == 'Event':
                         factory.newevent(ntype, name)
-                        component = factory.geteventbyname(name)
+                        component = factory.get_event_by_name(name)
                     elif ntype == 'DiskImage':
                         log.debug("Found Disk image %s" % name)
                         path = ""
@@ -340,7 +340,7 @@ class ConfigFile:
                         continue
                     else:  # elif ntype == 'Brick'
                         factory.newbrick(ntype, name)
-                        component = factory.getbrickbyname(name)
+                        component = factory.get_brick_by_name(name)
 
                 except Exception, e:
                     log.exception("Bad config line: %s", l)
