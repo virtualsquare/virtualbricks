@@ -30,7 +30,7 @@ import gobject
 
 import virtualbricks
 from virtualbricks import app, tools, errors, settings, configfile, console
-from virtualbricks import (bricks, events, link, router, switches, tunnels,
+from virtualbricks import (events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
 from virtualbricks.models import BricksModel, EventsModel
 
@@ -394,32 +394,6 @@ class BrickFactory(gobject.GObject):
     #     sock = link.Sock(brick, name)
     #     self.socks.append(sock)
     #     return sock
-
-    ''' brick action dispatcher '''
-    def brickAction(self, obj, cmd):
-        if (cmd[0] == 'on'):
-            obj.poweron()
-        if (cmd[0] == 'off'):
-            obj.poweroff()
-        if (cmd[0] == 'remove'):
-            if obj.get_type() == 'Event':
-                self.delevent(obj)
-            elif isinstance(obj, bricks.Brick):
-                self.delbrick(obj)
-            else:
-                raise errors.UnmanagedTypeError("Unknown type %s",
-                                                obj.__class__.__name__)
-        if (cmd[0] == 'config'):
-            obj.configure(cmd[1:])
-        if (cmd[0] == 'show'):
-            obj.cfg.dump()
-        if (cmd[0] == 'connect' and len(cmd) == 2):
-            if(self.connect_to(obj, cmd[1].rstrip('\n')) is not None):
-                log.info("Connection ok")
-            else:
-                log.info("Connection failed")
-        if (cmd[0] == 'disconnect'):
-            obj.disconnect()
 
     ''' connect bricks together '''
     def connect_to(self, brick, nick):

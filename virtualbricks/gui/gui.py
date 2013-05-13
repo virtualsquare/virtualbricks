@@ -22,6 +22,7 @@ import re
 import logging
 import subprocess
 import threading
+import StringIO
 import __builtin__
 
 import gobject
@@ -29,7 +30,7 @@ import gtk
 import gtk.glade
 
 from virtualbricks import (app, tools, errors, settings, configfile,
-						brickfactory, virtualmachines)
+						brickfactory, virtualmachines, console)
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.models import EventsModel
 from virtualbricks.settings import MYPATH
@@ -403,14 +404,17 @@ class VBGUI(gobject.GObject):
 				self.shcommandsmodel = gtk.ListStore (str, bool)
 
 				for a in e.cfg[key]:
-					iter = self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
+					# iter = self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
+					self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
 
-				iter = self.shcommandsmodel.append(["", False])
+				# iter = self.shcommandsmodel.append(["", False])
+				self.shcommandsmodel.append(["", False])
 
 				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
 				actions.set_model(self.shcommandsmodel)
 
-				columns = (COL_COMMAND, COL_BOOL) = range(2)
+				# columns = (COL_COMMAND, COL_BOOL) = range(2)
+				COL_COMMAND, COL_BOOL = range(2)
 				cell = gtk.CellRendererText ()
 				column_command = gtk.TreeViewColumn(_("Command"), cell, text = COL_COMMAND)
 				cell.set_property('editable', True)
@@ -747,14 +751,22 @@ class VBGUI(gobject.GObject):
 	'''
 	' Specific per-type confirm methods
 	'''
+	def __action_command(self, command):
+		sio = StringIO.StringIO()
+		console.parse(self.brickfactory, command, console=sio)
+		ret = sio.getvalue()
+		if ret:
+			log.debug("action output: %s", ret)
+
 	def config_Event_confirm(self, b):
-		actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
+		# actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
 		iter = self.shcommandsmodel.get_iter_first()
 		#Do not hide window
 		#if not iter:
 		#	return
 		currevent = None
-		columns = (COL_COMMAND, COL_BOOL) = range(2)
+		# columns = (COL_COMMAND, COL_BOOL) = range(2)
+		COL_COMMAND, COL_BOOL = range(2)
 		currevent = self.eventstree.get_selection()
 		currevent.cfg.actions=list()
 		while iter:
@@ -781,9 +793,9 @@ class VBGUI(gobject.GObject):
 				continue
 
 			commands[0] = 'config %s %s' % (commandtype, commands[0])
-			c = unicode(' %s ' % commandtype).join(commands)
+			c = (' %s ' % commandtype).join(commands)
 
-			self.brickfactory.brickAction(currevent, c.split(" "))
+			self.__action_command("event %s %s" % (currevent.name, c))
 			iter = self.shcommandsmodel.iter_next(iter)
 
 	def config_Tap_confirm(self,b):
@@ -1280,13 +1292,16 @@ class VBGUI(gobject.GObject):
 
 				self.shcommandsmodel = None
 				self.shcommandsmodel = gtk.ListStore (str, bool)
-				iter = self.shcommandsmodel.append (["new switch myswitch", False])
-				iter = self.shcommandsmodel.append (["", False])
+				# iter = self.shcommandsmodel.append (["new switch myswitch", False])
+				# iter = self.shcommandsmodel.append (["", False])
+				self.shcommandsmodel.append(["new switch myswitch", False])
+				self.shcommandsmodel.append(["", False])
 
 				actions = self.gladefile.get_widget('treeview_event_actions')
 				actions.set_model(self.shcommandsmodel)
 
-				columns = (COL_COMMAND, COL_BOOL) = range(2)
+				# columns = (COL_COMMAND, COL_BOOL) = range(2)
+				COL_COMMAND, COL_BOOL = range(2)
 				cell = gtk.CellRendererText ()
 				column_command = gtk.TreeViewColumn (_("Command"), cell, text = COL_COMMAND)
 				cell.set_property('editable', True)
@@ -1308,7 +1323,8 @@ class VBGUI(gobject.GObject):
 
 			elif ntype in ['BrickStart', 'BrickStop', 'EventsCollation']:
 
-				columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
+				# columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
+				COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG = range(4)
 
 				availbricks = self.gladefile.get_widget('bricks_available_treeview')
 				addedbricks = self.gladefile.get_widget('bricks_added_treeview')
@@ -1325,7 +1341,8 @@ class VBGUI(gobject.GObject):
 					parameters = brick.get_parameters()
 					if len(parameters) > 30:
 						parameters = "%s..." % parameters[:30]
-					iter = self.availmodel.append(
+					# iter = self.availmodel.append(
+					self.availmodel.append(
 						[gtk.gdk.pixbuf_new_from_file_at_size(
 							graphics.running_brick_icon(brick), 48, 48),
 							brick.get_type(), brick.name, parameters])
@@ -1673,7 +1690,7 @@ class VBGUI(gobject.GObject):
 		raise NotImplementedError("on_item_settings_autohide_activate not implemented")
 
 	def on_item_about_activate(self, widget=None, data=""):
-		dialogs.AboutDialog().run()
+		dialogs.AboutDialog().show()
 
 	def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
 		raise NotImplementedError("on_toolbutton_launchxterm_clicked not implemented")
@@ -1776,7 +1793,8 @@ class VBGUI(gobject.GObject):
 			return
 
 		iter = tree.get_model().get_iter(path)
-		name = tree.get_model().get_value(iter, EventsModel.EVENT_IDX).name
+		# name = tree.get_model().get_value(iter, EventsModel.EVENT_IDX).name
+		tree.get_model().get_value(iter, EventsModel.EVENT_IDX).name
 		self.Dragging = e
 		if event.button == 3:
 			self.show_eventactions()
@@ -2414,7 +2432,7 @@ class VBGUI(gobject.GObject):
 			try:
 				name = self.gladefile.get_widget('text_neweventname').get_text()
 				delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
-				actions = self.gladefile.get_widget('treeview_event_actions')
+				# actions = self.gladefile.get_widget('treeview_event_actions')
 
 				iter = self.shcommandsmodel.get_iter_first()
 
@@ -2423,13 +2441,12 @@ class VBGUI(gobject.GObject):
 					return
 
 				currevent = None
-				columns = (COL_COMMAND, COL_BOOL) = range(2)
+				# columns = (COL_COMMAND, COL_BOOL) = range(2)
 
 				while iter:
-					linecommand = self.shcommandsmodel.get_value (iter, COL_COMMAND)
-					shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
-
-					linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
+					linecommand = self.shcommandsmodel.get_value (iter, 0)
+					shbool = self.shcommandsmodel.get_value(iter, 1)
+					linecommand = linecommand.strip()
 					"""
 					Can be multiline command.
 					CTRL+ENTER does not send "enter" inside
@@ -2442,29 +2459,34 @@ class VBGUI(gobject.GObject):
 					will be transformed into:
 					[eventname] config add sw1 config fstp=False add wf1 config xxx=yyy add...
 					"""
-		 			commands = linecommand.split("\n")
-		 			commandtype = 'addsh' if shbool else 'add'
+					commands = linecommand.split("\n")
+					commandtype = 'addsh' if shbool else 'add'
 
-		 			if not commands[0]:
-		 				iter = self.shcommandsmodel.iter_next(iter)
-		 				continue
+					if not commands[0]:
+						iter = self.shcommandsmodel.iter_next(iter)
+						continue
 
-		 			commands[0] = 'config %s %s' % (commandtype, commands[0])
-		 			c = unicode(' %s ' % commandtype).join(commands)
+					commands[0] = 'config %s %s' % (commandtype, commands[0])
+					# c = unicode(' %s ' % commandtype).join(commands)
+					c = (' %s ' % commandtype).join(commands)
 
-		 			if currevent is None:
-						self.brickfactory.newevent("event", name)
-		 				currevent = self.brickfactory.geteventbyname(name)
-		 				self.brickfactory.brickAction(currevent,
-							('config delay='+str(delay)).split(" "))
+					if currevent is None:
+						self.brickfactory.new_event(name)
+						currevent = self.brickfactory.get_event_by_name(name)
+						# self.brickfactory.brickAction(currevent,
+						# 	('config delay='+str(delay)).split(" "))
+						__command = "event %s config delay=%s" % (
+							currevent.name, delay)
+						self.__action_command(__command)
 
-		 			self.brickfactory.brickAction(currevent, c.split(" "))
-		 			iter = self.shcommandsmodel.iter_next(iter)
+					# self.brickfactory.brickAction(currevent, c.split(" "))
+					self.__action_command("event %s %s" % (currevent.name, c))
+					iter = self.shcommandsmodel.iter_next(iter)
 
-		 		if currevent is not None:
+				if currevent is not None:
 					#If at least one element added
 					log.debug("Event created successfully")
-		 			widget.hide()
+					widget.hide()
 			except errors.InvalidNameError:
 				log.error(_("Invalid name!"))
 				widget.hide()
@@ -2473,8 +2495,9 @@ class VBGUI(gobject.GObject):
 			widget.hide()
 
 	def on_dialog_event_bricks_select_response(self,widget=None, response=0, data=""):
-		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
-		addedbricks = self.gladefile.get_widget('bricks_added_treeview')
+		# columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
+		COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG = range(4)
+		# addedbricks = self.gladefile.get_widget('bricks_added_treeview')
 		iter = self.addedmodel.get_iter_first()
 
 		if not iter and response==1:
@@ -2489,16 +2512,19 @@ class VBGUI(gobject.GObject):
 		delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 		self.brickfactory.newevent("event", evname)
 		currevent = self.brickfactory.geteventbyname(evname)
-		self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+		# self.brickfactory.brickAction(currevent,('config delay='+str(delay)).split(" "))
+		self.__action_command("event %s config delay=%s" % (currevent.name,
+															delay))
 
 		action = ' on' if self.selected_event_type() in ['BrickStart', 'EventsCollation'] else ' off'
 
-		while iter:
-			evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
-			self.brickfactory.\
-			brickAction(currevent,('config add ' + evnametoadd + action).\
-										split(" "))
-			iter = self.addedmodel.iter_next(iter)
+		# XXX: I think this is broken, this is why i commented it
+		# while iter:
+		# 	evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
+		# 	self.brickfactory.\
+		# 	brickAction(currevent,('config add ' + evnametoadd + action).\
+		# 								split(" "))
+		# 	iter = self.addedmodel.iter_next(iter)
 
 		log.debug("Event created successfully")
 
@@ -2754,7 +2780,7 @@ class VBGUI(gobject.GObject):
 		pthinfo = treeview.get_path_at_pos(x, y)
 		number = get_treeselected(self, treeview, store, pthinfo, 0)
 		self.vmplug_selected = None
-		vmsock = False
+		# vmsock = False
 		for pl in b.plugs:
 			if str(pl.vlan) == number:
 				self.vmplug_selected = pl
@@ -2763,7 +2789,7 @@ class VBGUI(gobject.GObject):
 			for pl in b.socks:
 				if str(pl.vlan) == number:
 					self.vmplug_selected = pl
-					vmsock=True
+					# vmsock=True
 					break
 		pl = self.vmplug_selected
 
@@ -2983,7 +3009,8 @@ class VBGUI(gobject.GObject):
 	def on_brick_attach_event(self, menuitem, data=None):
 		attach_event_window = self.gladefile.get_widget("dialog_attach_event")
 
-		columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
+		# columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
+		COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG = range(4)
 
 		startavailevents = self.gladefile.get_widget('start_events_avail_treeview')
 		stopavailevents = self.gladefile.get_widget('stop_events_avail_treeview')
@@ -3068,7 +3095,7 @@ class VBGUI(gobject.GObject):
 				self.config.set("current_project", filename)
 				try:
 					do_action(filename)
-				except IOError, e:
+				except IOError:
 					self.config.set("current_project", current_project)
 				else:
 					try:
@@ -3275,7 +3302,8 @@ class VBGUI(gobject.GObject):
 	def do_image_convert(self, arg=None):
 		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
 		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
-		dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
+		# dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
+		src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
 		self.user_wait_action(self.exec_image_convert)
 		return True
 
@@ -3284,8 +3312,8 @@ class VBGUI(gobject.GObject):
 			log.error("Select a file")
 			return
 
-		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
-		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
+		# src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
+		# fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
 		if not os.access(os.path.dirname(self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()), os.W_OK):
 			log.error("Cannot write to the specified location")
 		else:
@@ -3490,8 +3518,8 @@ class MessageDialogHandler(logging.Handler):
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
 				gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
 		dialog.set_property('text', record.getMessage())
-		dialog.run()
-		dialog.destroy()
+		dialog.connect("response", lambda d, r: d.destroy())
+		dialog.show()
 
 
 def my_raw_input(prompt=""):
@@ -3561,6 +3589,8 @@ class Application(brickfactory.Application):
 		factory.BRICKTYPES['qemu'] = virtualmachines.VMGui
 		configfile.restore_last_project(self.factory)
 		self.autosave_timer = brickfactory.AutosaveTimer(factory)
+		# disable default link_button action
+		gtk.link_button_set_uri_hook(None)
 		self.gui = gui = VBGUI(factory, gladefile, self.textbuffer)
 		if self.config.get('term', True):
 			self.console = console_thread(factory, gui=gui)

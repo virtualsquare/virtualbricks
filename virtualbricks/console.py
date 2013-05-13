@@ -301,6 +301,8 @@ class SocketWrapper:
 
 
 def parse(factory, command, console=sys.stdout, **local):
+    # XXX: this should not be here but who invoke parse should pass a
+    # SocketWrapper directly
     if isinstance(console, socket.socket):
         console = SocketWrapper(console)
 
@@ -350,6 +352,34 @@ class Protocol:
 
 class VBProtocol(Protocol):
 
+    def brick_action(self, obj, cmd):
+        """brick action dispatcher"""
+
+        if cmd[0] == "on":
+            obj.poweron()
+        elif cmd[0] == "off":
+            obj.poweroff()
+        elif cmd[0] == "remove":
+            if obj.get_type() == "Event":
+                self.delevent(obj)
+            elif isinstance(obj, bricks.Brick):
+                self.delbrick(obj)
+            else:
+                raise errors.UnmanagedTypeError("Unknown type %s",
+                                                obj.__class__.__name__)
+        elif cmd[0] == "config":
+            obj.configure(cmd[1:])
+        elif cmd[0] == "show":
+            obj.cfg.dump()
+        elif cmd[0] == "connect" and len(cmd) == 2:
+            if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
+                log.info("Connection ok")
+            else:
+                log.info("Connection failed")
+        elif cmd[0] == "disconnect":
+            obj.disconnect()
+
+
     def default(self, line):
         if not line:
             self.sendLine("Invalid console command '%s'" % line)
@@ -362,7 +392,7 @@ class VBProtocol(Protocol):
             if obj is None:
                 self.sendLine("Invalid console command '%s'" % line)
                 return False
-        self.factory.brickAction(obj, args[1:])
+        self.brick_action(obj, args[1:])
         return True
 
     def do_quit(self, args):
@@ -389,6 +419,29 @@ class VBProtocol(Protocol):
         self.sendLine("BRICK_NAME disconnect    Disconnect BRICK_NAME to a sock")
         self.sendLine("BRICK_NAME help      Help about parameters of BRICK_NAME")
     do_h = do_help
+
+    def do_event(self, args):
+        if not args:
+            self.sendLine("Invalid console command")
+            return False
+        event = self.factory.get_event_by_name(args[0])
+        if event is None:
+            self.sendLine("No such event '%s'" % args[0])
+            return False
+        self.brick_action(event, args[1:])
+        return True
+
+    def do_brick(self, args):
+        if not args:
+            self.sendLine("Invalid console command")
+            return False
+        brick = self.factory.get_brick_by_name(args[0])
+        if brick is None:
+            self.sendLine("No such event '%s'" % args[0])
+            return False
+        self.brick_action(brick, args[1:])
+        return True
+
 
     def do_ps(self, args):
         """List of active processes"""
