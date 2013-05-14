@@ -83,10 +83,12 @@ class BrickConfig(dict):
         frame = stack[2][0]
         obj = frame.f_locals.get('self', None)
         if obj is not None:
-            setter = obj.get_cbset(key)
-            if setter is not None:
-                log.debug(_("setter: setting value %s for key %s"), value, key)
-                setter(value)
+            if hasattr(obj, "get_cbset"):
+                setter = obj.get_cbset(key)
+                if setter is not None:
+                    log.debug(_("setter: setting value %s for key %s"), value,
+                              key)
+                    setter(value)
 
     def dump(self):
         keys = sorted(self.keys())
