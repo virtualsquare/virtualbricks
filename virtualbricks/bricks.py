@@ -62,7 +62,6 @@ class Brick(base.Base):
     name = property(get_name, set_name)
 
     def __init__(self, factory, name, homehost=None):
-        base.Base.__init__(self)
         self.factory = factory
         self._name = name
         self.settings = self.factory.settings
