@@ -49,10 +49,22 @@ class Brick(base.Base):
     need_restart_to_apply_changes = False
     internal_console = None
     terminal = "vdeterm"
+    _name = None
+
+    def get_name(self):
+        return self._name
+
+    getname = get_name
+
+    def set_name(self, name):
+        self._name = name
+
+    name = property(get_name, set_name)
 
     def __init__(self, factory, name, homehost=None):
+        base.Base.__init__(self)
         self.factory = factory
-        self.name = name
+        self._name = name
         self.settings = self.factory.settings
         self.plugs = []
         self.socks = []
@@ -113,9 +125,6 @@ class Brick(base.Base):
     def pidfile(self):
         return "/tmp/%s.pid" % self.name
     pidfile = property(pidfile)
-
-    def getname(self):
-        return self.name
 
     def on_config_changed(self):
         self.factory.emit("brick-changed", self.name)

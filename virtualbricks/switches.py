@@ -44,10 +44,6 @@ class Switch(Brick):
     """
 
     type = "Switch"
-    _name = None
-
-    def get_name(self):
-        return self._name
 
     def set_name(self, name):
         self._name = name
@@ -55,7 +51,7 @@ class Switch(Brick):
             so.nickname = name + "_port"
             so.path = os.path.join(settings.VIRTUALBRICKS_HOME, name + ".ctl")
 
-    name = property(get_name, set_name)
+    name = property(Brick.get_name, set_name)
 
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
