@@ -56,7 +56,7 @@ def parse_opts(opts, args):
     return app.run(gui.Application, config)
 
 
-short_opts = "vqld"
+short_opts = "vql:d"
 long_opts = ["noterm", "help", "verbose", "quiet", "logfile=", "debug"]
 main = app.usage_wrapper(parse_opts, short_opts, long_opts)
 
