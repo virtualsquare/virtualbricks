@@ -121,7 +121,7 @@ class TcpServer(Thread):
             log.warning("Len args: %d" % len(args))
             log.warning("Args[0]=%s" % args[0])
             return False
-        for b in self.factory.bricks:
+        for b in iter(self.factory.bricks):
             if b.name == args[2]:
                 w = wires.PyWire(self.factory, args[1])
                 w.set_remoteport(args[3])
@@ -176,7 +176,7 @@ class TcpServer(Thread):
                     log.exception("Send error")
                     return
 
-        for b in self.factory.bricks:
+        for b in iter(self.factory.bricks):
             if b.proc is not None:
                 pz = b.proc.poll()
                 if pz is not None:

@@ -159,7 +159,7 @@ class ConfigFile:
             if img.readonly is not False:
                 fileobj.write('readonly=True\n')
 
-        for e in factory.events:
+        for e in iter(factory.events):
             fileobj.write('[' + e.get_type() + ':' + e.name + ']\n')
             for k, v in e.cfg.iteritems():
                 #Special management for actions parameter
@@ -181,7 +181,7 @@ class ConfigFile:
                 else:
                     fileobj.write(k + '=' + str(v) + '\n')
 
-        for b in factory.bricks:
+        for b in iter(factory.bricks):
             fileobj.write('[' + b.get_type() + ':' + b.name + ']\n')
             for k, v in b.cfg.iteritems():
                 # VMDisk objects don't need to be saved
@@ -191,13 +191,13 @@ class ConfigFile:
                                                in types)):
                     fileobj.write(k + '=' + str(v) + '\n')
 
-        for b in factory.bricks:
+        for b in iter(factory.bricks):
             for sk in b.socks:
                 if b.get_type() == 'Qemu':
                     fileobj.write('sock|' + b.name + "|" + sk.nickname + '|' +
                             sk.model + '|' + sk.mac + '|' + str(sk.vlan) +
                             '\n')
-        for b in factory.bricks:
+        for b in iter(factory.bricks):
             for pl in b.plugs:
                 if b.get_type() == 'Qemu':
                     if pl.mode == 'vde':
@@ -233,7 +233,7 @@ class ConfigFile:
             if re.search("\A.*sock\|", l) and len(l.split("|")) >= 3:
                 l.rstrip('\n')
                 log.debug("************************* sock detected")
-                for bb in factory.bricks:
+                for bb in iter(factory.bricks):
                     if bb.name == l.split("|")[1]:
                         if (bb.get_type() == 'Qemu'):
                             sockname = l.split('|')[2]
@@ -248,7 +248,7 @@ class ConfigFile:
             if re.search("\A.*link\|", l) and len(l.split("|")) >= 3:
                 l.rstrip('\n')
                 log.debug("************************* link detected")
-                for bb in factory.bricks:
+                for bb in iter(factory.bricks):
                     if bb.name == l.split("|")[1]:
                         if (bb.get_type() == 'Qemu'):
                             sockname = l.split('|')[2]
@@ -372,7 +372,7 @@ class ConfigFile:
                 continue
             l = fileobj.readline()
 
-        for b in factory.bricks:
+        for b in iter(factory.bricks):
             for c in b.config_socks:
                 factory.connect_to(b, c)
 
