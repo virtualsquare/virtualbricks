@@ -50,9 +50,9 @@ def get_treeselected(gui, tree, model, pthinfo, c):
 		path, col, cellx, celly = pthinfo
 		tree.grab_focus()
 		tree.set_cursor(path, col, 0)
-		iter = model.get_iter(path)
-		name = model.get_value(iter, c)
-		gui.config_last_iter = iter
+		iter_ = model.get_iter(path)
+		name = model.get_value(iter_, c)
+		gui.config_last_iter = iter_
 		return name
 	return ""
 
@@ -62,7 +62,7 @@ def get_treeselected_name(gui, tree, model, pathinfo):
 
 def check_joblist(gui, force=False):
 	new_ps = []
-	for b in gui.brickfactory.bricks:
+	for b in iter(gui.brickfactory.bricks):
 		if b.proc is not None:
 			if b.homehost and b.homehost.connected:
 				ret = None
@@ -79,22 +79,25 @@ def check_joblist(gui, force=False):
 		gui.bricks = []
 		gui.running_bricks.clear()
 		for b in gui.ps:
-			iter = gui.running_bricks.append()
+			i = gui.running_bricks.append()
 			if (b.pid == -10):
 				pid = "python-thread   "
 			elif b.homehost:
 				pid = "Remote"
 			else:
 				pid = str(b.pid)
-			gui.running_bricks.set_value(iter, 0,
+			gui.running_bricks.set_value(i, 0,
 					gtk.gdk.pixbuf_new_from_file_at_size(
 						graphics.get_brick_icon(b), 48, 48))
-			gui.running_bricks.set_value(iter, 1, pid)
-			gui.running_bricks.set_value(iter, 2, b.get_type())
-			gui.running_bricks.set_value(iter, 3, b.name)
+			gui.running_bricks.set_value(i, 1, pid)
+			gui.running_bricks.set_value(i, 2, b.get_type())
+			gui.running_bricks.set_value(i, 3, b.name)
 		log.debug("proc list updated")
 	if gui.brickfactory.remotehosts_changed:
 		#TODO: define/Use VBTree.redraw() for this
+		# XXX: iter_ not defined but this does not seems a problem because the
+		# remote_hosts is cleared
+		iter_ = None
 		gui.remote_hosts_tree.clear()
 		for r in gui.brickfactory.remote_hosts:
 			if r.connected:
@@ -103,8 +106,8 @@ def check_joblist(gui, force=False):
 			else:
 				img = gtk.gdk.pixbuf_new_from_file_at_size(
 					graphics.get_image("Disconnect.png"), 48, 48)
-			gui.remote_hosts_tree.set_value(iter, 1, r.addr[0]+":"+str(r.addr[1]))
-			gui.remote_hosts_tree.set_value(iter, 2, str(r.num_bricks()))
+			gui.remote_hosts_tree.set_value(iter_, 1, r.addr[0]+":"+str(r.addr[1]))
+			gui.remote_hosts_tree.set_value(iter_, 2, str(r.num_bricks()))
 			ac = "Yes" if r.autoconnect else "No"
 			row = [img, r.addr[0] + ":" + str(r.addr[1]),
 					str(r.num_bricks()), ac]
@@ -135,15 +138,8 @@ class VBGUI(gobject.GObject):
 		log.info("Starting VirtualBricks!")
 
 		# Connect all the signal from the factory to specific callbacks
-		self.__event_handlers = eh = []
-		self.__brick_handlers = bh = []
 		self.__factory_handlers = fh = []
 		f = self.brickfactory
-		bm, em = f.bricksmodel, f.eventsmodel
-		bh.append(bm.connect("brick-added", self.cb_brick_added))
-		bh.append(bm.connect("brick-deleted", self.cb_brick_deleted))
-		eh.append(em.connect("event-added", self.cb_event_added))
-		eh.append(em.connect("event-deleted", self.cb_event_deleted))
 		fh.append(f.connect("engine-closed", self.on_engine_closed))
 		fh.append(f.connect("brick-stopped", self.cb_brick_stopped))
 		fh.append(f.connect("brick-started", self.cb_brick_started))
@@ -262,17 +258,17 @@ class VBGUI(gobject.GObject):
 					"this alert from the general settings.", missing_text,
 					missing_components)
 
+	def __foreach_handler(self, do_action):
+		for handler in self.__factory_handlers:
+			if not self.brickfactory.handler_is_connected(handler):
+				log.warning("handler %d is not connected to model %s",
+						handler, self.brickfactory)
+			else:
+				do_action(handler)
+
 	def quit(self):
-		for model, handlers in ((self.brickfactory, self.__factory_handlers),
-					(self.brickfactory.bricksmodel, self.__brick_handlers),
-					(self.brickfactory.eventsmodel, self.__event_handlers)):
-			for handler in handlers:
-				if not model.handler_is_connected(handler):
-					log.warning("handler %d is not connected to model %s",
-							handler, model)
-				else:
-					model.disconnect(handler)
-				del handlers[:]
+		self.__foreach_handler(self.brickfactory.disconnect)
+		del self.__factory_handlers[:]
 
 	def __setup_treeview(self, resource, window_name, widget_name):
 		ui = graphics.get_data("virtualbricks.gui", resource)
@@ -337,11 +333,13 @@ class VBGUI(gobject.GObject):
 	def on_engine_closed(self, factory):
 		gobject.idle_add(gtk.main_quit)
 
-	def cb_brick_added(self, model, name):
-		self.draw_topology()
+	# TODO: re-enable draw topology
+	# def cb_brick_added(self, model, name):
+	# 	self.draw_topology()
 
-	def cb_brick_deleted(self, model, name):
-		self.draw_topology()
+	# TODO: re-enable draw topology
+	# def cb_brick_deleted(self, model, name):
+	# 	self.draw_topology()
 
 	def cb_brick_changed(self, model, name):
 		self.draw_topology()
@@ -354,11 +352,11 @@ class VBGUI(gobject.GObject):
 		self.draw_topology()
 		self.check_joblist(force=True)
 
-	def cb_event_added(self, model, name):
-		pass
+	# def cb_event_added(self, model, name):
+	# 	pass
 
-	def cb_event_deleted(self, model, name):
-		pass
+	# def cb_event_deleted(self, model, name):
+	# 	pass
 
 	def cb_event_stopped(self, model, name=""):
 		pass
@@ -367,26 +365,10 @@ class VBGUI(gobject.GObject):
 		pass
 
 	def _stop_listening(self):
-		for model, handlers in ((self.brickfactory, self.__factory_handlers),
-					(self.brickfactory.bricksmodel, self.__brick_handlers),
-					(self.brickfactory.eventsmodel, self.__event_handlers)):
-			for handler in handlers:
-				if not model.handler_is_connected(handler):
-					log.warning("handler %d is not connected to model %s",
-							handler, model)
-				else:
-					model.handler_block(handler)
+		self.__foreach_handler(self.brickfactory.handler_block)
 
 	def _start_listening(self):
-		for model, handlers in ((self.brickfactory, self.__factory_handlers),
-					(self.brickfactory.bricksmodel, self.__brick_handlers),
-					(self.brickfactory.eventsmodel, self.__event_handlers)):
-			for handler in handlers:
-				if not model.handler_is_connected(handler):
-					log.warning("handler %d is not connected to model %s",
-							handler, model)
-				else:
-					model.handler_unblock(handler)
+		self.__foreach_handler(self.brickfactory.handler_unblock)
 
 	""" ******************************************************** """
 	"""                                                          """
@@ -415,10 +397,10 @@ class VBGUI(gobject.GObject):
 				self.shcommandsmodel = gtk.ListStore (str, bool)
 
 				for a in e.cfg[key]:
-					# iter = self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
+					# iter_ = self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
 					self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
 
-				# iter = self.shcommandsmodel.append(["", False])
+				# iter_ = self.shcommandsmodel.append(["", False])
 				self.shcommandsmodel.append(["", False])
 
 				actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
@@ -642,7 +624,7 @@ class VBGUI(gobject.GObject):
 				widget.set_value(int(b.cfg[key]))
 			if t == "Switch" and key == 'numports':
 				nports = 0
-				for it in self.brickfactory.bricks:
+				for it in iter(self.brickfactory.bricks):
 					for p in it.plugs:
 						if p.sock.nickname == b.socks[0].nickname:
 							nports += 1
@@ -665,14 +647,14 @@ class VBGUI(gobject.GObject):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
 			if (widget is not None):
 				model = widget.get_model()
-				iter = model.get_iter_first()
+				iter_ = model.get_iter_first()
 				i = 0
-				while iter:
-					if model.get_value(iter,0)==b.cfg[key]:
+				while iter_:
+					if model.get_value(iter_,0)==b.cfg[key]:
 						widget.set_active(i)
 						break
 					else:
-						iter=model.iter_next(iter)
+						iter_ = model.iter_next(iter_)
 						i = i + 1
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
@@ -771,18 +753,18 @@ class VBGUI(gobject.GObject):
 
 	def config_Event_confirm(self, b):
 		# actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
-		iter = self.shcommandsmodel.get_iter_first()
+		iter_ = self.shcommandsmodel.get_iter_first()
 		#Do not hide window
-		#if not iter:
+		#if not iter_:
 		#	return
 		currevent = None
 		# columns = (COL_COMMAND, COL_BOOL) = range(2)
 		COL_COMMAND, COL_BOOL = range(2)
 		currevent = self.eventstree.get_selection()
 		currevent.cfg.actions=list()
-		while iter:
-			linecommand = self.shcommandsmodel.get_value(iter, COL_COMMAND)
-			shbool = self.shcommandsmodel.get_value(iter, COL_BOOL)
+		while iter_:
+			linecommand = self.shcommandsmodel.get_value(iter_, COL_COMMAND)
+			shbool = self.shcommandsmodel.get_value(iter_, COL_BOOL)
 			linecommand = linecommand.lstrip("\n").rstrip("\n").strip()
 			"""
 			Can be multiline command.
@@ -800,14 +782,14 @@ class VBGUI(gobject.GObject):
 			commandtype = 'addsh' if shbool else 'add'
 
 			if not commands[0]:
-				iter = self.shcommandsmodel.iter_next(iter)
+				iter_ = self.shcommandsmodel.iter_next(iter_)
 				continue
 
 			commands[0] = 'config %s %s' % (commandtype, commands[0])
 			c = (' %s ' % commandtype).join(commands)
 
 			self.__action_command("event %s %s" % (currevent.name, c))
-			iter = self.shcommandsmodel.iter_next(iter)
+			iter_ = self.shcommandsmodel.iter_next(iter_)
 
 	def config_Tap_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
@@ -1061,9 +1043,9 @@ class VBGUI(gobject.GObject):
 			path, col, cellx, celly = pthinfo
 			tree.grab_focus()
 			tree.set_cursor(path, col, 0)
-			iter = store.model.get_iter(path)
-			name = store.model.get_value(iter, c)
-			self.config_last_iter = iter
+			iter_ = store.model.get_iter(path)
+			name = store.model.get_value(iter_, c)
+			self.config_last_iter = iter_
 			return name
 		return ""
 
@@ -1303,8 +1285,8 @@ class VBGUI(gobject.GObject):
 
 				self.shcommandsmodel = None
 				self.shcommandsmodel = gtk.ListStore (str, bool)
-				# iter = self.shcommandsmodel.append (["new switch myswitch", False])
-				# iter = self.shcommandsmodel.append (["", False])
+				# iter_ = self.shcommandsmodel.append (["new switch myswitch", False])
+				# iter_ = self.shcommandsmodel.append (["", False])
 				self.shcommandsmodel.append(["new switch myswitch", False])
 				self.shcommandsmodel.append(["", False])
 
@@ -1344,15 +1326,15 @@ class VBGUI(gobject.GObject):
 				self.addedmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
 
 				if ntype == 'EventsCollation':
-					container = self.brickfactory.events
+					iterator = iter(self.brickfactory.events)
 				else:
-					container = self.brickfactory.bricks
+					iterator = iter(self.brickfactory.bricks)
 
-				for brick in container:
+				for brick in iterator:
 					parameters = brick.get_parameters()
 					if len(parameters) > 30:
 						parameters = "%s..." % parameters[:30]
-					# iter = self.availmodel.append(
+					# iter_ = self.availmodel.append(
 					self.availmodel.append(
 						[gtk.gdk.pixbuf_new_from_file_at_size(
 							graphics.running_brick_icon(brick), 48, 48),
@@ -1419,10 +1401,10 @@ class VBGUI(gobject.GObject):
 	def edited_callback (self, cell, rowpath, new_text, user_data):
 		model, col_id = user_data
 		model[rowpath][col_id] = new_text
-		iter = self.shcommandsmodel.get_iter_first()
-		while iter:
-			last=iter
-			iter=self.shcommandsmodel.iter_next(iter)
+		iter_ = self.shcommandsmodel.get_iter_first()
+		while iter_:
+			last=iter_
+			iter_=self.shcommandsmodel.iter_next(iter_)
 		if self.shcommandsmodel.get_value(last, col_id) != '':
 			self.shcommandsmodel.append (["", False])
 		return
@@ -1434,19 +1416,19 @@ class VBGUI(gobject.GObject):
 
 	def on_event_brick_select_add_clicked(self, widget=None, data=""):
 		availbricks = self.gladefile.get_widget('bricks_available_treeview')
-		model, iter =availbricks.get_selection().get_selected()
-		if not iter:
+		model, iter_ =availbricks.get_selection().get_selected()
+		if not iter_:
 			return
-		self.addedmodel.append(model[iter])
-		model.remove(iter)
+		self.addedmodel.append(model[iter_])
+		model.remove(iter_)
 
 	def on_event_brick_select_remove_clicked(self, widget=None, data=""):
 		addedbricks = self.gladefile.get_widget('bricks_added_treeview')
-		model, iter = addedbricks.get_selection().get_selected()
-		if not iter:
+		model, iter_ = addedbricks.get_selection().get_selected()
+		if not iter_:
 			return
-		self.availmodel.append(model[iter])
-		model.remove(iter)
+		self.availmodel.append(model[iter_])
+		model.remove(iter_)
 
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
@@ -1708,25 +1690,25 @@ class VBGUI(gobject.GObject):
 
 	def on_toolbutton_start_all_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for b in self.brickfactory.bricks:
+		for b in iter(self.brickfactory.bricks):
 			if b.proc is None:
 				b.poweron()
 
 	def on_toolbutton_stop_all_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for b in self.brickfactory.bricks:
+		for b in iter(self.brickfactory.bricks):
 			if b.proc is not None:
 				b.poweroff()
 
 	def on_toolbutton_start_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for e in self.brickfactory.events:
+		for e in iter(self.brickfactory.events):
 			if not e.active:
 				e.poweron()
 
 	def on_toolbutton_stop_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for e in self.brickfactory.events:
+		for e in iter(self.brickfactory.events):
 			if e.active:
 				e.poweroff()
 
@@ -1804,9 +1786,9 @@ class VBGUI(gobject.GObject):
 			# "nothing selected!"
 			return
 
-		iter = tree.get_model().get_iter(path)
-		# name = tree.get_model().get_value(iter, EventsModel.EVENT_IDX).name
-		tree.get_model().get_value(iter, EventsModel.EVENT_IDX).name
+		iter_ = tree.get_model().get_iter(path)
+		# name = tree.get_model().get_value(iter_, EventsModel.EVENT_IDX).name
+		tree.get_model().get_value(iter_, EventsModel.EVENT_IDX).name
 		self.Dragging = e
 		if event.button == 3:
 			self.show_eventactions()
@@ -2028,14 +2010,14 @@ class VBGUI(gobject.GObject):
 		if (response == 1):
 			startevents = self.gladefile.get_widget('start_events_avail_treeview')
 			stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
-			model, iter = startevents.get_selection().get_selected()
-			if iter:
-				self.maintree.get_selection().cfg.pon_vbevent = model[iter][2]
+			model, iter_ = startevents.get_selection().get_selected()
+			if iter_:
+				self.maintree.get_selection().cfg.pon_vbevent = model[iter_][2]
 			else:
 				self.maintree.get_selection().cfg.pon_vbevent = ""
-			model, iter = stopevents.get_selection().get_selected()
-			if iter:
-				self.maintree.get_selection().cfg.poff_vbevent = model[iter][2]
+			model, iter_ = stopevents.get_selection().get_selected()
+			if iter_:
+				self.maintree.get_selection().cfg.poff_vbevent = model[iter_][2]
 			else:
 				self.maintree.get_selection().cfg.poff_vbevent = ""
 
@@ -2442,18 +2424,18 @@ class VBGUI(gobject.GObject):
 				delay = int(self.gladefile.get_widget('text_neweventdelay').get_text())
 				# actions = self.gladefile.get_widget('treeview_event_actions')
 
-				iter = self.shcommandsmodel.get_iter_first()
+				iter_ = self.shcommandsmodel.get_iter_first()
 
 				#Do not hide window
-				if not iter:
+				if not iter_:
 					return
 
 				currevent = None
 				# columns = (COL_COMMAND, COL_BOOL) = range(2)
 
-				while iter:
-					linecommand = self.shcommandsmodel.get_value (iter, 0)
-					shbool = self.shcommandsmodel.get_value(iter, 1)
+				while iter_:
+					linecommand = self.shcommandsmodel.get_value (iter_, 0)
+					shbool = self.shcommandsmodel.get_value(iter_, 1)
 					linecommand = linecommand.strip()
 					"""
 					Can be multiline command.
@@ -2471,7 +2453,7 @@ class VBGUI(gobject.GObject):
 					commandtype = 'addsh' if shbool else 'add'
 
 					if not commands[0]:
-						iter = self.shcommandsmodel.iter_next(iter)
+						iter_ = self.shcommandsmodel.iter_next(iter_)
 						continue
 
 					commands[0] = 'config %s %s' % (commandtype, commands[0])
@@ -2489,7 +2471,7 @@ class VBGUI(gobject.GObject):
 
 					# self.brickfactory.brickAction(currevent, c.split(" "))
 					self.__action_command("event %s %s" % (currevent.name, c))
-					iter = self.shcommandsmodel.iter_next(iter)
+					iter_ = self.shcommandsmodel.iter_next(iter_)
 
 				if currevent is not None:
 					#If at least one element added
@@ -2506,9 +2488,9 @@ class VBGUI(gobject.GObject):
 		# columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
 		COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG = range(4)
 		# addedbricks = self.gladefile.get_widget('bricks_added_treeview')
-		iter = self.addedmodel.get_iter_first()
+		iter_ = self.addedmodel.get_iter_first()
 
-		if not iter and response==1:
+		if not iter_ and response==1:
 			return
 		elif response==0:
 			widget.hide()
@@ -2527,12 +2509,12 @@ class VBGUI(gobject.GObject):
 		# action = ' on' if self.selected_event_type() in ['BrickStart', 'EventsCollation'] else ' off'
 
 		# XXX: I think this is broken, this is why i commented it
-		# while iter:
-		# 	evnametoadd = self.addedmodel.get_value(iter, COL_NAME)
+		# while iter_:
+		# 	evnametoadd = self.addedmodel.get_value(iter_, COL_NAME)
 		# 	self.brickfactory.\
 		# 	brickAction(currevent,('config add ' + evnametoadd + action).\
 		# 								split(" "))
-		# 	iter = self.addedmodel.iter_next(iter)
+		# 	iter_ = self.addedmodel.iter_next(iter_)
 
 		log.debug("Event created successfully")
 
@@ -3033,20 +3015,18 @@ class VBGUI(gobject.GObject):
 		treeviewselectionstop = stopavailevents.get_selection()
 		treeviewselectionstop.unselect_all()
 
-		container = self.brickfactory.events
-
-		for event in container:
+		for event in iter(self.brickfactory.events):
 			if event.configured():
 				parameters = event.get_parameters()
 				if len(parameters) > 30:
 					parameters = "%s..." % parameters[:30]
 				image = gtk.gdk.pixbuf_new_from_file_at_size(
 					graphics.running_brick_icon(event), 48, 48)
-				iter = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
+				iter_ = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
 				if self.maintree.get_selection().cfg.pon_vbevent == event.name:
-					treeviewselectionstart.select_iter(iter)
+					treeviewselectionstart.select_iter(iter_)
 				if self.maintree.get_selection().cfg.poff_vbevent == event.name:
-					treeviewselectionstop.select_iter(iter)
+					treeviewselectionstop.select_iter(iter_)
 
 		cell = gtk.CellRendererPixbuf ()
 		column_icon = gtk.TreeViewColumn (_("Icon"), cell, pixbuf = COL_ICON)
@@ -3337,7 +3317,7 @@ class VBGUI(gobject.GObject):
 		self.gladefile.get_widget("check_commit_privatecow").set_sensitive(False)
 		combo = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk'))
 		using_cow = dict()
-		for b in self.brickfactory.bricks:
+		for b in iter(self.brickfactory.bricks):
 			if b.get_type() == "Qemu":
 				for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
 					disk = getattr(b.cfg, dev)

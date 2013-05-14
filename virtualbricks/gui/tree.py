@@ -18,8 +18,11 @@
 
 import gtk
 
-from virtualbricks.models import BricksModel, EventsModel
 from virtualbricks.gui import graphics
+
+
+if False:  # pyflakes
+	_ = str
 
 
 class VBTree:
@@ -101,7 +104,7 @@ class VBTree:
 		self.order(column, direction)
 
 	def order(self, field=None, ascending=True):
-		if fiels is None:
+		if field is None:
 			field = _("Type")
 		self.order_last_direction = ascending
 		field = self.get_column_from_fieldname(field)
@@ -128,8 +131,8 @@ class BricksTree(VBTree):
 			field = _("Type")
 		nxt = self.model.iter_next(itr)
 		if (nxt):
-			br_itr = self.model.get_value(itr, BricksModel.BRICK_IDX)
-			br_nxt = self.model.get_value(nxt, BricksModel.BRICK_IDX)
+			br_itr = self.model.get_value(itr, 0)
+			br_nxt = self.model.get_value(nxt, 0)
 			if field == _('Icon') or field == _('Type'):
 				x = br_nxt.get_type()
 				y = br_itr.get_type()
@@ -196,7 +199,7 @@ class BricksTree(VBTree):
 			moved = self._bricks_treeorder_continue(itr, field, ascending)
 
 	def cell_render(self, column, cell, mod, iter):
-		brick = mod.get_value(iter, BricksModel.BRICK_IDX)
+		brick = mod.get_value(iter, 0)
 		assert brick is not None
 		if column.get_title() == _('Icon'):
 			if brick.homehost is not None and not brick.homehost.connected:
@@ -237,8 +240,8 @@ class EventsTree(VBTree):
 			field = _("Type")
 		nxt = self.model.iter_next(itr)
 		if (nxt):
-			br_itr = self.model.get_value(itr, EventsModel.EVENT_IDX)
-			br_nxt = self.model.get_value(nxt, EventsModel.EVENT_IDX)
+			br_itr = self.model.get_value(itr, 0)
+			br_nxt = self.model.get_value(nxt, 0)
 			if field == _('Icon') or field == _('Type'):
 				x = br_nxt.get_type()
 				y = br_itr.get_type()
@@ -305,7 +308,7 @@ class EventsTree(VBTree):
 			moved = self._events_treeorder_continue(itr, field, ascending)
 
 	def cell_render(self, column, cell, mod, iter):
-		event = mod.get_value(iter, EventsModel.EVENT_IDX)
+		event = mod.get_value(iter, 0)
 		assert event is not None
 		if column.get_title() == _('Icon'):
 			icon = gtk.gdk.pixbuf_new_from_file_at_size(

@@ -70,7 +70,7 @@ class RemoteHostConnectionInstance(threading.Thread):
                         args = eventline.rstrip('\n').split(' ')
 
                         if len(args) > 0 and args[0] == 'brick-started':
-                            for br in self.factory.bricks:
+                            for br in iter(self.factory.bricks):
                                 if br.name == args[1]:
                                     br.proc = True
                                     br.factory.emit("brick-started", br.name)
@@ -78,7 +78,7 @@ class RemoteHostConnectionInstance(threading.Thread):
                                     br.post_poweron()
 
                         if len(args) > 0 and args[0] == 'brick-stopped':
-                            for br in self.factory.bricks:
+                            for br in iter(self.factory.bricks):
                                 if br.name == args[1]:
                                     br.proc = None
                                     br.factory.emit("brick-stopped", br.name)
@@ -86,7 +86,7 @@ class RemoteHostConnectionInstance(threading.Thread):
                                     br.post_poweroff()
 
                         if len(args) > 0 and args[0] == 'udp':
-                            for br in self.factory.bricks:
+                            for br in iter(self.factory.bricks):
                                 if (br.name == args[1] and
                                         br.get_type() == 'Wire'
                                         and args[2] == 'remoteport'):
@@ -113,7 +113,7 @@ class RemoteHost:
 
     def num_bricks(self):
         r = 0
-        for b in self.factory.bricks:
+        for b in iter(self.factory.bricks):
             if b.homehost and b.homehost.addr[0] == self.addr[0]:
                 r += 1
         return r
@@ -157,7 +157,7 @@ class RemoteHost:
     def disconnect(self):
         if self.connected:
             self.connected = False
-            for b in self.factory.bricks:
+            for b in iter(self.factory.bricks):
                 if b.homehost and b.homehost.addr[0] == self.addr[0]:
                     b.poweroff()
             self.send("reset all")
@@ -214,7 +214,7 @@ class RemoteHost:
                 name = name[len(name) - 1]
                 self.send("i add %s %s/%s" % (img.name, self.baseimagesname))
 
-        for b in self.factory.bricks:
+        for b in iter(self.factory.bricks):
             if b.homehost and b.homehost.addr == self.addr:
                     self.upload(b)
 
@@ -446,14 +446,14 @@ class VBProtocol(Protocol):
     def do_ps(self, args):
         """List of active processes"""
 
-        procs = len([b for b in self.factory.bricks if b.proc is not None])
+        procs = len([b for b in iter(self.factory.bricks) if b.proc])
         if not procs:
             self.sendLine("No process running")
             return
 
         self.sendLine("PID\tType\tName")
         self.sendLine("-" * 24)
-        for b in self.factory.bricks:
+        for b in iter(self.factory.bricks):
             if b.proc is not None:
                 self.sendLine("%d\t%s\t%s" % (b.pid, b.get_type(), b.name))
 
@@ -477,11 +477,11 @@ class VBProtocol(Protocol):
         """List of bricks already created"""
         self.sendLine("Bricks")
         self.sendLine("-" * 20)
-        for obj in self.factory.bricks:
+        for obj in iter(self.factory.bricks):
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         self.sendLine("\nEvents")
         self.sendLine("-" * 20)
-        for obj in self.factory.events:
+        for obj in iter(self.factory.events):
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         # self.sendLine("End of list.")
 
@@ -505,7 +505,7 @@ class VBProtocol(Protocol):
 
     def do_connections(self, args):
         """List of connections for each brick"""
-        for b in self.factory.bricks:
+        for b in iter(self.factory.bricks):
             self.sendLine("Connections from %s brick:" % b.name)
             for sk in b.socks:
                 if b.get_type() == "Qemu":
@@ -548,7 +548,7 @@ class VBProtocol(Protocol):
         # if self.factory.TCP:
         #     if len(args) != 4:
         #         self.sendLine("FAIL udp arguments")
-        #     for b in self.factory.bricks:
+        #     for b in iter(self.factory.bricks):
         #         if b.name == args[2]:
         #             w = PyWire(self.factory, args[1])
         #             w.set_remoteport(args[3])
