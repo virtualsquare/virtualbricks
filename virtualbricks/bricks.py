@@ -62,6 +62,7 @@ class Brick(base.Base):
     name = property(get_name, set_name)
 
     def __init__(self, factory, name, homehost=None):
+        base.Base.__init__(self)
         self.factory = factory
         self._name = name
         self.settings = self.factory.settings
@@ -126,7 +127,7 @@ class Brick(base.Base):
     pidfile = property(pidfile)
 
     def on_config_changed(self):
-        self.factory.emit("brick-changed", self.name)
+        self.emit("changed")
 
     def configured(self):
         return False
@@ -158,8 +159,7 @@ class Brick(base.Base):
         """TODO attrs : dict attr => value"""
         self.initialize(attrlist)
         # TODO brick should be gobject and a signal should be launched
-        self.factory.bricksmodel.change_brick(self)
-        self.on_config_changed()
+        self.emit("changed")
         if self.homehost and self.homehost.connected:
             self.homehost.putconfig(self)
 
@@ -167,7 +167,7 @@ class Brick(base.Base):
         for p in self.plugs:
             if not p.configured():
                 if p.connect(endpoint):
-                    self.on_config_changed()
+                    self.emit("changed")
                     self.gui_changed = True
                     return True
         return False
@@ -176,7 +176,7 @@ class Brick(base.Base):
         for p in self.plugs:
             if p.configured():
                 p.disconnect()
-        self.on_config_changed()
+        self.emit("changed")
 
     ############################
     ########### Poweron/Poweroff
@@ -193,7 +193,7 @@ class Brick(base.Base):
             if not self.check_links():
                 raise errors.LinkLoopError("Link loop detected")
         self._poweron()
-        self.factory.bricksmodel.change_brick(self)
+        self.emit("changed")
 
     def build_cmd_line(self):
         res = []

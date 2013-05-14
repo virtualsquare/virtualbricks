@@ -39,13 +39,14 @@ class Event(base.Base):
     timer = None
 
     def __init__(self, factory, name):
+        base.Base.__init__(self)
         self.factory = factory
         self.name = name
         self.settings = self.factory.settings
         self.cfg = brickconfig.BrickConfig()
         self.cfg.actions = list()
         self.cfg.delay = 0
-        self.on_config_changed()
+        # self.emit("changed")
 
     def get_state(self):
         """return state of the event"""
@@ -115,9 +116,8 @@ class Event(base.Base):
     def configure(self, attrlist):
         self.initialize(attrlist)
         # TODO brick should be gobject and a signal should be launched
-        self.factory.eventsmodel.change_event(self)
+        self.emit("changed")
         self.timer = threading.Timer(float(self.cfg.delay), self.doactions)
-        self.on_config_changed()
 
     ############################
     ########### Poweron/Poweroff
@@ -166,7 +166,7 @@ class Event(base.Base):
         self.factory.emit("event-accomplished", self.name)
 
     def on_config_changed(self):
-        self.factory.emit("event-changed", self.name)
+        self.emit("changed")
 
     #############################
     # Console related operations.
