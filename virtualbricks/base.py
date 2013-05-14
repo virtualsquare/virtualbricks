@@ -17,7 +17,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-class Base:
+import gobject
+
+
+class Base(gobject.GObject):
+
+    __gsignals__ = {"changed": (gobject.SIGNAL_RUN_FIRST, None, ())}
 
     # type = None  # if not set in a subclass will raise an AttributeError
     _needsudo = False
@@ -31,3 +36,8 @@ class Base:
     def get_cbset(self, key):
         return getattr(self, "cbset_" + key, None)
 
+    def signal_connect(self, signal, handler):
+        return gobject.GObject.connect(self, signal, handler)
+
+    def signal_disconnect(self, handler_id):
+        return gobject.GObject.disconnect(self, handler_id)

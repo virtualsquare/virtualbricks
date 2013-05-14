@@ -32,7 +32,6 @@ import gtk.glade
 from virtualbricks import (app, tools, errors, settings, configfile,
 						brickfactory, virtualmachines, console)
 from virtualbricks.console import VbShellCommand, RemoteHost
-from virtualbricks.models import EventsModel
 from virtualbricks.settings import MYPATH
 
 from virtualbricks.gui import tree, graphics, dialogs
@@ -1788,7 +1787,7 @@ class VBGUI(gobject.GObject):
 
 		iter_ = tree.get_model().get_iter(path)
 		# name = tree.get_model().get_value(iter_, EventsModel.EVENT_IDX).name
-		tree.get_model().get_value(iter_, EventsModel.EVENT_IDX).name
+		tree.get_model().get_value(iter_, 0).name
 		self.Dragging = e
 		if event.button == 3:
 			self.show_eventactions()

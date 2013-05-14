@@ -27,13 +27,13 @@ import logging
 import threading
 import itertools
 
+import gtk
 import gobject
 
 import virtualbricks
 from virtualbricks import app, tools, errors, settings, configfile, console
 from virtualbricks import (events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
-from virtualbricks.models import BricksModel, EventsModel
 
 
 log = logging.getLogger(__name__)
@@ -111,8 +111,10 @@ class BrickFactory(gobject.GObject):
         self.events = []
         self.socks = []
         self.disk_images = []
-        self.bricksmodel = BricksModel()
-        self.eventsmodel = EventsModel()
+        self.bricksmodel = gtk.ListStore(object)
+        self.__brick_signals = {}
+        self.eventsmodel = gtk.ListStore(object)
+        self.__event_signals = {}
         self.settings = settings.Settings(settings.CONFIGFILE)
         self.BRICKTYPES = install_brick_types(
             None, wires.VDESUPPORT and self.settings.python)
@@ -225,7 +227,24 @@ class BrickFactory(gobject.GObject):
         brick = self._new_brick(type, name, host, remote)
         self.bricks.append(brick)
         self.bricksmodel.append((brick,))
+        self.__brick_signals[brick.name] = brick.signal_connect(
+            "changed", self.__brick_changed)
         return brick
+
+    def __do_action_for_brick(self, action, brick):
+        i = self.bricksmodel.get_iter_first()
+        while i:
+            if self.bricksmodel.get_value(i, 0) == brick:
+                action(brick, i)
+                break
+            i = self.bricksmodel.iter_next(i)
+
+    def __emit_brick_row_changed(self, brick, i):
+        self.bricksmodel.row_changed(self.bricksmodel.get_path(i), i)
+
+    def __brick_changed(self, brick):
+        self.__do_action_for_brick(self.__emit_brick_row_changed, brick)
+        self.emit("brick-changed", brick.name)
 
     @synchronized
     def _new_brick(self, type, name, host, remote):
@@ -283,29 +302,31 @@ class BrickFactory(gobject.GObject):
         return new_brick
     dupbrick = dup_brick
 
+    def __remove_brick(self, brick, i):
+        self.bricksmodel.remove(i)
+
     @synchronized
-    def delbrick(self, bricktodel):
+    def delbrick(self, brick):
         # XXX check me
-
-        if bricktodel.proc is not None:
-            bricktodel.poweroff()
-
+        if brick.proc is not None:
+            brick.poweroff()
         for b in self.bricks:
-            if b == bricktodel:
+            if b == brick:
                 for so in b.socks:
                     self.socks.remove(so)
-                self.bricks.remove(b)
-            else:  # connections to bricktodel must be deleted too
+            else:  # connections to brick must be deleted too
                 for pl in reversed(b.plugs):
                     if pl.sock:
-                        if pl.sock.nickname.startswith(bricktodel.name):
+                        if pl.sock.nickname.startswith(brick.name):
                             log.debug("Deleting plug to %s", pl.sock.nickname)
                             b.plugs.remove(pl)
                             b.clear_self_socks(pl.sock.path)
                             # recreate Plug(self) of some objects
                             b.restore_self_plugs()
-
-        self.bricksmodel.del_brick(bricktodel)
+        self.bricks.remove(brick)
+        self.__do_action_for_brick(self.__remove_brick, brick)
+        brick.signal_disconnect(self.__brick_signals[brick.name])
+        del self.__brick_signals[brick.name]
 
     def get_brick_by_name(self, name):
         for b in self.bricks:
@@ -314,6 +335,7 @@ class BrickFactory(gobject.GObject):
 
     @synchronized
     def rename_brick(self, brick, name):
+        # XXX: this should emit "changed" signal
         nname = self.normalize(name)
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
@@ -321,9 +343,6 @@ class BrickFactory(gobject.GObject):
         # b.gui_changed = True
 
     renamebrick = rename_brick
-
-    def iter_bricks(self):
-        return iter(self.bricks)
 
     # [[[[[[[[[]]]]]]]]]
     # [     Events     ]
@@ -341,7 +360,24 @@ class BrickFactory(gobject.GObject):
         event = self._new_event(name)
         self.events.append(event)
         self.eventsmodel.append((event,))
+        self.__event_signals[event.name] = event.signal_connect(
+            "changed", self.__event_changed)
         return event
+
+    def __do_action_for_event(self, action, event):
+        i = self.eventsmodel.get_iter_first()
+        while i:
+            if self.eventsmodel.get_value(i, 0) == event:
+                action(event, i)
+                break
+            i = self.eventsmodel.iter_next(i)
+
+    def __emit_event_row_changed(self, event, i):
+        self.eventsmodel.row_changed(self.eventsmodel.get_path(i), i)
+
+    def __event_changed(self, event):
+        self.__do_action_for_event(self.__emit_event_row_changed, event)
+        self.emit("event-changed", event.name)
 
     @synchronized
     def _new_event(self, name):
@@ -371,13 +407,20 @@ class BrickFactory(gobject.GObject):
         new_event.on_config_changed()
         return new_event
 
+    def __remove_event(self, event, i):
+        self.eventsmodel.remove(i)
+
     @synchronized
     def del_event(self, event):
         for e in self.events:
             if e == event:
                 e.poweroff()
-                self.events.remove(e)
-        self.eventsmodel.del_event(event)
+        self.events.remove(event)
+
+        self.events.remove(event)
+        self.__do_action_for_event(self.__remove_event, event)
+        event.signal_disconnect(self.__event_signals[event.name])
+        del self.__event_signals[event.name]
 
     delevent = del_event
 
