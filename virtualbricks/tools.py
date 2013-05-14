@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 def random_mac():
     random.seed()
-    return "00:aa:{:02x}:{:02x}:{:02x}:{:02x}".format(random.getrandbits(8),
+    return "00:aa:{0:02x}:{1:02x}:{2:02x}:{3:02x}".format(random.getrandbits(8),
                                                       random.getrandbits(8),
                                                       random.getrandbits(8),
                                                       random.getrandbits(8))
