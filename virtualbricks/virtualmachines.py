@@ -432,16 +432,12 @@ class VMDisk:
 class VM(Brick):
 
     type = "Qemu"
-    _name = None
-
-    def get_name(self):
-        return self._name
 
     def set_name(self, name):
         self._name = name
         self.newbrick_changes()
 
-    name = property(get_name, set_name)
+    name = property(Brick.get_name, set_name)
 
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
