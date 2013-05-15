@@ -50,7 +50,7 @@ class VBTree:
 				if model is None:
 					col.add_attribute(elem, 'pixbuf', idx)
 			else:
-	 			elem = gtk.CellRendererText()
+				elem = gtk.CellRendererText()
 				col.pack_start(elem, False)
 				if model is None:
 					col.add_attribute(elem, 'text', idx)
