@@ -126,9 +126,9 @@ class VBGUI(gobject.GObject):
 	the widgets and the connections to the main engine.
 	"""
 
-	def __init__(self, brickfactory, gladefile, textbuffer=None):
+	def __init__(self, factory, gladefile, textbuffer=None):
 		gobject.GObject.__init__(self)
-		self.brickfactory = brickfactory
+		self.brickfactory = factory
 		self.gladefile = gladefile
 		self.messages_buffer = textbuffer
 		self.topology = None
@@ -138,13 +138,12 @@ class VBGUI(gobject.GObject):
 
 		# Connect all the signal from the factory to specific callbacks
 		self.__factory_handlers = fh = []
-		f = self.brickfactory
-		fh.append(f.connect("engine-closed", self.on_engine_closed))
-		fh.append(f.connect("brick-stopped", self.cb_brick_stopped))
-		fh.append(f.connect("brick-started", self.cb_brick_started))
-		fh.append(f.connect("brick-changed", self.cb_brick_changed))
-		fh.append(f.connect("event-started", self.cb_event_started))
-		fh.append(f.connect("event-stopped", self.cb_event_stopped))
+		fh.append(factory.connect("engine-closed", self.on_engine_closed))
+		fh.append(factory.connect("brick-stopped", self.cb_brick_stopped))
+		fh.append(factory.connect("brick-started", self.cb_brick_started))
+		fh.append(factory.connect("brick-changed", self.cb_brick_changed))
+		self.__brick_changed_h = factory.bricksmodel.connect("row-changed",
+				self.on_brick_changed)
 
 		self.availmodel = None
 		self.addedmodel = None
@@ -152,7 +151,7 @@ class VBGUI(gobject.GObject):
 		self.shcommandsmodel = None
 
 		# General settings (system properties)
-		self.config = self.brickfactory.settings
+		self.config = factory.settings
 
 		# Show the main window
 		self.widg['main_win'].show()
@@ -177,12 +176,18 @@ class VBGUI(gobject.GObject):
 
 		''' Treeview creation, using the VBTree class '''
 		''' Main Treeview '''
-		self.maintree = tree.BricksTree(self, 'treeview_bookmarks', self.brickfactory.bricksmodel, [gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING], [_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
+		self.maintree = tree.BricksTree(self, 'treeview_bookmarks',
+				factory.bricksmodel,
+				[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
+					gobject.TYPE_STRING, gobject.TYPE_STRING],
+				[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		''' TW with the events '''
-		self.eventstree = tree.EventsTree(self, 'treeview_events_bookmarks', self.brickfactory.eventsmodel,
-			[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-			[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
+		self.eventstree = tree.EventsTree(self, 'treeview_events_bookmarks',
+				factory.eventsmodel,
+				[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
+					gobject.TYPE_STRING, gobject.TYPE_STRING],
+				[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		self.setup_joblist()
 		self.setup_remotehosts()
@@ -216,7 +221,7 @@ class VBGUI(gobject.GObject):
 
 		''' Set the settings panel to bottom '''
 		self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
-		self.Dragging = None
+		# self.Dragging = None
 		self.curtain_down()
 
 		''' Reset the selections for the TWs'''
@@ -268,6 +273,8 @@ class VBGUI(gobject.GObject):
 	def quit(self):
 		self.__foreach_handler(self.brickfactory.disconnect)
 		del self.__factory_handlers[:]
+		self.brickfactory.bricksmodel.disconnect(self.__brick_changed_h)
+		self.__brick_changed_h = None
 
 	def __setup_treeview(self, resource, window_name, widget_name):
 		ui = graphics.get_data("virtualbricks.gui", resource)
@@ -332,13 +339,8 @@ class VBGUI(gobject.GObject):
 	def on_engine_closed(self, factory):
 		gobject.idle_add(gtk.main_quit)
 
-	# TODO: re-enable draw topology
-	# def cb_brick_added(self, model, name):
-	# 	self.draw_topology()
-
-	# TODO: re-enable draw topology
-	# def cb_brick_deleted(self, model, name):
-	# 	self.draw_topology()
+	def on_brick_changed(self, model, path, iter_):
+		self.draw_topology()
 
 	def cb_brick_changed(self, model, name):
 		self.draw_topology()
@@ -350,18 +352,6 @@ class VBGUI(gobject.GObject):
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
 		self.check_joblist(force=True)
-
-	# def cb_event_added(self, model, name):
-	# 	pass
-
-	# def cb_event_deleted(self, model, name):
-	# 	pass
-
-	def cb_event_stopped(self, model, name=""):
-		pass
-
-	def cb_event_started(self, model, name=""):
-		pass
 
 	def _stop_listening(self):
 		self.__foreach_handler(self.brickfactory.handler_block)
@@ -376,12 +366,11 @@ class VBGUI(gobject.GObject):
 	"""                                                          """
 	""" ******************************************************** """
 
-	'''
-	' The config_event_prepare is responsible for filling the
-	' configuration panel with the current configuration in the
-	' selected event object.
-	'''
 	def config_event_prepare(self):
+		"""The config_event_prepare is responsible for filling the
+		configuration panel with the current configuration in the
+		selected event object."""
+
 		e = self.eventstree.get_selection()
 		for key in e.cfg.keys():
 			t = e.get_type()
@@ -434,17 +423,17 @@ class VBGUI(gobject.GObject):
 	"			--  fill panel form with current brick/event
 	"				configuration
 	"""
-	'''
-	' prepare_ifcombo()
-	' Fill the interfaces combo in the capture configuration
-	' in order to show all the existing network interfaces
-	' in the host system
-	' @param b is the selected Capture brick, so the selection
-	' for the combo is set to the current selected real device.
-	' This helper method is specific for the capture brick,
-	' and it is called from the global "config_brick_prepare" below.
-	'''
 	def prepare_ifcombo(self, b):
+		"""Fill the interfaces combo in the capture configuration
+		in order to show all the existing network interfaces
+		in the host system
+
+		@param b: is the selected Capture brick, so the selection
+		for the combo is set to the current selected real device.
+		This helper method is specific for the capture brick,
+		and it is called from the global "config_brick_prepare" below.
+		"""
+
 		combo = ComboBox(self.gladefile.get_widget('ifcombo_capture'))
 		opt = dict()
 		try:
@@ -463,12 +452,12 @@ class VBGUI(gobject.GObject):
 			if n == b.cfg.iface:
 				combo.select(n)
 
-	'''
-	' fill the current configuration in the config interface.
-	' This is the global method to fill in all the forms
-	' in the configuration panel for bricks and events
-	'''
 	def config_brick_prepare(self):
+		"""fill the current configuration in the config interface.
+		This is the global method to fill in all the forms
+		in the configuration panel for bricks and events
+		"""
+
 		b = self.maintree.get_selection()
 		if b.get_type() == 'Capture':
 			self.prepare_ifcombo(b)
@@ -696,6 +685,13 @@ class VBGUI(gobject.GObject):
 	' the configuration will be read automatically.
 	'''
 	def widget_to_params(self, b):
+		"""Widget to params reads the config directly from
+		gtk widgets.
+		If the widget name is in the format:
+			- cfg_<type>_<variablename>_<widgettype>
+		the configuration will be read automatically.
+		"""
+
 		parameters = {}
 		for key in b.cfg.keys():
 			t = b.get_type()
@@ -1768,7 +1764,7 @@ class VBGUI(gobject.GObject):
 		path = tree.get_cursor()[0]
 		if path is None:
 			return
-		self.Dragging = b
+		# self.Dragging = b
 		if event.button == 3:
 			self.show_brickactions()
 
@@ -1788,7 +1784,7 @@ class VBGUI(gobject.GObject):
 		iter_ = tree.get_model().get_iter(path)
 		# name = tree.get_model().get_value(iter_, EventsModel.EVENT_IDX).name
 		tree.get_model().get_value(iter_, 0).name
-		self.Dragging = e
+		# self.Dragging = e
 		if event.button == 3:
 			self.show_eventactions()
 
