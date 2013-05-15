@@ -17,57 +17,45 @@
 
 COMBOBOXES = dict()
 
+
 def ComboBox(widget):
-	for k, v in COMBOBOXES.items():
-		if k == widget:
-			return v
-	COMBOBOXES[widget] = ComboBoxObj(widget)
-	return COMBOBOXES[widget]
+    if widget not in COMBOBOXES:
+        COMBOBOXES[widget] = ComboBoxObj(widget)
+    return COMBOBOXES[widget]
 
 
 class ComboBoxObj:
-	def __init__(self, _widget):
-		self.widget = _widget
-		self.model = self.widget.get_model()
-		self.options = dict()
 
-	def populate(self, args, selected=None, _clear=True):
-		"""args is dict[showing_name] = real name"""
-		if _clear:
-			self.clear()
-		for (k, v) in args.items():
-			self.options[k] = v
+    def __init__(self, widget):
+        self.widget = widget
+        self.model = self.widget.get_model()
+        self.options = dict()
 
-		items = [(v, k) for k, v in self.options.items()]
-		items.sort()
-		items = [(k, v) for v, k in items]
-		for k, v in items:
-			self.widget.append_text(k)
+    def populate(self, args, selected=None, clear=True):
+        """args is dict[showing_name] = real name"""
+        if clear:
+            self.clear()
+        self.options.update(args)
+        items = sorted((v, k) for k, v in self.options.items())
+        for k, v in ((k, v) for v, k in items):
+            self.widget.append_text(k)
+        if selected:
+            self.select(selected)
 
-		if selected:
-			self.select(selected)
+    def clear(self):
+        self.options.clear()
+        self.widget.set_model(None)
+        self.model.clear()
+        self.widget.set_model(self.model)
 
-	def clear(self):
-		self.options = {}
-		self.widget.set_model(None)
-		self.model.clear()
-		self.widget.set_model(self.model)
+    def select(self, regexp):
+        index = self.model.get_iter_first()
+        while index is not None:
+            value = self.model.get_value(index, 0)
+            if value == regexp:
+                self.widget.set_active_iter(index)
+                break
+            index = self.model.iter_next(index)
 
-	def select(self, regexp):
-		index = self.model.get_iter_first()
-		active = -1
-		while index is not None:
-			value = self.model.get_value(index, 0)
-			if value == regexp:
-				active = index
-				self.widget.set_active_iter(active)
-				break
-			index = self.model.iter_next(index)
-
-	def get_selected(self):
-		txt = self.widget.get_active_text()
-		try:
-			return self.options[txt]
-		except KeyError:
-			return None
-
+    def get_selected(self):
+        return self.options.get(self.widget.get_active_text(), None)
