@@ -272,7 +272,7 @@ class BrickFactory(gobject.GObject):
         ltype = type.lower()
         if ltype not in self.BRICKTYPES:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
-        brick = self.BRICKTYPES[ltype](self, name)
+        brick = self.BRICKTYPES[ltype](self, nname)
         if remote:
             brick.set_host(host)
             if brick.homehost.connected:
