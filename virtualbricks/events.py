@@ -19,7 +19,7 @@ import logging
 import subprocess
 import threading
 
-from virtualbricks import base, errors, brickconfig, console
+from virtualbricks import base, errors, console
 
 
 if False:  # pyflakes
@@ -39,11 +39,7 @@ class Event(base.Base):
     timer = None
 
     def __init__(self, factory, name):
-        base.Base.__init__(self)
-        self.factory = factory
-        self.name = name
-        self.settings = self.factory.settings
-        self.cfg = brickconfig.BrickConfig()
+        base.Base.__init__(self, factory, name)
         self.cfg.actions = list()
         self.cfg.delay = 0
         # self.emit("changed")
