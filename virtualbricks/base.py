@@ -28,10 +28,10 @@ if False:  # pyflakes
     _ = str
 
 
-class BrickConfig(dict):
+class Config(dict):
     """Generic configuration for Brick
 
-    >>> cfg = BrickConfig()
+    >>> cfg = Config()
     >>> cfg.enabled = True
     >>> cfg['enabled'] == True
     True
@@ -126,7 +126,7 @@ class Base(gobject.GObject):
         self.factory = factory
         self._name = name
         self.settings = self.factory.settings
-        self.cfg = BrickConfig()
+        self.cfg = Config()
 
     def get_type(self):
         return self.type
