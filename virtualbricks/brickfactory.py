@@ -289,6 +289,8 @@ class BrickFactory(gobject.GObject):
         else:
             new_brick = self.newbrick(ty, name)
         # Copy only strings, and not objects, into new vm config
+        # XXX: there is a problem here, new configs will have all kind of types
+        # XXX: maybe use deepcopy
         for c in brick.cfg:
             val = brick.cfg.get(c)
             if isinstance(val, str):

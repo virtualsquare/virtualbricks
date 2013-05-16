@@ -354,6 +354,8 @@ class VBProtocol(Protocol):
 
     def brick_action(self, obj, cmd):
         """brick action dispatcher"""
+        # XXX: cyclic imports
+        from virtualbricks import bricks
 
         if cmd[0] == "on":
             obj.poweron()
@@ -370,6 +372,7 @@ class VBProtocol(Protocol):
         elif cmd[0] == "config":
             obj.configure(cmd[1:])
         elif cmd[0] == "show":
+            # obj.cfg.dump(self.sendLine)
             obj.cfg.dump()
         elif cmd[0] == "connect" and len(cmd) == 2:
             if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
@@ -378,7 +381,6 @@ class VBProtocol(Protocol):
                 log.info("Connection failed")
         elif cmd[0] == "disconnect":
             obj.disconnect()
-
 
     def default(self, line):
         if not line:
@@ -441,7 +443,6 @@ class VBProtocol(Protocol):
             return False
         self.brick_action(brick, args[1:])
         return True
-
 
     def do_ps(self, args):
         """List of active processes"""
