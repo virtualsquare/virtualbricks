@@ -27,7 +27,8 @@ import copy
 import subprocess
 import logging
 
-from virtualbricks import base, errors, settings
+from virtualbricks import base, errors, settings, versions
+from virtualbricks.deprecated import deprecated
 from virtualbricks.console import RemoteHost
 
 
@@ -108,6 +109,7 @@ class Brick(base.Base):
     def pidfile(self):
         return "/tmp/%s.pid" % self.name
 
+    @deprecated(versions.Version("Virtualbricks", 1, 0), "emit")
     def on_config_changed(self):
         self.emit("changed")
 
