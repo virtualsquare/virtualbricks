@@ -26,9 +26,8 @@ from datetime import datetime
 from shutil import move
 import logging
 
-from virtualbricks import errors, tools
+from virtualbricks import base, errors, tools
 from virtualbricks.bricks import Brick
-from virtualbricks.brickconfig import BrickConfig
 from virtualbricks.link import Sock, Plug
 from virtualbricks.settings import MYPATH
 
@@ -94,7 +93,7 @@ class _VMPlug:
         self.__plug.brick.send("device_del eth%s\n" % self.vlan)
 
 
-class VMPlug(Plug, BrickConfig):
+class VMPlug(Plug, base.BrickConfig):
     def __init__(self, brick):
         Plug.__init__(self, brick)
         self.mac = tools.RandMac()
@@ -163,7 +162,7 @@ class _VMSock:
         return os.access(os.path.dirname(self.path), os.W_OK)
 
 
-class VMSock(Sock, BrickConfig):
+class VMSock(Sock, base.BrickConfig):
     def __init__(self,brick):
         Sock.__init__(self, brick)
         self.mac = tools.RandMac()
