@@ -129,8 +129,7 @@ class Base(object):
         builder.set_translation_domain(self.domain)
         builder.add_from_file(graphics.get_filename("virtualbricks.gui",
                                                     self.resource))
-        name = self.get_name()
-        self.widget = builder.get_object(name)
+        self.widget = builder.get_object(self.get_name())
         builder.connect_signals(self)
 
     def get_object(self, name):
@@ -182,11 +181,14 @@ class LoggingWindow(Window):
         vadjustment = self.get_object("scrolledwindow1").get_vadjustment()
         self.__vadjustment_h = vadjustment.connect("value-changed",
                 self.on_vadjustment_value_changed)
-        textview.scroll_mark_onscreen(textbuffer.get_insert())
+        self.scroll_to_end(textview, textbuffer)
+
+    def scroll_to_end(self, textview, textbuffer):
+        textview.scroll_to_mark(textbuffer.get_mark("end"), 0, True, 0, 1)
 
     def on_textbuffer_changed(self, textbuffer, textview):
         if self.__bottom:
-            textview.scroll_mark_onscreen(textbuffer.get_insert())
+            self.scroll_to_end(textview, textbuffer)
 
     def on_vadjustment_value_changed(self, adj):
         self.__bottom = adj.get_value() + adj.get_page_size() == \

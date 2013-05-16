@@ -3474,15 +3474,16 @@ class TextBufferHandler(logging.Handler):
 
 	def __init__(self, textbuffer):
 		logging.Handler.__init__(self)
+		textbuffer.create_mark("end", textbuffer.get_end_iter(), False)
 		self.textbuffer = textbuffer
 
 	def emit(self, record):
 		gobject.idle_add(self._emit, record)
 
 	def _emit(self, record):
-		eiter = self.textbuffer.get_end_iter()
-		msg = "%s\n" % self.format(record)
-		self.textbuffer.insert_with_tags_by_name(eiter, msg, record.levelname)
+		self.textbuffer.insert_with_tags_by_name(
+			self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark("end")),
+			"%s\n" % self.format(record), record.levelname)
 
 
 class MessageDialogHandler(logging.Handler):
