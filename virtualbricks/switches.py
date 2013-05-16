@@ -29,6 +29,13 @@ if False:  # pyflakes
     _ = str
 
 
+class SwitchConfig(base.NewConfig):
+
+    parameters = [("numports", base.SpinInt(32, 1, 128)),
+                  ("hub", base.Boolean(False)),
+                  ("fstp", base.Boolean(False))]
+
+
 class Switch(Brick):
     """
     >>> # bug #730812
