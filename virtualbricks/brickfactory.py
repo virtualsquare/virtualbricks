@@ -690,6 +690,8 @@ class Application:
 class ApplicationServer(Application):
 
     def start(self):
+        logging.captureWarnings(True)
+        warnings.filterwarnings("default", category=DeprecationWarning)
         if os.getuid() != 0:
             raise app.QuitError("server requires to be run by root.", 5)
         self.factory = factory = BrickFactoryServer()

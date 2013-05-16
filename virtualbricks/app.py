@@ -22,7 +22,7 @@ import getopt
 import logging
 
 
-log = logging.getLogger('virtualbricks')
+log = logging.getLogger()
 
 
 class UsageError(Exception):
