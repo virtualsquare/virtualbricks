@@ -18,12 +18,15 @@
 import os
 import logging
 
-from virtualbricks import settings
+from virtualbricks import base, settings
 from virtualbricks.bricks import Brick
 from virtualbricks.link import Sock
 
 
 log = logging.getLogger(__name__)
+
+if False:  # pyflakes
+    _ = str
 
 
 class Switch(Brick):
@@ -53,26 +56,28 @@ class Switch(Brick):
 
     name = property(Brick.get_name, set_name)
 
+    pid = -1
+    ports_used = 0
+    command_builder = {"-x": "hubmode",
+                       "-n": "numports",
+                       "-F": "fstp",
+                       "--macaddr": "macaddr",
+                       "-m": "mode",
+                       "-g": "group",
+                       "--priority": "priority",
+                       "--mgmtmode": "mgmtmode",
+                       "--mgmtgroup": "mgmtgroup"}
+
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
-        self.pid = -1
+        self.command_builder["-s"] = self.path
+        self.command_builder["-M"] = self.console
         self.cfg.numports = "32"
         self.cfg.hub = ""
         self.cfg.fstp = ""
-        self.ports_used = 0
-        self.command_builder = {"-s": self.path,
-                                "-M": self.console,
-                                "-x": "hubmode",
-                                "-n": "numports",
-                                "-F": "fstp",
-                                "--macaddr": "macaddr",
-                                "-m": "mode",
-                                "-g": "group",
-                                "--priority": "priority",
-                                "--mgmtmode": "mgmtmode",
-                                "--mgmtgroup": "mgmtgroup"}
-        portname = self.name + "_port"
-        self.socks.append(Sock(self, portname))
+        self.socks.append(Sock(self, self.name + "_port"))
+        # XXX: obiviusly configuration is changed in __init__, check if it is
+        # actually used by someone
         self.on_config_changed()
 
     def get_parameters(self):
@@ -135,17 +140,17 @@ class FakeProcess:
 class SwitchWrapper(Brick):
 
     type = "SwitchWrapper"
+    pid = -1
+    command_builder = {}
+    has_console = False
+    proc = None
 
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
-        self.pid = -1
-        self.command_builder = {}
         self.cfg.path = ""
-        portname = self.name + "_port"
-        self.socks.append(Sock(self, portname))
+        self.socks.append(Sock(self, self.name + "_port"))
+        # XXX: see Switch __init__
         self.on_config_changed()
-        self.has_console = False
-        self.proc = None
         self.cfg.numports = 32
 
     def get_parameters(self):

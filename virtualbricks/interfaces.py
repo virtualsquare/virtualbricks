@@ -28,3 +28,6 @@ class IBrick:
     def poweroff():
         """Stop the brick."""
 
+    def get_parameters():
+        """Actually used only in the main tree to show the list of the
+        parameters"""
