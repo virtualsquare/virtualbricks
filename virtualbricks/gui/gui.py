@@ -378,14 +378,14 @@ class VBGUI(gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
-				widget.set_text(str(e.cfg[key]))
+				widget.set_text(str(e.cfg.get(key)))
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "treeview")
 			if (widget is not None):
 				self.shcommandsmodel = None
 				self.shcommandsmodel = gtk.ListStore (str, bool)
 
-				for a in e.cfg[key]:
+				for a in e.cfg.get(key):
 					# iter_ = self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
 					self.shcommandsmodel.append([a, not isinstance(a, VbShellCommand)])
 
@@ -586,7 +586,7 @@ class VBGUI(gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if (widget is not None):
-				if (b.cfg[key] == "*" or b.cfg[key] == 'True' or b.cfg[key] == True):
+				if b.cfg.get(key) in set(["*", "True", True]):
 					if key is "kvm" and self.config.kvm:
 						widget.set_active(True)
 					elif key is not "kvm":
@@ -606,11 +606,11 @@ class VBGUI(gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
-				widget.set_text(str(b.cfg[key]))
+				widget.set_text(str(b.cfg.get(key)))
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-			if (widget is not None and len(b.cfg[key]) > 0):
-				widget.set_value(int(b.cfg[key]))
+			if (widget is not None and len(b.cfg.get(key)) > 0):
+				widget.set_value(int(b.cfg.get(key)))
 			if t == "Switch" and key == 'numports':
 				nports = 0
 				for it in iter(self.brickfactory.bricks):
@@ -625,12 +625,12 @@ class VBGUI(gobject.GObject):
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
 			if (widget is not None):
-				widget.set_value(float(b.cfg[key]))
+				widget.set_value(float(b.cfg.get(key)))
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
 			if (widget is not None and dicts.has_key(key)):
 				for k, v in dicts[key].iteritems():
-					if (v==b.cfg[key]):
+					if (v==b.cfg.get(key)):
 						ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
@@ -639,7 +639,7 @@ class VBGUI(gobject.GObject):
 				iter_ = model.get_iter_first()
 				i = 0
 				while iter_:
-					if model.get_value(iter_,0)==b.cfg[key]:
+					if model.get_value(iter_,0)==b.cfg.get(key):
 						widget.set_active(i)
 						break
 					else:
@@ -647,8 +647,8 @@ class VBGUI(gobject.GObject):
 						i = i + 1
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
-			if (widget is not None and len(b.cfg[key]) > 0):
-				widget.set_filename(b.cfg[key])
+			if (widget is not None and len(b.cfg.get(key)) > 0):
+				widget.set_filename(b.cfg.get(key))
 			elif (widget is not None and t=='Qemu' and (key[0:4]=='base' or key=='cdrom')):
 				widget.set_current_folder(self.config.get('baseimages'))
 			elif widget is not None:
