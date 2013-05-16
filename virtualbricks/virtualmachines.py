@@ -93,7 +93,7 @@ class _VMPlug:
         self.__plug.brick.send("device_del eth%s\n" % self.vlan)
 
 
-class VMPlug(Plug, base.BrickConfig):
+class VMPlug(Plug, base.Config):
     def __init__(self, brick):
         Plug.__init__(self, brick)
         self.mac = tools.RandMac()
@@ -162,7 +162,7 @@ class _VMSock:
         return os.access(os.path.dirname(self.path), os.W_OK)
 
 
-class VMSock(Sock, base.BrickConfig):
+class VMSock(Sock, base.Config):
     def __init__(self,brick):
         Sock.__init__(self, brick)
         self.mac = tools.RandMac()
