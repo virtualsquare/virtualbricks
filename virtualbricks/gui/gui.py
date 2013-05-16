@@ -24,6 +24,7 @@ import subprocess
 import threading
 import StringIO
 import __builtin__
+import warnings
 
 import gobject
 import gtk
@@ -3560,6 +3561,8 @@ class Application(brickfactory.Application):
 			raise app.QuitError("Cannot load gladefile", 1)
 
 	def start(self):
+		logging.captureWarnings(True)
+		warnings.filterwarnings("default", category=DeprecationWarning)
 		if not os.access(MYPATH, os.X_OK):
 			os.mkdir(MYPATH)  # XXX: should I check for exceptions?
 		self.install_raw_input()
