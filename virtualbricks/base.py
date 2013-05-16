@@ -19,6 +19,8 @@
 
 import gobject
 
+from virtualbricks import brickconfig
+
 
 class Base(gobject.GObject):
 
@@ -26,6 +28,24 @@ class Base(gobject.GObject):
 
     # type = None  # if not set in a subclass will raise an AttributeError
     _needsudo = False
+    _name = None
+
+    def get_name(self):
+        return self._name
+
+    getname = get_name
+
+    def set_name(self, name):
+        self._name = name
+
+    name = property(get_name, set_name)
+
+    def __init__(self, factory, name, homehost=None):
+        gobject.GObject.__init__(self)
+        self.factory = factory
+        self._name = name
+        self.settings = self.factory.settings
+        self.cfg = brickconfig.BrickConfig()
 
     def get_type(self):
         return self.type

@@ -27,9 +27,7 @@ import copy
 import subprocess
 import logging
 
-from virtualbricks import base, errors
-from virtualbricks.settings import MYPATH
-from virtualbricks.brickconfig import BrickConfig
+from virtualbricks import base, errors, settings
 from virtualbricks.console import RemoteHost
 
 
@@ -49,26 +47,11 @@ class Brick(base.Base):
     need_restart_to_apply_changes = False
     internal_console = None
     terminal = "vdeterm"
-    _name = None
-
-    def get_name(self):
-        return self._name
-
-    getname = get_name
-
-    def set_name(self, name):
-        self._name = name
-
-    name = property(get_name, set_name)
 
     def __init__(self, factory, name, homehost=None):
-        base.Base.__init__(self)
-        self.factory = factory
-        self._name = name
-        self.settings = self.factory.settings
+        base.Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
-        self.cfg = BrickConfig()
         self.cfg.pon_vbevent = ""
         self.cfg.poff_vbevent = ""
         self.command_builder = dict()
@@ -81,11 +64,10 @@ class Brick(base.Base):
 
     # each brick must overwrite this method
     def prog(self):
-        raise NotImplementedError("Brick.prog")
+        raise NotImplementedError(_("Brick.prog() not implemented."))
 
     def rewrite_sock_server(self, v):
-        f = os.path.basename(v)
-        return MYPATH + "/" + f
+        return os.path.join(settings.VIRTUALBRICKS_HOME, os.path.basename(v))
 
     def set_host(self, host):
         self.cfg.homehost = host
@@ -114,17 +96,17 @@ class Brick(base.Base):
         return new_brick
 
     def path(self):
-        return "%s/%s.ctl" % (MYPATH, self.name)
+        return "%s/%s.ctl" % (settings.VIRTUALBRICKS_HOME, self.name)
 
     def console(self):
-        return "%s/%s.mgmt" % (MYPATH, self.name)
+        return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
 
     def cmdline(self):
         return ""
 
+    @property
     def pidfile(self):
         return "/tmp/%s.pid" % self.name
-    pidfile = property(pidfile)
 
     def on_config_changed(self):
         self.emit("changed")
@@ -158,7 +140,6 @@ class Brick(base.Base):
     def configure(self, attrlist):
         """TODO attrs : dict attr => value"""
         self.initialize(attrlist)
-        # TODO brick should be gobject and a signal should be launched
         self.emit("changed")
         if self.homehost and self.homehost.connected:
             self.homehost.putconfig(self)
