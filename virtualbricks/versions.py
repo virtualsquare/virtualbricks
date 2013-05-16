@@ -30,9 +30,9 @@ class Version(_Version):
     Copy&paste from twisted. All rights to them.
     """
 
-    def __new__(self, package, *args, **kwds):
+    def __new__(self, package, major, minor, micro=0, prerelease=None):
         self.package = package
-        return _Version.__new__(self, *args, **kwds)
+        return _Version.__new__(self, major, minor, micro, prerelease)
 
     def _make(cls, package, iterable, new=tuple.__new__, len=len):
         raise NotImplementedError("Version._make not implemented")
