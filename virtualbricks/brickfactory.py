@@ -416,8 +416,6 @@ class BrickFactory(gobject.GObject):
             if e == event:
                 e.poweroff()
         self.events.remove(event)
-
-        self.events.remove(event)
         self.__do_action_for_event(self.__remove_event, event)
         event.signal_disconnect(self.__event_signals[event.name])
         del self.__event_signals[event.name]
