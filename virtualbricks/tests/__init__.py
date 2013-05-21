@@ -12,8 +12,13 @@ logger = logging.getLogger("virtualbricks")
 logger.addHandler(logging.NullHandler())
 
 
-MUST_TEST_THREADS = 0x01
+TEST_THREADS = 0x01
+TEST_DEPLOYMENT = 0x02
 
 
-def must_test_threads():
-    return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & MUST_TEST_THREADS
+def test_threads():
+    return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & TEST_THREADS
+
+
+def test_deployment():
+    return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & TEST_DEPLOYMENT
