@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_switches -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -18,9 +19,7 @@
 import os
 import logging
 
-from virtualbricks import base, settings
-from virtualbricks.bricks import Brick
-from virtualbricks.link import Sock
+from virtualbricks import settings, bricks, link
 
 
 log = logging.getLogger(__name__)
@@ -29,40 +28,9 @@ if False:  # pyflakes
     _ = str
 
 
-class SwitchConfig(base.NewConfig):
-
-    parameters = [("numports", base.SpinInt(32, 1, 128)),
-                  ("hub", base.Boolean(False)),
-                  ("fstp", base.Boolean(False))]
-
-
-class Switch(Brick):
-    """
-    >>> # bug #730812
-    >>> from copy import deepcopy
-    >>> factory = BrickFactory()
-    >>> sw1 = Switch(factory, 'sw1')
-    >>> sw2 = factory.dupbrick(sw1)
-    >>> id(sw1) != id(sw2)
-    True
-    >>> sw1 is not sw2
-    True
-    >>> sw1.cfg is not sw2.cfg
-    True
-    >>> sw1.icon is not sw2.icon
-    True
-    """
+class Switch(bricks.Brick):
 
     type = "Switch"
-
-    def set_name(self, name):
-        self._name = name
-        for so in self.socks:
-            so.nickname = name + "_port"
-            so.path = os.path.join(settings.VIRTUALBRICKS_HOME, name + ".ctl")
-
-    name = property(Brick.get_name, set_name)
-
     pid = -1
     ports_used = 0
     command_builder = {"-x": "hubmode",
@@ -75,14 +43,30 @@ class Switch(Brick):
                        "--mgmtmode": "mgmtmode",
                        "--mgmtgroup": "mgmtgroup"}
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
+    class config_factory(bricks.Config):
+
+        parameters = {"numports": bricks.SpinInt(32, 1, 128),
+                      "hub": bricks.Boolean(False),
+                      "fstp": bricks.Boolean(False),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
+
+    def set_name(self, name):
+        self._name = name
+        for so in self.socks:
+            so.nickname = name + "_port"
+            so.path = os.path.join(settings.VIRTUALBRICKS_HOME, name + ".ctl")
+
+    name = property(bricks.Brick.get_name, set_name)
+
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
         self.command_builder["-s"] = self.path
         self.command_builder["-M"] = self.console
-        self.cfg.numports = "32"
-        self.cfg.hub = ""
-        self.cfg.fstp = ""
-        self.socks.append(Sock(self, self.name + "_port"))
+        # self.cfg.numports = "32"
+        # self.cfg.hub = ""
+        # self.cfg.fstp = ""
+        self.socks.append(link.Sock(self, self.name + "_port"))
         # XXX: obiviusly configuration is changed in __init__, check if it is
         # actually used by someone
         self.on_config_changed()
@@ -107,7 +91,7 @@ class Switch(Brick):
 
         if self.proc is not None:
             self.need_restart_to_apply_changes = True
-        Brick.on_config_changed(self)
+        bricks.Brick.on_config_changed(self)
 
     def configured(self):
         return self.socks[0].has_valid_path()
@@ -144,7 +128,7 @@ class FakeProcess:
             return True
 
 
-class SwitchWrapper(Brick):
+class SwitchWrapper(bricks.Brick):
 
     type = "SwitchWrapper"
     pid = -1
@@ -152,13 +136,22 @@ class SwitchWrapper(Brick):
     has_console = False
     proc = None
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.cfg.path = ""
-        self.socks.append(Sock(self, self.name + "_port"))
+    class config_factory(bricks.Config):
+
+        parameters = {"path": bricks.String(""),
+                      "numports": bricks.SpinInt(32, 1, 128),
+                      "hub": bricks.Boolean(False),
+                      "fstp": bricks.Boolean(False),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
+
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
+        # self.cfg.path = ""
+        self.socks.append(link.Sock(self, self.name + "_port"))
         # XXX: see Switch __init__
         self.on_config_changed()
-        self.cfg.numports = 32
+        # self.cfg.numports = 32
 
     def get_parameters(self):
         return ""
@@ -168,7 +161,7 @@ class SwitchWrapper(Brick):
 
     def on_config_changed(self):
         self.socks[0].path = self.cfg.path
-        Brick.on_config_changed(self)
+        bricks.Brick.on_config_changed(self)
 
     def configured(self):
         return self.socks[0].has_valid_path()

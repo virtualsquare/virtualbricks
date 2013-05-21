@@ -15,21 +15,24 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from virtualbricks.bricks import Brick
+from virtualbricks import bricks
 
 
-class Router(Brick):
+class Router(bricks.Brick):
 
     type = "Router"
+    pid = -1
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.pid = -1
-        self.cfg.name = _name
-        self.command_builder = {
-                    "-M": self.console,
-                    "-c": "configfile",
-                    }
+    class config_factory(bricks.Config):
+
+        parameters = {"name": bricks.String(""),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
+
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
+        self.cfg.name = name
+        self.command_builder = {"-M": self.console, "-c": "configfile"}
         self.on_config_changed()
 
     def get_parameters(self):
@@ -37,9 +40,6 @@ class Router(Brick):
 
     def prog(self):
         return self.settings.get("vdepath") + "/vde_router"
-
-    def on_config_changed(self):
-        Brick.on_config_changed(self)
 
     def configured(self):
         return True

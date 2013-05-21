@@ -26,8 +26,9 @@ from datetime import datetime
 from shutil import move
 import logging
 
-from virtualbricks import base, errors, tools
-from virtualbricks.bricks import Brick
+from virtualbricks import base, errors, tools, settings, bricks
+from virtualbricks.deprecated import deprecated
+from virtualbricks.versions import Version
 from virtualbricks.link import Sock, Plug
 from virtualbricks.settings import MYPATH
 
@@ -211,10 +212,10 @@ class VMPlugHostonly(VMPlug):
         return True
 
 
-class DiskImage:
+class Image:
     """
     locked if already in use as read/write non-cow.
-    VMDisk must associate to this, and must check the locked flag
+    Disk must associate to this, and must check the locked flag
     before use.
     """
 
@@ -238,7 +239,7 @@ class DiskImage:
     def rename(self, newname):
         self.name = newname
         for vmd in self.vmdisks:
-            vmd.VM.cfg.set("base"+vmd.device +'='+ self.name)
+            vmd.VM.cfg["base" +vmd.device] = self.name
 
     def set_master(self, vmdisk):
        # XXX: Change name to something more useful
@@ -308,23 +309,23 @@ class DiskImage:
         return self.path
 
 
-class VMDisk:
+DiskImage = Image
+
+
+class Disk:
 
     @property
     def basefolder(self):
         return self.VM.get_basefolder()
 
-    # def __init__(self, VM, dev, basefolder=""):
     def __init__(self, VM, dev):
         self.VM = VM
         self.cow = False
         self.device = dev
-        # self.basefolder = basefolder
         self.image = None
 
     def args(self, k):
         ret = []
-
         diskname = self.get_real_disk_name()
         if k:
             ret.append("-" + self.device)
@@ -346,8 +347,8 @@ class VMDisk:
         if img:
             self.image = img
             img.add_vmdisk(self)
-            self.VM.cfg.set("base"+self.device +'='+ img.name)
-            if not self.cow and self.VM.cfg.get("snapshot")=="" and self.image.set_master(self):
+            self.VM.cfg["base" + self.device] = img.name
+            if not self.cow and not self.VM.cfg["snapshot"] and self.image.set_master(self):
                 log.debug("Machine %s acquired master lock on image %s",
                           self.VM.name, self.image.name)
             return True
@@ -367,8 +368,8 @@ class VMDisk:
 
         self.image = img
         img.add_vmdisk(self)
-        self.VM.cfg.set("base"+self.device +'='+ img.name)
-        if not self.cow and self.VM.cfg.get("snapshot")=="":
+        self.VM.cfg["base" + self.device] = img.name
+        if not self.cow and not self.VM.cfg["snapshot"]:
             if self.image.set_master(self):
                 log.debug("Machine %s acquired master lock on image %s",
                           self.VM.name, self.image.name)
@@ -423,198 +424,236 @@ class VMDisk:
             return self.image.path
 
     def readonly(self):
-        if (self.VM.cfg.snapshot == "*"):
-            return True
-        else:
-            return False
+        return self.VM.cfg["snapshot"]
 
-class VM(Brick):
+    def __repr__(self):
+        return "<Disk %s(%s) image=%s readonly=%s>" % (self.device,
+                                                       self.VM.name,
+                                                       self.image,
+                                                       self.readonly())
+
+
+VMDisk = Disk
+
+
+class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
+    pid = -1
+    command_builder = {
+        "#argv0": "argv0",
+        "#M": "machine",
+        "#cpu": "cpu",
+        "-smp": "smp",
+        "-m": "ram",
+        "-boot": "boot",
+        # numa not supported
+        "#basefda": "basefda",
+        "#basefdb": "basefdb",
+        "#basehda": "basehda",
+        "#basehdb": "basehdb",
+        "#basehdc": "basehdc",
+        "#basehdd": "basehdd",
+        "#basemtdblock": "basemtdblock",
+        "#privatehda": "privatehda",
+        "#privatehdb": "privatehdb",
+        "#privatehdc": "privatehdc",
+        "#privatehdd": "privatehdd",
+        "#privatefda": "privatefda",
+        "#privatefdb": "privatefdb",
+        "#privatemtdblock": "privatemtdblock",
+        "#cdrom": "cdrom",
+        "#device": "device",
+        "#cdromen": "cdromen",
+        "#deviceen": "deviceen",
+        "#keyboard": "keyboard",
+        "#usbdevlist": "usbdevlist",
+        "-soundhw": "soundhw",
+        "-usb": "usbmode",
+        # "-uuid": "uuid",
+        "-nographic": "novga",
+        # "-curses": "curses", ## not implemented
+        # "-no-frame": "noframe", ## not implemented
+        # "-no-quit": "noquit", ## not implemented.
+        "-snapshot": "snapshot",
+        "#vga": "vga",
+        "#vncN": "vncN",
+        "#vnc": "vnc",
+        # "-full-screen": "full-screen", ## TODO 0.3
+        "-sdl": "sdl",
+        "-portrait": "portrait",
+        "-win2k-hack": "win2k", # # not implemented
+        "-no-acpi": "noacpi",
+        # "-no-hpet": "nohpet", ## ???
+        # "-baloon": "baloon", ## ???
+        # #acpitable not supported
+        # #smbios not supported
+        "#kernel": "kernel",
+        "#kernelenbl": "kernelenbl",
+        "#append": "kopt",
+        "#initrd": "initrd",
+        "#initrdenbl": "initrdenbl",
+        # "-serial": "serial",
+        # "-parallel": "parallel",
+        # "-monitor": "monitor",
+        # "-qmp": "qmp",
+        # "-mon": "",
+        # "-pidfile": "", ## not needed
+        # "-singlestep": "",
+        # "-S": "",
+        "#gdb_e": "gdb",
+        "#gdb_port": "gdbport",
+        # "-s": "",
+        # "-d": "",
+        # "-hdachs": "",
+        # "-L": "",
+        # "-bios": "",
+        "#kvm": "kvm",
+        # "-no-reboot": "", ## not supported
+        # "-no-shutdown": "", ## not supported
+        "-loadvm": "loadvm",
+        # "-daemonize": "", ## not supported
+        # "-option-rom": "",
+        # "-clock": "",
+        "#rtc": "rtc",
+        # "-icount": "",
+        # "-watchdog": "",
+        # "-watchdog-action": "",
+        # "-echr": "",
+        # "-virtioconsole": "", ## future
+        # "-show-cursor": "",
+        # "-tb-size": "",
+        # "-incoming": "",
+        # "-nodefaults": "",
+        # "-chroot": "",
+        # "-runas": "",
+        # "-readconfig": "",
+        # "-writeconfig": "",
+        # "-no-kvm": "", ## already implemented otherwise
+        # "-no-kvm-irqchip": "",
+        # "-no-kvm-pit": "",
+        # "-no-kvm-pit-reinjection": "",
+        # "-pcidevice": "",
+        # "-enable-nesting": "",
+        # "-nvram": "",
+        "-tdf": "tdf",
+        "#kvmsm": "kvmsm",
+        "#kvmsmem": "kvmsmem",
+        # "-mem-path": "",
+        # "-mem-prealloc": "",
+        "#icon": "icon",
+        "#serial": "serial",
+        "#stdout": ""}
 
     def set_name(self, name):
         self._name = name
-        self.newbrick_changes()
+        self.newbrick_changes()  # XXX: why?
 
-    name = property(Brick.get_name, set_name)
+    name = property(bricks.Brick.get_name, set_name)
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.pid = -1
-        self.cfg.name = _name
-        self.cfg.argv0 = "i386"
-        self.cfg.machine = ""
-        self.cfg.cpu = ""
-        self.cfg.smp = ""
-        self.cfg.ram = "64"
-        self.cfg.novga = ""
-        self.cfg.vga = ""
-        self.cfg.vnc = ""
-        self.cfg.vncN = "1"
-        self.cfg.usbmode = ""
-        self.cfg.snapshot = ""
-        self.cfg.boot = ""
-        # PRIVATE COW IMAGES MUST BE CREATED IN A DIFFERENT DIRECTORY FOR EACH PROJECT
-        self.cfg.basehda = ""
-        self.cfg.set_obj("hda", VMDisk(self, "hda"))
-        self.cfg.privatehda = ""
-        self.cfg.basehdb = ""
-        self.cfg.set_obj("hdb", VMDisk(self, "hdb"))
-        self.cfg.privatehdb = ""
-        self.cfg.basehdc = ""
-        self.cfg.set_obj("hdc", VMDisk(self, "hdc"))
-        self.cfg.privatehdc = ""
-        self.cfg.basehdd = ""
-        self.cfg.set_obj("hdd", VMDisk(self, "hdd"))
-        self.cfg.privatehdd = ""
-        self.cfg.basefda = ""
-        self.cfg.set_obj("fda", VMDisk(self, "fda"))
-        self.cfg.privatefda = ""
-        self.cfg.basefdb = ""
-        self.cfg.set_obj("fdb", VMDisk(self, "fdb"))
-        self.cfg.privatefdb = ""
-        self.cfg.basemtdblock = ""
-        self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock"))
-        self.cfg.privatemtdblock = ""
-        self.cfg.cdrom = ""
-        self.cfg.device = ""
-        self.cfg.cdromen = ""
-        self.cfg.deviceen = ""
-        self.cfg.kvm = ""
-        self.cfg.soundhw = ""
-        self.cfg.rtc = ""
-        #kernel etc.
-        self.cfg.kernel = ""
-        self.cfg.kernelenbl = ""
-        self.cfg.initrd = ""
-        self.cfg.initrdenbl = ""
-        self.cfg.gdb = ""
-        self.cfg.gdbport = ""
-        self.cfg.kopt = ""
-        self.cfg.icon = ""
-        self.cfg.icon_gray = ""
+    class config_factory(bricks.Config):
+
+        parameters = {"name": bricks.String(""),
+
+                      # boot options
+                      "boot": bricks.String(""),
+                      "snapshot": bricks.Boolean(False),
+
+                      # cdrom device
+                      "deviceen": bricks.String(""),
+                      "device": bricks.String(""),
+                      "cdromen": bricks.String(""),
+                      "cdrom": bricks.String(""),
+
+                      # additional media
+                      "use_virtio": bricks.Boolean(False),
+                      "basehda": bricks.String(""),
+                      "hda": bricks.Object(None),
+                      "privatehda": bricks.Boolean(False),
+                      "basehdb": bricks.String(""),
+                      "hdb": bricks.Object(None),
+                      "privatehdb": bricks.Boolean(False),
+                      "basehdc": bricks.String(""),
+                      "hdc": bricks.Object(None),
+                      "privatehdc": bricks.Boolean(False),
+                      "basehdd": bricks.String(""),
+                      "hdd": bricks.Object(None),
+                      "privatehdd": bricks.Boolean(False),
+                      "basefda": bricks.String(""),
+                      "fda": bricks.Object(None),
+                      "privatefda": bricks.Boolean(False),
+                      "basefdb": bricks.String(""),
+                      "fdb": bricks.Object(None),
+                      "privatefdb": bricks.Boolean(False),
+                      "basemtdblock": bricks.String(""),
+                      "mtdblock": bricks.Object(None),
+                      "privatemtdblock": bricks.Boolean(False),
+
+                      # system and machine
+                      "argv0": bricks.String("i386"),
+                      "cpu": bricks.String(""),
+                      "machine": bricks.String(""),
+                      "kvm": bricks.Boolean(False),
+                      "smp": bricks.SpinInt(1, 1, 64),
+
+                      # audio device soundcard
+                      "soundhw": bricks.String(""),
+
+                      # memory device settings
+                      "ram": bricks.SpinInt(64, 1, 99999),
+                      "kvmsm": bricks.Boolean(False),
+                      "kvmsmem": bricks.SpinInt(1, 0, 99999),
+
+                      # display options
+                      "novga": bricks.Boolean(False),
+                      "vga": bricks.Boolean(False),
+                      "vnc": bricks.Boolean(False),
+                      "vncN": bricks.SpinInt(1, 0, 500),
+                      "sdl": bricks.Boolean(False),
+                      "portrait": bricks.Boolean(False),
+
+                      # usb settings
+                      "usbmode": bricks.Boolean(False),
+                      "usbdevlist": bricks.String(""),
+
+                      # extra settings
+                      "rtc": bricks.Boolean(False),
+                      "tdf": bricks.Boolean(False),
+                      "keyboard": bricks.String(""),
+                      "serial": bricks.Boolean(False),
+
+                      # booting linux
+                      "kernelenbl": bricks.Boolean(False),
+                      "kernel": bricks.String(""),
+                      "initrdenbl": bricks.Boolean(False),
+                      "initrd": bricks.String(""),
+                      "kopt": bricks.String(""),
+                      "gdb": bricks.Boolean(False),
+                      "gdbport": bricks.SpinInt(1234, 1, 65535),
+
+                      # virtual machine icon
+                      "icon": bricks.String(""),
+                      "icon_gray": bricks.String(""),
+
+                      # others
+                      "noacpi": bricks.String(""),
+                      "stdout": bricks.String(""),
+                      "loadvm": bricks.String(""),
+                      "pon_vbevent": base.String(""),
+                      "poff_vbevent": base.String("")}
+
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
         self.terminal = "unixterm"
-        self.cfg.keyboard = ""
-        self.cfg.noacpi = ""
-        self.cfg.sdl = ""
-        self.cfg.portrait = ""
-        self.cfg.tdf = ""
-        self.cfg.kvmsm = ""
-        self.cfg.kvmsmem = ""
-        self.cfg.serial = ""
-        self.cfg.use_virtio=""
-        self.cfg.stdout=""
-        self.command_builder = {
-            '#argv0':'argv0',
-            '#M':'machine',
-            '#cpu':'cpu',
-            '-smp':'smp',
-            '-m':'ram',
-            '-boot':'boot',
-            ##numa not supported
-            '#basefda':'basefda',
-            '#basefdb':'basefdb',
-            '#basehda':'basehda',
-            '#basehdb':'basehdb',
-            '#basehdc':'basehdc',
-            '#basehdd':'basehdd',
-            '#basemtdblock':'basemtdblock',
-            '#privatehda': 'privatehda',
-            '#privatehdb': 'privatehdb',
-            '#privatehdc': 'privatehdc',
-            '#privatehdd': 'privatehdd',
-            '#privatefda': 'privatefda',
-            '#privatefdb': 'privatefdb',
-            '#privatemtdblock': 'privatemtdblock',
-            '#cdrom':'cdrom',
-            '#device':'device',
-            '#cdromen': 'cdromen',
-            '#deviceen': 'deviceen',
-            '#keyboard':'keyboard',
-            '#usbdevlist':'usbdevlist',
-            '-soundhw':'soundhw',
-            '-usb':'usbmode',
-            #'-uuid':'uuid',
-            '-nographic':'novga',
-            #'-curses':'curses', ## not implemented
-            #'-no-frame':'noframe', ## not implemented
-            #'-no-quit':'noquit', ## not implemented.
-            '-snapshot':'snapshot',
-            '#vga':'vga',
-            '#vncN':'vncN',
-            '#vnc':'vnc',
-            #'-full-screen':'full-screen', ## TODO 0.3
-            '-sdl':'sdl',
-            '-portrait':'portrait',
-            '-win2k-hack':'win2k', ## not implemented
-            '-no-acpi':'noacpi',
-            #'-no-hpet':'nohpet', ## ???
-            #'-baloon':'baloon', ## ???
-            ##acpitable not supported
-            ##smbios not supported
-            '#kernel':'kernel',
-            '#kernelenbl':'kernelenbl',
-            '#append':'kopt',
-            '#initrd':'initrd',
-            '#initrdenbl': 'initrdenbl',
-            #'-serial':'serial',
-            #'-parallel':'parallel',
-            #'-monitor':'monitor',
-            #'-qmp':'qmp',
-            #'-mon':'',
-            #'-pidfile':'', ## not needed
-            #'-singlestep':'',
-            #'-S':'',
-            '#gdb_e':'gdb',
-            '#gdb_port':'gdbport',
-            #'-s':'',
-            #'-d':'',
-            #'-hdachs':'',
-            #'-L':'',
-            #'-bios':'',
-            '#kvm':'kvm',
-            #'-no-reboot':'', ## not supported
-            #'-no-shutdown':'', ## not supported
-            '-loadvm':'loadvm',
-            #'-daemonize':'', ## not supported
-            #'-option-rom':'',
-            #'-clock':'',
-            '#rtc':'rtc',
-            #'-icount':'',
-            #'-watchdog':'',
-            #'-watchdog-action':'',
-            #'-echr':'',
-            #'-virtioconsole':'', ## future
-            #'-show-cursor':'',
-            #'-tb-size':'',
-            #'-incoming':'',
-            #'-nodefaults':'',
-            #'-chroot':'',
-            #'-runas':'',
-            #'-readconfig':'',
-            #'-writeconfig':'',
-            #'-no-kvm':'', ## already implemented otherwise
-            #'-no-kvm-irqchip':'',
-            #'-no-kvm-pit':'',
-            #'-no-kvm-pit-reinjection':'',
-            #'-pcidevice':'',
-            #'-enable-nesting':'',
-            #'-nvram':'',
-            '-tdf':'tdf',
-            '#kvmsm':'kvmsm',
-            '#kvmsmem': 'kvmsmem',
-            #'-mem-path':'',
-            #'-mem-prealloc':'',
-            '#icon': 'icon',
-            '#serial': 'serial',
-            '#stdout': ''
-        }
+        self.cfg["name"] = name
+        self.newbrick_changes()
+        # self.connect("changed", lambda s: s.associate_disk())
 
     def get_basefolder(self):
         return self.factory.get_basefolder()
 
     def get_parameters(self):
-        txt = _("command:") + " %s, ram: %s" % (self.prog(), self.cfg.ram)
+        txt = _("command:") + " %s, ram: %s" % (self.prog(), self.cfg["ram"])
         for p in self.plugs:
             if p.mode == 'hostonly':
                 txt += ', eth %s: Host' % unicode(p.vlan)
@@ -632,19 +671,24 @@ class VM(Brick):
 
 
     def associate_disk(self):
-        for hd in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-            disk = getattr(self.cfg,hd)
+        for hd in ["hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock"]:
+            disk = self.cfg[hd]
             if hasattr(disk, "image"):
-                if disk.image is not None and self.cfg.get('base'+hd) != disk.image.name:
-                    disk.set_image(self.cfg.get('base'+hd))
-                elif disk.image is None and len(self.cfg.get('base'+hd)) > 0:
-                    disk.set_image(self.cfg.get('base'+hd))
+                if (disk.image is not None and self.cfg["base" + hd] !=
+                        disk.image.name):
+                    disk.set_image(self.cfg["base" + hd])
+                elif disk.image is None and self.cfg["base" + hd]:
+                    disk.set_image(self.cfg["base" + hd])
             else:
                 return
 
     def on_config_changed(self):
-        self.associate_disk()
-        Brick.on_config_changed(self)
+        self.associate_disk()  # XXX: really useful?
+        bricks.Brick.on_config_changed(self)
+
+    def configure(self, attrlist):
+        bricks.Brick.configure(self, attrlist)
+        self.associate_disk()  # XXX: really useful?
 
     def configured(self):
         cfg_ok = True
@@ -666,49 +710,38 @@ class VM(Brick):
         #         raise errors.BadConfigError(_("KVM not found! Please change VM configuration."))
         #         return
 
-        if (len(self.cfg.argv0) > 0 and self.cfg.kvm != "*"):
-            cmd = self.settings.get("qemupath") + "/" + self.cfg.argv0
+        if self.cfg["argv0"] and not self.cfg["kvm"]:
+            cmd = self.settings.get("qemupath") + "/" + self.cfg["argv0"]
         else:
             cmd = self.settings.get("qemupath") + "/qemu"
-        if self.cfg.kvm == "*":
+        if self.cfg["kvm"]:
             cmd = self.settings.get("qemupath") + "/kvm"
         return cmd
 
     def args(self):
         res = []
         res.append(self.prog())
-
-        if (self.cfg.kvm == ""):
-            if self.cfg.machine != "":
-                res.append("-M")
-                res.append(self.cfg.machine)
-            if self.cfg.cpu != "":
-                res.append("-cpu")
-                res.append(self.cfg.cpu)
-
-        for c in self.build_cmd_line():
-            res.append(c)
-
+        if not self.cfg["kvm"]:
+            if self.cfg["machine"] != "":
+                res.extend(["-M", self.cfg["machine"]])
+            if self.cfg["cpu"]:
+                res.extend(["-cpu", self.cfg["cpu"]])
+        res.extend(list(self.build_cmd_line()))
         if not self.has_graphic():
             res.append("-nographic")
-
         self.__clear_machine_vmdisks()
         idx = 0
-        for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-            if self.cfg.get("base" + dev) != "":
-                master = False
-                disk = getattr(self.cfg, dev)
-                if self.cfg.get("private" + dev) == "*":
-                    disk.cow = True
-                else:
-                    disk.cow = False
-                real_disk = disk.get_real_disk_name()
-                if disk.cow == False and disk.readonly() == False:
-                    if disk.image.readonly is not True:
+        for dev in ["hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock"]:
+            if self.cfg["base" + dev]:
+                # master = False
+                disk = self.cfg[dev]
+                disk.cow = self.cfg["private" + dev]
+                if not disk.cow and not disk.readonly():
+                    if not disk.image.readonly:
                         if disk.image.set_master(disk):
                             log.debug(_("Machine %s acquired master lock on "
                                         "image %s"), self.name, disk.image.name)
-                            master = True
+                            # master = True
                         else:
                             raise errors.DiskLockedError(
                                 _("Disk image %s already in use."),
@@ -718,105 +751,77 @@ class VM(Brick):
                             _("Disk image %s is marked as readonly and you are"
                               "not using private cow or snapshot mode."),
                             disk.image.name)
-                if self.cfg.get('use_virtio') == "*":
-                    res.append('-drive')
-                    diskname = disk.get_real_disk_name()
-                    res.append('file='+diskname+',if=virtio,index='+str(idx))
+                if self.cfg["use_virtio"]:
+                    res.extend(["-drive", "file=%s,if=virtio,index=%s" %
+                                (disk.get_real_disk_name(), str(idx))])
                     idx += 1
                 else:
+                    # res.extend(disk.args(master))
+                    res.extend(disk.args(True))
+                    # XXX: check this
+                    # if master:
+                    #     args = disk.args(True)
+                    #     res.append(args[0])
+                    #     res.append(args[1])
+                    # else:
+                    #     args = disk.args(True)
+                    #     res.append(args[0])
+                    #     res.append(args[1])
 
-                    if master:
-                        args = disk.args(True)
-                        res.append(args[0])
-                        res.append(args[1])
-                    else:
-                        args = disk.args(True)
-                        res.append(args[0])
-                        res.append(args[1])
+        if self.cfg["kernelenbl"] and self.cfg["kernel"]:
+            res.extend(["-kernel", self.cfg["kernel"]])
+        if self.cfg["initrdenbl"] and self.cfg["initrd"]:
+            res.extend(["-initrd", self.cfg["initrd"]])
+        if self.cfg["kopt"] and self.cfg["kernelenbl"] and self.cfg["kernel"]:
+            res.extend(["-append", re.sub("\"", "", self.cfg["kopt"])])
+        if self.cfg["gdb"]:
+            res.extend(["-gdb", "tcp::%d" % self.cfg["gdbport"]])
+        if self.cfg["vnc"]:
+            res.extend(["-vnc", ":%d" % self.cfg["vncN"]])
+        if self.cfg["vga"]:
+            res.extend(["-vga", "std"])
 
-        if self.cfg.kernelenbl == "*" and self.cfg.kernel!="":
-            res.append("-kernel")
-            res.append(self.cfg.kernel)
+        if self.cfg["usbmode"]:
+            for dev in self.cfg["usbdevlist"].split():
+                res.extend(["-usbdevice", "host:%s" % dev])
+            # The world is not ready for this, do chown /dev/bus/usb instead.
+            # self._needsudo = True
+        # else:
+        #     self._needsudo = False
 
-        if self.cfg.initrdenbl == "*" and self.cfg.initrd!="":
-            res.append("-initrd")
-            res.append(self.cfg.initrd)
-
-        if self.cfg.kopt != "" and self.cfg.kernelenbl =="*" and self.cfg.kernel != "":
-            res.append("-append")
-            res.append(re.sub('"','',self.cfg.kopt));
-
-        if self.cfg.gdb:
-            res.append('-gdb')
-            res.append('tcp::' + self.cfg.gdbport)
-        if self.cfg.vnc:
-            res.append('-vnc')
-            res.append(':' + self.cfg.vncN)
-        if self.cfg.vga:
-            res.append('-vga')
-            res.append('std')
-
-        if self.cfg.usbmode and self.cfg.usbdevlist:
-            for dev in self.cfg.usbdevlist.split(' '):
-                res.append('-usbdevice')
-                res.append('host:'+dev)
-            ''' The world is not ready for this, do chown /dev/bus/usb instead. '''
-            #self._needsudo = True
+        res.extend(["-name", self.name])
+        if not self.plugs and not self.socks:
+            res.extend(["-net", "none"])
         else:
-            self._needsudo = False
-
-        res.append('-name')
-        res.append(self.name)
-        if (len(self.plugs) + len(self.socks) == 0):
-            res.append('-net')
-            res.append('none')
-        else:
-            for pl in sorted(self.plugs + self.socks, key= lambda plug: plug.vlan):
+            for pl in sorted(self.plugs + self.socks, key=lambda p: p.vlan):
                 res.append("-device")
                 res.append("%s,vlan=%d,mac=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
-                if (pl.mode == 'vde'):
+                if pl.mode == "vde":
                     res.append("-net")
                     res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path.rstrip('[]')))
-                elif (pl.mode == 'sock'):
+                elif pl.mode == "sock":
                     res.append("-net")
                     res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.path))
                 else:
-                    res.append("-net")
-                    res.append("user")
-        if (self.cfg.cdromen == "*"):
-            if (self.cfg.cdrom != ""):
-                res.append('-cdrom')
-                res.append(self.cfg.cdrom)
-        elif (self.cfg.deviceen == "*"):
-            if (self.cfg.device != ""):
-                res.append('-cdrom')
-                res.append(self.cfg.device)
-
-        if (self.cfg.rtc == "*"):
-            res.append('-rtc')
-            res.append('base=localtime')
-
-        if (len(self.cfg.keyboard) == 2):
-            res.append('-k')
-            res.append(self.cfg.keyboard)
-
-        if (self.cfg.kvmsm == "*"):
-            res.append('-kvm-shadow-memory')
-            res.append(self.cfg.kvmsmem)
-
-        if (self.cfg.serial == "*"):
-            res.append('-serial')
-            res.append('unix:'+MYPATH+'/'+self.name+'_serial,server,nowait')
-
-        res.append("-mon")
-        res.append("chardev=mon")
-        res.append("-chardev")
-        res.append('socket,id=mon_cons,path=%s,server,nowait' % self.console2())
-
-        res.append("-mon")
-        res.append("chardev=mon_cons")
-        res.append("-chardev")
-        res.append('socket,id=mon,path=%s,server,nowait' % self.console())
+                    res.extend(["-net", "user"])
+        if self.cfg["cdromen"] and self.cfg["cdrom"]:
+                res.extend(["-cdrom", self.cfg["cdrom"]])
+        elif self.cfg["deviceen"] and self.cfg["device"]:
+                res.extend(["-cdrom", self.cfg["device"]])
+        if self.cfg["rtc"]:
+            res.extend(["-rtc", "base=localtime"])
+        if len(self.cfg.keyboard) == 2:
+            res.extend(["-k", self.cfg["keyboard"]])
+        if self.cfg["kvmsm"]:
+            res.extend(["-kvm-shadow-memory", self.cfg["kvmsmem"]])
+        if self.cfg["serial"]:
+            res.extend(["-serial", "unix:%s/%s_serial,server,nowait" %
+                        (settings.VIRTUALBRICKS_HOME, self.name)])
+        res.extend(["-mon", "chardev=mon", "-chardev",
+                    "socket,id=mon_cons,path=%s,server,nowait" %
+                    self.console2(),
+                    "-mon", "chardev=mon_cons", "-chardev",
+                    "socket,id=mon,path=%s,server,nowait" % self.console()])
         return res
 
     def __clear_machine_vmdisks(self):
@@ -830,6 +835,7 @@ class VM(Brick):
     def has_graphic(self):
         return self.homehost is not None
 
+    @deprecated(Version("virtualbricks", 1, 0), "brickfactory.dup_brick()")
     def __deepcopy__(self, memo):
         newname = self.factory.normalize(self.factory.next_name(
             "Copy_of_%s" % self.name))
@@ -839,13 +845,13 @@ class VM(Brick):
         return new_brick
 
     def newbrick_changes(self):
-        self.cfg.set_obj("hda", VMDisk(self, "hda"))
-        self.cfg.set_obj("hdb", VMDisk(self, "hdb"))
-        self.cfg.set_obj("hdc", VMDisk(self, "hdc"))
-        self.cfg.set_obj("hdd", VMDisk(self, "hdd"))
-        self.cfg.set_obj("fda", VMDisk(self, "fda"))
-        self.cfg.set_obj("fdb", VMDisk(self, "fdb"))
-        self.cfg.set_obj("mtdblock", VMDisk(self, "mtdblock"))
+        self.cfg["hda"] = Disk(self, "hda")
+        self.cfg["hdb"] = Disk(self, "hdb")
+        self.cfg["hdc"] = Disk(self, "hdc")
+        self.cfg["hdd"] = Disk(self, "hdd")
+        self.cfg["fda"] = Disk(self, "fda")
+        self.cfg["fdb"] = Disk(self, "fdb")
+        self.cfg["mtdblock"] = Disk(self, "mtdblock")
         self.associate_disk()
 
     def console(self):
@@ -939,19 +945,20 @@ class VM(Brick):
             c = socket.socket(socket.AF_UNIX)
             c.connect(self.console2())
             return c
-        except Exception:
+        except Exception, e:
             if self.proc.stdout is not None:
-                log.error("Virtual Machine startup failed. Check your "
-                          "configuration!\nMessage:\n" +
-                          "\n".join(self.proc.stdout.readlines()))
-            elif self.cfg.stdout != "":
-                stdout = open(self.cfg.stdout, "r")
-                log.error("Virtual Machine startup failed. Check your "
-                          "configuration!\nMessage:\n" +
-                          "\n".join(stdout.readlines()))
+                log.exception(_("Virtual Machine startup failed. Check your "
+                              "configuration!\n%s"), "%s\n%s" %
+                              (e, _("Message:\n%s") %
+                               "\n".join(self.proc.stdout.readlines())))
+            elif self.cfg["stdout"]:
+                with open(self.cfg["stdout"], "r") as stdout:
+                    log.exception(_("Virtual Machine startup failed. Check "
+                                    "your configuration!\n%s"), "%s\n%s" %
+                                  (e, _("Message:\n%s") % stdout.read()))
             else:
-                log.exception("Virtual Machine startup failed. Check your "
-                              "configuration!")
+                log.exception(_("Virtual Machine startup failed. Check your "
+                              "configuration!\n%s"), e)
 
             return None
 
@@ -961,6 +968,8 @@ class VM(Brick):
     def post_poweroff(self):
         self.active = False
         self.start_related_events(off=True)
+
+VM = VirtualMachine
 
 
 class VMGui(VM):

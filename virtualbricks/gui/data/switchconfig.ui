@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk+" version="2.24"/>
+  <!-- interface-naming-policy project-wide -->
+  <object class="GtkAdjustment" id="adjustment1">
+    <property name="lower">1</property>
+    <property name="upper">128</property>
+    <property name="value">32</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">32</property>
+  </object>
+  <object class="GtkFrame" id="SwitchConfigPanel">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="label_xalign">0</property>
+    <property name="shadow_type">in</property>
+    <child>
+      <object class="GtkTable" id="table1">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="n_rows">2</property>
+        <property name="n_columns">3</property>
+        <child>
+          <object class="GtkLabel" id="label2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Number of ports:</property>
+          </object>
+          <packing>
+            <property name="bottom_attach">2</property>
+            <property name="x_options"/>
+            <property name="y_options"/>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinButton" id="cfg_ports_spinint">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="invisible_char">●</property>
+            <property name="invisible_char_set">True</property>
+            <property name="primary_icon_activatable">False</property>
+            <property name="secondary_icon_activatable">False</property>
+            <property name="primary_icon_sensitive">True</property>
+            <property name="secondary_icon_sensitive">True</property>
+            <property name="adjustment">adjustment1</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="right_attach">2</property>
+            <property name="bottom_attach">2</property>
+            <property name="x_options"/>
+            <property name="y_options"/>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="cfg_fstp_check">
+            <property name="label" translatable="yes">Use FSTP</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="draw_indicator">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="right_attach">3</property>
+            <property name="x_options"/>
+            <property name="y_options"/>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="cfg_hub_check">
+            <property name="label" translatable="yes">Hub mode</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="draw_indicator">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="right_attach">3</property>
+            <property name="top_attach">1</property>
+            <property name="bottom_attach">2</property>
+            <property name="x_options"/>
+            <property name="y_options"/>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <child type="label">
+      <object class="GtkLabel" id="label1">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">&lt;b&gt;Switch Configuration&lt;/b&gt;</property>
+        <property name="use_markup">True</property>
+      </object>
+    </child>
+  </object>
+</interface>
