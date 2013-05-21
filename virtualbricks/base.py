@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
+import re
 import logging
 
 import gobject
@@ -97,22 +97,31 @@ class Config(dict):
 
 class NewConfig:
 
-    parameters = []
+    CONFIG_LINE = re.compile(r"^(\w+?)=([\w*]+?)$")
+    parameters = {}
 
     def __init__(self, brick):
         self.__dict__["brick"] = brick
-        self.__dict__["_cfg"] = dict((n, t.default) for n, t in self.parameters)
+        self.__dict__["_cfg"] = dict((name, typ.default) for name, typ in
+                                     self.parameters.iteritems())
 
     # dict interface
 
     def __getitem__(self, name):
         return self._cfg[name]
 
+    def __setitem__(self, name, value):
+        self._cfg[name] = value
+
     def __contains__(self, name):
         return name in self._cfg
 
+    # NOTE: old interface, values are always strings
     def get(self, name, default=None):
-        return self._cfg.get(name, default)
+        val = self._cfg.get(name, default)
+        if val is default:
+            return val
+        return self.parameters[name].to_string(val)
 
     def keys(self):
         return self._cfg.keys()
@@ -120,17 +129,10 @@ class NewConfig:
     def iterkeys(self):
         return self._cfg.iterkeys()
 
-    def values(self):
-        return self.values()
-
-    def itervalues(self):
-        return self.itervalues()
-
-    def items(self):
-        return self.items()
-
+    # NOTE: old interface, values are always strings
     def iteritems(self):
-        return self.iteritems()
+        for name, value in self._cfg.iteritems():
+            yield name, self.parameters[name].to_string(value)
 
     def __iter__(self):
         return iter(self._cfg)
@@ -138,33 +140,31 @@ class NewConfig:
     # XXX: check this interface
 
     def __getattr__(self, name):
-        try:
-            return self._cfg[name]
-        except KeyError:
+        # return always a string
+        if name not in self._cfg:
             raise AttributeError(name)
+        return self.parameters[name].to_string(self._cfg[name])
 
     def __setattr__(self, name, value):
         if name not in self._cfg:
-            raise TypeError
-        self._cfg[name] = value
+            raise TypeError(_("Brick %s(%s) has no parameter %s") %
+                            (self.brick.get_name(), self.brick.get_type(),
+                             name))
+        self._cfg[name] = self.parameters[name].from_string(value)
         self._set_running(name, value)
 
     # old config interface
 
     def set(self, attr):
-        kv = attr.split("=")
-        if len(kv) < 2:
-            return False
-        else:
-            val = ''
-            if len(kv) > 2:
-                val = "\"" + "=".join(v.strip('"') for v in kv[1:]) + "\""
-            else:
-                val += kv[1]
-            self._cfg[kv[0]] = val
+        kv = attr.split("=", 1)
+        # if len(kv) < 2:
+        #     return False
+        if len(kv) > 1:  # == 2
+            name, val = kv
+            self._cfg[name] = self.parameters[name].from_string(val)
             #Set value for running brick
-            self._set_running(kv[0], val)
-            return True
+            self._set_running(name, val)
+            # return True
 
     @deprecated(Version("virtualbricks", 1, 0), "__setitem__")
     def set_obj(self, key, obj):
@@ -180,10 +180,44 @@ class NewConfig:
             log.debug(_("setter: setting value %s for key %s"), value, name)
             setter(value)
 
+    def dump(self, write=None):
+        if write is None:
+            return self._dump()
+        for key in sorted(self._cfg.iterkeys()):
+            write("%s=%s" % (key, self._cfg[key]))
+
     @deprecated(Version("virtualbricks", 1, 0))
-    def dump(self):
+    def _dump(self):
+        # this function could not be deprecated becase is new, the behavior is
+        # deprecated
         for key in sorted(self._cfg.iterkeys()):
             print "%s=%s" % (key, self._cfg[key])
+
+    def save_to(self, fileobj):
+        fileobj.write("[{brick.type}:{brick.name}]\n".format(brick=self.brick))
+        for name, param in sorted(self.parameters.iteritems()):
+            if self[name] != param.default and not isinstance(param, Object):
+                fileobj.write("%s=%s\n" % (name, param.to_string(self[name])))
+
+    def load_from(self, fileobj):
+        curpos = fileobj.tell()
+        line = fileobj.readline()
+        while True:
+            if not line:
+                break
+            if line.startswith("#"):
+                curpos = fileobj.tell()
+                line = fileobj.readline()
+                continue
+            match = self.CONFIG_LINE.match(line)
+            if not match:
+                fileobj.seek(curpos)
+                break
+            else:
+                name, value = match.groups()
+                self[name] = self.parameters[name].from_string(value)
+                curpos = fileobj.tell()
+                line = fileobj.readline()
 
 
 class Parameter:
@@ -217,6 +251,7 @@ class SpinInt(Integer):
         if i < self.min or i > self.max:
             raise ValueError(_("value out range %d (%d, %d)") % (i, self.min,
                                                                  self.max))
+
     def from_string(self, in_object):
         i = int(in_object)
         self.assert_in_range(i)
@@ -249,7 +284,18 @@ class Boolean(Parameter):
         return in_object.lower() in set(["true", "*", "yes"])
 
     def to_string(self, in_object):
-        return "True" if in_object else "False"
+        return "*" if in_object else ""
+
+
+class Object(Parameter):
+    """A special parameter that is never translated to or from a string."""
+    # XXX: pratically the same of a string
+
+    def from_string(self, in_object):
+        return in_object
+
+    def to_string(self, in_object):
+        return in_object
 
 
 class Base(gobject.GObject):
@@ -276,7 +322,10 @@ class Base(gobject.GObject):
         self.factory = factory
         self._name = name
         self.settings = self.factory.settings
-        self.cfg = self.config_factory()
+        if issubclass(self.config_factory, NewConfig):
+            self.cfg = self.config_factory(self)
+        else:
+            self.cfg = self.config_factory()
 
     def get_type(self):
         return self.type

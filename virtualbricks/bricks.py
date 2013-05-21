@@ -28,12 +28,16 @@ import subprocess
 import logging
 
 from virtualbricks import base, errors, settings, versions
+from virtualbricks.base import (NewConfig as Config, String, Integer, SpinInt,
+                                Float, Boolean, Object)
 from virtualbricks.deprecated import deprecated
 from virtualbricks.console import RemoteHost
 
 
-log = logging.getLogger(__name__)
+__all__ = ["Brick", "Config", "String", "Integer", "SpinInt", "Float",
+           "Boolean", "Object"]
 
+log = logging.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str

@@ -29,9 +29,12 @@ import warnings
 import gobject
 import gtk
 import gtk.glade
+from zope.interface import interface, declarations, Interface, implements
+from zope.interface.adapter import AdapterRegistry
 
 from virtualbricks import (app, tools, errors, settings, configfile,
-						brickfactory, virtualmachines, console)
+						base, bricks, events, brickfactory, virtualmachines,
+						console)
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.settings import MYPATH
 
@@ -45,6 +48,245 @@ if False:  # pyflakes
     _ = str
 
 
+# from twisted.python.components import registerAdapter
+globalRegistry = AdapterRegistry()
+ALLOW_DUPLICATES = 0
+
+
+def registerAdapter(adapterFactory, origInterface, *interfaceClasses):
+    """Register an adapter class.
+
+    An adapter class is expected to implement the given interface, by
+    adapting instances implementing 'origInterface'. An adapter class's
+    __init__ method should accept one parameter, an instance implementing
+    'origInterface'.
+    """
+    self = globalRegistry
+    assert interfaceClasses, "You need to pass an Interface"
+    global ALLOW_DUPLICATES
+
+    # deal with class->interface adapters:
+    if not isinstance(origInterface, interface.InterfaceClass):
+        origInterface = declarations.implementedBy(origInterface)
+
+    for interfaceClass in interfaceClasses:
+        factory = self.registered([origInterface], interfaceClass)
+        if factory is not None and not ALLOW_DUPLICATES:
+            raise ValueError("an adapter (%s) was already registered." % (factory, ))
+    for interfaceClass in interfaceClasses:
+        self.register([origInterface], interfaceClass, '', adapterFactory)
+
+
+def _addHook(registry):
+    """
+    Add an adapter hook which will attempt to look up adapters in the given
+    registry.
+
+    @type registry: L{zope.interface.adapter.AdapterRegistry}
+
+    @return: The hook which was added, for later use with L{_removeHook}.
+    """
+    lookup = registry.lookup1
+    def _hook(iface, ob):
+        factory = lookup(declarations.providedBy(ob), iface)
+        if factory is None:
+            return None
+        else:
+            return factory(ob)
+    interface.adapter_hooks.append(_hook)
+    return _hook
+
+
+_addHook(globalRegistry)
+
+
+class IMenu(Interface):
+
+	def popup(button, time):
+		"""Pop up a menu for a specific brick."""
+
+
+class BaseMenu:
+	implements(IMenu)
+
+	def __init__(self, brick):
+		self.original = brick
+
+	def build(self, gui):
+		menu = gtk.Menu()
+		menu.append(gtk.MenuItem(self.original.get_name(), False))
+		menu.append(gtk.SeparatorMenuItem())
+		start_stop = gtk.MenuItem("_Start/Stop")
+		start_stop.connect("activate", self.on_startstop_activate, gui)
+		menu.append(start_stop)
+		delete = gtk.MenuItem("_Delete")
+		delete.connect("activate", self.on_delete_activate, gui)
+		menu.append(delete)
+		copy = gtk.MenuItem("Make a C_opy")
+		copy.connect("activate", self.on_copy_activate, gui)
+		menu.append(copy)
+		rename = gtk.MenuItem("Re_name")
+		rename.connect("activate", self.on_rename_activate, gui)
+		menu.append(rename)
+		configure = gtk.MenuItem("_Configure")
+		configure.connect("activate", self.on_configure_activate, gui)
+		menu.append(configure)
+		return menu
+
+	def popup(self, button, time, gui):
+		menu = self.build(gui)
+		menu.show_all()
+		menu.popup(None, None, None, button, time)
+
+	def on_configure_activate(self, menuitem, gui):
+		gui.curtain_up(self.original)
+		gui.curtain_is_down = False
+
+
+class BrickPopupMenu(BaseMenu):
+
+	def build(self, gui):
+		menu = BaseMenu.build(self, gui)
+		attach = gtk.MenuItem("_Attach Event")
+		attach.connect("activate", self.on_attach_activate, gui)
+		menu.append(attach)
+		return menu
+
+	def on_startstop_activate(self, menuitem, gui):
+		gui.user_wait_action(gui.startstop_brick, self.original)
+
+	def on_delete_activate(self, menuitem, gui):
+		message = ""
+		if self.original.proc is not None:
+			message = _("The brick is still running, it will be killed before being deleted!\n")
+		gui.ask_confirm(message + _("Do you really want to delete %s %s?") % (
+			self.original.get_type(), self.original.get_name()),
+			on_yes=gui.brickfactory.delbrick, arg=self.original)
+
+	def on_copy_activate(self, menuitem, gui):
+		gui.brickfactory.dupbrick(self.original)
+
+	def on_rename_activate(self, menuitem, gui):
+		if self.original.proc != None:
+			log.error(_("Cannot rename Brick: it is in use."))
+		else:
+			gui.gladefile.get_widget('entry_brick_newname').set_text(
+				self.original.get_name())
+			gui.gladefile.get_widget('dialog_rename').show_all()
+
+	def on_attach_activate(self, menuitem, gui):
+		gui.on_brick_attach_event(menuitem)
+
+registerAdapter(BrickPopupMenu, bricks.Brick, IMenu)
+
+
+# NOTE: there is a problem with this approach, it is not transparent, it must
+# know the type of the brick, however virtual machines are already not
+# transparent to the gui
+class VMPopupMenu(BrickPopupMenu):
+
+	def build(self, gui):
+		menu = BrickPopupMenu.build(self, gui)
+		resume = gtk.MenuItem("_Resume VM")
+		resume.connect("activate", self.on_resume_activate, gui)
+		menu.append(resume)
+		return menu
+
+	def on_resume_activate(self, menuitem, gui):
+		hda = self.original.cfg.get('basehda')
+		log.debug("Resuming virtual machine %s", self.original.get_name())
+		if os.system("qemu-img snapshot -l "+hda+" |grep virtualbricks") == 0:
+			if self.original.proc is not None:
+				self.original.send("loadvm virtualbricks\n")
+				self.original.recv()
+			else:
+				self.original.cfg["loadvm"] = "virtualbricks"
+				self.original.poweron()
+		else:
+			log.error(_("Cannot find suspend point."))
+
+
+registerAdapter(VMPopupMenu, virtualmachines.VM, IMenu)
+
+
+class EventPopupMenu(BaseMenu):
+
+	def on_startstop_activate(self, menuitem, gui):
+		gui.user_wait_action(gui.event_startstop_brick, self.original)
+
+	def on_delete_activate(self, menuitem, gui):
+		message = ""
+		if self.original.active:
+			message = _("This event is in use") + ". "
+		gui.ask_confirm(message + _("Do you really want to delete %s %s?") % (
+			self.original.get_type(), self.original.get_name()),
+			on_yes=gui.brickfactory.delevent, arg=self.original)
+
+	def on_copy_activate(self, menuitem, gui):
+		gui.brickfactory.dupevent(self.original)
+
+	def on_rename_activate(self, menuitem, gui):
+		gui.gladefile.get_widget('entry_event_newname').set_text(
+			self.original.get_name())
+		gui.gladefile.get_widget('dialog_event_rename').show_all()
+
+
+registerAdapter(EventPopupMenu, events.Event, IMenu)
+
+
+class IConfigPanel(Interface):
+
+	def get_panel(gui):
+		"""Return the configuration panel for the given brick or event"""
+
+
+class Panel(dialogs.Base):
+	implements(IConfigPanel)
+
+	def __init__(self, original):
+		self.original = original
+		dialogs.Base.__init__(self)
+
+	def __getitem__(self, name):
+		return self.get_object(name)
+
+class EventConfigPanel(Panel):
+
+	resource = "data/event_configuration.ui"
+
+
+class SwitchConfigPanel(Panel):
+
+	resource = "data/switchconfig.ui"
+
+	def get_panel(self, gui):
+		self["cfg_fstp_check"].set_active(self.original.cfg["fstp"])
+		self["cfg_hub_check"].set_active(self.original.cfg["hub"])
+		minports = len([1 for b in iter(gui.brickfactory.bricks)
+				for p in b.plugs if p.sock.nickname == b.socks[0].nickname])
+		spinner = self["cfg_ports_spinint"]
+		spinner.set_range(max(minports, 1), 128)
+		spinner.set_value(int(self.original.cfg.numports))
+		return self.widget
+
+	def configure_brick(self):
+		self.original.cfg["fstp"] = self["cfg_fstp_check"].get_active()
+		self.original.cfg["hub"] = self["cfg_hub_check"].get_active()
+		self.original.cfg["numports"] = \
+				self["cfg_ports_spinint"].get_value_as_int()
+
+
+def config_panel_factory(context):
+	type = context.get_type()
+	# if type == "Event":
+	# 	return EventConfigPanel(context)
+	if type == "Switch":
+		return SwitchConfigPanel(context)
+
+
+registerAdapter(config_panel_factory, base.Base, IConfigPanel)
+
+
 def get_treeselected(gui, tree, model, pthinfo, c):
 	if pthinfo is not None:
 		path, col, cellx, celly = pthinfo
@@ -55,6 +297,7 @@ def get_treeselected(gui, tree, model, pthinfo, c):
 		gui.config_last_iter = iter_
 		return name
 	return ""
+
 
 def get_treeselected_name(gui, tree, model, pathinfo):
 	return get_treeselected(gui, tree, model, pathinfo, 3)
@@ -119,6 +362,57 @@ def check_joblist(gui, force=False):
 		gui.widg['main_win'].set_title("Virtualbricks ( "+gui.brickfactory.settings.get('current_project')+ ")")
 
 	return True
+
+
+def get_combo_text(widget):
+	# XXX: this can return None
+	combo = ComboBox(widget)
+	txt = combo.get_selected()
+	if txt is not None and txt != "-- default --":
+		return txt
+
+
+def get_active(widget):
+	return "*" if widget.get_active() else ""
+
+
+def widget_to_params(brick, get_widget):
+	"""Widget to params reads the config directly from
+	gtk widgets.
+	If the widget name is in the format:
+		- cfg_<type>_<variablename>_<widgettype>
+	the configuration will be read automatically.
+	"""
+
+	pattern_setters = [("cfg_%s_%s_text", lambda w: w.get_text()),
+		("cfg_%s_%s_spinint", lambda w: str(w.get_value_as_int())),
+		("cfg_%s_%s_spinfloat", lambda w: str(w.get_value())),
+		("cfg_%s_%s_comboinitial", lambda w: w.get_active_text()),
+		("cfg_%s_%s_combo", lambda w: get_combo_text(w)),
+		("cfg_%s_%s_check", lambda w: get_active(w)),
+		("cfg_%s_%s_filechooser", lambda w: (w.get_filename() or ""))]
+
+	parameters = {}
+	for param_name in brick.cfg.keys():
+		for pattern, setter in pattern_setters:
+			name = pattern % (brick.get_type(), param_name)
+			widget = get_widget(name)
+			if widget:
+				parameters[param_name] = setter(widget)
+	return dict((k, v) for k, v in parameters.items() if v is not None)
+
+
+TYPE_CONFIG_WIDGET_NAME_MAP = {"Switch": "box_switchconfig",
+							"Qemu": "box_vmconfig",
+							"Tap": "box_tapconfig",
+							"Wire": "box_wireconfig",
+							"Wirefilter": "box_wirefilterconfig",
+							"TunnelConnect": "box_tunnelcconfig",
+							"TunnelListen": "box_tunnellconfig",
+							"Capture": "box_captureconfig",
+							"SwitchWrapper": "box_switchwrapperconfig",
+							"Router": "box_routerconfig",
+							"Event": "box_eventconfig"}
 
 
 class VBGUI(gobject.GObject):
@@ -333,6 +627,9 @@ class VBGUI(gobject.GObject):
 			ksmissing.append("ksm")
 		return vmissing + qmissing + ksmissing
 
+	def get_object(self, name):
+		return self.gladefile.get_widget(name)
+
 	""" ******************************************************** 	"""
 	""" Signal handlers                                           """
 	""" ******************************************************** 	"""
@@ -374,7 +671,7 @@ class VBGUI(gobject.GObject):
 
 		e = self.eventstree.get_selection()
 		for key in e.cfg.keys():
-			t = e.get_type()
+			t = e.get_type()  # :| they are all events..
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
@@ -844,19 +1141,25 @@ class VBGUI(gobject.GObject):
 			if sel == so.nickname:
 				b.plugs[1].connect(so)
 
-
-	'''
-	'	Main configuration confirm method.
-	'	called from on_config_ok
-	'''
 	def config_brick_confirm(self):
+		configpanel = self.gladefile.get_widget("configframe").get_child()
+		if configpanel:
+			log.debug("Found a config panel, I am going to configure the brick")
+			# configframe.remove(configpanel)
+			self._config_brick_confirm()
+		else:
+			self._config_brick_confirm()
+
+	def _config_brick_confirm(self):
+		"""Main configuration confirm method.  called from on_config_ok"""
+
 		notebook=self.gladefile.get_widget('main_notebook')
 		# is it an event?
 		if notebook.get_current_page() == 1:
 			b = self.eventstree.get_selection()
 		else:
 			b = self.maintree.get_selection()
-		parameters = self.widget_to_params(b)
+		parameters = widget_to_params(b, self.gladefile.get_widget)
 		t = b.get_type()
 		b.gui_changed = True
 
@@ -939,95 +1242,68 @@ class VBGUI(gobject.GObject):
 		return True
 
 	def curtain_down(self):
-		self.gladefile.get_widget('top_panel').show_all()
-		self.gladefile.get_widget('config_panel').hide()
-		self.gladefile.get_widget('padding_panel').hide()
-		self.gladefile.get_widget('label_showhidesettings').set_text(_('Show Settings'))
+		self.get_object("top_panel").show_all()
+		self.get_object("config_panel").hide()
+		self.get_object("padding_panel").hide()
+		self.get_object("label_showhidesettings").set_text(_("Show Settings"))
+		configframe = self.gladefile.get_widget("configframe")
+		configpanel = configframe.get_child()
+		if configpanel:
+			configframe.remove(configpanel)
 		self.curtain_is_down = True
 
-	def curtain_up(self):
-		notebook=self.gladefile.get_widget('main_notebook')
-
-		if (notebook.get_current_page() != 1) and (notebook.get_current_page() != 0):
-			return
-		self.gladefile.get_widget('box_vmconfig').hide()
-		self.gladefile.get_widget('box_tapconfig').hide()
-		self.gladefile.get_widget('box_tunnellconfig').hide()
-		self.gladefile.get_widget('box_tunnelcconfig').hide()
-		self.gladefile.get_widget('box_wireconfig').hide()
-		self.gladefile.get_widget('box_wirefilterconfig').hide()
-		self.gladefile.get_widget('box_switchconfig').hide()
-		self.gladefile.get_widget('box_captureconfig').hide()
-		self.gladefile.get_widget('box_eventconfig').hide()
-		self.gladefile.get_widget('box_switchwrapperconfig').hide()
-		self.gladefile.get_widget('box_routerconfig').hide()
-
-		notebook=self.gladefile.get_widget('main_notebook')
-
-		if notebook.get_current_page() == 1:
-			if self.eventstree.get_selection() is None:
+	def curtain_up(self, brick=None):
+		if brick is not None:
+			configpanel = IConfigPanel(brick)
+			if configpanel is not None:
+				log.debug("Found custom config panel")
+				self.__hide_panels()
+				configframe = self.get_object("configframe")
+				configframe.add(configpanel.get_panel(self))
+				configframe.show_all()
+				self.__show_config(brick.get_name())
 				return
-			if self.eventstree.get_selection().get_type() == 'Event':
-				log.debug("event config")
-				ww = self.gladefile.get_widget('box_eventconfig')
-				self.config_event_prepare()
-				ww.show_all()
-				self.gladefile.get_widget('top_panel').hide()
-				self.gladefile.get_widget('config_panel').show()
-				self.gladefile.get_widget('padding_panel').show()
-				self.gladefile.get_widget("wait_label").hide()
-				self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
-				self.widg['main_win'].set_title("Virtualbricks (Configuring Event " + self.eventstree.get_selection().name+ " )")
+		self._curtain_up()
+
+	def __hide_panels(self):
+		for name in TYPE_CONFIG_WIDGET_NAME_MAP.itervalues():
+			self.gladefile.get_widget(name).hide()
+
+	def __show_config(self, name):
+		self.get_object("top_panel").hide()
+		self.get_object("config_panel").show()
+		self.get_object("padding_panel").show()
+		self.get_object("wait_label").hide()
+		self.get_object("label_showhidesettings").set_text(
+			_("Hide Settings"))
+		self.curtain_is_down = False
+		self.widg["main_win"].set_title(
+			"Virtualbricks (Configuring Brick %s)" % name)
+
+	def _curtain_up(self):
+		notebook = self.gladefile.get_widget("main_notebook")
+		if notebook.get_current_page() not in (0, 1):
 			return
-
-		if self.maintree.get_selection() is None:
-			return
-
-		if self.maintree.get_selection().get_type() == 'Switch':
-			log.debug("switch config")
-			ww = self.gladefile.get_widget('box_switchconfig')
-		elif self.maintree.get_selection().get_type() == 'Qemu':
-			log.debug("qemu config")
-			ww = self.gladefile.get_widget('box_vmconfig')
-		elif self.maintree.get_selection().get_type() == 'Tap':
-			log.debug("tap config")
-			ww = self.gladefile.get_widget('box_tapconfig')
-		elif self.maintree.get_selection().get_type() == 'Wire':
-			log.debug("wire config")
-			ww = self.gladefile.get_widget('box_wireconfig')
-		elif self.maintree.get_selection().get_type() == 'Wirefilter':
-			log.debug("wirefilter config")
-			ww = self.gladefile.get_widget('box_wirefilterconfig')
-		elif self.maintree.get_selection().get_type() == 'TunnelConnect':
-			log.debug("tunnelc config")
-			ww = self.gladefile.get_widget('box_tunnelcconfig')
-		elif self.maintree.get_selection().get_type() == 'TunnelListen':
-			log.debug("tunnell config")
-			ww = self.gladefile.get_widget('box_tunnellconfig')
-		elif self.maintree.get_selection().get_type() == 'Capture':
-			log.debug("capture config")
-			ww = self.gladefile.get_widget('box_captureconfig')
-		elif self.maintree.get_selection().get_type() == 'SwitchWrapper':
-			log.debug("switchwrapper config")
-			ww = self.gladefile.get_widget('box_switchwrapperconfig')
-		elif self.maintree.get_selection().get_type() == 'Router':
-			log.debug("router config")
-			ww = self.gladefile.get_widget('box_routerconfig')
-
+		self.__hide_panels()
+		if notebook.get_current_page() == 0:
+			config_prepare = self.config_brick_prepare
+			brick = self.maintree.get_selection()
 		else:
+			config_prepare = self.config_event_prepare
+			brick = self.eventstree.get_selection()
+		if brick is None:
+			return
+		log.debug("config brick %s (%s)", brick.get_name(), brick.get_type())
+		try:
+			name = TYPE_CONFIG_WIDGET_NAME_MAP[brick.get_type()]
+		except KeyError:
 			log.debug("Error: invalid brick type")
 			self.curtain_down()
 			return
-
-		self.config_brick_prepare()
-		self.gladefile.get_widget('top_panel').hide()
-		self.gladefile.get_widget('config_panel').show()
-		self.gladefile.get_widget('padding_panel').show()
+		ww = self.gladefile.get_widget(name)
+		config_prepare()
 		ww.show()
-		self.gladefile.get_widget("wait_label").hide()
-		self.gladefile.get_widget('label_showhidesettings').set_text(_('Hide Settings'))
-		self.curtain_is_down = False
-		self.widg['main_win'].set_title("Virtualbricks (Configuring Brick " + self.maintree.get_selection().name+ " )")
+		self.__show_config(brick.get_name())
 
 
 	'''
@@ -1710,7 +1986,7 @@ class VBGUI(gobject.GObject):
 
 	# XXX: drag and drop does not work
 	# def on_mainwindow_dropaction(self, treeview, drag_context, x, y, selection_data, info, timestamp):
-	# 	pth = treeview.get_path_at_pos(x, y)
+	# 	pth = treeview.get_path_at_pos(int(x), int(y))
 	# 	dropbrick = self.maintree.get_selection(pth)
 	# 	drop_info = treeview.get_dest_row_at_pos(x, y)
 	# 	if drop_info:
@@ -1755,21 +2031,20 @@ class VBGUI(gobject.GObject):
 		self.gladefile.get_widget("eventaction_name").set_label(self.eventstree.get_selection().name)
 		self.show_window('menu_eventactions')
 
-	def on_treeview_bookmarks_button_release_event(self, widget=None, event=None, data=""):
-		b = self.maintree.get_selection()
-		if b is None:
-			return
-
-		self.curtain_down()
-		tree = self.gladefile.get_widget('treeview_bookmarks');
-		path = tree.get_cursor()[0]
-		if path is None:
-			return
-		# self.Dragging = b
+	def on_treeview_bookmarks_button_release_event(self, treeview, event):
 		if event.button == 3:
-			self.show_brickactions()
+			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+			if pthinfo is not None:
+				path, col, cellx, celly = pthinfo
+				treeview.grab_focus()
+				treeview.set_cursor(path, col, 0)
+				model = treeview.get_model()
+				obj = model.get_value(model.get_iter(path), 0)
+				IMenu(obj).popup(event.button, event.time, self)
+			return True
 
-	def on_treeview_events_bookmarks_button_release_event(self, widget=None, event=None, data=""):
+	def on_treeview_events_bookmarks_button_release_event(self, treeview, event):
+		return self.on_treeview_bookmarks_button_release_event(treeview, event)
 		e = self.eventstree.get_selection()
 		if e is None:
 			return
@@ -2367,19 +2642,6 @@ class VBGUI(gobject.GObject):
 				_(self.eventstree.get_selection().get_type()) + " \"" + self.eventstree.get_selection().name + "\" ?",
 				on_yes = self.brickfactory.delevent, arg = self.eventstree.get_selection())
 
-	def on_brick_copy(self,widget=None, event=None, data=""):
-		self.curtain_down()
-		self.brickfactory.dupbrick(self.maintree.get_selection())
-
-	def on_brick_rename(self,widget=None, event=None, data=""):
-		if self.maintree.get_selection().proc != None:
-			log.error(_("Cannot rename Brick: it is in use."))
-			return
-
-		self.gladefile.get_widget('entry_brick_newname').set_text(self.maintree.get_selection().name)
-		self.gladefile.get_widget('dialog_rename').show_all()
-		self.curtain_down()
-
 	def on_event_copy(self,widget=None, event=None, data=""):
 		self.curtain_down()
 		self.brickfactory.dupevent(self.eventstree.get_selection())
@@ -2513,9 +2775,6 @@ class VBGUI(gobject.GObject):
 		# 	iter_ = self.addedmodel.iter_next(iter_)
 
 		log.debug("Event created successfully")
-
-	def on_brick_configure(self,widget=None, event=None, data=""):
-		self.curtain_up()
 
 	def on_qemupath_changed(self, widget, data=None):
 		newpath = widget.get_filename()
@@ -2725,7 +2984,7 @@ class VBGUI(gobject.GObject):
 		mac = self.gladefile.get_widget('entry_newvmplug_mac').get_text()
 		if not self.valid_mac(mac):
 			mac = tools.RandMac()
-		if pl.brick.proc and pl.hotadd:
+		if pl.brick.proc and pl.hotadd:  # XXX: this can raise an exception
 			pl.hotadd()
 		self.update_vmplugs_tree()
 		self.show_window('')
@@ -2863,24 +3122,6 @@ class VBGUI(gobject.GObject):
 		while(not self.joblist_selected.recv().startswith("(qemu")):
 			time.sleep(1)
 		self.joblist_selected.poweroff()
-
-	def on_vm_resume(self, widget=None, event=None, data=""):
-		b = self.maintree.get_selection()
-		if b is None:
-			return
-
-		hda = b.cfg.get('basehda')
-		log.debug("resume")
-		if os.system("qemu-img snapshot -l "+hda+" |grep virtualbricks") == 0:
-			if b.proc is not None:
-				b.send("loadvm virtualbricks\n")
-				b.recv()
-				return
-			else:
-				b.cfg.set("loadvm=virtualbricks")
-				b.poweron()
-		else:
-			log.error(_("Cannot find suspend point."))
 
 	def on_vm_powerbutton(self, widget=None, event=None, data=""):
 		self.joblist_selected.send("system_powerdown\n")

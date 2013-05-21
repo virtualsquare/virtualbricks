@@ -5,8 +5,15 @@ from virtualbricks import brickfactory, bricks
 
 class BrickStub(bricks.Brick):
 
-    def get_type(self):
-        return "Stub"
+    type = "Stub"
+
+    def open_internal_console(self):
+        return Console()
+
+
+class Console(list):
+
+    send = list.append
 
 
 class ConfigFileStub:

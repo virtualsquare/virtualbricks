@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_tunnels -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -16,30 +17,41 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import logging
 
-from virtualbricks.bricks import Brick
-from virtualbricks.link import Plug
+from virtualbricks import bricks, link
 
 
-class TunnelListen(Brick):
+log = logging.getLogger(__name__)
+
+if False:  # pyflakes
+    _ = str
+
+
+class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
+    pid = -1
+    command_builder = {"-s": 'sock',
+                       "#password": "password",
+                       "-p": "port"}
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.pid = -1
-        self.cfg.name = _name
-        self.command_builder = {"-s": 'sock',
-            "#password": "password",
-            "-p": "port"
-        }
-        self.cfg.sock = ""
-        self.cfg.password = ""
-        self.plugs.append(Plug(self))
-        self.cfg.port = "7667"
+    class config_factory(bricks.Config):
+
+        parameters = {"name": bricks.String(""),
+                      "sock": bricks.String(""),
+                      "password": bricks.String(""),
+                      "port": bricks.Integer(7667),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
+
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
+        self.cfg.name = name
+        self.plugs.append(link.Plug(self))
 
     def restore_self_plugs(self):
-        self.plugs.append(Plug(self))
+        self.plugs.append(link.Plug(self))
 
     def clear_self_socks(self, sock=None):
         self.cfg.sock = ""
@@ -54,11 +66,11 @@ class TunnelListen(Brick):
         return self.settings.get("vdepath") + "/vde_cryptcab"
 
     def on_config_changed(self):
-        if (self.plugs[0].sock is not None):
+        if self.plugs[0].sock is not None:
             self.cfg.sock = self.plugs[0].sock.path.rstrip('[]')
-        if (self.proc is not None):
+        if self.proc is not None:
             self.need_restart_to_apply_changes = True
-        Brick.on_config_changed(self)
+        bricks.Brick.on_config_changed(self)
 
     def configured(self):
         return (self.plugs[0].sock is not None)
@@ -84,19 +96,22 @@ class TunnelListen(Brick):
 class TunnelConnect(TunnelListen):
 
     type = "TunnelConnect"
+    command_builder = {"-s": 'sock',
+                       "#password": "password",
+                       "-p": "localport",
+                       "-c": "host",
+                       "#port": "port"}
 
-    def __init__(self, _factory, _name):
-        TunnelListen.__init__(self, _factory, _name)
-        self.command_builder = {"-s": 'sock',
-            "#password": "password",
-            "-p": "localport",
-            "-c": "host",
-            "#port": "port"
-        }
-        self.cfg.sock = ""
-        self.cfg.host = ""
-        self.cfg.localport = "10771"
-        self.cfg.port = "7667"
+    class config_factory(bricks.Config):
+
+        parameters = {"name": bricks.String(""),
+                      "sock": bricks.String(""),
+                      "host": bricks.String(""),
+                      "password": bricks.String(""),
+                      "port": bricks.Integer(7667),
+                      "localport": bricks.Integer(10771),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
 
     def get_parameters(self):
         if self.plugs[0].sock:
@@ -106,21 +121,19 @@ class TunnelConnect(TunnelListen):
         return _("disconnected")
 
     def on_config_changed(self):
-        if (self.plugs[0].sock is not None):
+        if self.plugs[0].sock is not None:
             self.cfg.sock = self.plugs[0].sock.path.rstrip('[]')
 
         p = self.cfg.get("port")
         if p is not None:
             h = self.cfg.get("host")
             if h is not None:
-                h = h.split(":")[0]
-                h += ":" + p
-                self.cfg.host = h
+                self.cfg.host = "%s:%s" % (h.split(":")[0], p)
 
-        if (self.proc is not None):
+        if self.proc is not None:
             self.need_restart_to_apply_changes = True
 
-        Brick.on_config_changed(self)
+        bricks.Brick.on_config_changed(self)
 
     def configured(self):
         return ((self.plugs[0].sock is not None) and self.cfg.get("host") and

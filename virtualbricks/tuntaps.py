@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_tuntaps -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -17,33 +18,42 @@
 
 import os
 
-from virtualbricks.bricks import Brick
-from virtualbricks.link import Plug
+from virtualbricks import bricks, link
 
 
-class Capture(Brick):
+if False:  # pyflakes
+    _ = str
+
+
+class Capture(bricks.Brick):
 
     type = "Capture"
     _needsudo = True
+    pid = -1
+    command_builder = {"-s": 'sock',
+                       "*iface": "iface"}
 
+    class config_factory(bricks.Config):
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.pid = -1
-        self.cfg.name = _name
-        self.command_builder = {"-s": 'sock', "*iface": "iface"}
-        self.cfg.sock = ""
-        self.cfg.iface = ""
-        self.plugs.append(Plug(self))
+        parameters = {"name": bricks.String(""),
+                      "sock": bricks.String(""),
+                      "iface": bricks.String(""),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
+
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
+        self.cfg.name = name
+        self.plugs.append(link.Plug(self))
 
     def restore_self_plugs(self):
-        self.plugs.append(Plug(self))
+        self.plugs.append(link.Plug(self))
 
     def clear_self_socks(self, sock=None):
         self.cfg.sock = ""
 
     def get_parameters(self):
-        if (self.cfg.iface == ""):
+        if self.cfg.iface == "":
             return _("No interface selected")
         if self.plugs[0].sock:
             return _("Interface %s plugged to %s ") % (
@@ -57,35 +67,41 @@ class Capture(Brick):
         return None
 
     def on_config_changed(self):
-        if (self.plugs[0].sock is not None):
+        if self.plugs[0].sock is not None:
             self.cfg.sock = self.plugs[0].sock.path.rstrip("[]")
-        if (self.proc is not None):
+        if self.proc is not None:
             self.need_restart_to_apply_changes = True
-        Brick.on_config_changed(self)
+        bricks.Brick.on_config_changed(self)
 
     def configured(self):
-        return (self.plugs[0].sock is not None and self.cfg.iface != "")
+        return self.plugs[0].sock is not None and self.cfg.iface != ""
 
 
-class Tap(Brick):
+class Tap(bricks.Brick):
 
     type = "Tap"
     _needsudo = True
+    pid = -1
+    command_builder = {"-s": 'sock', "*tap": "name"}
 
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.pid = -1
-        self.cfg.name = _name
-        self.command_builder = {"-s": 'sock', "*tap": "name"}
-        self.cfg.sock = ""
-        self.plugs.append(Plug(self))
-        self.cfg.ip = "10.0.0.1"
-        self.cfg.nm = "255.255.255.0"
-        self.cfg.gw = ""
-        self.cfg.mode = "off"
+    class config_factory(bricks.Config):
+
+        parameters = {"name": bricks.String(""),
+                      "sock": bricks.String(""),
+                      "ip": bricks.String("10.0.0.1"),
+                      "nm": bricks.String("255.255.255.0"),
+                      "gw": bricks.String(""),
+                      "mode": bricks.String("off"),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
+
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
+        self.cfg.name = name
+        self.plugs.append(link.Plug(self))
 
     def restore_self_plugs(self):
-        self.plugs.append(Plug(self))
+        self.plugs.append(link.Plug(self))
 
     def clear_self_socks(self, sock=None):
         self.cfg.sock = ""
@@ -103,14 +119,14 @@ class Tap(Brick):
         return None
 
     def on_config_changed(self):
-        if (self.plugs[0].sock is not None):
+        if self.plugs[0].sock is not None:
             self.cfg.sock = self.plugs[0].sock.path.rstrip("[]")
-        if (self.proc is not None):
+        if self.proc is not None:
             self.need_restart_to_apply_changes = True
-        Brick.on_config_changed(self)
+        bricks.Brick.on_config_changed(self)
 
     def configured(self):
-        return (self.plugs[0].sock is not None)
+        return self.plugs[0].sock is not None
 
     def post_poweron(self):
         self.start_related_events(on=True)
