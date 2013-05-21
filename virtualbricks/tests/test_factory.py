@@ -2,7 +2,7 @@ import time
 import threading
 
 from virtualbricks import errors, brickfactory
-from virtualbricks.tests import unittest, must_test_threads, stubs
+from virtualbricks.tests import unittest, test_threads, stubs
 
 
 class TestFactory(unittest.TestCase):
@@ -36,7 +36,7 @@ class TestFactory(unittest.TestCase):
         self.assertFalse(self.factory.newevent("eVeNt", "event2"))
 
 
-@unittest.skipUnless(must_test_threads(), "threads tests non enabled")
+@unittest.skipUnless(test_threads(), "threads tests not enabled")
 class TestThreadingLocking(unittest.TestCase):
 
     def setUp(self):
