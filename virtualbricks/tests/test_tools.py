@@ -38,12 +38,12 @@ class TestTools(unittest.TestCase):
             if stop[0]:
                 lc.stop()
                 event[0] = True
+                raise RuntimeError("BOOM")
             else:
                 stop[0] = True
                 raise RuntimeError("BOOM")
 
-        lc = tools.LoopingCall(0.2, self.assertRaises, (RuntimeError, func))
-        # lc = tools.LoopingCall(0.001, func)
+        lc = tools.LoopingCall(0.001, self.assertRaises, (RuntimeError, func))
         lc._LoopingCall__timer.join()
         self.assertFalse(event[0])
 
