@@ -82,10 +82,13 @@ class IMenu(Interface):
 class IConfigPanel(Interface):
 
     def get_panel(gui):
-        """Return the configuration panel for the given brick or event"""
+        """Return the configuration panel for the given brick or event."""
+
+    def configure_brick(gui):
+        """Configure the brick as setted in the panel."""
 
 
-class IBrick:
+class IBrick(Interface):
 
     type = Attribute("The type name for the new brick")
 
