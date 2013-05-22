@@ -9,7 +9,7 @@
     <property name="step_increment">1</property>
     <property name="page_increment">32</property>
   </object>
-  <object class="GtkFrame" id="SwitchConfigPanel">
+  <object class="GtkFrame" id="config_frame">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="label_xalign">0</property>
@@ -33,7 +33,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkSpinButton" id="cfg_ports_spinint">
+          <object class="GtkSpinButton" id="ports_spinbutton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="invisible_char">●</property>
@@ -53,7 +53,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="cfg_fstp_check">
+          <object class="GtkCheckButton" id="fstp_checkbutton">
             <property name="label" translatable="yes">Use FSTP</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -68,7 +68,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="cfg_hub_check">
+          <object class="GtkCheckButton" id="hub_checkbutton">
             <property name="label" translatable="yes">Hub mode</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
