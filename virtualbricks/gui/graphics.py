@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_graphics -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -24,6 +25,7 @@ import pkgutil
 
 import Image
 import pygraphviz as pgv
+import gtk.gdk
 
 
 log = logging.getLogger('virtualbricks.gui')
@@ -46,24 +48,12 @@ def has_custom_icon(brick):
 	return "icon" in brick.cfg and brick.cfg.icon != ""
 
 
-def running_brick_icon(brick):
+def brick_icon(brick):
 	if not has_custom_icon(brick):
 		return get_filename("virtualbricks.gui",
 						"data/" + brick.get_type().lower() + ".png")
 	else:
 		return brick.cfg.icon
-
-
-def stopped_brick_icon(brick):
-	if not has_custom_icon(brick):
-		return get_filename("virtualbricks.gui",
-						"data/" + brick.get_type().lower() + "_gray.png")
-	else:
-		if "icon_gray" in brick.cfg and brick.cfg.icon_gray is not None:
-			return brick.cfg.icon_gray
-		if "icon" in brick.cfg and brick.cfg.icon is not None:
-			return brick.cfg.icon
-		return stopped_brick_icon(brick)
 
 
 def is_running(brick):
@@ -74,11 +64,38 @@ def is_running(brick):
 	return True
 
 
-def get_brick_icon(brick):
+def saturate_if_stopped(brick, pixbuf):
 	if is_running(brick):
-		return running_brick_icon(brick)
+		return pixbuf
 	else:
-		return stopped_brick_icon(brick)
+		pixbuf.saturate_and_pixelate(pixbuf, 0.0, True)
+		return pixbuf
+
+
+def pixbuf_for_brick_at_size(brick, width, height):
+	filename = brick_icon(brick)
+	pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(filename, width, height)
+	return saturate_if_stopped(brick, pixbuf)
+
+
+def pixbuf_for_brick(brick):
+	filename = brick_icon(brick)
+	pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+	return saturate_if_stopped(brick, pixbuf)
+
+
+def pixbuf_for_brick_type(type):
+	filename = get_filename("virtualbricks.gui", "data/%s.png" % type.lower())
+	return gtk.gdk.pixbuf_new_from_file(filename)
+
+
+def pixbuf_for_running_brick(brick):
+	return gtk.gdk.pixbuf_new_from_file(brick_icon(brick))
+
+
+def pixbuf_for_running_brick_at_size(brick, witdh, height):
+	return gtk.gdk.pixbuf_new_from_file_at_size(brick_icon(brick),
+			witdh, height)
 
 
 def get_image(name):
@@ -121,7 +138,7 @@ class Topology():
 			n = self.topo.get_node(b.name)
 			n.attr['shape']='none'
 			n.attr['fontsize']='9'
-			n.attr['image'] = get_brick_icon(b)
+			n.attr['image'] = brick_icon(b)
 
 		for row in bricks_model:
 			b = row[0]

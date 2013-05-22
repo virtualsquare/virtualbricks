@@ -17,10 +17,6 @@ class TestGraphics(unittest.TestCase):
         filename = graphics.get_filename("virtualbricks.gui", "data/test")
         self.assertTrue(filename.endswith("virtualbricks/gui/data/test"))
 
-    def test_running_brick_icon(self):
-        self.assertEqual(graphics.running_brick_icon(self.brick),
+    def test_brick_icon(self):
+        self.assertEqual(graphics.brick_icon(self.brick),
                          GUI_PATH + "/data/stub.png")
-
-    def test_stopped_brick_icon(self):
-        self.assertEqual(graphics.stopped_brick_icon(self.brick),
-                         GUI_PATH + "/data/stub_gray.png")

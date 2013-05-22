@@ -343,8 +343,7 @@ def check_joblist(gui, force=False):
 			else:
 				pid = str(b.pid)
 			gui.running_bricks.set_value(i, 0,
-					gtk.gdk.pixbuf_new_from_file_at_size(
-						graphics.get_brick_icon(b), 48, 48))
+					graphics.pixbuf_for_brick_at_size(b, 48, 48))
 			gui.running_bricks.set_value(i, 1, pid)
 			gui.running_bricks.set_value(i, 2, b.get_type())
 			gui.running_bricks.set_value(i, 3, b.name)
@@ -966,7 +965,7 @@ class VBGUI(gobject.GObject):
 				widget.unselect_all()
 
 			self.gladefile.get_widget("qemuicon").set_from_file(
-				graphics.get_brick_icon(b))
+				graphics.pixbuf_for_brick(b))
 
 		# Tap mode:
 		if b.get_type() == 'Tap':
@@ -1623,9 +1622,8 @@ class VBGUI(gobject.GObject):
 						parameters = "%s..." % parameters[:30]
 					# iter_ = self.availmodel.append(
 					self.availmodel.append(
-						[gtk.gdk.pixbuf_new_from_file_at_size(
-							graphics.running_brick_icon(brick), 48, 48),
-							brick.get_type(), brick.name, parameters])
+						[graphics.pixbuf_for_running_brick_at_size(brick, 48,
+							48), brick.get_type(), brick.name, parameters])
 
 				availbricks.set_model(self.availmodel)
 				addedbricks.set_model(self.addedmodel)
@@ -3233,8 +3231,8 @@ class VBGUI(gobject.GObject):
 
 	def on_filechooser_image_clear(self, widget=None, event=None, data=""):
 		self.on_filechooser_clear(widget)
-		self.gladefile.get_widget("qemuicon").set_from_file(
-			graphics.get_brick_icon("Qemu.png"))
+		self.gladefile.get_widget("qemuicon").set_from_pixbuf(
+			graphics.pixbuf_for_brick_type("qemu"))
 
 	def on_show_messages_activate(self, menuitem, data=None):
 		dialogs.LoggingWindow(self.messages_buffer).show()
@@ -3272,8 +3270,7 @@ class VBGUI(gobject.GObject):
 				parameters = event.get_parameters()
 				if len(parameters) > 30:
 					parameters = "%s..." % parameters[:30]
-				image = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.running_brick_icon(event), 48, 48)
+				image = graphics.pixbuf_for_running_brick_at_size(event, 48, 48)
 				iter_ = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
 				if self.maintree.get_selection().cfg.pon_vbevent == event.name:
 					treeviewselectionstart.select_iter(iter_)
