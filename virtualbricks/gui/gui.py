@@ -241,15 +241,22 @@ class IConfigPanel(Interface):
 		"""Return the configuration panel for the given brick or event"""
 
 
-class Panel(dialogs.Base):
+class Panel(object):
 	implements(IConfigPanel)
+
+	domain = "virtualbricks"
+	resource = None
 
 	def __init__(self, original):
 		self.original = original
-		dialogs.Base.__init__(self)
+		self.builder = builder = gtk.Builder()
+		builder.set_translation_domain(self.domain)
+		builder.add_from_file(graphics.get_filename("virtualbricks.gui",
+													self.resource))
+		builder.connect_signals(self)
 
-	def __getitem__(self, name):
-		return self.get_object(name)
+	def get_object(self, name):
+		return self.builder.get_object(name)
 
 class EventConfigPanel(Panel):
 
@@ -261,20 +268,81 @@ class SwitchConfigPanel(Panel):
 	resource = "data/switchconfig.ui"
 
 	def get_panel(self, gui):
-		self["cfg_fstp_check"].set_active(self.original.cfg["fstp"])
-		self["cfg_hub_check"].set_active(self.original.cfg["hub"])
+		self.get_object("fstp_checkbutton").set_active(
+			self.original.cfg["fstp"])
+		self.get_object("hub_checkbutton").set_active(self.original.cfg["hub"])
 		minports = len([1 for b in iter(gui.brickfactory.bricks)
-				for p in b.plugs if p.sock.nickname == b.socks[0].nickname])
-		spinner = self["cfg_ports_spinint"]
+				for p in b.plugs if b.socks and
+					p.sock.nickname == b.socks[0].nickname])
+		spinner = self.get_object("ports_spinbutton")
 		spinner.set_range(max(minports, 1), 128)
 		spinner.set_value(int(self.original.cfg.numports))
-		return self.widget
+		return self.get_object("config_frame")
 
-	def configure_brick(self):
-		self.original.cfg["fstp"] = self["cfg_fstp_check"].get_active()
-		self.original.cfg["hub"] = self["cfg_hub_check"].get_active()
+	def configure_brick(self, gui):
+		self.original.cfg["fstp"] = self.get_object(
+			"fstp_checkbutton").get_active()
+		self.original.cfg["hub"] = self.get_object(
+			"hub_checkbutton").get_active()
 		self.original.cfg["numports"] = \
-				self["cfg_ports_spinint"].get_value_as_int()
+				self.get_object("ports_spinbutton").get_value_as_int()
+
+
+def should_insert_sock(sock, brick, python, femaleplugs):
+	return ((sock.brick.homehost == brick.homehost or
+				(brick.get_type() == 'Wire' and python)) and
+			(sock.brick.get_type().startswith('Switch') or femaleplugs))
+
+
+class TapConfigPanel(Panel):
+
+	resource = "data/tapconfig.ui"
+
+	def get_panel(self, gui):
+		self.get_object("ip_entry").set_text(self.original.cfg["ip"])
+		self.get_object("nm_entry").set_text(self.original.cfg["nm"])
+		self.get_object("gw_entry").set_text(self.original.cfg["gw"])
+		# default to manual if not valid mode is set
+		if self.original.cfg["mode"] == "off":
+			self.get_object("nocfg_radiobutton").set_active(True)
+		elif self.original.cfg["mode"] == "dhcp":
+			self.get_object("dhcp_radiobutton").set_active(True)
+		else:
+			self.get_object("manual_radiobutton").set_active(True)
+		self.get_object("ipconfig_table").set_sensitive(
+			self.original.cfg["mode"] == "manual")
+		combo = self.get_object("sockscombo_tap")
+		model = combo.get_model()
+		model.clear()  # XXX: needed?
+		for i, sock in enumerate(iter(gui.brickfactory.socks)):
+			if should_insert_sock(sock, self.original, gui.config.python,
+					gui.config.femaleplugs):
+				model.append((sock.nickname, ))
+				if (self.original.plugs[0].configured() and
+						self.original.plugs[0].sock.nickname == sock.nickname):
+					combo.set_active(i)
+		return self.get_object("config_frame")
+
+	def configure_brick(self, gui):
+		model = self.get_object("sockscombo_tap").get_model()
+		itr = self.get_object("sockscombo_tap").get_active_iter()
+		if itr:
+			sel = model.get_value(itr, 0)
+			for sock in iter(gui.brickfactory.socks):
+				if sel == sock.nickname:
+					self.original.plugs[0].connect(sock)
+		if self.get_object("nocfg_radiobutton").get_active():
+			self.original.cfg["mode"] = "off"
+		elif self.get_object("dhcp_radiobutton").get_active():
+			self.original.cfg["mode"] = "dhcp"
+		else:
+			self.original.cfg["mode"] = "manual"
+			self.original.cfg["ip"] = self.get_object("ip_entry").get_text()
+			self.original.cfg["nm"] = self.get_object("nm_entry").get_text()
+			self.original.cfg["gw"] = self.get_object("gw_entry").get_text()
+
+	def on_manual_radiobutton_toggled(self, radiobtn):
+		self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
 
 
 def config_panel_factory(context):
@@ -283,6 +351,8 @@ def config_panel_factory(context):
 	# 	return EventConfigPanel(context)
 	if type == "Switch":
 		return SwitchConfigPanel(context)
+	elif type == "Tap":
+		return TapConfigPanel(context)
 
 
 registerAdapter(config_panel_factory, base.Base, IConfigPanel)
@@ -1146,7 +1216,7 @@ class VBGUI(gobject.GObject):
 	def config_brick_confirm(self):
 		if self.__config_panel:
 			# XXX: this method break the live management
-			self.__config_panel.configure_brick()
+			self.__config_panel.configure_brick(self)
 		else:
 			self._config_brick_confirm()
 
@@ -1275,7 +1345,7 @@ class VBGUI(gobject.GObject):
 	def __show_config(self, name):
 		self.get_object("top_panel").hide()
 		self.get_object("config_panel").show()
-		self.get_object("padding_panel").show()
+		# self.get_object("padding_panel").show()
 		self.get_object("wait_label").hide()
 		self.get_object("label_showhidesettings").set_text(
 			_("Hide Settings"))
