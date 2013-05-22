@@ -18,6 +18,7 @@
 import os
 import sys
 import time
+import types
 import re
 import logging
 import subprocess
@@ -428,6 +429,7 @@ class VBGUI(gobject.GObject):
 		self.messages_buffer = textbuffer
 		self.topology = None
 		self.widg = self.get_widgets(self.widgetnames())
+		self.__config_panel = None
 
 		log.info("Starting VirtualBricks!")
 
@@ -1142,11 +1144,9 @@ class VBGUI(gobject.GObject):
 				b.plugs[1].connect(so)
 
 	def config_brick_confirm(self):
-		configpanel = self.gladefile.get_widget("configframe").get_child()
-		if configpanel:
-			log.debug("Found a config panel, I am going to configure the brick")
-			# configframe.remove(configpanel)
-			self._config_brick_confirm()
+		if self.__config_panel:
+			# XXX: this method break the live management
+			self.__config_panel.configure_brick()
 		else:
 			self._config_brick_confirm()
 
@@ -1250,6 +1250,8 @@ class VBGUI(gobject.GObject):
 		configpanel = configframe.get_child()
 		if configpanel:
 			configframe.remove(configpanel)
+		if self.__config_panel is not None:
+			self.__config_panel = None
 		self.curtain_is_down = True
 
 	def curtain_up(self, brick=None):
@@ -1257,6 +1259,7 @@ class VBGUI(gobject.GObject):
 			configpanel = IConfigPanel(brick)
 			if configpanel is not None:
 				log.debug("Found custom config panel")
+				self.__config_panel = configpanel
 				self.__hide_panels()
 				configframe = self.get_object("configframe")
 				configframe.add(configpanel.get_panel(self))
@@ -3686,6 +3689,11 @@ class VBGUI(gobject.GObject):
 			settings.VIRTUALBRICKS_HOME + "/")
 
 	def user_wait_action(self, action, *args):
+		if isinstance(action, types.MethodType):
+			log.debug("Starting thread for action %s", action.func_name)
+		else:  # standard function
+			log.debug("Starting thread for action %s",
+					action.im_func.func_name)
 		self.gladefile.get_widget("window_userwait").show_all()
 		self.gladefile.get_widget("main_win").set_sensitive(False)
 		thread = threading.Thread(target=action, args=args)
@@ -3697,6 +3705,7 @@ class VBGUI(gobject.GObject):
 		if not is_alive:
 			self.gladefile.get_widget("window_userwait").hide()
 			self.gladefile.get_widget("main_win").set_sensitive(True)
+			log.debug("action terminated")
 		else:
 			self.gladefile.get_widget("userwait_progressbar").pulse()
 		return is_alive
