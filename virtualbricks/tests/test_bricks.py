@@ -20,22 +20,26 @@ class TestBricks(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertEquals(w[0].category, DeprecationWarning)
 
-    # def test_basic_interface(self):
-    #     factory = stubs.FactoryStub()
-    #     brick = bricks.Brick(factory, "test")
 
+class Brick(stubs.BrickStub):
 
-class SwitchConfig(base.NewConfig):
+    class config_factory(base.NewConfig):
 
-    parameters = {"numports": base.SpinInt(32, 1, 128),
-                  "hub": base.Boolean(False),
-                  "fstp": base.Boolean(False)}
+        parameters = {"numports": base.SpinInt(32, 1, 128),
+                      "hub": base.Boolean(False),
+                      "fstp": base.Boolean(False),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
 
 
 class TestConfig(unittest.TestCase):
 
+    def setUp(self):
+        self.factory = stubs.FactoryStub()
+        self.brick = Brick(self.factory, "test")
+
     def test_new_config(self):
-        cfg = SwitchConfig(None)
+        cfg = self.brick.cfg
         for name, typ in cfg.parameters.iteritems():
             self.assertIn(name, cfg)
             self.assertEqual(typ.default, cfg[name])
@@ -48,19 +52,19 @@ class TestConfig(unittest.TestCase):
 
     def test_save_to(self):
         sio = StringIO.StringIO()
-        cfg = SwitchConfig(stubs.BrickStub(stubs.FactoryStub(), "test_stub"))
+        cfg = self.brick.cfg
         cfg.save_to(sio)
-        out = "[Stub:test_stub]\n"
+        out = ""
         self.assertEqual(sio.getvalue(), out)
         cfg["numports"] = 33
         cfg["fstp"] = True
-        out = "[Stub:test_stub]\nfstp=*\nnumports=33\n"
+        out = "fstp=*\nnumports=33\n"
         sio.truncate(0)
         cfg.save_to(sio)
         self.assertEqual(sio.getvalue(), out)
 
     def test_load_from(self):
-        cfg = SwitchConfig(stubs.BrickStub(stubs.FactoryStub(), "test_stub"))
+        cfg = self.brick.cfg
         sio = StringIO.StringIO()
         sio.write("fstp=*\nnumports=33\n")
         sio.seek(0)
@@ -94,12 +98,11 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(sio.tell(), 0)
 
     def test_set(self):
-        cfg = SwitchConfig(None)
-        cfg.set("numports=33")
-        self.assertEqual(cfg.numports, "33")
+        self.brick.cfg.set("numports=33")
+        self.assertEqual(self.brick.cfg.numports, "33")
 
     def test_set_obj(self):
-        cfg = SwitchConfig(None)
+        cfg = self.brick.cfg
         cfg.set_obj("numports", 33)
         self.assertEqual(cfg.numports, "33")
         self.assertEqual(cfg["numports"], 33)
@@ -107,20 +110,20 @@ class TestConfig(unittest.TestCase):
     def test_set_running(self):
         state = []
 
-        class Brick(object):
-
-            def __init__(self):
-                self.cfg = SwitchConfig(self)
+        class _Brick(Brick):
 
             def cbset_numports(self, value):
                 state.append(value)
 
-        brick = Brick()
+        brick = _Brick(self.factory, "test")
         brick.cfg.set("numports=33")
         self.assertEqual(len(state), 1)
         self.assertEqual(brick.cfg.numports, "33")
+        brick.cfg.numports = "32"
+        self.assertEqual(len(state), 2)
+        self.assertEqual(state[1], "32")
+        self.assertEqual(brick.cfg.numports, "32")
 
     def test_get_set_attr(self):
-        cfg = SwitchConfig(None)
-        cfg.numports = "33"
-        self.assertEqual(cfg["numports"], 33)
+        self.brick.cfg.numports = "33"
+        self.assertEqual(self.brick.cfg["numports"], 33)
