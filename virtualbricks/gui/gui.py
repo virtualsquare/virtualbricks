@@ -125,6 +125,12 @@ interfaces.registerAdapter(BrickPopupMenu, bricks.Brick, interfaces.IMenu)
 # NOTE: there is a problem with this approach, it is not transparent, it must
 # know the type of the brick, however virtual machines are already not
 # transparent to the gui
+class GVirtualMachine(virtualmachines.VirtualMachine):
+
+    def has_graphic(self):
+        return True
+
+
 class VMPopupMenu(BrickPopupMenu):
 
 	def build(self, gui):
@@ -148,7 +154,7 @@ class VMPopupMenu(BrickPopupMenu):
 			log.error(_("Cannot find suspend point."))
 
 
-interfaces.registerAdapter(VMPopupMenu, virtualmachines.VM, interfaces.IMenu)
+interfaces.registerAdapter(VMPopupMenu, GVirtualMachine, interfaces.IMenu)
 
 
 class EventPopupMenu(BaseMenu):
@@ -3828,8 +3834,7 @@ class Application(brickfactory.Application):
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
 		self.factory = factory = brickfactory.BrickFactory()
-		factory.BRICKTYPES['vm'] = virtualmachines.VMGui
-		factory.BRICKTYPES['qemu'] = virtualmachines.VMGui
+		factory.register_brick_type(GVirtualMachine, "vm", "qemu")
 		configfile.restore_last_project(self.factory)
 		self.autosave_timer = brickfactory.AutosaveTimer(factory)
 		# disable default link_button action

@@ -26,6 +26,7 @@ import getpass
 import logging
 import threading
 import itertools
+import warnings
 
 import gtk
 import gobject
@@ -46,6 +47,7 @@ def install_brick_types(registry=None, vde_support=False):
     if registry is None:
         registry = {}
 
+    log.debug("Registering basic types")
     registry.update({
         'switch': switches.Switch,
         'tap': tuntaps.Tap,
@@ -64,6 +66,7 @@ def install_brick_types(registry=None, vde_support=False):
         'router': router.Router,
     })
     if vde_support:
+        log.debug("Register wire with vde_support")
         registry['wire'] = wires.PyWire
     else:
         registry['wire'] = wires.Wire
@@ -116,7 +119,7 @@ class BrickFactory(gobject.GObject):
         self.eventsmodel = gtk.ListStore(object)
         self.__event_signals = {}
         self.settings = settings.Settings(settings.CONFIGFILE)
-        self.BRICKTYPES = install_brick_types(
+        self.__factories = install_brick_types(
             None, wires.VDESUPPORT and self.settings.python)
 
     def lock(self):
@@ -165,6 +168,19 @@ class BrickFactory(gobject.GObject):
         project_file = self.settings.get("current_project")
         project_name = os.path.splitext(os.path.basename(project_file))[0]
         return os.path.join(baseimages, project_name)
+
+    def register_brick_type(self, factory, *types):
+        """Register a new brick type.
+
+        Factory argument is a contructor (or factory but factory is overused as
+        term)"""
+
+        for type in types:
+            log.debug("Registering new brick type %s", type)
+            if type in self.__factories:
+                log.debug("Type %s already present, overriding it", type)
+            self.__factories[type] = factory
+            # self.__factories.setdefault(type, []).append(factory)
 
     # [[[[[[[[[]]]]]]]]]
     # [   Disk Images  ]
@@ -270,9 +286,9 @@ class BrickFactory(gobject.GObject):
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
         ltype = type.lower()
-        if ltype not in self.BRICKTYPES:
+        if ltype not in self.__factories:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
-        brick = self.BRICKTYPES[ltype](self, nname)
+        brick = self.__factories[ltype](self, nname)
         if remote:
             brick.set_host(host)
             if brick.homehost.connected:

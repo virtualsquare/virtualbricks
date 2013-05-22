@@ -17,13 +17,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-from zope.interface import interface, declarations, Interface
+from zope.interface import interface, declarations, Interface, Attribute
 from zope.interface.adapter import AdapterRegistry
 
 
 # from twisted.python.components import registerAdapter
 globalRegistry = AdapterRegistry()
-ALLOW_DUPLICATES = 0
+ALLOW_DUPLICATES = True
 
 
 def registerAdapter(adapterFactory, origInterface, *interfaceClasses):
@@ -86,6 +86,11 @@ class IConfigPanel(Interface):
 
 
 class IBrick:
+
+    type = Attribute("The type name for the new brick")
+
+    def __call__(factory, name):
+        """Return a new brick of the type specified by the `type` attribute."""
 
     def get_type():
         """Return the type of brick."""

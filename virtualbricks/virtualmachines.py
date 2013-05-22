@@ -970,10 +970,3 @@ class VirtualMachine(bricks.Brick):
         self.start_related_events(off=True)
 
 VM = VirtualMachine
-
-
-class VMGui(VM):
-
-    def has_graphic(self):
-        return True
-
