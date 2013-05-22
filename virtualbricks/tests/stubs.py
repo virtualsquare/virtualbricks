@@ -41,7 +41,7 @@ class FactoryStub(brickfactory.BrickFactory):
 
     def __init__(self):
         brickfactory.BrickFactory.__init__(self)
-        self.BRICKTYPES["stub"] = BrickStub
+        self.register_brick_type(BrickStub, "stub")
 
 
 class LoggingHandlerStub(logging.Handler):
