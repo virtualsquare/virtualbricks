@@ -95,13 +95,62 @@ class Config(dict):
             print "%s=%s" % (k, self[k])
 
 
+class ConfigDescriptor(object):
+    """ConfigDescriptor is a descriptor that return a Config object that is
+    aware of the brick it operates. This is useful for do certain operation
+    everytime an option is set. Is is a non-data descriptor because it must
+    operate with lower precedence on instance variables."""
+
+    def __get__(self, instance, type=None):
+        if instance is None:
+            return self
+        return RunningConfig(instance, instance.config)
+
+
+class RunningConfig:
+
+    def __init__(self, brick, config):
+        self.__dict__["brick"] = brick
+        self.__dict__["config"] = config
+
+    def __contains__(self, name):
+        return name in self.config
+
+    def __getitem__(self, name):
+        return self.config[name]
+
+    def __setitem__(self, name, value):
+        self.config[name] = value
+
+    def __iter__(self):
+        return iter(self.config)
+
+    def set_running(self, name, value):
+        """Set the value for the running brick, if available and running"""
+
+        setter = getattr(self.brick, "cbset_" + name, None)
+        if setter:
+            setter(value)
+
+    def __getattr__(self, name):
+        return getattr(self.config, name)
+
+    def __setattr__(self, name, value):
+        self.config[name] = self.config.parameters[name].from_string(value)
+        self.set_running(name, value)
+
+    def set(self, attr):
+        kv = attr.split("=", 1)
+        if len(kv) > 1:
+            setattr(self, kv[0], kv[1])
+
+
 class NewConfig:
 
     CONFIG_LINE = re.compile(r"^(\w+?)=([\w*]+?)$")
     parameters = {}
 
-    def __init__(self, brick):
-        self.__dict__["brick"] = brick
+    def __init__(self):
         self.__dict__["_cfg"] = dict((name, typ.default) for name, typ in
                                      self.parameters.iteritems())
 
@@ -111,6 +160,8 @@ class NewConfig:
         return self._cfg[name]
 
     def __setitem__(self, name, value):
+        if name not in self.parameters:
+            raise ValueError(_("Parameter %s not found") % name)
         self._cfg[name] = value
 
     def __contains__(self, name):
@@ -141,44 +192,13 @@ class NewConfig:
 
     def __getattr__(self, name):
         # return always a string
-        if name not in self._cfg:
+        if name not in self.parameters:
             raise AttributeError(name)
         return self.parameters[name].to_string(self._cfg[name])
-
-    def __setattr__(self, name, value):
-        if name not in self._cfg:
-            raise TypeError(_("Brick %s(%s) has no parameter %s") %
-                            (self.brick.get_name(), self.brick.get_type(),
-                             name))
-        self._cfg[name] = self.parameters[name].from_string(value)
-        self._set_running(name, value)
-
-    # old config interface
-
-    def set(self, attr):
-        kv = attr.split("=", 1)
-        # if len(kv) < 2:
-        #     return False
-        if len(kv) > 1:  # == 2
-            name, val = kv
-            self._cfg[name] = self.parameters[name].from_string(val)
-            #Set value for running brick
-            self._set_running(name, val)
-            # return True
 
     @deprecated(Version("virtualbricks", 1, 0), "__setitem__")
     def set_obj(self, key, obj):
         self._cfg[key] = obj
-
-    def _set_running(self, name, value):
-        """
-        Set the value for the running brick,
-        if available and running
-        """
-        setter = getattr(self.brick, "cbset_" + name, None)
-        if setter:
-            log.debug(_("setter: setting value %s for key %s"), value, name)
-            setter(value)
 
     def dump(self, write=None):
         if write is None:
@@ -194,7 +214,7 @@ class NewConfig:
             print "%s=%s" % (key, self._cfg[key])
 
     def save_to(self, fileobj):
-        fileobj.write("[{brick.type}:{brick.name}]\n".format(brick=self.brick))
+        # fileobj.write("[{brick.type}:{brick.name}]\n".format(brick=self.brick))
         for name, param in sorted(self.parameters.iteritems()):
             if self[name] != param.default and not isinstance(param, Object):
                 fileobj.write("%s=%s\n" % (name, param.to_string(self[name])))
@@ -306,6 +326,7 @@ class Base(gobject.GObject):
     _needsudo = False
     _name = None
     config_factory = Config
+    cfg = ConfigDescriptor()
 
     def get_name(self):
         return self._name
@@ -323,9 +344,9 @@ class Base(gobject.GObject):
         self._name = name
         self.settings = self.factory.settings
         if issubclass(self.config_factory, NewConfig):
-            self.cfg = self.config_factory(self)
+            self.config = self.config_factory()
         else:
-            self.cfg = self.config_factory()
+            self.__dict__["cfg"] = self.config_factory()
 
     def get_type(self):
         return self.type
