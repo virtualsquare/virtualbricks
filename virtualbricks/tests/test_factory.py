@@ -5,6 +5,20 @@ from virtualbricks import errors, brickfactory
 from virtualbricks.tests import unittest, test_threads, stubs
 
 
+class Stub2(object):
+
+    def __init__(self, factory, name):
+        self.factory = factory
+        self.name = name
+
+    def signal_connect(self, name, handler, *args):
+        pass
+
+
+class Stub3(Stub2):
+    pass
+
+
 class TestFactory(unittest.TestCase):
 
     def setUp(self):
@@ -20,20 +34,31 @@ class TestFactory(unittest.TestCase):
         self.assertEquals(self.factory.events, [])
 
     def test_newbrick(self):
-        self.assertRaises(errors.InvalidNameError, self.factory.newbrick, "stub",
-                          "")
+        self.assertRaises(errors.InvalidNameError, self.factory.newbrick,
+                          "stub", "")
         self.factory.newbrick("stub", "test_brick")
-        self.assertRaises(errors.InvalidNameError, self.factory.newbrick, "stub",
-                          "test_brick")
+        self.assertRaises(errors.InvalidNameError, self.factory.newbrick,
+                          "stub", "test_brick")
 
     def test_newevent(self):
-        self.assertRaises(errors.InvalidNameError, self.factory.newevent, "event",
-                          "")
+        self.assertRaises(errors.InvalidNameError, self.factory.newevent,
+                          "event", "")
         self.factory.newevent("event", "test_event")
-        self.assertRaises(errors.InvalidNameError, self.factory.newevent, "event",
-                          "test_event")
+        self.assertRaises(errors.InvalidNameError, self.factory.newevent,
+                          "event", "test_event")
         self.assertTrue(self.factory.newevent("Event", "event1"))
         self.assertFalse(self.factory.newevent("eVeNt", "event2"))
+
+    def test_register_new_type(self):
+        self.assertRaises(errors.InvalidTypeError, self.factory.new_brick,
+                          "stub2", "test")
+        self.factory.register_brick_type(Stub2, "stub2")
+        brick = self.factory.new_brick("stub2", "test")
+        self.assertIs(type(brick), Stub2)
+        # override an existing type
+        self.factory.register_brick_type(Stub3, "stub2")
+        brick = self.factory.new_brick("stub2", "test2")
+        self.assertIs(type(brick), Stub3)
 
 
 @unittest.skipUnless(test_threads(), "threads tests not enabled")
