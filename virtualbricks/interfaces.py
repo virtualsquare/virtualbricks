@@ -17,6 +17,74 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+from zope.interface import interface, declarations, Interface
+from zope.interface.adapter import AdapterRegistry
+
+
+# from twisted.python.components import registerAdapter
+globalRegistry = AdapterRegistry()
+ALLOW_DUPLICATES = 0
+
+
+def registerAdapter(adapterFactory, origInterface, *interfaceClasses):
+    """Register an adapter class.
+
+    An adapter class is expected to implement the given interface, by
+    adapting instances implementing 'origInterface'. An adapter class's
+    __init__ method should accept one parameter, an instance implementing
+    'origInterface'.
+    """
+    self = globalRegistry
+    assert interfaceClasses, "You need to pass an Interface"
+    global ALLOW_DUPLICATES
+
+    # deal with class->interface adapters:
+    if not isinstance(origInterface, interface.InterfaceClass):
+        origInterface = declarations.implementedBy(origInterface)
+
+    for interfaceClass in interfaceClasses:
+        factory = self.registered([origInterface], interfaceClass)
+        if factory is not None and not ALLOW_DUPLICATES:
+            raise ValueError("an adapter (%s) was already registered." % (factory, ))
+    for interfaceClass in interfaceClasses:
+        self.register([origInterface], interfaceClass, '', adapterFactory)
+
+
+def _addHook(registry):
+    """
+    Add an adapter hook which will attempt to look up adapters in the given
+    registry.
+
+    @type registry: L{zope.interface.adapter.AdapterRegistry}
+
+    @return: The hook which was added, for later use with L{_removeHook}.
+    """
+    lookup = registry.lookup1
+    def _hook(iface, ob):
+        factory = lookup(declarations.providedBy(ob), iface)
+        if factory is None:
+            return None
+        else:
+            return factory(ob)
+    interface.adapter_hooks.append(_hook)
+    return _hook
+
+
+_addHook(globalRegistry)
+
+
+class IMenu(Interface):
+
+    def popup(button, time):
+        """Pop up a menu for a specific brick."""
+
+
+class IConfigPanel(Interface):
+
+    def get_panel(gui):
+        """Return the configuration panel for the given brick or event"""
+
+
 class IBrick:
 
     def get_type():

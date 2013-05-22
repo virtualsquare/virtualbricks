@@ -30,12 +30,11 @@ import warnings
 import gobject
 import gtk
 import gtk.glade
-from zope.interface import interface, declarations, Interface, implements
-from zope.interface.adapter import AdapterRegistry
+from zope.interface import implements
 
-from virtualbricks import (app, tools, errors, settings, configfile,
-						base, bricks, events, brickfactory, virtualmachines,
-						console)
+from virtualbricks import (interfaces, app, tools, errors, settings,
+		configfile, base, bricks, events, brickfactory, virtualmachines,
+		console)
 from virtualbricks.console import VbShellCommand, RemoteHost
 from virtualbricks.settings import MYPATH
 
@@ -49,66 +48,8 @@ if False:  # pyflakes
     _ = str
 
 
-# from twisted.python.components import registerAdapter
-globalRegistry = AdapterRegistry()
-ALLOW_DUPLICATES = 0
-
-
-def registerAdapter(adapterFactory, origInterface, *interfaceClasses):
-    """Register an adapter class.
-
-    An adapter class is expected to implement the given interface, by
-    adapting instances implementing 'origInterface'. An adapter class's
-    __init__ method should accept one parameter, an instance implementing
-    'origInterface'.
-    """
-    self = globalRegistry
-    assert interfaceClasses, "You need to pass an Interface"
-    global ALLOW_DUPLICATES
-
-    # deal with class->interface adapters:
-    if not isinstance(origInterface, interface.InterfaceClass):
-        origInterface = declarations.implementedBy(origInterface)
-
-    for interfaceClass in interfaceClasses:
-        factory = self.registered([origInterface], interfaceClass)
-        if factory is not None and not ALLOW_DUPLICATES:
-            raise ValueError("an adapter (%s) was already registered." % (factory, ))
-    for interfaceClass in interfaceClasses:
-        self.register([origInterface], interfaceClass, '', adapterFactory)
-
-
-def _addHook(registry):
-    """
-    Add an adapter hook which will attempt to look up adapters in the given
-    registry.
-
-    @type registry: L{zope.interface.adapter.AdapterRegistry}
-
-    @return: The hook which was added, for later use with L{_removeHook}.
-    """
-    lookup = registry.lookup1
-    def _hook(iface, ob):
-        factory = lookup(declarations.providedBy(ob), iface)
-        if factory is None:
-            return None
-        else:
-            return factory(ob)
-    interface.adapter_hooks.append(_hook)
-    return _hook
-
-
-_addHook(globalRegistry)
-
-
-class IMenu(Interface):
-
-	def popup(button, time):
-		"""Pop up a menu for a specific brick."""
-
-
 class BaseMenu:
-	implements(IMenu)
+	implements(interfaces.IMenu)
 
 	def __init__(self, brick):
 		self.original = brick
@@ -178,7 +119,7 @@ class BrickPopupMenu(BaseMenu):
 	def on_attach_activate(self, menuitem, gui):
 		gui.on_brick_attach_event(menuitem)
 
-registerAdapter(BrickPopupMenu, bricks.Brick, IMenu)
+interfaces.registerAdapter(BrickPopupMenu, bricks.Brick, interfaces.IMenu)
 
 
 # NOTE: there is a problem with this approach, it is not transparent, it must
@@ -207,7 +148,7 @@ class VMPopupMenu(BrickPopupMenu):
 			log.error(_("Cannot find suspend point."))
 
 
-registerAdapter(VMPopupMenu, virtualmachines.VM, IMenu)
+interfaces.registerAdapter(VMPopupMenu, virtualmachines.VM, interfaces.IMenu)
 
 
 class EventPopupMenu(BaseMenu):
@@ -232,17 +173,11 @@ class EventPopupMenu(BaseMenu):
 		gui.gladefile.get_widget('dialog_event_rename').show_all()
 
 
-registerAdapter(EventPopupMenu, events.Event, IMenu)
-
-
-class IConfigPanel(Interface):
-
-	def get_panel(gui):
-		"""Return the configuration panel for the given brick or event"""
+interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
 
 
 class Panel(object):
-	implements(IConfigPanel)
+	implements(interfaces.IConfigPanel)
 
 	domain = "virtualbricks"
 	resource = None
@@ -355,7 +290,8 @@ def config_panel_factory(context):
 		return TapConfigPanel(context)
 
 
-registerAdapter(config_panel_factory, base.Base, IConfigPanel)
+interfaces.registerAdapter(config_panel_factory, base.Base,
+		interfaces.IConfigPanel)
 
 
 def get_treeselected(gui, tree, model, pthinfo, c):
@@ -1326,7 +1262,7 @@ class VBGUI(gobject.GObject):
 
 	def curtain_up(self, brick=None):
 		if brick is not None:
-			configpanel = IConfigPanel(brick)
+			configpanel = interfaces.IConfigPanel(brick)
 			if configpanel is not None:
 				log.debug("Found custom config panel")
 				self.__config_panel = configpanel
@@ -2113,7 +2049,7 @@ class VBGUI(gobject.GObject):
 				treeview.set_cursor(path, col, 0)
 				model = treeview.get_model()
 				obj = model.get_value(model.get_iter(path), 0)
-				IMenu(obj).popup(event.button, event.time, self)
+				interfaces.IMenu(obj).popup(event.button, event.time, self)
 			return True
 
 	def on_treeview_events_bookmarks_button_release_event(self, treeview, event):

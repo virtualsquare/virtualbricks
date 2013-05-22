@@ -67,5 +67,6 @@ setup(name="virtualbricks",
       package_data={"virtualbricks.gui": ["data/*"]},
       data_files=[("share/applications", ["share/virtualbricks.desktop"])],
       scripts=["bin/virtualbricks", "bin/vbgui", "bin/vbd"],
+      requires=["zope.interface"],
       cmdclass={"install_data": InstallData}
      )
