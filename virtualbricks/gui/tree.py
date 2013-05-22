@@ -207,15 +207,13 @@ class BricksTree(VBTree):
 					graphics.get_image("Disconnect.png"), 48, 48)
 				cell.set_property('pixbuf', icon)
 			elif brick.proc is not None:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.get_brick_icon(brick), 48, 48)
+				icon = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
 				cell.set_property('pixbuf', icon)
 			elif not brick.properly_connected():
 				cell.set_property('stock-id', gtk.STOCK_DIALOG_ERROR)
 				cell.set_property('stock-size', gtk.ICON_SIZE_LARGE_TOOLBAR)
 			else:
-				icon = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.get_brick_icon(brick), 48, 48)
+				icon = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
 				cell.set_property('pixbuf', icon)
 		elif column.get_title() == _('Status'):
 			cell.set_property('text', brick.get_state())
@@ -311,8 +309,7 @@ class EventsTree(VBTree):
 		event = mod.get_value(iter, 0)
 		assert event is not None
 		if column.get_title() == _('Icon'):
-			icon = gtk.gdk.pixbuf_new_from_file_at_size(
-				graphics.get_brick_icon(event), 48, 48)
+			icon = graphics.pixbuf_for_brick_at_size(event, 48, 48)
 			cell.set_property('pixbuf', icon)
 		elif column.get_title() == _('Status'):
 			cell.set_property('text', event.get_state())

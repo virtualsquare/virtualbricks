@@ -633,7 +633,6 @@ class VirtualMachine(bricks.Brick):
 
                       # virtual machine icon
                       "icon": bricks.String(""),
-                      "icon_gray": bricks.String(""),
 
                       # others
                       "noacpi": bricks.String(""),
