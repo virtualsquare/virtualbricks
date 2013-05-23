@@ -125,6 +125,9 @@ class RunningConfig:
     def __iter__(self):
         return iter(self.config)
 
+    def __len__(self):
+        return len(self.config)
+
     def set_running(self, name, value):
         """Set the value for the running brick, if available and running"""
 
@@ -166,6 +169,9 @@ class NewConfig:
 
     def __contains__(self, name):
         return name in self._cfg
+
+    def __len__(self):
+        return len(self._cfg)
 
     # NOTE: old interface, values are always strings
     def get(self, name, default=None):

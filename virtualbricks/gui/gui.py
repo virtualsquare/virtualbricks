@@ -218,7 +218,7 @@ class SwitchConfigPanel(Panel):
 		spinner = self.get_object("ports_spinbutton")
 		spinner.set_range(max(minports, 1), 128)
 		spinner.set_value(int(self.original.cfg.numports))
-		return self.get_object("config_frame")
+		return self.get_object("table")
 
 	def configure_brick(self, gui):
 		self.original.cfg["fstp"] = self.get_object(
@@ -262,7 +262,7 @@ class TapConfigPanel(Panel):
 				if (self.original.plugs[0].configured() and
 						self.original.plugs[0].sock.nickname == sock.nickname):
 					combo.set_active(i)
-		return self.get_object("config_frame")
+		return self.get_object("vbox")
 
 	def configure_brick(self, gui):
 		model = self.get_object("sockscombo_tap").get_model()
@@ -1265,6 +1265,40 @@ class VBGUI(gobject.GObject):
 			self.__config_panel = None
 		self.curtain_is_down = True
 
+	def __get_brick_summary_frame(self, brick, panel):
+		builder = gtk.Builder()
+		builder.add_from_file(graphics.get_filename("virtualbricks.gui",
+			"data/bricksummary.ui"))
+		builder.get_object("label").set_markup(_("<b>%s(%s) settings</b>")
+			% (brick.get_name(), brick.get_type()))
+		builder.get_object("image").set_from_pixbuf(
+			graphics.pixbuf_for_running_brick(brick))
+		table = builder.get_object("table")
+		table.resize(len(brick.cfg), 2)
+		pon_poff = ["poff_vbevent", "pon_vbevent"]
+		for i, (name, value) in enumerate((n, v) for n, v in
+				sorted(brick.cfg.iteritems()) if n not in set(pon_poff)):
+			nlabel = gtk.Label("%s:" % name)
+			nlabel.set_alignment(1.0, 0.5)
+			nlabel.set_padding(0, 2)
+			table.attach(nlabel, 0, 1, i, i + 1, gtk.FILL)
+			vlabel = gtk.Label(value)
+			vlabel.set_alignment(0.0, 0.5)
+			vlabel.set_padding(0, 2)
+			table.attach(vlabel, 1, 2, i, i + 1)
+		# pon_vbevent and poff_vbevent always to the end
+		for j, name in enumerate(pon_poff):
+			nlabel = gtk.Label("%s:" % name)
+			nlabel.set_alignment(1.0, 0.5)
+			nlabel.set_padding(0, 2)
+			table.attach(nlabel, 0, 1, i + j + 1, i + j + 2, gtk.FILL)
+			vlabel = gtk.Label(brick.cfg.get(name))
+			vlabel.set_alignment(0.0, 0.5)
+			vlabel.set_padding(0, 2)
+			table.attach(vlabel, 1, 2, i + j + 1, i + j + 2)
+		builder.get_object("vbox").pack_start(panel, True, True, 0)
+		return builder.get_object("frame")
+
 	def curtain_up(self, brick=None):
 		if brick is not None:
 			configpanel = interfaces.IConfigPanel(brick)
@@ -1272,8 +1306,10 @@ class VBGUI(gobject.GObject):
 				log.debug("Found custom config panel")
 				self.__config_panel = configpanel
 				self.__hide_panels()
+				frame = self.__get_brick_summary_frame(brick,
+					configpanel.get_panel(self))
 				configframe = self.get_object("configframe")
-				configframe.add(configpanel.get_panel(self))
+				configframe.add(frame)
 				configframe.show_all()
 				self.__show_config(brick.get_name())
 				return

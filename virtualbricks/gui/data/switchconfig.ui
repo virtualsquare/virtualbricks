@@ -9,90 +9,74 @@
     <property name="step_increment">1</property>
     <property name="page_increment">32</property>
   </object>
-  <object class="GtkFrame" id="config_frame">
+  <object class="GtkTable" id="table">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="label_xalign">0</property>
-    <property name="shadow_type">in</property>
+    <property name="n_rows">2</property>
+    <property name="n_columns">3</property>
     <child>
-      <object class="GtkTable" id="table1">
+      <object class="GtkLabel" id="label2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="n_rows">2</property>
-        <property name="n_columns">3</property>
-        <child>
-          <object class="GtkLabel" id="label2">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Number of ports:</property>
-          </object>
-          <packing>
-            <property name="bottom_attach">2</property>
-            <property name="x_options"/>
-            <property name="y_options"/>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkSpinButton" id="ports_spinbutton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="invisible_char">●</property>
-            <property name="invisible_char_set">True</property>
-            <property name="primary_icon_activatable">False</property>
-            <property name="secondary_icon_activatable">False</property>
-            <property name="primary_icon_sensitive">True</property>
-            <property name="secondary_icon_sensitive">True</property>
-            <property name="adjustment">adjustment1</property>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="right_attach">2</property>
-            <property name="bottom_attach">2</property>
-            <property name="x_options"/>
-            <property name="y_options"/>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkCheckButton" id="fstp_checkbutton">
-            <property name="label" translatable="yes">Use FSTP</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
-          </object>
-          <packing>
-            <property name="left_attach">2</property>
-            <property name="right_attach">3</property>
-            <property name="x_options"/>
-            <property name="y_options"/>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkCheckButton" id="hub_checkbutton">
-            <property name="label" translatable="yes">Hub mode</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="draw_indicator">True</property>
-          </object>
-          <packing>
-            <property name="left_attach">2</property>
-            <property name="right_attach">3</property>
-            <property name="top_attach">1</property>
-            <property name="bottom_attach">2</property>
-            <property name="x_options"/>
-            <property name="y_options"/>
-          </packing>
-        </child>
+        <property name="label" translatable="yes">Number of ports:</property>
       </object>
+      <packing>
+        <property name="bottom_attach">2</property>
+        <property name="x_options"/>
+        <property name="y_options"/>
+      </packing>
     </child>
-    <child type="label">
-      <object class="GtkLabel" id="label1">
+    <child>
+      <object class="GtkSpinButton" id="ports_spinbutton">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">&lt;b&gt;Switch Configuration&lt;/b&gt;</property>
-        <property name="use_markup">True</property>
+        <property name="can_focus">True</property>
+        <property name="invisible_char">●</property>
+        <property name="invisible_char_set">True</property>
+        <property name="primary_icon_activatable">False</property>
+        <property name="secondary_icon_activatable">False</property>
+        <property name="primary_icon_sensitive">True</property>
+        <property name="secondary_icon_sensitive">True</property>
+        <property name="adjustment">adjustment1</property>
       </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="right_attach">2</property>
+        <property name="bottom_attach">2</property>
+        <property name="x_options"/>
+        <property name="y_options"/>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="fstp_checkbutton">
+        <property name="label" translatable="yes">Use FSTP</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">False</property>
+        <property name="draw_indicator">True</property>
+      </object>
+      <packing>
+        <property name="left_attach">2</property>
+        <property name="right_attach">3</property>
+        <property name="x_options"/>
+        <property name="y_options"/>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="hub_checkbutton">
+        <property name="label" translatable="yes">Hub mode</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">False</property>
+        <property name="draw_indicator">True</property>
+      </object>
+      <packing>
+        <property name="left_attach">2</property>
+        <property name="right_attach">3</property>
+        <property name="top_attach">1</property>
+        <property name="bottom_attach">2</property>
+        <property name="x_options"/>
+        <property name="y_options"/>
+      </packing>
     </child>
   </object>
 </interface>
