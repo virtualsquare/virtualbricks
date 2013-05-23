@@ -1268,7 +1268,7 @@ class VBGUI(gobject.GObject):
 	def __get_brick_summary_frame(self, brick, panel):
 		builder = gtk.Builder()
 		builder.add_from_file(graphics.get_filename("virtualbricks.gui",
-			"data/bricksummary.ui"))
+			"data/brickconfigsummary.ui"))
 		builder.get_object("label").set_markup(_("<b>%s(%s) settings</b>")
 			% (brick.get_name(), brick.get_type()))
 		builder.get_object("image").set_from_pixbuf(
