@@ -924,7 +924,7 @@ class VBGUI(gobject.GObject):
 			if t == "Switch" and key == 'numports':
 				nports = 0
 				for it in iter(self.brickfactory.bricks):
-					for p in it.plugs:
+					for p in [p for p in it.plugs if p.configured()]:
 						if p.sock.nickname == b.socks[0].nickname:
 							nports += 1
 				if nports > 0:
