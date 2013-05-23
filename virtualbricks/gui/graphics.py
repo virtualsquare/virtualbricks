@@ -22,10 +22,17 @@ import os.path
 import re
 import logging
 import pkgutil
+from pkgutil import get_data
 
 import Image
 import pygraphviz as pgv
 import gtk.gdk
+
+
+__all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
+		   "pixbuf_for_brick_at_size", "pixbuf_for_brick_type",
+		   "pixbuf_for_running_brick", "pixbuf_for_running_brick_at_size",
+		   "Node", "Topology"]
 
 
 log = logging.getLogger('virtualbricks.gui')
@@ -41,7 +48,8 @@ def get_filename(package, resource):
 	return os.path.join(*parts)
 
 
-get_data = pkgutil.get_data
+def get_image(name):
+	return get_filename("virtualbricks.gui", "data/" + name)
 
 
 def has_custom_icon(brick):
@@ -96,10 +104,6 @@ def pixbuf_for_running_brick(brick):
 def pixbuf_for_running_brick_at_size(brick, witdh, height):
 	return gtk.gdk.pixbuf_new_from_file_at_size(brick_icon(brick),
 			witdh, height)
-
-
-def get_image(name):
-	return get_filename("virtualbricks.gui", "data/" + name)
 
 
 class Node:

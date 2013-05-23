@@ -964,8 +964,8 @@ class VBGUI(gobject.GObject):
 			elif widget is not None:
 				widget.unselect_all()
 
-			self.gladefile.get_widget("qemuicon").set_from_file(
-				graphics.pixbuf_for_brick(b))
+			self.gladefile.get_widget("qemuicon").set_from_pixbuf(
+				graphics.pixbuf_for_running_brick(b))
 
 		# Tap mode:
 		if b.get_type() == 'Tap':
