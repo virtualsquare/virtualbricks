@@ -79,9 +79,9 @@ class IMenu(Interface):
         """Pop up a menu for a specific brick."""
 
 
-class IConfigPanel(Interface):
+class IConfigController(Interface):
 
-    def get_panel(gui):
+    def get_view(gui):
         """Return the configuration panel for the given brick or event."""
 
     def configure_brick(gui):

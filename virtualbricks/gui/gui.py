@@ -182,8 +182,8 @@ class EventPopupMenu(BaseMenu):
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
 
 
-class Panel(object):
-	implements(interfaces.IConfigPanel)
+class ConfigController(object):
+	implements(interfaces.IConfigController)
 
 	domain = "virtualbricks"
 	resource = None
@@ -199,16 +199,16 @@ class Panel(object):
 	def get_object(self, name):
 		return self.builder.get_object(name)
 
-class EventConfigPanel(Panel):
+# class EventConfigController(ConfigController):
 
-	resource = "data/event_configuration.ui"
+# 	resource = "data/event_configuration.ui"
 
 
-class SwitchConfigPanel(Panel):
+class SwitchConfigController(ConfigController):
 
 	resource = "data/switchconfig.ui"
 
-	def get_panel(self, gui):
+	def get_view(self, gui):
 		self.get_object("fstp_checkbutton").set_active(
 			self.original.cfg["fstp"])
 		self.get_object("hub_checkbutton").set_active(self.original.cfg["hub"])
@@ -235,11 +235,11 @@ def should_insert_sock(sock, brick, python, femaleplugs):
 			(sock.brick.get_type().startswith('Switch') or femaleplugs))
 
 
-class TapConfigPanel(Panel):
+class TapConfigController(ConfigController):
 
 	resource = "data/tapconfig.ui"
 
-	def get_panel(self, gui):
+	def get_view(self, gui):
 		self.get_object("ip_entry").set_text(self.original.cfg["ip"])
 		self.get_object("nm_entry").set_text(self.original.cfg["nm"])
 		self.get_object("gw_entry").set_text(self.original.cfg["gw"])
@@ -289,15 +289,15 @@ class TapConfigPanel(Panel):
 def config_panel_factory(context):
 	type = context.get_type()
 	# if type == "Event":
-	# 	return EventConfigPanel(context)
+	# 	return EventConfigController(context)
 	if type == "Switch":
-		return SwitchConfigPanel(context)
+		return SwitchConfigController(context)
 	elif type == "Tap":
-		return TapConfigPanel(context)
+		return TapConfigController(context)
 
 
 interfaces.registerAdapter(config_panel_factory, base.Base,
-		interfaces.IConfigPanel)
+		interfaces.IConfigController)
 
 
 def get_treeselected(gui, tree, model, pthinfo, c):
@@ -1301,13 +1301,13 @@ class VBGUI(gobject.GObject):
 
 	def curtain_up(self, brick=None):
 		if brick is not None:
-			configpanel = interfaces.IConfigPanel(brick)
+			configpanel = interfaces.IConfigController(brick)
 			if configpanel is not None:
 				log.debug("Found custom config panel")
 				self.__config_panel = configpanel
 				self.__hide_panels()
 				frame = self.__get_brick_summary_frame(brick,
-					configpanel.get_panel(self))
+					configpanel.get_view(self))
 				configframe = self.get_object("configframe")
 				configframe.add(frame)
 				configframe.show_all()
