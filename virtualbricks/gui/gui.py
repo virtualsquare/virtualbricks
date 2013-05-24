@@ -427,7 +427,109 @@ TYPE_CONFIG_WIDGET_NAME_MAP = {"Switch": "box_switchconfig",
 							"Event": "box_eventconfig"}
 
 
-class VBGUI(gobject.GObject):
+TOPOLOGY_TAB = 4
+
+
+class TopologyMixin(object):
+
+	_should_draw_topology = True
+	topology = None
+
+	def __init__(self):
+		super(TopologyMixin, self).__init__()
+		ts = self.get_object("topology_scrolled")
+		ts.get_hadjustment().connect("value-changed",
+			self.on_topology_h_scrolled)
+		ts.get_vadjustment().connect("value-changed",
+			self.on_topology_v_scrolled)
+
+	def draw_topology(self, export=""):
+		if self.get_object("main_notebook").get_current_page() == TOPOLOGY_TAB:
+			self._draw_topology()
+		else:
+			self._should_draw_topology = True
+
+	def _draw_topology(self, export=""):
+		log.debug("drawing topology")
+		self.maintree.order()
+		if self.get_object('topology_tb').get_active():
+			orientation = "TB"
+		else:
+			orientation = "LR"
+		self.topology = graphics.Topology(
+			self.get_object('image_topology'),
+			self.brickfactory.bricksmodel, 1.00, orientation, export,
+			settings.VIRTUALBRICKS_HOME + "/")
+		self._should_draw_topology = False
+
+	def on_topology_h_scrolled(self, adjustment):
+		self.topology.x_adj = adjustment.get_value()
+
+	def on_topology_v_scrolled(self, adjustment):
+		self.topology.y_adj = adjustment.get_value()
+
+	def on_topology_redraw(self, widget=None, event=None, data=""):
+		self._draw_topology()
+
+	def on_topology_export(self, widget=None, event=None, data=""):
+		def on_response(dialog, response_id):
+			try:
+				if response_id == gtk.RESPONSE_OK:
+					try:
+						self._draw_topology(dialog.get_filename())
+					except KeyError:
+						log.exception(_("Error saving topology: Invalid image"
+							" format"))
+					except IOError:
+						log.exception(_("Error saving topology: Could not "
+							"write file"))
+					except:
+						log.exception(_("Error saving topology: Unknown "
+							"error"))
+			finally:
+				dialog.destroy()
+
+		chooser = gtk.FileChooserDialog(title=_("Select an image file"),
+				action=gtk.FILE_CHOOSER_ACTION_OPEN,
+				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+						gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+		chooser.set_do_overwrite_confirmation(True)
+		chooser.connect("response", on_response)
+		chooser.show()
+
+	def on_topology_action(self, widget=None, event=None, data=""):
+		if self._should_draw_topology:
+			self._draw_topology()
+		if self.topology:
+			for n in self.topology.nodes:
+				if n.here(event.x,event.y) and event.button == 3:
+					brick = self.brickfactory.get_brick_by_name(n.name)
+					if brick is not None:
+						self.maintree.set_selection(brick)
+						self.show_brickactions()
+				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+					brick = self.brickfactory.get_brick_by_name(n.name)
+					if brick is not None:
+						self.maintree.set_selection(brick)
+						self.user_wait_action(self.startstop_brick, brick)
+		self.curtain_down()
+
+	def on_main_notebook_change_current_page(self, notebook, offset):
+		if (notebook.get_current_page() == TOPOLOGY_TAB and
+				self._should_draw_topology):
+			self._draw_topology()
+
+	def on_main_notebook_switch_page(self, notebook, page, page_num):
+		if page_num == TOPOLOGY_TAB and self._should_draw_topology:
+			self._draw_topology()
+
+	def on_main_notebook_select_page(self, notebook, move_focus):
+		if (notebook.get_current_page() == TOPOLOGY_TAB and
+				self._should_draw_topology):
+			self._draw_topology()
+
+
+class VBGUI(gobject.GObject, TopologyMixin):
 	"""
 	The main GUI object for virtualbricks, containing all the configuration for
 	the widgets and the connections to the main engine.
@@ -438,7 +540,8 @@ class VBGUI(gobject.GObject):
 		self.brickfactory = factory
 		self.gladefile = gladefile
 		self.messages_buffer = textbuffer
-		self.topology = None
+		TopologyMixin.__init__(self)
+
 		self.widg = self.get_widgets(self.widgetnames())
 		self.__config_panel = None
 
@@ -478,7 +581,6 @@ class VBGUI(gobject.GObject):
 		self.last_known_selected_brick = None
 		self.last_known_selected_event = None
 		self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
-		# self.topology_active = False
 
 		# self.sockscombo = dict()
 
@@ -539,7 +641,6 @@ class VBGUI(gobject.GObject):
 		self.curtain_is_down = True
 
 		''' Initialize threads, timers etc.'''
-		self.draw_topology()
 		self.signals()
 		self.timers()
 
@@ -3180,55 +3281,6 @@ class VBGUI(gobject.GObject):
 		self.joblist_selected.send("system_reset\n")
 		self.joblist_selected.recv()
 
-	def on_topology_drag(self, widget=None, event=None, data=""):
-		raise NotImplementedError("on_topology_drag not implemented")
-
-	def on_topology_redraw(self, widget=None, event=None, data=""):
-		self.draw_topology()
-
-	def on_topology_export(self, widget=None, event=None, data=""):
-		self.gladefile.get_widget('topology_export_dialog').show_all()
-
-	def on_topology_export_ok(self, widget=None, event=None, data=""):
-		fname = self.gladefile.get_widget('topology_export_dialog').get_filename()
-		self.gladefile.get_widget('topology_export_dialog').hide()
-		if fname:
-			if os.access(fname,os.R_OK):
-				self.ask_confirm("Do you want to overwrite " + fname + "?", on_yes=self.topology_export, arg=fname)
-			else:
-				self.topology_export(fname)
-
-	def topology_export(self, fname):
-		try:
-			self.draw_topology(fname)
-		except KeyError:
-			log.error(_("Error saving topology: Invalid image format"))
-		except IOError:
-			log.error(_("Error saving topology: Could not write file"))
-		except:
-			log.error(_("Error saving topology: Unknown error"))
-
-	def on_topology_export_cancel(self, widget=None, event=None, data=""):
-		self.gladefile.get_widget('topology_export_dialog').hide()
-
-	def on_topology_action(self, widget=None, event=None, data=""):
-		if self.topology:
-			for n in self.topology.nodes:
-				if n.here(event.x,event.y) and event.button == 3:
-					brick = self.brickfactory.get_brick_by_name(n.name)
-					if brick is not None:
-						self.maintree.set_selection(brick)
-						self.show_brickactions()
-				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
-					brick = self.brickfactory.get_brick_by_name(n.name)
-					if brick is not None:
-						self.maintree.set_selection(brick)
-						self.user_wait_action(self.startstop_brick, brick)
-		self.curtain_down()
-
-	def on_topology_scroll(self, widget=None, event=None, data=""):
-		raise NotImplementedError("on_topology_scroll not implemented")
-
 	def on_vnc_novga_toggled(self, widget=None, event=None, data=""):
 		novga = self.gladefile.get_widget('cfg_Qemu_novga_check')
 		vnc = self.gladefile.get_widget('cfg_Qemu_vnc_check')
@@ -3711,27 +3763,9 @@ class VBGUI(gobject.GObject):
 
 	def timers(self):
 		gobject.timeout_add(1000, self.check_joblist)
-		gobject.timeout_add(500, self.check_topology_scroll)
-
-	def check_topology_scroll(self):
-		if self.topology:
-			self.topology.x_adj = self.gladefile.get_widget('topology_scrolled').get_hadjustment().get_value()
-			self.topology.y_adj = self.gladefile.get_widget('topology_scrolled').get_vadjustment().get_value()
-			return True
 
 	def check_joblist(self, force=False):
 		return check_joblist(self, force)
-
-	def draw_topology(self, export=None):
-		self.maintree.order()
-		if self.gladefile.get_widget('topology_tb').get_active():
-			orientation = "TB"
-		else:
-			orientation = "LR"
-		self.topology = graphics.Topology(
-			self.gladefile.get_widget('image_topology'),
-			self.brickfactory.bricksmodel, 1.00, orientation, export,
-			settings.VIRTUALBRICKS_HOME + "/")
 
 	def user_wait_action(self, action, *args):
 		if isinstance(action, types.MethodType):
