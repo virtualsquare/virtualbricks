@@ -17,8 +17,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import traceback
+import logging
+
 from zope.interface import interface, declarations, Interface, Attribute
 from zope.interface.adapter import AdapterRegistry
+
+
+log = logging.getLogger()
 
 
 # from twisted.python.components import registerAdapter
@@ -73,6 +79,25 @@ def _addHook(registry):
 _addHook(globalRegistry)
 
 
+class InterfaceLogger:
+
+    def __init__(self, original, interface):
+        self.original = original
+        self.interface = interface
+
+    def __getattr__(self, name):
+        if name not in self.interface:
+            log.warning("Requested a non-interface (%s) method: %s\n%s",
+                        self.interface.__name__, name,
+                        "\n".join("%s:%d %s" % (fn, l, fun) for
+                                  fn, l, fun, t in
+                                  reversed(traceback.extract_stack())))
+        try:
+            return getattr(self.original, name)
+        except AttributeError:
+            raise AttributeError(name)
+
+
 class IMenu(Interface):
 
     def popup(button, time):
@@ -90,7 +115,8 @@ class IConfigController(Interface):
 
 class IBrick(Interface):
 
-    type = Attribute("The type name for the new brick")
+    type = Attribute("The type name of the brick")
+    name = Attribute("The name of the brick")
 
     def __call__(factory, name):
         """Return a new brick of the type specified by the `type` attribute."""
@@ -107,3 +133,31 @@ class IBrick(Interface):
     def get_parameters():
         """Actually used only in the main tree to show the list of the
         parameters"""
+
+    def configure(attrlist):
+        """Configure the brick"""
+
+    def __eq__(other):
+        """Compare two bricks"""
+        # XXX: maybe should use is keyword?
+
+    # extra
+
+    def signal_connect(name, handler, *args):
+        """Connect the handler to the given signal name."""
+
+    # to be controlled
+
+    config_socks = Attribute("")
+    homehost = Attribute("")
+    # proc = Attribute("")
+    properly_connected = Attribute("")
+    cfg = Attribute("")
+    socks = Attribute("")
+    plugs = Attribute("")
+
+    def connect(endpoint):
+        pass
+
+    def get_state():
+        pass
