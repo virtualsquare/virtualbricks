@@ -10,6 +10,9 @@ class BrickStub(bricks.Brick):
     def open_internal_console(self):
         return Console()
 
+    def prog(self):
+        return "true"
+
 
 class Console(list):
 
