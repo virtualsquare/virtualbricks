@@ -1,24 +1,121 @@
+import os
+import errno
+import signal
+import sys
 import warnings
 import StringIO
 
-from virtualbricks import base, bricks
-from virtualbricks.tests import unittest, stubs
+from virtualbricks import base, bricks, errors
+from virtualbricks.tests import unittest, stubs, echo_e
 
 
 class TestBricks(unittest.TestCase):
 
+    def setUp(self):
+        self.factory = stubs.FactoryStub()
+        self.brick = stubs.BrickStub(self.factory, "test")
+
     def test_get_cbset(self):
-        brick = bricks.Brick(stubs.FactoryStub(), "test")
-        cbset = brick.get_cbset("supercalifragilistichespiralidoso")
+        cbset = self.brick.get_cbset("supercalifragilistichespiralidoso")
         self.assertIs(cbset, None)
 
     def test_warnings(self):
-        brick = bricks.Brick(stubs.FactoryStub(), "test")
         with warnings.catch_warnings(record=True)as w:
             warnings.simplefilter("always")
-            brick.on_config_changed()
+            self.brick.on_config_changed()
             self.assertEqual(len(w), 1)
             self.assertEquals(w[0].category, DeprecationWarning)
+
+    def test_poweron(self):
+        self.assertRaises(errors.BadConfigError, self.brick.poweron)
+        self.brick.configured = lambda: True
+        self.brick.poweron()
+
+    def test_command_line(self):
+        self.assertEqual(self.brick.build_cmd_line(), [])
+        self.assertEqual(self.brick.args(), ["true"])
+
+    def test_escape(self):
+        s = 'echo "hello world"'
+        self.assertEqual(self.brick.escape(s), r'echo \"hello world\"')
+        # XXX: This is a bug
+        s = r'echo \"hello world\"'
+        self.assertNotEqual(self.brick.escape(s), r'echo \\\"hello world\\\"')
+
+
+class TestProcess(unittest.TestCase):
+
+    def process(self, *args, **kwds):
+        pd = bricks.Process(*args, **kwds)
+        self.out = []
+        pd.out = self.out.append
+        self.err = []
+        pd.err = self.err.append
+        return pd
+
+    def test_simple(self):
+        pd = self.process(["true"])
+        pd.start()
+        pd.join()
+        self.assertIsNot(pd._pd, None)
+        self.assertEqual(self.out, [])
+        self.assertEqual(self.err, [])
+        self.assertEqual(pd._pd.returncode, 0)
+        self.assertEqual(pd._raw, {})
+        with self.assertRaises(OSError) as cm:
+            os.waitpid(pd._pd.pid, 0)
+        self.assertEqual(cm.exception.errno, errno.ECHILD)
+
+    def test_kill(self):
+        for signo, func in ((signal.SIGTERM, bricks.Process.terminate),
+                            (signal.SIGKILL, bricks.Process.kill)):
+            pd = self.process(["sleep", "2"])
+            pd.start()
+            pd.join(0.01)
+            func(pd)
+            pd.join()
+            self.assertIsNot(pd._pd, None)
+            self.assertEqual(self.out, [])
+            self.assertEqual(self.err, [])
+            self.assertEqual(pd._pd.returncode, -signo)
+            with self.assertRaises(OSError) as cm:
+                os.waitpid(pd._pd.pid, 0)
+            self.assertEqual(cm.exception.errno, errno.ECHILD)
+
+    def test_out(self):
+        pd = self.process(["echo", "hello world"])
+        pd.start()
+        pd.join()
+        self.assertIsNot(pd._pd, None)
+        self.assertEqual(self.out, [["hello world"]])
+        self.assertEqual(self.err, [])
+        self.assertEqual(pd._pd.returncode, 0)
+        with self.assertRaises(OSError) as cm:
+            os.waitpid(pd._pd.pid, 0)
+        self.assertEqual(cm.exception.errno, errno.ECHILD)
+
+    @unittest.skipIf(sys.executable is None, "sys.executable unavailable")
+    def test_err(self):
+        echo = os.path.abspath(echo_e.__file__)
+        pd = self.process([sys.executable, echo, "hello world"])
+        pd.start()
+        pd.join()
+        self.assertIsNot(pd._pd, None)
+        self.assertEqual(self.out, [])
+        self.assertEqual(self.err, [["hello world"]])
+        self.assertEqual(pd._pd.returncode, 0)
+        with self.assertRaises(OSError) as cm:
+            os.waitpid(pd._pd.pid, 0)
+        self.assertEqual(cm.exception.errno, errno.ECHILD)
+
+    def test_terminate_on_a_terminated_child(self):
+        pd = self.process(["true"])
+        pd.start()
+        pd.join()
+        with self.assertRaises(OSError) as cm:
+            pd.terminate()
+        self.assertEqual(cm.exception.errno, errno.ESRCH)
+
 
 
 class Brick(stubs.BrickStub):
