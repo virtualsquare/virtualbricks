@@ -344,7 +344,7 @@ class Base(gobject.GObject):
 
     name = property(get_name, set_name)
 
-    def __init__(self, factory, name, homehost=None):
+    def __init__(self, factory, name):
         gobject.GObject.__init__(self)
         self.factory = factory
         self._name = name
