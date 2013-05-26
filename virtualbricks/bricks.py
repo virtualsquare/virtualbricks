@@ -18,7 +18,6 @@
 
 
 import os
-import errno
 import sys
 import time
 import socket
@@ -329,29 +328,6 @@ class Brick(base.Base):
         self._poweron()
         self.emit("changed")
 
-    def __poweron(self):
-        if self.proc is not None:
-            log.info("Called poweron on an already started brick "
-                     "%s(%s) pid: %d" % (self.name, self.type, self.proc.pid))
-        # remote brick
-        if self.homehost:
-            if not self.homehost.connected:
-                log.error(_("Error: You must be connected to the "
-                            "host to perform this action"))
-            else:
-                self.homehost.send(self.name + " on")
-            return
-
-        command_line = self.args()
-        if self.needsudo():
-            self._sudo_command_line(command_line)
-        log.debug(_("Starting: '%s'"), ' '.join(command_line))
-        self.proc = self.process_factory(command_line)
-        self.internal_console = self.open_internal_console()
-        self.factory.emit("brick-started", self.name)  # XXX
-        self.run_condition = True
-        self.post_poweron()
-
     def _poweron(self):
         if self.proc is not None:
             return
@@ -469,46 +445,6 @@ class Brick(base.Base):
         self.internal_console = None
         self.factory.emit("brick-stopped", self.name)
         self.post_poweroff()
-
-    def _poweroff(self):
-        if not self.proc or not self.run_condition:
-            log.debug("Called poweroff on a brick already stopped %s(%s)" %
-                      (self.name, self.type))
-            return
-        self.run_condition = False
-        if self.homehost:
-            self.proc = None
-            self.homehost.send(self.name + " off\n")
-            return
-        log.debug(_("Shutting down %s"), self.name)
-        try:
-            self.__poweroff()
-        finally:
-            self.proc = None
-            self.need_restart_to_apply_changes = False
-            self.close_internal_console()
-            self.factory.emit("brick-stopped", self.name)
-            self.post_poweroff()
-
-    def __poweroff(self):
-        try:
-            self.proc.terminate()
-        except OSError, e:
-            if e.errno != errno.ESRCH:
-                raise
-            log.info("Process %d terminated unexpectedly", self.proc.pid)
-        for i in range(10):
-            if self.proc.poll() is None:
-                time.sleep(0.2)
-            else:
-                break
-        else:
-            log.debug("I'm going to KILL process %d", self.proc.pid)
-            try:
-                self.proc.kill()
-            except OSError, e:
-                if e.errno != errno.ESRCH:
-                    raise
 
     def post_poweron(self):
         self.active = True
