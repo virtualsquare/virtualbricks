@@ -163,7 +163,7 @@ class Sudo(object):
         return self._send_signal("SIGKILL")
 
 
-class Brick(base.Base):
+class _LocalBrick(base.Base):
 
     active = False
     run_condition = False
@@ -174,7 +174,7 @@ class Brick(base.Base):
     terminal = "vdeterm"
     command_builder = {}
 
-    def __init__(self, factory, name, homehost=None):
+    def __init__(self, factory, name):
         base.Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
@@ -182,30 +182,12 @@ class Brick(base.Base):
         self.cfg.poff_vbevent = ""
         self.config_socks = []
 
-        if (homehost):
-            self.set_host(homehost)
-        else:
-            self.homehost = None
-
     # each brick must overwrite this method
     def prog(self):
         raise NotImplementedError(_("Brick.prog() not implemented."))
 
     def rewrite_sock_server(self, v):
         return os.path.join(settings.VIRTUALBRICKS_HOME, os.path.basename(v))
-
-    def set_host(self, host):
-        self.cfg.homehost = host
-        self.homehost = None
-        if len(host) > 0:
-            for existing in self.factory.remote_hosts:
-                if existing.addr[0] == host:
-                    self.homehost = existing
-                    break
-            if not self.homehost:
-                self.homehost = RemoteHost(self.factory, host)
-                self.factory.remote_hosts.append(self.homehost)
-            self.factory.remotehosts_changed = True
 
     def restore_self_plugs(self):  # DO NOT REMOVE
         pass
@@ -257,8 +239,6 @@ class Brick(base.Base):
         for attr in attrlist:
             k = attr.split("=")[0]
             self.cfg.set(attr)
-            if k == 'homehost':
-                self.set_host(attr.split('=')[1])
             if k == 'sock':
                 s = self.rewrite_sock_server(attr.split('=')[1])
                 self.cfg.sock = s
@@ -267,8 +247,6 @@ class Brick(base.Base):
         """TODO attrs : dict attr => value"""
         self.initialize(attrlist)
         self.emit("changed")
-        if self.homehost and self.homehost.connected:
-            self.homehost.putconfig(self)
 
     def connect(self, endpoint):
         for p in self.plugs:
@@ -354,46 +332,38 @@ class Brick(base.Base):
                 command_line[0] = self.settings.get("sudo")
                 command_line[1] = sudoarg.replace('"', r'"')
         log.debug(_("Starting: '%s'"), ' '.join(command_line))
-        if self.homehost:
-            if not self.homehost.connected:
-                log.error(_("Error: You must be connected to the "
-                            "host to perform this action"))
-                return
-            else:
-                # Initiate RemoteHost startup:
-                self.homehost.send(self.name + " on")
-                return
+        self._real_poweron(command_line)
+
+    def _real_poweron(self, command_line):
+        try:
+            # out and err files (if configured) for saving VM output
+            out = subprocess.PIPE
+            if self.get_type() == 'Qemu':
+                if self.cfg.stdout != "":
+                    out = open(self.cfg.stdout, "wb")
+            self.proc = subprocess.Popen(command_line,
+                                         stdin=subprocess.PIPE, stdout=out,
+                                         stderr=subprocess.STDOUT)
+        except OSError:
+            log.exception(_("OSError: Brick startup failed. Check your "
+                            "configuration!"))
+            return
+
+        if self.proc:
+            self.pid = self.proc.pid
         else:
-            # LOCAL BRICK
-            try:
-                # out and err files (if configured) for saving VM output
-                out = subprocess.PIPE
-                if self.get_type() == 'Qemu':
-                    if self.cfg.stdout != "":
-                        out = open(self.cfg.stdout, "wb")
-                self.proc = subprocess.Popen(command_line,
-                                             stdin=subprocess.PIPE, stdout=out,
-                                             stderr=subprocess.STDOUT)
-            except OSError:
-                log.exception(_("OSError: Brick startup failed. Check your "
-                                "configuration!"))
-                return
-
-            if self.proc:
-                self.pid = self.proc.pid
+            if self.proc is not None:
+                log.exception(_("Brick startup failed. Check your "
+                                "configuration!\nMessage:\n%s"),
+                                "\n".join(self.proc.stdout.readlines()))
             else:
-                if self.proc is not None:
-                    log.exception(_("Brick startup failed. Check your "
-                                    "configuration!\nMessage:\n%s"),
-                                    "\n".join(self.proc.stdout.readlines()))
-                else:
-                    log.exception(_("Brick startup failed. Check your"
-                                    "configuration!\n"))
-                return
+                log.exception(_("Brick startup failed. Check your"
+                                "configuration!\n"))
+            return
 
-            if (self.open_internal_console and
-                    callable(self.open_internal_console)):
-                self.internal_console = self.open_internal_console()
+        if (self.open_internal_console and
+                callable(self.open_internal_console)):
+            self.internal_console = self.open_internal_console()
 
         self.factory.emit("brick-started", self.name)
         self.run_condition = True
@@ -405,11 +375,9 @@ class Brick(base.Base):
         if self.run_condition is False:
             return
         self.run_condition = False
-        if self.homehost:
-            self.proc = None
-            self.homehost.send(self.name + " off\n")
-            return
+        self._poweroff()
 
+    def _poweroff(self):
         log.debug(_("Shutting down %s"), self.name)
         is_running = self.proc.poll() is None
         if is_running:
@@ -577,3 +545,55 @@ class Brick(base.Base):
         else:
             state = _('off')
         return state
+
+
+class Brick(_LocalBrick):
+
+    homehost = None
+
+    def __init__(self, factory, name, homehost=None):
+        _LocalBrick.__init__(self, factory, name)
+        if homehost is not None:
+            self.set_host(homehost)
+
+    def set_host(self, host):
+        self.cfg.homehost = host
+        self.homehost = None
+        if len(host) > 0:
+            for existing in self.factory.remote_hosts:
+                if existing.addr[0] == host:
+                    self.homehost = existing
+                    break
+            else:
+                self.homehost = RemoteHost(self.factory, host)
+                self.factory.remote_hosts.append(self.homehost)
+            self.factory.remotehosts_changed = True
+
+    def initialize(self, attrlist):
+        attributes = []
+        homehosts = []
+        for attr in attrlist:
+            if not attr.startswith("homehost="):
+                attributes.append(attr)
+            else:
+                homehosts.append(attr)
+        _LocalBrick.initialize(self, attributes)
+        for homehost in homehosts:
+            self.cfg.set(homehost)
+            self.set_host(homehost.split('=')[1])
+
+    def configure(self, attrlist):
+        _LocalBrick.configure(self, attrlist)
+        if self.homehost and self.homehost.connected:
+            self.homehost.putconfig(self)
+
+    def _real_poweron(self, command_line):
+        if not self.homehost.connected:
+            log.error(_("Error: You must be connected to the "
+                        "host to perform this action"))
+        else:
+            self.homehost.send(self.name + " on")
+
+    def _poweroff(self):
+        self.proc = None
+        self.homehost.send(self.name + " off\n")
