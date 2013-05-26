@@ -28,6 +28,7 @@ import copy
 import threading
 import subprocess
 import logging
+import tempfile
 
 from virtualbricks import base, errors, settings, versions
 from virtualbricks.base import (NewConfig as Config, String, Integer, SpinInt,
@@ -45,14 +46,9 @@ if False:  # pyflakes
     _ = str
 
 
-POLL_PRI = select.POLLIN | select.POLLPRI
-POLL_READ = POLL_PRI | select.POLLERR | select.POLLERR
-
-
 class Process(threading.Thread):
 
     _pd = None
-    TIMEOUT = 10.0
 
     def __init__(self, args):
         threading.Thread.__init__(self, name="Process_%s" % args[0])
@@ -68,68 +64,104 @@ class Process(threading.Thread):
     def kill(self):
         self._pd.kill()
 
-    def register(self, poller, fd):
-        self._raw[fd.fileno()] = ""
-        poller.register(fd, POLL_READ)
-
-    def unregister(self, poller, fd):
-        del self._raw[fd.fileno()]
-        poller.unregister(fd)
-
-    def _poll(self, poller):
-        try:
-            events = poller.poll(self.TIMEOUT)
-        except select.error as e:
-            if e.args[0] == errno.EINTR:
-                return
-            raise
-
-        for fd, events in events:
-            if events & select.POLLIN:
-                data = os.read(fd, 4096)
-                if not data:
-                    self.unregister(poller, fd)
-                else:
-                    data = self._raw[fd] + data
-                    lines = data.split("\n")
-                    self._raw[fd] = lines.pop()
-                    if lines and fd == self._pd.stdout.fileno():
-                        self.out(lines)
-                    elif lines and fd == self._pd.stderr.fileno():
-                        self.err(lines)
+    def __run(self):
+        self._pd = subprocess.Popen(self.args, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+        log.debug("Process pid: %d", self._pd.pid)
+        stdout, stderr = self._pd.communicate()
+        if stdout:
+            self.out(stdout)
+        if stderr:
+            self.err(stderr)
 
     def run(self):
         log.debug("Starting %s", self.args[0])
         try:
-            self._pd = subprocess.Popen(self.args, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
+            self.__run()
         except OSError:
             log.exception(_("OSError: Brick startup failed. Check your "
                             "configuration!"))
-            return
-
-        log.debug("Process pid: %d", self._pd.pid)
-        poller = select.poll()
-        self.register(poller, self._pd.stdout)
-        self.register(poller, self._pd.stderr)
-        while self.poll() is None:
-            self._poll(poller)
-
-        if self._raw[self._pd.stdout.fileno()]:
-            self.out(self._raw[self._pd.stdout.fileno()])
-        del self._raw[self._pd.stdout.fileno()]
-        if self._raw[self._pd.stderr.fileno()]:
-            self.err(self._raw[self._pd.stderr.fileno()])
-        del self._raw[self._pd.stderr.fileno()]
-
-        log.debug("Process %d terminated with exit code %d.", self._pd.pid,
-                  self._pd.returncode)
+        else:
+            log.debug("Process %d terminated with exit code %d.", self._pd.pid,
+                      self._pd.returncode)
 
     def out(self, data):
         log.info("stdout of process %d:\n%s", self._pd.pid, "\n".join(data))
 
     def err(self, data):
         log.warning("stdout of process %d:\n%s", self._pd.pid, "\n".join(data))
+
+
+class Sudo(object):
+
+    pid = None
+    process_factory = Process
+    returncode = None
+
+    def __init__(self, process, sudo="sudo"):
+        if isinstance(process, list):
+            process = self.process_factory(process)
+        self.process = process
+        self.sudo = sudo
+        self.pidfile = tempfile.NamedTemporaryFile()
+        self.inject_sudo()
+
+    def inject_sudo(self):
+        self._args = self.process.args
+        self.process.args = [self.sudo] + self._args[:] + \
+                ["-P", self.pidfile.name]
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.process, name)
+        except AttributeError:
+            raise AttributeError(name)
+
+    def _handle_exit_status(self, status):
+        if os.WIFSIGNALED(status):
+            self.returncode = -os.WTERMSIG(status)
+        elif os.WIFEXITED(status):
+            self.returncode = os.WEXITSTATUS(status)
+        else:
+            raise RuntimeError("This should never happen")
+
+    # Process interface
+
+    def poll(self):
+        if self.returncode is None:
+            status = self.process.poll()
+            if status is not None:
+                self._handle_exit_status(status)
+        return self.returncode
+
+    def start(self):
+        self.process.start()
+        try:
+            # wait the thread started
+            while self.process._pd is None:
+                self.process.join(0.0001)
+            # wait the pid is written in the pid file
+            while os.stat(self.pidfile.name).st_size == 0:
+                self.process.join(0.001)
+                status = self.process.poll()
+                if status is None:
+                    continue
+                else:
+                    self._handle_exit_status(status)
+            with self.pidfile:
+                self.pid = int(self.pidfile.read())
+        finally:
+            self.pidfile.close()
+
+    def _send_signal(self, signal):
+        return subprocess.call([self.sudo, "kill", "-%s" % signal,
+                                str(self.pid)])
+
+    def terminate(self):
+        return self._send_signal("SIGTERM")
+
+    def kill(self):
+        return self._send_signal("SIGKILL")
 
 
 class Brick(base.Base):
@@ -276,11 +308,7 @@ class Brick(base.Base):
         return res
 
     def args(self):
-        res = []
-        res.append(self.prog())
-        for c in self.build_cmd_line():
-            res.append(c)
-        return res
+        return [self.prog()] + self.build_cmd_line()
 
     @deprecated(versions.Version("Virtualbricks", 1, 0))
     def escape(self, arg):
