@@ -3,9 +3,21 @@ import logging
 from virtualbricks import brickfactory, bricks
 
 
+def hook():
+    return "d"
+
+
 class BrickStub(bricks.Brick):
 
     type = "Stub"
+    command_builder = {"-a": "a", "# -b": "b", "-c": "c", "-d": hook}
+
+    class config_factory(bricks.Config):
+
+        parameters = {"a": bricks.String("arg1"),
+                      "c": bricks.Boolean(True),
+                      "pon_vbevent": bricks.String(""),
+                      "poff_vbevent": bricks.String("")}
 
     def open_internal_console(self):
         return Console()

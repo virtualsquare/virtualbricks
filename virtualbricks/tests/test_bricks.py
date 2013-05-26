@@ -6,7 +6,7 @@ import warnings
 import StringIO
 
 from virtualbricks import base, bricks, errors
-from virtualbricks.tests import unittest, stubs, echo_e
+from virtualbricks.tests import unittest, stubs, echo_e, sleep_pid
 
 
 class TestBricks(unittest.TestCase):
@@ -31,10 +31,6 @@ class TestBricks(unittest.TestCase):
         self.brick.configured = lambda: True
         self.brick.poweron()
 
-    def test_command_line(self):
-        self.assertEqual(self.brick.build_cmd_line(), [])
-        self.assertEqual(self.brick.args(), ["true"])
-
     def test_escape(self):
         s = 'echo "hello world"'
         self.assertEqual(self.brick.escape(s), r'echo \"hello world\"')
@@ -42,53 +38,78 @@ class TestBricks(unittest.TestCase):
         s = r'echo \"hello world\"'
         self.assertNotEqual(self.brick.escape(s), r'echo \\\"hello world\\\"')
 
+    def test_args(self):
+        self.assertEqual(self.brick.build_cmd_line(), ["-a", "arg1", "-c",
+                                                       "-d", "d"])
+        self.assertEqual(self.brick.args(), ["true", "-a", "arg1", "-c", "-d",
+                                             "d"])
 
-class TestProcess(unittest.TestCase):
 
-    def process(self, *args, **kwds):
-        pd = bricks.Process(*args, **kwds)
-        self.out = []
-        pd.out = self.out.append
-        self.err = []
-        pd.err = self.err.append
-        return pd
+class ProcessMixin(object):
+
+    stdout = ""
+    stderr = ""
+
+    def out(self, data):
+        self.stdout = data
+
+    def err(self, data):
+        self.stderr = data
+
+
+class Process(ProcessMixin, bricks.Process):
+    pass
+
+
+class BaseTestProcess(object):
+
+    def _get_kill_signals(self):
+        return ((signal.SIGTERM, self.process_factory.terminate),
+                (signal.SIGKILL, self.process_factory.kill))
+
+    def test_kill(self):
+        for signo, func in self._get_kill_signals():
+            pd = self.process_factory(self._get_kill_program())
+            pd.start()
+            pd.join(0.01)
+            func(pd)
+            pd.join()
+            self.assertIsNot(pd._pd, None)
+            self.assertEqual(pd.stdout, "")
+            self.assertEqual(pd.stderr, "")
+            self.assertEqual(pd.poll(), -signo)
+            with self.assertRaises(OSError) as cm:
+                os.waitpid(pd._pd.pid, 0)
+            self.assertEqual(cm.exception.errno, errno.ECHILD)
+
+
+class TestProcess(BaseTestProcess, unittest.TestCase):
+
+    process_factory = Process
+
+    def _get_kill_program(self):
+        return ["sleep", "1"]
 
     def test_simple(self):
-        pd = self.process(["true"])
+        pd = self.process_factory(["true"])
         pd.start()
         pd.join()
         self.assertIsNot(pd._pd, None)
-        self.assertEqual(self.out, [])
-        self.assertEqual(self.err, [])
+        self.assertEqual(pd.stdout, "")
+        self.assertEqual(pd.stderr, "")
         self.assertEqual(pd._pd.returncode, 0)
         self.assertEqual(pd._raw, {})
         with self.assertRaises(OSError) as cm:
             os.waitpid(pd._pd.pid, 0)
         self.assertEqual(cm.exception.errno, errno.ECHILD)
 
-    def test_kill(self):
-        for signo, func in ((signal.SIGTERM, bricks.Process.terminate),
-                            (signal.SIGKILL, bricks.Process.kill)):
-            pd = self.process(["sleep", "2"])
-            pd.start()
-            pd.join(0.01)
-            func(pd)
-            pd.join()
-            self.assertIsNot(pd._pd, None)
-            self.assertEqual(self.out, [])
-            self.assertEqual(self.err, [])
-            self.assertEqual(pd._pd.returncode, -signo)
-            with self.assertRaises(OSError) as cm:
-                os.waitpid(pd._pd.pid, 0)
-            self.assertEqual(cm.exception.errno, errno.ECHILD)
-
     def test_out(self):
-        pd = self.process(["echo", "hello world"])
+        pd = self.process_factory(["echo", "hello world"])
         pd.start()
         pd.join()
         self.assertIsNot(pd._pd, None)
-        self.assertEqual(self.out, [["hello world"]])
-        self.assertEqual(self.err, [])
+        self.assertEqual(pd.stdout, "hello world\n")
+        self.assertEqual(pd.stderr, "")
         self.assertEqual(pd._pd.returncode, 0)
         with self.assertRaises(OSError) as cm:
             os.waitpid(pd._pd.pid, 0)
@@ -97,25 +118,49 @@ class TestProcess(unittest.TestCase):
     @unittest.skipIf(sys.executable is None, "sys.executable unavailable")
     def test_err(self):
         echo = os.path.abspath(echo_e.__file__)
-        pd = self.process([sys.executable, echo, "hello world"])
+        pd = self.process_factory([sys.executable, echo, "hello world"])
         pd.start()
         pd.join()
         self.assertIsNot(pd._pd, None)
-        self.assertEqual(self.out, [])
-        self.assertEqual(self.err, [["hello world"]])
+        self.assertEqual(pd.stdout, "")
+        self.assertEqual(pd.stderr, "hello world\n")
         self.assertEqual(pd._pd.returncode, 0)
         with self.assertRaises(OSError) as cm:
             os.waitpid(pd._pd.pid, 0)
         self.assertEqual(cm.exception.errno, errno.ECHILD)
 
     def test_terminate_on_a_terminated_child(self):
-        pd = self.process(["true"])
+        pd = self.process_factory(["true"])
         pd.start()
         pd.join()
         with self.assertRaises(OSError) as cm:
             pd.terminate()
         self.assertEqual(cm.exception.errno, errno.ESRCH)
 
+
+class Sudo(bricks.Sudo):
+
+    process_factory = Process
+
+
+class TestSudoProcess(BaseTestProcess, unittest.TestCase):
+
+    process_factory = Sudo
+
+    def _get_kill_program(self):
+        return [sys.executable, os.path.abspath(sleep_pid.__file__), "1"]
+
+    @unittest.skipIf(sys.executable is None, "sys.executable unavailable")
+    def test_terminate_on_a_terminated_child(self):
+        args = [sys.executable, os.path.abspath(sleep_pid.__file__), "0"]
+        pd = self.process_factory(args)
+        pd.start()
+        pd.join()
+        self.assertEqual(pd.terminate(), 1)
+
+    @unittest.skipIf(sys.executable is None, "sys.executable unavailable")
+    def test_kill(self):
+        super(TestSudoProcess, self).test_kill()
 
 
 class Brick(stubs.BrickStub):
