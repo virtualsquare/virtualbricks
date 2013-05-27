@@ -36,9 +36,7 @@ class Capture(bricks.Brick):
 
         parameters = {"name": bricks.String(""),
                       "sock": bricks.String(""),
-                      "iface": bricks.String(""),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
+                      "iface": bricks.String("")}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -89,9 +87,7 @@ class Tap(bricks.Brick):
                       "ip": bricks.String("10.0.0.1"),
                       "nm": bricks.String("255.255.255.0"),
                       "gw": bricks.String(""),
-                      "mode": bricks.String("off"),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
+                      "mode": bricks.String("off")}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)

@@ -21,6 +21,7 @@ import logging
 
 import gobject
 
+from virtualbricks import tools
 from virtualbricks.versions import Version
 from virtualbricks.deprecated import deprecated
 
@@ -154,8 +155,11 @@ class NewConfig:
     parameters = {}
 
     def __init__(self):
-        self.__dict__["_cfg"] = dict((name, typ.default) for name, typ in
-                                     self.parameters.iteritems())
+        parameters = {}
+        tools.accumulateClassDict(self.__class__, "parameters", parameters)
+        self.parameters = parameters
+        self.__dict__["_cfg"] = dict(
+            (name, typ.default) for name, typ in parameters.iteritems())
 
     # dict interface
 

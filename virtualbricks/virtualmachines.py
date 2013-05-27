@@ -646,9 +646,7 @@ class VirtualMachine(bricks.Brick):
                       # others
                       "noacpi": bricks.String(""),
                       "stdout": bricks.String(""),
-                      "loadvm": bricks.String(""),
-                      "pon_vbevent": base.String(""),
-                      "poff_vbevent": base.String("")}
+                      "loadvm": bricks.String("")}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)

@@ -30,8 +30,8 @@ import logging
 import tempfile
 
 from virtualbricks import base, errors, settings, versions
-from virtualbricks.base import (NewConfig as Config, String, Integer, SpinInt,
-                                Float, Boolean, Object)
+from virtualbricks.base import (NewConfig, String, Integer, SpinInt, Float,
+                                Boolean, Object)
 from virtualbricks.deprecated import deprecated
 from virtualbricks.console import RemoteHost
 
@@ -169,6 +169,12 @@ class Sudo(object):
 
     def kill(self):
         return self.send_signal("SIGKILL")
+
+
+class Config(NewConfig):
+
+    parameters = {"pon_vbevent": String(""),
+                  "poff_vbevent": String("")}
 
 
 class _LocalBrick(base.Base):

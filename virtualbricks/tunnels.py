@@ -28,21 +28,21 @@ if False:  # pyflakes
     _ = str
 
 
+class TunnelListenConfig(bricks.Config):
+
+    parameters = {"name": bricks.String(""),
+                  "sock": bricks.String(""),
+                  "password": bricks.String(""),
+                  "port": bricks.Integer(7667)}
+
+
 class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
+    config_factory = TunnelListenConfig
     command_builder = {"-s": 'sock',
                        "#password": "password",
                        "-p": "port"}
-
-    class config_factory(bricks.Config):
-
-        parameters = {"name": bricks.String(""),
-                      "sock": bricks.String(""),
-                      "password": bricks.String(""),
-                      "port": bricks.Integer(7667),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -92,25 +92,21 @@ class TunnelListen(bricks.Brick):
     #    pass
 
 
+class TunnelConnectConfig(TunnelListenConfig):
+
+    parameters = {"host": bricks.String(""),
+                  "localport": bricks.Integer(10771)}
+
+
 class TunnelConnect(TunnelListen):
 
     type = "TunnelConnect"
+    config_factory = TunnelConnectConfig
     command_builder = {"-s": 'sock',
                        "#password": "password",
                        "-p": "localport",
                        "-c": "host",
                        "#port": "port"}
-
-    class config_factory(bricks.Config):
-
-        parameters = {"name": bricks.String(""),
-                      "sock": bricks.String(""),
-                      "host": bricks.String(""),
-                      "password": bricks.String(""),
-                      "port": bricks.Integer(7667),
-                      "localport": bricks.Integer(10771),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
 
     def get_parameters(self):
         if self.plugs[0].sock:

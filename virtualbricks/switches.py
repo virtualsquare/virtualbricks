@@ -46,9 +46,7 @@ class Switch(bricks.Brick):
 
         parameters = {"numports": bricks.SpinInt(32, 1, 128),
                       "hub": bricks.Boolean(False),
-                      "fstp": bricks.Boolean(False),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
+                      "fstp": bricks.Boolean(False)}
 
     def set_name(self, name):
         self._name = name
@@ -136,9 +134,7 @@ class SwitchWrapper(bricks.Brick):
         parameters = {"path": bricks.String(""),
                       "numports": bricks.SpinInt(32, 1, 128),
                       "hub": bricks.Boolean(False),
-                      "fstp": bricks.Boolean(False),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
+                      "fstp": bricks.Boolean(False)}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
