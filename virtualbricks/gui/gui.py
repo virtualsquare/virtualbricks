@@ -35,7 +35,7 @@ from zope.interface import implements
 from virtualbricks import (interfaces, app, tools, errors, settings,
 		configfile, base, bricks, events, brickfactory, virtualmachines,
 		console)
-from virtualbricks.console import VbShellCommand, RemoteHost
+from virtualbricks.console import VbShellCommand
 from virtualbricks.settings import MYPATH
 
 from virtualbricks.gui import tree, graphics, dialogs
@@ -180,6 +180,61 @@ class EventPopupMenu(BaseMenu):
 
 
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
+
+
+class RemoteHostPopupMenu:
+	implements(interfaces.IMenu)
+
+	def __init__(self, original):
+		self.original = original
+
+	def build(self, gui):
+		menu = gtk.Menu()
+		label = _("Disconnect") if self.original.connected else _("Connect")
+		connect = gtk.MenuItem(label)
+		connect.connect("activate", self.on_connect_activate, gui)
+		menu.append(connect)
+		change_pw = gtk.MenuItem("Change password")
+		change_pw.connect("activate", self.on_change_password_activate, gui)
+		menu.append(change_pw)
+		ac = gtk.CheckMenuItem("Auto-connect at startup")
+		ac.set_active(self.original.autoconnect)
+		ac.connect("activate", self.on_ac_activate, gui)
+		menu.append(ac)
+		delete = gtk.MenuItem("Delete")
+		delete.connect("activate", self.on_delete_activate, gui)
+		menu.append(delete)
+		return menu
+
+	def popup(self, button, time, gui):
+		menu = self.build(gui)
+		menu.show_all()
+		menu.popup(None, None, None, button, time)
+
+	def on_connect_activate(self, menuitem, gui):
+		if self.original.connected:
+			self.original.disconnect()
+		else:
+			# XXX: this will block
+			conn_ok, msg = self.original.connect()
+			if not conn_ok:
+				log.error("Error connecting to remote host %s: %s",
+					self.original.addr[0], msg)
+
+	def on_change_password_activate(self, menuitem, gui):
+		dialogs.ChangePasswordDialog(self.original).show()
+
+	def on_ac_activate(self, menuitem, gui):
+		self.original.autoconnect = menuitem.get_active()
+
+	def on_delete_activate(self, menuitem, gui):
+		gui.ask_confirm(_("Do you really want to delete remote host ") +
+			" \"" + self.original.addr[0] + "\" and all the bricks related?",
+			on_yes=gui.brickfactory.delremote, arg=self.original)
+
+
+interfaces.registerAdapter(RemoteHostPopupMenu, console.RemoteHost,
+						interfaces.IMenu)
 
 
 class ConfigController(object):
@@ -348,26 +403,6 @@ def check_joblist(gui, force=False):
 			gui.running_bricks.set_value(i, 2, b.get_type())
 			gui.running_bricks.set_value(i, 3, b.name)
 		log.debug("proc list updated")
-	if gui.brickfactory.remotehosts_changed:
-		#TODO: define/Use VBTree.redraw() for this
-		# XXX: iter_ not defined but this does not seems a problem because the
-		# remote_hosts is cleared
-		iter_ = None
-		gui.remote_hosts_tree.clear()
-		for r in gui.brickfactory.remote_hosts:
-			if r.connected:
-				img = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.get_image("Connect.png"), 48, 48)
-			else:
-				img = gtk.gdk.pixbuf_new_from_file_at_size(
-					graphics.get_image("Disconnect.png"), 48, 48)
-			gui.remote_hosts_tree.set_value(iter_, 1, r.addr[0]+":"+str(r.addr[1]))
-			gui.remote_hosts_tree.set_value(iter_, 2, str(r.num_bricks()))
-			ac = "Yes" if r.autoconnect else "No"
-			row = [img, r.addr[0] + ":" + str(r.addr[1]),
-					str(r.num_bricks()), ac]
-			gui.remote_hosts_tree.append(row)
-			gui.brickfactory.remotehosts_changed = False
 
 	if gui.curtain_is_down:
 		# XXX: if project is changed, the title remain the same
@@ -637,7 +672,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		''' Reset the selections for the TWs'''
 		self.vmplug_selected = None
 		self.joblist_selected = None
-		self.remotehost_selected = None
 		self.curtain_is_down = True
 
 		''' Initialize threads, timers etc.'''
@@ -694,7 +728,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		widget = builder.get_object(widget_name)
 		widget.reparent(window)
 		return builder
-		self.running_bricks = builder.get_object("liststore1")
 
 	def setup_joblist(self):
 		builder = self.__setup_treeview("data/joblist.ui", "scrolledwindow1",
@@ -704,7 +737,42 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def setup_remotehosts(self):
 		builder = self.__setup_treeview("data/remotehosts.ui",
 								"scrolledwindow5", "remotehosts_treeview")
-		self.remote_hosts_tree = builder.get_object("liststore1")
+
+		def set_status(column, cell_renderer, model, iter):
+			host = model.get_value(iter, 0)
+			filename = "connect.png" if host.connected else "disconnect.png"
+			pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
+				graphics.get_image(filename), 48, 48)
+			cell_renderer.set_property("pixbuf", pixbuf)
+
+		def set_address(column, cell_renderer, model, iter):
+			host = model.get_value(iter, 0)
+			label = "{0[0]}:{0[1]}".format(host.addr)
+			cell_renderer.set_property("text", label)
+
+		def set_num_bricks(column, cell_renderer, model, iter):
+			host = model.get_value(iter, 0)
+			cell_renderer.set_property("text", str(host.num_bricks()))
+
+		def set_ac(column, cell_renderer, model, iter):
+			host = model.get_value(iter, 0)
+			cell_renderer.set_property("text",
+				"Yes" if host.autoconnect else "No")
+
+		status_c = builder.get_object("status_treeviewcolumn")
+		status_cr = builder.get_object("status_cellrenderer")
+		status_c.set_cell_data_func(status_cr, set_status)
+		address_c = builder.get_object("address_treeviewcolumn")
+		address_cr = builder.get_object("address_cellrenderer")
+		address_c.set_cell_data_func(address_cr, set_address)
+		numbrick_c = builder.get_object("numbrick_treeviewcolumn")
+		numbrick_cr = builder.get_object("numbrick_cellrenderer")
+		numbrick_c.set_cell_data_func(numbrick_cr, set_num_bricks)
+		ac_c = builder.get_object("ac_treeviewcolumn")
+		ac_cr = builder.get_object("ac_cellrenderer")
+		ac_c.set_cell_data_func(ac_cr, set_ac)
+		builder.get_object("remotehosts_treeview").set_model(
+			self.brickfactory.remote_hosts)
 
 	def setup_netwoks_cards(self):
 		builder = self.__setup_treeview("data/networkcards.ui",
@@ -1533,8 +1601,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'menu_brickactions',
 		'menu_eventactions',
 		'dialog_confirm',
-		'menu_popup_remotehosts',
-		'dialog_remote_password',
 		'dialog_imagename',
 		'dialog_commitimage',
 		'dialog_convertimage',
@@ -2273,44 +2339,36 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				b.poweroff()
 
 
-	def getremotehost(self, addr):
-		for r in self.brickfactory.remote_hosts:
-			if r.addr[0]+":"+str(r.addr[1]) == addr:
-				return r
-		return None
-
-	def on_remotehosts_treeview_button_release_event(self, widget=None, event=None, data=""):
-		treeview = self.gladefile.get_widget('scrolledwindow5').get_child()
-		store = self.remote_hosts_tree
-		x = int(event.x)
-		y = int(event.y)
-		pthinfo = treeview.get_path_at_pos(x, y)
-		addr = get_treeselected(self, treeview, store, pthinfo, 1)
-		self.remotehost_selected = self.getremotehost(addr)
-		if not self.remotehost_selected:
-			return
+	def on_remotehosts_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
-			self.gladefile.get_widget('popupcheck_autoconnect').set_active(self.remotehost_selected.autoconnect)
-			self.show_window('menu_popup_remotehosts')
+			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+			if pthinfo is not None:
+				path, col, cellx, celly = pthinfo
+				treeview.grab_focus()
+				treeview.set_cursor(path, col, 0)
+				model = treeview.get_model()
+				obj = model.get_value(model.get_iter(path), 0)
+				interfaces.IMenu(obj).popup(event.button, event.time, self)
+			return True
 
-	def on_remotehosts_treeview_button_press_event(self, widget=None, event=None, data=""):
-		treeview = self.gladefile.get_widget('scrolledwindow5').get_child()
-		store = self.remote_hosts_tree
-		x = int(event.x)
-		y = int(event.y)
-		pthinfo = treeview.get_path_at_pos(x, y)
-		addr = get_treeselected(self, treeview, store, pthinfo, 1)
-		self.remotehost_selected = self.getremotehost(addr)
-		if not self.remotehost_selected:
-			return
-		elif event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
-			if self.remotehost_selected.connected:
-				self.user_wait_action(self.remotehost_selected.disconnect)
-			else:
-				conn_ok, msg = self.remotehost_selected.connect()
-				if not conn_ok:
-					log.error("Error connecting to remote host %s: %s",
-							self.remotehost_selected.addr[0], msg)
+	def on_remotehosts_treeview_button_press_event(self, treeview, event):
+		if event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+			if pthinfo is not None:
+				path, col, cellx, celly = pthinfo
+				treeview.grab_focus()
+				treeview.set_cursor(path, col, 0)
+				model = treeview.get_model()
+				remote_host = model.get_value(model.get_iter(path), 0)
+				if remote_host.connected:
+					self.user_wait_action(remote_host.disconnect)
+				else:
+					# XXX: this will block
+					conn_ok, msg = remote_host.connect()
+					if not conn_ok:
+						log.error("Error connecting to remote host %s: %s",
+							remote_host.addr[0], msg)
+			return True
 
 	def on_joblist_treeview_button_release_event(self, widget=None, event=None, data=""):
 		treeview = self.gladefile.get_widget("scrolledwindow1").get_child()
@@ -3507,47 +3565,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		raise NotImplementedError("on_open_recent_project not implemented")
 
 	def on_add_remotehost(self, widget, data=None):
-		txt = self.gladefile.get_widget("newhost_text").get_text()
-		if len(txt) > 0:
-			for existing in self.brickfactory.remote_hosts:
-				if (txt == existing.addr[0]):
-					return
-			self.brickfactory.remote_hosts.append(RemoteHost(self.brickfactory, txt))
+		hostname = self.gladefile.get_widget("newhost_text").get_text()
+		if len(hostname) > 0:
+			self.brickfactory.get_host_by_name(hostname)
 
 	def on_check_newbrick_runremote_toggled(self, widget, event=None, data=None):
 		self.gladefile.get_widget('text_newbrick_runremote').set_sensitive(widget.get_active())
-
-	def on_passwd_ok(self, widget, event=None, data=None):
-		self.remotehost_selected.password=self.gladefile.get_widget('text_remote_password').get_text()
-		self.show_window('')
-		return True
-
-	def on_passwd_cancel(self, widget, event=None, data=None):
-		self.show_window('')
-		return True
-
-	def on_remote_connect(self, widget, event=None, data=None):
-		if self.remotehost_selected.connected:
-			self.remotehost_selected.disconnect()
-		else:
-			conn_ok, msg = self.remotehost_selected.connect()
-			if not conn_ok:
-				log.error("Error connecting to remote host %s: %s",
-						self.remotehost_selected.addr[0], msg)
-
-	def on_remote_password(self, widget, event=None, data=None):
-		self.gladefile.get_widget('text_remote_password').set_text(self.remotehost_selected.password)
-		self.show_window('dialog_remote_password')
-
-	def on_remote_autoconnect(self, widget, event=None, data=None):
-		self.remotehost_selected.autoconnect = widget.get_active()
-
-	def on_remote_delete(self, widget, event=None, data=None):
-		for existing in self.brickfactory.remote_hosts:
-			if (existing.addr[0] == self.remotehost_selected.addr[0]):
-				self.ask_confirm(_("Do you really want to delete remote host ") +
-					" \"" + existing.addr[0] + "\" and all the bricks related?",
-					on_yes = self.brickfactory.delremote, arg = self.remotehost_selected.addr[0])
 
 	def on_usbmode_onoff(self, w, event=None, data=None):
 		if (w.get_active()):
@@ -3790,6 +3813,36 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		return is_alive
 
 
+class List(gtk.ListStore):
+
+	def __init__(self):
+		gtk.ListStore.__init__(self, object)
+
+	def __iter__(self):
+		i = self.get_iter_first()
+		while i:
+			yield self.get_value(i, 0)
+			i = self.iter_next(i)
+
+	def append(self, element):
+		gtk.ListStore.append(self, (element, ))
+
+	def remove(self, element):
+		i = self.get_iter_first()
+		while i:
+			el = self.get_value(i, 0)
+			if el is element:
+				return gtk.ListStore.remove(self, i)
+			i = self.iter_next(i)
+
+
+class VisualFactory(brickfactory.BrickFactory):
+
+	def __init__(self):
+		brickfactory.BrickFactory.__init__(self)
+		self.remote_hosts = List()
+
+
 def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__, **local):
 	console = brickfactory.Console(factory, stdout, stdin, **local)
 	thread = threading.Thread(target=console.run, name="Console")
@@ -3900,7 +3953,7 @@ class Application(brickfactory.Application):
 		handler = MessageDialogHandler()
 		logger = logging.getLogger("virtualbricks")
 		logger.addHandler(handler)
-		self.factory = factory = brickfactory.BrickFactory()
+		self.factory = factory = VisualFactory()
 		factory.register_brick_type(GVirtualMachine, "vm", "qemu")
 		configfile.restore_last_project(self.factory)
 		self.autosave_timer = brickfactory.AutosaveTimer(factory)

@@ -25,7 +25,7 @@ import traceback
 import contextlib
 import logging
 
-from virtualbricks import tools, console, settings
+from virtualbricks import console, settings
 
 
 if False:  # pyflakes
@@ -313,14 +313,7 @@ class ConfigFile:
 
                     elif ntype == 'RemoteHost':
                         log.debug("Found remote host %s" % name)
-                        newr = None
-                        for existing in factory.remote_hosts:
-                            if existing.addr[0] == name:
-                                newr = existing
-                                break
-                        if not newr:
-                            newr = console.RemoteHost(factory, name)
-                            factory.remote_hosts.append(newr)
+                        newr = factory.get_host_by_name(name)
                         l = fileobj.readline()
                         while l and not l.startswith('['):
                             k, v = l.rstrip("\n").split("=")
@@ -344,7 +337,7 @@ class ConfigFile:
                         factory.newbrick(ntype, name)
                         component = factory.get_brick_by_name(name)
 
-                except Exception, e:
+                except Exception:
                     log.exception("Bad config line: %s", l)
                     l = fileobj.readline()
                     continue
