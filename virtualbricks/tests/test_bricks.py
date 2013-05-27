@@ -158,13 +158,11 @@ class TestSudoProcess(BaseTestProcess, unittest.TestCase):
 
 class Brick(stubs.BrickStub):
 
-    class config_factory(base.NewConfig):
+    class config_factory(bricks.Config):
 
         parameters = {"numports": base.SpinInt(32, 1, 128),
                       "hub": base.Boolean(False),
-                      "fstp": base.Boolean(False),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
+                      "fstp": base.Boolean(False)}
 
 
 class TestConfig(unittest.TestCase):

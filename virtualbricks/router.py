@@ -24,9 +24,7 @@ class Router(bricks.Brick):
 
     class config_factory(bricks.Config):
 
-        parameters = {"name": bricks.String(""),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
+        parameters = {"name": bricks.String("")}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)

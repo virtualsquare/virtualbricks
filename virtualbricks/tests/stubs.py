@@ -15,9 +15,7 @@ class BrickStub(bricks.Brick):
     class config_factory(bricks.Config):
 
         parameters = {"a": bricks.String("arg1"),
-                      "c": bricks.Boolean(True),
-                      "pon_vbevent": bricks.String(""),
-                      "poff_vbevent": bricks.String("")}
+                      "c": bricks.Boolean(True)}
 
     def open_internal_console(self):
         return Console()
