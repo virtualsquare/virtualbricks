@@ -29,7 +29,6 @@ class Capture(bricks.Brick):
 
     type = "Capture"
     _needsudo = True
-    pid = -1
     command_builder = {"-s": 'sock',
                        "*iface": "iface"}
 
@@ -81,7 +80,6 @@ class Tap(bricks.Brick):
 
     type = "Tap"
     _needsudo = True
-    pid = -1
     command_builder = {"-s": 'sock', "*tap": "name"}
 
     class config_factory(bricks.Config):

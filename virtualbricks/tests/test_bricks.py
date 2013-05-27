@@ -31,13 +31,6 @@ class TestBricks(unittest.TestCase):
         self.brick.configured = lambda: True
         self.brick.poweron()
 
-    def test_escape(self):
-        s = 'echo "hello world"'
-        self.assertEqual(self.brick.escape(s), r'echo \"hello world\"')
-        # XXX: This is a bug
-        s = r'echo \"hello world\"'
-        self.assertNotEqual(self.brick.escape(s), r'echo \\\"hello world\\\"')
-
     def test_args(self):
         self.assertEqual(self.brick.build_cmd_line(), ["-a", "arg1", "-c",
                                                        "-d", "d"])

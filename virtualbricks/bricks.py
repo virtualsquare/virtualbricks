@@ -20,9 +20,9 @@
 import os
 import sys
 import time
+import errno
 import socket
 import select
-import re
 import copy
 import threading
 import subprocess
@@ -49,13 +49,21 @@ class Process(threading.Thread):
 
     _pd = None
 
+    @property
+    def pid(self):
+        return self._pd.pid
+
     def __init__(self, args):
         threading.Thread.__init__(self, name="Process_%s" % args[0])
+        self.daemon = True
         self._raw = {}
         self.args = args
 
     def poll(self):
         return self._pd.poll()
+
+    def send_signal(self, signo):
+        self._pd.send_signal(signo)
 
     def terminate(self):
         self._pd.terminate()
@@ -85,10 +93,10 @@ class Process(threading.Thread):
                       self._pd.returncode)
 
     def out(self, data):
-        log.info("stdout of process %d:\n%s", self._pd.pid, "\n".join(data))
+        log.info("stdout of process %d:\n%s", self._pd.pid, data)
 
     def err(self, data):
-        log.warning("stdout of process %d:\n%s", self._pd.pid, "\n".join(data))
+        log.warning("stderr of process %d:\n%s", self._pd.pid, data)
 
 
 class Sudo(object):
@@ -152,15 +160,15 @@ class Sudo(object):
         finally:
             self.pidfile.close()
 
-    def _send_signal(self, signal):
+    def send_signal(self, signal):
         return subprocess.call([self.sudo, "kill", "-%s" % signal,
                                 str(self.pid)])
 
     def terminate(self):
-        return self._send_signal("SIGTERM")
+        return self.send_signal("SIGTERM")
 
     def kill(self):
-        return self._send_signal("SIGKILL")
+        return self.send_signal("SIGKILL")
 
 
 class _LocalBrick(base.Base):
@@ -173,6 +181,14 @@ class _LocalBrick(base.Base):
     internal_console = None
     terminal = "vdeterm"
     command_builder = {}
+    process_factory = Process
+    sudo_factory = Sudo
+
+    @property
+    def pid(self):
+        if self.proc is None:
+            return -1
+        return self.proc.pid
 
     def __init__(self, factory, name):
         base.Base.__init__(self, factory, name)
@@ -182,7 +198,110 @@ class _LocalBrick(base.Base):
         self.cfg.poff_vbevent = ""
         self.config_socks = []
 
-    # each brick must overwrite this method
+    # IBrick interface
+
+    def poweron(self):
+        if self.proc is not None:
+            log.info("Cannot start an already running process.")
+            return
+
+        if self.factory.TCP is None:
+            if not self.configured():
+                raise errors.BadConfigError("Brick %s not configured",
+                                            self.name)
+            if not self.properly_connected():
+                raise errors.NotConnectedError("Brick %s not properly "
+                                               "connected", self.name)
+            if not self.check_links():
+                raise errors.LinkLoopError("Link loop detected")
+        self._poweron()
+        self.emit("changed")
+
+    def poweroff(self):
+        if self.proc is None or not self.run_condition:
+            return
+        self.run_condition = False
+        log.debug(_("Shutting down %s"), self.name)
+        try:
+            self._poweroff()
+        finally:
+            self.proc = None
+            self.need_restart_to_apply_changes = False
+            self.close_internal_console()
+            self.factory.emit("brick-stopped", self.name)
+            self.post_poweroff()
+
+    def get_parameters(self):
+        raise NotImplementedError('Bricks.get_parameters() not implemented')
+
+    def configure(self, attrlist):
+        """TODO attrs : dict attr => value"""
+        self.initialize(attrlist)
+        self.emit("changed")
+
+    # Interal interface
+
+    def _poweron(self):
+        self.proc = self.process_factory(self.args())
+        if self.needsudo():
+            self.proc = self.sudo_factory(self.proc)
+        log.debug(_("Starting: '%s'"), ' '.join(self.proc.args))
+        self.proc.start()
+        self.open_internal_console()
+        self.factory.emit("brick-started", self.name)
+        self.run_condition = True
+        self.post_poweron()
+
+    def _poweroff(self):
+        try:
+            self.proc.terminate()
+        except OSError as e:
+            if e.errno != errno.ESRCH:
+                raise
+        # give the process the chance to stop itself (100ms)
+        for i in range(100):
+            if self.proc.poll() is None:
+                time.sleep(0.001)
+            else:
+                break
+        else:
+            # kill it
+            try:
+                self.proc.kill()
+                # while self.proc.poll() is None:
+                #     time.sleep(0.0001)
+            except OSError as e:
+                if e.errno != errno.ESRCH:
+                    raise
+
+    def post_poweron(self):
+        self.active = True
+        self.start_related_events(on=True)
+
+    def post_poweroff(self):
+        self.active = False
+        self.start_related_events(off=True)
+
+    def build_cmd_line(self):
+        res = []
+
+        for (switch, v) in self.command_builder.items():
+            if not switch.startswith("#"):
+                if callable(v):
+                    value = v()
+                else:
+                    value = self.cfg.get(v)
+                if value is "*":
+                    res.append(switch)
+                elif value is not None and len(value) > 0:
+                    if not switch.startswith("*"):
+                        res.append(switch)
+                    res.append(value)
+        return res
+
+    def args(self):
+        return [self.prog()] + self.build_cmd_line()
+
     def prog(self):
         raise NotImplementedError(_("Brick.prog() not implemented."))
 
@@ -207,13 +326,6 @@ class _LocalBrick(base.Base):
 
     def console(self):
         return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
-
-    def cmdline(self):
-        return ""
-
-    @property
-    def pidfile(self):
-        return "/tmp/%s.pid" % self.name
 
     @deprecated(versions.Version("Virtualbricks", 1, 0), "emit")
     def on_config_changed(self):
@@ -243,11 +355,6 @@ class _LocalBrick(base.Base):
                 s = self.rewrite_sock_server(attr.split('=')[1])
                 self.cfg.sock = s
 
-    def configure(self, attrlist):
-        """TODO attrs : dict attr => value"""
-        self.initialize(attrlist)
-        self.emit("changed")
-
     def connect(self, endpoint):
         for p in self.plugs:
             if not p.configured():
@@ -266,161 +373,6 @@ class _LocalBrick(base.Base):
     ############################
     ########### Poweron/Poweroff
     ############################
-
-    def build_cmd_line(self):
-        res = []
-
-        for (switch, v) in self.command_builder.items():
-            if not switch.startswith("#"):
-                if callable(v):
-                    value = v()
-                else:
-                    value = self.cfg.get(v)
-                if value is "*":
-                    res.append(switch)
-                elif value is not None and len(value) > 0:
-                    if not switch.startswith("*"):
-                        res.append(switch)
-                    res.append(value)
-        return res
-
-    def args(self):
-        return [self.prog()] + self.build_cmd_line()
-
-    @deprecated(versions.Version("Virtualbricks", 1, 0))
-    def escape(self, arg):
-        arg = re.sub('"', '\\"', arg)
-        #arg = '"' + arg + '"'
-        return arg
-
-    def poweron(self):
-        if self.factory.TCP is None:
-            if not self.configured():
-                raise errors.BadConfigError("Brick %s not configured",
-                                            self.name)
-            if not self.properly_connected():
-                raise errors.NotConnectedError("Brick %s not properly "
-                                               "connected", self.name)
-            if not self.check_links():
-                raise errors.LinkLoopError("Link loop detected")
-        self._poweron()
-        self.emit("changed")
-
-    def _poweron(self):
-        if self.proc is not None:
-            return
-        try:
-            command_line = self.args()
-        except Exception:
-            log.exception("Error while retrieving the list of arguments.")
-            return
-
-        if self.needsudo():
-            sudoarg = ""
-            if self.get_type() == 'Qemu':
-                command_line = []
-                command_line.append(self.settings.get("sudo"))
-                command_line.extend(map(lambda s: s.replace('"', r'\"'),
-                                        self.args()))
-                command_line.append('-pidfile')
-                command_line.append(self.pidfile)
-
-            else:
-                for cmdarg in command_line:
-                    sudoarg += cmdarg + " "
-                sudoarg += "-P %s" % self.pidfile
-                command_line[0] = self.settings.get("sudo")
-                command_line[1] = sudoarg.replace('"', r'"')
-        log.debug(_("Starting: '%s'"), ' '.join(command_line))
-        self._real_poweron(command_line)
-
-    def _real_poweron(self, command_line):
-        try:
-            # out and err files (if configured) for saving VM output
-            out = subprocess.PIPE
-            if self.get_type() == 'Qemu':
-                if self.cfg.stdout != "":
-                    out = open(self.cfg.stdout, "wb")
-            self.proc = subprocess.Popen(command_line,
-                                         stdin=subprocess.PIPE, stdout=out,
-                                         stderr=subprocess.STDOUT)
-        except OSError:
-            log.exception(_("OSError: Brick startup failed. Check your "
-                            "configuration!"))
-            return
-
-        if self.proc:
-            self.pid = self.proc.pid
-        else:
-            if self.proc is not None:
-                log.exception(_("Brick startup failed. Check your "
-                                "configuration!\nMessage:\n%s"),
-                                "\n".join(self.proc.stdout.readlines()))
-            else:
-                log.exception(_("Brick startup failed. Check your"
-                                "configuration!\n"))
-            return
-
-        if (self.open_internal_console and
-                callable(self.open_internal_console)):
-            self.internal_console = self.open_internal_console()
-
-        self.factory.emit("brick-started", self.name)
-        self.run_condition = True
-        self.post_poweron()
-
-    def poweroff(self):
-        if self.proc is None:
-            return
-        if self.run_condition is False:
-            return
-        self.run_condition = False
-        self._poweroff()
-
-    def _poweroff(self):
-        log.debug(_("Shutting down %s"), self.name)
-        is_running = self.proc.poll() is None
-        if is_running:
-            if self.needsudo():
-                with open(self.pidfile) as pidfile:
-                    pid = pidfile.readline().rstrip("\n")
-                    ret = os.system(self.settings.get('sudo') + ' "kill ' +
-                                    pid + '"')
-            else:
-                if self.proc.pid <= 1:
-                    return
-
-                pid = self.proc.pid
-                try:
-                    self.proc.terminate()
-                except Exception, e:
-                    log.exception(_("can not send SIGTERM: '%s'"), e)
-                ret = os.system('kill ' + str(pid))
-            if ret != 0:
-                log.error(_("can not stop brick error code: %s"), ret)
-                return
-
-        ret = None
-        while ret is None:
-            ret = self.proc.poll()
-            time.sleep(0.2)
-
-        self.proc = None
-        self.need_restart_to_apply_changes = False
-        if (self.close_internal_console and
-            callable(self.close_internal_console)):
-            self.close_internal_console()
-        self.internal_console = None
-        self.factory.emit("brick-stopped", self.name)
-        self.post_poweroff()
-
-    def post_poweron(self):
-        self.active = True
-        self.start_related_events(on=True)
-
-    def post_poweroff(self):
-        self.active = False
-        self.start_related_events(off=True)
 
     def start_related_events(self, on=True, off=False):
 
@@ -447,14 +399,14 @@ class _LocalBrick(base.Base):
     # Console related operations.
     #############################
     def has_console(self, closing=False):
-        for i in range(1, 10):
+        for i in range(500):
             if (self.proc is not None and self.console() and
                 os.path.exists(self.console())):
                 return True
             else:
                 if closing:
                     return False
-                time.sleep(0.5)
+                time.sleep(0.01)
         return False
 
     def open_console(self):
@@ -481,21 +433,32 @@ class _LocalBrick(base.Base):
     # Must be overridden in Qemu to use appropriate console as internal
     # (stdin, stdout?)
     def open_internal_console(self):
-        log.debug("open_internal_console")
+        log.debug("open internal console")
         if not self.has_console():
             log.debug(_("%s does not have a console"), self.get_type())
-            return None
-        for i in range(1, 10):
+            return
+        try:
+            self.internal_console = socket.socket(socket.AF_UNIX)
+        except socket.error:
+            self.internal_console = None
+            log.exception(_("Error while opening internal console"))
+            return
+
+        # NOTE: how much time should I wait? actually 5s
+        for i in range(500):
             try:
-                time.sleep(0.5)
-                c = socket.socket(socket.AF_UNIX)
-                c.connect(self.console())
-            except:
-                pass
-            else:
-                return c
+                self.internal_console.connect(self._get_console())
+                return
+            except socket.error as e:
+                if len(e.args) != 2 or e.errno != errno.ECONNREFUSED:
+                    log.exception(_("Error while opening internal console"))
+                time.sleep(0.01)
+
+        self.internal_console = None
         log.error(_("%s: error opening internal console"), self.get_type())
-        return None
+
+    def _get_console(self):
+        return self.console()
 
     def send(self, msg):
         if self.internal_console is None or not self.active:
@@ -524,17 +487,16 @@ class _LocalBrick(base.Base):
         return res
 
     def close_internal_console(self):
-        if not self.has_console(closing=True):
-            return
-        self.internal_console.close()
+        if self.internal_console is not None:
+            try:
+                self.internal_console.close()
+            finally:
+                self.internal_console = None
 
     def close_tty(self):
         sys.stdin.close()
         sys.stdout.close()
         sys.stderr.close()
-
-    def get_parameters(self):
-        raise NotImplementedError('Bricks.get_parameters() not implemented')
 
     def get_state(self):
         """return state of the brick"""
@@ -587,13 +549,18 @@ class Brick(_LocalBrick):
         if self.homehost and self.homehost.connected:
             self.homehost.putconfig(self)
 
-    def _real_poweron(self, command_line):
-        if not self.homehost.connected:
-            log.error(_("Error: You must be connected to the "
-                        "host to perform this action"))
+    def poweron(self):
+        if self.homehost:
+            if not self.homehost.connected:
+                log.error(_("Error: You must be connected to the "
+                            "host to perform this action"))
+            else:
+                self.homehost.send(self.name + " on")
         else:
-            self.homehost.send(self.name + " on")
+            _LocalBrick.poweron(self)
 
-    def _poweroff(self):
-        self.proc = None
-        self.homehost.send(self.name + " off\n")
+    def poweroff(self):
+        if self.homehost:
+            self.homehost.send(self.name + " off\n")
+        else:
+            _LocalBrick.poweroff(self)

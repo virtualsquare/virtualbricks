@@ -44,10 +44,18 @@ if False:  # pyflakes
 class Wire(logger.ChildLogger(__name__), Brick):
 
     type = "Wire"
+    _pid = -1
+
+    def get_pid(self):
+        return self._pid
+
+    def set_pid(self, value):
+        self._pid = value
+
+    pid = property(get_pid, set_pid)
 
     def __init__(self, _factory, _name):
         Brick.__init__(self, _factory, _name)
-        self.pid = -1
         self.cfg.name = _name
         self.command_builder = {"#sock left": "sock0", "#sock right": "sock1"}
         self.cfg.sock0 = ""

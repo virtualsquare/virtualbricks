@@ -31,7 +31,6 @@ if False:  # pyflakes
 class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
-    pid = -1
     command_builder = {"-s": 'sock',
                        "#password": "password",
                        "-p": "port"}

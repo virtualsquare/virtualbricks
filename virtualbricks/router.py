@@ -21,7 +21,6 @@ from virtualbricks import bricks
 class Router(bricks.Brick):
 
     type = "Router"
-    pid = -1
 
     class config_factory(bricks.Config):
 
