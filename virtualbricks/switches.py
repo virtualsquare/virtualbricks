@@ -31,7 +31,6 @@ if False:  # pyflakes
 class Switch(bricks.Brick):
 
     type = "Switch"
-    pid = -1
     ports_used = 0
     command_builder = {"-x": "hubmode",
                        "-n": "numports",
@@ -131,10 +130,6 @@ class FakeProcess:
 class SwitchWrapper(bricks.Brick):
 
     type = "SwitchWrapper"
-    pid = -1
-    command_builder = {}
-    has_console = False
-    proc = None
 
     class config_factory(bricks.Config):
 
@@ -169,19 +164,11 @@ class SwitchWrapper(bricks.Brick):
     def path(self):
         return self.cfg.path
 
-    def pidfile(self):
-        return "/tmp/%s.pid" % self.name
-
-    pidfile = property(pidfile)
-
     def poweron(self):
         if os.path.exists(self.cfg.path):
             self.proc = FakeProcess(self)
         else:
             self.proc = None
-
-    def _poweron(self):
-        pass
 
     def poweroff(self):
         pass

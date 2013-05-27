@@ -117,9 +117,7 @@ class IBrick(Interface):
 
     type = Attribute("The type name of the brick")
     name = Attribute("The name of the brick")
-
-    def __call__(factory, name):
-        """Return a new brick of the type specified by the `type` attribute."""
+    proc = Attribute("None or an object conform to IProcess.")
 
     def get_type():
         """Return the type of brick."""
@@ -150,7 +148,6 @@ class IBrick(Interface):
 
     config_socks = Attribute("")
     homehost = Attribute("")
-    # proc = Attribute("")
     properly_connected = Attribute("")
     cfg = Attribute("")
     socks = Attribute("")
@@ -161,3 +158,15 @@ class IBrick(Interface):
 
     def get_state():
         pass
+
+
+class IProcess(Interface):
+
+    def poll():
+        """Check if child process has terminated.
+
+        Set and return returncode attribute.
+        """
+
+    def send_signal(signo):
+        """Send a signal to the process."""

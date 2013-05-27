@@ -436,10 +436,19 @@ class Disk:
 VMDisk = Disk
 
 
+class QemuSudo(bricks.Sudo):
+
+    def inject_sudo(self):
+        self._args = self.process.args
+        self.process.args = [self.sudo] + self._args[:] + \
+                ["-pidfile", self.pidfile.name]
+
+
+
 class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
-    pid = -1
+    sudo_factory = QemuSudo
     command_builder = {
         "#argv0": "argv0",
         "#M": "machine",
@@ -933,33 +942,8 @@ class VirtualMachine(bricks.Brick):
                 p.vlan -= 1
         self.gui_changed = True
 
-    def open_internal_console(self):
-
-        if not self.has_console():
-            log.error("No console detected.")
-            return None
-
-        try:
-            time.sleep(0.5)
-            c = socket.socket(socket.AF_UNIX)
-            c.connect(self.console2())
-            return c
-        except Exception, e:
-            if self.proc.stdout is not None:
-                log.exception(_("Virtual Machine startup failed. Check your "
-                              "configuration!\n%s"), "%s\n%s" %
-                              (e, _("Message:\n%s") %
-                               "\n".join(self.proc.stdout.readlines())))
-            elif self.cfg["stdout"]:
-                with open(self.cfg["stdout"], "r") as stdout:
-                    log.exception(_("Virtual Machine startup failed. Check "
-                                    "your configuration!\n%s"), "%s\n%s" %
-                                  (e, _("Message:\n%s") % stdout.read()))
-            else:
-                log.exception(_("Virtual Machine startup failed. Check your "
-                              "configuration!\n%s"), e)
-
-            return None
+    def _get_console(self):
+        return self.console2()
 
     def commit_disks(self, args):
         self.send("commit all\n")
