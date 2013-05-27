@@ -839,7 +839,7 @@ class VirtualMachine(bricks.Brick):
                     return
 
     def has_graphic(self):
-        return self.homehost is not None
+        return False
 
     @deprecated(Version("virtualbricks", 1, 0), "brickfactory.dup_brick()")
     def __deepcopy__(self, memo):
