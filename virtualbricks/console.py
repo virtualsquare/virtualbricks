@@ -29,6 +29,13 @@ from virtualbricks import errors
 
 log = logging.getLogger(__name__)
 
+if False:  # pyflakes
+    _ = str
+
+
+class _Error(Exception):
+    """Please don't use."""
+
 
 class VbShellCommand(str):
     pass
@@ -91,24 +98,23 @@ class RemoteHostConnectionInstance(threading.Thread):
                                         br.get_type() == 'Wire'
                                         and args[2] == 'remoteport'):
                                     br.set_remoteport(args[3])
-                        self.remotehosts_changed = True
 
 
 class RemoteHost:
 
+    sock = None
+    connected = False
+    connection = None
+    password = ""
+    autoconnect = False
+    baseimages = "/root/VM"
+    vdepath = "/usr/bin"
+    qemupath = "/usr/bin"
+    bricksdirectory = "/root"
+
     def __init__(self, factory, address):
-        self.sock = None
         self.factory = factory
         self.addr = (address, 1050)
-        self.connected = False
-        self.connection = None
-        self.password = ""
-        self.factory.remotehosts_changed = True
-        self.autoconnect = False
-        self.baseimages = "/root/VM"
-        self.vdepath = "/usr/bin"
-        self.qemupath = "/usr/bin"
-        self.bricksdirectory = "/root"
         self.lock = threading.Lock()
 
     def num_bricks(self):
@@ -119,20 +125,21 @@ class RemoteHost:
         return r
 
     def connect(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            self.sock.connect(self.addr)
-        except:  # XXX don't catch all errors
+            self._connect()
+        except socket.error:
+            log.exception(_("Error on socket"))
             return False, "Error connecting to host"
-        else:
-            try:
-                rec = self.sock.recv(5)
-            except:  # XXX: don't catch all errors
-                return False, "Error reading from socket"
+        except _Error as e:
+            return False, str(e)
 
+    def _connect(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(self.addr)
+        rec = self.sock.recv(5)
         self.sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         if not rec.startswith('HELO'):
-            return False, "Invalid server response"
+            raise _Error("Invalid server response")
         rec = self.sock.recv(256)
         sha = hashlib.sha256()
         sha.update(self.password)
@@ -146,13 +153,11 @@ class RemoteHost:
             rec = self.sock.recv(4)
             if rec.startswith("OK"):
                 self.connected = True
-                self.factory.remotehosts_changed = True
                 self.connection = RemoteHostConnectionInstance(self,
                                                                self.factory)
                 self.connection.start()
                 return True, "Success"
-        self.factory.remotehosts_changed = True
-        return False, "Authentication Failed."
+        raise _Error("Authentication Failed.")
 
     def disconnect(self):
         if self.connected:
@@ -163,7 +168,6 @@ class RemoteHost:
             self.send("reset all")
             self.sock.close()
             self.sock = None
-        self.factory.remotehosts_changed = True
 
     def expect_OK(self):
         rec = self.recv()
@@ -181,7 +185,6 @@ class RemoteHost:
         self.send_nolock("new " + b.get_type() + " " + b.name)
         self.putconfig(b)
         self.send_nolock("ACK")
-        self.factory.remotehosts_changed = True
         self.lock.release()
 
     def putconfig(self, b):
@@ -199,7 +202,6 @@ class RemoteHost:
                     log.info("Qemu but not VDE plug")
             elif (pl.sock is not None):
                 log.info("Not a Qemu Plug")
-        self.factory.remotehosts_changed = True
 
     def post_connect_init(self):
         self.send('reset all')
@@ -528,16 +530,8 @@ class VBProtocol(Protocol):
     def do_control(self, args):
         if len(args) == 2:
             host, password = args
-            remote = None
-            for h in self.factory.remote_hosts:
-                if h.addr == host:
-                    remote = h
-                    break
-            else:
-                remote = RemoteHost(self.factory, host)
+            remote = self.factory.get_host_by_name(host)
             remote.password = password
-            self.factory.remotehosts_changed = True
-
             if remote.connect():
                 self.sendLine("Connection OK")
             else:

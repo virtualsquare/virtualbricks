@@ -33,7 +33,6 @@ from virtualbricks import base, errors, settings, versions
 from virtualbricks.base import (NewConfig, String, Integer, SpinInt, Float,
                                 Boolean, Object)
 from virtualbricks.deprecated import deprecated
-from virtualbricks.console import RemoteHost
 
 
 __all__ = ["Brick", "Config", "String", "Integer", "SpinInt", "Float",
@@ -524,18 +523,9 @@ class Brick(_LocalBrick):
         if homehost is not None:
             self.set_host(homehost)
 
-    def set_host(self, host):
-        self.cfg.homehost = host
-        self.homehost = None
-        if len(host) > 0:
-            for existing in self.factory.remote_hosts:
-                if existing.addr[0] == host:
-                    self.homehost = existing
-                    break
-            else:
-                self.homehost = RemoteHost(self.factory, host)
-                self.factory.remote_hosts.append(self.homehost)
-            self.factory.remotehosts_changed = True
+    def set_host(self, hostname):
+        self.homehost = self.factory.get_host_by_name(hostname)
+        self.cfg.homehost = hostname
 
     def initialize(self, attrlist):
         attributes = []

@@ -104,7 +104,6 @@ class BrickFactory(gobject.GObject):
 
     TCP = None
     quitting = False
-    remotehosts_changed = False
     running_condition = True
 
     def __init__(self):
@@ -456,11 +455,18 @@ class BrickFactory(gobject.GObject):
 
     ############################################
 
-    def get_host_by_name(self, host):
+    def __get_host_by_name(self, hostname):
         for h in self.remote_hosts:
-            if h.addr[0] == host:
+            if h.addr[0] == hostname:
                 return h
-        return None
+
+    def get_host_by_name(self, hostname):
+        host = self.__get_host_by_name(hostname)
+        if host is None:
+            host = console.RemoteHost(self, hostname)
+            self.remote_hosts.append(host)
+            log.debug("Created new host %s", hostname)
+        return host
 
     def next_name(self, name, suffix="_new"):
         while self.is_in_use(name):
@@ -515,21 +521,20 @@ class BrickFactory(gobject.GObject):
             return None
 
     @synchronized
-    def delremote(self, address):
+    def delremote(self, hostname):
+        if isinstance(hostname, console.RemoteHost):
+            self.__del_remote(hostname)
+        else:
+            host = self.__get_host_by_name(hostname)
+            if host is not None:
+                self.__del_remote(host)
 
-        # Deferred removal: fill the list first, then call delbrick(b)
-        # in sequence.
-
-        mybricks = []
-        for r in self.remote_hosts:
-            if r.addr[0] == address:
-                for br in self.bricks:
-                    if br.homehost and br.homehost.addr[0] == address:
-                        mybricks.append(br)
-                for br in mybricks:
-                    self.delbrick(br)
-                self.remote_hosts.remove(r)
-        self.remotehosts_changed = True
+    def __del_remote(self, host):
+        bricks = [b for b in self.bricks if b.homehost and
+                  b.homehost.addr[0] == host.addr[0]]
+        for brick in bricks:
+            self.delbrick(brick)
+        self.remote_hosts.remove(host)
 
 
 def readline(filename):
@@ -594,13 +599,12 @@ class Console(object):
         self.local = local
 
     def _check_changed(self):
-        if self.factory.remotehosts_changed:
-            for rh in self.factory.remote_hosts:
-                if rh.connection and rh.connection.isAlive():
-                    rh.connection.join(0.001)
-                    if not rh.connection.isAlive():
-                        rh.connected = False
-                        rh.connection = None
+        for host in self.factory.remote_hosts:
+            connection = host.connection
+            if connection is not None:
+                if not connection.isAlive():
+                    host.connected = False
+                    host.connection = None
 
     def _poll(self):
         command = ""    # because if stdin.readline raise an exception,

@@ -437,3 +437,22 @@ class UsbDevWindow(Window):
             vm.cfg.set('usbdevlist=' + devs)
             vm.update_usbdevlist(devs, old)
         self.window.destroy()
+
+
+class ChangePasswordDialog(Window):
+
+    resource = "data/changepwd.ui"
+
+    def __init__(self, remote_host):
+        Window.__init__(self)
+        self.remote_host = remote_host
+        self.get_object("password_entry").set_text(remote_host.password)
+
+    def on_ChangePasswordDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            password = self.get_object("password_entry").get_text()
+            self.remote_host.password = password
+        dialog.destroy()
+
+    def on_password_entry_activate(self, entry):
+        self.window.response(gtk.RESPONSE_OK)
