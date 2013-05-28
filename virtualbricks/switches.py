@@ -167,4 +167,4 @@ class SwitchWrapper(bricks.Brick):
             self.proc = None
 
     def poweroff(self):
-        pass
+        self.proc = None
