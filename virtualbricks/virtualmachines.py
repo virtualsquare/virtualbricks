@@ -732,7 +732,6 @@ class VirtualMachine(bricks.Brick):
             if self.cfg["cpu"]:
                 res.extend(["-cpu", self.cfg["cpu"]])
         res.extend(list(self.build_cmd_line()))
-        import pdb; pdb.set_trace()
         if not self.has_graphic() or self.cfg["novga"]:
             res.extend(["-display", "none"])
         self.__clear_machine_vmdisks()
