@@ -1160,7 +1160,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		return builder.get_object("frame")
 
 	def curtain_up(self, brick=None):
-		if brick is not None:
+		if False and brick is not None:
 			configpanel = interfaces.IConfigController(brick)
 			if configpanel is not None:
 				log.debug("Found custom config panel")
