@@ -118,16 +118,25 @@ class Switch(bricks.Brick):
 
 class FakeProcess:
 
-        def __init__(self, brick):
-            self.brick = brick
+    pid = -1
+    terminated = False
 
-        def poll(self):
-            return True
+    def __init__(self, brick):
+        self.brick = brick
+
+    def poll(self):
+        if self.terminated:
+            return 0
+        return None
+
+    def send_signal(self, signo):
+        self.terminated = False
 
 
 class SwitchWrapper(bricks.Brick):
 
     type = "SwitchWrapper"
+    pid = -1
 
     class config_factory(bricks.Config):
 
@@ -138,33 +147,36 @@ class SwitchWrapper(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        # self.cfg.path = ""
         self.socks.append(link.Sock(self, self.name + "_port"))
         # XXX: see Switch __init__
         self.on_config_changed()
-        # self.cfg.numports = 32
+
+    def poweron(self):
+        if os.path.exists(self.cfg.path):
+            self.proc = FakeProcess(self)
+        else:
+            log.debug("Socket does not exists: %s", self.cfg.path)
+            self.proc = None
+
+    def poweroff(self):
+        self.proc = None
 
     def get_parameters(self):
         return ""
 
-    def prog(self):
-        return ""
+    def __set_sock_path(self):
+        self.socks[0].path = self.cfg.path
 
     def on_config_changed(self):
-        self.socks[0].path = self.cfg.path
+        self.__set_sock_path()
         bricks.Brick.on_config_changed(self)
+
+    def configure(self, attrs):
+        bricks.Brick.configure(self, attrs)
+        self.__set_sock_path()
 
     def configured(self):
         return self.socks[0].has_valid_path()
 
     def path(self):
         return self.cfg.path
-
-    def poweron(self):
-        if os.path.exists(self.cfg.path):
-            self.proc = FakeProcess(self)
-        else:
-            self.proc = None
-
-    def poweroff(self):
-        self.proc = None
