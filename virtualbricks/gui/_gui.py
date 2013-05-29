@@ -113,7 +113,7 @@ interfaces.registerAdapter(BrickPopupMenu, bricks.Brick, interfaces.IMenu)
 class GVirtualMachine(virtualmachines.VirtualMachine):
 
     def has_graphic(self):
-        return self.homehost is not None
+        return self.homehost is None
 
 
 class VMPopupMenu(BrickPopupMenu):
