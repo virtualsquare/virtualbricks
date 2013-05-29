@@ -2090,8 +2090,10 @@ GB</property>
     <property name="height_request">260</property>
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Virtualbricks - Configure Disk Images</property>
+    <property name="modal">True</property>
     <property name="window_position">center</property>
     <property name="urgency_hint">True</property>
+    <property name="transient_for">main_win</property>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
