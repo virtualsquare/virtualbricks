@@ -64,12 +64,6 @@ class Process(threading.Thread):
         self.args = args
 
     def poll(self):
-        """Return the current status of the process.
-
-        Return C{None} if the process is still running or it is not still
-        launched, the pid if the process if the process terminated.
-        """
-
         if self._pd:
             return self._pd.poll()
 
