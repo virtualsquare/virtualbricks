@@ -327,6 +327,7 @@ class TapConfigController(ConfigController):
 
 
 def config_panel_factory(context):
+    return None
     type = context.get_type()
     # if type == "Event":
     #     return EventConfigController(context)
