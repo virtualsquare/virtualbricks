@@ -480,7 +480,6 @@ class VirtualMachine(bricks.Brick):
         "-soundhw": "soundhw",
         "-usb": "usbmode",
         # "-uuid": "uuid",
-        "-nographic": "novga",
         # "-curses": "curses", ## not implemented
         # "-no-frame": "noframe", ## not implemented
         # "-no-quit": "noquit", ## not implemented.
@@ -733,8 +732,9 @@ class VirtualMachine(bricks.Brick):
             if self.cfg["cpu"]:
                 res.extend(["-cpu", self.cfg["cpu"]])
         res.extend(list(self.build_cmd_line()))
-        if not self.has_graphic():
-            res.append("-nographic")
+        import pdb; pdb.set_trace()
+        if not self.has_graphic() or self.cfg["novga"]:
+            res.extend(["-display", "none"])
         self.__clear_machine_vmdisks()
         idx = 0
         for dev in ["hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock"]:
