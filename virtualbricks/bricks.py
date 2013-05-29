@@ -50,7 +50,12 @@ class Process(threading.Thread):
 
     @property
     def pid(self):
-        return self._pd.pid
+        """Return the pid of the process or -1 if unknown or not launced yet.
+        """
+
+        if self._pd:
+            return self._pd.pid
+        return -1
 
     def __init__(self, args):
         threading.Thread.__init__(self, name="Process_%s" % args[0])
@@ -59,7 +64,14 @@ class Process(threading.Thread):
         self.args = args
 
     def poll(self):
-        return self._pd.poll()
+        """Return the current status of the process.
+
+        Return C{None} if the process is still running or it is not still
+        launched, the pid if the process if the process terminated.
+        """
+
+        if self._pd:
+            return self._pd.poll()
 
     def send_signal(self, signo):
         self._pd.send_signal(signo)
