@@ -131,6 +131,7 @@ class IBrick(Interface):
     def get_parameters():
         """Actually used only in the main tree to show the list of the
         parameters"""
+        # XXX: remove this method
 
     def configure(attrlist):
         """Configure the brick"""
@@ -162,10 +163,13 @@ class IBrick(Interface):
 
 class IProcess(Interface):
 
+    # pid = Attribute("The pid of the process.")
+
     def poll():
         """Check if child process has terminated.
 
-        Set and return returncode attribute.
+        Set and return returncode attribute. Return C{None} if the process is
+        still running or it is not still launched, the exit code otherwise.
         """
 
     def send_signal(signo):
