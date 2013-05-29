@@ -198,7 +198,7 @@ class ConfigFile:
                             sk.model + '|' + sk.mac + '|' + str(sk.vlan) +
                             '\n')
         for b in iter(factory.bricks):
-            for pl in b.plugs:
+            for pl in (p for p in b.plugs if p.sock is not None):
                 if b.get_type() == 'Qemu':
                     if pl.mode == 'vde':
                         fileobj.write('link|' + b.name + "|" + pl.sock.nickname
