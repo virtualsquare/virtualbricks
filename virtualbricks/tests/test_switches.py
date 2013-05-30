@@ -25,3 +25,12 @@ class TestSwitch(unittest.TestCase):
         self.assertEqual(output[0], "port/setnumports 33")
         sw.cfg["numports"] = 33
         self.assertEqual(len(output), 1)
+
+    def test_args(self):
+        sw1 = switches.Switch(stubs.FactoryStub(), "test_switch")
+        sw2 = switches.Switch(stubs.FactoryStub(), "test_switch2")
+        self.assertEqual(sw1.args(),
+                         ["/home/marco/.virtualenvs/virtualbricks/bin/vde_switch",
+                          "-M", "/home/marco/.virtualbricks/test_switch.mgmt",
+                          "-n", "32", "-s",
+                          "/home/marco/.virtualbricks/test_switch.ctl"])
