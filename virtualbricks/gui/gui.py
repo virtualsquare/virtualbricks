@@ -468,7 +468,51 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def setup_netwoks_cards(self):
 		builder = self.__setup_treeview("data/networkcards.ui",
 								"scrolledwindow12", "networkcards_treeview")
+
+		def set_vlan(column, cell_renderer, model, iter):
+			link = model.get_value(iter, 0)
+			cell_renderer.set_property("text", str(link.vlan))
+
+		def set_connection(column, cell_renderer, model, iter):
+			link = model.get_value(iter, 0)
+			if link.mode == "hostonly":
+				conn = "Host"
+			elif link.sock:
+				conn = link.sock.brick.name
+			elif link.mode == "sock" and self.config.femaleplugs:
+				conn = "Vde socket (female plug)"
+			else:
+				conn = "None"
+			cell_renderer.set_property("text", conn)
+
+		def set_model(column, cell_renderer, model, iter):
+			link = model.get_value(iter, 0)
+			cell_renderer.set_property("text", link.model)
+
+		def set_mac(column, cell_renderer, model, iter):
+			link = model.get_value(iter, 0)
+			cell_renderer.set_property("text", link.mac)
+
+		vlan_c = builder.get_object("vlan_treeviewcolumn")
+		vlan_cr = builder.get_object("vlan_cellrenderer")
+		vlan_c.set_cell_data_func(vlan_cr, set_vlan)
+		connection_c = builder.get_object("connection_treeviewcolumn")
+		connection_cr = builder.get_object("connection_cellrenderer")
+		connection_c.set_cell_data_func(connection_cr, set_connection)
+		model_c = builder.get_object("model_treeviewcolumn")
+		model_cr = builder.get_object("model_cellrenderer")
+		model_c.set_cell_data_func(model_cr, set_model)
+		mac_c = builder.get_object("mac_treeviewcolumn")
+		mac_cr = builder.get_object("mac_cellrenderer")
+		mac_c.set_cell_data_func(mac_cr, set_mac)
 		self.vmplugs = builder.get_object("liststore1")
+
+		def sort_links(model, iter1, iter2):
+			return cmp(model.get_value(iter1, 0).vlan,
+				model.get_value(iter2, 0).vlan)
+
+		self.vmplugs.set_sort_func(0, sort_links)
+		self.vmplugs.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
 	def setup_router_devs(self):
 		pass
@@ -637,8 +681,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			combo = ComboBox(self.gladefile.get_widget(k))
 			opt=dict()
 			# add Ad-hoc host only to the vmehternet
-			if k == 'sockscombo_vmethernet':
-				opt['Host-only ad hoc network']='_hostonly'
 			if self.config.femaleplugs:
 				opt['Vde socket']='_sock'
 
@@ -715,21 +757,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				else:
 					images.select("Off")
 
-		# Qemu VMplugs:
-		ComboBox(self.gladefile.get_widget("vmplug_model")).populate(self.qemu_eth_model())
-		ComboBox(self.gladefile.get_widget("vmplug_model")).select('rtl8139')
-		if len(b.plugs)+ len(b.socks) == 0:
-			self.gladefile.get_widget('radiobutton_network_nonet').set_active(True)
-			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove',
-							   'scrolledwindow12'])
-		else:
-			self.gladefile.get_widget('radiobutton_network_usermode').set_active(True)
-			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove',
-							'scrolledwindow12'])
-		self.gladefile.get_widget('vmeth_config_panel').hide()
-
 		# Qemu: usb devices bind button
 		if (b.get_type() == "Qemu"):
 			if b.cfg.get('usbmode')=='*':
@@ -749,7 +776,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled"))
 				b.cfg.kvm=""
 
-		self.update_vmplugs_tree()
+		self.__update_vmplugs_tree()
 
 		for key in b.cfg.keys():
 			t = b.get_type()
@@ -1295,7 +1322,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'dialog_imagename',
 		'dialog_commitimage',
 		'dialog_convertimage',
-		'dialog_newvmplug'
 		]
 	'''
 	'	Returns a list with all the combos
@@ -1303,7 +1329,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	'''
 	def sockscombo_names(self):
 		return [
-		'sockscombo_vmethernet',
 		'sockscombo_tap',
 		'sockscombo_capture',
 		'sockscombo_wire0',
@@ -1312,7 +1337,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'sockscombo_wirefilter1',
 		'sockscombo_tunnell',
 		'sockscombo_tunnelc',
-		'sockscombo_newvmplug',
 		'sockscombo_router_netconf'
 		]
 
@@ -2841,169 +2865,63 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		else:
 			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(False)
 
-	def on_random_macaddr(self, widget=None, event=None, data=""):
-		self.gladefile.get_widget('vmplug_macaddr').set_text(tools.RandMac())
+	def on_addplug_button_clicked(self, button):
+		brick = self.maintree.get_selection()
+		if brick is not None:
+			dialog = dialogs.EthernetDialog(self, brick)
+			dialog.window.set_transient_for(self.widg["main_win"])
+			dialog.show()
 
-	def valid_mac(self, mac):
-		test = re.match("[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}:[a-fA-F0-9]{2}", mac)
-		if test:
-			return True
-		return False
-
-	def on_newvmplug_randmac(self, widget=None, event=None, data=""):
-		self.gladefile.get_widget('entry_newvmplug_mac').set_text(tools.RandMac())
-
-	def on_vmplug_add(self, widget=None, event=None, data=""):
-		ComboBox(self.gladefile.get_widget("combo_newvmplug_model")).populate(self.qemu_eth_model())
-		ComboBox(self.gladefile.get_widget("combo_newvmplug_model")).select('rtl8139')
-		self.config_brick_confirm()
-		self.gladefile.get_widget('dialog_newvmplug').show()
-
-
-	def on_newvmplug_cancel(self, widget=None, event=None, data=""):
-		self.show_window('')
-		self.curtain_up()
-		return True
-
-	def on_newvmplug_add(self, widget=None, event=None, data=""):
-		b = self.maintree.get_selection()
-		if b is None:
-			return
-		sockname = ComboBox(self.gladefile.get_widget('sockscombo_newvmplug')).get_selected()
-		if sockname == '_sock':
-			pl = b.add_sock()
-		elif (sockname == '_hostonly'):
-			pl = b.add_plug('_hostonly')
-		else:
-			pl = b.add_plug()
-			for so in self.brickfactory.socks:
-				if so.nickname == sockname:
-					pl.connect(so)
-		pl.model = self.gladefile.get_widget('combo_newvmplug_model').get_active_text()
-		mac = self.gladefile.get_widget('entry_newvmplug_mac').get_text()
-		if not self.valid_mac(mac):
-			mac = tools.RandMac()
-		if pl.brick.proc and pl.hotadd:  # XXX: this can raise an exception
-			pl.hotadd()
-		self.update_vmplugs_tree()
-		self.show_window('')
-		self.curtain_up()
-
-	def update_vmplugs_tree(self):
+	def __update_vmplugs_tree(self):
 		b = self.maintree.get_selection()
 		if b is None:
 			return
 
 		if b.get_type() == 'Qemu':
 			self.vmplugs.clear()
-			for pl in b.plugs:
-				conn = None
-				if pl.mode == 'hostonly':
-					conn = "Host"
-				elif pl.sock:
-					conn = pl.sock.brick.name
-				row = [pl.vlan, conn, pl.model, pl.mac]
-				self.vmplugs.append(row)
+			for plug in b.plugs:
+				self.vmplugs.append((plug, ))
 
 			if self.config.femaleplugs:
-				for sk in b.socks:
-					row = [sk.vlan, "Vde socket (female plug)", sk.model, sk.mac]
-					self.vmplugs.append(row)
-			self.vmplugs.set_sort_column_id(0, gtk.SORT_ASCENDING)
+				for sock in b.socks:
+					self.vmplugs.append((sock,))
 
-			self.gladefile.get_widget('vmeth_config_panel').hide()
-
-	def on_networkcards_treeview_button_release_event(self, widget, event):
-		b = self.maintree.get_selection()
-		if b is None:
-			return
-		treeview = self.gladefile.get_widget('scrolledwindow12').get_child()
-		store = self.vmplugs
-		x = int(event.x)
-		y = int(event.y)
-		pthinfo = treeview.get_path_at_pos(x, y)
-		number = get_treeselected(self, treeview, store, pthinfo, 0)
-		self.vmplug_selected = None
-		# vmsock = False
-		for pl in b.plugs:
-			if str(pl.vlan) == number:
-				self.vmplug_selected = pl
+	def remove_link(self, link):
+		if link.brick.proc and link.hotdel:
+			link.hotdel()
+		link.brick.remove_plug(link.vlan)
+		get_value = self.vmplugs.get_value
+		iter_next = self.vmplugs.iter_next
+		i = self.vmplugs.get_iter_first()
+		while i:
+			l = get_value(i, 0)
+			if link is l:
+				self.vmplugs.remove(i)
 				break
-		if not self.vmplug_selected:
-			for pl in b.socks:
-				if str(pl.vlan) == number:
-					self.vmplug_selected = pl
-					# vmsock=True
-					break
-		pl = self.vmplug_selected
+			i = iter_next(i)
 
-		if pl:
-			ComboBox(self.gladefile.get_widget("vmplug_model")).select(pl.model)
-			self.gladefile.get_widget('vmplug_macaddr').set_text(pl.mac)
-			if (pl.mode == 'sock'):
-				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Vde socket')
-			elif (pl.mode == 'hostonly'):
-				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select('Host-only ad hoc network')
-			elif (pl.sock):
-				ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).select(pl.sock.nickname)
+	def on_networkcards_treeview_key_press_event(self, treeview, event):
+		if gtk.gdk.keyval_from_name("Delete") == event.keyval:
+			brick = self.maintree.get_selection()
+			if brick is not None:
+				selection = treeview.get_selection()
+				model, itr = selection.get_selected()
+				if itr is not None:
+					link = model.get_value(itr, 0)
+					self.remove_link(link)
+					return True
 
-			self.gladefile.get_widget('vmeth_config_panel').show_all()
-		else:
-			self.gladefile.get_widget('vmeth_config_panel').hide()
-			treeview.get_selection().unselect_all()
-
-	def on_vmplug_edit(self, widget=None, event=None, data=""):
-		pl = self.vmplug_selected
-		if pl == None:
-			return
-		vlan = pl.vlan
-		b = self.maintree.get_selection()
-		if b is None:
-			return
-
-		if (pl.mode == 'sock'):
-			b.socks.remove(pl)
-		else:
-			b.plugs.remove(pl)
-		del(pl)
-		model = ComboBox(self.gladefile.get_widget('vmplug_model')).get_selected()
-		mac = self.gladefile.get_widget('vmplug_macaddr').get_text()
-		sockname = ComboBox(self.gladefile.get_widget('sockscombo_vmethernet')).get_selected()
-		if (sockname == '_sock'):
-			pl = b.add_sock()
-		if (sockname == '_hostonly'):
-			pl = b.add_plug(sockname)
-		else:
-			for so in self.brickfactory.socks:
-				if so.nickname == sockname:
-					pl = b.add_plug(so)
-		pl.vlan = vlan
-		pl.model = model
-		if (self.valid_mac(pl.mac)):
-			pl.mac = mac
-		else:
-			pl.mac = tools.RandMac()
-		self.update_vmplugs_tree()
-
-	def on_vmplug_remove(self, widget=None, event=None, data=""):
-		b = self.maintree.get_selection()
-		if b is None:
-			return
-		pl = self.vmplug_selected
-		if pl.brick.proc and pl.hotdel:
-			pl.hotdel()
-		b.remove_plug(pl.vlan)
-		self.update_vmplugs_tree()
-
-	def on_vmplug_onoff(self, widget=None, event=None, data=""):
-		if self.gladefile.get_widget('radiobutton_network_nonet').get_active():
-			self.set_nonsensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove',
-							   'scrolledwindow12'])
-		else:
-			self.set_sensitivegroup(['vmplug_model', 'sockscombo_vmethernet','vmplug_macaddr','randmac',
-				'button_network_netcard_add','button_network_edit','button_network_remove',
-							'scrolledwindow12'])
+	def on_networkcards_treeview_button_release_event(self, treeview, event):
+		if event.button == 3:
+			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+			if pthinfo is not None:
+				path, col, cellx, celly = pthinfo
+				treeview.grab_focus()
+				treeview.set_cursor(path, col, 0)
+				model = treeview.get_model()
+				obj = model.get_value(model.get_iter(path), 0)
+				interfaces.IMenu(obj).popup(event.button, event.time, self)
+				return True
 
 	def on_tap_config_manual(self, widget=None, event=None, data=""):
 		if widget.get_active():

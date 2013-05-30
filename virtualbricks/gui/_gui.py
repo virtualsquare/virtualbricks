@@ -22,7 +22,7 @@ import gtk
 from zope.interface import implements
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           console)
+                           console, link)
 
 from virtualbricks.gui import graphics, dialogs
 
@@ -220,6 +220,45 @@ class RemoteHostPopupMenu:
 
 interfaces.registerAdapter(RemoteHostPopupMenu, console.RemoteHost,
                            interfaces.IMenu)
+
+
+class LinkMenu:
+    implements(interfaces.IMenu)
+
+    def __init__(self, original):
+        self.original = original
+
+    def build(self, gui):
+        menu = gtk.Menu()
+        edit = gtk.MenuItem(_("Edit"))
+        edit.connect("activate", self.on_edit_activate, gui)
+        menu.append(edit)
+        remove = gtk.MenuItem(_("Remove"))
+        remove.connect("activate", self.on_remove_activate, gui)
+        menu.append(remove)
+        return menu
+
+    def popup(self, button, time, gui):
+        menu = self.build(gui)
+        menu.show_all()
+        menu.popup(None, None, None, button, time)
+
+    def on_edit_activate(self, menuitem, gui):
+        dialog = dialogs.EthernetDialog(gui, self.original.brick,
+                                  self.original)
+        dialog.window.set_transient_for(gui.widg["main_win"])
+        dialog.show()
+
+    def on_remove_activate(self, menuitem, gui):
+        question = _("Do you really want to delete eth%d network interface") \
+                % self.original.vlan
+        dialog = dialogs.ConfirmDialog(question, on_yes=gui.remove_link,
+                                       on_yes_arg=self.original)
+        dialog.window.set_transient_for(gui.widg["main_win"])
+        dialog.show()
+
+interfaces.registerAdapter(LinkMenu, link.Plug, interfaces.IMenu)
+interfaces.registerAdapter(LinkMenu, link.Sock, interfaces.IMenu)
 
 
 class ConfigController(object):

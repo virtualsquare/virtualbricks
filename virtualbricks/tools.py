@@ -21,6 +21,7 @@ import os
 import sys
 import errno
 import random
+import re
 import threading
 import logging
 import functools
@@ -37,6 +38,11 @@ def random_mac():
         random.getrandbits(8))
 
 RandMac = random_mac
+MAC_RE = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
+
+
+def mac_is_valid(mac):
+    return bool(MAC_RE.match(mac))
 
 
 class LoopingCall:
