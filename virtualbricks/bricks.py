@@ -226,7 +226,7 @@ class _LocalBrick(base.Base):
             if not self.check_links():
                 raise errors.LinkLoopError("Link loop detected")
         self._poweron()
-        self.emit("changed")
+        self.on_config_changed()
 
     def poweroff(self):
         if self.proc is None or not self.run_condition:
@@ -248,7 +248,7 @@ class _LocalBrick(base.Base):
     def configure(self, attrlist):
         """TODO attrs : dict attr => value"""
         self.initialize(attrlist)
-        self.emit("changed")
+        self.on_config_changed()
 
     # Interal interface
 
@@ -338,7 +338,6 @@ class _LocalBrick(base.Base):
     def console(self):
         return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
 
-    @deprecated(versions.Version("Virtualbricks", 1, 0), "emit")
     def on_config_changed(self):
         self.emit("changed")
 
@@ -370,7 +369,7 @@ class _LocalBrick(base.Base):
         for p in self.plugs:
             if not p.configured():
                 if p.connect(endpoint):
-                    self.emit("changed")
+                    self.on_config_changed()
                     self.gui_changed = True
                     return True
         return False
@@ -379,7 +378,7 @@ class _LocalBrick(base.Base):
         for p in self.plugs:
             if p.configured():
                 p.disconnect()
-        self.emit("changed")
+        self.on_config_changed()
 
     ############################
     ########### Poweron/Poweroff
