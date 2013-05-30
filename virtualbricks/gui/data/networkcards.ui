@@ -4,14 +4,8 @@
   <!-- interface-naming-policy project-wide -->
   <object class="GtkListStore" id="liststore1">
     <columns>
-      <!-- column-name Eth -->
-      <column type="gchararray"/>
-      <!-- column-name Connection -->
-      <column type="gchararray"/>
-      <!-- column-name Model -->
-      <column type="gchararray"/>
-      <!-- column-name macaddr -->
-      <column type="gchararray"/>
+      <!-- column-name Link -->
+      <column type="PyObject"/>
     </columns>
   </object>
   <object class="GtkWindow" id="window1">
@@ -22,55 +16,44 @@
         <property name="can_focus">True</property>
         <property name="model">liststore1</property>
         <signal name="button-release-event" handler="on_networkcards_treeview_button_release_event" swapped="no"/>
+        <signal name="key-press-event" handler="on_networkcards_treeview_key_press_event" swapped="no"/>
         <child>
-          <object class="GtkTreeViewColumn" id="treeviewcolumn1">
+          <object class="GtkTreeViewColumn" id="vlan_treeviewcolumn">
             <property name="title" translatable="yes">Eth</property>
             <property name="reorderable">True</property>
             <property name="sort_column_id">0</property>
             <child>
-              <object class="GtkCellRendererText" id="cellrenderertext1"/>
-              <attributes>
-                <attribute name="text">0</attribute>
-              </attributes>
+              <object class="GtkCellRendererText" id="vlan_cellrenderer"/>
             </child>
           </object>
         </child>
         <child>
-          <object class="GtkTreeViewColumn" id="treeviewcolumn2">
+          <object class="GtkTreeViewColumn" id="connection_treeviewcolumn">
             <property name="title" translatable="yes">Connection</property>
             <property name="reorderable">True</property>
             <property name="sort_column_id">1</property>
             <child>
-              <object class="GtkCellRendererText" id="cellrenderertext2"/>
-              <attributes>
-                <attribute name="text">1</attribute>
-              </attributes>
+              <object class="GtkCellRendererText" id="connection_cellrenderer"/>
             </child>
           </object>
         </child>
         <child>
-          <object class="GtkTreeViewColumn" id="treeviewcolumn3">
+          <object class="GtkTreeViewColumn" id="model_treeviewcolumn">
             <property name="title" translatable="yes">Model</property>
             <property name="reorderable">True</property>
             <property name="sort_column_id">2</property>
             <child>
-              <object class="GtkCellRendererText" id="cellrenderertext3"/>
-              <attributes>
-                <attribute name="text">2</attribute>
-              </attributes>
+              <object class="GtkCellRendererText" id="model_cellrenderer"/>
             </child>
           </object>
         </child>
         <child>
-          <object class="GtkTreeViewColumn" id="treeviewcolumn4">
-            <property name="title" translatable="yes">macaddr</property>
+          <object class="GtkTreeViewColumn" id="mac_treeviewcolumn">
+            <property name="title" translatable="yes">MAC address</property>
             <property name="reorderable">True</property>
             <property name="sort_column_id">3</property>
             <child>
-              <object class="GtkCellRendererText" id="cellrenderertext4"/>
-              <attributes>
-                <attribute name="text">3</attribute>
-              </attributes>
+              <object class="GtkCellRendererText" id="mac_cellrenderer"/>
             </child>
           </object>
         </child>

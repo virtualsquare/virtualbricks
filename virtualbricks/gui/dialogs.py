@@ -456,3 +456,125 @@ class ChangePasswordDialog(Window):
 
     def on_password_entry_activate(self, entry):
         self.window.response(gtk.RESPONSE_OK)
+
+
+class EthernetDialog(Window):
+
+    resource = "data/ethernetdialog.ui"
+
+    def __init__(self, gui, brick, plug=None):
+        Window.__init__(self)
+        self.gui = gui
+        self.brick = brick
+        self.plug = plug
+        socks = self.get_object("sock_model")
+        socks.append(("Host-only ad hoc network", "_hostonly"))
+        if gui.config.femaleplugs:
+            socks.append(("Vde socket", "_sock"))
+        # TODO: can this operation made only once?
+        for sock in gui.brickfactory.socks:
+            if (sock.brick.get_type().startswith('Switch') or
+                    gui.config.femaleplugs):
+                socks.append((sock.nickname, sock.nickname))
+
+        if plug:
+            self.get_object("title_label").set_label(
+                "<b>Edit ethernet interface</b>")
+            self.get_object("ok_button").set_property("label", gtk.STOCK_EDIT)
+            self.get_object("mac_entry").set_text(plug.mac)
+            model = self.get_object("netmodel_model")
+            i = model.get_iter_first()
+            while i:
+                if model.get_value(i, 0) == plug.model:
+                    self.get_object("model_combo").set_active_iter(i)
+                    break
+                i = model.iter_next(i)
+
+            i = socks.get_iter_first()
+            while i:
+                v = socks.get_value(i, 1)
+                if ((plug.mode == "sock" and v == "_sock") or
+                        (plug.mode == "hostonly" and v == "_hostonly") or
+                        (plug.sock and plug.sock.nickname == v)):
+                    self.get_object("sock_combo").set_active_iter(i)
+                    break
+                i = socks.iter_next(i)
+        else:
+            self.get_object("sock_combo").set_active(0)
+
+    def is_valid(self, mac):
+        return tools.mac_is_valid(mac)
+
+    def add_plug(self, vlan=None):
+        combo = self.get_object("sock_combo")
+        sockname = combo.get_model().get_value(combo.get_active_iter(), 1)
+        if sockname == "_sock":
+            plug = self.brick.add_sock()
+        elif sockname == "_hostonly":
+            plug = self.brick.add_plug(sockname)
+        else:
+            plug = self.brick.add_plug()
+            for sock in self.gui.brickfactory.socks:
+                if sock.nickname == sockname:
+                    plug.connect(sock)
+                    break
+        combo = self.get_object("model_combo")
+        plug.model = combo.get_model().get_value(combo.get_active_iter(), 0)
+        mac = self.get_object("mac_entry").get_text()
+        if not self.is_valid(mac):
+            log.error("MAC address %s is not valid, generating a random one",
+                      mac)
+            mac = tools.random_mac()
+        plug.mac = mac
+        if vlan is not None:
+            plug.vlan = vlan
+
+        self.gui.vmplugs.append((plug, ))
+
+    def on_randomize_button_clicked(self, button):
+        self.get_object("mac_entry").set_text(tools.random_mac())
+
+    def on_EthernetDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            vlan = None
+            plug = self.plug
+            if plug:
+                vlan = plug.vlan
+                if plug.mode == "sock":
+                    self.brick.socks.remove(plug)
+                else:
+                    self.brick.plugs.remove(plug)
+
+                get_value = self.gui.vmplugs.get_value
+                iter_next = self.gui.vmplugs.iter_next
+                i = self.gui.vmplugs.get_iter_first()
+                while i:
+                    l = get_value(i, 0)
+                    if plug is l:
+                        self.gui.vmplugs.remove(i)
+                        break
+                    i = iter_next(i)
+
+            self.add_plug(vlan)
+        dialog.destroy()
+
+
+class ConfirmDialog(Window):
+
+    resource = "data/confirmdialog.ui"
+
+    def __init__(self, question, on_yes=None, on_yes_arg=None, on_no=None,
+                 on_no_arg=None, ):
+        Window.__init__(self)
+        self.window.set_markup(question)
+        self.on_yes = on_yes
+        self.on_yes_arg = on_yes_arg
+        self.on_no = on_no
+        self.on_no_arg = on_no_arg
+
+    def on_ConfirmDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_YES and self.on_yes:
+            self.on_yes(self.on_yes_arg)
+        elif response_id == gtk.RESPONSE_NO and self.on_no:
+            self.on_no(self.on_no_arg)
+        dialog.destroy()
