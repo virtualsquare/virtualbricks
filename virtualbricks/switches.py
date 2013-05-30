@@ -32,15 +32,6 @@ class Switch(bricks.Brick):
 
     type = "Switch"
     ports_used = 0
-    command_builder = {"-x": "hubmode",
-                       "-n": "numports",
-                       "-F": "fstp",
-                       "--macaddr": "macaddr",
-                       "-m": "mode",
-                       "-g": "group",
-                       "--priority": "priority",
-                       "--mgmtmode": "mgmtmode",
-                       "--mgmtgroup": "mgmtgroup"}
 
     class config_factory(bricks.Config):
 
@@ -58,8 +49,17 @@ class Switch(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.command_builder["-s"] = self.path
-        self.command_builder["-M"] = self.console
+        self.command_builder = {"-x": "hubmode",
+                                "-n": "numports",
+                                "-F": "fstp",
+                                "--macaddr": "macaddr",
+                                "-m": "mode",
+                                "-g": "group",
+                                "--priority": "priority",
+                                "--mgmtmode": "mgmtmode",
+                                "--mgmtgroup": "mgmtgroup",
+                                "-s": self.path,
+                                "-M": self.console}
         # self.cfg.numports = "32"
         # self.cfg.hub = ""
         # self.cfg.fstp = ""
