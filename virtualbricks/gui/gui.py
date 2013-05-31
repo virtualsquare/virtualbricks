@@ -63,41 +63,20 @@ def get_treeselected_name(gui, tree, model, pathinfo):
 
 
 def check_joblist(gui, force=False):
-	new_ps = []
-	for b in iter(gui.brickfactory.bricks):
-		if b.proc is not None:
-			if b.homehost and b.homehost.connected:
-				ret = None
-			else:
-				ret = b.proc.poll()
-			if ret is None:
-				new_ps.append(b)
-			else:
-				b.poweroff()
-				b.gui_changed = True
+	running = gui.running_bricks
+	i = running.get_iter_first()
+	while i:
+		brick = running.get_value(i, 0)
+		if brick.proc is None or brick.proc.poll() is not None:
+			brick.poweroff()
+			if not running.remove(i):
+				break
+		i = running.iter_next(i)
 
-	if gui.ps != new_ps or force==True:
-		gui.ps = new_ps
-		gui.bricks = []
-		gui.running_bricks.clear()
-		for b in gui.ps:
-			i = gui.running_bricks.append()
-			if (b.pid == -10):
-				pid = "python-thread   "
-			elif b.homehost:
-				pid = "Remote"
-			else:
-				pid = str(b.pid)
-			gui.running_bricks.set_value(i, 0,
-					graphics.pixbuf_for_brick_at_size(b, 48, 48))
-			gui.running_bricks.set_value(i, 1, pid)
-			gui.running_bricks.set_value(i, 2, b.get_type())
-			gui.running_bricks.set_value(i, 3, b.name)
-		log.debug("proc list updated")
-
-	if gui.curtain_is_down:
-		# XXX: if project is changed, the title remain the same
-		gui.widg['main_win'].set_title("Virtualbricks ( "+gui.brickfactory.settings.get('current_project')+ ")")
+	running.clear()
+	for brick in gui.brickfactory.bricks:
+		if brick.proc is not None:
+			running.append((brick, ))
 
 	return True
 
@@ -423,6 +402,42 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def setup_joblist(self):
 		builder = self.__setup_treeview("data/joblist.ui", "scrolledwindow1",
 								"joblist_treeview")
+
+		def set_icon(column, cell_renderer, model, iter):
+			brick = model.get_value(iter, 0)
+			pixbuf = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
+			cell_renderer.set_property("pixbuf", pixbuf)
+
+		def set_pid(column, cell_renderer, model, iter):
+			brick = model.get_value(iter, 0)
+			if brick.pid == -10:
+				pid = "python-thread   "
+			elif brick.homehost:
+				pid = "Remote"
+			else:
+				pid = str(brick.pid)
+			cell_renderer.set_property("text", pid)
+
+		def set_type(column, cell_renderer, model, iter):
+			brick = model.get_value(iter, 0)
+			cell_renderer.set_property("text", brick.get_type())
+
+		def set_name(column, cell_renderer, model, iter):
+			brick = model.get_value(iter, 0)
+			cell_renderer.set_property("text", brick.name)
+
+		icon_c = builder.get_object("icon_treeviewcolumn")
+		icon_cr = builder.get_object("icon_cellrenderer")
+		icon_c.set_cell_data_func(icon_cr, set_icon)
+		pid_c = builder.get_object("pid_treeviewcolumn")
+		pid_cr = builder.get_object("pid_cellrenderer")
+		pid_c.set_cell_data_func(pid_cr, set_pid)
+		type_c = builder.get_object("type_treeviewcolumn")
+		type_cr = builder.get_object("type_cellrenderer")
+		type_c.set_cell_data_func(type_cr, set_type)
+		name_c = builder.get_object("name_treeviewcolumn")
+		name_cr = builder.get_object("name_cellrenderer")
+		name_c.set_cell_data_func(name_cr, set_name)
 		self.running_bricks = builder.get_object("liststore1")
 
 	def setup_remotehosts(self):
@@ -1306,7 +1321,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'dialog_create_image',
 		'menu_popup_imagelist',
 		'dialog_jobmonitor',
-		'menu_popup_joblist',
 		'menu_popup_usbhost',
 		'menu_popup_usbguest',
 		'menu_popup_volumes',
@@ -2085,24 +2099,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 							remote_host.addr[0], msg)
 			return True
 
-	def on_joblist_treeview_button_release_event(self, widget=None, event=None, data=""):
-		treeview = self.gladefile.get_widget("scrolledwindow1").get_child()
-		store = self.running_bricks
-		x = int(event.x)
-		y = int(event.y)
-		pthinfo = treeview.get_path_at_pos(x, y)
-		name = get_treeselected_name(self, treeview, store, pthinfo)
+	def on_joblist_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
-			self.joblist_selected = self.brickfactory.get_brick_by_name(name)
-			if not self.joblist_selected:
-				return
-
-			if self.joblist_selected.get_type()=="Qemu":
-				self.set_sensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
-			else:
-				self.set_nonsensitivegroup(['vmsuspend', 'vmpoweroff', 'vmhardreset'])
-
-			self.show_window('menu_popup_joblist')
+			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+			if pthinfo is not None:
+				path, col, cellx, celly = pthinfo
+				treeview.grab_focus()
+				treeview.set_cursor(path, col, 0)
+				model = treeview.get_model()
+				brick = model.get_value(model.get_iter(path), 0)
+				interfaces.IJobMenu(brick).popup(event.button, event.time, self)
+				return True
 
 	def on_button_togglesettings_clicked(self, widget=None, data=""):
 		if self.curtain_is_down:
@@ -2421,39 +2428,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_treeview_usbguest_row_activated(self, widget=None, data=""):
 		raise NotImplementedError("on_treeview_usbguest_row_activated not implemented")
-
-	def on_item_jobmonoitor_activate(self, widget=None, data=""):
-		self.joblist_selected.open_console()
-
-	def on_item_stop_job_activate(self, widget=None, data=""):
-		if self.joblist_selected is None:
-			return
-		if self.joblist_selected.proc != None:
-			log.debug("Sending to process signal 19!")
-			self.joblist_selected.proc.send_signal(19)
-
-	def on_item_cont_job_activate(self, widget=None, data=""):
-		if self.joblist_selected is None:
-			return
-		if self.joblist_selected.proc != None:
-			log.debug("Sending to process signal 18!")
-			self.joblist_selected.proc.send_signal(18)
-
-	def on_item_reset_job_activate(self, widget=None, data=""):
-		log.debug(self.joblist_selected)
-		if self.joblist_selected is None:
-			return
-		if self.joblist_selected.proc != None:
-			log.debug("Restarting process!")
-			self.joblist_selected.poweroff()
-			self.joblist_selected.poweron()
-
-	def on_item_kill_job_activate(self, widget=None, data=""):
-		if self.joblist_selected is None:
-			return
-		if self.joblist_selected.proc != None:
-			log.debug("Sending to process signal 9!")
-			self.joblist_selected.proc.send_signal(9)
 
 	def on_attach_device_activate(self, widget=None, data=""):
 		raise NotImplementedError("on_attach_device_activate not implemented")
@@ -2928,25 +2902,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.gladefile.get_widget('tap_ipconfig').set_sensitive(True)
 		else:
 			self.gladefile.get_widget('tap_ipconfig').set_sensitive(False)
-
-	def on_vm_suspend(self, widget=None, event=None, data=""):
-		hda = self.joblist_selected.cfg.get('basehda')
-		if hda is None or 0 != subprocess.Popen(["qemu-img","snapshot","-c","virtualbricks",hda]).wait():
-			log.error(_("Suspend/Resume not supported on this disk."))
-			return
-		self.joblist_selected.recv()
-		self.joblist_selected.send("savevm virtualbricks\n")
-		while(not self.joblist_selected.recv().startswith("(qemu")):
-			time.sleep(1)
-		self.joblist_selected.poweroff()
-
-	def on_vm_powerbutton(self, widget=None, event=None, data=""):
-		self.joblist_selected.send("system_powerdown\n")
-		self.joblist_selected.recv()
-
-	def on_vm_hardreset(self, widget=None, event=None, data=""):
-		self.joblist_selected.send("system_reset\n")
-		self.joblist_selected.recv()
 
 	def on_vnc_novga_toggled(self, widget=None, event=None, data=""):
 		novga = self.gladefile.get_widget('cfg_Qemu_novga_check')

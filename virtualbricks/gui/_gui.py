@@ -16,7 +16,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import time
 import logging
+import subprocess
 
 import gtk
 from zope.interface import implements
@@ -259,6 +261,107 @@ class LinkMenu:
 
 interfaces.registerAdapter(LinkMenu, link.Plug, interfaces.IMenu)
 interfaces.registerAdapter(LinkMenu, link.Sock, interfaces.IMenu)
+
+
+class JobMenu:
+    implements(interfaces.IMenu)
+
+    def __init__(self, original):
+        self.original = original
+
+    def build(self, gui):
+        menu = gtk.Menu()
+        open = gtk.MenuItem(_("Open control monitor"))
+        open.connect("activate", self.on_open_activate)
+        menu.append(open)
+        menu.append(gtk.SeparatorMenuItem())
+        stop = gtk.ImageMenuItem(gtk.STOCK_STOP)
+        stop.connect("activate", self.on_stop_activate)
+        menu.append(stop)
+        cont = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+        cont.set_label(_("Continue"))
+        cont.connect("activate", self.on_cont_activate)
+        menu.append(cont)
+        menu.append(gtk.SeparatorMenuItem())
+        reset = gtk.ImageMenuItem(gtk.STOCK_REDO)
+        reset.set_label(_("Restart"))
+        reset.connect("activate", self.on_reset_activate)
+        menu.append(reset)
+        kill = gtk.ImageMenuItem(gtk.STOCK_DELETE)
+        kill.set_label(_("Kill"))
+        kill.connect("activate", self.on_kill_activate)
+        menu.append(kill)
+        return menu
+
+    def popup(self, button, time, gui):
+        menu = self.build(gui)
+        menu.show_all()
+        menu.popup(None, None, None, button, time)
+
+    def on_open_activate(self, menuitem):
+        self.original.open_console()
+
+    def on_stop_activate(self, menuitem):
+        log.debug("Sending to process signal 19!")
+        self.original.proc.send_signal(19)
+
+    def on_cont_activate(self, menuitem):
+        log.debug("Sending to process signal 18!")
+        self.original.proc.send_signal(18)
+
+    def on_reset_activate(self, menuitem):
+        log.debug("Restarting process!")
+        self.original.poweroff()
+        self.original.poweron()
+
+    def on_kill_activate(self, menuitem):
+        log.debug("Sending to process signal 9!")
+        self.original.proc.send_signal(9)
+
+
+interfaces.registerAdapter(JobMenu, bricks.Brick, interfaces.IJobMenu)
+
+
+class VMJobMenu(JobMenu):
+
+    def build(self, gui):
+        menu = JobMenu.build(self, gui)
+        suspend = gtk.MenuItem(_("Suspend virtual machine"))
+        suspend.connect("activate", self.on_suspend_activate)
+        menu.insert(suspend, 5)
+        powerdown = gtk.MenuItem(_("Send ACPI powerdown"))
+        powerdown.connect("activate", self.on_powerdown_activate)
+        menu.insert(powerdown, 6)
+        reset = gtk.MenuItem(_("Send ACPI hard reset"))
+        reset.connect("activate", self.on_reset_activate)
+        menu.insert(reset, 7)
+        menu.insert(gtk.SeparatorMenuItem(), 8)
+        return menu
+
+    def on_suspend_activate(self, menuitem):
+        hda = self.original.cfg["basehda"]
+        if hda is None or 0 != subprocess.Popen(["qemu-img", "snapsho", "-c",
+                                           "virtualbricks",hda]).wait():
+            log.error(_("Suspend/Resume not supported on this disk."))
+            return
+        self.original.recv()
+        self.original.send("savevm virtualbricks\n")
+        while not self.original.recv().startswith("(qemu"):
+            time.sleep(0.5)
+        self.original.poweroff()
+
+    def on_powerdown_activate(self, menuitem):
+        log.info("send ACPI powerdown")
+        self.original.send("system_powerdown\n")
+        self.original.recv()
+
+    def on_reset_activate(self, menuitem):
+        log.info("send ACPI reset")
+        self.original.send("system_reset\n")
+        self.original.recv()
+
+
+interfaces.registerAdapter(VMJobMenu, GVirtualMachine, interfaces.IJobMenu)
 
 
 class ConfigController(object):

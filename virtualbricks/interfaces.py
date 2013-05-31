@@ -104,6 +104,10 @@ class IMenu(Interface):
         """Pop up a menu for a specific brick."""
 
 
+class IJobMenu(IMenu):
+    pass
+
+
 class IConfigController(Interface):
 
     def get_view(gui):
