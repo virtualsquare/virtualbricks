@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk+" version="2.24"/>
+  <!-- interface-naming-policy project-wide -->
+  <object class="GtkListStore" id="liststore1"/>
+  <object class="GtkWindow" id="window1">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkTreeView" id="bricks_treeview">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="model">liststore1</property>
+        <property name="headers_clickable">False</property>
+        <signal name="key-release-event" handler="on_bricks_treeview_key_release_event" swapped="no"/>
+        <signal name="row-activated" handler="on_bricks_treeview_row_activated" swapped="no"/>
+        <signal name="button-release-event" handler="on_bricks_treeview_button_release_event" swapped="no"/>
+        <child>
+          <object class="GtkTreeViewColumn" id="icon_treeviewcolumn">
+            <property name="title" translatable="yes">Icon</property>
+            <child>
+              <object class="GtkCellRendererPixbuf" id="icon_cellrenderer"/>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkTreeViewColumn" id="status_treeviewcolumn">
+            <property name="title" translatable="yes">Status</property>
+            <child>
+              <object class="GtkCellRendererText" id="status_cellrenderer"/>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkTreeViewColumn" id="type_treeviewcolumn">
+            <property name="title" translatable="yes">Type</property>
+            <child>
+              <object class="GtkCellRendererText" id="type_cellrenderer"/>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkTreeViewColumn" id="name_treeviewcolumn">
+            <property name="title" translatable="yes">Name</property>
+            <child>
+              <object class="GtkCellRendererText" id="name_cellrenderer"/>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkTreeViewColumn" id="parameters_treeviewcolumn">
+            <property name="title" translatable="yes">Parameters</property>
+            <child>
+              <object class="GtkCellRendererText" id="parameters_cellrenderer"/>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

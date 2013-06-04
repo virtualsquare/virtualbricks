@@ -140,11 +140,11 @@ class BrickFactory(gobject.GObject):
         self.bricksmodel.clear()
         self.eventsmodel.clear()
         for b in self.bricks:
-            self.delbrick(b)
+            self.del_brick(b)
         del self.bricks[:]
 
         for e in self.events:
-            self.delevent(e)
+            self.del_event(e)
         del self.events[:]
 
         del self.socks[:]
@@ -303,28 +303,24 @@ class BrickFactory(gobject.GObject):
 
         new_brick.on_config_changed()
         return new_brick
-    dupbrick = dup_brick
 
     def __remove_brick(self, brick, i):
         self.bricksmodel.remove(i)
 
-    def delbrick(self, brick):
+    def del_brick(self, brick):
+        brick.poweroff()
         # XXX check me
-        if brick.proc is not None:
-            brick.poweroff()
-        for b in self.bricks:
-            if b == brick:
-                for so in b.socks:
-                    self.socks.remove(so)
-            else:  # connections to brick must be deleted too
-                for pl in reversed(b.plugs):
-                    if pl.sock:
-                        if pl.sock.nickname.startswith(brick.name):
-                            log.debug("Deleting plug to %s", pl.sock.nickname)
-                            b.plugs.remove(pl)
-                            b.clear_self_socks(pl.sock.path)
-                            # recreate Plug(self) of some objects
-                            b.restore_self_plugs()
+        for so in brick.socks:
+            self.socks.remove(so)
+        # connections to brick must be deleted too
+        for b in (b for b in self.bricks if b is not brick):
+            for pl in reversed([p for p in b.plugs if p.sock and
+                                p.sock.nickname.startswith(brick.name)]):
+                log.debug("Deleting plug to %s", pl.sock.nickname)
+                b.plugs.remove(pl)
+                b.clear_self_socks(pl.sock.path)
+                # recreate Plug(self) of some objects
+                b.restore_self_plugs()
         self.bricks.remove(brick)
         self.__do_action_for_brick(self.__remove_brick, brick)
         brick.signal_disconnect(self.__brick_signals[id(brick)])
@@ -342,8 +338,6 @@ class BrickFactory(gobject.GObject):
             raise errors.NameAlreadyInUseError(nname)
         brick.name = nname
         # b.gui_changed = True
-
-    renamebrick = rename_brick
 
     # [[[[[[[[[]]]]]]]]]
     # [     Events     ]
@@ -398,7 +392,7 @@ class BrickFactory(gobject.GObject):
         log.debug("New event %s OK", event.name)
         return event
 
-    def dupevent(self, event):
+    def dup_event(self, event):
         name = self.normalize(self.next_name("copy_of_" + event.name))
         self.new_event(name)
         new_event = self.get_event_by_name(name)
@@ -409,15 +403,11 @@ class BrickFactory(gobject.GObject):
         self.eventsmodel.remove(i)
 
     def del_event(self, event):
-        for e in self.events:
-            if e == event:
-                e.poweroff()
+        event.poweroff()
         self.events.remove(event)
         self.__do_action_for_event(self.__remove_event, event)
         event.signal_disconnect(self.__event_signals[id(event)])
         del self.__event_signals[id(event)]
-
-    delevent = del_event
 
     def get_event_by_name(self, name):
         for e in self.events:
@@ -429,8 +419,6 @@ class BrickFactory(gobject.GObject):
         if self.is_in_use(name):
             raise errors.NameAlreadyInUseError(name)
         event.name = name
-
-    renameevent = rename_event
 
     ############################################
 
@@ -510,8 +498,17 @@ class BrickFactory(gobject.GObject):
         bricks = [b for b in self.bricks if b.homehost and
                   b.homehost.addr[0] == host.addr[0]]
         for brick in bricks:
-            self.delbrick(brick)
+            self.del_brick(brick)
         self.remote_hosts.remove(host)
+
+    ###################
+
+    delbrick = del_brick
+    dupbrick = dup_brick
+    renamebrick = rename_brick
+    delevent = del_event
+    dupevent = dup_event
+    renameevent = rename_event
 
 
 def readline(filename):

@@ -141,7 +141,6 @@ class _LocalBrick(base.Base):
 
     def poweroff(self, kill=False):
         if self.proc is None:
-            log.msg("Process is not running")
             return
         log.msg(_("Shutting down %s (pid: %d)") % (self.name, self.proc.pid))
         try:

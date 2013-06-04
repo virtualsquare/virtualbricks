@@ -83,13 +83,7 @@ class BrickPopupMenu(BaseMenu):
         gui.startstop_brick(self.original)
 
     def on_delete_activate(self, menuitem, gui):
-        message = ""
-        if self.original.proc is not None:
-            message = _("The brick is still running, it will be killed before"
-                        "being deleted!\n")
-        gui.ask_confirm(message + _("Do you really want to delete %s %s?") % (
-            self.original.get_type(), self.original.get_name()),
-            on_yes=gui.brickfactory.delbrick, arg=self.original)
+        gui.ask_remove_brick(self.original)
 
     def on_copy_activate(self, menuitem, gui):
         gui.brickfactory.dupbrick(self.original)
@@ -159,20 +153,15 @@ class EventPopupMenu(BaseMenu):
         self.original.toggle()
 
     def on_delete_activate(self, menuitem, gui):
-        message = ""
-        if self.original.scheduled:
-            message = _("This event is in use") + ". "
-        gui.ask_confirm(message + _("Do you really want to delete %s %s?") % (
-            self.original.get_type(), self.original.get_name()),
-            on_yes=gui.brickfactory.delevent, arg=self.original)
+        gui.ask_remove_event(self.original)
 
     def on_copy_activate(self, menuitem, gui):
         gui.brickfactory.dupevent(self.original)
 
     def on_rename_activate(self, menuitem, gui):
-        gui.gladefile.get_widget('entry_event_newname').set_text(
-            self.original.get_name())
-        gui.gladefile.get_widget('dialog_event_rename').show_all()
+        dialog = dialogs.RenameEventDialog(self.original, gui.brickfactory)
+        dialog.window.set_transient_for(gui.widg["main_win"])
+        dialog.show()
 
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
 
@@ -259,12 +248,7 @@ class LinkMenu:
         dialog.show()
 
     def on_remove_activate(self, menuitem, gui):
-        question = _("Do you really want to delete eth%d network interface") \
-                % self.original.vlan
-        dialog = dialogs.ConfirmDialog(question, on_yes=gui.remove_link,
-                                       on_yes_arg=self.original)
-        dialog.window.set_transient_for(gui.widg["main_win"])
-        dialog.show()
+        gui.ask_remove_link(self.original)
 
 interfaces.registerAdapter(LinkMenu, link.Plug, interfaces.IMenu)
 interfaces.registerAdapter(LinkMenu, link.Sock, interfaces.IMenu)

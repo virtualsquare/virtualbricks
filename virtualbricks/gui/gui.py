@@ -34,7 +34,7 @@ from virtualbricks import (interfaces, tools, errors, settings,
 from virtualbricks.console import VbShellCommand
 from virtualbricks.settings import MYPATH
 
-from virtualbricks.gui import _gui, tree, graphics, dialogs
+from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
 
 
@@ -168,7 +168,7 @@ class TopologyMixin(object):
 
 	def _draw_topology(self, export=""):
 		log.debug("drawing topology")
-		self.maintree.order()
+		# self.maintree.order()
 		if self.get_object('topology_tb').get_active():
 			orientation = "TB"
 		else:
@@ -222,12 +222,12 @@ class TopologyMixin(object):
 				if n.here(event.x,event.y) and event.button == 3:
 					brick = self.brickfactory.get_brick_by_name(n.name)
 					if brick is not None:
-						self.maintree.set_selection(brick)
+						# self.maintree.set_selection(brick)
 						self.show_brickactions()
 				if n.here(event.x,event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
 					brick = self.brickfactory.get_brick_by_name(n.name)
 					if brick is not None:
-						self.maintree.set_selection(brick)
+						# self.maintree.set_selection(brick)
 						self.startstop_brick(brick)
 		self.curtain_down()
 
@@ -302,44 +302,14 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		# self.sockscombo = dict()
 
-		''' Treeview creation, using the VBTree class '''
-		''' Main Treeview '''
-		self.maintree = tree.BricksTree(self, 'bricks_treeview',
-				factory.bricksmodel,
-				[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
-					gobject.TYPE_STRING, gobject.TYPE_STRING],
-				[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
-
-		''' TW with the events '''
-		self.eventstree = tree.EventsTree(self, 'events_treeview',
-				factory.eventsmodel,
-				[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
-					gobject.TYPE_STRING, gobject.TYPE_STRING],
-				[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
-
+		self.setup_bricks()
+		self.setup_events()
 		self.setup_joblist()
 		self.setup_remotehosts()
 		self.setup_netwoks_cards()
 		self.setup_router_devs()
 		self.setup_router_routes()
 		self.setup_router_filters()
-
-		# XXX: drag and drop does not work
-		# associate Drag and Drop action for main tree
-		# self.maintree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
-		# 		[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-		# 		gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		# self.maintree.tree.enable_model_drag_dest(
-		# 		[('BRICK', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-		# 		gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
-
-		# associate Drag and Drop action for events tree
-		# self.eventstree.tree.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
-		# 		[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-		# 		gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY)
-		# self.eventstree.tree.enable_model_drag_dest(
-		# 	[('EVENT', gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)],
-		# 	gtk.gdk.ACTION_DEFAULT| gtk.gdk.ACTION_PRIVATE)
 
 		self.statusicon = None
 
@@ -545,6 +515,85 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.vmplugs.set_sort_func(0, sort_links)
 		self.vmplugs.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
+	def setup_events(self):
+		builder = self.__setup_treeview("data/events.ui",
+			"events_scrolledwindow", "events_treeview")
+
+		def set_icon(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			pixbuf = graphics.pixbuf_for_brick_at_size(event, 48, 48)
+			cell_renderer.set_property("pixbuf", pixbuf)
+
+		def set_status(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			cell_renderer.set_property("text", event.get_state())
+
+		def set_name(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			cell_renderer.set_property("text", event.name)
+
+		def set_parameters(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			cell_renderer.set_property("text", event.get_parameters())
+
+		icon_c = builder.get_object("icon_treeviewcolumn")
+		icon_cr = builder.get_object("icon_cellrenderer")
+		icon_c.set_cell_data_func(icon_cr, set_icon)
+		status_c = builder.get_object("status_treeviewcolumn")
+		status_cr = builder.get_object("status_cellrenderer")
+		status_c.set_cell_data_func(status_cr, set_status)
+		name_c = builder.get_object("name_treeviewcolumn")
+		name_cr = builder.get_object("name_cellrenderer")
+		name_c.set_cell_data_func(name_cr, set_name)
+		parameters_c = builder.get_object("parameters_treeviewcolumn")
+		parameters_cr = builder.get_object("parameters_cellrenderer")
+		parameters_c.set_cell_data_func(parameters_cr, set_parameters)
+		self.__events_treeview = builder.get_object("events_treeview")
+		self.__events_treeview.set_model(self.brickfactory.eventsmodel)
+
+	def setup_bricks(self):
+		builder = self.__setup_treeview("data/bricks.ui",
+			"bricks_scrolledwindow", "bricks_treeview")
+
+		def set_icon(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			pixbuf = graphics.pixbuf_for_brick_at_size(event, 48, 48)
+			cell_renderer.set_property("pixbuf", pixbuf)
+
+		def set_status(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			cell_renderer.set_property("text", event.get_state())
+
+		def set_type(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			cell_renderer.set_property("text", event.get_type())
+
+		def set_name(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			cell_renderer.set_property("text", event.name)
+
+		def set_parameters(column, cell_renderer, model, iter):
+			event = model.get_value(iter, 0)
+			cell_renderer.set_property("text", event.get_parameters())
+
+		icon_c = builder.get_object("icon_treeviewcolumn")
+		icon_cr = builder.get_object("icon_cellrenderer")
+		icon_c.set_cell_data_func(icon_cr, set_icon)
+		status_c = builder.get_object("status_treeviewcolumn")
+		status_cr = builder.get_object("status_cellrenderer")
+		status_c.set_cell_data_func(status_cr, set_status)
+		type_c = builder.get_object("type_treeviewcolumn")
+		type_cr = builder.get_object("type_cellrenderer")
+		type_c.set_cell_data_func(type_cr, set_type)
+		name_c = builder.get_object("name_treeviewcolumn")
+		name_cr = builder.get_object("name_cellrenderer")
+		name_c.set_cell_data_func(name_cr, set_name)
+		parameters_c = builder.get_object("parameters_treeviewcolumn")
+		parameters_cr = builder.get_object("parameters_cellrenderer")
+		parameters_c.set_cell_data_func(parameters_cr, set_parameters)
+		self.__bricks_treeview = builder.get_object("bricks_treeview")
+		self.__bricks_treeview.set_model(self.brickfactory.bricksmodel)
+
 	def setup_router_devs(self):
 		pass
 		# self.routerdevs = tree.VBTree(self, "treeview_router_netdev", None,
@@ -613,12 +662,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	"""                                                          """
 	""" ******************************************************** """
 
-	def config_event_prepare(self):
+	def config_event_prepare(self, e):
 		"""The config_event_prepare is responsible for filling the
 		configuration panel with the current configuration in the
 		selected event object."""
 
-		e = self.eventstree.get_selection()
 		for key in e.cfg.keys():
 			t = e.get_type()  # :| they are all events..
 
@@ -699,13 +747,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			if n == b.cfg.iface:
 				combo.select(n)
 
-	def config_brick_prepare(self):
+	def config_brick_prepare(self, b):
 		"""fill the current configuration in the config interface.
 		This is the global method to fill in all the forms
 		in the configuration panel for bricks and events
 		"""
 
-		b = self.maintree.get_selection()
 		if b.get_type() == 'Capture':
 			self.prepare_ifcombo(b)
 		# Fill socks combobox
@@ -795,7 +842,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				self.gladefile.get_widget('vm_usb_show').set_sensitive(True)
 			else:
 				self.gladefile.get_widget('vm_usb_show').set_sensitive(False)
-				self.maintree.get_selection().cfg.set('usbdevlist=')
+				b.cfg.set('usbdevlist=')
 
 
 		# Qemu: check if KVM is checkable
@@ -976,16 +1023,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		if ret:
 			log.debug("action output: %s", ret)
 
-	def config_Event_confirm(self, b):
+	def config_Event_confirm(self, currevent):
 		# actions = self.gladefile.get_widget('cfg_Event_actions_treeview')
 		iter_ = self.shcommandsmodel.get_iter_first()
 		#Do not hide window
 		#if not iter_:
 		#	return
-		currevent = None
-		# columns = (COL_COMMAND, COL_BOOL) = range(2)
 		COL_COMMAND, COL_BOOL = range(2)
-		currevent = self.eventstree.get_selection()
 		currevent.cfg["actions"] = list()
 		while iter_:
 			linecommand = self.shcommandsmodel.get_value(iter_, COL_COMMAND)
@@ -1083,12 +1127,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def _config_brick_confirm(self):
 		"""Main configuration confirm method.  called from on_config_ok"""
 
-		notebook=self.gladefile.get_widget('main_notebook')
+		notebook = self.gladefile.get_widget('main_notebook')
 		# is it an event?
 		if notebook.get_current_page() == 1:
-			b = self.eventstree.get_selection()
+			b = self.__get_selection(self.__events_treeview)
 		else:
-			b = self.maintree.get_selection()
+			b = self.__get_selection(self.__bricks_treeview)
 		parameters = widget_to_params(b, self.gladefile.get_widget)
 		t = b.get_type()
 		b.gui_changed = True
@@ -1250,6 +1294,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.widg["main_win"].set_title(
 			"Virtualbricks (Configuring Brick %s)" % name)
 
+	def __get_selection(self, treeview):
+		selection = treeview.get_selection()
+		if selection is not None:
+			model, iter = selection.get_selected()
+			if iter is not None:
+				return model.get_value(iter, 0)
+
 	def _curtain_up(self):
 		notebook = self.gladefile.get_widget("main_notebook")
 		if notebook.get_current_page() not in (0, 1):
@@ -1257,10 +1308,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.__hide_panels()
 		if notebook.get_current_page() == 0:
 			config_prepare = self.config_brick_prepare
-			brick = self.maintree.get_selection()
+			brick = self.__get_selection(self.__bricks_treeview)
 		else:
 			config_prepare = self.config_event_prepare
-			brick = self.eventstree.get_selection()
+			brick = self.__get_selection(self.__events_treeview)
 		if brick is None:
 			return
 		log.debug("config brick %s (%s)", brick.get_name(), brick.get_type())
@@ -1271,7 +1322,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.curtain_down()
 			return
 		ww = self.gladefile.get_widget(name)
-		config_prepare()
+		config_prepare(brick)
 		ww.show()
 		self.__show_config(brick.get_name())
 
@@ -1405,10 +1456,42 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	"""                                                          """
 	""" ******************************************************** """
 
-	def on_bricks_keypressed(self, widget, event="", data=""):
-		if event.keyval == 65288 or event.keyval == 65535:
-			self.on_brick_delete()
+	def ask_remove_brick(self, brick):
+		if brick.proc is not None:
+			other = _("\nThe brick is still running, it will be "
+					"killed before being deleted!")
+		else:
+			other = None
+		self.__ask_for_deletion(self.brickfactory.del_brick, brick, other)
 
+	def ask_remove_event(self, event):
+		if event.scheduled is not None:
+			other = _("The event is in use, it will be stopped before.")
+		else:
+			other = None
+		self.__ask_for_deletion(self.brickfactory.del_event, event, other)
+
+	def __ask_for_deletion(self, on_yes, what, secondary_text=None):
+		question = _("Do you really want to delete %s (%s)?") % (
+			what.name, what.get_type())
+		dialog = dialogs.ConfirmDialog(question, on_yes=on_yes,
+				on_yes_arg=what)
+		if secondary_text is not None:
+			dialog.format_secondary_text(secondary_text)
+		dialog.window.set_transient_for(self.widg["main_win"])
+		dialog.show()
+
+	def on_bricks_treeview_key_release_event(self, treeview, event):
+		if gtk.gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
+			brick = self.__get_selection(treeview)
+			if brick is not None:
+				self.ask_remove_brick(brick)
+
+	def on_events_treeview_key_release_event(self, treeview, event):
+		if gtk.gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
+			event = self.__get_selection(treeview)
+			if event is not None:
+				self.ask_remove_event(event)
 
 	def on_systray_menu_toggle(self, widget=None, data=""):
 		if self.statusicon.get_blinking():
@@ -1944,47 +2027,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		for e in iter(self.brickfactory.events):
 			e.poweroff()
 
-	# XXX: drag and drop does not work
-	# def on_mainwindow_dropaction(self, treeview, drag_context, x, y, selection_data, info, timestamp):
-	# 	pth = treeview.get_path_at_pos(int(x), int(y))
-	# 	dropbrick = self.maintree.get_selection(pth)
-	# 	drop_info = treeview.get_dest_row_at_pos(x, y)
-	# 	if drop_info:
-	# 		pth, pos = drop_info
-
-	# 	if pos == gtk.TREE_VIEW_DROP_BEFORE:
-	# 		log.debug('dropped before')
-	# 		drag_context.finish(False, False, timestamp)
-	# 		return False
-
-	# 	if pos == gtk.TREE_VIEW_DROP_AFTER:
-	# 		drag_context.finish(False, False, timestamp)
-	# 		log.debug('dropped after')
-	# 		return False
-
-	# 	if dropbrick and (dropbrick != self.Dragging):
-	# 		log.debug("drag&drop: %s onto %s", self.Dragging.name, dropbrick.name)
-	# 		res = False
-	# 		if len(dropbrick.socks) > 0:
-	# 			res = self.Dragging.connect(dropbrick.socks[0])
-	# 		elif len(self.Dragging.socks) > 0:
-	# 			res = dropbrick.connect(self.Dragging.socks[0])
-
-	# 		if res:
-	# 			drag_context.finish(True, False, timestamp)
-	# 		else:
-	# 			drag_context.finish(False, False, timestamp)
-	# 	else:
-	# 		drag_context.finish(False, False, timestamp)
-	# 	self.Dragging = None
-
 	def show_brickactions(self):
-		if self.maintree.get_selection().get_type() == "Qemu":
+		brick = self.__get_selection(self.__bricks_treeview)
+		if brick.get_type() == "Qemu":
 			self.set_sensitivegroup(['vmresume'])
 		else:
 			self.set_nonsensitivegroup(['vmresume'])
-
-		self.gladefile.get_widget("brickaction_name").set_label(self.maintree.get_selection().name)
+		self.gladefile.get_widget("brickaction_name").set_label(brick.name)
 		self.show_window('menu_brickactions')
 
 	def on_bricks_treeview_button_release_event(self, treeview, event):
@@ -2002,14 +2051,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_events_treeview_button_release_event(self, treeview, event):
 		return self.on_bricks_treeview_button_release_event(treeview, event)
 
-	def on_bricks_treeview_cursor_changed(self, treeview):
-		self.curtain_down()
-
 	def on_bricks_treeview_row_activated(self, treeview, path, column):
-		self.startstop_brick(self.maintree.get_selection())
+		model = treeview.get_model()
+		iter = model.get_iter(path)
+		brick = model.get_value(iter, 0)
+		self.startstop_brick(brick)
 
 	def on_events_treeview_row_activated(self, treeview, path, column):
-		self.eventstree.get_selection().toggle()
+		model = treeview.get_model()
+		iter = model.get_iter(path)
+		event = model.get_value(iter, 0)
+		event.toggle()
 
 	def on_focus_out(self, widget=None, event=None , data=""):
 		self.curtain_down()
@@ -2170,18 +2222,19 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_dialog_attach_event_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if (response == 1):
+			brick = self.__get_selection(self.__bricks_treeview)
 			startevents = self.gladefile.get_widget('start_events_avail_treeview')
 			stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
 			model, iter_ = startevents.get_selection().get_selected()
 			if iter_:
-				self.maintree.get_selection().cfg.pon_vbevent = model[iter_][2]
+				brick.cfg.pon_vbevent = model[iter_][2]
 			else:
-				self.maintree.get_selection().cfg.pon_vbevent = ""
+				brick.cfg.pon_vbevent = ""
 			model, iter_ = stopevents.get_selection().get_selected()
 			if iter_:
-				self.maintree.get_selection().cfg.poff_vbevent = model[iter_][2]
+				brick.cfg.poff_vbevent = model[iter_][2]
 			else:
-				self.maintree.get_selection().cfg.poff_vbevent = ""
+				brick.cfg.poff_vbevent = ""
 
 		return True
 
@@ -2482,57 +2535,16 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_remove_cdrom(self, widget=None, event=None, data=""):
 		raise NotImplementedError("on_remove_cdrom not implemented")
 
-	def on_brick_delete(self,widget=None, event=None, data=""):
-		self.curtain_down()
-
-		message=""
-		if self.maintree.get_selection().proc is not None:
-			message = _("The brick is still running, it will be killed before being deleted!\n")
-
-		self.ask_confirm(message + _("Do you really want to delete ") +
-				self.maintree.get_selection().get_type() + " \"" + self.maintree.get_selection().name + "\" ?",
-				on_yes = self.brickfactory.delbrick, arg = self.maintree.get_selection())
-
-	def on_event_delete(self,widget=None, event=None, data=""):
-		self.curtain_down()
-		msg = ""
-		if self.eventstree.get_selection().scheduled:
-			msg = _("This event is in use. ")
-
-		self.ask_confirm(msg + _("Do you really want to delete") + " "+
-				_(self.eventstree.get_selection().get_type()) + " \"" + self.eventstree.get_selection().name + "\" ?",
-				on_yes = self.brickfactory.delevent, arg = self.eventstree.get_selection())
-
-	def on_event_copy(self,widget=None, event=None, data=""):
-		self.curtain_down()
-		self.brickfactory.dupevent(self.eventstree.get_selection())
-
 	def on_event_configure(self,widget=None, event=None, data=""):
 		self.curtain_up()
 		return
-
-	def on_event_rename(self,widget=None, event=None, data=""):
-		self.gladefile.get_widget('entry_event_newname').set_text(self.eventstree.get_selection().name)
-		self.gladefile.get_widget('dialog_event_rename').show_all()
-		self.curtain_down()
 
 	def on_dialog_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if response == 1:
 			try:
-				self.brickfactory.renamebrick(self.maintree.get_selection(), self.gladefile.get_widget('entry_brick_newname').get_text())
-			except errors.InvalidNameError:
-				log.error(_("Invalid name!"))
-
-	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
-		widget.hide()
-		if response == 1:
-			if self.eventstree.get_selection().scheduled:
-				log.error(_("Cannot rename Event: it is in use."))
-				return
-
-			try:
-				self.brickfactory.renameevent(self.eventstree.get_selection(), self.gladefile.get_widget('entry_event_newname').get_text())
+				brick = self.__get_selection(self.__bricks_treeview)
+				self.brickfactory.renamebrick(brick, self.gladefile.get_widget('entry_brick_newname').get_text())
 			except errors.InvalidNameError:
 				log.error(_("Invalid name!"))
 
@@ -2693,7 +2705,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			lbl.set_markup('<span color="darkgreen">'+_("All VDE components detected")+'.</span>\n')
 
 	def on_arch_changed(self, widget, data=None):
-		if self.maintree.get_selection().get_type() != 'Qemu':
+		brick = self.__get_selection(self.__bricks_treeview)
+		if brick.get_type() != 'Qemu':
 			return
 
 		combo = ComboBox(widget)
@@ -2712,7 +2725,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				opt_m[v]=v
 		toSelect=""
 		for k, v in opt_m.iteritems():
-			if v.strip() == self.maintree.get_selection().cfg.machine.strip():
+			if v.strip() == brick.cfg.machine.strip():
 				toSelect=k
 		machine_c.populate(opt_m, toSelect)
 		os.unlink(MYPATH+"/.vmachines")
@@ -2747,12 +2760,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 						if val.endswith(']'):
 							val = val.rstrip(']')
 						opt_c[val]=val
-		cpu_c.populate(opt_c, self.maintree.get_selection().cfg.cpu)
+		cpu_c.populate(opt_c, brick.cfg.cpu)
 		os.unlink(MYPATH+"/.cpus")
 
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
-			if not self.maintree.get_selection().homehost:
+			brick = self.__get_selection(self.__bricks_treeview)
+			if not brick.homehost:
 				kvm = tools.check_kvm(self.config.get("qemupath"))
 				self.kvm_toggle_all(True)
 				if not kvm:
@@ -2804,14 +2818,14 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(False)
 
 	def on_addplug_button_clicked(self, button):
-		brick = self.maintree.get_selection()
+		brick = self.__get_selection(self.__bricks_treeview)
 		if brick is not None:
 			dialog = dialogs.EthernetDialog(self, brick)
 			dialog.window.set_transient_for(self.widg["main_win"])
 			dialog.show()
 
 	def __update_vmplugs_tree(self):
-		b = self.maintree.get_selection()
+		b = self.__get_selection(self.__bricks_treeview)
 		if b is None:
 			return
 
@@ -2838,15 +2852,22 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				break
 			i = iter_next(i)
 
+	def ask_remove_link(self, link):
+		question = _("Do you really want to delete eth%d network interface") \
+				% link.vlan
+		dialog = dialogs.ConfirmDialog(question, on_yes=self.remove_link,
+				on_yes_arg=link)
+		dialog.window.set_transient_for(self.widg["main_win"])
+		dialog.show()
+
 	def on_networkcards_treeview_key_press_event(self, treeview, event):
 		if gtk.gdk.keyval_from_name("Delete") == event.keyval:
-			brick = self.maintree.get_selection()
+			brick = self.__get_selection(self.__bricks_treeview)
 			if brick is not None:
 				selection = treeview.get_selection()
 				model, itr = selection.get_selected()
 				if itr is not None:
-					link = model.get_value(itr, 0)
-					self.remove_link(link)
+					self.ask_remove_link(model.get_value(itr, 0))
 					return True
 
 	def on_networkcards_treeview_button_release_event(self, treeview, event):
@@ -2938,6 +2959,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		treeviewselectionstart.unselect_all()
 		treeviewselectionstop = stopavailevents.get_selection()
 		treeviewselectionstop.unselect_all()
+		brick = self.__get_selection(self.__bricks_treeview)
 
 		for event in iter(self.brickfactory.events):
 			if event.configured():
@@ -2946,9 +2968,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					parameters = "%s..." % parameters[:30]
 				image = graphics.pixbuf_for_running_brick_at_size(event, 48, 48)
 				iter_ = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
-				if self.maintree.get_selection().cfg.pon_vbevent == event.name:
+				if brick.cfg.pon_vbevent == event.name:
 					treeviewselectionstart.select_iter(iter_)
-				if self.maintree.get_selection().cfg.poff_vbevent == event.name:
+				if brick.cfg.poff_vbevent == event.name:
 					treeviewselectionstop.select_iter(iter_)
 
 		cell = gtk.CellRendererPixbuf ()
@@ -3101,18 +3123,20 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.gladefile.get_widget('text_newbrick_runremote').set_sensitive(widget.get_active())
 
 	def on_usbmode_onoff(self, w, event=None, data=None):
+		brick = self.__get_selection(self.__bricks_treeview)
 		if (w.get_active()):
-			self.maintree.get_selection().cfg.set('usbmode=*')
+			brick.cfg.set('usbmode=*')
 		else:
-			self.maintree.get_selection().cfg.set('usbmode=')
-			self.maintree.get_selection().cfg.set('usbdevlist=')
+			brick.cfg.set('usbmode=')
+			brick.cfg.set('usbdevlist=')
 		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
 
 	def on_usb_show(self, button):
 
 		def show_dialog(output):
-			dialogs.UsbDevWindow(self, output.strip()).show()
+			dialogs.UsbDevWindow(self, output.strip(), vm).show()
 
+		vm = self.__get_selection(self.__bricks_treeview)
 		devices = utils.getProcessOutput("lsusb", env=os.environ)
 		devices.addCallbacks(show_dialog, log.err)
 
