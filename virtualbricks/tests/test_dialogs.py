@@ -8,24 +8,14 @@ class Object:
     pass
 
 
-class Tree:
-
-    def __init__(self, usbdev):
-        self.usbdev = usbdev
-
-    def get_selection(self):
-        vm = Object()
-        vm.cfg = Object()
-        vm.cfg.usbdevlist = self.usbdev
-        return vm
-
-
 class UsbDevWindowStub(dialogs.UsbDevWindow):
 
     def __init__(self, treeview, usbdev):
         self.view = treeview
         self.gui = Object()
-        self.gui.maintree = Tree(usbdev)
+        self.vm = Object()
+        self.vm.cfg = Object()
+        self.vm.cfg.usbdevlist = self.usbdev
 
     def get_object(self, name):
         return self.view

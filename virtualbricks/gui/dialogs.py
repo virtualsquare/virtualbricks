@@ -365,9 +365,10 @@ class UsbDevWindow(Window):
 
     resource = "data/usbdev.ui"
 
-    def __init__(self, gui, output):
+    def __init__(self, gui, output, vm):
         Window.__init__(self)
         self.gui = gui
+        self.vm = vm
         log.msg("lsusb output:\n%s" % output)
         model = self.get_object("liststore1")
         self._populate_model(model, output)
@@ -381,8 +382,7 @@ class UsbDevWindow(Window):
         treeview = self.get_object("treeview1")
         selection = treeview.get_selection()
         selection.set_mode(gtk.SELECTION_MULTIPLE)
-        vm = self.gui.maintree.get_selection()
-        currents = vm.cfg.usbdevlist.split()
+        currents = self.vm.cfg.usbdevlist.split()
         # if currents:
         iter = model.get_iter_first()
         while iter:
@@ -407,10 +407,9 @@ class UsbDevWindow(Window):
                 self.gui.gladefile.get_widget("cfg_Qemu_usbmode_check"
                                              ).set_active(False)
 
-            vm = self.gui.maintree.get_selection()
-            old = vm.cfg.usbdevlist
-            vm.cfg.set('usbdevlist=' + devs)
-            vm.update_usbdevlist(devs, old)
+            old = self.vm.cfg.usbdevlist
+            self.vm.cfg.set('usbdevlist=' + devs)
+            self.vm.update_usbdevlist(devs, old)
         self.window.destroy()
 
 
@@ -547,9 +546,53 @@ class ConfirmDialog(Window):
         self.on_no = on_no
         self.on_no_arg = on_no_arg
 
+    def format_secondary_text(self, text):
+        self.window.format_secondary_text(text)
+
     def on_ConfirmDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_YES and self.on_yes:
             self.on_yes(self.on_yes_arg)
         elif response_id == gtk.RESPONSE_NO and self.on_no:
             self.on_no(self.on_no_arg)
         dialog.destroy()
+
+
+class RenameDialog(Window):
+
+    resource = "data/renamedialog.ui"
+    name = "RenameDialog"
+
+    def __init__(self, brick, factory):
+        Window.__init__(self)
+        self.brick = brick
+        self.factory = factory
+        self.get_object("entry").set_text(brick.name)
+
+
+class RenameEventDialog(RenameDialog):
+
+    def on_RenameDialog_response(self, dialog, response_id):
+        try:
+            if response_id == gtk.RESPONSE_OK:
+                if self.brick.scheduled:
+                    log.err(_("Cannot rename event: it is in use."))
+                else:
+                    new = self.get_object("entry").get_text()
+                    self.factory.rename_event(self.brick, new)
+        finally:
+            dialog.destroy()
+
+
+class RenameBrickDialog(RenameDialog):
+
+    def on_RenameDialog_response(self, dialog, response_id):
+        try:
+            return
+            if response_id == gtk.RESPONSE_OK:
+                if self.event.scheduled:
+                    log.err(_("Cannot rename event: it is in use."))
+                else:
+                    new = self.get_object("entry").get_text()
+                    self.factory.rename_event(self.event, new)
+        finally:
+            dialog.destroy()

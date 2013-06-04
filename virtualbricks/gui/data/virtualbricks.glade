@@ -1987,104 +1987,6 @@ GB</property>
       </widget>
     </child>
   </widget>
-  <widget class="GtkDialog" id="dialog_event_rename">
-    <property name="can_focus">False</property>
-    <property name="border_width">5</property>
-    <property name="title" translatable="yes">New event name</property>
-    <property name="modal">True</property>
-    <property name="window_position">center-always</property>
-    <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_dialog_settings_delete_event"/>
-    <signal name="response" handler="on_dialog_event_rename_response"/>
-    <child internal-child="vbox">
-      <widget class="GtkVBox" id="dialog-vbox25">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="spacing">2</property>
-        <child internal-child="action_area">
-          <widget class="GtkHButtonBox" id="dialog-action_area25">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
-            <child>
-              <widget class="GtkButton" id="button2">
-                <property name="label">gtk-cancel</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkButton" id="button1">
-                <property name="label">gtk-ok</property>
-                <property name="response_id">1</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="pack_type">end</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <widget class="GtkHBox" id="hbox1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <widget class="GtkLabel" id="label1">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Choose a new name:</property>
-              </widget>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkEntry" id="entry_event_newname">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="invisible_char">•</property>
-                <property name="primary_icon_activatable">False</property>
-                <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
-              </widget>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </widget>
-    </child>
-  </widget>
   <widget class="GtkWindow" id="dialog_imagename">
     <property name="width_request">604</property>
     <property name="height_request">260</property>
@@ -6260,22 +6162,12 @@ multiple devices&lt;/b&gt;</property>
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkScrolledWindow" id="scrolledwindow3">
+                      <widget class="GtkScrolledWindow" id="bricks_scrolledwindow">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <widget class="GtkTreeView" id="bricks_treeview">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="has_tooltip">True</property>
-                            <property name="tooltip" translatable="yes">You can use drag and drop to connect bricks and double click to start/stop them.</property>
-                            <signal name="cursor_changed" handler="on_bricks_treeview_cursor_changed"/>
-                            <signal name="drag_data_received" handler="on_mainwindow_dropaction"/>
-                            <signal name="row_activated" handler="on_bricks_treeview_row_activated"/>
-                            <signal name="button_release_event" handler="on_bricks_treeview_button_release_event"/>
-                            <signal name="key_press_event" handler="on_bricks_keypressed"/>
-                          </widget>
+                          <placeholder/>
                         </child>
                       </widget>
                       <packing>
@@ -6366,19 +6258,12 @@ multiple devices&lt;/b&gt;</property>
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkScrolledWindow" id="scrolledwindow2">
+                      <widget class="GtkScrolledWindow" id="events_scrolledwindow">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <widget class="GtkTreeView" id="events_treeview">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="has_tooltip">True</property>
-                            <property name="tooltip" translatable="yes">You can use drag and drop to add an event to events collation and double click to start/stop them.</property>
-                            <signal name="row_activated" handler="on_events_treeview_row_activated"/>
-                            <signal name="button_release_event" handler="on_events_treeview_button_release_event"/>
-                          </widget>
+                          <placeholder/>
                         </child>
                       </widget>
                       <packing>
@@ -20443,68 +20328,6 @@ bytes</property>
         <property name="label" translatable="yes">_Attach Event</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="on_brick_attach_event"/>
-      </widget>
-    </child>
-  </widget>
-  <widget class="GtkMenu" id="menu_eventactions">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <child>
-      <widget class="GtkMenuItem" id="eventaction_name">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes"> </property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkSeparatorMenuItem" id="menuitem_separator">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="startstop_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Start/Stop</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_startstop"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="delete_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Delete</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_delete"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="copy_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Make a C_opy</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_copy"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="rename">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Re_name</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_rename"/>
-      </widget>
-    </child>
-    <child>
-      <widget class="GtkMenuItem" id="configure_event_action">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">_Configure</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_event_configure"/>
       </widget>
     </child>
   </widget>
