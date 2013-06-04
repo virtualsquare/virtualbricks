@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_bricks -*-
+# -*- test-case-name: virtualbricks.tests.test_base -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -16,17 +16,20 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import copy
 import re
-import logging
 
 import gobject
+from twisted.python import reflect
+from twisted.python.versions import Version
+from twisted.python.deprecate import deprecated
 
-from virtualbricks import tools
-from virtualbricks.versions import Version
-from virtualbricks.deprecated import deprecated
+from virtualbricks import _compat
+# from virtualbricks.versions import Version
+# from virtualbricks.deprecated import deprecated
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
@@ -134,6 +137,8 @@ class RunningConfig:
 
         setter = getattr(self.brick, "cbset_" + name, None)
         if setter:
+            log.msg("%s: callback '%s' with argument %s" % (self.brick.name,
+                                                            name, value))
             setter(value)
 
     def __getattr__(self, name):
@@ -148,18 +153,21 @@ class RunningConfig:
         if len(kv) > 1:
             setattr(self, kv[0], kv[1])
 
+    def __deepcopy__(self, memo):
+        return self.__class__(self.brick, copy.deepcopy(self.config, memo))
+
 
 class NewConfig:
 
-    CONFIG_LINE = re.compile(r"^(\w+?)=([\w*]+?)$")
+    CONFIG_LINE = re.compile(r"^(\w+?)=(.*)$")
     parameters = {}
 
     def __init__(self):
         parameters = {}
-        tools.accumulateClassDict(self.__class__, "parameters", parameters)
+        reflect.accumulateClassDict(self.__class__, "parameters", parameters)
         self.parameters = parameters
         self.__dict__["_cfg"] = dict(
-            (name, typ.default) for name, typ in parameters.iteritems())
+            (n, v.default) for n, v in parameters.iteritems())
 
     # dict interface
 
@@ -206,7 +214,7 @@ class NewConfig:
             raise AttributeError(name)
         return self.parameters[name].to_string(self._cfg[name])
 
-    @deprecated(Version("virtualbricks", 1, 0), "__setitem__")
+    @deprecated(Version("virtualbricks", 1, 0, 0), "__setitem__")
     def set_obj(self, key, obj):
         self._cfg[key] = obj
 
@@ -216,7 +224,7 @@ class NewConfig:
         for key in sorted(self._cfg.iterkeys()):
             write("%s=%s" % (key, self._cfg[key]))
 
-    @deprecated(Version("virtualbricks", 1, 0))
+    @deprecated(Version("virtualbricks", 1, 0, 0))
     def _dump(self):
         # this function could not be deprecated becase is new, the behavior is
         # deprecated
@@ -224,10 +232,10 @@ class NewConfig:
             print "%s=%s" % (key, self._cfg[key])
 
     def save_to(self, fileobj):
-        # fileobj.write("[{brick.type}:{brick.name}]\n".format(brick=self.brick))
         for name, param in sorted(self.parameters.iteritems()):
             if self[name] != param.default and not isinstance(param, Object):
                 fileobj.write("%s=%s\n" % (name, param.to_string(self[name])))
+        fileobj.write("\n")
 
     def load_from(self, fileobj):
         curpos = fileobj.tell()
@@ -245,10 +253,12 @@ class NewConfig:
                 break
             else:
                 name, value = match.groups()
+                if value is None:
+                    # value is None when the parameter is not set
+                    value = ""
                 self[name] = self.parameters[name].from_string(value)
                 curpos = fileobj.tell()
                 line = fileobj.readline()
-
 
 class Parameter:
 
@@ -328,6 +338,26 @@ class Object(Parameter):
         return in_object
 
 
+class ListOf(Parameter):
+
+    def __init__(self, element_type):
+        # New there is a problem with this approach, the state is shared across
+        # all instances and require that a subclass of Config sets a new value
+        # in its contructor.
+        Parameter.__init__(self, [])
+        self.element_type = element_type
+
+    def from_string(self, in_object):
+        strings = eval(in_object)
+        return map(self.element_type.from_string, strings)
+
+    def to_string(self, in_object):
+        strings = []
+        for el in in_object:
+            strings.append(self.element_type.to_string(el))
+        return str(strings)
+
+
 class Base(gobject.GObject):
 
     __gsignals__ = {"changed": (gobject.SIGNAL_RUN_FIRST, None, ())}
@@ -372,3 +402,19 @@ class Base(gobject.GObject):
 
     def signal_disconnect(self, handler_id):
         return gobject.GObject.disconnect(self, handler_id)
+
+    def set(self, attrs):
+        for name, value in attrs.iteritems():
+            self.cfg[name] = value
+            setter = getattr(self, "cbset_" + name, None)
+            if setter:
+                log.msg("%s: callback '%s' with argument %s" %
+                        (self.name, name, value))
+                setter(value)
+
+    def get(self, name):
+        try:
+            return self.cfg[name]
+        except KeyError:
+            raise KeyError(_("%s config has no %s option.") % (self.name,
+                                                               name))

@@ -18,162 +18,77 @@
 
 
 import os
-import sys
-import time
-import errno
-import socket
-import select
 import copy
-import threading
-import subprocess
-import logging
-import tempfile
 
-from virtualbricks import base, errors, settings, versions
+from twisted.internet import protocol, reactor, error
+
+from virtualbricks import base, errors, settings, _compat
 from virtualbricks.base import (NewConfig, String, Integer, SpinInt, Float,
                                 Boolean, Object)
-from virtualbricks.deprecated import deprecated
 
 
 __all__ = ["Brick", "Config", "String", "Integer", "SpinInt", "Float",
            "Boolean", "Object"]
 
-log = logging.getLogger(__name__)
-
 if False:  # pyflakes
     _ = str
 
-
-class Process(threading.Thread):
-
-    _pd = None
-
-    @property
-    def pid(self):
-        """Return the pid of the process or -1 if unknown or not launced yet.
-        """
-
-        if self._pd:
-            return self._pd.pid
-        return -1
-
-    def __init__(self, args):
-        threading.Thread.__init__(self, name="Process_%s" % args[0])
-        self.daemon = True
-        self._raw = {}
-        self.args = args
-
-    def poll(self):
-        if self._pd:
-            return self._pd.poll()
-
-    def send_signal(self, signo):
-        self._pd.send_signal(signo)
-
-    def terminate(self):
-        self._pd.terminate()
-
-    def kill(self):
-        self._pd.kill()
-
-    def __run(self):
-        self._pd = subprocess.Popen(self.args, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-        log.debug("Process pid: %d", self._pd.pid)
-        stdout, stderr = self._pd.communicate()
-        if stdout:
-            self.out(stdout)
-        if stderr:
-            self.err(stderr)
-
-    def run(self):
-        log.debug("Starting %s", self.args[0])
-        try:
-            self.__run()
-        except OSError:
-            log.exception(_("OSError: Brick startup failed. Check your "
-                            "configuration!"))
-        else:
-            log.debug("Process %d terminated with exit code %d.", self._pd.pid,
-                      self._pd.returncode)
-
-    def out(self, data):
-        log.info("stdout of process %d:\n%s", self._pd.pid, data)
-
-    def err(self, data):
-        log.warning("stderr of process %d:\n%s", self._pd.pid, data)
+log = _compat.getLogger(__name__)
 
 
-class Sudo(object):
+class Process(protocol.ProcessProtocol):
 
-    pid = None
-    process_factory = Process
-    returncode = None
+    def __init__(self, brick):
+        self.brick = brick
 
-    def __init__(self, process, sudo="sudo"):
-        if isinstance(process, list):
-            process = self.process_factory(process)
-        self.process = process
-        self.sudo = sudo
-        self.pidfile = tempfile.NamedTemporaryFile()
-        self.inject_sudo()
+    def connectionMade(self):
+        # log.msg("Started process (%d)" % self.transport.pid)
+        self.transport.write("\n")
 
-    def inject_sudo(self):
-        self._args = self.process.args
-        self.process.args = [self.sudo] + self._args[:] + \
-                ["-P", self.pidfile.name]
+    def outReceived(self, data):
+        pass
+        # log.msg("process %s stdout:\n%s" % (self.transport.pid, data))
+        # self.brick.recv(data)
 
-    def __getattr__(self, name):
-        try:
-            return getattr(self.process, name)
-        except AttributeError:
-            raise AttributeError(name)
+    def errReceived(self, data):
+        pass
+        # log.msg("process %s stderr:\n%s" % (self.transport.pid, data),
+        #         isError=True, show_to_user=False)
+        # self.brick.recv(data)
 
-    def _handle_exit_status(self, status):
-        if os.WIFSIGNALED(status):
-            self.returncode = -os.WTERMSIG(status)
-        elif os.WIFEXITED(status):
-            self.returncode = os.WEXITSTATUS(status)
-        else:
-            raise RuntimeError("This should never happen")
+    def processExited(self, status):
+        log.msg(str(status.value),
+                isError=isinstance(status.value, error.ProcessTerminated),
+                show_to_user=False)
 
-    # Process interface
+    def processEnded(self, status):
+        self.brick.process_ended(self, status)
+        del self.brick
 
-    def poll(self):
-        if self.returncode is None:
-            status = self.process.poll()
-            if status is not None:
-                self._handle_exit_status(status)
-        return self.returncode
 
-    def start(self):
-        self.process.start()
-        try:
-            # wait the thread started
-            while self.process._pd is None:
-                self.process.join(0.0001)
-            # wait the pid is written in the pid file
-            while os.stat(self.pidfile.name).st_size == 0:
-                self.process.join(0.001)
-                status = self.process.poll()
-                if status is None:
-                    continue
-                else:
-                    self._handle_exit_status(status)
-            with self.pidfile:
-                self.pid = int(self.pidfile.read())
-        finally:
-            self.pidfile.close()
+class TermProtocol(protocol.ProcessProtocol):
 
-    def send_signal(self, signal):
-        return subprocess.call([self.sudo, "kill", "-%s" % signal,
-                                str(self.pid)])
+    def __init__(self):
+        self.out = []
+        self.err = []
 
-    def terminate(self):
-        return self.send_signal("SIGTERM")
+    def connectionMade(self):
+        self.transport.closeStdin()
 
-    def kill(self):
-        return self.send_signal("SIGKILL")
+    def outReceived(self, data):
+        self.out.append(data)
+
+    def errReceived(self, data):
+        self.err.append(data)
+
+    def processExited(self, status):
+        msg = "Console terminated\n%s" % status.value
+        terminated = isinstance(status.value, error.ProcessTerminated)
+        if terminated:
+            out = "".join(self.out)
+            err = "".join(self.err)
+            msg += "\nProcess stdout:\n%s\nProcess stderr:\n%s\n" % (out, err)
+        log.msg(msg, isError=terminated)
 
 
 class Config(NewConfig):
@@ -184,16 +99,9 @@ class Config(NewConfig):
 
 class _LocalBrick(base.Base):
 
-    active = False
-    run_condition = False
     proc = None
-    gui_changed = False
-    need_restart_to_apply_changes = False
-    internal_console = None
-    terminal = "vdeterm"
     command_builder = {}
-    process_factory = Process
-    sudo_factory = Sudo
+    term_command = "vdeterm"
 
     @property
     def pid(self):
@@ -205,6 +113,7 @@ class _LocalBrick(base.Base):
         base.Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
+        self.comm = []
         self.cfg.pon_vbevent = ""
         self.cfg.poff_vbevent = ""
         self.config_socks = []
@@ -213,84 +122,69 @@ class _LocalBrick(base.Base):
 
     def poweron(self):
         if self.proc is not None:
-            log.info("Cannot start an already running process.")
+            log.msg("Cannot start an already running process.")
             return
 
         if self.factory.TCP is None:
             if not self.configured():
-                raise errors.BadConfigError("Brick %s not configured",
-                                            self.name)
+                raise errors.BadConfigError(_("Cannot start '%s': not "
+                                              "configured") % self.name)
             if not self.properly_connected():
-                raise errors.NotConnectedError("Brick %s not properly "
-                                               "connected", self.name)
+                raise errors.NotConnectedError(_("Cannot start '%s': not "
+                                                 "connected") % self.name)
             if not self.check_links():
                 raise errors.LinkLoopError("Link loop detected")
+        del self.comm[:]
         self._poweron()
+        self.start_related_events(on=True)
         self.on_config_changed()
 
-    def poweroff(self):
-        if self.proc is None or not self.run_condition:
+    def poweroff(self, kill=False):
+        if self.proc is None:
+            log.msg("Process is not running")
             return
-        self.run_condition = False
-        log.debug(_("Shutting down %s"), self.name)
+        log.msg(_("Shutting down %s (pid: %d)") % (self.name, self.proc.pid))
         try:
-            self._poweroff()
+            if self.proc:
+                self.proc.signalProcess("KILL" if kill else "TERM")
         finally:
-            self.proc = None
-            self.need_restart_to_apply_changes = False
-            self.close_internal_console()
-            self.factory.emit("brick-stopped", self.name)
-            self.post_poweroff()
+            self._poweroff()
 
     def get_parameters(self):
-        raise NotImplementedError('Bricks.get_parameters() not implemented')
+        raise NotImplementedError("Bricks.get_parameters() not implemented")
 
     def configure(self, attrlist):
-        """TODO attrs : dict attr => value"""
-        self.initialize(attrlist)
+        attrs = {}
+        for name, value in (a.split("=", 2) for a in attrlist):
+            attrs[name] = self.cfg.parameters[name].from_string(value)
+        self.set(attrs)
+
+    def set(self, attrs):
+        if "sock" in attrs:
+            attrs["sock"] = self.rewrite_sock_server(attrs["sock"])
+        base.Base.set(self, attrs)
         self.on_config_changed()
+
+    def send_signal(self, signal):
+        if self.proc:
+            self.proc.signalProcess(signal)
 
     # Interal interface
 
     def _poweron(self):
-        self.proc = self.process_factory(self.args())
-        if self.needsudo():
-            self.proc = self.sudo_factory(self.proc)
-        log.debug(_("Starting: '%s'"), ' '.join(self.proc.args))
-        self.proc.start()
-        self.open_internal_console()
+        prog = self.prog()
+        args = self.args()
+        log.debug(_("Starting: '%s'"), ' '.join(args))
+        # usePTY?
+        self.proc = reactor.spawnProcess(Process(self), prog, args, os.environ,
+                                         usePTY=True)
+        # if self.needsudo():
+        #     self.proc = self.sudo_factory(self.proc)
         self.factory.emit("brick-started", self.name)
-        self.run_condition = True
-        self.post_poweron()
 
     def _poweroff(self):
-        try:
-            self.proc.terminate()
-        except OSError as e:
-            if e.errno != errno.ESRCH:
-                raise
-        # give the process the chance to stop itself (100ms)
-        for i in range(100):
-            if self.proc.poll() is None:
-                time.sleep(0.001)
-            else:
-                break
-        else:
-            # kill it
-            try:
-                self.proc.kill()
-                # while self.proc.poll() is None:
-                #     time.sleep(0.0001)
-            except OSError as e:
-                if e.errno != errno.ESRCH:
-                    raise
-
-    def post_poweron(self):
-        self.active = True
-        self.start_related_events(on=True)
-
-    def post_poweroff(self):
-        self.active = False
+        self.proc = None
+        self.factory.emit("brick-stopped", self.name)
         self.start_related_events(off=True)
 
     def build_cmd_line(self):
@@ -315,6 +209,9 @@ class _LocalBrick(base.Base):
 
     def prog(self):
         raise NotImplementedError(_("Brick.prog() not implemented."))
+
+    def process_ended(self, process, status):
+        self._poweroff()
 
     def rewrite_sock_server(self, v):
         return os.path.join(settings.VIRTUALBRICKS_HOME, os.path.basename(v))
@@ -361,16 +258,14 @@ class _LocalBrick(base.Base):
         for attr in attrlist:
             k = attr.split("=")[0]
             self.cfg.set(attr)
-            if k == 'sock':
-                s = self.rewrite_sock_server(attr.split('=')[1])
-                self.cfg.sock = s
+            if k == "sock":
+                self.cfg.sock = self.rewrite_sock_server(attr.split("=")[1])
 
     def connect(self, endpoint):
         for p in self.plugs:
             if not p.configured():
                 if p.connect(endpoint):
                     self.on_config_changed()
-                    self.gui_changed = True
                     return True
         return False
 
@@ -408,114 +303,37 @@ class _LocalBrick(base.Base):
     #############################
     # Console related operations.
     #############################
-    def has_console(self, closing=False):
-        for i in range(500):
-            if (self.proc is not None and self.console() and
-                os.path.exists(self.console())):
-                return True
-            else:
-                if closing:
-                    return False
-                time.sleep(0.01)
-        return False
 
     def open_console(self):
-        log.debug("open_console")
-        if not self.has_console():
-            return
+        term = self.settings.get("term")
+        args = [term, "-T", self.name, "-e",
+                os.path.join(self.settings.get("vdepath"), self.term_command),
+                self.console()]
+        log.msg("Opening console for %s\n%s\n" % (self.name, " ".join(args)))
+        reactor.spawnProcess(TermProtocol(), term, args, os.environ)
 
-        if os.access(self.settings.get('term'), os.X_OK):
-            cmdline = [self.settings.get('term'), '-T', self.name, '-e',
-                       self.terminal, self.console()]
-        elif os.access(self.settings.get('alt-term'), os.X_OK):
-            cmdline = [self.settings.get('alt-term'), '-t', self.name, '-e',
-                       self.terminal + " " + self.console()]
-        else:
-            log.error(_("Error: cannot start a terminal emulator"))
-            return
-        try:
-            # console = subprocess.Popen(cmdline)
-            subprocess.Popen(cmdline)
-        except:
-            log.exception(_("Error running command line %s"), cmdline)
-            return
+    def send(self, data):
+        # import pdb; pdb.set_trace()
+        if self.proc:
+            self.comm.append(data)
+            self.proc.write(data)
+        # else:
+        #     log.msg("Cannot send command, brick is not running.")
 
-    # Must be overridden in Qemu to use appropriate console as internal
-    # (stdin, stdout?)
-    def open_internal_console(self):
-        log.debug("open internal console")
-        if not self.has_console():
-            log.debug(_("%s does not have a console"), self.get_type())
-            return
-        try:
-            self.internal_console = socket.socket(socket.AF_UNIX)
-        except socket.error:
-            self.internal_console = None
-            log.exception(_("Error while opening internal console"))
-            return
-
-        # NOTE: how much time should I wait? actually 5s
-        for i in range(500):
-            try:
-                self.internal_console.connect(self._get_console())
-                return
-            except socket.error as e:
-                if len(e.args) != 2 or e.errno != errno.ECONNREFUSED:
-                    log.exception(_("Error while opening internal console"))
-                time.sleep(0.01)
-
-        self.internal_console = None
-        log.error(_("%s: error opening internal console"), self.get_type())
-
-    def _get_console(self):
-        return self.console()
-
-    def send(self, msg):
-        if self.internal_console is None or not self.active:
-            log.debug("%s: cancel send", self.get_type())
-            return
-        try:
-            log.debug("%s: sending '%s'", self.get_type(), msg)
-            self.internal_console.send(msg)
-        except Exception:
-            log.exception("%s: send failed", self.get_type())
+    # def recv(self, data):
+    #     self.comm.append(data)
 
     def recv(self):
-        log.debug("recv")
-        if self.internal_console is None:
-            return ''
-        res = ''
-        p = select.poll()
-        p.register(self.internal_console, select.POLLIN)
-        while True:
-            pollret = p.poll(300)
-            if (len(pollret) == 1 and pollret[0][1] == select.POLLIN):
-                line = self.internal_console.recv(100)
-                res += line
-            else:
-                break
-        return res
-
-    def close_internal_console(self):
-        if self.internal_console is not None:
-            try:
-                self.internal_console.close()
-            finally:
-                self.internal_console = None
-
-    def close_tty(self):
-        sys.stdin.close()
-        sys.stdout.close()
-        sys.stderr.close()
+        pass
 
     def get_state(self):
         """return state of the brick"""
         if self.proc is not None:
-            state = _('running')
+            state = _("running")
         elif not self.properly_connected():
-            state = _('disconnected')
+            state = _("disconnected")
         else:
-            state = _('off')
+            state = _("off")
         return state
 
 
@@ -545,8 +363,8 @@ class Brick(_LocalBrick):
             self.cfg.set(homehost)
             self.set_host(homehost.split('=')[1])
 
-    def configure(self, attrlist):
-        _LocalBrick.configure(self, attrlist)
+    def set(self, attrs):
+        _LocalBrick.set(self, attrs)
         if self.homehost and self.homehost.connected:
             self.homehost.putconfig(self)
 

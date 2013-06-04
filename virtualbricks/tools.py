@@ -22,7 +22,6 @@ import sys
 import errno
 import random
 import re
-import threading
 import logging
 import functools
 import tempfile
@@ -43,52 +42,6 @@ MAC_RE = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
 
 def mac_is_valid(mac):
     return bool(MAC_RE.match(mac))
-
-
-class LoopingCall:
-
-    daemon = True
-    _name = None
-
-    def get_name(self):
-        if self._name is None:
-            return repr(self)
-        return self._name
-
-    def set_name(self, name):
-        self._name = name
-
-    name = property(get_name, set_name)
-
-    def __init__(self, timeout, function, args=(), kwds={}):
-        self.__function = function
-        self.__args = args
-        self.__kwds = kwds
-        self.__timer = None
-        self.start(timeout)
-
-    def start(self, period=None):
-        self.stop()
-        if period is not None:
-            self.__period = period
-        self.__timer = threading.Timer(self.__period, self.__call)
-        self.__timer.daemon = self.daemon
-        self.__timer.name = self.get_name()
-        self.__timer.start()
-
-    def stop(self):
-        if self.__timer:
-            self.__timer.cancel()
-            self.__timer = None
-
-    def __call(self):
-        self.__function(*self.__args, **self.__kwds)
-        self.start()
-
-    def __repr__(self):
-        return '<LoopingCall func=%s, args=%s, kwds=%s>' % (self.__function,
-                                                            self.__args,
-                                                            self.__kwds)
 
 
 def synchronize(func, lock):

@@ -27,26 +27,6 @@ class TestTools(unittest.TestCase):
         foo_s()
         self.assertEqual(lock.c, 2)
 
-    @unittest.skipUnless(test_threads(), "threads tests not enabled")
-    def test_looping_call_function_raise_error(self):
-        """Test that if a function raise an error, it is not called again."""
-
-        stop = [False]
-        event = [False]
-
-        def func():
-            if stop[0]:
-                lc.stop()
-                event[0] = True
-                raise RuntimeError("BOOM")
-            else:
-                stop[0] = True
-                raise RuntimeError("BOOM")
-
-        lc = tools.LoopingCall(0.001, self.assertRaises, (RuntimeError, func))
-        lc._LoopingCall__timer.join()
-        self.assertFalse(event[0])
-
     def test_tempfile_context(self):
         with tools.Tempfile() as (fd, filename):
             os.close(fd)

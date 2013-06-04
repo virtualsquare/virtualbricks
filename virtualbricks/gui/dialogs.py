@@ -79,18 +79,16 @@ advised and possible with gtk-builder-convert.
 """
 
 import os
-import errno
-import logging
-import subprocess
-import threading
+import tempfile
 
 import gtk
+from twisted.internet import utils
 
-from virtualbricks import version, tools
+from virtualbricks import version, tools, _compat
 from virtualbricks.gui import graphics
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 
 if False:  # pyflakes
@@ -104,6 +102,11 @@ BUG_REPORT_ERRORS = {
     4: "The action failed.",
     5: "No permission to read one of the files passed on the command line."
 }
+
+BODY = """-- DO NOT MODIFY THE FOLLOWING LINES --
+
+ affects virtualbrick
+"""
 
 
 class Base(object):
@@ -223,39 +226,26 @@ class LoggingWindow(Window):
             dialog.destroy()
 
     def on_reportbugbutton_clicked(self, button):
-        td = threading.Thread(target=self.send_bug_report,
-                              name="BugReportThread")
-        td.daemon = True
-        td.start()
+        log.msg("Sending report bug")
+        fd, filename = tempfile.mkstemp()
+        os.write(fd, self.textbuffer.get_property("text"))
+        gtk.link_button_set_uri_hook(None)
+        exit_d = utils.getProcessOutputAndValue("xdg-email",
+            ["--utf8", "--body", BODY, "--attach", filename,
+             "new@bugs.launchpad.net"],
+            dict(os.environ, MM_NOTTTY="1"))
 
-    def send_bug_report(self):
-        log.info("Sending report bug")
-        with tools.Tempfile() as (fd, filename):
-            with os.fdopen(fd, "w") as fp:
-                self.save_to(fp)
-            try:
-                subprocess.call(["xdg-email", "--utf8", "--body",
-                                 " affects virtualbrick", "--attach", filename,
-                                 "new@bugs.launchpad.net"])
-                log.info("Report bug sent succefully")
-            except OSError, e:
-                # This is a special exception with the child traceback
-                # attacched
-                if e.errno == errno.ENOENT:
-                    log.exception("Cannot find xdg-email utility")
-                else:
-                    log.exception("Exception raised in the child.")
-                log.warning("Child traceback:\n%s", e.child_traceback)
-            except subprocess.CalledProcessError, e:
-                msg = _("Bug report not sent because of an error")
-                if e.returncode in BUG_REPORT_ERRORS:
-                    err = _(BUG_REPORT_ERRORS[e.returncode])
-                else:
-                    err = _("Unknown error.")
-                log.error("%s: %s\nCommand output:\n%s", msg, err, e.output)
+        def success((out, err, code)):
+            if code == 0:
+                log.msg("Report bug sent succefully")
+            elif code in BUG_REPORT_ERRORS:
+                log.err(BUG_REPORT_ERRORS[code])
+                log.err(err, show_to_user=False)
+            else:
+                log.err("Report bug failed with exit code %s" % code)
+                log.err(err, show_to_user=False)
 
-    def save_to(self, fileobj):
-        fileobj.write(self.textbuffer.get_property("text"))
+        exit_d.addCallbacks(success, log.err).addBoth(lambda _: os.close(fd))
 
 
 class DisksLibraryDialog(Window):
@@ -371,29 +361,14 @@ class DisksLibraryDialog(Window):
         w("host_entry").set_text(i.host or "")
 
 
-def get_usb_devices():
-    try:
-        return subprocess.check_output("lsusb")
-    except subprocess.CalledProcessError, e:
-        log.exception("lsusb returned with error code %d\n%s",
-                      e.returncode, e.output)
-    except OSError, e:
-        log.exception("cannot launch lsusb")
-
-
 class UsbDevWindow(Window):
 
     resource = "data/usbdev.ui"
 
-    def __init__(self, gui):
+    def __init__(self, gui, output):
         Window.__init__(self)
         self.gui = gui
-
-        output = get_usb_devices().strip()
-        if output is None:
-            self.window.destroy()
-            return
-        log.debug("lsusb output:\n%s", output)
+        log.msg("lsusb output:\n%s" % output)
         model = self.get_object("liststore1")
         self._populate_model(model, output)
 

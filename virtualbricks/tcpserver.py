@@ -19,7 +19,7 @@ import hashlib
 import socket
 import select
 import logging
-from threading import Thread
+# from threading import Thread
 
 from virtualbricks import console, wires
 

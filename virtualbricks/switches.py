@@ -83,37 +83,29 @@ class Switch(bricks.Brick):
     def prog(self):
         return self.settings.get("vdepath") + "/vde_switch"
 
-    def on_config_changed(self):
+    def _set_sock_path(self):
         self.socks[0].path = self.path()
 
-        if self.proc is not None:
-            self.need_restart_to_apply_changes = True
+    def on_config_changed(self):
+        self._set_sock_path()
         bricks.Brick.on_config_changed(self)
+
+    def set(self, attrs):
+        bricks.Brick.set(self, attrs)
+        self._set_sock_path()
 
     def configured(self):
         return self.socks[0].has_valid_path()
 
     # live-management callbacks
     def cbset_fstp(self, arg=False):
-        log.debug("%s: callback 'fstp' with argument %s", self.name, arg)
-        if arg:
-            self.send("fstp/setfstp 1\n")
-        else:
-            self.send("fstp/setfstp 0\n")
-        log.debug(self.recv())
+        self.send("fstp/setfstp %d\n" % bool(arg))
 
     def cbset_hub(self, arg=False):
-        log.debug("%s: callback 'hub' with argument %s", self.name, arg)
-        if arg:
-            self.send("port/sethub 1\n")
-        else:
-            self.send("port/sethub 0\n")
-        log.debug(self.recv())
+        self.send("port/sethub %d\n" % bool(arg))
 
     def cbset_numports(self, arg="32"):
-        log.debug("%s: callback 'numports' with argument %s", self.name, arg)
-        self.send("port/setnumports " + str(arg))
-        log.debug(self.recv())
+        self.send("port/setnumports %s\n" % arg)
 
 
 class FakeProcess:
@@ -164,15 +156,15 @@ class SwitchWrapper(bricks.Brick):
     def get_parameters(self):
         return ""
 
-    def __set_sock_path(self):
+    def _set_sock_path(self):
         self.socks[0].path = self.cfg.path
 
     def on_config_changed(self):
         self.__set_sock_path()
         bricks.Brick.on_config_changed(self)
 
-    def configure(self, attrs):
-        bricks.Brick.configure(self, attrs)
+    def set(self, attrs):
+        bricks.Brick.set(self, attrs)
         self.__set_sock_path()
 
     def configured(self):

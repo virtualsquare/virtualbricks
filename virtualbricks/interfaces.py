@@ -121,7 +121,8 @@ class IBrick(Interface):
 
     type = Attribute("The type name of the brick")
     name = Attribute("The name of the brick")
-    proc = Attribute("None or an object conform to IProcess.")
+    proc = Attribute("""None or an object conform to \
+                     C{twisted.internet.interfaces.IProcessTransport""")
 
     def get_type():
         """Return the type of brick."""
@@ -163,18 +164,3 @@ class IBrick(Interface):
 
     def get_state():
         pass
-
-
-class IProcess(Interface):
-
-    # pid = Attribute("The pid of the process.")
-
-    def poll():
-        """Check if child process has terminated.
-
-        Set and return returncode attribute. Return C{None} if the process is
-        still running or it is not still launched, the exit code otherwise.
-        """
-
-    def send_signal(signo):
-        """Send a signal to the process."""

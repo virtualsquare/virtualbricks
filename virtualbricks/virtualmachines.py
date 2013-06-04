@@ -19,21 +19,20 @@
 import copy
 import os
 import re
-import socket
-import time
 import subprocess
 from datetime import datetime
 from shutil import move
-import logging
 
-from virtualbricks import base, errors, tools, settings, bricks
+from twisted.internet import reactor
+
+from virtualbricks import base, errors, tools, settings, bricks, _compat
 from virtualbricks.deprecated import deprecated
 from virtualbricks.versions import Version
 from virtualbricks.link import Sock, Plug
 from virtualbricks.settings import MYPATH
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 
 if False:
@@ -436,19 +435,20 @@ class Disk:
 VMDisk = Disk
 
 
-class QemuSudo(bricks.Sudo):
+# class QemuSudo(bricks.Sudo):
 
-    def inject_sudo(self):
-        self._args = self.process.args
-        self.process.args = [self.sudo] + self._args[:] + \
-                ["-pidfile", self.pidfile.name]
+#     def inject_sudo(self):
+#         self._args = self.process.args
+#         self.process.args = [self.sudo] + self._args[:] + \
+#                 ["-pidfile", self.pidfile.name]
 
 
 
 class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
-    sudo_factory = QemuSudo
+    term_command = "unixterm"
+    # sudo_factory = QemuSudo
     command_builder = {
         "#argv0": "argv0",
         "#M": "machine",
@@ -654,6 +654,11 @@ class VirtualMachine(bricks.Brick):
         self.newbrick_changes()
         # self.connect("changed", lambda s: s.associate_disk())
 
+    def poweron(self, snapshot=None):
+        if snapshot is not None:
+            self.original.cfg["loadvm"] = snapshot
+        bricks.Brick.poweron(self)
+
     def get_basefolder(self):
         return self.factory.get_basefolder()
 
@@ -691,8 +696,8 @@ class VirtualMachine(bricks.Brick):
         self.associate_disk()  # XXX: really useful?
         bricks.Brick.on_config_changed(self)
 
-    def configure(self, attrlist):
-        bricks.Brick.configure(self, attrlist)
+    def set(self, attrs):
+        bricks.Brick.set(self, attrs)
         self.associate_disk()  # XXX: really useful?
 
     def configured(self):
@@ -823,10 +828,10 @@ class VirtualMachine(bricks.Brick):
             res.extend(["-serial", "unix:%s/%s_serial,server,nowait" %
                         (settings.VIRTUALBRICKS_HOME, self.name)])
         res.extend(["-mon", "chardev=mon", "-chardev",
-                    "socket,id=mon_cons,path=%s,server,nowait" %
-                    self.console2(),
+                    "socket,id=mon,path=%s,server,nowait" %
+                    self.console(),
                     "-mon", "chardev=mon_cons", "-chardev",
-                    "socket,id=mon,path=%s,server,nowait" % self.console()])
+                    "stdio,id=mon_cons,signal=off"])
         return res
 
     def __clear_machine_vmdisks(self):
@@ -858,12 +863,6 @@ class VirtualMachine(bricks.Brick):
         self.cfg["fdb"] = Disk(self, "fdb")
         self.cfg["mtdblock"] = Disk(self, "mtdblock")
         self.associate_disk()
-
-    def console(self):
-        return "%s/%s_cons.mgmt" % (MYPATH, self.name)
-
-    def console2(self):
-        return "%s/%s.mgmt" % (MYPATH, self.name)
 
     def __add_sock(self, mac=None, model=None):
         s = self.brickfactory.new_sock(self)
@@ -939,14 +938,8 @@ class VirtualMachine(bricks.Brick):
                 p.vlan -= 1
         self.gui_changed = True
 
-    def _get_console(self):
-        return self.console2()
-
     def commit_disks(self, args):
         self.send("commit all\n")
 
-    def post_poweroff(self):
-        self.active = False
-        self.start_related_events(off=True)
 
 VM = VirtualMachine

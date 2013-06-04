@@ -16,20 +16,18 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import time
-import logging
-import subprocess
 
 import gtk
 from zope.interface import implements
+from twisted.internet import reactor, utils, defer
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           console, link)
+                           console, link, _compat)
 
 from virtualbricks.gui import graphics, dialogs
 
 
-log = logging.getLogger("virtualbricks.gui.gui")
+log = _compat.getLogger("virtualbricks.gui.gui")
 
 if False:  # pyflakes
     _ = str
@@ -82,12 +80,13 @@ class BrickPopupMenu(BaseMenu):
         return menu
 
     def on_startstop_activate(self, menuitem, gui):
-        gui.user_wait_action(gui.startstop_brick, self.original)
+        gui.startstop_brick(self.original)
 
     def on_delete_activate(self, menuitem, gui):
         message = ""
         if self.original.proc is not None:
-            message = _("The brick is still running, it will be killed before being deleted!\n")
+            message = _("The brick is still running, it will be killed before"
+                        "being deleted!\n")
         gui.ask_confirm(message + _("Do you really want to delete %s %s?") % (
             self.original.get_type(), self.original.get_name()),
             on_yes=gui.brickfactory.delbrick, arg=self.original)
@@ -127,19 +126,29 @@ class VMPopupMenu(BrickPopupMenu):
         menu.append(resume)
         return menu
 
-    def on_resume_activate(self, menuitem, gui):
-        hda = self.original.cfg.get('basehda')
-        log.debug("Resuming virtual machine %s", self.original.get_name())
-        if os.system("qemu-img snapshot -l " + hda + " |grep virtualbricks") == 0:
+    def snapshot(self):
+
+        def grep(out, pattern):
+            if out.find(pattern) == -1:
+                raise RuntimeError(_("Cannot find suspend point."))
+
+        def loadvm(_):
             if self.original.proc is not None:
                 self.original.send("loadvm virtualbricks\n")
-                self.original.recv()
             else:
-                self.original.cfg["loadvm"] = "virtualbricks"
-                self.original.poweron()
-        else:
-            log.error(_("Cannot find suspend point."))
+                self.original.poweron("virtualbricks")
 
+        hda = self.original.cfg.get('basehda')
+        exe = "qemu-img"
+        args = [exe, "snapshot" "-l", hda]
+        output = utils.getProcessOutput(exe, args, os.environ)
+        output.addCallback(grep, "virtualbricks")
+        output.addCallbacks(loadvm, log.err)
+        return output
+
+    def on_resume_activate(self, menuitem, gui):
+        log.debug("Resuming virtual machine %s", self.original.get_name())
+        gui.user_wait_action(self.snapshot)
 
 interfaces.registerAdapter(VMPopupMenu, GVirtualMachine, interfaces.IMenu)
 
@@ -147,11 +156,11 @@ interfaces.registerAdapter(VMPopupMenu, GVirtualMachine, interfaces.IMenu)
 class EventPopupMenu(BaseMenu):
 
     def on_startstop_activate(self, menuitem, gui):
-        gui.user_wait_action(gui.event_startstop_brick, self.original)
+        self.original.toggle()
 
     def on_delete_activate(self, menuitem, gui):
         message = ""
-        if self.original.active:
+        if self.original.scheduled:
             message = _("This event is in use") + ". "
         gui.ask_confirm(message + _("Do you really want to delete %s %s?") % (
             self.original.get_type(), self.original.get_name()),
@@ -164,7 +173,6 @@ class EventPopupMenu(BaseMenu):
         gui.gladefile.get_widget('entry_event_newname').set_text(
             self.original.get_name())
         gui.gladefile.get_widget('dialog_event_rename').show_all()
-
 
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
 
@@ -218,7 +226,6 @@ class RemoteHostPopupMenu:
         gui.ask_confirm(_("Do you really want to delete remote host ") +
             " \"" + self.original.addr[0] + "\" and all the bricks related?",
             on_yes=gui.brickfactory.delremote, arg=self.original)
-
 
 interfaces.registerAdapter(RemoteHostPopupMenu, console.RemoteHost,
                            interfaces.IMenu)
@@ -302,22 +309,31 @@ class JobMenu:
         self.original.open_console()
 
     def on_stop_activate(self, menuitem):
-        log.debug("Sending to process signal 19!")
-        self.original.proc.send_signal(19)
+        log.debug("Sending to process signal SIGSTOP!")
+        self.original.send_signal(19)
 
     def on_cont_activate(self, menuitem):
-        log.debug("Sending to process signal 18!")
-        self.original.proc.send_signal(18)
+        log.debug("Sending to process signal SIGCONT!")
+        self.original.send_signal(18)
 
     def on_reset_activate(self, menuitem):
         log.debug("Restarting process!")
         self.original.poweroff()
-        self.original.poweron()
+
+        def start_brick(brick, count=0):
+            count += 1
+            if brick.proc is not None and count < 10:
+                # max count is totally euristic
+                reactor.callLater(0.1, start_brick, brick, count)
+            elif brick.proc is not None:
+                brick.poweroff(kill=True)
+            else:
+                brick.poweron()
+        reactor.callLater(0.1, start_brick, self.original)
 
     def on_kill_activate(self, menuitem):
-        log.debug("Sending to process signal 9!")
-        self.original.proc.send_signal(9)
-
+        log.debug("Sending to process signal SIGKILL!")
+        self.original.send_signal(9)
 
 interfaces.registerAdapter(JobMenu, bricks.Brick, interfaces.IJobMenu)
 
@@ -327,7 +343,7 @@ class VMJobMenu(JobMenu):
     def build(self, gui):
         menu = JobMenu.build(self, gui)
         suspend = gtk.MenuItem(_("Suspend virtual machine"))
-        suspend.connect("activate", self.on_suspend_activate)
+        suspend.connect("activate", self.on_suspend_activate, gui)
         menu.insert(suspend, 5)
         powerdown = gtk.MenuItem(_("Send ACPI powerdown"))
         powerdown.connect("activate", self.on_powerdown_activate)
@@ -338,28 +354,38 @@ class VMJobMenu(JobMenu):
         menu.insert(gtk.SeparatorMenuItem(), 8)
         return menu
 
-    def on_suspend_activate(self, menuitem):
+    def suspend(self):
+
+        def do_suspend(exit_code):
+            if exit_code == 0:
+                done = defer.Deferred()
+                self.original.send("savevm virtualbricks\n", done)
+                done.addCallback(lambda _: self.original.poweroff())
+            else:
+                log.msg(_("Suspend/Resume not supported on this disk."),
+                        isError=True)
+
         hda = self.original.cfg["basehda"]
-        if hda is None or 0 != subprocess.Popen(["qemu-img", "snapsho", "-c",
-                                           "virtualbricks",hda]).wait():
-            log.error(_("Suspend/Resume not supported on this disk."))
-            return
-        self.original.recv()
-        self.original.send("savevm virtualbricks\n")
-        while not self.original.recv().startswith("(qemu"):
-            time.sleep(0.5)
-        self.original.poweroff()
+        if hda is None:
+            log.msg(_("Suspend/Resume not supported on this disk."),
+                    isError=True)
+            return defer.fail()
+        exe = "qemu-img"
+        args = [exe, "snapshot", "-c", "virtualbricks", hda]
+        value = utils.getProcessValue(exe, args, os.environ)
+        value.addCallback(do_suspend)
+        return value
+
+    def on_suspend_activate(self, menuitem, gui):
+        gui.user_wait_action(self.suspend)
 
     def on_powerdown_activate(self, menuitem):
         log.info("send ACPI powerdown")
         self.original.send("system_powerdown\n")
-        self.original.recv()
 
     def on_reset_activate(self, menuitem):
         log.info("send ACPI reset")
         self.original.send("system_reset\n")
-        self.original.recv()
-
 
 interfaces.registerAdapter(VMJobMenu, GVirtualMachine, interfaces.IJobMenu)
 
@@ -403,12 +429,14 @@ class SwitchConfigController(ConfigController):
         return self.get_object("table")
 
     def configure_brick(self, gui):
-        self.original.cfg["fstp"] = self.get_object(
-            "fstp_checkbutton").get_active()
-        self.original.cfg["hub"] = self.get_object(
-            "hub_checkbutton").get_active()
-        self.original.cfg["numports"] = \
-                self.get_object("ports_spinbutton").get_value_as_int()
+        # self.original.set(self.config.get_parameters())
+        parameters = {
+            "fstp": self.get_object("fstp_checkbutton").get_active(),
+            "hub": self.get_object("hub_checkbutton").get_active(),
+            "numports": self.get_object("ports_spinbutton"
+                                       ).get_value_as_int()
+        }
+        self.original.set(parameters)
 
 
 def should_insert_sock(sock, brick, python, femaleplugs):
@@ -476,7 +504,6 @@ def config_panel_factory(context):
         return SwitchConfigController(context)
     elif type == "Tap":
         return TapConfigController(context)
-
 
 interfaces.registerAdapter(config_panel_factory, base.Base,
                            interfaces.IConfigController)
