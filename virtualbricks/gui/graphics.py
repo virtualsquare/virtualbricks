@@ -67,17 +67,14 @@ def brick_icon(brick):
 def is_running(brick):
     if hasattr(brick, "proc"):
         return brick.proc is not None
-    elif hasattr(brick, "active"):
-        return brick.active
     return True
 
 
 def saturate_if_stopped(brick, pixbuf):
-    if is_running(brick):
-        return pixbuf
-    else:
-        pixbuf.saturate_and_pixelate(pixbuf, 0.0, True)
-        return pixbuf
+    if ((brick.get_type() == "Event" and brick.scheduled is None) or
+        (hasattr(brick, "proc") and brick.proc is None)):
+            pixbuf.saturate_and_pixelate(pixbuf, 0.0, True)
+    return pixbuf
 
 
 def pixbuf_for_brick_at_size(brick, width, height):

@@ -23,16 +23,17 @@ import re
 import shutil
 import traceback
 import contextlib
-import logging
 
-from virtualbricks import console, settings
+from twisted.python import failure
+
+from virtualbricks import _compat, console, settings
 
 
 if False:  # pyflakes
     _ = str
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 
 @contextlib.contextmanager
@@ -127,7 +128,7 @@ class ConfigFile:
             self.save_to(factory, obj_or_str)
 
     def save_to(self, factory, fileobj):
-        with factory.lock():
+        # with factory.lock():
             return self.__save_to(factory, fileobj)
 
     def __save_to(self, factory, fileobj):
@@ -146,9 +147,9 @@ class ConfigFile:
             fileobj.write('vdepath=' + r.vdepath + '\n')
             fileobj.write('bricksdirectory=' + r.bricksdirectory + '\n')
             if r.autoconnect:
-                fileobj.write('autoconnect=True\n')
+                fileobj.write('autoconnect=True\n\n')
             else:
-                fileobj.write('autoconnect=False\n')
+                fileobj.write('autoconnect=False\n\n')
 
         # Disk Images
         for img in factory.disk_images:
@@ -158,58 +159,79 @@ class ConfigFile:
                 fileobj.write('host=' + img.host.addr[0] + '\n')
             if img.readonly is not False:
                 fileobj.write('readonly=True\n')
+            fileobj.write("\n")
 
-        for e in iter(factory.events):
-            fileobj.write('[' + e.get_type() + ':' + e.name + ']\n')
-            for k, v in e.cfg.iteritems():
-                #Special management for actions parameter
-                if k == 'actions':
-                    tempactions = list()
-                    for action in e.cfg.actions:
-                        #It's an host shell command
-                        if isinstance(action, console.ShellCommand):
-                            tempactions.append("addsh " + action)
-                        #It's a vb shell command
-                        elif isinstance(action, console.VbShellCommand):
-                            tempactions.append("add " + action)
-                        else:
-                            log.error("Error: unmanaged action type. Will not "
-                                      "be saved!")
-                            continue
-                    fileobj.write(k + '=' + str(tempactions) + '\n')
-                #Standard management for other parameters
+        for event in factory.events:
+            fileobj.write("[%s:%s]\n" % (event.get_type(), event.name))
+            event.cfg.save_to(fileobj)
+        # for e in iter(factory.events):
+        #     fileobj.write('[' + e.get_type() + ':' + e.name + ']\n')
+        #     for k, v in e.cfg.iteritems():
+        #         #Special management for actions parameter
+        #         if k == 'actions':
+        #             tempactions = list()
+        #             for action in e.cfg["actions"]:
+        #                 #It's an host shell command
+        #                 if isinstance(action, console.ShellCommand):
+        #                     tempactions.append("addsh " + action)
+        #                 #It's a vb shell command
+        #                 elif isinstance(action, console.VbShellCommand):
+        #                     tempactions.append("add " + action)
+        #                 else:
+        #                     import pdb; pdb.set_trace()
+        #                     log.error("Error: unmanaged action type. Will not "
+        #                               "be saved!")
+        #                     continue
+        #             fileobj.write(k + '=' + str(tempactions) + '\n')
+        #         #Standard management for other parameters
+        #         else:
+        #             fileobj.write(k + '=' + str(v) + '\n')
+
+        socks = []
+        plugs = []
+        for brick in iter(factory.bricks):
+            fileobj.write("[%s:%s]\n" % (brick.get_type(), brick.name))
+            brick.cfg.save_to(fileobj)
+            if brick.get_type() == "Qemu":
+                socks.extend(brick.socks)
+            plugs.extend(p for p in brick.plugs if p.sock is not None)
+
+        for sock in socks:
+            t = "sock|{s.brick.name}|{s.nickname}|{s.model}|{s.mac}|{s.vlan}\n"
+            fileobj.write(t.format(s=sock))
+
+        for plug in plugs:
+            if plug.brick.get_type() == 'Qemu':
+                if plug.mode == 'vde':
+                    t = ("link|{p.brick.name}|{p.sock.nickname}|{p.model}|"
+                         "{p.mac}|{p.vlan}\n")
                 else:
-                    fileobj.write(k + '=' + str(v) + '\n')
+                    t = ("userlink|{p.brick.name}||{p.model}|{pl.mac}|"
+                         "{pl.vlan}\n")
+                fileobj.write(t.format(p=plug))
+            elif plug.sock is not None:
+                t = "link|{p.brick.name}|{p.sock.nickname}\n"
+                fileobj.write(t.format(p=plug))
 
-        for b in iter(factory.bricks):
-            fileobj.write('[' + b.get_type() + ':' + b.name + ']\n')
-            for k, v in b.cfg.iteritems():
-                # VMDisk objects don't need to be saved
-                types = set(['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb',
-                             'mtdblock'])
-                if (b.get_type() != "Qemu" or (b.get_type() == "Qemu" and k not
-                                               in types)):
-                    fileobj.write(k + '=' + str(v) + '\n')
-
-        for b in iter(factory.bricks):
-            for sk in b.socks:
-                if b.get_type() == 'Qemu':
-                    fileobj.write('sock|' + b.name + "|" + sk.nickname + '|' +
-                            sk.model + '|' + sk.mac + '|' + str(sk.vlan) +
-                            '\n')
-        for b in iter(factory.bricks):
-            for pl in (p for p in b.plugs if p.sock is not None):
-                if b.get_type() == 'Qemu':
-                    if pl.mode == 'vde':
-                        fileobj.write('link|' + b.name + "|" + pl.sock.nickname
-                                      + '|' + pl.model + '|' + pl.mac + '|' +
-                                      str(pl.vlan) + '\n')
-                    else:
-                        fileobj.write('userlink|' + b.name + '||' + pl.model +
-                                      '|' + pl.mac + '|' + str(pl.vlan) + '\n')
-                elif (pl.sock is not None):
-                    fileobj.write('link|' + b.name + "|" + pl.sock.nickname +
-                                  '\n')
+        # for b in iter(factory.bricks):
+        #     for sk in b.socks:
+        #         if b.get_type() == 'Qemu':
+        #             fileobj.write('sock|' + b.name + "|" + sk.nickname + '|' +
+        #                     sk.model + '|' + sk.mac + '|' + str(sk.vlan) +
+        #                     '\n')
+        # for b in iter(factory.bricks):
+        #     for pl in (p for p in b.plugs if p.sock is not None):
+        #         if b.get_type() == 'Qemu':
+        #             if pl.mode == 'vde':
+        #                 fileobj.write('link|' + b.name + "|" + pl.sock.nickname
+        #                               + '|' + pl.model + '|' + pl.mac + '|' +
+        #                               str(pl.vlan) + '\n')
+        #             else:
+        #                 fileobj.write('userlink|' + b.name + '||' + pl.model +
+        #                               '|' + pl.mac + '|' + str(pl.vlan) + '\n')
+        #         elif (pl.sock is not None):
+        #             fileobj.write('link|' + b.name + "|" + pl.sock.nickname +
+        #                           '\n')
 
     def restore(self, factory, str_or_obj):
         if isinstance(str_or_obj, basestring):
@@ -222,7 +244,7 @@ class ConfigFile:
             self.restore_from(factory, str_or_obj)
 
     def restore_from(self, factory, fileobj):
-        with factory.lock():
+        # with factory.lock():
             return self.__restore_from(factory, fileobj)
 
     def __restore_from(self, factory, fileobj):
@@ -290,9 +312,9 @@ class ConfigFile:
                         path = ""
                         host = None
                         readonly = False
-                        l = fileobj.readline()
+                        l = fileobj.readline().rstrip("\n")
                         while l and not l.startswith('['):
-                            k, v = l.rstrip("\n").split("=")
+                            k, v = l.split("=", 2)
                             if k == 'path':
                                 path = str(v)
                             elif k == 'host':
@@ -338,31 +360,14 @@ class ConfigFile:
                         component = factory.get_brick_by_name(name)
 
                 except Exception:
-                    log.exception("Bad config line: %s", l)
+                    log.err(failure.Failure(), "Bad config line: %s" % l)
                     l = fileobj.readline()
                     continue
 
+                component.cfg.load_from(fileobj)
                 l = fileobj.readline()
-                parameters = []
-                while (component and l and not l.startswith('[') and
-                       not re.search("\A.*link\|", l) and
-                       not re.search("\A.*sock\|", l)):
-                    if len(l.split('=')) > 1:
-                        #Special management for event actions
-                        if l.split('=')[0] == "actions" and ntype == 'Event':
-                            actions = eval(''.join(
-                                l.rstrip('\n').split('=', 1)[1:]))
-                            for action in actions:
-                                #Initialize one by one
-                                component.configure(action.split(' '))
-                            l = fileobj.readline()
-                            continue
-                        parameters.append(l.rstrip('\n'))
-                    l = fileobj.readline()
-                if parameters:
-                    component.configure(parameters)
-
                 continue
+
             l = fileobj.readline()
 
         for b in iter(factory.bricks):

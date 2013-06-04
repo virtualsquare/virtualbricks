@@ -346,7 +346,8 @@ class Protocol:
             return False
 
     def sendLine(self, line):
-        self.sender.write(line + "\n")
+        self.sender.sendLine(line)
+        # self.sender.write(line + "\n")
 
     def default(self, parts):
         pass

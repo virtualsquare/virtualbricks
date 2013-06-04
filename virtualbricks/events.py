@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_events -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -15,72 +16,88 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import logging
-import subprocess
-import threading
+import os
 
-from virtualbricks import base, errors, console
+from twisted.internet import reactor, defer, utils
+
+from virtualbricks import base, errors, console, _compat
 
 
 if False:  # pyflakes
     _ = str
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
+
+
+class Command(base.String):
+
+    def from_string(self, in_object):
+        if in_object.startswith("add "):
+            factory = console.VbShellCommand
+        elif in_object.startswith("addsh "):
+            factory = console.ShellCommand
+        else:
+            raise RuntimeError()
+        return factory(in_object.split(" ", 1)[1])
+
+    def to_string(self, in_object):
+        if isinstance(in_object, console.VbShellCommand):
+            return "add " + in_object
+        elif isinstance(in_object, console.VbShellCommand):
+            return "addsh " + in_object
+        else:
+            raise RuntimeError()
+
+
+class EventConfig(base.NewConfig):
+
+    parameters = {"actions": base.ListOf(Command("")),
+                  "delay": base.Integer(0)}
+
+    def __init__(self):
+        base.NewConfig.__init__(self)
+        self._cfg["actions"] = []
 
 
 class Event(base.Base):
 
     type = "Event"
-    active = False
-    gui_changed = False
-    need_restart_to_apply_changes = False
-    internal_console = None
-    timer = None
-
-    def __init__(self, factory, name):
-        base.Base.__init__(self, factory, name)
-        self.cfg.actions = list()
-        self.cfg.delay = 0
-        # self.emit("changed")
+    scheduled = None
+    config_factory = EventConfig
 
     def get_state(self):
-        """return state of the event"""
-        if self.active:
-            state = _('running')
+        """Return state of the event"""
+
+        if self.scheduled is not None:
+            state = _("running")
         elif not self.configured():
-            state = _('unconfigured')
+            state = _("unconfigured")
         else:
-            state = _('off')
+            state = _("off")
         return state
 
-    def change_state(self):
-        if self.active:
-            self.poweroff()
-        else:
-            self.poweron()
-
     def configured(self):
-        return (len(self.cfg.actions) > 0 and self.cfg.delay > 0)
+        return len(self.cfg["actions"]) > 0 and self.cfg["delay"] > 0
 
     def initialize(self, attrlist):
-        if 'add' in attrlist and 'addsh' in attrlist:
+        if "add" in attrlist and "addsh" in attrlist:
             raise errors.InvalidActionError(_("Error: config line must "
                                               "contain add OR addsh."))
-        elif('add' in attrlist):
+        elif "add" in attrlist:
             configactions = list()
-            configactions = (' '.join(attrlist)).split('add')
+            configactions = (" ".join(attrlist)).split("add")
             for action in configactions[1:]:
                 action = action.strip()
-                self.cfg.actions.append(console.VbShellCommand(action))
-                log.info(_("Added vb-shell command: '%s'"), action)
-        elif('addsh' in attrlist):
+                self.cfg["actions"].append(console.VbShellCommand(action))
+                log.msg(_("Added vb-shell command: '%s'") % action)
+        elif "addsh" in attrlist:
             configactions = list()
-            configactions = (' '.join(attrlist)).split('addsh')
+            configactions = (" ".join(attrlist)).split("addsh")
             for action in configactions[1:]:
                 action = action.strip()
-                self.cfg.actions.append(console.ShellCommand(action))
-                log.info(_("Added host-shell command: '%s'"), action)
+                self.cfg["actions"].append(console.ShellCommand(action))
+                log.msg(_("Added host-shell command: '%s'") % action)
         else:
             for attr in attrlist:
                 self.cfg.set(attr)
@@ -89,17 +106,16 @@ class Event(base.Base):
         return True
 
     def get_parameters(self):
-        tempstr = _("Delay") + ": %d" % int(self.cfg.delay)
-        l = len(self.cfg.actions)
-        if l > 0:
-            tempstr += "; " + _("Actions") + ":"
-            #Add actions cutting the tail if it's too long
-            for s in self.cfg.actions:
+        tempstr = _("Delay: %d") % self.cfg["delay"]
+        if len(self.cfg["actions"]) > 0:
+            tempstr += "; " + _("Actions:")
+            # Add actions cutting the tail if it's too long
+            for s in self.cfg["actions"]:
                 if isinstance(s, console.ShellCommand):
                     tempstr += " \"*%s\"," % s
                 else:
                     tempstr += " \"%s\"," % s
-            #Remove the last character
+            # Remove the last character
             tempstr = tempstr[0:-1]
         return tempstr
 
@@ -113,62 +129,51 @@ class Event(base.Base):
         self.initialize(attrlist)
         # TODO brick should be gobject and a signal should be launched
         self.emit("changed")
-        self.timer = threading.Timer(float(self.cfg.delay), self.doactions)
 
     ############################
     ########### Poweron/Poweroff
     ############################
+
     def poweron(self):
+        if self.scheduled:
+            return
         if not self.configured():
-            raise errors.BadConfigError("Event %s not configured", self.name)
-        if self.active:
-            self.timer.cancel()
-            self.active = False
-            self.factory.emit("event-stopped", self.name)
-            self.timer = threading.Timer(float(self.cfg.delay), self.doactions)
-        try:
-            self.timer.start()
-        except RuntimeError:
-            pass
-        self.active = True
+            raise errors.BadConfigError("Event %s not configured" % self.name)
+
+        def call():
+            self.scheduled = None
+            return self.doactions()
+        self.scheduled = reactor.callLater(self.cfg["delay"], call)
         self.factory.emit("event-started", self.name)
 
     def poweroff(self):
-        if not self.active:
+        if self.scheduled is None:
             return
-        self.timer.cancel()
-        self.active = False
-        #We get ready for new poweron
-        self.timer = threading.Timer(float(self.cfg.delay), self.doactions)
+        self.scheduled.cancel()
+        self.scheduled = None
         self.factory.emit("event-stopped", self.name)
 
+    def toggle(self):
+        if self.scheduled is not None:
+            self.poweroff()
+        else:
+            self.poweron()
+
     def doactions(self):
-        for action in self.cfg.actions:
-            if (isinstance(action, console.VbShellCommand)):
+        procs = []
+        for action in self.cfg["actions"]:
+            if isinstance(action, console.VbShellCommand):
                 console.Parse(self.factory, action)
-            elif (isinstance(action, console.ShellCommand)):
-                try:
-                    subprocess.Popen(action, shell=True)
-                except:
-                    log.error("Error: cannot execute shell command %s", action)
-                    continue
-#            else:
-#                #it is an event
-#                action.poweron()
+            elif isinstance(action, console.ShellCommand):
+                procs.append(utils.getProcessValue("sh", action, os.environ))
 
-        self.active = False
-        #We get ready for new poweron
-        self.timer = threading.Timer(float(self.cfg.delay), self.doactions, ())
-        self.factory.emit("event-accomplished", self.name)
+        def log_err(results):
+            for success, value in results:
+                if not success:
+                    log.err(value)
 
-    def on_config_changed(self):
-        self.emit("changed")
+        defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
+        return defer
+        # self.factory.emit("event-accomplished", self.name)
 
-    #############################
-    # Console related operations.
-    #############################
-    def has_console(self):
-            return False
-
-    def close_tty(self):
-        return
+    change_state = toggle

@@ -1,5 +1,7 @@
 import logging
 
+from twisted.internet import defer
+
 from virtualbricks import brickfactory, bricks
 
 
@@ -16,9 +18,6 @@ class BrickStub(bricks.Brick):
 
         parameters = {"a": bricks.String("arg1"),
                       "c": bricks.Boolean(True)}
-
-    def open_internal_console(self):
-        return Console()
 
     def prog(self):
         return "true"
@@ -53,15 +52,14 @@ class ConfigFileStub:
 class FactoryStub(brickfactory.BrickFactory):
 
     def __init__(self):
-        brickfactory.BrickFactory.__init__(self)
+        brickfactory.BrickFactory.__init__(self, defer.Deferred())
         self.register_brick_type(BrickStub, "stub")
 
 
-class LoggingHandlerStub(logging.Handler):
+class LoggingObserver:
 
     def __init__(self):
-        logging.Handler.__init__(self)
-        self._records = {}
+        self.msgs = []
 
-    def emit(self, record):
-        self._records.setdefault(record.levelno, []).append(record)
+    def emit(self, event_dict):
+        self.msgs.append(event_dict)

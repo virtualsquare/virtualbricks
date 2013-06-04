@@ -15,57 +15,56 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import time
-import select
-import socket
-from threading import Thread
-import logging
+import os
+# import time
+# import select
+# import socket
+# from threading import Thread
 
-from virtualbricks import logger
-from virtualbricks.bricks import Brick
-from virtualbricks.link import Plug
+from virtualbricks import _compat, bricks, link
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
-VDESUPPORT = True
-try:
-    import VdePlug
-    log.info("VdePlug support ENABLED.")
-except ImportError:
-    log.info("VdePlug support not found. I will disable native VDE python "
-             "support.")
-    VDESUPPORT = False
+# try:
+#     import VdePlug
+#     # log.info("VdePlug support ENABLED.")
+# except ImportError:
+#     VdePlug = None
+#     # log.info("VdePlug support not found. I will disable native VDE python "
+#     #          "support.")
 
 
 if False:  # pyflakes
     _ = str
 
 
-class Wire(logger.ChildLogger(__name__), Brick):
+class WireConfig(bricks.Config):
+
+    parameters = {
+        "name": bricks.String(""),
+        "sock0": bricks.String(""),
+        "sock1": bricks.String("")
+    }
+
+
+class Wire(bricks.Brick):
 
     type = "Wire"
-    _pid = -1
+    config_factory = WireConfig
 
-    def get_pid(self):
-        return self._pid
-
-    def set_pid(self, value):
-        self._pid = value
-
-    pid = property(get_pid, set_pid)
-
-    def __init__(self, _factory, _name):
-        Brick.__init__(self, _factory, _name)
-        self.cfg.name = _name
-        self.command_builder = {"#sock left": "sock0", "#sock right": "sock1"}
-        self.cfg.sock0 = ""
-        self.cfg.sock1 = ""
-        self.plugs.append(Plug(self))
-        self.plugs.append(Plug(self))
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
+        self.cfg.name = name
+        self.command_builder = {
+            "#sock left": "sock0",
+            "#sock right": "sock1"
+        }
+        self.plugs.append(link.Plug(self))
+        self.plugs.append(link.Plug(self))
 
     def restore_self_plugs(self):
         while len(self.plugs) < 2:
-            self.plugs.append(Plug(self))
+            self.plugs.append(link.Plug(self))
 
     def clear_self_socks(self, sock=None):
         if sock is None:
@@ -101,157 +100,154 @@ class Wire(logger.ChildLogger(__name__), Brick):
             self.cfg.sock1 = self.plugs[1].sock.path.rstrip('[]')
         if (self.proc is not None):
             self.need_restart_to_apply_changes = True
-        Brick.on_config_changed(self)
+        bricks.Brick.on_config_changed(self)
 
     def configured(self):
         return (self.plugs[0].sock is not None and self.plugs[1].sock is not None)
 
     def prog(self):
-        return self.settings.get("vdepath") + "/dpipe"
+        return os.path.join(self.settings.get("vdepath"), "dpipe")
 
     def args(self):
-        res = []
-        res.append(self.prog())
-        res.append(self.settings.get("vdepath") + '/vde_plug')
-        res.append(self.cfg.sock0)
-        res.append('=')
-        res.append(self.settings.get("vdepath") + '/vde_plug')
-        res.append(self.cfg.sock1)
-        return res
+        return [self.prog(),
+                os.path.join(self.settings.get("vdepath"), "vde_plug"),
+                self.cfg.sock0, "=",
+                os.path.join(self.settings.get("vdepath"), "vde_plug"),
+                self.cfg.sock1]
 
 
-class PyWireThread(Thread):
+# class PyWireThread(Thread):
 
-    def __init__(self, wire):
-        self.wire = wire
-        self.run_condition = False
-        Thread.__init__(self)
+#     def __init__(self, wire):
+#         self.wire = wire
+#         self.run_condition = False
+#         Thread.__init__(self)
 
-    def run(self):
-        self.run_condition = True
-        self.wire.pid = -10
-        self.wire.factory.TCP
-        host0 = None
-        if self.wire.factory.TCP is not None:
-        # ON TCP SERVER SIDE OF REMOTE WIRE
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            for port in range(32400, 32500):
-                try:
-                    s.bind(('', port))
-                except:
-                    continue
-                else:
-                    self.wire.factory.TCP.sock.send("udp " + self.wire.name + " remoteport " + str(port) + '\n')
-            v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
-            p = select.poll()
-            p.register(v.datafd().fileno(), select.POLLIN)
-            p.register(s.fileno(), select.POLLIN)
-            while self.run_condition:
-                res = p.poll(250)
-                for f, e in res:
-                    if f == v.datafd().fileno() and (e & select.POLLIN):
-                        buf = v.recv(2000)
-                        s.sendto(buf, (self.wire.factory.TCP.master_address[0], self.wire.remoteport))
-                    if f == s.fileno() and (e & select.POLLIN):
-                        buf = s.recv(2000)
-                        v.send(buf)
+#     def run(self):
+#         self.run_condition = True
+#         self.wire.pid = -10
+#         self.wire.factory.TCP
+#         host0 = None
+#         if self.wire.factory.TCP is not None:
+#         # ON TCP SERVER SIDE OF REMOTE WIRE
+#             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#             for port in range(32400, 32500):
+#                 try:
+#                     s.bind(('', port))
+#                 except:
+#                     continue
+#                 else:
+#                     self.wire.factory.TCP.sock.send("udp " + self.wire.name + " remoteport " + str(port) + '\n')
+#             v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
+#             p = select.poll()
+#             p.register(v.datafd().fileno(), select.POLLIN)
+#             p.register(s.fileno(), select.POLLIN)
+#             while self.run_condition:
+#                 res = p.poll(250)
+#                 for f, e in res:
+#                     if f == v.datafd().fileno() and (e & select.POLLIN):
+#                         buf = v.recv(2000)
+#                         s.sendto(buf, (self.wire.factory.TCP.master_address[0], self.wire.remoteport))
+#                     if f == s.fileno() and (e & select.POLLIN):
+#                         buf = s.recv(2000)
+#                         v.send(buf)
 
-        elif self.wire.plugs[1].sock.brick.homehost == self.wire.plugs[0].sock.brick.homehost:
-        # LOCAL WIRE
-            v0 = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
-            v1 = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
-            p = select.epoll()
-            p.register(v0.datafd().fileno(), select.POLLIN)
-            p.register(v1.datafd().fileno(), select.POLLIN)
-            while self.run_condition:
-                res = p.poll(0.250)
-                for f, e in res:
-                    if f == v0.datafd().fileno() and (e & select.POLLIN):
-                        buf = v0.recv(2000)
-                        v1.send(buf)
-                    if f == v1.datafd().fileno() and (e & select.POLLIN):
-                        buf = v1.recv(2000)
-                        v0.send(buf)
-        else:
-        # ON GUI SIDE OF REMOTE WIRE
-            if host0:
-                v = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
-                remote = self.wire.plugs[0].sock.brick
-            else:
-                v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
-                remote = self.wire.plugs[1].sock.brick
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            for port in range(32400, 32500):
-                try:
-                    s.bind(('', port))
-                except:
-                    continue
-                if self.wire.remoteport == 0:
-                    remote.homehost.send("udp " + self.wire.name + " " + remote.name + " " + str(port))
-            while self.run_condition:
-                if self.wire.remoteport == 0:
-                    time.sleep(1)
-                    continue
-                p = select.poll()
-                p.register(v.datafd().fileno(), select.POLLIN)
-                p.register(s.fileno(), select.POLLIN)
-                res = p.poll(250)
-                for f, e in res:
-                    if f == v.datafd().fileno() and (e & select.POLLIN):
-                        buf = v.recv(2000)
-                        s.sendto(buf, (remote.homehost.addr[0], self.wire.remoteport))
-                    if f == s.fileno() and (e & select.POLLIN):
-                        buf = s.recv(2000)
-                        v.send(buf)
-            remote.homehost.send(self.wire.name + " off")
+#         elif self.wire.plugs[1].sock.brick.homehost == self.wire.plugs[0].sock.brick.homehost:
+#         # LOCAL WIRE
+#             v0 = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
+#             v1 = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
+#             p = select.epoll()
+#             p.register(v0.datafd().fileno(), select.POLLIN)
+#             p.register(v1.datafd().fileno(), select.POLLIN)
+#             while self.run_condition:
+#                 res = p.poll(0.250)
+#                 for f, e in res:
+#                     if f == v0.datafd().fileno() and (e & select.POLLIN):
+#                         buf = v0.recv(2000)
+#                         v1.send(buf)
+#                     if f == v1.datafd().fileno() and (e & select.POLLIN):
+#                         buf = v1.recv(2000)
+#                         v0.send(buf)
+#         else:
+#         # ON GUI SIDE OF REMOTE WIRE
+#             if host0:
+#                 v = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
+#                 remote = self.wire.plugs[0].sock.brick
+#             else:
+#                 v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
+#                 remote = self.wire.plugs[1].sock.brick
+#             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#             for port in range(32400, 32500):
+#                 try:
+#                     s.bind(('', port))
+#                 except:
+#                     continue
+#                 if self.wire.remoteport == 0:
+#                     remote.homehost.send("udp " + self.wire.name + " " + remote.name + " " + str(port))
+#             while self.run_condition:
+#                 if self.wire.remoteport == 0:
+#                     time.sleep(1)
+#                     continue
+#                 p = select.poll()
+#                 p.register(v.datafd().fileno(), select.POLLIN)
+#                 p.register(s.fileno(), select.POLLIN)
+#                 res = p.poll(250)
+#                 for f, e in res:
+#                     if f == v.datafd().fileno() and (e & select.POLLIN):
+#                         buf = v.recv(2000)
+#                         s.sendto(buf, (remote.homehost.addr[0], self.wire.remoteport))
+#                     if f == s.fileno() and (e & select.POLLIN):
+#                         buf = s.recv(2000)
+#                         v.send(buf)
+#             remote.homehost.send(self.wire.name + " off")
 
-            self.wire.pid = -1
+#             self.wire.pid = -1
 
-    def poll(self):
-        if self.isAlive():
-            return None
-        else:
-            return True
+#     def poll(self):
+#         if self.isAlive():
+#             return None
+#         else:
+#             return True
 
-    def wait(self):
-        return self.join()
+#     def wait(self):
+#         return self.join()
 
-    def terminate(self):
-        self.run_condition = False
+#     def terminate(self):
+#         self.run_condition = False
 
-    def send_signal(self, signo):
-        # TODO: Suspend/resume.
-        self.run_condition = False
+#     def send_signal(self, signo):
+#         # TODO: Suspend/resume.
+#         self.run_condition = False
 
 
-class PyWire(Wire):
+# class PyWire(Wire):
 
-    def __init__(self, factory, name, remoteport=0):
-        self.remoteport = remoteport
-        Wire.__init__(self, factory, name)
+#     def __init__(self, factory, name, remoteport=0):
+#         self.remoteport = remoteport
+#         Wire.__init__(self, factory, name)
 
-    def on_config_changed(self):
-        pass
+#     def on_config_changed(self):
+#         pass
 
-    def set_remoteport(self, port):
-        self.remoteport = int(port)
+#     def set_remoteport(self, port):
+#         self.remoteport = int(port)
 
-    def prog(self):
-        return ''
+#     def prog(self):
+#         return ''
 
-    def _poweron(self):
-        # self.proc
-        self.pid = -1
-        self.proc = PyWireThread(self)
-        self.proc.start()
+#     def _poweron(self):
+#         # self.proc
+#         self.pid = -1
+#         self.proc = PyWireThread(self)
+#         self.proc.start()
 
-    def poweroff(self):
-        self.remoteport = 0
-        if self.proc:
-            self.proc.terminate()
-            self.proc.join()
-            del(self.proc)
-            self.proc = None
+#     def poweroff(self):
+#         self.remoteport = 0
+#         if self.proc:
+#             self.proc.terminate()
+#             self.proc.join()
+#             del(self.proc)
+#             self.proc = None
 
 #    def configured(self):
 #        if self.factory.TCP is not None:
@@ -264,128 +260,134 @@ class PyWire(Wire):
 #        return True
 
 
+class WireFilterConfig(WireConfig):
+
+    parameters = {
+        "bandwidthLR": bricks.String(""),
+        "bandwidthRL": bricks.String(""),
+        "bandwidth": bricks.String(""),
+        "bandwidthLRJ": bricks.String(""),
+        "bandwidthRLJ": bricks.String(""),
+        "bandwidthJ": bricks.String(""),
+        "bandwidthmult": bricks.String("Mega"),
+        "bandwidthunit": bricks.String("bit/s"),
+        "bandwidthdistribLR": bricks.String("Uniform"),
+        "bandwidthdistribRL": bricks.String("Uniform"),
+        "bandwidthdistrib": bricks.String("Uniform"),
+        "bandwidthsymm": bricks.Boolean("*"),
+
+        "speedLR": bricks.String(""),
+        "speedRL": bricks.String(""),
+        "speed": bricks.String(""),
+        "speedLRJ": bricks.String(""),
+        "speedRLJ": bricks.String(""),
+        "speedJ": bricks.String(""),
+        "speedmult": bricks.String("Mega"),
+        "speedunit": bricks.String("bit/s"),
+        "speeddistribLR": bricks.String("Uniform"),
+        "speeddistribRL": bricks.String("Uniform"),
+        "speeddistrib": bricks.String("Uniform"),
+        "speedsymm": bricks.Boolean("*"),
+        "speedenable": bricks.String(""),
+
+        "delayLR": bricks.String(""),
+        "delayRL": bricks.String(""),
+        "delay": bricks.String(""),
+        "delayLRJ": bricks.String(""),
+        "delayRLJ": bricks.String(""),
+        "delayJ": bricks.String(""),
+        "delaymult": bricks.String("milli"),
+        "delayunit": bricks.String("seconds"),
+        "delaydistribLR": bricks.String("Uniform"),
+        "delaydistribRL": bricks.String("Uniform"),
+        "delaydistrib": bricks.String("Uniform"),
+        "delaysymm": bricks.Boolean("*"),
+
+        "chanbufsizeLR": bricks.String(""),
+        "chanbufsizeRL": bricks.String(""),
+        "chanbufsize": bricks.String(""),
+        "chanbufsizeLRJ": bricks.String(""),
+        "chanbufsizeRLJ": bricks.String(""),
+        "chanbufsizeJ": bricks.String(""),
+        "chanbufsizemult": bricks.String("Kilo"),
+        "chanbufsizeunit": bricks.String("bytes"),
+        "chanbufsizedistribLR": bricks.String("Uniform"),
+        "chanbufsizedistribRL": bricks.String("Uniform"),
+        "chanbufsizedistrib": bricks.String("Uniform"),
+        "chanbufsizesymm": bricks.Boolean("*"),
+
+        "lossLR": bricks.String(""),
+        "lossRL": bricks.String(""),
+        "loss": bricks.String(""),
+        "lossLRJ": bricks.String(""),
+        "lossRLJ": bricks.String(""),
+        "lossJ": bricks.String(""),
+        "lossmult": bricks.String(""),
+        "lossunit": bricks.String("%"),
+        "lossdistribLR": bricks.String("Uniform"),
+        "lossdistribRL": bricks.String("Uniform"),
+        "lossdistrib": bricks.String("Uniform"),
+        "losssymm": bricks.Boolean("*"),
+
+        "dupLR": bricks.String(""),
+        "dupRL": bricks.String(""),
+        "dup": bricks.String(""),
+        "dupLRJ": bricks.String(""),
+        "dupRLJ": bricks.String(""),
+        "dupJ": bricks.String(""),
+        "dupmult": bricks.String(""),
+        "dupunit": bricks.String("%"),
+        "dupdistribLR": bricks.String("Uniform"),
+        "dupdistribRL": bricks.String("Uniform"),
+        "dupdistrib": bricks.String("Uniform"),
+        "dupsymm": bricks.Boolean("*"),
+
+        "noiseLR": bricks.String(""),
+        "noiseRL": bricks.String(""),
+        "noise": bricks.String(""),
+        "noiseLRJ": bricks.String(""),
+        "noiseRLJ": bricks.String(""),
+        "noiseJ": bricks.String(""),
+        "noisemult": bricks.String("Mega"),
+        "noiseunit": bricks.String("bit"),
+        "noisedistribLR": bricks.String("Uniform"),
+        "noisedistribRL": bricks.String("Uniform"),
+        "noisedistrib": bricks.String("Uniform"),
+        "noisesymm": bricks.Boolean("*"),
+
+        "lostburstLR": bricks.String(""),
+        "lostburstRL": bricks.String(""),
+        "lostburst": bricks.String(""),
+        "lostburstLRJ": bricks.String(""),
+        "lostburstRLJ": bricks.String(""),
+        "lostburstJ": bricks.String(""),
+        "lostburstmult": bricks.String(""),
+        "lostburstunit": bricks.String("seconds"),
+        "lostburstdistribLR": bricks.String("Uniform"),
+        "lostburstdistribRL": bricks.String("Uniform"),
+        "lostburstdistrib": bricks.String("Uniform"),
+        "lostburstsymm": bricks.Boolean("*"),
+
+        "mtuLR": bricks.String(""),
+        "mtuRL": bricks.String(""),
+        "mtu": bricks.String(""),
+        "mtumult": bricks.String("Kilo"),
+        "mtuunit": bricks.String("bytes"),
+        "mtusymm": bricks.Boolean("*")
+    }
+
+
 class Wirefilter(Wire):
 
     type = "Wirefilter"
+    config_factory = WireFilterConfig
 
-    def __init__(self, _factory, _name):
-        Wire.__init__(self, _factory, _name)
+    def __init__(self, factory, name):
+        Wire.__init__(self, factory, name)
         self.command_builder = {
             "-N": "nofifo",
             "-M": self.console,
         }
-
-        self.cfg.bandwidthLR = ""
-        self.cfg.bandwidthRL = ""
-        self.cfg.bandwidth = ""
-        self.cfg.bandwidthLRJ = ""
-        self.cfg.bandwidthRLJ = ""
-        self.cfg.bandwidthJ = ""
-        self.cfg.bandwidthmult = "Mega"
-        self.cfg.bandwidthunit = "bit/s"
-        self.cfg.bandwidthdistribLR = "Uniform"
-        self.cfg.bandwidthdistribRL = "Uniform"
-        self.cfg.bandwidthdistrib = "Uniform"
-        self.cfg.bandwidthsymm = "*"
-
-        self.cfg.speedLR = ""
-        self.cfg.speedRL = ""
-        self.cfg.speed = ""
-        self.cfg.speedLRJ = ""
-        self.cfg.speedRLJ = ""
-        self.cfg.speedJ = ""
-        self.cfg.speedmult = "Mega"
-        self.cfg.speedunit = "bit/s"
-        self.cfg.speeddistribLR = "Uniform"
-        self.cfg.speeddistribRL = "Uniform"
-        self.cfg.speeddistrib = "Uniform"
-        self.cfg.speedsymm = "*"
-        self.cfg.speedenable = ""
-
-        self.cfg.delayLR = ""
-        self.cfg.delayRL = ""
-        self.cfg.delay = ""
-        self.cfg.delayLRJ = ""
-        self.cfg.delayRLJ = ""
-        self.cfg.delayJ = ""
-        self.cfg.delaymult = "milli"
-        self.cfg.delayunit = "seconds"
-        self.cfg.delaydistribLR = "Uniform"
-        self.cfg.delaydistribRL = "Uniform"
-        self.cfg.delaydistrib = "Uniform"
-        self.cfg.delaysymm = "*"
-
-        self.cfg.chanbufsizeLR = ""
-        self.cfg.chanbufsizeRL = ""
-        self.cfg.chanbufsize = ""
-        self.cfg.chanbufsizeLRJ = ""
-        self.cfg.chanbufsizeRLJ = ""
-        self.cfg.chanbufsizeJ = ""
-        self.cfg.chanbufsizemult = "Kilo"
-        self.cfg.chanbufsizeunit = "bytes"
-        self.cfg.chanbufsizedistribLR = "Uniform"
-        self.cfg.chanbufsizedistribRL = "Uniform"
-        self.cfg.chanbufsizedistrib = "Uniform"
-        self.cfg.chanbufsizesymm = "*"
-
-        self.cfg.lossLR = ""
-        self.cfg.lossRL = ""
-        self.cfg.loss = ""
-        self.cfg.lossLRJ = ""
-        self.cfg.lossRLJ = ""
-        self.cfg.lossJ = ""
-        self.cfg.lossmult = ""
-        self.cfg.lossunit = "%"
-        self.cfg.lossdistribLR = "Uniform"
-        self.cfg.lossdistribRL = "Uniform"
-        self.cfg.lossdistrib = "Uniform"
-        self.cfg.losssymm = "*"
-
-        self.cfg.dupLR = ""
-        self.cfg.dupRL = ""
-        self.cfg.dup = ""
-        self.cfg.dupLRJ = ""
-        self.cfg.dupRLJ = ""
-        self.cfg.dupJ = ""
-        self.cfg.dupmult = ""
-        self.cfg.dupunit = "%"
-        self.cfg.dupdistribLR = "Uniform"
-        self.cfg.dupdistribRL = "Uniform"
-        self.cfg.dupdistrib = "Uniform"
-        self.cfg.dupsymm = "*"
-
-        self.cfg.noiseLR = ""
-        self.cfg.noiseRL = ""
-        self.cfg.noise = ""
-        self.cfg.noiseLRJ = ""
-        self.cfg.noiseRLJ = ""
-        self.cfg.noiseJ = ""
-        self.cfg.noisemult = "Mega"
-        self.cfg.noiseunit = "bit"
-        self.cfg.noisedistribLR = "Uniform"
-        self.cfg.noisedistribRL = "Uniform"
-        self.cfg.noisedistrib = "Uniform"
-        self.cfg.noisesymm = "*"
-
-        self.cfg.lostburstLR = ""
-        self.cfg.lostburstRL = ""
-        self.cfg.lostburst = ""
-        self.cfg.lostburstLRJ = ""
-        self.cfg.lostburstRLJ = ""
-        self.cfg.lostburstJ = ""
-        self.cfg.lostburstmult = ""
-        self.cfg.lostburstunit = "seconds"
-        self.cfg.lostburstdistribLR = "Uniform"
-        self.cfg.lostburstdistribRL = "Uniform"
-        self.cfg.lostburstdistrib = "Uniform"
-        self.cfg.lostburstsymm = "*"
-
-        self.cfg.mtuLR = ""
-        self.cfg.mtuRL = ""
-        self.cfg.mtu = ""
-        self.cfg.mtumult = "Kilo"
-        self.cfg.mtuunit = "bytes"
-        self.cfg.mtusymm = "*"
 
     def gui_to_wf_value(self, base, jitter, distrib, mult, unit, def_mult="", def_unit=""):
         b = base
@@ -541,54 +543,34 @@ class Wirefilter(Wire):
 
     def args(self):
         res = []
-        res.append(self.prog())
-        res.append('-v')
-        res.append(self.cfg.sock0 + ":" + self.cfg.sock1)
+        res.extend([self.prog(), "-v", self.cfg.sock0 + ":" + self.cfg.sock1])
 
         #Bandwidth
         if len(self.cfg.bandwidth) > 0 and int(self.cfg.bandwidth) > 0:
-            res.append("-b")
-            value = self.compute_bandwidth()
-            res.append(value)
+            res.extend(["-b", self.compute_bandwidth()])
         else:
             if len(self.cfg.bandwidthLR) > 0:
-                res.append("-b")
-                value = self.compute_bandwidthLR()
-                res.append("LR" + value)
+                res.extend(["-b", "LR" + self.compute_bandwidthLR()])
             if len(self.cfg.bandwidthRL) > 0:
-                res.append("-b")
-                value = self.compute_bandwidthRL()
-                res.append("RL" + value)
+                res.extend(["-b", "RL" + self.compute_bandwidthRL()])
 
         #Speed
         if len(self.cfg.speed) > 0 and int(self.cfg.speed) > 0:
-            res.append("-s")
-            value = self.compute_speed()
-            res.append(value)
+            res.extend(["-s", self.compute_speed()])
         else:
             if len(self.cfg.speedLR) > 0:
-                res.append("-s")
-                value = self.compute_speedLR()
-                res.append("LR" + value)
+                res.extend(["-s", "LR" + self.compute_speedLR()])
             if len(self.cfg.speedRL) > 0:
-                res.append("-s")
-                value = self.compute_speedRL()
-                res.append("RL" + value)
+                res.extend(["-s", "RL" + self.compute_speedRL()])
 
         #Delay
         if len(self.cfg.delay) > 0 and int(self.cfg.delay) > 0:
-            res.append("-d")
-            value = self.compute_delay()
-            res.append(value)
+            res.extend(["-d", self.compute_delay()])
         else:
             if len(self.cfg.delayLR) > 0:
-                res.append("-d")
-                value = self.compute_delayLR()
-                res.append("LR" + value)
+                res.extend(["-d", "LR" + self.compute_delayLR()])
             if len(self.cfg.delayRL) > 0:
-                res.append("-d")
-                value = self.compute_delayRL()
-                res.append("RL" + value)
+                res.extend(["-d", "RL" + self.compute_delayRL()])
 
         #Chanbufsize
         if len(self.cfg.chanbufsize) > 0 and int(self.cfg.chanbufsize) > 0:
@@ -680,8 +662,7 @@ class Wirefilter(Wire):
                 value = self.compute_mtuRL()
                 res.append("RL" + value)
 
-        for param in Brick.build_cmd_line(self):
-            res.append(param)
+        res.extend(bricks.Brick.build_cmd_line(self))
         return res
 
     def prog(self):
@@ -689,235 +670,91 @@ class Wirefilter(Wire):
 
     #callbacks for live-management
     def cbset_bandwidthLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_bandwidthLR()
-        self.debug(self.name + ": callback 'bandwidth LR' with argument " + value)
-        self.send("bandwidth LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("bandwidth LR " + self.compute_bandwidthLR() + "\n")
 
     def cbset_bandwidthRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_bandwidthRL()
-        self.debug(self.name + ": callback 'bandwidth RL' with argument " + value)
-        self.send("bandwidth RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("bandwidth RL " + self.compute_bandwidthRL() + "\n")
 
     def cbset_bandwidth(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.bandwidthsymm != "*":
-            return
-        value = self.compute_bandwidth()
-        self.debug(self.name + ": callback 'bandwidth RL&LR' with argument " + value)
-        self.send("bandwidth " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["bandwidthsymm"]:
+            self.send("bandwidth " + self.compute_bandwidth() + "\n")
 
     def cbset_speedLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_speedLR()
-        self.debug(self.name + ": callback 'speed LR' with argument " + value)
-        self.send("speed LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("speed LR " + self.compute_speedLR() + "\n")
 
     def cbset_speedRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_speedRL()
-        self.debug(self.name + ": callback 'speed RL' with argument " + value)
-        self.send("speed RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("speed RL " + self.compute_speedRL() + "\n")
 
     def cbset_speed(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.speedsymm != "*":
-            return
-        value = self.compute_speed()
-        self.debug(self.name + ": callback 'speed LR&RL' with argument " + value)
-        self.send("speed " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["speedsymm"] != "*":
+            self.send("speed " + self.compute_speed() + "\n")
 
     def cbset_delayLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_delayLR()
-        self.debug(self.name + ": callback 'delay LR' with argument " + value)
-        self.send("delay LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("delay LR " + self.compute_delayLR() + "\n")
 
     def cbset_delayRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_delayRL()
-        self.debug(self.name + ": callback 'delay RL' with argument " + value)
-        self.send("delay RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("delay RL " + self.compute_delayRL() + "\n")
 
     def cbset_delay(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.delaysymm != "*":
-            return
-        value = self.compute_delay()
-        self.debug(self.name + ": callback 'delay LR&RL' with argument " + value)
-        self.send("delay " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["delaysymm"]:
+            self.send("delay " + self.compute_delay() + "\n")
 
     def cbset_chanbufsizeLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_chanbufsizeLR()
-        self.debug(self.name + ": callback 'chanbufsize (capacity) LR' with argument " + value)
-        self.send("chanbufsize LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("chanbufsize LR " + self.compute_chanbufsizeLR() + "\n")
 
     def cbset_chanbufsizeRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_chanbufsizeRL()
-        self.debug(self.name + ": callback 'chanbufsize (capacity) RL' with argument " + value)
-        self.send("chanbufsize RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("chanbufsize RL " + self.compute_chanbufsizeRL() + "\n")
 
     def cbset_chanbufsize(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.chanbufsizesymm != "*":
-            return
-        value = self.compute_chanbufsize()
-        self.debug(self.name + ": callback 'chanbufsize (capacity) LR&RL' with argument " + value)
-        self.send("chanbufsize " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["chanbufsizesymm"]:
+            self.send("chanbufsize " + self.compute_chanbufsize() + "\n")
 
     def cbset_lossLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_lossLR()
-        self.debug(self.name + ": callback 'loss LR' with argument " + value)
-        self.send("loss LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("loss LR " + self.compute_lossLR() + "\n")
 
     def cbset_lossRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_lossRL()
-        self.debug(self.name + ": callback 'loss RL' with argument " + value)
-        self.send("loss RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("loss RL " + self.compute_lossRL() + "\n")
 
     def cbset_loss(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.losssymm != "*":
-            return
-        value = self.compute_loss()
-        self.debug(self.name + ": callback 'loss LR&RL' with argument " + value)
-        self.send("loss " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["losssymm"]:
+            self.send("loss " + self.compute_loss() + "\n")
 
     def cbset_dupLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_dupLR()
-        self.debug(self.name + ": callback 'dup LR' with argument " + value)
-        self.send("dup LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("dup LR " + self.compute_dupLR() + "\n")
 
     def cbset_dupRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_dupRL()
-        self.debug(self.name + ": callback 'dup RL' with argument " + value)
-        self.send("dup RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("dup RL " + self.compute_dupRL() + "\n")
 
     def cbset_dup(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.dupsymm != "*":
-            return
-        value = self.compute_dup()
-        self.debug(self.name + ": callback 'dup RL&LR' with argument " + value)
-        self.send("dup " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["dupsymm"]:
+            self.send("dup " + self.compute_dup() + "\n")
 
     def cbset_noiseLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_noiseLR()
-        self.debug(self.name + ": callback 'noise LR' with argument " + value)
-        self.send("noise LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("noise LR " + self.compute_noiseLR() + "\n")
 
     def cbset_noiseRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_noiseRL()
-        self.debug(self.name + ": callback 'noise RL' with argument " + value)
-        self.send("noise RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("noise RL " + self.compute_noiseRL() + "\n")
 
     def cbset_noise(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.noisesymm != "*":
-            return
-        value = self.compute_noise()
-        self.debug(self.name + ": callback 'noise LR&RL' with argument " + value)
-        self.send("noise " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["noisesymm"]:
+            self.send("noise " + self.compute_noise() + "\n")
 
     def cbset_lostburstLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_lostburstLR()
-        self.debug(self.name + ": callback 'lostburst LR' with argument " + value)
-        self.send("lostburst LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("lostburst LR " + self.compute_lostburstLR() + "\n")
 
     def cbset_lostburstRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_lostburstRL()
-        self.debug(self.name + ": callback 'lostburst RL' with argument " + value)
-        self.send("lostburst RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("lostburst RL " + self.compute_lostburstRL() + "\n")
 
     def cbset_lostburst(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.lostburstsymm != "*":
-            return
-        value = self.compute_lostburst()
-        self.debug(self.name + ": callback 'lostburst RL&RL' with argument " + value)
-        self.send("lostburst " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["lostburstsymm"]:
+            self.send("lostburst " + self.compute_lostburst() + "\n")
 
     def cbset_mtuLR(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_mtuLR()
-        self.debug(self.name + ": callback 'mtu LR' with argument " + value)
-        self.send("mtu LR " + value + "\n")
-        self.debug(self.recv())
+        self.send("mtu LR " + self.compute_mtuLR() + "\n")
 
     def cbset_mtuRL(self, arg=0):
-        if not self.active:
-            return
-        value = self.compute_mtuRL()
-        self.debug(self.name + ": callback 'mtu RL' with argument " + value)
-        self.send("mtu RL " + value + "\n")
-        self.debug(self.recv())
+        self.send("mtu RL " + self.compute_mtuRL() + "\n")
 
     def cbset_mtu(self, arg=0):
-        if not self.active:
-            return
-        if self.cfg.mtusymm != "*":
-            return
-        value = self.compute_mtu()
-        self.debug(self.name + ": callback 'mtu LR&RL' with argument " + value)
-        self.send("mtu " + value + "\n")
-        self.debug(self.recv())
+        if self.cfg["mtusymm"]:
+            self.send("mtu " + self.compute_mtu() + "\n")

@@ -19,57 +19,58 @@
 from __future__ import print_function
 
 import os
+import errno
 import sys
 import re
 import copy
 import getpass
 import logging
-import threading
 import itertools
-import warnings
+import threading
 
 import gtk
 import gobject
 
+from twisted.application import app
+from twisted.internet import defer, task, stdio
+from twisted.protocols import basic
+from twisted.python import failure, log as _log
+
 import virtualbricks
-from virtualbricks import app, tools, errors, settings, configfile, console
+from virtualbricks import errors, settings, configfile, console, _compat
 from virtualbricks import (events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
 
 
-def install_brick_types(registry=None, vde_support=False):
+def install_brick_types(registry=None):
     if registry is None:
         registry = {}
 
     log.debug("Registering basic types")
     registry.update({
-        'switch': switches.Switch,
-        'tap': tuntaps.Tap,
-        'capture': tuntaps.Capture,
-        'vm': virtualmachines.VM,
-        'qemu': virtualmachines.VM,
-        'wirefilter': wires.Wirefilter,
-        'tunnelc': tunnels.TunnelConnect,
-        'tunnel client': tunnels.TunnelConnect,
-        'tunnelconnect': tunnels.TunnelConnect,
-        'tunnell': tunnels.TunnelListen,
-        'tunnel server': tunnels.TunnelListen,
-        'tunnellisten': tunnels.TunnelListen,
-        'event': events.Event,
-        'switchwrapper': switches.SwitchWrapper,
-        'router': router.Router,
+        "switch": switches.Switch,
+        "tap": tuntaps.Tap,
+        "capture": tuntaps.Capture,
+        "vm": virtualmachines.VM,
+        "qemu": virtualmachines.VM,
+        "wirefilter": wires.Wirefilter,
+        "wire": wires.Wire,
+        "tunnelc": tunnels.TunnelConnect,
+        "tunnel client": tunnels.TunnelConnect,
+        "tunnelconnect": tunnels.TunnelConnect,
+        "tunnell": tunnels.TunnelListen,
+        "tunnel server": tunnels.TunnelListen,
+        "tunnellisten": tunnels.TunnelListen,
+        "event": events.Event,
+        "switchwrapper": switches.SwitchWrapper,
+        "router": router.Router,
     })
-    if vde_support:
-        log.debug("Register wire with vde_support")
-        registry['wire'] = wires.PyWire
-    else:
-        registry['wire'] = wires.Wire
     return registry
 
 
@@ -80,15 +81,6 @@ class BrickFactory(gobject.GObject):
     It also contains a thread to manage the command console.
     """
 
-    # synchronized is a decorator that serializes methods invocation. Don't use
-    # outside the BrickFactory if not needed. The lock is a reentrant one
-    # because one synchronized method could call another synchronized method
-    # and we allow this (in the same thread). The quit method is on example.
-    # NOTE: this is a class variable but should not be a problem because
-    # BrickFactory is a singleton
-    _lock = threading.RLock()
-    synchronized = tools.synchronize_with(_lock)
-
     __gsignals__ = {
         'engine-closed': (gobject.SIGNAL_RUN_LAST, None, ()),
         'brick-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
@@ -97,17 +89,17 @@ class BrickFactory(gobject.GObject):
         'event-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-changed': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'event-accomplished': (gobject.SIGNAL_RUN_LAST, None, (str,)),
+        # 'event-accomplished': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         "image_added": (gobject.SIGNAL_RUN_LAST, None, (object,)),
         "image_removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
     }
 
     TCP = None
-    quitting = False
     running_condition = True
 
-    def __init__(self):
+    def __init__(self, quit):
         gobject.GObject.__init__(self)
+        self.quit_d = quit
         self.remote_hosts = []
         self.bricks = []
         self.events = []
@@ -118,34 +110,29 @@ class BrickFactory(gobject.GObject):
         self.eventsmodel = gtk.ListStore(object)
         self.__event_signals = {}
         self.settings = settings.Settings(settings.CONFIGFILE)
-        self.__factories = install_brick_types(
-            None, wires.VDESUPPORT and self.settings.python)
+        self.__factories = install_brick_types()
 
     def lock(self):
         return self._lock
 
-    @synchronized
+    def stop(self):
+        for e in self.events:
+            e.poweroff()
+        for b in self.bricks:
+            if b.proc is not None:
+                b.poweroff()
+        for h in self.remote_hosts:
+            h.disconnect()
+
+        log.info(_('Engine: Bye!'))
+        configfile.safe_save(self)
+        self.running_condition = False
+        self.emit("engine-closed")
+
     def quit(self):
-        if not self.quitting:
-            # because factory quit can be called twice from the console:
-            # vb> quit
-            # factory.quit() send "engine-closed"
-            # the gui termine and the application calls factory.quit() again
-            self.quitting = True
-            for e in self.events:
-                e.poweroff()
-            for b in self.bricks:
-                if b.proc is not None:
-                    b.poweroff()
-            for h in self.remote_hosts:
-                h.disconnect()
+        if not self.quit_d.called:
+            self.quit_d.callback(None)
 
-            log.info(_('Engine: Bye!'))
-            configfile.safe_save(self)
-            self.running_condition = False
-            self.emit("engine-closed")
-
-    @synchronized
     def reset(self):
         # hard reset
         # XXX: what about remote hosts?
@@ -185,12 +172,13 @@ class BrickFactory(gobject.GObject):
     # [   Disk Images  ]
     # [[[[[[[[[]]]]]]]]]
 
-    @synchronized
     def new_disk_image(self, name, path, description="", host=None):
         """Add one disk image to the library."""
 
         # XXX: assert that name and path are unique
+        log.msg("Creating new disk image with name '%s'" % name)
         nname = self.normalize(name)
+        log.msg("Name normalized to '%s'" % nname)
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
         img = virtualmachines.DiskImage(name, path, description, host)
@@ -198,7 +186,6 @@ class BrickFactory(gobject.GObject):
         self.emit("image_added", img)
         return img
 
-    @synchronized
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
         self.emit("image_removed", image)
@@ -242,7 +229,7 @@ class BrickFactory(gobject.GObject):
         brick = self._new_brick(type, name, host, remote)
         self.bricks.append(brick)
         self.bricksmodel.append((brick,))
-        self.__brick_signals[brick.name] = brick.signal_connect(
+        self.__brick_signals[id(brick)] = brick.signal_connect(
             "changed", self.__brick_changed)
         return brick
 
@@ -261,7 +248,6 @@ class BrickFactory(gobject.GObject):
         self.__do_action_for_brick(self.__emit_brick_row_changed, brick)
         self.emit("brick-changed", brick.name)
 
-    @synchronized
     def _new_brick(self, type, name, host, remote):
         """Return a new brick.
 
@@ -322,7 +308,6 @@ class BrickFactory(gobject.GObject):
     def __remove_brick(self, brick, i):
         self.bricksmodel.remove(i)
 
-    @synchronized
     def delbrick(self, brick):
         # XXX check me
         if brick.proc is not None:
@@ -342,15 +327,14 @@ class BrickFactory(gobject.GObject):
                             b.restore_self_plugs()
         self.bricks.remove(brick)
         self.__do_action_for_brick(self.__remove_brick, brick)
-        brick.signal_disconnect(self.__brick_signals[brick.name])
-        del self.__brick_signals[brick.name]
+        brick.signal_disconnect(self.__brick_signals[id(brick)])
+        del self.__brick_signals[id(brick)]
 
     def get_brick_by_name(self, name):
         for b in self.bricks:
             if b.name == name:
                 return b
 
-    @synchronized
     def rename_brick(self, brick, name):
         # XXX: this should emit "changed" signal
         nname = self.normalize(name)
@@ -377,7 +361,7 @@ class BrickFactory(gobject.GObject):
         event = self._new_event(name)
         self.events.append(event)
         self.eventsmodel.append((event,))
-        self.__event_signals[event.name] = event.signal_connect(
+        self.__event_signals[id(event)] = event.signal_connect(
             "changed", self.__event_changed)
         return event
 
@@ -396,7 +380,6 @@ class BrickFactory(gobject.GObject):
         self.__do_action_for_event(self.__emit_event_row_changed, event)
         self.emit("event-changed", event.name)
 
-    @synchronized
     def _new_event(self, name):
         """Create a new event.
 
@@ -420,22 +403,19 @@ class BrickFactory(gobject.GObject):
         self.new_event(name)
         new_event = self.get_event_by_name(name)
         new_event.cfg = copy.deepcopy(event.cfg)
-        new_event.active = False
-        new_event.on_config_changed()
         return new_event
 
     def __remove_event(self, event, i):
         self.eventsmodel.remove(i)
 
-    @synchronized
     def del_event(self, event):
         for e in self.events:
             if e == event:
                 e.poweroff()
         self.events.remove(event)
         self.__do_action_for_event(self.__remove_event, event)
-        event.signal_disconnect(self.__event_signals[event.name])
-        del self.__event_signals[event.name]
+        event.signal_disconnect(self.__event_signals[id(event)])
+        del self.__event_signals[id(event)]
 
     delevent = del_event
 
@@ -444,7 +424,6 @@ class BrickFactory(gobject.GObject):
             if e.name == name:
                 return e
 
-    @synchronized
     def rename_event(self, event, name):
         name = self.normalize(name)
         if self.is_in_use(name):
@@ -497,7 +476,6 @@ class BrickFactory(gobject.GObject):
                 return True
         return False
 
-    @synchronized
     def new_plug(self, brick):
         return link.Plug(brick)
 
@@ -520,7 +498,6 @@ class BrickFactory(gobject.GObject):
             log.debug("Endpoint %s not found.", nick)
             return None
 
-    @synchronized
     def delremote(self, hostname):
         if isinstance(hostname, console.RemoteHost):
             self.__del_remote(hostname)
@@ -582,8 +559,9 @@ class BrickFactoryServer(BrickFactory):
                     print("Passwords don't match. Retry.")
 
 
-class Console(object):
+class Console(basic.LineOnlyReceiver):
 
+    delimiter = "\n"
     prompt = "virtualbricks> "
     intro = ("Virtualbricks, version {version}\n"
         "Copyright (C) 2013 Virtualbricks team\n"
@@ -591,68 +569,60 @@ class Console(object):
         "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
         "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
 
-    def __init__(self, factory, stdout=sys.__stdout__, stdin=sys.__stdin__,
-                 **local):
+    def __init__(self, factory):
         self.factory = factory
-        self.stdout = stdout
-        self.stdin = stdin
-        self.local = local
 
-    def _check_changed(self):
-        for host in self.factory.remote_hosts:
-            connection = host.connection
-            if connection is not None:
-                if not connection.isAlive():
-                    host.connected = False
-                    host.connection = None
-
-    def _poll(self):
-        command = ""    # because if stdin.readline raise an exception,
-                        # command is not defined
-        try:
-            command = self.stdin.readline()
-            console.parse(self.factory, command, **self.local)
-        except EnvironmentError, e:
-            log.exception("An exception is occurred while processing "
-                          "command %s", command)
-            print(_("Exception:\n\tType: %s\n\tErrno: %s\n\t"
-                    "Message: %s\n" % (type(e), e.errno, e.strerror)),
-                  file=self.stdout)
-        except Exception as e:
-            log.exception("An exception is occurred while processing "
-                          "command %s", command)
-            print(_("Exception:\n\tType: %s\n\tErrno: %s\n\t"
-                    "Message: %s\n" % (type(e), "", str(e))),
-                  file=self.stdout)
-
-    def run(self):
+    def connectionMade(self):
         intro = self.intro.format(version=virtualbricks.version.short())
-        print(intro, end="", file=self.stdout)
-        while self.factory.running_condition:
-            print(self.prompt, end="", file=self.stdout)
-            self.stdout.flush()
-            self._poll()
-            self._check_changed()
-        self.stdout.flush()
+        self.transport.write(intro)
+        self.transport.write(self.prompt)
+
+    def lineReceived(self, line):
+        if line:
+            console.parse(self.factory, line, self)
+        self.transport.write(self.prompt)
+
+    def connectionLost(self, reason):
+        self.factory.quit()
 
 
-def AutosaveTimer(factory, timeout=180):
-    t = tools.LoopingCall(timeout, configfile.safe_save, (factory,))
-    t.set_name("AutosaveTimer_%d" % timeout)
-    t.start()
-    return t
+def AutosaveTimer(factory, interval=180):
+    l = task.LoopingCall(configfile.safe_save, factory)
+    l.start(interval, now=False)
+    return l
+
+
+class AppLogger(app.AppLogger):
+
+    def start(self, application):
+        s_observer = None
+        if self._observerFactory is not None:
+            self._observer = self._observerFactory()
+            if self._logfilename:
+                s_observer = self._getLogObserver()
+        elif self._logfilename:
+            self._observer = self._getLogObserver()
+        else:
+            self._observer = _log.FileLogObserver(_log.NullFile()).emit
+        _log.startLoggingWithObserver(self._observer, False)
+        if s_observer:
+            _log.addObserver(s_observer)
+        self._initialLog()
 
 
 class Application:
 
-    factory = None
-    autosave_timer = None
+    logger_factory = AppLogger
+    factory_factory = BrickFactory
 
     def __init__(self, config):
         self.config = config
+        self.logger = self.logger_factory(config)
+        if "server" in config and config["server"]:
+            self.factory_factory = BrickFactoryServer
 
-    def get_logging_handler(self):
-        pass
+    def getComponent(self, interface, default):
+        return default
 
     def install_locale(self):
         import locale
@@ -660,6 +630,22 @@ class Application:
         import gettext
 
         gettext.install('virtualbricks', codeset='utf8', names=["gettext"])
+
+    def _get_log_level(self, verbosity):
+        if verbosity >= 2:
+            return logging.DEBUG
+        elif verbosity == 1:
+            return logging.INFO
+        elif verbosity == -1:
+            return logging.ERROR
+        elif verbosity <= -2:
+            return logging.CRITICAL
+
+    def install_stdlog_handler(self):
+        root = logging.getLogger()
+        root.addHandler(_compat.LoggingToTwistedLogHandler())
+        if self.config["verbosity"]:
+            root.setLevel(self._get_log_level(self.config["verbosity"]))
 
     def install_sys_hooks(self):
         # displayhook is necessary because otherwise the python console sets
@@ -691,34 +677,43 @@ class Application:
         if exc_type in (SystemExit, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, traceback)
         else:
-            log.error(str(exc_value), exc_info=(exc_type, exc_value,
-                                                traceback))
+            log.err(failure.Failure(exc_value, exc_type, traceback))
 
-    def start(self):
-        self.factory = BrickFactory()
-        configfile.restore_last_project(self.factory)
-        self.autosave_timer = AutosaveTimer(self.factory)
-        console = Console(self.factory)
-        console.run()
+    def install_home(self):
+        try:
+            os.mkdir(settings.VIRTUALBRICKS_HOME)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
-    def quit(self):
-        if self.factory:
-            self.factory.quit()
-        if self.autosave_timer:
-            self.autosave_timer.stop()
-            self.autosave_timer = None
+    def run(self, reactor):
+        self.install_locale()
+        self.install_stdlog_handler()
+        self.install_sys_hooks()
+        self.logger.start(self)
+        self.install_home()
+        quit = defer.Deferred()
+        factory = self.factory_factory(quit)
+        self._run(factory, quit)
+        if not self.config["noterm"]:
+            stdio.StandardIO(Console(factory), reactor=reactor)
+        if self.config["verbosity"] >= 2 and not self.config["daemon"]:
+            import signal, pdb
+            signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
+            signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
+            app.fixPdb()
+        reactor.addSystemEventTrigger("after", "shutdown", factory.stop)
+        reactor.addSystemEventTrigger("after", "shutdown", self.logger.stop)
+        configfile.restore_last_project(factory)
+        AutosaveTimer(factory)
+        return quit
 
-
-class ApplicationServer(Application):
-
-    def start(self):
-        logging.captureWarnings(True)
-        warnings.filterwarnings("default", category=DeprecationWarning)
-        if os.getuid() != 0:
-            raise app.QuitError("server requires to be run by root.", 5)
-        self.factory = factory = BrickFactoryServer()
-        from virtualbricks import tcpserver
-        server_t = tcpserver.TcpServer(factory, factory.get_password())
-        factory.TCP = server_t
-        server_t.start()
-        Console(factory).run()
+    def _run(self, factory, quit):
+        if self.config["server"]:
+            if os.getuid() != 0:
+                raise SystemExit("server requires to be run by root.")
+            from virtualbricks import tcpserver
+            server_t = tcpserver.TcpServer(factory, factory.get_password())
+            factory.TCP = server_t
+            server_t.start()
+            # Console(factory).run()

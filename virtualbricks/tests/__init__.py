@@ -4,14 +4,14 @@ if sys.version_info >= (2, 7):
     import unittest
 else:
     import unittest2 as unittest
-import __builtin__
-__builtin__._ = str  # XXX: Be sure does not break gettext
 import logging
+
+from twisted.python import log
 
 logger = logging.getLogger("virtualbricks")
 logger.addHandler(logging.NullHandler())
-
-
+log.startLogging(log.NullFile())
+__builtins__["_"] = str
 TEST_THREADS = 0x01
 TEST_DEPLOYMENT = 0x02
 

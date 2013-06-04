@@ -1,8 +1,5 @@
-import time
-import threading
-
-from virtualbricks import errors, brickfactory
-from virtualbricks.tests import unittest, test_threads, stubs
+from virtualbricks import errors
+from virtualbricks.tests import unittest, stubs
 
 
 class Stub2(object):
@@ -60,41 +57,10 @@ class TestFactory(unittest.TestCase):
         brick = self.factory.new_brick("stub2", "test2")
         self.assertIs(type(brick), Stub3)
 
-
-@unittest.skipUnless(test_threads(), "threads tests not enabled")
-class TestThreadingLocking(unittest.TestCase):
-
-    def setUp(self):
-        self.factory = stubs.FactoryStub()
-
-    def test_configfile_synchronized(self):
-        st1 = [False]
-        st2 = [None]
-
-        def save1(_):
-            st1[0] = True
-            time.sleep(0.02)
-            st1[0] = False
-
-        def save2():
-            time.sleep(0.01)
-            stubs.ConfigFileStub(self.factory).restore(None)
-            st2[0] = st1[0]
-
-        cfs = stubs.ConfigFileStub(self.factory, save1)
-        t = threading.Thread(target=save2)
-        t.start()
-        cfs.save(None)
-        t.join()
-        self.assertIs(st2[0], False)
-
-    def test_lock(self):
-        lock = self.factory.lock()
-        try:
-            acquired = lock.acquire()
-            self.assertTrue(acquired)
-            self.assertEqual(lock._RLock__count, 1)
-        finally:
-            lock.release()
-        with self.factory.lock():
-            self.assertEqual(lock._RLock__count, 1)
+    def test_dup_event(self):
+        event = self.factory.new_event("test_event")
+        copy = self.factory.dupevent(event)
+        self.assertIsNot(copy, event)
+        self.assertEqual(copy.name, "copy_of_test_event")
+        self.assertEqual(event.get("delay"), copy.get("delay"))
+        self.assertEqual(event.get("actions"), copy.get("actions"))

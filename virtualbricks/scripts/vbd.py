@@ -15,56 +15,18 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""Usage: vbd [-vqld] [--server]
-
-    --server            start the server
-    -v, --verbose       increase log verbosity
-    -q, --quiet         decrease log verbosity
-    -l, --logfile=      write log messages to file
-    -d, --debug         verbose debug output
-    -h, --help          print this help and exit
-
-Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-Copyright (C) Virtualbricks team
-"""
-
 from __future__ import print_function
-import sys
 
 from virtualbricks import app
 
 
-def parse_opts(opts, args):
-    server = False
-    config = {'verbose': 0, 'logfile': None}
-    for o, a in opts:
-        if o in ('-h', '--help'):
-            print(__doc__)
-            return 0
-        elif o in ('-v', '--verbose'):
-            config['verbose'] += 1
-        elif o in ('-q', '--quiet'):
-            config['verbose'] -= 1
-        elif o == '--server':
-            server = True
-        elif o in ('-l', '--logfile'):
-            config['logfile'] = a
-        elif o in ('-d', '--debug'):
-            config['verbose'] = 2
+class Options(app.Options):
 
-    from virtualbricks import brickfactory
-
-    if server:
-        application = brickfactory.ApplicationServer
-    else:
-        application = brickfactory.Application
-    return app.run(application, config)
-
-
-short_opts = 'vql:d'
-long_opts = ['server', 'help', 'verbose', 'quiet', 'logfile=', 'debug']
-main = app.usage_wrapper(parse_opts, short_opts, long_opts)
+    optFlags = [
+        ["server", None, "Start in server mode."]
+    ]
 
 
 def run():
-    return sys.exit(main())
+    from virtualbricks.brickfactory import Application
+    app.run_app(Application, Options())

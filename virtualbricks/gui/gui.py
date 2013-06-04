@@ -16,23 +16,21 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import sys
-import time
-import types
 import re
 import logging
 import subprocess
-import threading
 import StringIO
-import __builtin__
-import warnings
 
 import gobject
 import gtk
 import gtk.glade
 
-from virtualbricks import (interfaces, app, tools, errors, settings,
-						configfile, brickfactory, console)
+from twisted.application import app
+from twisted.python import log as _log
+from twisted.internet import error, defer, task, protocol, reactor, utils
+
+from virtualbricks import (interfaces, tools, errors, settings,
+						configfile, brickfactory, console, _compat)
 from virtualbricks.console import VbShellCommand
 from virtualbricks.settings import MYPATH
 
@@ -40,11 +38,37 @@ from virtualbricks.gui import _gui, tree, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
 
+
+class SyncProtocol(protocol.ProcessProtocol):
+
+	def __init__(self, done):
+		self.done = done
+
+	def processEnded(self, status):
+		if isinstance(status.value, error.ProcessTerminated):
+			log.err(status.value)
+			self.done.errback(None)
+		else:
+			self.done.callback(None)
+
+
+class QemuImgCreateProtocol(protocol.ProcessProtocol):
+
+	def __init__(self, done):
+		self.done = done
+
+	def processEnded(self, status):
+		if isinstance(status.value, error.ProcessTerminated):
+			log.err(status.value)
+			self.done.errback(None)
+		else:
+			reactor.spawnProcess(SyncProtocol(self.done), "sync", ["sync"],
+				os.environ)
 
 def get_treeselected(gui, tree, model, pthinfo, c):
 	if pthinfo is not None:
@@ -62,23 +86,11 @@ def get_treeselected_name(gui, tree, model, pathinfo):
 	return get_treeselected(gui, tree, model, pathinfo, 3)
 
 
-def check_joblist(gui, force=False):
-	running = gui.running_bricks
-	i = running.get_iter_first()
-	while i:
-		brick = running.get_value(i, 0)
-		if brick.proc is None or brick.proc.poll() is not None:
-			brick.poweroff()
-			if not running.remove(i):
-				break
-		i = running.iter_next(i)
-
+def check_joblist(bricks, running):
 	running.clear()
-	for brick in gui.brickfactory.bricks:
+	for brick in bricks:
 		if brick.proc is not None:
 			running.append((brick, ))
-
-	return True
 
 
 def get_combo_text(widget):
@@ -216,7 +228,7 @@ class TopologyMixin(object):
 					brick = self.brickfactory.get_brick_by_name(n.name)
 					if brick is not None:
 						self.maintree.set_selection(brick)
-						self.user_wait_action(self.startstop_brick, brick)
+						self.startstop_brick(brick)
 		self.curtain_down()
 
 	def on_main_notebook_change_current_page(self, notebook, offset):
@@ -240,11 +252,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	the widgets and the connections to the main engine.
 	"""
 
-	def __init__(self, factory, gladefile, textbuffer=None):
+	def __init__(self, factory, gladefile, quit, textbuffer=None):
 		gobject.GObject.__init__(self)
 		self.brickfactory = factory
 		self.gladefile = gladefile
 		self.messages_buffer = textbuffer
+		self.quit_d = quit
 		TopologyMixin.__init__(self)
 
 		self.widg = self.get_widgets(self.widgetnames())
@@ -291,14 +304,14 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		''' Treeview creation, using the VBTree class '''
 		''' Main Treeview '''
-		self.maintree = tree.BricksTree(self, 'treeview_bookmarks',
+		self.maintree = tree.BricksTree(self, 'bricks_treeview',
 				factory.bricksmodel,
 				[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
 					gobject.TYPE_STRING, gobject.TYPE_STRING],
 				[_('Icon'), _('Status'), _('Type'), _('Name'), _('Parameters')])
 
 		''' TW with the events '''
-		self.eventstree = tree.EventsTree(self, 'treeview_events_bookmarks',
+		self.eventstree = tree.EventsTree(self, 'events_treeview',
 				factory.eventsmodel,
 				[gtk.gdk.Pixbuf, gobject.TYPE_STRING, gobject.TYPE_STRING,
 					gobject.TYPE_STRING, gobject.TYPE_STRING],
@@ -346,7 +359,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		''' Initialize threads, timers etc.'''
 		self.signals()
-		self.timers()
+		self.check_joblist_lc = task.LoopingCall(check_joblist,
+			self.brickfactory.bricks, self.running_bricks)
+		self.check_joblist_lc.start(1)
+
 
 		''' FIXME: re-enable when implemented '''
 		#self.gladefile.get_widget('convert_image_menuitem').set_sensitive(False)
@@ -567,7 +583,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	""" ******************************************************** 	"""
 
 	def on_engine_closed(self, factory):
-		gobject.idle_add(gtk.main_quit)
+		if not self.quit_d.called:
+			self.quit_d.callback(None)
 
 	def on_brick_changed(self, model, path, iter_):
 		self.draw_topology()
@@ -581,7 +598,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def cb_brick_started(self, model, name=""):
 		self.draw_topology()
-		self.check_joblist(force=True)
+		# self.check_joblist(force=True)
 
 	def _stop_listening(self):
 		self.__foreach_handler(self.brickfactory.handler_block)
@@ -969,7 +986,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		# columns = (COL_COMMAND, COL_BOOL) = range(2)
 		COL_COMMAND, COL_BOOL = range(2)
 		currevent = self.eventstree.get_selection()
-		currevent.cfg.actions=list()
+		currevent.cfg["actions"] = list()
 		while iter_:
 			linecommand = self.shcommandsmodel.get_value(iter_, COL_COMMAND)
 			shbool = self.shcommandsmodel.get_value(iter_, COL_BOOL)
@@ -1076,23 +1093,24 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		t = b.get_type()
 		b.gui_changed = True
 
-		if t == 'Event':
+		if t == "Event":
 			self.config_Event_confirm(b)
-		elif t == 'Tap':
+		elif t == "Tap":
 			self.config_Tap_confirm(b)
-		elif t == 'Capture':
+		elif t == "Capture":
 			self.config_Capture_confirm(b)
-		elif t == 'TunnelConnect':
+		elif t == "TunnelConnect":
 			self.config_TunnelConnect_confirm(b)
-		elif t == 'TunnelListen':
+		elif t == "TunnelListen":
 			self.config_TunnelListen_confirm(b)
-		elif t == 'Wire':
+		elif t == "Wire":
 			self.config_Wire_confirm(b)
-		elif t == 'Wirefilter':
+		elif t == "Wirefilter":
 			self.config_Wirefilter_confirm(b)
 
-		fmt_params = ['%s=%s' % (key,value) for key, value in parameters.iteritems()]
-		self.user_wait_action(b.configure, fmt_params)
+		# fmt_params = ["%s=%s" % (key,value) for key, value in parameters.iteritems()]
+		# self.user_wait_action(b.configure, fmt_params)
+		b.set(parameters)
 
 	def config_brick_cancel(self):
 		self.curtain_down()
@@ -1151,7 +1169,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.gladefile.get_widget("main_win").hide_on_delete()
 			self.statusicon.set_tooltip("VirtualBricks Hidden")
 		else:
-			gtk.main_quit()
+			self.quit_d.callback(None)
 		return True
 
 	def curtain_down(self):
@@ -1202,8 +1220,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		return builder.get_object("frame")
 
 	def curtain_up(self, brick=None):
-		if False and brick is not None:
-			configpanel = interfaces.IConfigController(brick)
+		if brick is not None:
+			configpanel = interfaces.IConfigController(brick, None)
 			if configpanel is not None:
 				log.debug("Found custom config panel")
 				self.__config_panel = configpanel
@@ -1331,7 +1349,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'dialog_newbrick',
 		'dialog_newevent',
 		'menu_brickactions',
-		'menu_eventactions',
 		'dialog_confirm',
 		'dialog_imagename',
 		'dialog_commitimage',
@@ -1406,7 +1423,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.gladefile.get_widget("main_win").hide()
 
 	def on_systray_exit(self, widget=None, data=""):
-		gtk.main_quit()
+		self.quit_d.callback(None)
 
 	def on_windown_destroy(self, widget=None, data=""):
 		widget.hide()
@@ -1822,7 +1839,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			"Packets longer than specified size are discarded.")
 
 	def on_item_quit_activate(self, widget=None, data=""):
-		gtk.main_quit()
+		self.quit_d.callback(None)
 
 	def on_item_settings_activate(self, widget=None, data=""):
 		self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(self.config.get('qemupath'))
@@ -1920,14 +1937,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_toolbutton_start_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
 		for e in iter(self.brickfactory.events):
-			if not e.active:
-				e.poweron()
+			e.poweron()
 
 	def on_toolbutton_stop_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
 		for e in iter(self.brickfactory.events):
-			if e.active:
-				e.poweroff()
+			e.poweroff()
 
 	# XXX: drag and drop does not work
 	# def on_mainwindow_dropaction(self, treeview, drag_context, x, y, selection_data, info, timestamp):
@@ -1972,11 +1987,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.gladefile.get_widget("brickaction_name").set_label(self.maintree.get_selection().name)
 		self.show_window('menu_brickactions')
 
-	def show_eventactions(self):
-		self.gladefile.get_widget("eventaction_name").set_label(self.eventstree.get_selection().name)
-		self.show_window('menu_eventactions')
-
-	def on_treeview_bookmarks_button_release_event(self, treeview, event):
+	def on_bricks_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
 			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
 			if pthinfo is not None:
@@ -1988,85 +1999,35 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				interfaces.IMenu(obj).popup(event.button, event.time, self)
 			return True
 
-	def on_treeview_events_bookmarks_button_release_event(self, treeview, event):
-		return self.on_treeview_bookmarks_button_release_event(treeview, event)
-		e = self.eventstree.get_selection()
-		if e is None:
-			return
+	def on_events_treeview_button_release_event(self, treeview, event):
+		return self.on_bricks_treeview_button_release_event(treeview, event)
 
-		self.curtain_down()
-		tree = self.gladefile.get_widget('treeview_events_bookmarks');
-		path = tree.get_cursor()[0]
-		# "on_treeview_events_bookmarks_button_release_event"
-		if path is None:
-			# "nothing selected!"
-			return
-
-		iter_ = tree.get_model().get_iter(path)
-		# name = tree.get_model().get_value(iter_, EventsModel.EVENT_IDX).name
-		tree.get_model().get_value(iter_, 0).name
-		# self.Dragging = e
-		if event.button == 3:
-			self.show_eventactions()
-
-	def on_treeview_bookmarks_cursor_changed(self, widget=None, event=None, data=""):
+	def on_bricks_treeview_cursor_changed(self, treeview):
 		self.curtain_down()
 
-	def on_treeview_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
-		self.on_brick_startstop(widget, event, data)
-		self.curtain_down()
+	def on_bricks_treeview_row_activated(self, treeview, path, column):
+		self.startstop_brick(self.maintree.get_selection())
 
-	def on_treeview_events_bookmarks_row_activated_event(self, widget=None, event=None, data=""):
-		self.on_event_startstop(widget, event, data)
-		self.curtain_down()
+	def on_events_treeview_row_activated(self, treeview, path, column):
+		self.eventstree.get_selection().toggle()
 
 	def on_focus_out(self, widget=None, event=None , data=""):
 		self.curtain_down()
-
-	def on_brick_startstop(self, widget=None, event=None, data=""):
-		self.curtain_down()
-		self.user_wait_action(self.startstop_brick, self.maintree.get_selection())
-
-	def on_event_startstop(self, widget=None, event=None, data=""):
-		self.curtain_down()
-		self.user_wait_action(self.event_startstop_brick, self.eventstree.get_selection())
-
-	def event_startstop_brick(self, e):
-		if e.get_type() == 'Event':
-			if e.active:
-				log.debug("Power OFF")
-				e.poweroff()
-			else:
-				log.debug("Power ON")
-				e.poweron()
-			return
 
 	def startstop_brick(self, b):
 		if b.proc is not None:
 			b.poweroff()
 		else:
 			if b.get_type() == "Qemu":
+				# XXX: check this
 				b.cfg.loadvm = '' #prevent restore from saved state
 			try:
 				b.poweron()
-			except errors.BadConfigError:
-				b.gui_changed=True
-				log.error(_("Cannot start '%s': not configured"),
-					b.name)
-			except errors.NotConnectedError:
-				log.error(_("Cannot start '%s': not connected"),
-					b.name)
 			except errors.LinkLoopError:
 				if self.config.erroronloop:
-					log.error(_("Loop link detected: aborting operation. If "
+					log.err(_("Loop link detected: aborting operation. If "
 							"you want to start a looped network, disable the "
 							"check loop feature in the general settings"))
-					b.poweroff()
-			except errors.DiskLockedError as e:
-				b.gui_changed=True
-				log.error(_("Disk used by the VM is locked:\n%s"), e)
-				b.poweroff()
-
 
 	def on_remotehosts_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
@@ -2339,26 +2300,30 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.show_createimage()
 
 	def image_create (self):
-		log.debug("Image creating.. ",)
-		path = self.gladefile.get_widget('filechooserbutton_newimage_dest').get_filename() + "/"
-		filename = self.gladefile.get_widget('entry_newimage_name').get_text()
-		img_format = self.gladefile.get_widget('combobox_newimage_format').get_active_text()
-		img_size = str(self.gladefile.get_widget('spinbutton_newimage_size').get_value())
-		#Get size unit and remove the last character 'B'
+		log.msg("Image creating.. ",)
+		path = self.get_object("filechooserbutton_newimage_dest").get_filename() + "/"
+		filename = self.get_object("entry_newimage_name").get_text()
+		img_format = self.get_object("combobox_newimage_format").get_active_text()
+		img_size = str(self.get_object("spinbutton_newimage_size").get_value())
+		#Get size unit and remove the last character "B"
 		#because qemu-img want k, M, G or T suffixes.
-		img_sizeunit = self.gladefile.get_widget('combobox_newimage_sizeunit').get_active_text()[:-1]
-		cmd='qemu-img create'
+		unit = self.gladefile.get_widget("combobox_newimage_sizeunit").get_active_text()[1]
+		# XXX: use a two value combobox
 		if not filename:
-			log.error(_("Choose a filename first!"))
+			log.err(_("Choose a filename first!"))
 			return
-
 		if img_format == "Auto":
 			img_format = "raw"
-		fullname = path+filename+"."+img_format
-		os.system('%s -f %s %s %s' % (cmd, img_format, fullname, img_size+img_sizeunit))
-		os.system('sync')
-		time.sleep(2)
-		self.brickfactory.new_disk_image(filename,fullname)
+		fullname = "%s%s.%s" % (path, filename, img_format)
+		exe = "qemu-img"
+		args = [exe, "create", "-f", img_format, fullname, img_size+unit]
+		done = defer.Deferred()
+		reactor.spawnProcess(QemuImgCreateProtocol(done), exe, args,
+			os.environ)
+		done.addCallback(
+			lambda _: self.brickfactory.new_disk_image(filename, fullname))
+		done.addErrback(log.err)
+		return done
 
 	def on_button_create_image_clicked(self, widget=None, data=""):
 		self.curtain_down()
@@ -2530,10 +2495,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_event_delete(self,widget=None, event=None, data=""):
 		self.curtain_down()
-
-		msg=""
-		if self.eventstree.get_selection().active:
-			msg=_("This event is in use")+". "
+		msg = ""
+		if self.eventstree.get_selection().scheduled:
+			msg = _("This event is in use. ")
 
 		self.ask_confirm(msg + _("Do you really want to delete") + " "+
 				_(self.eventstree.get_selection().get_type()) + " \"" + self.eventstree.get_selection().name + "\" ?",
@@ -2563,7 +2527,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_dialog_event_rename_response(self, widget=None, response=0, data=""):
 		widget.hide()
 		if response == 1:
-			if self.eventstree.get_selection().active:
+			if self.eventstree.get_selection().scheduled:
 				log.error(_("Cannot rename Event: it is in use."))
 				return
 
@@ -3059,7 +3023,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		finally:
 			self._start_listening()
 			self.draw_topology()
-			self.check_joblist(force=True)
+			# self.check_joblist(force=True)
 
 	def on_open_project(self, widget, data=None):
 		if self.confirm(_("Save current project?")):
@@ -3107,7 +3071,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		finally:
 			self._start_listening()
 			self.draw_topology()
-			self.check_joblist(force=True)
+			# self.check_joblist(force=True)
 
 	def on_new_project(self, widget, data=None):
 		if self.confirm("Save current project?"):
@@ -3145,7 +3109,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
 
 	def on_usb_show(self, button):
-		dialogs.UsbDevWindow(self).show()
+
+		def show_dialog(output):
+			dialogs.UsbDevWindow(self, output.strip()).show()
+
+		devices = utils.getProcessOutput("lsusb", env=os.environ)
+		devices.addCallbacks(show_dialog, log.err)
 
 	def on_check_commit_privatecow_toggled(self, widget, event=None, data=None):
 		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
@@ -3212,12 +3181,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			return True
 
 	def do_image_convert(self, arg=None):
+		raise NotImplementedError("do_image_convert")
 		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
 		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
 		# dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
 		src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
-		self.user_wait_action(self.exec_image_convert)
-		return True
+		# self.user_wait_action(self.exec_image_convert)
+		self.exec_image_convert()
 
 	def on_convertimage_convert(self, widget, event=None, data=None):
 		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
@@ -3348,33 +3318,32 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	"""                                                          """
 	""" ******************************************************** """
 
-	def timers(self):
-		gobject.timeout_add(1000, self.check_joblist)
+	# def check_joblist(self, force=False):
+	# 	return check_joblist(self, force)
 
-	def check_joblist(self, force=False):
-		return check_joblist(self, force)
+	def _main_window_set_insensitive(self):
+		window = self.get_object("main_win")
+		window.set_sensitive(False)
+		progressbar = self.get_object("userwait_progressbar")
+		lc = task.LoopingCall(progressbar.pulse)
+		wait_window = self.get_object("window_userwait")
+		wait_window.set_transient_for(window)
+		wait_window.show_all()
+		lc.start(0.2, False)
+		return lc
+
+	def _main_window_set_sensitive(self, _, lc):
+		self.get_object("window_userwait").hide()
+		self.get_object("main_win").set_sensitive(True)
+		lc.stop()
 
 	def user_wait_action(self, action, *args):
-		if isinstance(action, types.MethodType):
-			log.debug("Starting thread for action %s", action.func_name)
-		else:  # standard function
-			log.debug("Starting thread for action %s",
-					action.im_func.func_name)
-		self.gladefile.get_widget("window_userwait").show_all()
-		self.gladefile.get_widget("main_win").set_sensitive(False)
-		thread = threading.Thread(target=action, args=args)
-		gobject.timeout_add(200, self.user_wait_action_timer, thread)
-		thread.start()
-
-	def user_wait_action_timer(self, thread):
-		is_alive = thread.isAlive()
-		if not is_alive:
-			self.gladefile.get_widget("window_userwait").hide()
-			self.gladefile.get_widget("main_win").set_sensitive(True)
-			log.debug("action terminated")
+		lc = self._main_window_set_insensitive()
+		if isinstance(action, defer.Deferred):
+			done = action
 		else:
-			self.gladefile.get_widget("userwait_progressbar").pulse()
-		return is_alive
+			done = defer.maybeDeferred(action, *args)
+		done.addBoth(self._main_window_set_sensitive, lc)
 
 
 class List(gtk.ListStore):
@@ -3402,141 +3371,130 @@ class List(gtk.ListStore):
 
 class VisualFactory(brickfactory.BrickFactory):
 
-	def __init__(self):
-		brickfactory.BrickFactory.__init__(self)
+	def __init__(self, quit):
+		brickfactory.BrickFactory.__init__(self, quit)
 		self.remote_hosts = List()
 
 
-def console_thread(factory, stdout=sys.__stdout__, stdin=sys.__stdin__, **local):
-	console = brickfactory.Console(factory, stdout, stdin, **local)
-	thread = threading.Thread(target=console.run, name="Console")
-	# needed otherwise a new line should be read from console to exit the
-	# application
-	thread.daemon = True
-	thread.start()
-	return thread
-
-
-class TextBufferHandler(logging.Handler):
+class TextBufferObserver(_log.FileLogObserver):
 
 	def __init__(self, textbuffer):
-		logging.Handler.__init__(self)
 		textbuffer.create_mark("end", textbuffer.get_end_iter(), False)
 		self.textbuffer = textbuffer
 
 	def emit(self, record):
 		gobject.idle_add(self._emit, record)
 
-	def _emit(self, record):
+	def _emit(self, eventDict):
+		if "record" in eventDict:
+			lvl = eventDict["record"].levelname
+			text = eventDict["record"].getMessage()
+		else:
+			lvl = "ERROR" if eventDict["isError"] else "INFO"
+			text = _log.textFromEventDict(eventDict)
+			if text is None:
+				return
+
+		timeStr = self.formatTime(eventDict["time"])
+		fmtDict = {"system": eventDict["system"],
+					"text": text.replace("\n", "\n\t"),
+					"timeStr": timeStr}
+		msg = _log._safeFormat("%(timeStr)s [%(system)s] %(text)s\n", fmtDict)
 		self.textbuffer.insert_with_tags_by_name(
 			self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark("end")),
-			"%s\n" % self.format(record), record.levelname)
+			msg, lvl)
 
 
-class MessageDialogHandler(logging.Handler):
+class MessageDialogObserver:
 
 	def __init__(self, parent=None):
-		logging.Handler.__init__(self, logging.ERROR)
 		self.__parent = parent
 
 	def set_parent(self, parent):
 		self.__parent = parent
 
-	def emit(self, record):
-		gobject.idle_add(self._emit, record)
+	def emit(self, eventDict):
+		if ("show_to_user" not in eventDict and (("record" in eventDict and
+				eventDict["record"].levelno >= logging.ERROR) or
+				eventDict["isError"])):
+			gobject.idle_add(self._emit, eventDict)
 
-	def _emit(self, record):
+	def _emit(self, eventDict):
+		if "record" in eventDict:
+			msg = eventDict["record"].getMessage()
+		elif "why" in eventDict and eventDict["why"] is not None:
+			msg = eventDict["why"]
+		elif "failure" in eventDict:
+			msg = eventDict["failure"].getErrorMessage()
+		else:
+			msg = _log.textFromEventDict(eventDict)
+			if msg is None:
+				return
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
 				gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
-		dialog.set_property('text', record.getMessage())
+		dialog.set_property('text', msg)
 		dialog.connect("response", lambda d, r: d.destroy())
 		dialog.show()
 
 
-def my_raw_input(prompt=""):
-	sys.stdout.write(prompt)
-	sys.stdout.flush()
-	line = sys.stdin.readline()
-	if line == "":
-		raise EOFError
-	return line.rstrip("\n")
-
-
-class Application(brickfactory.Application):
-
-	tags = [('DEBUG', {'foreground': '#a29898'}),
+TEXT_TAGS = [('DEBUG', {'foreground': '#a29898'}),
 			('INFO', {}),
 			('WARNING', {'foreground': '#ff9500'}),
 			('ERROR', {'foreground': '#b8032e'}),
 			('CRITICAL', {'foreground': '#b8032e', 'background': '#000'}),
 			('EXCEPTION', {'foreground': '#000', 'background': '#b8032e'})]
 
-	gui = None
-	console = None
+
+class AppLogger(app.AppLogger):
+
+	def start(self, application):
+		observer = self._observerFactory()
+		if self._logfilename:
+			_log.addObserver(self._getLogObserver())
+		self._observer = observer
+		_log.startLoggingWithObserver(self._observer, False)
+		self._initialLog()
+
+
+class Application(brickfactory.Application):
+
+	factory_factory = VisualFactory
 
 	def __init__(self, config):
+		self.textbuffer = gtk.TextBuffer()
+		config["logger"] = self.textbuffer_logger
 		brickfactory.Application.__init__(self, config)
-		self.textbuffer = tb = gtk.TextBuffer()
-		self.builtin_raw_input = raw_input
-		for name, attrs in self.tags:
-			tb.create_tag(name, **attrs)
 
-	def get_logging_handler(self):
-		return TextBufferHandler(self.textbuffer)
+	def textbuffer_logger(self):
+		for name, attrs in TEXT_TAGS:
+			self.textbuffer.create_tag(name, **attrs)
+		return TextBufferObserver(self.textbuffer).emit
 
 	def install_locale(self):
 		brickfactory.Application.install_locale(self)
 		gtk.glade.bindtextdomain("virtualbricks", "/usr/share/locale")
 		gtk.glade.textdomain("virtualbricks")
 
-	def install_raw_input(self):
-		# actually there is a bug with builtin raw_input and pygtk that cause a
-		# deadlock
-		__builtin__.raw_input = my_raw_input
-
-	def install_sys_hooks(self):
-		# delay install sys hooks
-		pass
-
-	def load_gladefile(self):
-		try:
-			gladefile = graphics.get_filename("virtualbricks.gui",
-										"data/virtualbricks.glade")
-			return gtk.glade.XML(gladefile)
-		except Exception:
-			raise app.QuitError("Cannot load gladefile", 1)
-
-	def start(self):
-		logging.captureWarnings(True)
-		warnings.filterwarnings("default", category=DeprecationWarning)
-		if not os.access(MYPATH, os.X_OK):
-			os.mkdir(MYPATH)  # XXX: should I check for exceptions?
-		self.install_raw_input()
-		gladefile = self.load_gladefile()
-		gobject.threads_init()
-		handler = MessageDialogHandler()
-		logger = logging.getLogger("virtualbricks")
-		logger.addHandler(handler)
-		self.factory = factory = VisualFactory()
+	def _run(self, factory, quit):
+		# a bug in gtk2 make impossibile to use this and is not required anyway
+		gtk.set_interactive(False)
+		gladefile = load_gladefile()
 		factory.register_brick_type(_gui.GVirtualMachine, "vm", "qemu")
-		configfile.restore_last_project(self.factory)
-		self.autosave_timer = brickfactory.AutosaveTimer(factory)
+		message_dialog = MessageDialogObserver()
+		_log.addObserver(message_dialog.emit)
 		# disable default link_button action
-		gtk.link_button_set_uri_hook(None)
-		self.gui = gui = VBGUI(factory, gladefile, self.textbuffer)
-		if self.config.get('term', True):
-			self.console = console_thread(factory, gui=gui)
-		handler.set_parent(gui.widg["main_win"])  #XXX: ugly hack
-		brickfactory.Application.install_sys_hooks(self)  # :(
-		gtk.main()
+		gtk.link_button_set_uri_hook(lambda b, s: None)
+		gui = VBGUI(factory, gladefile, quit, self.textbuffer)
+		message_dialog.set_parent(gui.widg["main_win"])  #XXX: ugly hack
 
-	def quit(self):
-		if self.gui:
-			# if there is an error and self.gui is not setted, calling quit()
-			# on None everride the exception
-			self.gui.quit()
-		brickfactory.Application.quit(self)
-		__builtin__.raw_input = self.builtin_raw_input
+
+def load_gladefile():
+	try:
+		gladefile = graphics.get_filename("virtualbricks.gui",
+									"data/virtualbricks.glade")
+		return gtk.glade.XML(gladefile)
+	except Exception:
+		raise SystemExit("Cannot load gladefile")
 
 
 # vim: se noet :
