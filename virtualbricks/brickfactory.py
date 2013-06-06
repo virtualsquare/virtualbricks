@@ -388,7 +388,7 @@ class BrickFactory(gobject.GObject):
         nname = self.normalize(name)  # raises InvalidNameError
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
-        event = events.Event(self, name)
+        event = events.Event(self, nname)
         log.debug("New event %s OK", event.name)
         return event
 
