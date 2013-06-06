@@ -19,8 +19,9 @@
 import os
 
 from twisted.internet import reactor, defer, utils
+from twisted.python.deprecate import deprecated
 
-from virtualbricks import base, errors, console, _compat
+from virtualbricks import version, base, errors, console, _compat
 
 
 if False:  # pyflakes
@@ -44,10 +45,10 @@ class Command(base.String):
     def to_string(self, in_object):
         if isinstance(in_object, console.VbShellCommand):
             return "add " + in_object
-        elif isinstance(in_object, console.VbShellCommand):
+        elif isinstance(in_object, console.ShellCommand):
             return "addsh " + in_object
         else:
-            raise RuntimeError()
+            raise RuntimeError(_("Invalid command type."))
 
 
 class EventConfig(base.NewConfig):
@@ -80,6 +81,7 @@ class Event(base.Base):
     def configured(self):
         return len(self.cfg["actions"]) > 0 and self.cfg["delay"] > 0
 
+    @deprecated(version)
     def initialize(self, attrlist):
         if "add" in attrlist and "addsh" in attrlist:
             raise errors.InvalidActionError(_("Error: config line must "
@@ -125,6 +127,7 @@ class Event(base.Base):
     def disconnect(self):
         return
 
+    @deprecated(version)
     def configure(self, attrlist):
         self.initialize(attrlist)
         # TODO brick should be gobject and a signal should be launched

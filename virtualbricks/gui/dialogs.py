@@ -84,11 +84,15 @@ import tempfile
 import gtk
 from twisted.internet import utils
 
-from virtualbricks import version, tools, _compat
+from virtualbricks import version, tools, _compat, console
 from virtualbricks.gui import graphics
 
 
 log = _compat.getLogger(__name__)
+NUMERIC = set(map(str, range(10)))
+NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
+EXTRA = set(["BackSpace", "Delete", "Left", "Right", "Home", "End", "Tab"])
+VALIDKEY = NUMERIC | NUMPAD | EXTRA
 
 
 if False:  # pyflakes
@@ -596,3 +600,183 @@ class RenameBrickDialog(RenameDialog):
                     self.factory.rename_event(self.event, new)
         finally:
             dialog.destroy()
+
+
+class NewEventDialog(Window):
+
+    resource = "data/newevent.ui"
+
+    def __init__(self, gui):
+        Window.__init__(self)
+        self.gui = gui
+
+    def on_delay_entry_key_press_event(self, entry, event):
+        if gtk.gdk.keyval_name(event.keyval) not in VALIDKEY:
+            return True
+        elif gtk.gdk.keyval_name(event.keyval) == "Return":
+            self.window.response(gtk.RESPONSE_OK)
+            return True
+
+    def on_name_entry_key_press_event(self, entry, event):
+        if gtk.gdk.keyval_name(event.keyval) == "Return":
+            self.window.response(gtk.RESPONSE_OK)
+            return True
+
+    def get_event_type(self):
+        for name in "start", "stop", "config", "shell", "collation":
+            button = self.get_object(name + "_button")
+            if button.get_active():
+                return name
+        return "shell"  # this condition show not be reached
+
+    def on_NewEventDialog_response(self, dialog, response_id):
+        try:
+            if response_id == gtk.RESPONSE_OK:
+                name = self.get_object("name_entry").get_text()
+                delay = self.get_object("delay_entry").get_text()
+                type = self.get_event_type()
+                event = self.gui.brickfactory.new_event(name)
+                event.set({"delay": int(delay)})
+                if type in ("start", "stop", "collation"):
+                    action = "off" if type == "stop" else "on"
+                    bricks = self.gui.brickfactory.bricksmodel
+                    dialog_n = BrickSelectionDialog(event, action, bricks)
+                elif type == "shell":
+                    action = console.VbShellCommand("new switch myswitch")
+                    event.set({"actions": [action]})
+                    dialog_n = ShellCommandDialog(event)
+                else:
+                    raise RuntimeError("Invalid event type %s" % type)
+                dialog_n.window.set_transient_for(self.gui.widg["main_win"])
+                dialog_n.show()
+        finally:
+            dialog.destroy()
+
+
+class BrickSelectionDialog(Window):
+
+    resource = "data/brickselection.ui"
+
+    def __init__(self, event, action, bricks):
+        Window.__init__(self)
+        self.event = event
+        self.action = action
+        self.added = set()
+
+        self.availables_f = bricks.filter_new()
+        self.availables_f.set_visible_func(self.is_not_added, self.added)
+        availables_treeview = self.get_object("availables_treeview")
+        availables_treeview.set_model(self.availables_f)
+        self.added_f = bricks.filter_new()
+        self.added_f.set_visible_func(self.is_added, self.added)
+        added_treeview = self.get_object("added_treeview")
+        added_treeview.set_model(self.added_f)
+
+        avail_c = self.get_object("availables_treeviewcolumn")
+        icon_cr1 = self.get_object("icon_cellrenderer1")
+        avail_c.set_cell_data_func(icon_cr1, self.set_icon)
+        name_cr1 = self.get_object("name_cellrenderer1")
+        avail_c.set_cell_data_func(name_cr1, self.set_name)
+        added_c = self.get_object("added_treeviewcolumn")
+        icon_cr2 = self.get_object("icon_cellrenderer2")
+        added_c.set_cell_data_func(icon_cr2, self.set_icon)
+        name_cr2 = self.get_object("name_cellrenderer2")
+        added_c.set_cell_data_func(name_cr2, self.set_name)
+
+    def is_not_added(self, model, iter, added):
+        brick = model.get_value(iter, 0)
+        return brick not in added
+
+    def is_added(self, model, iter, added):
+        brick = model.get_value(iter, 0)
+        return brick in added
+
+    def set_icon(self, column, cell_renderer, model, iter):
+        brick = model.get_value(iter, 0)
+        pixbuf = graphics.pixbuf_for_running_brick_at_size(brick, 48, 48)
+        cell_renderer.set_property("pixbuf", pixbuf)
+
+    def set_name(self, column, cell_renderer, model, iter):
+        brick = model.get_value(iter, 0)
+        cell_renderer.set_property("text", "{0} ({1})".format(
+            brick.name, brick.get_type()))
+
+    def _move_to(self, treeview, action):
+        model, iter = treeview.get_selection().get_selected()
+        if iter:
+            action(model[iter][0])
+            self.added_f.refilter()
+            self.availables_f.refilter()
+
+    def on_add_button_clicked(self, button):
+        self._move_to(self.get_object("availables_treeview"), self.added.add)
+
+    def on_remove_button_clicked(self, button):
+        self._move_to(self.get_object("added_treeview"), self.added.remove)
+
+    def on_availables_treeview_row_activated(self, treeview, path, column):
+        self._move_to(treeview, self.added.add)
+
+    def on_added_treeview_row_activated(self, treeview, path, column):
+        self._move_to(treeview, self.added.remove)
+
+    def on_BrickSelectionDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            actions = [console.VbShellCommand("%s %s" % (b.name, self.action))
+                       for b in self.added]
+            self.event.set({"actions": actions})
+            log.msg("Event created successfully")
+        dialog.destroy()
+
+
+class EventControllerMixin(object):
+
+    resource = "data/eventconfig.ui"
+
+    def setup_controller(self, event):
+        self.get_object("action_treeview").get_selection().set_mode(
+            gtk.SELECTION_MULTIPLE)
+        self.get_object("sh_cellrenderer").set_activatable(True)
+        self.get_object("action_cellrenderer").set_property("editable", True)
+        model = self.get_object("actions_liststore")
+        for action in event.cfg["actions"]:
+            model.append((action, isinstance(action, console.ShellCommand)))
+        model.append(("", False))
+
+    def on_action_cellrenderer_edited(self, cell_renderer, path, new_text):
+        model = self.get_object("actions_liststore")
+        iter = model.get_iter(path)
+        if new_text:
+            model.set_value(iter, 0, new_text)
+            if model.iter_next(iter) is None:
+                model.append(("", False))
+        elif model.iter_next(iter) is not None:
+            model.remove(iter)
+        else:
+            model.set_value(iter, 0, new_text)
+
+    def on_sh_cellrenderer_toggled(self, cell_renderer, path):
+        model = self.get_object("actions_liststore")
+        iter = model.get_iter(path)
+        model.set_value(iter, 1, not cell_renderer.get_active())
+
+    def configure_event(self, event, attrs):
+        model = self.get_object("actions_liststore")
+        f = (console.VbShellCommand, console.ShellCommand)
+        attrs["actions"] = [f[row[1]](row[0]) for row in model if row[0]]
+        event.set(attrs)
+
+
+class ShellCommandDialog(Window, EventControllerMixin):
+
+    resource = "data/eventcommand.ui"
+
+    def __init__(self, event):
+        Window.__init__(self)
+        self.event = event
+        self.setup_controller(event)
+
+    def on_ShellCommandDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            self.configure_event(self.event, {})
+        dialog.destroy()
