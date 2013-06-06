@@ -391,9 +391,43 @@ class ConfigController(object):
     def get_object(self, name):
         return self.builder.get_object(name)
 
-# class EventConfigController(ConfigController):
 
-#     resource = "data/event_configuration.ui"
+class EventConfigController(ConfigController, dialogs.EventControllerMixin):
+
+    resource = "data/eventconfig.ui"
+
+    def get_view(self, gui):
+        self.setup_controller(self.original)
+        entry = self.get_object("delay_entry")
+        entry.set_text(self.original.cfg.get("delay"))
+        return self.get_object("vbox1")
+
+    def configure_brick(self, gui):
+        attributes = {}
+        text = self.get_object("delay_entry").get_text()
+        if self.original.cfg.get("delay") != text:
+            if not text:
+                text = 0
+            attributes["delay"] = int(text)
+        self.configure_event(self.original, attributes)
+
+    def on_delay_entry_key_press_event(self, entry, event):
+        if gtk.gdk.keyval_name(event.keyval) not in dialogs.VALIDKEY:
+            return True
+
+    def on_action_treeview_key_press_event(self, treeview, event):
+        if gtk.gdk.keyval_name(event.keyval) == "Delete":
+            selection = treeview.get_selection()
+            model, selected = selection.get_selected_rows()
+            rows = []
+            for path in selected:
+                rows.append(gtk.TreeRowReference(model, path))
+            for row in rows:
+                iter = model.get_iter(row.get_path())
+                next = model.iter_next(iter)
+                model.remove(iter)
+                if next is None:
+                    self.model.append(("", False))
 
 
 class SwitchConfigController(ConfigController):
@@ -482,8 +516,8 @@ class TapConfigController(ConfigController):
 
 def config_panel_factory(context):
     type = context.get_type()
-    # if type == "Event":
-    #     return EventConfigController(context)
+    if type == "Event":
+        return EventConfigController(context)
     if type == "Switch":
         return SwitchConfigController(context)
     elif type == "Tap":
