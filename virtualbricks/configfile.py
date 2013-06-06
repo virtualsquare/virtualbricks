@@ -314,7 +314,11 @@ class ConfigFile:
                         readonly = False
                         l = fileobj.readline().rstrip("\n")
                         while l and not l.startswith('['):
-                            k, v = l.split("=", 2)
+                            l = l.strip()
+                            if not l:
+                                l = fileobj.readline()
+                                continue
+                            k, v = l.split("=", 1)
                             if k == 'path':
                                 path = str(v)
                             elif k == 'host':
