@@ -172,7 +172,9 @@ class Event(base.Base):
 
         def log_err(results):
             for success, value in results:
-                if not success:
+                if success:
+                    log.msg("Process ended with exit code %s" % value)
+                else:
                     log.err(value)
 
         defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)

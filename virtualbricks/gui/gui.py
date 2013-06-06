@@ -2744,14 +2744,20 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			brick.cfg.set('usbdevlist=')
 		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
 
-	def on_usb_show(self, button):
+	def usb_show(self):
 
 		def show_dialog(output):
-			dialogs.UsbDevWindow(self, output.strip(), vm).show()
+			dialog = dialogs.UsbDevWindow(self, output.strip(), vm)
+			dialogs.window.set_transient_for(self.widg["main_win"])
+			dialog.show()
 
 		vm = self.__get_selection(self.__bricks_treeview)
 		devices = utils.getProcessOutput("lsusb", env=os.environ)
 		devices.addCallbacks(show_dialog, log.err)
+        log.msg("Searching USB devices")
+
+	def on_usb_show(self, button):
+		self.user_wait_action(self.osb_show)
 
 	def on_check_commit_privatecow_toggled(self, widget, event=None, data=None):
 		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
