@@ -104,9 +104,6 @@ class Event(base.Base):
             for attr in attrlist:
                 self.cfg.set(attr)
 
-    def properly_connected(self):
-        return True
-
     def get_parameters(self):
         tempstr = _("Delay: %d") % self.cfg["delay"]
         if len(self.cfg["actions"]) > 0:
