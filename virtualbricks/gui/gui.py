@@ -18,7 +18,6 @@
 import os
 import re
 import logging
-import subprocess
 import StringIO
 
 import gobject
@@ -2779,15 +2778,20 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.gladefile.get_widget("check_commit_privatecow").set_sensitive(True)
 		self.gladefile.get_widget("entry_commitimage_base").set_text("")
 
-	def do_image_commit(self, path):
-		if (not os.access(path, os.R_OK)):
-			log.error('Unable to read image')
-			return False
-		if 0 != subprocess.Popen(["qemu-img","commit",path]).wait():
-			log.error('Failed to commit image')
-			return False
-		return True
+	def __do_image_commit(self, path):
 
+		def log_err(exit_status):
+			if exit_status != 0:
+				log.msg("Failed to commit image", isError=True)
+
+		if not os.access(path, os.R_OK):
+			return defer.fail("Unable to read image")
+		ex_d = utils.getProcessValue("qemu-img", ["commit", path], os.environ)
+		ex_d.addCallback(log_err)
+		return ex_d
+
+	def do_image_commit(self, path):
+		self.user_wait_action(self.__do_image_commit, path)
 
 	def on_commitimage_commit(self, widget, event=None, data=None):
 		self.show_window('')
@@ -2814,23 +2818,23 @@ class VBGUI(gobject.GObject, TopologyMixin):
 						" This operation cannot be undone. \nAre you sure?", on_yes=self.do_image_commit, arg=path)
 		return True
 
-	def exec_image_convert(self, arg=None):
-		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
-		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
-		dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
-		if 0 != subprocess.Popen(["qemu-img", "convert","-O",fmt,src,dst]).wait():
-			return False
-		else:
-			return True
+	# def exec_image_convert(self, arg=None):
+	# 	src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
+	# 	fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
+	# 	dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
+	# 	if 0 != subprocess.Popen(["qemu-img", "convert","-O",fmt,src,dst]).wait():
+	# 		return False
+	# 	else:
+	# 		return True
 
 	def do_image_convert(self, arg=None):
 		raise NotImplementedError("do_image_convert")
-		src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
-		fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
-		# dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
-		src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
-		# self.user_wait_action(self.exec_image_convert)
-		self.exec_image_convert()
+		# src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
+		# fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
+		# # dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
+		# src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
+		# # self.user_wait_action(self.exec_image_convert)
+		# self.exec_image_convert()
 
 	def on_convertimage_convert(self, widget, event=None, data=None):
 		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
@@ -2874,25 +2878,30 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		else:
 			self.gladefile.get_widget('entry_commitimage_base').set_text('base not found')
 
+	def __commit_image_show_result(self, (out, err, code)):
+		if code != 0:
+			log.msg("Base not found (invalid cow?)\nstderr:\n%s" % err,
+					isError=True)
+			return
+		for line in out:
+			if line.startswith("backing file: "):
+				path = line.strip("backing file: ").split()[0]
+				self.get_widget("entry_commitimage_base").set_text(path)
+				break
+		else:
+			self.get_widget("entry_commitimage_base").set_text(
+					"base not found (invalid cow?)")
+
+	def __commit_image_changed(self, filename):
+		exit = utils.getProcessOutputAndValue("qemu-img", ["info", filename],
+										os.environ)
+		exit.addCallback(self.__commit_image_show_result)
+		return exit
+
 	def on_filechooser_commitimage_changed(self, widget, event=None, data=None):
-		sel = self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').get_filename()
-		path=''
-		if sel:
-			outfile = open('/tmp/virtualbricks_cow_info', 'w+')
-			if 0 != subprocess.Popen(['qemu-img', 'info', sel], stdout = outfile).wait():
-				self.gladefile.get_widget('entry_commitimage_base').set_text('base not found (invalid cow?)')
-				outfile.close()
-			else:
-				outfile.close()
-				outfile = open('/tmp/virtualbricks_cow_info','r')
-				for l in outfile:
-					if l.startswith('backing file: '):
-						path = l.strip('backing file: ').split()[0]
-				if (path == ''):
-					self.gladefile.get_widget('entry_commitimage_base').set_text('base not found (invalid cow?)')
-				else:
-					self.gladefile.get_widget('entry_commitimage_base').set_text(path)
-			os.unlink('/tmp/virtualbricks_cow_info')
+		filename = self.gladefile.get_widget(
+				"filechooserbutton_commitimage_cowpath").get_filename()
+		self.user_wait_action(self.__commit_image_changed, filename)
 
 	def on_convert_image(self,widget,event=None, data=None):
 		self.gladefile.get_widget('combobox_imageconvert_format').set_active(2)
