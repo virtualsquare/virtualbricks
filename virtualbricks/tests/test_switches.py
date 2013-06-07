@@ -9,6 +9,12 @@ def patch_brick(brick, output, input):
 
 class TestSwitch(unittest.TestCase):
 
+    def test_socks(self):
+        factory = stubs.FactoryStub()
+        sw = switches.Switch(factory, "test_switch")
+        self.assertEqual(len(sw.socks), 1)
+        self.assertIn(sw.socks[0], factory.socks)
+
     def test_base(self):
         sw = switches.Switch(stubs.FactoryStub(), "test_switch")
         self.assertEqual(len(sw.socks), 1)
@@ -22,7 +28,7 @@ class TestSwitch(unittest.TestCase):
         input.append("ok")
         sw.cfg.numports = "33"
         self.assertEqual(len(output), 1)
-        self.assertEqual(output[0], "port/setnumports 33")
+        self.assertEqual(output[0], "port/setnumports 33\n")
         sw.cfg["numports"] = 33
         self.assertEqual(len(output), 1)
 
@@ -34,3 +40,13 @@ class TestSwitch(unittest.TestCase):
                           "-M", "/home/marco/.virtualbricks/test_switch.mgmt",
                           "-n", "32", "-s",
                           "/home/marco/.virtualbricks/test_switch.ctl"])
+
+
+class TestSwitchWrapper(unittest.TestCase):
+
+    def test_socks(self):
+        factory = stubs.FactoryStub()
+        sw = switches.SwitchWrapper(factory, "test_switch")
+        self.assertEqual(len(sw.socks), 1)
+        self.assertIn(sw.socks[0], factory.socks)
+

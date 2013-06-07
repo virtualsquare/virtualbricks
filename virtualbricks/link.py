@@ -75,7 +75,6 @@ class Sock(object):
         self.nickname = name
         self.plugs = []
         self.mode = "sock"
-        self.brick.factory.socks.append(self)
 
     def get_free_ports(self):
         return int(self.brick.cfg.numports) - len(self.plugs)

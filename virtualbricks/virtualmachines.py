@@ -23,129 +23,83 @@ import subprocess
 from datetime import datetime
 from shutil import move
 
-from twisted.internet import reactor
-
-from virtualbricks import base, errors, tools, settings, bricks, _compat
+from virtualbricks import errors, tools, settings, bricks, _compat
 from virtualbricks.deprecated import deprecated
 from virtualbricks.versions import Version
-from virtualbricks.link import Sock, Plug
 from virtualbricks.settings import MYPATH
-
-
-log = _compat.getLogger(__name__)
 
 
 if False:
     _ = str
 
+log = _compat.getLogger(__name__)
+__metaclass__ = type
 
-class _VMPlug:
+
+class VMPlug:
 
     model = "rtl8139"
     mode = "vde"
 
-    @property
-    def brick(self):
-        return self.__plug.brick
-
-    @property
-    def sock(self):
-        return self.__plug.sock
-
     def __init__(self, plug):
-        self.__plug = plug
+        self._plug = plug
         self.mac = tools.random_mac()
         self.vlan = len(plug.brick.plugs) + len(plug.brick.socks)
 
     def __getattr__(self, name):
         try:
-            return getattr(self.__plug, name)
+            return getattr(self._plug, name)
         except AttributeError:
             raise AttributeError("_VMPlug." + name)
 
-    def configured(self):
-        return self.__plug.configured()
-
-    def connected(self):
-        return self.__plug.connected()
-
-    def connect(self, sock):
-        return self.__plug.connect(sock)
-
-    def disconnect(self):
-        return self.__plug.disconnect()
-
     def get_model_driver(self):
-        if self.model == 'virtio':
+        if self.model == "virtio":
             return "virtio-net-pci"
         return self.model
 
     def hotadd(self):
         driver = self.get_model_driver()
-        self.__plug.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" %
-                             (driver, self.mac, self.vlan, self.vlan))
-        self.__plug.brick.send("host_net_add vde sock=%s,vlan=%s\n" %
-                             (self.__plug.sock.path.rstrip('[]'), self.vlan))
+        self._plug.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" %
+                              (driver, self.mac, self.vlan, self.vlan))
+        self._plug.brick.send("host_net_add vde sock=%s,vlan=%s\n" %
+                              (self._plug.sock.path.rstrip("[]"), self.vlan))
 
     def hotdel(self):
-        self.__plug.brick.send("host_net_remove %s vde.%s\n" %
-                             (self.vlan, self.vlan))
-        self.__plug.brick.send("device_del eth%s\n" % self.vlan)
+        self._plug.brick.send("host_net_remove %s vde.%s\n" %
+                              (self.vlan, self.vlan))
+        self._plug.brick.send("device_del eth%s\n" % self.vlan)
 
 
-class VMPlug(Plug, base.Config):
-    def __init__(self, brick):
-        Plug.__init__(self, brick)
-        self.mac = tools.RandMac()
-        self.model = 'rtl8139'
-        self.vlan = len(self.brick.plugs) + len(self.brick.socks)
-        self.mode = 'vde'
-
-    def get_model_driver(self):
-        if self.model == 'virtio':
-            return "virtio-net-pci"
-        return self.model
-
-    def hotadd(self):
-        driver = self.get_model_driver()
-        self.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" % (str(driver), str(self.mac), str(self.vlan), str(self.vlan)))
-        self.brick.send("host_net_add vde sock=%s,vlan=%s\n" % (self.sock.path.rstrip('[]'), str(self.vlan)))
-
-    def hotdel(self):
-        self.brick.send("host_net_remove %s vde.%s\n" % (str(self.vlan), str(self.vlan)))
-        self.brick.send("device_del eth%s\n" % str(self.vlan))
-
-
-class _VMSock:
+class VMSock:
 
     model = "rtl8139"
 
-    @property
-    def brick(self):
-        return self.__sock.brick
-
-    @property
-    def plugs(self):
-        return self.__sock.plugs
-
-    @property
-    def mode(self):
-        return self.__sock.mode
-
     def __init__(self, sock):
-        self.__sock = sock
-        self.mac = tools.random_mac()
-        self.vlan = len(self.brick.plugs) + len(self.brick.socks)
-        self.path = "{MYPATH}/{sock.brick.name}_sock_eth{self.vlan}[]".format(
+        self.__dict__["_sock"] = sock
+        self.__dict__["mac"] = tools.random_mac()
+        # import pdb; pdb.set_trace()
+        self.__dict__["vlan"] = len(sock.brick.plugs) + len(sock.brick.socks)
+        sock.path = "{MYPATH}/{sock.brick.name}_sock_eth{self.vlan}[]".format(
             self=self, MYPATH=MYPATH, sock=sock)
-        self.nickname = "{sock.brick.name}_sock_eth{self.vlan}".format(
+        sock.nickname = "{sock.brick.name}_sock_eth{self.vlan}".format(
             self=self, sock=sock)
 
     def __getattr__(self, name):
         try:
-            return getattr(self.__sock, name)
+            return getattr(self._sock, name)
         except AttributeError:
             raise AttributeError("_VMSock." + name)
+
+    def __setattr__(self, name, value):
+        if name in self.__dict__:
+            self.__dict__[name] = value
+        else:
+            for klass in self.__class__.__mro__:
+                if name in klass.__dict__:
+                    self.__dict__[name] = value
+                    break
+            else:
+                setattr(self._sock, name, value)
 
     def connect(self, endpoint):
         return
@@ -155,32 +109,8 @@ class _VMSock:
             return "virtio-net-pci"
         return self.model
 
-    def get_free_ports(self):
-        return int(self.__sock.brick.cfg.numports) - len(self.__sock.plugs)
 
-    def has_valid_path(self):
-        return os.access(os.path.dirname(self.path), os.W_OK)
-
-
-class VMSock(Sock, base.Config):
-    def __init__(self,brick):
-        Sock.__init__(self, brick)
-        self.mac = tools.RandMac()
-        self.model = 'rtl8139'
-        self.vlan = len(self.brick.plugs) + len(self.brick.socks)
-        self.path = MYPATH + "/" + self.brick.name+ "_sock_eth" + str(self.vlan) + "[]"
-        self.nickname = self.path.split('/')[-1].rstrip('[]')
-
-    def connect(self, endpoint):
-        return
-
-    def get_model_driver(self):
-        if self.model == 'virtio':
-            return "virtio-net-pci"
-        return self.model
-
-
-class _VMPlugHostonly(_VMPlug):
+class VMPlugHostonly(VMPlug):
 
     mode = "hostonly"
 
@@ -191,23 +121,6 @@ class _VMPlugHostonly(_VMPlug):
         return True
 
     def connected(self):
-        log.debug("CALLED hostonly connected")
-        return True
-
-
-class VMPlugHostonly(VMPlug):
-    def __init__(self, _brick):
-        VMPlug.__init__(self, _brick)
-        self.mode = 'hostonly'
-
-    def connect(self, endpoint):
-        return
-
-    def configured(self):
-        return True
-
-    def connected(self):
-        log.debug("CALLED hostonly connected")
         return True
 
 
@@ -238,7 +151,7 @@ class Image:
     def rename(self, newname):
         self.name = newname
         for vmd in self.vmdisks:
-            vmd.VM.cfg["base" +vmd.device] = self.name
+            vmd.VM.cfg["base" + vmd.device] = self.name
 
     def set_master(self, vmdisk):
        # XXX: Change name to something more useful
@@ -257,7 +170,7 @@ class Image:
     def add_vmdisk(self, vmdisk):
         # XXX: O(n) complexity, a dict could fit?
         if vmdisk not in self.vmdisks:
-           self.vmdisks.append(vmdisk)
+            self.vmdisks.append(vmdisk)
         # for vmd in self.vmdisks:
         #     if vmd == vmdisk:
         #         return
@@ -376,12 +289,11 @@ class Disk:
                 log.warning("ERROR SETTING MASTER!!")
         return True
 
-
     def get_base(self):
         return self.image.path
 
     def get_real_disk_name(self):
-        if self.image == None:
+        if self.image is None:
             return ""
         if self.cow:
             if not os.path.exists(self.basefolder):
@@ -391,7 +303,7 @@ class Disk:
                 f = open(cowname)
                 buff = f.read(1)
                 while buff != '/':
-                    buff=f.read(1)
+                    buff = f.read(1)
                 base = ""
                 while buff != '\x00':
                     base += buff
@@ -413,7 +325,7 @@ class Disk:
                 else:
                     log.debug("Creating a new private COW from %s base image.",
                               self.get_base())
-                    command=[self.VM.settings.get("qemupath")+"/qemu-img","create","-b",self.get_base(),"-f",self.VM.settings.get('cowfmt'),cowname]
+                    command = [self.VM.settings.get("qemupath") + "/qemu-img", "create", "-b", self.get_base(), "-f", self.VM.settings.get('cowfmt'), cowname]
                     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     proc.wait()
                     proc = subprocess.Popen(["/bin/sync"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -433,15 +345,6 @@ class Disk:
 
 
 VMDisk = Disk
-
-
-# class QemuSudo(bricks.Sudo):
-
-#     def inject_sudo(self):
-#         self._args = self.process.args
-#         self.process.args = [self.sudo] + self._args[:] + \
-#                 ["-pidfile", self.pidfile.name]
-
 
 
 class VirtualMachine(bricks.Brick):
@@ -490,7 +393,7 @@ class VirtualMachine(bricks.Brick):
         # "-full-screen": "full-screen", ## TODO 0.3
         "-sdl": "sdl",
         "-portrait": "portrait",
-        "-win2k-hack": "win2k", # # not implemented
+        "-win2k-hack": "win2k",  # not implemented
         "-no-acpi": "noacpi",
         # "-no-hpet": "nohpet", ## ???
         # "-baloon": "baloon", ## ???
@@ -675,10 +578,9 @@ class VirtualMachine(bricks.Brick):
         log.debug("update_usbdevlist: old [%s] - new[%s]", old, dev)
         for d in dev.split(' '):
             if not d in old.split(' '):
-                self.send("usb_add host:"+d+"\n")
-        # FIXME: Don't know how to remove old devices, due to the ugly syntax of
-        # usb_del command.
-
+                self.send("usb_add host:" + d + "\n")
+        # FIXME: Don't know how to remove old devices, due to the ugly syntax
+        # of usb_del command.
 
     def associate_disk(self):
         for hd in ["hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock"]:
@@ -706,7 +608,7 @@ class VirtualMachine(bricks.Brick):
             if p.sock is None and p.mode == 'vde':
                 cfg_ok = False
         return cfg_ok
-    # QEMU PROGRAM SELECTION
+
     def prog(self):
         #IF IS IN A SERVER, CHECK IF KVM WORKS
         # XXX: I disabled this, how can be renabled?
@@ -864,9 +766,9 @@ class VirtualMachine(bricks.Brick):
         self.cfg["mtdblock"] = Disk(self, "mtdblock")
         self.associate_disk()
 
-    def __add_sock(self, mac=None, model=None):
-        s = self.brickfactory.new_sock(self)
-        sock = _VMSock(s)
+    def add_sock(self, mac=None, model=None):
+        s = self.factory.new_sock(self)
+        sock = VMSock(s)
         self.socks.append(sock)
         if mac:
             sock.mac = mac
@@ -875,44 +777,17 @@ class VirtualMachine(bricks.Brick):
         self.gui_changed = True
         return sock
 
-    def add_sock(self, mac=None, model=None):
-        sk = VMSock(self)
-        self.socks.append(sk)
-        if mac:
-            sk.mac = mac
-        if model:
-            sk.model = model
-        self.gui_changed = True
-        return sk
-
-    def __add_plug(self, sock=None, mac=None, model=None):
-        p = self.brickfactory.new_plug(self)
-        plug = _VMPlugHostonly(p) if sock == "_hostonly" else _VMPlug(p)
+    def add_plug(self, sock=None, mac=None, model=None):
+        p = self.factory.new_plug(self)
+        plug = VMPlugHostonly(p) if sock == "_hostonly" else VMPlug(p)
         self.plugs.append(plug)
-        # if pl.mode == 'vde':
-        #     pl.connect(sock)
+        plug.connect(sock)
         if mac:
             plug.mac = mac
         if model:
             plug.model = model
         self.gui_changed = True
         return plug
-
-    def add_plug(self, sock=None, mac=None, model=None):
-        if sock and sock == '_hostonly':
-            pl = VMPlugHostonly(self)
-            pl.mode = "hostonly"
-        else:
-            pl = VMPlug(self)
-        self.plugs.append(pl)
-        if pl.mode == 'vde':
-            pl.connect(sock)
-        if mac:
-            pl.mac = mac
-        if model:
-            pl.model = model
-        self.gui_changed = True
-        return pl
 
     def connect(self, endpoint):
         pl = self.add_plug()
