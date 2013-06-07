@@ -147,8 +147,8 @@ class SwitchWrapper(bricks.Brick):
         if os.path.exists(self.cfg.path):
             self.proc = FakeProcess(self)
         else:
-            log.debug("Socket does not exists: %s", self.cfg.path)
             self.proc = None
+            log.debug("Socket does not exists: %s", self.cfg.path)
 
     def poweroff(self):
         self.proc = None
