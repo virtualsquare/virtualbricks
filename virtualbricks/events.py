@@ -143,10 +143,7 @@ class Event(base.Base):
         if not self.configured():
             raise errors.BadConfigError("Event %s not configured" % self.name)
 
-        def call():
-            self.scheduled = None
-            return self.doactions()
-        self.scheduled = reactor.callLater(self.cfg["delay"], call)
+        self.scheduled = reactor.callLater(self.cfg["delay"], self.do_actions)
         self.factory.emit("event-started", self.name)
 
     def poweroff(self):
@@ -162,7 +159,8 @@ class Event(base.Base):
         else:
             self.poweron()
 
-    def doactions(self):
+    def do_actions(self):
+        self.scheduled = None
         procs = []
         for action in self.cfg["actions"]:
             if isinstance(action, console.VbShellCommand):
@@ -182,3 +180,4 @@ class Event(base.Base):
         # self.factory.emit("event-accomplished", self.name)
 
     change_state = toggle
+    doactions = do_actions
