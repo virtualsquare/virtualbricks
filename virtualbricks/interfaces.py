@@ -154,7 +154,6 @@ class IBrick(Interface):
 
     config_socks = Attribute("")
     homehost = Attribute("")
-    properly_connected = Attribute("")
     cfg = Attribute("")
     socks = Attribute("")
     plugs = Attribute("")
