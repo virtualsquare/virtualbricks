@@ -757,7 +757,7 @@ class VirtualMachine(bricks.Brick):
                               "not using private cow or snapshot mode."),
                             disk.image.name)
                 if self.cfg["use_virtio"]:
-                    res.extend(["-drive", "file=%s,if=virtio,index=%s" %
+                    res.extend(["-drive", "file=%s,if=virtio,boot=on,index=%s" %
                                 (disk.get_real_disk_name(), str(idx))])
                     idx += 1
                 else:
