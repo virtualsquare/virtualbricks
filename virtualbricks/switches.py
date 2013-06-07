@@ -63,7 +63,7 @@ class Switch(bricks.Brick):
         # self.cfg.numports = "32"
         # self.cfg.hub = ""
         # self.cfg.fstp = ""
-        self.socks.append(link.Sock(self, self.name + "_port"))
+        self.socks.append(self.factory.new_sock(self, self.name + "_port"))
         # XXX: obiviusly configuration is changed in __init__, check if it is
         # actually used by someone
         self.on_config_changed()
@@ -139,7 +139,7 @@ class SwitchWrapper(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.socks.append(link.Sock(self, self.name + "_port"))
+        self.socks.append(self.factory.new_sock(self, self.name + "_port"))
         # XXX: see Switch __init__
         self.on_config_changed()
 
@@ -160,7 +160,7 @@ class SwitchWrapper(bricks.Brick):
         self.socks[0].path = self.cfg.path
 
     def on_config_changed(self):
-        self.__set_sock_path()
+        self._set_sock_path()
         bricks.Brick.on_config_changed(self)
 
     def set(self, attrs):

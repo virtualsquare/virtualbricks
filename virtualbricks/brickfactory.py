@@ -467,11 +467,10 @@ class BrickFactory(gobject.GObject):
     def new_plug(self, brick):
         return link.Plug(brick)
 
-    # @synchronized
-    # def new_sock(self, brick, name=""):
-    #     sock = link.Sock(brick, name)
-    #     self.socks.append(sock)
-    #     return sock
+    def new_sock(self, brick, name=""):
+        sock = link.Sock(brick, name)
+        self.socks.append(sock)
+        return sock
 
     def connect_to(self, brick, nick):
         endpoint = None
