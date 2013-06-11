@@ -20,7 +20,8 @@
 import os
 import copy
 
-from twisted.internet import protocol, reactor, error
+from twisted.internet import protocol, reactor, error, defer
+from twisted.python import failure
 
 from virtualbricks import base, errors, settings, _compat
 from virtualbricks.base import (NewConfig, String, Integer, SpinInt, Float,
@@ -43,7 +44,8 @@ class Process(protocol.ProcessProtocol):
 
     def connectionMade(self):
         # log.msg("Started process (%d)" % self.transport.pid)
-        self.transport.write("\n")
+        self.brick.process_started(self)
+        # self.transport.write("\n")
 
     def outReceived(self, data):
         pass
@@ -60,10 +62,7 @@ class Process(protocol.ProcessProtocol):
         log.msg(str(status.value),
                 isError=isinstance(status.value, error.ProcessTerminated),
                 show_to_user=False)
-
-    def processEnded(self, status):
-        self.brick.process_ended(self, status)
-        del self.brick
+        self.brick.process_exited(self, status)
 
 
 class TermProtocol(protocol.ProcessProtocol):
@@ -102,6 +101,9 @@ class _LocalBrick(base.Base):
     proc = None
     command_builder = {}
     term_command = "vdeterm"
+    _started_d = None
+    _exited_d = None
+    _last_status = None
 
     @property
     def pid(self):
@@ -113,7 +115,6 @@ class _LocalBrick(base.Base):
         base.Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
-        self.comm = []
         self.cfg.pon_vbevent = ""
         self.cfg.poff_vbevent = ""
         self.config_socks = []
@@ -122,32 +123,37 @@ class _LocalBrick(base.Base):
 
     def poweron(self):
         if self.proc is not None:
-            log.msg("Cannot start an already running process.")
-            return
+            return defer.succeed(self)
 
-        if self.factory.TCP is None:
-            if not self.configured():
-                raise errors.BadConfigError(_("Cannot start '%s': not "
-                                              "configured") % self.name)
-            if not self.properly_connected():
-                raise errors.NotConnectedError(_("Cannot start '%s': not "
-                                                 "connected") % self.name)
-            if not self.check_links():
-                raise errors.LinkLoopError("Link loop detected")
-        del self.comm[:]
-        self._poweron()
-        self.start_related_events(on=True)
-        self.on_config_changed()
+        if not self.configured():
+            return defer.fail(failure.Failure(errors.BadConfigError(
+                _("Cannot start '%s': not configured") % self.name)))
+        if not self._properly_connected():
+            return defer.fail(failure.Failure(errors.NotConnectedError(
+                _("Cannot start '%s': not connected") % self.name)))
+
+        self._started_d = started = defer.Deferred()
+        self._exited_d = defer.Deferred()
+        d = self._check_links()
+        d.addCallback(self._poweron)
+        # here self._started_d could be None because if child process is
+        # created before reacing this point, process_stated is already called
+        # and then _started_d is unset
+        d.addErrback(started.errback)
+        d.addCallback(lambda _: self.start_related_events(on=True))
+        return started
 
     def poweroff(self, kill=False):
         if self.proc is None:
-            return
+            return defer.succeed((self, self._last_status))
         log.msg(_("Shutting down %s (pid: %d)") % (self.name, self.proc.pid))
         try:
-            if self.proc:
-                self.proc.signalProcess("KILL" if kill else "TERM")
-        finally:
-            self._poweroff()
+            self.proc.signalProcess("KILL" if kill else "TERM")
+        except OSError as e:
+            return defer.fail(failure.Failure(e))
+        except error.ProcessExitedAlready:
+            pass
+        return self._exited_d
 
     def get_parameters(self):
         raise NotImplementedError("Bricks.get_parameters() not implemented")
@@ -160,7 +166,7 @@ class _LocalBrick(base.Base):
 
     def set(self, attrs):
         if "sock" in attrs:
-            attrs["sock"] = self.rewrite_sock_server(attrs["sock"])
+            attrs["sock"] = self._rewrite_sock_server(attrs["sock"])
         base.Base.set(self, attrs)
         self.on_config_changed()
 
@@ -168,33 +174,48 @@ class _LocalBrick(base.Base):
         if self.proc:
             self.proc.signalProcess(signal)
 
+    # brick <--> process interface
+
+    def process_started(self, proc):
+        started, self._started_d = self._started_d, None
+        self.on_config_changed()
+        started.callback(self)
+
+    def process_exited(self, proc, status):
+        self.proc = None
+        self.start_related_events(off=True)
+        self.on_config_changed()
+        self._last_status = status
+        exited, self._exited_d = self._exited_d, None
+        exited.callback((self, status))
+
     # Interal interface
 
-    def _poweron(self):
-        prog = self.prog()
-        args = self.args()
-        log.debug(_("Starting: '%s'"), ' '.join(args))
-        # usePTY?
-        self.proc = reactor.spawnProcess(Process(self), prog, args, os.environ,
-                                         usePTY=True)
-        # if self.needsudo():
-        #     self.proc = self.sudo_factory(self.proc)
-        self.factory.emit("brick-started", self.name)
+    def _properly_connected(self):
+        return all(plug.configured() for plug in self.plugs)
 
-    def _poweroff(self):
-        self.proc = None
-        self.factory.emit("brick-stopped", self.name)
-        self.start_related_events(off=True)
+    def configured(self):
+        return False
+
+    def _check_links(self):
+        l = [plug.connected() for plug in self.plugs]
+        return defer.DeferredList(l, fireOnOneErrback=True, consumeErrors=True)
+
+    def args(self):
+        return [self.prog()] + self.build_cmd_line()
+
+    def prog(self):
+        raise NotImplementedError(_("Brick.prog() not implemented."))
 
     def build_cmd_line(self):
         res = []
 
-        for (switch, v) in self.command_builder.items():
+        for switch, value in self.command_builder.items():
             if not switch.startswith("#"):
-                if callable(v):
-                    value = v()
+                if callable(value):
+                    value = value()
                 else:
-                    value = self.cfg.get(v)
+                    value = self.cfg.get(value)
                 if value is "*":
                     res.append(switch)
                 elif value is not None and len(value) > 0:
@@ -203,17 +224,42 @@ class _LocalBrick(base.Base):
                     res.append(value)
         return res
 
-    def args(self):
-        return [self.prog()] + self.build_cmd_line()
+    def _poweron(self, ignore):
 
-    def prog(self):
-        raise NotImplementedError(_("Brick.prog() not implemented."))
+        def start_process(value):
+            args, prog = value
+            log.msg(_("Starting: '%s'") % " ".join(args))
+            # usePTY?
+            self.proc = reactor.spawnProcess(Process(self), prog, args,
+                                             os.environ, usePTY=True)
 
-    def process_ended(self, process, status):
-        self._poweroff()
+        l = [defer.maybeDeferred(self.args), defer.maybeDeferred(self.prog)]
+        d = defer.gatherResults(l, consumeErrors=True)
+        d.addCallback(start_process)
+        return d
+        # if self.needsudo():
+        #     self.proc = self.sudo_factory(self.proc)
+        # self.factory.emit("brick-started", self.name)
 
-    def rewrite_sock_server(self, v):
-        return os.path.join(settings.VIRTUALBRICKS_HOME, os.path.basename(v))
+    def start_related_events(self, on=True, off=False):
+        if any([on, off]) and any([on and self.cfg.pon_vbevent, off and
+                                   self.cfg.poff_vbevent]):
+            name = self.cfg.pon_vbevent if on else self.cfg.poff_vbevent
+            ev = self.factory.get_event_by_name(name)
+            if ev:
+                ev.poweron()
+            else:
+                log.warning("Warning. The Event '%s' attached to Brick '%s' is"
+                            " not available. Skipping execution.",
+                            self.cfg.poff_vbevent, self.name)
+
+    #############################
+    # Console related operations.
+    #############################
+
+    def _rewrite_sock_server(self, sock):
+        return os.path.join(settings.VIRTUALBRICKS_HOME,
+                            os.path.basename(sock))
 
     def restore_self_plugs(self):  # DO NOT REMOVE
         pass
@@ -237,28 +283,13 @@ class _LocalBrick(base.Base):
     def on_config_changed(self):
         self.emit("changed")
 
-    def configured(self):
-        return False
-
-    def properly_connected(self):
-        for p in self.plugs:
-            if not p.configured():
-                return False
-        return True
-
-    def check_links(self):
-        for p in self.plugs:
-            if not p.connected():
-                return False
-        return True
-
     def initialize(self, attrlist):
         """TODO attrs : dict attr => value"""
         for attr in attrlist:
             k = attr.split("=")[0]
             self.cfg.set(attr)
             if k == "sock":
-                self.cfg.sock = self.rewrite_sock_server(attr.split("=")[1])
+                self.cfg.sock = self._rewrite_sock_server(attr.split("=")[1])
 
     def connect(self, endpoint):
         for p in self.plugs:
@@ -278,31 +309,6 @@ class _LocalBrick(base.Base):
     ########### Poweron/Poweroff
     ############################
 
-    def start_related_events(self, on=True, off=False):
-
-        if on is False and off is False:
-            return
-
-        if ((off and not self.cfg.poff_vbevent) or
-            (on and not self.cfg.pon_vbevent)):
-            return
-
-        if off:
-            ev = self.factory.get_event_by_name(self.cfg.poff_vbevent)
-        elif on:
-            ev = self.factory.get_event_by_name(self.cfg.pon_vbevent)
-
-        if ev:
-            ev.poweron()
-        else:
-            log.warning("Warning. The Event '%s' attached to Brick '%s' is "
-                        "not available. Skipping execution.",
-                        self.cfg.poff_vbevent, self.name)
-
-    #############################
-    # Console related operations.
-    #############################
-
     def open_console(self):
         term = self.settings.get("term")
         args = [term, "-T", self.name, "-e",
@@ -312,15 +318,11 @@ class _LocalBrick(base.Base):
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)
 
     def send(self, data):
-        # import pdb; pdb.set_trace()
         if self.proc:
-            self.comm.append(data)
             self.proc.write(data)
         # else:
         #     log.msg("Cannot send command, brick is not running.")
 
-    # def recv(self, data):
-    #     self.comm.append(data)
 
     def recv(self):
         pass
@@ -329,7 +331,7 @@ class _LocalBrick(base.Base):
         """return state of the brick"""
         if self.proc is not None:
             state = _("running")
-        elif not self.properly_connected():
+        elif not self._properly_connected():
             state = _("disconnected")
         else:
             state = _("off")
@@ -375,10 +377,10 @@ class Brick(_LocalBrick):
             else:
                 self.homehost.send(self.name + " on")
         else:
-            _LocalBrick.poweron(self)
+            return _LocalBrick.poweron(self)
 
-    def poweroff(self):
+    def poweroff(self, kill=False):
         if self.homehost:
             self.homehost.send(self.name + " off\n")
         else:
-            _LocalBrick.poweroff(self)
+            return _LocalBrick.poweroff(self, kill)

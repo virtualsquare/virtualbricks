@@ -123,6 +123,7 @@ class Tap(bricks.Brick):
         return self.plugs[0].sock is not None
 
     def post_poweron(self):
+        # XXX: fixme
         self.start_related_events(on=True)
         if self.cfg.mode == 'dhcp':
             if self.needsudo():

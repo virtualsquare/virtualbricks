@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# This is a stub for qemu-img. Invoke it as following:
+#
+#   $ qemu-img [create] [-b] [action] [-f] [format] name
+#
+# where the parameters between squares are ignored and name is used as
+# return code, tipically 0 or 1.
+
+if [ $# != 6 ]; then
+    echo "Invalid arguments number" >&2
+    exit 1
+else
+    exit $6
+fi

@@ -19,7 +19,7 @@ import os
 
 import gtk
 from zope.interface import implements
-from twisted.internet import reactor, utils, defer
+from twisted.internet import reactor, utils, defer, error
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
                            console, link, _compat)
@@ -31,6 +31,17 @@ log = _compat.getLogger("virtualbricks.gui.gui")
 
 if False:  # pyflakes
     _ = str
+
+
+def cancel_call(passthru, call):
+    if call.active():
+        call.cancel()
+    return passthru
+
+
+def refilter(passthru, filter_model):
+    filter_model.refilter()
+    return passthru
 
 
 class BaseMenu:
@@ -280,7 +291,7 @@ class JobMenu:
         menu.append(reset)
         kill = gtk.ImageMenuItem(gtk.STOCK_DELETE)
         kill.set_label(_("Kill"))
-        kill.connect("activate", self.on_kill_activate)
+        kill.connect("activate", self.on_kill_activate, gui)
         menu.append(kill)
         return menu
 
@@ -294,30 +305,33 @@ class JobMenu:
 
     def on_stop_activate(self, menuitem):
         log.debug("Sending to process signal SIGSTOP!")
-        self.original.send_signal(19)
+        try:
+            self.original.send_signal(19)
+        except error.ProcessExitedAlready:
+            pass
 
     def on_cont_activate(self, menuitem):
         log.debug("Sending to process signal SIGCONT!")
-        self.original.send_signal(18)
+        try:
+            self.original.send_signal(18)
+        except error.ProcessExitedAlready:
+            pass
 
     def on_reset_activate(self, menuitem):
         log.debug("Restarting process!")
-        self.original.poweroff()
+        d = self.original.poweroff()
+        # give it 2 seconds before an hard reset
+        call = reactor.callLater(2, self.original.poweroff, kill=True)
+        d.addBoth(cancel_call, call)
+        d.addCallback(lambda _: self.original.poweron())
 
-        def start_brick(brick, count=0):
-            count += 1
-            if brick.proc is not None and count < 10:
-                # max count is totally euristic
-                reactor.callLater(0.1, start_brick, brick, count)
-            elif brick.proc is not None:
-                brick.poweroff(kill=True)
-            else:
-                brick.poweron()
-        reactor.callLater(0.1, start_brick, self.original)
-
-    def on_kill_activate(self, menuitem):
+    def on_kill_activate(self, menuitem, gui):
         log.debug("Sending to process signal SIGKILL!")
-        self.original.send_signal(9)
+        try:
+            d = self.original.poweroff(kill=True)
+            d.addCallback(refilter, gui.running_bricks)
+        except error.ProcessExitedAlready:
+            pass
 
 interfaces.registerAdapter(JobMenu, bricks.Brick, interfaces.IJobMenu)
 

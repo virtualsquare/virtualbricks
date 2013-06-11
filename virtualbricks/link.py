@@ -18,42 +18,49 @@
 
 import os
 
+from twisted.internet import defer
+from twisted.python import log, failure
+
 from virtualbricks import errors
+
+
+if False:  # pyflakes
+    _ = str
 
 
 class Plug:
 
+    sock = None
+    _antiloop = False
+    mode = "vde"
+
     def __init__(self, brick):
         self.brick = brick
-        self.sock = None
-        self.antiloop = False
-        self.mode = 'vde'
 
     def configured(self):
         return self.sock is not None
 
     def connected(self):
-        if self.antiloop:
-            if self.settings.get('erroronloop'):
-                raise errors.NotConnectedError('Network loop detected!')
-            self.antiloop = False
-            return False
+        if self._antiloop:
+            if self.brick.settings.get("erroronloop"):
+                log.err(_("Loop link detected: aborting operation. If "
+                        "you want to start a looped network, disable the "
+                        "check loop feature in the general settings"))
+            self._antiloop = False
+            return defer.fail(errors.LinkLoopError())
 
-        self.antiloop = True
+        self._antiloop = True
         if self.sock is None or self.sock.brick is None:
-            self.antiloop = False
-            return False
-        self.sock.brick.poweron()
+            self._antiloop = False
+            return defer.fail(errors.NotConnectedError())
 
-        if self.sock.brick.homehost is None and self.sock.brick.proc is None:
-            self.antiloop = False
-            return False
-        for p in self.sock.brick.plugs:
-            if not p.connected():
-                self.antiloop = False
-                return False
-        self.antiloop = False
-        return True
+        def clear_antiloop(passthru):
+            self._antiloop = False
+            return passthru
+
+        d = self.sock.brick.poweron()
+        d.addBoth(clear_antiloop)
+        return d
 
     def connect(self, sock):
         if sock is None:

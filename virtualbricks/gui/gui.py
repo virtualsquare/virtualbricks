@@ -84,13 +84,6 @@ def get_treeselected_name(gui, tree, model, pathinfo):
 	return get_treeselected(gui, tree, model, pathinfo, 3)
 
 
-def check_joblist(bricks, running):
-	running.clear()
-	for brick in bricks:
-		if brick.proc is not None:
-			running.append((brick, ))
-
-
 def get_combo_text(widget):
 	# XXX: this can return None
 	combo = ComboBox(widget)
@@ -266,8 +259,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		# Connect all the signal from the factory to specific callbacks
 		self.__factory_handlers = fh = []
 		fh.append(factory.connect("engine-closed", self.on_engine_closed))
-		fh.append(factory.connect("brick-stopped", self.cb_brick_stopped))
-		fh.append(factory.connect("brick-started", self.cb_brick_started))
 		fh.append(factory.connect("brick-changed", self.cb_brick_changed))
 		self.__brick_changed_h = factory.bricksmodel.connect("row-changed",
 				self.on_brick_changed)
@@ -325,9 +316,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		''' Initialize threads, timers etc.'''
 		self.signals()
-		self.check_joblist_lc = task.LoopingCall(check_joblist,
-			self.brickfactory.bricks, self.running_bricks)
-		self.check_joblist_lc.start(1)
+		task.LoopingCall(self.running_bricks.refilter).start(2)
 
 
 		''' FIXME: re-enable when implemented '''
@@ -420,7 +409,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		name_c = builder.get_object("name_treeviewcolumn")
 		name_cr = builder.get_object("name_cellrenderer")
 		name_c.set_cell_data_func(name_cr, set_name)
-		self.running_bricks = builder.get_object("liststore1")
+		self.running_bricks = self.brickfactory.bricksmodel.filter_new()
+
+		def is_running(model, iter):
+			brick = model[iter][0]
+			if brick:
+				return brick.proc is not None
+			return False
+			# return model[iter][0].proc is not None
+
+		self.running_bricks.set_visible_func(is_running)
+		builder.get_object("joblist_treeview").set_model(self.running_bricks)
 
 	def setup_remotehosts(self):
 		builder = self.__setup_treeview("data/remotehosts.ui",
@@ -636,14 +635,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def cb_brick_changed(self, model, name):
 		self.draw_topology()
-
-	def cb_brick_stopped(self, model, name=""):
-		self.draw_topology()
-		self.systray_blinking(None, False)
-
-	def cb_brick_started(self, model, name=""):
-		self.draw_topology()
-		# self.check_joblist(force=True)
 
 	def _stop_listening(self):
 		self.__foreach_handler(self.brickfactory.handler_block)
@@ -1095,14 +1086,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.statusicon.set_visible(False)
 			self.statusicon = None
 
-	def systray_blinking(self, args=None, disable=False):
-		if self.statusicon is None or not self.statusicon.get_visible():
-			return
-
-		if disable:
-			self.statusicon.set_blinking(False)
-		elif not self.statusicon.get_blinking():
-			self.statusicon.set_blinking(True)
+	def systray_blinking(self, disable=False):
+		if self.statusicon is not None and self.statusicon.get_visible():
+			self.statusicon.set_blinking(not disable)
 
 
 	'''
@@ -1392,7 +1378,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_systray_menu_toggle(self, widget=None, data=""):
 		if self.statusicon.get_blinking():
-			self.systray_blinking(None, True)
+			self.systray_blinking(True)
 			return
 
 		if not self.gladefile.get_widget("main_win").get_visible():
@@ -1719,16 +1705,30 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		raise NotImplementedError("on_toolbutton_launchxterm_clicked not implemented")
 
 	def on_toolbutton_start_all_clicked(self, widget=None, data=""):
+
+		def started_all(results):
+			for success, value in results:
+				if not success:
+					log.err(value, "Cannot starts brick %s (%s)." %
+						(value.name, value.get_type()))
+			self.running_bricks.refilter()
+
 		self.curtain_down()
-		for b in iter(self.brickfactory.bricks):
-			if b.proc is None:
-				b.poweron()
+		l = [brick.poweron() for brick in self.brickfactory.bricks]
+		dl = defer.DeferredList(l, consumeErrors=True)
+		dl.addCallback(started_all)
 
 	def on_toolbutton_stop_all_clicked(self, widget=None, data=""):
+
+		def stopped_all(results):
+			# for success, value in results:
+			# 	# TODO
+			# 	pass
+			self.running_bricks.refilter()
+
 		self.curtain_down()
-		for b in iter(self.brickfactory.bricks):
-			if b.proc is not None:
-				b.poweroff()
+		l = [brick.poweroff() for brick in self.brickfactory.bricks]
+		defer.DeferredList(l, consumeErrors=True).addCallback(stopped_all)
 
 	def on_toolbutton_start_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
@@ -1779,20 +1779,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_focus_out(self, widget=None, event=None , data=""):
 		self.curtain_down()
 
-	def startstop_brick(self, b):
-		if b.proc is not None:
-			b.poweroff()
-		else:
-			if b.get_type() == "Qemu":
-				# XXX: check this
-				b.cfg.loadvm = '' #prevent restore from saved state
-			try:
-				b.poweron()
-			except errors.LinkLoopError:
-				if self.config.erroronloop:
-					log.err(_("Loop link detected: aborting operation. If "
-							"you want to start a looped network, disable the "
-							"check loop feature in the general settings"))
+	def startstop_brick(self, brick):
+		d = brick.poweron() if brick.proc is None else brick.poweroff()
+		d.addCallbacks(lambda b: self.running_bricks.refilter(), log.err)
 
 	def on_remotehosts_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
@@ -2969,9 +2958,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	"""                                                          """
 	"""                                                          """
 	""" ******************************************************** """
-
-	# def check_joblist(self, force=False):
-	# 	return check_joblist(self, force)
 
 	def _main_window_set_insensitive(self):
 		window = self.get_object("main_win")

@@ -2,7 +2,7 @@ import os
 import os.path
 
 import virtualbricks
-from virtualbricks.tests import unittest, test_deployment
+from virtualbricks.tests import unittest, test_deployment, skipUnless
 
 
 DEPLOYMENT_PATH = os.environ.get("VIRTUALBRICKS_DEPLOYMENT_PATH", None)
@@ -42,7 +42,7 @@ SCRIPTS = [
 ]
 
 
-@unittest.skipUnless(test_deployment(), "deployment tests not enabled")
+@skipUnless(test_deployment(), "deployment tests not enabled")
 class TestDeployment(unittest.TestCase):
 
     def test_static_files(self):

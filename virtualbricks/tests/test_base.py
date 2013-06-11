@@ -2,7 +2,7 @@ import os
 import StringIO
 
 from virtualbricks import base
-from virtualbricks.tests import unittest
+from virtualbricks.tests import unittest, Skip
 
 
 marker = object()
@@ -68,6 +68,7 @@ class TestNewConfig(unittest.TestCase):
     def test_getattr(self):
         self._test_string(getattr)
 
+    @Skip("method moved to base.Base")
     def test_save_to(self):
         sio = StringIO.StringIO()
         self.cfg2.save_to(sio)
@@ -81,6 +82,7 @@ class TestNewConfig(unittest.TestCase):
         self.cfg2.save_to(sio)
         self.assertEqual(sio.getvalue(), DUMP)
 
+    @Skip("method moved to base.Base")
     def test_restore_from(self):
         sio = StringIO.StringIO(DUMP)
         sio.seek(-1, os.SEEK_END)
@@ -94,6 +96,7 @@ class TestNewConfig(unittest.TestCase):
         sio.seek(0, os.SEEK_END)
         self.assertEqual(cur, sio.tell())
 
+    @Skip("method moved to base.Base")
     def test_restore_advanced(self):
         sio = StringIO.StringIO(DUMP2)
         sio.seek(0)
