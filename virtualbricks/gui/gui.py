@@ -257,10 +257,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		log.info("Starting VirtualBricks!")
 
 		# Connect all the signal from the factory to specific callbacks
-		self.__factory_handlers = fh = []
-		fh.append(factory.connect("engine-closed", self.on_engine_closed))
-		fh.append(factory.connect("brick-changed", self.cb_brick_changed))
-		self.__brick_changed_h = factory.bricksmodel.connect("row-changed",
+		self.__brick_changed_h = factory.connect("brick-changed",
+				self.cb_brick_changed)
+		self.__row_changed_h = factory.bricksmodel.connect("row-changed",
 				self.on_brick_changed)
 
 		# TODO: remove these
@@ -346,18 +345,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					"this alert from the general settings.", missing_text,
 					missing_components)
 
-	def __foreach_handler(self, do_action):
-		for handler in self.__factory_handlers:
-			if not self.brickfactory.handler_is_connected(handler):
-				log.warning("handler %d is not connected to model %s",
-						handler, self.brickfactory)
-			else:
-				do_action(handler)
-
 	def quit(self):
-		self.__foreach_handler(self.brickfactory.disconnect)
-		del self.__factory_handlers[:]
-		self.brickfactory.bricksmodel.disconnect(self.__brick_changed_h)
+		self.brickfactory.disconnect(self.__brick_changed_h)
+		self.brickfactory.bricksmodel.disconnect(self.__row_changed_h)
+		self.__row_changed_h = None
 		self.__brick_changed_h = None
 
 	def __setup_treeview(self, resource, window_name, widget_name):
@@ -626,21 +617,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	""" Signal handlers                                           """
 	""" ******************************************************** 	"""
 
-	def on_engine_closed(self, factory):
-		if not self.quit_d.called:
-			self.quit_d.callback(None)
-
-	def on_brick_changed(self, model, path, iter_):
+	def on_brick_changed(self, model, path, iter):
 		self.draw_topology()
 
 	def cb_brick_changed(self, model, name):
 		self.draw_topology()
 
 	def _stop_listening(self):
-		self.__foreach_handler(self.brickfactory.handler_block)
+		self.brickfactory.handler_block(self.__brick_changed_h)
 
 	def _start_listening(self):
-		self.__foreach_handler(self.brickfactory.handler_unblock)
+		self.brickfactory.handler_unblock(self.__brick_changed_h)
 
 	"""
 	" ******************************************************** "

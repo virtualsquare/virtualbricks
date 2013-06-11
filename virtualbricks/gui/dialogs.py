@@ -270,9 +270,9 @@ class DisksLibraryDialog(Window):
         Window.__init__(self)
         self.factory = factory
         model = self.get_object("liststore1")
-        self.__add_handler_id = factory.connect("image_added",
+        self.__add_handler_id = factory.connect("image-added",
                 self.on_image_added, model)
-        self.__del_handler_id = factory.connect("image_removed",
+        self.__del_handler_id = factory.connect("image-removed",
                 self.on_image_removed, model)
         self.window.connect("destroy", self.on_window_destroy)
         self.tree_panel = self.get_object("treeview_panel")  # just handy
@@ -312,7 +312,7 @@ class DisksLibraryDialog(Window):
                 model.remove(iter)
                 break
         else:
-            log.warning("image_removed signal is emitted but seems I don't"
+            log.warning("image-removed signal is emitted but seems I don't"
                         " have that image")
 
     def on_close_button_clicked(self, button):

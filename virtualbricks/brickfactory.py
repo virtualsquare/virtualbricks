@@ -82,18 +82,12 @@ class BrickFactory(gobject.GObject):
     """
 
     __gsignals__ = {
-        'engine-closed': (gobject.SIGNAL_RUN_LAST, None, ()),
         'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'event-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'event-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'event-changed': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        # 'event-accomplished': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        "image_added": (gobject.SIGNAL_RUN_LAST, None, (object,)),
-        "image_removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
+        "image-added": (gobject.SIGNAL_RUN_LAST, None, (object,)),
+        "image-removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
     }
 
     TCP = None
-    running_condition = True
 
     def __init__(self, quit):
         gobject.GObject.__init__(self)
@@ -114,19 +108,15 @@ class BrickFactory(gobject.GObject):
         return self._lock
 
     def stop(self):
-        # XXX: use deferreds
+        log.info(_('Engine: Bye!'))
         for e in self.events:
             e.poweroff()
-        for b in self.bricks:
-            if b.proc is not None:
-                b.poweroff()
         for h in self.remote_hosts:
             h.disconnect()
 
-        log.info(_('Engine: Bye!'))
         configfile.safe_save(self)
-        self.running_condition = False
-        self.emit("engine-closed")
+        l = [brick.poweroff() for brick in self.bricks]
+        return defer.DeferredList(l, consumeErrors=True)
 
     def quit(self):
         if not self.quit_d.called:
@@ -182,12 +172,12 @@ class BrickFactory(gobject.GObject):
             raise errors.NameAlreadyInUseError(nname)
         img = virtualmachines.DiskImage(nname, path, description, host)
         self.disk_images.append(img)
-        self.emit("image_added", img)
+        self.emit("image-added", img)
         return img
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
-        self.emit("image_removed", image)
+        self.emit("image-removed", image)
 
     def get_image_by_name(self, name):
         """Get disk image object from the image library by its name."""
@@ -372,7 +362,6 @@ class BrickFactory(gobject.GObject):
 
     def __event_changed(self, event):
         self.__do_action_for_event(self.__emit_event_row_changed, event)
-        self.emit("event-changed", event.name)
 
     def _new_event(self, name):
         """Create a new event.
@@ -698,8 +687,8 @@ class Application:
             signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
-        reactor.addSystemEventTrigger("after", "shutdown", factory.stop)
-        reactor.addSystemEventTrigger("after", "shutdown", self.logger.stop)
+        reactor.addSystemEventTrigger("before", "shutdown", factory.stop)
+        reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         configfile.restore_last_project(factory)
         AutosaveTimer(factory)
         return quit

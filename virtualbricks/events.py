@@ -141,14 +141,12 @@ class Event(base.Base):
             raise errors.BadConfigError("Event %s not configured" % self.name)
 
         self.scheduled = reactor.callLater(self.cfg["delay"], self.do_actions)
-        self.factory.emit("event-started", self.name)
 
     def poweroff(self):
         if self.scheduled is None:
             return
         self.scheduled.cancel()
         self.scheduled = None
-        self.factory.emit("event-stopped", self.name)
 
     def toggle(self):
         if self.scheduled is not None:
@@ -174,7 +172,6 @@ class Event(base.Base):
 
         defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         return defer
-        # self.factory.emit("event-accomplished", self.name)
 
     change_state = toggle
     doactions = do_actions
