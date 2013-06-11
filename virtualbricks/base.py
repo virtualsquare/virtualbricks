@@ -25,8 +25,6 @@ from twisted.python.versions import Version
 from twisted.python.deprecate import deprecated
 
 from virtualbricks import _compat
-# from virtualbricks.versions import Version
-# from virtualbricks.deprecated import deprecated
 
 
 log = _compat.getLogger(__name__)
@@ -231,34 +229,6 @@ class NewConfig:
         for key in sorted(self._cfg.iterkeys()):
             print "%s=%s" % (key, self._cfg[key])
 
-    def save_to(self, fileobj):
-        for name, param in sorted(self.parameters.iteritems()):
-            if self[name] != param.default and not isinstance(param, Object):
-                fileobj.write("%s=%s\n" % (name, param.to_string(self[name])))
-        fileobj.write("\n")
-
-    def load_from(self, fileobj):
-        curpos = fileobj.tell()
-        line = fileobj.readline()
-        while True:
-            if not line:
-                break
-            if line.startswith("#"):
-                curpos = fileobj.tell()
-                line = fileobj.readline()
-                continue
-            match = self.CONFIG_LINE.match(line)
-            if not match:
-                fileobj.seek(curpos)
-                break
-            else:
-                name, value = match.groups()
-                if value is None:
-                    # value is None when the parameter is not set
-                    value = ""
-                self[name] = self.parameters[name].from_string(value)
-                curpos = fileobj.tell()
-                line = fileobj.readline()
 
 class Parameter:
 
@@ -418,3 +388,37 @@ class Base(gobject.GObject):
         except KeyError:
             raise KeyError(_("%s config has no %s option.") % (self.name,
                                                                name))
+
+    def load_from(self, fileobj):
+        attributes = {}
+        curpos = fileobj.tell()
+        line = fileobj.readline()
+        while True:
+            if not line:
+                # end of file
+                break
+            if line.startswith("#"):
+                curpos = fileobj.tell()
+                line = fileobj.readline()
+                continue
+            match = self.cfg.CONFIG_LINE.match(line)
+            if not match:
+                fileobj.seek(curpos)
+                break
+            else:
+                name, value = match.groups()
+                if value is None:
+                    # value is None when the parameter is not set
+                    value = ""
+                attributes[name] = self.cfg.parameters[name].from_string(value)
+                curpos = fileobj.tell()
+                line = fileobj.readline()
+        self.set(attributes)
+
+    def save_to(self, fileobj):
+        cfg = self.cfg
+        fileobj.write("[%s:%s]\n" % (self.get_type(), self.name))
+        for name, param in sorted(cfg.parameters.iteritems()):
+            if cfg[name] != param.default and not isinstance(param, Object):
+                fileobj.write("%s=%s\n" % (name, param.to_string(cfg[name])))
+        fileobj.write("\n")

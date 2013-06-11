@@ -83,8 +83,6 @@ class BrickFactory(gobject.GObject):
 
     __gsignals__ = {
         'engine-closed': (gobject.SIGNAL_RUN_LAST, None, ()),
-        'brick-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        'brick-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-started': (gobject.SIGNAL_RUN_LAST, None, (str,)),
         'event-stopped': (gobject.SIGNAL_RUN_LAST, None, (str,)),
@@ -116,6 +114,7 @@ class BrickFactory(gobject.GObject):
         return self._lock
 
     def stop(self):
+        # XXX: use deferreds
         for e in self.events:
             e.poweroff()
         for b in self.bricks:
@@ -181,7 +180,7 @@ class BrickFactory(gobject.GObject):
         log.msg("Name normalized to '%s'" % nname)
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
-        img = virtualmachines.DiskImage(name, path, description, host)
+        img = virtualmachines.DiskImage(nname, path, description, host)
         self.disk_images.append(img)
         self.emit("image_added", img)
         return img
@@ -308,6 +307,7 @@ class BrickFactory(gobject.GObject):
         self.bricksmodel.remove(i)
 
     def del_brick(self, brick):
+        # XXX: use deferreds
         brick.poweroff()
         # XXX check me
         for so in brick.socks:
@@ -692,7 +692,7 @@ class Application:
         factory = self.factory_factory(quit)
         self._run(factory, quit)
         if not self.config["noterm"]:
-            stdio.StandardIO(Console(factory), reactor=reactor)
+            stdio.StandardIO(Console(factory))
         if self.config["verbosity"] >= 2 and not self.config["daemon"]:
             import signal, pdb
             signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())

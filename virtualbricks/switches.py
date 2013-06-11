@@ -150,7 +150,7 @@ class SwitchWrapper(bricks.Brick):
             self.proc = None
             log.debug("Socket does not exists: %s", self.cfg.path)
 
-    def poweroff(self):
+    def poweroff(self, kill=False):
         self.proc = None
 
     def get_parameters(self):

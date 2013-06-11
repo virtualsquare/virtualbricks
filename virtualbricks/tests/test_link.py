@@ -1,4 +1,6 @@
 from twisted.trial import unittest
+from twisted.python import log
+from twisted.internet import defer
 
 from virtualbricks import link, errors
 from virtualbricks.tests import unittest as pyunit, stubs
@@ -13,17 +15,46 @@ class TestPlug(unittest.TestCase):
         self.factory = stubs.FactoryStub()
         self.brick = stubs.BrickStub(self.factory, "test")
         self.plug = self.plug_factory(self.brick)
+        self.log = []
+        log.addObserver(self.log.append)
+        self.addCleanup(log.removeObserver, self.log.append)
+
+    def get_real_plug(self):
+        return self.plug
 
     def test_connected(self):
-        self.assertFalse(self.plug.connected())
-        # self.assertFalse(self.plug.configured())
+        result = []
+        self.plug.connected().addErrback(result.append)
+        self.assertEqual(len(result), 1)
+        result[0].trap(errors.NotConnectedError)
 
-    @pyunit.skip("This is a know bug")
-    def test_erroronloop(self):
-        """Setting is not setted in links, this is a know bug"""
-        self.plug.antiloop = True
+    def test_connected_erroronloop(self):
+        self.plug._antiloop = True
         self.factory.settings.set("erroronloop", False)
-        self.assertRaises(errors.NotConnectedError, self.plug.connected)
+        result = []
+        self.plug.connected().addErrback(result.append)
+        self.assertEqual(len(result), 1)
+        result[0].trap(errors.LinkLoopError)
+        self.assertEqual(0, len(self.log))
+        self.plug._antiloop = True
+        self.factory.settings.set("erroronloop", True)
+        self.plug.connected().addErrback(result.append)
+        self.assertEqual(len(result), 2)
+        result[1].trap(errors.LinkLoopError)
+        self.assertEqual(1, len(self.log))
+        self.plug.connected().addErrback(result.append)
+        self.assertEqual(len(result), 3)
+        result[2].trap(errors.NotConnectedError)
+        self.assertEqual(1, len(self.log))
+
+    def test_connected_poweron(self):
+        self.brick.poweron = lambda: defer.succeed(self.brick)
+        sock = self.sock_factory(self.brick)
+        self.plug.connect(sock)
+        result = []
+        self.plug.connected().addCallback(result.append)
+        self.assertEqual(result, [self.brick])
+        self.assertFalse(self.plug._antiloop)
 
     def test_connect(self):
         self.assertFalse(self.plug.configured())
@@ -35,6 +66,13 @@ class TestPlug(unittest.TestCase):
         self.assertTrue(self.plug.configured())
         self.plug.disconnect()
         self.assertFalse(self.plug.configured())
+
+    def test_connect_maybe_a_bug(self):
+        """When a plug is disconnected leave its traces on socks."""
+        sock = self.sock_factory(self.brick)
+        self.plug.connect(sock)
+        self.plug.disconnect()
+        self.assertEqual(sock.plugs, [self.get_real_plug()])
 
 
 class TestSock(unittest.TestCase):

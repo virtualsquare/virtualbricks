@@ -1,12 +1,10 @@
 import os
-import sys
-if sys.version_info >= (2, 7):
-    import unittest
-else:
-    import unittest2 as unittest
+import types
 import logging
+import functools
 
 from twisted.python import log
+from twisted.trial import unittest
 
 logger = logging.getLogger("virtualbricks")
 logger.addHandler(logging.NullHandler())
@@ -22,3 +20,34 @@ def test_threads():
 
 def test_deployment():
     return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & TEST_DEPLOYMENT
+
+
+def _id(obj):
+    return obj
+
+
+def Skip(reason):
+    # This decorator is camelcase because otherwise importing it cause all the
+    # tests to skip because trial look deep in test method, class, module
+    def decorator(test_item):
+        if not isinstance(test_item, (type, types.ClassType)):
+            @functools.wraps(test_item)
+            def skip_wrapper(*args, **kwargs):
+                raise unittest.SkipTest(reason)
+            test_item = skip_wrapper
+
+        test_item.skip = reason
+        return test_item
+    return decorator
+
+
+def skipIf(condition, reason):
+    if condition:
+        return Skip(reason)
+    return _id
+
+
+def skipUnless(condition, reason):
+    if not condition:
+        return Skip(reason)
+    return _id

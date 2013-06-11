@@ -162,8 +162,7 @@ class ConfigFile:
             fileobj.write("\n")
 
         for event in factory.events:
-            fileobj.write("[%s:%s]\n" % (event.get_type(), event.name))
-            event.cfg.save_to(fileobj)
+            event.save_to(fileobj)
         # for e in iter(factory.events):
         #     fileobj.write('[' + e.get_type() + ':' + e.name + ']\n')
         #     for k, v in e.cfg.iteritems():
@@ -178,7 +177,6 @@ class ConfigFile:
         #                 elif isinstance(action, console.VbShellCommand):
         #                     tempactions.append("add " + action)
         #                 else:
-        #                     import pdb; pdb.set_trace()
         #                     log.error("Error: unmanaged action type. Will not "
         #                               "be saved!")
         #                     continue
@@ -190,8 +188,7 @@ class ConfigFile:
         socks = []
         plugs = []
         for brick in iter(factory.bricks):
-            fileobj.write("[%s:%s]\n" % (brick.get_type(), brick.name))
-            brick.cfg.save_to(fileobj)
+            brick.save_to(fileobj)
             if brick.get_type() == "Qemu":
                 socks.extend(brick.socks)
             plugs.extend(p for p in brick.plugs if p.sock is not None)
@@ -332,8 +329,7 @@ class ConfigFile:
                             continue
                         if host is None and not os.access(path, os.R_OK):
                             continue
-                        img = factory.new_disk_image(name, path,
-                                                          host=host)
+                        img = factory.new_disk_image(name, path, host=host)
                         img.set_readonly(readonly)
                         continue
 
@@ -368,7 +364,7 @@ class ConfigFile:
                     l = fileobj.readline()
                     continue
 
-                component.cfg.load_from(fileobj)
+                component.load_from(fileobj)
                 l = fileobj.readline()
                 continue
 

@@ -128,10 +128,14 @@ class IBrick(Interface):
         """Return the type of brick."""
 
     def poweron():
-        """Start the brick."""
+        """Start the brick.
+
+        Return a deferred that fires when the brick is started."""
 
     def poweroff():
-        """Stop the brick."""
+        """Stop the brick.
+
+        Return a deferred that fires when the brick is stopped."""
 
     def get_parameters():
         """Actually used only in the main tree to show the list of the
@@ -163,3 +167,12 @@ class IBrick(Interface):
 
     def get_state():
         pass
+
+
+class IPlug(Interface):
+
+    def connected():
+        """Check if the plug is properly connected and try to start the related
+        bricks if it is not.
+
+        Return a deferred that fires when the related are started."""

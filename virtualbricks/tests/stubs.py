@@ -1,26 +1,58 @@
-import logging
-
 from twisted.internet import defer
 
-from virtualbricks import brickfactory, bricks
+from virtualbricks import brickfactory, bricks, virtualmachines as vm
+
+
+class ProcessTransportStub:
+
+    pid = -1
+
+    def signalProcess(self, signal):
+        pass
 
 
 def hook():
     return "d"
 
 
-class BrickStub(bricks.Brick):
+class BrickStubMixin(object):
 
-    type = "Stub"
-    command_builder = {"-a": "a", "# -b": "b", "-c": "c", "-d": hook}
-
-    class config_factory(bricks.Config):
-
-        parameters = {"a": bricks.String("arg1"),
-                      "c": bricks.Boolean(True)}
+    def __init__(self):
+        self.sended = []
+        self.receved = []
 
     def prog(self):
         return "true"
+
+    def send(self, data):
+        self.sended.append(data)
+
+    def recv(self, data):
+        self.receved.append(data)
+
+
+class BrickStubConfig(bricks.Config):
+
+    parameters = {"a": bricks.String("arg1"),
+                  "c": bricks.Boolean(True)}
+
+
+class BrickStub(BrickStubMixin, bricks.Brick):
+
+    type = "Stub"
+    command_builder = {"-a": "a", "# -b": "b", "-c": "c", "-d": hook}
+    config_factory = BrickStubConfig
+
+    def __init__(self, factory, name):
+        BrickStubMixin.__init__(self)
+        bricks.Brick.__init__(self, factory, name)
+
+
+class VirtualMachineStub(BrickStubMixin, vm.VirtualMachine):
+
+    def __init__(self, factory, name):
+        BrickStubMixin.__init__(self)
+        vm.VirtualMachine.__init__(self, factory, name)
 
 
 class Console(list):
