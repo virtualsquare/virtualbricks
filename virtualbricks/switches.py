@@ -19,10 +19,10 @@
 import os
 import logging
 
-from virtualbricks import settings, bricks, link
+from virtualbricks import settings, bricks, link, _compat
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str

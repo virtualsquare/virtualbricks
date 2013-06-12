@@ -6,9 +6,6 @@ import functools
 from twisted.python import log
 from twisted.trial import unittest
 
-logger = logging.getLogger("virtualbricks")
-logger.addHandler(logging.NullHandler())
-log.startLogging(log.NullFile(), False)
 __builtins__["_"] = str
 TEST_THREADS = 0x01
 TEST_DEPLOYMENT = 0x02
