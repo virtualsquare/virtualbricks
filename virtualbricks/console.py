@@ -528,31 +528,6 @@ class VBProtocol(Protocol):
                     self.sendLine("\tlink: %s " % pl.sock.nickname)
     do_conn = do_connections
 
-    def do_control(self, args):
-        if len(args) == 2:
-            host, password = args
-            remote = self.factory.get_host_by_name(host)
-            remote.password = password
-            if remote.connect():
-                self.sendLine("Connection OK")
-            else:
-                self.sendLine("Connection Failed.")
-
-    def do_udp(self, args):
-        self.sendLine("udp command does not work at the moment")
-        return
-        # if self.factory.TCP:
-        #     if len(args) != 4:
-        #         self.sendLine("FAIL udp arguments")
-        #     for b in iter(self.factory.bricks):
-        #         if b.name == args[2]:
-        #             w = PyWire(self.factory, args[1])
-        #             w.set_remoteport(args[3])
-        #             w.connect(b.socks[0])
-        #             w.poweron()
-        #             break
-        #         self.sendLine("FAIL Brick not found: %s" % args[2])
-
     # easter eggs
     def do_python(self, args):
         """Open a python interpreter. Use ^D (^Z on windows) to exit."""
@@ -575,33 +550,10 @@ class VBProtocol(Protocol):
 class ImagesProtocol(Protocol):
 
     def do_list(self, parts):
-        host = None
-        if parts:
-            host = self.factory.get_host_by_name(parts[0])
         for img in self.factory.disk_images:
-            if len(parts) == 1 and img.host is None:
-                self.sendLine("%s,%s" % (img.name, img.path))
-            if (host is not None and img.host is not None
-                and img.host.addr[0] == host.addr[0]):
-                self.sendLine("%s,%s" % (img.name, img.path))
+            self.sendLine("%s, %s" % (img.name, img.path))
 
     def do_files(self, parts):
-        if parts:
-            host = self.factory.get_host_by_name(parts[0])
-            if host is not None and host.connected:
-                self.sendLine("files not works for remote hosts.")
-                return
-                # XXX
-                # files = host.get_files_list()
-                # log.debug(files)
-                # if files is None:
-                #     self.sendLine("No files found.")
-                # else:
-                #     for f in files:
-                #         self.sendLine(f)
-            else:
-                self.sendLine("Not connected to %s" % parts[0])
-            return
         dirname = self.factory.settings.get("baseimages")
         for image_file in os.listdir(dirname):
             if os.path.isfile(dirname + "/" + image_file):
@@ -610,57 +562,21 @@ class ImagesProtocol(Protocol):
     def do_add(self, parts):
         if parts:
             basepath = self.factory.settings.get("baseimages")
-            host = None
             name = parts[0].replace(".", "_")
             name = name.replace("/", "_")
-            if len(parts) == 2:
-                host = self.factory.get_host_by_name(parts[1])
-                if host is not None:
-                    basepath = host.baseimages
-            if len(parts) == 2 and parts[1].find("/") > -1:
-                img = self.factory.new_disk_image(name, parts[1])
-            else:
-                img = self.factory.new_disk_image(name, basepath + "/" + parts[0])
-            if host is not None:
-                img.host = host
-                if host.connected is True:
-                    host.send("i add " + parts[1])
-                    host.expect_OK()
+            img = self.factory.new_disk_image(name, basepath + "/" + parts[0])
 
     def do_del(self, parts):
         if parts:
             image = self.factory.get_image_by_name(parts[0])
             if image is not None:
-                if len(parts) == 2:
-                    host = self.factory.get_host_by_name(parts[1])
-                    if host.connected is False:
-                        host = None
-                    if host is None:
-                        return
-                    if host is not None and image.host != host:
-                        return
-                    self.factory.remove_disk_image(image)
-                    # self.disk_images.remove(image)
-                    if host.connected is True:
-                        host.send("i del " + parts[0])
-                        host.expect_OK()
-                if image.host is not None:
-                    return
                 self.factory.remove_disk_image(image)
-                # self.disk_images.remove(image)
 
     def do_base(self, parts):
         if not parts or parts[0] == "show":
-            self.sendLine("%s" % self.factory.settings.get("baseimages"))
+            self.sendLine(self.factory.settings.get("baseimages"))
         elif parts[0] == "set" and len(parts) > 1:
-            if len(parts) == 3:
-                host = None
-                host = self.factory.get_host_by_name(parts[2])
-                if host is None:
-                    return
-                host.baseimages = str(parts[1])
-            else:
-                self.factory.settings.set("baseimages", parts[1])
+            self.factory.settings.set("baseimages", parts[1])
 
 
 class ConfigurationProtocol(Protocol):
@@ -676,12 +592,5 @@ class ConfigurationProtocol(Protocol):
         #     pass  # TODO: show all settings
 
     def do_set(self, args):
-        if len(args) > 1:
-            if self.factory.settings.has_option(args[0]):
-                host = None
-                if len(args) == 3:
-                    host = self.factory.get_host_by_name(args[2])
-                    if host is not None and host.connected is True:
-                        host.send("cfg " + args[0] + " " + args[1])
-                else:
-                    self.factory.settings.set(args[0], args[1])
+        if len(args) > 1 and self.factory.settings.has_option(args[0]):
+            self.factory.settings.set(args[0], args[1])

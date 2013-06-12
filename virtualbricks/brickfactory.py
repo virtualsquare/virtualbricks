@@ -78,8 +78,6 @@ class BrickFactory(object):
     It also contains a thread to manage the command console.
     """
 
-    TCP = None
-
     def __init__(self, quit):
         self.quit_d = quit
         self.remote_hosts = []
@@ -97,8 +95,8 @@ class BrickFactory(object):
         log.info(_('Engine: Bye!'))
         for e in self.events:
             e.poweroff()
-        for h in self.remote_hosts:
-            h.disconnect()
+        # for h in self.remote_hosts:
+        #     h.disconnect()
 
         configfile.safe_save(self)
         l = [brick.poweroff() for brick in self.bricks]
@@ -353,8 +351,8 @@ class BrickFactory(object):
         host = self.__get_host_by_name(hostname)
         if host is None:
             host = console.RemoteHost(self, hostname)
-            self.remote_hosts.append(host)
-            log.debug("Created new host %s", hostname)
+            # self.remote_hosts.append(host)
+            # log.debug("Created new host %s", hostname)
         return host
 
     def next_name(self, name, suffix="_new"):
@@ -407,22 +405,22 @@ class BrickFactory(object):
             log.debug("Endpoint %s not found.", nick)
             return None
 
-    def delremote(self, hostname):
-        if isinstance(hostname, console.RemoteHost):
-            self.__del_remote(hostname)
-        else:
-            host = self.__get_host_by_name(hostname)
-            if host is not None:
-                self.__del_remote(host)
+    # def delremote(self, hostname):
+    #     if isinstance(hostname, console.RemoteHost):
+    #         self.__del_remote(hostname)
+    #     else:
+    #         host = self.__get_host_by_name(hostname)
+    #         if host is not None:
+    #             self.__del_remote(host)
 
-    def __del_remote(self, host):
-        bricks = [b for b in self.bricks if b.homehost and
-                  b.homehost.addr[0] == host.addr[0]]
-        for brick in bricks:
-            self.del_brick(brick)
-        self.remote_hosts.remove(host)
+    # def __del_remote(self, host):
+    #     bricks = [b for b in self.bricks if b.homehost and
+    #               b.homehost.addr[0] == host.addr[0]]
+    #     for brick in bricks:
+    #         self.del_brick(brick)
+    #     self.remote_hosts.remove(host)
 
-    ###################
+    # ###################
 
     delbrick = del_brick
     dupbrick = dup_brick
@@ -430,51 +428,6 @@ class BrickFactory(object):
     delevent = del_event
     dupevent = dup_event
     renameevent = rename_event
-
-
-def readline(filename):
-    with open(filename) as fp:
-        return fp.readline()
-
-
-def write(filename, data):
-    with open(filename, "w") as fp:
-        fp.write(data)
-
-
-def writesafe(filename, data):
-    write(filename, data)
-    try:
-        os.chmod(filename, 0600)
-    except Exception, e:
-        try:
-            os.unlink(filename)
-        except OSError:
-            pass
-        raise IOError(*e.args)
-
-
-class BrickFactoryServer(BrickFactory):
-
-    password_file = "/etc/virtualbricks-passwd"
-
-    def get_password(self):
-        try:
-            return readline(self.password_file)
-        except IOError:
-            while True:
-                pwd = getpass.getpass("Insert password:")
-                pwd2 = getpass.getpass("Confirm:")
-                if pwd == pwd2:
-                    try:
-                        writesafe(self.password_file, pwd)
-                    except IOError:
-                        print("Could not save password.")
-                    else:
-                        print("Password saved.")
-                    return pwd
-                else:
-                    print("Passwords don't match. Retry.")
 
 
 class Console(basic.LineOnlyReceiver):
@@ -536,8 +489,6 @@ class Application:
     def __init__(self, config):
         self.config = config
         self.logger = self.logger_factory(config)
-        if "server" in config and config["server"]:
-            self.factory_factory = BrickFactoryServer
 
     def getComponent(self, interface, default):
         return default
@@ -627,11 +578,4 @@ class Application:
         return quit
 
     def _run(self, factory, quit):
-        if self.config["server"]:
-            if os.getuid() != 0:
-                raise SystemExit("server requires to be run by root.")
-            from virtualbricks import tcpserver
-            server_t = tcpserver.TcpServer(factory, factory.get_password())
-            factory.TCP = server_t
-            server_t.start()
-            # Console(factory).run()
+        pass

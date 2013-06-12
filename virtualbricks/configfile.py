@@ -132,11 +132,6 @@ class ConfigFile:
             return self.__save_to(factory, fileobj)
 
     def __save_to(self, factory, fileobj):
-        if factory.TCP:  # XXX:
-            log.warning("configfile.save called when on server mode. "
-                        "This must be considerated a bug in the code.")
-            return
-
         # Remote hosts
         for r in factory.remote_hosts:
             fileobj.write('[RemoteHost:' + r.addr[0] + ']\n')

@@ -306,7 +306,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.setup_bricks()
 		self.setup_events()
 		self.setup_joblist()
-		self.setup_remotehosts()
+		# self.setup_remotehosts()
 		self.setup_netwoks_cards()
 		self.setup_router_devs()
 		self.setup_router_routes()
@@ -425,45 +425,45 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.running_bricks.set_visible_func(is_running)
 		builder.get_object("joblist_treeview").set_model(self.running_bricks)
 
-	def setup_remotehosts(self):
-		builder = self.__setup_treeview("data/remotehosts.ui",
-								"scrolledwindow5", "remotehosts_treeview")
+	# def setup_remotehosts(self):
+	# 	builder = self.__setup_treeview("data/remotehosts.ui",
+	# 							"scrolledwindow5", "remotehosts_treeview")
 
-		def set_status(column, cell_renderer, model, iter):
-			host = model.get_value(iter, 0)
-			filename = "connect.png" if host.connected else "disconnect.png"
-			pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
-				graphics.get_image(filename), 48, 48)
-			cell_renderer.set_property("pixbuf", pixbuf)
+	# 	def set_status(column, cell_renderer, model, iter):
+	# 		host = model.get_value(iter, 0)
+	# 		filename = "connect.png" if host.connected else "disconnect.png"
+	# 		pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
+	# 			graphics.get_image(filename), 48, 48)
+	# 		cell_renderer.set_property("pixbuf", pixbuf)
 
-		def set_address(column, cell_renderer, model, iter):
-			host = model.get_value(iter, 0)
-			label = "{0[0]}:{0[1]}".format(host.addr)
-			cell_renderer.set_property("text", label)
+	# 	def set_address(column, cell_renderer, model, iter):
+	# 		host = model.get_value(iter, 0)
+	# 		label = "{0[0]}:{0[1]}".format(host.addr)
+	# 		cell_renderer.set_property("text", label)
 
-		def set_num_bricks(column, cell_renderer, model, iter):
-			host = model.get_value(iter, 0)
-			cell_renderer.set_property("text", str(host.num_bricks()))
+	# 	def set_num_bricks(column, cell_renderer, model, iter):
+	# 		host = model.get_value(iter, 0)
+	# 		cell_renderer.set_property("text", str(host.num_bricks()))
 
-		def set_ac(column, cell_renderer, model, iter):
-			host = model.get_value(iter, 0)
-			cell_renderer.set_property("text",
-				"Yes" if host.autoconnect else "No")
+	# 	def set_ac(column, cell_renderer, model, iter):
+	# 		host = model.get_value(iter, 0)
+	# 		cell_renderer.set_property("text",
+	# 			"Yes" if host.autoconnect else "No")
 
-		status_c = builder.get_object("status_treeviewcolumn")
-		status_cr = builder.get_object("status_cellrenderer")
-		status_c.set_cell_data_func(status_cr, set_status)
-		address_c = builder.get_object("address_treeviewcolumn")
-		address_cr = builder.get_object("address_cellrenderer")
-		address_c.set_cell_data_func(address_cr, set_address)
-		numbrick_c = builder.get_object("numbrick_treeviewcolumn")
-		numbrick_cr = builder.get_object("numbrick_cellrenderer")
-		numbrick_c.set_cell_data_func(numbrick_cr, set_num_bricks)
-		ac_c = builder.get_object("ac_treeviewcolumn")
-		ac_cr = builder.get_object("ac_cellrenderer")
-		ac_c.set_cell_data_func(ac_cr, set_ac)
-		builder.get_object("remotehosts_treeview").set_model(
-			self.brickfactory.remote_hosts)
+	# 	status_c = builder.get_object("status_treeviewcolumn")
+	# 	status_cr = builder.get_object("status_cellrenderer")
+	# 	status_c.set_cell_data_func(status_cr, set_status)
+	# 	address_c = builder.get_object("address_treeviewcolumn")
+	# 	address_cr = builder.get_object("address_cellrenderer")
+	# 	address_c.set_cell_data_func(address_cr, set_address)
+	# 	numbrick_c = builder.get_object("numbrick_treeviewcolumn")
+	# 	numbrick_cr = builder.get_object("numbrick_cellrenderer")
+	# 	numbrick_c.set_cell_data_func(numbrick_cr, set_num_bricks)
+	# 	ac_c = builder.get_object("ac_treeviewcolumn")
+	# 	ac_cr = builder.get_object("ac_cellrenderer")
+	# 	ac_c.set_cell_data_func(ac_cr, set_ac)
+	# 	builder.get_object("remotehosts_treeview").set_model(
+	# 		self.brickfactory.remote_hosts)
 
 	def setup_netwoks_cards(self):
 		builder = self.__setup_treeview("data/networkcards.ui",
@@ -1784,36 +1784,36 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		d.addCallback(changed_brick_in_model, self.brickfactory.bricks)
 		d.addCallbacks(lambda _: self.running_bricks.refilter(), log.err)
 
-	def on_remotehosts_treeview_button_release_event(self, treeview, event):
-		if event.button == 3:
-			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
-			if pthinfo is not None:
-				path, col, cellx, celly = pthinfo
-				treeview.grab_focus()
-				treeview.set_cursor(path, col, 0)
-				model = treeview.get_model()
-				obj = model.get_value(model.get_iter(path), 0)
-				interfaces.IMenu(obj).popup(event.button, event.time, self)
-			return True
+	# def on_remotehosts_treeview_button_release_event(self, treeview, event):
+	# 	if event.button == 3:
+	# 		pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+	# 		if pthinfo is not None:
+	# 			path, col, cellx, celly = pthinfo
+	# 			treeview.grab_focus()
+	# 			treeview.set_cursor(path, col, 0)
+	# 			model = treeview.get_model()
+	# 			obj = model.get_value(model.get_iter(path), 0)
+	# 			interfaces.IMenu(obj).popup(event.button, event.time, self)
+	# 		return True
 
-	def on_remotehosts_treeview_button_press_event(self, treeview, event):
-		if event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
-			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
-			if pthinfo is not None:
-				path, col, cellx, celly = pthinfo
-				treeview.grab_focus()
-				treeview.set_cursor(path, col, 0)
-				model = treeview.get_model()
-				remote_host = model.get_value(model.get_iter(path), 0)
-				if remote_host.connected:
-					self.user_wait_action(remote_host.disconnect)
-				else:
-					# XXX: this will block
-					conn_ok, msg = remote_host.connect()
-					if not conn_ok:
-						log.error("Error connecting to remote host %s: %s",
-							remote_host.addr[0], msg)
-			return True
+	# def on_remotehosts_treeview_button_press_event(self, treeview, event):
+	# 	if event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+	# 		pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+	# 		if pthinfo is not None:
+	# 			path, col, cellx, celly = pthinfo
+	# 			treeview.grab_focus()
+	# 			treeview.set_cursor(path, col, 0)
+	# 			model = treeview.get_model()
+	# 			remote_host = model.get_value(model.get_iter(path), 0)
+	# 			if remote_host.connected:
+	# 				self.user_wait_action(remote_host.disconnect)
+	# 			else:
+	# 				# XXX: this will block
+	# 				conn_ok, msg = remote_host.connect()
+	# 				if not conn_ok:
+	# 					log.error("Error connecting to remote host %s: %s",
+	# 						remote_host.addr[0], msg)
+	# 		return True
 
 	def on_joblist_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
@@ -2716,10 +2716,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_open_recent_project(self, widget, data=None):
 		raise NotImplementedError("on_open_recent_project not implemented")
 
-	def on_add_remotehost(self, widget, data=None):
-		hostname = self.gladefile.get_widget("newhost_text").get_text()
-		if len(hostname) > 0:
-			self.brickfactory.get_host_by_name(hostname)
+	# def on_add_remotehost(self, widget, data=None):
+	# 	hostname = self.gladefile.get_widget("newhost_text").get_text()
+	# 	if len(hostname) > 0:
+	# 		self.brickfactory.get_host_by_name(hostname)
 
 	def on_check_newbrick_runremote_toggled(self, widget, event=None, data=None):
 		self.gladefile.get_widget('text_newbrick_runremote').set_sensitive(widget.get_active())
@@ -3036,7 +3036,7 @@ class VisualFactory(brickfactory.BrickFactory):
 		self.events = List()
 		self.bricks = List()
 		self.disk_images = List()
-		self.remote_hosts = List()
+		# self.remote_hosts = List()
 
 
 class TextBufferObserver(_log.FileLogObserver):
