@@ -15,7 +15,7 @@ class UsbDevWindowStub(dialogs.UsbDevWindow):
         self.gui = Object()
         self.vm = Object()
         self.vm.cfg = Object()
-        self.vm.cfg.usbdevlist = self.usbdev
+        self.vm.cfg.usbdevlist = usbdev
 
     def get_object(self, name):
         return self.view
