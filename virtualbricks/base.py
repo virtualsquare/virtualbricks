@@ -19,7 +19,6 @@
 import copy
 import re
 
-import gobject
 from twisted.python import reflect
 from twisted.python.versions import Version
 from twisted.python.deprecate import deprecated
@@ -328,9 +327,7 @@ class ListOf(Parameter):
         return str(strings)
 
 
-class Base(gobject.GObject):
-
-    __gsignals__ = {"changed": (gobject.SIGNAL_RUN_FIRST, None, ())}
+class Base(object):
 
     # type = None  # if not set in a subclass will raise an AttributeError
     _needsudo = False
@@ -349,7 +346,6 @@ class Base(gobject.GObject):
     name = property(get_name, set_name)
 
     def __init__(self, factory, name):
-        gobject.GObject.__init__(self)
         self.factory = factory
         self._name = name
         self.settings = self.factory.settings
@@ -366,12 +362,6 @@ class Base(gobject.GObject):
 
     def get_cbset(self, key):
         return getattr(self, "cbset_" + key, None)
-
-    def signal_connect(self, signal, handler):
-        return gobject.GObject.connect(self, signal, handler)
-
-    def signal_disconnect(self, handler_id):
-        return gobject.GObject.disconnect(self, handler_id)
 
     def set(self, attrs):
         for name, value in attrs.iteritems():

@@ -155,6 +155,7 @@ class VMPopupMenu(BrickPopupMenu):
         log.debug("Resuming virtual machine %s", self.original.get_name())
         gui.user_wait_action(self.snapshot)
 
+
 interfaces.registerAdapter(VMPopupMenu, GVirtualMachine, interfaces.IMenu)
 
 
@@ -289,7 +290,7 @@ class JobMenu:
         reset.set_label(_("Restart"))
         reset.connect("activate", self.on_reset_activate)
         menu.append(reset)
-        kill = gtk.ImageMenuItem(gtk.STOCK_DELETE)
+        kill = gtk.ImageMenuItem(gtk.STOCK_STOP)
         kill.set_label(_("Kill"))
         kill.connect("activate", self.on_kill_activate, gui)
         menu.append(kill)
@@ -350,6 +351,10 @@ class VMJobMenu(JobMenu):
         reset.connect("activate", self.on_reset_activate)
         menu.insert(reset, 7)
         menu.insert(gtk.SeparatorMenuItem(), 8)
+        term = gtk.ImageMenuItem(gtk.STOCK_DELETE)
+        term.set_label(_("Terminate"))
+        term.connect("activate", self.on_term_activate, gui)
+        menu.insert(term, 10)
         return menu
 
     def suspend(self):
@@ -384,6 +389,11 @@ class VMJobMenu(JobMenu):
     def on_reset_activate(self, menuitem):
         log.info("send ACPI reset")
         self.original.send("system_reset\n")
+
+    def on_term_activate(self, menuitem, gui):
+        log.debug("Sending to process signal SIGTERM!")
+        d = self.original.poweroff(term=True)
+        d.addCallback(refilter, gui.running_bricks)
 
 interfaces.registerAdapter(VMJobMenu, GVirtualMachine, interfaces.IJobMenu)
 

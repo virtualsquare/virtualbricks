@@ -163,27 +163,6 @@ class ConfigFile:
 
         for event in factory.events:
             event.save_to(fileobj)
-        # for e in iter(factory.events):
-        #     fileobj.write('[' + e.get_type() + ':' + e.name + ']\n')
-        #     for k, v in e.cfg.iteritems():
-        #         #Special management for actions parameter
-        #         if k == 'actions':
-        #             tempactions = list()
-        #             for action in e.cfg["actions"]:
-        #                 #It's an host shell command
-        #                 if isinstance(action, console.ShellCommand):
-        #                     tempactions.append("addsh " + action)
-        #                 #It's a vb shell command
-        #                 elif isinstance(action, console.VbShellCommand):
-        #                     tempactions.append("add " + action)
-        #                 else:
-        #                     log.error("Error: unmanaged action type. Will not "
-        #                               "be saved!")
-        #                     continue
-        #             fileobj.write(k + '=' + str(tempactions) + '\n')
-        #         #Standard management for other parameters
-        #         else:
-        #             fileobj.write(k + '=' + str(v) + '\n')
 
         socks = []
         plugs = []
@@ -209,26 +188,6 @@ class ConfigFile:
             elif plug.sock is not None:
                 t = "link|{p.brick.name}|{p.sock.nickname}\n"
                 fileobj.write(t.format(p=plug))
-
-        # for b in iter(factory.bricks):
-        #     for sk in b.socks:
-        #         if b.get_type() == 'Qemu':
-        #             fileobj.write('sock|' + b.name + "|" + sk.nickname + '|' +
-        #                     sk.model + '|' + sk.mac + '|' + str(sk.vlan) +
-        #                     '\n')
-        # for b in iter(factory.bricks):
-        #     for pl in (p for p in b.plugs if p.sock is not None):
-        #         if b.get_type() == 'Qemu':
-        #             if pl.mode == 'vde':
-        #                 fileobj.write('link|' + b.name + "|" + pl.sock.nickname
-        #                               + '|' + pl.model + '|' + pl.mac + '|' +
-        #                               str(pl.vlan) + '\n')
-        #             else:
-        #                 fileobj.write('userlink|' + b.name + '||' + pl.model +
-        #                               '|' + pl.mac + '|' + str(pl.vlan) + '\n')
-        #         elif (pl.sock is not None):
-        #             fileobj.write('link|' + b.name + "|" + pl.sock.nickname +
-        #                           '\n')
 
     def restore(self, factory, str_or_obj):
         if isinstance(str_or_obj, basestring):

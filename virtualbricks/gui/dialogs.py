@@ -186,8 +186,7 @@ class LoggingWindow(Window):
         self.__insert_text_h = textbuffer.connect("changed",
                 self.on_textbuffer_changed, textview)
         vadjustment = self.get_object("scrolledwindow1").get_vadjustment()
-        self.__vadjustment_h = vadjustment.connect("value-changed",
-                self.on_vadjustment_value_changed)
+        vadjustment.connect("value-changed", self.on_vadjustment_value_changed)
         self.scroll_to_end(textview, textbuffer)
 
     def scroll_to_end(self, textview, textbuffer):
@@ -203,8 +202,6 @@ class LoggingWindow(Window):
 
     def on_LoggingWindow_destroy(self, window):
         self.textbuffer.disconnect(self.__insert_text_h)
-        vadjustment = self.get_object("scrolledwindow1").get_vadjustment()
-        vadjustment.disconnect(self.__vadjustment_h)
 
     def on_closebutton_clicked(self, button):
         self.window.destroy()
@@ -255,6 +252,7 @@ class LoggingWindow(Window):
 class DisksLibraryDialog(Window):
 
     resource = "data/disklibrary.ui"
+    image = None
     cols_cell = (
         ("treeviewcolumn1", "cellrenderertext1", lambda i: i.name),
         ("treeviewcolumn2", "cellrenderertext2", lambda i: i.get_users()),
@@ -264,17 +262,9 @@ class DisksLibraryDialog(Window):
         ("treeviewcolumn5", "cellrenderertext5", lambda i: i.get_size())
     )
 
-    image = None
-
     def __init__(self, factory):
         Window.__init__(self)
         self.factory = factory
-        model = self.get_object("liststore1")
-        self.__add_handler_id = factory.connect("image-added",
-                self.on_image_added, model)
-        self.__del_handler_id = factory.connect("image-removed",
-                self.on_image_removed, model)
-        self.window.connect("destroy", self.on_window_destroy)
         self.tree_panel = self.get_object("treeview_panel")  # just handy
         self.config_panel = self.get_object("config_panel")  # just handy
         for column_name, cell_renderer_name, getter in self.cols_cell:
@@ -282,38 +272,13 @@ class DisksLibraryDialog(Window):
             cell_renderer = self.get_object(cell_renderer_name)
             column.set_cell_data_func(cell_renderer, self._set_cell_data,
                                       getter)
-        for image in factory.disk_images:
-            model.append((image,))
+        self.get_object("treeview_diskimages").set_model(factory.disk_images)
 
     def _set_cell_data(self, column, cell_renderer, model, iter, getter):
         image = model.get_value(iter, 0)
         cell_renderer.set_property("text", getter(image))
         color = "black" if image.exists() else "grey"
         cell_renderer.set_property("foreground", color)
-
-    def show(self):
-        Window.show(self)
-        self.config_panel.hide()
-
-    def on_window_destroy(self, widget):
-        assert self.__add_handler_id is not None, \
-                "Called on_window_destroy but no handler are associated"
-        self.factory.disconnect(self.__add_handler_id)
-        self.factory.disconnect(self.__del_handler_id)
-        self.__add_handler_id = self.__del_handler_id = None
-
-    def on_image_added(self, factory, image, model):
-        model.append((image,))
-
-    def on_image_removed(self, factory, image, model):
-        iter = model.get_iter_first()
-        while iter:
-            if model.get_value(iter, 0) == image:
-                model.remove(iter)
-                break
-        else:
-            log.warning("image-removed signal is emitted but seems I don't"
-                        " have that image")
 
     def on_close_button_clicked(self, button):
         self.window.destroy()
@@ -639,7 +604,7 @@ class NewEventDialog(Window):
                 event.set({"delay": int(delay)})
                 if type in ("start", "stop", "collation"):
                     action = "off" if type == "stop" else "on"
-                    bricks = self.gui.brickfactory.bricksmodel
+                    bricks = self.gui.brickfactory.bricks
                     dialog_n = BrickSelectionDialog(event, action, bricks)
                 elif type == "shell":
                     action = console.VbShellCommand("new switch myswitch")

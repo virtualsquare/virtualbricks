@@ -119,7 +119,7 @@ class Node:
 
 class Topology:
 
-    def __init__(self, widget, bricks_model, scale=1.00, orientation="LR",
+    def __init__(self, widget, bricks, scale=1.00, orientation="LR",
                  export=None, tempdir="/tmp/"):
         self.topowidget = widget
         self.topo = pgv.AGraph()
@@ -132,16 +132,14 @@ class Topology:
         # Add nodes
         sg = self.topo.add_subgraph([], name="switches_rank")
         sg.graph_attr['rank'] = 'same'
-        for row in bricks_model:
-            b = row[0]
-            self.topo.add_node(b.name)
-            n = self.topo.get_node(b.name)
+        for brick in bricks:
+            self.topo.add_node(brick.name)
+            n = self.topo.get_node(brick.name)
             n.attr['shape'] = 'none'
             n.attr['fontsize'] = '9'
-            n.attr['image'] = brick_icon(b)
+            n.attr['image'] = brick_icon(brick)
 
-        for row in bricks_model:
-            b = row[0]
+        for b in bricks:
             loop = 0
             for e in b.plugs:
                 if e.sock is not None:

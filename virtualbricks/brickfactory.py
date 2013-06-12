@@ -28,9 +28,6 @@ import logging
 import itertools
 import threading
 
-import gtk
-import gobject
-
 from twisted.application import app
 from twisted.internet import defer, task, stdio
 from twisted.protocols import basic
@@ -74,33 +71,22 @@ def install_brick_types(registry=None):
     return registry
 
 
-class BrickFactory(gobject.GObject):
+class BrickFactory(object):
     """This is the main class for the core engine.
 
     All the bricks are created and stored in the factory.
     It also contains a thread to manage the command console.
     """
 
-    __gsignals__ = {
-        'brick-changed': (gobject.SIGNAL_RUN_LAST, None, (str,)),
-        "image-added": (gobject.SIGNAL_RUN_LAST, None, (object,)),
-        "image-removed": (gobject.SIGNAL_RUN_LAST, None, (object,))
-    }
-
     TCP = None
 
     def __init__(self, quit):
-        gobject.GObject.__init__(self)
         self.quit_d = quit
         self.remote_hosts = []
         self.bricks = []
         self.events = []
         self.socks = []
         self.disk_images = []
-        self.bricksmodel = gtk.ListStore(object)
-        self.__brick_signals = {}
-        self.eventsmodel = gtk.ListStore(object)
-        self.__event_signals = {}
         self.settings = settings.Settings(settings.CONFIGFILE)
         self.__factories = install_brick_types()
 
@@ -126,8 +112,6 @@ class BrickFactory(gobject.GObject):
         # hard reset
         # XXX: what about remote hosts?
         # XXX: what about disk images?
-        self.bricksmodel.clear()
-        self.eventsmodel.clear()
         for b in self.bricks:
             self.del_brick(b)
         del self.bricks[:]
@@ -172,12 +156,10 @@ class BrickFactory(gobject.GObject):
             raise errors.NameAlreadyInUseError(nname)
         img = virtualmachines.DiskImage(nname, path, description, host)
         self.disk_images.append(img)
-        self.emit("image-added", img)
         return img
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
-        self.emit("image-removed", image)
 
     def get_image_by_name(self, name):
         """Get disk image object from the image library by its name."""
@@ -217,25 +199,7 @@ class BrickFactory(gobject.GObject):
     def new_brick(self, type, name, host="", remote=False):
         brick = self._new_brick(type, name, host, remote)
         self.bricks.append(brick)
-        self.bricksmodel.append((brick,))
-        self.__brick_signals[id(brick)] = brick.signal_connect(
-            "changed", self.__brick_changed)
         return brick
-
-    def __do_action_for_brick(self, action, brick):
-        i = self.bricksmodel.get_iter_first()
-        while i:
-            if self.bricksmodel.get_value(i, 0) == brick:
-                action(brick, i)
-                break
-            i = self.bricksmodel.iter_next(i)
-
-    def __emit_brick_row_changed(self, brick, i):
-        self.bricksmodel.row_changed(self.bricksmodel.get_path(i), i)
-
-    def __brick_changed(self, brick):
-        self.__do_action_for_brick(self.__emit_brick_row_changed, brick)
-        self.emit("brick-changed", brick.name)
 
     def _new_brick(self, type, name, host, remote):
         """Return a new brick.
@@ -293,9 +257,6 @@ class BrickFactory(gobject.GObject):
         new_brick.on_config_changed()
         return new_brick
 
-    def __remove_brick(self, brick, i):
-        self.bricksmodel.remove(i)
-
     def del_brick(self, brick):
         # XXX: use deferreds
         brick.poweroff()
@@ -312,9 +273,6 @@ class BrickFactory(gobject.GObject):
                 # recreate Plug(self) of some objects
                 b.restore_self_plugs()
         self.bricks.remove(brick)
-        self.__do_action_for_brick(self.__remove_brick, brick)
-        brick.signal_disconnect(self.__brick_signals[id(brick)])
-        del self.__brick_signals[id(brick)]
 
     def get_brick_by_name(self, name):
         for b in self.bricks:
@@ -322,12 +280,10 @@ class BrickFactory(gobject.GObject):
                 return b
 
     def rename_brick(self, brick, name):
-        # XXX: this should emit "changed" signal
         nname = self.normalize(name)
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
         brick.name = nname
-        # b.gui_changed = True
 
     # [[[[[[[[[]]]]]]]]]
     # [     Events     ]
@@ -344,24 +300,7 @@ class BrickFactory(gobject.GObject):
     def new_event(self, name):
         event = self._new_event(name)
         self.events.append(event)
-        self.eventsmodel.append((event,))
-        self.__event_signals[id(event)] = event.signal_connect(
-            "changed", self.__event_changed)
         return event
-
-    def __do_action_for_event(self, action, event):
-        i = self.eventsmodel.get_iter_first()
-        while i:
-            if self.eventsmodel.get_value(i, 0) == event:
-                action(event, i)
-                break
-            i = self.eventsmodel.iter_next(i)
-
-    def __emit_event_row_changed(self, event, i):
-        self.eventsmodel.row_changed(self.eventsmodel.get_path(i), i)
-
-    def __event_changed(self, event):
-        self.__do_action_for_event(self.__emit_event_row_changed, event)
 
     def _new_event(self, name):
         """Create a new event.
@@ -388,15 +327,9 @@ class BrickFactory(gobject.GObject):
         new_event.cfg = copy.deepcopy(event.cfg)
         return new_event
 
-    def __remove_event(self, event, i):
-        self.eventsmodel.remove(i)
-
     def del_event(self, event):
         event.poweroff()
         self.events.remove(event)
-        self.__do_action_for_event(self.__remove_event, event)
-        event.signal_disconnect(self.__event_signals[id(event)])
-        del self.__event_signals[id(event)]
 
     def get_event_by_name(self, name):
         for e in self.events:

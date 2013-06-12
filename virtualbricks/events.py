@@ -127,8 +127,6 @@ class Event(base.Base):
     @deprecated(version)
     def configure(self, attrlist):
         self.initialize(attrlist)
-        # TODO brick should be gobject and a signal should be launched
-        self.emit("changed")
 
     ############################
     ########### Poweron/Poweroff
@@ -140,7 +138,10 @@ class Event(base.Base):
         if not self.configured():
             raise errors.BadConfigError("Event %s not configured" % self.name)
 
-        self.scheduled = reactor.callLater(self.cfg["delay"], self.do_actions)
+        deferred = defer.Deferred()
+        self.scheduled = reactor.callLater(self.cfg["delay"], self.do_actions,
+                                           deferred)
+        return deferred
 
     def poweroff(self):
         if self.scheduled is None:
@@ -151,10 +152,11 @@ class Event(base.Base):
     def toggle(self):
         if self.scheduled is not None:
             self.poweroff()
+            return defer.succeed(self)
         else:
-            self.poweron()
+            return self.poweron()
 
-    def do_actions(self):
+    def do_actions(self, deferred):
         self.scheduled = None
         procs = []
         for action in self.cfg["actions"]:
@@ -169,9 +171,10 @@ class Event(base.Base):
                     log.msg("Process ended with exit code %s" % value)
                 else:
                     log.err(value)
+            return self
 
-        defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
-        return defer
+        dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
+        dl.chainDeferred(deferred)
 
     change_state = toggle
     doactions = do_actions
