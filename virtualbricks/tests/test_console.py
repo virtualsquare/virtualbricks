@@ -9,6 +9,7 @@ class TestProtocol(unittest.TestCase):
     def setUp(self):
         self.factory = stubs.FactoryStub()
         self.stdout = StringIO.StringIO()
+        self.stdout.sendLine = self.stdout.write
 
     def parse(self, cmd):
         return console.parse(self.factory, cmd, self.stdout)
@@ -27,13 +28,13 @@ class TestProtocol(unittest.TestCase):
         self.parse("new stub t+")
         self.assertEqual(self.get_value(),
                          "Name must contains only letters, "
-                         "numbers, underscores, hyphens and points, t+\n")
+                         "numbers, underscores, hyphens and points, t+")
         cmd = "new stub"
         self.parse(cmd)
-        self.assertEqual(self.get_value(), "invalid command %s\n" % cmd)
+        self.assertEqual(self.get_value(), "invalid command %s" % cmd)
         cmd = "new"
         self.parse(cmd)
-        self.assertEqual(self.get_value(), "invalid command %s\n" % cmd)
+        self.assertEqual(self.get_value(), "invalid command %s" % cmd)
 
     def test_new_event(self):
         self.parse("new event test_event")
