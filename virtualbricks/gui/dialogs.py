@@ -423,7 +423,7 @@ class EthernetDialog(Window):
         if plug:
             self.get_object("title_label").set_label(
                 "<b>Edit ethernet interface</b>")
-            self.get_object("ok_button").set_property("label", gtk.STOCK_EDIT)
+            self.get_object("ok_button").set_property("label", gtk.STOCK_OK)
             self.get_object("mac_entry").set_text(plug.mac)
             model = self.get_object("netmodel_model")
             i = model.get_iter_first()
