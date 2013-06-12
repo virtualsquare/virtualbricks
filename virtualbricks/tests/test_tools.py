@@ -2,7 +2,7 @@ import os
 import os.path
 
 from virtualbricks import tools
-from virtualbricks.tests import unittest, test_threads
+from virtualbricks.tests import unittest
 
 
 class MockLock(object):

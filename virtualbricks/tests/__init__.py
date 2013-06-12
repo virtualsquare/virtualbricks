@@ -1,9 +1,7 @@
 import os
 import types
-import logging
 import functools
 
-from twisted.python import log
 from twisted.trial import unittest
 
 __builtins__["_"] = str
@@ -11,11 +9,11 @@ TEST_THREADS = 0x01
 TEST_DEPLOYMENT = 0x02
 
 
-def test_threads():
+def should_test_threads():
     return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & TEST_THREADS
 
 
-def test_deployment():
+def should_test_deployment():
     return int(os.environ.get("VIRTUALBRICKS_TESTS", 0)) & TEST_DEPLOYMENT
 
 
