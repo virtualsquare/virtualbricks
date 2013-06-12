@@ -98,8 +98,6 @@ class Wire(bricks.Brick):
             self.cfg.sock0 = self.plugs[0].sock.path.rstrip('[]')
         if (self.plugs[1].sock is not None):
             self.cfg.sock1 = self.plugs[1].sock.path.rstrip('[]')
-        if (self.proc is not None):
-            self.need_restart_to_apply_changes = True
         bricks.Brick.on_config_changed(self)
 
     def configured(self):

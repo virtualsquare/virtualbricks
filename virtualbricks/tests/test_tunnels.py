@@ -16,7 +16,6 @@ class TestTunnelConnect(TestTunnelListen):
         self.assertEqual(tc.cfg["host"], "")
         tc.on_config_changed()
         self.assertEqual(tc.cfg["host"], ":%d" % tc.cfg["port"])
-        self.assertFalse(tc.need_restart_to_apply_changes)
         tc.cfg["host"] = "localhost"
         tc.on_config_changed()
         self.assertEqual(tc.cfg["host"], "localhost:%d" % tc.cfg["port"])

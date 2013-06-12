@@ -67,8 +67,6 @@ class TunnelListen(bricks.Brick):
     def on_config_changed(self):
         if self.plugs[0].sock is not None:
             self.cfg.sock = self.plugs[0].sock.path.rstrip('[]')
-        if self.proc is not None:
-            self.need_restart_to_apply_changes = True
         bricks.Brick.on_config_changed(self)
 
     def configured(self):
@@ -125,11 +123,9 @@ class TunnelConnect(TunnelListen):
             if h is not None:
                 self.cfg.host = "%s:%s" % (h.split(":")[0], p)
 
-        if self.proc is not None:
-            self.need_restart_to_apply_changes = True
-
         bricks.Brick.on_config_changed(self)
 
     def configured(self):
         return ((self.plugs[0].sock is not None) and self.cfg.get("host") and
                 len(self.cfg.host) > 0)
+
