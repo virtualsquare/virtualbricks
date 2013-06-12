@@ -358,7 +358,7 @@ class Base(object):
         return self.type
 
     def needsudo(self):
-        return self.factory.TCP is None and self._needsudo
+        return self._needsudo
 
     def get_cbset(self, key):
         return getattr(self, "cbset_" + key, None)

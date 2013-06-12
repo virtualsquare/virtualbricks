@@ -38,7 +38,6 @@ FILES = [
 SCRIPTS = [
     "virtualbricks",
     "vbgui",
-    "vbd",
 ]
 
 

@@ -15,12 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""Usage: virtualbricks [-vqld] [-nogui|-server|-noterm]
+"""Usage: virtualbricks [-vqld] [-noterm]
 
-    -nogui              start the brickfactory without the gui
-    -server             start the server without the gui
     -noterm             start the gui without the console
-    Deafult: start the gui and the console
 
     -v, --verbose       increase log verbosity
     -q, --quiet         decrease log verbosity
@@ -32,42 +29,22 @@ Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 Copyright (C) Virtualbricks team
 """
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import sys
 
 
-def main(argv=None):
+def run(argv=None):
     if argv is None:
         argv = sys.argv
     if "-h" in argv or "--help" in argv:
         print(__doc__)
         return 0
-    if "-d" not in argv or "--debug" not in argv:
-        argv.append("-d")
-    try:
-        idx = argv.index("-nogui")
-        from virtualbricks.scripts import vbd
-        del argv[idx]
-        return vbd.main(argv)
-    except ValueError:
-        pass
 
-    try:
-        idx = argv.index("-server")
-        from virtualbricks.scripts import vbd
-        argv[idx] = "--server"
-        return vbd.main(argv)
-    except ValueError:
-        pass
+    from virtualbricks.scripts import gui
 
-    from virtualbricks.scripts import vbgui
     try:
         idx = argv.index("-noterm")
         argv[idx] = "--noterm"
     except ValueError:
         pass
-    return vbgui.main(argv)
-
-
-def run():
-    sys.exit(main())
+    gui.run()
