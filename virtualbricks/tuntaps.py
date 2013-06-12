@@ -66,8 +66,6 @@ class Capture(bricks.Brick):
     def on_config_changed(self):
         if self.plugs[0].sock is not None:
             self.cfg.sock = self.plugs[0].sock.path.rstrip("[]")
-        if self.proc is not None:
-            self.need_restart_to_apply_changes = True
         bricks.Brick.on_config_changed(self)
 
     def configured(self):
@@ -115,8 +113,6 @@ class Tap(bricks.Brick):
     def on_config_changed(self):
         if self.plugs[0].sock is not None:
             self.cfg.sock = self.plugs[0].sock.path.rstrip("[]")
-        if self.proc is not None:
-            self.need_restart_to_apply_changes = True
         bricks.Brick.on_config_changed(self)
 
     def configured(self):
