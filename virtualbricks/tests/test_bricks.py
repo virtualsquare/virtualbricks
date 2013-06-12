@@ -47,12 +47,9 @@ class TestBricks(unittest.TestCase):
     def test_poweron(self):
 
         def continue_test(brick):
-            self.assertEqual(sig, [brick])
             self.assertIs(brick._started_d, None)
 
         self.brick.configured = lambda: True
-        sig = []
-        self.brick.signal_connect("changed", lambda b: sig.append(b))
         d = self.brick.poweron()
         d.addCallback(continue_test).addBoth(kill, self.brick)
         return d

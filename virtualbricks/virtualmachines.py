@@ -630,13 +630,26 @@ class VirtualMachine(bricks.Brick):
         bricks.Brick.__init__(self, factory, name)
         self.terminal = "unixterm"
         self.cfg["name"] = name
-        # import pdb; pdb.set_trace()
         self._newbrick_changes()
-        # self.connect("changed", lambda s: s.associate_disk())
 
     def poweron(self, snapshot=""):
         self.cfg["loadvm"] = snapshot
         return bricks.Brick.poweron(self)
+
+    def poweroff(self, kill=False, term=False):
+        if self.proc is None:
+            return defer.succeed((self, self._last_status))
+        elif not any((kill, term)):
+            log.msg("Sending powerdown to %r" % self)
+            self.send("system_powerdown\n")
+            return self._exited_d
+        elif term:
+            return bricks.Brick.poweroff(self)
+        else:
+            return bricks.Brick.poweroff(self, kill)
+
+    def process_exited(self, proc, status):
+        bricks.Brick.process_exited(self, proc, status)
 
     def get_basefolder(self):
         return self.factory.get_basefolder()
@@ -945,7 +958,6 @@ class VirtualMachine(bricks.Brick):
             sock.mac = mac
         if model:
             sock.model = model
-        self.gui_changed = True
         return sock
 
     def add_plug(self, sock=None, mac=None, model=None):
@@ -957,7 +969,6 @@ class VirtualMachine(bricks.Brick):
             plug.mac = mac
         if model:
             plug.model = model
-        self.gui_changed = True
         return plug
 
     def connect(self, endpoint):
@@ -965,7 +976,6 @@ class VirtualMachine(bricks.Brick):
         pl.mac = tools.RandMac()
         pl.model = 'rtl8139'
         pl.connect(endpoint)
-        self.gui_changed = True
 
     def remove_plug(self, idx):
         for p in self.plugs:
@@ -982,7 +992,6 @@ class VirtualMachine(bricks.Brick):
         for p in self.socks:
             if p.vlan > idx:
                 p.vlan -= 1
-        self.gui_changed = True
 
     def commit_disks(self, args):
         self.send("commit all\n")

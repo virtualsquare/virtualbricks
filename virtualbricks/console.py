@@ -485,7 +485,7 @@ class VBProtocol(Protocol):
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         self.sendLine("\nEvents")
         self.sendLine("-" * 20)
-        for obj in iter(self.factory.events):
+        for obj in self.factory.events:
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         # self.sendLine("End of list.")
 

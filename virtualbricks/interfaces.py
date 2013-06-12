@@ -149,11 +149,6 @@ class IBrick(Interface):
         """Compare two bricks"""
         # XXX: maybe should use is keyword?
 
-    # extra
-
-    def signal_connect(name, handler, *args):
-        """Connect the handler to the given signal name."""
-
     # to be controlled
 
     config_socks = Attribute("")

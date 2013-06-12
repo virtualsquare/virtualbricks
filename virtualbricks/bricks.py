@@ -140,7 +140,7 @@ class _LocalBrick(base.Base):
         # created before reacing this point, process_stated is already called
         # and then _started_d is unset
         d.addErrback(started.errback)
-        d.addCallback(lambda _: self.start_related_events(on=True))
+        d.addCallback(lambda _: self._start_related_events(on=True))
         return started
 
     def poweroff(self, kill=False):
@@ -183,7 +183,7 @@ class _LocalBrick(base.Base):
 
     def process_exited(self, proc, status):
         self.proc = None
-        self.start_related_events(off=True)
+        self._start_related_events(off=True)
         self.on_config_changed()
         self._last_status = status
         exited, self._exited_d = self._exited_d, None
@@ -239,9 +239,8 @@ class _LocalBrick(base.Base):
         return d
         # if self.needsudo():
         #     self.proc = self.sudo_factory(self.proc)
-        # self.factory.emit("brick-started", self.name)
 
-    def start_related_events(self, on=True, off=False):
+    def _start_related_events(self, on=True, off=False):
         if any([on, off]) and any([on and self.cfg.pon_vbevent, off and
                                    self.cfg.poff_vbevent]):
             name = self.cfg.pon_vbevent if on else self.cfg.poff_vbevent
@@ -252,6 +251,7 @@ class _LocalBrick(base.Base):
                 log.warning("Warning. The Event '%s' attached to Brick '%s' is"
                             " not available. Skipping execution.",
                             self.cfg.poff_vbevent, self.name)
+        return self
 
     #############################
     # Console related operations.
@@ -281,7 +281,7 @@ class _LocalBrick(base.Base):
         return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
 
     def on_config_changed(self):
-        self.emit("changed")
+        pass
 
     def initialize(self, attrlist):
         """TODO attrs : dict attr => value"""
@@ -336,6 +336,9 @@ class _LocalBrick(base.Base):
         else:
             state = _("off")
         return state
+
+    def __repr__(self):
+        return "<{0.type} {0.name}>".format(self)
 
 
 class Brick(_LocalBrick):

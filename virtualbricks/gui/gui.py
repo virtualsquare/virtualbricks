@@ -122,6 +122,26 @@ def widget_to_params(brick, get_widget):
 	return dict((k, v) for k, v in parameters.items() if v is not None)
 
 
+def changed(brick, row):
+	if row.valid():
+		path = row.get_path()
+		model = row.get_model()
+		model.row_changed(path, model.get_iter(path))
+	return brick
+
+
+def changed_brick_in_model(result, model):
+	try:
+		brick, status = result
+	except ValueError:
+		brick = result
+	for path, brick_ in enumerate(model):
+		if brick is brick_:
+			model.row_changed(path, model.get_iter(path))
+			break
+	return result
+
+
 TYPE_CONFIG_WIDGET_NAME_MAP = {"Switch": "box_switchconfig",
 							"Qemu": "box_vmconfig",
 							"Tap": "box_tapconfig",
@@ -166,7 +186,7 @@ class TopologyMixin(object):
 			orientation = "LR"
 		self.topology = graphics.Topology(
 			self.get_object('image_topology'),
-			self.brickfactory.bricksmodel, 1.00, orientation, export,
+			self.brickfactory.bricks, 1.00, orientation, export,
 			settings.VIRTUALBRICKS_HOME + "/")
 		self._should_draw_topology = False
 
@@ -257,13 +277,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		log.info("Starting VirtualBricks!")
 
 		# Connect all the signal from the factory to specific callbacks
-		self.__brick_changed_h = factory.connect("brick-changed",
-				self.cb_brick_changed)
-		self.__row_changed_h = factory.bricksmodel.connect("row-changed",
+		self.__row_changed_h = factory.bricks.connect("row-changed",
 				self.on_brick_changed)
-
-		# TODO: remove these
-		self.eventsmodel = None
 
 		# General settings (system properties)
 		self.config = factory.settings
@@ -346,10 +361,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					missing_components)
 
 	def quit(self):
-		self.brickfactory.disconnect(self.__brick_changed_h)
-		self.brickfactory.bricksmodel.disconnect(self.__row_changed_h)
+		self.brickfactory.bricks.disconnect(self.__row_changed_h)
 		self.__row_changed_h = None
-		self.__brick_changed_h = None
 
 	def __setup_treeview(self, resource, window_name, widget_name):
 		ui = graphics.get_data("virtualbricks.gui", resource)
@@ -400,7 +413,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		name_c = builder.get_object("name_treeviewcolumn")
 		name_cr = builder.get_object("name_cellrenderer")
 		name_c.set_cell_data_func(name_cr, set_name)
-		self.running_bricks = self.brickfactory.bricksmodel.filter_new()
+		self.running_bricks = self.brickfactory.bricks.filter_new()
 
 		def is_running(model, iter):
 			brick = model[iter][0]
@@ -535,7 +548,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		parameters_cr = builder.get_object("parameters_cellrenderer")
 		parameters_c.set_cell_data_func(parameters_cr, set_parameters)
 		self.__events_treeview = builder.get_object("events_treeview")
-		self.__events_treeview.set_model(self.brickfactory.eventsmodel)
+		self.__events_treeview.set_model(self.brickfactory.events)
 
 	def setup_bricks(self):
 		builder = self.__setup_treeview("data/bricks.ui",
@@ -578,7 +591,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		parameters_cr = builder.get_object("parameters_cellrenderer")
 		parameters_c.set_cell_data_func(parameters_cr, set_parameters)
 		self.__bricks_treeview = builder.get_object("bricks_treeview")
-		self.__bricks_treeview.set_model(self.brickfactory.bricksmodel)
+		self.__bricks_treeview.set_model(self.brickfactory.bricks)
 
 	def setup_router_devs(self):
 		pass
@@ -619,15 +632,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_brick_changed(self, model, path, iter):
 		self.draw_topology()
-
-	def cb_brick_changed(self, model, name):
-		self.draw_topology()
-
-	def _stop_listening(self):
-		self.brickfactory.handler_block(self.__brick_changed_h)
-
-	def _start_listening(self):
-		self.brickfactory.handler_unblock(self.__brick_changed_h)
 
 	"""
 	" ******************************************************** "
@@ -1018,7 +1022,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			b = self.__get_selection(self.__bricks_treeview)
 		parameters = widget_to_params(b, self.gladefile.get_widget)
 		t = b.get_type()
-		b.gui_changed = True
 
 		if t == "Tap":
 			self.config_Tap_confirm(b)
@@ -1701,31 +1704,42 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.running_bricks.refilter()
 
 		self.curtain_down()
-		l = [brick.poweron() for brick in self.brickfactory.bricks]
-		dl = defer.DeferredList(l, consumeErrors=True)
-		dl.addCallback(started_all)
+		bricks = self.brickfactory.bricks
+		l = []
+		for idx, brick in enumerate(bricks):
+			d = brick.poweron()
+			d.addCallback(changed, gtk.TreeRowReference(bricks, idx))
+			l.append(d)
+		defer.DeferredList(l, consumeErrors=True).addCallback(started_all)
 
 	def on_toolbutton_stop_all_clicked(self, widget=None, data=""):
 
 		def stopped_all(results):
-			# for success, value in results:
-			# 	# TODO
-			# 	pass
 			self.running_bricks.refilter()
 
 		self.curtain_down()
-		l = [brick.poweroff() for brick in self.brickfactory.bricks]
+		bricks = self.brickfactory.bricks
+		l = []
+		for idx, brick in enumerate(bricks):
+			d = brick.poweroff()
+			d.addCallback(changed, gtk.TreeRowReference(bricks, idx))
+			l.append(d)
 		defer.DeferredList(l, consumeErrors=True).addCallback(stopped_all)
 
 	def on_toolbutton_start_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for e in iter(self.brickfactory.events):
-			e.poweron()
+		events = self.brickfactory.events
+		for idx, event in enumerate(events):
+			d = event.poweron()
+			d.addCallback(changed, gtk.TreeRowReference(events, idx))
+			events.row_changed(idx, events.get_iter(idx))
 
 	def on_toolbutton_stop_all_events_clicked(self, widget=None, data=""):
 		self.curtain_down()
-		for e in iter(self.brickfactory.events):
-			e.poweroff()
+		events = self.brickfactory.events
+		for idx, event in enumerate(events):
+			event.poweroff()
+			events.row_changed(idx, events.get_iter(idx))
 
 	def show_brickactions(self):
 		brick = self.__get_selection(self.__bricks_treeview)
@@ -1759,16 +1773,16 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_events_treeview_row_activated(self, treeview, path, column):
 		model = treeview.get_model()
-		iter = model.get_iter(path)
-		event = model.get_value(iter, 0)
-		event.toggle()
+		event = model.get_value(model.get_iter(path), 0)
+		event.toggle().addCallback(changed, gtk.TreeRowReference(model, path))
 
 	def on_focus_out(self, widget=None, event=None , data=""):
 		self.curtain_down()
 
 	def startstop_brick(self, brick):
 		d = brick.poweron() if brick.proc is None else brick.poweroff()
-		d.addCallbacks(lambda b: self.running_bricks.refilter(), log.err)
+		d.addCallback(changed_brick_in_model, self.brickfactory.bricks)
+		d.addCallbacks(lambda _: self.running_bricks.refilter(), log.err)
 
 	def on_remotehosts_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
@@ -2538,10 +2552,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		startavailevents = self.gladefile.get_widget('start_events_avail_treeview')
 		stopavailevents = self.gladefile.get_widget('stop_events_avail_treeview')
 
-		self.eventsmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
+		eventsmodel = gtk.ListStore (gtk.gdk.Pixbuf, str, str, str)
 
-		startavailevents.set_model(self.eventsmodel)
-		stopavailevents.set_model(self.eventsmodel)
+		startavailevents.set_model(eventsmodel)
+		stopavailevents.set_model(eventsmodel)
 
 		treeviewselectionstart = startavailevents.get_selection()
 		treeviewselectionstart.unselect_all()
@@ -2549,13 +2563,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		treeviewselectionstop.unselect_all()
 		brick = self.__get_selection(self.__bricks_treeview)
 
-		for event in iter(self.brickfactory.events):
+		for event in self.brickfactory.events:
 			if event.configured():
 				parameters = event.get_parameters()
 				if len(parameters) > 30:
 					parameters = "%s..." % parameters[:30]
 				image = graphics.pixbuf_for_running_brick_at_size(event, 48, 48)
-				iter_ = self.eventsmodel.append([image, event.get_type(), event.name, parameters])
+				iter_ = eventsmodel.append([image, event.get_type(), event.name, parameters])
 				if brick.cfg.pon_vbevent == event.name:
 					treeviewselectionstart.select_iter(iter_)
 				if brick.cfg.poff_vbevent == event.name:
@@ -2992,12 +3006,36 @@ class List(gtk.ListStore):
 			if el is element:
 				return gtk.ListStore.remove(self, i)
 			i = self.iter_next(i)
+		raise ValueError("list.remove(x): x not in list")
+
+	# def __getitem__(self, key):
+	# 	if isinstance(key, int):
+	# 		return gtk.ListStore.__getitem__(self, key)[0]
+	# 	elif isinstance(key, slice):
+	# 		return [self[idx][0] for idx in xrange(*key.indices(len(self)))]
+	# 	else:
+	# 		raise TypeError
+
+	def __delitem__(self, key):
+		if isinstance(key, int):
+			gtk.ListStore.__delitem__(self, key)
+		elif isinstance(key, slice):
+			if (key.start is None and key.stop is None and
+					key.step in (1, -1, None)):
+				self.clear()
+			else:
+				raise TypeError
+		else:
+			raise TypeError
 
 
 class VisualFactory(brickfactory.BrickFactory):
 
 	def __init__(self, quit):
 		brickfactory.BrickFactory.__init__(self, quit)
+		self.events = List()
+		self.bricks = List()
+		self.disk_images = List()
 		self.remote_hosts = List()
 
 

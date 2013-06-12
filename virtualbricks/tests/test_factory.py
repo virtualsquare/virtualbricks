@@ -8,10 +8,6 @@ class Stub2(object):
         self.factory = factory
         self.name = name
 
-    def signal_connect(self, name, handler, *args):
-        pass
-
-
 class Stub3(Stub2):
     pass
 
