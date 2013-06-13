@@ -53,15 +53,15 @@ def get_image(name):
 
 
 def has_custom_icon(brick):
-    return "icon" in brick.cfg and brick.cfg.icon != ""
+    return "icon" in brick.config and brick.config["icon"]
 
 
 def brick_icon(brick):
-    if not has_custom_icon(brick):
+    if has_custom_icon(brick):
+        return brick.config["icon"]
+    else:
         return get_filename("virtualbricks.gui",
                         "data/" + brick.get_type().lower() + ".png")
-    else:
-        return brick.cfg.icon
 
 
 def is_running(brick):

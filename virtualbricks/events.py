@@ -51,14 +51,14 @@ class Command(base.String):
             raise RuntimeError(_("Invalid command type."))
 
 
-class EventConfig(base.NewConfig):
+class EventConfig(base.Config):
 
     parameters = {"actions": base.ListOf(Command("")),
                   "delay": base.Integer(0)}
 
     def __init__(self):
-        base.NewConfig.__init__(self)
-        self._cfg["actions"] = []
+        base.Config.__init__(self)
+        self["actions"] = []
 
 
 class Event(base.Base):
@@ -79,37 +79,14 @@ class Event(base.Base):
         return state
 
     def configured(self):
-        return len(self.cfg["actions"]) > 0 and self.cfg["delay"] > 0
-
-    @deprecated(version)
-    def initialize(self, attrlist):
-        if "add" in attrlist and "addsh" in attrlist:
-            raise errors.InvalidActionError(_("Error: config line must "
-                                              "contain add OR addsh."))
-        elif "add" in attrlist:
-            configactions = list()
-            configactions = (" ".join(attrlist)).split("add")
-            for action in configactions[1:]:
-                action = action.strip()
-                self.cfg["actions"].append(console.VbShellCommand(action))
-                log.msg(_("Added vb-shell command: '%s'") % action)
-        elif "addsh" in attrlist:
-            configactions = list()
-            configactions = (" ".join(attrlist)).split("addsh")
-            for action in configactions[1:]:
-                action = action.strip()
-                self.cfg["actions"].append(console.ShellCommand(action))
-                log.msg(_("Added host-shell command: '%s'") % action)
-        else:
-            for attr in attrlist:
-                self.cfg.set(attr)
+        return len(self.config["actions"]) > 0 and self.config["delay"] > 0
 
     def get_parameters(self):
-        tempstr = _("Delay: %d") % self.cfg["delay"]
-        if len(self.cfg["actions"]) > 0:
+        tempstr = _("Delay: %d") % self.config["delay"]
+        if len(self.config["actions"]) > 0:
             tempstr += "; " + _("Actions:")
             # Add actions cutting the tail if it's too long
-            for s in self.cfg["actions"]:
+            for s in self.config["actions"]:
                 if isinstance(s, console.ShellCommand):
                     tempstr += " \"*%s\"," % s
                 else:
@@ -124,10 +101,6 @@ class Event(base.Base):
     def disconnect(self):
         return
 
-    @deprecated(version)
-    def configure(self, attrlist):
-        self.initialize(attrlist)
-
     ############################
     ########### Poweron/Poweroff
     ############################
@@ -139,8 +112,8 @@ class Event(base.Base):
             raise errors.BadConfigError("Event %s not configured" % self.name)
 
         deferred = defer.Deferred()
-        self.scheduled = reactor.callLater(self.cfg["delay"], self.do_actions,
-                                           deferred)
+        self.scheduled = reactor.callLater(self.config["delay"],
+                                           self.do_actions, deferred)
         return deferred
 
     def poweroff(self):
@@ -159,7 +132,7 @@ class Event(base.Base):
     def do_actions(self, deferred):
         self.scheduled = None
         procs = []
-        for action in self.cfg["actions"]:
+        for action in self.config["actions"]:
             if isinstance(action, console.VbShellCommand):
                 console.Parse(self.factory, action)
             elif isinstance(action, console.ShellCommand):

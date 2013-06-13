@@ -28,7 +28,7 @@ class Router(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.cfg.name = name
+        self.config["name"] = name
         self.command_builder = {"-M": self.console, "-c": "configfile"}
         self.on_config_changed()
 

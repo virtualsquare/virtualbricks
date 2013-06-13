@@ -26,10 +26,10 @@ class TestSwitch(unittest.TestCase):
         output, input = [], []
         patch_brick(sw, output, input)
         input.append("ok")
-        sw.cfg.numports = "33"
+        sw.set({"numports": 33})
         self.assertEqual(len(output), 1)
         self.assertEqual(output[0], "port/setnumports 33\n")
-        sw.cfg["numports"] = 33
+        sw.config["numports"] = 33
         self.assertEqual(len(output), 1)
 
     def test_args(self):

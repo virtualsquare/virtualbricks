@@ -58,5 +58,8 @@ class TestFactory(unittest.TestCase):
         copy = self.factory.dupevent(event)
         self.assertIsNot(copy, event)
         self.assertEqual(copy.name, "copy_of_test_event")
+        self.assertIsNot(event.config, copy.config)
         self.assertEqual(event.get("delay"), copy.get("delay"))
         self.assertEqual(event.get("actions"), copy.get("actions"))
+        event.config["actions"] += ["new action"]
+        self.assertNotEqual(event.get("actions"), copy.get("actions"))

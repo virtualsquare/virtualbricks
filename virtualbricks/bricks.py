@@ -18,18 +18,17 @@
 
 
 import os
-import copy
 
 from twisted.internet import protocol, reactor, error, defer
 from twisted.python import failure
 
 from virtualbricks import base, errors, settings, _compat
-from virtualbricks.base import (NewConfig, String, Integer, SpinInt, Float,
-                                Boolean, Object)
+from virtualbricks.base import (Config as _Config, String, Integer, SpinInt,
+                                Float, Boolean, Object, ListOf)
 
 
 __all__ = ["Brick", "Config", "String", "Integer", "SpinInt", "Float",
-           "Boolean", "Object"]
+           "Boolean", "Object", "ListOf"]
 
 if False:  # pyflakes
     _ = str
@@ -90,7 +89,7 @@ class TermProtocol(protocol.ProcessProtocol):
         log.msg(msg, isError=terminated)
 
 
-class Config(NewConfig):
+class Config(_Config):
 
     parameters = {"pon_vbevent": String(""),
                   "poff_vbevent": String("")}
@@ -115,8 +114,8 @@ class _LocalBrick(base.Base):
         base.Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
-        self.cfg.pon_vbevent = ""
-        self.cfg.poff_vbevent = ""
+        self.config["pon_vbevent"] = ""
+        self.config["poff_vbevent"] = ""
         self.config_socks = []
 
     # IBrick interface
@@ -140,7 +139,12 @@ class _LocalBrick(base.Base):
         # created before reacing this point, process_stated is already called
         # and then _started_d is unset
         d.addErrback(started.errback)
-        d.addCallback(lambda _: self._start_related_events(on=True))
+
+        def start_related_events(_):
+            self._start_related_events(on=True)
+            return self
+
+        d.addCallback(start_related_events)
         return started
 
     def poweroff(self, kill=False):
@@ -161,7 +165,7 @@ class _LocalBrick(base.Base):
     def configure(self, attrlist):
         attrs = {}
         for name, value in (a.split("=", 2) for a in attrlist):
-            attrs[name] = self.cfg.parameters[name].from_string(value)
+            attrs[name] = self.config.parameters[name].from_string(value)
         self.set(attrs)
 
     def set(self, attrs):
@@ -215,7 +219,7 @@ class _LocalBrick(base.Base):
                 if callable(value):
                     value = value()
                 else:
-                    value = self.cfg.get(value)
+                    value = self.config.get(value)
                 if value is "*":
                     res.append(switch)
                 elif value is not None and len(value) > 0:
@@ -241,17 +245,19 @@ class _LocalBrick(base.Base):
         #     self.proc = self.sudo_factory(self.proc)
 
     def _start_related_events(self, on=True, off=False):
-        if any([on, off]) and any([on and self.cfg.pon_vbevent, off and
-                                   self.cfg.poff_vbevent]):
-            name = self.cfg.pon_vbevent if on else self.cfg.poff_vbevent
-            ev = self.factory.get_event_by_name(name)
-            if ev:
-                ev.poweron()
-            else:
-                log.warning("Warning. The Event '%s' attached to Brick '%s' is"
-                            " not available. Skipping execution.",
-                            self.cfg.poff_vbevent, self.name)
-        return self
+        if on and self.config["pon_vbevent"]:
+            name = self.config["pon_vbevent"]
+        elif off and self.config["poff_vbevent"]:
+            name = self.config["poff_vbevent"]
+        else:
+            return
+
+        event = self.factory.get_event_by_name(name)
+        if event:
+            event.poweron()
+        else:
+            log.msg("Warning. The Event '%s' attached to Brick '%s' is "
+                    "not available. Skipping execution." % (name, self.name))
 
     #############################
     # Console related operations.
@@ -267,13 +273,6 @@ class _LocalBrick(base.Base):
     def clear_self_socks(self, sock=None):  # DO NOT REMOVE
         pass
 
-    def __deepcopy__(self, memo):
-        newname = self.factory.normalize(self.factory.next_name(
-            "Copy_of_%s" % self.name))
-        new_brick = type(self)(self.factory, newname)
-        new_brick.cfg = copy.deepcopy(self.cfg, memo)
-        return new_brick
-
     def path(self):
         return "%s/%s.ctl" % (settings.VIRTUALBRICKS_HOME, self.name)
 
@@ -282,14 +281,6 @@ class _LocalBrick(base.Base):
 
     def on_config_changed(self):
         pass
-
-    def initialize(self, attrlist):
-        """TODO attrs : dict attr => value"""
-        for attr in attrlist:
-            k = attr.split("=")[0]
-            self.cfg.set(attr)
-            if k == "sock":
-                self.cfg.sock = self._rewrite_sock_server(attr.split("=")[1])
 
     def connect(self, endpoint):
         for p in self.plugs:
@@ -323,7 +314,6 @@ class _LocalBrick(base.Base):
         # else:
         #     log.msg("Cannot send command, brick is not running.")
 
-
     def recv(self):
         pass
 
@@ -352,20 +342,7 @@ class Brick(_LocalBrick):
 
     def set_host(self, hostname):
         self.homehost = self.factory.get_host_by_name(hostname)
-        self.cfg.homehost = hostname
-
-    def initialize(self, attrlist):
-        attributes = []
-        homehosts = []
-        for attr in attrlist:
-            if not attr.startswith("homehost="):
-                attributes.append(attr)
-            else:
-                homehosts.append(attr)
-        _LocalBrick.initialize(self, attributes)
-        for homehost in homehosts:
-            self.cfg.set(homehost)
-            self.set_host(homehost.split('=')[1])
+        self.config["homehost"] = hostname
 
     def set(self, attrs):
         _LocalBrick.set(self, attrs)

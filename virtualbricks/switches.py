@@ -17,9 +17,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import logging
 
-from virtualbricks import settings, bricks, link, _compat
+from virtualbricks import settings, bricks, _compat
 
 
 log = _compat.getLogger(__name__)
@@ -28,16 +27,18 @@ if False:  # pyflakes
     _ = str
 
 
+class SwitchConfig(bricks.Config):
+
+    parameters = {"numports": bricks.SpinInt(32, 1, 128),
+                  "hub": bricks.Boolean(False),
+                  "fstp": bricks.Boolean(False)}
+
+
 class Switch(bricks.Brick):
 
     type = "Switch"
     ports_used = 0
-
-    class config_factory(bricks.Config):
-
-        parameters = {"numports": bricks.SpinInt(32, 1, 128),
-                      "hub": bricks.Boolean(False),
-                      "fstp": bricks.Boolean(False)}
+    config_factory = SwitchConfig
 
     def set_name(self, name):
         self._name = name
@@ -60,9 +61,6 @@ class Switch(bricks.Brick):
                                 "--mgmtgroup": "mgmtgroup",
                                 "-s": self.path,
                                 "-M": self.console}
-        # self.cfg.numports = "32"
-        # self.cfg.hub = ""
-        # self.cfg.fstp = ""
         self.socks.append(self.factory.new_sock(self, self.name + "_port"))
         # XXX: obiviusly configuration is changed in __init__, check if it is
         # actually used by someone
@@ -71,14 +69,11 @@ class Switch(bricks.Brick):
     def get_parameters(self):
         fstp = ""
         hub = ""
-        if (self.cfg.get('fstp', False)):
-            if self.cfg.fstp == '*':
-                fstp = ", FSTP"
-        if (self.cfg.get('hub', False)):
-            if self.cfg.hub == '*':
-                hub = ", HUB"
-        return _("Ports:") + "%d%s%s" % ((int(unicode(
-            self.cfg.get('numports', '32')))), fstp, hub)
+        if self.config["fstp"]:
+            fstp = ", FSTP"
+        if self.config["hub"]:
+            hub = ", HUB"
+        return _("Ports: ") + "%d%s%s" % (self.config["numports"], fstp, hub)
 
     def prog(self):
         return self.settings.get("vdepath") + "/vde_switch"
@@ -125,17 +120,19 @@ class FakeProcess:
         self.terminated = False
 
 
+class SwitchWrapperConfig(bricks.Config):
+
+    parameters = {"path": bricks.String(""),
+                  "numports": bricks.SpinInt(32, 1, 128),
+                  "hub": bricks.Boolean(False),
+                  "fstp": bricks.Boolean(False)}
+
+
 class SwitchWrapper(bricks.Brick):
 
     type = "SwitchWrapper"
     pid = -1
-
-    class config_factory(bricks.Config):
-
-        parameters = {"path": bricks.String(""),
-                      "numports": bricks.SpinInt(32, 1, 128),
-                      "hub": bricks.Boolean(False),
-                      "fstp": bricks.Boolean(False)}
+    config_factory = SwitchWrapperConfig
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -144,11 +141,11 @@ class SwitchWrapper(bricks.Brick):
         self.on_config_changed()
 
     def poweron(self):
-        if os.path.exists(self.cfg.path):
+        if os.path.exists(self.config["path"]):
             self.proc = FakeProcess(self)
         else:
             self.proc = None
-            log.debug("Socket does not exists: %s", self.cfg.path)
+            log.debug("Socket does not exists: %s", self.config["path"])
 
     def poweroff(self, kill=False):
         self.proc = None
@@ -157,7 +154,7 @@ class SwitchWrapper(bricks.Brick):
         return ""
 
     def _set_sock_path(self):
-        self.socks[0].path = self.cfg.path
+        self.socks[0].path = self.config["path"]
 
     def on_config_changed(self):
         self._set_sock_path()
@@ -171,4 +168,4 @@ class SwitchWrapper(bricks.Brick):
         return self.socks[0].has_valid_path()
 
     def path(self):
-        return self.cfg.path
+        return self.config["path"]

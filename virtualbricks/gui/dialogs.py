@@ -351,7 +351,7 @@ class UsbDevWindow(Window):
         treeview = self.get_object("treeview1")
         selection = treeview.get_selection()
         selection.set_mode(gtk.SELECTION_MULTIPLE)
-        currents = self.vm.cfg.usbdevlist.split()
+        currents = self.vm.config["usbdevlist"]
         # if currents:
         iter = model.get_iter_first()
         while iter:
@@ -368,7 +368,7 @@ class UsbDevWindow(Window):
         selection = treeview.get_selection()
         if selection:
             model, paths = selection.get_selected_rows()
-            devs = " ".join(model[p[0]][0] for p in paths)
+            devs = [model[p[0]][0] for p in paths]
 
             if devs and not os.access("/dev/bus/usb", os.W_OK):
                 log.error(_("Cannot access /dev/bus/usb. "
@@ -376,9 +376,8 @@ class UsbDevWindow(Window):
                 self.gui.gladefile.get_widget("cfg_Qemu_usbmode_check"
                                              ).set_active(False)
 
-            old = self.vm.cfg.usbdevlist
-            self.vm.cfg.set('usbdevlist=' + devs)
-            self.vm.update_usbdevlist(devs, old)
+            self.vm.config["usbdevlist"] = devs
+            self.vm.update_usbdevlist(devs)
         self.window.destroy()
 
 
@@ -704,7 +703,7 @@ class EventControllerMixin(object):
         self.get_object("sh_cellrenderer").set_activatable(True)
         self.get_object("action_cellrenderer").set_property("editable", True)
         model = self.get_object("actions_liststore")
-        for action in event.cfg["actions"]:
+        for action in event.config["actions"]:
             model.append((action, isinstance(action, console.ShellCommand)))
         model.append(("", False))
 
