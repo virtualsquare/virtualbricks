@@ -2,7 +2,7 @@ import os
 import StringIO
 
 from virtualbricks import base
-from virtualbricks.tests import unittest, Skip, stubs
+from virtualbricks.tests import unittest, stubs
 
 
 marker = object()
@@ -22,7 +22,7 @@ str=b
 """
 
 
-class Config1(base.NewConfig):
+class Config1(base.Config):
 
     parameters = {
         "str": base.String("a"),
@@ -47,48 +47,43 @@ class BaseStub(base.Base):
     config_factory = Config2
 
 
-class TestNewConfig(unittest.TestCase):
+class TestConfig(unittest.TestCase):
 
     def setUp(self):
-        self.cfg1 = Config1()
-        self.cfg2 = Config2()
+        self.config1 = Config1()
+        self.config2 = Config2()
 
     def test_hierarchy(self):
-        for cfg in self.cfg1, self.cfg2:
+        for config in self.config1, self.config2:
             for p in "str", "int", "float", "bool", "obj":
-                self.assertIn(p, cfg.parameters)
-                self.assertIn(p, cfg)
-        self.assertIn("spinint", self.cfg2)
+                self.assertIn(p, config.parameters)
+                self.assertIn(p, config)
+        self.assertIn("spinint", self.config2)
 
     def test_defaults(self):
         for p, v in (("str", "a"), ("int", 42), ("float", 0.0),
                      ("bool", True), ("obj", marker), ("spinint", 32)):
-            self.assertEqual(self.cfg2[p], v)
+            self.assertEqual(self.config2[p], v)
 
     def _test_string(self, getter):
         for p, v in (("str", "a"), ("int", "42"), ("float", "0.0"),
                      ("bool", "*"), ("obj", marker), ("spinint", "32")):
-            self.assertEqual(getter(self.cfg2, p), v)
+            self.assertEqual(getter(self.config2, p), v)
 
     def test_get(self):
-        self._test_string(base.NewConfig.get)
+        self._test_string(base.Config.get)
 
     def test_getattr(self):
         self._test_string(getattr)
 
     def test_dict_interface(self):
-        self.assertIn("str", self.cfg2)
-        self.cfg2["str"] = "b"
-        self.assertRaises(ValueError, self.cfg2.__setitem__, "str2", "b")
-        self.assertEquals(self.cfg2["str"], "b")
-        self.assertEquals(len(self.cfg2), 6)
-        self.assertEquals(sorted(self.cfg2.keys()), ["bool", "float", "int",
+        self.assertIn("str", self.config2)
+        self.config2["str"] = "b"
+        self.assertRaises(ValueError, self.config2.__setitem__, "str2", "b")
+        self.assertEquals(self.config2["str"], "b")
+        self.assertEquals(len(self.config2), 6)
+        self.assertEquals(sorted(self.config2.keys()), ["bool", "float", "int",
                                                      "obj", "spinint", "str"])
-
-    def test_old_interface(self):
-        self.assertEquals(list(sorted(self.cfg2.iteritems())),
-                          [("bool", "*"), ("float", "0.0"), ("int", "42"),
-                           ("obj", marker), ("spinint", "32"), ("str", "a")])
 
 
 class TestBase(unittest.TestCase):
@@ -101,11 +96,11 @@ class TestBase(unittest.TestCase):
         sio = StringIO.StringIO()
         self.brick.save_to(sio)
         self.assertEqual(sio.getvalue(), "[Stub:base]\n\n")
-        self.brick.cfg["bool"] = False
-        self.brick.cfg["float"] = 0.1
-        self.brick.cfg["int"] = 43
-        self.brick.cfg["spinint"] = 31
-        self.brick.cfg["str"] = "b"
+        self.brick.config["bool"] = False
+        self.brick.config["float"] = 0.1
+        self.brick.config["int"] = 43
+        self.brick.config["spinint"] = 31
+        self.brick.config["str"] = "b"
         sio.seek(0)
         self.brick.save_to(sio)
         self.assertEqual(sio.getvalue(), DUMP)
@@ -120,7 +115,7 @@ class TestBase(unittest.TestCase):
         self.brick.load_from(sio)
         for p, v in (("bool", False), ("float", 0.1), ("int", 43),
                      ("spinint", 31), ("str", "b")):
-            self.assertEqual(self.brick.cfg[p], v)
+            self.assertEqual(self.brick.config[p], v)
         cur = sio.tell()
         sio.seek(0, os.SEEK_END)
         self.assertEqual(cur, sio.tell())
@@ -131,5 +126,5 @@ class TestBase(unittest.TestCase):
         self.brick.load_from(sio)
         for p, v in (("bool", True), ("float", 0.0), ("int", 43),
                      ("spinint", 32), ("str", "a")):
-            self.assertEqual(self.brick.cfg[p], v)
+            self.assertEqual(self.brick.config[p], v)
         self.assertEqual(sio.tell(), 7)

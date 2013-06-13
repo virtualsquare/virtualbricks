@@ -188,7 +188,7 @@ class RemoteHost:
         self.lock.release()
 
     def putconfig(self, b):
-        for (k, v) in b.cfg.iteritems():
+        for k, v in ((n, b.config.get(n)) for n in b.config):
             if k != 'homehost':
                 # ONLY SEND TO SERVER STRING PARAMETERS,
                 # OBJECT WON'T BE SENT TO SERVER AS A STRING!
@@ -374,8 +374,7 @@ class VBProtocol(Protocol):
         elif cmd[0] == "config":
             obj.configure(cmd[1:])
         elif cmd[0] == "show":
-            # obj.cfg.dump(self.sendLine)
-            obj.cfg.dump()
+            obj.config.dump(self.sendLine)
         elif cmd[0] == "connect" and len(cmd) == 2:
             if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
                 log.info("Connection ok")

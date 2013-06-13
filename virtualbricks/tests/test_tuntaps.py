@@ -9,9 +9,9 @@ class TestTap(unittest.TestCase):
         self.assertEqual(len(tap.plugs), 1)
         tap.restore_self_plugs()
         self.assertEqual(len(tap.plugs), 2)
-        tap.cfg["sock"] = "boom"
+        tap.config["sock"] = "boom"
         tap.clear_self_socks()
-        self.assertEqual(tap.cfg["sock"], "")
+        self.assertEqual(tap.config["sock"], "")
         self.assertFalse(tap.configured())
 
 
@@ -22,7 +22,7 @@ class Capture(unittest.TestCase):
         self.assertEqual(len(capture.plugs), 1)
         capture.restore_self_plugs()
         self.assertEqual(len(capture.plugs), 2)
-        capture.cfg["sock"] = "boom"
+        capture.config["sock"] = "boom"
         capture.clear_self_socks()
-        self.assertEqual(capture.cfg["sock"], "")
+        self.assertEqual(capture.config["sock"], "")
         self.assertFalse(capture.configured())

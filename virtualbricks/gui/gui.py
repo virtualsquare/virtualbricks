@@ -92,10 +92,6 @@ def get_combo_text(widget):
 		return txt
 
 
-def get_active(widget):
-	return "*" if widget.get_active() else ""
-
-
 def widget_to_params(brick, get_widget):
 	"""Widget to params reads the config directly from
 	gtk widgets.
@@ -105,15 +101,15 @@ def widget_to_params(brick, get_widget):
 	"""
 
 	pattern_setters = [("cfg_%s_%s_text", lambda w: w.get_text()),
-		("cfg_%s_%s_spinint", lambda w: str(w.get_value_as_int())),
-		("cfg_%s_%s_spinfloat", lambda w: str(w.get_value())),
+		("cfg_%s_%s_spinint", lambda w: w.get_value_as_int()),
+		("cfg_%s_%s_spinfloat", lambda w: w.get_value()),
 		("cfg_%s_%s_comboinitial", lambda w: w.get_active_text()),
 		("cfg_%s_%s_combo", lambda w: get_combo_text(w)),
-		("cfg_%s_%s_check", lambda w: get_active(w)),
+		("cfg_%s_%s_check", lambda w: w.get_active()),
 		("cfg_%s_%s_filechooser", lambda w: (w.get_filename() or ""))]
 
 	parameters = {}
-	for param_name in brick.cfg.keys():
+	for param_name in brick.config.keys():
 		for pattern, setter in pattern_setters:
 			name = pattern % (brick.get_type(), param_name)
 			widget = get_widget(name)
@@ -133,7 +129,7 @@ def changed(brick, row):
 def changed_brick_in_model(result, model):
 	try:
 		brick, status = result
-	except ValueError:
+	except TypeError:
 		brick = result
 	for path, brick_ in enumerate(model):
 		if brick is brick_:
@@ -668,7 +664,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					opt[name] = name
 		combo.populate(opt)
 		for n,s in opt.iteritems():
-			if n == b.cfg.iface:
+			if n == b.config["iface"]:
 				combo.select(n)
 
 	def config_brick_prepare(self, b):
@@ -755,38 +751,38 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					elif b.homehost is not None and img.host is not None and img.host.addr[0] == b.homehost.addr[0]:
 						opt[img.name] = img.name
 				images.populate(opt,"")
-				if len(b.cfg.get('base'+hd)) > 0 and (getattr(b.cfg, hd)).set_image(b.cfg.get('base'+hd)):
-					images.select(b.cfg.get("base"+hd))
+				if (b.config["base" + hd] and
+						b.config[hd].set_image(b.config["base" + hd])):
+					images.select(b.config["base" + hd])
 				else:
 					images.select("Off")
 
 		# Qemu: usb devices bind button
-		if (b.get_type() == "Qemu"):
-			if b.cfg.get('usbmode')=='*':
+		if b.get_type() == "Qemu":
+			if b.config["usbmode"]:
 				self.gladefile.get_widget('vm_usb_show').set_sensitive(True)
 			else:
 				self.gladefile.get_widget('vm_usb_show').set_sensitive(False)
-				b.cfg.set('usbdevlist=')
+				b.config["usbdevlist"] = ""
 
 
 		# Qemu: check if KVM is checkable
-		if (b.get_type()=="Qemu"):
+		if b.get_type()=="Qemu":
 			if self.config.kvm or b.homehost:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(True)
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM")
 			else:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(False)
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled"))
-				b.cfg.kvm=""
+				b.config["kvm"] = False
 
 		self.__update_vmplugs_tree()
 
-		for key in b.cfg.keys():
-			t = b.get_type()
-
+		t = b.get_type()
+		for key in b.config.keys():
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
-			if (widget is not None):
-				if b.cfg.get(key) in set(["*", "True", True]):
+			if widget is not None:
+				if b.config[key]:
 					if key is "kvm" and self.config.kvm:
 						widget.set_active(True)
 					elif key is not "kvm":
@@ -801,19 +797,18 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					else:
 						self.on_symm_toggle(widget)
 
-		for key in b.cfg.keys():
-			t = b.get_type()
-
+		t = b.get_type()
+		for key in b.config.keys():
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
-			if (widget is not None):
-				widget.set_text(str(b.cfg.get(key)))
+			if widget is not None:
+				widget.set_text(b.config.get(key))
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-			if (widget is not None and len(b.cfg.get(key)) > 0):
-				widget.set_value(int(b.cfg.get(key)))
+			if widget is not None and b.config.get(key):
+				widget.set_value(b.config[key])
 			if t == "Switch" and key == 'numports':
 				nports = 0
-				for it in iter(self.brickfactory.bricks):
+				for it in self.brickfactory.bricks:
 					for p in [p for p in it.plugs if p.configured()]:
 						if p.sock.nickname == b.socks[0].nickname:
 							nports += 1
@@ -823,23 +818,19 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					widget.set_range(1,128)
 
 
-			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
-			if (widget is not None):
-				widget.set_value(float(b.cfg.get(key)))
-
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
-			if (widget is not None and dicts.has_key(key)):
+			if widget is not None and dicts.has_key(key):
 				for k, v in dicts[key].iteritems():
-					if (v==b.cfg.get(key)):
+					if v == b.config.get(key):
 						ComboBox(self.gladefile.get_widget("cfg_"+t+"_"+key+"_combo")).select(k)
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
-			if (widget is not None):
+			if widget is not None:
 				model = widget.get_model()
 				iter_ = model.get_iter_first()
 				i = 0
 				while iter_:
-					if model.get_value(iter_,0)==b.cfg.get(key):
+					if model.get_value(iter_, 0) == b.config.get(key):
 						widget.set_active(i)
 						break
 					else:
@@ -847,9 +838,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 						i = i + 1
 
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
-			if (widget is not None and len(b.cfg.get(key)) > 0):
-				widget.set_filename(b.cfg.get(key))
-			elif (widget is not None and t=='Qemu' and (key[0:4]=='base' or key=='cdrom')):
+			if widget is not None and b.config.get(key):
+				widget.set_filename(b.config.get(key))
+			elif (widget is not None and t == 'Qemu' and
+					(key[0:4] == 'base' or key == 'cdrom')):
 				widget.set_current_folder(self.config.get('baseimages'))
 			elif widget is not None:
 				widget.unselect_all()
@@ -861,11 +853,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		if b.get_type() == 'Tap':
 			self.gladefile.get_widget('radio_tap_no').set_active(True)
 			self.gladefile.get_widget('radio_tap_manual').set_active(True)
-			if b.cfg.mode == 'off':
+			if b.config["mode"] == 'off':
 				self.gladefile.get_widget('radio_tap_no').set_active(True)
-			if b.cfg.mode == 'dhcp':
+			elif b.config["mode"] == 'dhcp':
 				self.gladefile.get_widget('radio_tap_dhcp').set_active(True)
-			if b.cfg.mode == 'manual':
+			elif b.config["mode"] == 'manual':
 				self.gladefile.get_widget('radio_tap_manual').set_active(True)
 
 	"""
@@ -894,7 +886,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		"""
 
 		parameters = {}
-		for key in b.cfg.keys():
+		for key in b.config.keys():
 			t = b.get_type()
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
 			if (widget is not None):
@@ -955,11 +947,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		# Address mode radio
 		if (self.gladefile.get_widget('radio_tap_no').get_active()):
-			b.cfg.mode = 'off'
+			b.config["mode"] = 'off'
 		elif (self.gladefile.get_widget('radio_tap_dhcp').get_active()):
-			b.cfg.mode = 'dhcp'
+			b.config["mode"] = 'dhcp'
 		else:
-			b.cfg.mode = 'manual'
+			b.config["mode"] = 'manual'
 
 	def config_Capture_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_capture')).get_selected()
@@ -968,9 +960,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				b.plugs[0].connect(so)
 		sel = ComboBox(self.gladefile.get_widget('ifcombo_capture')).get_selected()
 		if sel:
-			b.cfg.set("iface="+str(sel))
+			b.config["iface"] = str(sel)
 		else:
-			b.cfg.set("iface=")
+			b.config["iface"] = ""
 
 	def config_TunnelConnect_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
@@ -1006,7 +998,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def config_brick_confirm(self):
 		if self.__config_panel:
-			# XXX: this method break the live management
 			self.__config_panel.configure_brick(self)
 		else:
 			self._config_brick_confirm()
@@ -1036,8 +1027,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		elif t == "Wirefilter":
 			self.config_Wirefilter_confirm(b)
 
-		# fmt_params = ["%s=%s" % (key,value) for key, value in parameters.iteritems()]
-		# self.user_wait_action(b.configure, fmt_params)
 		b.set(parameters)
 
 	def config_brick_cancel(self):
@@ -1117,10 +1106,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		builder.get_object("image").set_from_pixbuf(
 			graphics.pixbuf_for_running_brick(brick))
 		table = builder.get_object("table")
-		table.resize(len(brick.cfg), 2)
+		table.resize(len(brick.config), 2)
 		pon_poff = ["poff_vbevent", "pon_vbevent"]
-		for i, (name, value) in enumerate((n, v) for n, v in
-				sorted(brick.cfg.iteritems()) if n not in set(pon_poff)):
+		# for i, (name, value) in enumerate((n, v) for n, v in
+		# 		sorted(brick.config.iteritems()) if n not in set(pon_poff)):
+		for i, (name, value) in enumerate((name, brick.config.get(name))
+				for name in sorted(brick.config)):
 			nlabel = gtk.Label("%s:" % name)
 			nlabel.set_alignment(1.0, 0.5)
 			nlabel.set_padding(0, 2)
@@ -1130,15 +1121,15 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			vlabel.set_padding(0, 2)
 			table.attach(vlabel, 1, 2, i, i + 1)
 		# pon_vbevent and poff_vbevent always to the end
-		for j, name in enumerate(pon_poff):
-			nlabel = gtk.Label("%s:" % name)
-			nlabel.set_alignment(1.0, 0.5)
-			nlabel.set_padding(0, 2)
-			table.attach(nlabel, 0, 1, i + j + 1, i + j + 2, gtk.FILL)
-			vlabel = gtk.Label(brick.cfg.get(name))
-			vlabel.set_alignment(0.0, 0.5)
-			vlabel.set_padding(0, 2)
-			table.attach(vlabel, 1, 2, i + j + 1, i + j + 2)
+		# for j, name in enumerate(pon_poff):
+		# 	nlabel = gtk.Label("%s:" % name)
+		# 	nlabel.set_alignment(1.0, 0.5)
+		# 	nlabel.set_padding(0, 2)
+		# 	table.attach(nlabel, 0, 1, i + j + 1, i + j + 2, gtk.FILL)
+		# 	vlabel = gtk.Label(brick.config.get(name))
+		# 	vlabel.set_alignment(0.0, 0.5)
+		# 	vlabel.set_padding(0, 2)
+		# 	table.attach(vlabel, 1, 2, i + j + 1, i + j + 2)
 		builder.get_object("vbox").pack_start(panel, True, True, 0)
 		return builder.get_object("frame")
 
@@ -1930,14 +1921,14 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
 			model, iter_ = startevents.get_selection().get_selected()
 			if iter_:
-				brick.cfg.pon_vbevent = model[iter_][2]
+				brick.config["pon_vbevent"] = model[iter_][2]
 			else:
-				brick.cfg.pon_vbevent = ""
+				brick.config["pon_vbevent"] = ""
 			model, iter_ = stopevents.get_selection().get_selected()
 			if iter_:
-				brick.cfg.poff_vbevent = model[iter_][2]
+				brick.config["poff_vbevent"] = model[iter_][2]
 			else:
-				brick.cfg.poff_vbevent = ""
+				brick.config["poff_vbevent"] = ""
 
 		return True
 
@@ -2327,7 +2318,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				opt_m[v]=v
 		toSelect=""
 		for k, v in opt_m.iteritems():
-			if v.strip() == brick.cfg.machine.strip():
+			if v.strip() == brick.config["machine"].strip():
 				toSelect=k
 		machine_c.populate(opt_m, toSelect)
 		os.unlink(MYPATH+"/.vmachines")
@@ -2362,7 +2353,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 						if val.endswith(']'):
 							val = val.rstrip(']')
 						opt_c[val]=val
-		cpu_c.populate(opt_c, brick.cfg.cpu)
+		cpu_c.populate(opt_c, brick.config["cpu"])
 		os.unlink(MYPATH+"/.cpus")
 
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
@@ -2570,9 +2561,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					parameters = "%s..." % parameters[:30]
 				image = graphics.pixbuf_for_running_brick_at_size(event, 48, 48)
 				iter_ = eventsmodel.append([image, event.get_type(), event.name, parameters])
-				if brick.cfg.pon_vbevent == event.name:
+				if brick.config["pon_vbevent"] == event.name:
 					treeviewselectionstart.select_iter(iter_)
-				if brick.cfg.poff_vbevent == event.name:
+				if brick.config["poff_vbevent"] == event.name:
 					treeviewselectionstop.select_iter(iter_)
 
 		cell = gtk.CellRendererPixbuf ()
@@ -2726,27 +2717,27 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_usbmode_onoff(self, w, event=None, data=None):
 		brick = self.__get_selection(self.__bricks_treeview)
-		if (w.get_active()):
-			brick.cfg.set('usbmode=*')
+		if w.get_active():
+			brick.config["usbmode"] = True
 		else:
-			brick.cfg.set('usbmode=')
-			brick.cfg.set('usbdevlist=')
+			brick.config["usbmode"] = False
+			brick.config["usbdevlist"] = ""
 		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
 
 	def usb_show(self):
 
 		def show_dialog(output):
 			dialog = dialogs.UsbDevWindow(self, output.strip(), vm)
-			dialogs.window.set_transient_for(self.widg["main_win"])
+			dialog.window.set_transient_for(self.widg["main_win"])
 			dialog.show()
 
 		vm = self.__get_selection(self.__bricks_treeview)
 		devices = utils.getProcessOutput("lsusb", env=os.environ)
-		devices.addCallbacks(show_dialog, log.err)
+		devices.addCallback(show_dialog).addErrback(log.err)
         log.msg("Searching USB devices")
 
 	def on_usb_show(self, button):
-		self.user_wait_action(self.osb_show)
+		self.user_wait_action(self.usb_show)
 
 	def on_check_commit_privatecow_toggled(self, widget, event=None, data=None):
 		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
@@ -2851,7 +2842,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		for b in iter(self.brickfactory.bricks):
 			if b.get_type() == "Qemu":
 				for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-					disk = getattr(b.cfg, dev)
+					disk = b.config[dev]
 					if disk.cow:
 						using_cow[dev + ' on ' + b.name] = disk
 

@@ -13,9 +13,9 @@ class TestTunnelConnect(TestTunnelListen):
     def test_on_config_changed(self):
         tc = tunnels.TunnelConnect(stubs.FactoryStub(), "test_tc")
         self.assertIs(tc.plugs[0].sock, None)
-        self.assertEqual(tc.cfg["host"], "")
+        self.assertEqual(tc.config["host"], "")
         tc.on_config_changed()
-        self.assertEqual(tc.cfg["host"], ":%d" % tc.cfg["port"])
-        tc.cfg["host"] = "localhost"
+        self.assertEqual(tc.config["host"], "")
+        tc.config["host"] = "localhost"
         tc.on_config_changed()
-        self.assertEqual(tc.cfg["host"], "localhost:%d" % tc.cfg["port"])
+        self.assertEqual(tc.config["host"], "localhost:%d" % tc.config["port"])

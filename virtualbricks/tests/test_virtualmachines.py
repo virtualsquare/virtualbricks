@@ -12,7 +12,7 @@ from virtualbricks.tests import stubs, test_link, Skip
 
 def disks(vm):
     names = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
-    return (vm.cfg.__getitem__(d) for d in names)
+    return (vm.config.__getitem__(d) for d in names)
 
 
 ARGS = ["/usr/bin/i386", "-nographic", "-name", "vm", "-net", "none", "-mon",
@@ -73,16 +73,16 @@ class TestVirtualMachine(unittest.TestCase):
 
     def test_associate_disk_on_new_vm(self):
         for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            disk = self.vm.cfg[hd]
+            disk = self.vm.config[hd]
             self.assertTrue(hasattr(disk, "image"))
             self.assertIs(disk.image, None)
         basehda = self.mktemp()
         open(basehda, "w").close()
-        self.vm.cfg["basehda"] = basehda
+        self.vm.config["basehda"] = basehda
         self.vm._associate_disk()
-        self.assertIsNot(self.vm.cfg["hda"], None)
+        self.assertIsNot(self.vm.config["hda"], None)
         for hd in "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            disk = self.vm.cfg[hd]
+            disk = self.vm.config[hd]
             self.assertTrue(hasattr(disk, "image"))
             self.assertIs(disk.image, None)
 

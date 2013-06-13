@@ -12,10 +12,8 @@ class UsbDevWindowStub(dialogs.UsbDevWindow):
 
     def __init__(self, treeview, usbdev):
         self.view = treeview
-        self.gui = Object()
         self.vm = Object()
-        self.vm.cfg = Object()
-        self.vm.cfg.usbdevlist = usbdev
+        self.vm.config = {"usbdevlist": usbdev}
 
     def get_object(self, name):
         return self.view
@@ -46,10 +44,10 @@ class TestUsbDevWindow(unittest.TestCase):
         return map(list, map(model.__getitem__, rows))
 
     def test_populate_model(self):
-        self.assertEquals(self.get_rows(""), [])
-        self.assertEquals(self.get_rows("0a5c:2110"),
+        self.assertEquals(self.get_rows([]), [])
+        self.assertEquals(self.get_rows(["0a5c:2110"]),
                 [["0a5c:2110", "Broadcom Corp. Bluetooth Controller"]])
-        self.assertEquals(self.get_rows("1d6b:0001"),
+        self.assertEquals(self.get_rows(["1d6b:0001"]),
                           [["1d6b:0001", "Linux Foundation 1.1 root hub"],
                            ["1d6b:0001", "Linux Foundation 1.1 root hub"],
                            ["1d6b:0001", "Linux Foundation 1.1 root hub"],

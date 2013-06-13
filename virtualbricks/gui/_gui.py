@@ -143,7 +143,7 @@ class VMPopupMenu(BrickPopupMenu):
             else:
                 self.original.poweron("virtualbricks")
 
-        hda = self.original.cfg.get('basehda')
+        hda = self.original.config["basehda"]
         exe = "qemu-img"
         args = [exe, "snapshot" "-l", hda]
         output = utils.getProcessOutput(exe, args, os.environ)
@@ -368,7 +368,7 @@ class VMJobMenu(JobMenu):
                 log.msg(_("Suspend/Resume not supported on this disk."),
                         isError=True)
 
-        hda = self.original.cfg["basehda"]
+        hda = self.original.config["basehda"]
         if hda is None:
             log.msg(_("Suspend/Resume not supported on this disk."),
                     isError=True)
@@ -423,13 +423,13 @@ class EventConfigController(ConfigController, dialogs.EventControllerMixin):
     def get_view(self, gui):
         self.setup_controller(self.original)
         entry = self.get_object("delay_entry")
-        entry.set_text(self.original.cfg.get("delay"))
+        entry.set_text(self.original.config.get("delay"))
         return self.get_object("vbox1")
 
     def configure_brick(self, gui):
         attributes = {}
         text = self.get_object("delay_entry").get_text()
-        if self.original.cfg.get("delay") != text:
+        if self.original.config.get("delay") != text:
             if not text:
                 text = 0
             attributes["delay"] = int(text)
@@ -460,14 +460,15 @@ class SwitchConfigController(ConfigController):
 
     def get_view(self, gui):
         self.get_object("fstp_checkbutton").set_active(
-            self.original.cfg["fstp"])
-        self.get_object("hub_checkbutton").set_active(self.original.cfg["hub"])
+            self.original.config["fstp"])
+        self.get_object("hub_checkbutton").set_active(
+            self.original.config["hub"])
         minports = len([1 for b in iter(gui.brickfactory.bricks)
                         for p in b.plugs if b.socks
                         and p.sock.nickname == b.socks[0].nickname])
         spinner = self.get_object("ports_spinbutton")
         spinner.set_range(max(minports, 1), 128)
-        spinner.set_value(int(self.original.cfg.numports))
+        spinner.set_value(self.original.config["numports"])
         return self.get_object("table")
 
     def configure_brick(self, gui):
@@ -492,18 +493,18 @@ class TapConfigController(ConfigController):
     resource = "data/tapconfig.ui"
 
     def get_view(self, gui):
-        self.get_object("ip_entry").set_text(self.original.cfg["ip"])
-        self.get_object("nm_entry").set_text(self.original.cfg["nm"])
-        self.get_object("gw_entry").set_text(self.original.cfg["gw"])
+        self.get_object("ip_entry").set_text(self.original.config["ip"])
+        self.get_object("nm_entry").set_text(self.original.config["nm"])
+        self.get_object("gw_entry").set_text(self.original.config["gw"])
         # default to manual if not valid mode is set
-        if self.original.cfg["mode"] == "off":
+        if self.original.config["mode"] == "off":
             self.get_object("nocfg_radiobutton").set_active(True)
-        elif self.original.cfg["mode"] == "dhcp":
+        elif self.original.config["mode"] == "dhcp":
             self.get_object("dhcp_radiobutton").set_active(True)
         else:
             self.get_object("manual_radiobutton").set_active(True)
         self.get_object("ipconfig_table").set_sensitive(
-            self.original.cfg["mode"] == "manual")
+            self.original.config["mode"] == "manual")
         combo = self.get_object("sockscombo_tap")
         model = combo.get_model()
         model.clear()  # XXX: needed?
@@ -525,14 +526,14 @@ class TapConfigController(ConfigController):
                 if sel == sock.nickname:
                     self.original.plugs[0].connect(sock)
         if self.get_object("nocfg_radiobutton").get_active():
-            self.original.cfg["mode"] = "off"
+            self.original.config["mode"] = "off"
         elif self.get_object("dhcp_radiobutton").get_active():
-            self.original.cfg["mode"] = "dhcp"
+            self.original.config["mode"] = "dhcp"
         else:
-            self.original.cfg["mode"] = "manual"
-            self.original.cfg["ip"] = self.get_object("ip_entry").get_text()
-            self.original.cfg["nm"] = self.get_object("nm_entry").get_text()
-            self.original.cfg["gw"] = self.get_object("gw_entry").get_text()
+            self.original.config["mode"] = "manual"
+            self.original.config["ip"] = self.get_object("ip_entry").get_text()
+            self.original.config["nm"] = self.get_object("nm_entry").get_text()
+            self.original.config["gw"] = self.get_object("gw_entry").get_text()
 
     def on_manual_radiobutton_toggled(self, radiobtn):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())

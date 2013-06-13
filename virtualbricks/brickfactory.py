@@ -23,7 +23,6 @@ import errno
 import sys
 import re
 import copy
-import getpass
 import logging
 import itertools
 import threading
@@ -237,16 +236,11 @@ class BrickFactory(object):
         ty = brick.get_type()
         if (brick.homehost):
             new_brick = self.newbrick("remote", ty, name,
-                                      brick.cfg.homehost)
+                                      brick.config["homehost"])
         else:
             new_brick = self.newbrick(ty, name)
         # Copy only strings, and not objects, into new vm config
-        # XXX: there is a problem here, new configs will have all kind of types
-        # XXX: maybe use deepcopy
-        for c in brick.cfg:
-            val = brick.cfg.get(c)
-            if isinstance(val, str):
-                new_brick.cfg.set(c + '=' + val)
+        new_brick.config = copy.deepcopy(brick.config)
 
         for p in brick.plugs:
             if p.sock is not None:
@@ -320,10 +314,9 @@ class BrickFactory(object):
 
     def dup_event(self, event):
         name = self.normalize(self.next_name("copy_of_" + event.name))
-        self.new_event(name)
-        new_event = self.get_event_by_name(name)
-        new_event.cfg = copy.deepcopy(event.cfg)
-        return new_event
+        new = self.new_event(name)
+        new.config = copy.deepcopy(event.config)
+        return new
 
     def del_event(self, event):
         event.poweroff()
@@ -567,7 +560,8 @@ class Application:
         if not self.config["noterm"]:
             stdio.StandardIO(Console(factory))
         if self.config["verbosity"] >= 2 and not self.config["daemon"]:
-            import signal, pdb
+            import signal
+            import pdb
             signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
