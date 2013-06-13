@@ -1,4 +1,6 @@
-from virtualbricks import switches
+from twisted.internet import defer
+
+from virtualbricks import switches, errors
 from virtualbricks.tests import unittest, stubs
 
 
@@ -34,19 +36,46 @@ class TestSwitch(unittest.TestCase):
 
     def test_args(self):
         sw1 = switches.Switch(stubs.FactoryStub(), "test_switch")
-        sw2 = switches.Switch(stubs.FactoryStub(), "test_switch2")
         self.assertEqual(sw1.args(),
-                         ["/home/marco/.virtualenvs/virtualbricks/bin/vde_switch",
-                          "-M", "/home/marco/.virtualbricks/test_switch.mgmt",
-                          "-n", "32", "-s",
-                          "/home/marco/.virtualbricks/test_switch.ctl"])
+             ["/home/marco/.virtualenvs/virtualbricks/bin/vde_switch",
+              "-M", "/home/marco/.virtualbricks/test_switch.mgmt",
+              "-n", "32", "-s",
+              "/home/marco/.virtualbricks/test_switch.ctl"])
 
 
 class TestSwitchWrapper(unittest.TestCase):
 
-    def test_socks(self):
-        factory = stubs.FactoryStub()
-        sw = switches.SwitchWrapper(factory, "test_switch")
-        self.assertEqual(len(sw.socks), 1)
-        self.assertIn(sw.socks[0], factory.socks)
+    def setUp(self):
+        self.factory = stubs.FactoryStub()
+        self.sw = switches.SwitchWrapper(self.factory, "test_switch")
 
+    def test_socks(self):
+        self.assertEqual(len(self.sw.socks), 1)
+        self.assertIn(self.sw.socks[0], self.factory.socks)
+
+    def test_poweron(self):
+        """
+        SwitchWrapper uses a custom poweron method, assure that it respect the
+        interface.
+        """
+        self.sw.proc = object()
+        result = []
+        self.sw.poweron().addCallbacks(result.append)
+        self.assertEqual(result, [self.sw])
+        self.sw.proc = None
+        sockfile = self.mktemp()
+        open(sockfile, "w").close()
+        self.sw.config["path"] = sockfile
+        self.sw.poweron().addCallback(result.append)
+        self.assertEqual(result, [self.sw] * 2)
+        self.sw.proc = None
+        self.sw.config["path"] = ""
+        deferred = self.sw.poweron()
+        self.assertFailure(deferred, errors.BadConfigError)
+
+    def test_poweroff(self):
+        self.sw.proc = object()
+        result = []
+        self.sw.poweroff().addCallback(result.append)
+        self.assertIs(self.sw.proc, None)
+        self.assertEqual(result, [(self.sw, None)])

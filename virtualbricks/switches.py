@@ -18,7 +18,10 @@
 
 import os
 
-from virtualbricks import settings, bricks, _compat
+from twisted.internet import defer
+from twisted.python import failure
+
+from virtualbricks import settings, bricks, _compat, errors
 
 
 log = _compat.getLogger(__name__)
@@ -141,14 +144,19 @@ class SwitchWrapper(bricks.Brick):
         self.on_config_changed()
 
     def poweron(self):
-        if os.path.exists(self.config["path"]):
+        if self.proc is not None:
+            return defer.succeed(self)
+        elif os.path.exists(self.config["path"]):
             self.proc = FakeProcess(self)
+            return defer.succeed(self)
         else:
-            self.proc = None
             log.debug("Socket does not exists: %s", self.config["path"])
+            return defer.fail(failure.Failure(errors.BadConfigError(
+                _("Socket does not exists: %s") % self.config["path"])))
 
     def poweroff(self, kill=False):
         self.proc = None
+        return defer.succeed((self, None))
 
     def get_parameters(self):
         return ""
@@ -162,7 +170,7 @@ class SwitchWrapper(bricks.Brick):
 
     def set(self, attrs):
         bricks.Brick.set(self, attrs)
-        self.__set_sock_path()
+        self._set_sock_path()
 
     def configured(self):
         return self.socks[0].has_valid_path()
