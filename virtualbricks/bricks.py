@@ -95,7 +95,7 @@ class ProcessLogger:
         loggers = [self.log, self.log_e]
         get_data = operator.itemgetter(0)
         is_error = operator.itemgetter(1)
-        for idx, group in itertools.groupby(reversed(self.buffer), is_error):
+        for idx, group in itertools.groupby(self.buffer, is_error):
             logger = loggers[idx]
             data = "".join(map(get_data, group))
             logger(data)
@@ -302,7 +302,7 @@ class _LocalBrick(base.Base):
             log.msg(_("Starting: '%s'") % " ".join(args))
             # usePTY?
             self.proc = reactor.spawnProcess(Process(self), prog, args,
-                                             os.environ, usePTY=True)
+                                             os.environ)
 
         l = [defer.maybeDeferred(self.args), defer.maybeDeferred(self.prog)]
         d = defer.gatherResults(l, consumeErrors=True)
@@ -378,7 +378,7 @@ class _LocalBrick(base.Base):
     def send(self, data):
         if self.proc:
             self.proc.write(data)
-            self.in_received
+            self.in_received(data)
         # else:
         #     log.msg("Cannot send command, brick is not running.")
 
