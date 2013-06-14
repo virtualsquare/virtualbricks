@@ -659,8 +659,8 @@ class VirtualMachine(bricks.Brick):
         else:
             return bricks.Brick.poweroff(self, kill)
 
-    def process_exited(self, proc, status):
-        bricks.Brick.process_exited(self, proc, status)
+    # def process_exited(self, proc, status):
+    #     bricks.Brick.process_exited(self, proc, status)
 
     def get_basefolder(self):
         return self.factory.get_basefolder()

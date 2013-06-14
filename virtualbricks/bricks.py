@@ -20,7 +20,7 @@
 import os
 
 from twisted.internet import protocol, reactor, error, defer
-from twisted.python import failure
+from twisted.python import failure, log as _log
 
 from virtualbricks import base, errors, settings, _compat
 from virtualbricks.base import (Config as _Config, String, Integer, SpinInt,
@@ -42,26 +42,69 @@ class Process(protocol.ProcessProtocol):
         self.brick = brick
 
     def connectionMade(self):
-        # log.msg("Started process (%d)" % self.transport.pid)
+        log.msg("Started process (%d)" % self.transport.pid)
         self.brick.process_started(self)
-        # self.transport.write("\n")
 
     def outReceived(self, data):
-        pass
-        # log.msg("process %s stdout:\n%s" % (self.transport.pid, data))
-        # self.brick.recv(data)
+        self.brick.out_received(data)
 
     def errReceived(self, data):
-        pass
-        # log.msg("process %s stderr:\n%s" % (self.transport.pid, data),
-        #         isError=True, show_to_user=False)
-        # self.brick.recv(data)
+        self.brick.err_received(data)
 
-    def processExited(self, status):
+    def processEnded(self, status):
         log.msg(str(status.value),
                 isError=isinstance(status.value, error.ProcessTerminated),
                 show_to_user=False)
-        self.brick.process_exited(self, status)
+        self.brick.process_ended(self, status)
+
+
+class ProcessLogger:
+    """Log the output of a process.
+
+    Limit is useful to prevent uncontrolled output of a process.
+    """
+
+    delay = 1
+    limit = 1024
+
+    def __init__(self, proc):
+        self.pid = proc.transport.pid
+        # 0: stdout, 1: stderr
+        self.buffers = [[], []]
+        self.scheduled = [None, None]
+
+    def logPrefix(self):
+        return "Process: {0}".format(self.pid)
+
+    def _flush(self, buffer, logger):
+        data = "".join(buffer)
+        del buffer[:]
+        logger(data)
+
+    def _enqueue(self, data, logger, stderr=False):
+        buffer = self.buffers[stderr]
+        scheduled = self.scheduled[stderr]
+        buffer.append(data)
+        if scheduled is None or not scheduled.active():
+            self.scheduled[stderr] = reactor.callLater(self.delay, self._flush,
+                                                       buffer, logger)
+        elif sum(map(len, buffer)) > self.limit:
+            scheduled.cancel()
+            self._flush(buffer, logger)
+        else:
+            scheduled.reset()
+
+    def _log_out(self, data):
+            _log.callWithLogger(self, _log.msg, data)
+
+    def out(self, data):
+        self._enqueue(data, self._log_out)
+
+    def _log_err(self, data):
+        _log.callWithLogger(self, _log.err, data, show_to_user=False)
+
+    def err(self, data):
+        self._enqueue(data, self._log_err, True)
 
 
 class TermProtocol(protocol.ProcessProtocol):
@@ -79,7 +122,7 @@ class TermProtocol(protocol.ProcessProtocol):
     def errReceived(self, data):
         self.err.append(data)
 
-    def processExited(self, status):
+    def processEnded(self, status):
         msg = "Console terminated\n%s" % status.value
         terminated = isinstance(status.value, error.ProcessTerminated)
         if terminated:
@@ -103,6 +146,7 @@ class _LocalBrick(base.Base):
     _started_d = None
     _exited_d = None
     _last_status = None
+    process_logger = ProcessLogger
 
     @property
     def pid(self):
@@ -136,8 +180,8 @@ class _LocalBrick(base.Base):
         d = self._check_links()
         d.addCallback(self._poweron)
         # here self._started_d could be None because if child process is
-        # created before reacing this point, process_stated is already called
-        # and then _started_d is unset
+        # created before reaching this point, process_stated is already called
+        # and then self._started_d is unset
         d.addErrback(started.errback)
 
         def start_related_events(_):
@@ -182,14 +226,21 @@ class _LocalBrick(base.Base):
 
     def process_started(self, proc):
         started, self._started_d = self._started_d, None
+        logger = self.process_logger(proc)
+        self.out_received = logger.out
+        self.err_received = logger.err
         self.on_config_changed()
         started.callback(self)
 
-    def process_exited(self, proc, status):
+    def process_ended(self, proc, status):
         self.proc = None
         self._start_related_events(off=True)
         self.on_config_changed()
         self._last_status = status
+        # ovvensive programming, raise an exception instead of hide the error
+        # behind a lambda (lambda _: None)
+        self.out_received = None
+        self.err_received = None
         exited, self._exited_d = self._exited_d, None
         exited.callback((self, status))
 
