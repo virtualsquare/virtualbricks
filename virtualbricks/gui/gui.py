@@ -1690,8 +1690,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		def started_all(results):
 			for success, value in results:
 				if not success:
-					log.err(value, "Cannot starts brick %s (%s)." %
-						(value.name, value.get_type()))
+					log.err(value, "Brick not started.")
 			self.running_bricks.refilter()
 
 		self.curtain_down()
