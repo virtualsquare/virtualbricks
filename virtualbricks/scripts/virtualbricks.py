@@ -22,7 +22,7 @@
     -v, --verbose       increase log verbosity
     -q, --quiet         decrease log verbosity
     -l, --logfile=      write log messages to file
-    -d, --debug         verbose debug output
+    -b, --debug         verbose debug output
     -h, --help          print this help and exit
 
 Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
