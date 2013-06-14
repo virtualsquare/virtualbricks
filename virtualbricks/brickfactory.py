@@ -551,14 +551,11 @@ class Application:
     def run(self, reactor):
         self.install_locale()
         self.install_stdlog_handler()
-        self.install_sys_hooks()
         self.logger.start(self)
         self.install_home()
         quit = defer.Deferred()
         factory = self.factory_factory(quit)
         self._run(factory, quit)
-        if not self.config["noterm"]:
-            stdio.StandardIO(Console(factory))
         if self.config["verbosity"] >= 2 and not self.config["daemon"]:
             import signal
             import pdb
@@ -569,6 +566,12 @@ class Application:
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         configfile.restore_last_project(factory)
         AutosaveTimer(factory)
+        if not self.config["noterm"] and not self.config["daemon"]:
+            stdio.StandardIO(Console(factory))
+        # delay as much as possible the installation of hooks because the
+        # exception hook can hide errors in the code requiring to start the
+        # application again with logging redirected
+        self.install_sys_hooks()
         return quit
 
     def _run(self, factory, quit):
