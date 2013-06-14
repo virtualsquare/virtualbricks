@@ -18,6 +18,8 @@
 
 
 import os
+import operator
+import itertools
 
 from twisted.internet import protocol, reactor, error, defer
 from twisted.python import failure, log as _log
@@ -38,11 +40,17 @@ log = _compat.getLogger(__name__)
 
 class Process(protocol.ProcessProtocol):
 
+    pid = None
+
     def __init__(self, brick):
         self.brick = brick
 
+    def logPrefix(self):
+        return "Process: {0}".format(self.pid)
+
     def connectionMade(self):
-        log.msg("Started process (%d)" % self.transport.pid)
+        self.pid = self.transport.pid
+        _log.msg("Started process", system=self.logPrefix())
         self.brick.process_started(self)
 
     def outReceived(self, data):
@@ -52,9 +60,11 @@ class Process(protocol.ProcessProtocol):
         self.brick.err_received(data)
 
     def processEnded(self, status):
-        log.msg(str(status.value),
-                isError=isinstance(status.value, error.ProcessTerminated),
-                show_to_user=False)
+        if status.check(error.ProcessTerminated):
+            _log.msg(" ".join(status.value.args), system=self.logPrefix(),
+                    isError=True, show_to_user=False)
+        else:
+            _log.msg("Process terminated", system=self.logPrefix())
         self.brick.process_ended(self, status)
 
 
@@ -69,42 +79,46 @@ class ProcessLogger:
 
     def __init__(self, proc):
         self.pid = proc.transport.pid
-        # 0: stdout, 1: stderr
-        self.buffers = [[], []]
-        self.scheduled = [None, None]
+        self.buffer = []
+        self.scheduled = None
 
     def logPrefix(self):
         return "Process: {0}".format(self.pid)
 
-    def _flush(self, buffer, logger):
-        data = "".join(buffer)
-        del buffer[:]
-        logger(data)
+    def log(self, data):
+        _log.msg(data, system=self.logPrefix())
 
-    def _enqueue(self, data, logger, stderr=False):
-        buffer = self.buffers[stderr]
-        scheduled = self.scheduled[stderr]
-        buffer.append(data)
-        if scheduled is None or not scheduled.active():
-            self.scheduled[stderr] = reactor.callLater(self.delay, self._flush,
-                                                       buffer, logger)
-        elif sum(map(len, buffer)) > self.limit:
-            scheduled.cancel()
-            self._flush(buffer, logger)
+    def log_e(self, data):
+        _log.err(data, system=self.logPrefix(), show_to_user=False)
+
+    def flush(self):
+        loggers = [self.log, self.log_e]
+        get_data = operator.itemgetter(0)
+        is_error = operator.itemgetter(1)
+        for idx, group in itertools.groupby(reversed(self.buffer), is_error):
+            logger = loggers[idx]
+            data = "".join(map(get_data, group))
+            logger(data)
+        del self.buffer[:]
+
+    def enqueue(self, data, is_error=False):
+        self.buffer.append((data, is_error))
+        if self.scheduled is None or not self.scheduled.active():
+            self.scheduled = reactor.callLater(self.delay, self.flush)
+        elif sum(map(len, (e[0] for e in self.buffer))) > self.limit:
+            self.scheduled.cancel()
+            self.flush()
         else:
-            scheduled.reset()
+            self.scheduled.reset(self.delay)
 
-    def _log_out(self, data):
-            _log.callWithLogger(self, _log.msg, data)
+    def in_(self, data):
+        self.enqueue(data)
 
     def out(self, data):
-        self._enqueue(data, self._log_out)
-
-    def _log_err(self, data):
-        _log.callWithLogger(self, _log.err, data, show_to_user=False)
+        self.enqueue(data)
 
     def err(self, data):
-        self._enqueue(data, self._log_err, True)
+        self.enqueue(data, True)
 
 
 class TermProtocol(protocol.ProcessProtocol):
@@ -227,6 +241,7 @@ class _LocalBrick(base.Base):
     def process_started(self, proc):
         started, self._started_d = self._started_d, None
         logger = self.process_logger(proc)
+        self.in_received = logger.in_
         self.out_received = logger.out
         self.err_received = logger.err
         self.on_config_changed()
@@ -239,6 +254,7 @@ class _LocalBrick(base.Base):
         self._last_status = status
         # ovvensive programming, raise an exception instead of hide the error
         # behind a lambda (lambda _: None)
+        self.in_received = None
         self.out_received = None
         self.err_received = None
         exited, self._exited_d = self._exited_d, None
@@ -362,6 +378,7 @@ class _LocalBrick(base.Base):
     def send(self, data):
         if self.proc:
             self.proc.write(data)
+            self.in_received
         # else:
         #     log.msg("Cannot send command, brick is not running.")
 
