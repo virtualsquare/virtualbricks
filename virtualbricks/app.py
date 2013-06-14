@@ -58,7 +58,7 @@ class Options(usage.Options):
 
     opt_v = opt_verbose
     opt_q = opt_quiet
-    opt_d = opt_debug
+    opt_b = opt_debug
 
 
 def run_app(Application, config):
