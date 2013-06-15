@@ -298,13 +298,13 @@ class _LocalBrick(base.Base):
     def _poweron(self, ignore):
 
         def start_process(value):
-            args, prog = value
+            prog, args = value
             log.msg(_("Starting: '%s'") % " ".join(args))
             # usePTY?
             self.proc = reactor.spawnProcess(Process(self), prog, args,
                                              os.environ)
 
-        l = [defer.maybeDeferred(self.args), defer.maybeDeferred(self.prog)]
+        l = [defer.maybeDeferred(self.prog), defer.maybeDeferred(self.args)]
         d = defer.gatherResults(l, consumeErrors=True)
         d.addCallback(start_process)
         return d
