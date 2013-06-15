@@ -23,7 +23,6 @@ import errno
 import sys
 import re
 import copy
-import logging
 import itertools
 import threading
 
@@ -495,16 +494,16 @@ class Application:
 
     def _get_log_level(self, verbosity):
         if verbosity >= 2:
-            return logging.DEBUG
+            return _compat.DEBUG
         elif verbosity == 1:
-            return logging.INFO
+            return _compat.INFO
         elif verbosity == -1:
-            return logging.ERROR
+            return _compat.ERROR
         elif verbosity <= -2:
-            return logging.CRITICAL
+            return _compat.CRITICAL
 
     def install_stdlog_handler(self):
-        root = logging.getLogger()
+        root = _compat.getLogger()
         root.addHandler(_compat.LoggingToTwistedLogHandler())
         if self.config["verbosity"]:
             root.setLevel(self._get_log_level(self.config["verbosity"]))

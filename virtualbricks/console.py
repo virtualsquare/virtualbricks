@@ -22,12 +22,11 @@ import select
 import socket
 import hashlib
 import threading
-import logging
 
-from virtualbricks import errors
+from virtualbricks import errors, _compat
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str

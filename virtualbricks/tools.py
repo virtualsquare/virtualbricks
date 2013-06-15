@@ -22,12 +22,12 @@ import sys
 import errno
 import random
 import re
-import logging
 import functools
 import tempfile
 
+from virtualbricks import _compat
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 
 def random_mac():

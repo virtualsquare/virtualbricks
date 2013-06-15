@@ -17,7 +17,6 @@
 
 import os
 import re
-import logging
 import StringIO
 
 import gobject
@@ -1107,7 +1106,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			graphics.pixbuf_for_running_brick(brick))
 		table = builder.get_object("table")
 		table.resize(len(brick.config), 2)
-		pon_poff = ["poff_vbevent", "pon_vbevent"]
+		# pon_poff = ["poff_vbevent", "pon_vbevent"]
 		# for i, (name, value) in enumerate((n, v) for n, v in
 		# 		sorted(brick.config.iteritems()) if n not in set(pon_poff)):
 		for i, (name, value) in enumerate((name, brick.config.get(name))
@@ -3068,7 +3067,7 @@ class MessageDialogObserver:
 
 	def emit(self, eventDict):
 		if ("show_to_user" not in eventDict and (("record" in eventDict and
-				eventDict["record"].levelno >= logging.ERROR) or
+				eventDict["record"].levelno >= _compat.ERROR) or
 				eventDict["isError"])):
 			gobject.idle_add(self._emit, eventDict)
 

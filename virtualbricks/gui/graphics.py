@@ -20,13 +20,14 @@ import os
 import os.path
 import sys
 import re
-import logging
 import pkgutil
 from pkgutil import get_data
 
 import Image
 import pygraphviz as pgv
 import gtk.gdk
+
+from virtualbricks import _compat
 
 
 __all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
@@ -35,7 +36,7 @@ __all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
            "Node", "Topology"]
 
 
-log = logging.getLogger('virtualbricks.gui')
+log = _compat.getLogger('virtualbricks.gui')
 
 
 def get_filename(package, resource):

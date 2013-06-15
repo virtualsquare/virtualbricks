@@ -313,8 +313,8 @@ class ConfigFile:
                         factory.newbrick(ntype, name)
                         component = factory.get_brick_by_name(name)
 
-                except Exception:
-                    log.err(failure.Failure(), "Bad config line: %s" % l)
+                except Exception as e:
+                    log.err(failure.Failure(e), "Bad config line: %s" % l)
                     l = fileobj.readline()
                     continue
 
