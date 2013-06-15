@@ -5,9 +5,11 @@ import StringIO
 
 from twisted.trial import unittest
 from twisted.internet import defer
+from twisted.python import failure
 
 from virtualbricks import link, virtualmachines as vm, errors, tests
-from virtualbricks.tests import stubs, test_link, Skip
+from virtualbricks.tests import (stubs, test_link, successResultOf,
+                                 failureResultOf)
 
 
 def disks(vm):
@@ -26,12 +28,12 @@ class TestVirtualMachine(unittest.TestCase):
 
     def setUp(self):
         self.factory = stubs.FactoryStub()
-        self.vm = vm.VirtualMachine(self.factory, "vm")
+        self.vm = stubs.VirtualMachineStub(self.factory, "vm")
 
-    @Skip("test outdated")
-    def test_basic_args(self):
-        # XXX: this will fail in another system
-        self.assertEquals(self.vm.args(), ARGS)
+    # @Skip("test outdated")
+    # def test_basic_args(self):
+    #     # XXX: this will fail in another system
+    #     self.assertEquals(self.vm.args(), ARGS)
 
     def test_disk_on_rename(self):
         olds = list(disks(self.vm))
@@ -85,6 +87,10 @@ class TestVirtualMachine(unittest.TestCase):
             disk = self.vm.config[hd]
             self.assertTrue(hasattr(disk, "image"))
             self.assertIs(disk.image, None)
+
+    def test_get_disk_args(self):
+        disk = DiskStub(self.vm, "hda")
+        self.vm.config["hda"] = disk
 
 
 class TestVMPlug(test_link.TestPlug):
@@ -174,10 +180,8 @@ class FULL:
 
 class DiskStub(vm.Disk):
 
-    def _sync(self, ret):
-        pass
-
     _basefolder = None
+    sync_cmd = "false"
 
     def get_basefolder(self):
         if self._basefolder is not None:
@@ -190,13 +194,16 @@ class DiskStub(vm.Disk):
     basefolder = property(get_basefolder, set_basefolder)
 
 
+class Object:
+    pass
+
+
 class TestDisk(unittest.TestCase):
 
     def setUp(self):
         self.factory = stubs.FactoryStub()
         self.vm = stubs.VirtualMachineStub(self.factory, "test_vm")
         self.disk = DiskStub(self.vm, "hda")
-        self.disk.sync = "false"
 
     def test_backing_file_from_cow(self):
         sio = StringIO.StringIO(COW_HEADER[8:])
@@ -225,10 +232,8 @@ class TestDisk(unittest.TestCase):
 
     def test_create_cow(self):
         self.factory.settings.set("qemupath", "/supercali")
-        result = []
-        self.disk._create_cow("name").addErrback(result.append)
-        self.assertEqual(len(result), 1)
-        result[0].trap(errors.BadConfigError)
+        failureResultOf(self, self.disk._create_cow("name"),
+                        errors.BadConfigError)
         qemupath = os.path.abspath(os.path.dirname(tests.__file__))
         self.factory.settings.set("qemupath", qemupath)
         self.disk.image = ImageStub()
@@ -237,8 +242,18 @@ class TestDisk(unittest.TestCase):
             self.fail("cow created, callback called with %s" % ret)
 
         def eb(failure):
-            self.assertEqual(failure.type, RuntimeError)
+            failure.trap(RuntimeError)
         return self.disk._create_cow("1").addCallbacks(cb, eb)
+
+    def test_sync_err(self):
+        def cb(ret):
+            self.fail("_create_cow did not failed while it had to")
+
+        def eb(failure):
+            failure.trap(RuntimeError)
+            failure.value.args[0].startswith("sync failed")
+
+        return self.disk._sync(("", "", 0)).addCallbacks(cb, eb)
 
     def test_check_base(self):
         err = self.assertRaises(IOError, self.disk._check_base, "/montypython")
@@ -292,3 +307,23 @@ class TestDisk(unittest.TestCase):
         result = []
         self.disk._get_cow_name().addCallback(result.append)
         self.assertEqual(result, [cowname])
+
+    def test_args(self):
+        self.disk.get_real_disk_name = lambda: defer.succeed("test")
+        self.assertEqual(successResultOf(self, self.disk.args()),
+                                         ["-hda", "test"])
+        f = failure.Failure(RuntimeError())
+        self.disk.get_real_disk_name = lambda: defer.fail(f)
+        failureResultOf(self, self.disk.args(), RuntimeError)
+
+    def test_get_real_disk_name(self):
+        result = successResultOf(self, self.disk.get_real_disk_name())
+        self.assertEqual(result, "")
+        self.disk.image = Object()
+        self.disk.image.path = "ping"
+        result = successResultOf(self, self.disk.get_real_disk_name())
+        self.assertEqual(result, "ping")
+        self.disk._get_cow_name = lambda: 1 / 0
+        self.disk.cow = True
+        failureResultOf(self, self.disk.get_real_disk_name(),
+                        ZeroDivisionError)

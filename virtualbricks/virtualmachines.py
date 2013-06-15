@@ -259,7 +259,7 @@ def is_missing(path, file):
 
 class Disk:
 
-    sync = "sync"
+    sync_cmd = "sync"
     cow = False
     image = None
 
@@ -324,23 +324,25 @@ class Disk:
     def get_base(self):
         return self.image.path
 
-    def _create_cow(self, cowname):
-        if is_missing(self.VM.settings.get("qemupath"), "qemu-img"):
-            msg = _("qemu-img not found! I can't create a new image.")
-            return defer.fail(failure.Failure(errors.BadConfigError(msg)))
+    def _sync(self, ret):
 
         def complain_on_error(ret):
             out, err, code = ret
             if code != 0:
                 raise RuntimeError("sync failed\n%s" % err)
 
-        def sync(ret):
-            out, err, code = ret
-            if code != 0:
-                raise RuntimeError("Cannot create private COW\n%s" % err)
+        out, err, code = ret
+        if code != 0:
+            raise RuntimeError("Cannot create private COW\n%s" % err)
 
-            exit = utils.getProcessOutputAndValue(self.sync, env=os.environ)
-            exit.addCallback(complain_on_error)
+        exit = utils.getProcessOutputAndValue(self.sync_cmd, env=os.environ)
+        exit.addCallback(complain_on_error)
+        return exit
+
+    def _create_cow(self, cowname):
+        if is_missing(self.VM.settings.get("qemupath"), "qemu-img"):
+            msg = _("qemu-img not found! I can't create a new image.")
+            return defer.fail(failure.Failure(errors.BadConfigError(msg)))
 
         log.msg("Creating a new private COW from %s base image." %
                 self.get_base())
@@ -348,7 +350,8 @@ class Disk:
                 self.VM.settings.get("cowfmt"), cowname]
         exe = os.path.join(self.VM.settings.get("qemupath"), "qemu-img")
         exit = utils.getProcessOutputAndValue(exe, args, os.environ)
-        exit.addCallback(sync)
+        exit.addCallback(self._sync)
+        exit.addCallback(lambda _: cowname)
         return exit
 
     def _get_backing_file_from_cow(self, fp):
@@ -405,9 +408,13 @@ class Disk:
 
     def get_real_disk_name(self):
         if self.image is None:
+            # XXX: this should be really an error
             return defer.succeed("")
         elif self.cow:
-            return self._get_cow_name()
+            try:
+                return self._get_cow_name()
+            except Exception as e:
+                return defer.fail(failure.Failure(e))
         else:
             return defer.succeed(self.image.path)
 
