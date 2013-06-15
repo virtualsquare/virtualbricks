@@ -18,13 +18,14 @@
 
 
 import traceback
-import logging
 
 from zope.interface import interface, declarations, Interface, Attribute
 from zope.interface.adapter import AdapterRegistry
 
+from virtualbricks import _compat
 
-log = logging.getLogger()
+
+log = _compat.getLogger()
 
 
 # from twisted.python.components import registerAdapter

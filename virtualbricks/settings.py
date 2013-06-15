@@ -17,16 +17,15 @@
 
 import os
 import ConfigParser
-import logging
 
-from virtualbricks import tools
+from virtualbricks import tools, _compat
 
 
 if False:  # pyflakes
     _ = str
 
 
-log = logging.getLogger(__name__)
+log = _compat.getLogger(__name__)
 
 
 VDEPATH = "/usr/bin"

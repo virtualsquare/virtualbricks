@@ -89,7 +89,8 @@ class ProcessLogger:
         _log.msg(data, system=self.logPrefix())
 
     def log_e(self, data):
-        _log.err(data, system=self.logPrefix(), show_to_user=False)
+        _log.msg(data, system=self.logPrefix(), isError=True,
+                 show_to_user=False)
 
     def flush(self):
         loggers = [self.log, self.log_e]
@@ -420,8 +421,8 @@ class Brick(_LocalBrick):
     def poweron(self):
         if self.homehost:
             if not self.homehost.connected:
-                log.error(_("Error: You must be connected to the "
-                            "host to perform this action"))
+                log.msg(_("Error: You must be connected to the "
+                            "host to perform this action"), isError=True)
             else:
                 self.homehost.send(self.name + " on")
         else:
