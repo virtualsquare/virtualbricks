@@ -68,7 +68,7 @@ class Logger(object):
     fatal = critical
 
 
-def getLogger(name="root"):
+def getLogger(name=None):
     if name is None:
         return logging.getLogger()
     return Logger(name)
