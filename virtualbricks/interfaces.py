@@ -19,65 +19,15 @@
 
 import traceback
 
-from zope.interface import interface, declarations, Interface, Attribute
-from zope.interface.adapter import AdapterRegistry
+from zope.interface import Interface, Attribute
+from twisted.python.components import registerAdapter
 
 from virtualbricks import _compat
 
 
-log = _compat.getLogger()
-
-
-# from twisted.python.components import registerAdapter
-globalRegistry = AdapterRegistry()
-ALLOW_DUPLICATES = True
-
-
-def registerAdapter(adapterFactory, origInterface, *interfaceClasses):
-    """Register an adapter class.
-
-    An adapter class is expected to implement the given interface, by
-    adapting instances implementing 'origInterface'. An adapter class's
-    __init__ method should accept one parameter, an instance implementing
-    'origInterface'.
-    """
-    self = globalRegistry
-    assert interfaceClasses, "You need to pass an Interface"
-    global ALLOW_DUPLICATES
-
-    # deal with class->interface adapters:
-    if not isinstance(origInterface, interface.InterfaceClass):
-        origInterface = declarations.implementedBy(origInterface)
-
-    for interfaceClass in interfaceClasses:
-        factory = self.registered([origInterface], interfaceClass)
-        if factory is not None and not ALLOW_DUPLICATES:
-            raise ValueError("an adapter (%s) was already registered." % (factory, ))
-    for interfaceClass in interfaceClasses:
-        self.register([origInterface], interfaceClass, '', adapterFactory)
-
-
-def _addHook(registry):
-    """
-    Add an adapter hook which will attempt to look up adapters in the given
-    registry.
-
-    @type registry: L{zope.interface.adapter.AdapterRegistry}
-
-    @return: The hook which was added, for later use with L{_removeHook}.
-    """
-    lookup = registry.lookup1
-    def _hook(iface, ob):
-        factory = lookup(declarations.providedBy(ob), iface)
-        if factory is None:
-            return None
-        else:
-            return factory(ob)
-    interface.adapter_hooks.append(_hook)
-    return _hook
-
-
-_addHook(globalRegistry)
+log = _compat.getLogger(__name__)
+__all__ = ["IMenu", "IJobMenu", "IConfigController", "IBrick", "IPlug",
+           "registerAdapter", "InterfaceLogger"]
 
 
 class InterfaceLogger:
