@@ -63,3 +63,11 @@ class TestFactory(unittest.TestCase):
         self.assertEqual(event.get("actions"), copy.get("actions"))
         event.config["actions"] += ["new action"]
         self.assertNotEqual(event.get("actions"), copy.get("actions"))
+
+    def test_dup_brick(self):
+        switch = self.factory.new_brick("switch", "switch")
+        switch2 = self.factory.dup_brick(switch)
+        self.assertIsNot(switch, switch2)
+        vm = self.factory.new_brick("vm", "vm")
+        vm2 = self.factory.dup_brick(vm)
+        self.assertIsNot(vm, vm2)

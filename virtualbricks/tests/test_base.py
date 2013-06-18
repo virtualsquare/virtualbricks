@@ -1,4 +1,5 @@
 import os
+import copy
 import StringIO
 
 from virtualbricks import base
@@ -84,6 +85,25 @@ class TestConfig(unittest.TestCase):
         self.assertEquals(len(self.config2), 6)
         self.assertEquals(sorted(self.config2.keys()), ["bool", "float", "int",
                                                      "obj", "spinint", "str"])
+
+    def _assert_basic_types_equals(self, cfg1, cfg2):
+        self.assertEqual(cfg1["str"], cfg2["str"])
+        self.assertEqual(cfg1["int"], cfg2["int"])
+        self.assertEqual(cfg1["float"], cfg2["float"])
+        self.assertEqual(cfg1["bool"], cfg2["bool"])
+        self.assertEqual(cfg1["spinint"], cfg2["spinint"])
+
+    def test_deepcopy(self):
+        cfg = copy.deepcopy(self.config2)
+        self._assert_basic_types_equals(cfg, self.config2)
+        self.assertIsNot(cfg, self.config2)
+        self.assertIsNot(cfg["obj"], self.config2["obj"])
+
+    def test_copy(self):
+        cfg = copy.copy(self.config2)
+        self._assert_basic_types_equals(cfg, self.config2)
+        self.assertIsNot(cfg, self.config2)
+        self.assertIs(cfg["obj"], self.config2["obj"])
 
 
 class TestBase(unittest.TestCase):

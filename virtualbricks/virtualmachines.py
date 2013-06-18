@@ -26,9 +26,9 @@ import shutil
 
 from twisted.internet import utils, defer
 from twisted.python import failure
+from twisted.python.deprecate import deprecated
 
 from virtualbricks import errors, tools, settings, bricks, _compat
-from virtualbricks.deprecated import deprecated
 from virtualbricks.versions import Version
 from virtualbricks.settings import MYPATH
 
@@ -153,10 +153,10 @@ class Image:
     master = None
     readonly = False
 
-    def __init__(self, name, path, description=None, host=None):
+    def __init__(self, name, path, description="", host=None):
         self.name = name
         self.path = path
-        if description is not None:
+        if description:
             self.set_description(description)
         self.vmdisks = []
         self.host = host
@@ -420,6 +420,15 @@ class Disk:
 
     def readonly(self):
         return self.VM.config["snapshot"]
+
+    def __deepcopy__(self, memo):
+        new = type(self)(self.VM, self.device)
+        new.sync_cmd = self.sync_cmd
+        new.cow = self.cow
+        img = self.image
+        if self.image is not None:
+            new.set_image(self.image.name)
+        return new
 
     def __repr__(self):
         return "<Disk %s(%s) image=%s readonly=%s>" % (self.device,
@@ -850,15 +859,6 @@ class VirtualMachine(bricks.Brick):
 
     def has_graphic(self):
         return False
-
-    @deprecated(Version("virtualbricks", 1, 0), "brickfactory.dup_brick()")
-    def __deepcopy__(self, memo):
-        newname = self.factory.normalize(self.factory.next_name(
-            "Copy_of_%s" % self.name))
-        new_brick = type(self)(self.factory, newname)
-        new_brick.config = copy.deepcopy(self.config, memo)
-        new_brick._newbrick_changes()
-        return new_brick
 
     def _newbrick_changes(self):
         for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
