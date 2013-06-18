@@ -26,7 +26,7 @@ import contextlib
 
 from twisted.python import failure
 
-from virtualbricks import _compat, console, settings
+from virtualbricks import _compat, settings
 
 
 if False:  # pyflakes
