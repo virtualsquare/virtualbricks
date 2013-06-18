@@ -1,6 +1,7 @@
 import os.path
 import errno
 import struct
+import copy
 import StringIO
 
 from twisted.trial import unittest
@@ -327,3 +328,15 @@ class TestDisk(unittest.TestCase):
         self.disk.cow = True
         failureResultOf(self, self.disk.get_real_disk_name(),
                         ZeroDivisionError)
+
+    def test_deepcopy(self):
+        disk = copy.deepcopy(self.disk)
+        self.assertIsNot(disk, self.disk)
+        self.assertIs(disk.image, None)
+        image = self.factory.new_disk_image("test", "/cucu")
+        self.disk.set_image("test")
+        disk = copy.deepcopy(self.disk)
+        self.assertIsNot(disk, self.disk)
+        self.assertIsNot(disk.image, None)
+        self.assertIs(disk.image, image)
+
