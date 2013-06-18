@@ -49,8 +49,8 @@ def install_brick_types(registry=None):
         "switch": switches.Switch,
         "tap": tuntaps.Tap,
         "capture": tuntaps.Capture,
-        "vm": virtualmachines.VM,
-        "qemu": virtualmachines.VM,
+        "vm": virtualmachines.VirtualMachine,
+        "qemu": virtualmachines.VirtualMachine,
         "wirefilter": wires.Wirefilter,
         "wire": wires.Wire,
         "tunnelc": tunnels.TunnelConnect,
@@ -147,7 +147,7 @@ class BrickFactory(object):
         log.msg("Name normalized to '%s'" % nname)
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
-        img = virtualmachines.DiskImage(nname, path, description, host)
+        img = virtualmachines.Image(nname, path, description, host)
         self.disk_images.append(img)
         return img
 

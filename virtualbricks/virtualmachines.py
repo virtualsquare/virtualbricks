@@ -20,16 +20,13 @@ import os
 import errno
 import struct
 import re
-import copy
 import datetime
 import shutil
 
 from twisted.internet import utils, defer
 from twisted.python import failure
-from twisted.python.deprecate import deprecated
 
 from virtualbricks import errors, tools, settings, bricks, _compat
-from virtualbricks.versions import Version
 from virtualbricks.settings import MYPATH
 
 
@@ -240,9 +237,6 @@ class Image:
         return self.path
 
 
-DiskImage = Image
-
-
 def move(src, dst):
     try:
         os.rename(src, dst)
@@ -425,7 +419,6 @@ class Disk:
         new = type(self)(self.VM, self.device)
         new.sync_cmd = self.sync_cmd
         new.cow = self.cow
-        img = self.image
         if self.image is not None:
             new.set_image(self.image.name)
         return new
@@ -437,7 +430,6 @@ class Disk:
                                                        self.readonly())
 
 
-VMDisk = Disk
 VM_COMMAND_BUILDER = {
         "#argv0": "argv0",
         "#M": "machine",
@@ -910,6 +902,3 @@ class VirtualMachine(bricks.Brick):
 
     def commit_disks(self, args):
         self.send("commit all\n")
-
-
-VM = VirtualMachine
