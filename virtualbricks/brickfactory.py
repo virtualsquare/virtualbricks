@@ -20,18 +20,15 @@ from __future__ import print_function
 
 import os
 import errno
-import sys
 import re
 import copy
 import itertools
-import threading
 
 from twisted.application import app
 from twisted.internet import defer, task, stdio
 from twisted.protocols import basic
-from twisted.python import failure, log as _log
+from twisted.python import log as _log
 
-import virtualbricks
 from virtualbricks import errors, settings, configfile, console, _compat
 from virtualbricks import (events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
@@ -424,29 +421,40 @@ class BrickFactory(object):
 
 class Console(basic.LineOnlyReceiver):
 
+    inner_protocol = None
+    protocol = None
     delimiter = "\n"
-    prompt = "virtualbricks> "
-    intro = ("Virtualbricks, version {version}\n"
-        "Copyright (C) 2013 Virtualbricks team\n"
-        "This is free software; see the source code for copying conditions.\n"
-        "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
-        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
+    protocol_factory = console.VBProtocol
 
     def __init__(self, factory):
         self.factory = factory
 
+    def _switchTo(self, new_proto):
+        self.inner_protocol = new_proto
+        new_proto.makeConnection(self.transport)
+
     def connectionMade(self):
-        intro = self.intro.format(version=virtualbricks.version.short())
-        self.transport.write(intro)
-        self.transport.write(self.prompt)
+        if self.protocol is None:
+            self.protocol = self.protocol_factory(self.factory, self,
+                                                  factory=self.factory)
+        self.protocol.makeConnection(self.transport)
+
+    def dataReceived(self, data):
+        if self.inner_protocol is not None:
+            self.inner_protocol.dataReceived(data)
+        else:
+            basic.LineOnlyReceiver.dataReceived(self, data)
 
     def lineReceived(self, line):
-        if line:
-            console.parse(self.factory, line, self)
-        self.transport.write(self.prompt)
+        self.protocol.lineReceived(line)
 
     def connectionLost(self, reason):
-        self.factory.quit()
+        if self.inner_protocol:
+            self.inner_protocol.connectionLost(reason)
+            self.inner_protocol = None
+            stdio.StandardIO(self)
+        else:
+            self.factory.quit()
 
 
 def AutosaveTimer(factory, interval=180):
@@ -508,38 +516,6 @@ class Application:
         if self.config["verbosity"]:
             root.setLevel(self._get_log_level(self.config["verbosity"]))
 
-    def install_sys_hooks(self):
-        # displayhook is necessary because otherwise the python console sets
-        # __builtin__._ to the result of the last command and this breaks
-        # gettext. excepthook is useful to not show traceback on the console
-        # but to log it.
-        sys.displayhook = print
-        sys.excepthook = self.excepthook
-
-        # Workaround for sys.excepthook thread bug
-        # See: http://bugs.python.org/issue1230540#msg91244
-        old_init = threading.Thread.__init__
-
-        def init(self, *args, **kwargs):
-            old_init(self, *args, **kwargs)
-            run_old = self.run
-
-            def run_with_except_hook(*args, **kw):
-                try:
-                    run_old(*args, **kw)
-                except (KeyboardInterrupt, SystemExit):
-                    raise
-                except:
-                    sys.excepthook(*sys.exc_info())
-            self.run = run_with_except_hook
-        threading.Thread.__init__ = init
-
-    def excepthook(self, exc_type, exc_value, traceback):
-        if exc_type in (SystemExit, KeyboardInterrupt):
-            sys.__excepthook__(exc_type, exc_value, traceback)
-        else:
-            log.err(failure.Failure(exc_value, exc_type, traceback))
-
     def install_home(self):
         try:
             os.mkdir(settings.VIRTUALBRICKS_HOME)
@@ -567,10 +543,6 @@ class Application:
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
             stdio.StandardIO(Console(factory))
-        # delay as much as possible the installation of hooks because the
-        # exception hook can hide errors in the code requiring to start the
-        # application again with logging redirected
-        self.install_sys_hooks()
         return quit
 
     def _run(self, factory, quit):

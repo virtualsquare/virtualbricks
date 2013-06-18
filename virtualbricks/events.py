@@ -16,12 +16,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
+from twisted.internet import reactor, defer
 
-from twisted.internet import reactor, defer, utils
-from twisted.python.deprecate import deprecated
-
-from virtualbricks import version, base, errors, console, _compat
+from virtualbricks import base, errors, console, _compat
 
 
 if False:  # pyflakes
@@ -130,13 +127,6 @@ class Event(base.Base):
             return self.poweron()
 
     def do_actions(self, deferred):
-        self.scheduled = None
-        procs = []
-        for action in self.config["actions"]:
-            if isinstance(action, console.VbShellCommand):
-                console.Parse(self.factory, action)
-            elif isinstance(action, console.ShellCommand):
-                procs.append(utils.getProcessValue("sh", action, os.environ))
 
         def log_err(results):
             for success, value in results:
@@ -147,6 +137,9 @@ class Event(base.Base):
                             "more informations")
             return self
 
+        self.scheduled = None
+        procs = [defer.maybeDeferred(action.perform()) for action in
+                 self.config["actions"]]
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)
 

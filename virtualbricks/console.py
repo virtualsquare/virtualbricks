@@ -22,7 +22,19 @@ import select
 import socket
 import hashlib
 import threading
+import StringIO
+import textwrap
+import termios
+import tty
 
+from twisted.internet import interfaces, utils
+from twisted.protocols import basic
+from twisted.python import failure, components
+from twisted.conch import manhole
+from twisted.conch.insults import insults
+from zope.interface import implements
+
+import virtualbricks
 from virtualbricks import errors, _compat
 
 
@@ -37,11 +49,15 @@ class _Error(Exception):
 
 
 class VbShellCommand(str):
-    pass
+
+    def perform(self):
+        return parse(self.factory, self)
 
 
 class ShellCommand(str):
-    pass
+
+    def perform(self):
+        return utils.getProcessValue("sh", self, os.environ)
 
 
 class RemoteHostConnectionInstance(threading.Thread):
@@ -292,7 +308,8 @@ class RemoteHost:
         return ret
 
 
-class SocketWrapper:
+class SocketTransportAdapter:
+    implements(interfaces.ITransport)
 
     def __init__(self, socket):
         self.socket = socket
@@ -300,58 +317,130 @@ class SocketWrapper:
     def write(self, data):
         self.socket.send(data)
 
+    def writeSequence(self, sequence):
+        self.write("".join(sequence))
 
-def parse(factory, command, console=sys.stdout, **local):
-    # XXX: this should not be here but who invoke parse should pass a
-    # SocketWrapper directly
-    if isinstance(console, socket.socket):
-        console = SocketWrapper(console)
+    loseConnection = getPeer = getHost = lambda s: None
 
-    protocol = VBProtocol(factory, console, local)
-    protocol.sub_protocols["images"] = ImagesProtocol(factory, console)
-    protocol.sub_protocols["config"] = ConfigurationProtocol(factory, console)
-    return protocol.lineReceived(command)
-
-Parse = parse
+components.registerAdapter(SocketTransportAdapter, socket.socket,
+                           interfaces.ITransport)
 
 
-class Protocol:
+class FileTransportAdapter:
+    implements(interfaces.ITransport)
 
-    def __init__(self, factory, sender, local=None):
-        self.factory = factory
-        self.sender = sender
+    def __init__(self, original):
+        self.original = original
+
+    def write(self, data):
+        self.original.write(data)
+
+    def writeSequence(self, sequence):
+        self.original.write("".join(sequence))
+
+    loseConnection = getPeer = getHost = lambda s: None
+
+components.registerAdapter(FileTransportAdapter, StringIO.StringIO,
+                           interfaces.ITransport)
+
+
+class NullTransportAdapter:
+    implements(interfaces.ITransport)
+
+    __init__ = write = writeSequence = lambda s, d: None
+    loseConnection = getPeer = getHost = lambda s: None
+
+components.registerAdapter(NullTransportAdapter, None, interfaces.ITransport)
+
+
+def parse(factory, command, console=None):
+    transport = interfaces.ITransport(console)
+    protocol = VBProtocol(factory)
+    protocol.makeConnection(transport)
+    protocol.lineReceived(command)
+
+
+class Protocol(basic.LineOnlyReceiver):
+
+    def __init__(self, _factory, **namespace):
+        self.factory = _factory
         self.sub_protocols = {}
-        if local is None:
-            self.extra_local = {}
-        else:
-            self.extra_local = local
+        self.namespace = namespace
 
     def lineReceived(self, line):
-        if not line:
-            line = "EOF"
         parts = line.split()
         if parts:
             handler = getattr(self, "do_" + parts[0], None)
             if handler is not None:
                 try:
-                    handler(parts[1:])
-                except TypeError, e:
-                    if "argument" in str(e):  # XXX: a better check?
-                        self.sendLine("invalid command %s" % line)
-                except IndexError:  # args[0] where no args are given
-                        self.sendLine("invalid command %s" % line)
-                return True
-            self.default(line)
-            return False
-
-    def sendLine(self, line):
-        self.sender.sendLine(line)
+                    handler(*parts[1:])
+                except TypeError:
+                    self.sendLine("invalid number of arguments")
+                except Exception as e:
+                    log.err(failure.Failure(e))
+                    self.sendLine("invalid command %s" % line)
+            else:
+                self.default(line)
 
     def default(self, parts):
         pass
 
 
 class VBProtocol(Protocol):
+    """\
+    Base commands -----------------------------------------------------
+    h[elp]                  print this help
+    ps                      List of active process
+    n[ew] TYPE NAME         Create a new TYPE brick with NAME
+    list                    List of bricks already created
+    socks                   List of connections available for bricks
+    conn[ections]           List of connections for each bricks
+    reset                   Remove all the bricks and events
+    quit                    Stop virtualbricks
+    event *args             TODO
+    brick *args             TODO
+
+    Brick configuration command ---------------------------------------
+    BRICK_NAME show         List parameters of BRICK_NAME brick
+    BRICK_NAME on           Starts BRICK_NAME
+    BRICK_NAME off          Stops BRICK_NAME
+    BRICK_NAME remove       Delete BRICK_NAME
+    BRICK_NAME config PARM=VALUE    Configure a parameter of BRICK_NAME
+    BRICK_NAME connect NICK Connect BRICK_NAME to a Sock
+    BRICK_NAME disconnect   Disconnect BRICK_NAME to a sock
+    BRICK_NAME help         Help about parameters of BRICK_NAME
+    """
+
+    _is_first = False
+    delimiter = "\n"
+    prompt = "virtualbricks> "
+    intro = ("Virtualbricks, version {version}\n"
+        "Copyright (C) 2013 Virtualbricks team\n"
+        "This is free software; see the source code for copying conditions.\n"
+        "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
+        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
+
+    def __init__(self, _factory, _main_protocol=None, **namespace):
+        Protocol.__init__(self, _factory, **namespace)
+        imgp = ImagesProtocol(_factory)
+        self.sub_protocols["images"] = imgp
+        cfgp = ConfigurationProtocol(_factory)
+        self.sub_protocols["config"] = cfgp
+        self.main_protocol = _main_protocol
+
+    def connectionMade(self):
+        self.sub_protocols["images"].makeConnection(self.transport)
+        self.sub_protocols["config"].makeConnection(self.transport)
+        if not self._is_first:
+            self._is_first = True
+            intro = self.intro.format(version=virtualbricks.version.short())
+            self.transport.write(intro)
+        self.transport.write(self.prompt)
+
+    def lineReceived(self, line):
+        Protocol.lineReceived(self, line)
+        if line != "python":  # :-(
+            self.transport.write(self.prompt)
 
     def brick_action(self, obj, cmd):
         """brick action dispatcher"""
@@ -383,102 +472,68 @@ class VBProtocol(Protocol):
             obj.disconnect()
 
     def default(self, line):
-        if not line:
-            self.sendLine("Invalid console command '%s'" % line)
-            return False
-        line = line.strip()
+        # line = line.strip()
         args = line.split()
         obj = self.factory.get_brick_by_name(args[0])
         if obj is None:
             obj = self.factory.get_event_by_name(args[0])
             if obj is None:
                 self.sendLine("Invalid console command '%s'" % line)
-                return False
+                return
         self.brick_action(obj, args[1:])
-        return True
 
-    def do_quit(self, args):
+    def do_quit(self):
         log.info("Quitting command loop")
         self.factory.quit()
-        return True
-    do_q = do_EOF = do_quit
 
-    def do_help(self, args):
-        self.sendLine("Base command " + "-" * 40)
-        self.sendLine("ps               List of active process")
-        self.sendLine("n[ew] TYPE NAME  Create a new TYPE brick with NAME")
-        self.sendLine("list             List of bricks already created")
-        self.sendLine("socks            List of connections available for bricks")
-        self.sendLine("conn[ections]    List of connections for each bricks")
-        self.sendLine("")
-        self.sendLine("Brick configuration command " + "-" * 25)
-        self.sendLine("BRICK_NAME show      List parameters of BRICK_NAME brick")
-        self.sendLine("BRICK_NAME on        Starts BRICK_NAME")
-        self.sendLine("BRICK_NAME off       Stops BRICK_NAME")
-        self.sendLine("BRICK_NAME remove    Delete BRICK_NAME")
-        self.sendLine("BRICK_NAME config PARM=VALUE     Configure a parameter of BRICK_NAME.")
-        self.sendLine("BRICK_NAME connect NICK  Connect BRICK_NAME to a Sock")
-        self.sendLine("BRICK_NAME disconnect    Disconnect BRICK_NAME to a sock")
-        self.sendLine("BRICK_NAME help      Help about parameters of BRICK_NAME")
-    do_h = do_help
+    def do_help(self):
+        self.sendLine(textwrap.dedent(self.__doc__))
 
-    def do_event(self, args):
-        if not args:
-            self.sendLine("Invalid console command")
-            return False
-        event = self.factory.get_event_by_name(args[0])
-        if event is None:
-            self.sendLine("No such event '%s'" % args[0])
-            return False
-        self.brick_action(event, args[1:])
-        return True
+    def do_event(self, name, *args):
+        event = self.factory.get_event_by_name(name)
+        if event is not None:
+            self.brick_action(event, *args)
+        else:
+            self.sendLine("No such event '%s'" % name)
 
-    def do_brick(self, args):
-        if not args:
-            self.sendLine("Invalid console command")
-            return False
-        brick = self.factory.get_brick_by_name(args[0])
-        if brick is None:
-            self.sendLine("No such event '%s'" % args[0])
-            return False
-        self.brick_action(brick, args[1:])
-        return True
+    def do_brick(self, name, *args):
+        brick = self.factory.get_brick_by_name(name)
+        if brick is not None:
+            self.brick_action(brick, *args)
+        else:
+            self.sendLine("No such event '%s'" % name)
 
-    def do_ps(self, args):
+    def do_ps(self):
         """List of active processes"""
 
-        procs = len([b for b in iter(self.factory.bricks) if b.proc])
+        procs = [b for b in self.factory.bricks if b.proc]
         if not procs:
             self.sendLine("No process running")
-            return
-
-        self.sendLine("PID\tType\tName")
-        self.sendLine("-" * 24)
-        for b in iter(self.factory.bricks):
-            if b.proc is not None:
+        else:
+            self.sendLine("PID\tType\tName")
+            self.sendLine("-" * 24)
+            for b in procs:
                 self.sendLine("%d\t%s\t%s" % (b.pid, b.get_type(), b.name))
 
-    def do_reset(self, args):
-        if args and args[0] == "all":  # backward compatibility
-            self.factory.reset()
+    def do_reset(self):
+        self.factory.reset()
 
-    def do_new(self, args):
+    def do_new(self, typ, name):
         """Create a new brick or event"""
 
-        if args[0] == "event":
-            self.factory.new_event(args[1])
+        if typ == "event":
+            self.factory.new_event(name)
         else:
             try:
-                self.factory.newbrick(*args)
+                self.factory.new_brick(typ, name)
             except (errors.InvalidTypeError, errors.InvalidNameError), e:
                 self.sendLine(str(e))
-    do_n = do_new
 
-    def do_list(self, args):
+    def do_list(self):
         """List of bricks already created"""
         self.sendLine("Bricks")
         self.sendLine("-" * 20)
-        for obj in iter(self.factory.bricks):
+        for obj in self.factory.bricks:
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         self.sendLine("\nEvents")
         self.sendLine("-" * 20)
@@ -486,15 +541,13 @@ class VBProtocol(Protocol):
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         # self.sendLine("End of list.")
 
-    def do_config(self, args):
+    def do_config(self, *args):
         self.sub_protocols["config"].lineReceived(" ".join(args))
-    do_cfg = do_config
 
-    def do_images(self, args):
+    def do_images(self, *args):
         self.sub_protocols["images"].lineReceived(" ".join(args))
-    do_i = do_images
 
-    def do_socks(self, args):
+    def do_socks(self):
         """List of connections available for bricks"""
         for s in self.factory.socks:
             if s.brick is not None:
@@ -504,7 +557,7 @@ class VBProtocol(Protocol):
             else:
                 self.sendLine("%s, not configured." % s.nickname)
 
-    def do_connections(self, args):
+    def do_connections(self):
         """List of connections for each brick"""
         for b in iter(self.factory.bricks):
             self.sendLine("Connections from %s brick:" % b.name)
@@ -523,19 +576,18 @@ class VBProtocol(Protocol):
                         self.sendLine(s % (pl.model, pl.mac))
                 elif (pl.sock is not None):
                     self.sendLine("\tlink: %s " % pl.sock.nickname)
-    do_conn = do_connections
 
     # easter eggs
-    def do_python(self, args):
+    def do_python(self):
         """Open a python interpreter. Use ^D (^Z on windows) to exit."""
-        import code
+        if self.main_protocol is not None:
+            protocol = insults.ServerProtocol(Manhole, self.namespace)
+            self.main_protocol._switchTo(protocol)
+        else:
+            log.msg("Cannot open a python interpreter, command is not called "
+                    "from a Console")
 
-        local = {"__name__": "__console__", "__doc__": None,
-                 "factory": self.factory}
-        local.update(self.extra_local)
-        code.interact(local=local)
-
-    def do_threads(self, args):
+    def do_threads(self):
         self.sendLine("Threads:")
         for i, thread in enumerate(threading.enumerate()):
             self.sendLine("  %d: %s" % (i, repr(thread)))
@@ -543,51 +595,72 @@ class VBProtocol(Protocol):
     def do_warranty(self):
         self.sendLine("NotImplementedError")
 
+    do_q = do_quit
+    do_h = do_help
+    do_n = do_new
+    do_cfg = do_config
+    do_i = do_images
+    do_conn = do_connections
+
 
 class ImagesProtocol(Protocol):
 
-    def do_list(self, parts):
+    def do_list(self):
         for img in self.factory.disk_images:
             self.sendLine("%s, %s" % (img.name, img.path))
 
-    def do_files(self, parts):
+    def do_files(self):
         dirname = self.factory.settings.get("baseimages")
         for image_file in os.listdir(dirname):
             if os.path.isfile(dirname + "/" + image_file):
                 self.sendLine(image_file)
 
-    def do_add(self, parts):
-        if parts:
-            basepath = self.factory.settings.get("baseimages")
-            name = parts[0].replace(".", "_")
-            name = name.replace("/", "_")
-            img = self.factory.new_disk_image(name, basepath + "/" + parts[0])
+    def do_add(self, name):
+        basepath = self.factory.settings.get("baseimages")
+        name = name.replace(".", "_")
+        name = name.replace("/", "_")
+        self.factory.new_disk_image(name, basepath + "/" + name)
 
-    def do_del(self, parts):
-        if parts:
-            image = self.factory.get_image_by_name(parts[0])
-            if image is not None:
-                self.factory.remove_disk_image(image)
+    def do_del(self, name):
+        image = self.factory.get_image_by_name(name)
+        if image is not None:
+            self.factory.remove_disk_image(image)
 
-    def do_base(self, parts):
-        if not parts or parts[0] == "show":
+    def do_base(self, cmd="", base=""):
+        if not cmd or cmd == "show":
             self.sendLine(self.factory.settings.get("baseimages"))
-        elif parts[0] == "set" and len(parts) > 1:
-            self.factory.settings.set("baseimages", parts[1])
+        elif cmd == "set" and base:
+            self.factory.settings.set("baseimages", base)
 
 
 class ConfigurationProtocol(Protocol):
 
-    def do_get(self, args):
-        if len(args) == 1:
-            if self.factory.settings.has_option(args[0]):
-                self.sendLine("%s = %s" % (args[0],
-                                           self.factory.settings.get(args[0])))
+    def do_get(self, name):
+        # if name:
+            if self.factory.settings.has_option(name):
+                self.sendLine("%s = %s" % (name,
+                                           self.factory.settings.get(name)))
             else:
-                self.sendLine("No such option %s" % args[0])
+                self.sendLine("No such option %s" % name)
         # elif len(args) == 0:
         #     pass  # TODO: show all settings
 
-    def do_set(self, args):
-        if len(args) > 1 and self.factory.settings.has_option(args[0]):
-            self.factory.settings.set(args[0], args[1])
+    def do_set(self, name, value):
+        if self.factory.settings.has_option(name):
+            self.factory.settings.set(name, value)
+        else:
+            self.sendLine("No such option %s" % name)
+
+
+class Manhole(manhole.Manhole):
+
+    def connectionMade(self):
+        fd = sys.__stdin__.fileno()
+        self.oldSettings = termios.tcgetattr(fd)
+        tty.setraw(fd)
+        manhole.Manhole.connectionMade(self)
+
+    def connectionLost(self, reason):
+        termios.tcsetattr(sys.__stdin__.fileno(), termios.TCSANOW,
+                          self.oldSettings)
+        manhole.Manhole.connectionLost(self, reason)

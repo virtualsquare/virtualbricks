@@ -17,7 +17,7 @@
 
 import os
 import re
-import StringIO
+import functools
 
 import gobject
 import gtk
@@ -27,8 +27,8 @@ from twisted.application import app
 from twisted.python import log as _log
 from twisted.internet import error, defer, task, protocol, reactor, utils
 
-from virtualbricks import (interfaces, tools, errors, settings,
-						configfile, brickfactory, console, _compat)
+from virtualbricks import (interfaces, tools, errors, settings, configfile,
+						brickfactory, _compat, console)
 from virtualbricks.settings import MYPATH
 
 from virtualbricks.gui import _gui, graphics, dialogs
@@ -931,12 +931,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	'''
 	' Specific per-type confirm methods
 	'''
-	def __action_command(self, command):
-		sio = StringIO.StringIO()
-		console.parse(self.brickfactory, command, console=sio)
-		ret = sio.getvalue()
-		if ret:
-			log.debug("action output: %s", ret)
 
 	def config_Tap_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
@@ -3138,6 +3132,8 @@ class Application(brickfactory.Application):
 		gtk.link_button_set_uri_hook(lambda b, s: None)
 		gui = VBGUI(factory, gladefile, quit, self.textbuffer)
 		message_dialog.set_parent(gui.widg["main_win"])  #XXX: ugly hack
+		brickfactory.Console.protocol_factory = \
+				functools.partial(console.VBProtocol, gui=gui)
 
 
 def load_gladefile():
