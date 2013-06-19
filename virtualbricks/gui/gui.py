@@ -183,7 +183,7 @@ class TopologyMixin(object):
 			self.get_object('image_topology'),
 			self.brickfactory.bricks, 1.00, orientation, export,
 			settings.VIRTUALBRICKS_HOME + "/")
-		self._should_draw_topology = False
+		# self._should_draw_topology = False
 
 	def on_topology_h_scrolled(self, adjustment):
 		self.topology.x_adj = adjustment.get_value()
