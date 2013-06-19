@@ -376,9 +376,6 @@ class Protocol(basic.LineOnlyReceiver):
                     handler(*parts[1:])
                 except TypeError:
                     self.sendLine("invalid number of arguments")
-                except Exception as e:
-                    log.err(failure.Failure(e))
-                    self.sendLine("invalid command %s" % line)
             else:
                 self.default(line)
 
@@ -455,7 +452,7 @@ class VBProtocol(Protocol):
             if obj.get_type() == "Event":
                 self.delevent(obj)
             elif isinstance(obj, bricks.Brick):
-                self.delbrick(obj)
+                self.factory.del_brick(obj)
             else:
                 raise errors.UnmanagedTypeError("Unknown type %s",
                                                 obj.__class__.__name__)
