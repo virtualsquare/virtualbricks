@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <glade-interface>
-  <!-- interface-requires gtk+ 2.20 -->
+  <!-- interface-requires gtk+ 2.24 -->
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkDialog" id="dialog_attach_event">
     <property name="width_request">800</property>
@@ -393,272 +393,6 @@
       </widget>
     </child>
   </widget>
-  <widget class="GtkDialog" id="dialog_commitimage">
-    <property name="width_request">600</property>
-    <property name="height_request">230</property>
-    <property name="can_focus">False</property>
-    <property name="title" translatable="yes">create new empty image</property>
-    <property name="type_hint">dialog</property>
-    <signal name="delete_event" handler="on_windown_destroy"/>
-    <child internal-child="vbox">
-      <widget class="GtkVBox" id="dialog-vbox23">
-        <property name="height_request">44</property>
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <child>
-          <widget class="GtkVBox" id="vbox15">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <widget class="GtkLabel" id="label41">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;b&gt;Commit COW changes to base image&lt;/b&gt;
-</property>
-                <property name="use_markup">True</property>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="padding">5</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkHBox" id="hbox2">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="homogeneous">True</property>
-                <child>
-                  <widget class="GtkRadioButton" id="radio_commitimage_file">
-                    <property name="label" translatable="yes">Commit _COW file changes</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="active">True</property>
-                    <property name="draw_indicator">False</property>
-                    <signal name="toggled" handler="on_commitimage_mode"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkRadioButton" id="radio_commitimage_vm">
-                    <property name="label" translatable="yes">Commit _Virtual Machine changes</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="image_position">right</property>
-                    <property name="active">True</property>
-                    <property name="draw_indicator">False</property>
-                    <property name="group">radio_commitimage_file</property>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkHBox" id="hbox1">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="homogeneous">True</property>
-                <child>
-                  <widget class="GtkFileChooserButton" id="filechooserbutton_commitimage_cowpath">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="show_hidden">True</property>
-                    <property name="title" translatable="yes">Select A Directory</property>
-                    <signal name="file_set" handler="on_filechooser_commitimage_changed"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkComboBox" id="combo_commitimage_vmdisk">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="items" translatable="yes"> 
-</property>
-                    <signal name="changed" handler="on_combo_commitimage_changed"/>
-                  </widget>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="padding">5</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkHSeparator" id="hseparator2">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child internal-child="action_area">
-          <widget class="GtkHButtonBox" id="dialog-action_area23">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
-            <child>
-              <widget class="GtkButton" id="button_create_image">
-                <property name="label" translatable="yes">Commit</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="can_default">True</property>
-                <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_commitimage_commit"/>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkButton" id="button_newimage_close">
-                <property name="label">gtk-close</property>
-                <property name="response_id">-7</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="can_default">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-                <signal name="clicked" handler="on_dialog_close"/>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">False</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="pack_type">end</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <widget class="GtkVBox" id="vbox1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <widget class="GtkHBox" id="hbox3">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child>
-                  <widget class="GtkLabel" id="label1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">0</property>
-                    <property name="label" translatable="yes">Written Image:</property>
-                  </widget>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="padding">12</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <widget class="GtkEntry" id="entry_commitimage_base">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="tooltip" translatable="yes">Enter a filename for the new image</property>
-                    <property name="editable">False</property>
-                    <property name="invisible_char">●</property>
-                    <property name="invisible_char_set">True</property>
-                    <property name="primary_icon_activatable">False</property>
-                    <property name="secondary_icon_activatable">False</property>
-                    <property name="primary_icon_sensitive">True</property>
-                    <property name="secondary_icon_sensitive">True</property>
-                  </widget>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="padding">8</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="padding">5</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkCheckButton" id="check_commit_privatecow">
-                <property name="label" translatable="yes">Commit changes on private COW</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="draw_indicator">True</property>
-                <signal name="toggled" handler="on_check_commit_privatecow_toggled"/>
-              </widget>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">2</property>
-          </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-      </widget>
-    </child>
-  </widget>
   <widget class="GtkDialog" id="dialog_confirm">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -939,21 +673,12 @@ with a different extension</property>
                 <property name="position">4</property>
               </packing>
             </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
           </widget>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
         <child>
           <widget class="GtkVBox" id="vbox16">
@@ -1210,9 +935,6 @@ vdi</property>
             <property name="pack_type">end</property>
             <property name="position">0</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
         <child>
           <widget class="GtkVBox" id="vbox15">
@@ -3334,9 +3056,6 @@ GB</property>
                   </packing>
                 </child>
                 <child>
-                  <placeholder/>
-                </child>
-                <child>
                   <widget class="GtkHSeparator" id="hseparator1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -3997,12 +3716,6 @@ Use an already open UDP multicast socket</property>
                         <property name="n_rows">4</property>
                         <property name="n_columns">2</property>
                         <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
                           <widget class="GtkLabel" id="label22">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
@@ -4066,90 +3779,6 @@ Use an already open UDP multicast socket</property>
                             <property name="bottom_attach">4</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -4190,21 +3819,12 @@ Use an already open UDP multicast socket</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
                         <property name="fill">True</property>
                         <property name="position">1</property>
                       </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                   </widget>
                 </child>
@@ -4308,7 +3928,6 @@ invalid path for vde binaries</property>
                                   </widget>
                                 </child>
                                 <child>
-                                  <placeholder/>
                                   <packing>
                                     <property name="type">label_item</property>
                                   </packing>
@@ -4735,9 +4354,6 @@ qcow2
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
-              <placeholder/>
-            </child>
-            <child>
               <widget class="GtkButton" id="applybutton1">
                 <property name="label">gtk-apply</property>
                 <property name="response_id">-10</property>
@@ -4793,21 +4409,6 @@ qcow2
             <property name="position">0</property>
           </packing>
         </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
       </widget>
     </child>
   </widget>
@@ -4843,9 +4444,6 @@ multiple devices&lt;/b&gt;</property>
             <property name="can_focus">True</property>
             <property name="hscrollbar_policy">automatic</property>
             <property name="vscrollbar_policy">automatic</property>
-            <child>
-              <placeholder/>
-            </child>
           </widget>
           <packing>
             <property name="expand">True</property>
@@ -5020,9 +4618,6 @@ multiple devices&lt;/b&gt;</property>
           <widget class="GtkHButtonBox" id="hbuttonbox6">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <child>
-              <placeholder/>
-            </child>
             <child>
               <widget class="GtkButton" id="button11">
                 <property name="label" translatable="yes">Advanced</property>
@@ -5322,7 +4917,6 @@ multiple devices&lt;/b&gt;</property>
                     <child>
                       <widget class="GtkMenuItem" id="commit_menuitem">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Co_mmit COW image</property>
                         <property name="use_underline">True</property>
@@ -5473,9 +5067,6 @@ multiple devices&lt;/b&gt;</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -5569,9 +5160,6 @@ multiple devices&lt;/b&gt;</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="shadow_type">in</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -5602,9 +5190,6 @@ multiple devices&lt;/b&gt;</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="shadow_type">in</property>
-                    <child>
-                      <placeholder/>
-                    </child>
                   </widget>
                   <packing>
                     <property name="position">2</property>
@@ -5697,9 +5282,6 @@ multiple devices&lt;/b&gt;</property>
                         <property name="can_focus">True</property>
                         <property name="hscrollbar_policy">automatic</property>
                         <property name="vscrollbar_policy">automatic</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -6787,9 +6369,6 @@ output queue</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="position">1</property>
@@ -7519,9 +7098,6 @@ Prioritize</property>
                             <property name="position">1</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="position">2</property>
@@ -7568,9 +7144,6 @@ Prioritize</property>
                             <property name="fill">False</property>
                             <property name="position">1</property>
                           </packing>
-                        </child>
-                        <child>
-                          <placeholder/>
                         </child>
                       </widget>
                       <packing>
@@ -7697,9 +7270,6 @@ fda</property>
                                                 <property name="fill">False</property>
                                                 <property name="position">0</property>
                                               </packing>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
                                             </child>
                                           </widget>
                                           <packing>
@@ -8924,15 +8494,6 @@ disk images</property>
                           <widget class="GtkHBox" id="hbox18">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
                           </widget>
                           <packing>
                             <property name="top_attach">2</property>
@@ -9366,9 +8927,6 @@ disk images</property>
                                 <property name="position">0</property>
                               </packing>
                             </child>
-                            <child>
-                              <placeholder/>
-                            </child>
                           </widget>
                           <packing>
                             <property name="left_attach">1</property>
@@ -9626,15 +9184,6 @@ disk images</property>
                           <widget class="GtkHBox" id="hbox49">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
                           </widget>
                           <packing>
                             <property name="left_attach">1</property>
@@ -9699,9 +9248,6 @@ disk images</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="shadow_type">in</property>
-                                <child>
-                                  <placeholder/>
-                                </child>
                               </widget>
                               <packing>
                                 <property name="top_attach">1</property>
@@ -10067,9 +9613,6 @@ disk images</property>
                                 <property name="position">2</property>
                               </packing>
                             </child>
-                            <child>
-                              <placeholder/>
-                            </child>
                           </widget>
                         </child>
                         <child>
@@ -10241,9 +9784,6 @@ disk images</property>
                             <property name="position">0</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="position">4</property>
@@ -10290,9 +9830,6 @@ disk images</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </widget>
               <packing>
@@ -18226,9 +17763,6 @@ bytes</property>
                             <property name="position">0</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </widget>
                       <packing>
                         <property name="position">5</property>
@@ -18252,9 +17786,6 @@ bytes</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </widget>
               <packing>
@@ -18368,9 +17899,6 @@ bytes</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </widget>
               <packing>
@@ -18632,9 +18160,6 @@ bytes</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
-                <child>
-                  <placeholder/>
-                </child>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -18695,9 +18220,6 @@ bytes</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </widget>
               <packing>
@@ -18841,18 +18363,6 @@ bytes</property>
                         <property name="n_rows">5</property>
                         <property name="n_columns">2</property>
                         <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
                           <widget class="GtkLabel" id="label51">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
@@ -18976,12 +18486,6 @@ bytes</property>
                         <property name="can_focus">False</property>
                         <property name="n_rows">5</property>
                         <property name="n_columns">2</property>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                         <child>
                           <widget class="GtkLabel" id="label49">
                             <property name="visible">True</property>
@@ -19283,9 +18787,6 @@ bytes</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
-                <child>
-                  <placeholder/>
-                </child>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -19367,9 +18868,6 @@ bytes</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
-                <child>
-                  <placeholder/>
-                </child>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -19387,13 +18885,9 @@ bytes</property>
                   <widget class="GtkAlignment" id="alignment16">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <child>
-                      <placeholder/>
-                    </child>
                   </widget>
                 </child>
                 <child>
-                  <placeholder/>
                   <packing>
                     <property name="type">label_item</property>
                   </packing>
@@ -19828,9 +19322,6 @@ bytes</property>
             <property name="pack_type">end</property>
             <property name="position">0</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </widget>
     </child>

@@ -1259,7 +1259,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'menu_brickactions',
 		'dialog_confirm',
 		'dialog_imagename',
-		'dialog_commitimage',
 		'dialog_convertimage',
 		]
 	'''
@@ -2731,75 +2730,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_usb_show(self, button):
 		self.user_wait_action(self.usb_show)
 
-	def on_check_commit_privatecow_toggled(self, widget, event=None, data=None):
-		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
-		if not sel:
-			return
-		if widget.get_active():
-			self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_real_disk_name())
-		else:
-			self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_base())
-
-	def on_commitimage_mode(self, widget, event=None, data=None):
-		if widget.get_active():
-			self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(True)
-			self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(False)
-			self.gladefile.get_widget("check_commit_privatecow").set_sensitive(False)
-		else:
-			self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(False)
-			self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(True)
-			self.gladefile.get_widget("check_commit_privatecow").set_sensitive(True)
-		self.gladefile.get_widget("entry_commitimage_base").set_text("")
-
-	def __do_image_commit(self, path):
-
-		def log_err(exit_status):
-			if exit_status != 0:
-				log.msg("Failed to commit image", isError=True)
-
-		if not os.access(path, os.R_OK):
-			return defer.fail("Unable to read image")
-		ex_d = utils.getProcessValue("qemu-img", ["commit", path], os.environ)
-		ex_d.addCallback(log_err)
-		return ex_d
-
-	def do_image_commit(self, path):
-		self.user_wait_action(self.__do_image_commit, path)
-
-	def on_commitimage_commit(self, widget, event=None, data=None):
-		self.show_window('')
-		path = ''
-		if not self.gladefile.get_widget('radio_commitimage_file').get_active():
-			img = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
-			if (img):
-				if self.gladefile.get_widget("check_commit_privatecow").get_active():
-					self.ask_confirm("Warning: the private COW image will be updated.\n"+
-							" This operation cannot be undone. \nAre you sure?", on_yes=img.VM.commit_disks)
-					return True
-				else:
-					path = img.basefolder + "/" + img.VM.name + "_" + img.device + ".cow"
-			else:
-				log.error("Invalid image")
-				return False
-		else:
-			path = self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').get_filename()
-
-		if not os.access(path, os.R_OK):
-			log.error("Error: %s is not a valid COW image", path)
-			return True
-		self.ask_confirm("Warning: the base image will be updated to the changes contained in the COW.\n"+
-						" This operation cannot be undone. \nAre you sure?", on_yes=self.do_image_commit, arg=path)
-		return True
-
-	# def exec_image_convert(self, arg=None):
-	# 	src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
-	# 	fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
-	# 	dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
-	# 	if 0 != subprocess.Popen(["qemu-img", "convert","-O",fmt,src,dst]).wait():
-	# 		return False
-	# 	else:
-	# 		return True
-
 	def do_image_convert(self, arg=None):
 		raise NotImplementedError("do_image_convert")
 		# src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
@@ -2825,56 +2755,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		return True
 
 	def on_commit_image(self,widget,event=None, data=None):
-		self.gladefile.get_widget('radio_commitimage_file').set_active(True)
-		self.gladefile.get_widget('filechooserbutton_commitimage_cowpath').set_sensitive(True)
-		self.gladefile.get_widget('combo_commitimage_vmdisk').set_sensitive(False)
-		self.gladefile.get_widget("check_commit_privatecow").set_sensitive(False)
-		combo = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk'))
-		using_cow = dict()
-		for b in iter(self.brickfactory.bricks):
-			if b.get_type() == "Qemu":
-				for dev in ['hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock']:
-					disk = b.config[dev]
-					if disk.cow:
-						using_cow[dev + ' on ' + b.name] = disk
-
-		combo.populate(using_cow)
-		self.show_window('dialog_commitimage')
-
-	def on_combo_commitimage_changed(self, widget, event=None, data=None):
-		sel = ComboBox(self.gladefile.get_widget('combo_commitimage_vmdisk')).get_selected()
-		if sel and sel.get_base():
-			if self.glade.get_widget("check_commit_privatecow").get_active():
-				self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_real_disk_name())
-			else:
-				self.gladefile.get_widget('entry_commitimage_base').set_text(sel.get_base())
-		else:
-			self.gladefile.get_widget('entry_commitimage_base').set_text('base not found')
-
-	def __commit_image_show_result(self, (out, err, code)):
-		if code != 0:
-			log.msg("Base not found (invalid cow?)\nstderr:\n%s" % err,
-					isError=True)
-			return
-		for line in out:
-			if line.startswith("backing file: "):
-				path = line.strip("backing file: ").split()[0]
-				self.get_widget("entry_commitimage_base").set_text(path)
-				break
-		else:
-			self.get_widget("entry_commitimage_base").set_text(
-					"base not found (invalid cow?)")
-
-	def __commit_image_changed(self, filename):
-		exit = utils.getProcessOutputAndValue("qemu-img", ["info", filename],
-										os.environ)
-		exit.addCallback(self.__commit_image_show_result)
-		return exit
-
-	def on_filechooser_commitimage_changed(self, widget, event=None, data=None):
-		filename = self.gladefile.get_widget(
-				"filechooserbutton_commitimage_cowpath").get_filename()
-		self.user_wait_action(self.__commit_image_changed, filename)
+		dialog = dialogs.CommitImageDialog(self.brickfactory)
+		dialog.show(self.get_object("main_win"))
 
 	def on_convert_image(self,widget,event=None, data=None):
 		self.gladefile.get_widget('combobox_imageconvert_format').set_active(2)

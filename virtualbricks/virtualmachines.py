@@ -902,4 +902,5 @@ class VirtualMachine(bricks.Brick):
                 p.vlan -= 1
 
     def commit_disks(self, args):
+        # XXX: fixme
         self.send("commit all\n")
