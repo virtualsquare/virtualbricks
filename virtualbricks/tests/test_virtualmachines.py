@@ -325,7 +325,7 @@ class TestDisk(unittest.TestCase):
         result = successResultOf(self, self.disk.get_real_disk_name())
         self.assertEqual(result, "ping")
         self.disk._get_cow_name = lambda: 1 / 0
-        self.disk.cow = True
+        self.vm.config["private" + self.disk.device] = True
         failureResultOf(self, self.disk.get_real_disk_name(),
                         ZeroDivisionError)
 
