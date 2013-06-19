@@ -25,7 +25,7 @@ import copy
 import itertools
 
 from twisted.application import app
-from twisted.internet import defer, task, stdio
+from twisted.internet import defer, task, stdio, error
 from twisted.protocols import basic
 from twisted.python import log as _log
 
@@ -449,12 +449,17 @@ class Console(basic.LineOnlyReceiver):
         self.protocol.lineReceived(line)
 
     def connectionLost(self, reason):
-        if self.inner_protocol:
-            self.inner_protocol.connectionLost(reason)
-            self.inner_protocol = None
-            stdio.StandardIO(self)
+        if reason.check(error.ConnectionDone):
+            if self.inner_protocol:
+                self.inner_protocol.connectionLost(reason)
+                self.inner_protocol = None
+                stdio.StandardIO(self)
+            else:
+                self.factory.quit()
         else:
-            self.factory.quit()
+            # an exception is raised inside the protocol, this in an error in
+            # the code, don't quit and reopen the terminal.
+            stdio.StandardIO(self)
 
 
 def AutosaveTimer(factory, interval=180):
