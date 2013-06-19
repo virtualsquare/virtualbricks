@@ -37,10 +37,10 @@ class TestProtocol(unittest.TestCase):
                          "numbers, underscores, hyphens and points, t+\n")
         cmd = "new stub"
         self.parse(cmd)
-        self.assertEqual(self.get_value(), "invalid command %s\n" % cmd)
+        self.assertEqual(self.get_value(), "invalid number of arguments\n")
         cmd = "new"
         self.parse(cmd)
-        self.assertEqual(self.get_value(), "invalid command %s\n" % cmd)
+        self.assertEqual(self.get_value(), "invalid number of arguments\n")
         self.flushLoggedErrors(TypeError)
 
     def test_new_event(self):
