@@ -3928,6 +3928,7 @@ invalid path for vde binaries</property>
                                   </widget>
                                 </child>
                                 <child>
+                                  <placeholder/>
                                   <packing>
                                     <property name="type">label_item</property>
                                   </packing>
@@ -4920,7 +4921,7 @@ multiple devices&lt;/b&gt;</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Co_mmit COW image</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_commit_image"/>
+                        <signal name="activate" handler="on_commit_menuitem_activate"/>
                       </widget>
                     </child>
                     <child>
@@ -18888,6 +18889,7 @@ bytes</property>
                   </widget>
                 </child>
                 <child>
+                  <placeholder/>
                   <packing>
                     <property name="type">label_item</property>
                   </packing>
