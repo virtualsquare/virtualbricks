@@ -2754,7 +2754,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.show_window('')
 		return True
 
-	def on_commit_image(self,widget,event=None, data=None):
+	def on_commit_menuitem_activate(self, menuitem):
 		dialog = dialogs.CommitImageDialog(self.brickfactory)
 		dialog.show(self.get_object("main_win"))
 
