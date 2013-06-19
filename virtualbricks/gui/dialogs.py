@@ -158,7 +158,12 @@ class Window(Base):
     def window(self):
         return self.widget
 
-    def show(self):
+    def set_transient_for(self, parent):
+        self.window.set_transient_for(parent)
+
+    def show(self, parent=None):
+        if parent is not None:
+            self.window.set_transient_for(parent)
         self.widget.show()
 
 
@@ -744,3 +749,156 @@ class ShellCommandDialog(Window, EventControllerMixin):
         if response_id == gtk.RESPONSE_OK:
             self.configure_event(self.event, {})
         dialog.destroy()
+
+
+def disks_of(brick):
+    if brick.get_type() == "Qemu":
+        for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
+            yield brick.config[dev]
+
+
+class CommitImageDialog(Window):
+
+    resource = "data/commitdialog.ui"
+    parent = None
+    _set_label_d = None
+
+    def __init__(self, factory):
+        Window.__init__(self)
+        model = self.get_object("model1")
+        for brick in factory.bricks:
+            for disk in (disk for disk in disks_of(brick) if disk.cow):
+                model.append((disk.device + " on " + brick.name, disk))
+        Window.show(self)
+
+    def show(self, parent=None):
+        parent = parent
+
+    def _do_image_commit(self, path):
+
+        def log_err(exit_status):
+            if exit_status != 0:
+                log.msg("Failed to commit image", isError=True)
+
+        ex_d = utils.getProcessValue("qemu-img", ["commit", path], os.environ)
+        ex_d.addCallback(log_err)
+        return ex_d
+
+    def do_image_commit(self, path):
+        self.window.destroy()
+        self.user_wait_action(self._do_image_commit, path)
+
+    def commit_file(self, pathname):
+        question = ("Warning: the base image will be updated to the\n"
+                    "changes contained in the COW. This operation\n"
+                    "cannot be undone. Are you sure?")
+        ConfirmDialog(question, on_yes=self.do_image_commit,
+                      on_yes_arg=pathname).show(self.parent)
+
+    def _commit_vm(self, img):
+        log.msg("TODO: not implemented yet")
+        # img.VM.commit_disks()
+        self.window.destroy()
+
+    def commit_vm(self):
+        combobox = self.get_object("disk_combo")
+        model = combobox.get_model()
+        itr = combobox.get_active_iter()
+        if itr:
+            img = model[itr][1]
+            if self.get_object("cow_checkbutton").get_active():
+                question = ("Warning: the private COW image will be "
+                            "updated.\nThis operation cannot be undone.\n"
+                            "Are you sure?")
+                ConfirmDialog(question, on_yes=self._commit_vm,
+                              on_yes_arg=img).show(self.parent)
+            else:
+                pathname = os.path.join(img.basefolder,
+                        "{0.vm.name}_{0.device}.cow".format(img))
+                self.commit_file(pathname)
+        else:
+            log.msg("Invalid image", isError=True)
+
+    def on_CommitImageDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            if self.get_object("file_radiobutton").get_active():
+                pathname = self.get_object("cowpath_filechooser").get_filename()
+                self.commit_file(pathname)
+            else:
+                self.commit_vm()
+        else:
+            dialog.destroy()
+
+    def on_file_radiobutton_toggled(self, button):
+        active = button.get_active()
+        filechooser = self.get_object("cowpath_filechooser")
+        filechooser.set_visible(active)
+        filechooser.unselect_all()
+        combo = self.get_object("disk_combo")
+        combo.set_visible(not active)
+        combo.set_active(-1)
+        self.get_object("cow_checkbutton").set_visible(not active)
+        self.get_object("msg_label").set_visible(False)
+
+    def _commit_image_show_result(self, (out, err, code)):
+        if code != 0:
+            log.msg("Base not found (invalid cow?)\nstderr:\n%s" % err,
+                    isError=True)
+        else:
+            label = self.get_object("msg_label")
+            for line in out.splitlines():
+                if line.startswith("backing file: "):
+                    label.set_text(line)
+                    break
+            else:
+                label.set_text(_("Base not found (invalid cow?)"))
+            label.set_visible(True)
+
+    def on_cowpath_filechooser_file_set(self, filechooser):
+        if self._set_label_d is not None:
+            self._set_label_d.cancel()
+        filename = filechooser.get_filename()
+        if os.access(filename, os.R_OK):
+            code = utils.getProcessOutputAndValue("qemu-img",
+                    ["info", filename], os.environ)
+            code.addCallback(self._commit_image_show_result)
+            self._set_label_d = code
+            return code
+
+    def _set_label(self, combobox=None, button=None):
+        if self._set_label_d is not None:
+            self._set_label_d.cancel()
+        if combobox is None:
+            combobox = self.get_object("disk_combo")
+        if button is None:
+            button = self.get_object("cow_checkbutton")
+        label = self.get_object("msg_label")
+        label.set_visible(False)
+        model = combobox.get_model()
+        itr = combobox.get_active_iter()
+        if itr is not None:
+            disk = model[itr][1]
+            self._set_label(disk, label)
+            base = disk.get_base()
+            if base and button.get_active():
+                # XXX: make disk.get_real_disk_name's deferred cancellable
+                deferred = disk.get_real_disk_name()
+                deferred.addCallback(label.set_text)
+                deferred.addCallback(lambda _: label.set_visible(True))
+                deferred.addErrback(log.err, "Setting image for combobox")
+                self._set_label_d = deferred
+            elif base:
+                label.set_visible(True)
+                label.set_text(base)
+            else:
+                label.set_visible(True)
+                label.set_text("base not found")
+        else:
+            label.set_visible(True)
+            label.set_text("base not found")
+
+    def on_disk_combo_changed(self, combobox):
+        self._set_label(combobox=combobox)
+
+    def on_cow_checkbutton_toggled(self, button):
+        self._set_label(button=button)
