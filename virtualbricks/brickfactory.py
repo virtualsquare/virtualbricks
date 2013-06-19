@@ -20,6 +20,7 @@ from __future__ import print_function
 
 import os
 import errno
+import sys
 import re
 import copy
 import itertools
@@ -27,7 +28,7 @@ import itertools
 from twisted.application import app
 from twisted.internet import defer, task, stdio, error
 from twisted.protocols import basic
-from twisted.python import log as _log
+from twisted.python import failure, log as _log
 
 from virtualbricks import errors, settings, configfile, console, _compat
 from virtualbricks import (events, link, router, switches, tunnels,
@@ -521,6 +522,35 @@ class Application:
         if self.config["verbosity"]:
             root.setLevel(self._get_log_level(self.config["verbosity"]))
 
+    def install_sys_hooks(self):
+        import threading
+
+        sys.excepthook = self.excepthook
+
+        # Workaround for sys.excepthook thread bug
+        # See: http://bugs.python.org/issue1230540#msg91244
+        old_init = threading.Thread.__init__
+
+        def init(self, *args, **kwargs):
+            old_init(self, *args, **kwargs)
+            run_old = self.run
+
+            def run_with_except_hook(*args, **kw):
+                try:
+                    run_old(*args, **kw)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except:
+                    sys.excepthook(*sys.exc_info())
+            self.run = run_with_except_hook
+        threading.Thread.__init__ = init
+
+    def excepthook(self, exc_type, exc_value, traceback):
+        if exc_type in (SystemExit, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, traceback)
+        else:
+            log.err(failure.Failure(exc_value, exc_type, traceback))
+
     def install_home(self):
         try:
             os.mkdir(settings.VIRTUALBRICKS_HOME)
@@ -548,6 +578,10 @@ class Application:
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
             stdio.StandardIO(Console(factory))
+        # delay as much as possible the installation of hooks because the
+        # exception hook can hide errors in the code requiring to start the
+        # application again with logging redirected
+        self.install_sys_hooks()
         return quit
 
     def _run(self, factory, quit):
