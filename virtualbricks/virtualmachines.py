@@ -254,15 +254,18 @@ def is_missing(path, file):
 class Disk:
 
     sync_cmd = "sync"
-    cow = False
     image = None
+
+    @property
+    def cow(self):
+        return self.vm.config["private" + self.device]
 
     @property
     def basefolder(self):
         return self.VM.get_basefolder()
 
     def __init__(self, VM, dev):
-        self.VM = VM
+        self.VM = self.vm = VM
         self.device = dev
 
     def args(self):
@@ -407,7 +410,7 @@ class Disk:
         elif self.cow:
             try:
                 return self._get_cow_name()
-            except Exception as e:
+            except (OSError, IOError) as e:
                 return defer.fail(failure.Failure(e))
         else:
             return defer.succeed(self.image.path)
@@ -418,16 +421,14 @@ class Disk:
     def __deepcopy__(self, memo):
         new = type(self)(self.VM, self.device)
         new.sync_cmd = self.sync_cmd
-        new.cow = self.cow
         if self.image is not None:
             new.set_image(self.image.name)
         return new
 
     def __repr__(self):
-        return "<Disk %s(%s) image=%s readonly=%s>" % (self.device,
-                                                       self.VM.name,
-                                                       self.image,
-                                                       self.readonly())
+        return "<Disk {self.device}({self.VM.name}) image={self.image} " \
+                "readonly={readonly} cow={self.cow}>".format(
+                    self=self, readonly=self.readonly())
 
 
 VM_COMMAND_BUILDER = {
@@ -746,7 +747,7 @@ class VirtualMachine(bricks.Brick):
 
     def _get_disk_args(self, idx, dev):
         disk = self.config[dev]
-        disk.cow = self.config["private" + dev]
+        # disk.cow = self.config["private" + dev]
         if not disk.cow and not disk.readonly():
             if not disk.image.readonly:
                 if disk.image.set_master(disk):
