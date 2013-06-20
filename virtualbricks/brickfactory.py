@@ -21,6 +21,8 @@ from __future__ import print_function
 import os
 import errno
 import sys
+import termios
+import tty
 import re
 import copy
 import itertools
@@ -29,6 +31,8 @@ from twisted.application import app
 from twisted.internet import defer, task, stdio, error
 from twisted.protocols import basic
 from twisted.python import failure, log as _log
+from twisted.conch.insults import insults
+from twisted.conch import manhole
 
 from virtualbricks import errors, settings, configfile, console, _compat
 from virtualbricks import (events, link, router, switches, tunnels,
@@ -420,15 +424,37 @@ class BrickFactory(object):
     renameevent = rename_event
 
 
+class Manhole(manhole.Manhole):
+
+    def connectionMade(self):
+        fd = sys.__stdin__.fileno()
+        self.oldSettings = termios.tcgetattr(fd)
+        tty.setraw(fd)
+        manhole.Manhole.connectionMade(self)
+
+    def connectionLost(self, reason):
+        termios.tcsetattr(sys.__stdin__.fileno(), termios.TCSANOW,
+                          self.oldSettings)
+        manhole.Manhole.connectionLost(self, reason)
+
+
 class Console(basic.LineOnlyReceiver):
 
     inner_protocol = None
     protocol = None
     delimiter = "\n"
-    protocol_factory = console.VBProtocol
 
-    def __init__(self, factory):
+    def __init__(self, factory, namespace={}):
         self.factory = factory
+        self.namespace = namespace
+
+    def _inject_python(self, protocol):
+
+        def do_python():
+            """Open a python interpreter. Use ^D (^Z on windows) to exit."""
+            protocol = insults.ServerProtocol(Manhole, self.namespace)
+            self._switchTo(protocol)
+        protocol.do_python = do_python
 
     def _switchTo(self, new_proto):
         self.inner_protocol = new_proto
@@ -436,8 +462,8 @@ class Console(basic.LineOnlyReceiver):
 
     def connectionMade(self):
         if self.protocol is None:
-            self.protocol = self.protocol_factory(self.factory, self,
-                                                  factory=self.factory)
+            self.protocol = console.VBProtocol(self.factory)
+            self._inject_python(self.protocol)
         self.protocol.makeConnection(self.transport)
 
     def dataReceived(self, data):
@@ -450,16 +476,28 @@ class Console(basic.LineOnlyReceiver):
         self.protocol.lineReceived(line)
 
     def connectionLost(self, reason):
+        # This method is called for a multitude of reasons, I'm trying to
+        # enumerate them here.
         if reason.check(error.ConnectionDone):
             if self.inner_protocol:
+                # 1. Manhole is terminated and the transport close its
+                # connection. Here I want to restart the virtualbricks
+                # protocol.
                 self.inner_protocol.connectionLost(reason)
                 self.inner_protocol = None
                 stdio.StandardIO(self)
             else:
+                # 2. ^D, twisted.internet.fdesc.readFromFD reads an empty
+                # string and returns ConnectionDone.
                 self.factory.quit()
+        if reason.check(error.ConnectionLost):
+            # 3. The quit deferred is activated, the reactor disconnects all
+            # selectables with ConnectionLost. This method is called twice
+            # after a ^D with a ConnectionDone followed by a ConnectionLost.
+            pass
         else:
-            # an exception is raised inside the protocol, this in an error in
-            # the code, don't quit and reopen the terminal.
+            # 4. An exception is raised inside the protocol, this in an error
+            # in the code, don't quit and reopen the terminal.
             stdio.StandardIO(self)
 
 
@@ -558,6 +596,9 @@ class Application:
             if e.errno != errno.EEXIST:
                 raise
 
+    def get_namespace(self):
+        return {}
+
     def run(self, reactor):
         self.install_locale()
         self.install_stdlog_handler()
@@ -577,7 +618,9 @@ class Application:
         configfile.restore_last_project(factory)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
-            stdio.StandardIO(Console(factory))
+            namespace = self.get_namespace()
+            namespace["factory"] = factory
+            stdio.StandardIO(Console(factory, namespace))
         # delay as much as possible the installation of hooks because the
         # exception hook can hide errors in the code requiring to start the
         # application again with logging redirected

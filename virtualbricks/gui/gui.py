@@ -17,7 +17,6 @@
 
 import os
 import re
-import functools
 
 import gobject
 import gtk
@@ -28,7 +27,7 @@ from twisted.python import log as _log
 from twisted.internet import error, defer, task, protocol, reactor, utils
 
 from virtualbricks import (interfaces, tools, errors, settings, configfile,
-						brickfactory, _compat, console)
+						brickfactory, _compat)
 from virtualbricks.settings import MYPATH
 
 from virtualbricks.gui import _gui, graphics, dialogs
@@ -3003,6 +3002,9 @@ class Application(brickfactory.Application):
 		gtk.glade.bindtextdomain("virtualbricks", "/usr/share/locale")
 		gtk.glade.textdomain("virtualbricks")
 
+	def get_namespace(self):
+		return {"gui": self.gui}
+
 	def _run(self, factory, quit):
 		# a bug in gtk2 make impossibile to use this and is not required anyway
 		gtk.set_interactive(False)
@@ -3012,10 +3014,8 @@ class Application(brickfactory.Application):
 		_log.addObserver(message_dialog.emit)
 		# disable default link_button action
 		gtk.link_button_set_uri_hook(lambda b, s: None)
-		gui = VBGUI(factory, gladefile, quit, self.textbuffer)
-		message_dialog.set_parent(gui.widg["main_win"])  #XXX: ugly hack
-		brickfactory.Console.protocol_factory = \
-				functools.partial(console.VBProtocol, gui=gui)
+		self.gui = VBGUI(factory, gladefile, quit, self.textbuffer)
+		message_dialog.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
 
 
 def load_gladefile():

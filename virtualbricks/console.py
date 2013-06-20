@@ -17,21 +17,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import sys
 import select
 import socket
 import hashlib
 import threading
 import StringIO
 import textwrap
-import termios
-import tty
 
 from twisted.internet import interfaces, utils
 from twisted.protocols import basic
-from twisted.python import failure, components
-from twisted.conch import manhole
-from twisted.conch.insults import insults
+from twisted.python import components
 from zope.interface import implements
 
 import virtualbricks
@@ -362,10 +357,9 @@ def parse(factory, command, console=None):
 
 class Protocol(basic.LineOnlyReceiver):
 
-    def __init__(self, _factory, **namespace):
-        self.factory = _factory
+    def __init__(self, factory):
+        self.factory = factory
         self.sub_protocols = {}
-        self.namespace = namespace
 
     def lineReceived(self, line):
         parts = line.split()
@@ -381,6 +375,14 @@ class Protocol(basic.LineOnlyReceiver):
 
     def default(self, parts):
         pass
+
+    def connectionMade(self):
+        for protocol in self.sub_protocols.itervalues():
+            protocol.makeConnection(self.transport)
+
+    def connectionLost(self, reason):
+        for protocol in self.sub_protocols.itervalues():
+            protocol.connectionLost(reason)
 
 
 class VBProtocol(Protocol):
@@ -408,7 +410,7 @@ class VBProtocol(Protocol):
     BRICK_NAME help         Help about parameters of BRICK_NAME
     """
 
-    _is_first = False
+    # _is_first = False
     delimiter = "\n"
     prompt = "virtualbricks> "
     intro = ("Virtualbricks, version {version}\n"
@@ -417,21 +419,21 @@ class VBProtocol(Protocol):
         "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
         "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
 
-    def __init__(self, _factory, _main_protocol=None, **namespace):
-        Protocol.__init__(self, _factory, **namespace)
-        imgp = ImagesProtocol(_factory)
+    def __init__(self, factory):
+        Protocol.__init__(self, factory)
+        imgp = ImagesProtocol(factory)
         self.sub_protocols["images"] = imgp
-        cfgp = ConfigurationProtocol(_factory)
+        cfgp = ConfigurationProtocol(factory)
         self.sub_protocols["config"] = cfgp
-        self.main_protocol = _main_protocol
 
     def connectionMade(self):
-        self.sub_protocols["images"].makeConnection(self.transport)
-        self.sub_protocols["config"].makeConnection(self.transport)
-        if not self._is_first:
-            self._is_first = True
-            intro = self.intro.format(version=virtualbricks.version.short())
-            self.transport.write(intro)
+        Protocol.connectionMade(self)
+        # if not self._is_first:
+        #     self._is_first = True
+        #     intro = self.intro.format(version=virtualbricks.version.short())
+        #     self.transport.write(intro)
+        intro = self.intro.format(version=virtualbricks.version.short())
+        self.transport.write(intro)
         self.transport.write(self.prompt)
 
     def lineReceived(self, line):
@@ -575,20 +577,6 @@ class VBProtocol(Protocol):
                     self.sendLine("\tlink: %s " % pl.sock.nickname)
 
     # easter eggs
-    def do_python(self):
-        """Open a python interpreter. Use ^D (^Z on windows) to exit."""
-        if self.main_protocol is not None:
-            protocol = insults.ServerProtocol(Manhole, self.namespace)
-            self.main_protocol._switchTo(protocol)
-        else:
-            log.msg("Cannot open a python interpreter, command is not called "
-                    "from a Console")
-
-    def do_threads(self):
-        self.sendLine("Threads:")
-        for i, thread in enumerate(threading.enumerate()):
-            self.sendLine("  %d: %s" % (i, repr(thread)))
-
     def do_warranty(self):
         self.sendLine("NotImplementedError")
 
@@ -647,17 +635,3 @@ class ConfigurationProtocol(Protocol):
             self.factory.settings.set(name, value)
         else:
             self.sendLine("No such option %s" % name)
-
-
-class Manhole(manhole.Manhole):
-
-    def connectionMade(self):
-        fd = sys.__stdin__.fileno()
-        self.oldSettings = termios.tcgetattr(fd)
-        tty.setraw(fd)
-        manhole.Manhole.connectionMade(self)
-
-    def connectionLost(self, reason):
-        termios.tcsetattr(sys.__stdin__.fileno(), termios.TCSANOW,
-                          self.oldSettings)
-        manhole.Manhole.connectionLost(self, reason)
