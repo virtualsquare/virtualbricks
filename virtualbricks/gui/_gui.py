@@ -579,16 +579,31 @@ class CaptureConfigController(PlugMixin, ConfigController):
     resource = "data/captureconfig.ui"
 
     def get_view(self, gui):
-        # TODO: not finished
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox1")
         self.configure_sock_combobox(combo, model, self.original,
                                      self.original.plugs[0], gui)
+        combo2 = self.get_object("combobox2")
+        model = combo2.get_model()
+        with open("/proc/net/dev") as fd:
+            # skip the header
+            next(fd), next(fd)
+            for line in fd:
+                name = line.strip().split(":")[0]
+                if name != "lo":
+                    itr = model.append((name, ))
+                    if self.original.config["iface"] == name:
+                        combo2.set_active_iter(itr)
 
         return self.get_object("table1")
 
     def configure_brick(self, gui):
-        self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
+        self.connect_plug(self.original.plugs[0], self.get_object("combobox1"))
+        combo = self.get_object("combobox2")
+        itr = combo.get_active_iter()
+        if itr is not None:
+            model = combo.get_model()
+            self.original.set(iface=model[itr][0])
 
     def on_manual_radiobutton_toggled(self, radiobtn):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
