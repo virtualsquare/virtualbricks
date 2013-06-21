@@ -257,6 +257,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		self.widg = self.get_widgets(self.widgetnames())
 		self.__config_panel = None
+		self.__summary_table = None
 
 		log.info("Starting VirtualBricks!")
 
@@ -976,23 +977,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		configpanel = configframe.get_child()
 		if configpanel:
 			configframe.remove(configpanel)
-		if self.__config_panel is not None:
-			self.__config_panel = None
+		self.__config_panel = None
+		self.__summary_table = None
 		self.curtain_is_down = True
 
-	def __get_brick_summary_frame(self, brick, panel):
-		builder = gtk.Builder()
-		builder.add_from_file(graphics.get_filename("virtualbricks.gui",
-			"data/brickconfigsummary.ui"))
-		builder.get_object("label").set_markup(_("<b>%s(%s) settings</b>")
-			% (brick.get_name(), brick.get_type()))
-		builder.get_object("image").set_from_pixbuf(
-			graphics.pixbuf_for_running_brick(brick))
-		table = builder.get_object("table")
+	def __fill_config_table(self, brick, table):
+		table.foreach(table.remove)
 		table.resize(len(brick.config), 2)
-		# pon_poff = ["poff_vbevent", "pon_vbevent"]
-		# for i, (name, value) in enumerate((n, v) for n, v in
-		# 		sorted(brick.config.iteritems()) if n not in set(pon_poff)):
 		for i, (name, value) in enumerate((name, brick.config.get(name))
 				for name in sorted(brick.config)):
 			nlabel = gtk.Label("%s:" % name)
@@ -1003,16 +994,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			vlabel.set_alignment(0.0, 0.5)
 			vlabel.set_padding(0, 2)
 			table.attach(vlabel, 1, 2, i, i + 1, gtk.FILL, gtk.FILL)
-		# pon_vbevent and poff_vbevent always to the end
-		# for j, name in enumerate(pon_poff):
-		# 	nlabel = gtk.Label("%s:" % name)
-		# 	nlabel.set_alignment(1.0, 0.5)
-		# 	nlabel.set_padding(0, 2)
-		# 	table.attach(nlabel, 0, 1, i + j + 1, i + j + 2, gtk.FILL)
-		# 	vlabel = gtk.Label(brick.config.get(name))
-		# 	vlabel.set_alignment(0.0, 0.5)
-		# 	vlabel.set_padding(0, 2)
-		# 	table.attach(vlabel, 1, 2, i + j + 1, i + j + 2)
+
+	def __get_brick_summary_frame(self, brick, panel):
+		builder = gtk.Builder()
+		builder.add_from_file(graphics.get_filename("virtualbricks.gui",
+			"data/brickconfigsummary.ui"))
+		builder.get_object("label").set_markup(_("<b>%s(%s) settings</b>")
+			% (brick.get_name(), brick.get_type()))
+		builder.get_object("image").set_from_pixbuf(
+			graphics.pixbuf_for_running_brick(brick))
+		self.__summary_table = table = builder.get_object("table")
+		self.__fill_config_table(brick, table)
 		builder.get_object("vbox").pack_start(panel, True, True, 0)
 		return builder.get_object("frame")
 
@@ -1323,6 +1315,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_config_save(self, widget=None, data=""):
 		# TODO: update config values
 		self.config_brick_confirm()
+		if self.__config_panel:
+			self.__fill_config_table(self.__config_panel.original,
+				self.__summary_table)
+			self.__summary_table.show_all()
 
 	def set_sensitivegroup(self,l):
 		for i in l:
