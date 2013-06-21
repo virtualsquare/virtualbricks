@@ -235,10 +235,6 @@ class _LocalBrick(base.Base):
         self.set(attrs)
 
     def set(self, attrs=None, **kwds):
-        if attrs is None:
-            attrs = kwds
-        else:
-            attrs.update(kwds)
         if "sock" in attrs:
             attrs["sock"] = self._rewrite_sock_server(attrs["sock"])
         base.Base.set(self, attrs)
@@ -419,7 +415,11 @@ class Brick(_LocalBrick):
         self.homehost = self.factory.get_host_by_name(hostname)
         self.config["homehost"] = hostname
 
-    def set(self, attrs):
+    def set(self, attrs=None, **kwds):
+        if attrs is None:
+            attrs = kwds
+        else:
+            attrs.update(kwds)
         _LocalBrick.set(self, attrs)
         if self.homehost and self.homehost.connected:
             self.homehost.putconfig(self)
