@@ -136,19 +136,9 @@ def changed_brick_in_model(result, model):
 	return result
 
 
-TYPE_CONFIG_WIDGET_NAME_MAP = {"Switch": "box_switchconfig",
-							"Qemu": "box_vmconfig",
-							"Tap": "box_tapconfig",
-							"Wire": "box_wireconfig",
+TYPE_CONFIG_WIDGET_NAME_MAP = {"Qemu": "box_vmconfig",
 							"Wirefilter": "box_wirefilterconfig",
-							"TunnelConnect": "box_tunnelcconfig",
-							"TunnelListen": "box_tunnellconfig",
-							"Capture": "box_captureconfig",
-							"SwitchWrapper": "box_switchwrapperconfig",
-							"Router": "box_routerconfig",
-							"Event": "box_eventconfig"}
-
-
+							"Router": "box_routerconfig"}
 TOPOLOGY_TAB = 4
 
 
@@ -636,43 +626,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	"			--  fill panel form with current brick/event
 	"				configuration
 	"""
-	def prepare_ifcombo(self, b):
-		"""Fill the interfaces combo in the capture configuration
-		in order to show all the existing network interfaces
-		in the host system
-
-		@param b: is the selected Capture brick, so the selection
-		for the combo is set to the current selected real device.
-		This helper method is specific for the capture brick,
-		and it is called from the global "config_brick_prepare" below.
-		"""
-
-		combo = ComboBox(self.gladefile.get_widget('ifcombo_capture'))
-		opt = dict()
-		try:
-			netdev = open("/proc/net/dev", "r")
-		except:
-			pass
-		for line in netdev.readlines():
-			if ":" in line:
-				while line.startswith(" "):
-					line = line.strip(" ")
-				name = line.split(":")[0]
-				if name != 'lo':
-					opt[name] = name
-		combo.populate(opt)
-		for n,s in opt.iteritems():
-			if n == b.config["iface"]:
-				combo.select(n)
-
 	def config_brick_prepare(self, b):
 		"""fill the current configuration in the config interface.
 		This is the global method to fill in all the forms
 		in the configuration panel for bricks and events
 		"""
 
-		if b.get_type() == 'Capture':
-			self.prepare_ifcombo(b)
 		# Fill socks combobox
 		for k in self.sockscombo_names():
 			combo = ComboBox(self.gladefile.get_widget(k))
@@ -847,17 +806,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.gladefile.get_widget("qemuicon").set_from_pixbuf(
 				graphics.pixbuf_for_running_brick(b))
 
-		# Tap mode:
-		if b.get_type() == 'Tap':
-			self.gladefile.get_widget('radio_tap_no').set_active(True)
-			self.gladefile.get_widget('radio_tap_manual').set_active(True)
-			if b.config["mode"] == 'off':
-				self.gladefile.get_widget('radio_tap_no').set_active(True)
-			elif b.config["mode"] == 'dhcp':
-				self.gladefile.get_widget('radio_tap_dhcp').set_active(True)
-			elif b.config["mode"] == 'manual':
-				self.gladefile.get_widget('radio_tap_manual').set_active(True)
-
 	"""
 	" ******************************************************** "
 	" ******************************************************** "
@@ -931,53 +879,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	' Specific per-type confirm methods
 	'''
 
-	def config_Tap_confirm(self,b):
-		sel = ComboBox(self.gladefile.get_widget('sockscombo_tap')).get_selected()
-		for so in self.brickfactory.socks:
-			if sel == so.nickname:
-				b.plugs[0].connect(so)
-
-		# Address mode radio
-		if (self.gladefile.get_widget('radio_tap_no').get_active()):
-			b.config["mode"] = 'off'
-		elif (self.gladefile.get_widget('radio_tap_dhcp').get_active()):
-			b.config["mode"] = 'dhcp'
-		else:
-			b.config["mode"] = 'manual'
-
-	def config_Capture_confirm(self,b):
-		sel = ComboBox(self.gladefile.get_widget('sockscombo_capture')).get_selected()
-		for so in self.brickfactory.socks:
-			if sel == so.nickname:
-				b.plugs[0].connect(so)
-		sel = ComboBox(self.gladefile.get_widget('ifcombo_capture')).get_selected()
-		if sel:
-			b.config["iface"] = str(sel)
-		else:
-			b.config["iface"] = ""
-
-	def config_TunnelConnect_confirm(self,b):
-		sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnelc')).get_selected()
-		for so in self.brickfactory.socks:
-			if sel == so.nickname:
-				b.plugs[0].connect(so)
-
-	def config_TunnelListen_confirm(self,b):
-		sel = ComboBox(self.gladefile.get_widget('sockscombo_tunnell')).get_selected()
-		for so in self.brickfactory.socks:
-			if sel == so.nickname:
-				b.plugs[0].connect(so)
-
-	def config_Wire_confirm(self,b):
-		sel = ComboBox(self.gladefile.get_widget('sockscombo_wire0')).get_selected()
-		for so in self.brickfactory.socks:
-			if sel == so.nickname:
-				b.plugs[0].connect(so)
-		sel = ComboBox(self.gladefile.get_widget('sockscombo_wire1')).get_selected()
-		for so in self.brickfactory.socks:
-			if sel == so.nickname:
-				b.plugs[1].connect(so)
-
 	def config_Wirefilter_confirm(self,b):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
 		for so in self.brickfactory.socks:
@@ -1006,17 +907,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		parameters = widget_to_params(b, self.gladefile.get_widget)
 		t = b.get_type()
 
-		if t == "Tap":
-			self.config_Tap_confirm(b)
-		elif t == "Capture":
-			self.config_Capture_confirm(b)
-		elif t == "TunnelConnect":
-			self.config_TunnelConnect_confirm(b)
-		elif t == "TunnelListen":
-			self.config_TunnelListen_confirm(b)
-		elif t == "Wire":
-			self.config_Wire_confirm(b)
-		elif t == "Wirefilter":
+		if t == "Wirefilter":
 			self.config_Wirefilter_confirm(b)
 
 		b.set(parameters)
@@ -1159,7 +1050,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.get_object("top_panel").hide()
 		self.get_object("config_panel").show()
 		# self.get_object("padding_panel").show()
-		self.get_object("wait_label").hide()
 		self.get_object("label_showhidesettings").set_text(
 			_("Hide Settings"))
 		self.curtain_is_down = False
@@ -1276,14 +1166,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	'''
 	def sockscombo_names(self):
 		return [
-		'sockscombo_tap',
-		'sockscombo_capture',
-		'sockscombo_wire0',
-		'sockscombo_wire1',
 		'sockscombo_wirefilter0',
 		'sockscombo_wirefilter1',
-		'sockscombo_tunnell',
-		'sockscombo_tunnelc',
 		'sockscombo_router_netconf'
 		]
 
@@ -1433,11 +1317,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.curtain_down()
 
 	def on_config_ok(self, widget=None, data=""):
-		self.gladefile.get_widget("wait_label").show_now()
 		self.config_brick_confirm()
 		self.curtain_down()
 
 	def on_config_save(self, widget=None, data=""):
+		# TODO: update config values
 		self.config_brick_confirm()
 
 	def set_sensitivegroup(self,l):
@@ -2474,12 +2358,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				obj = model.get_value(model.get_iter(path), 0)
 				interfaces.IMenu(obj).popup(event.button, event.time, self)
 				return True
-
-	def on_tap_config_manual(self, widget=None, event=None, data=""):
-		if widget.get_active():
-			self.gladefile.get_widget('tap_ipconfig').set_sensitive(True)
-		else:
-			self.gladefile.get_widget('tap_ipconfig').set_sensitive(False)
 
 	def on_vnc_novga_toggled(self, widget=None, event=None, data=""):
 		novga = self.gladefile.get_widget('cfg_Qemu_novga_check')
