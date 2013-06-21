@@ -482,17 +482,70 @@ class SwitchConfigController(ConfigController):
         self.original.set(parameters)
 
 
+class SwitchWrapperConfigController(ConfigController):
+
+    resource = "data/switchwrapperconfig.ui"
+
+    def get_view(self, gui):
+        self.get_object("entry").set_text(self.original.config["path"])
+        return self.get_object("table1")
+
+    def configure_brick(self, gui):
+        self.original.set({"path": self.get_object("entry").get_text()})
+
+
 def should_insert_sock(sock, brick, python, femaleplugs):
     return ((sock.brick.homehost == brick.homehost or
              (brick.get_type() == 'Wire' and python)) and
             (sock.brick.get_type().startswith('Switch') or femaleplugs))
 
+class PlugMixin(object):
 
-class TapConfigController(ConfigController):
+    def _should_insert_sock(self, sock, brick, python, femaleplugs):
+        return ((sock.brick.homehost == brick.homehost or
+                 (brick.get_type() == 'Wire' and python)) and
+                (sock.brick.get_type().startswith('Switch') or femaleplugs))
+
+    def _sock_should_visible(self, model, itr, extra):
+        gui, brick = extra
+        return self._should_insert_sock(model[itr][0], brick,
+                                        gui.config.python,
+                                        gui.config.femaleplugs)
+
+    def _set_text(self, column, cell_renderer, model, itr):
+        sock = model.get_value(itr, 0)
+        cell_renderer.set_property("text", sock.nickname)
+
+    def configure_sock_combobox(self, combo, model, brick, plug, gui):
+        model.set_visible_func(self._sock_should_visible, (gui, brick))
+        combo.set_model(model)
+        cell = combo.get_cells()[0]
+        combo.set_cell_data_func(cell, self._set_text)
+        if plug.configured():
+            itr = model.get_iter_first()
+            while itr:
+                if model[itr][0] is plug.sock:
+                    combo.set_active_iter(itr)
+                    break
+                itr = model.iter_next(itr)
+
+    def connect_plug(self, plug, combo):
+        itr = combo.get_active_iter()
+        if itr:
+            model = combo.get_model()
+            plug.connect(model[itr][0])
+
+
+class TapConfigController(PlugMixin, ConfigController):
 
     resource = "data/tapconfig.ui"
 
     def get_view(self, gui):
+        model = gui.brickfactory.socks.filter_new()
+        combo = self.get_object("combobox")
+        self.configure_sock_combobox(combo, model, self.original,
+                                     self.original.plugs[0], gui)
+
         self.get_object("ip_entry").set_text(self.original.config["ip"])
         self.get_object("nm_entry").set_text(self.original.config["nm"])
         self.get_object("gw_entry").set_text(self.original.config["gw"])
@@ -503,28 +556,13 @@ class TapConfigController(ConfigController):
             self.get_object("dhcp_radiobutton").set_active(True)
         else:
             self.get_object("manual_radiobutton").set_active(True)
+
         self.get_object("ipconfig_table").set_sensitive(
             self.original.config["mode"] == "manual")
-        combo = self.get_object("sockscombo_tap")
-        model = combo.get_model()
-        model.clear()  # XXX: needed?
-        for i, sock in enumerate(iter(gui.brickfactory.socks)):
-            if should_insert_sock(sock, self.original, gui.config.python,
-                    gui.config.femaleplugs):
-                model.append((sock.nickname, ))
-                if (self.original.plugs[0].configured() and
-                        self.original.plugs[0].sock.nickname == sock.nickname):
-                    combo.set_active(i)
-        return self.get_object("vbox")
+
+        return self.get_object("table1")
 
     def configure_brick(self, gui):
-        model = self.get_object("sockscombo_tap").get_model()
-        itr = self.get_object("sockscombo_tap").get_active_iter()
-        if itr:
-            sel = model.get_value(itr, 0)
-            for sock in iter(gui.brickfactory.socks):
-                if sel == sock.nickname:
-                    self.original.plugs[0].connect(sock)
         if self.get_object("nocfg_radiobutton").get_active():
             self.original.config["mode"] = "off"
         elif self.get_object("dhcp_radiobutton").get_active():
@@ -534,19 +572,119 @@ class TapConfigController(ConfigController):
             self.original.config["ip"] = self.get_object("ip_entry").get_text()
             self.original.config["nm"] = self.get_object("nm_entry").get_text()
             self.original.config["gw"] = self.get_object("gw_entry").get_text()
+        self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
 
     def on_manual_radiobutton_toggled(self, radiobtn):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
+
+
+class CaptureConfigController(PlugMixin, ConfigController):
+
+    resource = "data/captureconfig.ui"
+
+    def get_view(self, gui):
+        # TODO: not finished
+        model = gui.brickfactory.socks.filter_new()
+        combo = self.get_object("combobox1")
+        self.configure_sock_combobox(combo, model, self.original,
+                                     self.original.plugs[0], gui)
+
+        return self.get_object("table1")
+
+    def configure_brick(self, gui):
+        self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
+
+    def on_manual_radiobutton_toggled(self, radiobtn):
+        self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
+
+
+class WireConfigController(PlugMixin, ConfigController):
+
+    resource = "data/wireconfig.ui"
+
+    def get_view(self, gui):
+        model = gui.brickfactory.socks.filter_new()
+        for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
+            combo = self.get_object(wname)
+            self.configure_sock_combobox(combo, model, self.original,
+                                         self.original.plugs[i], gui)
+
+        return self.get_object("vbox")
+
+    def configure_brick(self, gui):
+        for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
+            self.connect_plug(self.original.plugs[i], self.get_object(wname))
+
+
+class WirefilterConfigController(WireConfigController):
+
+    pass
+
+    # resource = "data/wirefilterconfig.ui"
+
+
+class TunnelListenConfigController(PlugMixin, ConfigController):
+
+    resource = "data/tunnellconfig.ui"
+
+    def get_view(self, gui):
+        model = gui.brickfactory.socks.filter_new()
+        combo = self.get_object("combobox")
+        self.configure_sock_combobox(combo, model, self.original,
+                                     self.original.plugs[0], gui)
+        port = self.get_object("port_spinbutton")
+        port.set_value(self.original.config["port"])
+        password = self.get_object("password_entry")
+        password.set_text(self.original.config["password"])
+        return self.get_object("table1")
+
+    def configure_brick(self, gui):
+        self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
+        port = self.get_object("port_spinbutton")
+        self.original.config["port"] = port.get_value_as_int()
+        password = self.get_object("password_entry")
+        self.original.config["password"] = password.get_text()
+
+
+class TunnelClientConfigController(TunnelListenConfigController):
+
+    resource = "data/tunnelcconfig.ui"
+
+    def get_view(self, gui):
+        host = self.get_object("host_entry")
+        host.set_text(self.original.config["host"])
+        localport = self.get_object("localport_spinbutton")
+        localport.set_value(self.original.config["localport"])
+        return TunnelListenConfigController.get_view(self, gui)
+
+    def configure_brick(self, gui):
+        TunnelListenConfigController.configure_brick(self, gui)
+        host = self.get_object("host_entry")
+        self.original.config["host"] = host.get_text()
+        localport = self.get_object("localport_spinbutton")
+        self.original.config["localport"] = localport.get_value_as_int()
 
 
 def config_panel_factory(context):
     type = context.get_type()
     if type == "Event":
         return EventConfigController(context)
-    if type == "Switch":
+    elif type == "Switch":
         return SwitchConfigController(context)
+    elif type == "SwitchWrapper":
+        return SwitchWrapperConfigController(context)
     elif type == "Tap":
         return TapConfigController(context)
+    elif type == "Capture":
+        return CaptureConfigController(context)
+    elif type == "Wire":
+        return WireConfigController(context)
+    # elif type == "Wirefilter":
+    #     return WirefilterConfigController(context)
+    elif type == "TunnelConnect":
+        return TunnelClientConfigController(context)
+    elif type == "TunnelListen":
+        return TunnelListenConfigController(context)
 
 interfaces.registerAdapter(config_panel_factory, base.Base,
                            interfaces.IConfigController)

@@ -38,42 +38,14 @@ if False:  # pyflakes
     _ = str
 
 
-class WireConfig(bricks.Config):
-
-    parameters = {
-        "name": bricks.String(""),
-        "sock0": bricks.String(""),
-        "sock1": bricks.String("")
-    }
-
-
 class Wire(bricks.Brick):
 
     type = "Wire"
-    config_factory = WireConfig
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.config["name"] = name
-        self.command_builder = {
-            "#sock left": "sock0",
-            "#sock right": "sock1"
-        }
         self.plugs.append(link.Plug(self))
         self.plugs.append(link.Plug(self))
-
-    def restore_self_plugs(self):
-        while len(self.plugs) < 2:
-            self.plugs.append(link.Plug(self))
-
-    def clear_self_socks(self, sock=None):
-        if sock is None:
-            self.config["sock0"] = ""
-            self.config["sock1"] = ""
-        elif self.config["sock0"] == sock:
-            self.config["sock0"] = ""
-        elif self.config["sock1"] == sock:
-            self.config["sock1"] = ""
 
     def get_parameters(self):
         if self.plugs[0].sock:
@@ -93,15 +65,9 @@ class Wire(bricks.Brick):
                 _("Left plug is") + " " + p0 + " " + _("and right plug is") + \
                 " " + p1
 
-    def on_config_changed(self):
-        if (self.plugs[0].sock is not None):
-            self.config["sock0"] = self.plugs[0].sock.path.rstrip('[]')
-        if (self.plugs[1].sock is not None):
-            self.config["sock1"] = self.plugs[1].sock.path.rstrip('[]')
-        bricks.Brick.on_config_changed(self)
-
     def configured(self):
-        return (self.plugs[0].sock is not None and self.plugs[1].sock is not None)
+        return (self.plugs[0].sock is not None and
+                self.plugs[1].sock is not None)
 
     def prog(self):
         return os.path.join(self.settings.get("vdepath"), "dpipe")
@@ -109,9 +75,10 @@ class Wire(bricks.Brick):
     def args(self):
         return [self.prog(),
                 os.path.join(self.settings.get("vdepath"), "vde_plug"),
-                self.config["sock0"], "=",
+                # XXX: this is awful
+                self.plugs[0].sock.path.rstrip('[]'), "=",
                 os.path.join(self.settings.get("vdepath"), "vde_plug"),
-                self.config["sock1"]]
+                self.plugs[1].sock.path.rstrip('[]')]
 
 
 # class PyWireThread(Thread):
@@ -258,7 +225,7 @@ class Wire(bricks.Brick):
 #        return True
 
 
-class WireFilterConfig(WireConfig):
+class WireFilterConfig(bricks.Config):
 
     parameters = {
         "bandwidthLR": bricks.String(""),
@@ -386,6 +353,134 @@ class Wirefilter(Wire):
             "-N": "nofifo",
             "-M": self.console,
         }
+
+    def args(self):
+        res = []
+        res.extend([self.prog(), "-v", self.plugs[0].sock.path.rstrip('[]') +
+                    ":" + self.plugs[1].sock.path.rstrip('[]')])
+
+        #Bandwidth
+        if self.config["bandwidth"] and int(self.config["bandwidth"]) > 0:
+            res.extend(["-b", self.compute_bandwidth()])
+        else:
+            if self.config["bandwidthLR"]:
+                res.extend(["-b", "LR" + self.compute_bandwidthLR()])
+            if self.config["bandwidthRL"]:
+                res.extend(["-b", "RL" + self.compute_bandwidthRL()])
+
+        #Speed
+        if self.config["speed"] and int(self.config["speed"]) > 0:
+            res.extend(["-s", self.compute_speed()])
+        else:
+            if self.config["speedLR"]:
+                res.extend(["-s", "LR" + self.compute_speedLR()])
+            if self.config["speedRL"]:
+                res.extend(["-s", "RL" + self.compute_speedRL()])
+
+        #Delay
+        if self.config["delay"] and int(self.config["delay"]) > 0:
+            res.extend(["-d", self.compute_delay()])
+        else:
+            if self.config["delayLR"]:
+                res.extend(["-d", "LR" + self.compute_delayLR()])
+            if self.config["delayRL"]:
+                res.extend(["-d", "RL" + self.compute_delayRL()])
+
+        #Chanbufsize
+        if self.config["chanbufsize"] and int(self.config["chanbufsize"]) > 0:
+            res.append("-c")
+            value = self.compute_chanbufsize()
+            res.append(value)
+        else:
+            if self.config["chanbufsizeLR"]:
+                res.append("-c")
+                value = self.compute_chanbufsizeLR()
+                res.append("LR" + value)
+            if self.config["chanbufsizeRL"]:
+                res.append("-c")
+                value = self.compute_chanbufsizeRL()
+                res.append("RL" + value)
+
+        #Loss
+        if self.config["loss"] and int(self.config["loss"]) > 0:
+            res.append("-l")
+            value = self.compute_loss()
+            res.append(value)
+        else:
+            if self.config["lossLR"]:
+                res.append("-l")
+                value = self.compute_lossLR()
+                res.append("LR" + value)
+            if self.config["lossRL"]:
+                res.append("-l")
+                value = self.compute_lossRL()
+                res.append("RL" + value)
+
+        #Dup
+        if self.config["dup"] and int(self.config["dup"]) > 0:
+            res.append("-D")
+            value = self.compute_dup()
+            res.append(value)
+        else:
+            if self.config["dupLR"]:
+                res.append("-D")
+                value = self.compute_dupLR()
+                res.append("LR" + value)
+            if self.config["dupRL"]:
+                res.append("-D")
+                value = self.compute_dupRL()
+                res.append("RL" + value)
+
+        #Noise
+        if self.config["noise"] and int(self.config["noise"]) > 0:
+            res.append("-n")
+            value = self.compute_noise()
+            res.append(value)
+        else:
+            if self.config["noiseLR"]:
+                res.append("-n")
+                value = self.compute_noiseLR()
+                res.append("LR" + value)
+            if self.config["noiseRL"]:
+                res.append("-n")
+                value = self.compute_noiseRL()
+                res.append("RL" + value)
+
+        #Lostburst
+        if self.config["lostburst"] and int(self.config["lostburst"]) > 0:
+            res.append("-L")
+            value = self.compute_lostburst()
+            res.append(value)
+        else:
+            if self.config["lostburstLR"]:
+                res.append("-L")
+                value = self.compute_lostburstLR()
+                res.append("LR" + value)
+            if self.config["lostburstRL"]:
+                res.append("-L")
+                value = self.compute_lostburstRL()
+                res.append("RL" + value)
+
+        #MTU
+        if self.config["mtu"] and int(self.config["mtu"]) > 0:
+            res.append("-m")
+            value = self.compute_mtu()
+            res.append(value)
+        else:
+            if self.config["mtuLR"]:
+                res.append("-m")
+                value = self.compute_mtuLR()
+                res.append("LR" + value)
+            if self.config["mtuRL"]:
+                res.append("-m")
+                value = self.compute_mtuRL()
+                res.append("RL" + value)
+
+        res.extend(bricks.Brick.build_cmd_line(self))
+        return res
+
+    def prog(self):
+        return self.settings.get("vdepath") + "/wirefilter"
 
     def gui_to_wf_value(self, base, jitter, distrib, mult, unit, def_mult="",
                         def_unit=""):
@@ -634,134 +729,6 @@ class Wirefilter(Wire):
         return self.gui_to_wf_value(self.config["mtuRL"], "", "",
                                     self.config["mtumult"],
                                     self.config["mtuunit"], "", "bytes")
-
-    def args(self):
-        res = []
-        res.extend([self.prog(), "-v",
-                    self.config["sock0"] + ":" + self.config["sock1"]])
-
-        #Bandwidth
-        if self.config["bandwidth"] and int(self.config["bandwidth"]) > 0:
-            res.extend(["-b", self.compute_bandwidth()])
-        else:
-            if self.config["bandwidthLR"]:
-                res.extend(["-b", "LR" + self.compute_bandwidthLR()])
-            if self.config["bandwidthRL"]:
-                res.extend(["-b", "RL" + self.compute_bandwidthRL()])
-
-        #Speed
-        if self.config["speed"] and int(self.config["speed"]) > 0:
-            res.extend(["-s", self.compute_speed()])
-        else:
-            if self.config["speedLR"]:
-                res.extend(["-s", "LR" + self.compute_speedLR()])
-            if self.config["speedRL"]:
-                res.extend(["-s", "RL" + self.compute_speedRL()])
-
-        #Delay
-        if self.config["delay"] and int(self.config["delay"]) > 0:
-            res.extend(["-d", self.compute_delay()])
-        else:
-            if self.config["delayLR"]:
-                res.extend(["-d", "LR" + self.compute_delayLR()])
-            if self.config["delayRL"]:
-                res.extend(["-d", "RL" + self.compute_delayRL()])
-
-        #Chanbufsize
-        if self.config["chanbufsize"] and int(self.config["chanbufsize"]) > 0:
-            res.append("-c")
-            value = self.compute_chanbufsize()
-            res.append(value)
-        else:
-            if self.config["chanbufsizeLR"]:
-                res.append("-c")
-                value = self.compute_chanbufsizeLR()
-                res.append("LR" + value)
-            if self.config["chanbufsizeRL"]:
-                res.append("-c")
-                value = self.compute_chanbufsizeRL()
-                res.append("RL" + value)
-
-        #Loss
-        if self.config["loss"] and int(self.config["loss"]) > 0:
-            res.append("-l")
-            value = self.compute_loss()
-            res.append(value)
-        else:
-            if self.config["lossLR"]:
-                res.append("-l")
-                value = self.compute_lossLR()
-                res.append("LR" + value)
-            if self.config["lossRL"]:
-                res.append("-l")
-                value = self.compute_lossRL()
-                res.append("RL" + value)
-
-        #Dup
-        if self.config["dup"] and int(self.config["dup"]) > 0:
-            res.append("-D")
-            value = self.compute_dup()
-            res.append(value)
-        else:
-            if self.config["dupLR"]:
-                res.append("-D")
-                value = self.compute_dupLR()
-                res.append("LR" + value)
-            if self.config["dupRL"]:
-                res.append("-D")
-                value = self.compute_dupRL()
-                res.append("RL" + value)
-
-        #Noise
-        if self.config["noise"] and int(self.config["noise"]) > 0:
-            res.append("-n")
-            value = self.compute_noise()
-            res.append(value)
-        else:
-            if self.config["noiseLR"]:
-                res.append("-n")
-                value = self.compute_noiseLR()
-                res.append("LR" + value)
-            if self.config["noiseRL"]:
-                res.append("-n")
-                value = self.compute_noiseRL()
-                res.append("RL" + value)
-
-        #Lostburst
-        if self.config["lostburst"] and int(self.config["lostburst"]) > 0:
-            res.append("-L")
-            value = self.compute_lostburst()
-            res.append(value)
-        else:
-            if self.config["lostburstLR"]:
-                res.append("-L")
-                value = self.compute_lostburstLR()
-                res.append("LR" + value)
-            if self.config["lostburstRL"]:
-                res.append("-L")
-                value = self.compute_lostburstRL()
-                res.append("RL" + value)
-
-        #MTU
-        if self.config["mtu"] and int(self.config["mtu"]) > 0:
-            res.append("-m")
-            value = self.compute_mtu()
-            res.append(value)
-        else:
-            if self.config["mtuLR"]:
-                res.append("-m")
-                value = self.compute_mtuLR()
-                res.append("LR" + value)
-            if self.config["mtuRL"]:
-                res.append("-m")
-                value = self.compute_mtuRL()
-                res.append("RL" + value)
-
-        res.extend(bricks.Brick.build_cmd_line(self))
-        return res
-
-    def prog(self):
-        return self.settings.get("vdepath") + "/wirefilter"
 
     #callbacks for live-management
     def cbset_bandwidthLR(self, arg=0):
