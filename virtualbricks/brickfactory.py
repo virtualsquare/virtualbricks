@@ -491,7 +491,12 @@ class Console(basic.LineOnlyReceiver):
             # 3. The quit deferred is activated, the reactor disconnects all
             # selectables with ConnectionLost. This method is called twice
             # after a ^D with a ConnectionDone followed by a ConnectionLost.
-            pass
+            if self.inner_protocol:
+                # 1. Manhole is terminated and the transport close its
+                # connection. Here I want to restart the virtualbricks
+                # protocol.
+                self.inner_protocol.connectionLost(reason)
+                self.inner_protocol = None
         else:
             # 4. An exception is raised inside the protocol, this in an error
             # in the code, don't quit and reopen the terminal.
