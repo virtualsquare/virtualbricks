@@ -318,16 +318,19 @@ class TestDisk(unittest.TestCase):
         failureResultOf(self, self.disk.args(), RuntimeError)
 
     def test_get_real_disk_name(self):
+
+        def raise_IOError():
+            raise IOError(-1)
+
         result = successResultOf(self, self.disk.get_real_disk_name())
         self.assertEqual(result, "")
         self.disk.image = Object()
         self.disk.image.path = "ping"
         result = successResultOf(self, self.disk.get_real_disk_name())
         self.assertEqual(result, "ping")
-        self.disk._get_cow_name = lambda: 1 / 0
+        self.disk._get_cow_name = raise_IOError
         self.vm.config["private" + self.disk.device] = True
-        failureResultOf(self, self.disk.get_real_disk_name(),
-                        ZeroDivisionError)
+        failureResultOf(self, self.disk.get_real_disk_name(), IOError)
 
     def test_deepcopy(self):
         disk = copy.deepcopy(self.disk)
