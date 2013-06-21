@@ -29,9 +29,7 @@ if False:  # pyflakes
 
 class TunnelListenConfig(bricks.Config):
 
-    parameters = {"name": bricks.String(""),
-                  "sock": bricks.String(""),
-                  "password": bricks.String(""),
+    parameters = {"password": bricks.String(""),
                   "port": bricks.SpinInt(7667, 1, 65535)}
 
 
@@ -39,20 +37,19 @@ class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
     config_factory = TunnelListenConfig
-    command_builder = {"-s": 'sock',
+    command_builder = {"-s": None,
                        "#password": "password",
                        "-p": "port"}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.config["name"] = name
+        self.command_builder["-s"] = self.sock_path
         self.plugs.append(link.Plug(self))
 
-    def restore_self_plugs(self):
-        self.plugs.append(link.Plug(self))
-
-    def clear_self_socks(self, sock=None):
-        self.config["sock"] = ""
+    def sock_path(self):
+        if self.plugs[0].sock:
+            return self.plugs[0].sock.path.rstrip('[]')
+        return ""
 
     def get_parameters(self):
         if self.plugs[0].sock:
@@ -63,15 +60,11 @@ class TunnelListen(bricks.Brick):
     def prog(self):
         return self.settings.get("vdepath") + "/vde_cryptcab"
 
-    def on_config_changed(self):
-        if self.plugs[0].sock is not None:
-            self.config["sock"] = self.plugs[0].sock.path.rstrip('[]')
-        bricks.Brick.on_config_changed(self)
-
     def configured(self):
-        return (self.plugs[0].sock is not None)
+        return self.plugs[0].sock is not None
 
     def args(self):
+        # TODO: port to utils.getProcessOutput
         pwdgen = "echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (
             self.config["password"], self.name)
         exitstatus = os.system(pwdgen)
@@ -99,11 +92,20 @@ class TunnelConnect(TunnelListen):
 
     type = "TunnelConnect"
     config_factory = TunnelConnectConfig
-    command_builder = {"-s": 'sock',
+    command_builder = {"-s": None,
                        "#password": "password",
                        "-p": "localport",
-                       "-c": "host",
+                       "-c": None,
                        "#port": "port"}
+
+    def __init__(self, factory, name):
+        TunnelListen.__init__(self, factory, name)
+        self.command_builder["-c"] = self.get_host
+
+    def get_host(self):
+        if self.config["host"]:
+            return "{0}:{1}".format(self.config["host"], self.config["port"])
+        return ""
 
     def get_parameters(self):
         if self.plugs[0].sock:
@@ -111,17 +113,6 @@ class TunnelConnect(TunnelListen):
                 _(", connecting to udp://") + self.config["host"]
 
         return _("disconnected")
-
-    def on_config_changed(self):
-        if self.plugs[0].sock is not None:
-            self.config["sock"] = self.plugs[0].sock.path.rstrip('[]')
-
-        h = self.config["host"]
-        if h:
-            self.config["host"] = "%s:%d" % (h.split(":")[0],
-                                             self.config["port"])
-
-        bricks.Brick.on_config_changed(self)
 
     def configured(self):
         return self.plugs[0].sock is not None and self.config["host"]

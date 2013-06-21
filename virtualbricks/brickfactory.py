@@ -16,8 +16,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from __future__ import print_function
-
 import os
 import errno
 import sys
@@ -250,22 +248,21 @@ class BrickFactory(object):
         new_brick.on_config_changed()
         return new_brick
 
-    def del_brick(self, brick):
-        # XXX: use deferreds
-        brick.poweroff()
-        # XXX check me
+    def do_del_brick(self, result):
+        brick, status = result
+        socks = set(brick.socks)
+        log.msg("Removing socks: " + ", ".join(s.nickname for s in socks))
+        for _brick in self.bricks:
+            for plug in _brick.plugs:
+                if plug.sock and plug.sock in socks:
+                    log.msg("Disconnecting plug to %s" % plug.sock.nickname)
+                    plug.disconnect()
         for so in brick.socks:
             self.socks.remove(so)
-        # connections to brick must be deleted too
-        for b in (b for b in self.bricks if b is not brick):
-            for pl in reversed([p for p in b.plugs if p.sock and
-                                p.sock.nickname.startswith(brick.name)]):
-                log.debug("Deleting plug to %s", pl.sock.nickname)
-                b.plugs.remove(pl)
-                b.clear_self_socks(pl.sock.path)
-                # recreate Plug(self) of some objects
-                b.restore_self_plugs()
         self.bricks.remove(brick)
+
+    def del_brick(self, brick):
+        return brick.poweroff().addCallback(self.do_del_brick)
 
     def get_brick_by_name(self, name):
         for b in self.bricks:

@@ -162,6 +162,7 @@ class _LocalBrick(base.Base):
     _exited_d = None
     _last_status = None
     process_logger = ProcessLogger
+    config_factory = Config
 
     @property
     def pid(self):
@@ -194,16 +195,22 @@ class _LocalBrick(base.Base):
         self._exited_d = defer.Deferred()
         d = self._check_links()
         d.addCallback(self._poweron)
-        # here self._started_d could be None because if child process is
-        # created before reaching this point, process_stated is already called
-        # and then self._started_d is unset
-        d.addErrback(started.errback)
 
         def start_related_events(_):
             self._start_related_events(on=True)
             return self
 
         d.addCallback(start_related_events)
+
+        def eb(failure):
+            if failure.check(defer.FirstError):
+                failure = failure.value.subFailure
+            started.errback(failure)
+
+        # here self._started_d could be None because if child process is
+        # created before reaching this point, process_stated is already called
+        # and then self._started_d is unset
+        d.addErrback(eb)
         return started
 
     def poweroff(self, kill=False):
@@ -280,6 +287,7 @@ class _LocalBrick(base.Base):
         raise NotImplementedError(_("Brick.prog() not implemented."))
 
     def build_cmd_line(self):
+        # TODO: documents the behavior of all cases (#, *, etc.)
         res = []
 
         for switch, value in self.command_builder.items():
@@ -334,12 +342,6 @@ class _LocalBrick(base.Base):
     def _rewrite_sock_server(self, sock):
         return os.path.join(settings.VIRTUALBRICKS_HOME,
                             os.path.basename(sock))
-
-    def restore_self_plugs(self):  # DO NOT REMOVE
-        pass
-
-    def clear_self_socks(self, sock=None):  # DO NOT REMOVE
-        pass
 
     def path(self):
         return "%s/%s.ctl" % (settings.VIRTUALBRICKS_HOME, self.name)

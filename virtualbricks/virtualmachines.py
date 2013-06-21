@@ -881,8 +881,6 @@ class VirtualMachine(bricks.Brick):
 
     def connect(self, endpoint):
         pl = self.add_plug()
-        pl.mac = tools.RandMac()
-        pl.model = 'rtl8139'
         pl.connect(endpoint)
 
     def remove_plug(self, idx):

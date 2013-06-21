@@ -1107,11 +1107,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			nlabel = gtk.Label("%s:" % name)
 			nlabel.set_alignment(1.0, 0.5)
 			nlabel.set_padding(0, 2)
-			table.attach(nlabel, 0, 1, i, i + 1, gtk.FILL)
+			table.attach(nlabel, 0, 1, i, i + 1, gtk.FILL, gtk.FILL)
 			vlabel = gtk.Label(value)
 			vlabel.set_alignment(0.0, 0.5)
 			vlabel.set_padding(0, 2)
-			table.attach(vlabel, 1, 2, i, i + 1)
+			table.attach(vlabel, 1, 2, i, i + 1, gtk.FILL, gtk.FILL)
 		# pon_vbevent and poff_vbevent always to the end
 		# for j, name in enumerate(pon_poff):
 		# 	nlabel = gtk.Label("%s:" % name)
@@ -1125,19 +1125,29 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		builder.get_object("vbox").pack_start(panel, True, True, 0)
 		return builder.get_object("frame")
 
+	def _show_config_for_brick(self, brick, configpanel):
+		# log.debug("Found custom config panel")
+		self.__config_panel = configpanel
+		self.__hide_panels()
+		frame = self.__get_brick_summary_frame(brick,
+			configpanel.get_view(self))
+		configframe = self.get_object("configframe")
+		configframe.add(frame)
+		configframe.show_all()
+		self.__show_config(brick.get_name())
+
 	def curtain_up(self, brick=None):
+		if brick is None:
+			notebook = self.gladefile.get_widget("main_notebook")
+			if notebook.get_current_page() == 0:
+				brick = self.__get_selection(self.__bricks_treeview)
+			elif notebook.get_current_page() == 1:
+				brick = self.__get_selection(self.__events_treeview)
+
 		if brick is not None:
 			configpanel = interfaces.IConfigController(brick, None)
 			if configpanel is not None:
-				log.debug("Found custom config panel")
-				self.__config_panel = configpanel
-				self.__hide_panels()
-				frame = self.__get_brick_summary_frame(brick,
-					configpanel.get_view(self))
-				configframe = self.get_object("configframe")
-				configframe.add(frame)
-				configframe.show_all()
-				self.__show_config(brick.get_name())
+				self._show_config_for_brick(brick, configpanel)
 				return
 		self._curtain_up()
 
@@ -2900,6 +2910,7 @@ class VisualFactory(brickfactory.BrickFactory):
 		self.events = List()
 		self.bricks = List()
 		self.disk_images = List()
+		self.socks = List()
 		# self.remote_hosts = List()
 
 

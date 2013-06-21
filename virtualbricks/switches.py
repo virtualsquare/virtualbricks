@@ -53,7 +53,8 @@ class Switch(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.command_builder = {"-x": "hubmode",
+        self.command_builder = {"-x": "hub",
+                                # "-x": "hubmode",
                                 "-n": "numports",
                                 "-F": "fstp",
                                 "--macaddr": "macaddr",
@@ -65,9 +66,6 @@ class Switch(bricks.Brick):
                                 "-s": self.path,
                                 "-M": self.console}
         self.socks.append(self.factory.new_sock(self, self.name + "_port"))
-        # XXX: obiviusly configuration is changed in __init__, check if it is
-        # actually used by someone
-        self.on_config_changed()
 
     def get_parameters(self):
         fstp = ""
@@ -81,21 +79,13 @@ class Switch(bricks.Brick):
     def prog(self):
         return self.settings.get("vdepath") + "/vde_switch"
 
-    def _set_sock_path(self):
-        self.socks[0].path = self.path()
-
-    def on_config_changed(self):
-        self._set_sock_path()
-        bricks.Brick.on_config_changed(self)
-
-    def set(self, attrs):
-        bricks.Brick.set(self, attrs)
-        self._set_sock_path()
-
     def configured(self):
         return self.socks[0].has_valid_path()
 
     # live-management callbacks
+    def cbset_path(self, path):
+        self.socks[0].path = path
+
     def cbset_fstp(self, arg=False):
         self.send("fstp/setfstp %d\n" % bool(arg))
 
@@ -140,8 +130,6 @@ class SwitchWrapper(bricks.Brick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.socks.append(self.factory.new_sock(self, self.name + "_port"))
-        # XXX: see Switch __init__
-        self.on_config_changed()
 
     def poweron(self):
         if self.proc is not None:
@@ -161,19 +149,8 @@ class SwitchWrapper(bricks.Brick):
     def get_parameters(self):
         return ""
 
-    def _set_sock_path(self):
-        self.socks[0].path = self.config["path"]
-
-    def on_config_changed(self):
-        self._set_sock_path()
-        bricks.Brick.on_config_changed(self)
-
-    def set(self, attrs):
-        bricks.Brick.set(self, attrs)
-        self._set_sock_path()
-
     def configured(self):
         return self.socks[0].has_valid_path()
 
-    def path(self):
-        return self.config["path"]
+    def cbset_path(self, path):
+        self.socks[0].path = path
