@@ -472,14 +472,10 @@ class SwitchConfigController(ConfigController):
         return self.get_object("table")
 
     def configure_brick(self, gui):
-        # self.original.set(self.config.get_parameters())
-        parameters = {
-            "fstp": self.get_object("fstp_checkbutton").get_active(),
-            "hub": self.get_object("hub_checkbutton").get_active(),
-            "numports": self.get_object("ports_spinbutton"
-                                       ).get_value_as_int()
-        }
-        self.original.set(parameters)
+        go = self.get_object
+        self.original.set(fstp=go("fstp_checkbutton").get_active(),
+                          hub=go("hub_checkbutton").get_active(),
+                          numports=go("ports_spinbutton").get_value_as_int())
 
 
 class SwitchWrapperConfigController(ConfigController):
@@ -564,14 +560,14 @@ class TapConfigController(PlugMixin, ConfigController):
 
     def configure_brick(self, gui):
         if self.get_object("nocfg_radiobutton").get_active():
-            self.original.config["mode"] = "off"
+            self.original.set(mode="off")
         elif self.get_object("dhcp_radiobutton").get_active():
-            self.original.config["mode"] = "dhcp"
+            self.original.set(mode="dhcp")
         else:
-            self.original.config["mode"] = "manual"
-            self.original.config["ip"] = self.get_object("ip_entry").get_text()
-            self.original.config["nm"] = self.get_object("nm_entry").get_text()
-            self.original.config["gw"] = self.get_object("gw_entry").get_text()
+            self.original.set(mode="manual",
+                              ip=self.get_object("ip_entry").get_text(),
+                              nm=self.get_object("nm_entry").get_text(),
+                              gw=self.get_object("gw_entry").get_text())
         self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
 
     def on_manual_radiobutton_toggled(self, radiobtn):
@@ -640,10 +636,9 @@ class TunnelListenConfigController(PlugMixin, ConfigController):
 
     def configure_brick(self, gui):
         self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
-        port = self.get_object("port_spinbutton")
-        self.original.config["port"] = port.get_value_as_int()
-        password = self.get_object("password_entry")
-        self.original.config["password"] = password.get_text()
+        port = self.get_object("port_spinbutton").get_value_as_int()
+        password = self.get_object("password_entry").get_text()
+        self.original.set(port=port, password=password)
 
 
 class TunnelClientConfigController(TunnelListenConfigController):
@@ -659,10 +654,9 @@ class TunnelClientConfigController(TunnelListenConfigController):
 
     def configure_brick(self, gui):
         TunnelListenConfigController.configure_brick(self, gui)
-        host = self.get_object("host_entry")
-        self.original.config["host"] = host.get_text()
-        localport = self.get_object("localport_spinbutton")
-        self.original.config["localport"] = localport.get_value_as_int()
+        host = self.get_object("host").get_text()
+        lport = self.get_object("localport_spinbutton").get_value_as_int()
+        self.original.set(host=host, localport=lport)
 
 
 def config_panel_factory(context):

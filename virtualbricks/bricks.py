@@ -234,7 +234,11 @@ class _LocalBrick(base.Base):
             attrs[name] = self.config.parameters[name].from_string(value)
         self.set(attrs)
 
-    def set(self, attrs):
+    def set(self, attrs=None, **kwds):
+        if attrs is None:
+            attrs = kwds
+        else:
+            attrs.update(kwds)
         if "sock" in attrs:
             attrs["sock"] = self._rewrite_sock_server(attrs["sock"])
         base.Base.set(self, attrs)
