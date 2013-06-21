@@ -65,7 +65,9 @@ class Switch(bricks.Brick):
                                 "--mgmtgroup": "mgmtgroup",
                                 "-s": self.path,
                                 "-M": self.console}
-        self.socks.append(self.factory.new_sock(self, self.name + "_port"))
+        sock = self.factory.new_sock(self, self.name + "_port")
+        sock.path = self.path()
+        self.socks.append(sock)
 
     def get_parameters(self):
         fstp = ""
@@ -115,10 +117,7 @@ class FakeProcess:
 
 class SwitchWrapperConfig(bricks.Config):
 
-    parameters = {"path": bricks.String(""),
-                  "numports": bricks.SpinInt(32, 1, 128),
-                  "hub": bricks.Boolean(False),
-                  "fstp": bricks.Boolean(False)}
+    parameters = {"path": bricks.String("")}
 
 
 class SwitchWrapper(bricks.Brick):
