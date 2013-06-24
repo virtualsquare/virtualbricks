@@ -950,6 +950,8 @@ class LoadImageDialog(Window):
                 dialog.destroy()
                 raise
         dialog.destroy()
+
+
 class CreateImageDialog(Window):
 
     resource = "data/createimagedialog.ui"
@@ -969,7 +971,7 @@ class CreateImageDialog(Window):
                 return self.factory.new_disk_image(name, pathname)
 
         exit = utils.getProcessOutputAndValue("qemu-img",
-            ["create", "-f", fmt, pathname, size+unit], os.environ)
+            ["create", "-f", fmt, pathname, size + unit], os.environ)
         exit.addCallback(_create_disk)
         exit.addErrback(log.err)
         return exit
