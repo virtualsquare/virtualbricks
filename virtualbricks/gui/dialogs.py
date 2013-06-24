@@ -902,3 +902,37 @@ class CommitImageDialog(Window):
 
     def on_cow_checkbutton_toggled(self, button):
         self._set_label(button=button)
+class LoadImageDialog(Window):
+
+    resource = "data/loadimagedialog.ui"
+
+    def __init__(self, factory, pathname):
+        Window.__init__(self)
+        self.pathname = pathname
+        self.factory = factory
+
+    def show(self, parent=None):
+        name = os.path.basename(self.pathname).replace(".", "_")
+        self.get_object("name_entry").set_text(name)
+        buf = self.get_object("description_textview").get_buffer()
+        buf.set_text(self.load_desc())
+        Window.show(self, parent)
+
+    def load_desc(self):
+        try:
+            with open(self.pathname + ".vbdescr") as fd:
+                return fd.read()
+        except IOError:
+            return ""
+
+    def on_LoadImageDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            name = self.get_object("name_entry").get_text()
+            buf = self.get_object("description_textview").get_buffer()
+            desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
+            try:
+                self.factory.new_disk_image(name, self.pathname, desc)
+            except:
+                dialog.destroy()
+                raise
+        dialog.destroy()
