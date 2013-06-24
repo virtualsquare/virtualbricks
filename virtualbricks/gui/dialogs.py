@@ -950,3 +950,58 @@ class LoadImageDialog(Window):
                 dialog.destroy()
                 raise
         dialog.destroy()
+class CreateImageDialog(Window):
+
+    resource = "data/createimagedialog.ui"
+
+    def __init__(self, gui, factory):
+        self.gui = gui
+        self.factory = factory
+        Window.__init__(self)
+
+    def create_image(self, name, pathname, fmt, size, unit):
+
+        def _create_disk(result):
+            out, err, code = result
+            if code:
+                log.msg(err, isError=True)
+            else:
+                return self.factory.new_disk_image(name, pathname)
+
+        exit = utils.getProcessOutputAndValue("qemu-img",
+            ["create", "-f", fmt, pathname, size+unit], os.environ)
+        exit.addCallback(_create_disk)
+        exit.addErrback(log.err)
+        return exit
+
+    def on_CreateImageDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            log.msg("Creating image...")
+            name = self.get_object("name_entry").get_text()
+            if not name:
+                log.msg(_("Choose a filename first!"), isError=True)
+                return
+            folder = self.get_object("folder_filechooserbutton").get_filename()
+            fmt_cmb = self.get_object("format_combobox")
+            itr = fmt_cmb.get_active_iter()
+            if itr:
+                fmt = fmt_cmb.get_model()[itr][0]
+                if fmt == "Auto":
+                    fmt = "raw"
+            else:
+                log.msg("Invalid value for format combo, assuming raw")
+                fmt = "raw"
+            size = str(self.get_object("size_spinbutton").get_value_as_int())
+            # Get size unit and remove the last character "B"
+            # because qemu-img want k, M, G or T suffixes.
+            unit_cmb = self.get_object("unit_combobox")
+            itr = unit_cmb.get_active_iter()
+            if itr:
+                unit = unit_cmb.get_model()[itr][0][0]
+            else:
+                log.msg("Invalid value for unit combo, assuming Mb")
+                unit = "M"
+            pathname = "%s/%s.%s" % (folder, name, fmt)
+            self.gui.user_wait_action(self.create_image(name, pathname, size,
+                                                        unit))
+        dialog.destroy()

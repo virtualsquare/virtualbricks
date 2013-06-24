@@ -1136,7 +1136,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'dialog_settings',
 		'dialog_bookmarks',
 		'menu_popup_bookmarks',
-		'dialog_create_image',
 		'menu_popup_imagelist',
 		'dialog_jobmonitor',
 		'menu_popup_usbhost',
@@ -1711,10 +1710,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		widget.hide()
 		return True
 
-	def on_button_newimage_close_clicked(self, widget=None, data=""):
-		self.gladefile.get_widget('dialog_create_image').hide()
-		return True
-
 	def on_dialog_close(self, widget=None, data=""):
 		self.show_window('')
 		return True
@@ -1851,9 +1846,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_delete_bookmark_activate(self, widget=None, data=""):
 		raise NotImplementedError("on_delete_bookmark_activate not implemented")
 
-	def on_dialog_create_image_response(self, widget=None, data=""):
-		raise NotImplementedError("on_dialog_create_image_response not implemented")
-
 	def on_filechooserbutton_newimage_dest_selection_changed(self, widget=None, data=""):
 		raise NotImplementedError("on_filechooserbutton_newimage_dest_selection_changed not implemented")
 
@@ -1872,12 +1864,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
 		raise NotImplementedError("on_combobox_newimage_sizeunit_changed not implemented")
 
-	def show_createimage(self):
-		self.curtain_down()
-		self.gladefile.get_widget('combobox_newimage_format').set_active(0)
-		self.gladefile.get_widget('combobox_newimage_sizeunit').set_active(1)
-		self.show_window('dialog_create_image')
-
 	def on_filechooserdialog_openimage_response(self, dialog, response):
 		pass
 
@@ -1894,10 +1880,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		dialogs.DisksLibraryDialog(self.brickfactory).show()
 
 	def on_image_newempty(self, widget=None, data=""):
-		self.show_createimage()
+		dialogs.CreateImageDialog(self.brickfactory).show(
+			self.get_object("main_win"))
 
 	def on_item_create_image_activate(self, widget=None, data=""):
-		self.show_createimage()
+		dialogs.CreateImageDialog(self.brickfactory).show(
+			self.get_object("main_win"))
 
 	def image_create (self):
 		log.msg("Image creating.. ",)
@@ -1928,11 +1916,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_button_create_image_clicked(self, widget=None, data=""):
 		self.curtain_down()
 		self.user_wait_action(self.image_create)
-
-	def on_newimage_close_clicked(self, widget=None, data=""):
-		self.curtain_down()
-		self.widg['dialog_create_image'].hide()
-		return True
 
 	def on_dialog_messages_response(self, widget=None, data=""):
 		raise NotImplementedError("on_dialog_messages_response not implemented")
