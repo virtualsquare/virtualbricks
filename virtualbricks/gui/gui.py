@@ -1149,7 +1149,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		'dialog_newbrick',
 		'menu_brickactions',
 		'dialog_confirm',
-		'dialog_imagename',
 		'dialog_convertimage',
 		]
 	'''
@@ -1888,19 +1887,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_button_openimage_open_clicked(self, button):
 		pass
 
-	def on_imagename_save(self, widget=None, data=""):
-		name = self.gladefile.get_widget('text_imagename_name').get_text()
-		path = self.gladefile.get_widget('text_imagename_path').get_text()
-		description = self.gladefile.get_widget('text_imagename_description').get_text()
-		try:
-			self.brickfactory.new_disk_image(name, path, description)
-		finally:
-			self.show_window("")
-
-	def on_imagename_cancel(self, widget=None, data=""):
-		self.show_window('')
-		return True
-
 	def on_image_newfromfile(self, menuitem):
 		dialog = gtk.FileChooserDialog(_("Open a disk image"),
 								self.widg['main_win'],
@@ -1909,12 +1895,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 									gtk.STOCK_OPEN, gtk.RESPONSE_OK))
 
 		if dialog.run() == gtk.RESPONSE_OK:
-			path = dialog.get_filename()
-			name = os.path.basename(path)
-			self.gladefile.get_widget('text_imagename_name').set_text(re.sub("\.","_",name))
-			self.gladefile.get_widget('text_imagename_path').set_text(path)
-			self.gladefile.get_widget('text_imagename_description').set_text('')
-			self.show_window('dialog_imagename')
+			pathname = dialog.get_filename()
+			dialogs.LoadImageDialog(self.brickfactory, pathname).show(
+				self.get_object("main_win"))
 		dialog.destroy()
 
 	def on_image_library(self, widget=None, data=""):
