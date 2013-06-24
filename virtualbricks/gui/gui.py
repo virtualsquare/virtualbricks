@@ -1888,17 +1888,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		pass
 
 	def on_image_newfromfile(self, menuitem):
-		dialog = gtk.FileChooserDialog(_("Open a disk image"),
-								self.widg['main_win'],
-								gtk.FILE_CHOOSER_ACTION_OPEN,
-								(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-									gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-
-		if dialog.run() == gtk.RESPONSE_OK:
-			pathname = dialog.get_filename()
-			dialogs.LoadImageDialog(self.brickfactory, pathname).show(
-				self.get_object("main_win"))
-		dialog.destroy()
+		dialogs.choose_new_image(self, self.brickfactory)
 
 	def on_image_library(self, widget=None, data=""):
 		dialogs.DisksLibraryDialog(self.brickfactory).show()

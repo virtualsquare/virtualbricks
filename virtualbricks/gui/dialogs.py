@@ -902,6 +902,20 @@ class CommitImageDialog(Window):
 
     def on_cow_checkbutton_toggled(self, button):
         self._set_label(button=button)
+
+
+def choose_new_image(gui, factory):
+    main = gui.get_object("main_win")
+    dialog = gtk.FileChooserDialog(_("Open a disk image"), main,
+        gtk.FILE_CHOOSER_ACTION_OPEN,
+        (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+         gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+    if dialog.run() == gtk.RESPONSE_OK:
+        pathname = dialog.get_filename()
+        LoadImageDialog(factory, pathname).show(main)
+    dialog.destroy()
+
+
 class LoadImageDialog(Window):
 
     resource = "data/loadimagedialog.ui"
