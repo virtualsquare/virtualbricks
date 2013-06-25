@@ -2,8 +2,8 @@ from twisted.trial import unittest
 from twisted.python import log
 from twisted.internet import defer
 
-from virtualbricks import link, errors
-from virtualbricks.tests import unittest as pyunit, stubs
+from virtualbricks import link, errors, settings
+from virtualbricks.tests import stubs
 
 
 class TestPlug(unittest.TestCase):
@@ -30,14 +30,14 @@ class TestPlug(unittest.TestCase):
 
     def test_connected_erroronloop(self):
         self.plug._antiloop = True
-        self.factory.settings.set("erroronloop", False)
+        settings.set("erroronloop", False)
         result = []
         self.plug.connected().addErrback(result.append)
         self.assertEqual(len(result), 1)
         result[0].trap(errors.LinkLoopError)
         self.assertEqual(0, len(self.log))
         self.plug._antiloop = True
-        self.factory.settings.set("erroronloop", True)
+        settings.set("erroronloop", True)
         self.plug.connected().addErrback(result.append)
         self.assertEqual(len(result), 2)
         result[1].trap(errors.LinkLoopError)

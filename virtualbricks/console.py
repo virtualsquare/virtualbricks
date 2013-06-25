@@ -30,7 +30,7 @@ from twisted.python import components
 from zope.interface import implements
 
 import virtualbricks
-from virtualbricks import errors, _compat
+from virtualbricks import errors, _compat, settings
 
 
 log = _compat.getLogger(__name__)
@@ -595,13 +595,13 @@ class ImagesProtocol(Protocol):
             self.sendLine("%s, %s" % (img.name, img.path))
 
     def do_files(self):
-        dirname = self.factory.settings.get("baseimages")
+        dirname = settings.get("baseimages")
         for image_file in os.listdir(dirname):
             if os.path.isfile(dirname + "/" + image_file):
                 self.sendLine(image_file)
 
     def do_add(self, name):
-        basepath = self.factory.settings.get("baseimages")
+        basepath = settings.get("baseimages")
         name = name.replace(".", "_")
         name = name.replace("/", "_")
         self.factory.new_disk_image(name, basepath + "/" + name)
@@ -613,25 +613,24 @@ class ImagesProtocol(Protocol):
 
     def do_base(self, cmd="", base=""):
         if not cmd or cmd == "show":
-            self.sendLine(self.factory.settings.get("baseimages"))
+            self.sendLine(settings.get("baseimages"))
         elif cmd == "set" and base:
-            self.factory.settings.set("baseimages", base)
+            settings.set("baseimages", base)
 
 
 class ConfigurationProtocol(Protocol):
 
     def do_get(self, name):
         # if name:
-            if self.factory.settings.has_option(name):
-                self.sendLine("%s = %s" % (name,
-                                           self.factory.settings.get(name)))
+            if settings.has_option(name):
+                self.sendLine("%s = %s" % (name, settings.get(name)))
             else:
                 self.sendLine("No such option %s" % name)
         # elif len(args) == 0:
         #     pass  # TODO: show all settings
 
     def do_set(self, name, value):
-        if self.factory.settings.has_option(name):
-            self.factory.settings.set(name, value)
+        if settings.has_option(name):
+            settings.set(name, value)
         else:
             self.sendLine("No such option %s" % name)

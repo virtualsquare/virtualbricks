@@ -21,7 +21,7 @@ import os
 from twisted.internet import defer
 from twisted.python import log
 
-from virtualbricks import errors
+from virtualbricks import errors, settings
 
 
 if False:  # pyflakes
@@ -42,7 +42,7 @@ class Plug:
 
     def connected(self):
         if self._antiloop:
-            if self.brick.settings.get("erroronloop"):
+            if settings.get("erroronloop"):
                 log.msg(_("Loop link detected: aborting operation. If you "
                           "want to start a looped network, disable the "
                           "check loop feature in the general settings"),

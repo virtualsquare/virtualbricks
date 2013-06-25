@@ -1,6 +1,6 @@
-from twisted.internet import defer
+import os
 
-from virtualbricks import switches, errors
+from virtualbricks import switches, errors, settings
 from virtualbricks.tests import unittest, stubs
 
 
@@ -37,10 +37,10 @@ class TestSwitch(unittest.TestCase):
     def test_args(self):
         sw1 = switches.Switch(stubs.FactoryStub(), "test_switch")
         self.assertEqual(sw1.args(),
-             ["/home/marco/.virtualenvs/virtualbricks/bin/vde_switch",
-              "-M", "/home/marco/.virtualbricks/test_switch.mgmt",
+             ["/usr/bin/vde_switch", "-M",
+              os.path.join(settings.VIRTUALBRICKS_HOME, "test_switch.mgmt"),
               "-n", "32", "-s",
-              "/home/marco/.virtualbricks/test_switch.ctl"])
+              os.path.join(settings.VIRTUALBRICKS_HOME, "test_switch.ctl")])
 
 
 class TestSwitchWrapper(unittest.TestCase):

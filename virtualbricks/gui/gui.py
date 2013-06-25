@@ -28,7 +28,6 @@ from twisted.internet import error, defer, task, protocol, reactor, utils
 
 from virtualbricks import (interfaces, tools, errors, settings, configfile,
 						brickfactory, _compat)
-from virtualbricks.settings import MYPATH
 
 from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
@@ -266,7 +265,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				self.on_brick_changed)
 
 		# General settings (system properties)
-		self.config = factory.settings
+		self.config = settings
 
 		# Show the main window
 		self.widg['main_win'].show()
@@ -300,7 +299,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.statusicon = None
 
 		''' Tray icon '''
-		if self.config.systray:
+		if settings.systray:
 			self.start_systray()
 
 		''' Set the settings panel to bottom '''
@@ -328,14 +327,14 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.disable_config_ksm = False
 		missing_text=""
 		missing_components=""
-		if (len(missing) > 0 and self.config.show_missing == True):
+		if (len(missing) > 0 and settings.show_missing == True):
 			for m in missing:
 				if m == "kvm":
-					self.config.kvm = False
+					settings.kvm = False
 					self.disable_config_kvm = True
 					missing_text = missing_text + "KVM not found: kvm support will be disabled.\n"
 				elif m == "ksm":
-					self.config.ksm = False
+					settings.ksm = False
 					self.disable_config_ksm = True
 					missing_text = missing_text + "KSM not found in Linux. Samepage memory will not work on this system.\n"
 				else:
@@ -464,7 +463,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				conn = "Host"
 			elif link.sock:
 				conn = link.sock.brick.name
-			elif link.mode == "sock" and self.config.femaleplugs:
+			elif link.mode == "sock" and settings.femaleplugs:
 				conn = "Vde socket (female plug)"
 			else:
 				conn = "None"
@@ -600,9 +599,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		# [ 'Dev','Source','Destination','Protocol','TOS','Action'])
 
 	def check_gui_prerequisites(self):
-		qmissing, _ = tools.check_missing_qemu(
-			self.config.get("qemupath"))
-		vmissing = tools.check_missing_vde(self.config.get("vdepath"))
+		qmissing, _ = tools.check_missing_qemu(settings.get("qemupath"))
+		vmissing = tools.check_missing_vde(settings.get("vdepath"))
 		ksmissing = []
 		if not os.access("/sys/kernel/mm/ksm",os.X_OK):
 			ksmissing.append("ksm")
@@ -638,12 +636,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			combo = ComboBox(self.gladefile.get_widget(k))
 			opt=dict()
 			# add Ad-hoc host only to the vmehternet
-			if self.config.femaleplugs:
+			if settings.femaleplugs:
 				opt['Vde socket']='_sock'
 
 			for so in self.brickfactory.socks:
-				if (so.brick.homehost == b.homehost or (b.get_type() == 'Wire' and self.config.python)) and \
-				(so.brick.get_type().startswith('Switch') or self.config.femaleplugs):
+				if (so.brick.homehost == b.homehost or (b.get_type() == 'Wire'
+											and settings.python)) and \
+				(so.brick.get_type().startswith('Switch') or settings.femaleplugs):
 					opt[so.nickname] = so.nickname
 			combo.populate(opt)
 			t = b.get_type()
@@ -657,7 +656,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		dicts=dict()
 		#QEMU COMMAND COMBO
-		__, found = tools.check_missing_qemu(self.config.get("qemupath"))
+		__, found = tools.check_missing_qemu(settings.get("qemupath"))
 		qemuarch = ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
 		opt = dict()
 		for arch in found:
@@ -726,7 +725,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		# Qemu: check if KVM is checkable
 		if b.get_type()=="Qemu":
-			if self.config.kvm or b.homehost:
+			if settings.kvm or b.homehost:
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(True)
 				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM")
 			else:
@@ -741,7 +740,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
 			if widget is not None:
 				if b.config[key]:
-					if key is "kvm" and self.config.kvm:
+					if key is "kvm" and settings.kvm:
 						widget.set_active(True)
 					elif key is not "kvm":
 						widget.set_active(True)
@@ -800,7 +799,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				widget.set_filename(b.config.get(key))
 			elif (widget is not None and t == 'Qemu' and
 					(key[0:4] == 'base' or key == 'cdrom')):
-				widget.set_current_folder(self.config.get('baseimages'))
+				widget.set_current_folder(settings.get('baseimages'))
 			elif widget is not None:
 				widget.unselect_all()
 
@@ -961,7 +960,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def delete_event(self,window,event):
 		#don't delete; hide instead
-		if self.config.systray and self.statusicon is not None:
+		if settings.systray and self.statusicon is not None:
 			self.gladefile.get_widget("main_win").hide_on_delete()
 			self.statusicon.set_tooltip("VirtualBricks Hidden")
 		else:
@@ -1484,11 +1483,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.quit_d.callback(None)
 
 	def on_item_settings_activate(self, widget=None, data=""):
-		self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(self.config.get('qemupath'))
-		self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(self.config.get('vdepath'))
-		self.gladefile.get_widget('filechooserbutton_baseimages').set_current_folder(self.config.get('baseimages'))
+		self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(settings.get('qemupath'))
+		self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(settings.get('vdepath'))
+		self.gladefile.get_widget('filechooserbutton_baseimages').set_current_folder(settings.get('baseimages'))
 
-		cowfmt = self.config.get('cowfmt')
+		cowfmt = settings.get('cowfmt')
 
 		if cowfmt == 'qcow2':
 			self.gladefile.get_widget('combo_cowfmt').set_active(2)
@@ -1507,48 +1506,48 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		else:
 			self.gladefile.get_widget('check_ksm').set_sensitive(True)
 
-		if self.config.kvm:
+		if settings.kvm:
 			self.gladefile.get_widget('check_kvm').set_active(True)
 		else:
 			self.gladefile.get_widget('check_kvm').set_active(False)
 
-		if self.config.ksm:
+		if settings.ksm:
 			self.gladefile.get_widget('check_ksm').set_active(True)
 		else:
 			self.gladefile.get_widget('check_ksm').set_active(False)
 
-		if self.config.kqemu:
+		if settings.kqemu:
 			self.gladefile.get_widget('check_kqemu').set_active(True)
 		else:
 			self.gladefile.get_widget('check_kqemu').set_active(False)
 
-		if self.config.femaleplugs:
+		if settings.femaleplugs:
 			self.gladefile.get_widget('check_femaleplugs').set_active(True)
 		else:
 			self.gladefile.get_widget('check_femaleplugs').set_active(False)
 
-		if self.config.erroronloop:
+		if settings.erroronloop:
 			self.gladefile.get_widget('check_erroronloop').set_active(True)
 		else:
 			self.gladefile.get_widget('check_erroronloop').set_active(False)
 
-		if self.config.python:
+		if settings.python:
 			self.gladefile.get_widget('check_python').set_active(True)
 		else:
 			self.gladefile.get_widget('check_python').set_active(False)
 
-		if self.config.systray:
+		if settings.systray:
 			self.gladefile.get_widget('check_systray').set_active(True)
 		else:
 			self.gladefile.get_widget('check_systray').set_active(False)
 
-		if self.config.show_missing:
+		if settings.show_missing:
 			self.gladefile.get_widget('check_show_missing').set_active(True)
 		else:
 			self.gladefile.get_widget('check_show_missing').set_active(False)
 
-		self.gladefile.get_widget('entry_term').set_text(self.config.get('term'))
-		self.gladefile.get_widget('entry_sudo').set_text(self.config.get('sudo'))
+		self.gladefile.get_widget('entry_term').set_text(settings.get('term'))
+		self.gladefile.get_widget('entry_sudo').set_text(settings.get('sudo'))
 		self.curtain_down()
 		self.show_window('dialog_settings')
 
@@ -1723,57 +1722,57 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		if response in [gtk.RESPONSE_APPLY, gtk.RESPONSE_OK]:
 			log.debug("Apply settings...")
 			for k in ['qemupath', 'vdepath', 'baseimages']:
-				self.config.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
+				settings.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
 
-			self.config.set('cowfmt', self.gladefile.get_widget('combo_cowfmt').get_active_text())
+			settings.set('cowfmt', self.gladefile.get_widget('combo_cowfmt').get_active_text())
 
 			if self.gladefile.get_widget('check_kvm').get_active():
-				self.config.set("kvm", True)
+				settings.set("kvm", True)
 			else:
-				self.config.set("kvm", False)
+				settings.set("kvm", False)
 
 			ksm = self.gladefile.get_widget('check_ksm').get_active()
-			self.config.set("ksm", ksm)
-			tools.enable_ksm(ksm, self.config.get("sudo"))
+			settings.set("ksm", ksm)
+			tools.enable_ksm(ksm, settings.get("sudo"))
 
 			if self.gladefile.get_widget('check_kqemu').get_active():
-				self.config.set("kqemu", True)
+				settings.set("kqemu", True)
 			else:
-				self.config.set("kqemu", False)
+				settings.set("kqemu", False)
 
 			if self.gladefile.get_widget('check_python').get_active():
-				self.config.set("python", True)
+				settings.set("python", True)
 			else:
-				self.config.set("python", False)
+				settings.set("python", False)
 
 			if self.gladefile.get_widget('check_femaleplugs').get_active():
-				self.config.set("femaleplugs", True)
+				settings.set("femaleplugs", True)
 			else:
-				self.config.set("femaleplugs", False)
+				settings.set("femaleplugs", False)
 
 			if self.gladefile.get_widget('check_erroronloop').get_active():
-				self.config.set("erroronloop", True)
+				settings.set("erroronloop", True)
 			else:
-				self.config.set("erroronloop", False)
+				settings.set("erroronloop", False)
 
 			if self.gladefile.get_widget('check_systray').get_active():
-				self.config.set('systray', True)
+				settings.set('systray', True)
 				self.start_systray()
 			else:
-				self.config.set('systray', False)
+				settings.set('systray', False)
 				self.stop_systray()
 
 			if self.gladefile.get_widget('check_show_missing').get_active():
-				self.config.set('show_missing', True)
+				settings.set('show_missing', True)
 				self.start_systray()
 			else:
-				self.config.set('show_missing', False)
+				settings.set('show_missing', False)
 				self.stop_systray()
 
-			self.config.set("term", self.gladefile.get_widget('entry_term').get_text())
-			self.config.set("sudo", self.gladefile.get_widget('entry_sudo').get_text())
+			settings.set("term", self.gladefile.get_widget('entry_term').get_text())
+			settings.set("sudo", self.gladefile.get_widget('entry_sudo').get_text())
 
-			self.config.store()
+			settings.store()
 
 			if response == gtk.RESPONSE_OK:
 				widget.hide()
@@ -2052,7 +2051,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_check_kvm(self, widget=None, event=None, data=""):
 		if widget.get_active():
-			kvm = tools.check_kvm(self.config.get("qemupath"))
+			kvm = tools.check_kvm(settings.get("qemupath"))
 			if not kvm:
 				log.error(_("No KVM support found on the local system. "
 					"Check your active configuration. "
@@ -2139,13 +2138,14 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			return
 
 		combo = ComboBox(widget)
-		path = self.config.get('qemupath')
+		path = settings.get('qemupath')
 
 		#Machine COMBO
 		machine_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_machine_combo"))
 		opt_m = dict()
-		os.system(path + "/" + combo.get_selected() + " -M ? >" + MYPATH+"/.vmachines")
-		for m in open(MYPATH+"/.vmachines").readlines():
+		os.system(path + "/" + combo.get_selected() + " -M ? >" +
+			settings.VIRTUALBRICKS_HOME + "/.vmachines")
+		for m in open(settings.VIRTUALBRICKS_HOME + "/.vmachines").readlines():
 			if not re.search('machines are', m):
 				v = m.split(' ')[0]
 				k = m.lstrip(v).rstrip('/n')
@@ -2157,13 +2157,14 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			if v.strip() == brick.config["machine"].strip():
 				toSelect=k
 		machine_c.populate(opt_m, toSelect)
-		os.unlink(MYPATH+"/.vmachines")
+		os.unlink(settings.VIRTUALBRICKS_HOME + "/.vmachines")
 
 		#CPU combo
 		opt_c = dict()
 		cpu_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_cpu_combo"))
-		os.system(path + "/" + combo.get_selected() + " -cpu ? >" + MYPATH+"/.cpus")
-		for m in open(MYPATH+"/.cpus").readlines():
+		os.system(path + "/" + combo.get_selected() + " -cpu ? >" +
+			settings.VIRTUALBRICKS_HOME + "/.cpus")
+		for m in open(settings.VIRTUALBRICKS_HOME + "/.cpus").readlines():
 			if not re.search('Available CPU', m):
 				if (m.startswith('  ')):
 					while (m.startswith(' ')):
@@ -2190,13 +2191,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 							val = val.rstrip(']')
 						opt_c[val]=val
 		cpu_c.populate(opt_c, brick.config["cpu"])
-		os.unlink(MYPATH+"/.cpus")
+		os.unlink(settings.VIRTUALBRICKS_HOME + "/.cpus")
 
 	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
 		if widget.get_active():
 			brick = self.__get_selection(self.__bricks_treeview)
 			if not brick.homehost:
-				kvm = tools.check_kvm(self.config.get("qemupath"))
+				kvm = tools.check_kvm(settings.get("qemupath"))
 				self.kvm_toggle_all(True)
 				if not kvm:
 					log.error(_("No KVM support found on the system. "
@@ -2263,7 +2264,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			for plug in b.plugs:
 				self.vmplugs.append((plug, ))
 
-			if self.config.femaleplugs:
+			if settings.femaleplugs:
 				for sock in b.socks:
 					self.vmplugs.append((sock,))
 
@@ -2447,15 +2448,15 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					ext = ".vbl"
 					if not filename.endswith(ext):
 						filename += ext
-				current_project = self.config.get("current_project")
-				self.config.set("current_project", filename)
+				current_project = settings.get("current_project")
+				settings.set("current_project", filename)
 				try:
 					do_action(filename)
 				except IOError:
-					self.config.set("current_project", current_project)
+					settings.set("current_project", current_project)
 				else:
 					try:
-						self.config.store()
+						settings.store()
 					except IOError:
 						log.exception("Cannot save settings")
 		finally:

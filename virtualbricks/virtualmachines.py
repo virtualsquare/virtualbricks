@@ -27,7 +27,6 @@ from twisted.internet import utils, defer
 from twisted.python import failure
 
 from virtualbricks import errors, tools, settings, bricks, _compat
-from virtualbricks.settings import MYPATH
 
 
 if False:
@@ -95,8 +94,8 @@ class VMSock:
         self.__dict__["_sock"] = sock
         self.__dict__["mac"] = tools.random_mac()
         self.__dict__["vlan"] = len(sock.brick.plugs) + len(sock.brick.socks)
-        sock.path = "{MYPATH}/{sock.brick.name}_sock_eth{self.vlan}[]".format(
-            self=self, MYPATH=MYPATH, sock=sock)
+        sock.path = "{HOME}/{sock.brick.name}_sock_eth{self.vlan}[]".format(
+            self=self, HOME=settings.VIRTUALBRICKS_HOME, sock=sock)
         sock.nickname = "{sock.brick.name}_sock_eth{self.vlan}".format(
             self=self, sock=sock)
 
@@ -337,15 +336,15 @@ class Disk:
         return exit
 
     def _create_cow(self, cowname):
-        if is_missing(self.VM.settings.get("qemupath"), "qemu-img"):
+        if is_missing(settings.get("qemupath"), "qemu-img"):
             msg = _("qemu-img not found! I can't create a new image.")
             return defer.fail(failure.Failure(errors.BadConfigError(msg)))
 
         log.msg("Creating a new private COW from %s base image." %
                 self.get_base())
         args = ["create", "-b", self.get_base(), "-f",
-                self.VM.settings.get("cowfmt"), cowname]
-        exe = os.path.join(self.VM.settings.get("qemupath"), "qemu-img")
+                settings.get("cowfmt"), cowname]
+        exe = os.path.join(settings.get("qemupath"), "qemu-img")
         exit = utils.getProcessOutputAndValue(exe, args, os.environ)
         exit.addCallback(self._sync)
         exit.addCallback(lambda _: cowname)
@@ -728,11 +727,11 @@ class VirtualMachine(bricks.Brick):
         #         return
 
         if self.config["argv0"] and not self.config["kvm"]:
-            cmd = self.settings.get("qemupath") + "/" + self.config["argv0"]
+            cmd = settings.get("qemupath") + "/" + self.config["argv0"]
         else:
-            cmd = self.settings.get("qemupath") + "/qemu"
+            cmd = settings.get("qemupath") + "/qemu"
         if self.config["kvm"]:
-            cmd = self.settings.get("qemupath") + "/kvm"
+            cmd = settings.get("qemupath") + "/kvm"
         return cmd
 
     def args(self):
