@@ -22,7 +22,7 @@ from zope.interface import implements
 from twisted.internet import reactor, utils, defer, error
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           console, link, _compat)
+                           console, link, _compat, settings)
 
 from virtualbricks.gui import graphics, dialogs
 
