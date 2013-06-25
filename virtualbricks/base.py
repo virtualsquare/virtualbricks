@@ -187,7 +187,6 @@ class Base(object):
     def __init__(self, factory, name):
         self.factory = factory
         self._name = name
-        self.settings = self.factory.settings
         self.config = self.config_factory()
 
     def get_type(self):

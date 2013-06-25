@@ -57,7 +57,7 @@ class Capture(bricks.Brick):
         return _("Interface %s disconnected") % self.config["iface"]
 
     def prog(self):
-        return self.settings.get("vdepath") + "/vde_pcapplug"
+        return settings.get("vdepath") + "/vde_pcapplug"
 
     def open_console(self):
         pass
@@ -97,7 +97,7 @@ class Tap(bricks.Brick):
         return _("disconnected")
 
     def prog(self):
-        return self.settings.get("vdepath") + "/vde_plug2tap"
+        return settings.get("vdepath") + "/vde_plug2tap"
 
     def open_console(self):
         pass
@@ -110,18 +110,18 @@ class Tap(bricks.Brick):
         self.start_related_events(on=True)
         if self.config["mode"] == 'dhcp':
             if self.needsudo():
-                os.system(self.settings.get('sudo') + ' "dhclient ' + self.name
+                os.system(settings.get('sudo') + ' "dhclient ' + self.name
                           + '"')
             else:
                 os.system('dhclient ' + self.name)
         elif self.config["mode"] == 'manual':
             if self.needsudo():
                     # XXX Ugly, can't we ioctls?
-                    os.system(self.settings.get('sudo') + ' "/sbin/ifconfig ' +
+                    os.system(settings.get('sudo') + ' "/sbin/ifconfig ' +
                               self.name + ' ' + self.config["ip"] + ' netmask ' +
                               self.config["nm"] + '"')
                     if (len(self.config["gw"]) > 0):
-                        os.system(self.settings.get('sudo') +
+                        os.system(settings.get('sudo') +
                                   ' "/sbin/route add default gw ' +
                                   self.config["gw"] + ' dev ' + self.name +
                                   '"')

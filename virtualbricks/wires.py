@@ -70,14 +70,14 @@ class Wire(bricks.Brick):
                 self.plugs[1].sock is not None)
 
     def prog(self):
-        return os.path.join(self.settings.get("vdepath"), "dpipe")
+        return os.path.join(settings.get("vdepath"), "dpipe")
 
     def args(self):
         return [self.prog(),
-                os.path.join(self.settings.get("vdepath"), "vde_plug"),
+                os.path.join(settings.get("vdepath"), "vde_plug"),
                 # XXX: this is awful
                 self.plugs[0].sock.path.rstrip('[]'), "=",
-                os.path.join(self.settings.get("vdepath"), "vde_plug"),
+                os.path.join(settings.get("vdepath"), "vde_plug"),
                 self.plugs[1].sock.path.rstrip('[]')]
 
 
@@ -480,7 +480,7 @@ class Wirefilter(Wire):
         return res
 
     def prog(self):
-        return self.settings.get("vdepath") + "/wirefilter"
+        return settings.get("vdepath") + "/wirefilter"
 
     def gui_to_wf_value(self, base, jitter, distrib, mult, unit, def_mult="",
                         def_unit=""):

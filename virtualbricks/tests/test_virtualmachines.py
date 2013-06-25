@@ -8,7 +8,7 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.python import failure
 
-from virtualbricks import link, virtualmachines as vm, errors, tests
+from virtualbricks import link, virtualmachines as vm, errors, tests, settings
 from virtualbricks.tests import (stubs, test_link, successResultOf,
                                  failureResultOf)
 
@@ -232,11 +232,11 @@ class TestDisk(unittest.TestCase):
         self.assertRaises(RuntimeError, self.disk._get_backing_file, sio)
 
     def test_create_cow(self):
-        self.factory.settings.set("qemupath", "/supercali")
+        settings.set("qemupath", "/supercali")
         failureResultOf(self, self.disk._create_cow("name"),
                         errors.BadConfigError)
         qemupath = os.path.abspath(os.path.dirname(tests.__file__))
-        self.factory.settings.set("qemupath", qemupath)
+        settings.set("qemupath", qemupath)
         self.disk.image = ImageStub()
 
         def cb(ret):

@@ -79,7 +79,7 @@ class Switch(bricks.Brick):
         return _("Ports: ") + "%d%s%s" % (self.config["numports"], fstp, hub)
 
     def prog(self):
-        return self.settings.get("vdepath") + "/vde_switch"
+        return settings.get("vdepath") + "/vde_switch"
 
     def configured(self):
         return self.socks[0].has_valid_path()

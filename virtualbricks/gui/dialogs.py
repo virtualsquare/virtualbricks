@@ -84,7 +84,7 @@ import tempfile
 import gtk
 from twisted.internet import utils
 
-from virtualbricks import version, tools, _compat, console
+from virtualbricks import version, tools, _compat, console, settings
 from virtualbricks.gui import graphics
 
 
@@ -416,12 +416,12 @@ class EthernetDialog(Window):
         self.plug = plug
         socks = self.get_object("sock_model")
         socks.append(("Host-only ad hoc network", "_hostonly"))
-        if gui.config.femaleplugs:
+        if settings.femaleplugs:
             socks.append(("Vde socket", "_sock"))
         # TODO: can this operation made only once?
         for sock in gui.brickfactory.socks:
             if (sock.brick.get_type().startswith('Switch') or
-                    gui.config.femaleplugs):
+                    settings.femaleplugs):
                 socks.append((sock.nickname, sock.nickname))
 
         if plug:

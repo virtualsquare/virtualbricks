@@ -58,7 +58,7 @@ class TunnelListen(bricks.Brick):
         return _("disconnected")
 
     def prog(self):
-        return self.settings.get("vdepath") + "/vde_cryptcab"
+        return settings.get("vdepath") + "/vde_cryptcab"
 
     def configured(self):
         return self.plugs[0].sock is not None

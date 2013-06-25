@@ -334,7 +334,7 @@ _config = ConfigFile()
 
 def save(factory, filename=None):
     if filename is None:
-        filename = factory.settings.get("current_project")
+        filename = settings.get("current_project")
     _config.save(factory, filename)
 
 
@@ -347,7 +347,7 @@ def safe_save(factory, filename=None):
 
 def restore(factory, filename=None):
     if filename is None:
-        filename = factory.settings.get("current_project")
+        filename = settings.get("current_project")
     factory.reset()
     _config.restore(factory, filename)
 
@@ -361,7 +361,7 @@ def restore_last_project(factory):
         if e.errno != errno.EEXIST:
             raise
     try:
-        os.mkdir(factory.settings.get("baseimages"))
+        os.mkdir(settings.get("baseimages"))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -369,10 +369,9 @@ def restore_last_project(factory):
         restore(factory)
     except IOError as e:
         if e.errno == errno.ENOENT:
-            if (factory.settings.get("current_project") !=
-                    settings.DEFAULT_PROJECT):
+            if settings.get("current_project") != settings.DEFAULT_PROJECT:
                 log.error("Cannot find last project '%s': file not found. "
                           "A new project will be created with that path.",
-                          factory.settings.get("current_project"))
+                          settings.get("current_project"))
         else:
             raise

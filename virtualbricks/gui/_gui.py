@@ -505,8 +505,8 @@ class PlugMixin(object):
     def _sock_should_visible(self, model, itr, extra):
         gui, brick = extra
         return self._should_insert_sock(model[itr][0], brick,
-                                        gui.config.python,
-                                        gui.config.femaleplugs)
+                                        settings.python,
+                                        settings.femaleplugs)
 
     def _set_text(self, column, cell_renderer, model, itr):
         sock = model.get_value(itr, 0)

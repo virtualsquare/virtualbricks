@@ -371,9 +371,9 @@ class _LocalBrick(base.Base):
     ############################
 
     def open_console(self):
-        term = self.settings.get("term")
+        term = settings.get("term")
         args = [term, "-T", self.name, "-e",
-                os.path.join(self.settings.get("vdepath"), self.term_command),
+                os.path.join(settings.get("vdepath"), self.term_command),
                 self.console()]
         log.msg("Opening console for %s\n%s\n" % (self.name, " ".join(args)))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)

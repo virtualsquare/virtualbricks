@@ -36,7 +36,7 @@ class Router(bricks.Brick):
         return "Work in progress..."
 
     def prog(self):
-        return self.settings.get("vdepath") + "/vde_router"
+        return settings.get("vdepath") + "/vde_router"
 
     def configured(self):
         return True

@@ -83,7 +83,6 @@ class BrickFactory(object):
         self.events = []
         self.socks = []
         self.disk_images = []
-        self.settings = settings.Settings(settings.CONFIGFILE)
         self.__factories = install_brick_types()
 
     def lock(self):
@@ -119,8 +118,8 @@ class BrickFactory(object):
         del self.socks[:]
 
     def get_basefolder(self):
-        baseimages = self.settings.get("baseimages")
-        project_file = self.settings.get("current_project")
+        baseimages = settings.get("baseimages")
+        project_file = settings.get("current_project")
         project_name = os.path.splitext(os.path.basename(project_file))[0]
         return os.path.join(baseimages, project_name)
 
@@ -546,6 +545,9 @@ class Application:
 
         gettext.install('virtualbricks', codeset='utf8', names=["gettext"])
 
+    def install_settings(self):
+        settings.load()
+
     def _get_log_level(self, verbosity):
         if verbosity >= 2:
             return _compat.DEBUG
@@ -603,6 +605,7 @@ class Application:
 
     def run(self, reactor):
         self.install_locale()
+        self.install_settings()
         self.install_stdlog_handler()
         self.logger.start(self)
         self.install_home()
