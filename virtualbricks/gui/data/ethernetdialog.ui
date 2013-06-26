@@ -215,7 +215,7 @@
   </object>
   <object class="GtkListStore" id="netmodel_model">
     <columns>
-      <!-- column-name gchararray -->
+      <!-- column-name label -->
       <column type="gchararray"/>
     </columns>
     <data>
