@@ -168,17 +168,16 @@ class ConfigFile:
             plugs.extend(p for p in brick.plugs if p.sock is not None)
 
         for sock in socks:
-            t = "sock|{s.brick.name}|{s.nickname}|{s.model}|{s.mac}|{s.vlan}\n"
+            t = "sock|{s.brick.name}|{s.nickname}|{s.model}|{s.mac}\n"
             fileobj.write(t.format(s=sock))
 
         for plug in plugs:
             if plug.brick.get_type() == 'Qemu':
                 if plug.mode == 'vde':
                     t = ("link|{p.brick.name}|{p.sock.nickname}|{p.model}|"
-                         "{p.mac}|{p.vlan}\n")
+                         "{p.mac}\n")
                 else:
-                    t = ("userlink|{p.brick.name}||{p.model}|{pl.mac}|"
-                         "{pl.vlan}\n")
+                    t = "userlink|{p.brick.name}||{p.model}|{pl.mac}\n"
                 fileobj.write(t.format(p=plug))
             elif plug.sock is not None:
                 t = "link|{p.brick.name}|{p.sock.nickname}\n"
@@ -204,30 +203,27 @@ class ConfigFile:
         while (l):
             l = re.sub(' ', '', l)
             if re.search("\A.*sock\|", l) and len(l.split("|")) >= 3:
-                l.rstrip('\n')
-                log.debug("************************* sock detected")
+                l = l.rstrip('\n')
+                log.debug("sock detected")
                 for bb in iter(factory.bricks):
                     if bb.name == l.split("|")[1]:
                         if (bb.get_type() == 'Qemu'):
                             sockname = l.split('|')[2]
                             model = l.split("|")[3]
                             macaddr = l.split("|")[4]
-                            vlan = l.split("|")[5]
                             pl = bb.add_sock(macaddr, model)
-
-                            pl.vlan = int(vlan)
-                            log.debug("added eth%d" % pl.vlan)
+                            idx = len(bb.plugs) + len(bb.socks)
+                            log.debug("added eth%d" % idx)
 
             if re.search("\A.*link\|", l) and len(l.split("|")) >= 3:
-                l.rstrip('\n')
-                log.debug("************************* link detected")
+                l = l.rstrip('\n')
+                log.debug("link detected")
                 for bb in iter(factory.bricks):
                     if bb.name == l.split("|")[1]:
                         if (bb.get_type() == 'Qemu'):
                             sockname = l.split('|')[2]
                             model = l.split("|")[3]
                             macaddr = l.split("|")[4]
-                            vlan = l.split("|")[5]
                             this_sock = "?"
                             if l.split("|")[0] == 'userlink':
                                 this_sock = '_hostonly'
@@ -242,9 +238,8 @@ class ConfigFile:
                                             "Skipping.", sockname, l)
                                 continue
                             pl = bb.add_plug(this_sock, macaddr, model)
-
-                            pl.vlan = int(vlan)
-                            log.debug("added eth%d" % pl.vlan)
+                            idx = len(bb.plugs) + len(bb.socks)
+                            log.debug("added eth%d" % idx)
                         else:
                             bb.config_socks.append(
                                 l.split('|')[2].rstrip('\n'))

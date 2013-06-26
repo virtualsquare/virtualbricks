@@ -22,6 +22,7 @@ import struct
 import re
 import datetime
 import shutil
+import itertools
 
 from twisted.internet import utils, defer
 from twisted.python import failure
@@ -41,88 +42,51 @@ QCOW_MAGIC = "QFI\xfb"
 QCOW_HEADER_FMT = r">QI"
 
 
-class VMPlug:
+class Wrapper:
+
+    def __init__(self, original):
+        self.__dict__["original"] = original
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.original, name)
+        except AttributeError:
+            raise AttributeError("{0.__class__.__name__}.{1}".format(
+                self, name))
+
+    def __setattr__(self, name, value):
+        if name in self.__dict__:
+            self.__dict__[name] = value
+        else:
+            for klass in self.__class__.__mro__:
+                if name in klass.__dict__:
+                    self.__dict__[name] = value
+                    break
+            else:
+                setattr(self.original, name, value)
+
+
+
+class VMPlug(Wrapper):
 
     model = "rtl8139"
     mode = "vde"
 
     def __init__(self, plug):
-        self.__dict__["_plug"] = plug
+        Wrapper.__init__(self, plug)
         self.__dict__["mac"] = tools.random_mac()
-        self.__dict__["vlan"] = len(plug.brick.plugs) + len(plug.brick.socks)
-
-    def __getattr__(self, name):
-        try:
-            return getattr(self._plug, name)
-        except AttributeError:
-            raise AttributeError("_VMPlug." + name)
-
-    def __setattr__(self, name, value):
-        if name in self.__dict__:
-            self.__dict__[name] = value
-        else:
-            for klass in self.__class__.__mro__:
-                if name in klass.__dict__:
-                    self.__dict__[name] = value
-                    break
-            else:
-                setattr(self._plug, name, value)
-
-    def get_model_driver(self):
-        if self.model == "virtio":
-            return "virtio-net-pci"
-        return self.model
-
-    def hotadd(self):
-        driver = self.get_model_driver()
-        self._plug.brick.send("device_add %s,mac=%s,vlan=%s,id=eth%s\n" %
-                              (driver, self.mac, self.vlan, self.vlan))
-        self._plug.brick.send("host_net_add vde sock=%s,vlan=%s\n" %
-                              (self._plug.sock.path.rstrip("[]"), self.vlan))
-
-    def hotdel(self):
-        self._plug.brick.send("host_net_remove %s vde.%s\n" %
-                              (self.vlan, self.vlan))
-        self._plug.brick.send("device_del eth%s\n" % self.vlan)
 
 
-class VMSock:
+class VMSock(Wrapper):
 
     model = "rtl8139"
 
     def __init__(self, sock):
-        self.__dict__["_sock"] = sock
+        Wrapper.__init__(self, sock)
         self.__dict__["mac"] = tools.random_mac()
-        self.__dict__["vlan"] = len(sock.brick.plugs) + len(sock.brick.socks)
-        sock.path = "{HOME}/{sock.brick.name}_sock_eth{self.vlan}[]".format(
-            self=self, HOME=settings.VIRTUALBRICKS_HOME, sock=sock)
-        sock.nickname = "{sock.brick.name}_sock_eth{self.vlan}".format(
-            self=self, sock=sock)
-
-    def __getattr__(self, name):
-        try:
-            return getattr(self._sock, name)
-        except AttributeError:
-            raise AttributeError("_VMSock." + name)
-
-    def __setattr__(self, name, value):
-        if name in self.__dict__:
-            self.__dict__[name] = value
-        else:
-            for klass in self.__class__.__mro__:
-                if name in klass.__dict__:
-                    self.__dict__[name] = value
-                    break
-            else:
-                setattr(self._sock, name, value)
 
     def connect(self, endpoint):
         return
-
-    def get_model_driver(self):
-        if self.model == "virtio":
-            return "virtio-net-pci"
-        return self.model
 
 
 class VMPlugHostonly(VMPlug):
@@ -674,14 +638,15 @@ class VirtualMachine(bricks.Brick):
         return self.factory.get_basefolder()
 
     def get_parameters(self):
-        txt = _("command:") + " %s, ram: %s" % (self.prog(),
-                                                self.config["ram"])
-        for p in self.plugs:
-            if p.mode == 'hostonly':
-                txt += ', eth %s: Host' % unicode(p.vlan)
-            elif p.sock:
-                txt += ', eth %s: %s' % (unicode(p.vlan), p.sock.nickname)
-        return txt
+        txt = [_("command:") + " %s, ram: %s" % (self.prog(),
+                                                 self.config["ram"])]
+
+        for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
+            if link.mode == "hostonly":
+                txt.append("eth%d: Host" % i)
+            elif link.sock:
+                txt.append("eth%d: %s" % (i, link.sock.nickname))
+        return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
         log.debug("update_usbdevlist: old %s - new %s",
@@ -810,17 +775,21 @@ class VirtualMachine(bricks.Brick):
         if not self.plugs and not self.socks:
             res.extend(["-net", "none"])
         else:
-            for pl in sorted(self.plugs + self.socks, key=lambda p: p.vlan):
+            for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
                 res.append("-device")
-                res.append("%s,vlan=%d,mac=%s,id=eth%s" % (pl.get_model_driver(), pl.vlan, pl.mac, str(pl.vlan)))
-                if pl.mode == "vde":
+                res.append("{1.model},vlan={0},mac={1.mac},id=eth{0}".format(
+                    i, link))
+                if link.mode == "vde":
                     res.append("-net")
-                    res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.sock.path.rstrip('[]')))
-                elif pl.mode == "sock":
+                    res.append("vde,vlan={0},sock={1}".format(
+                        i, link.sock.path.rstrip('[]')))
+                elif link.mode == "sock":
                     res.append("-net")
-                    res.append("vde,vlan=%d,sock=%s" % (pl.vlan, pl.path))
+                    res.append("vde,vlan={0},sock={1}".format(
+                        i, link.path))
                 else:
                     res.extend(["-net", "user"])
+
         if self.config["cdromen"] and self.config["cdrom"]:
                 res.extend(["-cdrom", self.config["cdrom"]])
         elif self.config["deviceen"] and self.config["device"]:
@@ -860,6 +829,10 @@ class VirtualMachine(bricks.Brick):
     def add_sock(self, mac=None, model=None):
         s = self.factory.new_sock(self)
         sock = VMSock(s)
+        vlan = len(self.plugs) + len(self.socks)
+        sock.path = "{0}/{1.brick.name}_sock_eth{2}[]".format(
+            settings.VIRTUALBRICKS_HOME, sock, vlan)
+        sock.nickname = "{0.brick.name}_sock_eth{1}".format(sock, vlan)
         self.socks.append(sock)
         if mac:
             sock.mac = mac
@@ -871,32 +844,26 @@ class VirtualMachine(bricks.Brick):
         p = self.factory.new_plug(self)
         plug = VMPlugHostonly(p) if sock == "_hostonly" else VMPlug(p)
         self.plugs.append(plug)
-        plug.connect(sock)
+        if sock:
+            plug.connect(sock)
         if mac:
             plug.mac = mac
         if model:
             plug.model = model
         return plug
 
-    def connect(self, endpoint):
-        pl = self.add_plug()
-        pl.connect(endpoint)
+    def connect(self, socket):
+        plug = self.add_plug()
+        plug.connect(socket)
 
-    def remove_plug(self, idx):
-        for p in self.plugs:
-            if p.vlan == idx:
-                self.plugs.remove(p)
-                del(p)
-        for p in self.socks:
-            if p.vlan == idx:
-                self.socks.remove(p)
-                del(p)
-        for p in self.plugs:
-            if p.vlan > idx:
-                p.vlan -= 1
-        for p in self.socks:
-            if p.vlan > idx:
-                p.vlan -= 1
+    def remove_plug(self, plug):
+        try:
+            if plug.mode == "sock":
+                self.socks.remove(plug)
+            else:
+                self.plugs.remove(plug)
+        except ValueError:
+            log.error("plug %r does not belong to %r" % (plug, self))
 
     def commit_disks(self, args):
         # XXX: fixme
