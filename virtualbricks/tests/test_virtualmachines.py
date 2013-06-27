@@ -112,8 +112,14 @@ class TestVMPlug(test_link.TestPlug):
     def plug_factory(brick):
         return vm.VMPlug(link.Plug(brick))
 
-    def get_real_plug(self):
-        return self.plug._plug
+    def test_wrap_wrapper(self):
+        plug = self.plug_factory(self.brick)
+        plugho = vm.VMPlugHostonly(plug)
+        self.assertFalse(plug.configured())
+        self.assertTrue(plugho.configured())
+        self.assertEqual(plug.mode, "vde")
+        self.assertEqual(plugho.mode, "hostonly")
+
 
 class TestVMSock(test_link.TestSock):
 
