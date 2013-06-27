@@ -544,9 +544,9 @@ class VirtualMachineConfig(bricks.Config):
                   "snapshot": bricks.Boolean(False),
 
                   # cdrom device
-                  "deviceen": bricks.Boolean(""),
+                  "deviceen": bricks.Boolean(False),
                   "device": bricks.String(""),
-                  "cdromen": bricks.Boolean(""),
+                  "cdromen": bricks.Boolean(False),
                   "cdrom": bricks.String(""),
 
                   # additional media
