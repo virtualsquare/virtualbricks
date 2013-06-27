@@ -17,6 +17,7 @@
 
 import os
 import re
+import itertools
 
 import gobject
 import gtk
@@ -453,9 +454,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		builder = self.__setup_treeview("data/networkcards.ui",
 								"scrolledwindow12", "networkcards_treeview")
 
-		def set_vlan(column, cell_renderer, model, iter):
-			link = model.get_value(iter, 0)
-			cell_renderer.set_property("text", str(link.vlan))
+		def set_vlan(column, cell_renderer, model, itr):
+			vlan = model.get_path(itr)[0]
+			cell_renderer.set_property("text", str(vlan))
 
 		def set_connection(column, cell_renderer, model, iter):
 			link = model.get_value(iter, 0)
@@ -490,13 +491,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		mac_cr = builder.get_object("mac_cellrenderer")
 		mac_c.set_cell_data_func(mac_cr, set_mac)
 		self.vmplugs = builder.get_object("liststore1")
-
-		def sort_links(model, iter1, iter2):
-			return cmp(model.get_value(iter1, 0).vlan,
-				model.get_value(iter2, 0).vlan)
-
-		self.vmplugs.set_sort_func(0, sort_links)
-		self.vmplugs.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
 	def setup_events(self):
 		builder = self.__setup_treeview("data/events.ui",
@@ -1106,25 +1100,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			r[i] = self.gladefile.get_widget(i)
 			r[i].hide()
 		return r
-
-	'''
-	'	method that returns a dictionary
-	'	containing the eth models, to fill in the
-	'	model selection combobox
-	'''
-	def qemu_eth_model(self):
-		res = dict()
-		for k in [ "rtl8139",
-			"e1000",
-			"virtio",
-			"i82551",
-			"i82557b",
-			"i82559er",
-			"ne2k_pci",
-			"pcnet",
-			"ne2k_isa"]:
-			res[k]=k
-		return res
 
 	'''
 	'	Returns a list with all the
@@ -2255,36 +2230,26 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			dialog.show()
 
 	def __update_vmplugs_tree(self):
-		b = self.__get_selection(self.__bricks_treeview)
-		if b is None:
+		brick = self.__get_selection(self.__bricks_treeview)
+		if brick is None:
 			return
-
-		if b.get_type() == 'Qemu':
+		if brick.get_type() == "Qemu":
 			self.vmplugs.clear()
-			for plug in b.plugs:
-				self.vmplugs.append((plug, ))
-
-			if settings.femaleplugs:
-				for sock in b.socks:
-					self.vmplugs.append((sock,))
+			for card in itertools.chain(brick.plugs, brick.socks):
+				self.vmplugs.append((card, ))
 
 	def remove_link(self, link):
-		if link.brick.proc and link.hotdel:
-			link.hotdel()
-		link.brick.remove_plug(link.vlan)
-		get_value = self.vmplugs.get_value
-		iter_next = self.vmplugs.iter_next
-		i = self.vmplugs.get_iter_first()
-		while i:
-			l = get_value(i, 0)
+		link.brick.remove_plug(link)
+		itr = self.vmplugs.get_iter_first()
+		while itr:
+			l = self.vmplugs.get_value(itr, 0)
 			if link is l:
-				self.vmplugs.remove(i)
+				self.vmplugs.remove(itr)
 				break
-			i = iter_next(i)
+			itr = self.vmplugs.iter_next(itr)
 
 	def ask_remove_link(self, link):
-		question = _("Do you really want to delete eth%d network interface") \
-				% link.vlan
+		question = _("Do you really want to delete the network interface")
 		dialog = dialogs.ConfirmDialog(question, on_yes=self.remove_link,
 				on_yes_arg=link)
 		dialog.window.set_transient_for(self.widg["main_win"])

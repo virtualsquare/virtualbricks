@@ -19,9 +19,6 @@ class TestPlug(unittest.TestCase):
         log.addObserver(self.log.append)
         self.addCleanup(log.removeObserver, self.log.append)
 
-    def get_real_plug(self):
-        return self.plug
-
     def test_connected(self):
         result = []
         self.plug.connected().addErrback(result.append)
@@ -58,21 +55,27 @@ class TestPlug(unittest.TestCase):
 
     def test_connect(self):
         self.assertFalse(self.plug.configured())
-        self.plug.disconnect()
+        if __debug__:
+            self.assertRaises(AssertionError, self.plug.disconnect)
         self.assertFalse(self.plug.configured())
-        self.assertFalse(self.plug.connect(None))
-        self.assertFalse(self.plug.configured())
-        self.assertTrue(self.plug.connect(self.sock_factory(self.brick)))
+        if __debug__:
+            self.assertRaises(AssertionError, self.plug.connect, None)
+            self.assertFalse(self.plug.configured())
+        sock = self.sock_factory(self.brick)
+        self.plug.connect(sock)
+        self.assertIs(self.plug.sock, sock)
         self.assertTrue(self.plug.configured())
         self.plug.disconnect()
         self.assertFalse(self.plug.configured())
 
-    def test_connect_maybe_a_bug(self):
-        """When a plug is disconnected leave its traces on socks."""
+    def test_disconnect(self):
+        """
+        Test that after a disconnect there are no more references to plug.
+        """
         sock = self.sock_factory(self.brick)
         self.plug.connect(sock)
         self.plug.disconnect()
-        self.assertEqual(sock.plugs, [self.get_real_plug()])
+        self.assertEqual(sock.plugs, [])
 
 
 class TestSock(unittest.TestCase):

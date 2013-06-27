@@ -72,7 +72,7 @@ class TestVirtualMachine(unittest.TestCase):
         self.assertEqual(self.vm.socks, [sock])
         self.assertIs(sock.mac, mac)
         self.assertIs(sock.model, model)
-        self.assertEqual(self.factory.socks, [sock._sock])
+        self.assertEqual(self.factory.socks, [sock.original])
 
     def test_associate_disk_on_new_vm(self):
         for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
@@ -93,6 +93,14 @@ class TestVirtualMachine(unittest.TestCase):
         disk = DiskStub(self.vm, "hda")
         self.vm.config["hda"] = disk
 
+    def test_del_brick(self):
+        factory = stubs.FactoryStub()
+        vm = factory.new_brick("vm", "test")
+        sock = vm.add_sock()
+        self.assertEqual(factory.socks, [sock.original])
+        factory.del_brick(vm)
+        self.assertEqual(factory.socks, [])
+
 
 class TestVMPlug(test_link.TestPlug):
 
@@ -104,31 +112,13 @@ class TestVMPlug(test_link.TestPlug):
     def plug_factory(brick):
         return vm.VMPlug(link.Plug(brick))
 
-    def get_real_plug(self):
-        return self.plug._plug
-
-    def test_model_driver(self):
-        self.assertEqual(self.plug.get_model_driver(), self.plug.model)
-        self.plug.model = "virtio"
-        self.assertEqual(self.plug.get_model_driver(), "virtio-net-pci")
-
-    def test_hotadd(self):
-        # sock is not set
-        self.assertRaises(AttributeError, self.plug.hotadd)
-        # clean the communication
-        del self.brick.sended[:]
-        self.plug.connect(self.sock_factory(self.brick))
-        self.brick.active = True
-        self.plug.hotadd()
-        comm = ["device_add rtl8139,mac=%s,vlan=0,id=eth0\n" % self.plug.mac,
-                "host_net_add vde sock=%s,vlan=0\n" %
-                self.plug.sock.path.rstrip('[]')]
-        self.assertEqual(self.brick.sended, comm)
-
-    def test_hostdel(self):
-        self.plug.hotdel()
-        comm = ["host_net_remove 0 vde.0\n", "device_del eth0\n"]
-        self.assertEqual(self.brick.sended, comm)
+    def test_wrap_wrapper(self):
+        plug = self.plug_factory(self.brick)
+        plugho = vm.VMPlugHostonly(plug)
+        self.assertFalse(plug.configured())
+        self.assertTrue(plugho.configured())
+        self.assertEqual(plug.mode, "vde")
+        self.assertEqual(plugho.mode, "hostonly")
 
 
 class TestVMSock(test_link.TestSock):
@@ -142,8 +132,10 @@ class TestVMSock(test_link.TestSock):
         return vm.VMSock(link.Sock(brick))
 
     def test_has_valid_path2(self):
-        """Because a VMSock has already a valid path."""
-        self.assertTrue(self.sock.has_valid_path())
+        factory = stubs.FactoryStub()
+        vm = stubs.VirtualMachineStub(factory, "vm")
+        sock = vm.add_sock()
+        self.assertTrue(sock.has_valid_path())
 
 
 HELLO = "/hello/backingfile"
