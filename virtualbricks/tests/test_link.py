@@ -19,9 +19,6 @@ class TestPlug(unittest.TestCase):
         log.addObserver(self.log.append)
         self.addCleanup(log.removeObserver, self.log.append)
 
-    def get_real_plug(self):
-        return self.plug
-
     def test_connected(self):
         result = []
         self.plug.connected().addErrback(result.append)
