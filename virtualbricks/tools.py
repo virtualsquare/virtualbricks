@@ -86,7 +86,7 @@ def check_missing_qemu(path):
             "qemu-system-sparc", "qemu-system-sparc64", "qemu-system-x86_64",
             "qemu-img"]
     missing = check_missing(path, bins)
-    return missing, list(set(bins) - set(missing))
+    return missing, sorted(set(bins) - set(missing))
 
 
 def check_kvm(path):
