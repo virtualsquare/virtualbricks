@@ -253,11 +253,11 @@ class BrickFactory(object):
         log.msg("Removing socks: " + ", ".join(s.nickname for s in socks))
         for _brick in self.bricks:
             for plug in _brick.plugs:
-                if plug.sock and plug.sock in socks:
+                if plug.connected() and plug.sock in socks:
                     log.msg("Disconnecting plug to %s" % plug.sock.nickname)
                     plug.disconnect()
-        for so in brick.socks:
-            self.socks.remove(so)
+        for sock in [s for s in self.socks if s.brick is brick]:
+            self.socks.remove(sock)
         self.bricks.remove(brick)
 
     def del_brick(self, brick):

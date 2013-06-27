@@ -452,7 +452,7 @@ class EthernetDialog(Window):
     def is_valid(self, mac):
         return tools.mac_is_valid(mac)
 
-    def add_plug(self, vlan=None):
+    def add_plug(self):
         combo = self.get_object("sock_combo")
         sockname = combo.get_model().get_value(combo.get_active_iter(), 1)
         if sockname == "_sock":
@@ -473,8 +473,6 @@ class EthernetDialog(Window):
                       mac)
             mac = tools.random_mac()
         plug.mac = mac
-        if vlan is not None:
-            plug.vlan = vlan
 
         self.gui.vmplugs.append((plug, ))
 
@@ -483,10 +481,8 @@ class EthernetDialog(Window):
 
     def on_EthernetDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            vlan = None
             plug = self.plug
             if plug:
-                vlan = plug.vlan
                 if plug.mode == "sock":
                     self.brick.socks.remove(plug)
                 else:
@@ -502,7 +498,7 @@ class EthernetDialog(Window):
                         break
                     i = iter_next(i)
 
-            self.add_plug(vlan)
+            self.add_plug()
         dialog.destroy()
 
 

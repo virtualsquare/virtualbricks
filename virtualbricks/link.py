@@ -64,14 +64,15 @@ class Plug:
         return d
 
     def connect(self, sock):
-        if sock is None:
-            return False
-        else:
-            sock.plugs.append(self)
-            self.sock = sock
-            return True
+        assert sock is not None, "Cannot connect a plug to nothing"
+        sock.plugs.append(self)
+        self.sock = sock
 
     def disconnect(self):
+        assert self.sock is not None, "Plug not connected"
+        assert self in self.sock.plugs, \
+                "sock %r has not reference to %r" % (self.sock, self)
+        self.sock.plugs.remove(self)
         self.sock = None
 
 
