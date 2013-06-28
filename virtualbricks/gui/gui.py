@@ -17,7 +17,6 @@
 
 import os
 import re
-import itertools
 
 import gobject
 import gtk
@@ -25,7 +24,7 @@ import gtk.glade
 
 from twisted.application import app
 from twisted.python import log as _log
-from twisted.internet import error, defer, task, protocol, reactor, utils
+from twisted.internet import error, defer, task, protocol, reactor
 
 from virtualbricks import (interfaces, tools, errors, settings, configfile,
 						brickfactory, _compat)
@@ -136,8 +135,7 @@ def changed_brick_in_model(result, model):
 	return result
 
 
-TYPE_CONFIG_WIDGET_NAME_MAP = {"Qemu": "box_vmconfig",
-							"Wirefilter": "box_wirefilterconfig",
+TYPE_CONFIG_WIDGET_NAME_MAP = {"Wirefilter": "box_wirefilterconfig",
 							"Router": "box_routerconfig"}
 TOPOLOGY_TAB = 4
 
@@ -292,7 +290,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.setup_events()
 		self.setup_joblist()
 		# self.setup_remotehosts()
-		self.setup_netwoks_cards()
 		self.setup_router_devs()
 		self.setup_router_routes()
 		self.setup_router_filters()
@@ -450,48 +447,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	# 	builder.get_object("remotehosts_treeview").set_model(
 	# 		self.brickfactory.remote_hosts)
 
-	def setup_netwoks_cards(self):
-		builder = self.__setup_treeview("data/networkcards.ui",
-								"scrolledwindow12", "networkcards_treeview")
-
-		def set_vlan(column, cell_renderer, model, itr):
-			vlan = model.get_path(itr)[0]
-			cell_renderer.set_property("text", str(vlan))
-
-		def set_connection(column, cell_renderer, model, iter):
-			link = model.get_value(iter, 0)
-			if link.mode == "hostonly":
-				conn = "Host"
-			elif link.sock:
-				conn = link.sock.brick.name
-			elif link.mode == "sock" and settings.femaleplugs:
-				conn = "Vde socket (female plug)"
-			else:
-				conn = "None"
-			cell_renderer.set_property("text", conn)
-
-		def set_model(column, cell_renderer, model, iter):
-			link = model.get_value(iter, 0)
-			cell_renderer.set_property("text", link.model)
-
-		def set_mac(column, cell_renderer, model, iter):
-			link = model.get_value(iter, 0)
-			cell_renderer.set_property("text", link.mac)
-
-		vlan_c = builder.get_object("vlan_treeviewcolumn")
-		vlan_cr = builder.get_object("vlan_cellrenderer")
-		vlan_c.set_cell_data_func(vlan_cr, set_vlan)
-		connection_c = builder.get_object("connection_treeviewcolumn")
-		connection_cr = builder.get_object("connection_cellrenderer")
-		connection_c.set_cell_data_func(connection_cr, set_connection)
-		model_c = builder.get_object("model_treeviewcolumn")
-		model_cr = builder.get_object("model_cellrenderer")
-		model_c.set_cell_data_func(model_cr, set_model)
-		mac_c = builder.get_object("mac_treeviewcolumn")
-		mac_cr = builder.get_object("mac_cellrenderer")
-		mac_c.set_cell_data_func(mac_cr, set_mac)
-		self.vmplugs = builder.get_object("liststore1")
-
 	def setup_events(self):
 		builder = self.__setup_treeview("data/events.ui",
 			"events_scrolledwindow", "events_treeview")
@@ -634,9 +589,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				opt['Vde socket']='_sock'
 
 			for so in self.brickfactory.socks:
-				if (so.brick.homehost == b.homehost or (b.get_type() == 'Wire'
-											and settings.python)) and \
-				(so.brick.get_type().startswith('Switch') or settings.femaleplugs):
+				if ((so.brick.homehost == b.homehost or (b.get_type() == 'Wire'
+						and settings.python)) and
+						(so.brick.get_type().startswith('Switch') or
+						settings.femaleplugs)):
 					opt[so.nickname] = so.nickname
 			combo.populate(opt)
 			t = b.get_type()
@@ -649,85 +605,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					combo.select(b.plugs[1].sock.nickname)
 
 		dicts=dict()
-		#QEMU COMMAND COMBO
-		__, found = tools.check_missing_qemu(settings.get("qemupath"))
-		qemuarch = ComboBox(self.gladefile.get_widget("cfg_Qemu_argv0_combo"))
-		opt = dict()
-		for arch in found:
-			if arch.startswith('qemu-system-'):
-				opt[arch.split('qemu-system-')[1]] = arch
-		qemuarch.populate(opt, 'i386')
-		dicts['argv0']=opt
-
-		#SNDCARD COMBO
-		sndhw = ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo"))
-		opt = dict()
-		opt['no audio']=""
-		opt['PC speaker']="pcspk"
-		opt['Creative Sound Blaster 16'] = "sb16"
-		opt['Intel 82801AA AC97 Audio'] = "ac97"
-		opt['ENSONIQ AudioPCI ES1370'] = "es1370"
-		dicts['soundhw']=opt
-		sndhw.populate(opt, "")
-		ComboBox(self.gladefile.get_widget("cfg_Qemu_soundhw_combo")).select('Intel 82801AA AC97 Audio')
-
-		#device COMBO
-		devices = ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo"))
-		opt = dict()
-		opt['NO']=""
-		opt['cdrom']="/dev/cdrom"
-		dicts['device']=opt
-		devices.populate(opt, "")
-		ComboBox(self.gladefile.get_widget("cfg_Qemu_device_combo")).select('NO')
-
-		#boot COMBO
-		boot_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo"))
-		opt = dict()
-		opt['HD1']=""
-		opt['FLOPPY'] = "a"
-		opt['CDROM'] = "d"
-		dicts['boot']=opt
-		boot_c.populate(opt, "")
-		ComboBox(self.gladefile.get_widget("cfg_Qemu_boot_combo")).select('HD1')
-
-		#images COMBO
-		if b.get_type() == "Qemu":
-			for hd in ['hda','hdb','hdc','hdd','fda','fdb','mtdblock']:
-				images = ComboBox(self.gladefile.get_widget("cfg_Qemu_base"+hd+"_combo"))
-				opt = dict()
-				opt['Off'] = ""
-				for img in self.brickfactory.disk_images:
-					if b.homehost is None and img.host is None:
-						opt[img.name] = img.name
-					elif b.homehost is not None and img.host is not None and img.host.addr[0] == b.homehost.addr[0]:
-						opt[img.name] = img.name
-				images.populate(opt,"")
-				if (b.config["base" + hd] and
-						b.config[hd].set_image(b.config["base" + hd])):
-					images.select(b.config["base" + hd])
-				else:
-					images.select("Off")
-
-		# Qemu: usb devices bind button
-		if b.get_type() == "Qemu":
-			if b.config["usbmode"]:
-				self.gladefile.get_widget('vm_usb_show').set_sensitive(True)
-			else:
-				self.gladefile.get_widget('vm_usb_show').set_sensitive(False)
-				b.config["usbdevlist"] = ""
-
-
-		# Qemu: check if KVM is checkable
-		if b.get_type()=="Qemu":
-			if settings.kvm or b.homehost:
-				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(True)
-				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label("KVM")
-			else:
-				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_sensitive(False)
-				self.gladefile.get_widget('cfg_Qemu_kvm_check').set_label(_("KVM is disabled"))
-				b.config["kvm"] = False
-
-		self.__update_vmplugs_tree()
 
 		t = b.get_type()
 		for key in b.config.keys():
@@ -1847,18 +1724,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_button_openimage_open_clicked(self, button):
 		pass
 
-	def on_image_newfromfile(self, menuitem):
-		dialogs.choose_new_image(self, self.brickfactory)
-
-	def on_image_library(self, widget=None, data=""):
-		dialogs.DisksLibraryDialog(self.brickfactory).show()
-
-	def on_image_newempty(self, widget=None, data=""):
-		dialogs.CreateImageDialog(self.brickfactory).show(
-			self.get_object("main_win"))
-
 	def on_item_create_image_activate(self, widget=None, data=""):
-		dialogs.CreateImageDialog(self.brickfactory).show(
+		dialogs.CreateImageDialog(self, self.brickfactory).show(
 			self.get_object("main_win"))
 
 	def image_create (self):
@@ -2107,216 +1974,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		else:
 			lbl.set_markup('<span color="darkgreen">'+_("All VDE components detected")+'.</span>\n')
 
-	def on_arch_changed(self, widget, data=None):
-		brick = self.__get_selection(self.__bricks_treeview)
-		if brick.get_type() != 'Qemu':
-			return
-
-		combo = ComboBox(widget)
-		path = settings.get('qemupath')
-
-		#Machine COMBO
-		machine_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_machine_combo"))
-		opt_m = dict()
-		os.system(path + "/" + combo.get_selected() + " -M ? >" +
-			settings.VIRTUALBRICKS_HOME + "/.vmachines")
-		for m in open(settings.VIRTUALBRICKS_HOME + "/.vmachines").readlines():
-			if not re.search('machines are', m):
-				v = m.split(' ')[0]
-				k = m.lstrip(v).rstrip('/n')
-				while (k.startswith(' ')):
-					k = k.lstrip(' ')
-				opt_m[v]=v
-		toSelect=""
-		for k, v in opt_m.iteritems():
-			if v.strip() == brick.config["machine"].strip():
-				toSelect=k
-		machine_c.populate(opt_m, toSelect)
-		os.unlink(settings.VIRTUALBRICKS_HOME + "/.vmachines")
-
-		#CPU combo
-		opt_c = dict()
-		cpu_c = ComboBox(self.gladefile.get_widget("cfg_Qemu_cpu_combo"))
-		os.system(path + "/" + combo.get_selected() + " -cpu ? >" +
-			settings.VIRTUALBRICKS_HOME + "/.cpus")
-		for m in open(settings.VIRTUALBRICKS_HOME + "/.cpus").readlines():
-			if not re.search('Available CPU', m):
-				if (m.startswith('  ')):
-					while (m.startswith(' ')):
-						m = m.lstrip(' ')
-					if m.endswith('\n'):
-						m = m.rstrip('\n')
-					opt_c[m] = m
-				else:
-					lst = m.split(' ')
-					if len(lst) > 1:
-						val = m.lstrip(lst[0])
-						while (val.startswith(' ')):
-							val = val.lstrip(' ')
-						if val.startswith('\''):
-							val = val.lstrip('\'')
-						if val.startswith('['):
-							val = val.lstrip('[')
-						if val.endswith('\n'):
-							val = val.rstrip('\n')
-
-						if val.endswith('\''):
-							val = val.rstrip('\'')
-						if val.endswith(']'):
-							val = val.rstrip(']')
-						opt_c[val]=val
-		cpu_c.populate(opt_c, brick.config["cpu"])
-		os.unlink(settings.VIRTUALBRICKS_HOME + "/.cpus")
-
-	def on_check_kvm_toggled(self, widget=None, event=None, data=""):
-		if widget.get_active():
-			brick = self.__get_selection(self.__bricks_treeview)
-			if not brick.homehost:
-				kvm = tools.check_kvm(settings.get("qemupath"))
-				self.kvm_toggle_all(True)
-				if not kvm:
-					log.error(_("No KVM support found on the system. "
-						"Check your active configuration. "
-						"KVM will stay disabled."))
-				widget.set_active(kvm)
-			else:
-				self.kvm_toggle_all(True)
-		else:
-			self.kvm_toggle_all(False)
-
-	def kvm_toggle_all(self, enabled):
-		self.gladefile.get_widget('cfg_Qemu_kvmsmem_spinint').set_sensitive(enabled)
-		self.gladefile.get_widget('cfg_Qemu_kvmsm_check').set_sensitive(enabled)
-		# disable incompatible options
-		if self.gladefile.get_widget('cfg_Qemu_tdf_check').get_active() and not enabled:
-			self.gladefile.get_widget('cfg_Qemu_tdf_check').set_active(False)
-		self.gladefile.get_widget('cfg_Qemu_tdf_check').set_sensitive(enabled)
-		self.disable_qemu_combos(not enabled)
-
-	def disable_qemu_combos(self,active):
-		self.gladefile.get_widget('cfg_Qemu_argv0_combo').set_sensitive(active)
-		self.gladefile.get_widget('cfg_Qemu_cpu_combo').set_sensitive(active)
-		self.gladefile.get_widget('cfg_Qemu_machine_combo').set_sensitive(active)
-
-	def on_check_customkernel_toggled(self, widget=None, event=None, data=""):
-		if widget.get_active():
-			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(True)
-			self.gladefile.get_widget('filedel_cfg_Qemu_kernel').set_sensitive(True)
-		else:
-			self.on_filechooser_clear(self.gladefile.get_widget('cfg_Qemu_kernel_filechooser'), None, "", True)
-			self.gladefile.get_widget('cfg_Qemu_kernel_filechooser').set_sensitive(False)
-			self.gladefile.get_widget('filedel_cfg_Qemu_kernel').set_sensitive(False)
-
-	def on_check_initrd_toggled(self, widget=None, event=None, data=""):
-		if widget.get_active():
-			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(True)
-			self.gladefile.get_widget('filedel_cfg_Qemu_initrd').set_sensitive(False)
-		else:
-			self.on_filechooser_clear(self.gladefile.get_widget('cfg_Qemu_initrd_filechooser'), None, "", True)
-			self.gladefile.get_widget('cfg_Qemu_initrd_filechooser').set_sensitive(False)
-			self.gladefile.get_widget('filedel_cfg_Qemu_initrd').set_sensitive(True)
-
-	def on_check_gdb_toggled(self, widget=None, event=None, data=""):
-		if widget.get_active():
-			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(True)
-		else:
-			self.gladefile.get_widget('cfg_Qemu_gdbport_spinint').set_sensitive(False)
-
-	def on_addplug_button_clicked(self, button):
-		brick = self.__get_selection(self.__bricks_treeview)
-		if brick is not None:
-			dialog = dialogs.EthernetDialog(self, brick)
-			dialog.window.set_transient_for(self.widg["main_win"])
-			dialog.show()
-
-	def __update_vmplugs_tree(self):
-		brick = self.__get_selection(self.__bricks_treeview)
-		if brick is None:
-			return
-		if brick.get_type() == "Qemu":
-			self.vmplugs.clear()
-			for card in itertools.chain(brick.plugs, brick.socks):
-				self.vmplugs.append((card, ))
-
-	def remove_link(self, link):
-		link.brick.remove_plug(link)
-		itr = self.vmplugs.get_iter_first()
-		while itr:
-			l = self.vmplugs.get_value(itr, 0)
-			if link is l:
-				self.vmplugs.remove(itr)
-				break
-			itr = self.vmplugs.iter_next(itr)
-
-	def ask_remove_link(self, link):
-		question = _("Do you really want to delete the network interface")
-		dialog = dialogs.ConfirmDialog(question, on_yes=self.remove_link,
-				on_yes_arg=link)
-		dialog.window.set_transient_for(self.widg["main_win"])
-		dialog.show()
-
-	def on_networkcards_treeview_key_press_event(self, treeview, event):
-		if gtk.gdk.keyval_from_name("Delete") == event.keyval:
-			brick = self.__get_selection(self.__bricks_treeview)
-			if brick is not None:
-				selection = treeview.get_selection()
-				model, itr = selection.get_selected()
-				if itr is not None:
-					self.ask_remove_link(model.get_value(itr, 0))
-					return True
-
-	def on_networkcards_treeview_button_release_event(self, treeview, event):
-		if event.button == 3:
-			pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
-			if pthinfo is not None:
-				path, col, cellx, celly = pthinfo
-				treeview.grab_focus()
-				treeview.set_cursor(path, col, 0)
-				model = treeview.get_model()
-				obj = model.get_value(model.get_iter(path), 0)
-				interfaces.IMenu(obj).popup(event.button, event.time, self)
-				return True
-
-	def on_vnc_novga_toggled(self, widget=None, event=None, data=""):
-		novga = self.gladefile.get_widget('cfg_Qemu_novga_check')
-		vnc = self.gladefile.get_widget('cfg_Qemu_vnc_check')
-		if (novga==widget):
-			vnc.set_sensitive(not novga.get_active())
-			self.gladefile.get_widget('cfg_Qemu_vncN_spinint').set_sensitive(not novga.get_active())
-			self.gladefile.get_widget('label33').set_sensitive(not novga.get_active())
-		if (vnc == widget):
-			novga.set_sensitive(not vnc.get_active())
-
 	def on_vmicon_file_change(self, widget=None, event=None, data=""):
 		if widget.get_filename() is not None:
 			pixbuf = self.pixbuf_scaled(widget.get_filename())
 			self.gladefile.get_widget("qemuicon").set_from_pixbuf(pixbuf)
-
-	def on_filechooser_clear(self, widget=None, event=None, data="", direct=False):
-		if not direct:
-			filechooser = widget.name[8:] + "_filechooser"
-		else:
-			filechooser = widget.name
-		self.gladefile.get_widget(filechooser).unselect_all()
-
-	def on_filechooser_hd_clear(self, widget=None, event=None, data=""):
-		#self.on_filechooser_clear(widget)
-		hd = widget.name[21:]
-		check = self.gladefile.get_widget("cfg_Qemu_private"+hd+"_check")
-		check.set_active(False)
-		imgcombo = widget.name[8:] + "_combo"
-		images = ComboBox(self.gladefile.get_widget(imgcombo))
-		opt = dict()
-		opt['Off'] = ""
-		for img in self.brickfactory.disk_images:
-			opt[img.name] = img.name
-		images.populate(opt,"")
-		images.select("Off")
-
-	def on_filechooser_image_clear(self, widget=None, event=None, data=""):
-		self.on_filechooser_clear(widget)
-		self.gladefile.get_widget("qemuicon").set_from_pixbuf(
-			graphics.pixbuf_for_brick_type("qemu"))
 
 	def on_show_messages_activate(self, menuitem, data=None):
 		dialogs.LoggingWindow(self.messages_buffer).show()
@@ -2510,30 +2171,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_check_newbrick_runremote_toggled(self, widget, event=None, data=None):
 		self.gladefile.get_widget('text_newbrick_runremote').set_sensitive(widget.get_active())
-
-	def on_usbmode_onoff(self, w, event=None, data=None):
-		brick = self.__get_selection(self.__bricks_treeview)
-		if w.get_active():
-			brick.config["usbmode"] = True
-		else:
-			brick.config["usbmode"] = False
-			brick.config["usbdevlist"] = ""
-		self.gladefile.get_widget('vm_usb_show').set_sensitive(w.get_active())
-
-	def usb_show(self):
-
-		def show_dialog(output):
-			dialog = dialogs.UsbDevWindow(self, output.strip(), vm)
-			dialog.window.set_transient_for(self.widg["main_win"])
-			dialog.show()
-
-		vm = self.__get_selection(self.__bricks_treeview)
-		devices = utils.getProcessOutput("lsusb", env=os.environ)
-		devices.addCallback(show_dialog).addErrback(log.err)
-        log.msg("Searching USB devices")
-
-	def on_usb_show(self, button):
-		self.user_wait_action(self.usb_show)
 
 	def do_image_convert(self, arg=None):
 		raise NotImplementedError("do_image_convert")

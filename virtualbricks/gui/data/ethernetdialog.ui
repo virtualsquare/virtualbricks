@@ -253,7 +253,7 @@
       <!-- column-name label -->
       <column type="gchararray"/>
       <!-- column-name value -->
-      <column type="gchararray"/>
+      <column type="PyObject"/>
     </columns>
   </object>
 </interface>
