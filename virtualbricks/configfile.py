@@ -26,7 +26,7 @@ import contextlib
 
 from twisted.python import failure
 
-from virtualbricks import _compat, settings
+from virtualbricks import _compat, settings, virtualmachines
 
 
 if False:  # pyflakes
@@ -225,8 +225,8 @@ class ConfigFile:
                             model = l.split("|")[3]
                             macaddr = l.split("|")[4]
                             this_sock = "?"
-                            if l.split("|")[0] == 'userlink':
-                                this_sock = '_hostonly'
+                            if sockname == '_hostonly':
+                                this_sock = virtualmachines.hostonly_sock
                             else:
                                 for s in factory.socks:
                                     if s.nickname == sockname:

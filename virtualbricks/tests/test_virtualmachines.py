@@ -8,7 +8,8 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.python import failure
 
-from virtualbricks import link, virtualmachines as vm, errors, tests, settings
+from virtualbricks import (link, virtualmachines as vm, errors, tests,
+                           settings, configfile)
 from virtualbricks.tests import (stubs, test_link, successResultOf,
                                  failureResultOf)
 
@@ -44,17 +45,12 @@ class TestVirtualMachine(unittest.TestCase):
 
     def test_add_plug_hostonly(self):
         mac, model = object(), object()
-        plug = self.vm.add_plug("_hostonly", mac, model)
-        self.assertEqual(plug.mode, "hostonly")
-        self.assertEqual(len(self.vm.plugs), 1)
-        self.assertIs(plug.sock, None)
-        self.assertIs(plug.mac, mac)
-        self.assertIs(plug.model, model)
-
-    def test_add_plug_empty(self):
-        plug = self.vm.add_plug()
+        plug = self.vm.add_plug(vm.hostonly_sock, mac, model)
         self.assertEqual(plug.mode, "vde")
         self.assertEqual(len(self.vm.plugs), 1)
+        self.assertIs(plug.sock, vm.hostonly_sock)
+        self.assertIs(plug.mac, mac)
+        self.assertIs(plug.model, model)
 
     def test_add_plug_sock(self):
         brick = stubs.BrickStub(self.factory, "test")
@@ -101,6 +97,25 @@ class TestVirtualMachine(unittest.TestCase):
         factory.del_brick(vm)
         self.assertEqual(factory.socks, [])
 
+    def test_brick_plug_sock_self(self):
+        """A plug can be connected to a sock of the same brick."""
+        sock = self.vm.add_sock()
+        plug = self.vm.add_plug(sock)
+        self.assertEqual(self.vm.socks, [sock])
+        self.assertEqual(self.vm.plugs, [plug])
+        self.assertIs(plug.sock, sock)
+        self.assertIs(plug.brick, sock.brick)
+
+    def test_poweron_loop_on_self_plug(self):
+        """If a vm is plugged to itself it can start without error. The last
+        check seem obvious but poweron() deferred is called only there is no
+        errors."""
+        self.vm._poweron = lambda _: defer.succeed(None)
+        self.vm.add_plug(self.vm.add_sock())
+        d = self.vm.poweron()
+        d.callback(self.vm)
+        self.assertEqual(successResultOf(self, d), self.vm)
+
 
 class TestVMPlug(test_link.TestPlug):
 
@@ -111,15 +126,6 @@ class TestVMPlug(test_link.TestPlug):
     @staticmethod
     def plug_factory(brick):
         return vm.VMPlug(link.Plug(brick))
-
-    def test_wrap_wrapper(self):
-        plug = self.plug_factory(self.brick)
-        plugho = vm.VMPlugHostonly(plug)
-        self.assertFalse(plug.configured())
-        self.assertTrue(plugho.configured())
-        self.assertEqual(plug.mode, "vde")
-        self.assertEqual(plugho.mode, "hostonly")
-
 
 class TestVMSock(test_link.TestSock):
 
@@ -136,6 +142,45 @@ class TestVMSock(test_link.TestSock):
         vm = stubs.VirtualMachineStub(factory, "vm")
         sock = vm.add_sock()
         self.assertTrue(sock.has_valid_path())
+
+
+HOSTONLY_CONFIG = """[Qemu:vm]
+name=vm
+
+link|vm|_hostonly|rtl8139|00:11:22:33:44:55
+"""
+
+class TestPlugWithHostOnlySock(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = stubs.FactoryStub()
+        self.vm = self.factory.new_brick("vm", "vm")
+        self.plug = self.vm.add_plug(vm.hostonly_sock, "00:11:22:33:44:55")
+
+    def test_add_plug(self):
+        self.assertIs(self.plug.sock, vm.hostonly_sock)
+
+    def test_poweron(self):
+        self.vm._poweron = lambda _: defer.succeed(self.vm)
+        d = self.vm.poweron()
+        d.callback(self.vm)
+
+    def test_config_save(self):
+        sio = StringIO.StringIO()
+        configfile.ConfigFile().save_to(self.factory, sio)
+        self.assertEqual(sio.getvalue(), HOSTONLY_CONFIG)
+
+    def test_config_resume(self):
+        self.factory.del_brick(self.vm)
+        self.assertEqual(len(self.factory.bricks), 0)
+        sio = StringIO.StringIO(HOSTONLY_CONFIG)
+        configfile.ConfigFile().restore_from(self.factory, sio)
+        self.assertEqual(len(self.factory.bricks), 1)
+        vm1 = self.factory.get_brick_by_name("vm")
+        self.assertEqual(len(vm1.plugs), 1)
+        plug = vm1.plugs[0]
+        self.assertEqual(plug.mac, "00:11:22:33:44:55")
+        self.assertIs(plug.sock, vm.hostonly_sock)
 
 
 HELLO = "/hello/backingfile"

@@ -22,7 +22,7 @@ from zope.interface import implements
 from twisted.internet import reactor, utils, defer, error
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           console, link, _compat, settings)
+                           console, link, _compat, settings, tools)
 
 from virtualbricks.gui import graphics, dialogs
 
@@ -238,29 +238,29 @@ class LinkMenu:
     def __init__(self, original):
         self.original = original
 
-    def build(self, gui):
+    def build(self, controller, gui):
         menu = gtk.Menu()
         edit = gtk.MenuItem(_("Edit"))
-        edit.connect("activate", self.on_edit_activate, gui)
+        edit.connect("activate", self.on_edit_activate, controller, gui)
         menu.append(edit)
         remove = gtk.MenuItem(_("Remove"))
-        remove.connect("activate", self.on_remove_activate, gui)
+        remove.connect("activate", self.on_remove_activate, controller)
         menu.append(remove)
         return menu
 
-    def popup(self, button, time, gui):
-        menu = self.build(gui)
+    def popup(self, button, time, controller, gui):
+        menu = self.build(controller, gui)
         menu.show_all()
         menu.popup(None, None, None, button, time)
 
-    def on_edit_activate(self, menuitem, gui):
-        dialog = dialogs.EthernetDialog(gui, self.original.brick,
-                                  self.original)
-        dialog.window.set_transient_for(gui.widg["main_win"])
-        dialog.show()
+    def on_edit_activate(self, menuitem, controller, gui):
+        parent = gui.get_object("main_win")
+        dialogs.EditEthernetDialog(gui.brickfactory, self.original.brick,
+                                   self.original).show(parent)
 
-    def on_remove_activate(self, menuitem, gui):
-        gui.ask_remove_link(self.original)
+    def on_remove_activate(self, menuitem, controller):
+        controller.ask_remove_link(self.original)
+
 
 interfaces.registerAdapter(LinkMenu, link.Plug, interfaces.IMenu)
 interfaces.registerAdapter(LinkMenu, link.Sock, interfaces.IMenu)
@@ -495,6 +495,7 @@ def should_insert_sock(sock, brick, python, femaleplugs):
              (brick.get_type() == 'Wire' and python)) and
             (sock.brick.get_type().startswith('Switch') or femaleplugs))
 
+
 class PlugMixin(object):
 
     def _should_insert_sock(self, sock, brick, python, femaleplugs):
@@ -674,6 +675,385 @@ class TunnelClientConfigController(TunnelListenConfigController):
         self.original.set(host=host, localport=lport)
 
 
+def get_selection(treeview):
+    selection = treeview.get_selection()
+    if selection is not None:
+        model, iter = selection.get_selected()
+        if iter is not None:
+            return model.get_value(iter, 0)
+
+
+def get_element_at_click(treeview, event):
+    pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
+    if pthinfo is not None:
+        path, col, cellx, celly = pthinfo
+        treeview.grab_focus()
+        treeview.set_cursor(path, col, 0)
+        model = treeview.get_model()
+        obj = model.get_value(model.get_iter(path), 0)
+        return obj
+
+
+class QemuConfigController(ConfigController):
+
+    resource = "data/qemuconfig.ui"
+    config_to_widget_mapping = (
+        ("snapshot", "snapshot_checkbutton"),
+        ("deviceen", "deviceen_radiobutton"),
+        ("cdromen", "cdromen_radiobutton"),
+        ("use_virtio", "virtio_checkbutton"),
+        ("privatehda", "privatehda_checkbutton"),
+        ("privatehdb", "privatehdb_checkbutton"),
+        ("privatehdc", "privatehdc_checkbutton"),
+        ("privatehdd", "privatehdd_checkbutton"),
+        ("privatefda", "privatefda_checkbutton"),
+        ("privatefdb", "privatefdb_checkbutton"),
+        ("privatemtdblock", "privatemtdblock_checkbutton"),
+        ("kvm", "kvm_checkbutton"),
+        ("kvmsm", "kvmsm_checkbutton"),
+        ("novga", "novga_checkbutton"),
+        ("vga", "vga_checkbutton"),
+        ("vnc", "vnc_checkbutton"),
+        ("sdl", "sdl_checkbutton"),
+        ("portrait", "portrait_checkbutton"),
+        ("usbmode", "usbmode_checkbutton"),
+        ("rtc", "rtc_checkbutton"),
+        ("tdf", "tdf_checkbutton"),
+        ("serial", "serial_checkbutton"),
+        ("kernelenbl", "kernelenbl_checkbutton"),
+        ("initrdenbl", "initrdenbl_checkbutton"),
+        ("gdb", "gdb_checkbutton")
+    )
+    config_to_combo_mapping = (
+        ("boot", "boot_combobox"),
+        ("device", "device_combobox"),
+        ("argv0", "argv0_combobox"),
+        ("cpu", "cpu_combobox"),
+        ("machine", "machine_combobox"),
+        ("soundhw", "soundhw_combobox"),
+    )
+    hd_to_combo_mapping = (
+        ("hda", "hda_combobox"),
+        ("hdb", "hdb_combobox"),
+        ("hdc", "hdc_combobox"),
+        ("hdd", "hdd_combobox"),
+        ("fda", "fda_combobox"),
+        ("fdb", "fdb_combobox"),
+        ("mtdblock", "mtdblock_combobox")
+    )
+    config_to_filechooser_mapping = (
+        ("cdrom", "cdrom_filechooser"),
+        ("kernel", "kernel_filechooser"),
+        ("initrd", "initrd_filechooser"),
+        ("icon", "icon_filechooser")
+    )
+    config_to_spinint_mapping = (
+        ("smp", "smp_spinint"),
+        ("ram", "ram_spinint"),
+        ("kvmsmem", "kvmsmem_spinint"),
+        ("vncN", "vncN_spinint"),
+        ("gdbport", "gdbport_spinint")
+    )
+
+    def _combo_select(self, combo, value):
+        model = combo.get_model()
+        itr = model.get_iter_first()
+        while itr:
+            if model[itr][1] == value:
+                combo.set_active_iter(itr)
+                break
+            itr = model.iter_next(itr)
+
+    def _set_text(self, layout, cell, model, itr):
+        cell.set_property("text", model[itr][0].name)
+
+    def _build_images_model(self, model, images):
+        model.clear()
+        model.append(("", None))
+        itr = images.get_iter_first()
+        while itr:
+            image = images[itr][0]
+            model.append((image.name, image))
+            itr = images.iter_next(itr)
+
+    def setup_netwoks_cards(self):
+        vmplugs = self.get_object("plugsmodel")
+        vmplugs.clear()
+        for plug in self.original.plugs:
+            vmplugs.append((plug, ))
+
+        if self.gui.config.femaleplugs:
+            for sock in self.original.socks:
+                vmplugs.append((sock,))
+
+        def set_vlan(column, cell_renderer, model, itr):
+            vlan = model.get_path(itr)[0]
+            cell_renderer.set_property("text", vlan)
+
+        def set_connection(column, cell_renderer, model, iter):
+            link = model.get_value(iter, 0)
+            if link.mode == "hostonly":
+                conn = "Host"
+            elif link.sock:
+                conn = link.sock.brick.name
+            elif link.mode == "sock" and self.gui.config.femaleplugs:
+                conn = "Vde socket (female plug)"
+            else:
+                conn = "None"
+            cell_renderer.set_property("text", conn)
+
+        def set_model(column, cell_renderer, model, iter):
+            link = model.get_value(iter, 0)
+            cell_renderer.set_property("text", link.model)
+
+        def set_mac(column, cell_renderer, model, iter):
+            link = model.get_value(iter, 0)
+            cell_renderer.set_property("text", link.mac)
+
+        vlan_c = self.get_object("vlan_treeviewcolumn")
+        vlan_cr = self.get_object("vlan_cellrenderer")
+        vlan_c.set_cell_data_func(vlan_cr, set_vlan)
+        connection_c = self.get_object("connection_treeviewcolumn")
+        connection_cr = self.get_object("connection_cellrenderer")
+        connection_c.set_cell_data_func(connection_cr, set_connection)
+        model_c = self.get_object("model_treeviewcolumn")
+        model_cr = self.get_object("model_cellrenderer")
+        model_c.set_cell_data_func(model_cr, set_model)
+        mac_c = self.get_object("mac_treeviewcolumn")
+        mac_cr = self.get_object("mac_cellrenderer")
+        mac_c.set_cell_data_func(mac_cr, set_mac)
+
+    def get_view(self, gui):
+        self.gui = gui
+        cfg = self.original.config
+        go = self.get_object
+        argv0 = go("argv0_combobox")
+        model = argv0.get_model()
+        for found in tools.check_missing_qemu(gui.config.get("qemupath"))[1]:
+            if found.startswith("qemu-system-"):
+                model.append((found[12:], found))
+            else:
+                model.append((found, found))
+        self._build_images_model(go("imagesmodel"),
+                                 self.original.factory.disk_images)
+        for pname, wname in self.config_to_widget_mapping:
+            go(wname).set_active(cfg[pname])
+        for pname, wname in self.config_to_spinint_mapping:
+            go(wname).set_value(cfg[pname])
+        for pname, wname in self.config_to_combo_mapping:
+            self._combo_select(go(wname), cfg[pname])
+        for pname, wname in self.hd_to_combo_mapping:
+            self._combo_select(go(wname), cfg[pname].image)
+        for pname, wname in self.config_to_filechooser_mapping:
+            if cfg[pname]:
+                go(wname).set_filename(cfg[pname])
+        self.setup_netwoks_cards()
+        return self.get_object("box_vmconfig")
+
+    def _config_set_combo(self, config, name, combo):
+        model = combo.get_model()
+        itr = combo.get_active_iter()
+        if itr:
+            config[name] = model[itr][1]
+
+    def configure_brick(self, gui):
+        c = {}
+        for config_name, widget_name in self.config_to_widget_mapping:
+            c[config_name] = self.get_object(widget_name).get_active()
+        for pname, wname in self.config_to_spinint_mapping:
+            c[pname] = self.get_object(wname).get_value_as_int()
+        for pname, wname in self.config_to_combo_mapping:
+            self._config_set_combo(c, pname, self.get_object(wname))
+        for pname, wname in self.hd_to_combo_mapping:
+            self._config_set_combo(c, pname, self.get_object(wname))
+        for pname, wname in self.config_to_filechooser_mapping:
+            filename = self.get_object(wname).get_filename()
+            if filename:
+                c[pname] = filename
+        return
+
+    def on_deviceen_radiobutton_toggled(self, radiobutton):
+        self.get_object("device_combobox").set_sensitive(
+            radiobutton.get_active())
+
+    def on_cdromen_radiobutton_toggled(self, radiobutton):
+        self.get_object("cdrom_filechooser").set_sensitive(
+            radiobutton.get_active())
+
+    def on_newimage_button_clicked(self, button):
+        dialogs.choose_new_image(self.gui, self.gui.brickfactory)
+
+    def on_configimage_button_clicked(self, button):
+        parent = self.gui.get_object("main_win")
+        dialogs.DisksLibraryDialog(self.original.factory).show(parent)
+
+    def on_newempty_button_clicked(self, button):
+        dialogs.CreateImageDialog(self, self.brickfactory).show(
+            self.gui.get_object("main_win"))
+
+    def _update_cpu_combobox(self, output, combobox):
+        model = combobox.get_model()
+        model.clear()
+        lines = iter(output.splitlines())
+        if output.startswith("Available CPUs:"):
+            next(lines)
+        for line in lines:
+            if line.startswith(" "):
+                label = value = line.strip()
+            else:
+                _, v = line.split(None, 1)
+                label = value = v.strip("'[]")
+            itr = model.append((label, value))
+            if self.original.config["cpu"] == value:
+                combobox.set_active_iter(itr)
+
+    def _update_machine_combobox(self, output, combobox):
+        model = combobox.get_model()
+        model.clear()
+        lines = iter(output.splitlines())
+        next(lines)
+        for line in lines:
+            value, label = line.split(None, 1)
+            itr = model.append((label, value))
+            if self.original.config["machine"] == value:
+                combobox.set_active_iter(itr)
+
+    def on_argv0_combobox_changed(self, combobox):
+        itr = combobox.get_active_iter()
+        if itr:
+            argv0 = combobox.get_model()[itr][1]
+            exe = os.path.join(self.gui.config.get('qemupath'), argv0)
+            exit = utils.getProcessOutput(exe, ["-M", "?"])
+            cmb = self.get_object("machine_combobox")
+            exit.addCallback(self._update_machine_combobox, cmb)
+            exit.addErrback(log.err, "Error while retrieving machines types.")
+
+            exit = utils.getProcessOutput(exe, ["-cpu", "?"])
+            cmb = self.get_object("cpu_combobox")
+            exit.addCallback(self._update_cpu_combobox, cmb)
+            exit.addErrback(log.err, "Error while retrieving cpu model.")
+
+    def on_kvm_checkbutton_toggled(self, togglebutton):
+        if togglebutton.get_active():
+            if not self.original.homehost:
+                kvm = tools.check_kvm(self.gui.config.get("qemupath"))
+                self._kvm_toggle_all(kvm)
+                togglebutton.set_active(kvm)
+                if not kvm:
+                    log.error(_("No KVM support found on the system. "
+                        "Check your active configuration. "
+                        "KVM will stay disabled."))
+            else:
+                self._kvm_toggle_all(True)
+        else:
+            self._kvm_toggle_all(False)
+
+    def _kvm_toggle_all(self, enabled):
+        self.get_object("kvmsmem_spinint").set_sensitive(enabled)
+        self.get_object("kvmsm_checkbutton").set_sensitive(enabled)
+        # disable incompatible options
+        self.get_object("tdf_checkbutton").set_active(enabled)
+        self.get_object("tdf_checkbutton").set_sensitive(enabled)
+        self._disable_qemu_combos(not enabled)
+
+    def _disable_qemu_combos(self,active):
+        self.get_object("argv0_combobox").set_sensitive(active)
+        self.get_object("cpu_combobox").set_sensitive(active)
+        self.get_object("machine_combobox").set_sensitive(active)
+
+    def on_vnc_novga_checkbutton_toggled(self, togglebutton):
+        novga = self.get_object("novga_checkbutton")
+        vnc = self.get_object("vnc_checkbutton")
+        active = not togglebutton.get_active()
+        if togglebutton is novga:
+            vnc.set_sensitive(active)
+            self.get_object("vncN_spinint").set_sensitive(active)
+            self.get_object("label17").set_sensitive(active)
+        else:
+            novga.set_sensitive(active)
+
+    def on_usbmode_checkbutton_toggled(self, togglebutton):
+        active = togglebutton.get_active()
+        if active and not os.access("/dev/bus/usb", os.W_OK):
+            log.error(_("Cannot access /dev/bus/usb. Check user privileges."))
+            togglebutton.set_active(False)
+        else:
+            self.original.set(usbmode=active)
+            if not active:
+                self.original.set(usbdevlist=[])
+            self.get_object("bind_button").set_sensitive(active)
+
+    def on_bind_button_clicked(self, button):
+
+        def show_dialog(output):
+            dialogs.UsbDevWindow(self.gui, output.strip(), self.original).show(
+                self.gui.get_object("main_win"))
+
+        log.msg("Searching USB devices")
+        devices_d = utils.getProcessOutput("lsusb", env=os.environ)
+        devices_d.addCallback(show_dialog)
+        devices_d.addErrback(log.err, "Error while retrieving usb devices.")
+        self.gui.user_wait_action(devices_d)
+
+    def _remove_link(self, link, model):
+        if link.brick.proc and link.hotdel:
+            # XXX: why checking hotdel? is a method it is always true or raise
+            # an exception if it is not defined
+            link.hotdel()
+        link.brick.remove_plug(link)
+        itr = model.get_iter_first()
+        while itr:
+            link = model.get_value(itr, 0)
+            if link is link:
+                model.remove(itr)
+                break
+            itr = model.iter_next(itr)
+
+    def ask_remove_link(self, link):
+        question = _("Do you really want to delete the network interface?")
+        model = self.get_object("plugsmodel")
+        remove = lambda _: self._remove_link(link, model)
+        dialogs.ConfirmDialog(question, on_yes=remove).show(
+            self.gui.get_object("main_win"))
+
+    def on_networkcards_treeview_key_press_event(self, treeview, event):
+        if gtk.gdk.keyval_from_name("Delete") == event.keyval:
+            link = get_selection(treeview)
+            if link is not None:
+                self.ask_remove_link(link)
+                return True
+
+    def on_networkcards_treeview_button_release_event(self, treeview, event):
+        if event.button == 3:
+            link = get_element_at_click(treeview, event)
+            if link:
+                interfaces.IMenu(link).popup(event.button, event.time, self,
+                                             self.gui)
+                return True
+
+    def on_addplug_button_clicked(self, button):
+        model = self.get_object("plugsmodel")
+        parent = self.gui.get_object("main_win")
+        dialogs.AddEthernetDialog(self.gui.brickfactory, self.original,
+                                  model).show(parent)
+
+    def on_kernelenbl_checkbutton_toggled(self, togglebutton):
+        self.get_object("kernel_filechooser").set_sensitive(
+            togglebutton.get_active())
+
+    def on_initrdenbl_checkbutton_toggled(self, togglebutton):
+        self.get_object("initrd_filechooser").set_sensitive(
+            togglebutton.get_active())
+
+    def on_gdb_checkbutton_toggled(self, togglebutton):
+        self.get_object("gdbport_spinint").set_sensitive(
+            togglebutton.get_active())
+
+    def on_setdefaulticon_button_clicked(self, button):
+        self.get_object("qemuicon").set_from_pixbuf(
+            graphics.pixbuf_for_brick_type("qemu"))
+
+
 def config_panel_factory(context):
     type = context.get_type()
     if type == "Event":
@@ -694,6 +1074,8 @@ def config_panel_factory(context):
         return TunnelClientConfigController(context)
     elif type == "TunnelListen":
         return TunnelListenConfigController(context)
+    elif type == "Qemu":
+        return QemuConfigController(context)
 
 interfaces.registerAdapter(config_panel_factory, base.Base,
                            interfaces.IConfigController)

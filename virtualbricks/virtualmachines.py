@@ -80,6 +80,7 @@ class VMPlug(Wrapper):
 class VMSock(Wrapper):
 
     model = "rtl8139"
+    # mac = ""
 
     def __init__(self, sock):
         Wrapper.__init__(self, sock)
@@ -89,18 +90,31 @@ class VMSock(Wrapper):
         return
 
 
-class VMPlugHostonly(VMPlug):
+class _FakeBrick:
 
+    name = "hostonly"
+
+    def poweron(self):
+        return defer.succeed(self)
+
+
+class _HostonlySock:
+    """This is dummy implementation of a VMSock used with VirtualMachines that
+    want a plug that is not connected to nothing. The instance is a singleton,
+    but not enforced anyhow, maybe a better solution is to have a different
+    hostonly socket for each plug and let the brick choose which socket should
+    be saved and which not."""
+
+    nickname = "_hostonly"
+    path = "?"
+    model = "?"
+    mac = "?"
     mode = "hostonly"
+    brick = _FakeBrick()
+    plugs = []
 
-    def connect(self, endpoint):
-        pass
 
-    def configured(self):
-        return True
-
-    def connected(self):
-        return True
+hostonly_sock = _HostonlySock()
 
 
 class Image:
@@ -642,10 +656,7 @@ class VirtualMachine(bricks.Brick):
                                                  self.config["ram"])]
 
         for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
-            if link.mode == "hostonly":
-                txt.append("eth%d: Host" % i)
-            elif link.sock:
-                txt.append("eth%d: %s" % (i, link.sock.nickname))
+            txt.append("eth%d: %s" % (i, link.sock.nickname))
         return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
@@ -668,11 +679,12 @@ class VirtualMachine(bricks.Brick):
         self._associate_disk()  # XXX: really useful?
         bricks.Brick.on_config_changed(self)
 
-    def set(self, attrs):
-        bricks.Brick.set(self, attrs)
+    def set(self, attrs=None, **kwds):
+        bricks.Brick.set(self, attrs, **kwds)
         self._associate_disk()  # XXX: really useful?
 
     def configured(self):
+        # return all([p.configured() for p in self.plugs])
         for p in self.plugs:
             if p.sock is None and p.mode == 'vde':
                 return False
@@ -840,9 +852,8 @@ class VirtualMachine(bricks.Brick):
             sock.model = model
         return sock
 
-    def add_plug(self, sock=None, mac=None, model=None):
-        p = self.factory.new_plug(self)
-        plug = VMPlugHostonly(p) if sock == "_hostonly" else VMPlug(p)
+    def add_plug(self, sock, mac=None, model=None):
+        plug = VMPlug(self.factory.new_plug(self))
         self.plugs.append(plug)
         if sock:
             plug.connect(sock)

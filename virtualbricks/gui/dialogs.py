@@ -84,7 +84,8 @@ import tempfile
 import gtk
 from twisted.internet import utils
 
-from virtualbricks import version, tools, _compat, console, settings
+from virtualbricks import (version, tools, _compat, console, settings,
+                           virtualmachines)
 from virtualbricks.gui import graphics
 
 
@@ -405,101 +406,115 @@ class ChangePasswordDialog(Window):
         self.window.response(gtk.RESPONSE_OK)
 
 
-class EthernetDialog(Window):
+class BaseEthernetDialog(Window):
 
     resource = "data/ethernetdialog.ui"
+    name = "EthernetDialog"
 
-    def __init__(self, gui, brick, plug=None):
+    def __init__(self, factory, brick):
         Window.__init__(self)
-        self.gui = gui
+        self.factory = factory
         self.brick = brick
-        self.plug = plug
-        socks = self.get_object("sock_model")
-        socks.append(("Host-only ad hoc network", "_hostonly"))
-        if settings.femaleplugs:
-            socks.append(("Vde socket", "_sock"))
-        # TODO: can this operation made only once?
-        for sock in gui.brickfactory.socks:
-            if (sock.brick.get_type().startswith('Switch') or
-                    settings.femaleplugs):
-                socks.append((sock.nickname, sock.nickname))
-
-        if plug:
-            self.get_object("title_label").set_label(
-                "<b>Edit ethernet interface</b>")
-            self.get_object("ok_button").set_property("label", gtk.STOCK_OK)
-            self.get_object("mac_entry").set_text(plug.mac)
-            model = self.get_object("netmodel_model")
-            i = model.get_iter_first()
-            while i:
-                if model.get_value(i, 0) == plug.model:
-                    self.get_object("model_combo").set_active_iter(i)
-                    break
-                i = model.iter_next(i)
-
-            i = socks.get_iter_first()
-            while i:
-                v = socks.get_value(i, 1)
-                if ((plug.mode == "sock" and v == "_sock") or
-                        (plug.mode == "hostonly" and v == "_hostonly") or
-                        (plug.sock and plug.sock.nickname == v)):
-                    self.get_object("sock_combo").set_active_iter(i)
-                    break
-                i = socks.iter_next(i)
-        else:
-            self.get_object("sock_combo").set_active(0)
 
     def is_valid(self, mac):
         return tools.mac_is_valid(mac)
 
-    def add_plug(self):
-        combo = self.get_object("sock_combo")
-        sockname = combo.get_model().get_value(combo.get_active_iter(), 1)
-        if sockname == "_sock":
-            plug = self.brick.add_sock()
-        elif sockname == "_hostonly":
-            plug = self.brick.add_plug(sockname)
+    def setup(self):
+        socks = self.get_object("sock_model")
+        socks.append(("Host-only ad hoc network",
+                      virtualmachines.hostonly_sock))
+        if settings.femaleplugs:
+            socks.append(("Vde socket", "_sock"))
+            for sock in self.factory.socks:
+                socks.append((sock.nickname, sock))
         else:
-            plug = self.brick.add_plug()
-            for sock in self.gui.brickfactory.socks:
-                if sock.nickname == sockname:
-                    plug.connect(sock)
-                    break
-        combo = self.get_object("model_combo")
-        plug.model = combo.get_model().get_value(combo.get_active_iter(), 0)
-        mac = self.get_object("mac_entry").get_text()
-        if not self.is_valid(mac):
-            log.error("MAC address %s is not valid, generating a random one",
-                      mac)
-            mac = tools.random_mac()
-        plug.mac = mac
+            for sock in self.factory.socks:
+                if sock.brick.get_type().startswith("Switch"):
+                    socks.append((sock.nickname, sock))
 
-        self.gui.vmplugs.append((plug, ))
+    def show(self, parent=None):
+        Window.show(self, parent)
 
     def on_randomize_button_clicked(self, button):
         self.get_object("mac_entry").set_text(tools.random_mac())
 
     def on_EthernetDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            plug = self.plug
-            if plug:
-                if plug.mode == "sock":
-                    self.brick.socks.remove(plug)
-                else:
-                    self.brick.plugs.remove(plug)
-
-                get_value = self.gui.vmplugs.get_value
-                iter_next = self.gui.vmplugs.iter_next
-                i = self.gui.vmplugs.get_iter_first()
-                while i:
-                    l = get_value(i, 0)
-                    if plug is l:
-                        self.gui.vmplugs.remove(i)
-                        break
-                    i = iter_next(i)
-
-            self.add_plug()
+            combo = self.get_object("sock_combo")
+            sock = combo.get_model().get_value(combo.get_active_iter(), 1)
+            combo = self.get_object("model_combo")
+            model = combo.get_model().get_value(combo.get_active_iter(), 0)
+            mac = self.get_object("mac_entry").get_text()
+            if not self.is_valid(mac):
+                log.error("MAC address %s is not valid, generating a random "
+                          "one", mac)
+                mac = tools.random_mac()
+            self.do(sock, mac, model)
         dialog.destroy()
+
+
+class AddEthernetDialog(BaseEthernetDialog):
+
+    def __init__(self, factory, brick, model):
+        BaseEthernetDialog.__init__(self, factory, brick)
+        self.model = model
+
+    def show(self, parent=None):
+        self.setup()
+        self.get_object("sock_combo").set_active(0)
+        BaseEthernetDialog.show(self, parent)
+
+    def do(self, sock, mac, model):
+        if sock == "_sock":
+            link = self.brick.add_sock(mac, model)
+        else:
+            link = self.brick.add_plug(sock, mac, model)
+        self.model.append((link, ))
+
+
+class EditEthernetDialog(BaseEthernetDialog):
+
+    def __init__(self, factory, brick, plug):
+        BaseEthernetDialog.__init__(self, factory, brick)
+        self.plug = plug
+
+    def show(self, parent=None):
+        self.setup()
+        self.get_object("title_label").set_label(
+            "<b>Edit ethernet interface</b>")
+        self.get_object("ok_button").set_property("label", gtk.STOCK_OK)
+        self.get_object("mac_entry").set_text(self.plug.mac)
+        model = self.get_object("netmodel_model")
+        itr = model.get_iter_first()
+        while itr:
+            if model.get_value(itr, 0) == self.plug.model:
+                self.get_object("model_combo").set_active_iter(itr)
+                break
+            itr = model.iter_next(itr)
+
+        socks = self.get_object("sock_model")
+        if self.plug.mode == "sock" and settings.femaleplugs:
+            self.get_object("sock_combo").set_active(1)
+        else:
+            itr = socks.get_iter_first()
+            while itr:
+                if self.plug.sock is socks.get_value(itr, 1):
+                    self.get_object("sock_combo").set_active_iter(itr)
+                    break
+                itr = socks.iter_next(itr)
+        BaseEthernetDialog.show(self, parent)
+
+    def do(self, sock, mac, model):
+        if sock == "_sock":
+            log.error("Not implemented")
+        else:
+            if self.plug.configured():
+                self.plug.disconnect()
+            self.plug.connect(sock)
+            if mac:
+                self.plug.mac = mac
+            if model:
+                self.plug.model = model
 
 
 class ConfirmDialog(Window):
@@ -1000,6 +1015,6 @@ class CreateImageDialog(Window):
                 log.msg("Invalid value for unit combo, assuming Mb")
                 unit = "M"
             pathname = "%s/%s.%s" % (folder, name, fmt)
-            self.gui.user_wait_action(self.create_image(name, pathname, size,
-                                                        unit))
+            self.gui.user_wait_action(self.create_image(name, pathname, fmt,
+                                                        size, unit))
         dialog.destroy()

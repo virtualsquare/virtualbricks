@@ -55,6 +55,12 @@ class Plug:
             self._antiloop = False
             return defer.fail(errors.NotConnectedError())
 
+        # special case where a brick (vm) is plugged to itself:
+        # brick -> plug -> sock <- brick
+        if self.sock.brick is self.brick:
+            self._antiloop = False
+            return defer.succeed(self.brick)
+
         def clear_antiloop(passthru):
             self._antiloop = False
             return passthru

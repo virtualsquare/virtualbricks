@@ -65,7 +65,7 @@ class Switch(bricks.Brick):
                                 "--mgmtgroup": "mgmtgroup",
                                 "-s": self.path,
                                 "-M": self.console}
-        sock = self.factory.new_sock(self, self.name + "_port")
+        sock = factory.new_sock(self, self.name + "_port")
         sock.path = self.path()
         self.socks.append(sock)
 
@@ -128,7 +128,7 @@ class SwitchWrapper(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.socks.append(self.factory.new_sock(self, self.name + "_port"))
+        self.socks.append(factory.new_sock(self, self.name + "_port"))
 
     def poweron(self):
         if self.proc is not None:
