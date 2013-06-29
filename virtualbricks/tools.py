@@ -24,6 +24,7 @@ import random
 import re
 import functools
 import tempfile
+import struct
 
 from virtualbricks import _compat
 
@@ -125,3 +126,34 @@ class Tempfile:
         except OSError, e:
             if e.errno != errno.ENOENT:
                 raise
+
+
+HEADER_FMT = r">BBBBI"
+COW_MAGIC = "MOOO"[::-1]
+COW_SIZE = 1024
+QCOW_MAGIC = "QFI\xfb"
+QCOW_HEADER_FMT = r">QI"
+
+
+def get_backing_file_from_cow(fp):
+    data = fp.read(COW_SIZE)
+    return data.rstrip("\x00")
+
+def get_backing_file_from_qcow(fp):
+    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
+    if size == 0:
+        return ""
+    else:
+        fp.seek(offset)
+        return fp.read(size)
+
+def get_backing_file(fp):
+    data = fp.read(8)
+    m1, m2, m3, m4, version = struct.unpack(HEADER_FMT, data)
+    magic = "".join(map(chr, (m1, m2, m3, m4)))
+    if magic == COW_MAGIC:
+        return get_backing_file_from_cow(fp)
+    elif magic == QCOW_MAGIC and version in (1, 2):
+        return get_backing_file_from_qcow(fp)
+    raise RuntimeError("Unknow type")
+
