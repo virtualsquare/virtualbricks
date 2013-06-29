@@ -1,6 +1,5 @@
 import os.path
 import errno
-import struct
 import copy
 import StringIO
 
@@ -9,7 +8,7 @@ from twisted.internet import defer
 from twisted.python import failure
 
 from virtualbricks import (link, virtualmachines as vm, errors, tests,
-                           settings, configfile)
+                           settings, configfile, tools)
 from virtualbricks.tests import (stubs, test_link, successResultOf,
                                  failureResultOf)
 
@@ -183,16 +182,6 @@ class TestPlugWithHostOnlySock(unittest.TestCase):
         self.assertIs(plug.sock, vm.hostonly_sock)
 
 
-HELLO = "/hello/backingfile"
-COW_HEADER = "OOOM\x00\x00\x00\x02" + HELLO + "\x00" * 1006
-QCOW_HEADER = "QFI\xfb\x00\x00\x00\x01" + struct.pack(">Q", 20) + \
-        struct.pack(">I", len(HELLO)) + HELLO
-QCOW_HEADER0 = "QFI\xfb\x00\x00\x00\x01" + "\x00" * 12
-QCOW_HEADER2 = "QFI\xfb\x00\x00\x00\x02" + struct.pack(">Q", 20) + \
-        struct.pack(">I", len(HELLO)) + HELLO
-UNKNOWN_HEADER = "MOOO\x00\x00\x00\x02"
-
-
 class ImageStub:
 
     path = "cucu"
@@ -243,31 +232,6 @@ class TestDisk(unittest.TestCase):
         self.vm = stubs.VirtualMachineStub(self.factory, "test_vm")
         self.disk = DiskStub(self.vm, "hda")
 
-    def test_backing_file_from_cow(self):
-        sio = StringIO.StringIO(COW_HEADER[8:])
-        backing_file = self.disk._get_backing_file_from_cow(sio)
-        self.assertEqual(backing_file, HELLO)
-
-    def test_backing_file_from_qcow0(self):
-        sio = StringIO.StringIO(QCOW_HEADER0[8:])
-        backing_file = self.disk._get_backing_file_from_qcow(sio)
-        self.assertEqual(backing_file, "")
-
-    def test_backing_file_from_qcow(self):
-        sio = StringIO.StringIO(QCOW_HEADER)
-        sio.seek(8)
-        backing_file = self.disk._get_backing_file_from_qcow(sio)
-        self.assertEqual(backing_file, HELLO)
-
-    def test_backing_file(self):
-        for header in COW_HEADER, QCOW_HEADER, QCOW_HEADER2:
-            sio = StringIO.StringIO(header)
-            backing_file = self.disk._get_backing_file(sio)
-            self.assertEqual(backing_file, "/hello/backingfile")
-
-        sio = StringIO.StringIO(UNKNOWN_HEADER)
-        self.assertRaises(RuntimeError, self.disk._get_backing_file, sio)
-
     def test_create_cow(self):
         settings.set("qemupath", "/supercali")
         failureResultOf(self, self.disk._create_cow("name"),
@@ -296,7 +260,7 @@ class TestDisk(unittest.TestCase):
     def test_check_base(self):
         err = self.assertRaises(IOError, self.disk._check_base, "/montypython")
         self.assertEqual(err.errno, errno.ENOENT)
-        self.disk._get_backing_file = lambda _: NULL()
+        self.patch(tools, "get_backing_file", lambda _: NULL())
         self.disk._create_cow = lambda _: defer.succeed(None)
         self.disk.image = ImageStub()
         cowname = self.mktemp()
@@ -305,7 +269,7 @@ class TestDisk(unittest.TestCase):
         result = []
         self.disk._check_base(cowname).addCallback(result.append)
         self.assertEqual(result, [cowname])
-        self.disk._get_backing_file = lambda _: FULL()
+        self.patch(tools, "get_backing_file", lambda _: FULL())
         del result[:]
         cowname = self.mktemp()
         fp = open(cowname, "w")

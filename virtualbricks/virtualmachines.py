@@ -18,7 +18,6 @@
 
 import os
 import errno
-import struct
 import re
 import datetime
 import shutil
@@ -35,11 +34,6 @@ if False:
 
 __metaclass__ = type
 log = _compat.getLogger(__name__)
-HEADER_FMT = r">BBBBI"
-COW_MAGIC = "MOOO"[::-1]
-COW_SIZE = 1024
-QCOW_MAGIC = "QFI\xfb"
-QCOW_HEADER_FMT = r">QI"
 
 
 class Wrapper:
@@ -328,31 +322,9 @@ class Disk:
         exit.addCallback(lambda _: cowname)
         return exit
 
-    def _get_backing_file_from_cow(self, fp):
-        data = fp.read(COW_SIZE)
-        return data.rstrip("\x00")
-
-    def _get_backing_file_from_qcow(self, fp):
-        offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
-        if size == 0:
-            return ""
-        else:
-            fp.seek(offset)
-            return fp.read(size)
-
-    def _get_backing_file(self, fp):
-        data = fp.read(8)
-        m1, m2, m3, m4, version = struct.unpack(HEADER_FMT, data)
-        magic = "".join(map(chr, (m1, m2, m3, m4)))
-        if magic == COW_MAGIC:
-            return self._get_backing_file_from_cow(fp)
-        elif magic == QCOW_MAGIC and version in (1, 2):
-            return self._get_backing_file_from_qcow(fp)
-        raise RuntimeError("Unknow type")
-
     def _check_base(self, cowname):
         with open(cowname) as fp:
-            backing_file = self._get_backing_file(fp)
+            backing_file = tools.get_backing_file(fp)
         if backing_file == self.get_base():
             return defer.succeed(cowname)
         else:
