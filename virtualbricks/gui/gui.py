@@ -1046,6 +1046,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	"""                                                          """
 	""" ******************************************************** """
 
+	def on_new_image_menuitem_activate(self, menuitem):
+		dialogs.choose_new_image(self, self.brickfactory)
+
+	def on_image_library_menuitem_activate(self, menuitem):
+		parent = self.get_object("main_win")
+		dialogs.DisksLibraryDialog(self.brickfactory).show(parent)
+
 	def ask_remove_brick(self, brick):
 		if brick.proc is not None:
 			other = _("\nThe brick is still running, it will be "
