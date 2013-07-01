@@ -112,85 +112,40 @@ hostonly_sock = _HostonlySock()
 
 
 class Image:
-    """
-    locked if already in use as read/write non-cow.
-    Disk must associate to this, and must check the locked flag
-    before use.
-    """
 
-    master = None
     readonly = False
+    master = None
 
-    def __init__(self, name, path, description="", host=None):
-        self.name = name
-        self.path = path
+    def __init__(self, path, description=""):
+        self.path = os.path.abspath(path)
         if description:
             self.set_description(description)
-        self.vmdisks = []
-        self.host = host
 
-    def set_readonly(self, value):
-        self.readonly = value
-
-    def is_readonly(self):
-        return self.readonly
-
-    def rename(self, newname):
-        self.name = newname
-        for vmd in self.vmdisks:
-            vmd.VM.config["base" + vmd.device] = self.name
-
-    def set_master(self, vmdisk):
-       # XXX: Change name to something more useful
-        if self.master is None:
-            self.master = vmdisk
-        if self.master == vmdisk:
-            return True
-        else:
-            return False
-
-    def get_master_name(self):
-        if self.master is not None:
-            return self.master.VM.name
-        return ""
-
-    def add_vmdisk(self, vmdisk):
-        # XXX: O(n) complexity, a dict could fit?
-        if vmdisk not in self.vmdisks:
-            self.vmdisks.append(vmdisk)
-        # for vmd in self.vmdisks:
-        #     if vmd == vmdisk:
-        #         return
-        # self.vmdisks.append(vmdisk)
-
-    def del_vmdisk(self, vmdisk):
-        self.vmdisks.remove(vmdisk)
-        if len(self.vmdisks) == 0 or self.master == vmdisk:
-            self.master = None
-
-    def description_file(self):
+    def _description_file(self):
         return self.path + ".vbdescr"
 
     def set_description(self, descr):
         try:
-            with open(self.description_file(), "w") as fp:
+            with open(self._description_file(), "w") as fp:
                 fp.write(descr)
         except IOError:
-            return False
-        return True
+            pass
 
     def get_description(self):
         try:
-            with open(self.description_file()) as fp:
+            with open(self._description_file()) as fp:
                 return fp.read()
         except IOError:
             return ""
 
-    def get_cows(self):
-        return len([vmd for vmd in self.vmdisks if vmd.cow])
+    description = property(get_description, set_description)
 
-    def get_users(self):
-        return len(self.vmdisks)
+    @property
+    def name(self):
+        return os.path.basename(self.path)
+
+    def basename(self):
+        return os.path.basename(self.path)
 
     def get_size(self):
         if not self.exists():
@@ -204,8 +159,22 @@ class Image:
     def exists(self):
         return os.path.exists(self.path)
 
-    def get_path(self):
-        return self.path
+    def acquire(self, disk):
+        if self.master in (None, disk):
+            self.master = disk
+        else:
+            raise errors.LockedImageError(self, self.master)
+
+    def release(self, disk):
+        if self.master is disk:
+            self.master = None
+        else:
+            raise errors.LockedImageError(self, self.master)
+
+    def repr_master(self):
+        if self.master is None:
+            return ""
+        return repr(self.master)
 
 
 def move(src, dst):
@@ -245,51 +214,17 @@ class Disk:
         return d
 
     def set_image(self, image):
-        ''' Old virtualbricks (0.4) will pass a full path here, new behavior
-            is to pass the image nickname '''
-        if len(image) == 0:
-            img = None
-            if self.image:
-                self.image.vmdisks.remove(self)
-                self.image = None
-            return
+        self.image = image
 
-        ''' Try to look for image by nickname '''
-        img = self.VM.factory.get_image_by_name(image)
-        if img:
-            self.image = img
-            img.add_vmdisk(self)
-            self.VM.config["base" + self.device] = img.name
-            if (not self.cow and not self.VM.config["snapshot"] and
-                    self.image.set_master(self)):
-                log.debug("Machine %s acquired master lock on image %s",
-                          self.VM.name, self.image.name)
-            return True
+    def acquire(self):
+        if self.image and not self.cow and not self.VM.config["snapshot"]:
+            self.image.acquire(self)
 
-        ''' If that fails: rollback to old behavior, and search for an already
-            registered image under that path. '''
-        if img is None:
-            img = self.VM.factory.get_image_by_path(image)
+    def release(self):
+        if self.image and not self.cow and not self.VM.config["snapshot"]:
+            self.image.release(self)
 
-        ''' If that fails: check for path existence and create a new image based
-            there. It may be that we are using new method for the first time. '''
-        if img is None and os.access(image, os.R_OK):
-            img = self.VM.factory.new_disk_image(os.path.basename(image), image)
-        if img is None:
-            return False
-
-        self.image = img
-        img.add_vmdisk(self)
-        self.VM.config["base" + self.device] = img.name
-        if not self.cow and not self.VM.config["snapshot"]:
-            if self.image.set_master(self):
-                log.debug("Machine %s acquired master lock on image %s",
-                          self.VM.name, self.image.name)
-            else:
-                log.warning("ERROR SETTING MASTER!!")
-        return True
-
-    def get_base(self):
+    def _get_base(self):
         return self.image.path
 
     def _sync(self, ret):
@@ -313,8 +248,8 @@ class Disk:
             return defer.fail(failure.Failure(errors.BadConfigError(msg)))
 
         log.msg("Creating a new private COW from %s base image." %
-                self.get_base())
-        args = ["create", "-b", self.get_base(), "-f",
+                self._get_base())
+        args = ["create", "-b", self._get_base(), "-f",
                 settings.get("cowfmt"), cowname]
         exe = os.path.join(settings.get("qemupath"), "qemu-img")
         exit = utils.getProcessOutputAndValue(exe, args, os.environ)
@@ -325,7 +260,7 @@ class Disk:
     def _check_base(self, cowname):
         with open(cowname) as fp:
             backing_file = tools.get_backing_file(fp)
-        if backing_file == self.get_base():
+        if backing_file == self._get_base():
             return defer.succeed(cowname)
         else:
             dt = datetime.datetime.now()
@@ -371,7 +306,7 @@ class Disk:
         new = type(self)(self.VM, self.device)
         new.sync_cmd = self.sync_cmd
         if self.image is not None:
-            new.set_image(self.image.name)
+            new.set_image(self.image)
         return new
 
     def __repr__(self):
@@ -388,13 +323,6 @@ VM_COMMAND_BUILDER = {
         "-m": "ram",
         "-boot": "boot",
         # numa not supported
-        "#basefda": "basefda",
-        "#basefdb": "basefdb",
-        "#basehda": "basehda",
-        "#basehdb": "basehdb",
-        "#basehdc": "basehdc",
-        "#basehdd": "basehdd",
-        "#basemtdblock": "basemtdblock",
         "#privatehda": "privatehda",
         "#privatehdb": "privatehdb",
         "#privatehdc": "privatehdc",
@@ -502,32 +430,25 @@ class VirtualMachineConfig(bricks.Config):
                   # additional media
                   "use_virtio": bricks.Boolean(False),
 
-                  "basehda": bricks.String(""),
-                  "hda": bricks.Object(None),
+                  "hda": bricks.String(""),
                   "privatehda": bricks.Boolean(False),
 
-                  "basehdb": bricks.String(""),
-                  "hdb": bricks.Object(None),
+                  "hdb": bricks.String(""),
                   "privatehdb": bricks.Boolean(False),
 
-                  "basehdc": bricks.String(""),
-                  "hdc": bricks.Object(None),
+                  "hdc": bricks.String(""),
                   "privatehdc": bricks.Boolean(False),
 
-                  "basehdd": bricks.String(""),
-                  "hdd": bricks.Object(None),
+                  "hdd": bricks.String(""),
                   "privatehdd": bricks.Boolean(False),
 
-                  "basefda": bricks.String(""),
-                  "fda": bricks.Object(None),
+                  "fda": bricks.String(""),
                   "privatefda": bricks.Boolean(False),
 
-                  "basefdb": bricks.String(""),
-                  "fdb": bricks.Object(None),
+                  "fdb": bricks.String(""),
                   "privatefdb": bricks.Boolean(False),
 
-                  "basemtdblock": bricks.String(""),
-                  "mtdblock": bricks.Object(None),
+                  "mtdblock": bricks.String(""),
                   "privatemtdblock": bricks.Boolean(False),
 
                   # system and machine
@@ -587,23 +508,40 @@ class VirtualMachine(bricks.Brick):
     term_command = "unixterm"
     # sudo_factory = QemuSudo
     command_builder = VM_COMMAND_BUILDER
-
-    def set_name(self, name):
-        self._name = name
-        self._newbrick_changes()  # XXX: why?
-
-    name = property(bricks.Brick.get_name, set_name)
     config_factory = VirtualMachineConfig
+
+    for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
+        s = """def cbset_{0}(self, value):
+            image = self.factory.get_image_by_path(value)
+            self.disks["{0}"].set_image(image)""".format(hd)
+        exec s
+    del hd
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.terminal = "unixterm"
         self.config["name"] = name
-        self._newbrick_changes()
+        self.disks = {}
+        for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
+            disk = Disk(self, hd)
+            self.disks[hd] = disk
+            if self.config[hd]:
+                image = factory.get_image_by_path(self.config[hd])
+                disk.set_image(image)
 
     def poweron(self, snapshot=""):
+        def acquire(passthru):
+            self.acquire()
+            return passthru
+
+        def release(passthru):
+            self.release()
+            return passthru
+
         self.config["loadvm"] = snapshot
-        return bricks.Brick.poweron(self)
+        d = bricks.Brick.poweron(self)
+        d.addCallback(acquire)
+        self._exited_d.addBoth(release)
+        return d
 
     def poweroff(self, kill=False, term=False):
         if self.proc is None:
@@ -612,13 +550,10 @@ class VirtualMachine(bricks.Brick):
             log.msg("Sending powerdown to %r" % self)
             self.send("system_powerdown\n")
             return self._exited_d
-        elif term:
+        if term:
             return bricks.Brick.poweroff(self)
         else:
             return bricks.Brick.poweroff(self, kill)
-
-    # def process_exited(self, proc, status):
-    #     bricks.Brick.process_exited(self, proc, status)
 
     def get_basefolder(self):
         return self.factory.get_basefolder()
@@ -638,22 +573,6 @@ class VirtualMachine(bricks.Brick):
             self.send("usb_add host:" + d + "\n")
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
-
-    def _associate_disk(self):
-        for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            disk = self.config[hd]
-            if ((disk.image is not None and
-                    self.config["base" + hd] != disk.image.name) or
-                    (disk.image is None and self.config["base" + hd])):
-                disk.set_image(self.config["base" + hd])
-
-    def on_config_changed(self):
-        self._associate_disk()  # XXX: really useful?
-        bricks.Brick.on_config_changed(self)
-
-    def set(self, attrs=None, **kwds):
-        bricks.Brick.set(self, attrs, **kwds)
-        self._associate_disk()  # XXX: really useful?
 
     def configured(self):
         # return all([p.configured() for p in self.plugs])
@@ -689,29 +608,11 @@ class VirtualMachine(bricks.Brick):
         return d
 
     def _get_devices(self,):
-        devs = ["hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock"]
-        return [self._get_disk_args(idx, dev) for idx, dev in enumerate(devs)
-                if self.config["base" + dev]]
+        devs = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
+        return [self._get_disk_args(i, self.disks[dev]) for i, dev in
+                enumerate(devs) if self.config[dev]]
 
-    def _get_disk_args(self, idx, dev):
-        disk = self.config[dev]
-        # disk.cow = self.config["private" + dev]
-        if not disk.cow and not disk.readonly():
-            if not disk.image.readonly:
-                if disk.image.set_master(disk):
-                    log.debug(_("Machine %s acquired master lock on "
-                                "image %s"), self.name, disk.image.name)
-                else:
-                    fail = failure.Failure(errors.DiskLockedError(
-                        _("Disk image %s already in use."),
-                        disk.image.name))
-                    return defer.fail(fail)
-            else:
-                fail = failure.Failure(errors.DiskLockedError(
-                    _("Disk image %s is marked as readonly and you are"
-                      "not using private cow or snapshot mode."),
-                    disk.image.name))
-                raise defer.fail(fail)
+    def _get_disk_args(self, idx, disk):
         if self.config["use_virtio"]:
             def cb(disk_name):
                 return ["-drive", "file=%s,if=virtio,index=%s" %
@@ -730,7 +631,6 @@ class VirtualMachine(bricks.Brick):
         res.extend(list(self.build_cmd_line()))
         if not self.has_graphic() or self.config["novga"]:
             res.extend(["-display", "none"])
-        self.__clear_machine_vmdisks()
         for disk_args in results:
             res.extend(disk_args)
         if self.config["kernelenbl"] and self.config["kernel"]:
@@ -794,21 +694,8 @@ class VirtualMachine(bricks.Brick):
                     "stdio,id=mon_cons,signal=off"])
         return res
 
-    def __clear_machine_vmdisks(self):
-        for image in self.factory.disk_images:
-            for vmdisk in image.vmdisks:
-                if vmdisk.VM is self:
-                    image.del_vmdisk(vmdisk)
-                    log.debug("VM disk lock released")
-                    return
-
     def has_graphic(self):
         return False
-
-    def _newbrick_changes(self):
-        for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            self.config[hd] = Disk(self, hd)
-        self._associate_disk()
 
     def add_sock(self, mac=None, model=None):
         s = self.factory.new_sock(self)
@@ -851,3 +738,24 @@ class VirtualMachine(bricks.Brick):
     def commit_disks(self, args):
         # XXX: fixme
         self.send("commit all\n")
+
+    def acquire(self):
+        """Acquire locks on images if needed."""
+        log.debug("Aquiring disk locks")
+        devices = ["hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock"]
+        acquired = []
+        while devices:
+            dev = devices.pop()
+            try:
+                self.disks[dev].acquire()
+            except errors.LockedImageError:
+                for _dev in acquired:
+                    self.disks[_dev].release()
+                raise
+            else:
+                acquired.append(dev)
+
+    def release(self):
+        log.debug("Releasing disk locks")
+        for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
+            self.disks[hd].release()

@@ -140,28 +140,20 @@ class BrickFactory(object):
     # [   Disk Images  ]
     # [[[[[[[[[]]]]]]]]]
 
-    def new_disk_image(self, name, path, description="", host=None):
+    def new_disk_image(self, path, description=""):
         """Add one disk image to the library."""
 
-        # XXX: assert that name and path are unique
-        log.msg("Creating new disk image with name '%s'" % name)
-        nname = self.normalize(name)
-        log.msg("Name normalized to '%s'" % nname)
-        if self.is_in_use(nname):
-            raise errors.NameAlreadyInUseError(nname)
-        img = virtualmachines.Image(nname, path, description, host)
+        log.msg("Creating new disk image at '%s'" % path)
+        path = os.path.abspath(path)
+        for img in self.disk_images:
+            if img.path == path:
+                raise errors.ImageAlreadyInUseError(path)
+        img = virtualmachines.Image(path, description)
         self.disk_images.append(img)
         return img
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
-
-    def get_image_by_name(self, name):
-        """Get disk image object from the image library by its name."""
-
-        for img in self.disk_images:
-            if img.name == name:
-                return img
 
     def get_image_by_path(self, path):
         """Get disk image object from the image library by its path."""
@@ -369,7 +361,7 @@ class BrickFactory(object):
         """used to determine whether the chosen name can be used or
         it has already a duplicate among bricks or events."""
 
-        for o in itertools.chain(self.bricks, self.events, self.disk_images):
+        for o in itertools.chain(self.bricks, self.events):
             if o.name == name:
                 return True
         return False

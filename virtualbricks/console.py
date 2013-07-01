@@ -590,26 +590,26 @@ class VBProtocol(Protocol):
 
 class ImagesProtocol(Protocol):
 
-    def do_list(self):
-        for img in self.factory.disk_images:
-            self.sendLine("%s, %s" % (img.name, img.path))
+    # def do_list(self):
+    #     for img in self.factory.disk_images:
+    #         self.sendLine("%s, %s" % (img.name, img.path))
 
-    def do_files(self):
-        dirname = settings.get("baseimages")
-        for image_file in os.listdir(dirname):
-            if os.path.isfile(dirname + "/" + image_file):
-                self.sendLine(image_file)
+    # def do_files(self):
+    #     dirname = settings.get("baseimages")
+    #     for image_file in os.listdir(dirname):
+    #         if os.path.isfile(dirname + "/" + image_file):
+    #             self.sendLine(image_file)
 
-    def do_add(self, name):
-        basepath = settings.get("baseimages")
-        name = name.replace(".", "_")
-        name = name.replace("/", "_")
-        self.factory.new_disk_image(name, basepath + "/" + name)
+    # def do_add(self, name):
+    #     basepath = settings.get("baseimages")
+    #     name = name.replace(".", "_")
+    #     name = name.replace("/", "_")
+    #     self.factory.new_disk_image(name, basepath + "/" + name)
 
-    def do_del(self, name):
-        image = self.factory.get_image_by_name(name)
-        if image is not None:
-            self.factory.remove_disk_image(image)
+    # def do_del(self, name):
+    #     image = self.factory.get_image_by_name(name)
+    #     if image is not None:
+    #         self.factory.remove_disk_image(image)
 
     def do_base(self, cmd="", base=""):
         if not cmd or cmd == "show":

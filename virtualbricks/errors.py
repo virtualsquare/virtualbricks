@@ -58,5 +58,17 @@ class InvalidActionError(Error):
     pass
 
 
-class DiskLockedError(Error):
+class LockedImageError(Error):
+
+    def __init__(self, image, master):
+        Exception.__init__(self, image, master)
+        self.image = image
+        self.master = master
+
+    def __repr__(self):
+        return "Image {0} already locked by {1}".format(self.image,
+                                                        self.master)
+
+
+class ImageAlreadyInUseError(Error):
     pass

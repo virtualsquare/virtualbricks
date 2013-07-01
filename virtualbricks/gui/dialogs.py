@@ -260,11 +260,10 @@ class DisksLibraryDialog(Window):
     resource = "data/disklibrary.ui"
     image = None
     cols_cell = (
-        ("treeviewcolumn1", "cellrenderertext1", lambda i: i.name),
-        ("treeviewcolumn2", "cellrenderertext2", lambda i: i.get_users()),
-        ("treeviewcolumn3", "cellrenderertext3",
-         lambda i: i.get_master_name()),
-        ("treeviewcolumn4", "cellrenderertext4", lambda i: i.get_cows()),
+        ("treeviewcolumn1", "cellrenderertext1", lambda i: i.path),
+        # ("treeviewcolumn2", "cellrenderertext2", lambda i: i.get_users()),
+        ("treeviewcolumn3", "cellrenderertext3", lambda i: i.repr_master()),
+        # ("treeviewcolumn4", "cellrenderertext4", lambda i: i.get_cows()),
         ("treeviewcolumn5", "cellrenderertext5", lambda i: i.get_size())
     )
 
@@ -278,13 +277,41 @@ class DisksLibraryDialog(Window):
             cell_renderer = self.get_object(cell_renderer_name)
             column.set_cell_data_func(cell_renderer, self._set_cell_data,
                                       getter)
+        column = self.get_object("treeviewcolumn2")
+        cell_renderer = self.get_object("cellrenderertext2")
+        column.set_cell_data_func(cell_renderer, self._set_users)
+        column = self.get_object("treeviewcolumn4")
+        cell_renderer = self.get_object("cellrenderertext4")
+        column.set_cell_data_func(cell_renderer, self._set_cows)
         self.get_object("treeview_diskimages").set_model(factory.disk_images)
 
     def _set_cell_data(self, column, cell_renderer, model, iter, getter):
         image = model.get_value(iter, 0)
-        cell_renderer.set_property("text", getter(image))
-        color = "black" if image.exists() else "grey"
-        cell_renderer.set_property("foreground", color)
+        self._set_text(cell_renderer, getter(image), image.exists())
+
+    def _set_text(self, cell_renderer, text, exists):
+        cell_renderer.set_property("text", text)
+        cell_renderer.set_property("foreground", "black" if exists else "grey")
+
+    def _set_users(self, column, cell_renderer, model, itr):
+        def is_user(disk, image):
+            return disk.image is image
+        self._set_something(cell_renderer, model, itr, is_user)
+
+    def _set_cows(self, column, cell_renderer, model, itr):
+        def is_cow(disk, image):
+            return disk.image is image and disk.cow
+        self._set_something(cell_renderer, model, itr, is_cow)
+
+    def _set_something(self, cell_renderer, model, itr, condition):
+        image = model.get_value(itr, 0)
+        c = 0
+        for brick in self.factory.bricks:
+            if brick.get_type() == "Qemu":
+                for disk in brick.disks.values():
+                    if condition(disk, image):
+                        c += 1
+        self._set_text(cell_renderer, str(c), image.exists())
 
     def on_close_button_clicked(self, button):
         self.window.destroy()
@@ -311,16 +338,17 @@ class DisksLibraryDialog(Window):
     def on_save_button_clicked(self, button):
         assert self.image is not None, \
                 "Called on_save_button_clicked but no image is selected"
-        name = self.get_object("name_entry").get_text()
-        if self.image.name != name:
-            self.image.rename(name)
-        host = self.get_object("host_entry").get_text()
-        if host != self.image.host:
-            self.image.host = host
-        ro = self.get_object("readonly_checkbutton").get_active()
-        self.image.set_readonly(ro)
+        # name = self.get_object("name_entry").get_text()
+        # if self.image.name != name:
+        #     self.image.rename(name)
+        # host = self.get_object("host_entry").get_text()
+        # if host != self.image.host:
+        #     self.image.host = host
+        # ro = self.get_object("readonly_checkbutton").get_active()
+        # self.image.set_readonly(ro)
         desc = self.get_object("description_entry").get_text()
-        self.image.set_description(desc)
+        if desc and self.image.description != desc:
+            self.image.description = desc
         self.image = None
         self.tree_panel.show()
         self.config_panel.hide()
@@ -329,11 +357,11 @@ class DisksLibraryDialog(Window):
         assert self.image is not None, \
                 "Called on_diskimages_config_panel_show but image is None"
         i, w = self.image, self.get_object
-        w("name_entry").set_text(i.name)
+        w("name_entry").set_text(i.basename())
         w("path_entry").set_text(i.path)
-        w("description_entry").set_text(i.get_description())
-        w("readonly_checkbutton").set_active(i.is_readonly())
-        w("host_entry").set_text(i.host or "")
+        w("description_entry").set_text(i.description)
+        # w("readonly_checkbutton").set_active(i.is_readonly())
+        # w("host_entry").set_text(i.host or "")
 
 
 class UsbDevWindow(Window):
@@ -937,7 +965,7 @@ class LoadImageDialog(Window):
         self.factory = factory
 
     def show(self, parent=None):
-        name = os.path.basename(self.pathname).replace(".", "_")
+        name = os.path.basename(self.pathname)
         self.get_object("name_entry").set_text(name)
         buf = self.get_object("description_textview").get_buffer()
         buf.set_text(self.load_desc())
@@ -952,11 +980,11 @@ class LoadImageDialog(Window):
 
     def on_LoadImageDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            name = self.get_object("name_entry").get_text()
+            # name = self.get_object("name_entry").get_text()
             buf = self.get_object("description_textview").get_buffer()
             desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
             try:
-                self.factory.new_disk_image(name, self.pathname, desc)
+                self.factory.new_disk_image(self.pathname, desc)
             except:
                 dialog.destroy()
                 raise
@@ -972,14 +1000,14 @@ class CreateImageDialog(Window):
         self.factory = factory
         Window.__init__(self)
 
-    def create_image(self, name, pathname, fmt, size, unit):
+    def create_image(self, pathname, fmt, size, unit):
 
         def _create_disk(result):
             out, err, code = result
             if code:
                 log.msg(err, isError=True)
             else:
-                return self.factory.new_disk_image(name, pathname)
+                return self.factory.new_disk_image(pathname)
 
         exit = utils.getProcessOutputAndValue("qemu-img",
             ["create", "-f", fmt, pathname, size + unit], os.environ)
@@ -1015,6 +1043,6 @@ class CreateImageDialog(Window):
                 log.msg("Invalid value for unit combo, assuming Mb")
                 unit = "M"
             pathname = "%s/%s.%s" % (folder, name, fmt)
-            self.gui.user_wait_action(self.create_image(name, pathname, fmt,
-                                                        size, unit))
+            self.gui.user_wait_action(self.create_image(pathname, fmt, size,
+                                                        unit))
         dialog.destroy()

@@ -25,6 +25,19 @@ ARGS = ["/usr/bin/i386", "-nographic", "-name", "vm", "-net", "none", "-mon",
         "vm_cons.mgmt,server,nowait"]
 
 
+class _Image(vm.Image):
+
+    def __init__(self):
+        self.acquired = []
+        self.released = []
+
+    def acquire(self, disk):
+        self.acquired.append(disk)
+
+    def release(self, disk):
+        self.released.append(disk)
+
+
 class TestVirtualMachine(unittest.TestCase):
 
     def setUp(self):
@@ -35,12 +48,6 @@ class TestVirtualMachine(unittest.TestCase):
     # def test_basic_args(self):
     #     # XXX: this will fail in another system
     #     self.assertEquals(self.vm.args(), ARGS)
-
-    def test_disk_on_rename(self):
-        olds = list(disks(self.vm))
-        self.vm.name = "vmng"
-        for old, new in zip(olds, disks(self.vm)):
-            self.assertIsNot(old, new)
 
     def test_add_plug_hostonly(self):
         mac, model = object(), object()
@@ -68,21 +75,6 @@ class TestVirtualMachine(unittest.TestCase):
         self.assertIs(sock.mac, mac)
         self.assertIs(sock.model, model)
         self.assertEqual(self.factory.socks, [sock.original])
-
-    def test_associate_disk_on_new_vm(self):
-        for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            disk = self.vm.config[hd]
-            self.assertTrue(hasattr(disk, "image"))
-            self.assertIs(disk.image, None)
-        basehda = self.mktemp()
-        open(basehda, "w").close()
-        self.vm.config["basehda"] = basehda
-        self.vm._associate_disk()
-        self.assertIsNot(self.vm.config["hda"], None)
-        for hd in "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            disk = self.vm.config[hd]
-            self.assertTrue(hasattr(disk, "image"))
-            self.assertIs(disk.image, None)
 
     def test_get_disk_args(self):
         disk = DiskStub(self.vm, "hda")
@@ -115,6 +107,24 @@ class TestVirtualMachine(unittest.TestCase):
         d.callback(self.vm)
         self.assertEqual(successResultOf(self, d), self.vm)
 
+    def test_lock(self):
+        self.vm.acquire()
+        self.vm.release()
+        image = vm.Image("/vmimage")
+        disk = DiskStub(self.vm, "hdb")
+        disk.set_image(image)
+        disk.acquire()
+        self.vm.disks["hda"].set_image(image)
+        self.assertRaises(errors.LockedImageError, self.vm.acquire)
+        _image = _Image()
+        self.vm.disks["hdb"].set_image(_image)
+        try:
+            self.vm.acquire()
+        except errors.LockedImageError:
+            pass
+        self.assertEqual(_image.acquired, [self.vm.disks["hdb"]])
+        self.assertEqual(_image.released, [self.vm.disks["hdb"]])
+
 
 class TestVMPlug(test_link.TestPlug):
 
@@ -125,6 +135,7 @@ class TestVMPlug(test_link.TestPlug):
     @staticmethod
     def plug_factory(brick):
         return vm.VMPlug(link.Plug(brick))
+
 
 class TestVMSock(test_link.TestSock):
 
@@ -148,6 +159,7 @@ name=vm
 
 link|vm|_hostonly|rtl8139|00:11:22:33:44:55
 """
+
 
 class TestPlugWithHostOnlySock(unittest.TestCase):
 
@@ -338,9 +350,57 @@ class TestDisk(unittest.TestCase):
         self.assertIsNot(disk, self.disk)
         self.assertIs(disk.image, None)
         image = self.factory.new_disk_image("test", "/cucu")
-        self.disk.set_image("test")
+        self.disk.set_image(image)
         disk = copy.deepcopy(self.disk)
         self.assertIsNot(disk, self.disk)
         self.assertIsNot(disk.image, None)
         self.assertIs(disk.image, image)
 
+    def test_acquire(self):
+        self.assertFalse(self.disk.cow)
+        self.assertIs(self.disk.image, None)
+        self.assertFalse(self.vm.config["snapshot"])
+        self.disk.acquire()
+        image = vm.Image("/vmimage")
+        self.vm.set(snapshot=False, privatehda=False)
+        self.disk.set_image(image)
+        self.disk.acquire()
+        self.assertIs(image.master, self.disk)
+        disk = DiskStub(self.vm, "hdb")
+        disk.set_image(image)
+        self.assertRaises(errors.LockedImageError, disk.acquire)
+
+    def test_release(self):
+        self.assertFalse(self.disk.cow)
+        self.assertIs(self.disk.image, None)
+        self.assertFalse(self.vm.config["snapshot"])
+        self.disk.release()
+        image = vm.Image("/vmimage")
+        self.vm.set(snapshot=False, privatehda=False)
+        self.disk.set_image(image)
+        self.disk.acquire()
+        self.disk.release()
+
+
+class TestImage(unittest.TestCase):
+
+    def test_acquire(self):
+        image = vm.Image("/vmimage")
+        o = object()
+        image.acquire(o)
+        self.assertIs(image.master, o)
+        exc = self.assertRaises(errors.LockedImageError, image.acquire,
+                                object())
+        self.assertEqual(exc.args, (image, o))
+        image.acquire(o)
+
+    def test_release(self):
+        image = vm.Image("/vmimage")
+        exc = self.assertRaises(errors.LockedImageError, image.release,
+                                object())
+        self.assertEqual(exc.args, (image, None))
+        image.release(None)
+        o = object()
+        image.acquire(o)
+        image.release(o)
+        self.assertRaises(errors.LockedImageError, image.release, o)
