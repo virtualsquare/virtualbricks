@@ -148,6 +148,7 @@
                     <child>
                       <object class="GtkEntry" id="name_entry">
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">●</property>
                         <property name="primary_icon_activatable">False</property>
@@ -232,6 +233,7 @@
                     <child>
                       <object class="GtkEntry" id="host_entry">
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">●</property>
                         <property name="primary_icon_activatable">False</property>
@@ -250,6 +252,7 @@
                       <object class="GtkCheckButton" id="readonly_checkbutton">
                         <property name="label" translatable="yes">Readonly</property>
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
                         <property name="draw_indicator">True</property>

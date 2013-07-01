@@ -1050,8 +1050,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		dialogs.choose_new_image(self, self.brickfactory)
 
 	def on_image_library_menuitem_activate(self, menuitem):
-		parent = self.get_object("main_win")
-		dialogs.DisksLibraryDialog(self.brickfactory).show(parent)
+		dialogs.DisksLibraryDialog(self.brickfactory).show()
 
 	def ask_remove_brick(self, brick):
 		if brick.proc is not None:

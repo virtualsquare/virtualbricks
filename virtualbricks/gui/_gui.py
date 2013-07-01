@@ -143,10 +143,9 @@ class VMPopupMenu(BrickPopupMenu):
             else:
                 self.original.poweron("virtualbricks")
 
-        hda = self.original.config["basehda"]
-        exe = "qemu-img"
-        args = [exe, "snapshot" "-l", hda]
-        output = utils.getProcessOutput(exe, args, os.environ)
+        # XXX: hda can be None
+        args = ["snapshot", "-l", self.original.config["hda"]]
+        output = utils.getProcessOutput("qemu-img", args, os.environ)
         output.addCallback(grep, "virtualbricks")
         output.addCallbacks(loadvm, log.err)
         return output
@@ -368,14 +367,13 @@ class VMJobMenu(JobMenu):
                 log.msg(_("Suspend/Resume not supported on this disk."),
                         isError=True)
 
-        hda = self.original.config["basehda"]
-        if hda is None:
+        hda = self.original.config["hda"]
+        if not hda:
             log.msg(_("Suspend/Resume not supported on this disk."),
                     isError=True)
             return defer.fail()
-        exe = "qemu-img"
-        args = [exe, "snapshot", "-c", "virtualbricks", hda]
-        value = utils.getProcessValue(exe, args, os.environ)
+        args = ["snapshot", "-c", "virtualbricks", hda]
+        value = utils.getProcessValue("qemu-img", args, os.environ)
         value.addCallback(do_suspend)
         return value
 
@@ -773,7 +771,7 @@ class QemuConfigController(ConfigController):
         itr = images.get_iter_first()
         while itr:
             image = images[itr][0]
-            model.append((image.name, image))
+            model.append((image.basename(), image))
             itr = images.iter_next(itr)
 
     def setup_netwoks_cards(self):
@@ -843,7 +841,7 @@ class QemuConfigController(ConfigController):
         for pname, wname in self.config_to_combo_mapping:
             self._combo_select(go(wname), cfg[pname])
         for pname, wname in self.hd_to_combo_mapping:
-            self._combo_select(go(wname), cfg[pname].image)
+            self._combo_select(go(wname), self.original.disks[pname].image)
         for pname, wname in self.config_to_filechooser_mapping:
             if cfg[pname]:
                 go(wname).set_filename(cfg[pname])
@@ -863,12 +861,11 @@ class QemuConfigController(ConfigController):
         model = combo.get_model()
         itr = combo.get_active_iter()
         if itr:
-            config["base" + name] = model[itr][0]
-            # img = model[itr][1]
-            # if img is None:
-            #     config["base" + name] = ""
-            # else:
-            #     config["base" + name] = img.name
+            img = model[itr][1]
+            if img is None:
+                config[name] = ""
+            else:
+                config[name] = img.path
 
     def configure_brick(self, gui):
         cfg = {}
@@ -898,8 +895,7 @@ class QemuConfigController(ConfigController):
         dialogs.choose_new_image(self.gui, self.gui.brickfactory)
 
     def on_configimage_button_clicked(self, button):
-        parent = self.gui.get_object("main_win")
-        dialogs.DisksLibraryDialog(self.original.factory).show(parent)
+        dialogs.DisksLibraryDialog(self.original.factory).show()
 
     def on_newempty_button_clicked(self, button):
         dialogs.CreateImageDialog(self, self.brickfactory).show(

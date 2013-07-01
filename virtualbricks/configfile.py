@@ -150,10 +150,6 @@ class ConfigFile:
         for img in factory.disk_images:
             fileobj.write('[DiskImage:' + img.name + ']\n')
             fileobj.write('path=' + img.path + '\n')
-            if img.host is not None:
-                fileobj.write('host=' + img.host.addr[0] + '\n')
-            if img.readonly is not False:
-                fileobj.write('readonly=True\n')
             fileobj.write("\n")
 
         for event in factory.events:
@@ -267,10 +263,6 @@ class ConfigFile:
                             k, v = l.split("=", 1)
                             if k == 'path':
                                 path = str(v)
-                            elif k == 'host':
-                                host = factory.get_host_by_name(str(v))
-                            elif k == 'readonly' and v == 'True':
-                                readonly = True
                             l = fileobj.readline()
                         if factory.is_in_use(name):
                             log.info("Skipping disk image, name %s already in "
@@ -278,8 +270,7 @@ class ConfigFile:
                             continue
                         if host is None and not os.access(path, os.R_OK):
                             continue
-                        img = factory.new_disk_image(name, path, host=host)
-                        img.set_readonly(readonly)
+                        img = factory.new_disk_image(path)
                         continue
 
                     elif ntype == 'RemoteHost':
