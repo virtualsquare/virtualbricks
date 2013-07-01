@@ -854,23 +854,37 @@ class QemuConfigController(ConfigController):
         model = combo.get_model()
         itr = combo.get_active_iter()
         if itr:
-            config[name] = model[itr][1]
+            obj = model[itr][1]
+            if obj is None:
+                obj = ""
+            config[name] = obj
+
+    def _hd_config_set_combo(self, config, name, combo):
+        model = combo.get_model()
+        itr = combo.get_active_iter()
+        if itr:
+            config["base" + name] = model[itr][0]
+            # img = model[itr][1]
+            # if img is None:
+            #     config["base" + name] = ""
+            # else:
+            #     config["base" + name] = img.name
 
     def configure_brick(self, gui):
-        c = {}
+        cfg = {}
         for config_name, widget_name in self.config_to_widget_mapping:
-            c[config_name] = self.get_object(widget_name).get_active()
+            cfg[config_name] = self.get_object(widget_name).get_active()
         for pname, wname in self.config_to_spinint_mapping:
-            c[pname] = self.get_object(wname).get_value_as_int()
+            cfg[pname] = self.get_object(wname).get_value_as_int()
         for pname, wname in self.config_to_combo_mapping:
-            self._config_set_combo(c, pname, self.get_object(wname))
+            self._config_set_combo(cfg, pname, self.get_object(wname))
         for pname, wname in self.hd_to_combo_mapping:
-            self._config_set_combo(c, pname, self.get_object(wname))
+            self._hd_config_set_combo(cfg, pname, self.get_object(wname))
         for pname, wname in self.config_to_filechooser_mapping:
             filename = self.get_object(wname).get_filename()
             if filename:
-                c[pname] = filename
-        return
+                cfg[pname] = filename
+        self.original.set(cfg)
 
     def on_deviceen_radiobutton_toggled(self, radiobutton):
         self.get_object("device_combobox").set_sensitive(
