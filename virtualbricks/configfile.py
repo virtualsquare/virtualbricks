@@ -20,11 +20,10 @@ import os
 import os.path
 import errno
 import re
-import shutil
 import traceback
 import contextlib
 
-from twisted.python import failure
+from twisted.python import failure, filepath
 
 from virtualbricks import _compat, settings, virtualmachines
 
@@ -37,75 +36,55 @@ log = _compat.getLogger(__name__)
 
 
 @contextlib.contextmanager
-def backup(original, filename):
-    created = False
-    # create a new backup file of the project
-    if os.path.isfile(original):
-        shutil.copyfile(original, filename)
-        created = True
-    yield
-    if created:
-        # remove the project backup file
-        os.remove(filename)
+def backup(original, fbackup):
+    try:
+        original.copyTo(fbackup)
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            yield
+    else:
+        yield
+        fbackup.remove()
 
 
 def restore_backup(filename, fbackup):
-    # check if there's a project backup to restore and if its size is
-    # different from current project file
-    filename_back = filename + ".back"
-    if os.path.isfile(fbackup):
-        log.info("I found a backup project file, I'm going to restore it!")
-        try:
-            os.rename(filename, filename_back)
-            log.info("Saved project to %s.", filename_back)
-        except OSError, e:
-            if e.errno == errno.EXDEV:
-                try:
-                    shutil.copyfile(filename, filename_back)
-                except IOError:
-                    log.warning("Cannot save to backup file %s.\n%s",
-                                filename_back, traceback.format_exc())
-                    log.error("Cannot create a backup of the broject.")
-            elif e.errno == errno.ENOENT:
-                pass
-            else:
-                log.warning("Cannot save to backup file %s.\n%s",
-                            filename_back, traceback.format_exc())
-                log.error("Cannot create a backup of the broject.")
-        # restore backup file
-        log.info("I found a backup project file, I'm going to restore it!")
-
-        try:
-            os.rename(fbackup, filename)
-            log.info("Saved project to %s.", filename_back)
-            log.error(_("A backup file for the current project has been "
-                        "restored.\nYou can find more informations looking in "
-                        "View->Messages."))
-        except OSError, e:
-            if e.errno == errno.EXDEV:
-                try:
-                    shutil.copyfile(fbackup, filename)
-                    os.remove(fbackup)
-                except IOError:
-                    log.warning("Cannot restore backup file %s.\n%s",
-                                fbackup, traceback.format_exc())
-                    log.error("Cannot restore backup of the broject.")
-                finally:
-                    try:
-                        os.remove(fbackup)
-                    except OSError:
-                        pass
-            elif e.errno == errno.ENOENT:
-                pass
-            else:
-                log.warning("Cannot restore backup file %s.\n%s",
-                            fbackup, traceback.format_exc())
-                log.error("Cannot restore backup of the broject.")
+    filename_back = filename.sibling(filename.basename() + ".back")
+    created = False
+    try:
+        filename.moveTo(filename_back)
+        created = True
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            pass
+        else:
+            log.warning("Cannot save to backup file %s.\n%s",
+                        filename_back, traceback.format_exc())
+            log.error("Cannot create a backup of the broject.")
+    else:
+        log.info("Saved project to %s.", filename_back)
+    try:
+        fbackup.moveTo(filename)
+    except OSError, e:
+        if created:
+            created = False
+            filename_back.moveTo(filename)
+        if e.errno == errno.ENOENT:
+            pass
+        else:
+            log.warning("Cannot restore backup file %s.\n%s",
+                        fbackup, traceback.format_exc())
+            log.error("Cannot restore backup of the broject.")
+    else:
+        log.error(_("A backup file for the current project has been "
+                    "restored.\nYou can find more informations looking in "
+                    "View->Messages."))
+    if created:
+        filename_back.remove()
 
 
 class ConfigFile:
 
-    def save(self, factory, obj_or_str):
+    def save(self, factory, str_or_obj):
         """Save the current project.
 
         @param obj_or_str: The filename of file object where to save the
@@ -114,38 +93,22 @@ class ConfigFile:
                           interface.
         """
 
-        if isinstance(obj_or_str, basestring):
-            filename = obj_or_str
-            log.debug("CONFIG DUMP on " + filename)
-            fp = None
-            with backup(filename, filename + "~"):
-                head, tail = os.path.split(filename)
-                tmpfile = os.path.join(head, "." + tail + ".sav")
-                with open(tmpfile, "w") as fp:
-                    self.save_to(factory, fp)
-                os.rename(tmpfile, filename)
+        if isinstance(str_or_obj, (basestring, filepath.FilePath)):
+            if isinstance(str_or_obj, basestring):
+                fp = filepath.FilePath(str_or_obj)
+            log.debug("CONFIG DUMP on " + fp.path)
+            with backup(fp, fp.sibling(fp.basename() + "~")):
+                tmpfile = fp.sibling("." + fp.basename() + ".sav")
+                with tmpfile.open("w") as fd:
+                    self.save_to(factory, fd)
+                tmpfile.moveTo(fp)
         else:
-            self.save_to(factory, obj_or_str)
+            self.save_to(factory, str_or_obj)
 
     def save_to(self, factory, fileobj):
-        # with factory.lock():
-            return self.__save_to(factory, fileobj)
+        return self.__save_to(factory, fileobj)
 
     def __save_to(self, factory, fileobj):
-        # Remote hosts
-        for r in factory.remote_hosts:
-            fileobj.write('[RemoteHost:' + r.addr[0] + ']\n')
-            fileobj.write('port=' + str(r.addr[1]) + '\n')
-            fileobj.write('password=' + r.password + '\n')
-            fileobj.write('baseimages=' + r.baseimages + '\n')
-            fileobj.write('qemupath=' + r.qemupath + '\n')
-            fileobj.write('vdepath=' + r.vdepath + '\n')
-            fileobj.write('bricksdirectory=' + r.bricksdirectory + '\n')
-            if r.autoconnect:
-                fileobj.write('autoconnect=True\n\n')
-            else:
-                fileobj.write('autoconnect=False\n\n')
-
         # Disk Images
         for img in factory.disk_images:
             fileobj.write('[DiskImage:' + img.name + ']\n')
@@ -180,18 +143,19 @@ class ConfigFile:
                 fileobj.write(t.format(p=plug))
 
     def restore(self, factory, str_or_obj):
-        if isinstance(str_or_obj, basestring):
-            filename = str_or_obj
-            restore_backup(filename, filename + "~")
-            log.info("Open %s project", filename)
-            with open(filename) as fp:
-                self.restore_from(factory, fp)
+        if isinstance(str_or_obj, (basestring, filepath.FilePath)):
+            if isinstance(str_or_obj, basestring):
+                fp = filepath.FilePath(str_or_obj)
+            restore_backup(fp, fp.sibling(fp.basename() + "~"))
+            log.info("Open %s project", fp.path)
+            with fp.open() as fd:
+                self.restore_from(factory, fd)
         else:
             self.restore_from(factory, str_or_obj)
 
     def restore_from(self, factory, fileobj):
-        # with factory.lock():
-            return self.__restore_from(factory, fileobj)
+        factory.reset()
+        return self.__restore_from(factory, fileobj)
 
     def __restore_from(self, factory, fileobj):
         l = fileobj.readline()
@@ -233,7 +197,7 @@ class ConfigFile:
                                             "parsing following line: %s\n. "
                                             "Skipping.", sockname, l)
                                 continue
-                            pl = bb.add_plug(this_sock, macaddr, model)
+                            bb.add_plug(this_sock, macaddr, model)
                             idx = len(bb.plugs) + len(bb.socks)
                             log.debug("added eth%d" % idx)
                         else:
@@ -253,7 +217,7 @@ class ConfigFile:
                         log.debug("Found Disk image %s" % name)
                         path = ""
                         host = None
-                        readonly = False
+                        # readonly = False
                         l = fileobj.readline().rstrip("\n")
                         while l and not l.startswith('['):
                             l = l.strip()
@@ -270,7 +234,7 @@ class ConfigFile:
                             continue
                         if host is None and not os.access(path, os.R_OK):
                             continue
-                        img = factory.new_disk_image(path)
+                        factory.new_disk_image(path)
                         continue
 
                     elif ntype == 'RemoteHost':
@@ -320,7 +284,8 @@ _config = ConfigFile()
 
 def save(factory, filename=None):
     if filename is None:
-        filename = settings.get("current_project")
+        filename = os.path.join(settings.get("workspace"),
+                                settings.get("current_project"), ".project")
     _config.save(factory, filename)
 
 
@@ -333,31 +298,8 @@ def safe_save(factory, filename=None):
 
 def restore(factory, filename=None):
     if filename is None:
-        filename = settings.get("current_project")
-    factory.reset()
+        filename = os.path.join(settings.get("workspace"),
+                                settings.get("current_project"), ".project")
     _config.restore(factory, filename)
 
 
-def restore_last_project(factory):
-    """Restore the last project if found or create a new one."""
-
-    try:
-        os.mkdir(settings.VIRTUALBRICKS_HOME)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-    try:
-        os.mkdir(settings.get("baseimages"))
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-    try:
-        restore(factory)
-    except IOError as e:
-        if e.errno == errno.ENOENT:
-            if settings.get("current_project") != settings.DEFAULT_PROJECT:
-                log.error("Cannot find last project '%s': file not found. "
-                          "A new project will be created with that path.",
-                          settings.get("current_project"))
-        else:
-            raise

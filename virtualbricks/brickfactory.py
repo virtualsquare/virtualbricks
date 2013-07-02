@@ -32,7 +32,8 @@ from twisted.python import failure, log as _log
 from twisted.conch.insults import insults
 from twisted.conch import manhole
 
-from virtualbricks import errors, settings, configfile, console, _compat
+from virtualbricks import (errors, settings, configfile, console, _compat,
+                           project)
 from virtualbricks import (events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
 
@@ -95,7 +96,6 @@ class BrickFactory(object):
         # for h in self.remote_hosts:
         #     h.disconnect()
 
-        configfile.safe_save(self)
         l = [brick.poweroff() for brick in self.bricks]
         return defer.DeferredList(l, consumeErrors=True)
 
@@ -116,12 +116,10 @@ class BrickFactory(object):
         del self.events[:]
 
         del self.socks[:]
+        del self.disk_images[:]
 
     def get_basefolder(self):
-        baseimages = settings.get("baseimages")
-        project_file = settings.get("current_project")
-        project_name = os.path.splitext(os.path.basename(project_file))[0]
-        return os.path.join(baseimages, project_name)
+        return project.current.path
 
     def register_brick_type(self, factory, *types):
         """Register a new brick type.
@@ -612,7 +610,9 @@ class Application:
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", factory.stop)
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
-        configfile.restore_last_project(factory)
+        reactor.addSystemEventTrigger("before", "shutdown", settings.store)
+        prj = project.restore_last_project(factory)
+        reactor.addSystemEventTrigger("before", "shutdown", prj.save, factory)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
             namespace = self.get_namespace()

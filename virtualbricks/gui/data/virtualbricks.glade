@@ -3839,13 +3839,36 @@ multiple devices&lt;/b&gt;</property>
                   <widget class="GtkMenu" id="menuitem_file_menu">
                     <property name="can_focus">False</property>
                     <child>
-                      <widget class="GtkImageMenuItem" id="gtk-open">
+                      <widget class="GtkImageMenuItem" id="project_new">
+                        <property name="label" translatable="yes">Restart with _empty project</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="use_underline">True</property>
+                        <property name="use_stock">False</property>
+                        <signal name="activate" handler="on_project_new_activate"/>
+                        <child internal-child="image">
+                          <widget class="GtkImage" id="image17">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="stock">gtk-new</property>
+                          </widget>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkSeparatorMenuItem" id="menuitem1">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkImageMenuItem" id="project_open">
                         <property name="label" translatable="yes">_Open Project</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_open_project"/>
+                        <signal name="activate" handler="on_project_open_activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image15">
                             <property name="visible">True</property>
@@ -3873,58 +3896,18 @@ multiple devices&lt;/b&gt;</property>
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkSeparatorMenuItem" id="menuitem1">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                      </widget>
-                    </child>
-                    <child>
-                      <widget class="GtkImageMenuItem" id="gtk-new">
-                        <property name="label" translatable="yes">Restart with _empty project</property>
+                      <widget class="GtkImageMenuItem" id="project_save">
+                        <property name="label" translatable="yes">_Save project</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_new_project"/>
-                        <child internal-child="image">
-                          <widget class="GtkImage" id="image17">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="stock">gtk-new</property>
-                          </widget>
-                        </child>
-                      </widget>
-                    </child>
-                    <child>
-                      <widget class="GtkImageMenuItem" id="gtk-import-bricks">
-                        <property name="label" translatable="yes">_Import bricks</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="use_underline">True</property>
-                        <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_import_project"/>
-                        <child internal-child="image">
-                          <widget class="GtkImage" id="image18">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="stock">gtk-add</property>
-                          </widget>
-                        </child>
-                      </widget>
-                    </child>
-                    <child>
-                      <widget class="GtkImageMenuItem" id="gtk-save-as">
-                        <property name="label" translatable="yes">_Save project as...</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="use_underline">True</property>
-                        <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_save_project"/>
+                        <signal name="activate" handler="on_project_save_activate"/>
                         <child internal-child="image">
                           <widget class="GtkImage" id="image19">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="stock">gtk-save-as</property>
+                            <property name="stock">gtk-save</property>
                           </widget>
                         </child>
                       </widget>

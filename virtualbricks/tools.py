@@ -147,6 +147,11 @@ def get_backing_file_from_qcow(fp):
         fp.seek(offset)
         return fp.read(size)
 
+
+class UnknowTypeError(Exception):
+    pass
+
+
 def get_backing_file(fp):
     data = fp.read(8)
     m1, m2, m3, m4, version = struct.unpack(HEADER_FMT, data)
@@ -155,5 +160,13 @@ def get_backing_file(fp):
         return get_backing_file_from_cow(fp)
     elif magic == QCOW_MAGIC and version in (1, 2):
         return get_backing_file_from_qcow(fp)
-    raise RuntimeError("Unknow type")
+    raise UnknowTypeError()
 
+
+def backing_files_for(files):
+    for file in files:
+        try:
+            with open(file) as fp:
+                yield get_backing_file(fp)
+        except UnknowTypeError:
+            pass
