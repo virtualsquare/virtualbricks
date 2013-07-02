@@ -85,7 +85,7 @@ import gtk
 from twisted.internet import utils
 
 from virtualbricks import (version, tools, _compat, console, settings,
-                           virtualmachines)
+                           virtualmachines, project)
 from virtualbricks.gui import graphics
 
 
@@ -1046,3 +1046,55 @@ class CreateImageDialog(Window):
             self.gui.user_wait_action(self.create_image(pathname, fmt, size,
                                                         unit))
         dialog.destroy()
+class NewProjectDialog(Window):
+
+    resource = "data/newproject.ui"
+
+    def __init__(self, factory):
+        self.factory = factory
+        Window.__init__(self)
+
+    def on_NewProjectDialog_response(self, dialog, response_id):
+        try:
+            if response_id == gtk.RESPONSE_OK:
+                name = self.get_object("name_entry").get_text()
+                prj = project.manager.create(name, self.factory)
+        finally:
+            dialog.destroy()
+
+class OpenProjectDialog(Window):
+
+    resource = "data/openproject.ui"
+
+    def __init__(self, factory):
+        self.factory = factory
+        Window.__init__(self)
+
+    def show(self, parent=None):
+        model = self.get_object("liststore1")
+        for prj in project.manager:
+            model.append((prj, ))
+        Window.show(self, parent)
+
+    def on_treeview1_row_activated(self, treeview, path, column):
+        model = treeview.get_model()
+        name = model[path][0]
+        self.on_OpenProjectDialog_response(self.get_object("OpenProjectDialog"),
+                                           gtk.RESPONSE_OK, name)
+
+    def on_OpenProjectDialog_response(self, dialog, response_id, name=""):
+        if response_id == gtk.RESPONSE_OK:
+            if not name:
+                treeview = self.get_object("treeview1")
+                selection = treeview.get_selection()
+                model, itr = selection.get_selected()
+                if itr:
+                    name = model[itr][0]
+                else:
+                    return
+            try:
+                prj = project.manager.open(name, self.factory)
+            finally:
+                dialog.destroy()
+        dialog.destroy()
+

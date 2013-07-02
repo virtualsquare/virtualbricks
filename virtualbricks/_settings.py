@@ -31,13 +31,13 @@ log = _compat.getLogger(__name__)
 HOME = os.path.expanduser("~")
 VIRTUALBRICKS_HOME = os.path.join(HOME, ".virtualbricks")
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
-DEFAULT_PROJECT = os.path.join(VIRTUALBRICKS_HOME, "virtualbricks.vbl")
+DEFAULT_WORKSPACE = VIRTUALBRICKS_HOME
+DEFAULT_PROJECT = "new_project"
 DEFAULT_CONF = {
     "term": "/usr/bin/xterm",
     "alt-term": "/usr/bin/gnome-terminal",
     "sudo": "/usr/bin/gksu",
     "qemupath": "/usr/bin",
-    "baseimages": os.path.join(VIRTUALBRICKS_HOME, "img"),
     "kvm": False,
     "ksm": False,
     "kqemu": False,
@@ -47,6 +47,7 @@ DEFAULT_CONF = {
     "femaleplugs": False,
     "erroronloop": False,
     "systray": True,
+    "workspace": DEFAULT_WORKSPACE,
     "current_project": DEFAULT_PROJECT,
     "cowfmt": "cow",
     "show_missing": True
@@ -90,6 +91,9 @@ class Settings:
             self.config.set(self.DEFAULT_SECTION, key, str(value))
 
     def has_option(self, value):
+        return self.config.has_option(self.DEFAULT_SECTION, value)
+
+    def __contrains__(self, name):
         return self.config.has_option(self.DEFAULT_SECTION, value)
 
     def get(self, attr):

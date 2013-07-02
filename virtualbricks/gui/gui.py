@@ -26,8 +26,8 @@ from twisted.application import app
 from twisted.python import log as _log
 from twisted.internet import error, defer, task, protocol, reactor
 
-from virtualbricks import (interfaces, tools, errors, settings, configfile,
-						brickfactory, _compat)
+from virtualbricks import (interfaces, tools, errors, settings, brickfactory,
+						_compat, project)
 
 from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
@@ -668,9 +668,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
 			if widget is not None and b.config.get(key):
 				widget.set_filename(b.config.get(key))
-			elif (widget is not None and t == 'Qemu' and
-					(key[0:4] == 'base' or key == 'cdrom')):
-				widget.set_current_folder(settings.get('baseimages'))
 			elif widget is not None:
 				widget.unselect_all()
 
@@ -1130,17 +1127,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.curtain_down()
 		self.show_window('')
 
-	def selected_type(self):
-		for ntype in ['Switch','Tap','Wire','Wirefilter','TunnelConnect','TunnelListen','Qemu','Capture', 'SwitchWrapper', 'Router']:
-			if self.gladefile.get_widget('typebutton_'+ntype).get_active():
-				return ntype
-		return 'Switch'
+	def selected_type(self, group):
+		for button in group.get_group():
+			if button.get_active():
+				return button.name.split("_")[1]
+		return "Switch"
 
 	def on_newbrick_ok(self, widget=None, data=""):
 		self.show_window('')
 		self.curtain_down()
 		name = self.gladefile.get_widget('text_newbrickname').get_text()
-		ntype = self.selected_type()
+		ntype = self.selected_type(self.get_object("typebutton_Switch"))
 		runremote = self.gladefile.get_widget('check_newbrick_runremote').get_active()
 		if runremote:
 			remotehost = self.gladefile.get_widget('text_newbrick_runremote').get_text()
@@ -1343,7 +1340,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def on_item_settings_activate(self, widget=None, data=""):
 		self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(settings.get('qemupath'))
 		self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(settings.get('vdepath'))
-		self.gladefile.get_widget('filechooserbutton_baseimages').set_current_folder(settings.get('baseimages'))
 
 		cowfmt = settings.get('cowfmt')
 
@@ -1579,7 +1575,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 		if response in [gtk.RESPONSE_APPLY, gtk.RESPONSE_OK]:
 			log.debug("Apply settings...")
-			for k in ['qemupath', 'vdepath', 'baseimages']:
+			for k in 'qemupath', 'vdepath':
 				settings.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
 
 			settings.set('cowfmt', self.gladefile.get_widget('combo_cowfmt').get_active_text())
@@ -2072,100 +2068,15 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		attach_event_window.show_all()
 		return True
 
-	def __on_dialog_response(self, dialog, response_id, do_action):
-		try:
-			if response_id == gtk.RESPONSE_OK:
-				filename = dialog.get_filename()
-				if dialog.get_action() == gtk.FILE_CHOOSER_ACTION_SAVE:
-					ext = ".vbl"
-					if not filename.endswith(ext):
-						filename += ext
-				current_project = settings.get("current_project")
-				settings.set("current_project", filename)
-				try:
-					do_action(filename)
-				except IOError:
-					settings.set("current_project", current_project)
-				else:
-					try:
-						settings.store()
-					except IOError:
-						log.exception("Cannot save settings")
-		finally:
-			dialog.destroy()
+	def on_project_open_activate(self, menuitem):
+		project.current.save(self.brickfactory)
+		dialogs.OpenProjectDialog(self.brickfactory).show(
+			self.get_object("main_win"))
 
-	def __open_project(self, filename):
-		self._stop_listening()
-		try:
-			configfile.restore(self.brickfactory, filename)
-		finally:
-			self._start_listening()
-			self.draw_topology()
-			# self.check_joblist(force=True)
-
-	def on_open_project(self, widget, data=None):
-		if self.confirm(_("Save current project?")):
-			configfile.safe_save(self.brickfactory)
-
-		chooser = gtk.FileChooserDialog(title=_("Open a project"),
-				action=gtk.FILE_CHOOSER_ACTION_OPEN,
-				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-						gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-		chooser.set_current_folder(settings.VIRTUALBRICKS_HOME)
-		chooser.add_filter(self.vbl_filter)
-		chooser.add_filter(self.all_files_filter)
-		chooser.connect("response", self.__on_dialog_response,
-				self.__open_project)
-		chooser.show()
-
-	def __save_project(self, filename):
-		configfile.safe_save(self.brickfactory, filename)
-
-	def on_save_project(self, menuitem):
-		chooser = gtk.FileChooserDialog(title=_("Save as..."),
-				action=gtk.FILE_CHOOSER_ACTION_SAVE,
-				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-						gtk.STOCK_SAVE,gtk.RESPONSE_OK))
-		chooser.set_do_overwrite_confirmation(True)
-		chooser.set_current_folder(settings.VIRTUALBRICKS_HOME)
-		chooser.add_filter(self.vbl_filter)
-		chooser.add_filter(self.all_files_filter)
-		chooser.connect("response", self.__on_dialog_response,
-				self.__save_project)
-		chooser.show()
-
-	def on_import_project(self, widget, data=None):
-		raise NotImplementedError("on_import_project not implemented")
-
-	def __new_project(self, filename):
-		self._stop_listening()
-		try:
-			self.brickfactory.reset()
-			with open(filename, "w+"):
-				pass
-		except IOError:
-			log.exception("Exception occurred while starting new project")
-			raise
-		finally:
-			self._start_listening()
-			self.draw_topology()
-			# self.check_joblist(force=True)
-
-	def on_new_project(self, widget, data=None):
-		if self.confirm("Save current project?"):
-			configfile.safe_save(self.brickfactory)
-
-		chooser = gtk.FileChooserDialog(title=_("New project"),
-				action=gtk.FILE_CHOOSER_ACTION_SAVE,
-				buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-						gtk.STOCK_SAVE, gtk.RESPONSE_OK))
-		chooser.set_do_overwrite_confirmation(True)
-		chooser.set_current_folder(settings.VIRTUALBRICKS_HOME)
-		chooser.add_filter(self.vbl_filter)
-		chooser.add_filter(self.all_files_filter)
-		chooser.connect("response", self.__on_dialog_response,
-				self.__new_project)
-		chooser.show()
+	def on_project_new_activate(self, menuitem):
+		project.current.save(self.brickfactory)
+		dialogs.NewProjectDialog(self.brickfactory).show(
+			self.get_object("main_win"))
 
 	def on_open_recent_project(self, widget, data=None):
 		raise NotImplementedError("on_open_recent_project not implemented")

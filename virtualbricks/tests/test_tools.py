@@ -73,4 +73,4 @@ class TestTools(unittest.TestCase):
             self.assertEqual(backing_file, "/hello/backingfile")
 
         sio = StringIO.StringIO(UNKNOWN_HEADER)
-        self.assertRaises(RuntimeError, tools.get_backing_file, sio)
+        self.assertRaises(tools.UnknowTypeError, tools.get_backing_file, sio)

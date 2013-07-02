@@ -548,6 +548,7 @@ class VBProtocol(Protocol):
 
     def do_socks(self):
         """List of connections available for bricks"""
+        # XXX: if brick is not a switch this raise an exception
         for s in self.factory.socks:
             if s.brick is not None:
                 self.sendLine("%s - port on %s %s - %d available" % (
@@ -589,6 +590,7 @@ class VBProtocol(Protocol):
 
 
 class ImagesProtocol(Protocol):
+    pass
 
     # def do_list(self):
     #     for img in self.factory.disk_images:
@@ -611,11 +613,11 @@ class ImagesProtocol(Protocol):
     #     if image is not None:
     #         self.factory.remove_disk_image(image)
 
-    def do_base(self, cmd="", base=""):
-        if not cmd or cmd == "show":
-            self.sendLine(settings.get("baseimages"))
-        elif cmd == "set" and base:
-            settings.set("baseimages", base)
+    # def do_base(self, cmd="", base=""):
+    #     if not cmd or cmd == "show":
+    #         self.sendLine(settings.get("baseimages"))
+    #     elif cmd == "set" and base:
+    #         settings.set("baseimages", base)
 
 
 class ConfigurationProtocol(Protocol):
