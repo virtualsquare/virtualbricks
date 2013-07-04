@@ -1072,6 +1072,10 @@ class QemuConfigController(ConfigController):
         self.get_object("qemuicon").set_from_pixbuf(
             graphics.pixbuf_for_brick_type("qemu"))
 
+    def on_icon_filechooser_file_set(self, filechooser):
+        raise NotImplementedError(
+            "QemuConfigController.on_icon_filechooser_file_set")
+
 
 def config_panel_factory(context):
     type = context.get_type()
