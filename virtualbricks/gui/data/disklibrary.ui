@@ -38,6 +38,14 @@
                       </object>
                     </child>
                     <child>
+                      <object class="GtkTreeViewColumn" id="treeviewcolumn6">
+                        <property name="title" translatable="yes">Path</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cellrenderertext6"/>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
                       <object class="GtkTreeViewColumn" id="treeviewcolumn2">
                         <property name="title" translatable="yes">Used by</property>
                         <child>
@@ -148,7 +156,6 @@
                     <child>
                       <object class="GtkEntry" id="name_entry">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">●</property>
                         <property name="primary_icon_activatable">False</property>

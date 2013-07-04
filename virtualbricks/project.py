@@ -22,18 +22,39 @@ import errno
 from twisted.internet import utils
 from twisted.python import filepath
 
-from virtualbricks import tools, _settings, settings, configfile, _compat
+from virtualbricks import settings, configfile, _compat, errors
 
 
 log = _compat.getLogger(__name__)
 __metaclass__ = type
 
 
-class InvalidNameError(Exception):
-    pass
+class Tgz:
+
+    def create(self, pathname, files):
+        args = ["cfz", pathname, "-C", settings.VIRTUALBRICKS_HOME] + files
+        d = utils.getProcessOutputAndValue(self.exe_c, args, os.environ)
+        d.addErrback(log.err, "Error on export project")
+        return d
+
+    def extract(self, pathname):
+        args = ["Sxfz", pathname, "-C", settings.VIRTUALBRICKS_HOME]
+        d = utils.getProcessOutputAndValue(self.exe_x, args, os.environ)
+        d.addErrback(log.err, "Error on import project")
+        return d
+
+    def list(self, pathname):
+        pass
+
+
+class BsdTgz(Tgz):
+
+    exe_c = exe_x = "bsdtar"
 
 
 class ProjectManager:
+
+    archive = BsdTgz()
 
     def __iter__(self):
         path = filepath.FilePath(settings.get("workspace"))
@@ -53,12 +74,12 @@ class ProjectManager:
         try:
             path = workspace.child(name)
         except filepath.InsecurePath:
-            raise InvalidNameError(name)
+            raise errors.InvalidNameError(name)
         if not path.isdir():
             if create:
                 return self.create(name, factory)
             else:
-                raise InvalidNameError(name)
+                raise errors.ProjectNotExistsError(name)
         path.child(".project").touch()
         prj = Project(path)
         self._set_project_default(prj, factory)
@@ -70,14 +91,14 @@ class ProjectManager:
             try:
                 path = workspace.child(name)
             except filepath.InsecurePath:
-                raise InvalidNameError(name)
+                raise errors.InvalidNameError(name)
         else:  # type(name) == filepath.FilePath
             path = name
         try:
             path.makedirs()
         except OSError as e:
             if e.errno == errno.EEXIST:
-                raise InvalidNameError(name)
+                raise errors.ProjectExistsError(name)
             else:
                 raise
         path.child(".project").touch()
@@ -89,7 +110,20 @@ class ProjectManager:
         global current
         if current:
             current = None
-            settings.VIRTUALBRICKS_HOME = _settings.VIRTUALBRICKS_HOME
+            settings.VIRTUALBRICKS_HOME = settings.DEFAULT_HOME
+
+    def export(self, output, files, include_backing_file=False):
+        # if include_backing_file:
+        #     # TODO: implement me please
+        #     files.extend(tools.backing_files_for(files))
+        return self.archive.create(output, files)
+
+    def import_(self, project_name, factory, pathname):
+        project = self.create(project_name, factory)
+        d = self.archive.extract(pathname)
+        # d.addCallback(remap_images)
+        d.addCallback(lambda _: project.restore(factory))
+        return d
 
 
 manager = ProjectManager()
@@ -118,46 +152,19 @@ class Project:
     def files(self):
         return (fp for fp in self.filepath.walk() if fp.isfile())
 
-    def export(self, output, files, include_backing_file=False):
-        if include_backing_file:
-            files.extend(tools.backing_files_for(files))
-        return self.archive.create(output, files)
 
-
-class Tar:
-
-    def create(self, path, files):
-        d = utils.getProcessValue(self.executable, ["cfz", path] + files,
-                                  os.environ)
-        return d
-
-
-class BSDTgz(Tar):
-
-    executable = "bsdtar"
-
-
-class GNUTgz(Tar):
-
-    executable = "tar"
-
-
-def is_in_path(executable):
-    return any(os.access(os.path.join(p, executable), os.X_OK) for p in
-               os.environ.get("PATH", "").split(":"))
-
-
-def install_archive_manager():
-    if is_in_path("bsdtar"):
-        Project.archive = BSDTgz()
-    else:
-        Project.archive = GNUTgz()
 def restore_last_project(factory):
     """Restore the last project if found or create a new one."""
 
     try:
-        os.mkdir(_settings.VIRTUALBRICKS_HOME)
+        os.mkdir(settings.get("workspace"))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-    return manager.open(settings.get("current_project"), factory, create=True)
+    name = settings.get("current_project")
+    try:
+        return manager.open(name, factory)
+    except errors.ProjectNotExistsError:
+        log.error("Cannot find last project '" + name + "'. A new project "
+                  "will be created with that name.")
+        return manager.create(name, factory)

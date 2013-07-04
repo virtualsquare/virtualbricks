@@ -590,11 +590,10 @@ class VBProtocol(Protocol):
 
 
 class ImagesProtocol(Protocol):
-    pass
 
-    # def do_list(self):
-    #     for img in self.factory.disk_images:
-    #         self.sendLine("%s, %s" % (img.name, img.path))
+    def do_list(self):
+        for img in self.factory.disk_images:
+            self.sendLine("%s, %s" % (img.name, img.path))
 
     # def do_files(self):
     #     dirname = settings.get("baseimages")

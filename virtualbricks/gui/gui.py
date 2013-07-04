@@ -239,6 +239,57 @@ class TopologyMixin(object):
 			self._draw_topology()
 
 
+class _Freezer:
+
+	def __init__(self, freeze, unfreeze, parent):
+		self.freeze = freeze
+		self.unfreeze = unfreeze
+		builder = gtk.Builder()
+		res = graphics.get_filename("virtualbricks.gui", "data/userwait.ui")
+		builder.add_from_file(res)
+		self.progressbar = builder.get_object("progressbar")
+		self.window = builder.get_object("UserWaitWindow")
+		self.window.set_transient_for(parent)
+
+	def wait_for(self, something, *args):
+		if isinstance(something, defer.Deferred):
+			return self.wait_for_deferred(something)
+		elif hasattr(something, "__call__"):
+			return self.wait_for_action(something, *args)
+		raise RuntimeError("Invalid argument")
+
+	def wait_for_action(self, action, *args):
+		done = defer.maybeDeferred(action, *args)
+		return self.wait_for_deferred(done)
+
+	def wait_for_deferred(self, deferred):
+		deferred.addBoth(self.stop, self.start())
+		return deferred
+
+	def start(self):
+		self.freeze()
+		self.window.show_all()
+		lc = task.LoopingCall(self.progressbar.pulse)
+		lc.start(0.2, False)
+		return lc
+
+	def stop(self, passthru, lc):
+		self.window.destroy()
+		self.unfreeze()
+		lc.stop()
+		return passthru
+
+
+class ProgressBar:
+
+	def __init__(self, gui):
+		self.freezer = _Freezer(gui.set_insensitive, gui.set_sensitive,
+			gui.get_object("main_win"))
+
+	def wait_for(self, something, *args):
+		return self.freezer.wait_for(something, *args)
+
+
 class VBGUI(gobject.GObject, TopologyMixin):
 	"""
 	The main GUI object for virtualbricks, containing all the configuration for
@@ -295,6 +346,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.setup_router_filters()
 
 		self.statusicon = None
+		self.progressbar = ProgressBar(self)
 
 		''' Tray icon '''
 		if settings.systray:
@@ -2078,6 +2130,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		dialogs.NewProjectDialog(self.brickfactory).show(
 			self.get_object("main_win"))
 
+	def on_project_save_activate(self, menuitem):
+		raise NotImplementedError("on_project_save_activate")
+
+	def on_export_menuitem_activate(self, menuitem):
+		dialogs.ExportProjectDialog(ProgressBar(self)).show(
+			self.get_object("main_win"))
+
+	def on_import_menuitem_activate(self, menuitem):
+		dialogs.ImportProjectDialog(self.brickfactory, ProgressBar(self)).show(
+			self.get_object("main_win"))
+
 	def on_open_recent_project(self, widget, data=None):
 		raise NotImplementedError("on_open_recent_project not implemented")
 
@@ -2184,29 +2247,17 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	"""                                                          """
 	""" ******************************************************** """
 
-	def _main_window_set_insensitive(self):
-		window = self.get_object("main_win")
-		window.set_sensitive(False)
-		progressbar = self.get_object("userwait_progressbar")
-		lc = task.LoopingCall(progressbar.pulse)
-		wait_window = self.get_object("window_userwait")
-		wait_window.set_transient_for(window)
-		wait_window.show_all()
-		lc.start(0.2, False)
-		return lc
-
-	def _main_window_set_sensitive(self, _, lc):
-		self.get_object("window_userwait").hide()
-		self.get_object("main_win").set_sensitive(True)
-		lc.stop()
-
 	def user_wait_action(self, action, *args):
-		lc = self._main_window_set_insensitive()
-		if isinstance(action, defer.Deferred):
-			done = action
-		else:
-			done = defer.maybeDeferred(action, *args)
-		done.addBoth(self._main_window_set_sensitive, lc)
+		return ProgressBar(self).wait_for(action, *args)
+
+	def user_wait_deferred(self, deferred):
+		return ProgressBar(self).wait_for(deferred)
+
+	def set_insensitive(self):
+		self.get_object("main_win").set_sensitive(False)
+
+	def set_sensitive(self):
+		self.get_object("main_win").set_sensitive(True)
 
 
 class List(gtk.ListStore):

@@ -116,7 +116,8 @@ class Image:
     readonly = False
     master = None
 
-    def __init__(self, path, description=""):
+    def __init__(self, name, path, description=""):
+        self.name = name
         self.path = os.path.abspath(path)
         if description:
             self.set_description(description)
@@ -139,10 +140,6 @@ class Image:
             return ""
 
     description = property(get_description, set_description)
-
-    @property
-    def name(self):
-        return os.path.basename(self.path)
 
     def basename(self):
         return os.path.basename(self.path)
@@ -512,7 +509,7 @@ class VirtualMachine(bricks.Brick):
 
     for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
         s = """def cbset_{0}(self, value):
-            image = self.factory.get_image_by_path(value)
+            image = self.factory.get_image_by_name(value)
             self.disks["{0}"].set_image(image)""".format(hd)
         exec s
     del hd
@@ -525,7 +522,7 @@ class VirtualMachine(bricks.Brick):
             disk = Disk(self, hd)
             self.disks[hd] = disk
             if self.config[hd]:
-                image = factory.get_image_by_path(self.config[hd])
+                image = factory.get_image_by_name(self.config[hd])
                 disk.set_image(image)
 
     def poweron(self, snapshot=""):

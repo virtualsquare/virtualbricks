@@ -79,10 +79,12 @@ advised and possible with gtk-builder-convert.
 """
 
 import os
+import sys
 import tempfile
 
 import gtk
 from twisted.internet import utils
+from twisted.python import filepath
 
 from virtualbricks import (version, tools, _compat, console, settings,
                            virtualmachines, project)
@@ -260,7 +262,8 @@ class DisksLibraryDialog(Window):
     resource = "data/disklibrary.ui"
     image = None
     cols_cell = (
-        ("treeviewcolumn1", "cellrenderertext1", lambda i: i.path),
+        ("treeviewcolumn1", "cellrenderertext1", lambda i: i.name),
+        ("treeviewcolumn6", "cellrenderertext6", lambda i: i.path),
         # ("treeviewcolumn2", "cellrenderertext2", lambda i: i.get_users()),
         ("treeviewcolumn3", "cellrenderertext3", lambda i: i.repr_master()),
         # ("treeviewcolumn4", "cellrenderertext4", lambda i: i.get_cows()),
@@ -338,9 +341,8 @@ class DisksLibraryDialog(Window):
     def on_save_button_clicked(self, button):
         assert self.image is not None, \
                 "Called on_save_button_clicked but no image is selected"
-        # name = self.get_object("name_entry").get_text()
-        # if self.image.name != name:
-        #     self.image.rename(name)
+        name = self.get_object("name_entry").get_text()
+        self.image.name = name
         # host = self.get_object("host_entry").get_text()
         # if host != self.image.host:
         #     self.image.host = host
@@ -357,7 +359,7 @@ class DisksLibraryDialog(Window):
         assert self.image is not None, \
                 "Called on_diskimages_config_panel_show but image is None"
         i, w = self.image, self.get_object
-        w("name_entry").set_text(i.basename())
+        w("name_entry").set_text(i.name)
         w("path_entry").set_text(i.path)
         w("description_entry").set_text(i.description)
         # w("readonly_checkbutton").set_active(i.is_readonly())
@@ -861,7 +863,8 @@ class CommitImageDialog(Window):
     def on_CommitImageDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
             if self.get_object("file_radiobutton").get_active():
-                pathname = self.get_object("cowpath_filechooser").get_filename()
+                pathname = self.get_object(
+                    "cowpath_filechooser").get_filename()
                 self.commit_file(pathname)
             else:
                 self.commit_vm()
@@ -980,11 +983,11 @@ class LoadImageDialog(Window):
 
     def on_LoadImageDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            # name = self.get_object("name_entry").get_text()
+            name = self.get_object("name_entry").get_text()
             buf = self.get_object("description_textview").get_buffer()
             desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
             try:
-                self.factory.new_disk_image(self.pathname, desc)
+                self.factory.new_disk_image(name, self.pathname, desc)
             except:
                 dialog.destroy()
                 raise
@@ -1000,14 +1003,14 @@ class CreateImageDialog(Window):
         self.factory = factory
         Window.__init__(self)
 
-    def create_image(self, pathname, fmt, size, unit):
+    def create_image(self, name, pathname, fmt, size, unit):
 
         def _create_disk(result):
             out, err, code = result
             if code:
                 log.msg(err, isError=True)
             else:
-                return self.factory.new_disk_image(pathname)
+                return self.factory.new_disk_image(name, pathname)
 
         exit = utils.getProcessOutputAndValue("qemu-img",
             ["create", "-f", fmt, pathname, size + unit], os.environ)
@@ -1043,9 +1046,11 @@ class CreateImageDialog(Window):
                 log.msg("Invalid value for unit combo, assuming Mb")
                 unit = "M"
             pathname = "%s/%s.%s" % (folder, name, fmt)
-            self.gui.user_wait_action(self.create_image(pathname, fmt, size,
-                                                        unit))
+            self.gui.user_wait_action(self.create_image(name, pathname, fmt,
+                                                        size, unit))
         dialog.destroy()
+
+
 class NewProjectDialog(Window):
 
     resource = "data/newproject.ui"
@@ -1058,9 +1063,10 @@ class NewProjectDialog(Window):
         try:
             if response_id == gtk.RESPONSE_OK:
                 name = self.get_object("name_entry").get_text()
-                prj = project.manager.create(name, self.factory)
+                project.manager.create(name, self.factory)
         finally:
             dialog.destroy()
+
 
 class OpenProjectDialog(Window):
 
@@ -1079,8 +1085,8 @@ class OpenProjectDialog(Window):
     def on_treeview1_row_activated(self, treeview, path, column):
         model = treeview.get_model()
         name = model[path][0]
-        self.on_OpenProjectDialog_response(self.get_object("OpenProjectDialog"),
-                                           gtk.RESPONSE_OK, name)
+        self.on_OpenProjectDialog_response(self.get_object(
+            "OpenProjectDialog"), gtk.RESPONSE_OK, name)
 
     def on_OpenProjectDialog_response(self, dialog, response_id, name=""):
         if response_id == gtk.RESPONSE_OK:
@@ -1093,8 +1099,195 @@ class OpenProjectDialog(Window):
                 else:
                     return
             try:
-                prj = project.manager.open(name, self.factory)
+                project.manager.open(name, self.factory)
             finally:
                 dialog.destroy()
         dialog.destroy()
 
+
+def is_vm(brick):
+    return brick.get_type() == "Qemu"
+
+
+def has_cow(disk):
+    return disk.image and disk.cow
+
+
+def cowname(brick, disk):
+    return os.path.join(project.current.path,
+                        "{0.name}_{1.device}.cow".format(brick, disk))
+
+
+def gather_selected(model, parent, workspace, lst):
+    itr = model.iter_children(parent)
+    while itr:
+        fp = model[itr][2]
+        if model[itr][1] and fp.isfile():
+            lst.append(os.path.join(*fp.segmentsFrom(workspace)))
+        else:
+            gather_selected(model, itr, workspace, lst)
+        itr = model.iter_next(itr)
+
+
+class ExportProjectDialog(Window):
+
+    resource = "data/exportproject.ui"
+
+    def __init__(self, progressbar):
+        self.progressbar = progressbar
+        Window.__init__(self)
+
+    def show(self, parent_w=None):
+        model = self.get_object("treestore1")
+        required = set([project.current.filepath.child(".project").path])
+        # for brick in filter(is_vm, self.factory.bricks):
+        #     for disk in filter(has_cow, brick.disks.values()):
+        #         required.add(cowname(brick, disk))
+
+        parent = None
+        for dirpath, dirnames, filenames in os.walk(project.current.path):
+            row = (True, False, filepath.FilePath(dirpath))
+            parent = model.append(parent, row)
+            for name in filenames:
+                path = filepath.FilePath(os.path.join(dirpath, name))
+                if path.isfile():
+                    model.append(parent, (path.path not in required,
+                                          path.path in required, path))
+
+        column = self.get_object("treeviewcolumn1")
+        # selected_cr = self.get_object("selected_cellrenderer")
+        # selected_cr.set_property("activatable", True)
+        pixbuf_cr = self.get_object("icon_cellrenderer")
+        pixbuf_cr.set_property("stock-size", gtk.ICON_SIZE_MENU)
+        column.set_cell_data_func(pixbuf_cr, self._set_icon)
+        filename_cr = self.get_object("filename_cellrenderer")
+        column.set_cell_data_func(filename_cr, self._set_filename)
+        size_c = self.get_object("treeviewcolumn2")
+        size_cr = self.get_object("size_cellrenderer")
+        size_c.set_cell_data_func(size_cr, self._set_size)
+        Window.show(self, parent_w)
+
+    def _set_icon(self, column, cellrenderer, model, itr):
+        fp = model[itr][2]
+        stockid = gtk.STOCK_FILE if fp.isfile() else gtk.STOCK_DIRECTORY
+        cellrenderer.set_property("stock-id", stockid)
+
+    def _set_filename(self, column, cellrenderer, model, itr):
+        fp = model[itr][2]
+        cellrenderer.set_property("text", fp.basename())
+
+    def _set_size(self, column, cellrenderer, model, itr):
+        fp = model[itr][2]
+        if fp.isfile():
+            cellrenderer.set_property("text", tools.fmtsize(fp.getsize()))
+        else:
+            size = self._calc_size(model, itr)
+            cellrenderer.set_property("text", tools.fmtsize(size))
+
+    def _calc_size(self, model, parent):
+        size = 0
+        fp = model[parent][2]
+        if fp.isdir():
+            itr = model.iter_children(parent)
+            while itr:
+                size += self._calc_size(model, itr)
+                itr = model.iter_next(itr)
+        elif model[parent][1]:
+            size += fp.getsize()
+        return size
+
+    def on_selected_cellrenderer_toggled(self, cellrenderer, path):
+        model = self.get_object("treestore1")
+        itr = model.get_iter(path)
+        selected = not model[itr][1]
+        self._select_children(model, itr, selected)
+        parent = model.iter_parent(itr)
+        while parent:
+            if model[parent][0]:
+                model[parent][1] = selected
+            parent = model.iter_parent(parent)
+
+    def _select_children(self, model, parent, select):
+        itr = model.iter_children(parent)
+        while itr:
+            self._select_children(model, itr, select)
+            itr = model.iter_next(itr)
+        if model[parent][0]:
+            model[parent][1] = select
+
+    def on_filechooser_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            filename = dialog.get_filename()
+            if filename is None:
+                self.get_object("export_button").set_sensitive(False)
+            elif os.path.exists(filename) and not os.path.isfile(filename):
+                dialog.unselect_all()
+                self.get_object("export_button").set_sensitive(False)
+            else:
+                if os.path.splitext(filename)[1] == "":
+                    filename += ".vbp"
+                txt = filename.decode(sys.getfilesystemencoding()).encode(
+                    "utf8")
+                self.get_object("filename_entry").set_text(txt)
+                self.get_object("export_button").set_sensitive(True)
+        dialog.destroy()
+
+    def on_open_button_clicked(self, button):
+        chooser = gtk.FileChooserDialog(title=_("Export project"),
+                action=gtk.FILE_CHOOSER_ACTION_SAVE,
+                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                        gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        vbp = gtk.FileFilter()
+        vbp.add_pattern("*.vbp")
+        chooser.set_do_overwrite_confirmation(True)
+        chooser.set_filter(vbp)
+        chooser.connect("response", self.on_filechooser_response)
+        chooser.set_transient_for(self.window)
+        chooser.show()
+
+    def on_filename_entry_changed(self, entry):
+        self.get_object("export_button").set_sensitive(bool(entry.get_text()))
+
+    def on_ExportProjectDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            model = self.get_object("treestore1")
+            files = []
+            ancestor = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
+            gather_selected(model, model.get_iter_first(), ancestor, files)
+            output = self.get_object("filename_entry").get_text()
+            self.progressbar.wait_for(project.manager.export(output, files))
+        dialog.destroy()
+
+
+class ImportProjectDialog(Window):
+
+    resource = "data/importproject.ui"
+
+    def __init__(self, factory, progressbar):
+        Window.__init__(self)
+        self.factory = factory
+        self.progressbar = progressbar
+        self.get_object("vbp_filefilter").add_pattern("*.vbp")
+
+    def set_import_sensitive(self, filename, name):
+        if filename and os.path.isfile(filename) and name:
+            self.get_object("import_button").set_sensitive(True)
+        else:
+            self.get_object("import_button").set_sensitive(False)
+
+    def on_filechooserbutton_file_set(self, filechooser):
+        filename = filechooser.get_filename()
+        prjname = self.get_object("prjname_entry").get_text()
+        self.set_import_sensitive(filename, prjname)
+
+    def on_prjname_entry_changed(self, entry):
+        filename = self.get_object("filechooserbutton").get_filename()
+        self.set_import_sensitive(filename, entry.get_text())
+
+    def on_ImportProjectDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            archive = self.get_object("filechooserbutton").get_filename()
+            prjname = self.get_object("prjname_entry").get_text()
+            d = project.manager.import_(prjname, self.factory, archive)
+            self.progressbar.wait_for(d)
+        dialog.destroy()

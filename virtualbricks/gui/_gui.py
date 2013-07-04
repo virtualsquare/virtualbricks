@@ -131,7 +131,7 @@ class VMPopupMenu(BrickPopupMenu):
         menu.append(resume)
         return menu
 
-    def snapshot(self):
+    def snapshot(self, factory):
 
         def grep(out, pattern):
             if out.find(pattern) == -1:
@@ -143,16 +143,21 @@ class VMPopupMenu(BrickPopupMenu):
             else:
                 self.original.poweron("virtualbricks")
 
-        # XXX: hda can be None
-        args = ["snapshot", "-l", self.original.config["hda"]]
-        output = utils.getProcessOutput("qemu-img", args, os.environ)
-        output.addCallback(grep, "virtualbricks")
-        output.addCallbacks(loadvm, log.err)
-        return output
+        img = factory.get_image_by_name(self.original.config["hda"])
+        if img is not None:
+            args = ["snapshot", "-l", img.path]
+            output = utils.getProcessOutput("qemu-img", args, os.environ)
+            output.addCallback(grep, "virtualbricks")
+            output.addCallbacks(loadvm, log.err)
+            return output
+        try:
+            raise RuntimeError("No such image")
+        except:
+            return defer.fail(failure.Failure())
 
     def on_resume_activate(self, menuitem, gui):
         log.debug("Resuming virtual machine %s", self.original.get_name())
-        gui.user_wait_action(self.snapshot)
+        gui.user_wait_action(self.snapshot, gui.brickfactory)
 
 
 interfaces.registerAdapter(VMPopupMenu, GVirtualMachine, interfaces.IMenu)
@@ -367,18 +372,22 @@ class VMJobMenu(JobMenu):
                 log.msg(_("Suspend/Resume not supported on this disk."),
                         isError=True)
 
-        hda = self.original.config["hda"]
-        if not hda:
+        img = factory.get_image_by_name(self.original.config["hda"])
+        if not img:
             log.msg(_("Suspend/Resume not supported on this disk."),
                     isError=True)
-            return defer.fail()
-        args = ["snapshot", "-c", "virtualbricks", hda]
+            try:
+                raise RuntimeError(_("Suspend/Resume not supported on this "
+                                     "disk."))
+            except:
+                return defer.fail()
+        args = ["snapshot", "-c", "virtualbricks", img.path]
         value = utils.getProcessValue("qemu-img", args, os.environ)
         value.addCallback(do_suspend)
         return value
 
     def on_suspend_activate(self, menuitem, gui):
-        gui.user_wait_action(self.suspend)
+        gui.user_wait_action(self.suspend, gui.factory)
 
     def on_powerdown_activate(self, menuitem):
         log.info("send ACPI powerdown")
@@ -771,7 +780,7 @@ class QemuConfigController(ConfigController):
         itr = images.get_iter_first()
         while itr:
             image = images[itr][0]
-            model.append((image.basename(), image))
+            model.append((image.name, image))
             itr = images.iter_next(itr)
 
     def setup_netwoks_cards(self):
