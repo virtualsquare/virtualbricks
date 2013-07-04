@@ -72,3 +72,13 @@ class LockedImageError(Error):
 
 class ImageAlreadyInUseError(Error):
     pass
+
+
+# Project specific errors
+
+class ProjectExistsError(InvalidNameError):
+    pass
+
+
+class ProjectNotExistsError(InvalidNameError):
+    pass

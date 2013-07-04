@@ -1,10 +1,7 @@
-import os
-import sys
-
 from twisted.trial import unittest
 from twisted.python import filepath
 
-from virtualbricks import settings, project, configfile, _settings
+from virtualbricks import settings, project, configfile, errors
 
 
 class FactoryStub:
@@ -16,27 +13,6 @@ class FactoryStub:
 
 
 class TestProject(unittest.TestCase):
-
-    def test_is_in_path(self):
-
-        def reset_path():
-            os.environ["PATH"] = oldpath
-
-        oldpath = os.environ["PATH"]
-        self.addCleanup(reset_path)
-        os.environ["PATH"] = ""
-        self.assertFalse(project.is_in_path("python"))
-        os.environ["PATH"] = os.path.dirname(sys.executable)
-        self.assertTrue(project.is_in_path("python"))
-
-    def test_archive_manager(self):
-
-        def reset_archive():
-            del project.Project.archive
-
-        project.install_archive_manager()
-        self.addCleanup(reset_archive)
-        self.assertTrue(hasattr(project.Project.archive, "create"))
 
     def create_project_manager(self):
         path = filepath.FilePath(self.mktemp())
@@ -55,15 +31,15 @@ class TestProject(unittest.TestCase):
     def test_new_project(self):
         f = FactoryStub()
         pm = self.create_project_manager()
-        self.assertRaises(project.InvalidNameError, pm.create, "../t", f)
-        self.assertRaises(project.InvalidNameError, pm.create, "/test", f)
+        self.assertRaises(errors.InvalidNameError, pm.create, "../t", f)
+        self.assertRaises(errors.InvalidNameError, pm.create, "/test", f)
         prj = pm.create("test", f)
         self.addCleanup(pm.close)
         self.assertTrue(prj.filepath.child(".project").isfile())
-        self.assertRaises(project.InvalidNameError, pm.create, "test", f)
+        self.assertRaises(errors.InvalidNameError, pm.create, "test", f)
 
     def restore_home(self):
-        settings.VIRTUALBRICKS_HOME = _settings.VIRTUALBRICKS_HOME
+        settings.VIRTUALBRICKS_HOME = settings.DEFAULT_HOME
 
     def test_restore_save(self):
 
@@ -82,12 +58,12 @@ class TestProject(unittest.TestCase):
     def test_restore_project_set_virtualbricks_home(self):
         self.addCleanup(self.restore_home)
         self.assertEqual(settings.VIRTUALBRICKS_HOME,
-                         _settings.VIRTUALBRICKS_HOME)
+                         settings.DEFAULT_HOME)
         self.patch(configfile, "restore", lambda fa, fi: None)
         prj = self.create_project("test", FactoryStub())
         self.assertEqual(prj.path, settings.VIRTUALBRICKS_HOME)
         self.assertNotEqual(settings.VIRTUALBRICKS_HOME,
-                            _settings.VIRTUALBRICKS_HOME)
+                            settings.DEFAULT_HOME)
 
     def test_open_create_set_current(self):
         """Everytime ProjectManager's open or create are called,
@@ -101,3 +77,12 @@ class TestProject(unittest.TestCase):
         self.assertIs(project.current, prj2)
         prj3 = pm.open("new1", factory)
         self.assertIs(project.current, prj3)
+
+    def test_files(self):
+        prj = self.create_project("test", FactoryStub())
+        files = [prj.filepath.child(".project")]
+        self.assertEqual(list(prj.files()), files)
+        afile = prj.filepath.child("file")
+        afile.open("w").close()
+        files.append(afile)
+        self.assertEqual(sorted(prj.files()), sorted(files))

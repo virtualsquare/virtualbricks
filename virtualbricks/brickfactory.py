@@ -105,8 +105,6 @@ class BrickFactory(object):
 
     def reset(self):
         # hard reset
-        # XXX: what about remote hosts?
-        # XXX: what about disk images?
         for b in self.bricks:
             self.del_brick(b)
         del self.bricks[:]
@@ -117,6 +115,7 @@ class BrickFactory(object):
 
         del self.socks[:]
         del self.disk_images[:]
+        del self.remote_hosts[:]
 
     def get_basefolder(self):
         return project.current.path
@@ -138,20 +137,30 @@ class BrickFactory(object):
     # [   Disk Images  ]
     # [[[[[[[[[]]]]]]]]]
 
-    def new_disk_image(self, path, description=""):
+    def new_disk_image(self, name, path, description=""):
         """Add one disk image to the library."""
 
         log.msg("Creating new disk image at '%s'" % path)
+        name = self.normalize(name)
+        if self.is_in_use(name):
+            raise erros.NameAlreadyInUseError(name)
         path = os.path.abspath(path)
         for img in self.disk_images:
-            if img.path == path:
+            if img.path == path or img.name == name:
                 raise errors.ImageAlreadyInUseError(path)
-        img = virtualmachines.Image(path, description)
+        img = virtualmachines.Image(name, path, description)
         self.disk_images.append(img)
         return img
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
+
+    def get_image_by_name(self, name):
+        """Return a disk image given its name or {None}."""
+
+        for img in self.disk_images:
+            if img.name == name:
+                return img
 
     def get_image_by_path(self, path):
         """Get disk image object from the image library by its path."""
@@ -359,7 +368,7 @@ class BrickFactory(object):
         """used to determine whether the chosen name can be used or
         it has already a duplicate among bricks or events."""
 
-        for o in itertools.chain(self.bricks, self.events):
+        for o in itertools.chain(self.bricks, self.events, self.disk_images):
             if o.name == name:
                 return True
         return False

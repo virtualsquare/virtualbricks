@@ -49,7 +49,7 @@ DEFAULT_CONF = {
     "systray": True,
     "workspace": DEFAULT_WORKSPACE,
     "current_project": DEFAULT_PROJECT,
-    "cowfmt": "cow",
+    "cowfmt": "qcow2",
     "show_missing": True
 }
 
@@ -82,6 +82,7 @@ class Settings:
     DEFAULT_SECTION = "Main"
     DEFAULT_PROJECT = DEFAULT_PROJECT
     VIRTUALBRICKS_HOME = VIRTUALBRICKS_HOME
+    DEFAULT_HOME = VIRTUALBRICKS_HOME
 
     def __init__(self, filename=CONFIGFILE):
         self.filename = filename

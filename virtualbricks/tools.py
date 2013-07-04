@@ -170,3 +170,14 @@ def backing_files_for(files):
                 yield get_backing_file(fp)
         except UnknowTypeError:
             pass
+
+
+def fmtsize(size):
+    if size < 1024:
+        return str(size)
+    size /= 1024.0
+    for unit in "KB", "MB", "GB":
+        if size < 1024:
+            return "{0:.1f} {1}".format(size, unit)
+        size /= 1024.0
+    return "{0:.1f} TB".format(size)

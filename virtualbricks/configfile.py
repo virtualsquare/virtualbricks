@@ -105,15 +105,12 @@ class ConfigFile:
         else:
             self.save_to(factory, str_or_obj)
 
-    def save_to(self, factory, fileobj):
-        return self.__save_to(factory, fileobj)
-
-    def __save_to(self, factory, fileobj):
-        # Disk Images
-        for img in factory.disk_images:
-            fileobj.write('[DiskImage:' + img.name + ']\n')
-            fileobj.write('path=' + img.path + '\n')
-            fileobj.write("\n")
+    def save_to(self, factory, fileobj, include_images=True):
+        if include_images:
+            for img in factory.disk_images:
+                fileobj.write('[DiskImage:' + img.name + ']\n')
+                fileobj.write('path=' + img.path + '\n')
+                fileobj.write("\n")
 
         for event in factory.events:
             event.save_to(fileobj)
@@ -155,9 +152,6 @@ class ConfigFile:
 
     def restore_from(self, factory, fileobj):
         factory.reset()
-        return self.__restore_from(factory, fileobj)
-
-    def __restore_from(self, factory, fileobj):
         l = fileobj.readline()
         b = None
         while (l):
@@ -234,7 +228,7 @@ class ConfigFile:
                             continue
                         if host is None and not os.access(path, os.R_OK):
                             continue
-                        factory.new_disk_image(path)
+                        factory.new_disk_image(name, path)
                         continue
 
                     elif ntype == 'RemoteHost':
@@ -301,5 +295,3 @@ def restore(factory, filename=None):
         filename = os.path.join(settings.get("workspace"),
                                 settings.get("current_project"), ".project")
     _config.restore(factory, filename)
-
-
