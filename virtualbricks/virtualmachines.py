@@ -26,7 +26,7 @@ import itertools
 from twisted.internet import utils, defer
 from twisted.python import failure
 
-from virtualbricks import errors, tools, settings, bricks, _compat
+from virtualbricks import errors, tools, settings, bricks, _compat, project
 
 
 if False:
@@ -195,14 +195,18 @@ class Disk:
 
     @property
     def cow(self):
-        return self.vm.config["private" + self.device]
+        return self.VM.config["private" + self.device]
 
     @property
     def basefolder(self):
-        return self.VM.get_basefolder()
+        return project.current.path
+
+    @property
+    def vm_name(self):
+        return self.VM.name
 
     def __init__(self, VM, dev):
-        self.VM = self.vm = VM
+        self.VM = VM
         self.device = dev
 
     def args(self):
@@ -214,11 +218,11 @@ class Disk:
         self.image = image
 
     def acquire(self):
-        if self.image and not self.cow and not self.VM.config["snapshot"]:
+        if self.image and not self.cow and not self.readonly():
             self.image.acquire(self)
 
     def release(self):
-        if self.image and not self.cow and not self.VM.config["snapshot"]:
+        if self.image and not self.cow and not self.readonly():
             self.image.release(self)
 
     def _get_base(self):
@@ -275,7 +279,7 @@ class Disk:
             if e.errno != errno.EEXIST:
                 raise
         cowname = os.path.join(self.basefolder,
-                               "%s_%s.cow" % (self.VM.name, self.device))
+                               "%s_%s.cow" % (self.vm_name, self.device))
         try:
             return self._check_base(cowname)
         except IOError, e:
@@ -307,7 +311,7 @@ class Disk:
         return new
 
     def __repr__(self):
-        return "<Disk {self.device}({self.VM.name}) image={self.image} " \
+        return "<Disk {self.device}({self.vm_name}) image={self.image} " \
                 "readonly={readonly} cow={self.cow}>".format(
                     self=self, readonly=self.readonly())
 
@@ -410,6 +414,37 @@ VM_COMMAND_BUILDER = {
         "#stdout": ""}
 
 
+class DefaultDevice:
+
+    def __ne__(self, other):
+        if isinstance(other, Disk):
+            return other.image is not None
+        return NotImplemented
+
+    def __eq__(self, other):
+        return not self != other
+
+
+default_device = DefaultDevice()
+
+
+class Device(bricks.Parameter):
+
+    def __init__(self, name):
+        self.name = name
+        bricks.Parameter.__init__(self, default_device)
+
+    def from_string_brick(self, in_string, brick):
+        disk = brick.config[self.name]
+        disk.set_image(brick.factory.get_image_by_name(in_string))
+        return disk
+
+    def to_string(self, disk):
+        if disk.image is not None:
+            return disk.image.name
+        return ""
+
+
 class VirtualMachineConfig(bricks.Config):
 
     parameters = {"name": bricks.String(""),
@@ -427,25 +462,25 @@ class VirtualMachineConfig(bricks.Config):
                   # additional media
                   "use_virtio": bricks.Boolean(False),
 
-                  "hda": bricks.String(""),
+                  "hda": Device("hda"),
                   "privatehda": bricks.Boolean(False),
 
-                  "hdb": bricks.String(""),
+                  "hdb": Device("hdb"),
                   "privatehdb": bricks.Boolean(False),
 
-                  "hdc": bricks.String(""),
+                  "hdc": Device("hdc"),
                   "privatehdc": bricks.Boolean(False),
 
-                  "hdd": bricks.String(""),
+                  "hdd": Device("hdd"),
                   "privatehdd": bricks.Boolean(False),
 
-                  "fda": bricks.String(""),
+                  "fda": Device("fda"),
                   "privatefda": bricks.Boolean(False),
 
-                  "fdb": bricks.String(""),
+                  "fdb": Device("fdb"),
                   "privatefdb": bricks.Boolean(False),
 
-                  "mtdblock": bricks.String(""),
+                  "mtdblock": Device("mtdblock"),
                   "privatemtdblock": bricks.Boolean(False),
 
                   # system and machine
@@ -507,23 +542,11 @@ class VirtualMachine(bricks.Brick):
     command_builder = VM_COMMAND_BUILDER
     config_factory = VirtualMachineConfig
 
-    for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-        s = """def cbset_{0}(self, value):
-            image = self.factory.get_image_by_name(value)
-            self.disks["{0}"].set_image(image)""".format(hd)
-        exec s
-    del hd
-
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.config["name"] = name
-        self.disks = {}
-        for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            disk = Disk(self, hd)
-            self.disks[hd] = disk
-            if self.config[hd]:
-                image = factory.get_image_by_name(self.config[hd])
-                disk.set_image(image)
+        for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
+            self.config[dev] = Disk(self, dev)
 
     def poweron(self, snapshot=""):
         def acquire(passthru):
@@ -551,9 +574,6 @@ class VirtualMachine(bricks.Brick):
             return bricks.Brick.poweroff(self)
         else:
             return bricks.Brick.poweroff(self, kill)
-
-    def get_basefolder(self):
-        return self.factory.get_basefolder()
 
     def get_parameters(self):
         txt = [_("command:") + " %s, ram: %s" % (self.prog(),
@@ -606,10 +626,9 @@ class VirtualMachine(bricks.Brick):
 
     def _get_devices(self,):
         devs = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
-        return [self._get_disk_args(i, self.disks[dev]) for i, dev in
-                enumerate(devs) if self.config[dev]]
+        return [self._args_for(i, self.config[d]) for i, d in enumerate(devs)]
 
-    def _get_disk_args(self, idx, disk):
+    def _args_for(self, idx, disk):
         if self.config["use_virtio"]:
             def cb(disk_name):
                 return ["-drive", "file=%s,if=virtio,index=%s" %
@@ -744,10 +763,10 @@ class VirtualMachine(bricks.Brick):
         while devices:
             dev = devices.pop()
             try:
-                self.disks[dev].acquire()
+                self.config[dev].acquire()
             except errors.LockedImageError:
                 for _dev in acquired:
-                    self.disks[_dev].release()
+                    self.config[_dev].release()
                 raise
             else:
                 acquired.append(dev)
@@ -755,4 +774,4 @@ class VirtualMachine(bricks.Brick):
     def release(self):
         log.debug("Releasing disk locks")
         for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            self.disks[hd].release()
+            self.config[hd].release()

@@ -25,7 +25,7 @@ import contextlib
 
 from twisted.python import failure, filepath
 
-from virtualbricks import _compat, settings, virtualmachines
+from virtualbricks import _compat, settings
 
 
 if False:  # pyflakes
@@ -105,12 +105,11 @@ class ConfigFile:
         else:
             self.save_to(factory, str_or_obj)
 
-    def save_to(self, factory, fileobj, include_images=True):
-        if include_images:
-            for img in factory.disk_images:
-                fileobj.write('[DiskImage:' + img.name + ']\n')
-                fileobj.write('path=' + img.path + '\n')
-                fileobj.write("\n")
+    def save_to(self, factory, fileobj):
+        for img in factory.disk_images:
+            fileobj.write('[Image:' + img.name + ']\n')
+            fileobj.write('path=' + img.path + '\n')
+            fileobj.write("\n")
 
         for event in factory.events:
             event.save_to(fileobj)
@@ -180,6 +179,7 @@ class ConfigFile:
                             macaddr = l.split("|")[4]
                             this_sock = "?"
                             if sockname == '_hostonly':
+                                from virtualbricks import virtualmachines
                                 this_sock = virtualmachines.hostonly_sock
                             else:
                                 for s in factory.socks:
@@ -207,7 +207,7 @@ class ConfigFile:
                     if ntype == 'Event':
                         factory.newevent(ntype, name)
                         component = factory.get_event_by_name(name)
-                    elif ntype == 'DiskImage':
+                    elif ntype == 'Image':
                         log.debug("Found Disk image %s" % name)
                         path = ""
                         host = None

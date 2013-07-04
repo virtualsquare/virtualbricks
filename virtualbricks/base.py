@@ -19,8 +19,6 @@
 import re
 
 from twisted.python import reflect
-from twisted.python.versions import Version
-from twisted.python.deprecate import deprecated
 
 from virtualbricks import _compat
 
@@ -77,10 +75,16 @@ class Parameter:
     def __init__(self, default):
         self.default = default
 
-    def to_string(self):
+    def from_string_brick(self, in_string, brick):
+        return self.from_string(in_string)
+
+    def to_string_brick(self, in_object, brick):
+        return self.to_string(in_object)
+
+    def from_string(self, in_string):
         pass
 
-    def from_string(self):
+    def to_string(self, in_object):
         pass
 
 
@@ -104,8 +108,8 @@ class SpinInt(Integer):
             raise ValueError(_("value out range %d (%d, %d)") % (i, self.min,
                                                                  self.max))
 
-    def from_string(self, in_object):
-        i = int(in_object)
+    def from_string(self, in_string):
+        i = int(in_string)
         self.assert_in_range(i)
         return i
 
@@ -117,8 +121,8 @@ class SpinInt(Integer):
 
 class String(Parameter):
 
-    def from_string(self, in_object):
-        return in_object
+    def from_string(self, in_string):
+        return in_string
 
     def to_string(self, in_object):
         return in_object
@@ -132,8 +136,8 @@ class Float(Parameter):
 
 class Boolean(Parameter):
 
-    def from_string(self, in_object):
-        return in_object.lower() in set(["true", "*", "yes"])
+    def from_string(self, in_string):
+        return in_string.lower() in set(["true", "*", "yes"])
 
     def to_string(self, in_object):
         return "*" if in_object else ""
@@ -143,8 +147,8 @@ class Object(Parameter):
     """A special parameter that is never translated to or from a string."""
     # XXX: pratically the same of a string
 
-    def from_string(self, in_object):
-        return in_object
+    def from_string(self, in_string):
+        return in_string
 
     def to_string(self, in_object):
         return in_object
@@ -159,8 +163,8 @@ class ListOf(Parameter):
         Parameter.__init__(self, [])
         self.element_type = element_type
 
-    def from_string(self, in_object):
-        strings = eval(in_object, {}, {})
+    def from_string(self, in_string):
+        strings = eval(in_string, {}, {})
         return map(self.element_type.from_string, strings)
 
     def to_string(self, in_object):
@@ -233,7 +237,8 @@ class Base(object):
                 if value is None:
                     # value is None when the parameter is not set
                     value = ""
-                attrs[name] = self.config.parameters[name].from_string(value)
+                param = self.config.parameters[name]
+                attrs[name] = param.from_string_brick(value, self)
                 curpos = fileobj.tell()
                 line = fileobj.readline()
         self.set(attrs)
@@ -242,7 +247,7 @@ class Base(object):
         config = self.config
         fileobj.write("[%s:%s]\n" % (self.get_type(), self.name))
         for name, param in sorted(config.parameters.iteritems()):
-            if config[name] != param.default and not isinstance(param, Object):
-                fileobj.write("%s=%s\n" % (name,
-                                           param.to_string(config[name])))
+            if config[name] != param.default:
+                value = param.to_string_brick(config[name], self)
+                fileobj.write("%s=%s\n" % (name, value))
         fileobj.write("\n")

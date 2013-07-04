@@ -20,6 +20,7 @@ import os
 import gtk
 from zope.interface import implements
 from twisted.internet import reactor, utils, defer, error
+from twisted.python import failure
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
                            console, link, _compat, settings, tools)
@@ -361,7 +362,7 @@ class VMJobMenu(JobMenu):
         menu.insert(term, 10)
         return menu
 
-    def suspend(self):
+    def suspend(self, factory):
 
         def do_suspend(exit_code):
             if exit_code == 0:
@@ -850,7 +851,7 @@ class QemuConfigController(ConfigController):
         for pname, wname in self.config_to_combo_mapping:
             self._combo_select(go(wname), cfg[pname])
         for pname, wname in self.hd_to_combo_mapping:
-            self._combo_select(go(wname), self.original.disks[pname].image)
+            self._combo_select(go(wname), self.original.config[pname].image)
         for pname, wname in self.config_to_filechooser_mapping:
             if cfg[pname]:
                 go(wname).set_filename(cfg[pname])
@@ -866,15 +867,12 @@ class QemuConfigController(ConfigController):
                 obj = ""
             config[name] = obj
 
-    def _hd_config_set_combo(self, config, name, combo):
+    def _hd_config_set_combo(self, disk, combo):
         model = combo.get_model()
         itr = combo.get_active_iter()
         if itr:
             img = model[itr][1]
-            if img is None:
-                config[name] = ""
-            else:
-                config[name] = img.path
+            disk.set_image(img)
 
     def configure_brick(self, gui):
         cfg = {}
@@ -885,7 +883,8 @@ class QemuConfigController(ConfigController):
         for pname, wname in self.config_to_combo_mapping:
             self._config_set_combo(cfg, pname, self.get_object(wname))
         for pname, wname in self.hd_to_combo_mapping:
-            self._hd_config_set_combo(cfg, pname, self.get_object(wname))
+            self._hd_config_set_combo(self.original.config[pname],
+                                      self.get_object(wname))
         for pname, wname in self.config_to_filechooser_mapping:
             filename = self.get_object(wname).get_filename()
             if filename:
@@ -975,7 +974,7 @@ class QemuConfigController(ConfigController):
         self.get_object("tdf_checkbutton").set_sensitive(enabled)
         self._disable_qemu_combos(not enabled)
 
-    def _disable_qemu_combos(self,active):
+    def _disable_qemu_combos(self, active):
         self.get_object("argv0_combobox").set_sensitive(active)
         self.get_object("cpu_combobox").set_sensitive(active)
         self.get_object("machine_combobox").set_sensitive(active)
