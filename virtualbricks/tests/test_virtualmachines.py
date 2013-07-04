@@ -110,20 +110,25 @@ class TestVirtualMachine(unittest.TestCase):
     def test_lock(self):
         self.vm.acquire()
         self.vm.release()
-        image = vm.Image("/vmimage")
+        image = vm.Image("test", "/vmimage")
         disk = DiskStub(self.vm, "hdb")
         disk.set_image(image)
         disk.acquire()
-        self.vm.disks["hda"].set_image(image)
+        self.vm.config["hda"].set_image(image)
         self.assertRaises(errors.LockedImageError, self.vm.acquire)
         _image = _Image()
-        self.vm.disks["hdb"].set_image(_image)
+        self.vm.config["hdb"].set_image(_image)
         try:
             self.vm.acquire()
         except errors.LockedImageError:
             pass
-        self.assertEqual(_image.acquired, [self.vm.disks["hdb"]])
-        self.assertEqual(_image.released, [self.vm.disks["hdb"]])
+        self.assertEqual(_image.acquired, [self.vm.config["hdb"]])
+        self.assertEqual(_image.released, [self.vm.config["hdb"]])
+
+    def test_config_device(self):
+        config = self.vm.config
+        disk = config["hda"]
+        self.assertEqual(config.parameters["hda"].to_string(disk), "")
 
 
 class TestVMPlug(test_link.TestPlug):
@@ -361,7 +366,7 @@ class TestDisk(unittest.TestCase):
         self.assertIs(self.disk.image, None)
         self.assertFalse(self.vm.config["snapshot"])
         self.disk.acquire()
-        image = vm.Image("/vmimage")
+        image = vm.Image("test", "/vmimage")
         self.vm.set(snapshot=False, privatehda=False)
         self.disk.set_image(image)
         self.disk.acquire()
@@ -375,7 +380,7 @@ class TestDisk(unittest.TestCase):
         self.assertIs(self.disk.image, None)
         self.assertFalse(self.vm.config["snapshot"])
         self.disk.release()
-        image = vm.Image("/vmimage")
+        image = vm.Image("test", "/vmimage")
         self.vm.set(snapshot=False, privatehda=False)
         self.disk.set_image(image)
         self.disk.acquire()
@@ -385,7 +390,7 @@ class TestDisk(unittest.TestCase):
 class TestImage(unittest.TestCase):
 
     def test_acquire(self):
-        image = vm.Image("/vmimage")
+        image = vm.Image("test", "/vmimage")
         o = object()
         image.acquire(o)
         self.assertIs(image.master, o)
@@ -395,7 +400,7 @@ class TestImage(unittest.TestCase):
         image.acquire(o)
 
     def test_release(self):
-        image = vm.Image("/vmimage")
+        image = vm.Image("test", "/vmimage")
         exc = self.assertRaises(errors.LockedImageError, image.release,
                                 object())
         self.assertEqual(exc.args, (image, None))

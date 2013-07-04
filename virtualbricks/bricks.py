@@ -25,12 +25,12 @@ from twisted.internet import protocol, reactor, error, defer
 from twisted.python import failure, log as _log
 
 from virtualbricks import base, errors, settings, _compat
-from virtualbricks.base import (Config as _Config, String, Integer, SpinInt,
-                                Float, Boolean, Object, ListOf)
+from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
+                                SpinInt, Float, Boolean, Object, ListOf)
 
 
-__all__ = ["Brick", "Config", "String", "Integer", "SpinInt", "Float",
-           "Boolean", "Object", "ListOf"]
+__all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
+           "Float", "Boolean", "Object", "ListOf"]
 
 if False:  # pyflakes
     _ = str

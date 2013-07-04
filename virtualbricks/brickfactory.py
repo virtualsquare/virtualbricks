@@ -117,9 +117,6 @@ class BrickFactory(object):
         del self.disk_images[:]
         del self.remote_hosts[:]
 
-    def get_basefolder(self):
-        return project.current.path
-
     def register_brick_type(self, factory, *types):
         """Register a new brick type.
 
