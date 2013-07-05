@@ -17,6 +17,7 @@
 
 import os
 import re
+import logging
 
 import gobject
 import gtk
@@ -2329,7 +2330,8 @@ class TextBufferObserver(_log.FileLogObserver):
 			lvl = eventDict["record"].levelname
 			text = eventDict["record"].getMessage()
 		else:
-			lvl = "ERROR" if eventDict["isError"] else "INFO"
+			lvl = logging.getLevelName(eventDict.get("logLevel",
+					[logging.INFO, logging.ERROR][eventDict["isError"]]))
 			text = _log.textFromEventDict(eventDict)
 			if text is None:
 				return
