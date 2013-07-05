@@ -140,7 +140,7 @@ class BrickFactory(object):
         log.msg("Creating new disk image at '%s'" % path)
         name = self.normalize(name)
         if self.is_in_use(name):
-            raise erros.NameAlreadyInUseError(name)
+            raise errors.NameAlreadyInUseError(name)
         path = os.path.abspath(path)
         for img in self.disk_images:
             if img.path == path or img.name == name:
@@ -377,6 +377,13 @@ class BrickFactory(object):
         sock = link.Sock(brick, name)
         self.socks.append(sock)
         return sock
+
+    def get_sock_by_name(self, name):
+        if name == "_hostonly":
+            return virtualmachines.hostonly_sock
+        for sock in self.socks:
+            if sock.nickname == name:
+                return sock
 
     def connect_to(self, brick, nick):
         endpoint = None
