@@ -1,10 +1,29 @@
 import os
+import StringIO
 
 from twisted.python import log, filepath
 
 from virtualbricks import configfile
 from virtualbricks.tests import unittest, stubs
 
+
+CONFIG1 = """
+[Image:martin]
+path=/vimages/vtatpa.martin.qcow2
+
+[Qemu:sender]
+hda=martin
+kvm=*
+name=sender
+privatehda=*
+tdf=*
+
+[Wirefilter:wf]
+
+[Switch:sw1]
+
+link|sender|sw1_port|rtl8139|00:aa:79:71:be:61
+"""
 
 class TestConfigFile(unittest.TestCase):
 
@@ -54,3 +73,26 @@ class TestConfigFile(unittest.TestCase):
     def test_restore(self):
         config = configfile.ConfigFile()
         self.assertRaises(IOError, config.restore, None, self.mktemp())
+
+
+class TestParser(unittest.TestCase):
+
+    def test_iter(self):
+        sio = StringIO.StringIO(CONFIG1)
+        parser = configfile.Parser(sio)
+        itr = iter(parser)
+        sec1 = next(itr)
+        self.assertEqual(sec1.type, "Image")
+        self.assertEqual(sec1.name, "martin")
+        sec2 = next(itr)
+        self.assertEqual(sec2.type, "Qemu")
+        self.assertEqual(sec2.name, "sender")
+        sec3 = next(itr)
+        self.assertEqual(sec3.type, "Wirefilter")
+        self.assertEqual(sec3.name, "wf")
+        sec4 = next(itr)
+        self.assertEqual(sec4.type, "Switch")
+        self.assertEqual(sec4.name, "sw1")
+        link = next(itr)
+        self.assertEqual(link, ("link", "sender", "sw1_port", "rtl8139",
+                                "00:aa:79:71:be:61"))
