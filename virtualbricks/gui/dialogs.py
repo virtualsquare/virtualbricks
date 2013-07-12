@@ -322,7 +322,7 @@ class DisksLibraryDialog(Window):
         c = 0
         for brick in self.factory.bricks:
             if brick.get_type() == "Qemu":
-                for disk in brick.disks.values():
+                for disk in brick.disks():
                     if condition(disk, image):
                         c += 1
         self._set_text(cell_renderer, str(c), image.exists())
