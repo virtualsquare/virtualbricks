@@ -221,33 +221,6 @@ class Base(object):
             return self.config.parameters[name].from_string_brick(value, self)
         self.set(dict((n, getvalue(n, v)) for n, v in section))
 
-    # def load_from(self, fileobj):
-    #     attrs = {}
-    #     curpos = fileobj.tell()
-    #     line = fileobj.readline()
-    #     while True:
-    #         if not line:
-    #             # end of file
-    #             break
-    #         if line.startswith("#"):
-    #             curpos = fileobj.tell()
-    #             line = fileobj.readline()
-    #             continue
-    #         match = self.config.CONFIG_LINE.match(line)
-    #         if not match:
-    #             fileobj.seek(curpos)
-    #             break
-    #         else:
-    #             name, value = match.groups()
-    #             if value is None:
-    #                 # value is None when the parameter is not set
-    #                 value = ""
-    #             param = self.config.parameters[name]
-    #             attrs[name] = param.from_string_brick(value, self)
-    #             curpos = fileobj.tell()
-    #             line = fileobj.readline()
-    #     self.set(attrs)
-
     def save_to(self, fileobj):
         config = self.config
         fileobj.write("[%s:%s]\n" % (self.get_type(), self.name))

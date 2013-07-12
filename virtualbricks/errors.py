@@ -82,3 +82,7 @@ class ProjectExistsError(InvalidNameError):
 
 class ProjectNotExistsError(InvalidNameError):
     pass
+
+
+class InvalidArchiveError(Error):
+    """The archive format is not recognized."""
