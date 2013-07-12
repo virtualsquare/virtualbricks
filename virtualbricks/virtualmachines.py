@@ -534,6 +534,12 @@ class VirtualMachineConfig(bricks.Config):
                   "loadvm": bricks.String("")}
 
 
+def _get_nick(link):
+    if hasattr(link, "sock"):
+        return str(getattr(link.sock, "nickname", "None"))
+    return "None"
+
+
 class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
@@ -576,11 +582,10 @@ class VirtualMachine(bricks.Brick):
             return bricks.Brick.poweroff(self, kill)
 
     def get_parameters(self):
-        txt = [_("command:") + " %s, ram: %s" % (self.prog(),
-                                                 self.config["ram"])]
-
+        ram = self.config["ram"]
+        txt = [_("command:") + " %s, ram: %s" % (self.prog(), ram)]
         for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
-            txt.append("eth%d: %s" % (i, link.sock.nickname))
+            txt.append("eth%d: %s" % (i, _get_nick(link)))
         return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
