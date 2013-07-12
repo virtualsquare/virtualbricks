@@ -19,14 +19,12 @@
 import os
 import os.path
 import errno
-import re
 import traceback
 import contextlib
-import collections
 
-from twisted.python import failure, filepath
+from twisted.python import filepath
 
-from virtualbricks import _compat, settings
+from virtualbricks import _compat, settings, configparser
 
 
 if False:  # pyflakes
@@ -34,73 +32,6 @@ if False:  # pyflakes
 
 
 log = _compat.getLogger(__name__)
-
-
-class Section:
-
-    EMPTY = re.compile(r"^\s*$")
-    CONFIG_LINE = re.compile(r"^(\w+)\s*=\s*(.*)$")
-
-    def __init__(self, type, name, fileobj):
-        self.type = type
-        self.name = name
-        self.fileobj = fileobj
-
-    def __iter__(self):
-        curpos = self.fileobj.tell()
-        line = self.fileobj.readline()
-        while line:
-            if line.startswith("#") or self.EMPTY.match(line):
-                curpos = self.fileobj.tell()
-                line = self.fileobj.readline()
-                continue
-            match = self.CONFIG_LINE.match(line)
-            if match:
-                name, value = match.groups()
-                if value is None:
-                    # value is None when the parameter is not set
-                    value = ""
-                yield name, value
-                curpos = self.fileobj.tell()
-                line = self.fileobj.readline()
-            else:
-                self.fileobj.seek(curpos)
-                return
-
-
-Link = collections.namedtuple("Link", ["type", "owner", "sockname", "model",
-                                       "mac"])
-
-
-class Parser:
-
-    EMPTY = re.compile(r"^\s*$")
-    SECTION_HEADER = re.compile(r"^\[([a-zA-Z0-9_]+):(.+)\]$")
-    LINK = re.compile(r"^(link|sock)\|(\w+)\|(\w+)\|(\w+)\|"
-                      r"([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})$")
-
-    def __init__(self, fileobj):
-        self.fileobj = fileobj
-
-    def __iter__(self):
-        """Iter through sections. There are two kinds of sections: bricks,
-        events and images are one kind of section and links and socks are the
-        second kind of section.
-        """
-
-        line = self.fileobj.readline()
-        while line:
-            if line.startswith("#") or self.EMPTY.match(line):
-                line = self.fileobj.readline()
-                continue
-            match = self.SECTION_HEADER.match(line)
-            if match:
-                yield Section(match.group(1), match.group(2), self.fileobj)
-            else:
-                match = self.LINK.match(line)
-                if match:
-                    yield Link._make(match.groups())
-            line = self.fileobj.readline()
 
 
 @contextlib.contextmanager
@@ -148,6 +79,48 @@ def restore_backup(filename, fbackup):
                     "View->Messages."))
     if created:
         filename_back.remove()
+
+
+class ImageBuilder:
+
+    def __init__(self, factory, name):
+        self.factory = factory
+        self.name = name
+
+    def load_from(self, section):
+        log.debug("Found Disk image %s" % self.name)
+        path = dict(section).get("path", "")
+        if self.factory.is_in_use(self.name):
+            log.info("Skipping disk image, name %s already in "
+                     "use", self.name)
+        elif not os.access(path, os.R_OK):
+            log.info("Cannot access image file, skipping")
+        else:
+            return self.factory.new_disk_image(self.name, path)
+
+
+class SockBuilder:
+
+    def __init__(self, factory):
+        self.factory = factory
+
+    def load_from(self, sock):
+        brick = self.factory.get_brick_by_name(sock.owner)
+        if brick:
+            brick.add_sock(sock.mac, sock.model)
+
+
+class LinkBuilder:
+
+    def __init__(self, factory):
+        self.factory = factory
+
+    def load_from(self, link):
+        brick = self.factory.get_brick_by_name(link.owner)
+        if brick:
+            sock = self.factory.get_sock_by_name(link.sockname)
+            if sock:
+                brick.add_plug(sock, link.mac, link.model)
 
 
 class ConfigFile:
@@ -200,7 +173,7 @@ class ConfigFile:
                     t = ("link|{p.brick.name}|{p.sock.nickname}|{p.model}|"
                          "{p.mac}\n")
                 else:
-                    t = "link|{p.brick.name}||{p.model}|{pl.mac}\n"
+                    t = "link|{p.brick.name}||{p.model}|{p.mac}\n"
                 fileobj.write(t.format(p=plug))
             elif plug.sock is not None:
                 t = "link|{p.brick.name}|{p.sock.nickname}\n"
@@ -218,18 +191,17 @@ class ConfigFile:
             self.restore_from(factory, str_or_obj)
 
     def restore_from(self, factory, fileobj):
-        parser = Parser(fileobj)
-        for item in parser:
-            if isinstance(item, Link):
-                typ, name, sockname, model, mac = item
-                brick = factory.get_brick_by_name(name)
-                if typ == "sock":
-                    brick.add_sock(mac, model)
-                elif typ == "link":
-                    sock = factory.get_sock_by_name(sockname)
-                    brick.add_plug(sock, mac, model)
+        for item in configparser.Parser(fileobj):
+            if isinstance(item, tuple):  # links
+                self.build_link(factory, item.type).load_from(item)
             else:
                 self.build_type(factory, item.type, item.name).load_from(item)
+
+    def build_link(self, factory, type):
+        if type == "sock":
+            return SockBuilder(factory)
+        elif type == "link":
+            return LinkBuilder(factory)
 
     def build_type(self, factory, type, name):
         if type == "Image":
@@ -238,25 +210,6 @@ class ConfigFile:
             return factory.new_event(name)
         else:
             return factory.new_brick(type, name)
-
-
-class ImageBuilder:
-
-    def __init__(self, factory, name):
-        self.factory = factory
-        self.name = name
-
-    def load_from(self, section):
-        log.debug("Found Disk image %s" % self.name)
-        path = dict(section).get("path", "")
-        if self.factory.is_in_use(self.name):
-            log.info("Skipping disk image, name %s already in "
-                     "use", self.name)
-        elif not os.access(path, os.R_OK):
-            log.info("Cannot access image file, skipping")
-        else:
-            return self.factory.new_disk_image(self.name, path)
-
 
 
 _config = ConfigFile()

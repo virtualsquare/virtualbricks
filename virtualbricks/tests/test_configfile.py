@@ -3,7 +3,7 @@ import StringIO
 
 from twisted.python import log, filepath
 
-from virtualbricks import configfile
+from virtualbricks import configfile, configparser
 from virtualbricks.tests import unittest, stubs
 
 
@@ -79,7 +79,7 @@ class TestParser(unittest.TestCase):
 
     def test_iter(self):
         sio = StringIO.StringIO(CONFIG1)
-        parser = configfile.Parser(sio)
+        parser = configparser.Parser(sio)
         itr = iter(parser)
         sec1 = next(itr)
         self.assertEqual(sec1.type, "Image")
