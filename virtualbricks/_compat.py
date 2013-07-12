@@ -1,4 +1,6 @@
 import logging
+# import urllib
+# import uuid
 
 from twisted.python import log, failure
 
@@ -7,6 +9,25 @@ WARN = WARNING = logging.WARNING
 ERROR = logging.ERROR
 INFO = logging.INFO
 DEBUG = logging.DEBUG
+
+
+class LogInfo:
+
+    # class __metaclass__(type):
+
+    #     def __new__(cls, name, bases, dct):
+    #         if "id" not in dct:
+    #             format = dct.get("format", "UNKNOWN ERROR")
+    #             url = "http://virtualbricks.eu/ns/log/?" + urllib.urlencode(
+    #                 dict(format=format))
+    #             dct["id"] = uuid.uuid5(uuid.NAMESPACE_URL, url)
+    #         return type.__new__(cls, name, bases, dct)
+
+    level = INFO
+    format = ""
+
+    def __str__(self):
+        return self.format.format(self)
 
 
 class LoggingToTwistedLogHandler(logging.Handler):
@@ -21,9 +42,7 @@ class LoggingToTwistedLogHandler(logging.Handler):
             else:
                 log.msg(msg, record=record, system=record.name,
                         isError=record.levelno >= logging.ERROR)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
+        except Exception:
             self.handleError(record)
 
 
@@ -42,6 +61,8 @@ class Logger(object):
 
     def msg(self, message, **kwds):
         kwds["system"] = self.name
+        if isinstance(message, LogInfo):
+            kwds["logLevel"] = message.level
         log.msg(message, **kwds)
 
     def warning(self, msg, *args):
