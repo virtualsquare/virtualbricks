@@ -122,8 +122,9 @@ class TestVirtualMachine(unittest.TestCase):
             self.vm.acquire()
         except errors.LockedImageError:
             pass
-        self.assertEqual(_image.acquired, [self.vm.config["hdb"]])
-        self.assertEqual(_image.released, [self.vm.config["hdb"]])
+        else:
+            self.fail("vm lock acquired but it should not happend")
+        self.assertEqual(_image.acquired, _image.released)
 
     def test_config_device(self):
         config = self.vm.config

@@ -630,8 +630,7 @@ class VirtualMachine(bricks.Brick):
         return d
 
     def _get_devices(self,):
-        devs = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
-        return [self._args_for(i, self.config[d]) for i, d in enumerate(devs)]
+        return [self._args_for(i, d) for i, d in enumerate(self.disks())]
 
     def _args_for(self, idx, disk):
         if self.config["use_virtio"]:
@@ -763,20 +762,22 @@ class VirtualMachine(bricks.Brick):
     def acquire(self):
         """Acquire locks on images if needed."""
         log.debug("Aquiring disk locks")
-        devices = ["hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock"]
         acquired = []
-        while devices:
-            dev = devices.pop()
+        for disk in self.disks():
             try:
-                self.config[dev].acquire()
+                disk.acquire()
             except errors.LockedImageError:
-                for _dev in acquired:
-                    self.config[_dev].release()
+                for _disk in acquired:
+                    _disk.release()
                 raise
             else:
-                acquired.append(dev)
+                acquired.append(disk)
 
     def release(self):
         log.debug("Releasing disk locks")
+        for disk in self.disks():
+            disk.release()
+
+    def disks(self):
         for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            self.config[hd].release()
+            yield self.config[hd]
