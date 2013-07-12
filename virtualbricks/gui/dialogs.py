@@ -81,10 +81,11 @@ advised and possible with gtk-builder-convert.
 import os
 import sys
 import tempfile
+import functools
 
 import gtk
-from twisted.internet import utils
-from twisted.python import filepath
+from twisted.internet import utils, defer
+from twisted.python import filepath, failure
 
 from virtualbricks import (version, tools, _compat, console, settings,
                            virtualmachines, project)
@@ -114,6 +115,16 @@ BODY = """-- DO NOT MODIFY THE FOLLOWING LINES --
 
  affects virtualbrick
 """
+
+
+def destroy_on_exit(func):
+    @functools.wraps(func)
+    def on_response(self, dialog, response_id):
+        try:
+            func(self, dialog, response_id)
+        finally:
+            dialog.destroy()
+    return on_response
 
 
 class Base(object):
@@ -1129,6 +1140,10 @@ def gather_selected(model, parent, workspace, lst):
         itr = model.iter_next(itr)
 
 
+class ImportCanceled(Exception):
+    pass
+
+
 class ExportProjectDialog(Window):
 
     resource = "data/exportproject.ui"
@@ -1269,6 +1284,17 @@ class ImportProjectDialog(Window):
         self.progressbar = progressbar
         self.get_object("vbp_filefilter").add_pattern("*.vbp")
 
+    def map_images(self, images):
+        def freeze(passthru):
+            self.progressbar.wait_for(deferred)
+            return passthru
+
+        deferred = defer.Deferred()
+        deferred.addCallback(freeze)
+        dialog = ImageMapDialog(images, deferred)
+        dialog.show()
+        return deferred
+
     def set_import_sensitive(self, filename, name):
         if filename and os.path.isfile(filename) and name:
             self.get_object("import_button").set_sensitive(True)
@@ -1284,10 +1310,75 @@ class ImportProjectDialog(Window):
         filename = self.get_object("filechooserbutton").get_filename()
         self.set_import_sensitive(filename, entry.get_text())
 
+    @destroy_on_exit
     def on_ImportProjectDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
             archive = self.get_object("filechooserbutton").get_filename()
             prjname = self.get_object("prjname_entry").get_text()
-            d = project.manager.import_(prjname, self.factory, archive)
-            self.progressbar.wait_for(d)
-        dialog.destroy()
+            d = project.manager.import_(prjname, archive, self.factory,
+                                        self.map_images, False)
+            d.addErrback(lambda fail: fail.trap(ImportCanceled))
+            d.addErrback(log.err, "Error on import project")
+
+
+def retrieve_data(entry, (dct, name)):
+    attr = entry.get_data(name)
+    if attr is not None:
+        dct[attr] = entry.get_text()
+
+def accumulate_data(container, name):
+    dct = {}
+    container.foreach(retrieve_data, (dct, name))
+    return dct
+
+
+def _choose_image_handler(entry):
+    def on_button_click(button):
+        chooser = gtk.FileChooserDialog(title=_("Choose an image file"),
+                action=gtk.FILE_CHOOSER_ACTION_OPEN,
+                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                         gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+        if chooser.run() == gtk.RESPONSE_OK:
+            entry.set_text(chooser.get_filename())
+        chooser.destroy()
+    return on_button_click
+
+
+def _fill_image_table(table, images):
+    table.resize(len(images) + 2, 4)
+    for i, ((_, name), section) in enumerate(images, 2):
+        label = gtk.Label(name + ":")
+        label.set_alignment(0, 0.5)
+        label.show()
+        table.attach(label, 0, 1, i, i + 1, gtk.FILL, gtk.FILL)
+        entry = gtk.Entry()
+        entry.set_data("image_name", name)
+        entry.set_editable(False)
+        entry.show()
+        table.attach(entry, 2, 3, i, i + 1, gtk.FILL|gtk.EXPAND, gtk.FILL)
+        button = gtk.Button("Open file...")
+        button.connect("clicked", _choose_image_handler(entry))
+        button.show()
+        table.attach(button, 3, 4, i, i + 1, gtk.FILL, gtk.FILL)
+
+
+class ImageMapDialog(Window):
+
+    resource = "data/imagemapdialog.ui"
+
+    def __init__(self, images, deferred):
+        self.images = images
+        self.complete_d = deferred
+        Window.__init__(self)
+
+    def show(self, parent=None):
+        _fill_image_table(self.get_object("table"), self.images)
+        Window.show(self, parent)
+
+    @destroy_on_exit
+    def on_ImageMapDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            self.complete_d.callback(accumulate_data(self.get_object("table"),
+                                                     "image_name"))
+        else:
+            self.complete_d.errback(failure.Failure(ImportCanceled()))
