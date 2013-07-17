@@ -1315,8 +1315,9 @@ class ImportProjectDialog(Window):
         if response_id == gtk.RESPONSE_OK:
             archive = self.get_object("filechooserbutton").get_filename()
             prjname = self.get_object("prjname_entry").get_text()
+            open_project = self.get_object("open_checkbutton").get_active()
             d = project.manager.import_(prjname, archive, self.factory,
-                                        self.map_images, False)
+                                        self.map_images, open_project)
             d.addErrback(lambda fail: fail.trap(ImportCanceled))
             d.addErrback(log.err, "Error on import project")
 

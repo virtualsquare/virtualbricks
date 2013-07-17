@@ -43,14 +43,14 @@ class Tgz:
 
     def create(self, pathname, files):
         log.msg("Create archive " + pathname)
-        args = ["cvvfz", pathname, "-C", settings.VIRTUALBRICKS_HOME] + files
+        args = ["cfz", pathname, "-C", settings.VIRTUALBRICKS_HOME] + files
         d = utils.getProcessOutputAndValue(self.exe_c, args, os.environ)
         d.addCallback(_complain_on_error)
         return d
 
     def extract(self, pathname, destination):
         log.msg("Extract archive " + pathname)
-        args = ["Sxvvfz", pathname, "-C", destination]
+        args = ["Sxfz", pathname, "-C", destination]
         d = utils.getProcessOutputAndValue(self.exe_x, args, os.environ)
         d.addCallback(_complain_on_error)
         return d
@@ -130,12 +130,8 @@ class Archive:
         return self.archive.getmember(name)
 
     def get_project(self):
-        try:
-            project = self.archive.getmember(".project")
-        except KeyError:
-            pass
-        else:
-            return ProjectEntry.from_fileobj(self.archive.extractfile(project))
+        project = self.archive.getmember(".project")
+        return ProjectEntry.from_fileobj(self.archive.extractfile(project))
 
 
 class ProjectManager:
@@ -158,11 +154,12 @@ class ProjectManager:
                 return self._create(name, Project(path), factory, open=True)
             else:
                 raise errors.ProjectNotExistsError(name)
-        return self._open(Project(path), factory)
+        return self.restore(Project(path), factory)
 
-    def _open(self, project, factory):
+    def restore(self, project, factory):
+        log.debug("{0}{1}".format("Restoring project ", project.name))
         project.filepath.child(".project").touch()
-        self.close()
+        self.close(factory)
         global current
         current = project
         project.restore(factory)
@@ -179,22 +176,22 @@ class ProjectManager:
             else:
                 raise
         else:
+            project.filepath.child(".project").touch()
             if open:
-                return self._open(project, factory)
+                return self.restore(project, factory)
             return project
 
     def create(self, name, factory, open=True):
-        if isinstance(name, basestring):
-            workspace = filepath.FilePath(settings.get("workspace"))
-            try:
-                path = workspace.child(name)
-            except filepath.InsecurePath:
-                raise errors.InvalidNameError(name)
-        else:  # type(name) == filepath.FilePath
-            path = name
+        log.debug("{0}{1}".format("Creating project ", name))
+        workspace = filepath.FilePath(settings.get("workspace"))
+        try:
+            path = workspace.child(name)
+        except filepath.InsecurePath:
+            raise errors.InvalidNameError(name)
         return self._create(name, Project(path), factory, open)
 
-    def close(self):
+    def close(self, factory):
+        factory.reset()
         global current
         if current:
             current = None
@@ -206,28 +203,27 @@ class ProjectManager:
     def import_(self, prjname, pathname, factory, image_mapper, open=True):
         """Import a project in the current workspace."""
 
-        prjentry = Archive(pathname).get_project()
-        if prjentry is None:
+        log.debug("{0}{1}{2}{3}".format("Importing project ", pathname, "as",
+                                        prjname))
+        try:
+            prjentry = Archive(pathname).get_project()
+        except KeyError:
             raise errors.InvalidArchiveError(".project file not found.")
         deferred = image_mapper(prjentry.get_images())
         deferred.addCallback(self._remap_images_cb, prjentry)
         deferred.addCallback(self._create_cb, prjname, factory)
         deferred.addCallback(self._import_cb, prjentry, pathname)
         if open:
-            def restore(project):
-                project.restore(factory)
-                return project
-            deferred.addCallback(restore)
+            deferred.addCallback(self.restore, factory)
         return deferred
 
     def _remap_images_cb(self, dct, prjentry):
         for header, section in prjentry.get_images():
-            if header[1] in dct:
+            if header[1] in dct and dct[header[1]]:
                 prjentry.sections[header]["path"] = dct[header[1]]
-        # return prjentry
 
     def _create_cb(self, _, name, factory):
-        return self.create(self, name, factory, False)
+        return self.create(name, factory, False)
 
     def _import_cb(self, project, prjentry, pathname):
         deferred = self.archive.extract(pathname, project.path)
@@ -236,6 +232,7 @@ class ProjectManager:
         return deferred
 
     def _dump_cb(self, _, project, prjentry):
+        log.debug("Writing new .project file")
         with project.filepath.child(".project").open("w") as fp:
             prjentry.dump(fp)
         return project
@@ -249,14 +246,16 @@ class ProjectManager:
             return project
 
         disks = prjentry.get_disks()
-        images = prjentry.get_images()
+        images = dict(prjentry.get_images())
         dl = []
         for vmname in disks:
             for dev, iname in disks[vmname]:
-                cow = project.child("{0}_{1}.cow".format(vmname, dev))
-                if cow.exists():
-                    backing_file = images[iname]["path"]
-                    dl.append(self._real_rebase, backing_file, cow.path)
+                cow = project.filepath.child("{0}_{1}.cow".format(vmname, dev))
+                if cow.exists() and ("Image", iname) in images:
+                    backing_file = images[("Image", iname)]["path"]
+                    log.debug("{0}{1}{2}{3}".format("Rebasing ", cow.path,
+                                                    " to ", backing_file))
+                    dl.append(self._real_rebase(backing_file, cow.path))
         return defer.DeferredList(dl).addCallback(check_rebase)
 
     def _real_rebase(self, backing_file, cow):
