@@ -246,17 +246,20 @@ class BrickFactory(object):
     def do_del_brick(self, result):
         brick, status = result
         socks = set(brick.socks)
-        log.msg("Removing socks: " + ", ".join(s.nickname for s in socks))
-        for _brick in self.bricks:
-            for plug in _brick.plugs:
-                if plug.connected() and plug.sock in socks:
-                    log.msg("Disconnecting plug to %s" % plug.sock.nickname)
-                    plug.disconnect()
-        for sock in [s for s in self.socks if s.brick is brick]:
-            self.socks.remove(sock)
+        if socks:
+            log.msg("Removing socks: " + ", ".join(s.nickname for s in socks))
+            for _brick in self.bricks:
+                for plug in _brick.plugs:
+                    if plug.configured() and plug.sock in socks:
+                        log.msg("Disconnecting plug to %s" %
+                                plug.sock.nickname)
+                        plug.disconnect()
+            for sock in [s for s in self.socks if s.brick is brick]:
+                self.socks.remove(sock)
         self.bricks.remove(brick)
 
     def del_brick(self, brick):
+        log.info("Removing brick %s" % brick.name)
         return brick.poweroff().addCallback(self.do_del_brick)
 
     def get_brick_by_name(self, name):
