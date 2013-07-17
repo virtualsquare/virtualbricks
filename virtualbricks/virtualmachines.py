@@ -210,9 +210,12 @@ class Disk:
         self.device = dev
 
     def args(self):
-        d = self.get_real_disk_name()
-        d.addCallback(lambda dn: ["-" + self.device, dn])
-        return d
+        if self.image:
+            d = self.get_real_disk_name()
+            d.addCallback(lambda dn: ["-" + self.device, dn])
+            return d
+        else:
+            return defer.succeed([])
 
     def set_image(self, image):
         self.image = image

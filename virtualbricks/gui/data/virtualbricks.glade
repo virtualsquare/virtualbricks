@@ -2833,6 +2833,12 @@ Use an already open UDP multicast socket</property>
                         <property name="n_rows">4</property>
                         <property name="n_columns">2</property>
                         <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
                           <widget class="GtkLabel" id="label22">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
@@ -2895,6 +2901,12 @@ Use an already open UDP multicast socket</property>
                             <property name="top_attach">3</property>
                             <property name="bottom_attach">4</property>
                           </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                       </widget>
                       <packing>
@@ -3905,6 +3917,7 @@ multiple devices&lt;/b&gt;</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">E_xport project</property>
+                        <property name="use_underline">True</property>
                         <signal name="activate" handler="on_export_menuitem_activate"/>
                       </widget>
                     </child>

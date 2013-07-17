@@ -5,6 +5,8 @@ import functools
 from twisted.trial import unittest
 from twisted.python import failure
 
+from virtualbricks import settings
+
 __builtins__["_"] = str
 TEST_THREADS = 0x01
 TEST_DEPLOYMENT = 0x02
@@ -133,3 +135,19 @@ def failureResultOf(self, deferred, *expectedExceptionTypes):
                 result[0].getTraceback()))
     else:
         return result[0]
+
+
+def backup_settings(lst):
+    return dict((k, settings.get(k)) for k in lst)
+
+
+def restore_settings(olds):
+    for k, v in olds.iteritems():
+        settings.set(k, v)
+
+
+def patch_settings(suite, **kwds):
+    olds = backup_settings(kwds.keys())
+    suite.addCleanup(restore_settings, olds)
+    for k, v in kwds.iteritems():
+        settings.set(k, v)
