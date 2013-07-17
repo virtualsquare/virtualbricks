@@ -88,7 +88,7 @@ from twisted.internet import utils, defer
 from twisted.python import filepath, failure
 
 from virtualbricks import (version, tools, _compat, console, settings,
-                           virtualmachines, project)
+                           virtualmachines, project, errors)
 from virtualbricks.gui import graphics
 
 
@@ -1310,6 +1310,18 @@ class ImportProjectDialog(Window):
         filename = self.get_object("filechooserbutton").get_filename()
         self.set_import_sensitive(filename, entry.get_text())
 
+    def import_cancelled_eb(self, fail):
+        fail.trap(ImportCanceled)
+        log.debug("Import cancelled")
+
+    def complain_eb(self, fail):
+        fail.trap(errors.InvalidNameError, errors.ProjectExistsError)
+        if fail.check(errors.ProjectExistsError):
+            log.msg("Cannot import project " + fail.value.args[0] + " a "
+                    "project with the same name exists.", isError=True)
+        else:
+            log.msg("Invalid project name " + fail.value.args[0], isError=True)
+
     @destroy_on_exit
     def on_ImportProjectDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
@@ -1318,7 +1330,8 @@ class ImportProjectDialog(Window):
             open_project = self.get_object("open_checkbutton").get_active()
             d = project.manager.import_(prjname, archive, self.factory,
                                         self.map_images, open_project)
-            d.addErrback(lambda fail: fail.trap(ImportCanceled))
+            d.addErrback(self.import_cancelled_eb)
+            d.addErrback(self.complain_eb)
             d.addErrback(log.err, "Error on import project")
 
 
@@ -1326,6 +1339,7 @@ def retrieve_data(entry, (dct, name)):
     attr = entry.get_data(name)
     if attr is not None:
         dct[attr] = entry.get_text()
+
 
 def accumulate_data(container, name):
     dct = {}
@@ -1356,7 +1370,7 @@ def _fill_image_table(table, images):
         entry.set_data("image_name", name)
         entry.set_editable(False)
         entry.show()
-        table.attach(entry, 2, 3, i, i + 1, gtk.FILL|gtk.EXPAND, gtk.FILL)
+        table.attach(entry, 2, 3, i, i + 1, gtk.FILL | gtk.EXPAND, gtk.FILL)
         button = gtk.Button("Open file...")
         button.connect("clicked", _choose_image_handler(entry))
         button.show()
