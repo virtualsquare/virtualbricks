@@ -2,7 +2,7 @@ import os
 import copy
 import StringIO
 
-from virtualbricks import base, configfile
+from virtualbricks import base, configparser
 from virtualbricks.tests import unittest, stubs
 
 
@@ -130,7 +130,7 @@ class TestBase(unittest.TestCase):
         sio.seek(-1, os.SEEK_END)
         sio.write("# this is a comment")
         sio.seek(0)
-        section = next(iter(configfile.Parser(sio)))
+        section = next(iter(configparser.Parser(sio)))
         self.brick.load_from(section)
         for p, v in (("bool", False), ("float", 0.1), ("int", 43),
                      ("spinint", 31), ("str", "b")):
