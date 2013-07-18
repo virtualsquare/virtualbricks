@@ -47,7 +47,7 @@ class SyncProtocol(protocol.ProcessProtocol):
 
 	def processEnded(self, status):
 		if isinstance(status.value, error.ProcessTerminated):
-			log.err(status.value)
+			log.err(status.value, "Sync terminated unexpectedly")
 			self.done.errback(None)
 		else:
 			self.done.callback(None)
@@ -60,7 +60,7 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
 
 	def processEnded(self, status):
 		if isinstance(status.value, error.ProcessTerminated):
-			log.err(status.value)
+			log.err(status.value, "Create image terminated unexpectedly")
 			self.done.errback(None)
 		else:
 			reactor.spawnProcess(SyncProtocol(self.done), "sync", ["sync"],
@@ -1557,7 +1557,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def startstop_brick(self, brick):
 		d = brick.poweron() if brick.proc is None else brick.poweroff()
 		d.addCallback(changed_brick_in_model, self.brickfactory.bricks)
-		d.addCallbacks(lambda _: self.running_bricks.refilter(), log.err)
+		d.addCallbacks(lambda _: self.running_bricks.refilter(), log.err,
+				errbackArgs=("Error on stopping brick",))
 
 	# def on_remotehosts_treeview_button_release_event(self, treeview, event):
 	# 	if event.button == 3:
@@ -1794,7 +1795,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		unit = self.gladefile.get_widget("combobox_newimage_sizeunit").get_active_text()[1]
 		# XXX: use a two value combobox
 		if not filename:
-			log.err(_("Choose a filename first!"))
+			log.error(_("Choose a filename first!"))
 			return
 		if img_format == "Auto":
 			img_format = "raw"
@@ -1806,7 +1807,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			os.environ)
 		done.addCallback(
 			lambda _: self.brickfactory.new_disk_image(filename, fullname))
-		done.addErrback(log.err)
+		done.addErrback(log.err, "Error on creating image")
 		return done
 
 	def on_button_create_image_clicked(self, widget=None, data=""):

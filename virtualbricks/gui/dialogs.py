@@ -259,13 +259,15 @@ class LoggingWindow(Window):
             if code == 0:
                 log.msg("Report bug sent succefully")
             elif code in BUG_REPORT_ERRORS:
-                log.err(BUG_REPORT_ERRORS[code])
-                log.err(err, show_to_user=False)
+                log.error(BUG_REPORT_ERRORS[code])
+                log.error("stderr:\n{stderr}", stderr=err, show_to_user=False)
             else:
-                log.err("Report bug failed with exit code %s" % code)
-                log.err(err, show_to_user=False)
+                log.error("Report bug failed with exit code {code}", code=code)
+                log.error("stderr:\n{stderr}", stderr=err, show_to_user=False)
 
-        exit_d.addCallbacks(success, log.err).addBoth(lambda _: os.close(fd))
+        exit_d.addCallbacks(success, log.err,
+                            errbackArgs=("Error on bug reporting",))
+        exit_d.addBoth(lambda _: os.close(fd))
 
 
 class DisksLibraryDialog(Window):
@@ -600,7 +602,7 @@ class RenameEventDialog(RenameDialog):
         try:
             if response_id == gtk.RESPONSE_OK:
                 if self.brick.scheduled:
-                    log.err(_("Cannot rename event: it is in use."))
+                    log.error(_("Cannot rename event: it is in use."))
                 else:
                     new = self.get_object("entry").get_text()
                     self.factory.rename_event(self.brick, new)
@@ -615,7 +617,7 @@ class RenameBrickDialog(RenameDialog):
             return
             if response_id == gtk.RESPONSE_OK:
                 if self.event.scheduled:
-                    log.err(_("Cannot rename event: it is in use."))
+                    log.error(_("Cannot rename event: it is in use."))
                 else:
                     new = self.get_object("entry").get_text()
                     self.factory.rename_event(self.event, new)
@@ -1026,7 +1028,7 @@ class CreateImageDialog(Window):
         exit = utils.getProcessOutputAndValue("qemu-img",
             ["create", "-f", fmt, pathname, size + unit], os.environ)
         exit.addCallback(_create_disk)
-        exit.addErrback(log.err)
+        exit.addErrback(log.err, "Error on creating image")
         return exit
 
     def on_CreateImageDialog_response(self, dialog, response_id):

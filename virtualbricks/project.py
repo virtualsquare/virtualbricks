@@ -241,7 +241,7 @@ class ProjectManager:
         def check_rebase(result):
             for success, status in result:
                 if not success:
-                    log.err(status, show_to_user=False)
+                    log.err(status, "Error on rebase", show_to_user=False)
                     log.msg("Rebase failed, try manually", isError=True)
             return project
 
