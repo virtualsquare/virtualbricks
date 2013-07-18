@@ -745,9 +745,8 @@ class VirtualMachine(bricks.Brick):
             plug.model = model
         return plug
 
-    def connect(self, socket):
-        plug = self.add_plug()
-        plug.connect(socket)
+    def connect(self, sock):
+        plug = self.add_plug(sock)
 
     def remove_plug(self, plug):
         try:
