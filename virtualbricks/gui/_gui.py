@@ -149,7 +149,8 @@ class VMPopupMenu(BrickPopupMenu):
             args = ["snapshot", "-l", img.path]
             output = utils.getProcessOutput("qemu-img", args, os.environ)
             output.addCallback(grep, "virtualbricks")
-            output.addCallbacks(loadvm, log.err)
+            output.addCallbacks(loadvm, log.err,
+                                errbackArgs=("Error on snapshot",))
             return output
         try:
             raise RuntimeError("No such image")

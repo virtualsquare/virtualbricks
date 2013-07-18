@@ -597,7 +597,8 @@ class Application:
         if exc_type in (SystemExit, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, traceback)
         else:
-            log.err(failure.Failure(exc_value, exc_type, traceback))
+            log.err(failure.Failure(exc_value, exc_type, traceback),
+                    "Uncaught exception")
 
     def install_home(self):
         try:
