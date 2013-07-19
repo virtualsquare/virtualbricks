@@ -17,18 +17,19 @@
 
 import os
 import re
-import logging
 
 import gobject
 import gtk
 import gtk.glade
 
-from twisted.application import app
-from twisted.python import log as _log
 from twisted.internet import error, defer, task, protocol, reactor
 
-from virtualbricks import (interfaces, tools, errors, settings, brickfactory,
-						_compat, project)
+# import it first because virtualbricks settings is not loved by
+# _log.replaceTwistedLoggers
+from virtualbricks import brickfactory
+
+from virtualbricks import (interfaces, tools, errors, settings, _compat,
+		project, _log)
 
 from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
@@ -2317,34 +2318,22 @@ class VisualFactory(brickfactory.BrickFactory):
 		# self.remote_hosts = List()
 
 
-class TextBufferObserver(_log.FileLogObserver):
+# @implementer(_log.ILogObserver)
+class TextBufferObserver:
 
 	def __init__(self, textbuffer):
 		textbuffer.create_mark("end", textbuffer.get_end_iter(), False)
 		self.textbuffer = textbuffer
 
-	def emit(self, record):
-		gobject.idle_add(self._emit, record)
+	def __call__(self, event):
+		gobject.idle_add(self.emit, event)
 
-	def _emit(self, eventDict):
-		if "record" in eventDict:
-			lvl = eventDict["record"].levelname
-			text = eventDict["record"].getMessage()
-		else:
-			lvl = logging.getLevelName(eventDict.get("logLevel",
-					[logging.INFO, logging.ERROR][eventDict["isError"]]))
-			text = _log.textFromEventDict(eventDict)
-			if text is None:
-				return
-
-		timeStr = self.formatTime(eventDict["time"])
-		fmtDict = {"system": eventDict["system"],
-					"text": text.replace("\n", "\n\t"),
-					"timeStr": timeStr}
-		msg = _log._safeFormat("%(timeStr)s [%(system)s] %(text)s\n", fmtDict)
+	def emit(self, event):
+		entry = "{log_time} [{log_namespace}] {text}\n"
+		msg = entry.format(text=_log.formatEvent(event), **event)
 		self.textbuffer.insert_with_tags_by_name(
 			self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark("end")),
-			msg, lvl)
+			msg, event["log_level"].name)
 
 
 class MessageDialogObserver:
@@ -2355,47 +2344,25 @@ class MessageDialogObserver:
 	def set_parent(self, parent):
 		self.__parent = parent
 
-	def emit(self, eventDict):
-		if ("show_to_user" not in eventDict and (("record" in eventDict and
-				eventDict["record"].levelno >= _compat.ERROR) or
-				eventDict["isError"])):
-			gobject.idle_add(self._emit, eventDict)
-
-	def _emit(self, eventDict):
-		if "record" in eventDict:
-			msg = eventDict["record"].getMessage()
-		elif "why" in eventDict and eventDict["why"] is not None:
-			msg = eventDict["why"]
-		elif "failure" in eventDict:
-			msg = eventDict["failure"].getErrorMessage()
-		else:
-			msg = _log.textFromEventDict(eventDict)
-			if msg is None:
-				return
+	def __call__(self, event):
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
 				gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
-		dialog.set_property('text', msg)
+		dialog.set_property('text', _log.formatEvent(event))
 		dialog.connect("response", lambda d, r: d.destroy())
 		dialog.show()
 
 
-TEXT_TAGS = [('DEBUG', {'foreground': '#a29898'}),
-			('INFO', {}),
-			('WARNING', {'foreground': '#ff9500'}),
-			('ERROR', {'foreground': '#b8032e'}),
-			('CRITICAL', {'foreground': '#b8032e', 'background': '#000'}),
-			('EXCEPTION', {'foreground': '#000', 'background': '#b8032e'})]
+def should_show_to_user(event):
+	if (event["log_level"] == _log.LogLevel.error and
+			"show_to_user" not in event):
+		return _log.PredicateResult.yes
+	return _log.PredicateResult.no
 
 
-class AppLogger(app.AppLogger):
-
-	def start(self, application):
-		observer = self._observerFactory()
-		if self._logfilename:
-			_log.addObserver(self._getLogObserver())
-		self._observer = observer
-		_log.startLoggingWithObserver(self._observer, False)
-		self._initialLog()
+TEXT_TAGS = [('debug', {'foreground': '#a29898'}),
+			('info', {}),
+			('warn', {'foreground': '#ff9500'}),
+			('error', {'foreground': '#b8032e'})]
 
 
 class Application(brickfactory.Application):
@@ -2410,7 +2377,7 @@ class Application(brickfactory.Application):
 	def textbuffer_logger(self):
 		for name, attrs in TEXT_TAGS:
 			self.textbuffer.create_tag(name, **attrs)
-		return TextBufferObserver(self.textbuffer).emit
+		return TextBufferObserver(self.textbuffer)
 
 	def install_locale(self):
 		brickfactory.Application.install_locale(self)
@@ -2426,11 +2393,13 @@ class Application(brickfactory.Application):
 		gladefile = load_gladefile()
 		factory.register_brick_type(_gui.GVirtualMachine, "vm", "qemu")
 		message_dialog = MessageDialogObserver()
-		_log.addObserver(message_dialog.emit)
+		observer = _log.FilteringLogObserver(message_dialog,
+			(should_show_to_user,))
+		log.publisher.addObserver(observer)
 		# disable default link_button action
 		gtk.link_button_set_uri_hook(lambda b, s: None)
 		self.gui = VBGUI(factory, gladefile, quit, self.textbuffer)
-		message_dialog.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
+		message_dialog.set_parent(self.gui.widg["main_win"])
 
 
 def load_gladefile():

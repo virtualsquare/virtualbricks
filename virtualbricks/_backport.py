@@ -7,9 +7,12 @@ Backport module for twisted 12.0 (debian)
 
 import sys
 
-from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.internet.error import ReactorNotRunning
+
+from virtualbricks import _compat
+
+log = _compat.getLogger(__name__)
 
 
 def react(main, argv, _reactor=None):

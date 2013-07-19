@@ -32,52 +32,13 @@ if False:  # pyflakes
 
 
 log = _compat.getLogger(__name__)
-
-
-class ParseError(_compat.LogInfo):
-
-    level = _compat.WARNING
-
-    def __init__(self, configline=""):
-        self.configline = configline
-
-
-class _LinkError(ParseError):
-    pass
-
-
-class LinkTypeError(_LinkError):
-
-    format = "Cannot find link of type {0.type}"
-
-    def __init__(self, type):
-        _LinkError.__init__(self)
-        self.type = type
-
-
-class _LinkLineError(_LinkError):
-
-    def __init__(self, link):
-        _LinkError.__init__(self, "|".join(link))
-        self.link = link
-
-
-class BrickNotFound(_LinkLineError):
-
-    format = "Cannot find brick {0.link.owner}, skipping line {1.configline}"
-
-
-class SockNotFound(_LinkLineError):
-
-    format = "Cannot find sock {0.link.sockname}, skipping line {0.configline}"
-
-
-class LinkAdded(_compat.LogInfo):
-
-    format = "Added {0.link.type} to {0.link.owner}"
-
-    def __init__(self, link):
-        self.link = link
+link_type_error = log.declare("Cannot find link of type {link.type}",
+                              log.LogLevel.warn)
+brick_not_found = log.declare("Cannot find brick {brick}, skipping line "
+                              "{line}", log.LogLevel.warn)
+sock_not_found = log.declare("Cannot find sock {sockname}, skipping line "
+                             "{line}", log.LogLevel.warn)
+link_added = log.declare("Added {type} to {brick}", log.LogLevel.info)
 
 
 @contextlib.contextmanager
@@ -154,9 +115,9 @@ class SockBuilder:
         brick = self.factory.get_brick_by_name(sock.owner)
         if brick:
             brick.add_sock(sock.mac, sock.model)
-            log.msg(LinkAdded(sock))
+            link_added(type=sock.type, brick=sock.owner)
         else:
-            log.msg(BrickNotFound(sock))
+            brick_not_found(brick=sock.owner, line="|".join(sock))
 
 
 class LinkBuilder:
@@ -170,11 +131,11 @@ class LinkBuilder:
             sock = self.factory.get_sock_by_name(link.sockname)
             if sock:
                 brick.add_plug(sock, link.mac, link.model)
-                log.msg(LinkAdded(link))
+                link_added(type=link.type, brick=link.owner)
             else:
-                log.msg(SockNotFound(link))
+                sock_not_found(sockname=link.sockname, line="|".join(link))
         else:
-            log.msg(BrickNotFound(link))
+            brick_not_found(brick=link.owner, line="|".join(link))
 
 
 class ConfigFile:
@@ -264,7 +225,7 @@ class ConfigFile:
         elif type == "link":
             return LinkBuilder(factory)
         else:
-            log.msg(LinkTypeError(type))
+            link_type_error(type=type)
 
     def build_type(self, factory, type, name):
         if type == "Image":
