@@ -24,7 +24,7 @@ import itertools
 from twisted.internet import protocol, reactor, error, defer
 from twisted.python import failure
 
-from virtualbricks import base, errors, settings, _compat
+from virtualbricks import base, errors, settings, _compat, log
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
                                 SpinInt, Float, Boolean, Object, ListOf)
 
@@ -35,20 +35,20 @@ __all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
 if False:  # pyflakes
     _ = str
 
-log = _compat.getLogger(__name__)
+logger = _compat.getLogger(__name__)
 
 
 class Process(protocol.ProcessProtocol):
 
     pid = None
-    log = _compat.Logger()
+    logger = log.Logger()
 
     def __init__(self, brick):
         self.brick = brick
 
     def connectionMade(self):
         self.pid = self.transport.pid
-        self.log.info("Started process")
+        self.logger.info("Started process")
         self.brick.process_started(self)
 
     def outReceived(self, data):
@@ -59,9 +59,9 @@ class Process(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         if status.check(error.ProcessTerminated):
-            self.log.error(" ".join(status.value.args), show_to_user=False)
+            self.logger.error(" ".join(status.value.args), show_to_user=False)
         else:
-            self.log.msg("Process terminated")
+            self.logger.msg("Process terminated")
         self.brick.process_ended(self, status)
 
 
@@ -73,7 +73,7 @@ class ProcessLogger:
 
     delay = 1
     limit = 1024
-    log = _compat.Logger()
+    logger = log.Logger()
 
     def __init__(self, proc):
         self.pid = proc.transport.pid
@@ -84,10 +84,10 @@ class ProcessLogger:
         return "Process: {0}".format(self.pid)
 
     def log(self, data):
-        self.log.info(data)
+        self.logger.info(data)
 
     def log_e(self, data):
-        self.log.error(data, show_to_user=False)
+        self.logger.error(data, show_to_user=False)
 
     def flush(self):
         loggers = [self.log, self.log_e]
@@ -141,9 +141,9 @@ class TermProtocol(protocol.ProcessProtocol):
             out = "".join(self.out)
             err = "".join(self.err)
             msg += "\nProcess stdout:\n{out}\nProcess stderr:\n{err}\n"
-            log.error(msg, status=status.value, out=out, err=err)
+            logger.error(msg, status=status.value, out=out, err=err)
         else:
-            log.info(msg, status=status.value)
+            logger.info(msg, status=status.value)
 
 
 class Config(_Config):
@@ -215,8 +215,8 @@ class _LocalBrick(base.Base):
     def poweroff(self, kill=False):
         if self.proc is None:
             return defer.succeed((self, self._last_status))
-        log.info(_("Shutting down {name} (pid: {pid})"), name=self.name,
-                 pid=self.proc.pid)
+        logger.info(_("Shutting down {name} (pid: {pid})"), name=self.name,
+                    pid=self.proc.pid)
         try:
             self.proc.signalProcess("KILL" if kill else "TERM")
         except OSError as e:
@@ -308,7 +308,7 @@ class _LocalBrick(base.Base):
 
         def start_process(value):
             prog, args = value
-            log.info(_("Starting: '{args}'"), args=" ".join(args))
+            logger.info(_("Starting: '{args}'"), args=" ".join(args))
             # usePTY?
             self.proc = reactor.spawnProcess(Process(self), prog, args,
                                              os.environ)
@@ -332,9 +332,9 @@ class _LocalBrick(base.Base):
         if event:
             event.poweron()
         else:
-            log.msg("Warning. The Event '{name}' attached to Brick "
-                    "'{brickname}' is not available. Skipping execution.",
-                    name=name, brickname=self.name)
+            logger.msg("Warning. The Event '{name}' attached to Brick "
+                       "'{brickname}' is not available. Skipping execution.",
+                       name=name, brickname=self.name)
 
     #############################
     # Console related operations.
@@ -376,8 +376,8 @@ class _LocalBrick(base.Base):
         args = [term, "-T", self.name, "-e",
                 os.path.join(settings.get("vdepath"), self.term_command),
                 self.console()]
-        log.msg("Opening console for {name}\n%{args}\n", name=self.name,
-                args=" ".join(args))
+        logger.msg("Opening console for {name}\n%{args}\n", name=self.name,
+                   args=" ".join(args))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)
 
     def send(self, data):
@@ -429,8 +429,8 @@ class Brick(_LocalBrick):
     def poweron(self):
         if self.homehost:
             if not self.homehost.connected:
-                log.error(_("Error: You must be connected to the "
-                            "host to perform this action"))
+                logger.error(_("Error: You must be connected to the host to "
+                               "perform this action"))
             else:
                 self.homehost.send(self.name + " on")
         else:
