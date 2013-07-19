@@ -29,7 +29,7 @@ from twisted.internet import error, defer, task, protocol, reactor
 from virtualbricks import brickfactory
 
 from virtualbricks import (interfaces, tools, errors, settings, _compat,
-		project, _log)
+		project, log as _log)
 
 from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
@@ -2353,8 +2353,7 @@ class MessageDialogObserver:
 
 
 def should_show_to_user(event):
-	if (event["log_level"] == _log.LogLevel.error and
-			"show_to_user" not in event):
+	if "show_to_user" in event or event["log_level"] == _log.LogLevel.error:
 		return _log.PredicateResult.yes
 	return _log.PredicateResult.no
 
