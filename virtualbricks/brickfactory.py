@@ -28,9 +28,12 @@ import itertools
 from twisted.application import app
 from twisted.internet import defer, task, stdio, error
 from twisted.protocols import basic
-from twisted.python import failure, log as _log
+from twisted.python import failure, logfile
 from twisted.conch.insults import insults
 from twisted.conch import manhole
+
+from virtualbricks import _log
+_log.replaceTwistedLoggers()
 
 from virtualbricks import (errors, settings, configfile, console, _compat,
                            project)
@@ -516,20 +519,36 @@ def AutosaveTimer(factory, interval=180):
 
 class AppLogger(app.AppLogger):
 
+    def _getLogObserver(self):
+        if self._logfilename == '-' or not self._logfilename:
+            logFile = sys.stdout
+        else:
+            logFile = logfile.LogFile.fromFullPath(self._logfilename)
+        return _compat.FileLogObserver(logFile)
+
     def start(self, application):
-        s_observer = None
+        self._sobserver = None
         if self._observerFactory is not None:
             self._observer = self._observerFactory()
             if self._logfilename:
-                s_observer = self._getLogObserver()
+                self._sobserver = self._getLogObserver()
         elif self._logfilename:
             self._observer = self._getLogObserver()
-        else:
-            self._observer = _log.FileLogObserver(_log.NullFile()).emit
-        _log.startLoggingWithObserver(self._observer, False)
-        if s_observer:
-            _log.addObserver(s_observer)
+
+        if self._observer is not None:
+            log.publisher.addObserver(self._observer, False)
+        if self._sobserver:
+            log.publisher.addObserver(self._sobserver, False)
         self._initialLog()
+
+    def stop(self):
+        log.msg("Server Shut Down.")
+        if self._observer is not None:
+            log.publisher.removeObserver(self._observer)
+            self._observer = None
+        if self._sobserver:
+            log.publisher.removeObserver(self._sobserver)
+            self._sobserver = None
 
 
 class Application:
@@ -565,7 +584,8 @@ class Application:
             return _compat.CRITICAL
 
     def install_stdlog_handler(self):
-        root = _compat.getLogger()
+        import logging
+        root = logging.getLogger()
         root.addHandler(_compat.LoggingToTwistedLogHandler())
         if self.config["verbosity"]:
             root.setLevel(self._get_log_level(self.config["verbosity"]))
