@@ -552,6 +552,8 @@ class AppLogger(app.AppLogger):
             logger.publisher.addObserver(self._sobserver, False)
         observer = log.LegacyObserver()
         legacy_log.startLoggingWithObserver(observer, False)
+        logger.publisher.filteredPublisher.removeObserver(
+            logger.publisher.legacyLogObserver)
         self._initialLog()
 
     def stop(self):
@@ -646,7 +648,6 @@ class Application:
         return {}
 
     def run(self, reactor):
-        # log.replaceTwistedLoggers()
         self.install_locale()
         self.install_settings()
         self.install_stdlog_handler()
