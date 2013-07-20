@@ -113,7 +113,7 @@ def getTimezoneOffset(when):
     return offset.days * (60 * 60 * 24) + offset.seconds
 
 
-def formatTime(self, when):
+def format_time(when):
     """
     Format the given UTC value as a string representing that time in the
     local timezone.
@@ -157,27 +157,35 @@ class FileLogObserver:
         self.write = f.write
         self.flush = f.flush
 
-    def formatTime(self, when):
+    def format_time(self, when):
         if self.timeFormat is not None:
             return time.strftime(self.timeFormat, time.localtime(when))
-        return formatTime(when)
+        return format_time(when)
 
-    def __call__(self, eventDict):
-        text = formatEvent(eventDict)
-        timeStr = self.formatTime(eventDict["log_time"])
-        fmtDict = {"system": eventDict["log_namespace"],
+    def __call__(self, event):
+        text = formatEvent(event)
+        timeStr = self.format_time(event["log_time"])
+        fmtDict = {"system": event["log_namespace"],
                    "text": text.replace("\n", "\n\t"),
                    "log_format": "[{system}] {text}\n"}
         msgStr = formatEvent(fmtDict)
+        if "log_failure" in event:
+            msgStr += event["log_failure"].getTraceback()
 
         util.untilConcludes(self.write, timeStr + " " + msgStr)
         util.untilConcludes(self.flush)  # Hoorj!
 
 
+def format_traceback(event):
+    if "log_failure" in event:
+        return event["log_failure"].getTraceback()
+    return ""
+
+
 import logging
 
 
-class LoggingToTwistedLogHandler(logging.Handler):
+class LoggingToNewLogginAdapter(logging.Handler):
 
     logger = Logger()
 
@@ -190,7 +198,7 @@ class LoggingToTwistedLogHandler(logging.Handler):
                 level = self._map_levelname_to_LogLevel(record.levelname)
                 self.logger.emit(level, msg, **record.__dict__)
         except Exception:
-            self.handleError(record)
+            self.logger.failure("Unformattable event", **record.__dict__)
 
     def _map_levelname_to_LogLevel(self, levelName):
         if levelName == "DEBUG":
@@ -202,5 +210,23 @@ class LoggingToTwistedLogHandler(logging.Handler):
         elif levelName in set(("ERROR", "CRITICAL")):
             return LogLevel.error
         else:
-            # probabilly NOTSET
+            # likely NOTSET
             return LogLevel.info
+
+
+from twisted.python import log as legacyLog
+
+
+class LegacyObserver:
+
+    logger = Logger()
+
+    def __call__(self, event):
+        if event.pop("isError", False):
+            log_failure = None
+            if "failure" in event:
+                log_failure = event.pop("failure")
+            self.logger.failure(event.pop("why"), log_failure, **event)
+        else:
+            text = legacyLog.textFromEventDict(event)
+            self.logger.info(text, **event)

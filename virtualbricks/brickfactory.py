@@ -32,10 +32,7 @@ from twisted.python import failure, logfile
 from twisted.conch.insults import insults
 from twisted.conch import manhole
 
-from virtualbricks import log
-log.replaceTwistedLoggers()
-
-from virtualbricks import errors, settings, configfile, console, project
+from virtualbricks import errors, settings, configfile, console, project, log
 from virtualbricks import (events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
 
@@ -56,7 +53,7 @@ invalid_command = log.Event("Invalid event command '{type} {name}'")
 endpoint_not_found = log.Event("Endpoint {nick} not found.")
 shut_down = log.Event("Server Shut Down.")
 new_event_ok = log.Event("New event {name} OK")
-uncaught_exception = log.Event("Uncaught exception")
+uncaught_exception = log.Event("Uncaught exception: {error()}")
 
 
 def install_brick_types(registry=None):
@@ -539,6 +536,8 @@ class AppLogger(app.AppLogger):
         return log.FileLogObserver(logFile)
 
     def start(self, application):
+        from twisted.python import log as legacy_log
+
         self._sobserver = None
         if self._observerFactory is not None:
             self._observer = self._observerFactory()
@@ -549,8 +548,10 @@ class AppLogger(app.AppLogger):
 
         if self._observer is not None:
             logger.publisher.addObserver(self._observer, False)
-        if self._sobserver:
+        if self._sobserver is not None:
             logger.publisher.addObserver(self._sobserver, False)
+        observer = log.LegacyObserver()
+        legacy_log.startLoggingWithObserver(observer, False)
         self._initialLog()
 
     def stop(self):
@@ -599,7 +600,7 @@ class Application:
                 return logging.CRITICAL
 
         root = logging.getLogger()
-        root.addHandler(log.LoggingToTwistedLogHandler())
+        root.addHandler(log.LoggingToNewLogginAdapter())
         if self.config["verbosity"]:
             root.setLevel(get_log_level(self.config["verbosity"]))
 
@@ -630,8 +631,9 @@ class Application:
         if exc_type in (SystemExit, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, traceback)
         else:
-            logger.error(uncaught_exception, log_failure=failure.Failure(
-                exc_value, exc_type, traceback))
+            fail = failure.Failure(exc_value, exc_type, traceback)
+            logger.error(uncaught_exception, log_failure=fail,
+                         error=lambda: fail.getErrorMessage())
 
     def install_home(self):
         try:
@@ -644,6 +646,7 @@ class Application:
         return {}
 
     def run(self, reactor):
+        # log.replaceTwistedLoggers()
         self.install_locale()
         self.install_settings()
         self.install_stdlog_handler()
