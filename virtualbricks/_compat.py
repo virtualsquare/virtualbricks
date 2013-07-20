@@ -1,4 +1,4 @@
-from virtualbricks import _log as log
+from virtualbricks import log
 
 
 def enumerate_str(iterable):

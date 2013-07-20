@@ -474,7 +474,7 @@ def bindEmit(level):
 
     setattr(Logger, level.name, log_emit)
 
-for level in LogLevel.iterconstants(): 
+for level in LogLevel.iterconstants():
     bindEmit(level)
 
 del level
@@ -544,7 +544,7 @@ class LogPublisher(object):
             pass
 
 
-    def __call__(self, event): 
+    def __call__(self, event):
         for observer in self.observers:
             try:
                 observer(event)
@@ -724,8 +724,8 @@ class LegacyLogObserver(object):
         """
         self.legacyObserver = legacyObserver
 
-    
-    def __call__(self, event): 
+
+    def __call__(self, event):
         prefix = "[{log_namespace}#{log_level.name}] ".format(**event)
 
         level = event["log_level"]
@@ -925,7 +925,7 @@ def replaceTwistedLoggers():
             continue
 
         # Don't patch this module
-        if moduleName is __name__:
+        if moduleName == __name__:
             continue
 
         for name, obj in module.__dict__.iteritems():

@@ -24,12 +24,8 @@ import gtk.glade
 
 from twisted.internet import error, defer, task, protocol, reactor
 
-# import it first because virtualbricks settings is not loved by
-# _log.replaceTwistedLoggers
-from virtualbricks import brickfactory
-
 from virtualbricks import (interfaces, tools, errors, settings, _compat,
-		project, log as _log)
+		project, log as _log, brickfactory)
 
 from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
@@ -2329,11 +2325,17 @@ class TextBufferObserver:
 		gobject.idle_add(self.emit, event)
 
 	def emit(self, event):
-		entry = "{log_time} [{log_namespace}] {text}\n"
-		msg = entry.format(text=_log.formatEvent(event), **event)
-		self.textbuffer.insert_with_tags_by_name(
-			self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark("end")),
-			msg, event["log_level"].name)
+		entry = "{iso8601_time} [{log_namespace}] {msg}\n{traceback}"
+		if "log_failure" in event:
+			event["traceback"] = event["log_failure"].getTraceback()
+		else:
+			event["traceback"] = ""
+		event["iso8601_time"] = _log.format_time(event["log_time"])
+		msg = entry.format(msg=_log.formatEvent(event), **event)
+		mark = self.textbuffer.get_mark("end")
+		iter = self.textbuffer.get_iter_at_mark(mark)
+		self.textbuffer.insert_with_tags_by_name(iter, msg,
+			event["log_level"].name)
 
 
 class MessageDialogObserver:
@@ -2394,7 +2396,7 @@ class Application(brickfactory.Application):
 		message_dialog = MessageDialogObserver()
 		observer = _log.FilteringLogObserver(message_dialog,
 			(should_show_to_user,))
-		log.publisher.addObserver(observer)
+		log.publisher.addObserver(observer, False)
 		# disable default link_button action
 		gtk.link_button_set_uri_hook(lambda b, s: None)
 		self.gui = VBGUI(factory, gladefile, quit, self.textbuffer)

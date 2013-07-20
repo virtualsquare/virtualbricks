@@ -200,7 +200,7 @@ class LoggingWindow(Window):
         Window.__init__(self)
         self.textbuffer = textbuffer
         self.__bottom = True
-        textview = self.get_object("textview1")
+        textview = self.get_object("textview")
         textview.set_buffer(textbuffer)
         self.__insert_text_h = textbuffer.connect("changed",
                 self.on_textbuffer_changed, textview)
