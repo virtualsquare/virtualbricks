@@ -213,7 +213,7 @@ class ConfigFile:
                     t = "link|{p.brick.name}||{p.model}|{p.mac}\n"
                 fileobj.write(t.format(p=plug))
             elif plug.sock is not None:
-                t = "link|{p.brick.name}|{p.sock.nickname}\n"
+                t = "link|{p.brick.name}|{p.sock.nickname}||\n"
                 fileobj.write(t.format(p=plug))
 
     def restore(self, factory, str_or_obj):
@@ -229,13 +229,6 @@ class ConfigFile:
 
     def restore_from(self, factory, fileobj):
         for item in configparser.Parser(fileobj):
-            # if isinstance(item, tuple):  # links
-            #     brick = factory.get_brick_by_name(item.owner)
-            #     if item.type == "sock":
-            #         brick.add_sock(item.mac, item.model)
-            #     elif item.type == "link":
-            #         sock = factory.get_sock_by_name(item.sockname)
-            #         brick.add_plug(sock, item.mac, item.model)
             if isinstance(item, tuple):  # links
                 self.build_link(factory, item.type).load_from(item)
             else:
