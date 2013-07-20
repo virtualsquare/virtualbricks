@@ -105,7 +105,7 @@ def restore_backup(filename, fbackup):
             logger.warn(cannot_restore_backup, filename=fbackup,
                         traceback=traceback.format_exc())
     else:
-        logger.warn(backup_restored, show_to_user=True)
+        logger.warn(backup_restored, hide_to_user=True)
     if created:
         filename_back.remove()
 
