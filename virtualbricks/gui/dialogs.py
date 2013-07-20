@@ -260,10 +260,10 @@ class LoggingWindow(Window):
                 log.msg("Report bug sent succefully")
             elif code in BUG_REPORT_ERRORS:
                 log.error(BUG_REPORT_ERRORS[code])
-                log.error("stderr:\n{stderr}", stderr=err, show_to_user=False)
+                log.error("stderr:\n{stderr}", stderr=err, hide_to_user=True)
             else:
                 log.error("Report bug failed with exit code {code}", code=code)
-                log.error("stderr:\n{stderr}", stderr=err, show_to_user=False)
+                log.error("stderr:\n{stderr}", stderr=err, hide_to_user=True)
 
         exit_d.addCallbacks(success, log.err,
                             errbackArgs=("Error on bug reporting",))

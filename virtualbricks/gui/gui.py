@@ -721,9 +721,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			elif widget is not None:
 				widget.unselect_all()
 
-			self.gladefile.get_widget("qemuicon").set_from_pixbuf(
-				graphics.pixbuf_for_running_brick(b))
-
 	"""
 	" ******************************************************** "
 	" ******************************************************** "
@@ -2355,9 +2352,9 @@ class MessageDialogObserver:
 
 
 def should_show_to_user(event):
-	if "show_to_user" in event or event["log_level"] == _log.LogLevel.error:
-		return _log.PredicateResult.yes
-	return _log.PredicateResult.no
+	if "hide_to_user" in event or event["log_level"] != _log.LogLevel.error:
+		return _log.PredicateResult.no
+	return _log.PredicateResult.maybe
 
 
 TEXT_TAGS = [('debug', {'foreground': '#a29898'}),

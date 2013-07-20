@@ -74,7 +74,7 @@ class Process(protocol.ProcessProtocol):
         if status.check(error.ProcessTerminated):
             get_status = lambda: " ".join(status.value.args)
             self.logger.error(process_terminated, status=get_status,
-                              show_to_user=True)
+                              hide_to_user=True)
         else:
             self.logger.info(process_terminated)
         self.brick.process_ended(self, status)
@@ -102,7 +102,7 @@ class ProcessLogger:
         self.logger.info(data)
 
     def log_e(self, data):
-        self.logger.error(data, show_to_user=True)
+        self.logger.error(data, hide_to_user=True)
 
     def flush(self):
         loggers = [self.log, self.log_e]
