@@ -21,7 +21,7 @@ import os
 # import socket
 # from threading import Thread
 
-from virtualbricks import _compat, bricks, link
+from virtualbricks import _compat, bricks, settings
 
 log = _compat.getLogger(__name__)
 
@@ -42,32 +42,26 @@ class Wire(bricks.Brick):
 
     type = "Wire"
 
-    def __init__(self, factory, name):
-        bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(link.Plug(self))
-        self.plugs.append(link.Plug(self))
-
     def get_parameters(self):
-        if self.plugs[0].sock:
-            p0 = self.plugs[0].sock.brick.name
+        p0 = _("disconnected")
+        p1 = _("disconnected")
+        if len(self.plugs) == 2:
+            if self.plugs[0].sock:
+                p0 = self.plugs[0].sock.brick.name
+            if self.plugs[1].sock:
+                p1 = self.plugs[1].sock.brick.name
+            if p0 != _('disconnected') and p1 != _('disconnected'):
+                return _("Configured to connect {0} to {1}").format(p0, p1)
+        elif len(self.plugs) == 1:
+            if self.plugs[0].sock:
+                p0 = self.plugs[0].sock.brick.name
+            return _("Configured to connect {0} to {1}").format(p0, p1)
         else:
-            p0 = _("disconnected")
-
-        if self.plugs[1].sock:
-            p1 = self.plugs[1].sock.brick.name
-        else:
-            p1 = _("disconnected")
-
-        if p0 != _('disconnected') and p1 != _('disconnected'):
-            return _("Configured to connect") + " " + p0 + " " + "to" + " " + p1
-        else:
-            return _("Not yet configured.") + " " +\
-                _("Left plug is") + " " + p0 + " " + _("and right plug is") + \
-                " " + p1
+            return _("Not yet configured. Left plug is {0} and right plug is "
+                     "{1}").format(p0, p1)
 
     def configured(self):
-        return (self.plugs[0].sock is not None and
-                self.plugs[1].sock is not None)
+        return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))
 
     def prog(self):
         return os.path.join(settings.get("vdepath"), "dpipe")
@@ -79,6 +73,14 @@ class Wire(bricks.Brick):
                 self.plugs[0].sock.path.rstrip('[]'), "=",
                 os.path.join(settings.get("vdepath"), "vde_plug"),
                 self.plugs[1].sock.path.rstrip('[]')]
+
+    def add_plug(self, sock, mac=None, model=None):
+        if len(self.plugs) > 2:
+            raise ValueError("Cannot add another plug, max reached.")
+        plug = self.factory.new_plug(self)
+        self.plugs.append(plug)
+        plug.connect(sock)
+        return plug
 
 
 # class PyWireThread(Thread):
@@ -480,7 +482,7 @@ class Wirefilter(Wire):
         return res
 
     def prog(self):
-        return settings.get("vdepath") + "/wirefilter"
+        return os.path.join(settings.get("vdepath"), "wirefilter")
 
     def gui_to_wf_value(self, base, jitter, distrib, mult, unit, def_mult="",
                         def_unit=""):

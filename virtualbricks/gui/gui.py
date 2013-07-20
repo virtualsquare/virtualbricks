@@ -651,7 +651,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					combo.select(b.plugs[0].sock.nickname)
 
 			elif k.endswith('1') and t.startswith('Wire'):
-				if len(b.plugs) >= 1 and b.plugs[1].sock:
+				if len(b.plugs) >= 2 and b.plugs[1].sock:
 					combo.select(b.plugs[1].sock.nickname)
 
 		dicts=dict()
@@ -798,11 +798,19 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
 		for so in self.brickfactory.socks:
 			if sel == so.nickname:
-				b.plugs[0].connect(so)
+				if len(b.plugs) > 0:
+					b.plugs[0].connect(so)
+				else:
+					b.add_plug(so)
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
 		for so in self.brickfactory.socks:
 			if sel == so.nickname:
-				b.plugs[1].connect(so)
+				if len(b.plugs) == 2:
+					b.plugs[1].connect(so)
+				elif len(b.plugs) == 1:
+					b.add_plug(so)
+				else:
+					raise ValueError("Configure left link too please")
 
 	def config_brick_confirm(self):
 		if self.__config_panel:
