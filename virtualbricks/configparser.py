@@ -62,8 +62,7 @@ class Parser:
 
     EMPTY = re.compile(r"^\s*$")
     SECTION_HEADER = re.compile(r"^\[([a-zA-Z0-9_]+):(.+)\]$")
-    LINK = re.compile(r"^(link|sock)\|(\w+)\|(\w+)\|(\w+)\|"
-                      r"([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})$")
+    LINK = re.compile(r"^(link|sock)\|(\w+)\|(\w+)\|(\w*)\|([\w:]*)$")
 
     def __init__(self, fileobj):
         self.fileobj = fileobj
