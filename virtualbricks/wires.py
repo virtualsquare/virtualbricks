@@ -16,23 +16,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-# import time
-# import select
-# import socket
-# from threading import Thread
 
 from virtualbricks import _compat, bricks, settings
 
 log = _compat.getLogger(__name__)
-
-# try:
-#     import VdePlug
-#     # log.info("VdePlug support ENABLED.")
-# except ImportError:
-#     VdePlug = None
-#     # log.info("VdePlug support not found. I will disable native VDE python "
-#     #          "support.")
-
 
 if False:  # pyflakes
     _ = str
@@ -81,150 +68,6 @@ class Wire(bricks.Brick):
         self.plugs.append(plug)
         plug.connect(sock)
         return plug
-
-
-# class PyWireThread(Thread):
-
-#     def __init__(self, wire):
-#         self.wire = wire
-#         self.run_condition = False
-#         Thread.__init__(self)
-
-#     def run(self):
-#         self.run_condition = True
-#         self.wire.pid = -10
-#         self.wire.factory.TCP
-#         host0 = None
-#         if self.wire.factory.TCP is not None:
-#         # ON TCP SERVER SIDE OF REMOTE WIRE
-#             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#             for port in range(32400, 32500):
-#                 try:
-#                     s.bind(('', port))
-#                 except:
-#                     continue
-#                 else:
-#                     self.wire.factory.TCP.sock.send("udp " + self.wire.name + " remoteport " + str(port) + '\n')
-#             v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
-#             p = select.poll()
-#             p.register(v.datafd().fileno(), select.POLLIN)
-#             p.register(s.fileno(), select.POLLIN)
-#             while self.run_condition:
-#                 res = p.poll(250)
-#                 for f, e in res:
-#                     if f == v.datafd().fileno() and (e & select.POLLIN):
-#                         buf = v.recv(2000)
-#                         s.sendto(buf, (self.wire.factory.TCP.master_address[0], self.wire.remoteport))
-#                     if f == s.fileno() and (e & select.POLLIN):
-#                         buf = s.recv(2000)
-#                         v.send(buf)
-
-#         elif self.wire.plugs[1].sock.brick.homehost == self.wire.plugs[0].sock.brick.homehost:
-#         # LOCAL WIRE
-#             v0 = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
-#             v1 = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
-#             p = select.epoll()
-#             p.register(v0.datafd().fileno(), select.POLLIN)
-#             p.register(v1.datafd().fileno(), select.POLLIN)
-#             while self.run_condition:
-#                 res = p.poll(0.250)
-#                 for f, e in res:
-#                     if f == v0.datafd().fileno() and (e & select.POLLIN):
-#                         buf = v0.recv(2000)
-#                         v1.send(buf)
-#                     if f == v1.datafd().fileno() and (e & select.POLLIN):
-#                         buf = v1.recv(2000)
-#                         v0.send(buf)
-#         else:
-#         # ON GUI SIDE OF REMOTE WIRE
-#             if host0:
-#                 v = VdePlug.VdePlug(self.wire.plugs[1].sock.path)
-#                 remote = self.wire.plugs[0].sock.brick
-#             else:
-#                 v = VdePlug.VdePlug(self.wire.plugs[0].sock.path)
-#                 remote = self.wire.plugs[1].sock.brick
-#             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#             for port in range(32400, 32500):
-#                 try:
-#                     s.bind(('', port))
-#                 except:
-#                     continue
-#                 if self.wire.remoteport == 0:
-#                     remote.homehost.send("udp " + self.wire.name + " " + remote.name + " " + str(port))
-#             while self.run_condition:
-#                 if self.wire.remoteport == 0:
-#                     time.sleep(1)
-#                     continue
-#                 p = select.poll()
-#                 p.register(v.datafd().fileno(), select.POLLIN)
-#                 p.register(s.fileno(), select.POLLIN)
-#                 res = p.poll(250)
-#                 for f, e in res:
-#                     if f == v.datafd().fileno() and (e & select.POLLIN):
-#                         buf = v.recv(2000)
-#                         s.sendto(buf, (remote.homehost.addr[0], self.wire.remoteport))
-#                     if f == s.fileno() and (e & select.POLLIN):
-#                         buf = s.recv(2000)
-#                         v.send(buf)
-#             remote.homehost.send(self.wire.name + " off")
-
-#             self.wire.pid = -1
-
-#     def poll(self):
-#         if self.isAlive():
-#             return None
-#         else:
-#             return True
-
-#     def wait(self):
-#         return self.join()
-
-#     def terminate(self):
-#         self.run_condition = False
-
-#     def send_signal(self, signo):
-#         # TODO: Suspend/resume.
-#         self.run_condition = False
-
-
-# class PyWire(Wire):
-
-#     def __init__(self, factory, name, remoteport=0):
-#         self.remoteport = remoteport
-#         Wire.__init__(self, factory, name)
-
-#     def on_config_changed(self):
-#         pass
-
-#     def set_remoteport(self, port):
-#         self.remoteport = int(port)
-
-#     def prog(self):
-#         return ''
-
-#     def _poweron(self):
-#         # self.proc
-#         self.pid = -1
-#         self.proc = PyWireThread(self)
-#         self.proc.start()
-
-#     def poweroff(self):
-#         self.remoteport = 0
-#         if self.proc:
-#             self.proc.terminate()
-#             self.proc.join()
-#             del(self.proc)
-#             self.proc = None
-
-#    def configured(self):
-#        if self.factory.TCP is not None:
-#            return len(self.plugs) != 0 and self.plugs[0].sock is not None
-#        else:
-#            return (self.plugs[0].sock is not None and self.plugs[1].sock is not None)
-
-#    def connected(self):
-#        self.debug( "CALLED PyWire connected" )
-#        return True
 
 
 class WireFilterConfig(bricks.Config):
