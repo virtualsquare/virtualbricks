@@ -120,17 +120,17 @@ class Settings:
         if os.path.exists(self.filename):
             try:
                 self.config.read(self.filename)
-                log.info(config_loaded, filename=self.filename)
+                logger.info(config_loaded, filename=self.filename)
             except ConfigParser.Error:
-                log.exception(cannot_read_config, filename=self.filename)
+                logger.exception(cannot_read_config, filename=self.filename)
         else:
-            log.info(config_loaded, filename=self.filename)
+            logger.info(config_loaded, filename=self.filename)
             try:
                 with open(self.filename, "w") as fp:
                     self.config.write(fp)
-                log.info(config_saved, filename=self.filename)
+                logger.info(config_saved, filename=self.filename)
             except IOError:
-                log.exception(cannot_save_config)
+                logger.exception(cannot_save_config)
 
         tools.enable_ksm(self.ksm, self.get("sudo"))
 
