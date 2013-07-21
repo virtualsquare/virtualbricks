@@ -83,6 +83,7 @@ class Settings:
     DEFAULT_PROJECT = DEFAULT_PROJECT
     VIRTUALBRICKS_HOME = VIRTUALBRICKS_HOME
     DEFAULT_HOME = VIRTUALBRICKS_HOME
+    __name__ = "virtualbricks.settings"
 
     def __init__(self, filename=CONFIGFILE):
         self.filename = filename

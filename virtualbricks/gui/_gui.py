@@ -149,7 +149,8 @@ class VMPopupMenu(BrickPopupMenu):
             args = ["snapshot", "-l", img.path]
             output = utils.getProcessOutput("qemu-img", args, os.environ)
             output.addCallback(grep, "virtualbricks")
-            output.addCallbacks(loadvm, log.err)
+            output.addCallbacks(loadvm, log.err,
+                                errbackArgs=("Error on snapshot",))
             return output
         try:
             raise RuntimeError("No such image")
@@ -906,7 +907,7 @@ class QemuConfigController(ConfigController):
         dialogs.DisksLibraryDialog(self.original.factory).show()
 
     def on_newempty_button_clicked(self, button):
-        dialogs.CreateImageDialog(self, self.brickfactory).show(
+        dialogs.CreateImageDialog(self.gui, self.gui.brickfactory).show(
             self.gui.get_object("main_win"))
 
     def _update_cpu_combobox(self, output, combobox):

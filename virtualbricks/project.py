@@ -162,9 +162,9 @@ class ProjectManager:
         self.close(factory)
         global current
         current = project
-        project.restore(factory)
         settings.set("current_project", project.name)
         settings.VIRTUALBRICKS_HOME = project.path
+        project.restore(factory)
         return project
 
     def _create(self, name, project, factory, open=False):
@@ -241,7 +241,7 @@ class ProjectManager:
         def check_rebase(result):
             for success, status in result:
                 if not success:
-                    log.err(status, show_to_user=False)
+                    log.err(status, "Error on rebase", hide_to_user=True)
                     log.msg("Rebase failed, try manually", isError=True)
             return project
 

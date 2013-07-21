@@ -200,7 +200,7 @@ class LoggingWindow(Window):
         Window.__init__(self)
         self.textbuffer = textbuffer
         self.__bottom = True
-        textview = self.get_object("textview1")
+        textview = self.get_object("textview")
         textview.set_buffer(textbuffer)
         self.__insert_text_h = textbuffer.connect("changed",
                 self.on_textbuffer_changed, textview)
@@ -259,13 +259,15 @@ class LoggingWindow(Window):
             if code == 0:
                 log.msg("Report bug sent succefully")
             elif code in BUG_REPORT_ERRORS:
-                log.err(BUG_REPORT_ERRORS[code])
-                log.err(err, show_to_user=False)
+                log.error(BUG_REPORT_ERRORS[code])
+                log.error("stderr:\n{stderr}", stderr=err, hide_to_user=True)
             else:
-                log.err("Report bug failed with exit code %s" % code)
-                log.err(err, show_to_user=False)
+                log.error("Report bug failed with exit code {code}", code=code)
+                log.error("stderr:\n{stderr}", stderr=err, hide_to_user=True)
 
-        exit_d.addCallbacks(success, log.err).addBoth(lambda _: os.close(fd))
+        exit_d.addCallbacks(success, log.err,
+                            errbackArgs=("Error on bug reporting",))
+        exit_d.addBoth(lambda _: os.close(fd))
 
 
 class DisksLibraryDialog(Window):
@@ -600,7 +602,7 @@ class RenameEventDialog(RenameDialog):
         try:
             if response_id == gtk.RESPONSE_OK:
                 if self.brick.scheduled:
-                    log.err(_("Cannot rename event: it is in use."))
+                    log.error(_("Cannot rename event: it is in use."))
                 else:
                     new = self.get_object("entry").get_text()
                     self.factory.rename_event(self.brick, new)
@@ -615,7 +617,7 @@ class RenameBrickDialog(RenameDialog):
             return
             if response_id == gtk.RESPONSE_OK:
                 if self.event.scheduled:
-                    log.err(_("Cannot rename event: it is in use."))
+                    log.error(_("Cannot rename event: it is in use."))
                 else:
                     new = self.get_object("entry").get_text()
                     self.factory.rename_event(self.event, new)
@@ -815,30 +817,33 @@ class CommitImageDialog(Window):
     parent = None
     _set_label_d = None
 
-    def __init__(self, factory):
+    def __init__(self, progessbar, factory):
         Window.__init__(self)
+        self.progessbar = progessbar
         model = self.get_object("model1")
         for brick in factory.bricks:
             for disk in (disk for disk in disks_of(brick) if disk.cow):
                 model.append((disk.device + " on " + brick.name, disk))
-        Window.show(self)
 
     def show(self, parent=None):
-        parent = parent
+        self.parent = parent
+        Window.show(self, parent)
 
     def _do_image_commit(self, path):
 
-        def log_err(exit_status):
+        def log_err((out, err, exit_status)):
             if exit_status != 0:
-                log.msg("Failed to commit image", isError=True)
+                log.msg("Failed to commit image\n{0}".format(err),
+                        isError=True)
 
-        ex_d = utils.getProcessValue("qemu-img", ["commit", path], os.environ)
-        ex_d.addCallback(log_err)
-        return ex_d
+        d = utils.getProcessOutputAndValue("qemu-img", ["commit", path],
+                                           os.environ)
+        d.addCallback(log_err)
+        return d
 
     def do_image_commit(self, path):
         self.window.destroy()
-        self.user_wait_action(self._do_image_commit, path)
+        self.progessbar.wait_for(self._do_image_commit, path)
 
     def commit_file(self, pathname):
         question = ("Warning: the base image will be updated to the\n"
@@ -858,7 +863,7 @@ class CommitImageDialog(Window):
         itr = combobox.get_active_iter()
         if itr:
             img = model[itr][1]
-            if self.get_object("cow_checkbutton").get_active():
+            if not self.get_object("cow_checkbutton").get_active():
                 question = ("Warning: the private COW image will be "
                             "updated.\nThis operation cannot be undone.\n"
                             "Are you sure?")
@@ -866,7 +871,7 @@ class CommitImageDialog(Window):
                               on_yes_arg=img).show(self.parent)
             else:
                 pathname = os.path.join(img.basefolder,
-                        "{0.vm.name}_{0.device}.cow".format(img))
+                        "{0.vm_name}_{0.device}.cow".format(img))
                 self.commit_file(pathname)
         else:
             log.msg("Invalid image", isError=True)
@@ -918,7 +923,7 @@ class CommitImageDialog(Window):
             self._set_label_d = code
             return code
 
-    def _set_label(self, combobox=None, button=None):
+    def set_label(self, combobox=None, button=None):
         if self._set_label_d is not None:
             self._set_label_d.cancel()
         if combobox is None:
@@ -931,8 +936,7 @@ class CommitImageDialog(Window):
         itr = combobox.get_active_iter()
         if itr is not None:
             disk = model[itr][1]
-            self._set_label(disk, label)
-            base = disk.get_base()
+            base = disk.image and disk.image.path or None
             if base and button.get_active():
                 # XXX: make disk.get_real_disk_name's deferred cancellable
                 deferred = disk.get_real_disk_name()
@@ -951,10 +955,10 @@ class CommitImageDialog(Window):
             label.set_text("base not found")
 
     def on_disk_combo_changed(self, combobox):
-        self._set_label(combobox=combobox)
+        self.set_label(combobox=combobox)
 
     def on_cow_checkbutton_toggled(self, button):
-        self._set_label(button=button)
+        self.set_label(button=button)
 
 
 def choose_new_image(gui, factory):
@@ -1026,7 +1030,7 @@ class CreateImageDialog(Window):
         exit = utils.getProcessOutputAndValue("qemu-img",
             ["create", "-f", fmt, pathname, size + unit], os.environ)
         exit.addCallback(_create_disk)
-        exit.addErrback(log.err)
+        exit.addErrback(log.err, "Error on creating image")
         return exit
 
     def on_CreateImageDialog_response(self, dialog, response_id):
