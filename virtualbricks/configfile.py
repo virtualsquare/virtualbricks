@@ -24,60 +24,47 @@ import contextlib
 
 from twisted.python import filepath
 
-from virtualbricks import _compat, settings, configparser
+from virtualbricks import settings, configparser, log
 
 
 if False:  # pyflakes
     _ = str
 
 
-log = _compat.getLogger(__name__)
+logger = log.Logger()
+link_type_error = log.Event("Cannot find link of type {type}")
+brick_not_found = log.Event("Cannot find brick {brick}, skipping line {line}")
+sock_not_found = log.Event("Cannot find sock {sockname}, skipping line {line}")
+link_added = log.Event("Added {type} to {brick}")
+cannot_save_backup = log.Event("Cannot save to backup file {filename}.\n"
+                               "{traceback}")
+project_saved = log.Event("Saved project to {filename}.")
+cannot_restore_backup = log.Event("Cannot restore backup file {filename}.\n"
+                                  "{traceback}")
+backup_restored = log.Event("A backup file for the current project has been "
+                            "restored.\nYou can find more informations "
+                            "looking in View->Messages.")
+image_found = log.Event("Found Disk image {name}")
+skip_image = log.Event("Skipping disk image, name '{name}' already in use")
+skip_image_noa = log.Event("Cannot access image file, skipping")
+config_dump = log.Event("CONFIG DUMP on {path}")
+open_project = log.Event("Open project at {path}")
+config_save_error = log.Event("Error while saving configuration file")
 
-
-class ParseError(_compat.LogInfo):
-
-    level = _compat.WARNING
-
-    def __init__(self, configline=""):
-        self.configline = configline
-
-
-class _LinkError(ParseError):
-    pass
-
-
-class LinkTypeError(_LinkError):
-
-    format = "Cannot find link of type {0.type}"
-
-    def __init__(self, type):
-        _LinkError.__init__(self)
-        self.type = type
-
-
-class _LinkLineError(_LinkError):
-
-    def __init__(self, link):
-        _LinkError.__init__(self, "|".join(link))
-        self.link = link
-
-
-class BrickNotFound(_LinkLineError):
-
-    format = "Cannot find brick {0.link.owner}, skipping line {1.configline}"
-
-
-class SockNotFound(_LinkLineError):
-
-    format = "Cannot find sock {0.link.sockname}, skipping line {0.configline}"
-
-
-class LinkAdded(_compat.LogInfo):
-
-    format = "Added {0.link.type} to {0.link.owner}"
-
-    def __init__(self, link):
-        self.link = link
+log_events = [link_type_error,
+              brick_not_found,
+              sock_not_found,
+              link_added,
+              cannot_save_backup,
+              project_saved,
+              cannot_restore_backup,
+              backup_restored,
+              image_found,
+              skip_image,
+              skip_image_noa,
+              config_dump,
+              open_project,
+              config_save_error]
 
 
 @contextlib.contextmanager
@@ -102,11 +89,10 @@ def restore_backup(filename, fbackup):
         if e.errno == errno.ENOENT:
             pass
         else:
-            log.warning("Cannot save to backup file %s.\n%s",
-                        filename_back, traceback.format_exc())
-            log.error("Cannot create a backup of the broject.")
+            logger.error(cannot_save_backup, filename=filename_back,
+                      traceback=traceback.format_exc())
     else:
-        log.info("Saved project to %s.", filename_back)
+        logger.info(project_saved, filename=filename_back)
     try:
         fbackup.moveTo(filename)
     except OSError, e:
@@ -116,13 +102,10 @@ def restore_backup(filename, fbackup):
         if e.errno == errno.ENOENT:
             pass
         else:
-            log.warning("Cannot restore backup file %s.\n%s",
-                        fbackup, traceback.format_exc())
-            log.error("Cannot restore backup of the broject.")
+            logger.warn(cannot_restore_backup, filename=fbackup,
+                        traceback=traceback.format_exc())
     else:
-        log.error(_("A backup file for the current project has been "
-                    "restored.\nYou can find more informations looking in "
-                    "View->Messages."))
+        logger.warn(backup_restored, hide_to_user=True)
     if created:
         filename_back.remove()
 
@@ -134,13 +117,12 @@ class ImageBuilder:
         self.name = name
 
     def load_from(self, section):
-        log.debug("Found Disk image %s" % self.name)
+        logger.debug(image_found, name=self.name)
         path = dict(section).get("path", "")
         if self.factory.is_in_use(self.name):
-            log.info("Skipping disk image, name %s already in "
-                     "use", self.name)
+            logger.info(skip_image, name=self.name)
         elif not os.access(path, os.R_OK):
-            log.info("Cannot access image file, skipping")
+            logger.info(skip_image_noa)
         else:
             return self.factory.new_disk_image(self.name, path)
 
@@ -154,9 +136,9 @@ class SockBuilder:
         brick = self.factory.get_brick_by_name(sock.owner)
         if brick:
             brick.add_sock(sock.mac, sock.model)
-            log.msg(LinkAdded(sock))
+            logger.info(link_added, type=sock.type, brick=sock.owner)
         else:
-            log.msg(BrickNotFound(sock))
+            logger.warn(brick_not_found, brick=sock.owner, line="|".join(sock))
 
 
 class LinkBuilder:
@@ -170,11 +152,12 @@ class LinkBuilder:
             sock = self.factory.get_sock_by_name(link.sockname)
             if sock:
                 brick.add_plug(sock, link.mac, link.model)
-                log.msg(LinkAdded(link))
+                logger.info(link_added, type=link.type, brick=link.owner)
             else:
-                log.msg(SockNotFound(link))
+                logger.warn(sock_not_found, sockname=link.sockname,
+                            line="|".join(link))
         else:
-            log.msg(BrickNotFound(link))
+            logger.warn(brick_not_found, brick=link.owner, line="|".join(link))
 
 
 class ConfigFile:
@@ -191,7 +174,7 @@ class ConfigFile:
         if isinstance(str_or_obj, (basestring, filepath.FilePath)):
             if isinstance(str_or_obj, basestring):
                 fp = filepath.FilePath(str_or_obj)
-            log.debug("CONFIG DUMP on " + fp.path)
+            logger.debug(config_dump, path=fp.path)
             with backup(fp, fp.sibling(fp.basename() + "~")):
                 tmpfile = fp.sibling("." + fp.basename() + ".sav")
                 with tmpfile.open("w") as fd:
@@ -230,7 +213,7 @@ class ConfigFile:
                     t = "link|{p.brick.name}||{p.model}|{p.mac}\n"
                 fileobj.write(t.format(p=plug))
             elif plug.sock is not None:
-                t = "link|{p.brick.name}|{p.sock.nickname}\n"
+                t = "link|{p.brick.name}|{p.sock.nickname}||\n"
                 fileobj.write(t.format(p=plug))
 
     def restore(self, factory, str_or_obj):
@@ -238,7 +221,7 @@ class ConfigFile:
             if isinstance(str_or_obj, basestring):
                 fp = filepath.FilePath(str_or_obj)
             restore_backup(fp, fp.sibling(fp.basename() + "~"))
-            log.info("Open %s project", fp.path)
+            logger.info(open_project, path=fp.path)
             with fp.open() as fd:
                 self.restore_from(factory, fd)
         else:
@@ -246,13 +229,6 @@ class ConfigFile:
 
     def restore_from(self, factory, fileobj):
         for item in configparser.Parser(fileobj):
-            # if isinstance(item, tuple):  # links
-            #     brick = factory.get_brick_by_name(item.owner)
-            #     if item.type == "sock":
-            #         brick.add_sock(item.mac, item.model)
-            #     elif item.type == "link":
-            #         sock = factory.get_sock_by_name(item.sockname)
-            #         brick.add_plug(sock, item.mac, item.model)
             if isinstance(item, tuple):  # links
                 self.build_link(factory, item.type).load_from(item)
             else:
@@ -264,7 +240,7 @@ class ConfigFile:
         elif type == "link":
             return LinkBuilder(factory)
         else:
-            log.msg(LinkTypeError(type))
+            logger.warn(link_type_error, type=type)
 
     def build_type(self, factory, type, name):
         if type == "Image":
@@ -289,7 +265,7 @@ def safe_save(factory, filename=None):
     try:
         save(factory, filename)
     except Exception:
-        log.exception("Error while saving configuration file")
+        logger.exception(config_save_error)
 
 
 def restore(factory, filename=None):

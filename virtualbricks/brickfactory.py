@@ -28,27 +28,39 @@ import itertools
 from twisted.application import app
 from twisted.internet import defer, task, stdio, error
 from twisted.protocols import basic
-from twisted.python import failure, log as _log
+from twisted.python import failure, logfile
 from twisted.conch.insults import insults
 from twisted.conch import manhole
 
-from virtualbricks import (errors, settings, configfile, console, _compat,
-                           project)
+from virtualbricks import errors, settings, configfile, console, project, log
 from virtualbricks import (events, link, router, switches, tunnels,
                            tuntaps, virtualmachines, wires)
 
 
-log = _compat.getLogger(__name__)
-
 if False:  # pyflakes
     _ = str
+
+logger = log.Logger()
+reg_basic_types = log.Event("Registering basic types")
+engine_bye = log.Event("Engine: Bye!")
+reg_new_type = log.Event("Registering new brick type {type}")
+type_present = log.Event("Type {type} already present, overriding it")
+create_image = log.Event("Creating new disk image at '{path}'")
+remove_socks = log.Event("Removing socks: {socks}")
+disconnect_plug = log.Event("Disconnecting plug to {sock}")
+remove_brick = log.Event("Removing brick {brick}")
+invalid_command = log.Event("Invalid event command '{type} {name}'")
+endpoint_not_found = log.Event("Endpoint {nick} not found.")
+shut_down = log.Event("Server Shut Down.")
+new_event_ok = log.Event("New event {name} OK")
+uncaught_exception = log.Event("Uncaught exception: {error()}")
 
 
 def install_brick_types(registry=None):
     if registry is None:
         registry = {}
 
-    log.debug("Registering basic types")
+    logger.debug(reg_basic_types)
     registry.update({
         "switch": switches.Switch,
         "tap": tuntaps.Tap,
@@ -90,7 +102,7 @@ class BrickFactory(object):
         return self._lock
 
     def stop(self):
-        log.info(_('Engine: Bye!'))
+        logger.info(engine_bye)
         for e in self.events:
             e.poweroff()
         # for h in self.remote_hosts:
@@ -124,9 +136,9 @@ class BrickFactory(object):
         term)"""
 
         for type in types:
-            log.debug("Registering new brick type %s", type)
+            logger.debug(reg_new_type, type=type)
             if type in self.__factories:
-                log.debug("Type %s already present, overriding it", type)
+                logger.debug(type_present, type=type)
             self.__factories[type] = factory
             # self.__factories.setdefault(type, []).append(factory)
 
@@ -137,7 +149,7 @@ class BrickFactory(object):
     def new_disk_image(self, name, path, description=""):
         """Add one disk image to the library."""
 
-        log.msg("Creating new disk image at '%s'" % path)
+        logger.info(create_image, path=path)
         name = self.normalize(name)
         if self.is_in_use(name):
             raise errors.NameAlreadyInUseError(name)
@@ -247,19 +259,19 @@ class BrickFactory(object):
         brick, status = result
         socks = set(brick.socks)
         if socks:
-            log.msg("Removing socks: " + ", ".join(s.nickname for s in socks))
+            nicknames = (s.nickname for s in socks)
+            logger.info(remove_socks, socks=lambda: ", ".join(nicknames))
             for _brick in self.bricks:
                 for plug in _brick.plugs:
                     if plug.configured() and plug.sock in socks:
-                        log.msg("Disconnecting plug to %s" %
-                                plug.sock.nickname)
+                        logger.info(disconnect_plug, sock=plug.sock.nickname)
                         plug.disconnect()
             for sock in [s for s in self.socks if s.brick is brick]:
                 self.socks.remove(sock)
         self.bricks.remove(brick)
 
     def del_brick(self, brick):
-        log.info("Removing brick %s" % brick.name)
+        logger.info(remove_brick, brick=brick.name)
         return brick.poweroff().addCallback(self.do_del_brick)
 
     def get_brick_by_name(self, name):
@@ -277,10 +289,10 @@ class BrickFactory(object):
     # [     Events     ]
     # [[[[[[[[[]]]]]]]]]
 
-    def newevent(self, ntype="", name=""):
+    def newevent(self, type="", name=""):
         """Old interface, use brickfactory.new_event() instead."""
-        if ntype not in ("event", "Event"):
-            log.error("Invalid event command '%s %s'", ntype, name)
+        if type not in ("event", "Event"):
+            logger.error(invalid_command, type=type, name=name)
             return False
         self.new_event(name)
         return True
@@ -305,7 +317,7 @@ class BrickFactory(object):
         if self.is_in_use(nname):
             raise errors.NameAlreadyInUseError(nname)
         event = events.Event(self, nname)
-        log.debug("New event %s OK", event.name)
+        logger.debug(new_event_ok, name=event.name)
         return event
 
     def dup_event(self, event):
@@ -341,7 +353,7 @@ class BrickFactory(object):
         if host is None:
             host = console.RemoteHost(self, hostname)
             # self.remote_hosts.append(host)
-            # log.debug("Created new host %s", hostname)
+            # logger.debug("Created new host %s", hostname)
         return host
 
     def next_name(self, name, suffix="_new"):
@@ -398,7 +410,7 @@ class BrickFactory(object):
         if endpoint is not None:
             return brick.connect(endpoint)
         else:
-            log.debug("Endpoint %s not found.", nick)
+            logger.debug(endpoint_not_found, nick=nick)
             return None
 
     # def delremote(self, hostname):
@@ -516,20 +528,42 @@ def AutosaveTimer(factory, interval=180):
 
 class AppLogger(app.AppLogger):
 
+    def _getLogObserver(self):
+        if self._logfilename == '-' or not self._logfilename:
+            logFile = sys.stdout
+        else:
+            logFile = logfile.LogFile.fromFullPath(self._logfilename)
+        return log.FileLogObserver(logFile)
+
     def start(self, application):
-        s_observer = None
+        from twisted.python import log as legacy_log
+
+        self._sobserver = None
         if self._observerFactory is not None:
             self._observer = self._observerFactory()
             if self._logfilename:
-                s_observer = self._getLogObserver()
+                self._sobserver = self._getLogObserver()
         elif self._logfilename:
             self._observer = self._getLogObserver()
-        else:
-            self._observer = _log.FileLogObserver(_log.NullFile()).emit
-        _log.startLoggingWithObserver(self._observer, False)
-        if s_observer:
-            _log.addObserver(s_observer)
+
+        if self._observer is not None:
+            logger.publisher.addObserver(self._observer, False)
+        if self._sobserver is not None:
+            logger.publisher.addObserver(self._sobserver, False)
+        observer = log.LegacyObserver()
+        legacy_log.startLoggingWithObserver(observer, False)
+        logger.publisher.filteredPublisher.removeObserver(
+            logger.publisher.legacyLogObserver)
         self._initialLog()
+
+    def stop(self):
+        logger.info(shut_down)
+        if self._observer is not None:
+            logger.publisher.removeObserver(self._observer)
+            self._observer = None
+        if self._sobserver:
+            logger.publisher.removeObserver(self._sobserver)
+            self._sobserver = None
 
 
 class Application:
@@ -554,21 +588,23 @@ class Application:
     def install_settings(self):
         settings.load()
 
-    def _get_log_level(self, verbosity):
-        if verbosity >= 2:
-            return _compat.DEBUG
-        elif verbosity == 1:
-            return _compat.INFO
-        elif verbosity == -1:
-            return _compat.ERROR
-        elif verbosity <= -2:
-            return _compat.CRITICAL
-
     def install_stdlog_handler(self):
-        root = _compat.getLogger()
-        root.addHandler(_compat.LoggingToTwistedLogHandler())
+        import logging
+
+        def get_log_level(verbosity):
+            if verbosity >= 2:
+                return logging.DEBUG
+            elif verbosity == 1:
+                return logging.INFO
+            elif verbosity == -1:
+                return logging.ERROR
+            elif verbosity <= -2:
+                return logging.CRITICAL
+
+        root = logging.getLogger()
+        root.addHandler(log.LoggingToNewLogginAdapter())
         if self.config["verbosity"]:
-            root.setLevel(self._get_log_level(self.config["verbosity"]))
+            root.setLevel(get_log_level(self.config["verbosity"]))
 
     def install_sys_hooks(self):
         import threading
@@ -597,7 +633,9 @@ class Application:
         if exc_type in (SystemExit, KeyboardInterrupt):
             sys.__excepthook__(exc_type, exc_value, traceback)
         else:
-            log.err(failure.Failure(exc_value, exc_type, traceback))
+            fail = failure.Failure(exc_value, exc_type, traceback)
+            logger.error(uncaught_exception, log_failure=fail,
+                         error=lambda: fail.getErrorMessage())
 
     def install_home(self):
         try:

@@ -17,18 +17,15 @@
 
 import os
 import re
-import logging
 
 import gobject
 import gtk
 import gtk.glade
 
-from twisted.application import app
-from twisted.python import log as _log
 from twisted.internet import error, defer, task, protocol, reactor
 
-from virtualbricks import (interfaces, tools, errors, settings, brickfactory,
-						_compat, project)
+from virtualbricks import (interfaces, tools, errors, settings, _compat,
+		project, log as _log, brickfactory)
 
 from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
@@ -47,7 +44,7 @@ class SyncProtocol(protocol.ProcessProtocol):
 
 	def processEnded(self, status):
 		if isinstance(status.value, error.ProcessTerminated):
-			log.err(status.value)
+			log.err(status.value, "Sync terminated unexpectedly")
 			self.done.errback(None)
 		else:
 			self.done.callback(None)
@@ -60,7 +57,7 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
 
 	def processEnded(self, status):
 		if isinstance(status.value, error.ProcessTerminated):
-			log.err(status.value)
+			log.err(status.value, "Create image terminated unexpectedly")
 			self.done.errback(None)
 		else:
 			reactor.spawnProcess(SyncProtocol(self.done), "sync", ["sync"],
@@ -654,7 +651,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					combo.select(b.plugs[0].sock.nickname)
 
 			elif k.endswith('1') and t.startswith('Wire'):
-				if len(b.plugs) >= 1 and b.plugs[1].sock:
+				if len(b.plugs) >= 2 and b.plugs[1].sock:
 					combo.select(b.plugs[1].sock.nickname)
 
 		dicts=dict()
@@ -723,9 +720,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				widget.set_filename(b.config.get(key))
 			elif widget is not None:
 				widget.unselect_all()
-
-			self.gladefile.get_widget("qemuicon").set_from_pixbuf(
-				graphics.pixbuf_for_running_brick(b))
 
 	"""
 	" ******************************************************** "
@@ -804,11 +798,19 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
 		for so in self.brickfactory.socks:
 			if sel == so.nickname:
-				b.plugs[0].connect(so)
+				if len(b.plugs) > 0:
+					b.plugs[0].connect(so)
+				else:
+					b.add_plug(so)
 		sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
 		for so in self.brickfactory.socks:
 			if sel == so.nickname:
-				b.plugs[1].connect(so)
+				if len(b.plugs) == 2:
+					b.plugs[1].connect(so)
+				elif len(b.plugs) == 1:
+					b.add_plug(so)
+				else:
+					raise ValueError("Configure left link too please")
 
 	def config_brick_confirm(self):
 		if self.__config_panel:
@@ -1557,7 +1559,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def startstop_brick(self, brick):
 		d = brick.poweron() if brick.proc is None else brick.poweroff()
 		d.addCallback(changed_brick_in_model, self.brickfactory.bricks)
-		d.addCallbacks(lambda _: self.running_bricks.refilter(), log.err)
+		d.addCallbacks(lambda _: self.running_bricks.refilter(), log.err,
+				errbackArgs=("Error on stopping brick",))
 
 	# def on_remotehosts_treeview_button_release_event(self, treeview, event):
 	# 	if event.button == 3:
@@ -1794,7 +1797,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		unit = self.gladefile.get_widget("combobox_newimage_sizeunit").get_active_text()[1]
 		# XXX: use a two value combobox
 		if not filename:
-			log.err(_("Choose a filename first!"))
+			log.error(_("Choose a filename first!"))
 			return
 		if img_format == "Auto":
 			img_format = "raw"
@@ -1806,7 +1809,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			os.environ)
 		done.addCallback(
 			lambda _: self.brickfactory.new_disk_image(filename, fullname))
-		done.addErrback(log.err)
+		done.addErrback(log.err, "Error on creating image")
 		return done
 
 	def on_button_create_image_clicked(self, widget=None, data=""):
@@ -2132,7 +2135,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.get_object("main_win"))
 
 	def on_project_save_activate(self, menuitem):
-		raise NotImplementedError("on_project_save_activate")
+		project.current.save(self.brickfactory)
 
 	def on_export_menuitem_activate(self, menuitem):
 		dialogs.ExportProjectDialog(ProgressBar(self)).show(
@@ -2178,8 +2181,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		return True
 
 	def on_commit_menuitem_activate(self, menuitem):
-		dialog = dialogs.CommitImageDialog(self.brickfactory)
-		dialog.show(self.get_object("main_win"))
+		dialogs.CommitImageDialog(self.progressbar, self.brickfactory).show(
+			self.get_object("main_win"))
 
 	def on_convert_image(self,widget,event=None, data=None):
 		self.gladefile.get_widget('combobox_imageconvert_format').set_active(2)
@@ -2316,34 +2319,28 @@ class VisualFactory(brickfactory.BrickFactory):
 		# self.remote_hosts = List()
 
 
-class TextBufferObserver(_log.FileLogObserver):
+# @implementer(_log.ILogObserver)
+class TextBufferObserver:
 
 	def __init__(self, textbuffer):
 		textbuffer.create_mark("end", textbuffer.get_end_iter(), False)
 		self.textbuffer = textbuffer
 
-	def emit(self, record):
-		gobject.idle_add(self._emit, record)
+	def __call__(self, event):
+		gobject.idle_add(self.emit, event)
 
-	def _emit(self, eventDict):
-		if "record" in eventDict:
-			lvl = eventDict["record"].levelname
-			text = eventDict["record"].getMessage()
+	def emit(self, event):
+		entry = "{iso8601_time} [{log_namespace}] {msg}\n{traceback}"
+		if "log_failure" in event:
+			event["traceback"] = event["log_failure"].getTraceback()
 		else:
-			lvl = logging.getLevelName(eventDict.get("logLevel",
-					[logging.INFO, logging.ERROR][eventDict["isError"]]))
-			text = _log.textFromEventDict(eventDict)
-			if text is None:
-				return
-
-		timeStr = self.formatTime(eventDict["time"])
-		fmtDict = {"system": eventDict["system"],
-					"text": text.replace("\n", "\n\t"),
-					"timeStr": timeStr}
-		msg = _log._safeFormat("%(timeStr)s [%(system)s] %(text)s\n", fmtDict)
-		self.textbuffer.insert_with_tags_by_name(
-			self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark("end")),
-			msg, lvl)
+			event["traceback"] = ""
+		event["iso8601_time"] = _log.format_time(event["log_time"])
+		msg = entry.format(msg=_log.formatEvent(event), **event)
+		mark = self.textbuffer.get_mark("end")
+		iter = self.textbuffer.get_iter_at_mark(mark)
+		self.textbuffer.insert_with_tags_by_name(iter, msg,
+			event["log_level"].name)
 
 
 class MessageDialogObserver:
@@ -2354,47 +2351,24 @@ class MessageDialogObserver:
 	def set_parent(self, parent):
 		self.__parent = parent
 
-	def emit(self, eventDict):
-		if ("show_to_user" not in eventDict and (("record" in eventDict and
-				eventDict["record"].levelno >= _compat.ERROR) or
-				eventDict["isError"])):
-			gobject.idle_add(self._emit, eventDict)
-
-	def _emit(self, eventDict):
-		if "record" in eventDict:
-			msg = eventDict["record"].getMessage()
-		elif "why" in eventDict and eventDict["why"] is not None:
-			msg = eventDict["why"]
-		elif "failure" in eventDict:
-			msg = eventDict["failure"].getErrorMessage()
-		else:
-			msg = _log.textFromEventDict(eventDict)
-			if msg is None:
-				return
+	def __call__(self, event):
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
 				gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
-		dialog.set_property('text', msg)
+		dialog.set_property('text', _log.formatEvent(event))
 		dialog.connect("response", lambda d, r: d.destroy())
 		dialog.show()
 
 
-TEXT_TAGS = [('DEBUG', {'foreground': '#a29898'}),
-			('INFO', {}),
-			('WARNING', {'foreground': '#ff9500'}),
-			('ERROR', {'foreground': '#b8032e'}),
-			('CRITICAL', {'foreground': '#b8032e', 'background': '#000'}),
-			('EXCEPTION', {'foreground': '#000', 'background': '#b8032e'})]
+def should_show_to_user(event):
+	if "hide_to_user" in event or event["log_level"] != _log.LogLevel.error:
+		return _log.PredicateResult.no
+	return _log.PredicateResult.maybe
 
 
-class AppLogger(app.AppLogger):
-
-	def start(self, application):
-		observer = self._observerFactory()
-		if self._logfilename:
-			_log.addObserver(self._getLogObserver())
-		self._observer = observer
-		_log.startLoggingWithObserver(self._observer, False)
-		self._initialLog()
+TEXT_TAGS = [('debug', {'foreground': '#a29898'}),
+			('info', {}),
+			('warn', {'foreground': '#ff9500'}),
+			('error', {'foreground': '#b8032e'})]
 
 
 class Application(brickfactory.Application):
@@ -2409,7 +2383,7 @@ class Application(brickfactory.Application):
 	def textbuffer_logger(self):
 		for name, attrs in TEXT_TAGS:
 			self.textbuffer.create_tag(name, **attrs)
-		return TextBufferObserver(self.textbuffer).emit
+		return TextBufferObserver(self.textbuffer)
 
 	def install_locale(self):
 		brickfactory.Application.install_locale(self)
@@ -2425,11 +2399,13 @@ class Application(brickfactory.Application):
 		gladefile = load_gladefile()
 		factory.register_brick_type(_gui.GVirtualMachine, "vm", "qemu")
 		message_dialog = MessageDialogObserver()
-		_log.addObserver(message_dialog.emit)
+		observer = _log.FilteringLogObserver(message_dialog,
+			(should_show_to_user,))
+		log.publisher.addObserver(observer, False)
 		# disable default link_button action
 		gtk.link_button_set_uri_hook(lambda b, s: None)
 		self.gui = VBGUI(factory, gladefile, quit, self.textbuffer)
-		message_dialog.set_parent(self.gui.widg["main_win"])  #XXX: ugly hack
+		message_dialog.set_parent(self.gui.widg["main_win"])
 
 
 def load_gladefile():

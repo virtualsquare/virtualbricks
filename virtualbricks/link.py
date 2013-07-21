@@ -19,11 +19,11 @@
 import os
 
 from twisted.internet import defer
-from twisted.python import log
 
-from virtualbricks import errors, settings
+from virtualbricks import errors, settings, _compat
 
 
+log = _compat.getLogger(__name__)
 if False:  # pyflakes
     _ = str
 
@@ -43,10 +43,9 @@ class Plug:
     def connected(self):
         if self._antiloop:
             if settings.get("erroronloop"):
-                log.msg(_("Loop link detected: aborting operation. If you "
-                          "want to start a looped network, disable the "
-                          "check loop feature in the general settings"),
-                        isError=True)
+                log.error(_("Loop link detected: aborting operation. If you "
+                            "want to start a looped network, disable the "
+                            "check loop feature in the general settings"))
             self._antiloop = False
             return defer.fail(errors.LinkLoopError())
 
