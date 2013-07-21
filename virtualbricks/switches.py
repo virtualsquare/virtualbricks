@@ -21,13 +21,13 @@ import os
 from twisted.internet import defer
 from twisted.python import failure
 
-from virtualbricks import settings, bricks, _compat, errors
+from virtualbricks import settings, bricks, log, errors
 
-
-log = _compat.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
+
+sock_not_exists = log.Event("Socket does not exists: {path}")
 
 
 class SwitchConfig(bricks.Config):
@@ -137,7 +137,7 @@ class SwitchWrapper(bricks.Brick):
             self.proc = FakeProcess(self)
             return defer.succeed(self)
         else:
-            log.debug("Socket does not exists: %s", self.config["path"])
+            self.logger.debug(sock_not_exists, path=self.config["path"])
             return defer.fail(failure.Failure(errors.BadConfigError(
                 _("Socket does not exists: %s") % self.config["path"])))
 

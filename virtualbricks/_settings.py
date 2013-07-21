@@ -18,14 +18,18 @@
 import os
 import ConfigParser
 
-from virtualbricks import tools, _compat
+from virtualbricks import tools, log
 
 
 if False:  # pyflakes
     _ = str
 
 
-log = _compat.getLogger(__name__)
+logger = log.Logger()
+config_loaded = log.Event("Configuration loaded ({filename})")
+config_saved = log.Event("Default configuration saved ({filename})")
+cannot_read_config = log.Event("Cannot read config file {filename}")
+cannot_save_config = log.Event("Cannot save default configuration")
 
 
 HOME = os.path.expanduser("~")
@@ -92,11 +96,11 @@ class Settings:
         for key, value in DEFAULT_CONF.items():
             self.config.set(self.DEFAULT_SECTION, key, str(value))
 
-    def has_option(self, value):
-        return self.config.has_option(self.DEFAULT_SECTION, value)
+    def has_option(self, name):
+        return self.config.has_option(self.DEFAULT_SECTION, name)
 
     def __contrains__(self, name):
-        return self.config.has_option(self.DEFAULT_SECTION, value)
+        return self.config.has_option(self.DEFAULT_SECTION, name)
 
     def get(self, attr):
         if attr in self.__boolean_values__:
@@ -116,19 +120,17 @@ class Settings:
         if os.path.exists(self.filename):
             try:
                 self.config.read(self.filename)
-                log.info(_("Configuration loaded ('%s')"), self.filename)
-            except ConfigParser.Error, e:
-                log.error(_("Cannot read config file '%s': '%s'!"),
-                          self.filename, e)
+                log.info(config_loaded, filename=self.filename)
+            except ConfigParser.Error:
+                log.exception(cannot_read_config, filename=self.filename)
         else:
-            log.info(_("Default configuration loaded"))
+            log.info(config_loaded, filename=self.filename)
             try:
                 with open(self.filename, "w") as fp:
                     self.config.write(fp)
-                log.info(_("Default configuration saved ('%s')"),
-                        self.filename)
+                log.info(config_saved, filename=self.filename)
             except IOError:
-                log.error(_("Cannot save default configuration"))
+                log.exception(cannot_save_config)
 
         tools.enable_ksm(self.ksm, self.get("sudo"))
 

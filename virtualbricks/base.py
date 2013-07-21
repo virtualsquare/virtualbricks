@@ -20,16 +20,15 @@ import re
 
 from twisted.python import reflect
 
-from virtualbricks import _compat
+from virtualbricks import log
 
-
-log = _compat.getLogger(__name__)
 
 if False:  # pyflakes
     _ = str
 
 
 __metaclass__ = type
+set_callback = log.Event("{name}: callback '{cb}' with argument {arg}")
 
 
 class Config(dict):
@@ -177,6 +176,7 @@ class Base(object):
     _needsudo = False
     _name = None
     config_factory = Config
+    logger = log.Logger()
 
     def get_name(self):
         return self._name
@@ -205,8 +205,8 @@ class Base(object):
                 self.config[name] = value
                 setter = getattr(self, "cbset_" + name, None)
                 if setter:
-                    log.msg("%s: callback '%s' with argument %s" %
-                            (self.name, name, value))
+                    self.logger.info(set_callback, name=self.name, cb=name,
+                                     arg=value)
                     setter(value)
 
     def get(self, name):

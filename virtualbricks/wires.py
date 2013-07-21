@@ -17,9 +17,7 @@
 
 import os
 
-from virtualbricks import _compat, bricks, settings
-
-log = _compat.getLogger(__name__)
+from virtualbricks import bricks, settings
 
 if False:  # pyflakes
     _ = str
