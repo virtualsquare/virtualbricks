@@ -18,14 +18,16 @@
 
 from twisted.internet import reactor, defer
 
-from virtualbricks import base, errors, console, _compat
+from virtualbricks import base, errors, console, log
 
 
 if False:  # pyflakes
     _ = str
 
 
-log = _compat.getLogger(__name__)
+process_ended = log.Event("Process ended with exit code {code}")
+event_error = log.Event("Error in event action. See the log for more "
+                        "informations")
 
 
 class Command(base.String):
@@ -129,12 +131,11 @@ class Event(base.Base):
     def do_actions(self, deferred):
 
         def log_err(results):
-            for success, value in results:
+            for success, status in results:
                 if success:
-                    log.msg("Process ended with exit code %s" % value)
+                    self.logger.info(process_ended, code=status)
                 else:
-                    log.err(value, "Error in event action. See the log for "
-                            "more informations")
+                    self.logger.error(event_error, log_failure=status)
             return self
 
         self.scheduled = None

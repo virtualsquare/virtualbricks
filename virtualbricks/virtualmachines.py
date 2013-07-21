@@ -26,14 +26,22 @@ import itertools
 from twisted.internet import utils, defer
 from twisted.python import failure
 
-from virtualbricks import errors, tools, settings, bricks, _compat, project
+from virtualbricks import errors, tools, settings, bricks, log, project
 
 
 if False:
     _ = str
 
 __metaclass__ = type
-log = _compat.getLogger(__name__)
+logger = log.Logger()
+new_cow = log.Event("Creating a new private COW from {base} image.")
+invalid_base = log.Event("{cowname} private cow found with a different base "
+                         "image ({base}): moving it in {path}")
+powerdown = log.Event("Sending powerdown to {vm}")
+update_usb = log.Event("update_usbdevlist: old {old} - new {new}")
+own_err = log.Event("plug {plug} does not belong to {brick}")
+acquire_lock = log.Event("Aquiring disk locks")
+release_lock = log.Event("Releasing disk locks")
 
 
 class Wrapper:
@@ -58,7 +66,6 @@ class Wrapper:
                     break
             else:
                 setattr(self.original, name, value)
-
 
 
 class VMPlug(Wrapper):
@@ -251,8 +258,7 @@ class Disk:
             msg = _("qemu-img not found! I can't create a new image.")
             return defer.fail(failure.Failure(errors.BadConfigError(msg)))
 
-        log.msg("Creating a new private COW from %s base image." %
-                self._get_base())
+        logger.info(new_cow, base=self._get_base())
         args = ["create", "-b", self._get_base(), "-f",
                 settings.get("cowfmt"), cowname]
         exe = os.path.join(settings.get("qemupath"), "qemu-img")
@@ -269,9 +275,8 @@ class Disk:
         else:
             dt = datetime.datetime.now()
             cowback = cowname + ".back-" + dt.strftime("%Y-%m-%d_%H-%M-%S")
-            log.debug("%s private cow found with a different base "
-                      "image (%s): moving it in %s", cowname, backing_file,
-                      cowback)
+            logger.debug(invalid_base, cowname=cowname, base=backing_file,
+                         path=cowback)
             move(cowname, cowback)
             return self._create_cow(cowname).addCallback(lambda _: cowname)
 
@@ -576,7 +581,7 @@ class VirtualMachine(bricks.Brick):
         if self.proc is None:
             return defer.succeed((self, self._last_status))
         elif not any((kill, term)):
-            log.msg("Sending powerdown to %r" % self)
+            self.logger.info(powerdown, vm=self)
             self.send("system_powerdown\n")
             return self._exited_d
         if term:
@@ -592,8 +597,7 @@ class VirtualMachine(bricks.Brick):
         return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
-        log.debug("update_usbdevlist: old %s - new %s",
-                  self.config["usbdevlist"], dev)
+        self.logger.debug(update_usb, old=self.config["usbdevlist"], new=dev)
         for d in set(dev) - set(self.config["usbdevlist"]):
             self.send("usb_add host:" + d + "\n")
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
@@ -607,18 +611,6 @@ class VirtualMachine(bricks.Brick):
         return True
 
     def prog(self):
-        #IF IS IN A SERVER, CHECK IF KVM WORKS
-        # XXX: I disabled this, how can be renabled?
-        # if self.factory.server:
-        #     try:
-        #         self.settings.check_kvm()
-        #     except IOError:
-        #         raise errors.BadConfigError(_("KVM not found! Please change VM configuration."))
-        #         return
-        #     except NotImplementedError:
-        #         raise errors.BadConfigError(_("KVM not found! Please change VM configuration."))
-        #         return
-
         if self.config["argv0"] and not self.config["kvm"]:
             cmd = settings.get("qemupath") + "/" + self.config["argv0"]
         else:
@@ -746,7 +738,7 @@ class VirtualMachine(bricks.Brick):
         return plug
 
     def connect(self, sock):
-        plug = self.add_plug(sock)
+        self.add_plug(sock)
 
     def remove_plug(self, plug):
         try:
@@ -755,7 +747,7 @@ class VirtualMachine(bricks.Brick):
             else:
                 self.plugs.remove(plug)
         except ValueError:
-            log.error("plug %r does not belong to %r" % (plug, self))
+            self.logger.error(own_err, plug=plug, brick=self)
 
     def commit_disks(self, args):
         # XXX: fixme
@@ -763,7 +755,7 @@ class VirtualMachine(bricks.Brick):
 
     def acquire(self):
         """Acquire locks on images if needed."""
-        log.debug("Aquiring disk locks")
+        self.logger.debug(acquire_lock)
         acquired = []
         for disk in self.disks():
             try:
@@ -776,7 +768,7 @@ class VirtualMachine(bricks.Brick):
                 acquired.append(disk)
 
     def release(self):
-        log.debug("Releasing disk locks")
+        self.logger.debug(release_lock)
         for disk in self.disks():
             disk.release()
 

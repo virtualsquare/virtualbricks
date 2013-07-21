@@ -26,9 +26,10 @@ import functools
 import tempfile
 import struct
 
-from virtualbricks import _compat
+from virtualbricks import log
 
-log = _compat.getLogger(__name__)
+logger = log.Logger()
+ksm_error = log.Event("Can not change ksm state. (failed command: {cmd})")
 
 
 def random_mac():
@@ -111,7 +112,7 @@ def enable_ksm(enable, use_sudo):
         cmd = "echo %d > %s" % (enable, "/sys/kernel/mm/ksm/run")
         exit = os.system("sudo %s" % cmd) if use_sudo else os.system(cmd)
         if exit:  # exit state != 0
-            log.error("Can not change ksm state. (failed command: %s)" % cmd)
+            logger.error(ksm_error, cmd=cmd)
 
 
 class Tempfile:

@@ -10,9 +10,10 @@ import sys
 from twisted.python.failure import Failure
 from twisted.internet.error import ReactorNotRunning
 
-from virtualbricks import _compat
+from virtualbricks import log
 
-log = _compat.getLogger(__name__)
+logger = log.Logger()
+main_error = log.Event("main function encountered error")
 
 
 def react(main, argv, _reactor=None):
@@ -60,7 +61,7 @@ def react(main, argv, _reactor=None):
             if result.check(SystemExit) is not None:
                 code = result.value.code
             else:
-                log.err(result, "main function encountered error")
+                log.error(main_error, log_failure=result)
                 code = 1
             codes[0] = code
 

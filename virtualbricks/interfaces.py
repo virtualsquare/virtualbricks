@@ -22,12 +22,15 @@ import traceback
 from zope.interface import Interface, Attribute
 from twisted.python.components import registerAdapter
 
-from virtualbricks import _compat
+from virtualbricks import log
 
 
-log = _compat.getLogger(__name__)
 __all__ = ["IMenu", "IJobMenu", "IConfigController", "IBrick", "IPlug",
            "registerAdapter", "InterfaceLogger"]
+
+logger = log.Logger()
+non_interface = log.Event("Requested a non-interface ({interface}) method: "
+                          "{method}\n{traceback}")
 
 
 class InterfaceLogger:
@@ -38,11 +41,11 @@ class InterfaceLogger:
 
     def __getattr__(self, name):
         if name not in self.interface:
-            log.warning("Requested a non-interface (%s) method: %s\n%s",
-                        self.interface.__name__, name,
-                        "\n".join("%s:%d %s" % (fn, l, fun) for
-                                  fn, l, fun, t in
-                                  reversed(traceback.extract_stack())))
+            tb = lambda: "\n".join("{0}:{1} {2}".format(fn, l, fun) for
+                                   fn, l, fun, t in
+                                   reversed(traceback.extract_stack()))
+            logger.warn(non_interface, interface=self.interface.__name__,
+                        method=name, traceback=tb)
         try:
             return getattr(self.original, name)
         except AttributeError:
