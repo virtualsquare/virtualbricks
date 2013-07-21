@@ -2135,7 +2135,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.get_object("main_win"))
 
 	def on_project_save_activate(self, menuitem):
-		raise NotImplementedError("on_project_save_activate")
+		project.current.save(self.brickfactory)
 
 	def on_export_menuitem_activate(self, menuitem):
 		dialogs.ExportProjectDialog(ProgressBar(self)).show(
@@ -2181,8 +2181,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		return True
 
 	def on_commit_menuitem_activate(self, menuitem):
-		dialog = dialogs.CommitImageDialog(self.brickfactory)
-		dialog.show(self.get_object("main_win"))
+		dialogs.CommitImageDialog(self.progressbar, self.brickfactory).show(
+			self.get_object("main_win"))
 
 	def on_convert_image(self,widget,event=None, data=None):
 		self.gladefile.get_widget('combobox_imageconvert_format').set_active(2)
