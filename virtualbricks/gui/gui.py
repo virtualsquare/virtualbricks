@@ -41,7 +41,7 @@ create_image_error = log.Event("Create image terminated unexpectedly")
 draw_topology = log.Event("drawing topology")
 top_invalid_format = log.Event("Error saving topology: Invalid image format")
 top_write_error = log.Event("Error saving topology: Could not write file")
-top_unknown = log.exception("Error saving topology: Unknown error")
+top_unknown = log.Event("Error saving topology: Unknown error")
 start_virtualbricks = log.Event("Starting VirtualBricks")
 components_not_found = log.Event("{text}\nThere are some components not "
     "found: {components} some functionalities may not be available.\nYou can "
