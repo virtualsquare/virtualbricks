@@ -176,6 +176,7 @@ class ProjectManager:
         current = project
         settings.set("current_project", project.name)
         settings.VIRTUALBRICKS_HOME = project.path
+        settings.store()
         project.restore(factory)
         return project
 
