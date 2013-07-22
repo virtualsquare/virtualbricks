@@ -775,3 +775,9 @@ class VirtualMachine(bricks.Brick):
     def disks(self):
         for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             yield self.config[hd]
+
+    def set_vm(self, disk):
+        disk.VM = self
+
+    cbset_hda = cbset_hdb = cbset_hdc = cbset_hdd = cbset_fda = cbset_fdb = \
+            cbset_mtblock = set_vm
