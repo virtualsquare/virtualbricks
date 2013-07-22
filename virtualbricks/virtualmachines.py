@@ -492,7 +492,7 @@ class VirtualMachineConfig(bricks.Config):
                   "privatemtdblock": bricks.Boolean(False),
 
                   # system and machine
-                  "argv0": bricks.String("i386"),
+                  "argv0": bricks.String("qemu-system-i386"),
                   "cpu": bricks.String(""),
                   "machine": bricks.String(""),
                   "kvm": bricks.Boolean(False),
