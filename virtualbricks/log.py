@@ -22,7 +22,8 @@ import urllib
 import uuid
 import functools
 
-from twisted.python import failure, util
+from twisted.python import util
+from twisted.python.failure import Failure
 
 from virtualbricks._log import (InvalidLogLevelError, LogLevel, formatEvent,
     Logger as _Logger, LegacyLogger, ILogObserver, ILegacyLogObserver,
@@ -95,7 +96,16 @@ class Logger(_Logger):
 
     @expect_event
     def exception(self, event, **kwds):
-        event(self, LogLevel.error, log_failure=failure.Failure(), **kwds)
+        event(self, LogLevel.error, log_failure=Failure(), **kwds)
+
+    @expect_event
+    def failure(self, event, failure=None, level=LogLevel.error, **kwargs):
+        if failure is None:
+            failure = Failure()
+        event(self, level, log_failure=failure, **kwargs)
+
+    def failure_eb(self, failure, event, level=LogLevel.error, **kwargs):
+        self.failure(event, failure, level, **kwargs)
 
 
 def getTimezoneOffset(when):
@@ -193,7 +203,7 @@ class LoggingToNewLogginAdapter(logging.Handler):
         try:
             msg = self.format(record)
             if record.exc_info is not None:
-                self.logger.failure(msg, failure.Failure(*record.exc_info))
+                self.logger.failure(msg, Failure(*record.exc_info))
             else:
                 level = self._map_levelname_to_LogLevel(record.levelname)
                 self.logger.emit(level, msg, **record.__dict__)
