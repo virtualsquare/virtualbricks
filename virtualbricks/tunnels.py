@@ -18,10 +18,11 @@
 
 import os
 
-from virtualbricks import bricks, link, _compat
+from virtualbricks import settings, bricks, link, log
 
 
-log = _compat.getLogger(__name__)
+logger = log.Logger()
+pwdgen_exit = log.Event("Command pwdgen exited with {code}")
 
 if False:  # pyflakes
     _ = str
@@ -68,7 +69,7 @@ class TunnelListen(bricks.Brick):
         pwdgen = "echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (
             self.config["password"], self.name)
         exitstatus = os.system(pwdgen)
-        log.info("Command pwdgen exited with code %d", exitstatus)
+        logger.info(pwdgen_exit, code=exitstatus)
         res = []
         res.append(self.prog())
         res.append("-P")
