@@ -246,7 +246,7 @@ class BrickFactory(object):
         else:
             new_brick = self.newbrick(ty, name)
         # Copy only strings, and not objects, into new vm config
-        new_brick.config = copy.deepcopy(brick.config)
+        new_brick.set(copy.deepcopy(brick.config))
 
         for p in brick.plugs:
             if p.sock is not None:
