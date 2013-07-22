@@ -7,13 +7,9 @@ Backport module for twisted 12.0 (debian)
 
 import sys
 
+from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.internet.error import ReactorNotRunning
-
-from virtualbricks import log
-
-logger = log.Logger()
-main_error = log.Event("main function encountered error")
 
 
 def react(main, argv, _reactor=None):
@@ -61,7 +57,7 @@ def react(main, argv, _reactor=None):
             if result.check(SystemExit) is not None:
                 code = result.value.code
             else:
-                log.error(main_error, log_failure=result)
+                log.err(result, "main function encountered error")
                 code = 1
             codes[0] = code
 
