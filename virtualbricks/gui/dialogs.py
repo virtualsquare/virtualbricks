@@ -87,21 +87,50 @@ import gtk
 from twisted.internet import utils, defer
 from twisted.python import filepath, failure
 
-from virtualbricks import (version, tools, _compat, console, settings,
+from virtualbricks import (version, tools, log, console, settings,
                            virtualmachines, project, errors)
 from virtualbricks.gui import graphics
-
-
-log = _compat.getLogger(__name__)
-NUMERIC = set(map(str, range(10)))
-NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
-EXTRA = set(["BackSpace", "Delete", "Left", "Right", "Home", "End", "Tab"])
-VALIDKEY = NUMERIC | NUMPAD | EXTRA
 
 
 if False:  # pyflakes
     _ = str
 
+logger = log.Logger()
+bug_send = log.Event("Sending report bug")
+bug_sent = log.Event("Report bug sent succefully")
+bug_error = log.Event("{err}\nstderr:\n{stderr}")
+bug_report_fail = log.Event("Report bug failed with code "
+                            "{code}\nstderr:\n{stderr}")
+img_cannot_remove = log.Event("Cannot remove image {img}")
+bug_err_unknown = log.Event("Error on bug reporting")
+lsusb_out = log.Event("lsusb output:\n{out}")
+dev_found = log.Event("found {dev}")
+perm_error = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
+invalid_mac = log.Event("MAC address {mac} is not valid, generating "
+                        "a random one")
+not_implemented = log.Event("Not implemented")
+event_in_use = log.Event("Cannot rename event: it is in use.")
+brick_in_use = log.Event("Cannot rename brick: it is in use.")
+event_created = log.Event("Event created successfully")
+commit_failed = log.Event("Failed to commit image\n{err}")
+img_invalid = log.Event("Invalid image")
+base_not_found = log.Event("Base not found (invalid cow?)\nstderr:\n{err}")
+img_combo = log.Event("Setting image for combobox")
+img_create_err = log.Event("Error on creating image")
+img_create = log.Event("Creating image...")
+img_choose = log.Event("Choose a filename first!")
+img_invalid_type = log.Event("Invalid value for format combo, assuming raw")
+img_invalid_unit = log.Event("Invalid value for unit combo, assuming Mb")
+import_cancelled = log.Event("Import cancelled")
+import_prj_exists = log.Event("Cannot import project {name} a project with "
+                              "the same name exists.")
+import_invalid_name = log.Event("Invalid project name {name}")
+import_err = log.Event("Error on import project")
+
+NUMERIC = set(map(str, range(10)))
+NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
+EXTRA = set(["BackSpace", "Delete", "Left", "Right", "Home", "End", "Tab"])
+VALIDKEY = NUMERIC | NUMPAD | EXTRA
 
 BUG_REPORT_ERRORS = {
     1: "Error in command line syntax.",
@@ -246,7 +275,7 @@ class LoggingWindow(Window):
             dialog.destroy()
 
     def on_reportbugbutton_clicked(self, button):
-        log.msg("Sending report bug")
+        logger.info(bug_send)
         fd, filename = tempfile.mkstemp()
         os.write(fd, self.textbuffer.get_property("text"))
         gtk.link_button_set_uri_hook(None)
@@ -257,16 +286,16 @@ class LoggingWindow(Window):
 
         def success((out, err, code)):
             if code == 0:
-                log.msg("Report bug sent succefully")
+                logger.info(bug_sent)
             elif code in BUG_REPORT_ERRORS:
-                log.error(BUG_REPORT_ERRORS[code])
-                log.error("stderr:\n{stderr}", stderr=err, hide_to_user=True)
+                logger.error(bug_error, err=BUG_REPORT_ERRORS[code],
+                             stderr=err, hide_to_user=True)
             else:
-                log.error("Report bug failed with exit code {code}", code=code)
-                log.error("stderr:\n{stderr}", stderr=err, hide_to_user=True)
+                logger.error(bug_report_fail, code=code, stderr=err,
+                             hide_to_user=True)
 
-        exit_d.addCallbacks(success, log.err,
-                            errbackArgs=("Error on bug reporting",))
+        exit_d.addCallback(success)
+        exit_d.addErrback(logger.failure_eb, bug_err_unknown)
         exit_d.addBoth(lambda _: os.close(fd))
 
 
@@ -347,7 +376,7 @@ class DisksLibraryDialog(Window):
         try:
             self.factory.remove_disk_image(self.image)
         except Exception:
-            log.exception("Cannot remove image %s", self.image)
+            logger.failure(img_cannot_remove, img=self.image)
         self.tree_panel.show()
         self.config_panel.hide()
 
@@ -387,7 +416,7 @@ class UsbDevWindow(Window):
         Window.__init__(self)
         self.gui = gui
         self.vm = vm
-        log.msg("lsusb output:\n%s" % output)
+        logger.info(lsusb_out, out=output)
         model = self.get_object("liststore1")
         self._populate_model(model, output)
 
@@ -408,7 +437,7 @@ class UsbDevWindow(Window):
                 ndev = model.get_value(iter, 0)
                 if ndev == dev:
                     selection.select_iter(iter)
-                    log.debug("found %s", dev)
+                    logger.debug(dev_found, dev=dev)
                     break
             iter = model.iter_next(iter)
 
@@ -420,8 +449,7 @@ class UsbDevWindow(Window):
             devs = [model[p[0]][0] for p in paths]
 
             if devs and not os.access("/dev/bus/usb", os.W_OK):
-                log.error(_("Cannot access /dev/bus/usb. "
-                            "Check user privileges."))
+                logger.error(perm_error)
                 self.gui.gladefile.get_widget("cfg_Qemu_usbmode_check"
                                              ).set_active(False)
 
@@ -489,8 +517,7 @@ class BaseEthernetDialog(Window):
             model = combo.get_model().get_value(combo.get_active_iter(), 0)
             mac = self.get_object("mac_entry").get_text()
             if not self.is_valid(mac):
-                log.error("MAC address %s is not valid, generating a random "
-                          "one", mac)
+                logger.error(invalid_mac, mac=mac)
                 mac = tools.random_mac()
             self.do(sock, mac, model)
         dialog.destroy()
@@ -549,7 +576,7 @@ class EditEthernetDialog(BaseEthernetDialog):
 
     def do(self, sock, mac, model):
         if sock == "_sock":
-            log.error("Not implemented")
+            logger.error(not_implemented)
         else:
             if self.plug.configured():
                 self.plug.disconnect()
@@ -602,7 +629,7 @@ class RenameEventDialog(RenameDialog):
         try:
             if response_id == gtk.RESPONSE_OK:
                 if self.brick.scheduled:
-                    log.error(_("Cannot rename event: it is in use."))
+                    logger.error(event_in_use)
                 else:
                     new = self.get_object("entry").get_text()
                     self.factory.rename_event(self.brick, new)
@@ -617,7 +644,7 @@ class RenameBrickDialog(RenameDialog):
             return
             if response_id == gtk.RESPONSE_OK:
                 if self.event.scheduled:
-                    log.error(_("Cannot rename event: it is in use."))
+                    logger.error(brick_in_use)
                 else:
                     new = self.get_object("entry").get_text()
                     self.factory.rename_event(self.event, new)
@@ -748,7 +775,7 @@ class BrickSelectionDialog(Window):
             actions = [console.VbShellCommand("%s %s" % (b.name, self.action))
                        for b in self.added]
             self.event.set({"actions": actions})
-            log.msg("Event created successfully")
+            logger.info(event_created)
         dialog.destroy()
 
 
@@ -833,8 +860,7 @@ class CommitImageDialog(Window):
 
         def log_err((out, err, exit_status)):
             if exit_status != 0:
-                log.msg("Failed to commit image\n{0}".format(err),
-                        isError=True)
+                logger.error(commit_failed, err=err)
 
         d = utils.getProcessOutputAndValue("qemu-img", ["commit", path],
                                            os.environ)
@@ -853,7 +879,7 @@ class CommitImageDialog(Window):
                       on_yes_arg=pathname).show(self.parent)
 
     def _commit_vm(self, img):
-        log.msg("TODO: not implemented yet")
+        logger.warning(not_implemented)
         # img.VM.commit_disks()
         self.window.destroy()
 
@@ -874,7 +900,7 @@ class CommitImageDialog(Window):
                         "{0.vm_name}_{0.device}.cow".format(img))
                 self.commit_file(pathname)
         else:
-            log.msg("Invalid image", isError=True)
+            logger.error(img_invalid)
 
     def on_CommitImageDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
@@ -900,8 +926,7 @@ class CommitImageDialog(Window):
 
     def _commit_image_show_result(self, (out, err, code)):
         if code != 0:
-            log.msg("Base not found (invalid cow?)\nstderr:\n%s" % err,
-                    isError=True)
+            logger.error(base_not_found, err=err)
         else:
             label = self.get_object("msg_label")
             for line in out.splitlines():
@@ -942,7 +967,7 @@ class CommitImageDialog(Window):
                 deferred = disk.get_real_disk_name()
                 deferred.addCallback(label.set_text)
                 deferred.addCallback(lambda _: label.set_visible(True))
-                deferred.addErrback(log.err, "Setting image for combobox")
+                deferred.addErrback(logger.failure_eb, img_combo)
                 self._set_label_d = deferred
             elif base:
                 label.set_visible(True)
@@ -1023,22 +1048,22 @@ class CreateImageDialog(Window):
         def _create_disk(result):
             out, err, code = result
             if code:
-                log.msg(err, isError=True)
+                logger.error(err)
             else:
                 return self.factory.new_disk_image(name, pathname)
 
         exit = utils.getProcessOutputAndValue("qemu-img",
             ["create", "-f", fmt, pathname, size + unit], os.environ)
         exit.addCallback(_create_disk)
-        exit.addErrback(log.err, "Error on creating image")
+        exit.addErrback(logger.failure_eb, img_create_err)
         return exit
 
     def on_CreateImageDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            log.msg("Creating image...")
+            logger.info(img_create)
             name = self.get_object("name_entry").get_text()
             if not name:
-                log.msg(_("Choose a filename first!"), isError=True)
+                logger.error(img_choose)
                 return
             folder = self.get_object("folder_filechooserbutton").get_filename()
             fmt_cmb = self.get_object("format_combobox")
@@ -1048,7 +1073,7 @@ class CreateImageDialog(Window):
                 if fmt == "Auto":
                     fmt = "raw"
             else:
-                log.msg("Invalid value for format combo, assuming raw")
+                logger.info(img_invalid_type)
                 fmt = "raw"
             size = str(self.get_object("size_spinbutton").get_value_as_int())
             # Get size unit and remove the last character "B"
@@ -1058,7 +1083,7 @@ class CreateImageDialog(Window):
             if itr:
                 unit = unit_cmb.get_model()[itr][0][0]
             else:
-                log.msg("Invalid value for unit combo, assuming Mb")
+                logger.info(img_invalid_unit)
                 unit = "M"
             pathname = "%s/%s.%s" % (folder, name, fmt)
             self.gui.user_wait_action(self.create_image(name, pathname, fmt,
@@ -1316,15 +1341,14 @@ class ImportProjectDialog(Window):
 
     def import_cancelled_eb(self, fail):
         fail.trap(ImportCanceled)
-        log.debug("Import cancelled")
+        logger.debug(import_cancelled)
 
     def complain_eb(self, fail):
         fail.trap(errors.InvalidNameError, errors.ProjectExistsError)
         if fail.check(errors.ProjectExistsError):
-            log.msg("Cannot import project " + fail.value.args[0] + " a "
-                    "project with the same name exists.", isError=True)
+            logger.error(import_prj_exists, name=fail.value.args[0])
         else:
-            log.msg("Invalid project name " + fail.value.args[0], isError=True)
+            logger.error(import_invalid_name, name=fail.value.args[0])
 
     @destroy_on_exit
     def on_ImportProjectDialog_response(self, dialog, response_id):
@@ -1336,7 +1360,7 @@ class ImportProjectDialog(Window):
                                         self.map_images, open_project)
             d.addErrback(self.import_cancelled_eb)
             d.addErrback(self.complain_eb)
-            d.addErrback(log.err, "Error on import project")
+            d.addErrback(logger.failure_eb, import_err)
 
 
 def retrieve_data(entry, (dct, name)):

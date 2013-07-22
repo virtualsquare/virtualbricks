@@ -27,16 +27,11 @@ import Image
 import pygraphviz as pgv
 import gtk.gdk
 
-from virtualbricks import _compat
-
 
 __all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
            "pixbuf_for_brick_at_size", "pixbuf_for_brick_type",
            "pixbuf_for_running_brick", "pixbuf_for_running_brick_at_size",
            "Node", "Topology"]
-
-
-log = _compat.getLogger('virtualbricks.gui')
 
 
 def get_filename(package, resource):

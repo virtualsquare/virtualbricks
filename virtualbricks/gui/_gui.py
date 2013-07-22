@@ -23,12 +23,28 @@ from twisted.internet import reactor, utils, defer, error
 from twisted.python import failure
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           console, link, _compat, settings, tools)
+                           console, link, log, settings, tools)
 
 from virtualbricks.gui import graphics, dialogs
 
 
-log = _compat.getLogger("virtualbricks.gui.gui")
+logger = log.Logger("virtualbricks.gui.gui")
+cannot_resume = log.Event("Cannot rename Brick: it is in use.")
+snap_error = log.Event("Error on snapshot")
+invalid_name = log.Event("Invalid name!")
+resume_vm = log.Event("Resuming virtual machine {name}")
+connect_error = log.Event("Error connecting to remote host {addr}: {msg}")
+proc_signal = log.Event("Sending to process signal {signame}!")
+proc_restart = log.Event("Restarting process!")
+s_r_not_supported = log.Event("Suspend/Resume not supported on this disk.")
+send_acpi = log.Event("send ACPI {event}")
+machine_type = log.err("Error while retrieving machines types.")
+cpu_model = log.Event("Error while retrieving cpu model.")
+usb_access = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
+no_kvm = log.Event("No KVM support found on the system. Check your active "
+                   "configuration. KVM will stay disabled.")
+search_usb = log.Event("Searching USB devices")
+retr_usb = log.Event("Error while retrieving usb devices.")
 
 if False:  # pyflakes
     _ = str
@@ -102,7 +118,7 @@ class BrickPopupMenu(BaseMenu):
 
     def on_rename_activate(self, menuitem, gui):
         if self.original.proc is not None:
-            log.error(_("Cannot rename Brick: it is in use."))
+            logger.error(cannot_resume)
         else:
             gui.gladefile.get_widget('entry_brick_newname').set_text(
                 self.original.get_name())
@@ -149,8 +165,8 @@ class VMPopupMenu(BrickPopupMenu):
             args = ["snapshot", "-l", img.path]
             output = utils.getProcessOutput("qemu-img", args, os.environ)
             output.addCallback(grep, "virtualbricks")
-            output.addCallbacks(loadvm, log.err,
-                                errbackArgs=("Error on snapshot",))
+            output.addCallback(loadvm)
+            output.addErrback(logger.failure_eb, snap_error)
             return output
         try:
             raise RuntimeError("No such image")
@@ -158,7 +174,7 @@ class VMPopupMenu(BrickPopupMenu):
             return defer.fail(failure.Failure())
 
     def on_resume_activate(self, menuitem, gui):
-        log.debug("Resuming virtual machine %s", self.original.get_name())
+        logger.debug(resume_vm, name=self.original.get_name())
         gui.user_wait_action(self.snapshot, gui.brickfactory)
 
 
@@ -220,8 +236,8 @@ class RemoteHostPopupMenu:
             # XXX: this will block
             conn_ok, msg = self.original.connect()
             if not conn_ok:
-                log.error("Error connecting to remote host %s: %s",
-                    self.original.addr[0], msg)
+                logger.error(connect_error, addr=self.original.addr[0],
+                             msg=msg)
 
     def on_change_password_activate(self, menuitem, gui):
         dialogs.ChangePasswordDialog(self.original).show()
@@ -311,21 +327,21 @@ class JobMenu:
         self.original.open_console()
 
     def on_stop_activate(self, menuitem):
-        log.debug("Sending to process signal SIGSTOP!")
+        logger.debug(proc_signal, signame="SIGSTOP")
         try:
             self.original.send_signal(19)
         except error.ProcessExitedAlready:
             pass
 
     def on_cont_activate(self, menuitem):
-        log.debug("Sending to process signal SIGCONT!")
+        logger.debug(proc_signal, signame="SIGCONT")
         try:
             self.original.send_signal(18)
         except error.ProcessExitedAlready:
             pass
 
     def on_reset_activate(self, menuitem):
-        log.debug("Restarting process!")
+        logger.debug(proc_restart)
         d = self.original.poweroff()
         # give it 2 seconds before an hard reset
         call = reactor.callLater(2, self.original.poweroff, kill=True)
@@ -333,7 +349,7 @@ class JobMenu:
         d.addCallback(lambda _: self.original.poweron())
 
     def on_kill_activate(self, menuitem, gui):
-        log.debug("Sending to process signal SIGKILL!")
+        logger.debug(proc_signal, signame="SIGKILL")
         try:
             d = self.original.poweroff(kill=True)
             d.addCallback(refilter, gui.running_bricks)
@@ -371,13 +387,11 @@ class VMJobMenu(JobMenu):
                 self.original.send("savevm virtualbricks\n", done)
                 done.addCallback(lambda _: self.original.poweroff())
             else:
-                log.msg(_("Suspend/Resume not supported on this disk."),
-                        isError=True)
+                logger.error(s_r_not_supported)
 
         img = factory.get_image_by_name(self.original.config["hda"])
         if not img:
-            log.msg(_("Suspend/Resume not supported on this disk."),
-                    isError=True)
+            logger.error(s_r_not_supported)
             try:
                 raise RuntimeError(_("Suspend/Resume not supported on this "
                                      "disk."))
@@ -392,15 +406,15 @@ class VMJobMenu(JobMenu):
         gui.user_wait_action(self.suspend, gui.factory)
 
     def on_powerdown_activate(self, menuitem):
-        log.info("send ACPI powerdown")
+        logger.info(send_acpi, event="powerdown")
         self.original.send("system_powerdown\n")
 
     def on_reset_activate(self, menuitem):
-        log.info("send ACPI reset")
+        logger.info(send_acpi, event="reset")
         self.original.send("system_reset\n")
 
     def on_term_activate(self, menuitem, gui):
-        log.debug("Sending to process signal SIGTERM!")
+        logger.debug(proc_signal, signame="SIGTERM")
         d = self.original.poweroff(term=True)
         d.addCallback(refilter, gui.running_bricks)
 
@@ -945,12 +959,12 @@ class QemuConfigController(ConfigController):
             exit = utils.getProcessOutput(exe, ["-M", "?"])
             cmb = self.get_object("machine_combobox")
             exit.addCallback(self._update_machine_combobox, cmb)
-            exit.addErrback(log.err, "Error while retrieving machines types.")
+            exit.addErrback(logger.failure_eb, machine_type)
 
             exit = utils.getProcessOutput(exe, ["-cpu", "?"])
             cmb = self.get_object("cpu_combobox")
             exit.addCallback(self._update_cpu_combobox, cmb)
-            exit.addErrback(log.err, "Error while retrieving cpu model.")
+            exit.addErrback(logger.failure_eb, cpu_model)
 
     def on_kvm_checkbutton_toggled(self, togglebutton):
         if togglebutton.get_active():
@@ -959,9 +973,7 @@ class QemuConfigController(ConfigController):
                 self._kvm_toggle_all(kvm)
                 togglebutton.set_active(kvm)
                 if not kvm:
-                    log.error(_("No KVM support found on the system. "
-                        "Check your active configuration. "
-                        "KVM will stay disabled."))
+                    logger.error(no_kvm)
             else:
                 self._kvm_toggle_all(True)
         else:
@@ -994,7 +1006,7 @@ class QemuConfigController(ConfigController):
     def on_usbmode_checkbutton_toggled(self, togglebutton):
         active = togglebutton.get_active()
         if active and not os.access("/dev/bus/usb", os.W_OK):
-            log.error(_("Cannot access /dev/bus/usb. Check user privileges."))
+            logger.error(usb_access)
             togglebutton.set_active(False)
         else:
             self.original.set(usbmode=active)
@@ -1008,10 +1020,10 @@ class QemuConfigController(ConfigController):
             dialogs.UsbDevWindow(self.gui, output.strip(), self.original).show(
                 self.gui.get_object("main_win"))
 
-        log.msg("Searching USB devices")
+        logger.info(search_usb)
         devices_d = utils.getProcessOutput("lsusb", env=os.environ)
         devices_d.addCallback(show_dialog)
-        devices_d.addErrback(log.err, "Error while retrieving usb devices.")
+        devices_d.addErrback(logger.failure_eb, retr_usb)
         self.gui.user_wait_action(devices_d)
 
     def _remove_link(self, link, model):

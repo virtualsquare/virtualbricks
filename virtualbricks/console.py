@@ -30,10 +30,16 @@ from twisted.python import components
 from zope.interface import implements
 
 import virtualbricks
-from virtualbricks import errors, _compat, settings
+from virtualbricks import errors, log, settings
 
 
-log = _compat.getLogger(__name__)
+logger = log.Logger()
+socket_error = log.Event("Error on socket")
+qemu_not_vde = log.Event("Qemu but not VDE plug")
+invalid_brick = log.Event("Not a Qemu Plug")
+conn_ok = log.Event("Connection ok")
+conn_failed = log.Event("Connection failed")
+quit_loop = log.Event("Quitting command loop")
 
 if False:  # pyflakes
     _ = str
@@ -138,7 +144,7 @@ class RemoteHost:
         try:
             self._connect()
         except socket.error:
-            log.exception(_("Error on socket"))
+            logger.failure(socket_error)
             return False, "Error connecting to host"
         except _Error as e:
             return False, str(e)
@@ -209,9 +215,9 @@ class RemoteHost:
                 if pl.mode == 'vde':
                     self.send_nolock(b.name + " connect " + pl.sock.nickname)
                 else:
-                    log.info("Qemu but not VDE plug")
+                    logger.info(qemu_not_vde)
             elif (pl.sock is not None):
-                log.info("Not a Qemu Plug")
+                logger.info(invalid_brick)
 
     def post_connect_init(self):
         self.send('reset all')
@@ -229,9 +235,6 @@ class RemoteHost:
         for b in iter(self.factory.bricks):
             if b.homehost and b.homehost.addr == self.addr:
                     self.upload(b)
-
-        # XXX: this is a bug, for sure
-        # self.send("cfg set projects " + self.factory.settings.get("projects"))
 
     def get_files_list(self):
         return self.send_and_recv("i files")
@@ -464,9 +467,9 @@ class VBProtocol(Protocol):
             obj.config.dump(self.sendLine)
         elif cmd[0] == "connect" and len(cmd) == 2:
             if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
-                log.info("Connection ok")
+                logger.info(conn_ok)
             else:
-                log.info("Connection failed")
+                logger.info(conn_failed)
         elif cmd[0] == "disconnect":
             obj.disconnect()
 
@@ -482,7 +485,7 @@ class VBProtocol(Protocol):
         self.brick_action(obj, args[1:])
 
     def do_quit(self):
-        log.info("Quitting command loop")
+        logger.info(quit_loop)
         self.factory.quit()
 
     def do_help(self):
