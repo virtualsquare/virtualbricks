@@ -23,18 +23,44 @@ import gtk
 import gtk.glade
 
 from twisted.internet import error, defer, task, protocol, reactor
+from zope.interface import implementer
 
-from virtualbricks import (interfaces, tools, errors, settings, _compat,
-		project, log as _log, brickfactory)
+from virtualbricks import (interfaces, tools, errors, settings, project, log,
+							brickfactory)
 
 from virtualbricks.gui import _gui, graphics, dialogs
 from virtualbricks.gui.combo import ComboBox
 
 
-log = _compat.getLogger(__name__)
-
 if False:  # pyflakes
     _ = str
+
+logger = log.Logger()
+sync_error = log.Event("Sync terminated unexpectedly")
+create_image_error = log.Event("Create image terminated unexpectedly")
+draw_topology = log.Event("drawing topology")
+top_invalid_format = log.Event("Error saving topology: Invalid image format")
+top_write_error = log.Event("Error saving topology: Could not write file")
+top_unknown = log.exception("Error saving topology: Unknown error")
+start_virtualbricks = log.Event("Starting VirtualBricks")
+components_not_found = log.Event("{text}\nThere are some components not "
+	"found: {components} some functionalities may not be available.\nYou can "
+	"disable this alert from the general settings.")
+config_brick = log.Event("config brick {name} ({type})")
+invalid_type = log.Event("Error: invalid brick type")
+brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
+created = log.Event("Created successfully")
+create_image_error = log.Event("Error on creating image")
+apply_settings = log.Event("Apply settings...")
+create_image = log.Event("Image creating.. ")
+filename_empty = log.Event("Choose a filename first!")
+not_started = log.Event("Brick not started.")
+stop_error = log.Event("Error on stopping brick")
+no_kvm = log.Event("No KVM support found on the local system. Check your "
+	"active configuration. KVM will stay disabled.")
+cannot_write = log.Event("Cannot write to the specified location")
+invalid_name = log.Event("Invalid name!")
+select_file = log.Event("Select a file")
 
 
 class SyncProtocol(protocol.ProcessProtocol):
@@ -44,7 +70,7 @@ class SyncProtocol(protocol.ProcessProtocol):
 
 	def processEnded(self, status):
 		if isinstance(status.value, error.ProcessTerminated):
-			log.err(status.value, "Sync terminated unexpectedly")
+			logger.failure(sync_error, status)
 			self.done.errback(None)
 		else:
 			self.done.callback(None)
@@ -57,7 +83,7 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
 
 	def processEnded(self, status):
 		if isinstance(status.value, error.ProcessTerminated):
-			log.err(status.value, "Create image terminated unexpectedly")
+			logger.failure(create_image_error, status)
 			self.done.errback(None)
 		else:
 			reactor.spawnProcess(SyncProtocol(self.done), "sync", ["sync"],
@@ -158,7 +184,7 @@ class TopologyMixin(object):
 			self._should_draw_topology = True
 
 	def _draw_topology(self, export=""):
-		log.debug("drawing topology")
+		logger.debug(draw_topology)
 		# self.maintree.order()
 		if self.get_object('topology_tb').get_active():
 			orientation = "TB"
@@ -186,14 +212,11 @@ class TopologyMixin(object):
 					try:
 						self._draw_topology(dialog.get_filename())
 					except KeyError:
-						log.exception(_("Error saving topology: Invalid image"
-							" format"))
+						logger.failure(top_invalid_format)
 					except IOError:
-						log.exception(_("Error saving topology: Could not "
-							"write file"))
+						logger.failure(top_write_error)
 					except:
-						log.exception(_("Error saving topology: Unknown "
-							"error"))
+						logger.failure(top_unknown)
 			finally:
 				dialog.destroy()
 
@@ -306,7 +329,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		self.__config_panel = None
 		self.__summary_table = None
 
-		log.info("Starting VirtualBricks!")
+		logger.info(start_virtualbricks)
 
 		# Connect all the signal from the factory to specific callbacks
 		self.__row_changed_h = factory.bricks.connect("row-changed",
@@ -387,10 +410,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 					missing_text = missing_text + "KSM not found in Linux. Samepage memory will not work on this system.\n"
 				else:
 					missing_components = missing_components + ('%s ' % m)
-			log.error("%s\nThere are some components not found: %s some "
-					"functionalities may not be available.\nYou can disable "
-					"this alert from the general settings.", missing_text,
-					missing_components)
+			logger.error(components_not_found, text=missing_text,
+				components=missing_components)
 
 	def quit(self):
 		self.brickfactory.bricks.disconnect(self.__row_changed_h)
@@ -931,7 +952,6 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		return builder.get_object("frame")
 
 	def _show_config_for_brick(self, brick, configpanel):
-		# log.debug("Found custom config panel")
 		self.__config_panel = configpanel
 		self.__hide_panels()
 		frame = self.__get_brick_summary_frame(brick,
@@ -985,11 +1005,12 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		brick = self.__get_selection(self.__bricks_treeview)
 		if brick is None:
 			return
-		log.debug("config brick %s (%s)", brick.get_name(), brick.get_type())
+		logger.debug(config_brick, name=brick.get_name(),
+			type=brick.get_type())
 		try:
 			name = TYPE_CONFIG_WIDGET_NAME_MAP[brick.get_type()]
 		except KeyError:
-			log.debug("Error: invalid brick type")
+			logger.warning(invalid_type)
 			self.curtain_down()
 			return
 		ww = self.gladefile.get_widget(name)
@@ -1199,17 +1220,16 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			try:
 				self.brickfactory.newbrick('remote', ntype, name, remotehost, "")
 			except errors.InvalidNameError:
-				log.error(_("Cannot create brick: Invalid name."))
+				logger.error(brick_invalid_name)
 			else:
-				log.debug("Created successfully")
+				logger.debug(created)
 		else:
 			try:
 				self.brickfactory.newbrick(ntype, name)
 			except errors.InvalidNameError:
-				log.error(_("Cannot create brick: Invalid name."))
+				logger.error(brick_invalid_name)
 			else:
-				log.debug("Created successfully")
-
+				logger.debug(created)
 
 	def on_config_cancel(self, widget=None, data=""):
 		self.config_brick_cancel()
@@ -1477,7 +1497,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		def started_all(results):
 			for success, value in results:
 				if not success:
-					log.err(value, "Brick not started.")
+					logger.failure(not_started, value)
 			self.running_bricks.refilter()
 
 		self.curtain_down()
@@ -1559,39 +1579,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
 	def startstop_brick(self, brick):
 		d = brick.poweron() if brick.proc is None else brick.poweroff()
 		d.addCallback(changed_brick_in_model, self.brickfactory.bricks)
-		d.addCallbacks(lambda _: self.running_bricks.refilter(), log.err,
-				errbackArgs=("Error on stopping brick",))
-
-	# def on_remotehosts_treeview_button_release_event(self, treeview, event):
-	# 	if event.button == 3:
-	# 		pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
-	# 		if pthinfo is not None:
-	# 			path, col, cellx, celly = pthinfo
-	# 			treeview.grab_focus()
-	# 			treeview.set_cursor(path, col, 0)
-	# 			model = treeview.get_model()
-	# 			obj = model.get_value(model.get_iter(path), 0)
-	# 			interfaces.IMenu(obj).popup(event.button, event.time, self)
-	# 		return True
-
-	# def on_remotehosts_treeview_button_press_event(self, treeview, event):
-	# 	if event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
-	# 		pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
-	# 		if pthinfo is not None:
-	# 			path, col, cellx, celly = pthinfo
-	# 			treeview.grab_focus()
-	# 			treeview.set_cursor(path, col, 0)
-	# 			model = treeview.get_model()
-	# 			remote_host = model.get_value(model.get_iter(path), 0)
-	# 			if remote_host.connected:
-	# 				self.user_wait_action(remote_host.disconnect)
-	# 			else:
-	# 				# XXX: this will block
-	# 				conn_ok, msg = remote_host.connect()
-	# 				if not conn_ok:
-	# 					log.error("Error connecting to remote host %s: %s",
-	# 						remote_host.addr[0], msg)
-	# 		return True
+		d.addCallback(lambda _: self.running_bricks.refilter())
+		d.addErrback(logger.failure_eb, stop_error)
 
 	def on_joblist_treeview_button_release_event(self, treeview, event):
 		if event.button == 3:
@@ -1630,7 +1619,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			return
 
 		if response in [gtk.RESPONSE_APPLY, gtk.RESPONSE_OK]:
-			log.debug("Apply settings...")
+			logger.debug(apply_settings)
 			for k in 'qemupath', 'vdepath':
 				settings.set(k, self.gladefile.get_widget('filechooserbutton_'+k).get_filename())
 
@@ -1787,7 +1776,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			self.get_object("main_win"))
 
 	def image_create (self):
-		log.msg("Image creating.. ",)
+		logger.info(create_image)
 		path = self.get_object("filechooserbutton_newimage_dest").get_filename() + "/"
 		filename = self.get_object("entry_newimage_name").get_text()
 		img_format = self.get_object("combobox_newimage_format").get_active_text()
@@ -1797,7 +1786,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		unit = self.gladefile.get_widget("combobox_newimage_sizeunit").get_active_text()[1]
 		# XXX: use a two value combobox
 		if not filename:
-			log.error(_("Choose a filename first!"))
+			logger.error(filename_empty)
 			return
 		if img_format == "Auto":
 			img_format = "raw"
@@ -1809,7 +1798,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 			os.environ)
 		done.addCallback(
 			lambda _: self.brickfactory.new_disk_image(filename, fullname))
-		done.addErrback(log.err, "Error on creating image")
+		done.addErrback(logger.failure_eb, create_image_error)
 		return done
 
 	def on_button_create_image_clicked(self, widget=None, data=""):
@@ -1953,9 +1942,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 		if widget.get_active():
 			kvm = tools.check_kvm(settings.get("qemupath"))
 			if not kvm:
-				log.error(_("No KVM support found on the local system. "
-					"Check your active configuration. "
-					"KVM will stay disabled."))
+				logger.error(no_kvm)
 			widget.set_active(kvm)
 
 	def on_add_cdrom(self, widget=None, event=None, data=""):
@@ -1975,7 +1962,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
 				brick = self.__get_selection(self.__bricks_treeview)
 				self.brickfactory.renamebrick(brick, self.gladefile.get_widget('entry_brick_newname').get_text())
 			except errors.InvalidNameError:
-				log.error(_("Invalid name!"))
+				logger.error(invalid_name)
 
 	def on_qemupath_changed(self, widget, data=None):
 		newpath = widget.get_filename()
@@ -2167,13 +2154,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
 	def on_convertimage_convert(self, widget, event=None, data=None):
 		if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
-			log.error("Select a file")
+			logger.error(select_file)
 			return
 
 		# src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
 		# fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
 		if not os.access(os.path.dirname(self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()), os.W_OK):
-			log.error("Cannot write to the specified location")
+			logger.error(cannot_write)
 		else:
 			self.do_image_convert()
 
@@ -2319,7 +2306,7 @@ class VisualFactory(brickfactory.BrickFactory):
 		# self.remote_hosts = List()
 
 
-# @implementer(_log.ILogObserver)
+@implementer(log.ILogObserver)
 class TextBufferObserver:
 
 	def __init__(self, textbuffer):
@@ -2335,8 +2322,8 @@ class TextBufferObserver:
 			event["traceback"] = event["log_failure"].getTraceback()
 		else:
 			event["traceback"] = ""
-		event["iso8601_time"] = _log.format_time(event["log_time"])
-		msg = entry.format(msg=_log.formatEvent(event), **event)
+		event["iso8601_time"] = log.format_time(event["log_time"])
+		msg = entry.format(msg=log.formatEvent(event), **event)
 		mark = self.textbuffer.get_mark("end")
 		iter = self.textbuffer.get_iter_at_mark(mark)
 		self.textbuffer.insert_with_tags_by_name(iter, msg,
@@ -2354,15 +2341,15 @@ class MessageDialogObserver:
 	def __call__(self, event):
 		dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
 				gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
-		dialog.set_property('text', _log.formatEvent(event))
+		dialog.set_property('text', log.formatEvent(event))
 		dialog.connect("response", lambda d, r: d.destroy())
 		dialog.show()
 
 
 def should_show_to_user(event):
-	if "hide_to_user" in event or event["log_level"] != _log.LogLevel.error:
-		return _log.PredicateResult.no
-	return _log.PredicateResult.maybe
+	if "hide_to_user" in event or event["log_level"] != log.LogLevel.error:
+		return log.PredicateResult.no
+	return log.PredicateResult.maybe
 
 
 TEXT_TAGS = [('debug', {'foreground': '#a29898'}),
@@ -2399,9 +2386,9 @@ class Application(brickfactory.Application):
 		gladefile = load_gladefile()
 		factory.register_brick_type(_gui.GVirtualMachine, "vm", "qemu")
 		message_dialog = MessageDialogObserver()
-		observer = _log.FilteringLogObserver(message_dialog,
+		observer = log.FilteringLogObserver(message_dialog,
 			(should_show_to_user,))
-		log.publisher.addObserver(observer, False)
+		logger.publisher.addObserver(observer, False)
 		# disable default link_button action
 		gtk.link_button_set_uri_hook(lambda b, s: None)
 		self.gui = VBGUI(factory, gladefile, quit, self.textbuffer)
