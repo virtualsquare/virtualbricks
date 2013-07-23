@@ -2914,6 +2914,12 @@ Use an already open UDP multicast socket</property>
                         <child>
                           <placeholder/>
                         </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -14372,7 +14378,6 @@ bytes</property>
         </child>
         <child>
           <widget class="GtkButton" id="button_togglesettings">
-            <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="has_tooltip">True</property>
