@@ -953,10 +953,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
     def _show_config_for_brick(self, brick, configpanel):
         self.__config_panel = configpanel
         self.__hide_panels()
-        frame = self.__get_brick_summary_frame(brick,
-            configpanel.get_view(self))
+        # frame = self.__get_brick_summary_frame(brick,
+        #     configpanel.get_view(self))
         configframe = self.get_object("configframe")
-        configframe.add(frame)
+        # configframe.add(frame)
+        configframe.add(configpanel.get_view(self))
         configframe.show_all()
         self.__show_config(brick.get_name())
 
