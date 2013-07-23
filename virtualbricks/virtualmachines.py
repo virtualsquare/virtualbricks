@@ -678,7 +678,9 @@ class VirtualMachine(bricks.Brick):
                 res.append("-device")
                 res.append("{1.model},vlan={0},mac={1.mac},id=eth{0}".format(
                     i, link))
-                if link.mode == "vde":
+                if link.sock and link.sock.mode == "hostonly":
+                    res.extend(("-net", "user,vlan={0}".format(i)))
+                elif link.mode == "vde":
                     res.append("-net")
                     res.append("vde,vlan={0},sock={1}".format(
                         i, link.sock.path.rstrip('[]')))

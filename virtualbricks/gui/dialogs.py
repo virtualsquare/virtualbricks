@@ -503,9 +503,6 @@ class BaseEthernetDialog(Window):
                 if sock.brick.get_type().startswith("Switch"):
                     socks.append((sock.nickname, sock))
 
-    def show(self, parent=None):
-        Window.show(self, parent)
-
     def on_randomize_button_clicked(self, button):
         self.get_object("mac_entry").set_text(tools.random_mac())
 
