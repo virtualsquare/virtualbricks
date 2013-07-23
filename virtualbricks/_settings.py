@@ -69,12 +69,8 @@ class Settings:
                 def get(self):
                     return self.config.getboolean(self.DEFAULT_SECTION, opt)
 
-                def set(self, val):
-                    return self.config.set(self.DEFAULT_SECTION, opt,
-                                           bool(val))
                 dct["get_" + opt] = get
-                dct["set_" + opt] = set
-                dct[opt] = property(get, set)
+                dct[opt] = property(get)
 
             for opt in dct["__boolean_values__"]:
                 make_property(opt)
