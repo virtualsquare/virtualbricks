@@ -400,11 +400,11 @@ class VBGUI(gobject.GObject, TopologyMixin):
         if len(missing) > 0 and settings.show_missing:
             for m in missing:
                 if m == "kvm":
-                    settings.kvm = False
+                    settings.set("kvm", "False")
                     self.disable_config_kvm = True
                     missing_text = missing_text + "KVM not found: kvm support will be disabled.\n"
                 elif m == "ksm":
-                    settings.ksm = False
+                    settings.set("kvm", "True")
                     self.disable_config_ksm = True
                     missing_text = missing_text + "KSM not found in Linux. Samepage memory will not work on this system.\n"
                 else:
