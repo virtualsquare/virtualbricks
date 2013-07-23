@@ -197,6 +197,8 @@ class Base(object):
 class Window(Base):
     """Base class for all dialogs."""
 
+    on_destroy = None
+
     @property
     def window(self):
         return self.widget
@@ -204,10 +206,15 @@ class Window(Base):
     def set_transient_for(self, parent):
         self.window.set_transient_for(parent)
 
+    def _on_destroy(self, window):
+        self.on_destroy()
+
     def show(self, parent=None):
         if parent is not None:
             self.window.set_transient_for(parent)
-        self.widget.show()
+        if self.on_destroy is not None:
+            self.window.connect("destroy", self._on_destroy)
+        self.window.show()
 
 
 class AboutDialog(Window):
