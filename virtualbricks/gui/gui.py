@@ -920,6 +920,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
         self.__config_panel = None
         self.__summary_table = None
         self.curtain_is_down = True
+        if project.current:
+            self.set_title_default()
 
     def __fill_config_table(self, brick, table):
         table.foreach(table.remove)
@@ -984,8 +986,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
         self.get_object("label_showhidesettings").set_text(
             _("Hide Settings"))
         self.curtain_is_down = False
-        self.widg["main_win"].set_title(
-            "Virtualbricks (Configuring Brick %s)" % name)
+        self.set_title("Virtualbricks (Configuring Brick %s)" % name)
 
     def __get_selection(self, treeview):
         selection = treeview.get_selection()
@@ -1106,6 +1107,13 @@ class VBGUI(gobject.GObject, TopologyMixin):
             new_width = 48 * width / height
         pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
         return pixbuf
+
+    def set_title(self, title):
+        self.get_object("main_win").set_title(title)
+
+    def set_title_default(self):
+        self.set_title("Virtualbricks (project: {0})".format(
+            project.current.name))
 
     """ ******************************************************** """
     """                                                          """
@@ -2107,8 +2115,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
 
     def on_project_open_activate(self, menuitem):
         project.current.save(self.brickfactory)
-        dialogs.OpenProjectDialog(self.brickfactory).show(
-            self.get_object("main_win"))
+        d = dialogs.OpenProjectDialog(self.brickfactory)
+        d.on_destroy = self.set_title_default
+        d.show(self.get_object("main_win"))
 
     def on_project_new_activate(self, menuitem):
         project.current.save(self.brickfactory)
@@ -2123,8 +2132,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
             self.get_object("main_win"))
 
     def on_import_menuitem_activate(self, menuitem):
-        dialogs.ImportProjectDialog(self.brickfactory, ProgressBar(self)).show(
-            self.get_object("main_win"))
+        d = dialogs.ImportProjectDialog(self.brickfactory, ProgressBar(self))
+        d.on_destroy = self.set_title_default
+        d.show(self.get_object("main_win"))
 
     def on_open_recent_project(self, widget, data=None):
         raise NotImplementedError("on_open_recent_project not implemented")
