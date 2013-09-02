@@ -871,6 +871,7 @@ class QemuConfigController(ConfigController):
             if cfg[pname]:
                 go(wname).set_filename(cfg[pname])
         self.setup_netwoks_cards()
+        go("cfg_Qemu_keyboard_text").set_text(cfg["keyboard"])
         return self.get_object("box_vmconfig")
 
     def _config_set_combo(self, config, name, combo):
@@ -904,6 +905,7 @@ class QemuConfigController(ConfigController):
             filename = self.get_object(wname).get_filename()
             if filename:
                 cfg[pname] = filename
+        cfg["keyboard"] = self.get_object("cfg_Qemu_keyboard_text").get_text()
         self.original.set(cfg)
 
     def on_deviceen_radiobutton_toggled(self, radiobutton):
