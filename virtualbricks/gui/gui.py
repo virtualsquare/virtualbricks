@@ -909,7 +909,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
         return True
 
     def curtain_down(self):
-        self.get_object("top_panel").show_all()
+        self.get_object("top_panel").show()
         self.get_object("config_panel").hide()
         self.get_object("padding_panel").hide()
         self.get_object("label_showhidesettings").set_text(_("Show Settings"))
@@ -1172,7 +1172,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
             return
 
         if not self.gladefile.get_widget("main_win").get_visible():
-            self.gladefile.get_widget("main_win").show_all()
+            self.gladefile.get_widget("main_win").show()
             self.curtain_down()
             self.statusicon.set_tooltip("the window is visible")
         else:
