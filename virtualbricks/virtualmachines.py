@@ -630,7 +630,7 @@ class VirtualMachine(bricks.Brick):
     def _args_for(self, idx, disk):
         if self.config["use_virtio"]:
             def cb(disk_name):
-                return ["-drive", "file=%s,if=virtio,index=%s" %
+                return ["-drive", "file=%s,if=virtio,boot=on,index=%s" %
                         (disk_name, str(idx))]
             return disk.get_real_disk_name().addCallback(cb)
         else:
