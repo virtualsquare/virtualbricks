@@ -159,6 +159,7 @@ class ListOf(Parameter):
         # New there is a problem with this approach, the state is shared across
         # all instances and require that a subclass of Config sets a new value
         # in its contructor.
+        # XXX: Is this still true?
         Parameter.__init__(self, [])
         self.element_type = element_type
 
