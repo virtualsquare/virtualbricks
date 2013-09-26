@@ -27,7 +27,7 @@ if False:  # pyflakes
 
 logger = log.Logger()
 config_loaded = log.Event("Configuration loaded ({filename})")
-config_saved = log.Event("Default configuration saved ({filename})")
+config_installed = log.Event("Default configuration saved ({filename})")
 cannot_read_config = log.Event("Cannot read config file {filename}")
 cannot_save_config = log.Event("Cannot save default configuration")
 
@@ -92,11 +92,10 @@ class Settings:
         for key, value in DEFAULT_CONF.items():
             self.config.set(self.DEFAULT_SECTION, key, str(value))
 
-    def has_option(self, name):
-        return self.config.has_option(self.DEFAULT_SECTION, name)
-
     def __contrains__(self, name):
         return self.config.has_option(self.DEFAULT_SECTION, name)
+
+    has_option = __contrains__
 
     def get(self, attr):
         if attr in self.__boolean_values__:
@@ -113,22 +112,23 @@ class Settings:
             self.config.write(fp)
 
     def load(self):
-        if os.path.exists(self.filename):
-            try:
-                self.config.read(self.filename)
+        try:
+            parsed = self.config.read(self.filename)
+            if not parsed:
+                self.install()
+            else:
                 logger.info(config_loaded, filename=self.filename)
-            except ConfigParser.Error:
-                logger.exception(cannot_read_config, filename=self.filename)
-        else:
-            logger.info(config_loaded, filename=self.filename)
-            try:
-                with open(self.filename, "w") as fp:
-                    self.config.write(fp)
-                logger.info(config_saved, filename=self.filename)
-            except IOError:
-                logger.exception(cannot_save_config)
+                tools.enable_ksm(self.ksm, self.get("sudo"))
+        except ConfigParser.Error:
+            logger.exception(cannot_read_config, filename=self.filename)
 
-        tools.enable_ksm(self.ksm, self.get("sudo"))
+    def install(self):
+        self.set("ksm", tools.check_ksm())
+        try:
+            self.store()
+            logger.info(config_installed, filename=self.filename)
+        except IOError:
+            logger.exception(cannot_save_config)
 
 
 def install(settings):

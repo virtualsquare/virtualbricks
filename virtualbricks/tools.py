@@ -101,7 +101,7 @@ def bin2brick(bin_name):
         for i in brick_bin.iterkeys():
             if brick_bin[i] == bin_name:
                 brick_list.append(i)
-    
+
     return brick_list
 
 def check_missing_vde(path):
@@ -122,7 +122,7 @@ def check_kvm(path):
 def check_ksm():
     try:
         with open("/sys/kernel/mm/ksm/run") as fp:
-            return int(fp.readline())
+            return bool(int(fp.readline()))
     except IOError:
         return False
 
