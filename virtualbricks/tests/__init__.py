@@ -137,17 +137,14 @@ def failureResultOf(self, deferred, *expectedExceptionTypes):
         return result[0]
 
 
-def backup_settings(lst):
-    return dict((k, settings.get(k)) for k in lst)
-
-
 def restore_settings(olds):
     for k, v in olds.iteritems():
         settings.set(k, v)
 
 
 def patch_settings(suite, **kwds):
-    olds = backup_settings(kwds.keys())
+    olds = dict((k, settings.get(k)) for k in kwds.iterkeys())
     suite.addCleanup(restore_settings, olds)
+    suite.patch(settings, "store", lambda: None)
     for k, v in kwds.iteritems():
         settings.set(k, v)

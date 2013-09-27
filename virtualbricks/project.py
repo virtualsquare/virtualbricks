@@ -19,6 +19,8 @@
 import os
 import errno
 import tarfile
+import itertools
+import re
 
 from twisted.internet import utils, error, defer
 from twisted.python import filepath
@@ -33,13 +35,15 @@ create_archive = log.Event("Create archive in {path}")
 extract_archive = log.Event("Extract archive in {path}")
 restore_project = log.Event("Restoring project {name}")
 import_project = log.Event("Importing project from {path} as {name}")
-create_project = log.Event("Creating project {name}")
+create_project = log.Event("Create project {name}")
 write_project = log.Event("Writing new .project file")
 rebase_error = log.Event("Error on rebase")
 # log.msg("Rebase failed, try manually", isError=True)
 rebase = log.Event("Rebasing {cow} to {basefile}")
-cannot_find_project = log.Event("Cannot find project {name}. A new project "
-                                "will be created with that name.")
+cannot_find_project = log.Event("Cannot find project \"{name}\". "
+                                "A new project will be created.")
+DEFAULT_PROJECT_RE = re.compile(r"^{0}(?:_\d+)?$".format(
+    settings.DEFAULT_PROJECT))
 
 
 def _complain_on_error(result):
@@ -155,22 +159,21 @@ class ProjectManager:
         return (p.basename() for p in path.children() if
                 p.child(".project").isfile())
 
-    def open(self, name, factory, create=False):
+    def open(self, name, factory):
         workspace = filepath.FilePath(settings.get("workspace"))
         try:
             path = workspace.child(name)
         except filepath.InsecurePath:
             raise errors.InvalidNameError(name)
-        if not path.isdir():
-            if create:
-                return self._create(name, Project(path), factory, open=True)
-            else:
+
+        try:
+            return self.restore(Project(path), factory)
+        except EnvironmentError as e:
+            if e.errno in (errno.ENOENT, errno.ENOTDIR):
                 raise errors.ProjectNotExistsError(name)
-        return self.restore(Project(path), factory)
 
     def restore(self, project, factory):
         logger.debug(restore_project, name=project.name)
-        project.filepath.child(".project").touch()
         self.close(factory)
         global current
         current = project
@@ -190,12 +193,12 @@ class ProjectManager:
                 raise
         else:
             project.filepath.child(".project").touch()
+            logger.debug(create_project, name=name)
             if open:
                 return self.restore(project, factory)
             return project
 
     def create(self, name, factory, open=True):
-        logger.debug("{0}{1}".format("Creating project ", name))
         workspace = filepath.FilePath(settings.get("workspace"))
         try:
             path = workspace.child(name)
@@ -293,13 +296,16 @@ class Project:
         return self.filepath.basename()
 
     def restore(self, factory):
-        configfile.restore(factory, self.filepath.child(".project").path)
+        configfile.restore(factory, self.dot_project().path)
 
     def save(self, factory):
-        configfile.save(factory, self.filepath.child(".project").path)
+        configfile.save(factory, self.dot_project().path)
 
     def files(self):
         return (fp for fp in self.filepath.walk() if fp.isfile())
+
+    def dot_project(self):
+        return self.filepath.child(".project")
 
 
 def restore_last_project(factory):
@@ -314,5 +320,16 @@ def restore_last_project(factory):
     try:
         return manager.open(name, factory)
     except errors.ProjectNotExistsError:
-        logger.error(cannot_find_project, name=name)
-        return manager.create(name, factory, open=True)
+        if DEFAULT_PROJECT_RE.match(name):
+             return manager.create(name, factory, open=True)
+        else:
+            logger.error(cannot_find_project, name=name)
+            for i in itertools.count():
+                name = "{0}_{1}".format(settings.DEFAULT_PROJECT, i)
+                try:
+                     return manager.create(name, factory, open=True)
+                except errors.ProjectExistsError:
+                    pass
+
+
+restore_last = restore_last_project

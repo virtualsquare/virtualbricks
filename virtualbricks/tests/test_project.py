@@ -9,7 +9,7 @@ from twisted.python import filepath
 from twisted.internet import utils, defer
 
 from virtualbricks import settings, project, configfile, errors, tests
-from virtualbricks.tests import successResultOf, patch_settings, Skip
+from virtualbricks.tests import successResultOf, patch_settings, Skip, stubs
 
 
 class FactoryStub:
@@ -220,68 +220,100 @@ class TestArchive(unittest.TestCase):
         self.assertEquals(sio.getvalue(), DUMP)
 
 
-class ProjectManager(project.ProjectManager):
-
-    def __init__(self):
-        self.restored = []
-
-    def restore(self, project, factory):
-        self.restored.append(project)
-        return project
-
-    def close(self):
-        pass
-
-
 class TestProjectManager(unittest.TestCase):
 
     def setUp(self):
         self.tmp = filepath.FilePath(self.mktemp())
         self.tmp.makedirs()
-        patch_settings(self, workspace=self.tmp.path)
-        self.manager = ProjectManager()
+        patch_settings(self, workspace=self.tmp.path,
+                       current_project="new_project")
+        self.manager = project.ProjectManager()
+        self.factory = stubs.FactoryStub()
+        self.addCleanup(self.manager.close, self.factory)
+
+    def create_project(self, name):
+        prj = self.tmp.child(name)
+        prj.makedirs()
+        prj.child(".project").touch()
+        return prj
 
     def test_iter(self):
+        """Returns only prooved projects."""
+
+        # a file is not a project
         self.tmp.child("child1").touch()
-        prj1 = self.tmp.child("prj1")
-        prj1.makedirs()
-        prj1.child(".project").touch()
+        self.create_project("prj1")
+        # a directory without a .project file is not a project
         self.tmp.child("prj2").makedirs()
         self.assertEqual(list(self.manager), ["prj1"])
 
-    def test_open_fails(self):
-        self.assertRaises(errors.InvalidNameError, self.manager.open,
-                          "../ciccio", None)
-        self.assertRaises(errors.ProjectNotExistsError, self.manager.open,
-                          "test", None)
-        self.tmp.child("test").touch()
-        self.assertRaises(errors.ProjectNotExistsError, self.manager.open,
-                          "test", None)
+    def test_open_project(self):
+        """Simple open test."""
 
-    def test_open(self):
-        prjpath = self.tmp.child("prj1")
-        prjpath.makedirs()
-        prjpath.child(".project").touch()
-        self.manager.open("prj1", None)
-        prj = self.manager.restored[0]
+        prjpath = self.create_project("prj1")
+        prj = self.manager.open("prj1", self.factory)
         self.assertTrue(isinstance(prj, project.Project))
         self.assertEqual(prj.filepath, prjpath)
 
-    def test_open_create(self):
-        prj = self.manager.open("prj1", None, create=True)
-        self.assertTrue(isinstance(prj, project.Project))
-        self.assertEqual(prj.filepath, self.tmp.child("prj1"))
-        self.assertTrue(prj.filepath.child(".project").exists())
+    def test_open_project_invalid_name(self):
+        """Name could not contains path traversal."""
 
-    def test_create(self):
-        self.assertRaises(errors.InvalidNameError, self.manager.create,
-                          "../cucu", None)
-        path = self.tmp.child("prj")
-        path.makedirs()
-        self.assertRaises(errors.ProjectExistsError, self.manager.create,
-                          path.basename(), None)
-        prj = self.manager.create("prj2", None, False)
-        self.assertEqual(self.manager.restored, [])
+        self.assertRaises(errors.InvalidNameError, self.manager.open,
+                          "../ciccio", None)
+
+    def test_open_project_does_not_exists(self):
+        """Try to open a project that does not exists."""
+
+        self.addCleanup(self.manager.close, self.factory)
+        self.assertRaises(errors.ProjectNotExistsError, project.manager.open,
+                          "project", self.factory)
+
+    def test_open_project_does_not_exists_dot_project(self):
+        """Try to open a project but the .project file does not exists."""
+
+        prj = self.create_project("project")
+        prj.child(".project").remove()
+        self.assertFalse(prj.child(".project").isfile())
+        self.assertRaises(errors.ProjectNotExistsError, project.manager.open,
+                          "project", self.factory)
+
+    def test_create_project(self):
+        """Create a project."""
+
         self.assertEqual(settings.get("current_project"), "new_project")
-        prj = self.manager.create("prj3", None)
-        self.assertEqual(self.manager.restored, [prj])
+        prj = self.manager.create("prj", self.factory)
+        self.assertEqual(settings.get("current_project"), prj.name)
+        self.assertTrue(prj.dot_project().isfile())
+
+    def test_create_project_already_exists(self):
+        """Create a project but it exists already."""
+
+        self.create_project("prj")
+        self.assertRaises(errors.ProjectExistsError, self.manager.create,
+                          "prj", self.factory)
+
+    def test_restore_last_project(self):
+        """Restore last used project."""
+
+        settings.set("current_project", "prj")
+        self.create_project("prj")
+        prj = project.restore_last(self.factory)
+        self.assertEqual(prj.name, "prj")
+
+    def test_restore_last_project_not_exists(self):
+        """
+        If the last project does not exists, don't create a new one with the
+        same name but use a default name.
+        """
+
+        events = []
+
+        def append(ev):
+            events.append(ev)
+
+        settings.set("current_project", "prj")
+        self.assertFalse(self.tmp.child("prj").isdir())
+        project.logger.publisher.addObserver(append)
+        self.addCleanup(project.logger.publisher.removeObserver, append)
+        prj = project.restore_last(self.factory)
+        self.assertEqual(prj.name, settings.DEFAULT_PROJECT + "_0")
