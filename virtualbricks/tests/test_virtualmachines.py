@@ -5,7 +5,6 @@ import StringIO
 
 from twisted.trial import unittest
 from twisted.internet import defer
-from twisted.python import failure
 
 from virtualbricks import (link, virtualmachines as vm, errors, tests,
                            settings, configfile, tools)
@@ -14,15 +13,14 @@ from virtualbricks.tests import (stubs, test_link, successResultOf,
 
 
 def disks(vm):
-    names = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
-    return (vm.config.__getitem__(d) for d in names)
+    return (vm.config.__getitem__(d) for d in ("hda", "hdb", "hdc", "hdd",
+                                               "fda", "fdb", "mtdblock"))
 
 
-ARGS = ["/usr/bin/i386", "-nographic", "-name", "vm", "-net", "none", "-mon",
-        "chardev=mon", "-chardev", "socket,id=mon_cons,path=/home/marco/."
-        "virtualbricks/vm.mgmt,server,nowait", "-mon", "chardev=mon_cons",
-        "-chardev", "socket,id=mon,path=/home/marco/.virtualbricks/"
-        "vm_cons.mgmt,server,nowait"]
+ARGS = ["true", "-m", "64", "-smp", "1", "-display", "none", "@@DRIVESARGS@@",
+        "-name", "vm", "-net", "none", "-mon", "chardev=mon", "-chardev",
+        "socket,id=mon,path=/home/marco/.virtualbricks/vm.mgmt,server,nowait",
+        "-mon", "chardev=mon_cons", "-chardev", "stdio,id=mon_cons,signal=off"]
 
 
 class _Image(vm.Image):
@@ -43,11 +41,25 @@ class TestVirtualMachine(unittest.TestCase):
     def setUp(self):
         self.factory = stubs.FactoryStub()
         self.vm = stubs.VirtualMachineStub(self.factory, "vm")
+        self.image_path = os.path.abspath(self.mktemp())
+        self.image = vm.Image("test", self.image_path)
+        self.vm.get("hda").set_image(self.image)
 
-    # @Skip("test outdated")
-    # def test_basic_args(self):
-    #     # XXX: this will fail in another system
-    #     self.assertEquals(self.vm.args(), ARGS)
+    def get_args(self, *drive_args):
+        args = ARGS[:]
+        i = args.index("@@DRIVESARGS@@")
+        args[i:i + 1] = drive_args
+        return args
+
+    def test_args(self):
+        args = self.get_args("-hda", self.image_path)
+        self.assertEquals(successResultOf(self, self.vm.args()), args)
+
+    def test_args_virtio(self):
+        self.vm.set({"use_virtio": True})
+        drv = "file={0},if=virtio".format(self.image_path)
+        args = self.get_args("-drive", drv)
+        self.assertEquals(successResultOf(self, self.vm.args()), args)
 
     def test_add_plug_hostonly(self):
         mac, model = object(), object()
@@ -125,11 +137,6 @@ class TestVirtualMachine(unittest.TestCase):
         else:
             self.fail("vm lock acquired but it should not happend")
         self.assertEqual(_image.acquired, _image.released)
-
-    def test_config_device(self):
-        config = self.vm.config
-        disk = config["hda"]
-        self.assertEqual(config.parameters["hda"].to_string(disk), "")
 
 
 class TestVMPlug(test_link.TestPlug):
