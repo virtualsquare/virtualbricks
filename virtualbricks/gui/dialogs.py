@@ -1244,6 +1244,11 @@ class ExportProjectDialog(Window):
             size += fp.getsize()
         return size
 
+    def _normalize_filename(self, filename):
+        if filename[-4:] != ".vbp":
+            return filename + ".vbp"
+        return filename
+
     def on_selected_cellrenderer_toggled(self, cellrenderer, path):
         model = self.get_object("treestore1")
         itr = model.get_iter(path)
@@ -1272,8 +1277,7 @@ class ExportProjectDialog(Window):
                 dialog.unselect_all()
                 self.get_object("export_button").set_sensitive(False)
             else:
-                if os.path.splitext(filename)[1] == "":
-                    filename += ".vbp"
+                filename = self._normalize_filename(filename)
                 txt = filename.decode(sys.getfilesystemencoding()).encode(
                     "utf8")
                 self.get_object("filename_entry").set_text(txt)
@@ -1302,8 +1306,9 @@ class ExportProjectDialog(Window):
             files = []
             ancestor = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
             gather_selected(model, model.get_iter_first(), ancestor, files)
-            output = self.get_object("filename_entry").get_text()
-            self.progressbar.wait_for(project.manager.export(output, files))
+            filename = self._normalize_filename(
+                self.get_object("filename_entry").get_text())
+            self.progressbar.wait_for(project.manager.export(filename, files))
         dialog.destroy()
 
 
