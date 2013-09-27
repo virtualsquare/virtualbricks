@@ -100,11 +100,13 @@ class _FakeBrick:
 
 
 class _HostonlySock:
-    """This is dummy implementation of a VMSock used with VirtualMachines that
+    """
+    This is dummy implementation of a VMSock used with VirtualMachines that
     want a plug that is not connected to nothing. The instance is a singleton,
     but not enforced anyhow, maybe a better solution is to have a different
     hostonly socket for each plug and let the brick choose which socket should
-    be saved and which not."""
+    be saved and which not.
+    """
 
     nickname = "_hostonly"
     path = "?"
@@ -216,10 +218,19 @@ class Disk:
         self.VM = VM
         self.device = dev
 
+    def _virtio_args_cb(self, disk_name):
+        return ["-drive", "file={0},if=virtio".format(disk_name)]
+
+    def _args_cb(self, disk_name):
+        return ["-" + self.device, disk_name]
+
     def args(self):
         if self.image:
             d = self.get_real_disk_name()
-            d.addCallback(lambda dn: ["-" + self.device, dn])
+            if self.VM.get("use_virtio"):
+                d.addCallback(self._virtio_args_cb)
+            else:
+                d.addCallback(self._args_cb)
             return d
         else:
             return defer.succeed([])
@@ -612,29 +623,16 @@ class VirtualMachine(bricks.Brick):
 
     def prog(self):
         if self.config["argv0"] and not self.config["kvm"]:
-            cmd = settings.get("qemupath") + "/" + self.config["argv0"]
+            return os.path.join(settings.get("qemupath"), self.config["argv0"])
+        elif self.config["kvm"]:
+            return os.path.join(settings.get("qemupath"), "kvm")
         else:
-            cmd = settings.get("qemupath") + "/qemu"
-        if self.config["kvm"]:
-            cmd = settings.get("qemupath") + "/kvm"
-        return cmd
+            return os.path.join(settings.get("qemupath"), "qemu")
 
     def args(self):
-        d = defer.gatherResults(self._get_devices())
+        d = defer.gatherResults([disk.args() for disk in self.disks()])
         d.addCallback(self.__args)
         return d
-
-    def _get_devices(self,):
-        return [self._args_for(i, d) for i, d in enumerate(self.disks())]
-
-    def _args_for(self, idx, disk):
-        if self.config["use_virtio"]:
-            def cb(disk_name):
-                return ["-drive", "file=%s,if=virtio,boot=on,index=%s" %
-                        (disk_name, str(idx))]
-            return disk.get_real_disk_name().addCallback(cb)
-        else:
-            return disk.args()
 
     def __args(self, results):
         res = [self.prog()]
