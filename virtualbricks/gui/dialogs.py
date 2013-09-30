@@ -1165,8 +1165,8 @@ def cowname(brick, disk):
 def gather_selected(model, parent, workspace, lst):
     itr = model.iter_children(parent)
     while itr:
-        fp = model[itr][2]
-        if model[itr][1] and fp.isfile():
+        fp = model[itr][FILEPATH]
+        if model[itr][SELECTED] and fp.isfile():
             lst.append(os.path.join(*fp.segmentsFrom(workspace)))
         else:
             gather_selected(model, itr, workspace, lst)
@@ -1175,6 +1175,8 @@ def gather_selected(model, parent, workspace, lst):
 
 class ImportCanceled(Exception):
     pass
+
+SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 
 
 class ExportProjectDialog(Window):
@@ -1187,45 +1189,34 @@ class ExportProjectDialog(Window):
 
     def show(self, parent_w=None):
         model = self.get_object("treestore1")
-        required = set([project.current.filepath.child(".project").path])
-        # for brick in filter(is_vm, self.factory.bricks):
-        #     for disk in filter(has_cow, brick.disks.values()):
-        #         required.add(cowname(brick, disk))
+        # required = set([project.current.filepath.child(".project").path])
 
-        parent = None
+        curpath = filepath.FilePath(project.current.path)
+        row = (False, True, gtk.STOCK_DIRECTORY, curpath.basename(), curpath)
+        root = model.append(None, row)
+        nodes = {project.current.path: root}
         for dirpath, dirnames, filenames in os.walk(project.current.path):
-            row = (True, False, filepath.FilePath(dirpath))
-            parent = model.append(parent, row)
-            for name in filenames:
-                path = filepath.FilePath(os.path.join(dirpath, name))
-                if path.isfile():
-                    model.append(parent, (path.path not in required,
-                                          path.path in required, path))
+            parent = nodes[dirpath]
+            dp = filepath.FilePath(dirpath)
+            for dirname in sorted(dirnames):
+                node = model.append(parent, (False, True, gtk.STOCK_DIRECTORY,
+                                             dirname, dp.child(dirname)))
+                nodes[os.path.join(dirpath, dirname)] = node
+            for filename in sorted(filenames):
+                model.append(parent, (False, True, gtk.STOCK_FILE, filename,
+                                      dp.child(filename)))
 
-        column = self.get_object("treeviewcolumn1")
-        # selected_cr = self.get_object("selected_cellrenderer")
-        # selected_cr.set_property("activatable", True)
         pixbuf_cr = self.get_object("icon_cellrenderer")
         pixbuf_cr.set_property("stock-size", gtk.ICON_SIZE_MENU)
-        column.set_cell_data_func(pixbuf_cr, self._set_icon)
-        filename_cr = self.get_object("filename_cellrenderer")
-        column.set_cell_data_func(filename_cr, self._set_filename)
         size_c = self.get_object("treeviewcolumn2")
         size_cr = self.get_object("size_cellrenderer")
         size_c.set_cell_data_func(size_cr, self._set_size)
+        self.get_object("selected_cellrenderer").connect(
+            "toggled", self.on_selected_cellrenderer_toggled, model)
         Window.show(self, parent_w)
 
-    def _set_icon(self, column, cellrenderer, model, itr):
-        fp = model[itr][2]
-        stockid = gtk.STOCK_FILE if fp.isfile() else gtk.STOCK_DIRECTORY
-        cellrenderer.set_property("stock-id", stockid)
-
-    def _set_filename(self, column, cellrenderer, model, itr):
-        fp = model[itr][2]
-        cellrenderer.set_property("text", fp.basename())
-
     def _set_size(self, column, cellrenderer, model, itr):
-        fp = model[itr][2]
+        fp = model[itr][FILEPATH]
         if fp.isfile():
             cellrenderer.set_property("text", tools.fmtsize(fp.getsize()))
         else:
@@ -1234,13 +1225,13 @@ class ExportProjectDialog(Window):
 
     def _calc_size(self, model, parent):
         size = 0
-        fp = model[parent][2]
+        fp = model[parent][FILEPATH]
         if fp.isdir():
             itr = model.iter_children(parent)
             while itr:
                 size += self._calc_size(model, itr)
                 itr = model.iter_next(itr)
-        elif model[parent][1]:
+        elif model[parent][SELECTED]:
             size += fp.getsize()
         return size
 
@@ -1249,24 +1240,28 @@ class ExportProjectDialog(Window):
             return filename + ".vbp"
         return filename
 
-    def on_selected_cellrenderer_toggled(self, cellrenderer, path):
-        model = self.get_object("treestore1")
+    def on_selected_cellrenderer_toggled(self, cellrenderer, path, model):
         itr = model.get_iter(path)
-        selected = not model[itr][1]
-        self._select_children(model, itr, selected)
+        model[itr][SELECTED] = not model[itr][SELECTED]
+        self._select_children(model, itr, model[itr][SELECTED])
         parent = model.iter_parent(itr)
         while parent:
-            if model[parent][0]:
-                model[parent][1] = selected
+            child = model.iter_children(parent)
+            while child:
+                if not model[child][SELECTED]:
+                    model[parent][SELECTED] = False
+                    break
+                child = model.iter_next(child)
+            else:
+                model[parent][SELECTED] = True
             parent = model.iter_parent(parent)
 
-    def _select_children(self, model, parent, select):
+    def _select_children(self, model, parent, selected):
         itr = model.iter_children(parent)
         while itr:
-            self._select_children(model, itr, select)
+            self._select_children(model, itr, selected)
+            model[itr][SELECTED] = selected
             itr = model.iter_next(itr)
-        if model[parent][0]:
-            model[parent][1] = select
 
     def on_filechooser_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:

@@ -103,19 +103,23 @@
                   <object class="GtkTreeViewColumn" id="treeviewcolumn1">
                     <property name="title" translatable="yes">Name</property>
                     <child>
-                      <object class="GtkCellRendererToggle" id="selected_cellrenderer">
-                        <signal name="toggled" handler="on_selected_cellrenderer_toggled" swapped="no"/>
-                      </object>
+                      <object class="GtkCellRendererToggle" id="selected_cellrenderer"/>
                       <attributes>
-                        <attribute name="activatable">0</attribute>
-                        <attribute name="active">1</attribute>
+                        <attribute name="activatable">1</attribute>
+                        <attribute name="active">0</attribute>
                       </attributes>
                     </child>
                     <child>
                       <object class="GtkCellRendererPixbuf" id="icon_cellrenderer"/>
+                      <attributes>
+                        <attribute name="stock-id">2</attribute>
+                      </attributes>
                     </child>
                     <child>
                       <object class="GtkCellRendererText" id="filename_cellrenderer"/>
+                      <attributes>
+                        <attribute name="text">3</attribute>
+                      </attributes>
                     </child>
                   </object>
                 </child>
@@ -206,12 +210,19 @@
   </object>
   <object class="GtkTreeStore" id="treestore1">
     <columns>
-      <!-- column-name activatable -->
-      <column type="gboolean"/>
       <!-- column-name selected -->
       <column type="gboolean"/>
+      <!-- column-name activatable -->
+      <column type="gboolean"/>
+      <!-- column-name type -->
+      <column type="gchararray"/>
+      <!-- column-name name -->
+      <column type="gchararray"/>
       <!-- column-name file -->
       <column type="PyObject"/>
     </columns>
+  </object>
+  <object class="GtkTreeModelFilter" id="treemodelfilter1">
+    <property name="child_model">treestore1</property>
   </object>
 </interface>
