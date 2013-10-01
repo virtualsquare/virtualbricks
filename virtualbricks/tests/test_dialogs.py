@@ -1,10 +1,8 @@
-import copy
-import itertools
-
 import gtk
+from twisted.python import filepath
 
 from virtualbricks.gui import dialogs
-from virtualbricks.tests import unittest
+from virtualbricks.tests import unittest, GtkTestCase
 
 
 class Object:
@@ -60,8 +58,8 @@ class TestUsbDevWindow(unittest.TestCase):
 
 class WindowStub(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, _, prjpath):
+        super(WindowStub, self).__init__(_, prjpath)
 
 
 class ExportProjectDialog(WindowStub, dialogs.ExportProjectDialog):
@@ -69,100 +67,122 @@ class ExportProjectDialog(WindowStub, dialogs.ExportProjectDialog):
     pass
 
 MODEL = {
-    0: ([0, 1, gtk.STOCK_DIRECTORY, "root", None], {
-        0: ([0, 1, gtk.STOCK_DIRECTORY, "A", None], {
-            0: ([0, 1, gtk.STOCK_FILE, "a", None], {}),
-            1: ([0, 1, gtk.STOCK_FILE, "b", None], {}),
-            2: ([0, 1, gtk.STOCK_FILE, "c", None], {}),
-        }),
-        1: ([0, 1, gtk.STOCK_DIRECTORY, "B", None], {
-            0: ([0, 1, gtk.STOCK_FILE, "a", None], {}),
-            1: ([0, 1, gtk.STOCK_FILE, "b", None], {}),
-            2: ([0, 1, gtk.STOCK_FILE, "c", None], {}),
-        }),
-        2: ([0, 1, gtk.STOCK_DIRECTORY, "C", None], {
-            0: ([0, 1, gtk.STOCK_FILE, "a", None], {}),
-            1: ([0, 1, gtk.STOCK_FILE, "b", None], {}),
-            2: ([0, 1, gtk.STOCK_FILE, "c", None], {}),
-        })
-    })
+    (0, 1, gtk.STOCK_DIRECTORY, "root", None): {
+        (0, 1, gtk.STOCK_DIRECTORY, "A", None): {
+            (0, 1, gtk.STOCK_FILE, "a", None): {},
+            (0, 1, gtk.STOCK_FILE, "b", None): {},
+            (0, 1, gtk.STOCK_FILE, "c", None): {},
+        },
+        (0, 1, gtk.STOCK_DIRECTORY, "B", None): {
+            (0, 1, gtk.STOCK_FILE, "a", None): {},
+            (0, 1, gtk.STOCK_FILE, "b", None): {},
+            (0, 1, gtk.STOCK_FILE, "c", None): {},
+        },
+        (0, 1, gtk.STOCK_DIRECTORY, "C", None): {
+            (0, 1, gtk.STOCK_FILE, "a", None): {},
+            (0, 1, gtk.STOCK_FILE, "b", None): {},
+            (0, 1, gtk.STOCK_FILE, "c", None): {},
+        }
+    }
 }
 
 
-class TestExportDialog(unittest.TestCase):
+def build_model():
+    model = gtk.TreeStore(bool, bool, str, str, object)
+    root = MODEL.keys()[0]
+    insert_children(model, None, root, MODEL[root])
+    return model
+
+
+def insert_children(model, ancestor, row, children):
+    parent = model.append(ancestor, row)
+    for node in sorted(children):
+        insert_children(model, parent, node, children[node])
+
+
+class TestExportDialog(GtkTestCase):
 
     def setUp(self):
-        self.dialog = ExportProjectDialog()
-        self.model = self.build_model()
+        self.prjpath = filepath.FilePath(self.mktemp())
+        self.dialog = ExportProjectDialog(None, self.prjpath)
 
-    def build_model(self):
-        model = gtk.TreeStore(bool, bool, str, str, object)
-        for idx in MODEL:
-            self.insert_children(model, None, idx, MODEL[idx][0],
-                                 MODEL[idx][1])
-        return model
-
-    def insert_children(self, model, ancestor, position, row, children):
-        parent = model.insert(ancestor, position, row)
-        for idx in sorted(children):
-            self.insert_children(model, parent, idx, children[idx][0],
-                                 children[idx][1])
-
-    def assertTreeEqual(self, model, dct):
-        self.assertSubtreeEqual(model, model.get_iter_root(), dct, 0)
-
-    def assertSubtreeEqual(self, model, itr, dct, idx):
-        self.assertIn(idx, dct)
-        value, children = dct[idx]
-        self.assertEqual(value, list(model[itr]))
-        itrc = model.iter_children(itr)
-        for i in itertools.count():
-            if not itrc:
-                break
-            self.assertSubtreeEqual(model, itrc, children, i)
-            itrc = model.iter_next(itrc)
-
-    def toggle(self, path):
-        self.dialog.on_selected_cellrenderer_toggled(None, path, self.model)
-
-    def modify_dict(self, tree, *toggled):
-        for index, value in toggled:
-            itr = map(int, index.split(":"))
-            field = itr.pop()
-            node = tree
-            for idx in itr:
-                node = node[idx]
-            node[field] = value
+    def toggle(self, path, model):
+        self.dialog.on_selected_cellrenderer_toggled(None, path, model)
 
     def test_selected_toggled(self):
         """Toggle a node and all descendants should be checked."""
 
-        self.toggle("0:0")
-        dct = copy.deepcopy(MODEL)
-        self.modify_dict(dct, ("0:1:0:0:0", 1), ("0:1:0:1:0:0:0", 1),
-                         ("0:1:0:1:1:0:0", 1), ("0:1:0:1:2:0:0", 1))
-        self.assertTreeEqual(self.model, dct)
+        tree1 = build_model()
+        self.toggle("0:0", tree1)
+        tree2 = build_model()
+        tree2[0, 0][0] = 1
+        tree2[0, 0, 0][0] = 1
+        tree2[0, 0, 1][0] = 1
+        tree2[0, 0, 2][0] = 1
+        self.assertTreeModelEqual(tree1, tree2)
 
     def test_selected_toggled_all_children(self):
         """Selecting all children select the parent too."""
 
-        self.toggle("0:0:0")
-        self.toggle("0:0:1")
-        self.toggle("0:0:2")
-        dct = copy.deepcopy(MODEL)
-        self.modify_dict(dct, ("0:1:0:0:0", 1), ("0:1:0:1:0:0:0", 1),
-                         ("0:1:0:1:1:0:0", 1), ("0:1:0:1:2:0:0", 1))
-        self.assertTreeEqual(self.model, dct)
+        tree1 = build_model()
+        self.toggle("0:0:0", tree1)
+        self.toggle("0:0:1", tree1)
+        self.toggle("0:0:2", tree1)
+        tree2 = build_model()
+        tree2[0, 0][0] = 1
+        tree2[0, 0, 0][0] = 1
+        tree2[0, 0, 1][0] = 1
+        tree2[0, 0, 2][0] = 1
+        self.assertTreeModelEqual(tree1, tree2)
 
     def test_selected_toggled_root(self):
         """Selecting root select all nodes."""
 
-        self.toggle("0")
-        dct = copy.deepcopy(MODEL)
-        self.modify_dict(dct, ("0:0:0", 1), ("0:1:0:0:0", 1), ("0:1:1:0:0", 1),
-                         ("0:1:2:0:0", 1), ("0:1:0:1:0:0:0", 1),
-                         ("0:1:0:1:1:0:0", 1), ("0:1:0:1:2:0:0", 1),
-                         ("0:1:1:1:0:0:0", 1), ("0:1:1:1:1:0:0", 1),
-                         ("0:1:1:1:2:0:0", 1), ("0:1:2:1:0:0:0", 1),
-                         ("0:1:2:1:1:0:0", 1), ("0:1:2:1:2:0:0", 1))
-        self.assertTreeEqual(self.model, dct)
+        tree1 = build_model()
+        self.toggle("0", tree1)
+        tree2 = build_model()
+        tree2[0, ][0] = 1
+        tree2[0, 0][0] = 1
+        tree2[0, 0, 0][0] = 1
+        tree2[0, 0, 1][0] = 1
+        tree2[0, 0, 2][0] = 1
+        tree2[0, 1][0] = 1
+        tree2[0, 1, 0][0] = 1
+        tree2[0, 1, 1][0] = 1
+        tree2[0, 1, 2][0] = 1
+        tree2[0, 2][0] = 1
+        tree2[0, 2, 0][0] = 1
+        tree2[0, 2, 1][0] = 1
+        tree2[0, 2, 2][0] = 1
+        self.assertTreeModelEqual(tree1, tree2)
+
+    def create_file(self, parent, name, isdir=False):
+        child = parent.child(name)
+        if isdir:
+            child.makedirs()
+        else:
+            child.touch()
+        return child
+
+    def test_build_tree_path(self):
+        """
+        Internal files and required files should not be presented to the users.
+        """
+
+        self.prjpath.makedirs()
+        A = self.create_file(self.prjpath, "A", True)
+        a = self.create_file(A, "a")
+        b = self.create_file(self.prjpath, "b")
+        self.create_file(self.prjpath, ".project")
+        self.create_file(self.prjpath, "vde.dot")
+        self.create_file(self.prjpath, "vde_topology.plain")
+        tree1 = gtk.TreeStore(bool, bool, str, str, object)
+        tree2 = gtk.TreeStore(bool, bool, str, str, object)
+        self.dialog.build_path_tree(tree1, self.prjpath)
+        ritr = tree2.append(None, (False, True, gtk.STOCK_DIRECTORY,
+                                   self.prjpath.basename(), self.prjpath))
+        Ai = tree2.append(ritr, (False, True, gtk.STOCK_DIRECTORY,
+                                  A.basename(), A))
+        tree2.append(Ai, (False, True, gtk.STOCK_FILE, a.basename(), a))
+        tree2.append(ritr, (False, True, gtk.STOCK_FILE, b.basename(), b))
+        self.assertTreeModelEqual(tree1, tree2)
