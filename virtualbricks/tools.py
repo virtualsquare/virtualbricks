@@ -194,10 +194,7 @@ def backing_files_for(files):
 
 
 def fmtsize(size):
-    if size < 1024:
-        return str(size)
-    size /= 1024.0
-    for unit in "KB", "MB", "GB":
+    for unit in "B", "KB", "MB", "GB":
         if size < 1024:
             return "{0:.1f} {1}".format(size, unit)
         size /= 1024.0

@@ -74,3 +74,11 @@ class TestTools(unittest.TestCase):
 
         sio = StringIO.StringIO(UNKNOWN_HEADER)
         self.assertRaises(tools.UnknowTypeError, tools.get_backing_file, sio)
+
+    def test_fmtsize(self):
+        """Basic fmtusage."""
+
+        self.assertEqual("1023.0 B", tools.fmtsize(1023))
+        self.assertEqual("5.0 KB", tools.fmtsize(5 * 1024))
+        self.assertEqual("123.0 MB", tools.fmtsize(123 * 1024 ** 2))
+        self.assertEqual("321.0 GB", tools.fmtsize(321 * 1024 ** 3))
