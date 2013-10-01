@@ -205,7 +205,4 @@
       <column type="PyObject"/>
     </columns>
   </object>
-  <object class="GtkTreeModelFilter" id="treemodelfilter1">
-    <property name="child_model">treestore1</property>
-  </object>
 </interface>

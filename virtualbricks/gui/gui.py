@@ -2137,8 +2137,9 @@ class VBGUI(gobject.GObject, TopologyMixin):
         project.current.save(self.brickfactory)
 
     def on_export_menuitem_activate(self, menuitem):
-        dialogs.ExportProjectDialog(ProgressBar(self)).show(
-            self.get_object("main_win"))
+        dialogs.ExportProjectDialog(ProgressBar(self),
+                                    project.current.filepath).show(
+                                        self.get_object("main_win"))
 
     def on_import_menuitem_activate(self, menuitem):
         d = dialogs.ImportProjectDialog(self.brickfactory, ProgressBar(self))

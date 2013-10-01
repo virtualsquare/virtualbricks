@@ -148,3 +148,23 @@ def patch_settings(suite, **kwds):
     suite.patch(settings, "store", lambda: None)
     for k, v in kwds.iteritems():
         settings.set(k, v)
+
+
+class GtkTestCase(unittest.TestCase):
+
+    def assertTreeModelEqual(self, tree1, tree2):
+        self.assertEqual(tree1.get_n_columns(), tree2.get_n_columns())
+        for i in range(tree1.get_n_columns()):
+            self.assertEqual(tree1.get_column_type(i), tree2.get_column_type(i))
+        root1 = tree1.get_iter_root()
+        root2 = tree2.get_iter_root()
+        self.assertSubtreeModelEqual(tree1, root1, tree2, root2)
+
+    def assertSubtreeModelEqual(self, tree1, itr1, tree2, itr2):
+        self.assertEqual(type(itr1), type(itr2))
+        while itr1 and itr2:
+            self.assertEqual(tuple(tree1[itr1]), tuple(tree2[itr2]))
+            self.assertSubtreeModelEqual(tree1, tree1.iter_children(itr1),
+                                         tree2, tree2.iter_children(itr2))
+            itr1 = tree1.iter_next(itr1)
+            itr2 = tree2.iter_next(itr2)

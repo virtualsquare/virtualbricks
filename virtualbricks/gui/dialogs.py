@@ -1176,6 +1176,7 @@ def gather_selected(model, parent, workspace, lst):
 class ImportCanceled(Exception):
     pass
 
+
 SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 
 
@@ -1183,29 +1184,42 @@ class ExportProjectDialog(Window):
 
     resource = "data/exportproject.ui"
 
-    def __init__(self, progressbar):
+    def __init__(self, progressbar, prjpath):
+        super(Window, self).__init__()
         self.progressbar = progressbar
-        Window.__init__(self)
+        self.prjpath = prjpath
+        self.required_files = set([prjpath.child(".project")])
+        self.internal_files = set([prjpath.child("vde.dot"),
+                                   prjpath.child("vde_topology.plain")])
+
+    def append_dirs(self, dirpath, dirnames, model, parent, nodes):
+        for dirname in sorted(dirnames):
+            child = dirpath.child(dirname)
+            if child not in self.required_files | self.internal_files:
+                row = (False, True, gtk.STOCK_DIRECTORY, dirname, child)
+                nodes[child.path] = model.append(parent, row)
+
+    def append_files(self, dirpath, filenames, model, parent):
+        for filename in sorted(filenames):
+            child = dirpath.child(filename)
+            if (child not in self.required_files | self.internal_files and
+                    child.isfile()):
+                row = (False, True, gtk.STOCK_FILE, filename, child)
+                model.append(parent, row)
+
+    def build_path_tree(self, model, prjpath):
+        row = (False, True, gtk.STOCK_DIRECTORY, prjpath.basename(), prjpath)
+        root = model.append(None, row)
+        nodes = {prjpath.path: root}
+        for dirpath, dirnames, filenames in os.walk(prjpath.path):
+            parent = nodes[dirpath]
+            dp = filepath.FilePath(dirpath)
+            self.append_dirs(dp, dirnames, model, parent, nodes)
+            self.append_files(dp, filenames, model, parent)
 
     def show(self, parent_w=None):
         model = self.get_object("treestore1")
-        # required = set([project.current.filepath.child(".project").path])
-
-        curpath = filepath.FilePath(project.current.path)
-        row = (False, True, gtk.STOCK_DIRECTORY, curpath.basename(), curpath)
-        root = model.append(None, row)
-        nodes = {project.current.path: root}
-        for dirpath, dirnames, filenames in os.walk(project.current.path):
-            parent = nodes[dirpath]
-            dp = filepath.FilePath(dirpath)
-            for dirname in sorted(dirnames):
-                node = model.append(parent, (False, True, gtk.STOCK_DIRECTORY,
-                                             dirname, dp.child(dirname)))
-                nodes[os.path.join(dirpath, dirname)] = node
-            for filename in sorted(filenames):
-                model.append(parent, (False, True, gtk.STOCK_FILE, filename,
-                                      dp.child(filename)))
-
+        self.build_path_tree(model, self.prjpath)
         pixbuf_cr = self.get_object("icon_cellrenderer")
         pixbuf_cr.set_property("stock-size", gtk.ICON_SIZE_MENU)
         size_c = self.get_object("treeviewcolumn2")
@@ -1213,14 +1227,17 @@ class ExportProjectDialog(Window):
         size_c.set_cell_data_func(size_cr, self._set_size)
         self.get_object("selected_cellrenderer").connect(
             "toggled", self.on_selected_cellrenderer_toggled, model)
+        self.get_object("treeview1").expand_row(0, False)
         Window.show(self, parent_w)
 
     def _set_size(self, column, cellrenderer, model, itr):
-        fp = model[itr][FILEPATH]
+        fp = model.get_value(itr, FILEPATH)
         if fp.isfile():
             cellrenderer.set_property("text", tools.fmtsize(fp.getsize()))
         else:
             size = self._calc_size(model, itr)
+            if model.get_path(itr) == (0,):
+                size += sum(fp.getsize() for fp in self.required_files)
             cellrenderer.set_property("text", tools.fmtsize(size))
 
     def _calc_size(self, model, parent):
@@ -1283,7 +1300,7 @@ class ExportProjectDialog(Window):
         chooser = gtk.FileChooserDialog(title=_("Export project"),
                 action=gtk.FILE_CHOOSER_ACTION_SAVE,
                 buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                        gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+                         gtk.STOCK_SAVE, gtk.RESPONSE_OK))
         vbp = gtk.FileFilter()
         vbp.add_pattern("*.vbp")
         chooser.set_do_overwrite_confirmation(True)
@@ -1301,6 +1318,8 @@ class ExportProjectDialog(Window):
             files = []
             ancestor = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
             gather_selected(model, model.get_iter_first(), ancestor, files)
+            for fp in self.required_files:
+                files.append(os.path.join(*fp.segmentsFrom(ancestor)))
             filename = self._normalize_filename(
                 self.get_object("filename_entry").get_text())
             self.progressbar.wait_for(project.manager.export(filename, files))
