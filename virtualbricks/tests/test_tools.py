@@ -78,7 +78,9 @@ class TestTools(unittest.TestCase):
     def test_fmtsize(self):
         """Basic fmtusage."""
 
-        self.assertEqual("1023.0 B", tools.fmtsize(1023))
-        self.assertEqual("5.0 KB", tools.fmtsize(5 * 1024))
+        self.assertEqual("1023 B", tools.fmtsize(1023))
+        self.assertEqual("5120 B", tools.fmtsize(5 * 1024))
+        self.assertEqual("9216 B", tools.fmtsize(9 * 1024))
         self.assertEqual("123.0 MB", tools.fmtsize(123 * 1024 ** 2))
+        self.assertEqual("10.0 GB", tools.fmtsize(10200 * 1024 ** 2))
         self.assertEqual("321.0 GB", tools.fmtsize(321 * 1024 ** 3))
