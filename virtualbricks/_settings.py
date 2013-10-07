@@ -31,7 +31,7 @@ config_installed = log.Event("Default configuration saved ({filename})")
 cannot_read_config = log.Event("Cannot read config file {filename}")
 cannot_save_config = log.Event("Cannot save default configuration")
 
-
+LOCK_FILE="/tmp/vb.lock"
 HOME = os.path.expanduser("~")
 VIRTUALBRICKS_HOME = os.path.join(HOME, ".virtualbricks")
 CONFIGFILE = os.path.join(HOME, ".virtualbricks.conf")
