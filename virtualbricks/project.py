@@ -66,21 +66,26 @@ class BsdTgz:
     def create(self, pathname, files, images=(),
                run=utils.getProcessOutputAndValue):
         logger.info(create_archive, path=pathname)
-        args = ["cfzh", pathname]
-        images_args = []
+        args = ["cfzh", pathname, "-C", settings.VIRTUALBRICKS_HOME] + files
         if images:
             logger.info(include_images, images=images)
-            parts = []
-            for dirname, basename in map(os.path.split, images):
-                images_args.extend(("-C", dirname, basename))
-                parts.append(basename)
-            pattern = r"/^\({0}\)$/.image.\1/".format(r"\|".join(parts))
-            args.extend(("-s", pattern))
-        args.extend(["-C", settings.VIRTUALBRICKS_HOME])
-        args.extend(files)
-        args.extend(images_args)
+            prjpath = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
+            imgs = prjpath.child(".images")
+            try:
+                imgs.remove()
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    return defer.fail(failure.Failure(e))
+            imgs.makedirs()
+            for image in map(filepath.FilePath, images):
+                if image.exists():
+                    link = imgs.child(image.basename())
+                    image.linkTo(link)
+                    args.append("/".join(link.segmentsFrom(prjpath)))
         d = run(self.exe_c, args, os.environ)
         d.addCallback(_complain_on_error)
+        if images:
+            d.addBoth(pass_through(imgs.remove))
         return d
 
     def extract(self, pathname, destination,
