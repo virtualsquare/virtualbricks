@@ -69,10 +69,10 @@ class Event(object):
 
 def expect_event(func):
     @functools.wraps(func)
-    def wrapper(self, event, **kwds):
+    def wrapper(self, event, *args, **kwds):
         if isinstance(event, str):
             event = Event(event)
-        return func(self, event, **kwds)
+        return func(self, event, *args, **kwds)
     return wrapper
 
 
