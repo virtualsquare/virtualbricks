@@ -18,7 +18,6 @@
 
 import os
 import errno
-import tarfile
 import itertools
 import re
 
@@ -174,19 +173,6 @@ class ProjectEntry:
             fileobj.write("{0}\n".format("|".join(link)))
 
 
-class Archive:
-
-    def __init__(self, filename):
-        self.archive = tarfile.open(filename)
-
-    def get_member(self, name):
-        return self.archive.getmember(name)
-
-    def get_project(self):
-        project = self.archive.getmember(".project")
-        return ProjectEntry.from_fileobj(self.archive.extractfile(project))
-
-
 def pass_through(function, *args, **kwds):
     def wrapper(arg):
         function(*args, **kwds)
@@ -315,77 +301,6 @@ class ProjectManager:
         for success, status in result:
             if not success:
                 logger.error(rebase_error, log_failure=status)
-
-    def import_(self, prjname, path, factory, image_mapper, open=True):
-        """Import a project in the current workspace.
-
-        @param prjname: name of the new project.
-        @param path: the path of the .vbp file.
-        @param factory: the brick factory.
-        @param image_mapper: a callable that accept a list of images and return
-            a dictionary. Keys are the name of the images and values are the
-            new paths.
-        @param open: If True the project will be open after the import.
-        """
-
-        logger.debug(import_project, path=path, name=prjname)
-        try:
-            prjentry = Archive(path).get_project()
-        except KeyError:
-            raise errors.InvalidArchiveError(".project file not found.")
-        except tarfile.TarError as e:
-            raise errors.InvalidArchiveError(*e.args)
-        deferred = defer.maybeDeferred(image_mapper, prjentry.get_images())
-        deferred.addCallback(self._import_cb, prjname, path, factory, prjentry)
-        if open:
-            deferred.addCallback(self.restore, factory)
-        deferred.addErrback(self._import_eb, prjname)
-        return deferred
-
-    def _import_eb(self, fail, prjname):
-        self.delete(prjname)
-        return fail
-
-    def _import_cb(self, dct, name, path, factory, prjentry):
-        self._remap_images(dct, prjentry)
-        prj = self.create(name, factory, False)
-        return self._extract(prj, prjentry, path, dct)
-
-    def _remap_images(self, dct, prjentry):
-        for name, path in dct.iteritems():
-            if prjentry.has_image(name):
-                logger.debug(remap_image, original=name, new=path)
-                prjentry.remap_image(name, path)
-
-    def _extract(self, project, prjentry, pathname, dct):
-        logger.debug(extract_project)
-        deferred = self.archive.extract(pathname, project.path)
-        return deferred.addCallback(self._rebase, project, prjentry, dct)
-
-    def _rebase(self, _, project, prjentry, dct):
-        logger.debug(write_project)
-        with project.filepath.child(".project").open("w") as fp:
-            prjentry.dump(fp)
-        return self._rebase_cb(project, prjentry, dct)
-
-    def _rebase_cb(self, project, prjentry, dct):
-        def check_rebase(result):
-            for success, status in result:
-                if not success:
-                    logger.error(rebase_error, log_failure=status)
-            return project
-
-        disks = prjentry.get_disks()
-        images = dict(prjentry.get_images())
-        dl = []
-        for vmname in disks:
-            for dev, iname in disks[vmname]:
-                cow = project.filepath.child("{0}_{1}.cow".format(vmname, dev))
-                if cow.exists() and ("Image", iname) in images:
-                    backing_file = images[("Image", iname)]["path"]
-                    logger.debug(rebase, cow=cow.path, basefile=backing_file)
-                    dl.append(self._real_rebase(backing_file, cow.path))
-        return defer.DeferredList(dl).addCallback(check_rebase)
 
     def _real_rebase(self, backing_file, cow):
         args = ["rebase", "-u", "-b", backing_file, cow]
