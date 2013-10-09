@@ -1398,11 +1398,11 @@ class ImportProjectDialog(Window):
         #     self.destroy()
 
 
-def retrieve_data(entry, data):
+def retrieve_data(widget, data):
     lst, name = data
-    attr = entry.get_data(name)
+    attr = widget.get_data(name)
     if attr is not None:
-        lst.append((attr, entry.get_text()))
+        lst.append((attr, widget))
 
 
 def accumulate_data(container, name):
@@ -1454,8 +1454,13 @@ class ImageMapDialog(Window):
     def on_ImageMapDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
             logger.debug(remap_completed)
-            dct = accumulate_data(self.get_object("table"), "image_name")
-            self.complete_d.callback(dct)
+            lst = []
+            for name, entry in accumulate_data(self.get_object("table"),
+                                               "image_name"):
+                path = entry.get_text()
+                if path:
+                    lst.append((name, path))
+            self.complete_d.callback(lst)
         else:
             logger.debug(remap_canceled)
             self.complete_d.errback(failure.Failure(ImportCanceled()))

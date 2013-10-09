@@ -201,3 +201,29 @@ class TestExportDialog(GtkTestCase):
     def export(self, filename, files, images):
         for name in itertools.chain(files, images):
             self.assertIsInstance(name, str)
+
+
+class Container:
+
+    def __init__(self, children=None, **kwds):
+        self.children = children or []
+        self.__dict__.update(kwds)
+
+    def foreach(self, function, data):
+        function(self, data)
+        for child in self.children:
+            child.foreach(function, data)
+
+    def get_data(self, name):
+        return self.__dict__.get(name, None)
+
+
+class TestImageMapDialog(unittest.TestCase):
+
+    def test_accumulate_data(self):
+        c1 = Container(data="a")
+        c2 = Container(data="b")
+        root = Container((c1, c2))
+        lst = dialogs.accumulate_data(root, "data")
+        expected = [("a", c1), ("b", c2)]
+        self.assertEqual(lst, expected)
