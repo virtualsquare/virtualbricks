@@ -5,8 +5,8 @@ import StringIO
 import operator
 
 from twisted.trial import unittest
-from twisted.python import filepath
-from twisted.internet import defer
+from twisted.python import filepath, failure
+from twisted.internet import defer, error
 
 from virtualbricks import settings, project, configfile, errors
 from virtualbricks.tests import patch_settings, stubs
@@ -206,26 +206,27 @@ class TestImport(TestBase, unittest.TestCase):
     def patch_rebase_should_fail(self):
         self.manager._ProjectManager__rebase = lambda *a: 1 / 0
 
+    def assert_defer_fail(self, fail, *errors):
+        self.assertIsInstance(fail, failure.Failure,
+                              "Deferred succeeded (%r returned)" % (fail, ))
+        self.assertIsNot(fail.check(*errors), None,
+                         "%s raised instead of %s:\n %s" % (
+                             fail.type, [e.__name__ for e in errors],
+                             fail.getTraceback()))
+
     def test_import_wrong_file_type(self):
         """Raise an exception if the file is not a valid .vbp."""
 
-        self.assertRaises(errors.InvalidArchiveError, self.manager.import_,
-                          "test_project", __file__, None, None)
-
-    def test_import_vbp_has_not_dot_project(self):
-        """Raise an exception if the file is not a valid .vbp."""
-
-        vbp = os.path.join(os.path.dirname(__file__), "empty.vbp")
-        self.assertRaises(errors.InvalidArchiveError, self.manager.import_,
-                          "test_project", vbp, None, None)
+        d = self.manager.import2("test_project", __file__, None, None)
+        return d.addErrback(self.assert_defer_fail, error.ProcessTerminated)
 
     def test_import(self):
         """Simple import test."""
 
         PROJECT_NAME = "test_import"
         vbp = self.get_vbp()
-        d = self.manager.import_(PROJECT_NAME, vbp, self.factory,
-                                 lambda i: {"": ""}, False)
+        d = self.manager.import2(PROJECT_NAME, vbp, self.factory,
+                                 lambda i: defer.succeed(()), False)
         return d.addCallback(self.assert_project_equal, PROJECT_NAME, vbp)
 
     def test_import2(self):
