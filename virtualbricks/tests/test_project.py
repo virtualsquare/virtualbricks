@@ -335,12 +335,18 @@ class TestTarArchive(unittest.TestCase):
     def test_create_images(self):
         """Create an archive with images."""
 
-        self.archive.create("test.tgz", ["a1", "b1"],
-                            ["/images/a2", "/images/b2"], self.run_process)
-        self.assertEqual(self.args, ["cfzh", "test.tgz", "-s",
-                                     r"/^\(a2\|b2\)$/.image.\1/", "-C",
-                                     self.tmp, "a1", "b1", "-C", "/images", "a2",
-                                     "-C", "/images", "b2"])
+        tmp = filepath.FilePath(self.mktemp())
+        tmp.makedirs()
+        a = tmp.child("a")
+        a.touch()
+        b = tmp.child("b")
+        b.touch()
+        files = ["a", "b"]
+        images = [a.path, b.path]
+        self.archive.create("test.tgz", files, images, self.run_process)
+        expected = ["cfzh", "test.tgz", "-C", self.tmp, "a", "b", ".images/a",
+                    ".images/b"]
+        self.assertEqual(self.args, expected)
 
 
 PROJECT = """[Image:test_qcow2.qcow2]
