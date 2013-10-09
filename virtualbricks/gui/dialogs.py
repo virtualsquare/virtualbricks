@@ -126,6 +126,8 @@ import_prj_exists = log.Event("Cannot import project {name} a project with "
                               "the same name exists.")
 import_invalid_name = log.Event("Invalid project name {name}")
 import_err = log.Event("Error on import project")
+remap_canceled = log.Event("Remap canceled by the user.")
+remap_completed = log.Event("Remap finished.")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -206,14 +208,11 @@ class Window(Base):
     def set_transient_for(self, parent):
         self.window.set_transient_for(parent)
 
-    def _on_destroy(self, window):
-        self.on_destroy()
-
     def show(self, parent=None):
         if parent is not None:
             self.window.set_transient_for(parent)
         if self.on_destroy is not None:
-            self.window.connect("destroy", self._on_destroy)
+            self.window.connect("destroy", lambda w: self.on_destroy())
         self.window.show()
 
 
@@ -1183,11 +1182,14 @@ SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 class ExportProjectDialog(Window):
 
     resource = "data/exportproject.ui"
+    include_images = False
 
-    def __init__(self, progressbar, prjpath):
+    def __init__(self, progressbar, prjpath, disk_images):
         super(Window, self).__init__()
         self.progressbar = progressbar
         self.prjpath = prjpath
+        self.image_files = set(filepath.FilePath(image.path) for image in
+                                disk_images)
         self.required_files = set([prjpath.child(".project")])
         self.internal_files = set([prjpath.child("vde.dot"),
                                    prjpath.child("vde_topology.plain")])
@@ -1203,7 +1205,7 @@ class ExportProjectDialog(Window):
         for filename in sorted(filenames):
             child = dirpath.child(filename)
             if (child not in self.required_files | self.internal_files and
-                    child.isfile()):
+                    child.isfile() and not child.islink()):
                 row = (False, True, gtk.STOCK_FILE, filename, child)
                 model.append(parent, row)
 
@@ -1238,6 +1240,8 @@ class ExportProjectDialog(Window):
             size = self._calc_size(model, itr)
             if model.get_path(itr) == (0,):
                 size += sum(fp.getsize() for fp in self.required_files)
+                if self.include_images:
+                    size += sum(fp.getsize() for fp in self.image_files)
             cellrenderer.set_property("text", tools.fmtsize(size))
 
     def _calc_size(self, model, parent):
@@ -1312,17 +1316,28 @@ class ExportProjectDialog(Window):
     def on_filename_entry_changed(self, entry):
         self.get_object("export_button").set_sensitive(bool(entry.get_text()))
 
+    def on_include_images_checkbutton_toggled(self, checkbutton):
+        self.include_images = checkbutton.get_active()
+        model = self.get_object("treestore1")
+        model.row_changed((0,), model.get_iter((0,)))
+
+    def export(self, model, ancestor, filename):
+        files = []
+        gather_selected(model, model.get_iter_first(), ancestor, files)
+        for fp in self.required_files:
+            files.append(os.path.join(*fp.segmentsFrom(ancestor)))
+        images = []
+        if self.include_images:
+            images = [fp.path for fp in self.image_files]
+        return project.manager.export(filename, files, images)
+
     def on_ExportProjectDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
             model = self.get_object("treestore1")
-            files = []
             ancestor = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
-            gather_selected(model, model.get_iter_first(), ancestor, files)
-            for fp in self.required_files:
-                files.append(os.path.join(*fp.segmentsFrom(ancestor)))
-            filename = self._normalize_filename(
-                self.get_object("filename_entry").get_text())
-            self.progressbar.wait_for(project.manager.export(filename, files))
+            filename = self._normalize_filename(self.get_object(
+                "filename_entry").get_text())
+            self.progressbar.wait_for(self.export(model, ancestor, filename))
         dialog.destroy()
 
 
@@ -1337,14 +1352,8 @@ class ImportProjectDialog(Window):
         self.get_object("vbp_filefilter").add_pattern("*.vbp")
 
     def map_images(self, images):
-        def freeze(passthru):
-            self.progressbar.wait_for(deferred)
-            return passthru
-
         deferred = defer.Deferred()
-        deferred.addCallback(freeze)
-        dialog = ImageMapDialog(images, deferred)
-        dialog.show()
+        ImageMapDialog(images, deferred).show()
         return deferred
 
     def set_import_sensitive(self, filename, name):
@@ -1377,55 +1386,29 @@ class ImportProjectDialog(Window):
     def on_ImportProjectDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
             archive = self.get_object("filechooserbutton").get_filename()
-            prjname = self.get_object("prjname_entry").get_text()
+            name = self.get_object("prjname_entry").get_text()
             open_project = self.get_object("open_checkbutton").get_active()
-            d = project.manager.import_(prjname, archive, self.factory,
+            d = project.manager.import2(name, archive, self.factory,
                                         self.map_images, open_project)
+            self.progressbar.wait_for(d)
             d.addErrback(self.import_cancelled_eb)
             d.addErrback(self.complain_eb)
             d.addErrback(logger.failure_eb, import_err)
+        # else:
+        #     self.destroy()
 
 
-def retrieve_data(entry, (dct, name)):
+def retrieve_data(entry, data):
+    lst, name = data
     attr = entry.get_data(name)
     if attr is not None:
-        dct[attr] = entry.get_text()
+        lst.append((attr, entry.get_text()))
 
 
 def accumulate_data(container, name):
-    dct = {}
-    container.foreach(retrieve_data, (dct, name))
-    return dct
-
-
-def _choose_image_handler(entry):
-    def on_button_click(button):
-        chooser = gtk.FileChooserDialog(title=_("Choose an image file"),
-                action=gtk.FILE_CHOOSER_ACTION_OPEN,
-                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                         gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        if chooser.run() == gtk.RESPONSE_OK:
-            entry.set_text(chooser.get_filename())
-        chooser.destroy()
-    return on_button_click
-
-
-def _fill_image_table(table, images):
-    table.resize(len(images) + 2, 4)
-    for i, ((_, name), section) in enumerate(images, 2):
-        label = gtk.Label(name + ":")
-        label.set_alignment(0, 0.5)
-        label.show()
-        table.attach(label, 0, 1, i, i + 1, gtk.FILL, gtk.FILL)
-        entry = gtk.Entry()
-        entry.set_data("image_name", name)
-        entry.set_editable(False)
-        entry.show()
-        table.attach(entry, 2, 3, i, i + 1, gtk.FILL | gtk.EXPAND, gtk.FILL)
-        button = gtk.Button("Open file...")
-        button.connect("clicked", _choose_image_handler(entry))
-        button.show()
-        table.attach(button, 3, 4, i, i + 1, gtk.FILL, gtk.FILL)
+    lst = []
+    container.foreach(retrieve_data, (lst, name))
+    return lst
 
 
 class ImageMapDialog(Window):
@@ -1437,14 +1420,42 @@ class ImageMapDialog(Window):
         self.complete_d = deferred
         Window.__init__(self)
 
+    def _fill_image_table(self, table, images):
+        table.resize(len(images) + 2, 4)
+        for i, ((_, name), section) in enumerate(images, 2):
+            label = gtk.Label(name + ":")
+            label.set_alignment(0, 0.5)
+            label.show()
+            table.attach(label, 0, 1, i, i + 1, gtk.FILL, gtk.FILL)
+            entry = gtk.Entry()
+            entry.set_data("image_name", name)
+            entry.set_editable(False)
+            entry.show()
+            table.attach(entry, 2, 3, i, i + 1, gtk.FILL | gtk.EXPAND, gtk.FILL)
+            button = gtk.Button("Open file...")
+            button.connect("clicked", self.on_choose_clicked, entry)
+            button.show()
+            table.attach(button, 3, 4, i, i + 1, gtk.FILL, gtk.FILL)
+
+    def on_choose_clicked(sef, button, entry):
+        chooser = gtk.FileChooserDialog(title=_("Choose an image file"),
+                action=gtk.FILE_CHOOSER_ACTION_OPEN,
+                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                         gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+        if chooser.run() == gtk.RESPONSE_OK:
+            entry.set_text(chooser.get_filename())
+        chooser.destroy()
+
     def show(self, parent=None):
-        _fill_image_table(self.get_object("table"), self.images)
+        self._fill_image_table(self.get_object("table"), self.images)
         Window.show(self, parent)
 
     @destroy_on_exit
     def on_ImageMapDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            self.complete_d.callback(accumulate_data(self.get_object("table"),
-                                                     "image_name"))
+            logger.debug(remap_completed)
+            dct = accumulate_data(self.get_object("table"), "image_name")
+            self.complete_d.callback(dct)
         else:
+            logger.debug(remap_canceled)
             self.complete_d.errback(failure.Failure(ImportCanceled()))

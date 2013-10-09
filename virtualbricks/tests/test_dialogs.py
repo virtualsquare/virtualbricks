@@ -1,6 +1,9 @@
+import itertools
+
 import gtk
 from twisted.python import filepath
 
+from virtualbricks import project
 from virtualbricks.gui import dialogs
 from virtualbricks.tests import unittest, GtkTestCase
 
@@ -58,8 +61,8 @@ class TestUsbDevWindow(unittest.TestCase):
 
 class WindowStub(object):
 
-    def __init__(self, _, prjpath):
-        super(WindowStub, self).__init__(_, prjpath)
+    def __init__(self, _, prjpath, disk_images):
+        super(WindowStub, self).__init__(_, prjpath, disk_images)
 
 
 class ExportProjectDialog(WindowStub, dialogs.ExportProjectDialog):
@@ -104,7 +107,7 @@ class TestExportDialog(GtkTestCase):
 
     def setUp(self):
         self.prjpath = filepath.FilePath(self.mktemp())
-        self.dialog = ExportProjectDialog(None, self.prjpath)
+        self.dialog = ExportProjectDialog(None, self.prjpath, [])
 
     def toggle(self, path, model):
         self.dialog.on_selected_cellrenderer_toggled(None, path, model)
@@ -186,3 +189,15 @@ class TestExportDialog(GtkTestCase):
         tree2.append(Ai, (False, True, gtk.STOCK_FILE, a.basename(), a))
         tree2.append(ritr, (False, True, gtk.STOCK_FILE, b.basename(), b))
         self.assertTreeModelEqual(tree1, tree2)
+
+    def test_export(self):
+        self.patch(project.manager, "export", self.export)
+        model = gtk.TreeStore(bool, bool, str, str, object)
+        self.dialog.include_images = True
+        self.dialog.image_files = [filepath.FilePath("/images/a")]
+        ancestor = filepath.FilePath("/")
+        self.dialog.export(model, ancestor, "test.tgz")
+
+    def export(self, filename, files, images):
+        for name in itertools.chain(files, images):
+            self.assertIsInstance(name, str)
