@@ -1,6 +1,7 @@
 import os
 import types
 import functools
+import difflib
 
 from twisted.trial import unittest
 from twisted.python import failure
@@ -150,21 +151,48 @@ def patch_settings(suite, **kwds):
         settings.set(k, v)
 
 
+def pformat_tree(tree, sep="", indent=2):
+    lst = []
+    n_cols = tree.get_n_columns()
+    pformat_subtree(tree, tree.get_iter_root(), lst, n_cols, sep, indent, 0)
+    return lst
+
+
+def pformat_subtree(tree, itr, lst, columns, sep="", indent=2, level=0):
+    while itr:
+        row = tree.get(itr, *range(columns))
+        lst.append("{0}{1}{2}".format(indent * level * " ", sep, row))
+        pformat_subtree(tree, tree.iter_children(itr), lst, columns, sep,
+                        indent, level + 1)
+        itr = tree.iter_next(itr)
+
+
 class GtkTestCase(unittest.TestCase):
 
-    def assertTreeModelEqual(self, tree1, tree2):
+    def assert_tree_model_equal(self, tree1, tree2, msg=None):
         self.assertEqual(tree1.get_n_columns(), tree2.get_n_columns())
         for i in range(tree1.get_n_columns()):
-            self.assertEqual(tree1.get_column_type(i), tree2.get_column_type(i))
+            self.assertEqual(tree1.get_column_type(i),
+                             tree2.get_column_type(i))
         root1 = tree1.get_iter_root()
         root2 = tree2.get_iter_root()
-        self.assertSubtreeModelEqual(tree1, root1, tree2, root2)
+        self.assert_subtree_model_equal(tree1, root1, tree2, root2, msg)
 
-    def assertSubtreeModelEqual(self, tree1, itr1, tree2, itr2):
+    def assert_subtree_model_equal(self, tree1, itr1, tree2, itr2, msg=None):
         self.assertEqual(type(itr1), type(itr2))
         while itr1 and itr2:
+            if tuple(tree1[itr1]) != tuple(tree2[itr2]):
+                diff = "\n".join(difflib.ndiff(pformat_tree(tree1),
+                                               pformat_tree(tree2)))
+                default = "Trees are different:\n" + diff
+                self.fail(msg or default)
             self.assertEqual(tuple(tree1[itr1]), tuple(tree2[itr2]))
-            self.assertSubtreeModelEqual(tree1, tree1.iter_children(itr1),
-                                         tree2, tree2.iter_children(itr2))
+            self.assert_subtree_model_equal(tree1, tree1.iter_children(itr1),
+                                            tree2, tree2.iter_children(itr2))
             itr1 = tree1.iter_next(itr1)
             itr2 = tree2.iter_next(itr2)
+
+
+            # diff = ('\n' + '\n'.join(difflib.ndiff(
+            #                pprint.pformat(d1).splitlines(),
+            #                pprint.pformat(d2).splitlines())))
