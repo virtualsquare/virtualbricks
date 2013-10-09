@@ -1,6 +1,4 @@
 import os
-import errno
-import tarfile
 import StringIO
 import operator
 
@@ -367,6 +365,16 @@ link|sender|sw1|rtl8139|00:11:22:33:44:55
 """
 
 
+class PseudoOerderedDict(dict):
+
+    def __init__(self, arg):
+        super(PseudoOerderedDict, self).__init__(arg)
+        self._order = map(operator.itemgetter(0), arg)
+
+    def __iter__(self):
+        return iter(self._order)
+
+
 class TestProjectEntry(unittest.TestCase):
 
     def setUp(self):
@@ -401,42 +409,7 @@ class TestProjectEntry(unittest.TestCase):
         devs = list(self.entry.device_for_image("vtatpa.martin.qcow2"))
         self.assertEqual([("test", "hda")], devs)
 
-
-class PseudoOerderedDict(dict):
-
-    def __init__(self, arg):
-        super(PseudoOerderedDict, self).__init__(arg)
-        self._order = map(operator.itemgetter(0), arg)
-
-    def __iter__(self):
-        return iter(self._order)
-
-
-class TestArchive(unittest.TestCase):
-
-    def test_base(self):
-        """If the file is not a valid archive, an error is raised."""
-
-        filename = self.mktemp()
-        exp = self.assertRaises(IOError, project.Archive, filename)
-        self.assertEquals(exp.errno, errno.ENOENT)
-        open(filename, "w").close()
-        exp = self.assertRaises(tarfile.TarError, project.Archive, filename)
-
-    def test_get_project(self):
-        filename = self.mktemp()
-        project_entry = self.mktemp()
-        open(project_entry, "w").close()
-        tarfile.open(filename, "w").close()
-        archive = project.Archive(filename)
-        self.assertRaises(KeyError, archive.get_project)
-        tf = tarfile.open(filename, "w")
-        tf.add(project_entry, ".project")
-        tf.close()
-        archive = project.Archive(filename)
-        self.assertIsNot(None, archive.get_project())
-
-    def test_project_entry_dump(self):
+    def test_dump(self):
         sections = {
             ("Image", "test_qcow2.qcow2"): {
                 "path": "/images/test qcow2.qcow2"
