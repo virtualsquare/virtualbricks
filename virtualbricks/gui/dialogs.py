@@ -1192,12 +1192,15 @@ class ExportProjectDialog(Window):
                                 disk_images)
         self.required_files = set([prjpath.child(".project")])
         self.internal_files = set([prjpath.child("vde.dot"),
-                                   prjpath.child("vde_topology.plain")])
+                                   prjpath.child("vde_topology.plain"),
+                                   prjpath.child(".images")])
 
     def append_dirs(self, dirpath, dirnames, model, parent, nodes):
         for dirname in sorted(dirnames):
             child = dirpath.child(dirname)
-            if child not in self.required_files | self.internal_files:
+            if child in self.required_files | self.internal_files:
+                dirnames.remove(dirname)
+            else:
                 row = (False, True, gtk.STOCK_DIRECTORY, dirname, child)
                 nodes[child.path] = model.append(parent, row)
 
@@ -1394,8 +1397,6 @@ class ImportProjectDialog(Window):
             d.addErrback(self.import_cancelled_eb)
             d.addErrback(self.complain_eb)
             d.addErrback(logger.failure_eb, import_err)
-        # else:
-        #     self.destroy()
 
 
 def retrieve_data(widget, data):

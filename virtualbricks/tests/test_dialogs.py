@@ -122,7 +122,7 @@ class TestExportDialog(GtkTestCase):
         tree2[0, 0, 0][0] = 1
         tree2[0, 0, 1][0] = 1
         tree2[0, 0, 2][0] = 1
-        self.assertTreeModelEqual(tree1, tree2)
+        self.assert_tree_model_equal(tree1, tree2)
 
     def test_selected_toggled_all_children(self):
         """Selecting all children select the parent too."""
@@ -136,7 +136,7 @@ class TestExportDialog(GtkTestCase):
         tree2[0, 0, 0][0] = 1
         tree2[0, 0, 1][0] = 1
         tree2[0, 0, 2][0] = 1
-        self.assertTreeModelEqual(tree1, tree2)
+        self.assert_tree_model_equal(tree1, tree2)
 
     def test_selected_toggled_root(self):
         """Selecting root select all nodes."""
@@ -157,7 +157,7 @@ class TestExportDialog(GtkTestCase):
         tree2[0, 2, 0][0] = 1
         tree2[0, 2, 1][0] = 1
         tree2[0, 2, 2][0] = 1
-        self.assertTreeModelEqual(tree1, tree2)
+        self.assert_tree_model_equal(tree1, tree2)
 
     def create_file(self, parent, name, isdir=False):
         child = parent.child(name)
@@ -188,7 +188,11 @@ class TestExportDialog(GtkTestCase):
                                   A.basename(), A))
         tree2.append(Ai, (False, True, gtk.STOCK_FILE, a.basename(), a))
         tree2.append(ritr, (False, True, gtk.STOCK_FILE, b.basename(), b))
-        self.assertTreeModelEqual(tree1, tree2)
+        self.assert_tree_model_equal(tree1, tree2)
+
+    def test_build_tree_path_dont_recurse_internal_dirs(self):
+        self.todo = "not implemented"
+        raise NotImplementedError()
 
     def test_export(self):
         self.patch(project.manager, "export", self.export)
