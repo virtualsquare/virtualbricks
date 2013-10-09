@@ -23,7 +23,7 @@ import itertools
 import re
 
 from twisted.internet import utils, error, defer
-from twisted.python import filepath
+from twisted.python import filepath, failure
 
 from virtualbricks import settings, configfile, log, errors, configparser
 
@@ -59,9 +59,9 @@ def _complain_on_error(result):
     return result
 
 
-class BsdTgz:
+class Tgz:
 
-    exe_c = exe_x = "bsdtar"
+    exe_c = exe_x = "tar"
 
     def create(self, pathname, files, images=(),
                run=utils.getProcessOutputAndValue):
@@ -94,6 +94,11 @@ class BsdTgz:
         args = ["Sxfz", pathname, "-C", destination]
         d = run(self.exe_x, args, os.environ)
         return d.addCallback(_complain_on_error)
+
+
+class BsdTgz(Tgz):
+
+    exe_c = exe_x = "bsdtar"
 
 
 class ProjectEntry:
