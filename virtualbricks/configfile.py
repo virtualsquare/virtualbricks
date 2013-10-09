@@ -90,12 +90,12 @@ def restore_backup(filename, fbackup):
             pass
         else:
             logger.error(cannot_save_backup, filename=filename_back,
-                      traceback=traceback.format_exc())
+                         traceback=traceback.format_exc())
     else:
         logger.info(project_saved, filename=filename_back)
     try:
         fbackup.moveTo(filename)
-    except OSError, e:
+    except OSError as e:
         if created:
             created = False
             filename_back.moveTo(filename)

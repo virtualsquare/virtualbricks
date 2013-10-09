@@ -27,23 +27,39 @@ link|sender|sw1_port|rtl8139|00:aa:79:71:be:61
 
 class TestConfigFile(unittest.TestCase):
 
-    def test_restore_backup(self):
+    def add_observer(self):
         observer = stubs.LoggingObserver()
         log.addObserver(observer.emit)
         self.addCleanup(log.removeObserver, observer.emit)
-        filename = filepath.FilePath(self.mktemp())
-        filename.touch()
-        fbackup = filename.sibling(filename.basename() + "~")
-        configfile.restore_backup(filename, fbackup)
+        return observer
+
+    def create_config_backup(self):
+        config = filepath.FilePath(self.mktemp())
+        config.touch()
+        backup = config.sibling(config.basename() + "~")
+        return config, backup
+
+    def test_restore_backup_does_not_exists(self):
+        """Try to restore a backup that does not exists."""
+
+        observer = self.add_observer()
+        config, backup = self.create_config_backup()
+        configfile.restore_backup(config, backup)
         self.assertEqual(len(observer.msgs), 1)
         self.assertFalse(observer.msgs[0]["isError"])
-        fbackup.touch()
-        self.assertTrue(fbackup.isfile())
-        configfile.restore_backup(filename, fbackup)
-        self.assertFalse(os.path.isfile(filename.path + ".back"))
-        self.assertEqual(len(observer.msgs), 3)
-        self.assertTrue(observer.msgs[-1]["isError"])
-        self.assertFalse(fbackup.isfile())
+        self.assertFalse(config.sibling(config.basename() + ".back").exists())
+        self.assertTrue(config.exists())
+
+    def test_restore_backup(self):
+        """Restore a backup."""
+
+        observer = self.add_observer()
+        config, backup = self.create_config_backup()
+        backup.touch()
+        configfile.restore_backup(config, backup)
+        self.assertFalse(config.sibling(config.basename() + ".back").exists())
+        self.assertFalse(backup.exists())
+        self.assertTrue(config.exists())
 
     def test_backup_context(self):
         filename = self.mktemp()
