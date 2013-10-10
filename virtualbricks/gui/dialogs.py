@@ -1360,10 +1360,17 @@ class ImportProjectDialog(Window):
         return deferred
 
     def set_import_sensitive(self, filename, name):
-        if filename and os.path.isfile(filename) and name:
-            self.get_object("import_button").set_sensitive(True)
+        import_button = self.get_object("import_button")
+        label = self.get_object("warn_label")
+        if name in set(project.manager):
+            import_button.set_sensitive(False)
+            label.set_visible(True)
         else:
-            self.get_object("import_button").set_sensitive(False)
+            label.set_visible(False)
+            if filename and os.path.isfile(filename) and name:
+                import_button.set_sensitive(True)
+            else:
+                import_button.set_sensitive(False)
 
     def on_filechooserbutton_file_set(self, filechooser):
         filename = filechooser.get_filename()

@@ -2,15 +2,11 @@
 <interface>
   <requires lib="gtk+" version="2.24"/>
   <!-- interface-naming-policy project-wide -->
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-add</property>
-  </object>
-  <object class="GtkFileFilter" id="vbp_filefilter"/>
   <object class="GtkDialog" id="ImportProjectDialog">
+    <property name="width_request">400</property>
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
+    <property name="title" translatable="yes">Virtualbricks - Import project</property>
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_ImportProjectDialog_response" swapped="no"/>
     <child internal-child="vbox">
@@ -61,27 +57,15 @@
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Import Project</property>
-            <attributes>
-              <attribute name="weight" value="bold"/>
-              <attribute name="size" value="10000"/>
-            </attributes>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="padding">6</property>
-            <property name="position">1</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkLabel" id="label2">
-            <property name="visible">True</property>
+          <object class="GtkLabel" id="warn_label">
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Choose the project to import</property>
+            <property name="label" translatable="yes">A project with such name already exists.</property>
+            <attributes>
+              <attribute name="foreground" value="#ffff00000000"/>
+            </attributes>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -186,4 +170,10 @@
       <action-widget response="-5">import_button</action-widget>
     </action-widgets>
   </object>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-add</property>
+  </object>
+  <object class="GtkFileFilter" id="vbp_filefilter"/>
 </interface>
