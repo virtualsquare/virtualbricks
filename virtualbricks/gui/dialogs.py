@@ -277,7 +277,7 @@ class LoggingWindow(Window):
         try:
             if response_id == gtk.RESPONSE_OK:
                 with open(dialog.get_filename(), "w") as fp:
-                    self.save_to(fp)
+                    fp.write(self.textbuffer.get_property("text"))
         finally:
             dialog.destroy()
 
