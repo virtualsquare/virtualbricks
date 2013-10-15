@@ -3,8 +3,8 @@ import StringIO
 import operator
 
 from twisted.trial import unittest
-from twisted.python import filepath, failure
-from twisted.internet import defer, error
+from twisted.python import filepath
+from twisted.internet import defer
 
 from virtualbricks import settings, project, configfile, errors
 from virtualbricks.tests import (patch_settings, stubs, successResultOf,
@@ -217,118 +217,6 @@ class TestProjectManager(TestBase, unittest.TestCase):
         d = self.manager.extract(PRJNAME, vbppath, True)
         prj = successResultOf(self, d)
         self.assertEqual(prj.path, path.path)
-
-
-class TestImport(TestBase, unittest.TestCase):
-
-    def assert_project_equal(self, project, name, vbp):
-        """
-        These values are hard coded in the virtualbricks/tests/test.vbp file.
-        """
-
-        self.assertEqual(project.name, name)
-        self.assertTrue(project.filepath.exists())
-        self.assertEqual([project.name], list(self.manager))
-        self.assertTrue(project.dot_project().exists())
-
-    # def walk_tar(self, vbp):
-    #     return tarfile.open(vbp).getnames()
-
-    def get_vbp(self):
-        return os.path.join(os.path.dirname(__file__), "test.vbp")
-
-    def null_mapper(self, i, project):
-        return defer.succeed(())
-
-    def patch_rebase_should_fail(self):
-        self.manager._ProjectManager__rebase = lambda *a: 1 / 0
-
-    def assert_defer_fail(self, fail, *errors):
-        self.assertIsInstance(fail, failure.Failure,
-                              "Deferred succeeded (%r returned)" % (fail, ))
-        self.assertIsNot(fail.check(*errors), None,
-                         "%s raised instead of %s:\n %s" % (
-                             fail.type, [e.__name__ for e in errors],
-                             fail.getTraceback()))
-
-    # def test_import_wrong_file_type(self):
-    #     """Raise an exception if the file is not a valid .vbp."""
-
-    #     d = self.manager.import_vbp("test_project", __file__, None)
-    #     return d.addErrback(self.assert_defer_fail, error.ProcessTerminated)
-
-    # def test_import(self):
-    #     """Simple import test."""
-
-    #     PROJECT_NAME = "test_import"
-    #     vbp = self.get_vbp()
-    #     d = self.manager.import_vbp(PROJECT_NAME, vbp, self.factory,
-    #                              lambda i: defer.succeed(()), False)
-    #     return d.addCallback(self.assert_project_equal, PROJECT_NAME, vbp)
-
-    # def test_import(self):
-    #     """Simple import test."""
-
-    #     PROJECT_NAME = "test_import"
-    #     vbp = self.get_vbp()
-    #     d = self.manager.import_vbp(PROJECT_NAME, vbp, self.null_mapper)
-    #     return d.addCallback(self.assert_project_equal, PROJECT_NAME, vbp)
-
-    # def test_failed_import_does_not_create_project(self):
-    #     """If an import is failed, the project is not created."""
-
-    #     def assert_cb(_):
-    #         self.assertEqual([], list(self.manager))
-
-    #     self.patch_rebase_should_fail()
-    #     d = self.manager.import_vbp("test", self.get_vbp(), self.null_mapper)
-    #     return d.addErrback(assert_cb)
-
-    def get_entry(self, string):
-        return project.ProjectEntry.from_fileobj(StringIO.StringIO(string))
-
-    def prepare_rebase(self):
-        self.args = []
-        self.manager._real_rebase = self.real_rebase
-
-    def real_rebase(self, backing_file, cow):
-        self.args.append((backing_file, cow))
-        return defer.succeed(None)
-
-    def assert_rebase(self, _, expected):
-        self.assertEqual(self.args, expected)
-
-    def rebase(self, mapp=(), entry="", project=None):
-        if isinstance(entry, basestring):
-            entry = self.get_entry(PROJECT)
-        if project is None:
-            project = self.manager.create("test")
-        self.prepare_rebase()
-        return self.manager._ProjectManager__rebase(mapp, entry, project)
-
-    def test_nothing_rebase(self):
-        """If there no images to map, don't rebase."""
-
-        result = self.rebase()
-        self.assertIs(result, None)
-        self.assert_rebase(None, [])
-
-    def test_rebase_images_are_not_used(self):
-        """Unused images are not rebased."""
-
-        mapp = [("test_qcow2.qcow2", "")]
-        d = self.rebase(mapp, PROJECT)
-        return d.addCallback(self.assert_rebase, [])
-
-    def test_rebase_empty(self):
-        """If the path is empty do not rebase."""
-
-        mapp = [("vtatpa.martin.qcow2", "")]
-        project = self.manager.create("test")
-        # create a fake cow file
-        project.filepath.child("test_hda.cow").touch()
-        d = self.rebase(mapp, PROJECT, project)
-        return d.addCallback(self.assert_rebase, [])
 
 
 class TestTarArchive(unittest.TestCase):

@@ -270,59 +270,6 @@ class ProjectManager:
         deferred = self.archive.extract(vbppath, project.filepath.path)
         return deferred.addCallback(lambda _: project)
 
-    def import_vbp(self, name, vbppath, map_cb):
-        try:
-            project = self.create(name)
-        except:
-            return defer.fail()
-        deferred = self.__extract(vbppath, project.filepath.path)
-        deferred.addCallback(self.__map_images, map_cb, project)
-        deferred.addCallback(lambda _: project)
-        deferred.addErrback(pass_through(self.delete, name))
-        return deferred
-
-    def __extract(self, vbpname, path):
-        logger.debug(extract_project)
-        return self.archive.extract(vbpname, path)
-
-    def __map_images(self, _, map_cb, project):
-        with project.dot_project().open() as fp:
-            entry = ProjectEntry.from_fileobj(fp)
-        d = map_cb([n for ((_, n), _) in entry.get_images()], project)
-        return d.addCallback(self.__rebase, entry, project)
-
-    def __rebase(self, new_map, prjentry, project):
-        if new_map:
-            self.__save_dot_project(new_map, prjentry, project.dot_project())
-            dl = []
-            for name, path in filter(lambda e: bool(e[1]), new_map):
-                for vmname, dev in prjentry.device_for_image(name):
-                    cow_name = "{0}_{1}.cow".format(vmname, dev)
-                    cow = project.filepath.child(cow_name)
-                    if cow.exists():
-                        logger.debug(rebase, cow=cow.path, basefile=path)
-                        dl.append(self._real_rebase(path, cow.path))
-            return defer.DeferredList(dl).addCallback(self.__check_rebase)
-
-    def __save_dot_project(self, new_map, prjentry, dot_project):
-        for name, path in new_map:
-            logger.debug(remap_image, original=name, new=path)
-            prjentry.remap_image(name, path)
-        logger.debug(write_project)
-        with dot_project.open("w") as fp:
-            prjentry.dump(fp)
-
-    def __check_rebase(self, result):
-        for success, status in result:
-            if not success:
-                logger.error(rebase_error, log_failure=status)
-
-    def _real_rebase(self, backing_file, cow):
-        args = ["rebase", "-u", "-b", backing_file, cow]
-        d = utils.getProcessOutputAndValue("qemu-img", args, os.environ)
-        d.addCallback(_complain_on_error)
-        return d
-
 
 manager = ProjectManager()
 current = None
