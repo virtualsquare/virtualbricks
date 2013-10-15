@@ -375,8 +375,8 @@ class TestImportDialog(test_project.TestBase, GtkTestCase):
         imported_images = set((TEST_IMAGE1, TEST_IMAGE2))
         project_images = {TEST_IMAGE1: "/" + IMG1}
         model = gtk.ListStore(str, str, bool)
-        model.append((TEST_IMAGE1, self.vimages.child(IMG1).path, True))
-        model.append((TEST_IMAGE2, self.vimages.child(TEST_IMAGE2).path, True))
+        model.append((TEST_IMAGE1, self.vimages.child(IMG1), True))
+        model.append((TEST_IMAGE2, self.vimages.child(TEST_IMAGE2), True))
         return imported_images, project_images, model
 
     @block_prepare_signal
@@ -402,6 +402,12 @@ class TestImportDialog(test_project.TestBase, GtkTestCase):
         self.dialog.step_3(self.assistant, self.get_page(3))
         self.assert_current_page(self.assistant, cur_page)
         model = gtk.ListStore(str, str)
-        model.append(("test_image", ""))
+        model.append(("test_image", None))
         self.assert_tree_model_equal(self.go("liststore2"), model)
         self.assert_page_not_complete(self.assistant, 3)
+
+    @block_prepare_signal
+    def test_step_4(self):
+        cur_page = self.assistant.get_current_page()
+        # self.dialog.step_4(self.assistant, self.get_page(4))
+        self.assert_current_page(self.assistant, cur_page)
