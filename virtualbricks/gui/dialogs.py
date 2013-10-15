@@ -81,6 +81,7 @@ advised and possible with gtk-builder-convert.
 from __future__ import print_function
 import os
 import sys
+import errno
 import tempfile
 import functools
 
@@ -131,6 +132,7 @@ remap_canceled = log.Event("Remap canceled by the user.")
 remap_completed = log.Event("Remap finished.")
 rebase = log.Event("Rebasing {cow} to {basefile}")
 rebase_error = log.Event("Error on rebase")
+image_not_exists = log.Event("Cannot save image, file does not exists: {file}")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -1477,6 +1479,12 @@ def complain_on_error(result):
     return result
 
 
+def set_path(column, cell_renderer, model, iter, colid):
+    # cell_renderer.props.text = model[iter][colid]
+    path = model.get_value(iter, colid)
+    cell_renderer.set_property("text",  path.path if path else "")
+
+
 class ImportDialog(Window):
 
     resource = "data/importdialog.ui"
@@ -1543,7 +1551,7 @@ class ImportDialog(Window):
                 while fp2.exists():
                     fp2 = fp.siblingExtension(".{0}".format(c))
                     c += 1
-                model.append((image, fp2.path, True))
+                model.append((image, fp2, True))
             if len(model) == 0:
                 self.goto_next_page(assistant)
 
@@ -1554,9 +1562,9 @@ class ImportDialog(Window):
         model.clear()
         for name in self.project_images:
             if name not in imgs:
-                model.append((name, ""))
-            # else:
-            #     model.append((name, imgs[name]))
+                model.append((name, None))
+            else:
+                model.append((name, imgs[name]))
         if all(path for name, path in iter_model(model)):
             assistant.set_page_complete(page, True)
         else:
@@ -1570,8 +1578,16 @@ class ImportDialog(Window):
         for name, path, save in iter_model(self.get_object("liststore1")):
             if save:
                 fp = imagesfp.child(name)
-                fp.moveTo(filepath.FilePath(path))
-                entry.remap_image(name, path)
+                try:
+                    fp.moveTo(path)
+                except OSError as e:
+                    if e.errno == errno.ENOENT:
+                        import pdb; pdb.set_trace()
+                        logger.error(image_not_exists, file=path.path)
+                        continue
+                    else:
+                        raise
+                entry.remap_image(name, path.path)
                 imgs[name] = path
         for name, path in iter_model(self.get_object("liststore2")):
             entry.remap_image(name, path)
@@ -1585,12 +1601,12 @@ class ImportDialog(Window):
                 cow_name = "{0}_{1}.cow".format(vmname, dev)
                 cow = self.project.filepath.child(cow_name)
                 if cow.exists():
-                    logger.debug(rebase, cow=cow.path, basefile=path)
-                    dl.append(self.rebase(path, cow.path))
+                    logger.debug(rebase, cow=cow.path, basefile=path.path)
+                    dl.append(self.rebase(path.path, cow.path))
         return defer.DeferredList(dl).addCallback(self.check_rebase)
 
     def rebase(self, backing_file, cow):
-        d = defer.success("rebasing {0} to {1}".format(cow, backing_file))
+        d = defer.succeed("rebasing {0} to {1}".format(cow, backing_file))
         return d.addCallback(print)
 
         # args = ["rebase", "-u", "-b", backing_file, cow]
@@ -1629,14 +1645,18 @@ class ImportDialog(Window):
                                            gtk.STOCK_OPEN)
 
     def show(self, parent=None):
-        self.get_object("treeview1").connect("button_press_event",
-                self.on_treeview_button_press_event,
-                self.get_object("pathcolumn1"),
-                self.get_save_filechooserdialog)
-        self.get_object("treeview2").connect("button_press_event",
-                self.on_treeview_button_press_event,
-                self.get_object("pathcolumn2"),
-                self.get_map_filechooserdialog)
+        col1 = self.get_object("pathcolumn1")
+        cell1 = self.get_object("cellrenderertext2")
+        col1.set_cell_data_func(cell1, set_path, 1)
+        col2 = self.get_object("pathcolumn2")
+        cell2 = self.get_object("cellrenderertext4")
+        col2.set_cell_data_func(cell2, set_path, 1)
+        view1 = self.get_object("treeview1")
+        view1.connect("button_press_event", self.on_button_press_event, col1,
+                      self.get_save_filechooserdialog)
+        view2 = self.get_object("treeview2")
+        view2.connect("button_press_event", self.on_button_press_event, col2,
+                      self.get_map_filechooserdialog)
         Window.show(self, parent)
 
     def on_ImportDialog_prepare(self, assistant, page):
@@ -1699,8 +1719,7 @@ class ImportDialog(Window):
         model.set(model.get_iter(path), self.SELECTED, not active)
         return True
 
-    def on_treeview_button_press_event(self, treeview, event, column,
-                                       dialog_factory):
+    def on_button_press_event(self, treeview, event, column, dialog_factory):
         if event.button == 1:
             x = int(event.x)
             y = int(event.y)
