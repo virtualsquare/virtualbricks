@@ -259,13 +259,13 @@ class ProjectManager:
             try:
                 project = self.create(name)
             except errors.ProjectExistsError:
-                if not overwrite:
+                if overwrite:
                     self.delete(name)
                     project = self.create(name)
                 else:
                     raise
-        except:
-            return defer.fail()
+        except Exception as e:
+            return defer.fail(e)
         logger.debug(extract_project)
         deferred = self.archive.extract(vbppath, project.filepath.path)
         return deferred.addCallback(lambda _: project)
@@ -375,7 +375,7 @@ def restore_last_project(factory):
     """Restore the last project if found or create a new one."""
 
     try:
-        os.mkdir(settings.get("workspace"))
+        os.makedirs(os.path.join(settings.get("workspace"), "vimages"))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
