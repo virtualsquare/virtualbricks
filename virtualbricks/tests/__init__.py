@@ -192,7 +192,29 @@ class GtkTestCase(unittest.TestCase):
             itr1 = tree1.iter_next(itr1)
             itr2 = tree2.iter_next(itr2)
 
+    def assert_page_complete(self, assistant, page_num, msg=""):
+        page = assistant.get_nth_page(page_num)
+        self.assertTrue(assistant.get_page_complete(page), msg)
 
-            # diff = ('\n' + '\n'.join(difflib.ndiff(
-            #                pprint.pformat(d1).splitlines(),
-            #                pprint.pformat(d2).splitlines())))
+    def assert_page_not_complete(self, assistant, page_num, msg=""):
+        page = assistant.get_nth_page(page_num)
+        self.assertFalse(assistant.get_page_complete(page), msg)
+
+    def assert_visible(self, widget, msg=""):
+        if not msg:
+            msg = ("widget {0} is not visible when it is expected it "
+                   "is.".format(widget))
+        self.assertTrue(widget.get_visible(), msg)
+
+    def assert_not_visible(self, widget, msg=""):
+        if not msg:
+            msg = ("widget {0} is visible when it is expected it is "
+                   "not.".format(widget))
+        self.assertFalse(widget.get_visible(), msg)
+
+    def assert_current_page(self, assistant, num, msg=""):
+        curr = assistant.get_current_page()
+        if not msg:
+            msg = ("Wrong assistant current page. Actual page is {0}, "
+                   "expected {1}".format(curr, num))
+        self.assertEqual(num, curr, msg)

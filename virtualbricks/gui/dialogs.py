@@ -78,17 +78,18 @@ results are not always excellent. A window at time conversion is highly
 advised and possible with gtk-builder-convert.
 """
 
+from __future__ import print_function
 import os
 import sys
 import tempfile
 import functools
 
 import gtk
-from twisted.internet import utils, defer
-from twisted.python import filepath, failure
+from twisted.internet import utils, defer, task, error
+from twisted.python import filepath
 
 from virtualbricks import (version, tools, log, console, settings,
-                           virtualmachines, project, errors)
+                           virtualmachines, project)
 from virtualbricks.gui import graphics
 
 
@@ -128,6 +129,8 @@ import_invalid_name = log.Event("Invalid project name {name}")
 import_err = log.Event("Error on import project")
 remap_canceled = log.Event("Remap canceled by the user.")
 remap_completed = log.Event("Remap finished.")
+rebase = log.Event("Rebasing {cow} to {basefile}")
+rebase_error = log.Event("Error on rebase")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -1188,8 +1191,10 @@ class ExportProjectDialog(Window):
         super(Window, self).__init__()
         self.progressbar = progressbar
         self.prjpath = prjpath
-        self.image_files = set(filepath.FilePath(image.path) for image in
-                                disk_images)
+        self.image_files = [(image.name, filepath.FilePath(image.path))
+                            for image in disk_images]
+        # self.image_files = set(filepath.FilePath(image.path) for image in
+        #                         disk_images)
         self.required_files = set([prjpath.child(".project")])
         self.internal_files = set([prjpath.child("vde.dot"),
                                    prjpath.child("vde_topology.plain"),
@@ -1201,7 +1206,7 @@ class ExportProjectDialog(Window):
             if child in self.required_files | self.internal_files:
                 dirnames.remove(dirname)
             else:
-                row = (False, True, gtk.STOCK_DIRECTORY, dirname, child)
+                row = (True, True, gtk.STOCK_DIRECTORY, dirname, child)
                 nodes[child.path] = model.append(parent, row)
 
     def append_files(self, dirpath, filenames, model, parent):
@@ -1209,11 +1214,11 @@ class ExportProjectDialog(Window):
             child = dirpath.child(filename)
             if (child not in self.required_files | self.internal_files and
                     child.isfile() and not child.islink()):
-                row = (False, True, gtk.STOCK_FILE, filename, child)
+                row = (True, True, gtk.STOCK_FILE, filename, child)
                 model.append(parent, row)
 
     def build_path_tree(self, model, prjpath):
-        row = (False, True, gtk.STOCK_DIRECTORY, prjpath.basename(), prjpath)
+        row = (True, True, gtk.STOCK_DIRECTORY, prjpath.basename(), prjpath)
         root = model.append(None, row)
         nodes = {prjpath.path: root}
         for dirpath, dirnames, filenames in os.walk(prjpath.path):
@@ -1244,7 +1249,7 @@ class ExportProjectDialog(Window):
             if model.get_path(itr) == (0,):
                 size += sum(fp.getsize() for fp in self.required_files)
                 if self.include_images:
-                    size += sum(fp.getsize() for fp in self.image_files)
+                    size += sum(fp.getsize() for n, fp in self.image_files)
             cellrenderer.set_property("text", tools.fmtsize(size))
 
     def _calc_size(self, model, parent):
@@ -1331,7 +1336,7 @@ class ExportProjectDialog(Window):
             files.append(os.path.join(*fp.segmentsFrom(ancestor)))
         images = []
         if self.include_images:
-            images = [fp.path for fp in self.image_files]
+            images = [(name, fp.path) for name, fp in self.image_files]
         return project.manager.export(filename, files, images)
 
     def on_ExportProjectDialog_response(self, dialog, response_id):
@@ -1344,66 +1349,70 @@ class ExportProjectDialog(Window):
         dialog.destroy()
 
 
-class ImportProjectDialog(Window):
+# class ImportProjectDialog(Window):
 
-    resource = "data/importproject.ui"
+#     resource = "data/importproject.ui"
 
-    def __init__(self, factory, progressbar):
-        Window.__init__(self)
-        self.factory = factory
-        self.progressbar = progressbar
-        self.get_object("vbp_filefilter").add_pattern("*.vbp")
+#     def __init__(self, factory, progressbar):
+#         Window.__init__(self)
+#         self.factory = factory
+#         self.progressbar = progressbar
+#         self.get_object("vbp_filefilter").add_pattern("*.vbp")
 
-    def map_images(self, images):
-        deferred = defer.Deferred()
-        ImageMapDialog(images, deferred).show()
-        return deferred
+#     # def map_images(self, images, project):
+#     #     # ImportDialog().show()
+#     #     deferred = defer.Deferred()
+#     #     if project.get_images():
+#     #         SaveImagesDialog(images, project, deferred).show()
+#     #     else:
+#     #         ImageMapDialog(images, deferred).show()
+#     #     return deferred
 
-    def set_import_sensitive(self, filename, name):
-        import_button = self.get_object("import_button")
-        label = self.get_object("warn_label")
-        if name in set(project.manager):
-            import_button.set_sensitive(False)
-            label.set_visible(True)
-        else:
-            label.set_visible(False)
-            if filename and os.path.isfile(filename) and name:
-                import_button.set_sensitive(True)
-            else:
-                import_button.set_sensitive(False)
+#     def set_import_sensitive(self, filename, name):
+#         import_button = self.get_object("import_button")
+#         label = self.get_object("warn_label")
+#         if name in set(project.manager):
+#             import_button.set_sensitive(False)
+#             label.set_visible(True)
+#         else:
+#             label.set_visible(False)
+#             if filename and os.path.isfile(filename) and name:
+#                 import_button.set_sensitive(True)
+#             else:
+#                 import_button.set_sensitive(False)
 
-    def on_filechooserbutton_file_set(self, filechooser):
-        filename = filechooser.get_filename()
-        prjname = self.get_object("prjname_entry").get_text()
-        self.set_import_sensitive(filename, prjname)
+#     def on_filechooserbutton_file_set(self, filechooser):
+#         filename = filechooser.get_filename()
+#         prjname = self.get_object("prjname_entry").get_text()
+#         self.set_import_sensitive(filename, prjname)
 
-    def on_prjname_entry_changed(self, entry):
-        filename = self.get_object("filechooserbutton").get_filename()
-        self.set_import_sensitive(filename, entry.get_text())
+#     def on_prjname_entry_changed(self, entry):
+#         filename = self.get_object("filechooserbutton").get_filename()
+#         self.set_import_sensitive(filename, entry.get_text())
 
-    def import_cancelled_eb(self, fail):
-        fail.trap(ImportCanceled)
-        logger.debug(import_cancelled)
+#     def import_cancelled_eb(self, fail):
+#         fail.trap(ImportCanceled)
+#         logger.debug(import_cancelled)
 
-    def complain_eb(self, fail):
-        fail.trap(errors.InvalidNameError, errors.ProjectExistsError)
-        if fail.check(errors.ProjectExistsError):
-            logger.error(import_prj_exists, name=fail.value.args[0])
-        else:
-            logger.error(import_invalid_name, name=fail.value.args[0])
+#     def complain_eb(self, fail):
+#         fail.trap(errors.InvalidNameError, errors.ProjectExistsError)
+#         if fail.check(errors.ProjectExistsError):
+#             logger.error(import_prj_exists, name=fail.value.args[0])
+#         else:
+#             logger.error(import_invalid_name, name=fail.value.args[0])
 
-    @destroy_on_exit
-    def on_ImportProjectDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
-            archive = self.get_object("filechooserbutton").get_filename()
-            name = self.get_object("prjname_entry").get_text()
-            open_project = self.get_object("open_checkbutton").get_active()
-            d = project.manager.import2(name, archive, self.factory,
-                                        self.map_images, open_project)
-            self.progressbar.wait_for(d)
-            d.addErrback(self.import_cancelled_eb)
-            d.addErrback(self.complain_eb)
-            d.addErrback(logger.failure_eb, import_err)
+#     @destroy_on_exit
+#     def on_ImportProjectDialog_response(self, dialog, response_id):
+#         if response_id == gtk.RESPONSE_OK:
+#             archive = self.get_object("filechooserbutton").get_filename()
+#             name = self.get_object("prjname_entry").get_text()
+#             open_project = self.get_object("open_checkbutton").get_active()
+#             d = project.manager.import_vbp(name, archive, self.factory,
+#                                            self.map_images, open_project)
+#             self.progressbar.wait_for(d)
+#             d.addErrback(self.import_cancelled_eb)
+#             d.addErrback(self.complain_eb)
+#             d.addErrback(logger.failure_eb, import_err)
 
 
 def retrieve_data(widget, data):
@@ -1419,56 +1428,406 @@ def accumulate_data(container, name):
     return lst
 
 
-class ImageMapDialog(Window):
+def pass_through(function, *args, **kwds):
+    def wrapper(arg):
+        function(*args, **kwds)
+        return arg
+    return wrapper
 
-    resource = "data/imagemapdialog.ui"
 
-    def __init__(self, images, deferred):
-        self.images = images
-        self.complete_d = deferred
-        Window.__init__(self)
+class ProgressBar:
 
-    def _fill_image_table(self, table, images):
-        table.resize(len(images) + 2, 4)
-        for i, ((_, name), section) in enumerate(images, 2):
-            label = gtk.Label(name + ":")
-            label.set_alignment(0, 0.5)
-            label.show()
-            table.attach(label, 0, 1, i, i + 1, gtk.FILL, gtk.FILL)
-            entry = gtk.Entry()
-            entry.set_data("image_name", name)
-            entry.set_editable(False)
-            entry.show()
-            table.attach(entry, 2, 3, i, i + 1, gtk.FILL | gtk.EXPAND, gtk.FILL)
-            button = gtk.Button("Open file...")
-            button.connect("clicked", self.on_choose_clicked, entry)
-            button.show()
-            table.attach(button, 3, 4, i, i + 1, gtk.FILL, gtk.FILL)
+    def __init__(self, progressbar):
+        self.progressbar = progressbar
 
-    def on_choose_clicked(sef, button, entry):
-        chooser = gtk.FileChooserDialog(title=_("Choose an image file"),
-                action=gtk.FILE_CHOOSER_ACTION_OPEN,
-                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                         gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        if chooser.run() == gtk.RESPONSE_OK:
-            entry.set_text(chooser.get_filename())
-        chooser.destroy()
+    def wait_for(self, something, *args):
+        if isinstance(something, defer.Deferred):
+            return self.wait_for_deferred(something)
+        elif hasattr(something, "__call__"):
+            return self.wait_for_action(something, *args)
+        raise RuntimeError("Invalid argument")
+
+    def wait_for_action(self, action, *args):
+        return self.wait_for_deferred(defer.maybeDeferred(action, *args))
+
+    def wait_for_deferred(self, deferred):
+        def stop():
+            lc.stop()
+
+        lc = task.LoopingCall(self.progressbar.pulse)
+        lc.start(0.2, False)
+        deferred.addBoth(pass_through(stop))
+        return deferred
+
+
+def iter_model(model):
+    itr = model.get_iter_root()
+    colunms = range(model.get_n_columns())
+    while itr:
+        yield model.get(itr, *colunms)
+        itr = model.iter_next(itr)
+
+
+def complain_on_error(result):
+    out, err, code = result
+    if code != 0:
+        logger.warn(err)
+        raise error.ProcessTerminated(code)
+    logger.info(err)
+    return result
+
+
+class ImportDialog(Window):
+
+    resource = "data/importdialog.ui"
+    NAME, PATH, SELECTED = range(3)
+    project = None
+    images = None
+    step2 = False
+
+    def get_project_name(self):
+        return self.get_object("prjname_entry").get_text()
+
+    def set_project_name(self, name):
+        self.get_object("prjname_entry").set_text(name)
+
+    def get_archive(self):
+        return self.get_object("filechooserbutton").get_filename()
+
+    def get_open(self):
+        return self.get_object("opencheckbutton").get_active()
+
+    def get_overwrite(self):
+        return self.get_object("overwritecheckbutton").get_active()
+
+    def goto_next_page(self, assistant=None):
+        if assistant is None:
+            assistant = self.widget
+        assistant.set_current_page(assistant.get_current_page() + 1)
+
+    def step_0(self, assistant, page):
+        pass
+
+    def step_1(self, assistant, page):
+        assistant.commit()
+        d = project.manager.extract(self.get_project_name(),
+                                    self.get_archive(), self.get_overwrite())
+        ProgressBar(self.get_object("progressbar1")).wait_for(d)
+        d.addCallback(self.import_cb, assistant, page)
+        d.addErrback(logger.failure_eb, import_err)
+        return d
+
+    def import_cb(self, project, assistant, page):
+        self.project = project
+        self.project_images = dict((name, section["path"])
+            for (_, name), section in project.get_descriptor().get_images())
+        self.imported_images = set(fp.basename() for fp in
+                                   project.imported_images())
+        assistant.set_page_complete(page, True)
+        self.goto_next_page(assistant)
+
+    def step_2(self, assistant, page):
+        if not self.step2:
+            self.step2 = True
+            assistant.commit()
+            model = self.get_object("liststore1")
+            vimages = self.project.filepath.sibling("vimages")
+            for image in self.imported_images:
+                if image in self.project_images:
+                    fp = vimages.child(os.path.basename(
+                        self.project_images[image]))
+                else:
+                    fp = vimages.child(image)
+                fp2 = filepath.FilePath(fp.path)
+                c = 1
+                while fp2.exists():
+                    fp2 = fp.siblingExtension(".{0}".format(c))
+                    c += 1
+                model.append((image, fp2.path, True))
+            if len(model) == 0:
+                self.goto_next_page(assistant)
+
+    def step_3(self, assistant, page):
+        imgs = dict((n, p) for n, p, s in
+                    iter_model(self.get_object("liststore1")) if s)
+        model = self.get_object("liststore2")
+        model.clear()
+        for name in self.project_images:
+            if name not in imgs:
+                model.append((name, ""))
+            # else:
+            #     model.append((name, imgs[name]))
+        if all(path for name, path in iter_model(model)):
+            assistant.set_page_complete(page, True)
+        else:
+            assistant.set_page_complete(page, False)
+
+    def step_4(self, assistant, page):
+        assistant.commit()
+        entry = self.project.get_descriptor()
+        imgs = {}
+        imagesfp = self.project.filepath.child(".images")
+        for name, path, save in iter_model(self.get_object("liststore1")):
+            if save:
+                fp = imagesfp.child(name)
+                fp.moveTo(filepath.FilePath(path))
+                entry.remap_image(name, path)
+                imgs[name] = path
+        for name, path in iter_model(self.get_object("liststore2")):
+            entry.remap_image(name, path)
+            imgs[name] = path
+        with self.project.dot_project().open("w") as fp:
+            entry.dump(fp)
+
+        dl = []
+        for name, path in imgs.iteritems():
+            for vmname, dev in entry.device_for_image(name):
+                cow_name = "{0}_{1}.cow".format(vmname, dev)
+                cow = self.project.filepath.child(cow_name)
+                if cow.exists():
+                    logger.debug(rebase, cow=cow.path, basefile=path)
+                    dl.append(self.rebase(path, cow.path))
+        return defer.DeferredList(dl).addCallback(self.check_rebase)
+
+    def rebase(self, backing_file, cow):
+        d = defer.success("rebasing {0} to {1}".format(cow, backing_file))
+        return d.addCallback(print)
+
+        # args = ["rebase", "-u", "-b", backing_file, cow]
+        # d = utils.getProcessOutputAndValue("qemu-img", args, os.environ)
+        # d.addCallback(complain_on_error)
+        # return d
+
+    def check_rebase(self, result):
+        for success, status in result:
+            if not success:
+                logger.error(rebase_error, log_failure=status)
+
+    def _get_filechooserdialog(self, model, path, title, action, stock_id):
+        chooser = gtk.FileChooserDialog(title, self.window, action,
+                (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                 stock_id, gtk.RESPONSE_OK))
+        chooser.set_modal(True)
+        chooser.set_select_multiple(False)
+        chooser.set_transient_for(self.window)
+        chooser.set_destroy_with_parent(True)
+        chooser.set_position(gtk.WIN_POS_CENTER)
+        chooser.set_do_overwrite_confirmation(True)
+        chooser.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
+        chooser.connect("response", self.on_filechooserdialog_response, model,
+                        path)
+        return chooser
+
+    def get_save_filechooserdialog(self, model, path):
+        return self._get_filechooserdialog(model, path, _("Save image as..."),
+                                           gtk.FILE_CHOOSER_ACTION_SAVE,
+                                           gtk.STOCK_SAVE)
+
+    def get_map_filechooserdialog(self, model, path):
+        return self._get_filechooserdialog(model, path, _("Map image as..."),
+                                           gtk.FILE_CHOOSER_ACTION_OPEN,
+                                           gtk.STOCK_OPEN)
 
     def show(self, parent=None):
-        self._fill_image_table(self.get_object("table"), self.images)
+        self.get_object("treeview1").connect("button_press_event",
+                self.on_treeview_button_press_event,
+                self.get_object("pathcolumn1"),
+                self.get_save_filechooserdialog)
+        self.get_object("treeview2").connect("button_press_event",
+                self.on_treeview_button_press_event,
+                self.get_object("pathcolumn2"),
+                self.get_map_filechooserdialog)
         Window.show(self, parent)
 
-    @destroy_on_exit
-    def on_ImageMapDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
-            logger.debug(remap_completed)
-            lst = []
-            for name, entry in accumulate_data(self.get_object("table"),
-                                               "image_name"):
-                path = entry.get_text()
-                if path:
-                    lst.append((name, path))
-            self.complete_d.callback(lst)
+    def on_ImportDialog_prepare(self, assistant, page):
+        func = getattr(self, "step_{0}".format(assistant.get_current_page()))
+        func(assistant, page)
+        return True
+
+    def on_ImportDialog_cancel(self, assistant):
+        name = self.get_project_name()
+        if name:
+            project.manager.delete(name)
+        assistant.destroy()
+
+    def on_ImportDialog_close(self, assistant):
+        print("close")
+        self.on_ImportDialog_cancel(assistant)
+
+    def on_ImportDialog_apply(self, assistant):
+        print("apply")
+
+    def on_filechooserbutton_file_set(self, filechooser):
+        filename = filechooser.get_filename()
+        name = os.path.splitext(os.path.basename(filename))[0]
+        if not self.get_project_name():
+            self.set_project_name(name)
+        return True
+
+    def on_prjname_entry_changed(self, entry):
+        filename = self.get_object("filechooserbutton").get_filename()
+        overwrite_btn = self.get_object("overwritecheckbutton")
+        self.set_import_sensitive(filename, entry.get_text(), overwrite_btn)
+        return True
+
+    def on_overwritecheckbutton_toggled(self, checkbutton):
+        filename = self.get_object("filechooserbutton").get_filename()
+        name = self.get_object("prjname_entry").get_text()
+        self.set_import_sensitive(filename, name, checkbutton)
+        return True
+
+    def set_import_sensitive(self, filename, name, overwrite_btn):
+        page = self.get_object("intro_page")
+        label = self.get_object("warn_label")
+        if name in set(project.manager):
+            overwrite_btn.set_visible(True)
+            overwrite = overwrite_btn.get_active()
+            label.set_visible(not overwrite)
+            self.widget.set_page_complete(page, overwrite)
         else:
-            logger.debug(remap_canceled)
-            self.complete_d.errback(failure.Failure(ImportCanceled()))
+            overwrite_btn.set_active(False)
+            overwrite_btn.set_visible(False)
+            label.set_visible(False)
+            if filename and name:
+                self.widget.set_page_complete(page, True)
+            else:
+                self.widget.set_page_complete(page, False)
+
+    def on_cellrenderertoggle1_toggled(self, renderer, path):
+        model = self.get_object("liststore1")
+        active = renderer.get_active()
+        model.set(model.get_iter(path), self.SELECTED, not active)
+        return True
+
+    def on_treeview_button_press_event(self, treeview, event, column,
+                                       dialog_factory):
+        if event.button == 1:
+            x = int(event.x)
+            y = int(event.y)
+            pthinfo = treeview.get_path_at_pos(x, y)
+            if pthinfo is not None and pthinfo[1] is column:
+                path, col = pthinfo[:2]
+                treeview.grab_focus()
+                treeview.set_cursor(path, col, 0)
+                model = treeview.get_model()
+                chooser = dialog_factory(model, path)
+                itr = model.get_iter(path)
+                filename = model.get_value(itr, self.PATH)
+                if not chooser.set_filename(filename):
+                    chooser.set_current_name(os.path.basename(filename))
+                chooser.show()
+                return True
+
+    def on_filechooserdialog_response(self, dialog, response_id, model, path):
+        if response_id == gtk.RESPONSE_OK:
+            filename = dialog.get_filename()
+            if filename is not None:
+                model.set_value(model.get_iter(path), self.PATH, filename)
+        dialog.destroy()
+        return True
+
+
+# class AbstractImageDialog(Window):
+
+#     resource = "data/imagedialog.ui"
+#     name = "ImageDialog"
+
+#     def set_text(self, text):
+#         self.get_object("label1").set_text(text)
+
+#     def on_filechooser_response(self, dialog, response_id, entry):
+#         if response_id == gtk.RESPONSE_OK:
+#             entry.set_text(dialog.get_filename())
+#         dialog.destroy()
+
+#     def on_choose_clicked(self, button, entry):
+#         chooser = gtk.FileChooserDialog(title=_("Choose an image file"),
+#                 action=gtk.FILE_CHOOSER_ACTION_OPEN,
+#                 buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+#                          gtk.STOCK_OPEN, gtk.RESPONSE_OK))
+#         chooser.connect("response", self.on_filechooser_response, entry)
+#         chooser.set_transient_for(self.window)
+#         chooser.show()
+
+#     def _fill_image_table(self, table, images):
+#         table.resize(len(images) + 2, 4)
+#         lst = []
+#         for i, name in enumerate(images, 2):
+#             label = gtk.Label(name + ":")
+#             label.set_alignment(0, 0.5)
+#             label.show()
+#             table.attach(label, 0, 1, i, i + 1, gtk.FILL, gtk.FILL)
+#             entry = gtk.Entry()
+#             lst.append((name, entry))
+#             entry.set_data("image_name", name)
+#             entry.set_editable(False)
+#             entry.show()
+#             table.attach(entry, 2, 3, i, i + 1, gtk.FILL | gtk.EXPAND,
+#                          gtk.FILL)
+#             button = gtk.Button("Open file...")
+#             button.connect("clicked", self.on_choose_clicked, entry)
+#             button.show()
+#             table.attach(button, 3, 4, i, i + 1, gtk.FILL, gtk.FILL)
+
+#     def show(self, parent=None):
+#         self._fill_image_table(self.get_object("table"), self.images)
+#         Window.show(self, parent)
+
+
+# class ImageMapDialog(AbstractImageDialog):
+
+#     def __init__(self, images, deferred):
+#         self.images = images
+#         self.complete_d = deferred
+#         AbstractImageDialog.__init__(self)
+
+#     @destroy_on_exit
+#     def on_ImageDialog_response(self, dialog, response_id):
+#         if response_id == gtk.RESPONSE_OK:
+#             logger.debug(remap_completed)
+#             lst = []
+#             for name, entry in accumulate_data(self.get_object("table"),
+#                                                "image_name"):
+#                 path = entry.get_text()
+#                 if path:
+#                     lst.append((name, path))
+#             self.complete_d.callback(lst)
+#         else:
+#             logger.debug(remap_canceled)
+#             self.complete_d.errback(failure.Failure(ImportCanceled()))
+
+
+# class SaveImagesDialog(AbstractImageDialog):
+
+#     def __init__(self, brick_images, disk_images, deferred):
+#         self.bricks_images = brick_images
+#         self.complete_d = deferred
+#         self.images = [fp.basename() for fp in disk_images]
+#         AbstractImageDialog.__init__(self)
+
+#     def show(self, parent=None):
+#         self.set_text("Found the following images in the project, choose "
+#                       "where to save them or leave blank to delete them.")
+#         AbstractImageDialog.show(self, parent)
+
+#     def move_images(self, images):
+#         for name, entry in images:
+#             path = entry.get_text()
+#             if not path:
+#                 continue
+
+#     @destroy_on_exit
+#     def on_ImageDialog_response(self, dialog, response_id):
+#         if response_id == gtk.RESPONSE_OK:
+#             # logger.debug(remap_completed)
+#             # lst = []
+#             # for name, entry in accumulate_data(self.get_object("table"),
+#             #                                    "image_name"):
+#             #     path = entry.get_text()
+#             #     if path:
+#             #         lst.append((name, path))
+#             # self.complete_d.callback(lst)
+#             self.complete_d.errback(failure.Failure(ImportCanceled()))
+#         else:
+#             logger.debug(remap_canceled)
+#             self.complete_d.errback(failure.Failure(ImportCanceled()))

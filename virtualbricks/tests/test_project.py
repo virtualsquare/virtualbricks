@@ -15,6 +15,8 @@ class TestBase(object):
     def setUp(self):
         self.tmp = filepath.FilePath(self.mktemp())
         self.tmp.makedirs()
+        self.vimages = self.tmp.child("vimages")
+        self.vimages.makedirs()
         patch_settings(self, workspace=self.tmp.path,
                        current_project="new_project")
         self.manager = project.ProjectManager()
@@ -22,10 +24,8 @@ class TestBase(object):
         self.addCleanup(self.manager.close, self.factory)
 
     def create_project(self, name):
-        prj = self.tmp.child(name)
-        prj.makedirs()
-        prj.child(".project").touch()
-        return prj
+        prj = self.manager.create(name)
+        return prj.filepath
 
 
 class TestProject(TestBase, unittest.TestCase):
@@ -40,7 +40,7 @@ class TestProject(TestBase, unittest.TestCase):
             self.assertTrue(filepath.FilePath(prjname).exists())
 
         self.assert_initial_status()
-        prj = self.manager.create("test", self.factory, False)
+        prj = self.manager.create("test")
         self.patch(configfile, "restore", save_restore)
         self.patch(configfile, "save", save_restore)
         prj.save(self.factory)
@@ -49,7 +49,8 @@ class TestProject(TestBase, unittest.TestCase):
     def test_restore_project_set_virtualbricks_home(self):
         self.assert_initial_status()
         self.patch(configfile, "restore", lambda fa, fi: None)
-        prj = self.manager.create("test", self.factory)
+        prj = self.manager.create("test")
+        prj.restore(self.factory)
         self.assertEqual(prj.path, settings.VIRTUALBRICKS_HOME)
         self.assertNotEqual(settings.VIRTUALBRICKS_HOME,
                             settings.DEFAULT_HOME)
@@ -61,10 +62,11 @@ class TestProject(TestBase, unittest.TestCase):
         PROJECT1 = "new1"
         PROJECT2 = "new2"
         self.assert_initial_status()
-        self.manager.create(PROJECT1, self.factory, False)
+        self.manager.create(PROJECT1)
         prj1 = self.manager.open(PROJECT1, self.factory)
         self.assertIs(project.current, prj1)
-        prj2 = self.manager.create(PROJECT2, self.factory)
+        prj2 = self.manager.create(PROJECT2)
+        prj2.restore(self.factory)
         self.assertIs(project.current, prj2)
         prj3 = self.manager.open(PROJECT1, self.factory)
         self.assertIs(project.current, prj3)
@@ -73,7 +75,7 @@ class TestProject(TestBase, unittest.TestCase):
 
     def test_files(self):
         self.assert_initial_status()
-        prj = self.manager.create("test", self.factory, False)
+        prj = self.manager.create("test")
         files = [prj.filepath.child(".project")]
         self.assertEqual(list(prj.files()), files)
         afile = prj.filepath.child("file")
@@ -89,7 +91,7 @@ class TestProjectManager(TestBase, unittest.TestCase):
 
         # a file is not a project
         self.tmp.child("child1").touch()
-        self.create_project("prj1")
+        self.manager.create("prj1")
         # a directory without a .project file is not a project
         self.tmp.child("prj2").makedirs()
         self.assertEqual(list(self.manager), ["prj1"])
@@ -128,22 +130,22 @@ class TestProjectManager(TestBase, unittest.TestCase):
         """Create a project."""
 
         self.assertEqual(settings.get("current_project"), "new_project")
-        prj = self.manager.create("prj", self.factory)
-        self.assertEqual(settings.get("current_project"), prj.name)
+        prj = self.manager.create("prj")
+        self.assertNotEqual(settings.get("current_project"), prj.name)
         self.assertTrue(prj.dot_project().isfile())
 
     def test_create_project_already_exists(self):
         """Create a project but it exists already."""
 
-        self.create_project("prj")
+        self.manager.create("prj")
         self.assertRaises(errors.ProjectExistsError, self.manager.create,
-                          "prj", self.factory)
+                          "prj")
 
     def test_restore_last_project(self):
         """Restore last used project."""
 
         settings.set("current_project", "prj")
-        self.create_project("prj")
+        self.manager.create("prj")
         prj = project.restore_last(self.factory)
         self.assertEqual(prj.name, "prj")
 
@@ -171,7 +173,7 @@ class TestProjectManager(TestBase, unittest.TestCase):
         fp = self.tmp.child("prj")
         self.assertFalse(fp.exists())
         self.manager.delete("prj")
-        self.create_project("prj")
+        self.manager.create("prj")
         fp.changed()
         self.assertTrue(fp.exists())
         self.assertTrue(fp.child(".project").exists())
@@ -198,7 +200,7 @@ class TestImport(TestBase, unittest.TestCase):
     def get_vbp(self):
         return os.path.join(os.path.dirname(__file__), "test.vbp")
 
-    def null_mapper(self, i):
+    def null_mapper(self, i, project):
         return defer.succeed(())
 
     def patch_rebase_should_fail(self):
@@ -215,25 +217,24 @@ class TestImport(TestBase, unittest.TestCase):
     def test_import_wrong_file_type(self):
         """Raise an exception if the file is not a valid .vbp."""
 
-        d = self.manager.import2("test_project", __file__, None, None)
+        d = self.manager.import_vbp("test_project", __file__, None)
         return d.addErrback(self.assert_defer_fail, error.ProcessTerminated)
+
+    # def test_import(self):
+    #     """Simple import test."""
+
+    #     PROJECT_NAME = "test_import"
+    #     vbp = self.get_vbp()
+    #     d = self.manager.import_vbp(PROJECT_NAME, vbp, self.factory,
+    #                              lambda i: defer.succeed(()), False)
+    #     return d.addCallback(self.assert_project_equal, PROJECT_NAME, vbp)
 
     def test_import(self):
         """Simple import test."""
 
         PROJECT_NAME = "test_import"
         vbp = self.get_vbp()
-        d = self.manager.import2(PROJECT_NAME, vbp, self.factory,
-                                 lambda i: defer.succeed(()), False)
-        return d.addCallback(self.assert_project_equal, PROJECT_NAME, vbp)
-
-    def test_import2(self):
-        """Simple import test."""
-
-        PROJECT_NAME = "test_import"
-        vbp = self.get_vbp()
-        d = self.manager.import2(PROJECT_NAME, vbp, self.factory,
-                                 self.null_mapper, False)
+        d = self.manager.import_vbp(PROJECT_NAME, vbp, self.null_mapper)
         return d.addCallback(self.assert_project_equal, PROJECT_NAME, vbp)
 
     def test_failed_import_does_not_create_project(self):
@@ -243,22 +244,8 @@ class TestImport(TestBase, unittest.TestCase):
             self.assertEqual([], list(self.manager))
 
         self.patch_rebase_should_fail()
-        d = self.manager.import2("test", self.get_vbp(), self.factory,
-                                 self.null_mapper)
+        d = self.manager.import_vbp("test", self.get_vbp(), self.null_mapper)
         return d.addErrback(assert_cb)
-
-    def test_import_failed_does_not_call_restore(self):
-        """If manager.import fails, manager.restore is not called."""
-
-        def assert_cb(_, l):
-            self.assertEqual(l, [])
-
-        l = []
-        self.manager.restore = lambda p, f: l.append(1)
-        self.patch_rebase_should_fail()
-        d = self.manager.import2("test", self.get_vbp(), self.factory,
-                                 self.null_mapper)
-        return d.addErrback(assert_cb, l)
 
     def get_entry(self, string):
         return project.ProjectEntry.from_fileobj(StringIO.StringIO(string))
@@ -278,7 +265,7 @@ class TestImport(TestBase, unittest.TestCase):
         if isinstance(entry, basestring):
             entry = self.get_entry(PROJECT)
         if project is None:
-            project = self.manager.create("test", self.factory, False)
+            project = self.manager.create("test")
         self.prepare_rebase()
         return self.manager._ProjectManager__rebase(mapp, entry, project)
 
@@ -300,7 +287,7 @@ class TestImport(TestBase, unittest.TestCase):
         """If the path is empty do not rebase."""
 
         mapp = [("vtatpa.martin.qcow2", "")]
-        project = self.manager.create("test", self.factory, False)
+        project = self.manager.create("test")
         # create a fake cow file
         project.filepath.child("test_hda.cow").touch()
         d = self.rebase(mapp, PROJECT, project)
@@ -341,10 +328,10 @@ class TestTarArchive(unittest.TestCase):
         b = tmp.child("b")
         b.touch()
         files = ["a", "b"]
-        images = [a.path, b.path]
+        images = [("img_a", a.path), ("img_b", b.path)]
         self.archive.create("test.tgz", files, images, self.run_process)
-        expected = ["cfzh", "test.tgz", "-C", self.tmp, "a", "b", ".images/a",
-                    ".images/b"]
+        expected = ["cfzh", "test.tgz", "-C", self.tmp, "a", "b",
+                    ".images/img_a", ".images/img_b"]
         self.assertEqual(self.args, expected)
 
 

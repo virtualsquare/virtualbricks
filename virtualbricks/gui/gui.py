@@ -2143,7 +2143,10 @@ class VBGUI(gobject.GObject, TopologyMixin):
                                         self.get_object("main_win"))
 
     def on_import_menuitem_activate(self, menuitem):
-        d = dialogs.ImportProjectDialog(self.brickfactory, ProgressBar(self))
+        # d = dialogs.ImportProjectDialog(self.brickfactory, ProgressBar(self))
+        # d.on_destroy = self.set_title_default
+        # d.show(self.get_object("main_win"))
+        d = dialogs.ImportDialog()
         d.on_destroy = self.set_title_default
         d.show(self.get_object("main_win"))
 

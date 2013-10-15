@@ -76,10 +76,11 @@ class Tgz:
                 if e.errno != errno.ENOENT:
                     return defer.fail(failure.Failure(e))
             imgs.makedirs()
-            for image in map(filepath.FilePath, images):
-                if image.exists():
-                    link = imgs.child(image.basename())
-                    image.linkTo(link)
+            for name, image in images:
+                fp = filepath.FilePath(image)
+                if fp.exists():
+                    link = imgs.child(name)
+                    fp.linkTo(link)
                     args.append("/".join(link.segmentsFrom(prjpath)))
         d = run(self.exe_c, args, os.environ)
         d.addCallback(_complain_on_error)
@@ -203,7 +204,9 @@ class ProjectManager:
     def open(self, name, factory):
         fp = self.project_path(name)
         try:
-            return self.restore(Project(fp), factory)
+            prj = Project(fp)
+            prj.restore(factory)
+            return prj
         except EnvironmentError as e:
             if e.errno in (errno.ENOENT, errno.ENOTDIR):
                 raise errors.ProjectNotExistsError(name)
@@ -219,7 +222,7 @@ class ProjectManager:
         project.restore(factory)
         return project
 
-    def create(self, name, factory, open=True):
+    def create(self, name):
         project = Project(self.project_path(name))
         try:
             project.filepath.makedirs()
@@ -231,8 +234,6 @@ class ProjectManager:
         else:
             project.filepath.child(".project").touch()
             logger.debug(create_project, name=name)
-            if open:
-                return self.restore(project, factory)
             return project
 
     def close(self, factory):
@@ -253,17 +254,31 @@ class ProjectManager:
             if e.errno != errno.ENOENT:
                 raise
 
-    def import2(self, name, vbppath, factory, map_cb, open=True):
+    def extract(self, name, vbppath, overwrite=False):
         try:
-            project = self.create(name, factory, False)
+            try:
+                project = self.create(name)
+            except errors.ProjectExistsError:
+                if not overwrite:
+                    self.delete(name)
+                    project = self.create(name)
+                else:
+                    raise
+        except:
+            return defer.fail()
+        logger.debug(extract_project)
+        deferred = self.archive.extract(vbppath, project.filepath.path)
+        return deferred.addCallback(lambda _: project)
+
+    def import_vbp(self, name, vbppath, map_cb):
+        try:
+            project = self.create(name)
         except:
             return defer.fail()
         deferred = self.__extract(vbppath, project.filepath.path)
         deferred.addCallback(self.__map_images, map_cb, project)
         deferred.addCallback(lambda _: project)
         deferred.addErrback(pass_through(self.delete, name))
-        if open:
-            deferred.addCallback(self.restore, factory)
         return deferred
 
     def __extract(self, vbpname, path):
@@ -273,7 +288,7 @@ class ProjectManager:
     def __map_images(self, _, map_cb, project):
         with project.dot_project().open() as fp:
             entry = ProjectEntry.from_fileobj(fp)
-        d = map_cb(entry.get_images())
+        d = map_cb([n for ((_, n), _) in entry.get_images()], project)
         return d.addCallback(self.__rebase, entry, project)
 
     def __rebase(self, new_map, prjentry, project):
@@ -327,6 +342,13 @@ class Project:
         return self.filepath.basename()
 
     def restore(self, factory):
+        logger.debug(restore_project, name=self.name)
+        manager.close(factory)
+        global current
+        current = self
+        settings.set("current_project", self.name)
+        settings.VIRTUALBRICKS_HOME = self.path
+        settings.store()
         configfile.restore(factory, self.dot_project().path)
 
     def save(self, factory):
@@ -337,6 +359,16 @@ class Project:
 
     def dot_project(self):
         return self.filepath.child(".project")
+
+    def imported_images(self):
+        path = self.filepath.child(".images")
+        if path.isdir():
+            return path.children()
+        return []
+
+    def get_descriptor(self):
+        with self.dot_project().open() as fp:
+            return ProjectEntry.from_fileobj(fp)
 
 
 def restore_last_project(factory):
@@ -352,13 +384,17 @@ def restore_last_project(factory):
         return manager.open(name, factory)
     except errors.ProjectNotExistsError:
         if DEFAULT_PROJECT_RE.match(name):
-            return manager.create(name, factory, open=True)
+            prj = manager.create(name)
+            prj.restore(factory)
+            return prj
         else:
             logger.error(cannot_find_project, name=name)
             for i in itertools.count():
                 name = "{0}_{1}".format(settings.DEFAULT_PROJECT, i)
                 try:
-                    return manager.create(name, factory, open=True)
+                    prj = manager.create(name)
+                    prj.restore(factory)
+                    return prj
                 except errors.ProjectExistsError:
                     pass
 
