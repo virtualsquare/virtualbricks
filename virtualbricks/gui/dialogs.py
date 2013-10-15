@@ -132,7 +132,8 @@ remap_canceled = log.Event("Remap canceled by the user.")
 remap_completed = log.Event("Remap finished.")
 rebase = log.Event("Rebasing {cow} to {basefile}")
 rebase_error = log.Event("Error on rebase")
-image_not_exists = log.Event("Cannot save image, file does not exists: {file}")
+image_not_exists = log.Event("Cannot save image to {destination}, file does "
+                             "not exists: {source}")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -1493,6 +1494,21 @@ class ImportDialog(Window):
     images = None
     step2 = False
 
+    def show(self, parent=None):
+        col1 = self.get_object("pathcolumn1")
+        cell1 = self.get_object("cellrenderertext2")
+        col1.set_cell_data_func(cell1, set_path, 1)
+        col2 = self.get_object("pathcolumn2")
+        cell2 = self.get_object("cellrenderertext4")
+        col2.set_cell_data_func(cell2, set_path, 1)
+        view1 = self.get_object("treeview1")
+        view1.connect("button_press_event", self.on_button_press_event, col1,
+                      self.get_save_filechooserdialog)
+        view2 = self.get_object("treeview2")
+        view2.connect("button_press_event", self.on_button_press_event, col2,
+                      self.get_map_filechooserdialog)
+        Window.show(self, parent)
+
     def get_project_name(self):
         return self.get_object("prjname_entry").get_text()
 
@@ -1561,14 +1577,14 @@ class ImportDialog(Window):
         model = self.get_object("liststore2")
         model.clear()
         for name in self.project_images:
-            if name not in imgs:
-                model.append((name, None))
-            else:
-                model.append((name, imgs[name]))
-        if all(path for name, path in iter_model(model)):
-            assistant.set_page_complete(page, True)
-        else:
-            assistant.set_page_complete(page, False)
+            model.append((name, imgs.get(name)))
+        assistant.set_page_complete(page,
+                all(path for name, path in iter_model(model)))
+        # XXX
+        # if all(path for name, path in iter_model(model)):
+        #     assistant.set_page_complete(page, True)
+        # else:
+        #     assistant.set_page_complete(page, False)
 
     def step_4(self, assistant, page):
         assistant.commit()
@@ -1582,8 +1598,8 @@ class ImportDialog(Window):
                     fp.moveTo(path)
                 except OSError as e:
                     if e.errno == errno.ENOENT:
-                        import pdb; pdb.set_trace()
-                        logger.error(image_not_exists, file=path.path)
+                        logger.error(image_not_exists, source=fp.path,
+                                     destination=path.path)
                         continue
                     else:
                         raise
@@ -1644,20 +1660,10 @@ class ImportDialog(Window):
                                            gtk.FILE_CHOOSER_ACTION_OPEN,
                                            gtk.STOCK_OPEN)
 
-    def show(self, parent=None):
-        col1 = self.get_object("pathcolumn1")
-        cell1 = self.get_object("cellrenderertext2")
-        col1.set_cell_data_func(cell1, set_path, 1)
-        col2 = self.get_object("pathcolumn2")
-        cell2 = self.get_object("cellrenderertext4")
-        col2.set_cell_data_func(cell2, set_path, 1)
-        view1 = self.get_object("treeview1")
-        view1.connect("button_press_event", self.on_button_press_event, col1,
-                      self.get_save_filechooserdialog)
-        view2 = self.get_object("treeview2")
-        view2.connect("button_press_event", self.on_button_press_event, col2,
-                      self.get_map_filechooserdialog)
-        Window.show(self, parent)
+    def on_liststore2_row_changed(self, model, path, iter):
+        assistant = self.widget
+        assistant.set_page_complete(assistant.get_nth_page(3),
+                all(path for name, path in iter_model(model)))
 
     def on_ImportDialog_prepare(self, assistant, page):
         func = getattr(self, "step_{0}".format(assistant.get_current_page()))
@@ -1732,8 +1738,9 @@ class ImportDialog(Window):
                 chooser = dialog_factory(model, path)
                 itr = model.get_iter(path)
                 filename = model.get_value(itr, self.PATH)
-                if not chooser.set_filename(filename):
-                    chooser.set_current_name(os.path.basename(filename))
+                if filename is not None:
+                    if not chooser.set_filename(filename.path):
+                        chooser.set_current_name(filename.basename())
                 chooser.show()
                 return True
 
@@ -1741,6 +1748,7 @@ class ImportDialog(Window):
         if response_id == gtk.RESPONSE_OK:
             filename = dialog.get_filename()
             if filename is not None:
-                model.set_value(model.get_iter(path), self.PATH, filename)
+                model.set_value(model.get_iter(path), self.PATH,
+                                filepath.FilePath(filename))
         dialog.destroy()
         return True

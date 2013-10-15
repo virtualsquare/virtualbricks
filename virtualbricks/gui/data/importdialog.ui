@@ -317,5 +317,6 @@
       <!-- column-name path -->
       <column type="PyObject"/>
     </columns>
+    <signal name="row-changed" handler="on_liststore2_row_changed" swapped="no"/>
   </object>
 </interface>
