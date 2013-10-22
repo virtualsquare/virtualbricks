@@ -216,7 +216,7 @@ class TestProjectManager(TestBase, unittest.TestCase):
         vbppath = os.path.join(os.path.dirname(__file__), "test.vbp")
         d = self.manager.extract(PRJNAME, vbppath, True)
         prj = successResultOf(self, d)
-        self.assertEqual(prj.path, path.path)
+        self.assertEqual(prj.filepath, path)
 
 
 class TestTarArchive(unittest.TestCase):

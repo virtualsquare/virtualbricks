@@ -175,9 +175,9 @@ class GtkTestCase(unittest.TestCase):
         for i in range(tree1.get_n_columns()):
             type1 = tree1.get_column_type(i)
             type2 = tree2.get_column_type(i)
-            msg = "Invalid type for column {0}: {1}, {2}".format(i, type1,
-                                                                 type2)
-            self.assertEqual(type1, type2, msg)
+            tmsg = "Invalid type for column {0}: {1}, {2}".format(i, type1,
+                                                                  type2)
+            self.assertEqual(type1, type2, tmsg)
         root1 = tree1.get_iter_root()
         root2 = tree2.get_iter_root()
         self.assert_subtree_model_equal(tree1, root1, tree2, root2, msg)
@@ -196,14 +196,6 @@ class GtkTestCase(unittest.TestCase):
             itr1 = tree1.iter_next(itr1)
             itr2 = tree2.iter_next(itr2)
 
-    def assert_page_complete(self, assistant, page_num, msg=None):
-        page = assistant.get_nth_page(page_num)
-        self.assertTrue(assistant.get_page_complete(page), msg)
-
-    def assert_page_not_complete(self, assistant, page_num, msg=None):
-        page = assistant.get_nth_page(page_num)
-        self.assertFalse(assistant.get_page_complete(page), msg)
-
     def assert_visible(self, widget, msg=None):
         if not msg:
             msg = ("widget {0} is not visible when it is expected it "
@@ -215,10 +207,3 @@ class GtkTestCase(unittest.TestCase):
             msg = ("widget {0} is visible when it is expected it is "
                    "not.".format(widget))
         self.assertFalse(widget.get_visible(), msg)
-
-    def assert_current_page(self, assistant, num, msg=None):
-        curr = assistant.get_current_page()
-        if not msg:
-            msg = ("Wrong assistant current page. Actual page is {0}, "
-                   "expected {1}".format(curr, num))
-        self.assertEqual(num, curr, msg)

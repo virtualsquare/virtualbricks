@@ -1,17 +1,10 @@
-import os
-import functools
-
 import gtk
 from twisted.internet import defer
 from twisted.python import filepath
 
-from virtualbricks import project
+from virtualbricks import project, errors
 from virtualbricks.gui import dialogs
-from virtualbricks.tests import unittest, GtkTestCase, test_project
-
-
-def gtk_null_iterations():
-    return int(os.environ.get("VIRTUALBRICKS_GTK_ITERATIONS", 1000))
+from virtualbricks.tests import unittest, GtkTestCase, failureResultOf
 
 
 class Object:
@@ -242,172 +235,383 @@ class TestImageMapDialog(unittest.TestCase):
         self.assertEqual(lst, expected)
 
 
-def ignore(func, *args, **kwds):
-    @functools.wraps(func)
-    def wrapper(_):
-        return func(*args, **kwds)
-    return wrapper
-
-
 def sort_model(model, iter1, iter2, column):
     return cmp(model[iter1][column], model[iter2][column])
 
 
-class TestImportDialog(test_project.TestBase, GtkTestCase):
+# class TestImportDialog(test_project.TestBase, GtkTestCase):
 
-    def setUp(self):
-        test_project.TestBase.setUp(self)
-        self.dialog = dialogs.ImportDialog()
-        self.assistant = self.dialog.widget
+#     def setUp(self):
+#         test_project.TestBase.setUp(self)
+#         self.dialog = dialogs.ImportDialog()
+#         self.assistant = self.dialog.widget
+#         self.addCleanup(self.assistant.destroy)
+#         self.assistant.handler_block_by_func(
+#             self.dialog.on_ImportDialog_prepare)
 
-    def get_page(self, num):
-        return self.assistant.get_nth_page(num)
+#     def get_page(self, num):
+#         return self.assistant.get_nth_page(num)
 
-    def block_prepare_signal(method):
-        @functools.wraps(method)
-        def wrapper(self):
-            def cb(passthru):
-                self.assistant.handler_unblock_by_func(
-                    self.dialog.on_ImportDialog_prepare)
-                return passthru
-            self.assistant.handler_block_by_func(
-                self.dialog.on_ImportDialog_prepare)
-            return defer.maybeDeferred(method, self).addBoth(cb)
-        return wrapper
+#     def go(self, name):
+#         return self.dialog.get_object(name)
 
-    def go(self, name):
-        return self.dialog.get_object(name)
+#     def get_archive(self):
+#         return self.go("filechooserbutton").get_filename()
 
-    def get_archive(self):
-        return self.go("filechooserbutton").get_filename()
+#     def set_archive(self, name):
+#         return self.go("filechooserbutton").set_filename(name)
 
-    def set_archive(self, name):
-        return self.go("filechooserbutton").set_filename(name)
+#     def set_project_name(self, name):
+#         self.go("prjname_entry").set_text(name)
 
-    def set_project_name(self, name):
-        self.go("prjname_entry").set_text(name)
+#     def get_project_name(self):
+#         return self.go("prjname_entry").get_text()
+
+#     def set_overwrite_project(self, flag):
+#         self.go("overwritecheckbutton").set_active(flag)
+
+#     def test_initial_status_page_0(self):
+#         self.assert_not_visible(self.go("overwritecheckbutton"))
+#         self.assert_not_visible(self.go("warn_label"))
+#         self.assert_page_not_complete(self.assistant, 0)
+
+#     def test_project_exists(self):
+#         """
+#         If the project exists a warning and an option to overwrite are showed.
+#         """
+
+#         TESTNAME = "test"
+#         self.manager.create(TESTNAME)
+#         self.set_project_name(TESTNAME)
+#         self.assert_visible(self.go("overwritecheckbutton"))
+#         self.assert_visible(self.go("warn_label"))
+#         self.assert_page_not_complete(self.assistant, 0)
+
+#     def test_project_exists_overwrite(self):
+#         """If the overwrite checkbutton is active, the label is not shown."""
+
+#         TESTNAME = "test"
+#         self.manager.create(TESTNAME)
+#         self.set_project_name(TESTNAME)
+#         self.set_overwrite_project(True)
+#         self.assert_visible(self.go("overwritecheckbutton"))
+#         self.assert_not_visible(self.go("warn_label"))
+#         self.assert_page_complete(self.assistant, 0)
+
+class ImportDialogStub:
+
+    destroied = False
+    step2 = False
+    project = None
+    images = None
+
+    def __init__(self, project_name=None, archive=None, overwrite=False,
+                 page=0):
+        self.project_name = project_name
+        self.archive = archive
+        self.curr_page = page
+        self.overwrite = overwrite
+        self.page_complete = {}
+        self.page_commit = set()
+
+    def commit(self):
+        self.page_commit.add(self.curr_page)
+
+    def set_page_complete(self, page=None, complete=True):
+        self.page_complete[page or self.curr_page] = complete
+
+    def get_current_page(self):
+        return self.curr_page
+
+    def goto_next_page(self):
+        self.curr_page += 1
 
     def get_project_name(self):
-        return self.go("prjname_entry").get_text()
+        return self.project_name
 
-    def set_open_project(self, flag):
-        self.go("opencheckbutton").set_active(flag)
+    def set_project_name(self, name):
+        self.project_name = name
 
-    def set_overwrite_project(self, flag):
-        self.go("overwritecheckbutton").set_active(flag)
+    def get_archive(self):
+        return self.archive
 
-    def test_initial_status_page_0(self):
-        self.assert_not_visible(self.go("overwritecheckbutton"))
-        self.assert_not_visible(self.go("warn_label"))
-        self.assert_page_not_complete(self.assistant, 0)
+    def set_archive(self, path):
+        self.archive = path
 
-    def test_project_exists(self):
+    def get_overwrite(self):
+        return self.overwrite
+
+    def set_overwrite(self, value):
+        self.overwrite = bool(value)
+
+    def destroy(self):
+        assert not self.destroied, "Dialog already destroied"
+        self.destroied = True
+
+    def get_object(self, name):
+        return None
+
+
+class ProjectManager(project.ProjectManager):
+
+    def __init__(self, path):
+        self.workspace = filepath.FilePath(path)
+        self.workspace.makedirs()
+
+    def project_path(self, name):
+        try:
+            return self.workspace.child(name)
+        except filepath.InsecurePath:
+            raise errors.InvalidNameError(name)
+
+
+class TestHumbleImport(GtkTestCase):
+
+    project_name = "test"
+    archive = "/import/project.vbp"
+    overwrite = False
+    page = 0
+
+    def setUp(self):
+        self.humble = dialogs._HumbleImport()
+        self.manager = ProjectManager(self.mktemp())
+        self.dialog = ImportDialogStub(self.project_name, self.archive,
+                                       self.overwrite, self.page)
+
+    def assert_page_complete(self, page, msg=None):
+        if msg is None:
+            msg = "Page %s is not set as complete" % page
+        self.assertIn(page, self.dialog.page_complete, msg)
+        self.assertTrue(self.dialog.page_complete[page], msg)
+
+    def assert_page_not_complete(self, page, msg=None):
+        if msg is None:
+            msg = "Page %s is set as complete" % page
+        if page in self.dialog.page_complete:
+            self.assertFalse(self.dialog.page_complete[page], msg)
+
+    def assert_current_page(self, num, msg=None):
+        curr = self.dialog.get_current_page()
+        if not msg:
+            msg = ("Wrong assistant current page. Actual page is {0}, "
+                   "expected {1}".format(curr, num))
+        self.assertEqual(num, curr, msg)
+
+    def assert_page_commit(self, msg=None):
+        self.assertIn(self.page, self.dialog.page_commit, msg)
+
+
+class TestHumbleImportStep1(TestHumbleImport):
+
+    page = 1
+    extract_args = None
+
+    def setUp(self):
+        TestHumbleImport.setUp(self)
+
+    def extract(self, *args):
+        self.extract_args = args
+        self.prj = self.manager.create("test")
+        return defer.succeed(self.prj)
+
+    def test_step_1_commit_page(self):
+        """When the project is extracted, you cannot get back."""
+
+        self.humble.step_1(self.dialog, self.extract)
+        self.assert_page_commit()
+        self.assert_current_page(2)
+
+    def test_step_1_extract_args(self):
         """
-        If the project exists a warning and an option to overwrite are showed.
+        The extract function is called with the project name, the path of the
+        archive and the overwrite flag.
         """
 
-        TESTNAME = "test"
-        self.manager.create(TESTNAME)
-        self.set_project_name(TESTNAME)
-        self.assert_visible(self.go("overwritecheckbutton"))
-        self.assert_visible(self.go("warn_label"))
-        self.assert_page_not_complete(self.assistant, 0)
+        self.humble.step_1(self.dialog, self.extract)
+        self.assertEqual(self.extract_args, (self.dialog.get_project_name(),
+                                             self.dialog.get_archive(),
+                                             self.dialog.get_overwrite()))
 
-    def test_project_exists_overwrite(self):
-        """If the overwrite checkbutton is active, the label is not shown."""
+    def test_step_1_state(self):
+        """
+        After the step 1, project and images attributes are set in the humble
+        object.
+        """
 
-        TESTNAME = "test"
-        self.manager.create(TESTNAME)
-        self.set_project_name(TESTNAME)
-        self.set_overwrite_project(True)
-        self.assert_visible(self.go("overwritecheckbutton"))
-        self.assert_not_visible(self.go("warn_label"))
-        self.assert_page_complete(self.assistant, 0)
+        self.humble.step_1(self.dialog, self.extract)
+        self.assertIs(self.dialog.project, self.prj)
+        self.assertEqual(self.dialog.images, {})
 
-    def assert_not_fail(self, deferred):
-        def eb(fail):
-            self.fail("Operation failed unexpectedly. Error message: %s." %
-                      fail.getErrorMessage())
-            return fail
-        return deferred.addErrback(eb)
+    def test_step_1_import_error(self):
+        """If the import fails, destroy the assistant."""
 
-    def step_1(self):
-        self.patch(project, "manager", self.manager)
-        self.set_project_name("test")
-        self.assertEqual(self.get_project_name(), "test")
-        self.set_overwrite_project(True)
-        archive = os.path.join(os.path.dirname(__file__), "test.vbp")
-        self.assertTrue(self.set_archive(archive))
-        num_iter = gtk_null_iterations()
-        for i in xrange(num_iter):  # :/
-            gtk.main_iteration(False)
-        self.assertIsNot(self.get_archive(), None,
-                         "Archive project not set. This is a problem of gtk "
-                         "2.24.10 and who knows what others versions. It this "
-                         "assertion fails, increase the number of iterations "
-                         "the gtk loop performes before the check. Actual "
-                         "number of iterations: %s, try setting the "
-                         "VIRTUALBRICKS_GTK_ITERATIONS environment variable "
-                         "to with %s" % (num_iter, num_iter * 10))
-        return self.dialog.step_1(self.assistant, self.get_page(1))
+        extract = lambda *a: defer.fail(RuntimeError())
+        d = self.humble.step_1(self.dialog, extract)
+        failureResultOf(self, d, RuntimeError)
+        self.flushLoggedErrors(RuntimeError)
+        self.assertTrue(self.dialog.destroied)
 
-    def step_1_cb(self, _):
-        # these values are hard coded in test.vbp
-        self.assertEqual(self.dialog.get_project_name(), "test")
-        self.assertEqual(self.dialog.get_open(), False)
-        self.assertIsNot(self.dialog.project, None)
-        self.assertEqual(self.dialog.imported_images, set())
-        self.assertEqual(self.dialog.project_images, {"vtatpa.martin.qcow2":
-                "/home/marco/.virtualenvs/virtualbricks/src/vb-debug/tmp/"
-                "vtatpa.martin.qcow2"})
-        self.assert_page_complete(self.assistant, 1)
-        self.assert_current_page(self.assistant, 2)
 
-    @block_prepare_signal
-    def test_step_1(self):
-        self.assistant.set_current_page(1)
-        return self.assert_not_fail(self.step_1()).addCallback(self.step_1_cb)
+class TestHumbleImportStep2(TestHumbleImport):
 
-    def get_imported_project_model(self):
-        TEST_IMAGE1 = "test_image"
-        TEST_IMAGE2 = "test_image2"
-        IMG1 = "1.img"
-        imported_images = set((TEST_IMAGE1, TEST_IMAGE2))
-        project_images = {TEST_IMAGE1: "/" + IMG1}
+    page = 2
+
+    def setUp(self):
+        TestHumbleImport.setUp(self)
+        self.model = gtk.ListStore(str, object, bool)
+        self.ipath = self.manager.workspace.child("vimages")
+        self.dialog.project = self.project = self.manager.create("test")
+        self.dialog.images = {}
+
+    def test_step_2_commit_page(self):
+        """No images are extracted, go to the next page."""
+
+        self.humble.step_2(self.dialog, self.model, self.ipath)
+        self.assert_page_commit()
+        self.assert_current_page(3)
+
+    def build_test_images(self, prj):
+        # fake some image
+        fp = prj.filepath.child(".images")
+        fp.makedirs()
+        fp.child("debian7.img").touch()
+        fp.child("ubuntu.img").touch()
+
+    def test_step_2_fill_save_model(self):
+        """Found some image, fill the model and don't go to the next page."""
+
+        self.build_test_images(self.project)
         model = gtk.ListStore(str, object, bool)
-        model.append((TEST_IMAGE1, self.vimages.child(IMG1), True))
-        model.append((TEST_IMAGE2, self.vimages.child(TEST_IMAGE2), True))
-        return imported_images, project_images, model
+        model.append(("debian7.img", self.ipath.child("debian7.img"), True))
+        model.append(("ubuntu.img", self.ipath.child("ubuntu.img"), True))
+        self.humble.step_2(self.dialog, self.model, self.ipath)
+        self.assert_tree_model_equal(self.model, model)
+        self.assert_page_commit()
+        self.assert_current_page(2)
 
-    @block_prepare_signal
-    def test_step_2(self):
-        self.dialog.project = self.manager.create("test")
-        iimgs, pimgs, model = self.get_imported_project_model()
-        self.dialog.imported_images = iimgs
-        self.dialog.project_images = pimgs
-        self.assertFalse(self.dialog.step2)
-        cur_page = self.assistant.get_current_page()
-        self.dialog.step_2(self.assistant, self.get_page(2))
-        self.assertTrue(self.dialog.step2)
-        self.assert_current_page(self.assistant, cur_page)
-        model2 = self.go("liststore1")
-        model2.set_default_sort_func(sort_model, 0)
-        self.assert_tree_model_equal(model, model2)
 
-    @block_prepare_signal
-    def test_step_3(self):
-        cur_page = self.assistant.get_current_page()
-        iimgs, pimgs, _ = self.get_imported_project_model()
-        self.dialog.project_images = pimgs
-        self.dialog.step_3(self.assistant, self.get_page(3))
-        self.assert_current_page(self.assistant, cur_page)
-        model = gtk.ListStore(str, object)
-        model.append(("test_image", None))
-        self.assert_tree_model_equal(self.go("liststore2"), model)
-        self.assert_page_not_complete(self.assistant, 3)
+class TestHumbleImportStep3(TestHumbleImport):
 
-    @block_prepare_signal
-    def test_step_4(self):
-        cur_page = self.assistant.get_current_page()
-        # self.dialog.step_4(self.assistant, self.get_page(4))
-        self.assert_current_page(self.assistant, cur_page)
+    page = 3
+
+    def setUp(self):
+        TestHumbleImport.setUp(self)
+        self.dialog.images = {}
+        self.store1 = gtk.ListStore(str, object, bool)
+        self.store2 = gtk.ListStore(str, object)
+
+    def test_no_images(self):
+        """
+        If the project does not require any image it should be importable.
+        """
+
+        self.assertEqual(len(self.dialog.images), 0)
+        self.humble.step_3(self.dialog, self.store1, self.store2)
+        self.assert_page_complete(3)
+
+    def test_simple(self):
+        """
+        The archive does not include images and the project uses one. The
+        assistant is stopped to this step.
+        """
+
+        self.dialog.images["test_image"] = "/vimages/test.img"
+        self.humble.step_3(self.dialog, self.store1, self.store2)
+        self.assert_page_not_complete(3)
+
+    def test_one_image_mapped(self):
+        """The archive include one image used by the project."""
+
+        self.dialog.images["test_image"] = ""
+        self.store1.append(("test_image", "/vimages/test.img", True))
+        self.humble.step_3(self.dialog, self.store1, self.store2)
+        self.assert_page_complete(3)
+
+    def test_one_image_not_mapped(self):
+        """The project require one image but is not mapped."""
+
+        self.dialog.images["test_image"] = ""
+        self.humble.step_3(self.dialog, self.store1, self.store2)
+        self.assert_page_not_complete(3)
+
+
+class TestHumbleImportStep4(TestHumbleImport):
+
+    page = 4
+
+    def setUp(self):
+        TestHumbleImport.setUp(self)
+        self.dialog.images = {}
+        self.store1 = gtk.ListStore(str, object, bool)
+        self.store2 = gtk.ListStore(str, object)
+        self.dialog.project = self.project = self.manager.create("test")
+
+    def test_no_come_back(self):
+        """Step 4 does not permit to come back."""
+
+        self.humble.step_4(self.dialog, self.store1, self.store2)
+        self.assert_page_commit()
+
+    def make_src_dest(self, *names):
+        source = filepath.FilePath(self.mktemp())
+        source.makedirs()
+        dest = filepath.FilePath(self.mktemp())
+        dest.makedirs()
+        ret = [source, dest]
+        for name in names:
+            src = source.child(name)
+            src.touch()
+            dst = dest.child(name)
+            ret.extend((src, dst))
+        return ret
+
+    def test_save_images(self):
+        """Move the selected images."""
+
+        NAME1, NAME2 = "image1", "image2"
+        src, _, _, dimg1, _, dimg2 = self.make_src_dest(NAME1, NAME2)
+        self.store1.append((NAME1, dimg1, True))
+        self.store1.append((NAME2, dimg2, False))
+        d = self.humble.save_images(self.store1, src)
+        self.assertEqual(d, {NAME1: dimg1})
+
+
+class AssistantStub:
+
+    def __init__(self):
+        self.completed = {}
+        self.current_page = 0
+        self.pages = []
+
+    def get_nth_page(self, num):
+        try:
+            return self.pages[num]
+        except IndexError:
+            return None
+
+    def get_current_page(self):
+        return self.current_page
+
+    def set_page_complete(self, page, complete):
+        self.completed[page] = complete
+
+
+class ImportDialog(dialogs.ImportDialog):
+
+    _assistant = None
+
+    @property
+    def assistant(self):
+        if self._assistant is None:
+            self._assistant = AssistantStub()
+        return self._assistant
+
+
+class TestImportDialog(unittest.TestCase):
+
+    def test_set_page_complete(self):
+        page = object()
+        dialog = ImportDialog()
+        dialog.assistant.pages = [page]
+        dialog.set_page_complete()
+        self.assertEqual(dialog.assistant.completed, {page: True})
