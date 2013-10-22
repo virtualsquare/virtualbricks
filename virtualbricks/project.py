@@ -22,7 +22,7 @@ import itertools
 import re
 
 from twisted.internet import utils, error, defer
-from twisted.python import filepath, failure
+from twisted.python import filepath
 
 from virtualbricks import settings, configfile, log, errors, configparser
 
@@ -74,7 +74,7 @@ class Tgz:
                 imgs.remove()
             except OSError as e:
                 if e.errno != errno.ENOENT:
-                    return defer.fail(failure.Failure(e))
+                    return defer.fail(e)
             imgs.makedirs()
             for name, image in images:
                 fp = filepath.FilePath(image)
@@ -300,6 +300,9 @@ class Project:
 
     def save(self, factory):
         configfile.save(factory, self.dot_project().path)
+
+    def delete(self):
+        manager.delete(self.name)
 
     def files(self):
         return (fp for fp in self.filepath.walk() if fp.isfile())
