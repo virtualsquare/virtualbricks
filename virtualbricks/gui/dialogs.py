@@ -78,7 +78,6 @@ results are not always excellent. A window at time conversion is highly
 advised and possible with gtk-builder-convert.
 """
 
-from __future__ import print_function
 import os
 import sys
 import errno
@@ -1419,9 +1418,36 @@ def complain_on_error(result):
 
 
 def set_path(column, cell_renderer, model, iter, colid):
-    # cell_renderer.props.text = model[iter][colid]
     path = model.get_value(iter, colid)
     cell_renderer.set_property("text",  path.path if path else "")
+
+
+class IImportDialog:
+
+    project = "A Project instance or None."
+    images = "A dict of images' names/images' path pairs."
+
+    def get_project_name(self):
+        """Return the project name or None if not set."""
+
+    def get_archive_path(self):
+        """Return the archive path or None if not set."""
+
+    def get_overwrite(self):
+        """Return True if an old project with the same name should be
+        overwritten."""
+
+    def set_page_complete(self):
+        """Set the current page as complete."""
+
+    def goto_next_page(self):
+        """Go to the next page/step."""
+
+    def destroy(self):
+        """Destroy the dialog."""
+
+    def commit(self):
+        """Mark the current step as cannot go back point."""
 
 
 class _HumbleImport:
@@ -1432,7 +1458,7 @@ class _HumbleImport:
     def step_1(self, dialog, extract=project.manager.extract,
                hook=None):
         dialog.commit()
-        d = extract(dialog.get_project_name(), dialog.get_archive(),
+        d = extract(dialog.get_project_name(), dialog.get_archive_path(),
                     dialog.get_overwrite())
         if hook:
             hook(d)
@@ -1587,10 +1613,7 @@ class ImportDialog(Window):
     step2 = False
     project = None
     images = None
-
-    def __init__(self):
-        Window.__init__(self)
-        self.humble = _HumbleImport()
+    humble = _HumbleImport()
 
     @property
     def assistant(self):
@@ -1612,7 +1635,7 @@ class ImportDialog(Window):
         Window.show(self, parent)
 
     def destroy(self):
-        self.widget.destroy()
+        self.assistant.destroy()
 
     # assistant method helpers
 
@@ -1636,7 +1659,7 @@ class ImportDialog(Window):
     def set_project_name(self, name):
         self.get_object("prjname_entry").set_text(name)
 
-    def get_archive(self):
+    def get_archive_path(self):
         return self.get_object("filechooserbutton").get_filename()
 
     def get_open(self):
@@ -1717,15 +1740,14 @@ class ImportDialog(Window):
         return True
 
     def on_prjname_entry_changed(self, entry):
-        filename = self.get_object("filechooserbutton").get_filename()
-        overwrite_btn = self.get_object("overwritecheckbutton")
-        self.set_import_sensitive(filename, entry.get_text(), overwrite_btn)
+        self.set_import_sensitive(self.get_archive_path(), entry.get_text(),
+                                  self.get_object("overwritecheckbutton"))
         return True
 
     def on_overwritecheckbutton_toggled(self, checkbutton):
-        filename = self.get_object("filechooserbutton").get_filename()
-        name = self.get_object("prjname_entry").get_text()
-        self.set_import_sensitive(filename, name, checkbutton)
+        self.set_import_sensitive(self.get_archive_path(),
+                                  self.get_object("prjname_entry").get_text(),
+                                  checkbutton)
         return True
 
     def set_import_sensitive(self, filename, name, overwrite_btn):

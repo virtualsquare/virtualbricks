@@ -332,7 +332,7 @@ class ImportDialogStub:
     def set_project_name(self, name):
         self.project_name = name
 
-    def get_archive(self):
+    def get_archive_path(self):
         return self.archive
 
     def set_archive(self, path):
@@ -429,7 +429,7 @@ class TestHumbleImportStep1(TestHumbleImport):
 
         self.humble.step_1(self.dialog, self.extract)
         self.assertEqual(self.extract_args, (self.dialog.get_project_name(),
-                                             self.dialog.get_archive(),
+                                             self.dialog.get_archive_path(),
                                              self.dialog.get_overwrite()))
 
     def test_step_1_state(self):
