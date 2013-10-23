@@ -15,12 +15,6 @@
     <signal name="cancel" handler="on_ImportDialog_cancel" swapped="no"/>
     <signal name="prepare" handler="on_ImportDialog_prepare" swapped="no"/>
     <child>
-      <placeholder/>
-    </child>
-    <child>
-      <placeholder/>
-    </child>
-    <child>
       <object class="GtkTable" id="intro_page">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
