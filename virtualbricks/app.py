@@ -29,6 +29,11 @@ from virtualbricks import _backport, settings
 
 class Options(usage.Options):
 
+    longdesc = """Virtualbricks - a vde/qemu gui written in python and
+    GTK/Glade.
+
+    Copyright (C) Virtualbricks team"""
+
     optFlags = [
         ["noterm", None, "Do not show the terminal."],
         ["daemon", None, ""]

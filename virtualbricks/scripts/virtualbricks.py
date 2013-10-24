@@ -15,38 +15,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""Usage: virtualbricks [-vqld] [-noterm]
-
-    -noterm             start the gui without the console
-
-    -v, --verbose       increase log verbosity
-    -q, --quiet         decrease log verbosity
-    -l, --logfile=      write log messages to file
-    -b, --debug         verbose debug output
-    -h, --help          print this help and exit
-
-Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-Copyright (C) Virtualbricks team
-"""
-
-from __future__ import print_function, absolute_import
-import sys
+from __future__ import absolute_import
 
 
 def run(argv=None):
-    if argv is None:
-        argv = sys.argv
-    if "-h" in argv or "--help" in argv:
-        print(__doc__)
-        return 0
-
     from virtualbricks.scripts import gui
     from virtualbricks import app
-
-    try:
-        idx = argv.index("-noterm")
-        argv[idx] = "--noterm"
-    except ValueError:
-        pass
 
     gui.run(app.LockedApplication(gui.application_factory))
