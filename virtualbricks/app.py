@@ -17,11 +17,14 @@
 
 from __future__ import print_function
 
+__metaclass__ = type
+
 import sys
 
-from twisted.python import usage
+from twisted.python import usage, lockfile
+from twisted.internet import defer
 
-from virtualbricks import _backport
+from virtualbricks import _backport, settings
 
 
 class Options(usage.Options):
@@ -67,3 +70,32 @@ def run_app(Application, config):
     except usage.error, ue:
         raise SystemExit("%s: %s" % (sys.argv[0], ue))
     _backport.react(Application(config).run, ())
+
+
+class _LockedApplication:
+
+    def __init__(self, config, lock=None):
+        self.config = config
+        self.lock = lock or lockfile.FilesystemLock(settings.LOCK_FILE)
+
+    def run(self, reactor):
+        if self.lock.lock():
+            reactor.addSystemEventTrigger("after", "shutdown",
+                                          self.lock.unlock)
+            app = self.application(self.config)
+            return app.run(reactor)
+        else:
+            msg = ("Another Virtualbricks instance is running and you cannot "
+                   "run more than one instance of it. If this is an "
+                   "error, please delete %s to start Virtualbricks" %
+                   self.lock.name)
+            return defer.fail(SystemExit(msg))
+
+
+def LockedApplication(application):
+    def init(config):
+        app = _LockedApplication(config)
+        app.application = application
+        return app
+
+    return init
