@@ -31,36 +31,17 @@ Copyright (C) Virtualbricks team
 
 from __future__ import print_function, absolute_import
 import sys
-from os.path import exists
-from os import getpid, remove
-from virtualbricks import _settings
 
-def rem_lock():
-    try: 
-	remove(_settings.LOCK_FILE)
-    except e:
-	pass
 
 def run(argv=None):
-
     if argv is None:
         argv = sys.argv
     if "-h" in argv or "--help" in argv:
         print(__doc__)
         return 0
 
-    try:
-	if not exists(_settings.LOCK_FILE):
-		f = open(_settings.LOCK_FILE,"w")
-		f.write(str(getpid()))
-		f.close()
-    	else:
-       		print("Another Virtualbricks instance is running. If this is an error, please delete /tmp/vb.lock to start Virtualbricks")
-		return 0
-    except e:
-	pass 
-
     from virtualbricks.scripts import gui
+    from virtualbricks import app
 
     try:
         idx = argv.index("-noterm")
@@ -68,8 +49,4 @@ def run(argv=None):
     except ValueError:
         pass
 
-    try:
-	gui.run()
-    finally:
-	print("Bye bye...")
-	rem_lock()
+    gui.run(app.LockedApplication(gui.application_factory))

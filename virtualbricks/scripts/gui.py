@@ -19,8 +19,14 @@ from __future__ import absolute_import
 from virtualbricks import app
 
 
-def run():
+def application_factory(config):
+    from virtualbricks.gui import gui
+    return gui.Application(config)
+
+
+def run(application=None):
     from twisted.internet import gtk2reactor
     gtk2reactor.install()
-    from virtualbricks.gui import gui
-    app.run_app(gui.Application, app.Options())
+    if not application:
+        application = application_factory
+    app.run_app(application, app.Options())
