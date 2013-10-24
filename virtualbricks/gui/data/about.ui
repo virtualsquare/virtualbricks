@@ -9,7 +9,7 @@
     <property name="program_name">Virtualbricks</property>
     <property name="version">(version unknown)</property>
     <property name="copyright" translatable="yes">Virtualbricks is licensed under the terms of the GPL (General Public License) Version 2.
-© 2011 Daniele Lacamera, Rainer Haage and the virtualbricks team on Launchpad.
+© 2013 the Virtualbricks team on Launchpad.
 
 VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.
 QEMU - Copyright © 2005-2011 Fabrice Bellard.
@@ -305,7 +305,8 @@ Francesco Apollonio
 Simone Abbati
 Pierre-Louis Bonicoli
 Rainer Haage
-Fabio Viola</property>
+Fabio Viola
+Marco Giusti</property>
     <property name="artists">All the icons are created by Fabio Viola
 and released under the terms of
 CC BY-NC-SA v.3
