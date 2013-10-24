@@ -202,3 +202,76 @@ def fmtsize(size):
             return "{0:.1f} {1}".format(size, unit)
         size /= 1024.0
     return "{0:.1f} TB".format(size)
+
+
+def copyTo(self, destination, followLinks=True):
+    """
+    Copies self to destination.
+
+    If self doesn't exist, an OSError is raised.
+
+    If self is a directory, this method copies its children (but not
+    itself) recursively to destination - if destination does not exist as a
+    directory, this method creates it.  If destination is a file, an
+    IOError will be raised.
+
+    If self is a file, this method copies it to destination.  If
+    destination is a file, this method overwrites it.  If destination is a
+    directory, an IOError will be raised.
+
+    If self is a link (and followLinks is False), self will be copied
+    over as a new symlink with the same target as returned by os.readlink.
+    That means that if it is absolute, both the old and new symlink will
+    link to the same thing.  If it's relative, then perhaps not (and
+    it's also possible that this relative link will be broken).
+
+    File/directory permissions and ownership will NOT be copied over.
+
+    If followLinks is True, symlinks are followed so that they're treated
+    as their targets.  In other words, if self is a link, the link's target
+    will be copied.  If destination is a link, self will be copied to the
+    destination's target (the actual destination will be destination's
+    target).  Symlinks under self (if self is a directory) will be
+    followed and its target's children be copied recursively.
+
+    If followLinks is False, symlinks will be copied over as symlinks.
+
+    @param destination: the destination (a FilePath) to which self
+        should be copied
+    @param followLinks: whether symlinks in self should be treated as links
+        or as their targets
+    """
+    if self.islink() and not followLinks:
+        os.symlink(os.readlink(self.path), destination.path)
+        return
+    # XXX TODO: *thorough* audit and documentation of the exact desired
+    # semantics of this code.  Right now the behavior of existent
+    # destination symlinks is convenient, and quite possibly correct, but
+    # its security properties need to be explained.
+    if self.isdir():
+        if not destination.exists():
+            destination.createDirectory()
+        for child in self.children():
+            destChild = destination.child(child.basename())
+            copyTo(child, destChild, followLinks)
+    elif self.isfile():
+        writefile = destination.open('w')
+        try:
+            readfile = self.open()
+            try:
+                while 1:
+                    # XXX TODO: optionally use os.open, os.read and O_DIRECT
+                    # and use os.fstatvfs to determine chunk sizes and make
+                    # *****sure**** copy is page-atomic; the following is
+                    # good enough for 99.9% of everybody and won't take a
+                    # week to audit though.
+                    chunk = readfile.read(self._chunkSize)
+                    writefile.write(chunk)
+                    if len(chunk) < self._chunkSize:
+                        break
+            finally:
+                readfile.close()
+        finally:
+            writefile.close()
+    elif not self.exists():
+        raise OSError(errno.ENOENT, "No such file or directory")

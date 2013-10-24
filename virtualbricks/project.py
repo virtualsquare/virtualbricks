@@ -25,7 +25,8 @@ import re
 from twisted.internet import utils, error, defer
 from twisted.python import filepath
 
-from virtualbricks import settings, configfile, log, errors, configparser
+from virtualbricks import (settings, configfile, log, errors, configparser,
+                           tools)
 
 
 logger = log.Logger()
@@ -304,7 +305,7 @@ class Project:
     def save_as(self, name, factory):
         self.save(factory)
         dst = self.filepath.sibling(name)
-        self.filepath.copyTo(dst)
+        tools.copyTo(self.filepath, dst)
 
     def files(self):
         return (fp for fp in self.filepath.walk() if fp.isfile())
