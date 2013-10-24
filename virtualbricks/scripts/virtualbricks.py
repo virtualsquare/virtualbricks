@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 
 def run(argv=None):
-    from virtualbricks.scripts import gui
+    from virtualbricks.scripts import vb
     from virtualbricks import app
 
-    gui.run(app.LockedApplication(gui.application_factory))
+    vb.run(app.LockedApplication(vb.application_factory))
