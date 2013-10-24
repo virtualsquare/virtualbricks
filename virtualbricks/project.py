@@ -301,6 +301,11 @@ class Project:
     def save(self, factory):
         configfile.save(factory, self.dot_project().path)
 
+    def save_as(self, name, factory):
+        self.save(factory)
+        dst = self.filepath.sibling(name)
+        self.filepath.copyTo(dst)
+
     def files(self):
         return (fp for fp in self.filepath.walk() if fp.isfile())
 
