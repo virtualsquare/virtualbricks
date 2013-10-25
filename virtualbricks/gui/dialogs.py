@@ -1795,3 +1795,44 @@ class ImportDialog(Window):
                                 filepath.FilePath(filename))
         dialog.destroy()
         return True
+
+
+class SaveAsDialog(Window):
+
+    resource = "data/saveas.ui"
+    home = filepath.FilePath(settings.DEFAULT_HOME)
+
+    def __init__(self, factory, projects):
+        Window.__init__(self)
+        self.factory = factory
+        self.model = model = self.get_object("liststore1")
+        for prj in projects:
+            model.append((prj, ))
+
+    def get_project_name(self):
+        return self.get_object("name_entry").get_text()
+
+    def set_invalid(self, invalid):
+        self.get_object("ok_button").set_sensitive(not invalid)
+
+    def on_name_entry_changed(self, entry):
+        name = entry.get_text()
+        try:
+            self.home.child(name)
+        except filepath.InsecurePath:
+            self.set_invalid(True)
+        else:
+            model = self.model
+            itr = model.get_iter_root()
+            while itr:
+                if model.get_value(itr, 0) == name:
+                    self.set_invalid(True)
+                    break
+                itr = model.iter_next(itr)
+            else:
+                self.set_invalid(False)
+
+    @destroy_on_exit
+    def on_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            project.current.save_as(self.get_project_name(), self.factory)

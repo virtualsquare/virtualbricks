@@ -24,7 +24,8 @@ import re
 from twisted.internet import utils, error, defer
 from twisted.python import filepath
 
-from virtualbricks import settings, configfile, log, errors, configparser
+from virtualbricks import (settings, configfile, log, errors, configparser,
+                           tools)
 
 
 logger = log.Logger()
@@ -300,6 +301,11 @@ class Project:
 
     def save(self, factory):
         configfile.save(factory, self.dot_project().path)
+
+    def save_as(self, name, factory):
+        self.save(factory)
+        dst = self.filepath.sibling(name)
+        tools.copyTo(self.filepath, dst)
 
     def delete(self):
         manager.delete(self.name)
