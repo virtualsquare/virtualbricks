@@ -101,13 +101,41 @@ class TestProject(TestBase, unittest.TestCase):
     def test_save_as(self):
         NEW_PROJET_NAME = "copy"
         FILENAME = "new_file"
-        factory = stubs.FactoryStub()
-        project = self.create_project("test", factory)
+        project = self.manager.create("test")
         project.filepath.child(FILENAME).touch()
-        project.save_as(NEW_PROJET_NAME, factory)
+        project.save_as(NEW_PROJET_NAME, stubs.FactoryStub())
         path = project.filepath.sibling(NEW_PROJET_NAME)
         self.assertTrue(path.isdir())
         self.assertTrue(path.child(FILENAME).isfile())
+
+    def test_rename(self):
+        """Rename a project."""
+
+        project = self.manager.create("test")
+        project.rename("test_rename")
+        self.assertEqual(project.name, "test_rename")
+
+    def test_rename_invalid(self):
+        """If an invalid name is given an exception is raised."""
+
+        project = self.manager.create("test")
+        self.assertRaises(errors.InvalidNameError, project.rename,
+                          "test/invalid")
+
+    def test_rename_invalid_pathological(self):
+        """If the name is really strange, the error is not raised."""
+
+        project = self.manager.create("test")
+        project.rename("test/../invalid")
+        self.assertEqual(project.name, "invalid")
+
+    def test_rename_exists(self):
+        """If a project with the same name exists an exception is raised."""
+
+        project = self.manager.create("test")
+        project = self.manager.create("test2")
+        self.assertRaises(errors.ProjectExistsError, project.rename,
+                          "test2")
 
 
 class TestProjectManager(TestBase, unittest.TestCase):
@@ -228,6 +256,18 @@ class TestProjectManager(TestBase, unittest.TestCase):
         d = self.manager.extract(PRJNAME, vbppath, True)
         prj = successResultOf(self, d)
         self.assertEqual(prj.filepath, path)
+
+    def test_exists(self):
+        """Test the existance of a project."""
+
+        NAME = "test"
+        self.assertFalse(self.manager.exists(NAME))
+        self.manager.create(NAME)
+        self.assertTrue(self.manager.exists(NAME))
+
+    def test_exists_bizarre_name(self):
+        self.assertRaises(errors.InvalidNameError, self.manager.exists,
+                          "test/bizarre")
 
 
 class TestTarArchive(unittest.TestCase):

@@ -1663,7 +1663,7 @@ class ImportDialog(Window):
     def get_overwrite(self):
         return self.get_object("overwritecheckbutton").get_active()
 
-    def _get_filechooserdialog(self, model, path, title, action, stock_id):
+    def get_filechooserdialog(self, model, path, title, action, stock_id):
         chooser = gtk.FileChooserDialog(title, self.window, action,
                 (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                  stock_id, gtk.RESPONSE_OK))
@@ -1679,12 +1679,12 @@ class ImportDialog(Window):
         return chooser
 
     def get_save_filechooserdialog(self, model, path):
-        return self._get_filechooserdialog(model, path, _("Save image as..."),
+        return self.get_filechooserdialog(model, path, _("Save image as..."),
                                            gtk.FILE_CHOOSER_ACTION_SAVE,
                                            gtk.STOCK_SAVE)
 
     def get_map_filechooserdialog(self, model, path):
-        return self._get_filechooserdialog(model, path, _("Map image as..."),
+        return self.get_filechooserdialog(model, path, _("Map image as..."),
                                            gtk.FILE_CHOOSER_ACTION_OPEN,
                                            gtk.STOCK_OPEN)
 

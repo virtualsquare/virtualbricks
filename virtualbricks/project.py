@@ -199,8 +199,7 @@ class ProjectManager:
             raise errors.InvalidNameError(name)
 
     def exists(self, name):
-        path = filepath.FilePath(settings.get("workspace"))
-        return path.child(name).exists()
+        return self.project_path(name).exists()
 
     def open(self, name, factory):
         fp = self.project_path(name)
@@ -306,6 +305,12 @@ class Project:
         self.save(factory)
         dst = self.filepath.sibling(name)
         tools.copyTo(self.filepath, dst)
+
+    def rename(self, name):
+        new = manager.create(name)
+        new.filepath.child(".project").remove()
+        self.filepath.moveTo(new.filepath)
+        self.filepath = new.filepath
 
     def delete(self):
         manager.delete(self.name)
