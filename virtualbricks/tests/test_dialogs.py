@@ -470,17 +470,14 @@ class TestHumbleImportStep2(TestHumbleImport):
         self.assert_page_commit()
         self.assert_current_page(3)
 
-    def build_test_images(self, prj):
-        # fake some image
-        fp = prj.filepath.child(".images")
-        fp.makedirs()
-        fp.child("debian7.img").touch()
-        fp.child("ubuntu.img").touch()
-
     def test_step_2_fill_save_model(self):
         """Found some image, fill the model and don't go to the next page."""
 
-        self.build_test_images(self.project)
+        # fake some image
+        fp = self.project.filepath.child(".images")
+        fp.makedirs()
+        fp.child("debian7.img").touch()
+        fp.child("ubuntu.img").touch()
         model = gtk.ListStore(str, object, bool)
         model.append(("debian7.img", self.ipath.child("debian7.img"), True))
         model.append(("ubuntu.img", self.ipath.child("ubuntu.img"), True))
@@ -574,6 +571,9 @@ class TestHumbleImportStep4(TestHumbleImport):
         self.store1.append((NAME2, dimg2, False))
         d = self.humble.save_images(self.store1, src)
         self.assertEqual(d, {NAME1: dimg1})
+
+    def test_remap_images(self):
+        """Remap the images """
 
 
 class AssistantStub:

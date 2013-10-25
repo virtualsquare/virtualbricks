@@ -1526,8 +1526,7 @@ class _HumbleImport:
     def get_images(self, dialog, entry, store1, store2):
         imagesfp = dialog.project.filepath.child(".images")
         imgs = self.save_images(store1, imagesfp)
-        self.remap_images(entry, imgs)
-        imgs.update(self.remap_images_2(entry, store2))
+        self.remap_images(entry, store2, imgs)
         with dialog.project.dot_project().open("w") as fp:
             entry.dump(fp)
         return imgs
@@ -1550,16 +1549,12 @@ class _HumbleImport:
                     saved[name] = destination
         return saved
 
-    def remap_images(self, entry, saved):
+    def remap_images(self, entry, store, saved):
         for name, destination in saved.iteritems():
             entry.remap_image(name, destination.path)
-
-    def remap_images_2(self, entry, store):
-        imgs = {}
         for name, path in iter_model(store):
-            entry.remap_image(name, path)
-            imgs[name] = path
-        return imgs
+            entry.remap_image(name, path.path)
+            saved[name] = path
 
     def rebase_all(self, dialog, images, entry):
         lst = []
