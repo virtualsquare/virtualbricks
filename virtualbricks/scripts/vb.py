@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -16,5 +15,18 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from virtualbricks.scripts import gui
-gui.run()
+from __future__ import absolute_import
+from virtualbricks import app
+
+
+def application_factory(config):
+    from virtualbricks.gui import gui
+    return gui.Application(config)
+
+
+def run(application=None):
+    from twisted.internet import gtk2reactor
+    gtk2reactor.install()
+    if not application:
+        application = application_factory
+    app.run_app(application, app.Options())

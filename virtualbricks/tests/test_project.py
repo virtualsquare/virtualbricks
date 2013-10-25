@@ -98,6 +98,17 @@ class TestProject(TestBase, unittest.TestCase):
         files.append(afile)
         self.assertEqual(sorted(prj.files()), sorted(files))
 
+    def test_save_as(self):
+        NEW_PROJET_NAME = "copy"
+        FILENAME = "new_file"
+        factory = stubs.FactoryStub()
+        project = self.create_project("test", factory)
+        project.filepath.child(FILENAME).touch()
+        project.save_as(NEW_PROJET_NAME, factory)
+        path = project.filepath.sibling(NEW_PROJET_NAME)
+        self.assertTrue(path.isdir())
+        self.assertTrue(path.child(FILENAME).isfile())
+
 
 class TestProjectManager(TestBase, unittest.TestCase):
 
