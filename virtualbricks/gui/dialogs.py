@@ -136,6 +136,8 @@ image_not_exists = log.Event("Cannot save image to {destination}, file does "
                              "not exists: {source}")
 invalid_step_assitant = log.Event("Assistant cannot handle step {num}")
 project_extracted = log.Event("Project has beed extracted in {path}")
+removing_temporary_project = log.Event("Remove temporary files in {path}")
+error_on_import_project = log.Event("An error occurred while import project")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -1374,31 +1376,6 @@ def pass_through(function, *args, **kwds):
     return wrapper
 
 
-class ProgressBar:
-
-    def __init__(self, progressbar):
-        self.progressbar = progressbar
-
-    def wait_for(self, something, *args):
-        if isinstance(something, defer.Deferred):
-            return self.wait_for_deferred(something)
-        elif hasattr(something, "__call__"):
-            return self.wait_for_action(something, *args)
-        raise RuntimeError("Invalid argument")
-
-    def wait_for_action(self, action, *args):
-        return self.wait_for_deferred(defer.maybeDeferred(action, *args))
-
-    def wait_for_deferred(self, deferred):
-        def stop():
-            lc.stop()
-
-        lc = task.LoopingCall(self.progressbar.pulse)
-        lc.start(0.2, False)
-        deferred.addBoth(pass_through(stop))
-        return deferred
-
-
 def iter_model(model, *columns):
     itr = model.get_iter_root()
     if not columns:
@@ -1422,74 +1399,86 @@ def set_path(column, cell_renderer, model, iter, colid):
     cell_renderer.set_property("text",  path.path if path else "")
 
 
-class IImportDialog:
+class Freezer:
 
-    project = "A Project instance or None."
-    images = "A dict of images' names/images' path pairs."
+    def __init__(self, freeze, unfreeze, parent):
+        self.freeze = freeze
+        self.unfreeze = unfreeze
+        builder = gtk.Builder()
+        res = graphics.get_filename("virtualbricks.gui", "data/userwait.ui")
+        builder.add_from_file(res)
+        self.progressbar = builder.get_object("progressbar")
+        self.window = builder.get_object("UserWaitWindow")
+        self.window.set_transient_for(parent)
+        self.window.set_modal(True)
 
-    def get_project_name(self):
-        """Return the project name or None if not set."""
+    def wait_for(self, something, *args):
+        if isinstance(something, defer.Deferred):
+            return self.wait_for_deferred(something)
+        elif hasattr(something, "__call__"):
+            return self.wait_for_action(something, *args)
+        raise RuntimeError("Invalid argument")
 
-    def get_archive_path(self):
-        """Return the archive path or None if not set."""
+    def wait_for_action(self, action, *args):
+        done = defer.maybeDeferred(action, *args)
+        return self.wait_for_deferred(done)
 
-    def get_overwrite(self):
-        """Return True if an old project with the same name should be
-        overwritten."""
+    def wait_for_deferred(self, deferred):
+        deferred.addBoth(self.stop, self.start())
+        return deferred
 
-    def set_page_complete(self):
-        """Set the current page as complete."""
+    def start(self):
+        self.freeze()
+        self.window.show_all()
+        lc = task.LoopingCall(self.progressbar.pulse)
+        lc.start(0.2, False)
+        return lc
 
-    def goto_next_page(self):
-        """Go to the next page/step."""
+    def stop(self, passthru, lc):
+        self.window.destroy()
+        self.unfreeze()
+        lc.stop()
+        return passthru
 
-    def destroy(self):
-        """Destroy the dialog."""
 
-    def commit(self):
-        """Mark the current step as cannot go back point."""
+class ProgressBar:
+
+    def __init__(self, dialog):
+        self.freezer = Freezer(lambda: None, lambda: None, dialog)
+
+    def wait_for(self, something, *args):
+        return self.freezer.wait_for(something, *args)
 
 
 class _HumbleImport:
 
-    def step_0(self, dialog):
-        pass
-
-    def step_1(self, dialog, extract=project.manager.extract,
-               hook=None):
-        dialog.commit()
-        d = extract(dialog.get_project_name(), dialog.get_archive_path(),
-                    dialog.get_overwrite())
-        if hook:
-            hook(d)
-        d.addCallback(self.extract_cb, dialog)
-        d.addErrback(self.extract_eb, dialog)
-        return d
+    def step_1(self, dialog, model, path, extract=project.manager.extract):
+        archive_path = dialog.get_archive_path()
+        if archive_path != dialog.archive_path:
+            if dialog.project:
+                dialog.project.delete()
+            dialog.archive_path = archive_path
+            d = extract(filepath._secureEnoughString(), archive_path)
+            d.addCallback(self.extract_cb, dialog)
+            d.addCallback(self.fill_model_cb, dialog, model, path)
+            d.addErrback(self.extract_eb, dialog)
+            return d
 
     def extract_cb(self, project, dialog):
         logger.debug(project_extracted, path=project.path)
         dialog.project = project
         dialog.images = dict((name, section["path"]) for (_, name), section in
                               project.get_descriptor().get_images())
-        dialog.set_page_complete()
-        dialog.goto_next_page()
+        return project
 
     def extract_eb(self, fail, dialog):
         logger.failure(extract_err, fail)
         dialog.destroy()
         return fail
 
-    def step_2(self, dialog, model, path):
-        if not dialog.step2:
-            dialog.step2 = True
-            dialog.commit()
-            self.fill_save_model(dialog, model,
-                                 dialog.project.imported_images(), path)
-            if len(model) == 0:
-                dialog.goto_next_page()
-
-    def fill_save_model(self, dialog, model, images, vipath):
-        for name in (fp.basename() for fp in images):
+    def fill_model_cb(self, project, dialog, model, vipath):
+        model.clear()
+        for name in (fp.basename() for fp in project.imported_images()):
             if name in dialog.images:
                 fp = vipath.child(os.path.basename(dialog.images[name]))
             else:
@@ -1501,8 +1490,8 @@ class _HumbleImport:
                 c += 1
             model.append((name, fp2, True))
 
-    def step_3(self, dialog, store1, store2):
-        """Step 3: map images."""
+    def step_2(self, dialog, store1, store2):
+        """Step 2: map images."""
 
         imgs = dict((name, path) for name, path, save in
                     iter_model(store1) if save)
@@ -1512,22 +1501,50 @@ class _HumbleImport:
         if len(store2) == 0 or all(p for (p,) in iter_model(store2, 1)):
             dialog.set_page_complete()
 
-    def step_4(self, dialog, store1, store2, hook=None):
-        dialog.commit()
-        entry = dialog.project.get_descriptor()
-        imgs = self.get_images(dialog, entry, store1, store2)
-        deferred = self.rebase_all(dialog, imgs, entry)
-        if hook is not None:
-            hook(deferred)
+    def step_3(self, dialog):
+        w = dialog.get_object
+        w("projectname_label").set_text(dialog.get_project_name())
+        path_label = w("projectpath_label")
+        path = dialog.project.filepath.sibling(dialog.get_project_name()).path
+        path_label.set_text(path)
+        path_label.set_tooltip_text(path)
+        w("open_label").set_text(str(dialog.get_open()))
+        w("overwrite_label").set_text(str(dialog.get_overwrite()))
+        iimgs = (name for name, s in iter_model(w("liststore1"), 0, 2) if s)
+        w("imported_label").set_text("\n".join(iimgs))
+        store = w("liststore2")
+        vbox = w("vbox1")
+        vbox.foreach(vbox.remove)
+        for i, (name, dest) in enumerate(iter_model(store)):
+            nlabel = gtk.Label(name + ":")
+            nlabel.set_alignment(0.0, 0.5)
+            dlabel = gtk.Label(dest.path)
+            dlabel.set_tooltip_text(dest.path)
+            dlabel.set_alignment(0.0, 0.5)
+            dlabel.set_ellipsize(pango.ELLIPSIZE_MIDDLE)
+            box = gtk.HBox(spacing=5)
+            box.pack_start(nlabel, False, True, 0)
+            box.pack_start(dlabel, True, True, 0)
+            vbox.pack_start(box, False, True, 3)
+            box.show_all()
+
+    def apply(self, project, name, factory, overwrite, open, store1, store2):
+        entry = project.get_descriptor()
+        imgs = self.get_images(project, entry, store1, store2)
+        deferred = self.rebase_all(project, imgs, entry)
         deferred.addCallback(self.check_rebase)
-        deferred.addCallback(lambda a: dialog.goto_next_page())
+        deferred.addCallback(lambda a: project.rename(name, overwrite))
+        if open:
+            deferred.addCallback(pass_through(project.restore, factory))
+        deferred.addErrback(pass_through(project.delete))
+        deferred.addErrback(logger.failure_eb, error_on_import_project)
         return deferred
 
-    def get_images(self, dialog, entry, store1, store2):
-        imagesfp = dialog.project.filepath.child(".images")
+    def get_images(self, project, entry, store1, store2):
+        imagesfp = project.filepath.child(".images")
         imgs = self.save_images(store1, imagesfp)
         self.remap_images(entry, store2, imgs)
-        with dialog.project.dot_project().open("w") as fp:
+        with project.dot_project().open("w") as fp:
             entry.dump(fp)
         return imgs
 
@@ -1556,12 +1573,12 @@ class _HumbleImport:
             entry.remap_image(name, path.path)
             saved[name] = path
 
-    def rebase_all(self, dialog, images, entry):
+    def rebase_all(self, project, images, entry):
         lst = []
         for name, path in images.iteritems():
             for vmname, dev in entry.device_for_image(name):
                 cow_name = "{0}_{1}.cow".format(vmname, dev)
-                cow = dialog.project.filepath.child(cow_name)
+                cow = project.filepath.child(cow_name)
                 if cow.exists():
                     logger.debug(log_rebase, cow=cow.path, basefile=path.path)
                     lst.append(self.rebase(path.path, cow.path))
@@ -1577,38 +1594,19 @@ class _HumbleImport:
             if not success:
                 logger.error(rebase_error, log_failure=status)
 
-    def step_5(self, dialog):
-        go = dialog.get_object
-        go("projectname_label").set_text(dialog.get_project_name())
-        go("projectpath_label").set_text(dialog.project.path)
-        go("open_label").set_text(str(dialog.get_open()))
-        go("overwrite_label").set_text(str(dialog.get_overwrite()))
-        iimgs = (name for name, s in iter_model(go("liststore1"), 0, 2) if s)
-        go("imported_label").set_text("\n".join(iimgs))
-        store = go("liststore2")
-        table = go("vbox2")
-        for i, (name, dest) in enumerate(iter_model(store)):
-            nlabel = gtk.Label(name + ":")
-            nlabel.set_alignment(0.0, 0.5)
-            dlabel = gtk.Label(dest.path)
-            dlabel.set_tooltip_text(dest.path)
-            dlabel.set_alignment(0.0, 0.5)
-            dlabel.set_ellipsize(pango.ELLIPSIZE_MIDDLE)
-            box = gtk.HBox(spacing=5)
-            box.pack_start(nlabel, False, True, 0)
-            box.pack_start(dlabel, True, True, 0)
-            table.pack_start(box, False, True, 3)
-            box.show_all()
-
 
 class ImportDialog(Window):
 
     resource = "data/importdialog.ui"
     NAME, PATH, SELECTED = range(3)
-    step2 = False
+    archive_path = None
     project = None
     images = None
     humble = _HumbleImport()
+
+    def __init__(self, factory):
+        Window.__init__(self)
+        self.factory = factory
 
     @property
     def assistant(self):
@@ -1639,12 +1637,6 @@ class ImportDialog(Window):
             page = self.assistant.get_nth_page(
                 self.assistant.get_current_page())
         self.assistant.set_page_complete(page, complete)
-
-    def commit(self):
-        self.assistant.commit()
-
-    def goto_next_page(self):
-        self.assistant.set_current_page(self.assistant.get_current_page() + 1)
 
     ####
 
@@ -1695,37 +1687,40 @@ class ImportDialog(Window):
             all(path for name, path in iter_model(model)))
 
     def on_ImportDialog_prepare(self, assistant, page):
-        page = assistant.get_current_page()
-        if page == 0:
+        page_num = assistant.get_current_page()
+        if page_num == 0:
             pass
-        elif page == 1:
-            progress = ProgressBar(self.get_object("progressbar1"))
-            self.humble.step_1(self, hook=progress.wait_for)
-        elif page == 2:
+        elif page_num == 1:
             ws = settings.get("workspace")
+            deferred = self.humble.step_1(self, self.get_object("liststore1"),
+                    filepath.FilePath(ws).child("vimages"))
+            if deferred:
+                ProgressBar(self.assistant).wait_for(deferred)
+        elif page_num == 2:
             self.humble.step_2(self, self.get_object("liststore1"),
-                               filepath.FilePath(ws).child("vimages"))
-        elif page == 3:
-            self.humble.step_3(self, self.get_object("liststore1"),
                                self.get_object("liststore2"))
-        elif page == 4:
-            progress = ProgressBar(self.get_object("progressbar2"))
-            self.humble.step_4(self, self.get_object("liststore1"),
-                               self.get_object("liststore2"),
-                               progress.wait_for)
-        elif page == 5:
-            self.humble.step_5(self)
+        elif page_num == 3:
+            self.humble.step_3(self)
         else:
-            logger.error(invalid_step_assitant, num=page)
+            logger.error(invalid_step_assitant, num=page_num)
         return True
 
     def on_ImportDialog_cancel(self, assistant):
         if self.project:
+            logger.info(removing_temporary_project, path=self.project.path)
             self.project.delete()
         assistant.destroy()
+        return True
 
-    def on_ImportDialog_close(self, assistant):
-        assistant.destroy()
+    def on_ImportDialog_apply(self, assistant):
+        deferred = self.humble.apply(self.project, self.get_project_name(),
+                                     self.factory, self.get_overwrite(),
+                                     self.get_open(),
+                                     self.get_object("liststore1"),
+                                     self.get_object("liststore2"))
+        ProgressBar(self.assistant).wait_for(deferred)
+        deferred.addBoth(pass_through(assistant.destroy))
+        return True
 
     def on_filechooserbutton_file_set(self, filechooser):
         filename = filechooser.get_filename()

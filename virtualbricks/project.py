@@ -211,23 +211,15 @@ class ProjectManager:
             if e.errno in (errno.ENOENT, errno.ENOTDIR):
                 raise errors.ProjectNotExistsError(name)
 
-    def restore(self, project, factory):
-        logger.debug(restore_project, name=project.name)
-        self.close(factory)
-        global current
-        current = project
-        settings.set("current_project", project.name)
-        settings.VIRTUALBRICKS_HOME = project.path
-        settings.store()
-        project.restore(factory)
-        return project
-
-    def create(self, name):
+    def create(self, name, overwrite=False):
         project = Project(self.project_path(name))
         try:
             project.filepath.makedirs()
         except OSError as e:
             if e.errno == errno.EEXIST:
+                if overwrite:
+                    self.delete(name)
+                    return self.create(name)
                 raise errors.ProjectExistsError(name)
             else:
                 raise
@@ -254,16 +246,9 @@ class ProjectManager:
             if e.errno != errno.ENOENT:
                 raise
 
-    def extract(self, name, vbppath, overwrite=False):
+    def extract(self, name, vbppath):
         try:
-            try:
-                project = self.create(name)
-            except errors.ProjectExistsError:
-                if overwrite:
-                    self.delete(name)
-                    project = self.create(name)
-                else:
-                    raise
+            project = self.create(name)
         except Exception as e:
             return defer.fail(e)
         logger.debug(extract_project)
@@ -306,9 +291,9 @@ class Project:
         dst = self.filepath.sibling(name)
         tools.copyTo(self.filepath, dst)
 
-    def rename(self, name):
-        new = manager.create(name)
-        new.filepath.child(".project").remove()
+    def rename(self, name, overwrite=False):
+        new = manager.create(name, overwrite)
+        new.filepath.remove()
         self.filepath.moveTo(new.filepath)
         self.filepath = new.filepath
 

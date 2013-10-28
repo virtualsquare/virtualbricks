@@ -408,18 +408,17 @@ class TestHumbleImportStep1(TestHumbleImport):
 
     def setUp(self):
         TestHumbleImport.setUp(self)
+        self.model = gtk.ListStore(str, object, bool)
 
     def extract(self, *args):
         self.extract_args = args
         self.prj = self.manager.create("test")
         return defer.succeed(self.prj)
 
-    def test_step_1_commit_page(self):
+    def test_step_1(self):
         """When the project is extracted, you cannot get back."""
 
-        self.humble.step_1(self.dialog, self.extract)
-        self.assert_page_commit()
-        self.assert_current_page(2)
+        self.humble.step_1(self.dialog, self.model, self.extract)
 
     def test_step_1_extract_args(self):
         """
