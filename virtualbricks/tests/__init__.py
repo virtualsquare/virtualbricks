@@ -183,18 +183,24 @@ class GtkTestCase(unittest.TestCase):
         self.assert_subtree_model_equal(tree1, root1, tree2, root2, msg)
 
     def assert_subtree_model_equal(self, tree1, itr1, tree2, itr2, msg=None):
+        if type(itr1) != type(itr2):
+            self.fail_tree(tree1, tree2, msg)
         self.assertEqual(type(itr1), type(itr2))
         while itr1 and itr2:
             if tuple(tree1[itr1]) != tuple(tree2[itr2]):
-                diff = "\n".join(difflib.ndiff(pformat_tree(tree1),
-                                               pformat_tree(tree2)))
-                default = "Trees are different:\n" + diff
-                self.fail(msg or default)
+                self.fail_tree(tree1, tree2, msg)
             self.assertEqual(tuple(tree1[itr1]), tuple(tree2[itr2]))
             self.assert_subtree_model_equal(tree1, tree1.iter_children(itr1),
                                             tree2, tree2.iter_children(itr2))
             itr1 = tree1.iter_next(itr1)
             itr2 = tree2.iter_next(itr2)
+
+    def fail_tree(self, tree1, tree2, msg=None):
+        if not msg:
+            diff = "\n".join(difflib.ndiff(pformat_tree(tree1),
+                                           pformat_tree(tree2)))
+            msg = "Trees are different:\n" + diff
+        self.fail(msg)
 
     def assert_visible(self, widget, msg=None):
         if not msg:
