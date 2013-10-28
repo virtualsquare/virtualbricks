@@ -261,51 +261,10 @@ class TopologyMixin(object):
             self._draw_topology()
 
 
-class _Freezer:
-
-    def __init__(self, freeze, unfreeze, parent):
-        self.freeze = freeze
-        self.unfreeze = unfreeze
-        builder = gtk.Builder()
-        res = graphics.get_filename("virtualbricks.gui", "data/userwait.ui")
-        builder.add_from_file(res)
-        self.progressbar = builder.get_object("progressbar")
-        self.window = builder.get_object("UserWaitWindow")
-        self.window.set_transient_for(parent)
-
-    def wait_for(self, something, *args):
-        if isinstance(something, defer.Deferred):
-            return self.wait_for_deferred(something)
-        elif hasattr(something, "__call__"):
-            return self.wait_for_action(something, *args)
-        raise RuntimeError("Invalid argument")
-
-    def wait_for_action(self, action, *args):
-        done = defer.maybeDeferred(action, *args)
-        return self.wait_for_deferred(done)
-
-    def wait_for_deferred(self, deferred):
-        deferred.addBoth(self.stop, self.start())
-        return deferred
-
-    def start(self):
-        self.freeze()
-        self.window.show_all()
-        lc = task.LoopingCall(self.progressbar.pulse)
-        lc.start(0.2, False)
-        return lc
-
-    def stop(self, passthru, lc):
-        self.window.destroy()
-        self.unfreeze()
-        lc.stop()
-        return passthru
-
-
 class ProgressBar:
 
     def __init__(self, gui):
-        self.freezer = _Freezer(gui.set_insensitive, gui.set_sensitive,
+        self.freezer = dialogs.Freezer(gui.set_insensitive, gui.set_sensitive,
             gui.get_object("main_win"))
 
     def wait_for(self, something, *args):
@@ -2148,10 +2107,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
                                         self.get_object("main_win"))
 
     def on_import_menuitem_activate(self, menuitem):
-        # d = dialogs.ImportProjectDialog(self.brickfactory, ProgressBar(self))
-        # d.on_destroy = self.set_title_default
-        # d.show(self.get_object("main_win"))
-        d = dialogs.ImportDialog()
+        d = dialogs.ImportDialog(self.brickfactory)
         d.on_destroy = self.set_title_default
         d.show(self.get_object("main_win"))
 

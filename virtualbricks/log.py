@@ -42,7 +42,7 @@ def make_id(log_format):
     module = inspect.currentframe().f_back.f_back.f_globals["__name__"]
     params = urllib.urlencode(dict(format=log_format, module=module))
     uri = "http://virtualbricks.eu/ns/log/?" + params
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, uri))
+    return uuid.uuid5(uuid.NAMESPACE_URL, uri)
 
 
 class Event(object):
@@ -65,6 +65,17 @@ class Event(object):
         if "log_id" in event and event["log_id"] == self.log_id:
             return PredicateResult.yes
         return PredicateResult.no
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.log_id == other.log_id
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return int(self.log_id)
 
 
 def expect_event(func):
