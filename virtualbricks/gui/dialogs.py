@@ -1489,6 +1489,7 @@ class _HumbleImport:
                 fp2 = fp.siblingExtension(".{0}".format(c))
                 c += 1
             model.append((name, fp2, True))
+        return project
 
     def step_2(self, dialog, store1, store2):
         """Step 2: map images."""

@@ -186,20 +186,29 @@ class ProjectManager:
 
     archive = BsdTgz()
 
+
     def __iter__(self):
-        path = filepath.FilePath(settings.get("workspace"))
+        path = self.workspace()
         return (p.basename() for p in path.children() if
                 p.child(".project").isfile())
 
     def project_path(self, name):
-        workspace = filepath.FilePath(settings.get("workspace"))
         try:
-            return workspace.child(name)
+            return self.workspace().child(name)
         except filepath.InsecurePath:
             raise errors.InvalidNameError(name)
 
+    def workspace(self):
+        return filepath.FilePath(settings.get("workspace"))
+
     def exists(self, name):
-        return self.project_path(name).exists()
+        # return self.project_path(name).exists()
+        try:
+            prj = self.create(name)
+            prj.delete()
+            return False
+        except errors.ProjectExistsError:
+            return True
 
     def open(self, name, factory):
         fp = self.project_path(name)
@@ -262,6 +271,8 @@ current = None
 
 class Project:
 
+    manager = manager
+
     def __init__(self, path):
         self.filepath = path
 
@@ -275,7 +286,7 @@ class Project:
 
     def restore(self, factory):
         logger.debug(restore_project, name=self.name)
-        manager.close(factory)
+        self.manager.close(factory)
         global current
         current = self
         settings.set("current_project", self.name)
@@ -292,13 +303,13 @@ class Project:
         tools.copyTo(self.filepath, dst)
 
     def rename(self, name, overwrite=False):
-        new = manager.create(name, overwrite)
+        new = self.manager.create(name, overwrite)
         new.filepath.remove()
         self.filepath.moveTo(new.filepath)
         self.filepath = new.filepath
 
     def delete(self):
-        manager.delete(self.name)
+        self.manager.delete(self.name)
 
     def files(self):
         return (fp for fp in self.filepath.walk() if fp.isfile())
