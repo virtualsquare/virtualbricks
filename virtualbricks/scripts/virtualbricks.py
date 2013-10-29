@@ -16,10 +16,15 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from __future__ import absolute_import
+from virtualbricks import app
 
 
-def run(argv=None):
-    from virtualbricks.scripts import vb
-    from virtualbricks import app
+def make_application(config):
+    from virtualbricks.gui import gui
+    return gui.Application(config)
 
-    vb.run(app.LockedApplication(vb.application_factory))
+
+def run():
+    from twisted.internet import gtk2reactor
+    gtk2reactor.install()
+    app.run_app(app.LockedApplication(make_application), app.Options())
