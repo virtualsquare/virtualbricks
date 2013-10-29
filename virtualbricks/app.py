@@ -79,15 +79,19 @@ def run_app(Application, config):
 
 class _LockedApplication:
 
+    factory = None
+
     def __init__(self, config, lock=None):
         self.config = config
         self.lock = lock or lockfile.FilesystemLock(settings.LOCK_FILE)
 
     def run(self, reactor):
+        assert self.factory is not None, \
+                "factory attribute is not set"
         if self.lock.lock():
             reactor.addSystemEventTrigger("after", "shutdown",
                                           self.lock.unlock)
-            app = self.application(self.config)
+            app = self.factory(self.config)
             return app.run(reactor)
         else:
             msg = ("Another Virtualbricks instance is running and you cannot "
@@ -97,10 +101,10 @@ class _LockedApplication:
             return defer.fail(SystemExit(msg))
 
 
-def LockedApplication(application):
+def LockedApplication(factory):
     def init(config):
         app = _LockedApplication(config)
-        app.application = application
+        app.factory = factory
         return app
 
     return init
