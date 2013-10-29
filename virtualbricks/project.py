@@ -327,6 +327,9 @@ class Project:
         with self.dot_project().open() as fp:
             return ProjectEntry.from_fileobj(fp)
 
+    def get_readme(self):
+        return self.filepath.child("README")
+
 
 def restore_last_project(factory):
     """Restore the last project if found or create a new one."""
