@@ -1125,8 +1125,8 @@ class OpenProjectDialog(Window):
 
     resource = "data/openproject.ui"
 
-    def __init__(self, factory):
-        self.factory = factory
+    def __init__(self, gui):
+        self.gui = gui
         Window.__init__(self)
 
     def show(self, parent=None):
@@ -1145,14 +1145,13 @@ class OpenProjectDialog(Window):
         if response_id == gtk.RESPONSE_OK:
             if not name:
                 treeview = self.get_object("treeview1")
-                selection = treeview.get_selection()
-                model, itr = selection.get_selected()
+                model, itr = treeview.get_selection().get_selected()
                 if itr:
-                    name = model[itr][0]
+                    name = model.get_value(itr, 0)
                 else:
                     return
             try:
-                project.manager.open(name, self.factory)
+                self.gui.on_open(name)
             finally:
                 dialog.destroy()
         dialog.destroy()
@@ -1202,7 +1201,8 @@ class ExportProjectDialog(Window):
                             for image in disk_images]
         # self.image_files = set(filepath.FilePath(image.path) for image in
         #                         disk_images)
-        self.required_files = set([prjpath.child(".project")])
+        self.required_files = set([prjpath.child(".project"),
+                                   prjpath.child("README")])
         self.internal_files = set([prjpath.child("vde.dot"),
                                    prjpath.child("vde_topology.plain"),
                                    prjpath.child(".images")])
@@ -1254,7 +1254,8 @@ class ExportProjectDialog(Window):
         else:
             size = self._calc_size(model, itr)
             if model.get_path(itr) == (0,):
-                size += sum(fp.getsize() for fp in self.required_files)
+                size += sum(fp.getsize() for fp in self.required_files if
+                            fp.exists())
                 if self.include_images:
                     size += sum(fp.getsize() for n, fp in self.image_files)
             cellrenderer.set_property("text", tools.fmtsize(size))
@@ -1340,7 +1341,8 @@ class ExportProjectDialog(Window):
         files = []
         gather_selected(model, model.get_iter_first(), ancestor, files)
         for fp in self.required_files:
-            files.append(os.path.join(*fp.segmentsFrom(ancestor)))
+            if fp.exists():
+                files.append(os.path.join(*fp.segmentsFrom(ancestor)))
         images = []
         if self.include_images:
             images = [(name, fp.path) for name, fp in self.image_files]

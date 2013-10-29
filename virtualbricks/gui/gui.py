@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import errno
 import re
 
 import gobject
@@ -162,7 +163,8 @@ def changed_brick_in_model(result, model):
 
 TYPE_CONFIG_WIDGET_NAME_MAP = {"Wirefilter": "box_wirefilterconfig",
                                "Router": "box_routerconfig"}
-TOPOLOGY_TAB = 4
+BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, \
+        REMOTE_TAB, TOPOLOGY_TAB, README_TAB = range(6)
 
 
 class TopologyMixin(object):
@@ -251,14 +253,77 @@ class TopologyMixin(object):
                 self._should_draw_topology):
             self._draw_topology()
 
-    def on_main_notebook_switch_page(self, notebook, page, page_num):
+    def on_main_notebook_switch_page(self, notebook, _, page_num):
         if page_num == TOPOLOGY_TAB and self._should_draw_topology:
             self._draw_topology()
+        super(TopologyMixin, self).on_main_notebook_switch_page(
+            notebook, _, page_num)
 
     def on_main_notebook_select_page(self, notebook, move_focus):
         if (notebook.get_current_page() == TOPOLOGY_TAB and
                 self._should_draw_topology):
             self._draw_topology()
+
+
+class ReadmeMixin(object):
+
+    __loaded = False
+
+    def __get_buffer(self):
+        return self.get_object("readme_textview").get_buffer()
+
+    def __get_modified(self):
+        return self.__get_buffer().get_modified()
+
+    def __set_modified(self, modified):
+        return self.__get_buffer().set_modified(modified)
+
+    def __get_text(self):
+        return self.__get_buffer().get_property("text")
+
+    def __set_text(self, text):
+        self.__get_buffer().set_text(text)
+
+    def __save_readme(self):
+        if self.__get_modified():
+            fp = project.current.get_readme()
+            new = not fp.exists()
+            fp.setContent(self.__get_text())
+            if new:
+                fp.chmod(0664)
+            self.__set_modified(False)
+
+    def __load_readme(self):
+        fp = project.current.get_readme()
+        try:
+            try:
+                self.__set_text(fp.getContent())
+                self.__set_modified(False)
+            except IOError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+                self.__set_text("")
+            self.__loaded = True
+        except:
+            raise
+
+    def on_main_notebook_switch_page(self, notebook, _, page_num):
+        # if I leave the readme tab
+        if notebook.get_current_page() == README_TAB:
+            self.__save_readme()
+        # if I switch to readme tab
+        if page_num == README_TAB and not self.__loaded:
+            self.__load_readme()
+        super(ReadmeMixin, self).on_main_notebook_switch_page(
+            notebook, _, page_num)
+
+    def on_save(self):
+        self.__save_readme()
+        super(ReadmeMixin, self).on_save()
+
+    def on_open(self):
+        self.__load_readme()
+        super(ReadmeMixin, self).on_open()
 
 
 class ProgressBar:
@@ -271,14 +336,30 @@ class ProgressBar:
         return self.freezer.wait_for(something, *args)
 
 
-class VBGUI(gobject.GObject, TopologyMixin):
+class _Root(object):
+    # This object ensure that super calls are not forwarded to object.
+
+    def on_main_notebook_switch_page(self, notebook, _, page_num):
+        pass
+
+    def on_quit(self):
+        pass
+
+    def on_save(self):
+        pass
+
+    def on_open(self):
+        pass
+
+
+
+class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     """
     The main GUI object for virtualbricks, containing all the configuration for
     the widgets and the connections to the main engine.
     """
 
     def __init__(self, factory, gladefile, quit, textbuffer=None):
-        gobject.GObject.__init__(self)
         self.brickfactory = factory
         self.gladefile = gladefile
         self.messages_buffer = textbuffer
@@ -863,9 +944,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
         if settings.systray and self.statusicon is not None:
             self.gladefile.get_widget("main_win").hide_on_delete()
             self.statusicon.set_tooltip("VirtualBricks Hidden")
-        else:
-            self.quit_d.callback(None)
-        return True
+            return True
+        return False
 
     def curtain_down(self):
         self.get_object("top_panel").show()
@@ -1082,6 +1162,32 @@ class VBGUI(gobject.GObject, TopologyMixin):
     """                                                          """
     """ ******************************************************** """
 
+    # Notebook signals
+
+    def on_main_notebook_switch_page(self, notebook, _, page_num):
+        super(VBGUI, self).on_main_notebook_switch_page(notebook, _, page_num)
+        return True
+
+    # gui (programming) interface
+
+    def on_quit(self):
+        self.on_save()
+        super(VBGUI, self).on_quit()
+        self.quit_d.callback(None)
+
+    def on_save(self):
+        project.current.save(self.brickfactory)
+        super(VBGUI, self).on_save()
+
+    def on_open(self, name):
+        project.manager.open(name, self.brickfactory)
+        super(VBGUI, self).on_open()
+
+    # end gui (programming) interface
+
+    def on_main_win_destroy_event(self, window):
+        self.on_quit()
+
     def on_new_image_menuitem_activate(self, menuitem):
         dialogs.choose_new_image(self, self.brickfactory)
 
@@ -1138,7 +1244,7 @@ class VBGUI(gobject.GObject, TopologyMixin):
             self.gladefile.get_widget("main_win").hide()
 
     def on_systray_exit(self, widget=None, data=""):
-        self.quit_d.callback(None)
+        self.on_quit()
 
     def on_windown_destroy(self, widget=None, data=""):
         widget.hide()
@@ -1372,8 +1478,8 @@ class VBGUI(gobject.GObject, TopologyMixin):
         return _("\t\t\tMTU: MAXIMUM TRANSMISSION UNIT\n\n"
             "Packets longer than specified size are discarded.")
 
-    def on_item_quit_activate(self, widget=None, data=""):
-        self.quit_d.callback(None)
+    def on_item_quit_activate(self, menuitem):
+        self.on_quit()
 
     def on_item_settings_activate(self, widget=None, data=""):
         self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(settings.get('qemupath'))
@@ -2082,25 +2188,28 @@ class VBGUI(gobject.GObject, TopologyMixin):
         return True
 
     def on_project_open_activate(self, menuitem):
-        project.current.save(self.brickfactory)
-        d = dialogs.OpenProjectDialog(self.brickfactory)
+        self.on_save()
+        d = dialogs.OpenProjectDialog(self)
         d.on_destroy = self.set_title_default
         d.show(self.get_object("main_win"))
 
     def on_project_new_activate(self, menuitem):
-        project.current.save(self.brickfactory)
+        self.on_save()
         dialogs.NewProjectDialog(self.brickfactory).show(
             self.get_object("main_win"))
+        return True
 
     def on_project_save_activate(self, menuitem):
-        project.current.save(self.brickfactory)
+        self.on_save()
 
     def on_project_saveas_activate(self, menuitem):
+        self.on_save()
         parent = self.get_object("main_win")
         dialogs.SaveAsDialog(self.brickfactory, project.manager).show(parent)
         return True
 
     def on_export_menuitem_activate(self, menuitem):
+        self.on_save()
         dialogs.ExportProjectDialog(ProgressBar(self),
                                     project.current.filepath,
                                     self.brickfactory.disk_images).show(
