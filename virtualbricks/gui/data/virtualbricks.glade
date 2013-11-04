@@ -2938,6 +2938,12 @@ Use an already open UDP multicast socket</property>
                         <child>
                           <placeholder/>
                         </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -3849,6 +3855,7 @@ multiple devices&lt;/b&gt;</property>
     <property name="default_width">850</property>
     <property name="default_height">600</property>
     <property name="icon">virtualbricks.png</property>
+    <signal name="destroy_event" handler="on_main_win_destroy_event"/>
     <signal name="delete_event" handler="on_systray_exit"/>
     <child>
       <widget class="GtkVBox" id="vbox1">

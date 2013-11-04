@@ -56,7 +56,8 @@ apply_settings = log.Event("Apply settings...")
 create_image = log.Event("Image creating.. ")
 filename_empty = log.Event("Choose a filename first!")
 not_started = log.Event("Brick not started.")
-stop_error = log.Event("Error on stopping brick")
+stop_error = log.Event("Error on stopping brick.")
+start_error = log.Event("Error on starting brick.")
 no_kvm = log.Event("No KVM support found on the local system. Check your "
     "active configuration. KVM will stay disabled.")
 cannot_write = log.Event("Cannot write to the specified location")
@@ -1649,7 +1650,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         d = brick.poweron() if brick.proc is None else brick.poweroff()
         d.addCallback(changed_brick_in_model, self.brickfactory.bricks)
         d.addCallback(lambda _: self.running_bricks.refilter())
-        d.addErrback(logger.failure_eb, stop_error)
+        d.addErrback(logger.failure_eb, stop_error if brick.proc else
+                     start_error)
 
     def on_joblist_treeview_button_release_event(self, treeview, event):
         if event.button == 3:
