@@ -37,7 +37,7 @@ if False:  # pyflakes
 
 logger = log.Logger(__name__)
 process_started = log.Event("Process started")
-process_terminated = log.Event("{status()}")
+process_terminated = log.Event("Process terminated. {status()}")
 process_done = log.Event("Process terminated")
 event_unavailable = log.Event("Warning. The Event {event} attached to Brick "
                               "{brick} is not available. Skipping execution.")
@@ -54,13 +54,14 @@ console_terminated = log.Event("Console terminated\n{status}\nProcess stdout:"
 class Process(protocol.ProcessProtocol):
 
     pid = None
-    logger = log.Logger()
+    logger = None
 
     def __init__(self, brick):
         self.brick = brick
 
     def connectionMade(self):
         self.pid = self.transport.pid
+        self.logger = log.Logger("virtualbricks.bricks.Process.%d" % self.pid)
         self.logger.info(process_started)
         self.brick.process_started(self)
 
@@ -72,11 +73,11 @@ class Process(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         if status.check(error.ProcessTerminated):
-            get_status = lambda: " ".join(status.value.args)
-            self.logger.error(process_terminated, status=get_status,
-                              hide_to_user=True)
+            self.logger.error(process_terminated,
+                              status=lambda: " ".join(status.value.args))
         else:
-            self.logger.info(process_terminated)
+            assert status.check(error.ProcessDone)
+            self.logger.info(process_terminated, status=lambda: "")
         self.brick.process_ended(self, status)
 
 
@@ -94,9 +95,6 @@ class ProcessLogger:
         self.pid = proc.transport.pid
         self.buffer = []
         self.scheduled = None
-
-    def logPrefix(self):
-        return "Process: {0}".format(self.pid)
 
     def log(self, data):
         self.logger.info(data)
@@ -118,7 +116,7 @@ class ProcessLogger:
         self.buffer.append((data, is_error))
         if self.scheduled is None or not self.scheduled.active():
             self.scheduled = reactor.callLater(self.delay, self.flush)
-        elif sum(map(len, (e[0] for e in self.buffer))) > self.limit:
+        elif sum(len(e[0]) for e in self.buffer) > self.limit:
             self.scheduled.cancel()
             self.flush()
         else:
@@ -275,9 +273,7 @@ class _LocalBrick(base.Base):
         self._last_status = status
         # ovvensive programming, raise an exception instead of hide the error
         # behind a lambda (lambda _: None)
-        self.in_received = None
-        self.out_received = None
-        self.err_received = None
+        self.in_received = self.out_received = self.err_received = None
         exited, self._exited_d = self._exited_d, None
         exited.callback((self, status))
 
