@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_log -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -22,8 +23,7 @@ import urllib
 import uuid
 import functools
 
-from twisted.python import util
-from twisted.python.failure import Failure
+from twisted.python import util, failure
 
 from virtualbricks._log import (InvalidLogLevelError, LogLevel, formatEvent,
     Logger as _Logger, LegacyLogger, ILogObserver, ILegacyLogObserver,
@@ -57,22 +57,14 @@ class Event(object):
         logger.emit(level, self.log_format, log_id=self.log_id, **kwds)
 
     def tap(self, observer, publisher):
-        filtered = FilteringLogObserver(observer, (self._is,))
+        filtered = FilteringLogObserver(observer, (self.is_,))
         publisher.addObserver(filtered, False)
         return lambda: publisher.removeObserver(filtered)
 
-    def _is(self, event):
+    def is_(self, event):
         if "log_id" in event and event["log_id"] == self.log_id:
             return PredicateResult.yes
         return PredicateResult.no
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.log_id == other.log_id
-
-    def __ne__(self, other):
-        return not self == other
 
     def __hash__(self):
         return int(self.log_id)
@@ -107,12 +99,12 @@ class Logger(_Logger):
 
     @expect_event
     def exception(self, event, **kwds):
-        event(self, LogLevel.error, log_failure=Failure(), **kwds)
+        event(self, LogLevel.error, log_failure=failure.Failure(), **kwds)
 
     @expect_event
     def failure(self, event, failure=None, level=LogLevel.error, **kwargs):
         if failure is None:
-            failure = Failure()
+            failure = failure.Failure()
         event(self, level, log_failure=failure, **kwargs)
 
     def failure_eb(self, failure, event, level=LogLevel.error, **kwargs):
@@ -215,7 +207,7 @@ class LoggingToNewLogginAdapter(logging.Handler):
         try:
             msg = self.format(record)
             if record.exc_info is not None:
-                self.logger.failure(msg, Failure(*record.exc_info))
+                self.logger.failure(msg, failure.Failure(*record.exc_info))
             else:
                 level = self._map_levelname_to_LogLevel(record.levelname)
                 self.logger.emit(level, msg, **record.__dict__)
