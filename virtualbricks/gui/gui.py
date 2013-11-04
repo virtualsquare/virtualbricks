@@ -1995,14 +1995,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_newbrick(self, widget=None, event=None, data=""):
         self.curtain_down()
         self.gladefile.get_widget('text_newbrickname').set_text("")
-        self.gladefile.get_widget('dialog_newbrick').show_all()
-        components = self.check_gui_prerequisites()
-        if len(components)>0:
-            bricks = []
-            for i in components:
-                bricks = list(set(bricks + tools.bin2brick(i)))
-            for i in bricks:
-                self.gladefile.get_widget('typebutton_'+i).hide()
         self.show_window('dialog_newbrick')
 
     def on_newevent(self, widget=None, event=None, data=""):
