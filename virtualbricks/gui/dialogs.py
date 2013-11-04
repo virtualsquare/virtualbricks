@@ -1501,7 +1501,7 @@ class _HumbleImport:
         store2.clear()
         for name in dialog.images:
             store2.append((name, imgs.get(name)))
-        if len(store2) == 0 or all(p for (p,) in iter_model(store2, 1)):
+        if len(store2) == 0 or dialog.all_paths_set(store2):
             dialog.set_page_complete()
 
     def step_3(self, dialog):
@@ -1683,11 +1683,13 @@ class ImportDialog(Window):
                                            gtk.FILE_CHOOSER_ACTION_OPEN,
                                            gtk.STOCK_OPEN)
 
+    def all_paths_set(self, model):
+        return all(path for (path,) in iter_model(model, 1))
+
     # callbacks
 
     def on_liststore2_row_changed(self, model, path, iter):
-        self.assistant.set_page_complete(self.assistant.get_nth_page(3),
-            all(path for name, path in iter_model(model)))
+        self.set_page_complete(complete=self.all_paths_set(model))
 
     def on_ImportDialog_prepare(self, assistant, page):
         page_num = assistant.get_current_page()

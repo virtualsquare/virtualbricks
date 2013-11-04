@@ -5,7 +5,7 @@ from twisted.python import filepath
 from virtualbricks import project
 from virtualbricks.gui import dialogs
 from virtualbricks.tests import (unittest, GtkTestCase, failureResultOf,
-                                 successResultOf)
+                                 successResultOf, stubs)
 
 
 class Object:
@@ -573,20 +573,23 @@ class AssistantStub:
 
 class ImportDialog(dialogs.ImportDialog):
 
-    _assistant = None
+    assistant = None
 
-    @property
-    def assistant(self):
-        if self._assistant is None:
-            self._assistant = AssistantStub()
-        return self._assistant
+class TestImportDialog(unittest.TestCase):
 
+    def setUp(self):
+        self.factory = stubs.FactoryStub()
+        self.dialog = ImportDialog(self.factory)
+        self.dialog.assistant = self.assistant = AssistantStub()
 
-# class TestImportDialog(unittest.TestCase):
+    def assert_page_complete(self, page, msg=None):
+        if not msg:
+            msg = "Page is not set as completed."
+        self.assertIn(page, self.assistant.completed, msg)
+        self.assertTrue(self.assistant.completed[page], msg)
 
-#     def test_set_page_complete(self):
-#         page = object()
-#         dialog = ImportDialog()
-#         dialog.assistant.pages = [page]
-#         dialog.set_page_complete()
-#         self.assertEqual(dialog.assistant.completed, {page: True})
+    def test_set_page_complete(self):
+        page = object()
+        self.assistant.pages = [page]
+        self.dialog.set_page_complete()
+        self.assert_page_complete(page)
