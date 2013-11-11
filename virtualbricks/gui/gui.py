@@ -2189,8 +2189,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_project_new_activate(self, menuitem):
         self.on_save()
-        dialogs.NewProjectDialog(self.brickfactory).show(
-            self.get_object("main_win"))
+        dialog = dialogs.NewProjectDialog(self.brickfactory)
+        dialog.on_destroy = self.set_title_default
+        dialog.show(self.get_object("main_win"))
         return True
 
     def on_project_save_activate(self, menuitem):
