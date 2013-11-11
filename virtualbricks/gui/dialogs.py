@@ -1116,7 +1116,8 @@ class NewProjectDialog(Window):
         try:
             if response_id == gtk.RESPONSE_OK:
                 name = self.get_object("name_entry").get_text()
-                project.manager.create(name, self.factory)
+                prj = project.manager.create(name, self.factory)
+                prj.restore(self.factory)
         finally:
             dialog.destroy()
 
