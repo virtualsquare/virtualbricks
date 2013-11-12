@@ -33,9 +33,7 @@ class TunnelListenConfig(bricks.Config):
     parameters = {"password": bricks.String(""),
                   "port": bricks.SpinInt(7667, 1, 65535)}
 
-
 class TunnelListen(bricks.Brick):
-
     type = "TunnelListen"
     config_factory = TunnelListenConfig
     command_builder = {"-s": None,
@@ -82,6 +80,9 @@ class TunnelListen(bricks.Brick):
     #    os.unlink("/tmp/tunnel_%s.key" % self.name)
     #    pass
 
+    def add_plug(self, sock, mac=None, model=None):
+        self.plugs[0].connect(sock)
+        return self.plugs[0]
 
 class TunnelConnectConfig(TunnelListenConfig):
 
