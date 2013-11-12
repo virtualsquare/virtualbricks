@@ -3883,7 +3883,7 @@ multiple devices&lt;/b&gt;</property>
                     <property name="can_focus">False</property>
                     <child>
                       <widget class="GtkImageMenuItem" id="project_new">
-                        <property name="label" translatable="yes">Restart with _empty project</property>
+                        <property name="label" translatable="yes">_New project</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
