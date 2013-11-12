@@ -661,7 +661,7 @@ class WirefilterConfigController(WireConfigController):
 class TunnelListenConfigController(PlugMixin, ConfigController):
 
     resource = "data/tunnellconfig.ui"
-
+    
     def get_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
@@ -682,7 +682,7 @@ class TunnelListenConfigController(PlugMixin, ConfigController):
 
 class TunnelClientConfigController(TunnelListenConfigController):
 
-    resource = "data/tunnelcconfig.ui"
+    resource = "data/tunnelcconfig.ui"    
 
     def get_view(self, gui):
         host = self.get_object("host_entry")
@@ -693,7 +693,7 @@ class TunnelClientConfigController(TunnelListenConfigController):
 
     def configure_brick(self, gui):
         TunnelListenConfigController.configure_brick(self, gui)
-        host = self.get_object("host").get_text()
+        host = self.get_object("host_entry").get_text()
         lport = self.get_object("localport_spinbutton").get_value_as_int()
         self.original.set(host=host, localport=lport)
 
