@@ -315,6 +315,10 @@ class Project:
         fp.remove()
         self.filepath.moveTo(fp)
         self.filepath = fp
+        if self is current:
+            settings.set("current_project", self.name)
+            settings.VIRTUALBRICKS_HOME = self.path
+            settings.store()
 
     def delete(self):
         self.manager.delete(self.name)

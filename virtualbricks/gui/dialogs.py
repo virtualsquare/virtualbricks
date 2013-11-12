@@ -1104,19 +1104,31 @@ class CreateImageDialog(Window):
         dialog.destroy()
 
 
-class NewProjectDialog(Window):
+class SimpleEntryDialog(Window):
 
-    resource = "data/newproject.ui"
+    resource = "data/simpleentry.ui"
+    name = "SimpleEntryDialog"
+    description = ""
 
     def __init__(self, gui):
-        self.gui = gui
         Window.__init__(self)
+        self.gui = gui
+        self.get_object("label1").set_text(self.description)
 
     @destroy_on_exit
-    def on_NewProjectDialog_response(self, dialog, response_id):
+    def on_SimpleEntryDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            name = self.get_object("name_entry").get_text()
-            self.gui.on_new(name)
+            self.do_action(self.get_object("name_entry").get_text())
+
+
+class NewProjectDialog(SimpleEntryDialog):
+
+    @property
+    def description(self):
+        return _("Project name")
+
+    def do_action(self, name):
+        self.gui.on_new(name)
 
 
 class ListProjectsDialog(Window):
@@ -1179,7 +1191,9 @@ class _ListProjectAbstract(ListProjectsDialog):
 
 class OpenProjectDialog(_ListProjectAbstract):
 
-    title = _("Virtualbricks - Open project")
+    @property
+    def title(self):
+        return _("Virtualbricks - Open project")
 
     @destroy_on_exit
     def do_action(self, dialog, response_id, name):
@@ -1188,11 +1202,23 @@ class OpenProjectDialog(_ListProjectAbstract):
 
 class DeleteProjectDialog(_ListProjectAbstract):
 
-    title = _("Virtualbricks - Delete project")
+    @property
+    def title(self):
+        return _("Virtualbricks - Delete project")
 
     @destroy_on_exit
     def do_action(self, dialog, response_id, name):
         project.manager.delete(name)
+
+
+class RenameProjectDialog(SimpleEntryDialog):
+
+    @property
+    def description(self):
+        return _("New project name")
+
+    def do_action(self, name):
+        project.current.rename(name)
 
 
 def is_vm(brick):
