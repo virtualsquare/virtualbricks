@@ -2944,6 +2944,12 @@ Use an already open UDP multicast socket</property>
                         <child>
                           <placeholder/>
                         </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -3918,7 +3924,6 @@ multiple devices&lt;/b&gt;</property>
                     <child>
                       <widget class="GtkImageMenuItem" id="gtk-open-recent">
                         <property name="label" translatable="yes">_Recent Projects...</property>
-                        <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">False</property>
