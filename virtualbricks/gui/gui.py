@@ -16,7 +16,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import errno
 import re
 
 import gobject
@@ -268,8 +267,6 @@ class TopologyMixin(object):
 
 class ReadmeMixin(object):
 
-    __loaded = False
-
     def __get_buffer(self):
         return self.get_object("readme_textview").get_buffer()
 
@@ -287,33 +284,23 @@ class ReadmeMixin(object):
 
     def __save_readme(self):
         if self.__get_modified():
-            fp = project.current.get_readme()
-            new = not fp.exists()
-            fp.setContent(self.__get_text())
-            if new:
-                fp.chmod(0664)
+            project.current.set_description(self.__get_text())
             self.__set_modified(False)
 
     def __load_readme(self):
-        fp = project.current.get_readme()
-        try:
-            try:
-                self.__set_text(fp.getContent())
-                self.__set_modified(False)
-            except IOError as e:
-                if e.errno != errno.ENOENT:
-                    raise
-                self.__set_text("")
-            self.__loaded = True
-        except:
-            raise
+        self.__set_text(project.current.get_description())
+        self.__set_modified(False)
+
+    def __current_tab_is_readme(self):
+        notebook = self.get_object("main_notebook")
+        return notebook.get_current_page() == README_TAB
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
         # if I leave the readme tab
         if notebook.get_current_page() == README_TAB:
             self.__save_readme()
         # if I switch to readme tab
-        if page_num == README_TAB and not self.__loaded:
+        if page_num == README_TAB:
             self.__load_readme()
         super(ReadmeMixin, self).on_main_notebook_switch_page(
             notebook, _, page_num)
@@ -322,9 +309,10 @@ class ReadmeMixin(object):
         self.__save_readme()
         super(ReadmeMixin, self).on_save()
 
-    def on_open(self):
-        self.__load_readme()
-        super(ReadmeMixin, self).on_open()
+    def on_open(self, name):
+        if self.__current_tab_is_readme():
+            self.__load_readme()
+        super(ReadmeMixin, self).on_open(name)
 
 
 class ProgressBar:
@@ -349,9 +337,11 @@ class _Root(object):
     def on_save(self):
         pass
 
-    def on_open(self):
+    def on_open(self, name):
         pass
 
+    def on_new(self, name):
+        pass
 
 
 class VBGUI(TopologyMixin, ReadmeMixin, _Root):
@@ -452,6 +442,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                     missing_components = missing_components + ('%s ' % m)
             logger.error(components_not_found, text=missing_text,
                 components=missing_components)
+
+        # attach the quit callback at the end, so it is not called if an
+        # exception is raised before because of a syntax error of another kind
+        # of error
+        quit.addCallback(lambda _: self.on_quit())
 
     def quit(self):
         self.brickfactory.bricks.disconnect(self.__row_changed_h)
@@ -1174,20 +1169,29 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_quit(self):
         self.on_save()
         super(VBGUI, self).on_quit()
-        self.quit_d.callback(None)
 
     def on_save(self):
-        project.current.save(self.brickfactory)
         super(VBGUI, self).on_save()
+        project.current.save(self.brickfactory)
 
     def on_open(self, name):
+        self.on_save()
+        super(VBGUI, self).on_open(name)
         project.manager.open(name, self.brickfactory)
-        super(VBGUI, self).on_open()
+
+    def on_new(self, name):
+        self.on_save()
+        super(VBGUI, self).on_new(name)
+        prj = project.manager.create(name, self.brickfactory)
+        prj.restore(self.brickfactory)
+
+    def do_quit(self):
+        self.quit_d.callback(None)
 
     # end gui (programming) interface
 
     def on_main_win_destroy_event(self, window):
-        self.on_quit()
+        self.do_quit()
 
     def on_new_image_menuitem_activate(self, menuitem):
         dialogs.choose_new_image(self, self.brickfactory)
@@ -1245,7 +1249,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             self.gladefile.get_widget("main_win").hide()
 
     def on_systray_exit(self, widget=None, data=""):
-        self.on_quit()
+        self.do_quit()
 
     def on_windown_destroy(self, widget=None, data=""):
         widget.hide()
@@ -1480,7 +1484,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             "Packets longer than specified size are discarded.")
 
     def on_item_quit_activate(self, menuitem):
-        self.on_quit()
+        self.do_quit()
 
     def on_item_settings_activate(self, widget=None, data=""):
         self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(settings.get('qemupath'))
@@ -2182,13 +2186,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_project_open_activate(self, menuitem):
-        self.on_save()
-        d = dialogs.OpenProjectDialog(self)
-        d.on_destroy = self.set_title_default
-        d.show(self.get_object("main_win"))
+        dialog = dialogs.OpenProjectDialog(self)
+        dialog.on_destroy = self.set_title_default
+        dialog.show(self.get_object("main_win"))
+        return True
 
     def on_project_new_activate(self, menuitem):
-        self.on_save()
         dialog = dialogs.NewProjectDialog(self.brickfactory)
         dialog.on_destroy = self.set_title_default
         dialog.show(self.get_object("main_win"))
@@ -2199,16 +2202,17 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_project_saveas_activate(self, menuitem):
         self.on_save()
-        parent = self.get_object("main_win")
-        dialogs.SaveAsDialog(self.brickfactory, project.manager).show(parent)
+        dialog = dialogs.SaveAsDialog(self.brickfactory, iter(project.manager))
+        dialog.show(self.get_object("main_win"))
         return True
 
     def on_export_menuitem_activate(self, menuitem):
         self.on_save()
-        dialogs.ExportProjectDialog(ProgressBar(self),
+        dialog = dialogs.ExportProjectDialog(ProgressBar(self),
                                     project.current.filepath,
-                                    self.brickfactory.disk_images).show(
-                                        self.get_object("main_win"))
+                                    self.brickfactory.disk_images)
+        dialog.show(self.get_object("main_win"))
+        return True
 
     def on_import_menuitem_activate(self, menuitem):
         d = dialogs.ImportDialog(self.brickfactory)
@@ -2480,5 +2484,5 @@ def load_gladefile():
         gladefile = graphics.get_filename("virtualbricks.gui",
                                     "data/virtualbricks.glade")
         return gtk.glade.XML(gladefile)
-    except Exception:
+    except:
         raise SystemExit("Cannot load gladefile")

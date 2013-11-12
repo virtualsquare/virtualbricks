@@ -1108,18 +1108,15 @@ class NewProjectDialog(Window):
 
     resource = "data/newproject.ui"
 
-    def __init__(self, factory):
-        self.factory = factory
+    def __init__(self, gui):
+        self.gui = gui
         Window.__init__(self)
 
+    @destroy_on_exit
     def on_NewProjectDialog_response(self, dialog, response_id):
-        try:
-            if response_id == gtk.RESPONSE_OK:
-                name = self.get_object("name_entry").get_text()
-                prj = project.manager.create(name, self.factory)
-                prj.restore(self.factory)
-        finally:
-            dialog.destroy()
+        if response_id == gtk.RESPONSE_OK:
+            name = self.get_object("name_entry").get_text()
+            self.gui.on_new(name)
 
 
 class OpenProjectDialog(Window):
@@ -1142,14 +1139,17 @@ class OpenProjectDialog(Window):
         self.on_OpenProjectDialog_response(self.get_object(
             "OpenProjectDialog"), gtk.RESPONSE_OK, name)
 
+    def get_project_name(self):
+        treeview = self.get_object("treeview1")
+        model, itr = treeview.get_selection().get_selected()
+        if itr:
+            return model.get_value(itr, 0)
+
     def on_OpenProjectDialog_response(self, dialog, response_id, name=""):
         if response_id == gtk.RESPONSE_OK:
             if not name:
-                treeview = self.get_object("treeview1")
-                model, itr = treeview.get_selection().get_selected()
-                if itr:
-                    name = model.get_value(itr, 0)
-                else:
+                name = self.get_project_name()
+                if name is None:
                     return
             try:
                 self.gui.on_open(name)
@@ -1455,7 +1455,6 @@ class ProgressBar:
 
 def all_paths_set(model):
     return all(path for (path,) in iter_model(model, 1))
-
 
 
 class _HumbleImport:
