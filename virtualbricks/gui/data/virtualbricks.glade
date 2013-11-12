@@ -3922,6 +3922,15 @@ multiple devices&lt;/b&gt;</property>
                       </widget>
                     </child>
                     <child>
+                      <widget class="GtkMenuItem" id="rename_menuitem">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">_Rename project</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="on_rename_menuitem_activate"/>
+                      </widget>
+                    </child>
+                    <child>
                       <widget class="GtkImageMenuItem" id="gtk-open-recent">
                         <property name="label" translatable="yes">_Recent Projects...</property>
                         <property name="can_focus">False</property>
@@ -3990,7 +3999,24 @@ multiple devices&lt;/b&gt;</property>
                       </widget>
                     </child>
                     <child>
-                      <widget class="GtkSeparatorMenuItem" id="menuitem2">
+                      <widget class="GtkImageMenuItem" id="project_delete">
+                        <property name="label" translatable="yes">_Delete project</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="use_underline">True</property>
+                        <property name="use_stock">False</property>
+                        <signal name="activate" handler="on_project_delete_activate"/>
+                        <child internal-child="image">
+                          <widget class="GtkImage" id="image2">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="stock">gtk-delete</property>
+                          </widget>
+                        </child>
+                      </widget>
+                    </child>
+                    <child>
+                      <widget class="GtkSeparatorMenuItem" id="separatormenuitem1">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                       </widget>

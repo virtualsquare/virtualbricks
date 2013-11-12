@@ -160,9 +160,9 @@ BODY = """-- DO NOT MODIFY THE FOLLOWING LINES --
 
 def destroy_on_exit(func):
     @functools.wraps(func)
-    def on_response(self, dialog, response_id):
+    def on_response(self, dialog, *args):
         try:
-            func(self, dialog, response_id)
+            func(self, dialog, *args)
         finally:
             dialog.destroy()
     return on_response
@@ -1119,43 +1119,80 @@ class NewProjectDialog(Window):
             self.gui.on_new(name)
 
 
-class OpenProjectDialog(Window):
+class ListProjectsDialog(Window):
 
-    resource = "data/openproject.ui"
+    resource = "data/listprojects.ui"
+    name = "ListProjectsDialog"
+    title = ""
+
+    def show(self, parent=None):
+        self.populate(self.get_projects())
+        if self.title:
+            self.window.set_title(self.title)
+        Window.show(self, parent)
+
+    def get_projects(self):
+        return iter(project.manager)
+
+    def populate(self, projects):
+        model = self.get_object("liststore1")
+        for prj in projects:
+            model.append((prj, ))
+
+    def get_project_name(self):
+        treeview = self.get_object("treeview")
+        model, itr = treeview.get_selection().get_selected()
+        if itr:
+            return model.get_value(itr, 0)
+
+    def on_treeview_row_activated(self, treeview, path, column):
+        model = treeview.get_model()
+        itr = model.get_iter(path)
+        if itr:
+            name = model.get_value(itr, 0)
+            self.do_action(self.window, gtk.RESPONSE_OK, name)
+        return True
+
+    def on_ListProjectsDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            name = self.get_project_name()
+            if name is not None:
+                self.do_action(dialog, response_id, name)
+        else:
+            dialog.destroy()
+        return True
+
+    def do_action(self, dialog, response_id, name):
+        pass
+
+
+class _ListProjectAbstract(ListProjectsDialog):
 
     def __init__(self, gui):
         self.gui = gui
         Window.__init__(self)
 
-    def show(self, parent=None):
-        model = self.get_object("liststore1")
-        for prj in project.manager:
-            model.append((prj, ))
-        Window.show(self, parent)
+    def get_projects(self):
+        curr = project.current.name
+        return (prj for prj in iter(project.manager) if prj != curr)
 
-    def on_treeview1_row_activated(self, treeview, path, column):
-        model = treeview.get_model()
-        name = model[path][0]
-        self.on_OpenProjectDialog_response(self.get_object(
-            "OpenProjectDialog"), gtk.RESPONSE_OK, name)
 
-    def get_project_name(self):
-        treeview = self.get_object("treeview1")
-        model, itr = treeview.get_selection().get_selected()
-        if itr:
-            return model.get_value(itr, 0)
+class OpenProjectDialog(_ListProjectAbstract):
 
-    def on_OpenProjectDialog_response(self, dialog, response_id, name=""):
-        if response_id == gtk.RESPONSE_OK:
-            if not name:
-                name = self.get_project_name()
-                if name is None:
-                    return
-            try:
-                self.gui.on_open(name)
-            finally:
-                dialog.destroy()
-        dialog.destroy()
+    title = _("Virtualbricks - Open project")
+
+    @destroy_on_exit
+    def do_action(self, dialog, response_id, name):
+        self.gui.on_open(name)
+
+
+class DeleteProjectDialog(_ListProjectAbstract):
+
+    title = _("Virtualbricks - Delete project")
+
+    @destroy_on_exit
+    def do_action(self, dialog, response_id, name):
+        project.manager.delete(name)
 
 
 def is_vm(brick):

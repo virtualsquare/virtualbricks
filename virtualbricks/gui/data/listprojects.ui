@@ -8,14 +8,14 @@
       <column type="gchararray"/>
     </columns>
   </object>
-  <object class="GtkDialog" id="OpenProjectDialog">
+  <object class="GtkDialog" id="ListProjectsDialog">
     <property name="width_request">300</property>
     <property name="height_request">300</property>
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
     <property name="modal">True</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_OpenProjectDialog_response" swapped="no"/>
+    <signal name="response" handler="on_ListProjectsDialog_response" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkVBox" id="dialog-vbox1">
         <property name="visible">True</property>
@@ -82,13 +82,13 @@
             <property name="hscrollbar_policy">automatic</property>
             <property name="vscrollbar_policy">automatic</property>
             <child>
-              <object class="GtkTreeView" id="treeview1">
+              <object class="GtkTreeView" id="treeview">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="model">liststore1</property>
                 <property name="headers_visible">False</property>
                 <property name="search_column">0</property>
-                <signal name="row-activated" handler="on_treeview1_row_activated" swapped="no"/>
+                <signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
                 <child>
                   <object class="GtkTreeViewColumn" id="treeviewcolumn1">
                     <property name="title" translatable="yes">column</property>
