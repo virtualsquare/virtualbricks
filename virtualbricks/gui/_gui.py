@@ -661,7 +661,7 @@ class WirefilterConfigController(WireConfigController):
 class TunnelListenConfigController(PlugMixin, ConfigController):
 
     resource = "data/tunnellconfig.ui"
-    
+
     def get_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
@@ -682,7 +682,7 @@ class TunnelListenConfigController(PlugMixin, ConfigController):
 
 class TunnelClientConfigController(TunnelListenConfigController):
 
-    resource = "data/tunnelcconfig.ui"    
+    resource = "data/tunnelcconfig.ui"
 
     def get_view(self, gui):
         host = self.get_object("host_entry")
