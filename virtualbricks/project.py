@@ -272,6 +272,8 @@ current = None
 class Project:
 
     manager = manager
+    _description = None
+    _description_modified = False
 
     def __init__(self, path):
         self.filepath = path
@@ -296,17 +298,23 @@ class Project:
 
     def save(self, factory):
         configfile.save(factory, self.dot_project().path)
+        if self._description_modified:
+            self.get_readme().setContent(self._description)
+            self._description_modified = False
 
     def save_as(self, name, factory):
         self.save(factory)
         dst = self.filepath.sibling(name)
         tools.copyTo(self.filepath, dst)
+        return self.__class__(dst)
+
+    copy = save_as
 
     def rename(self, name, overwrite=False):
-        new = self.manager.create(name, overwrite)
-        new.filepath.remove()
-        self.filepath.moveTo(new.filepath)
-        self.filepath = new.filepath
+        fp = self.manager.create(name, overwrite).filepath
+        fp.remove()
+        self.filepath.moveTo(fp)
+        self.filepath = fp
 
     def delete(self):
         self.manager.delete(self.name)
@@ -329,6 +337,20 @@ class Project:
 
     def get_readme(self):
         return self.filepath.child("README")
+
+    def get_description(self):
+        if self._description is None:
+            try:
+                self._description = self.get_readme().getContent()
+            except IOError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+                self._description = ""
+        return self._description
+
+    def set_description(self, text):
+        self._description = text
+        self._description_modified = True
 
 
 def restore_last_project(factory):
