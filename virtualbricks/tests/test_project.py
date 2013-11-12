@@ -38,10 +38,6 @@ class TestBase(object):
         self.factory = stubs.FactoryStub()
         self.addCleanup(self.manager.close, self.factory)
 
-    def create_project(self, name):
-        prj = self.manager.create(name)
-        return prj.filepath
-
 
 class TestProject(TestBase, unittest.TestCase):
 
@@ -49,19 +45,24 @@ class TestProject(TestBase, unittest.TestCase):
         self.assertIs(project.current, None)
         self.assertEqual(settings.VIRTUALBRICKS_HOME, settings.DEFAULT_HOME)
 
-    def test_restore_save(self):
-        def save_restore(f, prjname):
-            self.assertIs(f, self.factory)
-            self.assertTrue(filepath.FilePath(prjname).exists())
+    # def test_restore_save(self):
+    #     def save_restore(f, prjname):
+    #         self.assertIs(f, self.factory)
+    #         self.assertTrue(filepath.FilePath(prjname).exists())
 
-        self.assert_initial_status()
-        prj = self.manager.create("test")
-        self.patch(configfile, "restore", save_restore)
-        self.patch(configfile, "save", save_restore)
-        prj.save(self.factory)
-        prj.restore(self.factory)
+    #     self.assert_initial_status()
+    #     prj = self.manager.create("test")
+    #     self.patch(configfile, "restore", save_restore)
+    #     self.patch(configfile, "save", save_restore)
+    #     prj.save(self.factory)
+    #     prj.restore(self.factory)
 
     def test_restore_project_set_virtualbricks_home(self):
+        """
+        Every time a project is imported, settings.VIRTUALBRICKS_HOME is set
+        to the project's path.
+        """
+
         self.assert_initial_status()
         self.patch(configfile, "restore", lambda fa, fi: None)
         prj = self.manager.create("test")
@@ -71,8 +72,10 @@ class TestProject(TestBase, unittest.TestCase):
                             settings.DEFAULT_HOME)
 
     def test_open_create_set_current(self):
-        """Everytime ProjectManager's open or create are called,
-        virtualbricks.project.current is set to the current project."""
+        """
+        Everytime ProjectManager's open or create are called,
+        virtualbricks.project.current is set to the current project.
+        """
 
         PROJECT1 = "new1"
         PROJECT2 = "new2"
@@ -98,22 +101,24 @@ class TestProject(TestBase, unittest.TestCase):
         files.append(afile)
         self.assertEqual(sorted(prj.files()), sorted(files))
 
-    def test_save_as(self):
+    def test_copy(self):
+        """Create a copy of the project with a different name."""
+
         NEW_PROJET_NAME = "copy"
-        FILENAME = "new_file"
         project = self.manager.create("test")
-        project.filepath.child(FILENAME).touch()
-        project.save_as(NEW_PROJET_NAME, stubs.FactoryStub())
-        path = project.filepath.sibling(NEW_PROJET_NAME)
-        self.assertTrue(path.isdir())
-        self.assertTrue(path.child(FILENAME).isfile())
+        new = project.copy(NEW_PROJET_NAME, stubs.FactoryStub())
+        self.assertTrue(new.filepath.exists())
+        self.assertNotEqual(project.filepath, new.filepath)
 
     def test_rename(self):
         """Rename a project."""
 
         project = self.manager.create("test")
+        old_path = project.filepath
         project.rename("test_rename")
         self.assertEqual(project.name, "test_rename")
+        self.assertTrue(project.filepath.exists())
+        self.assertFalse(old_path.exists())
 
     def test_rename_invalid(self):
         """If an invalid name is given an exception is raised."""
@@ -137,8 +142,53 @@ class TestProject(TestBase, unittest.TestCase):
         self.assertRaises(errors.ProjectExistsError, project.rename,
                           "test2")
 
+    def test_save(self):
+        """Save a project."""
+
+        project = self.manager.create("test")
+        data = project.dot_project().getContent()
+        self.factory.new_brick("vm", "test")
+        project.save(self.factory)
+        self.assertNotEqual(project.dot_project().getContent(), data)
+
+    def test_description(self):
+        """Return a description of brand new project."""
+
+        project = self.manager.create("test")
+        self.assertEqual(project.get_description(), "")
+
+    def test_set_description(self):
+        """Set the description of a project."""
+
+        DESCRIPTION = "hello world"
+        prj = self.manager.create("test")
+        prj.set_description(DESCRIPTION)
+        self.assertEqual(prj.get_description(), DESCRIPTION)
+
+    def test_save_description(self):
+        """Save the description when the project is saved."""
+
+        DESCRIPTION = "hello world"
+        prj = self.manager.create("test")
+        prj.set_description(DESCRIPTION)
+        prj.save(self.factory)
+        self.assertEqual(prj.get_readme().getContent(), DESCRIPTION)
+
+    def test_delete(self):
+        """Delete a project."""
+
+        prj = self.manager.create("test")
+        path = prj.path
+        self.assertTrue(prj.filepath.exists())
+        prj.delete()
+        self.assertFalse(os.path.isdir(path))
+
 
 class TestProjectManager(TestBase, unittest.TestCase):
+
+    def create_project(self, name):
+        prj = self.manager.create(name)
+        return prj.filepath
 
     def test_iter(self):
         """Returns only prooved projects."""
@@ -167,16 +217,15 @@ class TestProjectManager(TestBase, unittest.TestCase):
     def test_open_project_does_not_exists(self):
         """Try to open a project that does not exists."""
 
-        self.addCleanup(self.manager.close, self.factory)
         self.assertRaises(errors.ProjectNotExistsError, project.manager.open,
                           "project", self.factory)
 
     def test_open_project_does_not_exists_dot_project(self):
         """Try to open a project but the .project file does not exists."""
 
-        prj = self.create_project("project")
-        prj.child(".project").remove()
-        self.assertFalse(prj.child(".project").isfile())
+        path = self.create_project("project")
+        path.child(".project").remove()
+        self.assertFalse(path.child(".project").isfile())
         self.assertRaises(errors.ProjectNotExistsError, project.manager.open,
                           "project", self.factory)
 
@@ -209,15 +258,8 @@ class TestProjectManager(TestBase, unittest.TestCase):
         same name but use a default name.
         """
 
-        events = []
-
-        def append(ev):
-            events.append(ev)
-
         settings.set("current_project", "prj")
         self.assertFalse(self.tmp.child("prj").isdir())
-        project.logger.publisher.addObserver(append)
-        self.addCleanup(project.logger.publisher.removeObserver, append)
         prj = project.restore_last(self.factory)
         self.assertEqual(prj.name, settings.DEFAULT_PROJECT + "_0")
 
@@ -245,17 +287,6 @@ class TestProjectManager(TestBase, unittest.TestCase):
         vbppath = os.path.join(os.path.dirname(__file__), "test.vbp")
         d = self.manager.extract(PRJNAME, vbppath)
         failureResultOf(self, d, errors.ProjectExistsError)
-
-    def test_extract_project_exists_overwrite(self):
-        """Extract a project, overwrite a project with the same name."""
-
-        PRJNAME = "test"
-        path = self.create_project(PRJNAME)
-        self.manager.archive = ArchiveStub()
-        vbppath = os.path.join(os.path.dirname(__file__), "test.vbp")
-        d = self.manager.extract(PRJNAME, vbppath, True)
-        prj = successResultOf(self, d)
-        self.assertEqual(prj.filepath, path)
 
     def test_exists(self):
         """Test the existance of a project."""
