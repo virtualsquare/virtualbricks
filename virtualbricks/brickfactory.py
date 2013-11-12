@@ -669,7 +669,7 @@ class Application:
         # XXX: this is disabled because the gui is responsable to save the
         # project before exting. This means that if the factory is launched in
         # a non-gui fashion, the project is not saved. Fix this.
-        # reactor.addSystemEventTrigger("before", "shutdown", prj.save, factory)
+        reactor.addSystemEventTrigger("before", "shutdown", prj.save, factory)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
             namespace = self.get_namespace()
