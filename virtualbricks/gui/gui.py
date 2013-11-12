@@ -2195,8 +2195,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         dialogs.DeleteProjectDialog(self).show(self.get_object("main_win"))
         return True
 
+    def on_rename_menuitem_activate(self, menuitem):
+        dialog = dialogs.RenameProjectDialog(self)
+        dialog.on_destroy = self.set_title_default
+        dialog.show(self.get_object("main_win"))
+        return True
+
     def on_project_new_activate(self, menuitem):
-        dialog = dialogs.NewProjectDialog(self.brickfactory)
+        dialog = dialogs.NewProjectDialog(self)
         dialog.on_destroy = self.set_title_default
         dialog.show(self.get_object("main_win"))
         return True
@@ -2481,6 +2487,11 @@ class Application(brickfactory.Application):
         gtk.link_button_set_uri_hook(lambda b, s: None)
         self.gui = VBGUI(factory, gladefile, quit, self.textbuffer)
         message_dialog.set_parent(self.gui.widg["main_win"])
+
+    def run(self, reactor):
+        ret = brickfactory.Application.run(self, reactor)
+        self.gui.set_title_default()
+        return ret
 
 
 def load_gladefile():
