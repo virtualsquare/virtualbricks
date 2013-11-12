@@ -33,7 +33,9 @@ class TunnelListenConfig(bricks.Config):
     parameters = {"password": bricks.String(""),
                   "port": bricks.SpinInt(7667, 1, 65535)}
 
+
 class TunnelListen(bricks.Brick):
+
     type = "TunnelListen"
     config_factory = TunnelListenConfig
     command_builder = {"-s": None,
@@ -53,7 +55,8 @@ class TunnelListen(bricks.Brick):
     def get_parameters(self):
         if self.plugs[0].sock:
             return _("plugged to") + " " + self.plugs[0].sock.brick.name + \
-                    " " + _("listening to udp:") + " " + self.config.get("port")
+                    " " + _("listening to udp:") + " " + \
+                    self.config.get("port")
         return _("disconnected")
 
     def prog(self):
@@ -83,6 +86,7 @@ class TunnelListen(bricks.Brick):
     def add_plug(self, sock, mac=None, model=None):
         self.plugs[0].connect(sock)
         return self.plugs[0]
+
 
 class TunnelConnectConfig(TunnelListenConfig):
 
