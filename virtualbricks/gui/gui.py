@@ -267,6 +267,8 @@ class TopologyMixin(object):
 
 class ReadmeMixin(object):
 
+    __deleyed_call = None
+
     def __get_buffer(self):
         return self.get_object("readme_textview").get_buffer()
 
@@ -288,12 +290,13 @@ class ReadmeMixin(object):
             self.__set_modified(False)
 
     def __load_readme(self):
-        self.__set_text(project.current.get_description())
-        self.__set_modified(False)
-
-    def __current_tab_is_readme(self):
-        notebook = self.get_object("main_notebook")
-        return notebook.get_current_page() == README_TAB
+        buf = self.__get_buffer()
+        buf.handler_block_by_func(self.__on_modify)
+        try:
+            self.__set_text(project.current.get_description())
+            self.__set_modified(False)
+        finally:
+            buf.handler_unblock_by_func(self.__on_modify)
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
         # if I leave the readme tab
@@ -305,13 +308,28 @@ class ReadmeMixin(object):
         super(ReadmeMixin, self).on_main_notebook_switch_page(
             notebook, _, page_num)
 
+    def init(self, factory):
+        self.__get_buffer().connect("modified-changed", self.__on_modify)
+        super(ReadmeMixin, self).init(factory)
+
+    def __on_modify(self, textbuffer):
+        if not self.__get_modified() and self.__deleyed_call:
+            if self.__deleyed_call.active():
+                self.__deleyed_call.cancel()
+            self.__deleyed_call = None
+        if self.__get_modified() and not self.__deleyed_call:
+            self.__deleyed_call = reactor.callLater(30, self.__save_readme)
+
+    def on_new(self, name):
+        self.__load_readme()
+        super(ReadmeMixin, self).on_new(name)
+
     def on_save(self):
         self.__save_readme()
         super(ReadmeMixin, self).on_save()
 
     def on_open(self, name):
-        if self.__current_tab_is_readme():
-            self.__load_readme()
+        self.__load_readme()
         super(ReadmeMixin, self).on_open(name)
 
 
@@ -327,6 +345,9 @@ class ProgressBar:
 
 class _Root(object):
     # This object ensure that super calls are not forwarded to object.
+
+    def init(self, factory):
+        pass
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
         pass
@@ -442,6 +463,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                     missing_components = missing_components + ('%s ' % m)
             logger.error(components_not_found, text=missing_text,
                 components=missing_components)
+
+        self.init(factory)
 
         # attach the quit callback at the end, so it is not called if an
         # exception is raised before because of a syntax error of another kind
@@ -1166,24 +1189,28 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     # gui (programming) interface
 
+    def init(self, factory):
+        super(VBGUI, self).init(factory)
+
     def on_quit(self):
-        self.on_save()
+        self.on_save(quit=True)
         super(VBGUI, self).on_quit()
 
-    def on_save(self):
+    def on_save(self, quit=False):
         super(VBGUI, self).on_save()
-        project.current.save(self.brickfactory)
+        if not quit:
+            project.current.save(self.brickfactory)
 
     def on_open(self, name):
         self.on_save()
-        super(VBGUI, self).on_open(name)
         project.manager.open(name, self.brickfactory)
+        super(VBGUI, self).on_open(name)
 
     def on_new(self, name):
         self.on_save()
-        super(VBGUI, self).on_new(name)
         prj = project.manager.create(name, self.brickfactory)
         prj.restore(self.brickfactory)
+        super(VBGUI, self).on_new(name)
 
     def do_quit(self):
         self.quit_d.callback(None)
