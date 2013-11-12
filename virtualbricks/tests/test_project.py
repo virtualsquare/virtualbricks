@@ -45,6 +45,7 @@ class TestProject(TestBase, unittest.TestCase):
         self.assertIs(project.current, None)
         self.assertEqual(settings.VIRTUALBRICKS_HOME, settings.DEFAULT_HOME)
 
+    # XXX implement save on restore
     # def test_restore_save(self):
     #     def save_restore(f, prjname):
     #         self.assertIs(f, self.factory)
@@ -171,6 +172,7 @@ class TestProject(TestBase, unittest.TestCase):
         DESCRIPTION = "hello world"
         prj = self.manager.create("test")
         prj.set_description(DESCRIPTION)
+        self.assertFalse(prj.get_readme().exists())
         prj.save(self.factory)
         self.assertEqual(prj.get_readme().getContent(), DESCRIPTION)
 
