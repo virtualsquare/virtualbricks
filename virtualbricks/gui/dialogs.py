@@ -83,6 +83,7 @@ import sys
 import errno
 import tempfile
 import functools
+import re
 
 import pango
 import gtk
@@ -90,7 +91,7 @@ from twisted.internet import utils, defer, task, error
 from twisted.python import filepath
 
 from virtualbricks import (version, tools, log, console, settings,
-                           virtualmachines, project)
+                           virtualmachines, project, errors)
 from virtualbricks.gui import graphics
 
 
@@ -111,7 +112,6 @@ perm_error = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
 invalid_mac = log.Event("MAC address {mac} is not valid, generating "
                         "a random one")
 not_implemented = log.Event("Not implemented")
-event_in_use = log.Event("Cannot rename event: it is in use.")
 brick_in_use = log.Event("Cannot rename brick: it is in use.")
 event_created = log.Event("Event created successfully")
 commit_failed = log.Event("Failed to commit image\n{err}")
@@ -138,6 +138,7 @@ invalid_step_assitant = log.Event("Assistant cannot handle step {num}")
 project_extracted = log.Event("Project has beed extracted in {path}")
 removing_temporary_project = log.Event("Remove temporary files in {path}")
 error_on_import_project = log.Event("An error occurred while import project")
+invalid_name = log.Event("Invalid name {name}")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -191,13 +192,13 @@ class Base(object):
         builder.set_translation_domain(self.domain)
         builder.add_from_file(graphics.get_filename("virtualbricks.gui",
                                                     self.resource))
-        self.widget = builder.get_object(self.get_name())
+        self.widget = builder.get_object(self._get_name())
         builder.connect_signals(self)
 
     def get_object(self, name):
         return self.builder.get_object(name)
 
-    def get_name(self):
+    def _get_name(self):
         if self.name:
             return self.name
         return self.__class__.__name__
@@ -622,47 +623,6 @@ class ConfirmDialog(Window):
         elif response_id == gtk.RESPONSE_NO and self.on_no:
             self.on_no(self.on_no_arg)
         dialog.destroy()
-
-
-class RenameDialog(Window):
-
-    resource = "data/renamedialog.ui"
-    name = "RenameDialog"
-
-    def __init__(self, brick, factory):
-        Window.__init__(self)
-        self.brick = brick
-        self.factory = factory
-        self.get_object("entry").set_text(brick.name)
-
-
-class RenameEventDialog(RenameDialog):
-
-    def on_RenameDialog_response(self, dialog, response_id):
-        try:
-            if response_id == gtk.RESPONSE_OK:
-                if self.brick.scheduled:
-                    logger.error(event_in_use)
-                else:
-                    new = self.get_object("entry").get_text()
-                    self.factory.rename_event(self.brick, new)
-        finally:
-            dialog.destroy()
-
-
-class RenameBrickDialog(RenameDialog):
-
-    def on_RenameDialog_response(self, dialog, response_id):
-        try:
-            return
-            if response_id == gtk.RESPONSE_OK:
-                if self.event.scheduled:
-                    logger.error(brick_in_use)
-                else:
-                    new = self.get_object("entry").get_text()
-                    self.factory.rename_event(self.event, new)
-        finally:
-            dialog.destroy()
 
 
 class NewEventDialog(Window):
@@ -1901,3 +1861,58 @@ class SaveAsDialog(Window):
     def on_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
             project.current.save_as(self.get_project_name(), self.factory)
+
+
+class RenameDialog(Window):
+
+    resource = "data/renamedialog.ui"
+    name = "RenameDialog"
+
+    def __init__(self, original, checker=None):
+        Window.__init__(self)
+        self.original = original
+        entry = self.get_entry()
+        entry.set_text(original.name)
+        if checker:
+            self.set_sensitive(False)
+            entry.connect("changed", self.on_changed, checker)
+
+    def get_entry(self):
+        return self.get_object("name_entry")
+
+    def set_sensitive(self, sensitive):
+        self.get_object("ok_button").set_sensitive(sensitive)
+
+    def get_name(self):
+        return self.get_entry().get_text()
+
+    def on_changed(self, entry, check):
+        try:
+            check(self.get_name())
+            self.set_sensitive(True)
+        except errors.InvalidNameError:
+            self.set_sensitive(False)
+
+    @destroy_on_exit
+    def on_RenameDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            name = self.get_name()
+            try:
+                self.rename(name)
+            except errors.InvalidNameError:
+                logger.error(invalid_name, name=name)
+
+    def rename(self, name):
+        self.original.rename(name)
+
+
+class RenameBrickDialog(RenameDialog):
+
+    def rename(self, name):
+        old = self.original.name
+        self.original.rename(name)
+        regex = re.compile("^{0}_([a-z0-9]+).cow$".format(old))
+        new = r"{0}_\1.cow".format(self.original.name)
+        for fp in project.current.filepath.children():
+            if fp.isfile() and regex.match(fp.basename()):
+                fp.moveTo(fp.sibling(regex.sub(new, fp.basename())))

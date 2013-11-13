@@ -60,7 +60,6 @@ start_error = log.Event("Error on starting brick.")
 no_kvm = log.Event("No KVM support found on the local system. Check your "
     "active configuration. KVM will stay disabled.")
 cannot_write = log.Event("Cannot write to the specified location")
-invalid_name = log.Event("Invalid name!")
 select_file = log.Event("Select a file")
 
 
@@ -2055,15 +2054,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_event_configure(self, widget=None, event=None, data=""):
         self.curtain_up()
         return
-
-    def on_dialog_rename_response(self, widget=None, response=0, data=""):
-        widget.hide()
-        if response == 1:
-            try:
-                brick = self.__get_selection(self.__bricks_treeview)
-                self.brickfactory.renamebrick(brick, self.gladefile.get_widget('entry_brick_newname').get_text())
-            except errors.InvalidNameError:
-                logger.error(invalid_name)
 
     def on_qemupath_changed(self, widget, data=None):
         newpath = widget.get_filename()

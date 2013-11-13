@@ -150,16 +150,17 @@ class BrickFactory(object):
         """Add one disk image to the library."""
 
         logger.info(create_image, path=path)
-        name = self.normalize(name)
-        if self.is_in_use(name):
-            raise errors.NameAlreadyInUseError(name)
         path = os.path.abspath(path)
-        for img in self.disk_images:
-            if img.path == path or img.name == name:
-                raise errors.ImageAlreadyInUseError(path)
-        img = virtualmachines.Image(name, path, description)
+        self.assert_path_not_in_use(path)
+        img = virtualmachines.Image(self.normalize_name(name), path,
+                                    description)
         self.disk_images.append(img)
         return img
+
+    def assert_path_not_in_use(self, path):
+        for img in self.disk_images:
+            if img.path == path:
+                raise errors.ImageAlreadyInUseError(path)
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
@@ -223,9 +224,7 @@ class BrickFactory(object):
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        nname = self.normalize(name)  # raises InvalidNameError
-        if self.is_in_use(nname):
-            raise errors.NameAlreadyInUseError(nname)
+        nname = self.normalize_name(name)
         ltype = type.lower()
         if ltype not in self.__factories:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
@@ -238,13 +237,12 @@ class BrickFactory(object):
         return brick
 
     def dup_brick(self, brick):
-        name = self.normalize(self.next_name("copy_of_" + brick.name))
-        ty = brick.get_type()
-        if (brick.homehost):
-            new_brick = self.newbrick("remote", ty, name,
+        name = self.next_name("copy_of_" + brick.name)
+        if brick.homehost:
+            new_brick = self.newbrick("remote", brick.get_type(), name,
                                       brick.config["homehost"])
         else:
-            new_brick = self.newbrick(ty, name)
+            new_brick = self.newbrick(brick.get_type(), name)
         # Copy only strings, and not objects, into new vm config
         new_brick.set(copy.deepcopy(brick.config))
 
@@ -280,10 +278,7 @@ class BrickFactory(object):
                 return b
 
     def rename_brick(self, brick, name):
-        nname = self.normalize(name)
-        if self.is_in_use(nname):
-            raise errors.NameAlreadyInUseError(nname)
-        brick.name = nname
+        brick.name = self.normalize_name(name)
 
     # [[[[[[[[[]]]]]]]]]
     # [     Events     ]
@@ -313,10 +308,7 @@ class BrickFactory(object):
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        nname = self.normalize(name)  # raises InvalidNameError
-        if self.is_in_use(nname):
-            raise errors.NameAlreadyInUseError(nname)
-        event = events.Event(self, nname)
+        event = events.Event(self, self.normalize_name(name))
         logger.debug(new_event_ok, name=event.name)
         return event
 
@@ -336,10 +328,7 @@ class BrickFactory(object):
                 return e
 
     def rename_event(self, event, name):
-        name = self.normalize(name)
-        if self.is_in_use(name):
-            raise errors.NameAlreadyInUseError(name)
-        event.name = name
+        event.name = self.normalize_name(name)
 
     ############################################
 
@@ -384,6 +373,20 @@ class BrickFactory(object):
             if o.name == name:
                 return True
         return False
+
+    def normalize_name(self, name):
+        """
+        Return the new normalized name.
+
+        @raise InvalidNameError: if the name is invalid (malformatted of
+            contains invalid characters).
+        @rase NameAlreadyInUseError: if the name is already in use.
+        """
+
+        _name = self.normalize(name)
+        if self.is_in_use(_name):
+            raise errors.NameAlreadyInUseError(name)
+        return _name
 
     def new_plug(self, brick):
         return link.Plug(brick)

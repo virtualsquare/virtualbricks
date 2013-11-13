@@ -29,7 +29,7 @@ from virtualbricks.gui import graphics, dialogs
 
 
 logger = log.Logger("virtualbricks.gui.gui")
-cannot_resume = log.Event("Cannot rename Brick: it is in use.")
+cannot_rename = log.Event("Cannot rename Brick: it is in use.")
 snap_error = log.Event("Error on snapshot")
 invalid_name = log.Event("Invalid name!")
 resume_vm = log.Event("Resuming virtual machine {name}")
@@ -45,6 +45,7 @@ no_kvm = log.Event("No KVM support found on the system. Check your active "
                    "configuration. KVM will stay disabled.")
 search_usb = log.Event("Searching USB devices")
 retr_usb = log.Event("Error while retrieving usb devices.")
+event_in_use = log.Event("Cannot rename event: it is in use.")
 
 if False:  # pyflakes
     _ = str
@@ -118,11 +119,11 @@ class BrickPopupMenu(BaseMenu):
 
     def on_rename_activate(self, menuitem, gui):
         if self.original.proc is not None:
-            logger.error(cannot_resume)
+            logger.error(cannot_rename)
         else:
-            gui.gladefile.get_widget('entry_brick_newname').set_text(
-                self.original.get_name())
-            gui.gladefile.get_widget('dialog_rename').show_all()
+            dialogs.RenameBrickDialog(self.original,
+                gui.brickfactory.normalize_name).show(
+                    gui.get_object("main_win"))
 
     def on_attach_activate(self, menuitem, gui):
         gui.on_brick_attach_event(menuitem)
@@ -193,9 +194,12 @@ class EventPopupMenu(BaseMenu):
         gui.brickfactory.dupevent(self.original)
 
     def on_rename_activate(self, menuitem, gui):
-        dialog = dialogs.RenameEventDialog(self.original, gui.brickfactory)
-        dialog.window.set_transient_for(gui.widg["main_win"])
-        dialog.show()
+        if not self.original.scheduled:
+            dialogs.RenameDialog(self.original,
+                gui.brickfactory.normalize_name).show(
+                    gui.get_object("main_win"))
+        else:
+            logger.error(event_in_use)
 
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
 
