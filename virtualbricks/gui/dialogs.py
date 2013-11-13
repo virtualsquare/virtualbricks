@@ -1457,9 +1457,21 @@ def complain_on_error(result):
     return result
 
 
-def set_path(column, cell_renderer, model, iter, colid):
+def _set_path(column, cell_renderer, model, iter, colid):
     path = model.get_value(iter, colid)
     cell_renderer.set_property("text",  path.path if path else "")
+
+
+def _set_path_remap(column, cell_renderer, model, iter, colid):
+    path = model.get_value(iter, colid)
+    if path:
+        cell_renderer.set_properties(font_desc=None, foreground=None,
+                                     text=path.path)
+    else:
+        font = pango.FontDescription()
+        font.set_style(pango.STYLE_ITALIC)
+        cell_renderer.set_properties(font_desc=font, foreground="gray",
+                                     text="(Click here to select an image)")
 
 
 class Freezer:
@@ -1683,10 +1695,10 @@ class ImportDialog(Window):
     def show(self, parent=None):
         col1 = self.get_object("pathcolumn1")
         cell1 = self.get_object("cellrenderertext2")
-        col1.set_cell_data_func(cell1, set_path, 1)
+        col1.set_cell_data_func(cell1, _set_path, 1)
         col2 = self.get_object("pathcolumn2")
         cell2 = self.get_object("cellrenderertext4")
-        col2.set_cell_data_func(cell2, set_path, 1)
+        col2.set_cell_data_func(cell2, _set_path_remap, 1)
         view1 = self.get_object("treeview1")
         view1.connect("button_press_event", self.on_button_press_event, col1,
                       self.get_save_filechooserdialog)

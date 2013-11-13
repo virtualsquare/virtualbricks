@@ -18,6 +18,9 @@
       <placeholder/>
     </child>
     <child>
+      <placeholder/>
+    </child>
+    <child>
       <object class="GtkTable" id="intro_page">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
@@ -151,6 +154,7 @@
             <property name="model">liststore1</property>
             <property name="headers_clickable">False</property>
             <property name="search_column">0</property>
+            <property name="enable_grid_lines">both</property>
             <child>
               <object class="GtkTreeViewColumn" id="treeviewcolumn1">
                 <property name="title" translatable="yes">Save</property>
@@ -204,6 +208,7 @@
             <property name="model">liststore2</property>
             <property name="headers_clickable">False</property>
             <property name="search_column">0</property>
+            <property name="enable_grid_lines">both</property>
             <child>
               <object class="GtkTreeViewColumn" id="treeviewcolumn4">
                 <property name="title" translatable="yes">Image name</property>
