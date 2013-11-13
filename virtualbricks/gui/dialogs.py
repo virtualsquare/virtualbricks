@@ -1212,6 +1212,26 @@ class ImportCanceled(Exception):
 SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 
 
+def ConfirmOverwriteDialog(fp, parent):
+    question = _("A file named \"{0}\" already exists.  Do you want to "
+                 "replace it?").format(fp.basename())
+    dialog = gtk.MessageDialog(parent, gtk.DIALOG_MODAL |
+                               gtk.DIALOG_DESTROY_WITH_PARENT,
+                               gtk.MESSAGE_QUESTION,
+                               message_format=question)
+    dialog.format_secondary_text(_("The file already exists in \"{0}\". "
+                                   "Replacing it will overwrite its "
+                                   "contents.").format(fp.dirname()))
+    dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+    button = gtk.Button(_("_Replace"))
+    button.set_can_default(True)
+    button.set_image(gtk.image_new_from_stock(gtk.STOCK_SAVE_AS,
+                                              gtk.ICON_SIZE_BUTTON))
+    button.show()
+    dialog.add_action_widget(button, gtk.RESPONSE_ACCEPT);
+    dialog.set_default_response(gtk.RESPONSE_ACCEPT)
+
+
 class ExportProjectDialog(Window):
 
     resource = "data/exportproject.ui"
@@ -1324,6 +1344,7 @@ class ExportProjectDialog(Window):
             model[itr][SELECTED] = selected
             itr = model.iter_next(itr)
 
+    @destroy_on_exit
     def on_filechooser_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
             filename = dialog.get_filename()
@@ -1338,7 +1359,6 @@ class ExportProjectDialog(Window):
                     "utf8")
                 self.get_object("filename_entry").set_text(txt)
                 self.get_object("export_button").set_sensitive(True)
-        dialog.destroy()
 
     def on_open_button_clicked(self, button):
         chooser = gtk.FileChooserDialog(title=_("Export project"),
@@ -1347,7 +1367,6 @@ class ExportProjectDialog(Window):
                          gtk.STOCK_SAVE, gtk.RESPONSE_OK))
         vbp = gtk.FileFilter()
         vbp.add_pattern("*.vbp")
-        chooser.set_do_overwrite_confirmation(True)
         chooser.set_filter(vbp)
         chooser.connect("response", self.on_filechooser_response)
         chooser.set_transient_for(self.window)
@@ -1372,14 +1391,32 @@ class ExportProjectDialog(Window):
             images = [(name, fp.path) for name, fp in self.image_files]
         return project.manager.export(filename, files, images)
 
+    @destroy_on_exit
+    def on_confirm_response(self, dialog, response_id, parent, filename):
+        if response_id == gtk.RESPONSE_ACCEPT:
+            parent.destroy()
+            self.do_export(filename)
+
+    def do_export(self, filename):
+        model = self.get_object("treestore1")
+        ancestor = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
+        self.progressbar.wait_for(self.export(model, ancestor, filename))
+
     def on_ExportProjectDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            model = self.get_object("treestore1")
-            ancestor = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
             filename = self._normalize_filename(self.get_object(
                 "filename_entry").get_text())
-            self.progressbar.wait_for(self.export(model, ancestor, filename))
-        dialog.destroy()
+            fp = filepath.FilePath(filename)
+            if fp.exists():
+                dialog = ConfirmOverwriteDialog(fp, dialog)
+                dialog.connect("response", self.on_confirm_response, dialog,
+                               fp.path)
+                dialog.show()
+            else:
+                dialog.destroy()
+                self.do_export(fp.path)
+        else:
+            dialog.destroy()
 
 
 def retrieve_data(widget, data):
