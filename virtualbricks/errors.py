@@ -34,7 +34,7 @@ class NameAlreadyInUseError(InvalidNameError):
         return _("Normalized name %s already in use") % self.name
 
 
-class InvalidTypeError(Error):
+class InvalidTypeError(Error, ValueError):
     pass
 
 

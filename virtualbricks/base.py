@@ -230,3 +230,7 @@ class Base(object):
                 value = param.to_string_brick(config[name], self)
                 fileobj.write("%s=%s\n" % (name, value))
         fileobj.write("\n")
+
+    def rename(self, name):
+        self.name = self.factory.normalize_name(name)
+
