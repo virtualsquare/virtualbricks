@@ -18,8 +18,7 @@
 
 import os
 
-from virtualbricks import bricks, link
-
+from virtualbricks import bricks, link, settings
 
 if False:  # pyflakes
     _ = str
@@ -97,13 +96,17 @@ class Tap(bricks.Brick):
         return _("disconnected")
 
     def prog(self):
-        return settings.get("vdepath") + "/vde_plug2tap"
+        return os.path.join(settings.get("vdepath"), "vde_plug2tap")
 
     def open_console(self):
         pass
 
     def configured(self):
         return self.plugs[0].sock
+
+    def add_plug(self, sock, mac=None, model=None):
+        self.plugs[0].connect(sock)
+        return self.plugs[0]
 
     def post_poweron(self):
         # XXX: fixme
