@@ -112,3 +112,21 @@ class TestParser(unittest.TestCase):
         link = next(itr)
         self.assertEqual(link, ("link", "sender", "sw1_port", "rtl8139",
                                 "00:aa:79:71:be:61"))
+
+    def test_link_with_minus(self):
+        """
+        Bricks' name can contains the following characters (in regex notation):
+        [\w.-]. Check that the parser parse correctly the links.
+        """
+
+        line = "link|vm1-ng|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
+        parser = configparser.Parser(StringIO.StringIO(line))
+        expected = tuple(line.split("|"))
+        self.assertEqual(list(parser), [expected])
+
+    def test_name_does_not_start_with_letter(self):
+        """Bricks' name must start with a letter."""
+
+        line = "link|1-brick|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
+        parser = configparser.Parser(StringIO.StringIO(line))
+        self.assertEqual(list(parser), [])
