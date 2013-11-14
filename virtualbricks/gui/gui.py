@@ -686,6 +686,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def get_object(self, name):
         return self.gladefile.get_widget(name)
 
+    def get_active(self, widget_name):
+        return self.get_object(widget_name).get_active()
+
+    def get_text(self, widget_name):
+        return self.get_object(widget_name).get_text()
+
     """ ********************************************************     """
     """ Signal handlers                                           """
     """ ********************************************************     """
@@ -1713,68 +1719,32 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.show_window('')
         return True
 
-    def on_dialog_settings_response(self, widget=None, response=0, data=""):
-        if response == gtk.RESPONSE_CANCEL:
-            widget.hide()
-            return
-
-        if response in [gtk.RESPONSE_APPLY, gtk.RESPONSE_OK]:
+    def on_dialog_settings_response(self, dialog, response_id):
+        if response_id in (gtk.RESPONSE_APPLY, gtk.RESPONSE_OK):
             logger.debug(apply_settings)
-            for k in 'qemupath', 'vdepath':
-                settings.set(k, self.gladefile.get_widget('filechooserbutton_' + k).get_filename())
+            for k in "qemupath", "vdepath":
+                settings.set(k, self.gladefile.get_widget("filechooserbutton_" + k).get_filename())
 
-            settings.set('cowfmt', self.gladefile.get_widget('combo_cowfmt').get_active_text())
-
-            if self.gladefile.get_widget('check_kvm').get_active():
-                settings.set("kvm", True)
-            else:
-                settings.set("kvm", False)
-
-            ksm = self.gladefile.get_widget('check_ksm').get_active()
-            settings.set("ksm", ksm)
-            tools.enable_ksm(ksm, settings.get("sudo"))
-
-            if self.gladefile.get_widget('check_kqemu').get_active():
-                settings.set("kqemu", True)
-            else:
-                settings.set("kqemu", False)
-
-            if self.gladefile.get_widget('check_python').get_active():
-                settings.set("python", True)
-            else:
-                settings.set("python", False)
-
-            if self.gladefile.get_widget('check_femaleplugs').get_active():
-                settings.set("femaleplugs", True)
-            else:
-                settings.set("femaleplugs", False)
-
-            if self.gladefile.get_widget('check_erroronloop').get_active():
-                settings.set("erroronloop", True)
-            else:
-                settings.set("erroronloop", False)
-
-            if self.gladefile.get_widget('check_systray').get_active():
-                settings.set('systray', True)
+            settings.set("cowfmt", self.gladefile.get_widget("combo_cowfmt").get_active_text())
+            settings.set("kvm", self.get_active("check_kvm"))
+            settings.set("ksm", self.get_active("check_ksm"))
+            tools.enable_ksm(self.get_active("check_ksm"), settings.get("sudo"))
+            settings.set("kqemu", self.get_active("check_kqemu"))
+            settings.set("python", self.get_active("check_python"))
+            settings.set("femaleplugs", self.get_active("check_femaleplugs"))
+            settings.set("erroronloop", self.get_active("check_erroronloop"))
+            settings.set("systray", self.get_active("check_systray"))
+            if self.get_active("check_systray"):
                 self.start_systray()
             else:
-                settings.set('systray', False)
                 self.stop_systray()
-
-            if self.gladefile.get_widget('check_show_missing').get_active():
-                settings.set('show_missing', True)
-                self.start_systray()
-            else:
-                settings.set('show_missing', False)
-                self.stop_systray()
-
-            settings.set("term", self.gladefile.get_widget('entry_term').get_text())
-            settings.set("sudo", self.gladefile.get_widget('entry_sudo').get_text())
-
+            settings.set("show_missing", self.get_active("check_show_missing"))
+            settings.set("term", self.get_text("entry_term"))
+            settings.set("sudo", self.get_text("entry_sudo"))
             settings.store()
-
-            if response == gtk.RESPONSE_OK:
-                widget.hide()
+            if response_id == gtk.RESPONSE_APPLY:
+                return
+        dialog.hide()
 
     def on_dialog_confirm_response(self, widget=None, response=0, data=""):
         widget.hide()
