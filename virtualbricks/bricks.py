@@ -383,7 +383,7 @@ class _LocalBrick(base.Base):
 
     def open_console(self):
         term = settings.get("term")
-        args = [term, "-T", self.name, "-e",
+        args = [term, "-e",
                 os.path.join(settings.get("vdepath"), self.term_command),
                 self.console()]
         get_args = lambda: " ".join(args)
