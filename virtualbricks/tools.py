@@ -28,6 +28,8 @@ import struct
 
 from virtualbricks import log
 
+from twisted.internet import utils
+
 logger = log.Logger()
 ksm_error = log.Event("Can not change ksm state. (failed command: {cmd})")
 
@@ -127,12 +129,21 @@ def check_ksm():
         return False
 
 
-def enable_ksm(enable, use_sudo):
+def _check_cb(exit_code, cmd):
+    if exit_code:  # exit state != 0
+        logger.error(ksm_error, cmd=cmd)
+
+
+def enable_ksm(enable, sudo):
     if enable ^ check_ksm():
-        cmd = "echo %d > %s" % (enable, "/sys/kernel/mm/ksm/run")
-        exit = os.system("sudo %s" % cmd) if use_sudo else os.system(cmd)
-        if exit:  # exit state != 0
-            logger.error(ksm_error, cmd=cmd)
+        cmd = "echo {0:d} > /sys/kernel/mm/ksm/run".format(enable)
+        if sudo:
+            d = utils.getProcessValue(sudo,
+                ["--", "su", "-c", cmd], env=os.environ)
+        else:
+            d = utils.getProcessValue(os.environ.get("SHELL", "/bin/sh"),
+                ["-c", cmd], env=os.environ)
+        d.addCallback(_check_cb, cmd)
 
 
 class Tempfile:
