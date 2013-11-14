@@ -320,9 +320,11 @@ class _LocalBrick(base.Base):
             get_args = lambda: " ".join(args)
             logger.info(start_brick, args=get_args)
             # usePTY?
+            if self.needsudo():
+                prog = settings.get('sudo')
+                args = [settings.get('sudo')] + args
             self.proc = reactor.spawnProcess(Process(self), prog, args,
                                              os.environ)
-
         l = [defer.maybeDeferred(self.prog), defer.maybeDeferred(self.args)]
         d = defer.gatherResults(l, consumeErrors=True)
         d.addCallback(start_process)
