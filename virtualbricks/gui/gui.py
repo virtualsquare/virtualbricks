@@ -379,7 +379,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
         self.widg = self.get_widgets(self.widgetnames())
         self.__config_panel = None
-        self.__summary_table = None
 
         logger.info(start_virtualbricks)
 
@@ -392,8 +391,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
         # Show the main window
         self.widg['main_win'].show()
-        self.ps = []
-        self.bricks = []
+        self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
 
         # Set two useful file filters
         self.vbl_filter = gtk.FileFilter()
@@ -402,13 +400,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.all_files_filter = gtk.FileFilter()
         self.all_files_filter.set_name(_("All files"))
         self.all_files_filter.add_pattern("*")
-
-        # Don't remove me, I am useful after config, when treeview may lose focus and selection.
-        self.last_known_selected_brick = None
-        self.last_known_selected_event = None
-        self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
-
-        # self.sockscombo = dict()
 
         self.setup_bricks()
         self.setup_events()
@@ -426,20 +417,16 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
         ''' Set the settings panel to bottom '''
         self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
-        # self.Dragging = None
         self.curtain_down()
 
         ''' Reset the selections for the TWs'''
         self.vmplug_selected = None
         self.joblist_selected = None
-        self.curtain_is_down = True
 
         ''' Initialize threads, timers etc.'''
         self.signals()
         task.LoopingCall(self.running_bricks.refilter).start(2)
 
-        ''' FIXME: re-enable when implemented '''
-        #self.gladefile.get_widget('convert_image_menuitem').set_sensitive(False)
 
         ''' Check GUI prerequisites '''
         missing = self.check_gui_prerequisites()
@@ -934,69 +921,28 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.get_object("top_panel").show()
         self.get_object("config_panel").hide()
         self.get_object("padding_panel").hide()
-        self.get_object("label_showhidesettings").set_text(_("Show Settings"))
         configframe = self.gladefile.get_widget("configframe")
         configpanel = configframe.get_child()
         if configpanel:
             configframe.remove(configpanel)
         self.__config_panel = None
-        self.__summary_table = None
-        self.curtain_is_down = True
         if project.current:
             self.set_title_default()
-
-    def __fill_config_table(self, brick, table):
-        table.foreach(table.remove)
-        table.resize(len(brick.config), 2)
-        for i, (name, value) in enumerate((name, brick.config.get(name))
-                for name in sorted(brick.config)):
-            nlabel = gtk.Label("%s:" % name)
-            nlabel.set_alignment(1.0, 0.5)
-            nlabel.set_padding(0, 2)
-            table.attach(nlabel, 0, 1, i, i + 1, gtk.FILL, gtk.FILL)
-            vlabel = gtk.Label(value)
-            vlabel.set_alignment(0.0, 0.5)
-            vlabel.set_padding(0, 2)
-            table.attach(vlabel, 1, 2, i, i + 1, gtk.FILL, gtk.FILL)
-
-    def __get_brick_summary_frame(self, brick, panel):
-        builder = gtk.Builder()
-        builder.add_from_file(graphics.get_filename("virtualbricks.gui",
-            "data/brickconfigsummary.ui"))
-        builder.get_object("label").set_markup(_("<b>%s(%s) settings</b>")
-            % (brick.get_name(), brick.get_type()))
-        builder.get_object("image").set_from_pixbuf(
-            graphics.pixbuf_for_running_brick(brick))
-        self.__summary_table = table = builder.get_object("table")
-        self.__fill_config_table(brick, table)
-        builder.get_object("vbox").pack_start(panel, True, True, 0)
-        return builder.get_object("frame")
 
     def _show_config_for_brick(self, brick, configpanel):
         self.__config_panel = configpanel
         self.__hide_panels()
-        # frame = self.__get_brick_summary_frame(brick,
-        #     configpanel.get_view(self))
         configframe = self.get_object("configframe")
-        # configframe.add(frame)
         configframe.add(configpanel.get_view(self))
         configframe.show_all()
         self.__show_config(brick.get_name())
 
-    def curtain_up(self, brick=None):
-        if brick is None:
-            notebook = self.gladefile.get_widget("main_notebook")
-            if notebook.get_current_page() == 0:
-                brick = self.__get_selection(self.__bricks_treeview)
-            elif notebook.get_current_page() == 1:
-                brick = self.__get_selection(self.__events_treeview)
-
-        if brick is not None:
-            configpanel = interfaces.IConfigController(brick, None)
-            if configpanel is not None:
-                self._show_config_for_brick(brick, configpanel)
-                return
-        self._curtain_up()
+    def curtain_up(self, brick):
+        try:
+            configpanel = interfaces.IConfigController(brick)
+            self._show_config_for_brick(brick, configpanel)
+        except TypeError:
+            self._curtain_up(brick)
 
     def __hide_panels(self):
         for name in TYPE_CONFIG_WIDGET_NAME_MAP.itervalues():
@@ -1006,9 +952,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.get_object("top_panel").hide()
         self.get_object("config_panel").show()
         # self.get_object("padding_panel").show()
-        self.get_object("label_showhidesettings").set_text(
-            _("Hide Settings"))
-        self.curtain_is_down = False
         self.set_title("Virtualbricks (Configuring Brick %s)" % name)
 
     def __get_selection(self, treeview):
@@ -1018,14 +961,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             if iter is not None:
                 return model.get_value(iter, 0)
 
-    def _curtain_up(self):
-        notebook = self.gladefile.get_widget("main_notebook")
-        if notebook.get_current_page() != 0:
-            return
+    def _curtain_up(self, brick):
         self.__hide_panels()
-        brick = self.__get_selection(self.__bricks_treeview)
-        if brick is None:
-            return
         logger.debug(config_brick, name=brick.get_name(),
             type=brick.get_type())
         try:
@@ -1277,10 +1214,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_config_save(self, widget=None, data=""):
         # TODO: update config values
         self.config_brick_confirm()
-        if self.__config_panel:
-            self.__fill_config_table(self.__config_panel.original,
-                self.__summary_table)
-            self.__summary_table.show_all()
 
     def set_sensitivegroup(self, l):
         for i in l:
@@ -1621,14 +1554,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 interfaces.IJobMenu(brick).popup(event.button, event.time, self)
                 return True
 
-    def on_button_togglesettings_clicked(self, widget=None, data=""):
-        if self.curtain_is_down:
-            self.curtain_up()
-            self.curtain_is_down = False
-        else:
-            self.curtain_down()
-            self.curtain_is_down = True
-
     def on_dialog_settings_delete_event(self, widget=None, event=None, data=""):
         """we could use deletable property but deletable is only available in
         GTK+ 2.10 and above"""
@@ -1745,10 +1670,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             if not kvm:
                 logger.error(no_kvm)
             widget.set_active(kvm)
-
-    def on_event_configure(self, widget=None, event=None, data=""):
-        self.curtain_up()
-        return
 
     def on_qemupath_changed(self, widget, data=None):
         newpath = widget.get_filename()
