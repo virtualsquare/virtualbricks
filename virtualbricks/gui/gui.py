@@ -1078,20 +1078,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def widgetnames(self):
         return ['main_win',
         'dialog_settings',
-        'dialog_bookmarks',
-        'menu_popup_bookmarks',
-        'menu_popup_imagelist',
-        'dialog_jobmonitor',
-        'menu_popup_usbhost',
-        'menu_popup_usbguest',
-        'menu_popup_volumes',
-        'dialog_newnetcard',
-        'dialog_confirm_action',
-        'dialog_new_redirect',
-        'ifconfig_win',
         'dialog_newbrick',
         'menu_brickactions',
-        'dialog_confirm',
         'dialog_convertimage',
         ]
     '''
@@ -1255,14 +1243,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             return True
         elif response == gtk.RESPONSE_NO:
             return False
-
-    def ask_confirm(self, text, on_yes=None, on_no=None, arg=None):
-        self.curtain_down()
-        self.gladefile.get_widget('lbl_confirm').set_text(text)
-        self.on_confirm_response_yes = on_yes
-        self.on_confirm_response_no = on_no
-        self.on_confirm_response_arg = arg
-        self.gladefile.get_widget('dialog_confirm').show_all()
 
     def on_newbrick_cancel(self, widget=None, data=""):
         self.curtain_down()
@@ -1535,17 +1515,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.curtain_down()
         self.show_window('dialog_settings')
 
-    def on_item_settings_autoshow_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_item_settings_autoshow_activate not implemented")
-
-    def on_item_settings_autohide_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_item_settings_autohide_activate not implemented")
-
     def on_item_about_activate(self, widget=None, data=""):
         dialogs.AboutDialog().show()
-
-    def on_toolbutton_launchxterm_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_toolbutton_launchxterm_clicked not implemented")
 
     def on_toolbutton_start_all_clicked(self, widget=None, data=""):
 
@@ -1695,15 +1666,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 return
         dialog.hide()
 
-    def on_dialog_confirm_response(self, widget=None, response=0, data=""):
-        widget.hide()
-        if (response == 1):
-            if (self.on_confirm_response_yes):
-                self.on_confirm_response_yes(self.on_confirm_response_arg)
-        elif (response == 0):
-            if (self.on_confirm_response_no):
-                self.on_confirm_response_no(self.on_confirm_response_arg)
-
     def on_dialog_attach_event_response(self, widget=None, response=0, data=""):
         widget.hide()
         if (response == 1):
@@ -1732,63 +1694,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
         treeselection = stopevents.get_selection()
         treeselection.unselect_all()
-
-    def on_treeview_cdromdrives_row_activated(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_cdromdrives_row_activated not implemented")
-
-    def on_button_settings_add_cdevice_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button_settings_add_cdevice_clicked not implemented")
-
-    def on_button_settings_rem_cdevice_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button_settings_rem_cdevice_clicked not implemented")
-
-    def on_treeview_qemupaths_row_activated(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_qemupaths_row_activated not implemented")
-
-    def on_button_settings_add_qemubin_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button_settings_add_qemubin_clicked not implemented")
-
-    def on_button_settings_rem_qemubin_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button_settings_rem_qemubin_clicked not implemented")
-
-    def on_dialog_bookmarks_response(self, widget=None, data=""):
-        raise NotImplementedError("on_dialog_bookmarks_response not implemented")
-
-    def on_edit_bookmark_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_edit_bookmark_activate not implemented")
-
-    def on_bookmark_info_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_bookmark_info_activate not implemented")
-
-    def on_delete_bookmark_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_delete_bookmark_activate not implemented")
-
-    def on_filechooserbutton_newimage_dest_selection_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_filechooserbutton_newimage_dest_selection_changed not implemented")
-
-    def on_filechooserbutton_newimage_dest_current_folder_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_filechooserbutton_newimage_dest_current_folder_changed not implemented")
-
-    def on_entry_newimage_name_changed(self, widget=None, data=""):
-        pass
-
-    def on_combobox_newimage_format_changed(self, widget=None, data=""):
-        pass
-
-    def on_spinbutton_newimage_size_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_spinbutton_newimage_size_changed not implemented")
-
-    def on_combobox_newimage_sizeunit_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_combobox_newimage_sizeunit_changed not implemented")
-
-    def on_filechooserdialog_openimage_response(self, dialog, response):
-        pass
-
-    def on_button_openimage_cancel_clicked(self, widget=None, data=""):
-        pass
-
-    def on_button_openimage_open_clicked(self, button):
-        pass
 
     def on_item_create_image_activate(self, widget=None, data=""):
         dialogs.CreateImageDialog(self, self.brickfactory).show(
@@ -1824,123 +1729,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.curtain_down()
         self.user_wait_action(self.image_create)
 
-    def on_dialog_messages_response(self, widget=None, data=""):
-        raise NotImplementedError("on_dialog_messages_response not implemented")
-
-    def on_item_info_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_item_info_activate not implemented")
-
-    def on_item_bookmark_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_item_bookmark_activate not implemented")
-
-    def on_dialog_jobmonitor_response(self, widget=None, data=""):
-        raise NotImplementedError("on_dialog_jobmonitor_response not implemented")
-
-    def on_toolbutton_stop_job_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_toolbutton_stop_job_clicked not implemented")
-
-    def on_toolbutton_reset_job_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_toolbutton_reset_job_clicked not implemented")
-
-    def on_toolbutton_pause_job_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_toolbutton_pause_job_clicked not implemented")
-
-    def on_toolbutton_rerun_job_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_toolbutton_rerun_job_clicked not implemented")
-
-    def on_treeview_jobmon_volumes_button_press_event(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_jobmon_volumes_button_press_event not implemented")
-
-    def on_treeview_jobmon_volumes_row_activated(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_jobmon_volumes_row_activated not implemented")
-
-    def on_button_jobmon_apply_cdrom_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button_jobmon_apply_cdrom_clicked not implemented")
-
-    def on_button_jobmon_apply_fda_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button_jobmon_apply_fda_clicked not implemented")
-
-    def on_button_jobmon_apply_fdb_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button_jobmon_apply_fdb_clicked not implemented")
-
-    def on_combobox_jobmon_cdrom_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_combobox_jobmon_cdrom_changed not implemented")
-
-    def on_combobox_jobmon_fda_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_combobox_jobmon_fda_changed not implemented")
-
-    def on_combobox_jobmon_fdb_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_combobox_jobmon_fdb_changed not implemented")
-
-    def on_treeview_usbhost_button_press_event(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_usbhost_button_press_event not implemented")
-
-    def on_treeview_usbhost_row_activated(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_usbhost_row_activated not implemented")
-
-    def on_treeview_usbguest_button_press_event(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_usbguest_button_press_event not implemented")
-
-    def on_treeview_usbguest_row_activated(self, widget=None, data=""):
-        raise NotImplementedError("on_treeview_usbguest_row_activated not implemented")
-
-    def on_attach_device_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_attach_device_activate not implemented")
-
-    def on_detach_device_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_detach_device_activate not implemented")
-
-    def on_item_eject_activate(self, widget=None, data=""):
-        raise NotImplementedError("on_item_eject_activate not implemented")
-
-    def on_dialog_newnetcard_response(self, widget=None, data=""):
-        raise NotImplementedError("on_dialog_newnetcard_response not implemented")
-
-    def on_combobox_networktype_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_combobox_networktype_changed not implemented")
-
-    def on_entry_network_macaddr_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_entry_network_macaddr_changed not implemented")
-
-    def on_entry_network_ip_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_entry_network_ip_changed not implemented")
-
-    def on_spinbutton_network_port_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_spinbutton_network_port_changed not implemented")
-
-    def on_spinbutton_network_vlan_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_spinbutton_network_vlan_changed not implemented")
-
-    def on_entry_network_ifacename_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_entry_network_ifacename_changed not implemented")
-
-    def on_entry_network_tuntapscript_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_entry_network_tuntapscript_changed not implemented")
-
-    def on_button__network_open_tuntap_file_clicked(self, widget=None, data=""):
-        raise NotImplementedError("on_button__network_open_tuntap_file_clicked not implemented")
-
-    def on_spinbutton_network_filedescriptor_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_spinbutton_network_filedescriptor_changed not implemented")
-
-    def on_dialog_new_redirect_response(self, widget=None, data=""):
-        raise NotImplementedError("on_dialog_new_redirect_response not implemented")
-
-    def on_radiobutton_redirect_TCP_toggled(self, widget=None, data=""):
-        raise NotImplementedError("on_radiobutton_redirect_TCP_toggled not implemented")
-
-    def on_radiobutton_redirect_UDP_toggled(self, widget=None, data=""):
-        raise NotImplementedError("on_radiobutton_redirect_UDP_toggled not implemented")
-
-    def on_spinbutton_redirect_sport_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_spinbutton_redirect_sport_changed not implemented")
-
-    def on_entry_redirect_gIP_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_entry_redirect_gIP_changed not implemented")
-
-    def on_spinbutton_redirect_dport_changed(self, widget=None, data=""):
-        raise NotImplementedError("on_spinbutton_redirect_dport_changed not implemented")
-
     def on_newbrick(self, widget=None, event=None, data=""):
         self.curtain_down()
         self.gladefile.get_widget('text_newbrickname').set_text("")
@@ -1951,24 +1739,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         dialog.window.set_transient_for(self.widg["main_win"])
         dialog.show()
 
-    def on_testconfig(self, widget=None, event=None, data=""):
-        raise NotImplementedError("on_testconfig not implemented")
-
-    def on_autodetectsettings(self, widget=None, event=None, data=""):
-        raise NotImplementedError("on_autodetectsettings not implemented")
-
     def on_check_kvm(self, widget=None, event=None, data=""):
         if widget.get_active():
             kvm = tools.check_kvm(settings.get("qemupath"))
             if not kvm:
                 logger.error(no_kvm)
             widget.set_active(kvm)
-
-    def on_add_cdrom(self, widget=None, event=None, data=""):
-        raise NotImplementedError("on_add_cdrom not implemented")
-
-    def on_remove_cdrom(self, widget=None, event=None, data=""):
-        raise NotImplementedError("on_remove_cdrom not implemented")
 
     def on_event_configure(self, widget=None, event=None, data=""):
         self.curtain_up()
@@ -2164,9 +1940,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         d = dialogs.ImportDialog(self.brickfactory)
         d.on_destroy = self.set_title_default
         d.show(self.get_object("main_win"))
-
-    def on_open_recent_project(self, widget, data=None):
-        raise NotImplementedError("on_open_recent_project not implemented")
 
     def do_image_convert(self, arg=None):
         raise NotImplementedError("do_image_convert")
