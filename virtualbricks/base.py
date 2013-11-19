@@ -103,7 +103,7 @@ class SpinInt(Integer):
         self.max = max
 
     def assert_in_range(self, i):
-        if i < self.min or i > self.max:
+        if not self.min <= i <= self.max:
             raise ValueError(_("value out range %d (%d, %d)") % (i, self.min,
                                                                  self.max))
 
