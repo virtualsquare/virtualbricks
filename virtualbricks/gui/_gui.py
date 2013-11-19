@@ -33,7 +33,6 @@ cannot_rename = log.Event("Cannot rename Brick: it is in use.")
 snap_error = log.Event("Error on snapshot")
 invalid_name = log.Event("Invalid name!")
 resume_vm = log.Event("Resuming virtual machine {name}")
-connect_error = log.Event("Error connecting to remote host {addr}: {msg}")
 proc_signal = log.Event("Sending to process signal {signame}!")
 proc_restart = log.Event("Restarting process!")
 s_r_not_supported = log.Event("Suspend/Resume not supported on this disk.")
@@ -202,60 +201,6 @@ class EventPopupMenu(BaseMenu):
             logger.error(event_in_use)
 
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
-
-
-class RemoteHostPopupMenu:
-    implements(interfaces.IMenu)
-
-    def __init__(self, original):
-        self.original = original
-
-    def build(self, gui):
-        menu = gtk.Menu()
-        label = _("Disconnect") if self.original.connected else _("Connect")
-        connect = gtk.MenuItem(label)
-        connect.connect("activate", self.on_connect_activate, gui)
-        menu.append(connect)
-        change_pw = gtk.MenuItem("Change password")
-        change_pw.connect("activate", self.on_change_password_activate, gui)
-        menu.append(change_pw)
-        ac = gtk.CheckMenuItem("Auto-connect at startup")
-        ac.set_active(self.original.autoconnect)
-        ac.connect("activate", self.on_ac_activate, gui)
-        menu.append(ac)
-        delete = gtk.MenuItem("Delete")
-        delete.connect("activate", self.on_delete_activate, gui)
-        menu.append(delete)
-        return menu
-
-    def popup(self, button, time, gui):
-        menu = self.build(gui)
-        menu.show_all()
-        menu.popup(None, None, None, button, time)
-
-    def on_connect_activate(self, menuitem, gui):
-        if self.original.connected:
-            self.original.disconnect()
-        else:
-            # XXX: this will block
-            conn_ok, msg = self.original.connect()
-            if not conn_ok:
-                logger.error(connect_error, addr=self.original.addr[0],
-                             msg=msg)
-
-    def on_change_password_activate(self, menuitem, gui):
-        dialogs.ChangePasswordDialog(self.original).show()
-
-    def on_ac_activate(self, menuitem, gui):
-        self.original.autoconnect = menuitem.get_active()
-
-    def on_delete_activate(self, menuitem, gui):
-        gui.ask_confirm(_("Do you really want to delete remote host ") +
-            " \"" + self.original.addr[0] + "\" and all the bricks related?",
-            on_yes=gui.brickfactory.delremote, arg=self.original)
-
-interfaces.registerAdapter(RemoteHostPopupMenu, console.RemoteHost,
-                           interfaces.IMenu)
 
 
 class LinkMenu:

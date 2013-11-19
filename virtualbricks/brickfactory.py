@@ -91,7 +91,6 @@ class BrickFactory(object):
 
     def __init__(self, quit):
         self.quit_d = quit
-        self.remote_hosts = []
         self.bricks = []
         self.events = []
         self.socks = []
@@ -105,8 +104,6 @@ class BrickFactory(object):
         logger.info(engine_bye)
         for e in self.events:
             e.poweroff()
-        # for h in self.remote_hosts:
-        #     h.disconnect()
 
         l = [brick.poweroff() for brick in self.bricks]
         return defer.DeferredList(l, consumeErrors=True)
@@ -127,7 +124,6 @@ class BrickFactory(object):
 
         del self.socks[:]
         del self.disk_images[:]
-        del self.remote_hosts[:]
 
     def register_brick_type(self, factory, *types):
         """Register a new brick type.
@@ -229,11 +225,6 @@ class BrickFactory(object):
         if ltype not in self.__factories:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
         brick = self.__factories[ltype](self, nname)
-        if remote:
-            brick.set_host(host)
-            if brick.homehost.connected:
-                brick.homehost.send("new " + brick.get_type() + " " +
-                                    brick.name)
         return brick
 
     def dup_brick(self, brick):
@@ -332,19 +323,6 @@ class BrickFactory(object):
 
     ############################################
 
-    def __get_host_by_name(self, hostname):
-        for h in self.remote_hosts:
-            if h.addr[0] == hostname:
-                return h
-
-    def get_host_by_name(self, hostname):
-        host = self.__get_host_by_name(hostname)
-        if host is None:
-            host = console.RemoteHost(self, hostname)
-            # self.remote_hosts.append(host)
-            # logger.debug("Created new host %s", hostname)
-        return host
-
     def next_name(self, name, suffix="_new"):
         while self.is_in_use(name):
             name += suffix
@@ -415,21 +393,6 @@ class BrickFactory(object):
         else:
             logger.debug(endpoint_not_found, nick=nick)
             return None
-
-    # def delremote(self, hostname):
-    #     if isinstance(hostname, console.RemoteHost):
-    #         self.__del_remote(hostname)
-    #     else:
-    #         host = self.__get_host_by_name(hostname)
-    #         if host is not None:
-    #             self.__del_remote(host)
-
-    # def __del_remote(self, host):
-    #     bricks = [b for b in self.bricks if b.homehost and
-    #               b.homehost.addr[0] == host.addr[0]]
-    #     for brick in bricks:
-    #         self.del_brick(brick)
-    #     self.remote_hosts.remove(host)
 
     # ###################
 

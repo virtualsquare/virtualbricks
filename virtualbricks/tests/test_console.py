@@ -1,8 +1,30 @@
 import StringIO
 import textwrap
 
-from virtualbricks import console, errors
+from zope.interface import implements
+from twisted.python import components
+from twisted.internet import interfaces
+
+from virtualbricks import console
 from virtualbricks.tests import unittest, stubs
+
+
+class FileTransportAdapter:
+    implements(interfaces.ITransport)
+
+    def __init__(self, original):
+        self.original = original
+
+    def write(self, data):
+        self.original.write(data)
+
+    def writeSequence(self, sequence):
+        self.original.write("".join(sequence))
+
+    loseConnection = getPeer = getHost = lambda s: None
+
+components.registerAdapter(FileTransportAdapter, StringIO.StringIO,
+                           interfaces.ITransport)
 
 
 class TestProtocol(unittest.TestCase):

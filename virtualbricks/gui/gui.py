@@ -413,7 +413,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.setup_bricks()
         self.setup_events()
         self.setup_joblist()
-        # self.setup_remotehosts()
         self.setup_router_devs()
         self.setup_router_routes()
         self.setup_router_filters()
@@ -534,46 +533,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
         self.running_bricks.set_visible_func(is_running)
         builder.get_object("joblist_treeview").set_model(self.running_bricks)
-
-    # def setup_remotehosts(self):
-    #     builder = self.__setup_treeview("data/remotehosts.ui",
-    #                             "scrolledwindow5", "remotehosts_treeview")
-
-    #     def set_status(column, cell_renderer, model, iter):
-    #         host = model.get_value(iter, 0)
-    #         filename = "connect.png" if host.connected else "disconnect.png"
-    #         pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(
-    #             graphics.get_image(filename), 48, 48)
-    #         cell_renderer.set_property("pixbuf", pixbuf)
-
-    #     def set_address(column, cell_renderer, model, iter):
-    #         host = model.get_value(iter, 0)
-    #         label = "{0[0]}:{0[1]}".format(host.addr)
-    #         cell_renderer.set_property("text", label)
-
-    #     def set_num_bricks(column, cell_renderer, model, iter):
-    #         host = model.get_value(iter, 0)
-    #         cell_renderer.set_property("text", str(host.num_bricks()))
-
-    #     def set_ac(column, cell_renderer, model, iter):
-    #         host = model.get_value(iter, 0)
-    #         cell_renderer.set_property("text",
-    #             "Yes" if host.autoconnect else "No")
-
-    #     status_c = builder.get_object("status_treeviewcolumn")
-    #     status_cr = builder.get_object("status_cellrenderer")
-    #     status_c.set_cell_data_func(status_cr, set_status)
-    #     address_c = builder.get_object("address_treeviewcolumn")
-    #     address_cr = builder.get_object("address_cellrenderer")
-    #     address_c.set_cell_data_func(address_cr, set_address)
-    #     numbrick_c = builder.get_object("numbrick_treeviewcolumn")
-    #     numbrick_cr = builder.get_object("numbrick_cellrenderer")
-    #     numbrick_c.set_cell_data_func(numbrick_cr, set_num_bricks)
-    #     ac_c = builder.get_object("ac_treeviewcolumn")
-    #     ac_cr = builder.get_object("ac_cellrenderer")
-    #     ac_c.set_cell_data_func(ac_cr, set_ac)
-    #     builder.get_object("remotehosts_treeview").set_model(
-    #         self.brickfactory.remote_hosts)
 
     def setup_events(self):
         builder = self.__setup_treeview("data/events.ui",
@@ -1320,22 +1279,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.curtain_down()
         name = self.gladefile.get_widget('text_newbrickname').get_text()
         ntype = self.selected_type(self.get_object("typebutton_Switch"))
-        runremote = self.gladefile.get_widget('check_newbrick_runremote').get_active()
-        if runremote:
-            remotehost = self.gladefile.get_widget('text_newbrick_runremote').get_text()
-            try:
-                self.brickfactory.newbrick('remote', ntype, name, remotehost, "")
-            except errors.InvalidNameError:
-                logger.error(brick_invalid_name)
-            else:
-                logger.debug(created)
+        try:
+            self.brickfactory.newbrick(ntype, name)
+        except errors.InvalidNameError:
+            logger.error(brick_invalid_name)
         else:
-            try:
-                self.brickfactory.newbrick(ntype, name)
-            except errors.InvalidNameError:
-                logger.error(brick_invalid_name)
-            else:
-                logger.debug(created)
+            logger.debug(created)
 
     def on_config_cancel(self, widget=None, data=""):
         self.config_brick_cancel()
@@ -2219,14 +2168,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_open_recent_project(self, widget, data=None):
         raise NotImplementedError("on_open_recent_project not implemented")
 
-    # def on_add_remotehost(self, widget, data=None):
-    #     hostname = self.gladefile.get_widget("newhost_text").get_text()
-    #     if len(hostname) > 0:
-    #         self.brickfactory.get_host_by_name(hostname)
-
-    def on_check_newbrick_runremote_toggled(self, widget, event=None, data=None):
-        self.gladefile.get_widget('text_newbrick_runremote').set_sensitive(widget.get_active())
-
     def do_image_convert(self, arg=None):
         raise NotImplementedError("do_image_convert")
         # src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
@@ -2384,7 +2325,6 @@ class VisualFactory(brickfactory.BrickFactory):
         self.bricks = List()
         self.disk_images = List()
         self.socks = List()
-        # self.remote_hosts = List()
 
 
 @implementer(log.ILogObserver)

@@ -44,8 +44,6 @@ event_unavailable = log.Event("Warning. The Event {event} attached to Brick "
 shutdown_brick = log.Event("Shutting down {name} (pid: {pid})")
 start_brick = log.Event("Starting: '{args()}'")
 open_console = log.Event("Opening console for {name}\n%{args()}\n")
-host_not_connected = log.Event("Error: You must be connected to the host to "
-                               "perform this action")
 console_done = log.Event("Console terminated\n{status}")
 console_terminated = log.Event("Console terminated\n{status}\nProcess stdout:"
                                "\n{out()}\nProcess stderr:\n{err()}\n")
@@ -420,12 +418,6 @@ class Brick(_LocalBrick):
 
     def __init__(self, factory, name, homehost=None):
         _LocalBrick.__init__(self, factory, name)
-        if homehost is not None:
-            self.set_host(homehost)
-
-    def set_host(self, hostname):
-        self.homehost = self.factory.get_host_by_name(hostname)
-        self.config["homehost"] = hostname
 
     def set(self, attrs=None, **kwds):
         if attrs is None:
@@ -433,20 +425,3 @@ class Brick(_LocalBrick):
         else:
             attrs.update(kwds)
         _LocalBrick.set(self, attrs)
-        if self.homehost and self.homehost.connected:
-            self.homehost.putconfig(self)
-
-    def poweron(self):
-        if self.homehost:
-            if not self.homehost.connected:
-                logger.error(host_not_connected)
-            else:
-                self.homehost.send(self.name + " on")
-        else:
-            return _LocalBrick.poweron(self)
-
-    def poweroff(self, kill=False):
-        if self.homehost:
-            self.homehost.send(self.name + " off\n")
-        else:
-            return _LocalBrick.poweroff(self, kill)
