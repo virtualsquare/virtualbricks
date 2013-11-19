@@ -1370,6 +1370,7 @@ class ExportProjectDialog(Window):
         chooser.set_filter(vbp)
         chooser.connect("response", self.on_filechooser_response)
         chooser.set_transient_for(self.window)
+        chooser.set_current_name(self.get_object("filename_entry").get_text())
         chooser.show()
 
     def on_filename_entry_changed(self, entry):
