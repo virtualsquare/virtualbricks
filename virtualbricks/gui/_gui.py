@@ -95,7 +95,6 @@ class BaseMenu:
 
     def on_configure_activate(self, menuitem, gui):
         gui.curtain_up(self.original)
-        gui.curtain_is_down = False
 
 
 class BrickPopupMenu(BaseMenu):
