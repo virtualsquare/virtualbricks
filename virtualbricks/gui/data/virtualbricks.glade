@@ -2859,6 +2859,12 @@ Use an already open UDP multicast socket</property>
                         <child>
                           <placeholder/>
                         </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -4158,7 +4164,7 @@ multiple devices&lt;/b&gt;</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes">Start All Bricks</property>
                             <property name="use_underline">True</property>
-                            <property name="stock_id">gtk-connect</property>
+                            <property name="stock_id">gtk-yes</property>
                             <signal name="clicked" handler="on_toolbutton_start_all_clicked"/>
                           </widget>
                           <packing>
@@ -4172,7 +4178,7 @@ multiple devices&lt;/b&gt;</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes">Stop All Bricks</property>
                             <property name="use_underline">True</property>
-                            <property name="stock_id">gtk-disconnect</property>
+                            <property name="stock_id">gtk-no</property>
                             <signal name="clicked" handler="on_toolbutton_stop_all_clicked"/>
                           </widget>
                           <packing>
