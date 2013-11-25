@@ -213,3 +213,28 @@ class GtkTestCase(unittest.TestCase):
             msg = ("widget {0} is visible when it is expected it is "
                    "not.".format(widget))
         self.assertFalse(widget.get_visible(), msg)
+
+
+class LoggingObserver:
+
+    def __init__(self):
+        self.msgs = []
+
+    def emit(self, event_dict):
+        self.msgs.append(event_dict)
+
+    def __call__(self, event_dict):
+        self.emit(event_dict)
+
+    def __len__(self):
+        return len(self.msgs)
+
+    def __getitem__(self, idx):
+        try:
+            return self.msgs[idx]
+        except IndexError:
+            raise IndexError("{0.__class__.__name__} index out of range"
+                             "".format(self))
+        except TypeError:
+            raise TypeError("{0.__class__.__name__} indices must be integers, "
+                            "not {1.__class__.__name__}".format(self, idx))

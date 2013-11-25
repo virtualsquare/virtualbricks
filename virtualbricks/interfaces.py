@@ -124,3 +124,9 @@ class IPlug(Interface):
         bricks if it is not.
 
         Return a deferred that fires when the related are started."""
+
+
+class IBuilder(Interface):
+
+    def load_from(factory, item):
+        """Return a new brick or link from the given item."""

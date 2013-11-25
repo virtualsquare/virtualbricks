@@ -86,12 +86,3 @@ class FactoryStub(brickfactory.BrickFactory):
     def __init__(self):
         brickfactory.BrickFactory.__init__(self, defer.Deferred())
         self.register_brick_type(BrickStub, "stub")
-
-
-class LoggingObserver:
-
-    def __init__(self):
-        self.msgs = []
-
-    def emit(self, event_dict):
-        self.msgs.append(event_dict)
