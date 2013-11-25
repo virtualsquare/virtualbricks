@@ -130,3 +130,22 @@ class TestParser(unittest.TestCase):
         line = "link|1-brick|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
         parser = configparser.Parser(StringIO.StringIO(line))
         self.assertEqual(list(parser), [])
+
+    def test_hostonly_link(self):
+        """Test a hostonly link."""
+
+        line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55"
+        parser = configparser.Parser(StringIO.StringIO(line))
+        expected = tuple(line.split("|"))
+        self.assertEqual(list(parser), [expected])
+
+    def test_link_ends_with_new_line(self):
+        """
+        Where links are parsed, a new line character can appears at the end of
+        the line.
+        """
+
+        line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55\n"
+        parser = configparser.Parser(StringIO.StringIO(line))
+        expected = tuple(line[:-1].split("|"))
+        self.assertEqual(list(parser), [expected])
