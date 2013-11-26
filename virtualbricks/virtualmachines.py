@@ -642,7 +642,7 @@ class VirtualMachine(bricks.Brick):
             if self.config["cpu"]:
                 res.extend(["-cpu", self.config["cpu"]])
         res.extend(list(self.build_cmd_line()))
-        if not self.has_graphic() or self.config["novga"]:
+        if self.config["novga"]:
             res.extend(["-display", "none"])
         for disk_args in results:
             res.extend(disk_args)
@@ -695,7 +695,7 @@ class VirtualMachine(bricks.Brick):
                 res.extend(["-cdrom", self.config["device"]])
         if self.config["rtc"]:
             res.extend(["-rtc", "base=localtime"])
-        if len(self.config.keyboard) == 2:
+        if len(self.config["keyboard"]) == 2:
             res.extend(["-k", self.config["keyboard"]])
         if self.config["kvmsm"]:
             res.extend(["-kvm-shadow-memory", self.config["kvmsmem"]])
@@ -708,9 +708,6 @@ class VirtualMachine(bricks.Brick):
                     "-mon", "chardev=mon_cons", "-chardev",
                     "stdio,id=mon_cons,signal=off"])
         return res
-
-    def has_graphic(self):
-        return False
 
     def add_sock(self, mac=None, model=None):
         s = self.factory.new_sock(self)
