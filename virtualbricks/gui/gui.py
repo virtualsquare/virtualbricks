@@ -16,7 +16,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import re
 
 import gobject
 import gtk
@@ -29,7 +28,6 @@ from virtualbricks import (interfaces, tools, errors, settings, project, log,
                            brickfactory)
 
 from virtualbricks.gui import _gui, graphics, dialogs
-from virtualbricks.gui.combo import ComboBox
 
 
 if False:  # pyflakes
@@ -46,8 +44,6 @@ start_virtualbricks = log.Event("Starting VirtualBricks")
 components_not_found = log.Event("{text}\nThere are some components not "
     "found: {components} some functionalities may not be available.\nYou can "
     "disable this alert from the general settings.")
-config_brick = log.Event("config brick {name} ({type})")
-invalid_type = log.Event("Error: invalid brick type")
 brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
 created = log.Event("Created successfully")
 create_image_error = log.Event("Error on creating image")
@@ -90,56 +86,6 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
                 os.environ)
 
 
-def get_treeselected(gui, tree, model, pthinfo, c):
-    if pthinfo is not None:
-        path, col, cellx, celly = pthinfo
-        tree.grab_focus()
-        tree.set_cursor(path, col, 0)
-        iter_ = model.get_iter(path)
-        name = model.get_value(iter_, c)
-        gui.config_last_iter = iter_
-        return name
-    return ""
-
-
-def get_treeselected_name(gui, tree, model, pathinfo):
-    return get_treeselected(gui, tree, model, pathinfo, 3)
-
-
-def get_combo_text(widget):
-    # XXX: this can return None
-    combo = ComboBox(widget)
-    txt = combo.get_selected()
-    if txt is not None and txt != "-- default --":
-        return txt
-
-
-def widget_to_params(brick, get_widget):
-    """Widget to params reads the config directly from
-    gtk widgets.
-    If the widget name is in the format:
-        - cfg_<type>_<variablename>_<widgettype>
-    the configuration will be read automatically.
-    """
-
-    pattern_setters = [("cfg_%s_%s_text", lambda w: w.get_text()),
-        ("cfg_%s_%s_spinint", lambda w: w.get_value_as_int()),
-        ("cfg_%s_%s_spinfloat", lambda w: w.get_value()),
-        ("cfg_%s_%s_comboinitial", lambda w: w.get_active_text()),
-        ("cfg_%s_%s_combo", lambda w: get_combo_text(w)),
-        ("cfg_%s_%s_check", lambda w: w.get_active()),
-        ("cfg_%s_%s_filechooser", lambda w: (w.get_filename() or ""))]
-
-    parameters = {}
-    for param_name in brick.config.keys():
-        for pattern, setter in pattern_setters:
-            name = pattern % (brick.get_type(), param_name)
-            widget = get_widget(name)
-            if widget:
-                parameters[param_name] = setter(widget)
-    return dict((k, v) for k, v in parameters.items() if v is not None)
-
-
 def changed(brick, row):
     if row.valid():
         path = row.get_path()
@@ -160,8 +106,6 @@ def changed_brick_in_model(result, model):
     return result
 
 
-TYPE_CONFIG_WIDGET_NAME_MAP = {"Wirefilter": "box_wirefilterconfig",
-                               "Router": "box_routerconfig"}
 BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, \
         REMOTE_TAB, TOPOLOGY_TAB, README_TAB = range(6)
 
@@ -378,7 +322,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         TopologyMixin.__init__(self)
 
         self.widg = self.get_widgets(self.widgetnames())
-        self.__config_panel = None
 
         logger.info(start_virtualbricks)
 
@@ -404,9 +347,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.setup_bricks()
         self.setup_events()
         self.setup_joblist()
-        self.setup_router_devs()
-        self.setup_router_routes()
-        self.setup_router_filters()
 
         self.statusicon = None
         self.progressbar = ProgressBar(self)
@@ -424,7 +364,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.joblist_selected = None
 
         ''' Initialize threads, timers etc.'''
-        self.signals()
+        self.gladefile.signal_autoconnect(self)
         task.LoopingCall(self.running_bricks.refilter).start(2)
 
 
@@ -600,27 +540,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.__bricks_treeview = builder.get_object("bricks_treeview")
         self.__bricks_treeview.set_model(self.brickfactory.bricks)
 
-    def setup_router_devs(self):
-        pass
-        # self.routerdevs = tree.VBTree(self, "treeview_router_netdev", None,
-        #                         [str, str, str],
-        #                         ["Eth", "connection", "macaddr"])
-
-    def setup_router_routes(self):
-        pass
-
-        # ''' TW with Router routes '''
-        # self.routerroutes = tree.VBTree(self, 'treeview_router_routes', None,
-    # [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-        # [ 'Destination','Netmask','Gateway','Via','metric'])
-
-    def setup_router_filters(self):
-        pass
-        # ''' TW with Router filters '''
-        # self.routerfilters = tree.VBTree(self, 'treeview_router_filters', None,
-    # [gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING],
-        # [ 'Dev','Source','Destination','Protocol','TOS','Action'])
-
     def check_gui_prerequisites(self):
         qmissing, _ = tools.check_missing_qemu(settings.get("qemupath"))
         vmissing = tools.check_missing_vde(settings.get("vdepath"))
@@ -644,236 +563,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_brick_changed(self, model, path, iter):
         self.draw_topology()
-
-    """
-    " ******************************************************** "
-    " ******************************************************** "
-    " ******************************************************** "
-    " BRICK CONFIGURATION
-    "    'PREPARE' METHODS
-    "            --  fill panel form with current brick/event
-    "                configuration
-    """
-    def config_brick_prepare(self, b):
-        """fill the current configuration in the config interface.
-        This is the global method to fill in all the forms
-        in the configuration panel for bricks and events
-        """
-
-        # Fill socks combobox
-        for k in self.sockscombo_names():
-            combo = ComboBox(self.gladefile.get_widget(k))
-            opt = dict()
-            # add Ad-hoc host only to the vmehternet
-            if settings.femaleplugs:
-                opt['Vde socket'] = '_sock'
-
-            for so in self.brickfactory.socks:
-                if ((so.brick.homehost == b.homehost or (b.get_type() == 'Wire'
-                        and settings.python)) and
-                        (so.brick.get_type().startswith('Switch') or
-                        settings.femaleplugs)):
-                    opt[so.nickname] = so.nickname
-            combo.populate(opt)
-            t = b.get_type()
-            if (not t.startswith('Wire')) or k.endswith('0'):
-                if len(b.plugs) >= 1 and b.plugs[0].sock:
-                    combo.select(b.plugs[0].sock.nickname)
-
-            elif k.endswith('1') and t.startswith('Wire'):
-                if len(b.plugs) >= 2 and b.plugs[1].sock:
-                    combo.select(b.plugs[1].sock.nickname)
-
-        dicts = dict()
-
-        t = b.get_type()
-        for key in b.config.keys():
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
-            if widget is not None:
-                if b.config[key]:
-                    if key is "kvm" and settings.kvm:
-                        widget.set_active(True)
-                    elif key is not "kvm":
-                        widget.set_active(True)
-                else:
-                    widget.set_active(False)
-                if b.get_type() == 'Wirefilter':
-                    #Trigger wirefilter "symmetrical" checkbox management
-                    if key is "speedenable":
-                        self.on_wf_speed_checkbox_toggle(widget)
-                    #Trigger wirefilter "speed" section management
-                    else:
-                        self.on_symm_toggle(widget)
-
-        t = b.get_type()
-        for key in b.config.keys():
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
-            if widget is not None:
-                widget.set_text(b.config.get(key))
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-            if widget is not None and b.config.get(key):
-                widget.set_value(b.config[key])
-            if t == "Switch" and key == 'numports':
-                nports = 0
-                for it in self.brickfactory.bricks:
-                    for p in [p for p in it.plugs if p.configured()]:
-                        if p.sock.nickname == b.socks[0].nickname:
-                            nports += 1
-                if nports > 0:
-                    widget.set_range(nports, 128)
-                else:
-                    widget.set_range(1, 128)
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
-            if widget is not None and key in dicts:
-                for k, v in dicts[key].iteritems():
-                    if v == b.config.get(key):
-                        ComboBox(self.gladefile.get_widget("cfg_" + t + "_" + key + "_combo")).select(k)
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
-            if widget is not None:
-                model = widget.get_model()
-                iter_ = model.get_iter_first()
-                i = 0
-                while iter_:
-                    if model.get_value(iter_, 0) == b.config.get(key):
-                        widget.set_active(i)
-                        break
-                    else:
-                        iter_ = model.iter_next(iter_)
-                        i = i + 1
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
-            if widget is not None and b.config.get(key):
-                widget.set_filename(b.config.get(key))
-            elif widget is not None:
-                widget.unselect_all()
-
-    """
-    " ******************************************************** "
-    " ******************************************************** "
-    " ******************************************************** "
-    " BRICK CONFIGURATION
-    "    'CONFIRM' METHODS
-    "            --  store new parameters from the form into the
-    "                brick configuration if the modifies are
-    "                confirmed.
-    """
-    '''
-    ' Widget to params reads the config directly from
-    ' gtk widgets.
-    ' If the widget name is in the format:
-    '     - cfg_<type>_<variablename>_<widgettype>
-    ' the configuration will be read automatically.
-    '''
-    def widget_to_params(self, b):
-        """Widget to params reads the config directly from
-        gtk widgets.
-        If the widget name is in the format:
-            - cfg_<type>_<variablename>_<widgettype>
-        the configuration will be read automatically.
-        """
-
-        parameters = {}
-        for key in b.config.keys():
-            t = b.get_type()
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "text")
-            if (widget is not None):
-                parameters[key] = widget.get_text()
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinint")
-            if (widget is not None):
-                parameters[key] = str(int(widget.get_value()))
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "spinfloat")
-            if (widget is not None):
-                parameters[key] = str(widget.get_value())
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "comboinitial")
-            if (widget is not None):
-                txt = widget.get_active_text()
-                parameters[key] = txt
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "combo")
-            if (widget is not None):
-                combo = ComboBox(widget)
-                #txt = widget.get_active_text()
-                txt = combo.get_selected()
-                if txt is not None and (txt != "-- default --"):
-                    parameters[key] = txt
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "check")
-            if (widget is not None):
-                if widget.get_active():
-                    parameters[key] = '*'
-                else:
-                    parameters[key] = ''
-
-            widget = self.gladefile.get_widget("cfg_" + t + "_" + key + "_" + "filechooser")
-            if (widget is not None):
-                f = widget.get_filename()
-                if f is not None:
-                    parameters[key] = f
-                else:
-                    parameters[key] = ''
-        return parameters
-
-    '''
-    ' Specific per-type confirm methods
-    '''
-
-    def config_Wirefilter_confirm(self, b):
-        sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter0')).get_selected()
-        for so in self.brickfactory.socks:
-            if sel == so.nickname:
-                if len(b.plugs) > 0:
-                    b.plugs[0].connect(so)
-                else:
-                    b.add_plug(so)
-        sel = ComboBox(self.gladefile.get_widget('sockscombo_wirefilter1')).get_selected()
-        for so in self.brickfactory.socks:
-            if sel == so.nickname:
-                if len(b.plugs) == 2:
-                    b.plugs[1].connect(so)
-                elif len(b.plugs) == 1:
-                    b.add_plug(so)
-                else:
-                    raise ValueError("Configure left link too please")
-
-    def config_brick_confirm(self):
-        if self.__config_panel:
-            self.__config_panel.configure_brick(self)
-        else:
-            self._config_brick_confirm()
-
-    def _config_brick_confirm(self):
-        """Main configuration confirm method.  called from on_config_ok"""
-
-        notebook = self.gladefile.get_widget('main_notebook')
-        # is it an event?
-        if notebook.get_current_page() == 1:
-            b = self.__get_selection(self.__events_treeview)
-        else:
-            b = self.__get_selection(self.__bricks_treeview)
-        parameters = widget_to_params(b, self.gladefile.get_widget)
-        t = b.get_type()
-
-        if t == "Wirefilter":
-            self.config_Wirefilter_confirm(b)
-
-        b.set(parameters)
-
-    def config_brick_cancel(self):
-        self.curtain_down()
-
-    """
-    " ******************************************************** "
-    " ******************************************************** "
-    " ******************************************************** "
-    " MISC GUI FUNCTIONS
-    "
-    """
 
     '''
     '    Systray management
@@ -918,41 +607,22 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return False
 
     def curtain_down(self):
-        self.get_object("top_panel").show()
-        self.get_object("config_panel").hide()
-        self.get_object("padding_panel").hide()
+        self.get_object("main_notebook").show()
         configframe = self.gladefile.get_widget("configframe")
         configpanel = configframe.get_child()
         if configpanel:
             configframe.remove(configpanel)
-        self.__config_panel = None
+        configframe.hide()
         if project.current:
             self.set_title_default()
 
-    def _show_config_for_brick(self, brick, configpanel):
-        self.__config_panel = configpanel
-        self.__hide_panels()
-        configframe = self.get_object("configframe")
-        configframe.add(configpanel.get_view(self))
-        configframe.show_all()
-        self.__show_config(brick.get_name())
-
     def curtain_up(self, brick):
-        try:
-            configpanel = interfaces.IConfigController(brick)
-            self._show_config_for_brick(brick, configpanel)
-        except TypeError:
-            self._curtain_up(brick)
-
-    def __hide_panels(self):
-        for name in TYPE_CONFIG_WIDGET_NAME_MAP.itervalues():
-            self.gladefile.get_widget(name).hide()
-
-    def __show_config(self, name):
-        self.get_object("top_panel").hide()
-        self.get_object("config_panel").show()
-        # self.get_object("padding_panel").show()
-        self.set_title("Virtualbricks (Configuring Brick %s)" % name)
+        configframe = self.get_object("configframe")
+        configframe.add(interfaces.IConfigController(brick).get_view(self))
+        configframe.show()
+        self.get_object("main_notebook").hide()
+        self.set_title("Virtualbricks (Configuring Brick %s)" %
+                       brick.get_name())
 
     def __get_selection(self, treeview):
         selection = treeview.get_selection()
@@ -960,42 +630,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             model, iter = selection.get_selected()
             if iter is not None:
                 return model.get_value(iter, 0)
-
-    def _curtain_up(self, brick):
-        self.__hide_panels()
-        logger.debug(config_brick, name=brick.get_name(),
-            type=brick.get_type())
-        try:
-            name = TYPE_CONFIG_WIDGET_NAME_MAP[brick.get_type()]
-        except KeyError:
-            logger.warning(invalid_type)
-            self.curtain_down()
-            return
-        ww = self.gladefile.get_widget(name)
-        self.config_brick_prepare(brick)
-        ww.show()
-        self.__show_config(brick.get_name())
-
-    '''
-    '    Methods to access treestore elements
-    '''
-
-    def get_treeselected(self, tree, store, pthinfo, c):
-        if pthinfo is not None:
-            path, col, cellx, celly = pthinfo
-            tree.grab_focus()
-            tree.set_cursor(path, col, 0)
-            iter_ = store.model.get_iter(path)
-            name = store.model.get_value(iter_, c)
-            self.config_last_iter = iter_
-            return name
-        return ""
-
-    def get_treeselected_name(self, t, s, p):
-        return self.get_treeselected(t, s, p, 3)
-
-    def get_treeselected_type(self, t, s, p):
-        return self.get_treeselected(t, s, p, 2)
 
     '''
     '    populate a list of all the widget whose names
@@ -1018,16 +652,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         'dialog_newbrick',
         'menu_brickactions',
         'dialog_convertimage',
-        ]
-    '''
-    '    Returns a list with all the combos
-    '    that provide a list of vde socks nicknames
-    '''
-    def sockscombo_names(self):
-        return [
-        'sockscombo_wirefilter0',
-        'sockscombo_wirefilter1',
-        'sockscombo_router_netconf'
         ]
 
     def show_window(self, name):
@@ -1203,18 +827,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         else:
             logger.debug(created)
 
-    def on_config_cancel(self, widget=None, data=""):
-        self.config_brick_cancel()
-        self.curtain_down()
-
-    def on_config_ok(self, widget=None, data=""):
-        self.config_brick_confirm()
-        self.curtain_down()
-
-    def on_config_save(self, widget=None, data=""):
-        # TODO: update config values
-        self.config_brick_confirm()
-
     def set_sensitivegroup(self, l):
         for i in l:
             w = self.gladefile.get_widget(i)
@@ -1224,158 +836,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         for i in l:
             w = self.gladefile.get_widget(i)
             w.set_sensitive(False)
-
-    def on_symm_toggle(self, widget=None, data=""):
-        base_name = widget.name.replace("cfg_", "").replace("symm_check", "")
-        text = self.gladefile.get_widget('cfg_' + base_name + '_text')
-        text_LR = self.gladefile.get_widget('cfg_' + base_name + 'LR_text')
-        text_RL = self.gladefile.get_widget('cfg_' + base_name + 'RL_text')
-        text_jitter = self.gladefile.get_widget('cfg_' + base_name + 'J_text')
-        text_jitter_LR = self.gladefile.get_widget('cfg_' + base_name + 'LRJ_text')
-        text_jitter_RL = self.gladefile.get_widget('cfg_' + base_name + 'RLJ_text')
-        frame = self.gladefile.get_widget(base_name + '_frame')
-        frame_LR = self.gladefile.get_widget(base_name + 'LR_frame')
-        frame_RL = self.gladefile.get_widget(base_name + 'RL_frame')
-
-        frame.hide()
-        frame_LR.hide()
-        frame_RL.hide()
-        if widget.get_active():
-            text_LR.set_text("")
-            if text_jitter_LR:
-                text_jitter_LR.set_text("")
-            text_RL.set_text("")
-            if text_jitter_RL:
-                text_jitter_RL.set_text("")
-            frame.show_all()
-            text.set_text("")
-            if text_jitter:
-                text_jitter.set_text("")
-        else:
-            text.set_text("")
-            if text_jitter:
-                text_jitter.set_text("")
-            frame_LR.show_all()
-            frame_RL.show_all()
-
-    def on_wf_speed_checkbox_toggle(self, widget=None, data=""):
-        frame = self.gladefile.get_widget('Wirefilter_speed_frame')
-        frame_GP = self.gladefile.get_widget('Speed_General_Parameters_Frame')
-        frame_LR = self.gladefile.get_widget('Wirefilter_speedLR_frame')
-        frame_RL = self.gladefile.get_widget('Wirefilter_speedRL_frame')
-        if not widget.get_active():
-            text = self.gladefile.get_widget('cfg_Wirefilter_speed_text')
-            text_LR = self.gladefile.get_widget('cfg_Wirefilter_speedLR_text')
-            text_RL = self.gladefile.get_widget('cfg_Wirefilter_speedRL_text')
-            text_jitter = self.gladefile.get_widget('cfg_Wirefilter_speedJ_text')
-            text_jitter_LR = self.gladefile.get_widget('cfg_Wirefilter_speedLRJ_text')
-            text_jitter_RL = self.gladefile.get_widget('cfg_Wirefilter_speedRLJ_text')
-            text.set_text("")
-            text_LR.set_text("")
-            text_RL.set_text("")
-            text_jitter.set_text("")
-            text_jitter_LR.set_text("")
-            text_jitter_RL.set_text("")
-            #frame.set_sensitive(False)
-            #frame_LR.set_sensitive(False)
-            #frame_RL.set_sensitive(False)
-            frame.show_all()
-            frame_LR.hide()
-            frame_RL.hide()
-            frame_GP.set_sensitive(False)
-        else:
-            frame_GP.set_sensitive(True)
-            self.on_symm_toggle(self.gladefile.get_widget('cfg_Wirefilter_speedsymm_check'))
-
-    def on_percent_insert_text(self, editable, new_text, new_text_length, position):
-        text = editable.get_text() + new_text
-        if not re.match("^(?:[1-9]+\.?[0-9]{0,3}|0\.[0-9]{0,3}|0)$", text):
-            editable.emit_stop_by_name('insert-text')
-
-    def on_non_negative_insert_text(self, editable, new_text, new_text_length, position):
-        import re
-        text = editable.get_text() + new_text
-        if not re.match("^(?:[1-9][0-9]*|0)$", text):
-            editable.emit_stop_by_name('insert-text')
-
-    def on_Wirefilter_help_button_clicked(self, widget=None, data=""):
-        paramname = widget.name.replace("Wirefilter_", "").replace("_help_button", "")
-        f_name = getattr(self, paramname + "_help")
-        if not f_name:
-            return
-        text = self.gladefile.get_widget('textview_messages')
-        window = self.gladefile.get_widget('dialog_messages')
-        window.set_title(_("Help for parameter:") + " " + paramname)
-        text.get_buffer().set_text(f_name())
-        window.show_all()
-
-    #Do NOT change string layout please
-    def jitter_str(self):
-        return " " + _("\nJitter is the variation from the "
-            "base value. Jitter 10 percent for a "
-            "base value of 100 means the final value goes from 90 to 110. "
-            "The distribution can be Uniform or Gaussian normal "
-            "(more than 98% of the values are inside the limits).")
-
-    def bandwidth_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tCHANNEL BANDWIDTH\n\n"
-            "Sender is not prevented "
-            "from sending packets, delivery is delayed to limit the bandwidth "
-            "to the desired value (like a bottleneck along the path)."
-            ) + self.jitter_str()
-
-    def speed_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tINTERFACE SPEED\n\n"
-            "Input is blocked for the tramission time of the packet, thus the "
-            "sender is prevented from sending too fast.\n"
-            "This feature can be confusing, consider using bandwidth."
-            ) + self.jitter_str()
-
-    def delay_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tDELAY\n\n"
-            "Extra delay (in milliseconds). This delay is added to the real "
-            "communication delay. Packets are temporarily stored and resent "
-            "after the delay.") + self.jitter_str()
-
-    def chanbufsize_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tCHANNEL BUFFER SIZE\n\n"
-            "Maximum size of the packet "
-            "queue. Exceeding packets are discarded.") + self.jitter_str()
-
-    def loss_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tPACKET LOSS\n\n"
-            "Percentage of loss as a floating point number."
-            ) + self.jitter_str()
-
-    def dup_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tPACKET DUPLICATION\n\n"
-            "Percentage of dup packet. Do not use dup factor 100% because it "
-            "means that each packet is sent infinite times."
-            ) + self.jitter_str()
-
-    def noise_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tNOISE\n\n"
-            "Number of bits damaged/one megabyte (megabit)."
-            ) + self.jitter_str()
-
-    def lostburst_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tLOST BURST\n\n"
-            "When this is not zero, wirefilter uses the Gilbert model for "
-            "bursty errors. This is the mean length of lost packet bursts."
-            ) + self.jitter_str()
-
-    def mtu_help(self):
-        #Do NOT change string layout please
-        return _("\t\t\tMTU: MAXIMUM TRANSMISSION UNIT\n\n"
-            "Packets longer than specified size are discarded.")
 
     def on_item_quit_activate(self, menuitem):
         self.do_quit()
@@ -1726,22 +1186,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         else:
             lbl.set_markup('<span color="darkgreen">' + _("All VDE components detected") + '.</span>\n')
 
-    def on_vmicon_file_change(self, widget=None, event=None, data=""):
-        if widget.get_filename() is not None:
-            pixbuf = self.pixbuf_scaled(widget.get_filename())
-            self.gladefile.get_widget("qemuicon").set_from_pixbuf(pixbuf)
-
     def on_show_messages_activate(self, menuitem, data=None):
         dialogs.LoggingWindow(self.messages_buffer).show()
-
-    def on_dialog_messages_close_event(self, widget=None, event=None, data=""):
-        self.on_dialog_messages_delete_event(self)
-        return True
-
-    def on_dialog_messages_delete_event(self, widget=None, event=None, data=""):
-        messages = self.gladefile.get_widget("dialog_messages")
-        messages.hide()
-        return True
 
     def on_brick_attach_event(self, menuitem, data=None):
         attach_event_window = self.gladefile.get_widget("dialog_attach_event")
@@ -1893,66 +1339,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_convert_image(self, widget, event=None, data=None):
         self.gladefile.get_widget('combobox_imageconvert_format').set_active(2)
         self.show_window('dialog_convertimage')
-
-    def on_router_netconf_auto_mac_checked(self, widget, event=None, data=None):
-        macaddr_txtfield = self.gladefile.get_widget('entry_router_netconf_mac')
-        if widget.get_active():
-            macaddr_txtfield.set_sensitive(False)
-            macaddr_txtfield.set_text('')
-        else:
-            macaddr_txtfield.set_sensitive(True)
-
-    def on_router_netconf_dhcpd_onoff(self, widget, event=None, data=None):
-        group = ['label_dhcpserv0', 'label_dhcpserv1', 'entry_router_netconf_dhcp_start', 'entry_router_netconf_dhcp_end']
-        if widget.get_active():
-            self.set_sensitivegroup(group)
-        else:
-            self.set_nonsensitivegroup(group)
-
-    def on_router_filter_src_onoff(self, widget, event=None, data=None):
-        group = ['hbox_filter_src_iface']
-        if widget.get_active():
-            self.set_sensitivegroup(group)
-        else:
-            self.set_nonsensitivegroup(group)
-
-    def on_router_filter_from_onoff(self, widget, event=None, data=None):
-        group = ['table_filter_srcaddr']
-        if widget.get_active():
-            self.set_sensitivegroup(group)
-        else:
-            self.set_nonsensitivegroup(group)
-
-    def on_router_filter_to_onoff(self, widget, event=None, data=None):
-        group = ['table_filter_dstaddr']
-        if widget.get_active():
-            self.set_sensitivegroup(group)
-        else:
-            self.set_nonsensitivegroup(group)
-
-    def on_router_filter_proto_onoff(self, widget, event=None, data=None):
-        group = ['table_filter_proto']
-        if widget.get_active():
-            self.set_sensitivegroup(group)
-        else:
-            self.set_nonsensitivegroup(group)
-
-    def on_router_filter_tos_onoff(self, widget, event=None, data=None):
-        group = ['hbox_filter_tos']
-        if widget.get_active():
-            self.set_sensitivegroup(group)
-        else:
-            self.set_nonsensitivegroup(group)
-
-    def signals(self):
-        self.gladefile.signal_autoconnect(self)
-
-    """ ******************************************************** """
-    """                                                          """
-    """ TIMERS                                                   """
-    """                                                          """
-    """                                                          """
-    """ ******************************************************** """
 
     def user_wait_action(self, action, *args):
         return ProgressBar(self).wait_for(action, *args)
