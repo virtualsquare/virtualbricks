@@ -185,7 +185,8 @@ class TopologyMixin(object):
                     if brick is not None:
                         # self.maintree.set_selection(brick)
                         self.show_brickactions()
-                if n.here(event.x, event.y) and event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+                if (n.here(event.x, event.y) and event.button == 1 and
+                        event.type == gtk.gdk._2BUTTON_PRESS):
                     brick = self.brickfactory.get_brick_by_name(n.name)
                     if brick is not None:
                         # self.maintree.set_selection(brick)
@@ -335,7 +336,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
         # Show the main window
         self.widg['main_win'].show()
-        self.gladefile.get_widget("main_win").connect("delete-event", self.delete_event)
+        self.get_object("main_win").connect("delete-event", self.delete_event)
 
         # Set two useful file filters
         self.vbl_filter = gtk.FileFilter()
@@ -357,7 +358,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             self.start_systray()
 
         ''' Set the settings panel to bottom '''
-        self.curtain = self.gladefile.get_widget('vpaned_mainwindow')
+        self.curtain = self.get_object('vpaned_mainwindow')
         self.curtain_down()
 
         ''' Reset the selections for the TWs'''
@@ -367,7 +368,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         ''' Initialize threads, timers etc.'''
         self.gladefile.signal_autoconnect(self)
         task.LoopingCall(self.running_bricks.refilter).start(2)
-
 
         ''' Check GUI prerequisites '''
         missing = self.check_gui_prerequisites()
@@ -380,11 +380,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 if m == "kvm":
                     settings.set("kvm", "False")
                     self.disable_config_kvm = True
-                    missing_text = missing_text + "KVM not found: kvm support will be disabled.\n"
+                    missing_text = (missing_text + "KVM not found: kvm support"
+                                    " will be disabled.\n")
                 elif m == "ksm":
                     settings.set("kvm", "True")
                     self.disable_config_ksm = True
-                    missing_text = missing_text + "KSM not found in Linux. Samepage memory will not work on this system.\n"
+                    missing_text = (missing_text + "KSM not found in Linux. "
+                                    "Samepage memory will not work on this "
+                                    "system.\n")
                 else:
                     missing_components = missing_components + ('%s ' % m)
             logger.error(components_not_found, text=missing_text,
@@ -406,7 +409,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         builder = gtk.Builder()
         builder.add_from_string(ui)
         builder.connect_signals(self)
-        window = self.gladefile.get_widget(window_name)
+        window = self.get_object(window_name)
         widget = builder.get_object(widget_name)
         widget.reparent(window)
         return builder
@@ -569,11 +572,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def start_systray(self):
         if self.statusicon is None:
             self.statusicon = gtk.StatusIcon()
-            self.statusicon.set_from_file(graphics.get_image("virtualbricks.png"))
+            self.statusicon.set_from_file(
+                graphics.get_image("virtualbricks.png"))
             self.statusicon.set_tooltip("VirtualBricks Visible")
             self.statusicon.connect('activate', self.on_systray_menu_toggle)
-            systray_menu = self.gladefile.get_widget("systray_menu")
-            self.statusicon.connect('popup-menu', self.systray_menu_popup, systray_menu)
+            systray_menu = self.get_object("systray_menu")
+            self.statusicon.connect('popup-menu', self.systray_menu_popup,
+                                    systray_menu)
 
         if not self.statusicon.get_visible():
             self.statusicon.set_visible(True)
@@ -600,14 +605,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def delete_event(self, window, event):
         #don't delete; hide instead
         if settings.systray and self.statusicon is not None:
-            self.gladefile.get_widget("main_win").hide_on_delete()
+            self.get_object("main_win").hide_on_delete()
             self.statusicon.set_tooltip("VirtualBricks Hidden")
             return True
         return False
 
     def curtain_down(self):
         self.get_object("main_notebook").show()
-        configframe = self.gladefile.get_widget("configframe")
+        configframe = self.get_object("configframe")
         configpanel = configframe.get_child()
         if configpanel:
             configframe.remove(configpanel)
@@ -637,7 +642,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def get_widgets(self, l):
         r = dict()
         for i in l:
-            r[i] = self.gladefile.get_widget(i)
+            r[i] = self.get_object(i)
             r[i].hide()
         return r
 
@@ -676,7 +681,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         else:
             new_height = 48
             new_width = 48 * width / height
-        pixbuf = pixbuf.scale_simple(new_width, new_height, gtk.gdk.INTERP_BILINEAR)
+        pixbuf = pixbuf.scale_simple(new_width, new_height,
+                                     gtk.gdk.INTERP_BILINEAR)
         return pixbuf
 
     def set_title(self, title):
@@ -780,12 +786,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             self.systray_blinking(True)
             return
 
-        if not self.gladefile.get_widget("main_win").get_visible():
-            self.gladefile.get_widget("main_win").show()
+        if not self.get_object("main_win").get_visible():
+            self.get_object("main_win").show()
             self.curtain_down()
             self.statusicon.set_tooltip("the window is visible")
         else:
-            self.gladefile.get_widget("main_win").hide()
+            self.get_object("main_win").hide()
 
     def on_systray_exit(self, widget=None, data=""):
         self.do_quit()
@@ -795,7 +801,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def confirm(self, message):
-        dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_YES_NO, message)
+        dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
+                                   gtk.BUTTONS_YES_NO, message)
         response = dialog.run()
         dialog.destroy()
 
@@ -817,7 +824,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_newbrick_ok(self, widget=None, data=""):
         self.show_window('')
         self.curtain_down()
-        name = self.gladefile.get_widget('text_newbrickname').get_text()
+        name = self.get_object('text_newbrickname').get_text()
         ntype = self.selected_type(self.get_object("typebutton_Switch"))
         try:
             self.brickfactory.newbrick(ntype, name)
@@ -828,82 +835,84 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def set_sensitivegroup(self, l):
         for i in l:
-            w = self.gladefile.get_widget(i)
+            w = self.get_object(i)
             w.set_sensitive(True)
 
     def set_nonsensitivegroup(self, l):
         for i in l:
-            w = self.gladefile.get_widget(i)
+            w = self.get_object(i)
             w.set_sensitive(False)
 
     def on_item_quit_activate(self, menuitem):
         self.do_quit()
 
     def on_item_settings_activate(self, widget=None, data=""):
-        self.gladefile.get_widget('filechooserbutton_qemupath').set_current_folder(settings.get('qemupath'))
-        self.gladefile.get_widget('filechooserbutton_vdepath').set_current_folder(settings.get('vdepath'))
+        self.get_object('filechooserbutton_qemupath').set_current_folder(
+            settings.get('qemupath'))
+        self.get_object('filechooserbutton_vdepath').set_current_folder(
+            settings.get('vdepath'))
 
         cowfmt = settings.get('cowfmt')
 
         if cowfmt == 'qcow2':
-            self.gladefile.get_widget('combo_cowfmt').set_active(2)
+            self.get_object('combo_cowfmt').set_active(2)
         elif cowfmt == 'qcow':
-            self.gladefile.get_widget('combo_cowfmt').set_active(1)
+            self.get_object('combo_cowfmt').set_active(1)
         else:  # default to cow
-            self.gladefile.get_widget('combo_cowfmt').set_active(0)
+            self.get_object('combo_cowfmt').set_active(0)
 
         if self.disable_config_kvm:
-            self.gladefile.get_widget('check_kvm').set_sensitive(False)
+            self.get_object('check_kvm').set_sensitive(False)
         else:
-            self.gladefile.get_widget('check_kvm').set_sensitive(True)
+            self.get_object('check_kvm').set_sensitive(True)
 
         if self.disable_config_ksm:
-            self.gladefile.get_widget('check_ksm').set_sensitive(False)
+            self.get_object('check_ksm').set_sensitive(False)
         else:
-            self.gladefile.get_widget('check_ksm').set_sensitive(True)
+            self.get_object('check_ksm').set_sensitive(True)
 
         if settings.kvm:
-            self.gladefile.get_widget('check_kvm').set_active(True)
+            self.get_object('check_kvm').set_active(True)
         else:
-            self.gladefile.get_widget('check_kvm').set_active(False)
+            self.get_object('check_kvm').set_active(False)
 
         if settings.ksm:
-            self.gladefile.get_widget('check_ksm').set_active(True)
+            self.get_object('check_ksm').set_active(True)
         else:
-            self.gladefile.get_widget('check_ksm').set_active(False)
+            self.get_object('check_ksm').set_active(False)
 
         if settings.kqemu:
-            self.gladefile.get_widget('check_kqemu').set_active(True)
+            self.get_object('check_kqemu').set_active(True)
         else:
-            self.gladefile.get_widget('check_kqemu').set_active(False)
+            self.get_object('check_kqemu').set_active(False)
 
         if settings.femaleplugs:
-            self.gladefile.get_widget('check_femaleplugs').set_active(True)
+            self.get_object('check_femaleplugs').set_active(True)
         else:
-            self.gladefile.get_widget('check_femaleplugs').set_active(False)
+            self.get_object('check_femaleplugs').set_active(False)
 
         if settings.erroronloop:
-            self.gladefile.get_widget('check_erroronloop').set_active(True)
+            self.get_object('check_erroronloop').set_active(True)
         else:
-            self.gladefile.get_widget('check_erroronloop').set_active(False)
+            self.get_object('check_erroronloop').set_active(False)
 
         if settings.python:
-            self.gladefile.get_widget('check_python').set_active(True)
+            self.get_object('check_python').set_active(True)
         else:
-            self.gladefile.get_widget('check_python').set_active(False)
+            self.get_object('check_python').set_active(False)
 
         if settings.systray:
-            self.gladefile.get_widget('check_systray').set_active(True)
+            self.get_object('check_systray').set_active(True)
         else:
-            self.gladefile.get_widget('check_systray').set_active(False)
+            self.get_object('check_systray').set_active(False)
 
         if settings.show_missing:
-            self.gladefile.get_widget('check_show_missing').set_active(True)
+            self.get_object('check_show_missing').set_active(True)
         else:
-            self.gladefile.get_widget('check_show_missing').set_active(False)
+            self.get_object('check_show_missing').set_active(False)
 
-        self.gladefile.get_widget('entry_term').set_text(settings.get('term'))
-        self.gladefile.get_widget('entry_sudo').set_text(settings.get('sudo'))
+        self.get_object('entry_term').set_text(settings.get('term'))
+        self.get_object('entry_sudo').set_text(settings.get('sudo'))
         self.curtain_down()
         self.show_window('dialog_settings')
 
@@ -962,7 +971,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             self.set_sensitivegroup(['vmresume'])
         else:
             self.set_nonsensitivegroup(['vmresume'])
-        self.gladefile.get_widget("brickaction_name").set_label(brick.name)
+        self.get_object("brickaction_name").set_label(brick.name)
         self.show_window('menu_brickactions')
 
     def on_bricks_treeview_button_release_event(self, treeview, event):
@@ -1010,10 +1019,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 treeview.set_cursor(path, col, 0)
                 model = treeview.get_model()
                 brick = model.get_value(model.get_iter(path), 0)
-                interfaces.IJobMenu(brick).popup(event.button, event.time, self)
+                interfaces.IJobMenu(brick).popup(event.button, event.time,
+                                                 self)
                 return True
 
-    def on_dialog_settings_delete_event(self, widget=None, event=None, data=""):
+    def on_dialog_settings_delete_event(self, widget, event):
         """we could use deletable property but deletable is only available in
         GTK+ 2.10 and above"""
         widget.hide()
@@ -1027,12 +1037,15 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         if response_id in (gtk.RESPONSE_APPLY, gtk.RESPONSE_OK):
             logger.debug(apply_settings)
             for k in "qemupath", "vdepath":
-                settings.set(k, self.gladefile.get_widget("filechooserbutton_" + k).get_filename())
+                settings.set(k,
+                    self.get_object("filechooserbutton_" + k).get_filename())
 
-            settings.set("cowfmt", self.gladefile.get_widget("combo_cowfmt").get_active_text())
+            settings.set("cowfmt",
+                 self.get_object("combo_cowfmt").get_active_text())
             settings.set("kvm", self.get_active("check_kvm"))
             settings.set("ksm", self.get_active("check_ksm"))
-            tools.enable_ksm(self.get_active("check_ksm"), settings.get("sudo"))
+            tools.enable_ksm(self.get_active("check_ksm"),
+                settings.get("sudo"))
             settings.set("kqemu", self.get_active("check_kqemu"))
             settings.set("python", self.get_active("check_python"))
             settings.set("femaleplugs", self.get_active("check_femaleplugs"))
@@ -1050,12 +1063,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 return
         dialog.hide()
 
-    def on_dialog_attach_event_response(self, widget=None, response=0, data=""):
-        widget.hide()
-        if (response == 1):
+    def on_dialog_attach_event_response(self, dialog, response_id):
+        dialog.hide()
+        if response_id == 1:
             brick = self.__get_selection(self.__bricks_treeview)
-            startevents = self.gladefile.get_widget('start_events_avail_treeview')
-            stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
+            startevents = self.get_object('start_events_avail_treeview')
+            stopevents = self.get_object('stop_events_avail_treeview')
             model, iter_ = startevents.get_selection().get_selected()
             if iter_:
                 brick.config["pon_vbevent"] = model[iter_][2]
@@ -1070,12 +1083,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_start_assign_nothing_button_clicked(self, widget=None, data=""):
-        startevents = self.gladefile.get_widget('start_events_avail_treeview')
+        startevents = self.get_object('start_events_avail_treeview')
         treeselection = startevents.get_selection()
         treeselection.unselect_all()
 
     def on_stop_assign_nothing_button_clicked(self, widget=None, data=""):
-        stopevents = self.gladefile.get_widget('stop_events_avail_treeview')
+        stopevents = self.get_object('stop_events_avail_treeview')
         treeselection = stopevents.get_selection()
         treeselection.unselect_all()
 
@@ -1085,13 +1098,16 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def image_create(self):
         logger.info(create_image)
-        path = self.get_object("filechooserbutton_newimage_dest").get_filename() + "/"
+        path = self.get_object(
+            "filechooserbutton_newimage_dest").get_filename() + "/"
         filename = self.get_object("entry_newimage_name").get_text()
-        img_format = self.get_object("combobox_newimage_format").get_active_text()
+        img_format = self.get_object(
+            "combobox_newimage_format").get_active_text()
         img_size = str(self.get_object("spinbutton_newimage_size").get_value())
         #Get size unit and remove the last character "B"
         #because qemu-img want k, M, G or T suffixes.
-        unit = self.gladefile.get_widget("combobox_newimage_sizeunit").get_active_text()[1]
+        unit = self.get_object(
+            "combobox_newimage_sizeunit").get_active_text()[1]
         # XXX: use a two value combobox
         if not filename:
             logger.error(filename_empty)
@@ -1115,7 +1131,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_newbrick(self, widget=None, event=None, data=""):
         self.curtain_down()
-        self.gladefile.get_widget('text_newbrickname').set_text("")
+        self.get_object('text_newbrickname').set_text("")
         self.show_window('dialog_newbrick')
 
     def on_newevent(self, widget=None, event=None, data=""):
@@ -1135,9 +1151,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         missing_qemu = False
         missing_kvm = False
         missing, found = tools.check_missing_qemu(newpath)
-        lbl = self.gladefile.get_widget("label_qemupath_status")
+        lbl = self.get_object("label_qemupath_status")
         if not os.access(newpath, os.X_OK):
-            lbl.set_markup('<span color="red">' + _("Error") + ':</SPAN>\n' + _("invalid path for qemu binaries"))
+            lbl.set_markup('<span color="red">' + _("Error") + ':</SPAN>\n' +
+                           _("invalid path for qemu binaries"))
             return
 
         for t in missing:
@@ -1146,16 +1163,21 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             if t == 'kvm':
                 missing_kvm = True
         if missing_qemu and missing_kvm:
-            lbl.set_markup('<span color="red">' + _("Error") + ':</span>\n' + _("cannot find neither qemu nor kvm in this path"))
+            lbl.set_markup('<span color="red">' + _("Error") + ':</span>\n' +
+                           _("cannot find neither qemu nor kvm in this path"))
             return
         txt = ""
         if missing_qemu:
-            txt = '<span color="red">' + _("Warning") + ':</span>\n' + _("cannot find qemu, using kvm only\n")
+            txt = ('<span color="red">' + _("Warning") + ':</span>\n' +
+                _("cannot find qemu, using kvm only\n"))
 
         elif missing_kvm:
-            txt = '<span color="yellow">' + _("Warning") + ':</span>\n' + _("kvm not found") + "." + _("KVM support disabled") + '.\n'
+            txt = ('<span color="yellow">' + _("Warning") + ':</span>\n' +
+                   _("kvm not found") + "." + _("KVM support disabled") +
+                   '.\n')
         else:
-            txt = '<span color="darkgreen">' + _("KVM and Qemu detected") + '.</span>\n'
+            txt = ('<span color="darkgreen">' + _("KVM and Qemu detected") +
+                   '.</span>\n')
         arch = ""
         rowlimit = 30
         for i in found:
@@ -1174,28 +1196,31 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_vdepath_changed(self, widget, data=None):
         newpath = widget.get_filename()
         missing = tools.check_missing_vde(newpath)
-        lbl = self.gladefile.get_widget("label_vdepath_status")
+        lbl = self.get_object("label_vdepath_status")
         if not os.access(newpath, os.X_OK):
-            lbl.set_markup('<span color="red">' + _("Error") + ':</span>\n' + _("invalid path for vde binaries"))
+            lbl.set_markup('<span color="red">' + _("Error") + ':</span>\n' +
+                           _("invalid path for vde binaries"))
         elif len(missing) > 0:
-            txt = '<span color="red">' + _("Warning, missing modules") + ':</span>\n'
+            txt = ('<span color="red">' + _("Warning, missing modules") +
+                   ':</span>\n')
             for l in missing:
                 txt += l + "\n"
             lbl.set_markup(txt)
         else:
-            lbl.set_markup('<span color="darkgreen">' + _("All VDE components detected") + '.</span>\n')
+            lbl.set_markup('<span color="darkgreen">' +
+                           _("All VDE components detected") + '.</span>\n')
 
     def on_show_messages_activate(self, menuitem, data=None):
         dialogs.LoggingWindow(self.messages_buffer).show()
 
     def on_brick_attach_event(self, menuitem, data=None):
-        attach_event_window = self.gladefile.get_widget("dialog_attach_event")
+        attach_event_window = self.get_object("dialog_attach_event")
 
         # columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
         COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG = range(4)
 
-        startavailevents = self.gladefile.get_widget('start_events_avail_treeview')
-        stopavailevents = self.gladefile.get_widget('stop_events_avail_treeview')
+        startavailevents = self.get_object('start_events_avail_treeview')
+        stopavailevents = self.get_object('stop_events_avail_treeview')
 
         eventsmodel = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str)
 
@@ -1213,8 +1238,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 parameters = event.get_parameters()
                 if len(parameters) > 30:
                     parameters = "%s..." % parameters[:30]
-                image = graphics.pixbuf_for_running_brick_at_size(event, 48, 48)
-                iter_ = eventsmodel.append([image, event.get_type(), event.name, parameters])
+                image = graphics.pixbuf_for_running_brick_at_size(event, 48,
+                                                                  48)
+                iter_ = eventsmodel.append([image, event.get_type(),
+                                            event.name, parameters])
                 if brick.config["pon_vbevent"] == event.name:
                     treeviewselectionstart.select_iter(iter_)
                 if brick.config["poff_vbevent"] == event.name:
@@ -1227,7 +1254,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         cell = gtk.CellRendererText()
         column_name = gtk.TreeViewColumn(_("Name"), cell, text=COL_NAME)
         cell = gtk.CellRendererText()
-        column_config = gtk.TreeViewColumn(_("Parameters"), cell, text=COL_CONFIG)
+        column_config = gtk.TreeViewColumn(_("Parameters"), cell,
+                                           text=COL_CONFIG)
 
         # Clear columns
         for c in startavailevents.get_columns():
@@ -1249,16 +1277,17 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         cell = gtk.CellRendererText()
         column_name = gtk.TreeViewColumn(_("Name"), cell, text=COL_NAME)
         cell = gtk.CellRendererText()
-        column_config = gtk.TreeViewColumn(_("Parameters"), cell, text=COL_CONFIG)
+        column_config = gtk.TreeViewColumn(_("Parameters"), cell,
+                                           text=COL_CONFIG)
 
         stopavailevents.append_column(column_icon)
         stopavailevents.append_column(column_type)
         stopavailevents.append_column(column_name)
         stopavailevents.append_column(column_config)
 
-        self.gladefile.\
-        get_widget('dialog_attach_event').\
-        set_title(_("Virtualbricks-Events to attach to the start/stop Brick Events"))
+        self.get_object('dialog_attach_event').\
+        set_title(_("Virtualbricks-Events to attach to the start/stop Brick "
+                    "Events"))
 
         attach_event_window.show_all()
         return True
@@ -1309,21 +1338,24 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def do_image_convert(self, arg=None):
         raise NotImplementedError("do_image_convert")
-        # src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
-        # fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
+        # src = self.get_object('filechooser_imageconvert_source').get_filename()
+        # fmt = self.get_object('combobox_imageconvert_format').get_active_text()
         # # dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
         # src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
         # # self.user_wait_action(self.exec_image_convert)
         # self.exec_image_convert()
 
     def on_convertimage_convert(self, widget, event=None, data=None):
-        if self.gladefile.get_widget('filechooser_imageconvert_source').get_filename() is None:
+        if (self.get_object('filechooser_imageconvert_source').get_filename()
+                is None):
             logger.error(select_file)
             return
 
-        # src = self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()
-        # fmt = self.gladefile.get_widget('combobox_imageconvert_format').get_active_text()
-        if not os.access(os.path.dirname(self.gladefile.get_widget('filechooser_imageconvert_source').get_filename()), os.W_OK):
+        # src = self.get_object('filechooser_imageconvert_source').get_filename()
+        # fmt = self.get_object('combobox_imageconvert_format').get_active_text()
+        filename = self.get_object(
+            'filechooser_imageconvert_source').get_filename()
+        if not os.access(os.path.dirname(filename), os.W_OK):
             logger.error(cannot_write)
         else:
             self.do_image_convert()
@@ -1336,7 +1368,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             self.get_object("main_win"))
 
     def on_convert_image(self, widget, event=None, data=None):
-        self.gladefile.get_widget('combobox_imageconvert_format').set_active(2)
+        self.get_object('combobox_imageconvert_format').set_active(2)
         self.show_window('dialog_convertimage')
 
     def user_wait_action(self, action, *args):
