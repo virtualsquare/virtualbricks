@@ -43,6 +43,7 @@ def random_mac():
 RandMac = random_mac
 MAC_RE = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
 
+
 def mac_is_valid(mac):
     return bool(MAC_RE.match(mac))
 
@@ -84,33 +85,15 @@ qemu_bins = ["qemu", "kvm", "qemu-system-arm", "qemu-system-cris",
     "qemu-system-sparc", "qemu-system-sparc64", "qemu-system-x86_64",
     "qemu-img"]
 
-def bin2brick(bin_name):
-
-    brick_bin = {'Switch': 'vde_switch',
-            'Wire': 'vde_plug',
-            'Wirefilter': 'wirefilter',
-            'Tap': 'vde_plug2tap',
-            'TunnelConnect': 'vde_cryptcab',
-            'TunnelListen': 'vde_cryptcab',
-            'Capture': 'vde_pcapplug',
-    }
-
-    brick_list = []
-    if bin_name in qemu_bins:
-        brick_list = ['Qemu']
-    else:
-        for i in brick_bin.iterkeys():
-            if brick_bin[i] == bin_name:
-                brick_list.append(i)
-
-    return brick_list
 
 def check_missing_vde(path):
     return check_missing(path, vde_bins)
 
+
 def check_missing_qemu(path):
     missing = check_missing(path, qemu_bins)
     return missing, sorted(set(qemu_bins) - set(missing))
+
 
 def check_kvm(path):
     if not os.access(os.path.join(path, "kvm"), os.X_OK):
@@ -169,6 +152,7 @@ QCOW_HEADER_FMT = r">QI"
 def get_backing_file_from_cow(fp):
     data = fp.read(COW_SIZE)
     return data.rstrip("\x00")
+
 
 def get_backing_file_from_qcow(fp):
     offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))

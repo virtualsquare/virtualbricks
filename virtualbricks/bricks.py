@@ -183,8 +183,6 @@ class Brick(base.Base):
         base.Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
-        self.config["pon_vbevent"] = ""
-        self.config["poff_vbevent"] = ""
         self.config_socks = []
 
     # IBrick interface

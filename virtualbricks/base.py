@@ -233,4 +233,3 @@ class Base(object):
 
     def rename(self, name):
         self.name = self.factory.normalize_name(name)
-
