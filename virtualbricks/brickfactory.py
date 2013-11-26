@@ -228,11 +228,7 @@ class BrickFactory(object):
 
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
-        if brick.homehost:
-            new_brick = self.newbrick("remote", brick.get_type(), name,
-                                      brick.config["homehost"])
-        else:
-            new_brick = self.newbrick(brick.get_type(), name)
+        new_brick = self.new_brick(brick.get_type(), name)
         # Copy only strings, and not objects, into new vm config
         new_brick.set(copy.deepcopy(brick.config))
 
