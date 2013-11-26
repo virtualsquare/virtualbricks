@@ -49,7 +49,6 @@ DATA_FILES = set([
     "qemu.png",
     "remotehosts.ui",
     "renamedialog.ui",
-    "router.png",
     "switchconfig.ui",
     "switch.png",
     "switchwrapperconfig.ui",

@@ -134,8 +134,7 @@ class ProjectEntry:
 
     def get_bricks(self):
         bricks = set(["Qemu", "Switch", "SwitchWrapper", "Tap", "Capture",
-                      "Wirefilter", "Wire", "TunnelConnect", "TunnelListen",
-                      "Router"])
+                      "Wirefilter", "Wire", "TunnelConnect", "TunnelListen"])
         return self._filter(lambda k: k[0] in bricks)
 
     def get_events(self):
