@@ -17,8 +17,8 @@ def disks(vm):
                                                "fda", "fdb", "mtdblock"))
 
 
-ARGS = ["true", "-m", "64", "-smp", "1", "-display", "none", "@@DRIVESARGS@@",
-        "-name", "vm", "-net", "none", "-mon", "chardev=mon", "-chardev",
+ARGS = ["true", "-m", "64", "-smp", "1", "@@DRIVESARGS@@", "-name", "vm",
+        "-net", "none", "-mon", "chardev=mon", "-chardev",
         "socket,id=mon,path=/home/marco/.virtualbricks/vm.mgmt,server,nowait",
         "-mon", "chardev=mon_cons", "-chardev", "stdio,id=mon_cons,signal=off"]
 
