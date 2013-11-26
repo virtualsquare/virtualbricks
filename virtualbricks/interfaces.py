@@ -106,7 +106,6 @@ class IBrick(Interface):
     # to be controlled
 
     config_socks = Attribute("")
-    homehost = Attribute("")
     socks = Attribute("")
     plugs = Attribute("")
 

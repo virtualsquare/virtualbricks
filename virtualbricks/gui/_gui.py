@@ -129,15 +129,6 @@ class BrickPopupMenu(BaseMenu):
 interfaces.registerAdapter(BrickPopupMenu, bricks.Brick, interfaces.IMenu)
 
 
-# NOTE: there is a problem with this approach, it is not transparent, it must
-# know the type of the brick, however virtual machines are already not
-# transparent to the gui
-class GVirtualMachine(virtualmachines.VirtualMachine):
-
-    def has_graphic(self):
-        return self.homehost is None
-
-
 class VMPopupMenu(BrickPopupMenu):
 
     def build(self, gui):
@@ -177,7 +168,8 @@ class VMPopupMenu(BrickPopupMenu):
         gui.user_wait_action(self.snapshot, gui.brickfactory)
 
 
-interfaces.registerAdapter(VMPopupMenu, GVirtualMachine, interfaces.IMenu)
+interfaces.registerAdapter(VMPopupMenu, virtualmachines.VirtualMachine,
+                           interfaces.IMenu)
 
 
 class EventPopupMenu(BaseMenu):
@@ -366,7 +358,8 @@ class VMJobMenu(JobMenu):
         d = self.original.poweroff(term=True)
         d.addCallback(refilter, gui.running_bricks)
 
-interfaces.registerAdapter(VMJobMenu, GVirtualMachine, interfaces.IJobMenu)
+interfaces.registerAdapter(VMJobMenu, virtualmachines.VirtualMachine,
+                           interfaces.IJobMenu)
 
 
 class ConfigController(object):
@@ -462,30 +455,24 @@ class SwitchWrapperConfigController(ConfigController):
 
 
 def should_insert_sock(sock, brick, python, femaleplugs):
-    return ((sock.brick.homehost == brick.homehost or
-             (brick.get_type() == 'Wire' and python)) and
+    if not brick:
+        return False
+    return ((brick.get_type() == 'Wire' and python) and
             (sock.brick.get_type().startswith('Switch') or femaleplugs))
 
 
 class PlugMixin(object):
 
-    def _should_insert_sock(self, sock, brick, python, femaleplugs):
-        return ((sock.brick.homehost == brick.homehost or
-                 (brick.get_type() == 'Wire' and python)) and
-                (sock.brick.get_type().startswith('Switch') or femaleplugs))
-
-    def _sock_should_visible(self, model, itr, extra):
-        gui, brick = extra
-        return self._should_insert_sock(model[itr][0], brick,
-                                        settings.python,
-                                        settings.femaleplugs)
+    def _sock_should_visible(self, model, itr, brick):
+        return should_insert_sock(model[itr][0], brick, settings.python,
+                                  settings.femaleplugs)
 
     def _set_text(self, column, cell_renderer, model, itr):
         sock = model.get_value(itr, 0)
         cell_renderer.set_property("text", sock.nickname)
 
     def configure_sock_combobox(self, combo, model, brick, plug, gui):
-        model.set_visible_func(self._sock_should_visible, (gui, brick))
+        model.set_visible_func(self._sock_should_visible, brick)
         combo.set_model(model)
         cell = combo.get_cells()[0]
         combo.set_cell_data_func(cell, self._set_text)
@@ -918,14 +905,11 @@ class QemuConfigController(ConfigController):
 
     def on_kvm_checkbutton_toggled(self, togglebutton):
         if togglebutton.get_active():
-            if not self.original.homehost:
-                kvm = tools.check_kvm(self.gui.config.get("qemupath"))
-                self._kvm_toggle_all(kvm)
-                togglebutton.set_active(kvm)
-                if not kvm:
-                    logger.error(no_kvm)
-            else:
-                self._kvm_toggle_all(True)
+            kvm = tools.check_kvm(self.gui.config.get("qemupath"))
+            self._kvm_toggle_all(kvm)
+            togglebutton.set_active(kvm)
+            if not kvm:
+                logger.error(no_kvm)
         else:
             self._kvm_toggle_all(False)
 

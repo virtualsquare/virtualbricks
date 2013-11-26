@@ -162,7 +162,7 @@ class Config(_Config):
                   "poff_vbevent": String("")}
 
 
-class _LocalBrick(base.Base):
+class Brick(base.Base):
 
     proc = None
     command_builder = {}
@@ -244,6 +244,10 @@ class _LocalBrick(base.Base):
         self.set(attrs)
 
     def set(self, attrs=None, **kwds):
+        if attrs is None:
+            attrs = kwds
+        else:
+            attrs.update(kwds)
         if "sock" in attrs:
             attrs["sock"] = self._rewrite_sock_server(attrs["sock"])
         base.Base.set(self, attrs)
@@ -402,18 +406,3 @@ class _LocalBrick(base.Base):
 
     def __repr__(self):
         return "<{0.type} {0.name}>".format(self)
-
-
-class Brick(_LocalBrick):
-
-    homehost = None
-
-    def __init__(self, factory, name, homehost=None):
-        _LocalBrick.__init__(self, factory, name)
-
-    def set(self, attrs=None, **kwds):
-        if attrs is None:
-            attrs = kwds
-        else:
-            attrs.update(kwds)
-        _LocalBrick.set(self, attrs)

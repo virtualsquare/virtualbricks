@@ -32,6 +32,7 @@ from virtualbricks.gui import _gui, graphics, dialogs
 
 if False:  # pyflakes
     _ = str
+    _gui.logger
 
 logger = log.Logger()
 sync_error = log.Event("Sync terminated unexpectedly")
@@ -423,8 +424,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             brick = model.get_value(iter, 0)
             if brick.pid == -10:
                 pid = "python-thread   "
-            elif brick.homehost:
-                pid = "Remote"
             else:
                 pid = str(brick.pid)
             cell_renderer.set_property("text", pid)
@@ -1485,7 +1484,6 @@ class Application(brickfactory.Application):
         # a bug in gtk2 make impossibile to use this and is not required anyway
         gtk.set_interactive(False)
         gladefile = load_gladefile()
-        factory.register_brick_type(_gui.GVirtualMachine, "vm", "qemu")
         message_dialog = MessageDialogObserver()
         observer = log.FilteringLogObserver(message_dialog,
                                             (should_show_to_user,))
