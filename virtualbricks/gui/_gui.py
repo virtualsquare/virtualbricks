@@ -23,7 +23,7 @@ from twisted.internet import reactor, utils, defer, error
 from twisted.python import failure
 
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           console, link, log, settings, tools)
+                           link, log, settings, tools)
 
 from virtualbricks.gui import graphics, dialogs
 
