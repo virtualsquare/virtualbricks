@@ -247,7 +247,6 @@ class _LocalBrick(base.Base):
         if "sock" in attrs:
             attrs["sock"] = self._rewrite_sock_server(attrs["sock"])
         base.Base.set(self, attrs)
-        self.on_config_changed()
 
     def send_signal(self, signal):
         if self.proc:
@@ -261,13 +260,11 @@ class _LocalBrick(base.Base):
         self.in_received = logger.in_
         self.out_received = logger.out
         self.err_received = logger.err
-        self.on_config_changed()
         started.callback(self)
 
     def process_ended(self, proc, status):
         self.proc = None
         self._start_related_events(off=True)
-        self.on_config_changed()
         self._last_status = status
         # ovvensive programming, raise an exception instead of hide the error
         # behind a lambda (lambda _: None)
@@ -358,14 +355,10 @@ class _LocalBrick(base.Base):
     def console(self):
         return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
 
-    def on_config_changed(self):
-        pass
-
     def connect(self, endpoint):
         for p in self.plugs:
             if not p.configured():
                 if p.connect(endpoint):
-                    self.on_config_changed()
                     return True
         return False
 
@@ -373,7 +366,6 @@ class _LocalBrick(base.Base):
         for p in self.plugs:
             if p.configured():
                 p.disconnect()
-        self.on_config_changed()
 
     ############################
     ########### Poweron/Poweroff
