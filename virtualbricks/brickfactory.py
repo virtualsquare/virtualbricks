@@ -240,7 +240,6 @@ class BrickFactory(object):
             if p.sock is not None:
                 new_brick.connect(p.sock)
 
-        new_brick.on_config_changed()
         return new_brick
 
     def do_del_brick(self, result):
