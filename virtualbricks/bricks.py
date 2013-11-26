@@ -246,8 +246,6 @@ class Brick(base.Base):
             attrs = kwds
         else:
             attrs.update(kwds)
-        if "sock" in attrs:
-            attrs["sock"] = self._rewrite_sock_server(attrs["sock"])
         base.Base.set(self, attrs)
 
     def send_signal(self, signal):
@@ -346,10 +344,6 @@ class Brick(base.Base):
     #############################
     # Console related operations.
     #############################
-
-    def _rewrite_sock_server(self, sock):
-        return os.path.join(settings.VIRTUALBRICKS_HOME,
-                            os.path.basename(sock))
 
     def path(self):
         return "%s/%s.ctl" % (settings.VIRTUALBRICKS_HOME, self.name)
