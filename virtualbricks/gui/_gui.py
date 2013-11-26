@@ -376,15 +376,48 @@ class ConfigController(object):
                                                     self.resource))
         builder.connect_signals(self)
 
+    def on_ok_button_clicked(self, button, gui):
+        self.configure_brick(gui)
+        gui.curtain_down()
+
+    # def on_save_button_clicked(self, button, gui):
+    #     # TODO: update config values
+    #     self.configure_brick(gui)
+
+    def on_cancel_button_clicked(self, button, gui):
+        gui.curtain_down()
+
     def get_object(self, name):
         return self.builder.get_object(name)
+
+    def get_view(self, gui):
+        bbox = gtk.HButtonBox()
+        bbox.set_layout(gtk.BUTTONBOX_END)
+        bbox.set_spacing(5)
+        ok_button = gtk.Button(stock=gtk.STOCK_OK)
+        ok_button.connect("clicked", self.on_ok_button_clicked, gui)
+        bbox.add(ok_button)
+        bbox.set_child_secondary(ok_button, False)
+        # save_button = gtk.Button(stock=gtk.STOCK_SAVE)
+        # save_button.connect("clicked", self.on_save_button_clicked, gui)
+        # bbox.add(save_button)
+        cancel_button = gtk.Button(stock=gtk.STOCK_CANCEL)
+        cancel_button.connect("clicked", self.on_cancel_button_clicked, gui)
+        bbox.add(cancel_button)
+        bbox.set_child_secondary(cancel_button, True)
+        box = gtk.VBox()
+        box.pack_end(bbox, False)
+        box.pack_end(gtk.HSeparator(), False, False, 3)
+        box.show_all()
+        box.pack_start(self.get_config_view(gui))
+        return box
 
 
 class EventConfigController(ConfigController, dialogs.EventControllerMixin):
 
     resource = "data/eventconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.setup_controller(self.original)
         entry = self.get_object("delay_entry")
         entry.set_text(self.original.config.get("delay"))
@@ -417,12 +450,15 @@ class EventConfigController(ConfigController, dialogs.EventControllerMixin):
                 if next is None:
                     self.model.append(("", False))
 
+interfaces.registerAdapter(EventConfigController, events.Event,
+                           interfaces.IConfigController)
+
 
 class SwitchConfigController(ConfigController):
 
     resource = "data/switchconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.get_object("fstp_checkbutton").set_active(
             self.original.config["fstp"])
         self.get_object("hub_checkbutton").set_active(
@@ -446,33 +482,27 @@ class SwitchWrapperConfigController(ConfigController):
 
     resource = "data/switchwrapperconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.get_object("entry").set_text(self.original.config["path"])
         return self.get_object("table1")
 
     def configure_brick(self, gui):
-        self.original.set({"path": self.get_object("entry").get_text()})
-
-
-def should_insert_sock(sock, brick, python, femaleplugs):
-    if not brick:
-        return False
-    return ((brick.get_type() == 'Wire' and python) and
-            (sock.brick.get_type().startswith('Switch') or femaleplugs))
+        self.original.set(path=self.get_object("entry").get_text())
 
 
 class PlugMixin(object):
 
-    def _sock_should_visible(self, model, itr, brick):
-        return should_insert_sock(model[itr][0], brick, settings.python,
-                                  settings.femaleplugs)
+    def _sock_should_visible(self, model, itr):
+        sock = model[itr][0]
+        return (sock.brick.get_type().startswith('Switch') or
+                settings.femaleplugs)
 
     def _set_text(self, column, cell_renderer, model, itr):
         sock = model.get_value(itr, 0)
         cell_renderer.set_property("text", sock.nickname)
 
     def configure_sock_combobox(self, combo, model, brick, plug, gui):
-        model.set_visible_func(self._sock_should_visible, brick)
+        model.set_visible_func(self._sock_should_visible)
         combo.set_model(model)
         cell = combo.get_cells()[0]
         combo.set_cell_data_func(cell, self._set_text)
@@ -495,7 +525,7 @@ class TapConfigController(PlugMixin, ConfigController):
 
     resource = "data/tapconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
         self.configure_sock_combobox(combo, model, self.original,
@@ -537,7 +567,7 @@ class CaptureConfigController(PlugMixin, ConfigController):
 
     resource = "data/captureconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox1")
         self.configure_sock_combobox(combo, model, self.original,
@@ -572,7 +602,7 @@ class WireConfigController(PlugMixin, ConfigController):
 
     resource = "data/wireconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
             combo = self.get_object(wname)
@@ -597,7 +627,7 @@ class TunnelListenConfigController(PlugMixin, ConfigController):
 
     resource = "data/tunnellconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
         self.configure_sock_combobox(combo, model, self.original,
@@ -619,12 +649,12 @@ class TunnelClientConfigController(TunnelListenConfigController):
 
     resource = "data/tunnelcconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         host = self.get_object("host_entry")
         host.set_text(self.original.config["host"])
         localport = self.get_object("localport_spinbutton")
         localport.set_value(self.original.config["localport"])
-        return TunnelListenConfigController.get_view(self, gui)
+        return TunnelListenConfigController.get_config_view(self, gui)
 
     def configure_brick(self, gui):
         TunnelListenConfigController.configure_brick(self, gui)
@@ -781,7 +811,7 @@ class QemuConfigController(ConfigController):
         mac_cr = self.get_object("mac_cellrenderer")
         mac_c.set_cell_data_func(mac_cr, set_mac)
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.gui = gui
         cfg = self.original.config
         go = self.get_object
@@ -1025,9 +1055,7 @@ class QemuConfigController(ConfigController):
 
 def config_panel_factory(context):
     type = context.get_type()
-    if type == "Event":
-        return EventConfigController(context)
-    elif type == "Switch":
+    if type == "Switch":
         return SwitchConfigController(context)
     elif type == "SwitchWrapper":
         return SwitchWrapperConfigController(context)

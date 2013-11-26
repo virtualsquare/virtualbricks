@@ -27,6 +27,11 @@ class Wire(bricks.Brick):
 
     type = "Wire"
 
+    def __init__(self, factory, name):
+        bricks.Brick.__init__(self, factory, name)
+        self.plugs.append(factory.new_plug(self))
+        self.plugs.append(factory.new_plug(self))
+
     def get_parameters(self):
         p0 = _("disconnected")
         p1 = _("disconnected")
