@@ -133,8 +133,11 @@ class ProjectEntry:
             self.sections[("Image", name)]["path"] = path
 
     def get_bricks(self):
+        # XXX: every time a new brick type is added or a a type is changed this
+        # method must change too. fix this
         bricks = set(["Qemu", "Switch", "SwitchWrapper", "Tap", "Capture",
-                      "Wirefilter", "Wire", "TunnelConnect", "TunnelListen"])
+                      "Wirefilter", "Netemu", "Wire", "TunnelConnect",
+                      "TunnelListen"])
         return self._filter(lambda k: k[0] in bricks)
 
     def get_events(self):

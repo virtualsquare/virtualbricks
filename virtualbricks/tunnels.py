@@ -83,9 +83,9 @@ class TunnelListen(bricks.Brick):
     #    os.unlink("/tmp/tunnel_%s.key" % self.name)
     #    pass
 
-    def add_plug(self, sock, mac=None, model=None):
-        self.plugs[0].connect(sock)
-        return self.plugs[0]
+    # def add_plug(self, sock, mac=None, model=None):
+    #     self.plugs[0].connect(sock)
+    #     return self.plugs[0]
 
 
 class TunnelConnectConfig(TunnelListenConfig):

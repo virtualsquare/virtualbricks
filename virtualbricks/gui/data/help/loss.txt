@@ -1,0 +1,4 @@
+Packet loss
+===========
+
+Percentage of loss as a floating point number.

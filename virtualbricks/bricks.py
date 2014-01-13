@@ -26,11 +26,12 @@ from twisted.python import failure
 
 from virtualbricks import base, errors, settings, log
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
-                                SpinInt, Float, Boolean, Object, ListOf)
+                                SpinInt, Float, SpinFloat, Boolean, Object,
+                                ListOf)
 
 
 __all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
-           "Float", "Boolean", "Object", "ListOf"]
+           "Float", "SpinFloat", "Boolean", "Object", "ListOf"]
 
 if False:  # pyflakes
     _ = str
@@ -78,6 +79,15 @@ class Process(protocol.ProcessProtocol):
             self.logger.info(process_terminated, status=lambda: "")
         self.brick.process_ended(self, status)
 
+    # new interface
+
+    # @property
+    # def pid(self):
+    #     return self.transport.pid
+
+    # def signalProcess(self, signalID):
+    #     self.transport.signalProcess(signalID)
+
 
 class ProcessLogger:
     """Log the output of a process.
@@ -102,11 +112,10 @@ class ProcessLogger:
 
     def flush(self):
         loggers = [self.log, self.log_e]
-        get_data = operator.itemgetter(0)
         is_error = operator.itemgetter(1)
         for idx, group in itertools.groupby(self.buffer, is_error):
             logger = loggers[idx]
-            data = "".join(map(get_data, group))
+            data = "".join(map(operator.itemgetter(0), group))
             logger(data)
         del self.buffer[:]
 
@@ -316,8 +325,10 @@ class Brick(base.Base):
             logger.info(start_brick, args=get_args)
             # usePTY?
             if self.needsudo():
-                prog = settings.get('sudo')
-                args = [settings.get('sudo')] + args
+                prog = settings.get("sudo")
+                args = [settings.get("sudo")] + args
+            # self.proc = Process(self)
+            # reactor.spawnProcess(self.proc, prog, args, os.environ)
             self.proc = reactor.spawnProcess(Process(self), prog, args,
                                              os.environ)
         l = [defer.maybeDeferred(self.prog), defer.maybeDeferred(self.args)]
@@ -351,12 +362,11 @@ class Brick(base.Base):
     def console(self):
         return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
 
-    def connect(self, endpoint):
+    def connect(self, endpoint, *args):
         for p in self.plugs:
             if not p.configured():
-                if p.connect(endpoint):
-                    return True
-        return False
+                p.connect(endpoint)
+                return
 
     def disconnect(self):
         for p in self.plugs:

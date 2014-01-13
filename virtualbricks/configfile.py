@@ -136,7 +136,7 @@ class LinkBuilder:
         if brick:
             sock = factory.get_sock_by_name(link.sockname)
             if sock:
-                brick.add_plug(sock, link.mac, link.model)
+                brick.connect(sock, link.mac, link.model)
                 logger.info(link_added, type=link.type, brick=link.owner)
             else:
                 logger.warn(sock_not_found, sockname=link.sockname,
@@ -234,9 +234,7 @@ class ConfigFile:
 
     def save_to(self, factory, fileobj):
         for img in factory.disk_images:
-            fileobj.write('[Image:' + img.name + ']\n')
-            fileobj.write('path=' + img.path + '\n')
-            fileobj.write("\n")
+            img.save_to(fileobj)
 
         for event in factory.events:
             event.save_to(fileobj)
@@ -254,16 +252,7 @@ class ConfigFile:
             fileobj.write(t.format(s=sock))
 
         for plug in plugs:
-            if plug.brick.get_type() == 'Qemu':
-                if plug.configured():
-                    t = ("link|{p.brick.name}|{p.sock.nickname}|{p.model}|"
-                         "{p.mac}\n")
-                else:
-                    t = "link|{p.brick.name}||{p.model}|{p.mac}\n"
-                fileobj.write(t.format(p=plug))
-            elif plug.sock is not None:
-                t = "link|{p.brick.name}|{p.sock.nickname}||\n"
-                fileobj.write(t.format(p=plug))
+            plug.save_to(fileobj)
 
     def restore(self, factory, str_or_obj):
         if isinstance(str_or_obj, (basestring, filepath.FilePath)):

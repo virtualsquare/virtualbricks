@@ -70,22 +70,18 @@ class Wrapper:
 
 class VMPlug(Wrapper):
 
-    model = "rtl8139"
-    mode = "vde"
-
     def __init__(self, plug):
         Wrapper.__init__(self, plug)
-        self.__dict__["mac"] = tools.random_mac()
+        self.model = "rtl8139"
+        self.mac = tools.random_mac()
 
 
 class VMSock(Wrapper):
 
-    model = "rtl8139"
-    # mac = ""
-
     def __init__(self, sock):
         Wrapper.__init__(self, sock)
-        self.__dict__["mac"] = tools.random_mac()
+        self.model = "rtl8139"
+        self.mac = tools.random_mac()
 
     def connect(self, endpoint):
         return
@@ -181,6 +177,9 @@ class Image:
         if self.master is None:
             return ""
         return repr(self.master)
+
+    def save_to(self, fileobj):
+        fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
 
 
 def move(src, dst):
@@ -734,8 +733,8 @@ class VirtualMachine(bricks.Brick):
             plug.model = model
         return plug
 
-    def connect(self, sock):
-        self.add_plug(sock)
+    def connect(self, sock, *args):
+        self.add_plug(sock, *args)
 
     def remove_plug(self, plug):
         try:

@@ -26,6 +26,9 @@ from virtualbricks import errors, settings, log
 if False:  # pyflakes
     _ = str
 
+
+__metaclass__ = type
+
 link_loop = log.Event("Loop link detected: aborting operation. If you want "
                       "to start a looped network, disable the check loop "
                       "feature in the general settings")
@@ -37,6 +40,8 @@ class Plug:
     _antiloop = False
     mode = "vde"
     logger = log.Logger()
+    model = ""
+    mac = ""
 
     def __init__(self, brick):
         self.brick = brick
@@ -82,8 +87,13 @@ class Plug:
         self.sock.plugs.remove(self)
         self.sock = None
 
+    def save_to(self, fileobj):
+        tmp = "link|{0.brick.name}|{1}|{0.model}|{0.mac}\n"
+        fileobj.write(tmp.format(self,
+            self.sock.nickname if self.configured() else ""))
 
-class Sock(object):
+
+class Sock:
 
     def __init__(self, brick, name=""):
         self.brick = brick

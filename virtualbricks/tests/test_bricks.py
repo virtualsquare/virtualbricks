@@ -6,15 +6,28 @@ from twisted.trial import unittest
 from twisted.internet import error
 
 from virtualbricks import errors, link
-from virtualbricks.tests import stubs
+from virtualbricks.tests import stubs, successResultOf
 
 
 def kill(passthru, brick):
     return brick.poweroff(kill=True).addBoth(lambda _: passthru)
 
+
 def patchr(passthru, patch):
     patch.restore()
     return passthru
+
+
+class SleepBrick(stubs.BrickStub):
+
+    def prog(self):
+        return "sleep"
+
+    def args(self):
+        return ["10"]
+
+    def configured(self):
+        return True
 
 
 class TestBricks(unittest.TestCase):
@@ -71,22 +84,27 @@ class TestBricks(unittest.TestCase):
         self.brick.poweron().addErrback(result.append)
         result[0].trap(IOError)
 
+    def test_poweroff_not_running(self):
+        """
+        If the brick is not started, poweroff succeed and return the last
+        status or None if the last status is not set.
+        """
+
+        self.assertEqual(successResultOf(self, self.brick.poweroff()),
+                         (self.brick, None))
+
     def test_poweroff(self):
 
         def check_result(result):
-            self.assertIs(result[0], self.brick)
+            self.assertIs(result[0], brick)
             self.assertIsInstance(result[1].value, error.ProcessTerminated)
             self.assertEqual(result[1].value.signal, signal.SIGTERM)
 
         def do_poweroff(brick):
             return brick.poweroff().addCallback(check_result)
 
-        result = []
-        self.brick.poweroff().addCallback(result.append)
-        self.assertEqual(result, [(self.brick, None)])
-        self.brick.configured = lambda : True
-        d = self.brick.poweron()
-        return d.addCallbacks(do_poweroff).addBoth(kill, self.brick)
+        brick = SleepBrick(self.factory, "test")
+        return brick.poweron().addCallbacks(do_poweroff).addBoth(kill, brick)
 
     def test_poweroff_raise_OSError(self):
 
@@ -128,3 +146,6 @@ class TestBricks(unittest.TestCase):
         d = self.brick.poweron()
         d.addCallback(continue_test).addBoth(kill, self.brick)
         return d
+
+    def test_signal_process(self):
+        pass

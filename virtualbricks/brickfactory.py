@@ -67,7 +67,8 @@ def install_brick_types(registry=None):
         "capture": tuntaps.Capture,
         "vm": virtualmachines.VirtualMachine,
         "qemu": virtualmachines.VirtualMachine,
-        "wirefilter": wires.Wirefilter,
+        "wirefilter": wires.Netemu,
+        "netemu": wires.Netemu,
         "wire": wires.Wire,
         "tunnelc": tunnels.TunnelConnect,
         "tunnel client": tunnels.TunnelConnect,
@@ -219,12 +220,11 @@ class BrickFactory(object):
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        nname = self.normalize_name(name)
-        ltype = type.lower()
-        if ltype not in self.__factories:
+        try:
+            brick_type = self.__factories[type.lower()]
+            return brick_type(self, self.normalize_name(name))
+        except KeyError:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
-        brick = self.__factories[ltype](self, nname)
-        return brick
 
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
@@ -626,9 +626,6 @@ class Application:
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
         prj = project.restore_last_project(factory)
-        # XXX: this is disabled because the gui is responsable to save the
-        # project before exting. This means that if the factory is launched in
-        # a non-gui fashion, the project is not saved. Fix this.
         reactor.addSystemEventTrigger("before", "shutdown", prj.save, factory)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:

@@ -1,0 +1,4 @@
+Channel bandwidth
+=================
+
+Sender is not prevented from sending packets, delivery is delayed to limit the bandwidth to the desired value (like a bottleneck along the path).

@@ -25,7 +25,7 @@ from twisted.python import failure
 from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
                            link, log, settings, tools)
 
-from virtualbricks.gui import graphics, dialogs
+from virtualbricks.gui import graphics, dialogs, help
 
 
 logger = log.Logger("virtualbricks.gui.gui")
@@ -490,7 +490,7 @@ class SwitchWrapperConfigController(ConfigController):
         self.original.set(path=self.get_object("entry").get_text())
 
 
-class PlugMixin(object):
+class _PlugMixin(object):
 
     def _sock_should_visible(self, model, itr):
         sock = model[itr][0]
@@ -521,7 +521,7 @@ class PlugMixin(object):
             plug.connect(model[itr][0])
 
 
-class TapConfigController(PlugMixin, ConfigController):
+class TapConfigController(_PlugMixin, ConfigController):
 
     resource = "data/tapconfig.ui"
 
@@ -563,7 +563,7 @@ class TapConfigController(PlugMixin, ConfigController):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
 
 
-class CaptureConfigController(PlugMixin, ConfigController):
+class CaptureConfigController(_PlugMixin, ConfigController):
 
     resource = "data/captureconfig.ui"
 
@@ -598,7 +598,7 @@ class CaptureConfigController(PlugMixin, ConfigController):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
 
 
-class WireConfigController(PlugMixin, ConfigController):
+class WireConfigController(_PlugMixin, ConfigController):
 
     resource = "data/wireconfig.ui"
 
@@ -616,14 +616,197 @@ class WireConfigController(PlugMixin, ConfigController):
             self.connect_plug(self.original.plugs[i], self.get_object(wname))
 
 
-class WirefilterConfigController(WireConfigController):
-
-    pass
-
-    # resource = "data/wirefilterconfig.ui"
+NO, MAYBE, YES = range(3)
 
 
-class TunnelListenConfigController(PlugMixin, ConfigController):
+class CompoundPrerequisite:
+    implements(interfaces.IPrerequisite)
+
+    def __init__(self):
+        self.prerequisites = []
+
+    def add_prerequisite(self, prerequisite):
+        self.prerequisites.append(prerequisite)
+
+    def __call__(self):
+        for prerequisite in self.prerequisites:
+            satisfied = prerequisite()
+            if satisfied in (YES, NO):
+                return satisfied
+        return MAYBE
+
+
+class State:
+
+    def __init__(self):
+        self.prerequisite = CompoundPrerequisite()
+        self.controls = []
+
+    def add_prerequisite(self, prerequisite):
+        self.prerequisite.add_prerequisite(prerequisite)
+
+    def add_control(self, control):
+        self.controls.append(control)
+
+    def check(self):
+        enable = self.prerequisite()
+        for control in self.controls:
+            control.react(enable)
+
+    def add_spin_button(self, spinbutton, condition):
+        self.add_prerequisite(condition)
+        spinbutton.connect("value-changed", lambda sb: self.check())
+
+
+class SensitiveControl:
+
+    tooltip = None
+
+    def __init__(self, widget, tooltip=None):
+        self.widget = widget
+        self.tooltip = self.widget.get_tooltip_markup()
+        self.widget.set_tooltip_markup(tooltip)
+
+    def react(self, enable):
+        self.set_sensitive(enable)
+
+    def set_sensitive(self, sensitive):
+        if self.widget.get_sensitive() ^ sensitive:
+            self.widget.set_sensitive(sensitive)
+            tooltip = self.tooltip
+            self.tooltip = self.widget.get_tooltip_markup()
+            self.widget.set_tooltip_markup(tooltip)
+
+
+class StateManager:
+
+    control_factory = SensitiveControl
+
+    def __init__(self):
+        self.states = []
+
+    def add_state(self, state):
+        self.states.append(state)
+
+    def _build_state(self, tooltip, *widgets):
+        state = State()
+        for widget in widgets:
+            state.add_control(self.control_factory(widget, tooltip))
+        self.add_state(state)
+        return state
+
+    def _add_checkbutton(self, checkbutton, prerequisite, tooltip=None,
+                         *widgets):
+        state = self._build_state(tooltip, *widgets)
+        state.add_prerequisite(checkbutton.get_active)
+        checkbutton.connect("toggled", lambda cb: state.check())
+        return state
+
+    def add_checkbutton_active(self, checkbutton, tooltip=None, *widgets):
+        return self._add_checkbutton(checkbutton, checkbutton.get_active,
+                                     tooltip, *widgets)
+
+    def add_checkbutton_not_active(self, checkbutton, tooltip=None, *widgets):
+        return self._add_checkbutton(checkbutton,
+                                     lambda: not checkbutton.get_active(),
+                                     tooltip, *widgets)
+
+    def add_spin_button(self, spinbutton, condition, tooltip=None, *widgets):
+        state = self._build_state(tooltip, *widgets)
+        self.add_prerequisite(condition)
+        spinbutton.connect("value-changed", lambda sb: self.check())
+        return state
+
+
+class NetemuConfigController(_PlugMixin, ConfigController):
+
+    resource = "data/netemuconfig.ui"
+    state_manager = None
+    help = help.Help()
+    config_to_checkbutton_mapping = (
+        ("chanbufsizesymm", "chanbufsize_checkbutton"),
+        ("delaysymm", "delay_checkbutton"),
+        ("losssymm", "loss_checkbutton"),
+        ("bandwidthsymm", "bandwidth_checkbutton"),
+    )
+    config_to_spinint_mapping = (
+        ("chanbufsizer", "chanbufsizer_spinbutton"),
+        ("chanbufsize", "chanbufsize_spinbutton"),
+        ("delayr", "delayr_spinbutton"),
+        ("delay", "delay_spinbutton"),
+        ("bandwidthr", "bandwidthr_spinbutton"),
+        ("bandwidth", "bandwidth_spinbutton"),
+    )
+    config_to_spinfloat_mapping = (
+        ("lossr", "lossr_spinbutton"),
+        ("loss", "loss_spinbutton"),
+    )
+    help_buttons = (
+        "chanbufsize_help_button",
+        "delay_help_button",
+        "loss_help_button",
+        "bandwidth_help_button",
+    )
+
+    def get_config_view(self, gui):
+        go = self.get_object
+        get = self.original.get
+        for pname, wname in self.config_to_checkbutton_mapping:
+            go(wname).set_active(not get(pname))
+        for pname, wname in self.config_to_spinint_mapping:
+            go(wname).set_value(get(pname))
+        for pname, wname in self.config_to_spinfloat_mapping:
+            go(wname).set_value(get(pname))
+
+        self.state_manager = manager = StateManager()
+        params = ("chanbufsize", "delay", "loss", "bandwidth")
+        for param in params:
+            cb = go(param + "_checkbutton")
+            tooltip = _("Disabled because set symmetric")
+            sb = go(param + "r_spinbutton")
+            manager.add_checkbutton_active(cb, tooltip, sb)
+            sb.set_sensitive(cb.get_active())
+
+        # setup help buttons
+        for button in self.help_buttons:
+            go(button).connect("clicked", self.help.on_help_button_clicked)
+
+        # setup plugs
+        model = gui.brickfactory.socks.filter_new()
+        for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
+            combo = self.get_object(wname)
+            self.configure_sock_combobox(combo, model, self.original,
+                                         self.original.plugs[i], gui)
+
+        return go("netemu_config_panel")
+
+    def configure_brick(self, gui):
+        cfg = {}
+        go = self.get_object
+        for config_name, widget_name in self.config_to_checkbutton_mapping:
+            cfg[config_name] = not go(widget_name).get_active()
+        for pname, wname in self.config_to_spinint_mapping:
+            cfg[pname] = go(wname).get_value_as_int()
+        for pname, wname in self.config_to_spinfloat_mapping:
+            cfg[pname] = go(wname).get_value()
+        self.original.set(cfg)
+
+        # configure plug
+        for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
+            self.connect_plug(self.original.plugs[i], self.get_object(wname))
+
+    def on_reset_button_clicked(self, button):
+        self.get_object("chanbufsize_spinbutton").set_value(75000)
+        self.get_object("chanbufsizer_spinbutton").set_value(75000)
+        self.get_object("delay_spinbutton").set_value(0)
+        self.get_object("delayr_spinbutton").set_value(0)
+        self.get_object("loss_spinbutton").set_value(0)
+        self.get_object("lossr_spinbutton").set_value(0)
+        self.get_object("bandwidth_spinbutton").set_value(125000)
+        self.get_object("bandwidthr_spinbutton").set_value(125000)
+
+
+class TunnelListenConfigController(_PlugMixin, ConfigController):
 
     resource = "data/tunnellconfig.ui"
 
@@ -1065,8 +1248,8 @@ def config_panel_factory(context):
         return CaptureConfigController(context)
     elif type == "Wire":
         return WireConfigController(context)
-    # elif type == "Wirefilter":
-    #     return WirefilterConfigController(context)
+    elif type == "Netemu":
+        return NetemuConfigController(context)
     elif type == "TunnelConnect":
         return TunnelClientConfigController(context)
     elif type == "TunnelListen":
