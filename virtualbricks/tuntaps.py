@@ -104,9 +104,9 @@ class Tap(bricks.Brick):
     def configured(self):
         return self.plugs[0].sock
 
-    def add_plug(self, sock, mac=None, model=None):
-        self.plugs[0].connect(sock)
-        return self.plugs[0]
+    # def add_plug(self, sock, mac=None, model=None):
+    #     self.plugs[0].connect(sock)
+    #     return self.plugs[0]
 
     def post_poweron(self):
         # XXX: fixme

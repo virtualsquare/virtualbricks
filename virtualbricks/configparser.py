@@ -66,7 +66,7 @@ class Parser:
                       "(?P<owner>[a-zA-Z][\w.-]*)\|"
                       "(?P<sockname>[a-zA-Z_][\w.-]*)\|"
                       "(?P<model>\w*)\|"
-                      "(?P<mac>(?:[0-9a-hA-H]{2}:){5}[0-9a-hA-H]{2})$")
+                      "(?P<mac>(?:(?:[0-9a-hA-H]{2}:){5}[0-9a-hA-H]{2})|)$")
 
     def __init__(self, fileobj):
         self.fileobj = fileobj

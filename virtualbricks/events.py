@@ -94,11 +94,11 @@ class Event(base.Base):
             tempstr = tempstr[0:-1]
         return tempstr
 
-    def connect(self, endpoint):
-        return True
+    # def connect(self, endpoint):
+    #     return True
 
-    def disconnect(self):
-        return
+    # def disconnect(self):
+    #     return
 
     ############################
     ########### Poweron/Poweroff

@@ -129,3 +129,24 @@ class IBuilder(Interface):
 
     def load_from(factory, item):
         """Return a new brick or link from the given item."""
+
+
+class IPrerequisite(Interface):
+
+    def __call__(self):
+        """Return YES, NO or MAYBE if the prerequisite is satisfied."""
+
+
+class IHelp(Interface):
+
+    def get_help(argument):
+        """Return the help for the given argument or raise an exception."""
+
+    def show_help_window(text):
+        """Show the help window with the text specified."""
+
+    def on_help_button_clicked(button):
+        """
+        Callback that can be used to open the help window and show the help
+        based on the name of the button.
+        """
