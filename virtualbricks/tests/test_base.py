@@ -106,6 +106,42 @@ class TestConfig(unittest.TestCase):
         self.assertIs(cfg["obj"], self.config2["obj"])
 
 
+class TestTypes(unittest.TestCase):
+
+    def test_spinint(self):
+        """SpinInt can convert integers to and from strings."""
+
+        spinint = base.SpinInt()
+        val = 42
+        string = spinint.to_string(val)
+        self.assertIdentical(type(string), str)
+        self.assertEqual(spinint.from_string(string), val)
+
+    def test_spinint_not_in_range(self):
+        """Values should be in range."""
+
+        spinint = base.SpinInt(2, 1, 3)
+        self.assertRaises(ValueError, spinint.to_string, 0)
+        self.assertRaises(ValueError, spinint.from_string, "4")
+
+    def test_spinfloat(self):
+        """SpinFloat can convert floats to and from strings."""
+
+        spinfloat = base.SpinFloat()
+        # val = 42.2
+        val = 0.1 + 0.1 + 0.1
+        string = spinfloat.to_string(val)
+        self.assertIdentical(type(string), str)
+        self.assertEqual(spinfloat.from_string(val), val)
+
+    def test_spinfloat_not_in_range(self):
+        """Valuese should be in range."""
+
+        spinfloat = base.SpinFloat(2, 0.2, 0.3)
+        self.assertRaises(ValueError, spinfloat.to_string, 0.1)
+        self.assertRaises(ValueError, spinfloat.from_string, "0.1")
+
+
 class TestBase(unittest.TestCase):
 
     def setUp(self):
