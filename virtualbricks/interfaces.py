@@ -25,8 +25,7 @@ from twisted.python.components import registerAdapter
 from virtualbricks import log
 
 
-__all__ = ["IMenu", "IJobMenu", "IConfigController", "IBrick", "IPlug",
-           "registerAdapter", "InterfaceLogger"]
+__all__ = ["registerAdapter", "InterfaceLogger", "IBrick", "IPlug", "IBuilder"]
 
 logger = log.Logger()
 non_interface = log.Event("Requested a non-interface ({interface}) method: "
@@ -50,25 +49,6 @@ class InterfaceLogger:
             return getattr(self.original, name)
         except AttributeError:
             raise AttributeError(name)
-
-
-class IMenu(Interface):
-
-    def popup(button, time):
-        """Pop up a menu for a specific brick."""
-
-
-class IJobMenu(IMenu):
-    pass
-
-
-class IConfigController(Interface):
-
-    def get_view(gui):
-        """Return the configuration panel for the given brick or event."""
-
-    def configure_brick(gui):
-        """Configure the brick as setted in the panel."""
 
 
 class IBrick(Interface):
@@ -129,24 +109,3 @@ class IBuilder(Interface):
 
     def load_from(factory, item):
         """Return a new brick or link from the given item."""
-
-
-class IPrerequisite(Interface):
-
-    def __call__(self):
-        """Return YES, NO or MAYBE if the prerequisite is satisfied."""
-
-
-class IHelp(Interface):
-
-    def get_help(argument):
-        """Return the help for the given argument or raise an exception."""
-
-    def show_help_window(text):
-        """Show the help window with the text specified."""
-
-    def on_help_button_clicked(button):
-        """
-        Callback that can be used to open the help window and show the help
-        based on the name of the button.
-        """
