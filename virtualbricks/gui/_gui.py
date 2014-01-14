@@ -637,6 +637,7 @@ class CompoundPrerequisite:
         return MAYBE
 
 
+@implementer(interfaces.IState)
 class State:
 
     def __init__(self):
@@ -655,6 +656,7 @@ class State:
             control.react(enable)
 
 
+@implementer(interfaces.IControl)
 class SensitiveControl:
 
     tooltip = None
@@ -674,6 +676,7 @@ class SensitiveControl:
             self.widget.set_tooltip_markup(tooltip)
 
 
+@implementer(interfaces.IStateManager)
 class StateManager:
 
     control_factory = SensitiveControl
