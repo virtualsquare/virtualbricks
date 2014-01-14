@@ -3,7 +3,7 @@ import errno
 import re
 
 import gtk
-from zope.interface import implements
+from zope.interface import implementer
 
 from virtualbricks.gui import graphics, interfaces
 
@@ -54,8 +54,8 @@ class HelpWindow:
         self.window.present()
 
 
+@implementer(interfaces.IHelp)
 class Help:
-    implements(interfaces.IHelp)
 
     RE = re.compile("^(\w+)_help_button$")
     window_factory = HelpWindow

@@ -22,7 +22,7 @@ import textwrap
 from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from twisted.python import components
-from zope.interface import implements
+from zope.interface import implementer
 
 from virtualbricks import version, errors, log, settings
 
@@ -55,8 +55,8 @@ class ShellCommand(str):
         return utils.getProcessValue("sh", self, os.environ)
 
 
+@implementer(interfaces.ITransport)
 class NullTransportAdapter:
-    implements(interfaces.ITransport)
 
     __init__ = write = writeSequence = lambda s, d: None
     loseConnection = getPeer = getHost = lambda s: None
