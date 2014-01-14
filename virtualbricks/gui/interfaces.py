@@ -20,7 +20,8 @@ from zope.interface import Interface
 from virtualbricks.interfaces import registerAdapter
 
 
-__all__ = ["IMenu", "IJobMenu", "IConfigController", "registerAdapter"]
+__all__ = ["registerAdapter", "IMenu", "IJobMenu", "IConfigController",
+           "IState", "IControl", "IStateManager"]
 
 
 class IMenu(Interface):
@@ -44,8 +45,56 @@ class IConfigController(Interface):
 
 class IPrerequisite(Interface):
 
-    def __call__(self):
-        """Return YES, NO or MAYBE if the prerequisite is satisfied."""
+    def __call__():
+        """
+        @return: YES, NO or MAYBE if the prerequisite is satisfied.
+        @rtype: C{bool}
+        """
+
+
+class IState(Interface):
+    """An object that check all prerequisites and manage the controls."""
+
+    def add_prerequisite(prerequisite):
+        """
+        Add a prerequisite.
+
+        @param prerequisite: A prerequisite.
+        @type prerequisite: L{IPrerequisite}
+        """
+
+    def add_control(control):
+        """
+        Add a control.
+
+        @param control: The control.
+        @type contro: L{IControl}
+        """
+
+
+class IControl(Interface):
+    """Control a widget."""
+
+    def react(enable):
+        """
+        Adjust a widget based on the result of the prerequisites.
+
+        @param enable: C{True} if the widget should be enabled or C{False}
+            otherwise.
+        @type enable: C{bool}
+        """
+
+
+class IStateManager(Interface):
+    """A collection of states."""
+
+    def add_state(state):
+        """
+        Add a state to the collection.
+
+        @param state: the state to add.
+        @type state: L{IState}
+        """
 
 
 class IHelp(Interface):
