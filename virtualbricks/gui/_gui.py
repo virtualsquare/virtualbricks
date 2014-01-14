@@ -19,7 +19,7 @@
 import os
 
 import gtk
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.internet import reactor, utils, defer, error
 from twisted.python import failure
 
@@ -62,8 +62,8 @@ def refilter(passthru, filter_model):
     return passthru
 
 
+@implementer(interfaces.IMenu)
 class BaseMenu:
-    implements(interfaces.IMenu)
 
     def __init__(self, brick):
         self.original = brick
@@ -195,8 +195,8 @@ class EventPopupMenu(BaseMenu):
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
 
 
+@implementer(interfaces.IMenu)
 class LinkMenu:
-    implements(interfaces.IMenu)
 
     def __init__(self, original):
         self.original = original
@@ -229,8 +229,8 @@ interfaces.registerAdapter(LinkMenu, link.Plug, interfaces.IMenu)
 interfaces.registerAdapter(LinkMenu, link.Sock, interfaces.IMenu)
 
 
+@implementer(interfaces.IMenu)
 class JobMenu:
-    implements(interfaces.IMenu)
 
     def __init__(self, original):
         self.original = original
@@ -363,8 +363,8 @@ interfaces.registerAdapter(VMJobMenu, virtualmachines.VirtualMachine,
                            interfaces.IJobMenu)
 
 
+@implementer(interfaces.IConfigController)
 class ConfigController(object):
-    implements(interfaces.IConfigController)
 
     domain = "virtualbricks"
     resource = None
@@ -620,8 +620,8 @@ class WireConfigController(_PlugMixin, ConfigController):
 NO, MAYBE, YES = range(3)
 
 
+@implementer(interfaces.IPrerequisite)
 class CompoundPrerequisite:
-    implements(interfaces.IPrerequisite)
 
     def __init__(self, *prerequisites):
         self.prerequisites = list(prerequisites)

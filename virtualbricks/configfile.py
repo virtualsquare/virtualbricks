@@ -23,7 +23,7 @@ import traceback
 import contextlib
 
 from twisted.python import filepath
-from zope.interface import implements
+from zope.interface import implementer
 
 from virtualbricks import interfaces, settings, configparser, log
 
@@ -116,8 +116,8 @@ def restore_backup(filename, fbackup):
         filename_back.remove()
 
 
+@implementer(interfaces.IBuilder)
 class SockBuilder:
-    implements(interfaces.IBuilder)
 
     def load_from(self, factory, sock):
         brick = factory.get_brick_by_name(sock.owner)
@@ -128,8 +128,8 @@ class SockBuilder:
             logger.warn(brick_not_found, brick=sock.owner, line="|".join(sock))
 
 
+@implementer(interfaces.IBuilder)
 class LinkBuilder:
-    implements(interfaces.IBuilder)
 
     def load_from(self, factory, link):
         brick = factory.get_brick_by_name(link.owner)
@@ -156,8 +156,8 @@ interfaces.registerAdapter(link_builder_factory, configparser.Link,
                            interfaces.IBuilder)
 
 
+@implementer(interfaces.IBuilder)
 class ImageBuilder:
-    implements(interfaces.IBuilder)
 
     def __init__(self, name):
         self.name = name
@@ -173,8 +173,8 @@ class ImageBuilder:
             return factory.new_disk_image(self.name, path)
 
 
+@implementer(interfaces.IBuilder)
 class EventBuilder:
-    implements(interfaces.IBuilder)
 
     def __init__(self, name):
         self.name = name
@@ -184,8 +184,8 @@ class EventBuilder:
         event.load_from(section)
 
 
+@implementer(interfaces.IBuilder)
 class BrickBuilder:
-    implements(interfaces.IBuilder)
 
     def __init__(self, type, name):
         self.type = type
