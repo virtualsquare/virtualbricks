@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_gui -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -622,8 +623,8 @@ NO, MAYBE, YES = range(3)
 class CompoundPrerequisite:
     implements(interfaces.IPrerequisite)
 
-    def __init__(self):
-        self.prerequisites = []
+    def __init__(self, *prerequisites):
+        self.prerequisites = list(prerequisites)
 
     def add_prerequisite(self, prerequisite):
         self.prerequisites.append(prerequisite)
@@ -653,10 +654,6 @@ class State:
         for control in self.controls:
             control.react(enable)
 
-    def add_spin_button(self, spinbutton, condition):
-        self.add_prerequisite(condition)
-        spinbutton.connect("value-changed", lambda sb: self.check())
-
 
 class SensitiveControl:
 
@@ -664,8 +661,7 @@ class SensitiveControl:
 
     def __init__(self, widget, tooltip=None):
         self.widget = widget
-        self.tooltip = self.widget.get_tooltip_markup()
-        self.widget.set_tooltip_markup(tooltip)
+        self.tooltip = tooltip
 
     def react(self, enable):
         self.set_sensitive(enable)
@@ -698,8 +694,9 @@ class StateManager:
     def _add_checkbutton(self, checkbutton, prerequisite, tooltip=None,
                          *widgets):
         state = self._build_state(tooltip, *widgets)
-        state.add_prerequisite(checkbutton.get_active)
+        state.add_prerequisite(prerequisite)
         checkbutton.connect("toggled", lambda cb: state.check())
+        state.check()
         return state
 
     def add_checkbutton_active(self, checkbutton, tooltip=None, *widgets):
@@ -710,12 +707,6 @@ class StateManager:
         return self._add_checkbutton(checkbutton,
                                      lambda: not checkbutton.get_active(),
                                      tooltip, *widgets)
-
-    def add_spin_button(self, spinbutton, condition, tooltip=None, *widgets):
-        state = self._build_state(tooltip, *widgets)
-        self.add_prerequisite(condition)
-        spinbutton.connect("value-changed", lambda sb: self.check())
-        return state
 
 
 class NetemuConfigController(_PlugMixin, ConfigController):
@@ -761,11 +752,11 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.state_manager = manager = StateManager()
         params = ("chanbufsize", "delay", "loss", "bandwidth")
         for param in params:
-            cb = go(param + "_checkbutton")
+            checkbutton = go(param + "_checkbutton")
+            checkbutton.set_active(not self.original.get(param + "symm"))
             tooltip = _("Disabled because set symmetric")
-            sb = go(param + "r_spinbutton")
-            manager.add_checkbutton_active(cb, tooltip, sb)
-            sb.set_sensitive(cb.get_active())
+            spinbutton = go(param + "r_spinbutton")
+            manager.add_checkbutton_active(checkbutton, tooltip, spinbutton)
 
         # setup help buttons
         for button in self.help_buttons:
