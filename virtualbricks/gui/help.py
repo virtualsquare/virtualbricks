@@ -3,8 +3,12 @@ import errno
 import re
 
 import gtk
+from zope.interface import implements
 
-from virtualbricks.gui import graphics
+from virtualbricks.gui import graphics, interfaces
+
+
+__metaclass__ = type
 
 
 class HelpError(Exception):
@@ -51,6 +55,7 @@ class HelpWindow:
 
 
 class Help:
+    implements(interfaces.IHelp)
 
     RE = re.compile("^(\w+)_help_button$")
     window_factory = HelpWindow

@@ -23,10 +23,10 @@ from zope.interface import implements
 from twisted.internet import reactor, utils, defer, error
 from twisted.python import failure
 
-from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           link, log, settings, tools)
+from virtualbricks import (base, bricks, events, virtualmachines, link, log,
+                           settings, tools)
 
-from virtualbricks.gui import graphics, dialogs, help
+from virtualbricks.gui import graphics, dialogs, help, interfaces
 
 
 logger = log.Logger("virtualbricks.gui.gui")

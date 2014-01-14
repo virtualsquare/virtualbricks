@@ -24,10 +24,9 @@ import gtk.glade
 from twisted.internet import error, defer, task, protocol, reactor
 from zope.interface import implementer
 
-from virtualbricks import (interfaces, tools, errors, settings, project, log,
-                           brickfactory)
+from virtualbricks import tools, errors, settings, project, log, brickfactory
 
-from virtualbricks.gui import _gui, graphics, dialogs
+from virtualbricks.gui import _gui, graphics, dialogs, interfaces
 
 
 if False:  # pyflakes
