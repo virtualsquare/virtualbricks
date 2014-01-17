@@ -1,4 +1,7 @@
-import mock
+try:
+    import mock
+except ImportError:
+    mock = None
 from twisted.trial import unittest
 
 from virtualbricks import wires, link, settings
@@ -58,6 +61,9 @@ class TestNetemu(unittest.TestCase):
         self.netemu.cbset_delay.assert_called_once_with(1)
         self.netemu.cbset_delayr.assert_called_once_with(2)
 
+    if mock is None:
+        test_live_management.skip = "Mock library not installed"
+
     def test_live_management_2(self):
         """Same as precedent but symmetric."""
 
@@ -78,3 +84,7 @@ class TestNetemu(unittest.TestCase):
         self.netemu.cbset_delay.assert_called_once_with(1)
         self.netemu.cbset_delayr.assert_called_once_with(2)
         self.netemu.send.assert_called_once_with("delay 1\n")
+
+    if mock is None:
+        test_live_management_2.skip = "Mock library not installed"
+
