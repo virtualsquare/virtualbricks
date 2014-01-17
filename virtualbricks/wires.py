@@ -17,9 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-
-# from twisted.internet import reactor
-# from twisted.protocols import basic
+import re
 
 from virtualbricks import bricks, settings
 
@@ -114,10 +112,16 @@ class NetemuConfig(bricks.Config):
     }
 
 
+class WFProcessProtocol(bricks.VDEProcessProtocol):
+
+    prompt = re.compile(r"^VDEwf\$ ", re.M)
+
+
 class Netemu(Wire):
 
     type = "Netemu"
     config_factory = NetemuConfig
+    process_protocol = WFProcessProtocol
 
     def __init__(self, factory, name):
         Wire.__init__(self, factory, name)
@@ -176,6 +180,10 @@ class Netemu(Wire):
         if not self.config["chanbufsizesymm"]:
             self.send("chanbufsize RL {0}\n".format(value))
 
+    def cbset_chanbufsizesymm(self, value):
+        self.cbset_chanbufsize(self.config["chanbufsize"])
+        self.cbset_chanbufsizer(self.config["chanbufsizer"])
+
     def cbset_delay(self, value):
         if self.config["delaysymm"]:
             self.send("delay {0}\n".format(value))
@@ -185,6 +193,10 @@ class Netemu(Wire):
     def cbset_delayr(self, value):
         if not self.config["delaysymm"]:
             self.send("delay RL {0}\n".format(value))
+
+    def cbset_delaysymm(self, value):
+        self.cbset_delay(self.config["delay"])
+        self.cbset_delayr(self.config["delayr"])
 
     def cbset_loss(self, value):
         if self.config["losssymm"]:
@@ -196,6 +208,10 @@ class Netemu(Wire):
         if not self.config["losssymm"]:
             self.send("loss RL {0}\n".format(value))
 
+    def cbset_losssymm(self, value):
+        self.cbset_loss(self.config["loss"])
+        self.cbset_lossr(self.config["lossr"])
+
     def cbset_bandwidth(self, value):
         if self.config["bandwidthsymm"]:
             self.send("bandwidth {0}\n".format(value))
@@ -206,9 +222,6 @@ class Netemu(Wire):
         if not self.config["bandwidthsymm"]:
             self.send("bandwidth RL {0}\n".format(value))
 
-#     def cbset_bandwidthsymm(self, value):
-#         self.cbset_bandwidth(self.config["bandwidth"])
-#         # XXX orrible hack because wirefilter can handle only one command at
-#         # time. Remove me as soon as possible
-#         reactor.callLater(0.1, self.cbset_bandwidthr,
-#                           self.config["bandwidthr"])
+    def cbset_bandwidthsymm(self, value):
+        self.cbset_bandwidth(self.config["bandwidth"])
+        self.cbset_bandwidthr(self.config["bandwidthr"])

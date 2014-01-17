@@ -3,9 +3,10 @@ import errno
 import signal
 
 from twisted.trial import unittest
-from twisted.internet import error
+from twisted.internet import error, defer
+from twisted.test import proto_helpers
 
-from virtualbricks import errors, link
+from virtualbricks import errors, link, bricks
 from virtualbricks.tests import stubs, successResultOf
 
 
@@ -24,7 +25,7 @@ class SleepBrick(stubs.BrickStub):
         return "sleep"
 
     def args(self):
-        return ["10"]
+        return ["sleep", "2"]
 
     def configured(self):
         return True
@@ -149,3 +150,45 @@ class TestBricks(unittest.TestCase):
 
     def test_signal_process(self):
         pass
+
+
+class TestVDEProcessProtocol(unittest.TestCase):
+
+    CMD1 = "bandwidth LR 125000"
+    CMD2 = "bandwidth RL 120000"
+    PROMPT = "vde$ "
+
+    def setUp(self):
+        brick = bricks.Brick(None, "test")
+        brick._started_d = defer.Deferred()
+        brick._exited_d = defer.Deferred()
+        self.proto = bricks.VDEProcessProtocol(brick)
+        self.transport = proto_helpers.StringTransport()
+        self.transport.pid = -1
+        self.proto.makeConnection(self.transport)
+
+    def test_enqueue(self):
+        """Until ACKs are received, the commands are queued."""
+
+        self.proto.send_command(self.CMD1)
+        self.proto.send_command(self.CMD2)
+        self.assertEqual(list(self.proto.queue), [self.CMD1, self.CMD2])
+
+    def test_dequeue(self):
+        """The queue is a FIFO, remove the oldest command sent."""
+
+        self.proto.send_command(self.CMD1)
+        self.proto.send_command(self.CMD2)
+        self.proto.data_received(self.PROMPT)
+        self.assertEqual(list(self.proto.queue), [self.CMD2])
+
+    def test_too_much_ack(self):
+        """
+        If too many ACKs are sent by the process, shutdown the connection.
+        """
+
+        self.proto.send_command(self.CMD1)
+        self.proto.data_received(self.PROMPT)
+        self.assertEqual(len(self.proto.queue), 0)
+        self.proto.data_received(self.PROMPT)
+        self.assertTrue(self.transport.disconnecting)
