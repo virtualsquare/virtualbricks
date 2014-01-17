@@ -562,9 +562,9 @@ class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
     term_command = "unixterm"
-    # sudo_factory = QemuSudo
     command_builder = VM_COMMAND_BUILDER
     config_factory = VirtualMachineConfig
+    process_protocol = bricks.Process
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
