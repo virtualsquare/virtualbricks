@@ -4,11 +4,6 @@ from virtualbricks import switches, errors, settings
 from virtualbricks.tests import unittest, stubs
 
 
-def patch_brick(brick, output, input):
-    brick.send = output.append
-    brick.recv = input.pop
-
-
 class TestSwitch(unittest.TestCase):
 
     def test_socks(self):
@@ -25,8 +20,8 @@ class TestSwitch(unittest.TestCase):
 
     def test_live_management_callbacks(self):
         sw = switches.Switch(stubs.FactoryStub(), "test_switch")
-        output, input = [], []
-        patch_brick(sw, output, input)
+        output = []
+        sw.send = output.append
         input.append("ok")
         sw.set({"numports": 33})
         self.assertEqual(len(output), 1)

@@ -27,9 +27,6 @@ class BrickStubMixin(object):
     def send(self, data):
         self.sended.append(data)
 
-    def recv(self, data):
-        self.receved.append(data)
-
 
 class BrickStubConfig(bricks.Config):
 

@@ -393,9 +393,6 @@ class Brick(base.Base):
         # else:
         #     log.msg("Cannot send command, brick is not running.")
 
-    def recv(self):
-        pass
-
     def get_state(self):
         """return state of the brick"""
         if self.proc is not None:
