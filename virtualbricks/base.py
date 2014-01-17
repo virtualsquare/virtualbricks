@@ -28,7 +28,6 @@ if False:  # pyflakes
 
 
 __metaclass__ = type
-set_callback = log.Event("{name}: callback '{cb}' with argument {arg}")
 
 
 class Config(dict):
@@ -212,8 +211,6 @@ class Base(object):
                 self.config[name] = value
                 setter = getattr(self, "cbset_" + name, None)
                 if setter:
-                    self.logger.info(set_callback, name=self.name, cb=name,
-                                     arg=value)
                     setter(value)
 
     def get(self, name):
