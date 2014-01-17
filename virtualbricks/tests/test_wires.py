@@ -1,11 +1,8 @@
+import mock
 from twisted.trial import unittest
 
 from virtualbricks import wires, link, settings
 from virtualbricks.tests import stubs
-
-
-class TestNetemuProcess(unittest.TestCase):
-    pass
 
 
 class TestNetemu(unittest.TestCase):
@@ -40,3 +37,44 @@ class TestNetemu(unittest.TestCase):
                 "{0}/test_netemu.mgmt".format(settings.VIRTUALBRICKS_HOME),
                 "--nofifo"]
         self.assertEqual(self.netemu.args(), args)
+
+    def test_live_management(self):
+        """
+        If set a *sync parameter, the corrisponding left-to-right and right to
+        left callbacks must not be called.
+        """
+
+        config = {
+            "delaysymm": False,
+            "delay": 1,
+            "delayr": 2
+        }
+        self.netemu.config["delaysymm"] = True
+        self.assertEqual(self.netemu.config["delay"], 0)
+        self.assertEqual(self.netemu.config["delayr"], 0)
+        self.netemu.cbset_delay = mock.Mock(name="cbset_delay")
+        self.netemu.cbset_delayr = mock.Mock(name="cbset_delayr")
+        self.netemu.set(config)
+        self.netemu.cbset_delay.assert_called_once_with(1)
+        self.netemu.cbset_delayr.assert_called_once_with(2)
+
+    def test_live_management_2(self):
+        """Same as precedent but symmetric."""
+
+        config = {
+            "delaysymm": True,
+            "delay": 1,
+            "delayr": 2
+        }
+        self.netemu.config["delaysymm"] = False
+        self.assertEqual(self.netemu.config["delay"], 0)
+        self.assertEqual(self.netemu.config["delayr"], 0)
+        self.netemu.cbset_delay = mock.Mock(name="cbset_delay",
+            side_effect=self.netemu.cbset_delay)
+        self.netemu.cbset_delayr = mock.Mock(name="cbset_delayr",
+            side_effect=self.netemu.cbset_delayr)
+        self.netemu.send = mock.Mock(name="send")
+        self.netemu.set(config)
+        self.netemu.cbset_delay.assert_called_once_with(1)
+        self.netemu.cbset_delayr.assert_called_once_with(2)
+        self.netemu.send.assert_called_once_with("delay 1\n")
