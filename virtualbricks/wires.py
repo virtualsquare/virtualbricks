@@ -66,30 +66,6 @@ class Wire(bricks.Brick):
                 os.path.join(settings.get("vdepath"), "vde_plug"),
                 self.plugs[1].sock.path.rstrip('[]')]
 
-    # def add_plug(self, sock, mac=None, model=None):
-    #     if self.plugs[0].configured():
-    #         if self.plugs[1].configured():
-    #             raise ValueError("Cannot add another plug, max reached.")
-    #     plug = self.factory.new_plug(self)
-    #     self.plugs.append(plug)
-    #     plug.connect(sock)
-    #     return plug
-
-
-# class Process(bricks.Process, basic.LineOnlyReceiver):
-
-#     delimiter = b'\n'
-#     _queue = []
-#     _state = "ready"
-
-#     def outReceived(self, data):
-#         self.dataReceived(data)
-
-#     def lineReceived(self, line):
-#         pass
-#         # if self._queue:
-#         #     self.send
-
 
 class NetemuConfig(bricks.Config):
 
@@ -167,6 +143,20 @@ class Netemu(Wire):
 
     def prog(self):
         return "vde-netemu"
+
+    def set(self, attrs):
+        self._set(attrs, "chanbufsizesymm", "chanbufsize", "chanbufsizer")
+        self._set(attrs, "delaysymm", "delay", "delayr")
+        self._set(attrs, "bandwidthsymm", "bandwidth", "bandwidthr")
+        self._set(attrs, "losssymm", "loss", "lossr")
+        Wire.set(self, attrs)
+
+    def _set(self, attrs, symm, left_to_right, right_to_left):
+        if symm in attrs and attrs[symm] != self.config[symm]:
+            if left_to_right in attrs:
+                self.config[left_to_right] = attrs.pop(left_to_right)
+            if right_to_left in attrs:
+                self.config[right_to_left] = attrs.pop(right_to_left)
 
     # callbacks for live-management
 

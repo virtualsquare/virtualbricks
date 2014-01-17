@@ -277,13 +277,6 @@ class Brick(base.Base):
             attrs[name] = self.config.parameters[name].from_string(value)
         self.set(attrs)
 
-    def set(self, attrs=None, **kwds):
-        if attrs is None:
-            attrs = kwds
-        else:
-            attrs.update(kwds)
-        base.Base.set(self, attrs)
-
     def send_signal(self, signal):
         if self.proc:
             self.proc.signalProcess(signal)
