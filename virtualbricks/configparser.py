@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_configfile -*-
+# -*- test-case-name: virtualbricks.tests.test_configfile.TestParser -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -63,10 +63,10 @@ class Parser:
     EMPTY = re.compile(r"^\s*$")
     SECTION_HEADER = re.compile(r"^\[([a-zA-Z0-9_]+):(.+)\]$")
     LINK = re.compile(r"^(?P<type>link|sock)\|"
-                      "(?P<owner>[a-zA-Z][\w.-]+)\|"
-                      "(?P<sockname>[a-zA-Z][\w.-]+)\|"
+                      "(?P<owner>[a-zA-Z][\w.-]*)\|"
+                      "(?P<sockname>[a-zA-Z_][\w.-]*)\|"
                       "(?P<model>\w*)\|"
-                      "(?P<mac>(?:[0-9a-hA-H]{2}:){5}[0-9a-hA-H]{2})$")
+                      "(?P<mac>(?:(?:[0-9a-hA-H]{2}:){5}[0-9a-hA-H]{2})|)$")
 
     def __init__(self, fileobj):
         self.fileobj = fileobj

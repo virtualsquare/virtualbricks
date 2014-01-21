@@ -3,18 +3,32 @@ import errno
 import signal
 
 from twisted.trial import unittest
-from twisted.internet import error
+from twisted.internet import error, defer
+from twisted.test import proto_helpers
 
-from virtualbricks import errors, link
-from virtualbricks.tests import stubs
+from virtualbricks import errors, link, bricks
+from virtualbricks.tests import stubs, successResultOf
 
 
 def kill(passthru, brick):
     return brick.poweroff(kill=True).addBoth(lambda _: passthru)
 
+
 def patchr(passthru, patch):
     patch.restore()
     return passthru
+
+
+class SleepBrick(stubs.BrickStub):
+
+    def prog(self):
+        return "sleep"
+
+    def args(self):
+        return ["sleep", "2"]
+
+    def configured(self):
+        return True
 
 
 class TestBricks(unittest.TestCase):
@@ -71,22 +85,27 @@ class TestBricks(unittest.TestCase):
         self.brick.poweron().addErrback(result.append)
         result[0].trap(IOError)
 
+    def test_poweroff_not_running(self):
+        """
+        If the brick is not started, poweroff succeed and return the last
+        status or None if the last status is not set.
+        """
+
+        self.assertEqual(successResultOf(self, self.brick.poweroff()),
+                         (self.brick, None))
+
     def test_poweroff(self):
 
         def check_result(result):
-            self.assertIs(result[0], self.brick)
+            self.assertIs(result[0], brick)
             self.assertIsInstance(result[1].value, error.ProcessTerminated)
             self.assertEqual(result[1].value.signal, signal.SIGTERM)
 
         def do_poweroff(brick):
             return brick.poweroff().addCallback(check_result)
 
-        result = []
-        self.brick.poweroff().addCallback(result.append)
-        self.assertEqual(result, [(self.brick, None)])
-        self.brick.configured = lambda : True
-        d = self.brick.poweron()
-        return d.addCallbacks(do_poweroff).addBoth(kill, self.brick)
+        brick = SleepBrick(self.factory, "test")
+        return brick.poweron().addCallbacks(do_poweroff).addBoth(kill, brick)
 
     def test_poweroff_raise_OSError(self):
 
@@ -128,3 +147,48 @@ class TestBricks(unittest.TestCase):
         d = self.brick.poweron()
         d.addCallback(continue_test).addBoth(kill, self.brick)
         return d
+
+    def test_signal_process(self):
+        pass
+
+
+class TestVDEProcessProtocol(unittest.TestCase):
+
+    CMD1 = "bandwidth LR 125000"
+    CMD2 = "bandwidth RL 120000"
+    PROMPT = "vde$ "
+
+    def setUp(self):
+        brick = bricks.Brick(None, "test")
+        brick._started_d = defer.Deferred()
+        brick._exited_d = defer.Deferred()
+        self.proto = bricks.VDEProcessProtocol(brick)
+        self.transport = proto_helpers.StringTransport()
+        self.transport.pid = -1
+        self.proto.makeConnection(self.transport)
+
+    def test_enqueue(self):
+        """Until ACKs are received, the commands are queued."""
+
+        self.proto.send_command(self.CMD1)
+        self.proto.send_command(self.CMD2)
+        self.assertEqual(list(self.proto.queue), [self.CMD1, self.CMD2])
+
+    def test_dequeue(self):
+        """The queue is a FIFO, remove the oldest command sent."""
+
+        self.proto.send_command(self.CMD1)
+        self.proto.send_command(self.CMD2)
+        self.proto.data_received(self.PROMPT)
+        self.assertEqual(list(self.proto.queue), [self.CMD2])
+
+    def test_too_much_ack(self):
+        """
+        If too many ACKs are sent by the process, shutdown the connection.
+        """
+
+        self.proto.send_command(self.CMD1)
+        self.proto.data_received(self.PROMPT)
+        self.assertEqual(len(self.proto.queue), 0)
+        self.proto.data_received(self.PROMPT)
+        self.assertTrue(self.transport.disconnecting)

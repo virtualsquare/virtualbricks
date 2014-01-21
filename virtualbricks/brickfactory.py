@@ -33,7 +33,7 @@ from twisted.conch.insults import insults
 from twisted.conch import manhole
 
 from virtualbricks import errors, settings, configfile, console, project, log
-from virtualbricks import (events, link, switches, tunnels, tuntaps,
+from virtualbricks import (events, link, router, switches, tunnels, tuntaps,
                            virtualmachines, wires)
 
 
@@ -67,7 +67,8 @@ def install_brick_types(registry=None):
         "capture": tuntaps.Capture,
         "vm": virtualmachines.VirtualMachine,
         "qemu": virtualmachines.VirtualMachine,
-        "wirefilter": wires.Wirefilter,
+        "wirefilter": wires.Netemu,
+        "netemu": wires.Netemu,
         "wire": wires.Wire,
         "tunnelc": tunnels.TunnelConnect,
         "tunnel client": tunnels.TunnelConnect,
@@ -77,6 +78,7 @@ def install_brick_types(registry=None):
         "tunnellisten": tunnels.TunnelListen,
         "event": events.Event,
         "switchwrapper": switches.SwitchWrapper,
+        "router": router.Router,
     })
     return registry
 
@@ -219,20 +221,15 @@ class BrickFactory(object):
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        nname = self.normalize_name(name)
-        ltype = type.lower()
-        if ltype not in self.__factories:
+        try:
+            brick_type = self.__factories[type.lower()]
+            return brick_type(self, self.normalize_name(name))
+        except KeyError:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
-        brick = self.__factories[ltype](self, nname)
-        return brick
 
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
-        if brick.homehost:
-            new_brick = self.newbrick("remote", brick.get_type(), name,
-                                      brick.config["homehost"])
-        else:
-            new_brick = self.newbrick(brick.get_type(), name)
+        new_brick = self.new_brick(brick.get_type(), name)
         # Copy only strings, and not objects, into new vm config
         new_brick.set(copy.deepcopy(brick.config))
 
@@ -240,7 +237,6 @@ class BrickFactory(object):
             if p.sock is not None:
                 new_brick.connect(p.sock)
 
-        new_brick.on_config_changed()
         return new_brick
 
     def do_del_brick(self, result):
@@ -631,9 +627,6 @@ class Application:
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
         prj = project.restore_last_project(factory)
-        # XXX: this is disabled because the gui is responsable to save the
-        # project before exting. This means that if the factory is launched in
-        # a non-gui fashion, the project is not saved. Fix this.
         reactor.addSystemEventTrigger("before", "shutdown", prj.save, factory)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:

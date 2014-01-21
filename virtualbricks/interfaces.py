@@ -25,8 +25,7 @@ from twisted.python.components import registerAdapter
 from virtualbricks import log
 
 
-__all__ = ["IMenu", "IJobMenu", "IConfigController", "IBrick", "IPlug",
-           "registerAdapter", "InterfaceLogger"]
+__all__ = ["registerAdapter", "InterfaceLogger", "IBrick", "IPlug", "IBuilder"]
 
 logger = log.Logger()
 non_interface = log.Event("Requested a non-interface ({interface}) method: "
@@ -50,25 +49,6 @@ class InterfaceLogger:
             return getattr(self.original, name)
         except AttributeError:
             raise AttributeError(name)
-
-
-class IMenu(Interface):
-
-    def popup(button, time):
-        """Pop up a menu for a specific brick."""
-
-
-class IJobMenu(IMenu):
-    pass
-
-
-class IConfigController(Interface):
-
-    def get_view(gui):
-        """Return the configuration panel for the given brick or event."""
-
-    def configure_brick(gui):
-        """Configure the brick as setted in the panel."""
 
 
 class IBrick(Interface):
@@ -106,7 +86,6 @@ class IBrick(Interface):
     # to be controlled
 
     config_socks = Attribute("")
-    homehost = Attribute("")
     socks = Attribute("")
     plugs = Attribute("")
 
@@ -124,3 +103,9 @@ class IPlug(Interface):
         bricks if it is not.
 
         Return a deferred that fires when the related are started."""
+
+
+class IBuilder(Interface):
+
+    def load_from(factory, item):
+        """Return a new brick or link from the given item."""

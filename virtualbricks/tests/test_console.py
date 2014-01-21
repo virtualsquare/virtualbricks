@@ -1,7 +1,7 @@
 import StringIO
 import textwrap
 
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.python import components
 from twisted.internet import interfaces
 
@@ -9,8 +9,8 @@ from virtualbricks import console
 from virtualbricks.tests import unittest, stubs
 
 
+@implementer(interfaces.ITransport)
 class FileTransportAdapter:
-    implements(interfaces.ITransport)
 
     def __init__(self, original):
         self.original = original

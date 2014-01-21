@@ -23,12 +23,18 @@ import traceback
 import contextlib
 
 from twisted.python import filepath
+from zope.interface import implementer
 
-from virtualbricks import settings, configparser, log
+from virtualbricks import interfaces, settings, configparser, log
 
 
 if False:  # pyflakes
     _ = str
+
+
+__all__ = ["BrickBuilder", "ConfigFile", "EventBuilder", "ImageBuilder",
+           "LinkBuilder", "SockBuilder", "log_events", "restore", "safe_save",
+           "save"]
 
 
 logger = log.Logger()
@@ -110,30 +116,11 @@ def restore_backup(filename, fbackup):
         filename_back.remove()
 
 
-class ImageBuilder:
-
-    def __init__(self, factory, name):
-        self.factory = factory
-        self.name = name
-
-    def load_from(self, section):
-        logger.debug(image_found, name=self.name)
-        path = dict(section).get("path", "")
-        if self.factory.is_in_use(self.name):
-            logger.info(skip_image, name=self.name)
-        elif not os.access(path, os.R_OK):
-            logger.info(skip_image_noa)
-        else:
-            return self.factory.new_disk_image(self.name, path)
-
-
+@implementer(interfaces.IBuilder)
 class SockBuilder:
 
-    def __init__(self, factory):
-        self.factory = factory
-
-    def load_from(self, sock):
-        brick = self.factory.get_brick_by_name(sock.owner)
+    def load_from(self, factory, sock):
+        brick = factory.get_brick_by_name(sock.owner)
         if brick:
             brick.add_sock(sock.mac, sock.model)
             logger.info(link_added, type=sock.type, brick=sock.owner)
@@ -141,23 +128,85 @@ class SockBuilder:
             logger.warn(brick_not_found, brick=sock.owner, line="|".join(sock))
 
 
+@implementer(interfaces.IBuilder)
 class LinkBuilder:
 
-    def __init__(self, factory):
-        self.factory = factory
-
-    def load_from(self, link):
-        brick = self.factory.get_brick_by_name(link.owner)
+    def load_from(self, factory, link):
+        brick = factory.get_brick_by_name(link.owner)
         if brick:
-            sock = self.factory.get_sock_by_name(link.sockname)
+            sock = factory.get_sock_by_name(link.sockname)
             if sock:
-                brick.add_plug(sock, link.mac, link.model)
+                brick.connect(sock, link.mac, link.model)
                 logger.info(link_added, type=link.type, brick=link.owner)
             else:
                 logger.warn(sock_not_found, sockname=link.sockname,
                             line="|".join(link))
         else:
             logger.warn(brick_not_found, brick=link.owner, line="|".join(link))
+
+
+def link_builder_factory(context):
+    if context.type == "sock":
+        return SockBuilder()
+    elif context.type == "link":
+        return LinkBuilder()
+
+
+interfaces.registerAdapter(link_builder_factory, configparser.Link,
+                           interfaces.IBuilder)
+
+
+@implementer(interfaces.IBuilder)
+class ImageBuilder:
+
+    def __init__(self, name):
+        self.name = name
+
+    def load_from(self, factory, section):
+        logger.debug(image_found, name=self.name)
+        path = dict(section).get("path", "")
+        if factory.is_in_use(self.name):
+            logger.info(skip_image, name=self.name)
+        elif not os.access(path, os.R_OK):
+            logger.info(skip_image_noa)
+        else:
+            return factory.new_disk_image(self.name, path)
+
+
+@implementer(interfaces.IBuilder)
+class EventBuilder:
+
+    def __init__(self, name):
+        self.name = name
+
+    def load_from(self, factory, section):
+        event = factory.new_event(self.name)
+        event.load_from(section)
+
+
+@implementer(interfaces.IBuilder)
+class BrickBuilder:
+
+    def __init__(self, type, name):
+        self.type = type
+        self.name = name
+
+    def load_from(self, factory, section):
+        brick = factory.new_brick(self.type, self.name)
+        brick.load_from(section)
+
+
+def brick_builder_factory(context):
+    if context.type == "Image":
+        return ImageBuilder(context.name)
+    elif context.type == "Event":
+        return EventBuilder(context.name)
+    else:
+        return BrickBuilder(context.type, context.name)
+
+
+interfaces.registerAdapter(brick_builder_factory, configparser.Section,
+                           interfaces.IBuilder)
 
 
 class ConfigFile:
@@ -185,9 +234,7 @@ class ConfigFile:
 
     def save_to(self, factory, fileobj):
         for img in factory.disk_images:
-            fileobj.write('[Image:' + img.name + ']\n')
-            fileobj.write('path=' + img.path + '\n')
-            fileobj.write("\n")
+            img.save_to(fileobj)
 
         for event in factory.events:
             event.save_to(fileobj)
@@ -205,16 +252,7 @@ class ConfigFile:
             fileobj.write(t.format(s=sock))
 
         for plug in plugs:
-            if plug.brick.get_type() == 'Qemu':
-                if plug.configured():
-                    t = ("link|{p.brick.name}|{p.sock.nickname}|{p.model}|"
-                         "{p.mac}\n")
-                else:
-                    t = "link|{p.brick.name}||{p.model}|{p.mac}\n"
-                fileobj.write(t.format(p=plug))
-            elif plug.sock is not None:
-                t = "link|{p.brick.name}|{p.sock.nickname}||\n"
-                fileobj.write(t.format(p=plug))
+            plug.save_to(fileobj)
 
     def restore(self, factory, str_or_obj):
         if isinstance(str_or_obj, (basestring, filepath.FilePath)):
@@ -229,10 +267,7 @@ class ConfigFile:
 
     def restore_from(self, factory, fileobj):
         for item in configparser.Parser(fileobj):
-            if isinstance(item, tuple):  # links
-                self.build_link(factory, item.type).load_from(item)
-            else:
-                self.build_type(factory, item.type, item.name).load_from(item)
+            interfaces.IBuilder(item).load_from(factory, item)
 
     def build_link(self, factory, type):
         if type == "sock":

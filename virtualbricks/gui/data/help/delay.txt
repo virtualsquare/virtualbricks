@@ -1,0 +1,4 @@
+Delay
+=====
+
+Propagation delay. This delay is added to the buffer queuing delay.

@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_gui -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
@@ -18,14 +19,14 @@
 import os
 
 import gtk
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.internet import reactor, utils, defer, error
 from twisted.python import failure
 
-from virtualbricks import (interfaces, base, bricks, events, virtualmachines,
-                           link, log, settings, tools)
+from virtualbricks import (base, bricks, events, virtualmachines, link, log,
+                           settings, tools)
 
-from virtualbricks.gui import graphics, dialogs
+from virtualbricks.gui import graphics, dialogs, help, interfaces
 
 
 logger = log.Logger("virtualbricks.gui.gui")
@@ -61,8 +62,8 @@ def refilter(passthru, filter_model):
     return passthru
 
 
+@implementer(interfaces.IMenu)
 class BaseMenu:
-    implements(interfaces.IMenu)
 
     def __init__(self, brick):
         self.original = brick
@@ -129,15 +130,6 @@ class BrickPopupMenu(BaseMenu):
 interfaces.registerAdapter(BrickPopupMenu, bricks.Brick, interfaces.IMenu)
 
 
-# NOTE: there is a problem with this approach, it is not transparent, it must
-# know the type of the brick, however virtual machines are already not
-# transparent to the gui
-class GVirtualMachine(virtualmachines.VirtualMachine):
-
-    def has_graphic(self):
-        return self.homehost is None
-
-
 class VMPopupMenu(BrickPopupMenu):
 
     def build(self, gui):
@@ -177,7 +169,8 @@ class VMPopupMenu(BrickPopupMenu):
         gui.user_wait_action(self.snapshot, gui.brickfactory)
 
 
-interfaces.registerAdapter(VMPopupMenu, GVirtualMachine, interfaces.IMenu)
+interfaces.registerAdapter(VMPopupMenu, virtualmachines.VirtualMachine,
+                           interfaces.IMenu)
 
 
 class EventPopupMenu(BaseMenu):
@@ -202,8 +195,8 @@ class EventPopupMenu(BaseMenu):
 interfaces.registerAdapter(EventPopupMenu, events.Event, interfaces.IMenu)
 
 
+@implementer(interfaces.IMenu)
 class LinkMenu:
-    implements(interfaces.IMenu)
 
     def __init__(self, original):
         self.original = original
@@ -236,8 +229,8 @@ interfaces.registerAdapter(LinkMenu, link.Plug, interfaces.IMenu)
 interfaces.registerAdapter(LinkMenu, link.Sock, interfaces.IMenu)
 
 
+@implementer(interfaces.IMenu)
 class JobMenu:
-    implements(interfaces.IMenu)
 
     def __init__(self, original):
         self.original = original
@@ -366,11 +359,12 @@ class VMJobMenu(JobMenu):
         d = self.original.poweroff(term=True)
         d.addCallback(refilter, gui.running_bricks)
 
-interfaces.registerAdapter(VMJobMenu, GVirtualMachine, interfaces.IJobMenu)
+interfaces.registerAdapter(VMJobMenu, virtualmachines.VirtualMachine,
+                           interfaces.IJobMenu)
 
 
+@implementer(interfaces.IConfigController)
 class ConfigController(object):
-    implements(interfaces.IConfigController)
 
     domain = "virtualbricks"
     resource = None
@@ -383,15 +377,48 @@ class ConfigController(object):
                                                     self.resource))
         builder.connect_signals(self)
 
+    def on_ok_button_clicked(self, button, gui):
+        self.configure_brick(gui)
+        gui.curtain_down()
+
+    # def on_save_button_clicked(self, button, gui):
+    #     # TODO: update config values
+    #     self.configure_brick(gui)
+
+    def on_cancel_button_clicked(self, button, gui):
+        gui.curtain_down()
+
     def get_object(self, name):
         return self.builder.get_object(name)
+
+    def get_view(self, gui):
+        bbox = gtk.HButtonBox()
+        bbox.set_layout(gtk.BUTTONBOX_END)
+        bbox.set_spacing(5)
+        ok_button = gtk.Button(stock=gtk.STOCK_OK)
+        ok_button.connect("clicked", self.on_ok_button_clicked, gui)
+        bbox.add(ok_button)
+        bbox.set_child_secondary(ok_button, False)
+        # save_button = gtk.Button(stock=gtk.STOCK_SAVE)
+        # save_button.connect("clicked", self.on_save_button_clicked, gui)
+        # bbox.add(save_button)
+        cancel_button = gtk.Button(stock=gtk.STOCK_CANCEL)
+        cancel_button.connect("clicked", self.on_cancel_button_clicked, gui)
+        bbox.add(cancel_button)
+        bbox.set_child_secondary(cancel_button, True)
+        box = gtk.VBox()
+        box.pack_end(bbox, False)
+        box.pack_end(gtk.HSeparator(), False, False, 3)
+        box.show_all()
+        box.pack_start(self.get_config_view(gui))
+        return box
 
 
 class EventConfigController(ConfigController, dialogs.EventControllerMixin):
 
     resource = "data/eventconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.setup_controller(self.original)
         entry = self.get_object("delay_entry")
         entry.set_text(self.original.config.get("delay"))
@@ -424,12 +451,15 @@ class EventConfigController(ConfigController, dialogs.EventControllerMixin):
                 if next is None:
                     self.model.append(("", False))
 
+interfaces.registerAdapter(EventConfigController, events.Event,
+                           interfaces.IConfigController)
+
 
 class SwitchConfigController(ConfigController):
 
     resource = "data/switchconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.get_object("fstp_checkbutton").set_active(
             self.original.config["fstp"])
         self.get_object("hub_checkbutton").set_active(
@@ -453,39 +483,27 @@ class SwitchWrapperConfigController(ConfigController):
 
     resource = "data/switchwrapperconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.get_object("entry").set_text(self.original.config["path"])
         return self.get_object("table1")
 
     def configure_brick(self, gui):
-        self.original.set({"path": self.get_object("entry").get_text()})
+        self.original.set(path=self.get_object("entry").get_text())
 
 
-def should_insert_sock(sock, brick, python, femaleplugs):
-    return ((sock.brick.homehost == brick.homehost or
-             (brick.get_type() == 'Wire' and python)) and
-            (sock.brick.get_type().startswith('Switch') or femaleplugs))
+class _PlugMixin(object):
 
-
-class PlugMixin(object):
-
-    def _should_insert_sock(self, sock, brick, python, femaleplugs):
-        return ((sock.brick.homehost == brick.homehost or
-                 (brick.get_type() == 'Wire' and python)) and
-                (sock.brick.get_type().startswith('Switch') or femaleplugs))
-
-    def _sock_should_visible(self, model, itr, extra):
-        gui, brick = extra
-        return self._should_insert_sock(model[itr][0], brick,
-                                        settings.python,
-                                        settings.femaleplugs)
+    def _sock_should_visible(self, model, itr):
+        sock = model[itr][0]
+        return (sock.brick.get_type().startswith('Switch') or
+                settings.femaleplugs)
 
     def _set_text(self, column, cell_renderer, model, itr):
         sock = model.get_value(itr, 0)
         cell_renderer.set_property("text", sock.nickname)
 
     def configure_sock_combobox(self, combo, model, brick, plug, gui):
-        model.set_visible_func(self._sock_should_visible, (gui, brick))
+        model.set_visible_func(self._sock_should_visible)
         combo.set_model(model)
         cell = combo.get_cells()[0]
         combo.set_cell_data_func(cell, self._set_text)
@@ -504,11 +522,11 @@ class PlugMixin(object):
             plug.connect(model[itr][0])
 
 
-class TapConfigController(PlugMixin, ConfigController):
+class TapConfigController(_PlugMixin, ConfigController):
 
     resource = "data/tapconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
         self.configure_sock_combobox(combo, model, self.original,
@@ -546,11 +564,11 @@ class TapConfigController(PlugMixin, ConfigController):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
 
 
-class CaptureConfigController(PlugMixin, ConfigController):
+class CaptureConfigController(_PlugMixin, ConfigController):
 
     resource = "data/captureconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox1")
         self.configure_sock_combobox(combo, model, self.original,
@@ -581,11 +599,11 @@ class CaptureConfigController(PlugMixin, ConfigController):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
 
 
-class WireConfigController(PlugMixin, ConfigController):
+class WireConfigController(_PlugMixin, ConfigController):
 
     resource = "data/wireconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
             combo = self.get_object(wname)
@@ -599,18 +617,194 @@ class WireConfigController(PlugMixin, ConfigController):
             self.connect_plug(self.original.plugs[i], self.get_object(wname))
 
 
-class WirefilterConfigController(WireConfigController):
-
-    pass
-
-    # resource = "data/wirefilterconfig.ui"
+NO, MAYBE, YES = range(3)
 
 
-class TunnelListenConfigController(PlugMixin, ConfigController):
+@implementer(interfaces.IPrerequisite)
+class CompoundPrerequisite:
+
+    def __init__(self, *prerequisites):
+        self.prerequisites = list(prerequisites)
+
+    def add_prerequisite(self, prerequisite):
+        self.prerequisites.append(prerequisite)
+
+    def __call__(self):
+        for prerequisite in self.prerequisites:
+            satisfied = prerequisite()
+            if satisfied in (YES, NO):
+                return satisfied
+        return MAYBE
+
+
+@implementer(interfaces.IState)
+class State:
+
+    def __init__(self):
+        self.prerequisite = CompoundPrerequisite()
+        self.controls = []
+
+    def add_prerequisite(self, prerequisite):
+        self.prerequisite.add_prerequisite(prerequisite)
+
+    def add_control(self, control):
+        self.controls.append(control)
+
+    def check(self):
+        enable = self.prerequisite()
+        for control in self.controls:
+            control.react(enable)
+
+
+@implementer(interfaces.IControl)
+class SensitiveControl:
+
+    tooltip = None
+
+    def __init__(self, widget, tooltip=None):
+        self.widget = widget
+        self.tooltip = tooltip
+
+    def react(self, enable):
+        self.set_sensitive(enable)
+
+    def set_sensitive(self, sensitive):
+        if self.widget.get_sensitive() ^ sensitive:
+            self.widget.set_sensitive(sensitive)
+            tooltip = self.tooltip
+            self.tooltip = self.widget.get_tooltip_markup()
+            self.widget.set_tooltip_markup(tooltip)
+
+
+@implementer(interfaces.IStateManager)
+class StateManager:
+
+    control_factory = SensitiveControl
+
+    def __init__(self):
+        self.states = []
+
+    def add_state(self, state):
+        self.states.append(state)
+
+    def _build_state(self, tooltip, *widgets):
+        state = State()
+        for widget in widgets:
+            state.add_control(self.control_factory(widget, tooltip))
+        self.add_state(state)
+        return state
+
+    def _add_checkbutton(self, checkbutton, prerequisite, tooltip=None,
+                         *widgets):
+        state = self._build_state(tooltip, *widgets)
+        state.add_prerequisite(prerequisite)
+        checkbutton.connect("toggled", lambda cb: state.check())
+        state.check()
+        return state
+
+    def add_checkbutton_active(self, checkbutton, tooltip=None, *widgets):
+        return self._add_checkbutton(checkbutton, checkbutton.get_active,
+                                     tooltip, *widgets)
+
+    def add_checkbutton_not_active(self, checkbutton, tooltip=None, *widgets):
+        return self._add_checkbutton(checkbutton,
+                                     lambda: not checkbutton.get_active(),
+                                     tooltip, *widgets)
+
+
+class NetemuConfigController(_PlugMixin, ConfigController):
+
+    resource = "data/netemuconfig.ui"
+    state_manager = None
+    help = help.Help()
+    config_to_checkbutton_mapping = (
+        ("chanbufsizesymm", "chanbufsize_checkbutton"),
+        ("delaysymm", "delay_checkbutton"),
+        ("losssymm", "loss_checkbutton"),
+        ("bandwidthsymm", "bandwidth_checkbutton"),
+    )
+    config_to_spinint_mapping = (
+        ("chanbufsizer", "chanbufsizer_spinbutton"),
+        ("chanbufsize", "chanbufsize_spinbutton"),
+        ("delayr", "delayr_spinbutton"),
+        ("delay", "delay_spinbutton"),
+        ("bandwidthr", "bandwidthr_spinbutton"),
+        ("bandwidth", "bandwidth_spinbutton"),
+    )
+    config_to_spinfloat_mapping = (
+        ("lossr", "lossr_spinbutton"),
+        ("loss", "loss_spinbutton"),
+    )
+    help_buttons = (
+        "chanbufsize_help_button",
+        "delay_help_button",
+        "loss_help_button",
+        "bandwidth_help_button",
+    )
+
+    def get_config_view(self, gui):
+        go = self.get_object
+        get = self.original.get
+        for pname, wname in self.config_to_checkbutton_mapping:
+            go(wname).set_active(not get(pname))
+        for pname, wname in self.config_to_spinint_mapping:
+            go(wname).set_value(get(pname))
+        for pname, wname in self.config_to_spinfloat_mapping:
+            go(wname).set_value(get(pname))
+
+        self.state_manager = manager = StateManager()
+        params = ("chanbufsize", "delay", "loss", "bandwidth")
+        for param in params:
+            checkbutton = go(param + "_checkbutton")
+            checkbutton.set_active(not self.original.get(param + "symm"))
+            tooltip = _("Disabled because set symmetric")
+            spinbutton = go(param + "r_spinbutton")
+            manager.add_checkbutton_active(checkbutton, tooltip, spinbutton)
+
+        # setup help buttons
+        for button in self.help_buttons:
+            go(button).connect("clicked", self.help.on_help_button_clicked)
+
+        # setup plugs
+        model = gui.brickfactory.socks.filter_new()
+        for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
+            combo = self.get_object(wname)
+            self.configure_sock_combobox(combo, model, self.original,
+                                         self.original.plugs[i], gui)
+
+        return go("netemu_config_panel")
+
+    def configure_brick(self, gui):
+        cfg = {}
+        go = self.get_object
+        for config_name, widget_name in self.config_to_checkbutton_mapping:
+            cfg[config_name] = not go(widget_name).get_active()
+        for pname, wname in self.config_to_spinint_mapping:
+            cfg[pname] = go(wname).get_value_as_int()
+        for pname, wname in self.config_to_spinfloat_mapping:
+            cfg[pname] = go(wname).get_value()
+        self.original.set(cfg)
+
+        # configure plug
+        for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
+            self.connect_plug(self.original.plugs[i], self.get_object(wname))
+
+    def on_reset_button_clicked(self, button):
+        self.get_object("chanbufsize_spinbutton").set_value(75000)
+        self.get_object("chanbufsizer_spinbutton").set_value(75000)
+        self.get_object("delay_spinbutton").set_value(0)
+        self.get_object("delayr_spinbutton").set_value(0)
+        self.get_object("loss_spinbutton").set_value(0)
+        self.get_object("lossr_spinbutton").set_value(0)
+        self.get_object("bandwidth_spinbutton").set_value(125000)
+        self.get_object("bandwidthr_spinbutton").set_value(125000)
+
+
+class TunnelListenConfigController(_PlugMixin, ConfigController):
 
     resource = "data/tunnellconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
         self.configure_sock_combobox(combo, model, self.original,
@@ -632,12 +826,12 @@ class TunnelClientConfigController(TunnelListenConfigController):
 
     resource = "data/tunnelcconfig.ui"
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         host = self.get_object("host_entry")
         host.set_text(self.original.config["host"])
         localport = self.get_object("localport_spinbutton")
         localport.set_value(self.original.config["localport"])
-        return TunnelListenConfigController.get_view(self, gui)
+        return TunnelListenConfigController.get_config_view(self, gui)
 
     def configure_brick(self, gui):
         TunnelListenConfigController.configure_brick(self, gui)
@@ -794,7 +988,7 @@ class QemuConfigController(ConfigController):
         mac_cr = self.get_object("mac_cellrenderer")
         mac_c.set_cell_data_func(mac_cr, set_mac)
 
-    def get_view(self, gui):
+    def get_config_view(self, gui):
         self.gui = gui
         cfg = self.original.config
         go = self.get_object
@@ -918,14 +1112,11 @@ class QemuConfigController(ConfigController):
 
     def on_kvm_checkbutton_toggled(self, togglebutton):
         if togglebutton.get_active():
-            if not self.original.homehost:
-                kvm = tools.check_kvm(self.gui.config.get("qemupath"))
-                self._kvm_toggle_all(kvm)
-                togglebutton.set_active(kvm)
-                if not kvm:
-                    logger.error(no_kvm)
-            else:
-                self._kvm_toggle_all(True)
+            kvm = tools.check_kvm(self.gui.config.get("qemupath"))
+            self._kvm_toggle_all(kvm)
+            togglebutton.set_active(kvm)
+            if not kvm:
+                logger.error(no_kvm)
         else:
             self._kvm_toggle_all(False)
 
@@ -1041,9 +1232,7 @@ class QemuConfigController(ConfigController):
 
 def config_panel_factory(context):
     type = context.get_type()
-    if type == "Event":
-        return EventConfigController(context)
-    elif type == "Switch":
+    if type == "Switch":
         return SwitchConfigController(context)
     elif type == "SwitchWrapper":
         return SwitchWrapperConfigController(context)
@@ -1053,8 +1242,8 @@ def config_panel_factory(context):
         return CaptureConfigController(context)
     elif type == "Wire":
         return WireConfigController(context)
-    # elif type == "Wirefilter":
-    #     return WirefilterConfigController(context)
+    elif type == "Netemu":
+        return NetemuConfigController(context)
     elif type == "TunnelConnect":
         return TunnelClientConfigController(context)
     elif type == "TunnelListen":
