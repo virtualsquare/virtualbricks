@@ -591,7 +591,7 @@ vdi</property>
                       </packing>
                     </child>
                     <child>
-                      <widget class="GtkRadioButton" id="typebutton_Wirefilter">
+                      <widget class="GtkRadioButton" id="typebutton_Netemu">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
@@ -618,7 +618,7 @@ vdi</property>
                               <widget class="GtkLabel" id="label5">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Wirefilter</property>
+                                <property name="label" translatable="yes">Netemu</property>
                               </widget>
                               <packing>
                                 <property name="expand">True</property>
