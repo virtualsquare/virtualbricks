@@ -70,22 +70,18 @@ class Wrapper:
 
 class VMPlug(Wrapper):
 
-    model = "rtl8139"
-    mode = "vde"
-
     def __init__(self, plug):
         Wrapper.__init__(self, plug)
-        self.__dict__["mac"] = tools.random_mac()
+        self.model = "rtl8139"
+        self.mac = tools.random_mac()
 
 
 class VMSock(Wrapper):
 
-    model = "rtl8139"
-    # mac = ""
-
     def __init__(self, sock):
         Wrapper.__init__(self, sock)
-        self.__dict__["mac"] = tools.random_mac()
+        self.model = "rtl8139"
+        self.mac = tools.random_mac()
 
     def connect(self, endpoint):
         return
@@ -181,6 +177,9 @@ class Image:
         if self.master is None:
             return ""
         return repr(self.master)
+
+    def save_to(self, fileobj):
+        fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
 
 
 def move(src, dst):
@@ -563,9 +562,9 @@ class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
     term_command = "unixterm"
-    # sudo_factory = QemuSudo
     command_builder = VM_COMMAND_BUILDER
     config_factory = VirtualMachineConfig
+    process_protocol = bricks.Process
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -642,7 +641,7 @@ class VirtualMachine(bricks.Brick):
             if self.config["cpu"]:
                 res.extend(["-cpu", self.config["cpu"]])
         res.extend(list(self.build_cmd_line()))
-        if not self.has_graphic() or self.config["novga"]:
+        if self.config["novga"]:
             res.extend(["-display", "none"])
         for disk_args in results:
             res.extend(disk_args)
@@ -695,7 +694,7 @@ class VirtualMachine(bricks.Brick):
                 res.extend(["-cdrom", self.config["device"]])
         if self.config["rtc"]:
             res.extend(["-rtc", "base=localtime"])
-        if len(self.config.keyboard) == 2:
+        if len(self.config["keyboard"]) == 2:
             res.extend(["-k", self.config["keyboard"]])
         if self.config["kvmsm"]:
             res.extend(["-kvm-shadow-memory", self.config["kvmsmem"]])
@@ -708,9 +707,6 @@ class VirtualMachine(bricks.Brick):
                     "-mon", "chardev=mon_cons", "-chardev",
                     "stdio,id=mon_cons,signal=off"])
         return res
-
-    def has_graphic(self):
-        return False
 
     def add_sock(self, mac=None, model=None):
         s = self.factory.new_sock(self)
@@ -737,8 +733,8 @@ class VirtualMachine(bricks.Brick):
             plug.model = model
         return plug
 
-    def connect(self, sock):
-        self.add_plug(sock)
+    def connect(self, sock, *args):
+        self.add_plug(sock, *args)
 
     def remove_plug(self, plug):
         try:

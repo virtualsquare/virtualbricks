@@ -18,19 +18,21 @@
 
 
 import os
-import operator
-import itertools
+import collections
+import functools
+import re
 
 from twisted.internet import protocol, reactor, error, defer
 from twisted.python import failure
 
 from virtualbricks import base, errors, settings, log
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
-                                SpinInt, Float, Boolean, Object, ListOf)
+                                SpinInt, Float, SpinFloat, Boolean, Object,
+                                ListOf)
 
 
 __all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
-           "Float", "Boolean", "Object", "ListOf"]
+           "Float", "SpinFloat", "Boolean", "Object", "ListOf"]
 
 if False:  # pyflakes
     _ = str
@@ -42,32 +44,39 @@ process_done = log.Event("Process terminated")
 event_unavailable = log.Event("Warning. The Event {event} attached to Brick "
                               "{brick} is not available. Skipping execution.")
 shutdown_brick = log.Event("Shutting down {name} (pid: {pid})")
-start_brick = log.Event("Starting: '{args()}'")
+start_brick = log.Event("Starting: {args()}")
 open_console = log.Event("Opening console for {name}\n%{args()}\n")
 console_done = log.Event("Console terminated\n{status}")
 console_terminated = log.Event("Console terminated\n{status}\nProcess stdout:"
                                "\n{out()}\nProcess stderr:\n{err()}\n")
+invalid_ack = log.Event("ACK received but no command sent.")
+
+
+class ProcessLogger(object):
+
+    def __init__(self, logger):
+        self.logger = logger
+
+    def __get__(self, instance, owner):
+        if instance is not None:
+            logger = self.logger.__get__(instance, owner)
+            logger.emit = functools.partial(logger.emit, pid=instance.pid)
+            return logger
+        return self.logger.__get__(instance, owner)
 
 
 class Process(protocol.ProcessProtocol):
 
-    pid = None
-    logger = None
+    logger = ProcessLogger(log.Logger())
+    debug = True
+    debug_child = True
 
     def __init__(self, brick):
         self.brick = brick
 
     def connectionMade(self):
-        self.pid = self.transport.pid
-        self.logger = log.Logger("virtualbricks.bricks.Process.%d" % self.pid)
         self.logger.info(process_started)
         self.brick.process_started(self)
-
-    def outReceived(self, data):
-        self.brick.out_received(data)
-
-    def errReceived(self, data):
-        self.brick.err_received(data)
 
     def processEnded(self, status):
         if status.check(error.ProcessTerminated):
@@ -78,56 +87,83 @@ class Process(protocol.ProcessProtocol):
             self.logger.info(process_terminated, status=lambda: "")
         self.brick.process_ended(self, status)
 
-
-class ProcessLogger:
-    """Log the output of a process.
-
-    Limit is useful to prevent uncontrolled output of a process.
-    """
-
-    delay = 1
-    limit = 1024
-    logger = log.Logger()
-
-    def __init__(self, proc):
-        self.pid = proc.transport.pid
-        self.buffer = []
-        self.scheduled = None
-
-    def log(self, data):
+    def outReceived(self, data):
         self.logger.info(data)
 
-    def log_e(self, data):
+    def errReceived(self, data):
         self.logger.error(data, hide_to_user=True)
 
-    def flush(self):
-        loggers = [self.log, self.log_e]
-        get_data = operator.itemgetter(0)
-        is_error = operator.itemgetter(1)
-        for idx, group in itertools.groupby(self.buffer, is_error):
-            logger = loggers[idx]
-            data = "".join(map(get_data, group))
-            logger(data)
-        del self.buffer[:]
+    # new interface
 
-    def enqueue(self, data, is_error=False):
-        self.buffer.append((data, is_error))
-        if self.scheduled is None or not self.scheduled.active():
-            self.scheduled = reactor.callLater(self.delay, self.flush)
-        elif sum(len(e[0]) for e in self.buffer) > self.limit:
-            self.scheduled.cancel()
-            self.flush()
+    @property
+    def pid(self):
+        return self.transport.pid
+
+    def signalProcess(self, signalID):
+        self.transport.signalProcess(signalID)
+
+    def write(self, data):
+        self.transport.write(data)
+
+
+class VDEProcessProtocol(Process):
+    """
+    Handle the VDE management console.
+
+    Commands are serialized, until an ACK is received, the next command is not
+    sent.
+
+    @cvar delimiter: The line-ending delimiter to use.
+    """
+
+    _buffer = ""
+    delimiter = "\n"
+    prompt = re.compile(r"^vde(?:\[[^]]*\]:|\$) ", re.MULTILINE)
+    PIPELINE_SIZE = 1
+
+    def __init__(self, brick):
+        Process.__init__(self, brick)
+        self.queue = collections.deque()
+
+
+    def data_received(self, data):
+        """
+        Translates bytes into lines, and calls ack_received.
+        """
+
+        acks = self.prompt.split(self._buffer + data)
+        self._buffer = acks.pop(-1)
+        for ack in acks:
+            self.ack_received(ack)
+
+    def ack_received(self, ack):
+        self.logger.info(ack)
+        try:
+            self.queue.popleft()
+        except IndexError:
+            self.logger.warn(invalid_ack)
+            self.transport.loseConnection()
         else:
-            self.scheduled.reset(self.delay)
+            if len(self.queue):
+                self._send_command()
 
-    def in_(self, data):
-        self.enqueue(data)
+    def send_command(self, cmd):
+        self.queue.append(cmd)
+        if 0 < len(self.queue) <= self.PIPELINE_SIZE:
+            self._send_command()
 
-    def out(self, data):
-        self.enqueue(data)
+    def _send_command(self):
+        cmd = self.queue[0]
+        self.logger.info(cmd)
+        if cmd.endswith(self.delimiter):
+            return self.transport.write(cmd)
+        return self.transport.writeSequence((cmd, self.delimiter))
 
-    def err(self, data):
-        self.enqueue(data, True)
+    def outReceived(self, data):
+        self.data_received(data)
+
+    def write(self, cmd):
+        self.send_command(cmd)
 
 
 class TermProtocol(protocol.ProcessProtocol):
@@ -162,7 +198,7 @@ class Config(_Config):
                   "poff_vbevent": String("")}
 
 
-class _LocalBrick(base.Base):
+class Brick(base.Base):
 
     proc = None
     command_builder = {}
@@ -170,7 +206,7 @@ class _LocalBrick(base.Base):
     _started_d = None
     _exited_d = None
     _last_status = None
-    process_logger = ProcessLogger
+    process_protocol = VDEProcessProtocol
     config_factory = Config
 
     @property
@@ -183,8 +219,6 @@ class _LocalBrick(base.Base):
         base.Base.__init__(self, factory, name)
         self.plugs = []
         self.socks = []
-        self.config["pon_vbevent"] = ""
-        self.config["poff_vbevent"] = ""
         self.config_socks = []
 
     # IBrick interface
@@ -243,12 +277,6 @@ class _LocalBrick(base.Base):
             attrs[name] = self.config.parameters[name].from_string(value)
         self.set(attrs)
 
-    def set(self, attrs=None, **kwds):
-        if "sock" in attrs:
-            attrs["sock"] = self._rewrite_sock_server(attrs["sock"])
-        base.Base.set(self, attrs)
-        self.on_config_changed()
-
     def send_signal(self, signal):
         if self.proc:
             self.proc.signalProcess(signal)
@@ -257,21 +285,14 @@ class _LocalBrick(base.Base):
 
     def process_started(self, proc):
         started, self._started_d = self._started_d, None
-        logger = self.process_logger(proc)
-        self.in_received = logger.in_
-        self.out_received = logger.out
-        self.err_received = logger.err
-        self.on_config_changed()
         started.callback(self)
 
     def process_ended(self, proc, status):
         self.proc = None
         self._start_related_events(off=True)
-        self.on_config_changed()
         self._last_status = status
         # ovvensive programming, raise an exception instead of hide the error
         # behind a lambda (lambda _: None)
-        self.in_received = self.out_received = self.err_received = None
         exited, self._exited_d = self._exited_d, None
         exited.callback((self, status))
 
@@ -315,20 +336,18 @@ class _LocalBrick(base.Base):
 
         def start_process(value):
             prog, args = value
-            get_args = lambda: " ".join(args)
-            logger.info(start_brick, args=get_args)
+            logger.info(start_brick, args=lambda: " ".join(args))
             # usePTY?
             if self.needsudo():
-                prog = settings.get('sudo')
-                args = [settings.get('sudo')] + args
-            self.proc = reactor.spawnProcess(Process(self), prog, args,
-                                             os.environ)
+                prog = settings.get("sudo")
+                args = [settings.get("sudo")] + args
+            self.proc = self.process_protocol(self)
+            reactor.spawnProcess(self.proc, prog, args, os.environ)
+
         l = [defer.maybeDeferred(self.prog), defer.maybeDeferred(self.args)]
         d = defer.gatherResults(l, consumeErrors=True)
         d.addCallback(start_process)
         return d
-        # if self.needsudo():
-        #     self.proc = self.sudo_factory(self.proc)
 
     def _start_related_events(self, on=True, off=False):
         if on and self.config["pon_vbevent"]:
@@ -348,32 +367,22 @@ class _LocalBrick(base.Base):
     # Console related operations.
     #############################
 
-    def _rewrite_sock_server(self, sock):
-        return os.path.join(settings.VIRTUALBRICKS_HOME,
-                            os.path.basename(sock))
-
     def path(self):
         return "%s/%s.ctl" % (settings.VIRTUALBRICKS_HOME, self.name)
 
     def console(self):
         return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
 
-    def on_config_changed(self):
-        pass
-
-    def connect(self, endpoint):
+    def connect(self, endpoint, *args):
         for p in self.plugs:
             if not p.configured():
-                if p.connect(endpoint):
-                    self.on_config_changed()
-                    return True
-        return False
+                p.connect(endpoint)
+                return
 
     def disconnect(self):
         for p in self.plugs:
             if p.configured():
                 p.disconnect()
-        self.on_config_changed()
 
     ############################
     ########### Poweron/Poweroff
@@ -391,12 +400,6 @@ class _LocalBrick(base.Base):
     def send(self, data):
         if self.proc:
             self.proc.write(data)
-            self.in_received(data)
-        # else:
-        #     log.msg("Cannot send command, brick is not running.")
-
-    def recv(self):
-        pass
 
     def get_state(self):
         """return state of the brick"""
@@ -410,18 +413,3 @@ class _LocalBrick(base.Base):
 
     def __repr__(self):
         return "<{0.type} {0.name}>".format(self)
-
-
-class Brick(_LocalBrick):
-
-    homehost = None
-
-    def __init__(self, factory, name, homehost=None):
-        _LocalBrick.__init__(self, factory, name)
-
-    def set(self, attrs=None, **kwds):
-        if attrs is None:
-            attrs = kwds
-        else:
-            attrs.update(kwds)
-        _LocalBrick.set(self, attrs)

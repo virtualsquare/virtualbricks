@@ -1,0 +1,4 @@
+Channel bandwidth
+=================
+
+The buffer is drained at this rate.

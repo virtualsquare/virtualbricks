@@ -22,10 +22,9 @@ import textwrap
 from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from twisted.python import components
-from zope.interface import implements
+from zope.interface import implementer
 
-import virtualbricks
-from virtualbricks import errors, log, settings
+from virtualbricks import version, errors, log, settings
 
 
 logger = log.Logger()
@@ -56,8 +55,8 @@ class ShellCommand(str):
         return utils.getProcessValue("sh", self, os.environ)
 
 
+@implementer(interfaces.ITransport)
 class NullTransportAdapter:
-    implements(interfaces.ITransport)
 
     __init__ = write = writeSequence = lambda s, d: None
     loseConnection = getPeer = getHost = lambda s: None
@@ -148,7 +147,7 @@ class VBProtocol(Protocol):
         #     self._is_first = True
         #     intro = self.intro.format(version=virtualbricks.version.short())
         #     self.transport.write(intro)
-        intro = self.intro.format(version=virtualbricks.version.short())
+        intro = self.intro.format(version=version.short())
         self.transport.write(intro)
         self.transport.write(self.prompt)
 

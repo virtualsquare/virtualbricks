@@ -1,0 +1,8 @@
+Packet loss rate
+================
+
+The packet loss rate is sent in % as a floating point number.
+
+Example:
+
+PLR=0.1 means one packet loss every 1000.

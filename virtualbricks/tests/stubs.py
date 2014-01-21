@@ -27,9 +27,6 @@ class BrickStubMixin(object):
     def send(self, data):
         self.sended.append(data)
 
-    def recv(self, data):
-        self.receved.append(data)
-
 
 class BrickStubConfig(bricks.Config):
 
@@ -86,12 +83,3 @@ class FactoryStub(brickfactory.BrickFactory):
     def __init__(self):
         brickfactory.BrickFactory.__init__(self, defer.Deferred())
         self.register_brick_type(BrickStub, "stub")
-
-
-class LoggingObserver:
-
-    def __init__(self):
-        self.msgs = []
-
-    def emit(self, event_dict):
-        self.msgs.append(event_dict)

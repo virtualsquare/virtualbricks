@@ -28,7 +28,6 @@ if False:  # pyflakes
 
 
 __metaclass__ = type
-set_callback = log.Event("{name}: callback '{cb}' with argument {arg}")
 
 
 class Config(dict):
@@ -52,10 +51,11 @@ class Config(dict):
 
     # NOTE: old interface, values are always strings
     def get(self, name, default=None):
-        val = super(Config, self).get(name, default)
-        if val is default:
-            return val
-        return self.parameters[name].to_string(val)
+        try:
+            val = dict.__getitem__(self, name)
+            return self.parameters[name].to_string(val)
+        except KeyError:
+            return default
 
     # XXX: check this interface
     def __getattr__(self, name):
@@ -90,32 +90,7 @@ class Parameter:
 class Integer(Parameter):
 
     from_string = int
-
-    def to_string(self, in_object):
-        return str(int(in_object))
-
-
-class SpinInt(Integer):
-
-    def __init__(self, default=32, min=1, max=128):
-        Integer.__init__(self, default)
-        self.min = min
-        self.max = max
-
-    def assert_in_range(self, i):
-        if not self.min <= i <= self.max:
-            raise ValueError(_("value out range %d (%d, %d)") % (i, self.min,
-                                                                 self.max))
-
-    def from_string(self, in_string):
-        i = int(in_string)
-        self.assert_in_range(i)
-        return i
-
-    def to_string(self, in_object):
-        i = int(in_object)
-        self.assert_in_range(i)
-        return str(i)
+    to_string = str
 
 
 class String(Parameter):
@@ -131,6 +106,36 @@ class Float(Parameter):
 
     from_string = float
     to_string = repr
+
+
+class SpinMixin:
+
+    def __init__(self, default=0, min=0, max=100):
+        super(SpinMixin, self).__init__(default)
+        self.min = min
+        self.max = max
+
+    def assert_in_range(self, i):
+        if not self.min <= i <= self.max:
+            raise ValueError(_("value out range {0} ({1}, {2})").format(
+                i, self.min, self.max))
+
+    def from_string(self, in_string):
+        i = super(SpinMixin, self).from_string(in_string)
+        self.assert_in_range(i)
+        return i
+
+    def to_string(self, in_object):
+        self.assert_in_range(in_object)
+        return super(SpinMixin, self).to_string(in_object)
+
+
+class SpinInt(SpinMixin, Integer):
+    pass
+
+
+class SpinFloat(SpinMixin, Float):
+    pass
 
 
 class Boolean(Parameter):
@@ -206,8 +211,6 @@ class Base(object):
                 self.config[name] = value
                 setter = getattr(self, "cbset_" + name, None)
                 if setter:
-                    self.logger.info(set_callback, name=self.name, cb=name,
-                                     arg=value)
                     setter(value)
 
     def get(self, name):
@@ -223,14 +226,16 @@ class Base(object):
         self.set(dict((n, getvalue(n, v)) for n, v in section))
 
     def save_to(self, fileobj):
-        config = self.config
-        fileobj.write("[%s:%s]\n" % (self.get_type(), self.name))
-        for name, param in sorted(config.parameters.iteritems()):
-            if config[name] != param.default:
-                value = param.to_string_brick(config[name], self)
-                fileobj.write("%s=%s\n" % (name, value))
-        fileobj.write("\n")
+        opt_tmp = "{0}={1}"
+        l = []
+        for name, param in sorted(self.config.parameters.iteritems()):
+            if self.config[name] != param.default:
+                value = param.to_string_brick(self.config[name], self)
+                l.append(opt_tmp.format(name, value))
+        if l:
+            l.append("")
+        tmp = "[{0}:{1}]\n{2}\n"
+        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
     def rename(self, name):
         self.name = self.factory.normalize_name(name)
-
