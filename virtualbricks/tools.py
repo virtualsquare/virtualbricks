@@ -75,7 +75,7 @@ def check_missing(path, files):
     return [f for f in files if not os.access(os.path.join(path, f), os.X_OK)]
 
 vde_bins = ["vde_switch", "vde_plug", "vde_cryptcab", "dpipe", "vdeterm",
-    "vde_plug2tap", "wirefilter"]
+    "vde_plug2tap", "wirefilter", "vde_router"]
 
 qemu_bins = ["qemu", "kvm", "qemu-system-arm", "qemu-system-cris",
     "qemu-system-i386", "qemu-system-m68k", "qemu-system-microblaze",
