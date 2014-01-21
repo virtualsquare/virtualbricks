@@ -33,7 +33,7 @@ from twisted.conch.insults import insults
 from twisted.conch import manhole
 
 from virtualbricks import errors, settings, configfile, console, project, log
-from virtualbricks import (events, link, switches, tunnels, tuntaps,
+from virtualbricks import (events, link, router, switches, tunnels, tuntaps,
                            virtualmachines, wires)
 
 
@@ -78,6 +78,7 @@ def install_brick_types(registry=None):
         "tunnellisten": tunnels.TunnelListen,
         "event": events.Event,
         "switchwrapper": switches.SwitchWrapper,
+        "router": router.Router,
     })
     return registry
 

@@ -137,7 +137,7 @@ class ProjectEntry:
         # method must change too. fix this
         bricks = set(["Qemu", "Switch", "SwitchWrapper", "Tap", "Capture",
                       "Wirefilter", "Netemu", "Wire", "TunnelConnect",
-                      "TunnelListen"])
+                      "TunnelListen", "Router"])
         return self._filter(lambda k: k[0] in bricks)
 
     def get_events(self):
