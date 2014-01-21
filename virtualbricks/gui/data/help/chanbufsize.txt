@@ -1,4 +1,4 @@
 Channel buffer size
 ===================
 
-Maximum size of the packet queue. Exceeding packets are discarded.
+Maximum size of the packet queue.

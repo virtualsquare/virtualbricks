@@ -1,4 +1,4 @@
 Delay
 =====
 
-Extra delay (in milliseconds). This delay is added to the real communication delay. Packets are temporarily stored and resent after the delay.
+Propagation delay. This delay is added to the buffer queuing delay.
