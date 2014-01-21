@@ -1849,7 +1849,7 @@ disk image</property>
                     <signal name="button-release-event" handler="on_networkcards_treeview_button_release_event" swapped="no"/>
                     <child>
                       <object class="GtkTreeViewColumn" id="vlan_treeviewcolumn">
-                        <property name="title" translatable="yes">Eth</property>
+                        <property name="title" translatable="yes">Nic</property>
                         <property name="clickable">True</property>
                         <property name="reorderable">True</property>
                         <property name="sort_column_id">0</property>
