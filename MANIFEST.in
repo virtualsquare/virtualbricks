@@ -1,7 +1,6 @@
-include share/vb_32x32.xpm
 include COPYING
 include l10nextract.sh
-include install.sh
-include uninstall.sh
 include locale/virtualbricks/virtualbricks.pot
 recursive-include locale/virtualbricks *.po
+recursive-include debian *
+recursive-include share *
