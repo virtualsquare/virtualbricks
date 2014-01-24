@@ -624,10 +624,10 @@ class Application:
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", factory.stop)
-        reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
         prj = project.restore_last_project(factory)
         reactor.addSystemEventTrigger("before", "shutdown", prj.save, factory)
+        reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
             namespace = self.get_namespace()
