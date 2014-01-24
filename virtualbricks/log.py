@@ -228,21 +228,3 @@ class LoggingToNewLogginAdapter(logging.Handler):
         else:
             # likely NOTSET
             return LogLevel.info
-
-
-from twisted.python import log as legacyLog
-
-
-class LegacyObserver:
-
-    logger = Logger()
-
-    def __call__(self, event):
-        if event.pop("isError", False):
-            log_failure = None
-            if "failure" in event:
-                log_failure = event.pop("failure")
-            self.logger.failure(event.pop("why"), log_failure, **event)
-        else:
-            text = legacyLog.textFromEventDict(event)
-            self.logger.info(text, **event)

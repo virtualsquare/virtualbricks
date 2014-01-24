@@ -497,8 +497,6 @@ class AppLogger(app.AppLogger):
         return log.FileLogObserver(logFile)
 
     def start(self, application):
-        from twisted.python import log as legacy_log
-
         self._sobserver = None
         if self._observerFactory is not None:
             self._observer = self._observerFactory()
@@ -511,10 +509,7 @@ class AppLogger(app.AppLogger):
             logger.publisher.addObserver(self._observer, False)
         if self._sobserver is not None:
             logger.publisher.addObserver(self._sobserver, False)
-        observer = log.LegacyObserver()
-        legacy_log.startLoggingWithObserver(observer, False)
-        logger.publisher.filteredPublisher.removeObserver(
-            logger.publisher.legacyLogObserver)
+        log.replaceTwistedLoggers()
         self._initialLog()
 
     def stop(self):
