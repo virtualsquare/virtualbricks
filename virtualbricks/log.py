@@ -207,7 +207,9 @@ class LoggingToNewLogginAdapter(logging.Handler):
         try:
             msg = self.format(record)
             if record.exc_info is not None:
-                self.logger.failure(msg, failure.Failure(*record.exc_info))
+                type, value, tb = record.exc_info
+                self.logger.failure(msg, failure.Failure(value, type, tb),
+                                    **record.__dict__)
             else:
                 level = self._map_levelname_to_LogLevel(record.levelname)
                 self.logger.emit(level, msg, **record.__dict__)
