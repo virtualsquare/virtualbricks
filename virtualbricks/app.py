@@ -48,11 +48,11 @@ class Options(usage.Options):
 
     def opt_verbose(self):
         """Increase log verbosity."""
-        self["vebosity"] += 1
+        self["verbosity"] += 1
 
     def opt_quiet(self):
         """Decrease log verbosity."""
-        self["vebosity"] -= 1
+        self["verbosity"] -= 1
 
     def opt_debug(self):
         """Verbose debug output"""
