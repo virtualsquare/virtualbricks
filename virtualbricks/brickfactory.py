@@ -489,37 +489,25 @@ def AutosaveTimer(factory, interval=180):
 
 class AppLogger(app.AppLogger):
 
-    def _getLogObserver(self):
-        if self._logfilename == '-' or not self._logfilename:
-            logFile = sys.stdout
-        else:
-            logFile = logfile.LogFile.fromFullPath(self._logfilename)
-        return log.FileLogObserver(logFile)
+    observer = None
+
+    def __init__(self, options):
+        self.observerFactory = options.get("logger")
 
     def start(self, application):
-        self._sobserver = None
-        if self._observerFactory is not None:
-            self._observer = self._observerFactory()
-            if self._logfilename:
-                self._sobserver = self._getLogObserver()
-        elif self._logfilename:
-            self._observer = self._getLogObserver()
+        if self.observerFactory is not None:
+            self.observer = self.observerFactory()
 
-        if self._observer is not None:
-            logger.publisher.addObserver(self._observer, False)
-        if self._sobserver is not None:
-            logger.publisher.addObserver(self._sobserver, False)
+        if self.observer is not None:
+            logger.publisher.addObserver(self.observer, False)
         log.replaceTwistedLoggers()
         self._initialLog()
 
     def stop(self):
         logger.info(shut_down)
-        if self._observer is not None:
-            logger.publisher.removeObserver(self._observer)
-            self._observer = None
-        if self._sobserver:
-            logger.publisher.removeObserver(self._sobserver)
-            self._sobserver = None
+        if self.observer is not None:
+            logger.publisher.removeObserver(self.observer)
+            self.observer = None
 
 
 class Application:

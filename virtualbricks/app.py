@@ -21,10 +21,27 @@ __metaclass__ = type
 
 import sys
 
-from twisted.python import usage, lockfile
+from twisted.python import usage, lockfile, reflect
 from twisted.internet import defer
 
 from virtualbricks import _backport, settings
+
+
+_log_file = sys.stdout
+
+
+def file_logger():
+    from virtualbricks import log
+
+    return log.FileLogObserver(_log_file)
+
+
+def _file_logger(filename):
+    if filename != "-":
+        from twisted.python import logfile
+        global _log_file
+        _log_file = logfile.LogFile.fromFullPath(filename)
+    return "virtualbricks.app.file_logger"
 
 
 class Options(usage.Options):
@@ -39,12 +56,21 @@ class Options(usage.Options):
         ["daemon", None, ""]
     ]
     optParameters = [
-        ["logfile", "l", None, "Write log messages to file."]
+        ["logfile", "l", None, "Write log messages to file."],
+        ["logger", None, None,
+         "A fully-qualified name to a log observer factory to use for the "
+         "initial log observer. Takes precedence over --logfile and --syslog "
+         "(when available)."],
     ]
 
     def __init__(self):
         usage.Options.__init__(self)
         self["verbosity"] = 0
+
+    def opt_logfile(self, arg):
+        """Write log messages to file."""
+
+        self["logger"] = _file_logger(arg)
 
     def opt_verbose(self):
         """Increase log verbosity."""
@@ -63,6 +89,14 @@ class Options(usage.Options):
         from virtualbricks import version
         print("Virtualbrics", version.short())
         sys.exit(0)
+
+    def postOptions(self):
+        if self["logger"]:
+            try:
+                self["logger"] = reflect.namedAny(self["logger"])
+            except Exception as err:
+                raise usage.UsageError("Logger '%s' could not be imported: %s"
+                                       % (self['logger'], err))
 
     opt_v = opt_verbose
     opt_q = opt_quiet
