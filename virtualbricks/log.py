@@ -202,29 +202,25 @@ import logging
 class LoggingToNewLogginAdapter(logging.Handler):
 
     logger = Logger()
+    levels = {
+        "DEBUG": LogLevel.debug,
+        "INFO": LogLevel.info,
+        "WARNING": LogLevel.warn,
+        "ERROR": LogLevel.error,
+        "CRITICAL": LogLevel.error
+    }
 
     def emit(self, record):
+        kw = dict(("rec_" + k, v) for k, v in record.__dict__.items())
+        kw["log_record"] = True
         try:
             msg = self.format(record)
-            if record.exc_info is not None:
-                type, value, tb = record.exc_info
-                self.logger.failure(msg, failure.Failure(value, type, tb),
-                                    **record.__dict__)
-            else:
-                level = self._map_levelname_to_LogLevel(record.levelname)
-                self.logger.emit(level, msg, **record.__dict__)
         except Exception:
             self.logger.failure("Unformattable event", **record.__dict__)
-
-    def _map_levelname_to_LogLevel(self, levelName):
-        if levelName == "DEBUG":
-            return LogLevel.debug
-        elif levelName == "INFO":
-            return LogLevel.info
-        elif levelName == "WARNING":
-            return LogLevel.warn
-        elif levelName in set(("ERROR", "CRITICAL")):
-            return LogLevel.error
         else:
-            # likely NOTSET
-            return LogLevel.info
+            if record.exc_info is not None:
+                tpe, value, tb = record.exc_info
+                self.logger.failure(msg, failure.Failure(value, tpe, tb), **kw)
+            else:
+                level = self.levels.get(record.levelname, LogLevel.info)
+                self.logger.emit(level, msg, **kw)
