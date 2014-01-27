@@ -255,11 +255,15 @@ class ReadmeMixin(object):
         self.__get_buffer().connect("modified-changed", self.__on_modify)
         super(ReadmeMixin, self).init(factory)
 
-    def __on_modify(self, textbuffer):
-        if not self.__get_modified() and self.__deleyed_call:
+    def __cancel_delayed_save(self):
+        if self.__deleyed_call:
             if self.__deleyed_call.active():
                 self.__deleyed_call.cancel()
             self.__deleyed_call = None
+
+    def __on_modify(self, textbuffer):
+        if not self.__get_modified() and self.__deleyed_call:
+            self.__cancel_delayed_save()
         if self.__get_modified() and not self.__deleyed_call:
             self.__deleyed_call = reactor.callLater(30, self.__save_readme)
 
@@ -274,6 +278,11 @@ class ReadmeMixin(object):
     def on_open(self, name):
         self.__load_readme()
         super(ReadmeMixin, self).on_open(name)
+
+    def on_quit(self):
+        self.__cancel_delayed_save()
+        self.__save_readme()
+        super(ReadmeMixin, self).on_quit()
 
 
 class ProgressBar:
@@ -709,13 +718,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         super(VBGUI, self).init(factory)
 
     def on_quit(self):
-        self.on_save(quit=True)
         super(VBGUI, self).on_quit()
 
-    def on_save(self, quit=False):
+    def on_save(self):
         super(VBGUI, self).on_save()
-        if not quit:
-            project.current.save(self.brickfactory)
 
     def on_open(self, name):
         self.on_save()
