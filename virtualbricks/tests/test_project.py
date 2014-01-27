@@ -7,7 +7,8 @@ from twisted.python import filepath
 from twisted.internet import defer
 
 from virtualbricks import settings, project, configfile, errors
-from virtualbricks.tests import patch_settings, stubs, failureResultOf
+from virtualbricks.tests import (patch_settings, stubs, failureResultOf,
+                                 create_manager)
 
 
 class ArchiveStub:
@@ -26,19 +27,9 @@ class ArchiveStub:
 
 class TestBase(object):
 
-    def get_manager(self, factory):
-        self.tmp = filepath.FilePath(self.mktemp())
-        self.tmp.makedirs()
-        self.tmp.child("vimages").makedirs()
-        patch_settings(self, workspace=self.tmp.path,
-                       current_project="new_project")
-        manager = project.ProjectManager()
-        self.addCleanup(manager.close, factory)
-        return manager
-
     def setUp(self):
         self.factory = stubs.FactoryStub()
-        self.manager = self.get_manager(self.factory)
+        self.tmp, self.manager = create_manager(self, self.factory)
 
 
 class TestProject(TestBase, unittest.TestCase):
