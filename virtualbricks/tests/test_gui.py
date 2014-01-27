@@ -1,6 +1,10 @@
 from twisted.trial import unittest
 
-from virtualbricks.gui import _gui
+import gtk
+
+from virtualbricks.gui import gui, _gui
+from virtualbricks.tests import stubs, create_manager
+from virtualbricks.tests.test_project import TestBase
 
 
 class WidgetStub:
@@ -139,3 +143,42 @@ class TestStateFramework(unittest.TestCase):
         checkbutton.set_active(True)
         self.assertFalse(widget.sensitive)
         self.assertEqual(widget.tooltip, TOOLTIP)
+
+
+class Readme(gui.ReadmeMixin, gui._Root):
+
+    def __init__(self):
+        self.textview = gtk.TextView()
+
+    def get_buffer(self):
+        return self.textview.get_buffer()
+
+    def get_object(self, name):
+        if name == "readme_textview":
+            return self.textview
+
+    def init(self, factory):
+        super(Readme, self).init(factory)
+
+    def on_quit(self):
+        super(Readme, self).on_quit()
+
+
+class TestReadme(TestBase, unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_quit(self):
+        DESC = "test"
+        PROJECT = "test_project"
+        factory = stubs.FactoryStub()
+        _, manager = create_manager(self, factory)
+        project = manager.create(PROJECT)
+        project.restore(factory)
+        readme_tab = Readme()
+        readme_tab.init(factory)
+        readme_tab.get_buffer().set_text(DESC)
+        self.assertEqual(project.get_description(), "")
+        readme_tab.on_quit()
+        self.assertEqual(project.get_description(), DESC)
