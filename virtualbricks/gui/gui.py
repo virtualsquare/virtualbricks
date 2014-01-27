@@ -106,8 +106,7 @@ def changed_brick_in_model(result, model):
     return result
 
 
-BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, \
-        REMOTE_TAB, TOPOLOGY_TAB, README_TAB = range(6)
+BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, TOPOLOGY_TAB, README_TAB = range(5)
 
 
 class TopologyMixin(object):
