@@ -626,8 +626,9 @@ class Application:
         reactor.addSystemEventTrigger("before", "shutdown", factory.stop)
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
-        prj = project.restore_last_project(factory)
-        reactor.addSystemEventTrigger("before", "shutdown", prj.save, factory)
+        project.restore_last(factory)
+        reactor.addSystemEventTrigger("before", "shutdown",
+                                      lambda: project.current.save(factory))
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
             namespace = self.get_namespace()
