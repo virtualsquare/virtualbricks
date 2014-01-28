@@ -722,6 +722,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_save(self):
         super(VBGUI, self).on_save()
+        project.current.save(self.brickfactory)
 
     def on_open(self, name):
         self.on_save()
