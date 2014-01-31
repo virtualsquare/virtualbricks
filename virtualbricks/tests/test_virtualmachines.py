@@ -392,7 +392,7 @@ class TestDisk(unittest.TestCase):
         self.assertFalse(self.vm.config["snapshot"])
         self.disk.release()
         image = vm.Image("test", "/vmimage")
-        self.vm.set(snapshot=False, privatehda=False)
+        self.vm.set({"snapshot": False, "privatehda": False})
         self.disk.set_image(image)
         self.disk.acquire()
         self.disk.release()
