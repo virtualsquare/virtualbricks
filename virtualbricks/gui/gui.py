@@ -461,11 +461,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.running_bricks = self.brickfactory.bricks.filter_new()
 
         def is_running(model, iter):
-            brick = model[iter][0]
-            if brick:
-                return brick.proc is not None
-            return False
-            # return model[iter][0].proc is not None
+            brick = model.get_value(iter, 0)
+            return brick and brick.proc is not None
 
         self.running_bricks.set_visible_func(is_running)
         builder.get_object("joblist_treeview").set_model(self.running_bricks)

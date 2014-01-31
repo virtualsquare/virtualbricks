@@ -493,19 +493,19 @@ class SwitchWrapperConfigController(ConfigController):
         self.original.set({"path": self.get_object("entry").get_text()})
 
 
-class _PlugMixin(object):
+def _sock_should_visible(model, iter):
+    sock = model.get_value(iter, 0)
+    return sock and (sock.brick.get_type().startswith('Switch') or
+                     settings.femaleplugs)
 
-    def _sock_should_visible(self, model, itr):
-        sock = model[itr][0]
-        return (sock.brick.get_type().startswith('Switch') or
-                settings.femaleplugs)
+class _PlugMixin(object):
 
     def _set_text(self, column, cell_renderer, model, itr):
         sock = model.get_value(itr, 0)
         cell_renderer.set_property("text", sock.nickname)
 
     def configure_sock_combobox(self, combo, model, brick, plug, gui):
-        model.set_visible_func(self._sock_should_visible)
+        model.set_visible_func(_sock_should_visible)
         combo.set_model(model)
         cell = combo.get_cells()[0]
         combo.set_cell_data_func(cell, self._set_text)
