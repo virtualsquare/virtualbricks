@@ -151,7 +151,7 @@ class VMPopupMenu(BrickPopupMenu):
             else:
                 self.original.poweron("virtualbricks")
 
-        img = factory.get_image_by_name(self.original.config["hda"])
+        img = factory.get_image_by_name(self.original.get("hda"))
         if img is not None:
             args = ["snapshot", "-l", img.path]
             output = utils.getProcessOutput("qemu-img", args, os.environ)
@@ -330,7 +330,7 @@ class VMJobMenu(JobMenu):
             else:
                 logger.error(s_r_not_supported)
 
-        img = factory.get_image_by_name(self.original.config["hda"])
+        img = factory.get_image_by_name(self.original.get("hda"))
         if not img:
             logger.error(s_r_not_supported)
             try:
@@ -461,22 +461,24 @@ class SwitchConfigController(ConfigController):
 
     def get_config_view(self, gui):
         self.get_object("fstp_checkbutton").set_active(
-            self.original.config["fstp"])
+            self.original.get("fstp"))
         self.get_object("hub_checkbutton").set_active(
-            self.original.config["hub"])
+            self.original.get("hub"))
         minports = len([1 for b in iter(gui.brickfactory.bricks)
                         for p in b.plugs if b.socks
                         and p.sock.nickname == b.socks[0].nickname])
         spinner = self.get_object("ports_spinbutton")
         spinner.set_range(max(minports, 1), 128)
-        spinner.set_value(self.original.config["numports"])
+        spinner.set_value(self.original.get("numports"))
         return self.get_object("table")
 
     def configure_brick(self, gui):
-        go = self.get_object
-        self.original.set(fstp=go("fstp_checkbutton").get_active(),
-                          hub=go("hub_checkbutton").get_active(),
-                          numports=go("ports_spinbutton").get_value_as_int())
+        cfg = {
+            "fstp": self.get_object("fstp_checkbutton").get_active(),
+            "hub": self.get_object("hub_checkbutton").get_active(),
+            "numports": self.get_object("ports_spinbutton").get_value_as_int()
+        }
+        self.original.set(cfg)
 
 
 class SwitchWrapperConfigController(ConfigController):
@@ -484,11 +486,11 @@ class SwitchWrapperConfigController(ConfigController):
     resource = "data/switchwrapperconfig.ui"
 
     def get_config_view(self, gui):
-        self.get_object("entry").set_text(self.original.config["path"])
+        self.get_object("entry").set_text(self.original.get("path"))
         return self.get_object("table1")
 
     def configure_brick(self, gui):
-        self.original.set(path=self.get_object("entry").get_text())
+        self.original.set({"path": self.get_object("entry").get_text()})
 
 
 class _PlugMixin(object):
@@ -532,32 +534,32 @@ class TapConfigController(_PlugMixin, ConfigController):
         self.configure_sock_combobox(combo, model, self.original,
                                      self.original.plugs[0], gui)
 
-        self.get_object("ip_entry").set_text(self.original.config["ip"])
-        self.get_object("nm_entry").set_text(self.original.config["nm"])
-        self.get_object("gw_entry").set_text(self.original.config["gw"])
+        self.get_object("ip_entry").set_text(self.original.get("ip"))
+        self.get_object("nm_entry").set_text(self.original.get("nm"))
+        self.get_object("gw_entry").set_text(self.original.get("gw"))
         # default to manual if not valid mode is set
-        if self.original.config["mode"] == "off":
+        if self.original.get("mode") == "off":
             self.get_object("nocfg_radiobutton").set_active(True)
-        elif self.original.config["mode"] == "dhcp":
+        elif self.original.get("mode") == "dhcp":
             self.get_object("dhcp_radiobutton").set_active(True)
         else:
             self.get_object("manual_radiobutton").set_active(True)
 
         self.get_object("ipconfig_table").set_sensitive(
-            self.original.config["mode"] == "manual")
+            self.original.get("mode") == "manual")
 
         return self.get_object("table1")
 
     def configure_brick(self, gui):
         if self.get_object("nocfg_radiobutton").get_active():
-            self.original.set(mode="off")
+            self.original.set({"mode": "off"})
         elif self.get_object("dhcp_radiobutton").get_active():
-            self.original.set(mode="dhcp")
+            self.original.set({"mode": "dhcp"})
         else:
-            self.original.set(mode="manual",
-                              ip=self.get_object("ip_entry").get_text(),
-                              nm=self.get_object("nm_entry").get_text(),
-                              gw=self.get_object("gw_entry").get_text())
+            self.original.set({"mode": "manual",
+                               "ip": self.get_object("ip_entry").get_text(),
+                               "nm": self.get_object("nm_entry").get_text(),
+                               "gw": self.get_object("gw_entry").get_text()})
         self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
 
     def on_manual_radiobutton_toggled(self, radiobtn):
@@ -582,7 +584,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
                 name = line.strip().split(":")[0]
                 if name != "lo":
                     itr = model.append((name, ))
-                    if self.original.config["iface"] == name:
+                    if self.original.get("iface") == name:
                         combo2.set_active_iter(itr)
 
         return self.get_object("table1")
@@ -593,7 +595,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
         itr = combo.get_active_iter()
         if itr is not None:
             model = combo.get_model()
-            self.original.set(iface=model[itr][0])
+            self.original.set({"iface": model[itr][0]})
 
     def on_manual_radiobutton_toggled(self, radiobtn):
         self.get_object("ipconfig_table").set_sensitive(radiobtn.get_active())
@@ -810,16 +812,16 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
         self.configure_sock_combobox(combo, model, self.original,
                                      self.original.plugs[0], gui)
         port = self.get_object("port_spinbutton")
-        port.set_value(self.original.config["port"])
+        port.set_value(self.original.get("port"))
         password = self.get_object("password_entry")
-        password.set_text(self.original.config["password"])
+        password.set_text(self.original.get("password"))
         return self.get_object("table1")
 
     def configure_brick(self, gui):
         self.connect_plug(self.original.plugs[0], self.get_object("combobox"))
         port = self.get_object("port_spinbutton").get_value_as_int()
         password = self.get_object("password_entry").get_text()
-        self.original.set(port=port, password=password)
+        self.original.set({"port": port, "password": password})
 
 
 class TunnelClientConfigController(TunnelListenConfigController):
@@ -828,16 +830,16 @@ class TunnelClientConfigController(TunnelListenConfigController):
 
     def get_config_view(self, gui):
         host = self.get_object("host_entry")
-        host.set_text(self.original.config["host"])
+        host.set_text(self.original.get("host"))
         localport = self.get_object("localport_spinbutton")
-        localport.set_value(self.original.config["localport"])
+        localport.set_value(self.original.get("localport"))
         return TunnelListenConfigController.get_config_view(self, gui)
 
     def configure_brick(self, gui):
         TunnelListenConfigController.configure_brick(self, gui)
         host = self.get_object("host_entry").get_text()
         lport = self.get_object("localport_spinbutton").get_value_as_int()
-        self.original.set(host=host, localport=lport)
+        self.original.set({"host": host, "localport": lport})
 
 
 def get_selection(treeview):
@@ -1081,7 +1083,7 @@ class QemuConfigController(ConfigController):
                 _, v = line.split(None, 1)
                 label = value = v.strip("'[]")
             itr = model.append((label, value))
-            if self.original.config["cpu"] == value:
+            if self.original.get("cpu") == value:
                 combobox.set_active_iter(itr)
 
     def _update_machine_combobox(self, output, combobox):
@@ -1092,7 +1094,7 @@ class QemuConfigController(ConfigController):
         for line in lines:
             value, label = line.split(None, 1)
             itr = model.append((label, value))
-            if self.original.config["machine"] == value:
+            if self.original.get("machine") == value:
                 combobox.set_active_iter(itr)
 
     def on_argv0_combobox_changed(self, combobox):
@@ -1150,9 +1152,9 @@ class QemuConfigController(ConfigController):
             logger.error(usb_access)
             togglebutton.set_active(False)
         else:
-            self.original.set(usbmode=active)
+            self.original.set({"usbmode": active})
             if not active:
-                self.original.set(usbdevlist=[])
+                self.original.set({"usbdevlist": []})
             self.get_object("bind_button").set_sensitive(active)
 
     def on_bind_button_clicked(self, button):

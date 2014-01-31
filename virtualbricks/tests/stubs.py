@@ -78,8 +78,11 @@ class ConfigFileStub:
                 self._save(arg)
 
 
-class FactoryStub(brickfactory.BrickFactory):
+class Factory(brickfactory.BrickFactory):
 
     def __init__(self):
         brickfactory.BrickFactory.__init__(self, defer.Deferred())
         self.register_brick_type(BrickStub, "stub")
+
+
+FactoryStub = Factory
