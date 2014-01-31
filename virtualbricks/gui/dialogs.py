@@ -657,6 +657,16 @@ class NewEventDialog(Window):
             dialog.destroy()
 
 
+def is_not_added(model, iter, added):
+    brick = model.get_value(iter, 0)
+    return brick and brick not in added
+
+
+def is_added(model, iter, added):
+    brick = model.get_value(iter, 0)
+    return brick and brick in added
+
+
 class BrickSelectionDialog(Window):
 
     resource = "data/brickselection.ui"
@@ -668,11 +678,11 @@ class BrickSelectionDialog(Window):
         self.added = set()
 
         self.availables_f = bricks.filter_new()
-        self.availables_f.set_visible_func(self.is_not_added, self.added)
+        self.availables_f.set_visible_func(is_not_added, self.added)
         availables_treeview = self.get_object("availables_treeview")
         availables_treeview.set_model(self.availables_f)
         self.added_f = bricks.filter_new()
-        self.added_f.set_visible_func(self.is_added, self.added)
+        self.added_f.set_visible_func(is_added, self.added)
         added_treeview = self.get_object("added_treeview")
         added_treeview.set_model(self.added_f)
 
@@ -686,14 +696,6 @@ class BrickSelectionDialog(Window):
         added_c.set_cell_data_func(icon_cr2, self.set_icon)
         name_cr2 = self.get_object("name_cellrenderer2")
         added_c.set_cell_data_func(name_cr2, self.set_name)
-
-    def is_not_added(self, model, iter, added):
-        brick = model.get_value(iter, 0)
-        return brick not in added
-
-    def is_added(self, model, iter, added):
-        brick = model.get_value(iter, 0)
-        return brick in added
 
     def set_icon(self, column, cell_renderer, model, iter):
         brick = model.get_value(iter, 0)
@@ -1209,7 +1211,7 @@ def ConfirmOverwriteDialog(fp, parent):
     button.set_image(gtk.image_new_from_stock(gtk.STOCK_SAVE_AS,
                                               gtk.ICON_SIZE_BUTTON))
     button.show()
-    dialog.add_action_widget(button, gtk.RESPONSE_ACCEPT);
+    dialog.add_action_widget(button, gtk.RESPONSE_ACCEPT)
     dialog.set_default_response(gtk.RESPONSE_ACCEPT)
 
 
