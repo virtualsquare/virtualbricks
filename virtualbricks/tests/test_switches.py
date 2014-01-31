@@ -22,7 +22,6 @@ class TestSwitch(unittest.TestCase):
         sw = switches.Switch(stubs.FactoryStub(), "test_switch")
         output = []
         sw.send = output.append
-        input.append("ok")
         sw.set({"numports": 33})
         self.assertEqual(len(output), 1)
         self.assertEqual(output[0], "port/setnumports 33\n")
