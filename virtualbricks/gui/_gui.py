@@ -498,17 +498,19 @@ def _sock_should_visible(model, iter):
     return sock and (sock.brick.get_type().startswith('Switch') or
                      settings.femaleplugs)
 
-class _PlugMixin(object):
 
-    def _set_text(self, column, cell_renderer, model, itr):
-        sock = model.get_value(itr, 0)
-        cell_renderer.set_property("text", sock.nickname)
+def _set_text(column, cell_renderer, model, itr):
+    sock = model.get_value(itr, 0)
+    cell_renderer.set_property("text", sock.nickname)
+
+
+class _PlugMixin(object):
 
     def configure_sock_combobox(self, combo, model, brick, plug, gui):
         model.set_visible_func(_sock_should_visible)
         combo.set_model(model)
         cell = combo.get_cells()[0]
-        combo.set_cell_data_func(cell, self._set_text)
+        combo.set_cell_data_func(cell, _set_text)
         if plug.configured():
             itr = model.get_iter_first()
             while itr:
