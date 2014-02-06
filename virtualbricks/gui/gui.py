@@ -619,7 +619,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         configframe = self.get_object("configframe")
         configpanel = configframe.get_child()
         if configpanel:
-            configframe.remove(configpanel)
+            configpanel.destroy()
+            # configframe.remove(configpanel)
         configframe.hide()
         if project.current:
             self.set_title_default()
