@@ -66,7 +66,6 @@ class Wire(bricks.Brick):
                 os.path.join(settings.get("vdepath"), "vde_plug"),
                 self.plugs[1].sock.path.rstrip('[]')]
 
-
 class NetemuConfig(bricks.Config):
 
     parameters = {
