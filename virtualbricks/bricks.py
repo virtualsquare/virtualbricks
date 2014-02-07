@@ -340,7 +340,7 @@ class Brick(base.Base):
             # usePTY?
             if self.needsudo():
                 prog = settings.get("sudo")
-                args = [settings.get("sudo")] + args
+                args = [settings.get("sudo"), "--"] + args
             self.proc = self.process_protocol(self)
             reactor.spawnProcess(self.proc, prog, args, os.environ)
 
