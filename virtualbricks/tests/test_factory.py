@@ -1,5 +1,8 @@
+from twisted.trial import unittest
+from twisted.internet import defer
+
 from virtualbricks import errors
-from virtualbricks.tests import unittest, stubs
+from virtualbricks.tests import stubs, successResultOf, failureResultOf
 
 
 class Stub2(object):
@@ -71,3 +74,36 @@ class TestFactory(unittest.TestCase):
         vm = self.factory.new_brick("vm", "vm")
         vm2 = self.factory.dup_brick(vm)
         self.assertIsNot(vm, vm2)
+
+    def test_del_brick(self):
+        """Delete a brick from a factory."""
+
+        brick = self.factory.newbrick("_stub", "test_brick")
+        self.assertEqual(list(self.factory.bricks), [brick])
+        successResultOf(self, self.factory.del_brick(brick))
+        self.assertEqual(list(self.factory.bricks), [])
+
+    def test_del_running_brick(self):
+        """If the brick is running, stop it and remove it."""
+
+        brick = self.factory.newbrick("_stub", "test_brick")
+        brick.poweron()
+        self.assertIsNot(brick.proc, None)
+        successResultOf(self, self.factory.del_brick(brick))
+        self.assertEqual(list(self.factory.bricks), [])
+        self.assertIs(brick.proc, None)
+
+    def test_del_remove_anyway(self):
+        """
+        If the brick is running and poweroff() raise an exception, remove the
+        brick anyway.
+        """
+
+        brick = self.factory.newbrick("_stub", "test_brick")
+        brick.poweron()
+        brick.poweroff = lambda kill=False: defer.fail(RuntimeError())
+        successResultOf(self, self.factory.del_brick(brick))
+        errors = self.flushLoggedErrors(RuntimeError)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(list(self.factory.bricks), [])
+        self.assertIsNot(brick.proc, None)
