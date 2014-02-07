@@ -54,6 +54,7 @@ endpoint_not_found = log.Event("Endpoint {nick} not found.")
 shut_down = log.Event("Server Shut Down.")
 new_event_ok = log.Event("New event {name} OK")
 uncaught_exception = log.Event("Uncaught exception: {error()}")
+brick_stop = log.Event("Error on brick poweroff")
 
 
 def install_brick_types(registry=None):
@@ -239,8 +240,7 @@ class BrickFactory(object):
 
         return new_brick
 
-    def do_del_brick(self, result):
-        brick, status = result
+    def do_del_brick(self, result, brick):
         socks = set(brick.socks)
         if socks:
             nicknames = (s.nickname for s in socks)
@@ -256,7 +256,9 @@ class BrickFactory(object):
 
     def del_brick(self, brick):
         logger.info(remove_brick, brick=brick.name)
-        return brick.poweroff().addCallback(self.do_del_brick)
+        return brick.poweroff(
+                ).addErrback(logger.failure_eb, brick_stop
+                ).addBoth(self.do_del_brick, brick)
 
     def get_brick_by_name(self, name):
         for b in self.bricks:

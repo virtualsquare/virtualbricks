@@ -83,6 +83,27 @@ class Factory(brickfactory.BrickFactory):
     def __init__(self):
         brickfactory.BrickFactory.__init__(self, defer.Deferred())
         self.register_brick_type(BrickStub, "stub")
+        self.register_brick_type(StubBrick, "_stub")
 
 
 FactoryStub = Factory
+
+
+class StubBrick(bricks.Brick):
+
+    type = "Stub2"
+    command_builder = {"-a": "a", "# -b": "b", "-c": "c", "-d": hook}
+    config_factory = BrickStubConfig
+
+    def poweron(self):
+        if self.proc is not None:
+            return defer.succeed(self)
+        else:
+            self.proc = bricks.FakeProcess(self)
+            return defer.succeed(self)
+
+    def poweroff(self, kill=False):
+        self.proc = None
+        return defer.succeed((self, None))
+
+
