@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+from collections import OrderedDict as odict
 
 from virtualbricks import bricks, link, settings
 
@@ -37,13 +38,12 @@ class Capture(PrivilegedBrick):
 
     type = "Capture"
     config_factory = CaptureConfig
-    command_builder = {"-s": None,
-                       "*iface": "iface"}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(link.Plug(self))
-        self.command_builder["-s"] = self.sock_path
+        self.command_builder = odict((("-s", self.sock_path),
+                                      ("*iface", "iface")))
 
     def sock_path(self):
         if self.plugs[0].sock:
