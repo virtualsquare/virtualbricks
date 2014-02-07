@@ -662,10 +662,6 @@ class VirtualMachine(bricks.Brick):
         if self.config["usbmode"]:
             for dev in self.config["usbdevlist"]:
                 res.extend(["-usbdevice", "host:%s" % dev])
-            # The world is not ready for this, do chown /dev/bus/usb instead.
-            # self._needsudo = True
-        # else:
-        #     self._needsudo = False
 
         res.extend(["-name", self.name])
         if not self.plugs and not self.socks:

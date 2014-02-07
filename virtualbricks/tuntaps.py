@@ -24,15 +24,18 @@ if False:  # pyflakes
     _ = str
 
 
+class PrivilegedBrick(bricks.Brick):
+
+    def needsudo(self):
+        return os.geteuid() != 0
 class CaptureConfig(bricks.Config):
 
     parameters = {"iface": bricks.String("")}
 
 
-class Capture(bricks.Brick):
+class Capture(PrivilegedBrick):
 
     type = "Capture"
-    _needsudo = True
     config_factory = CaptureConfig
     command_builder = {"-s": None,
                        "*iface": "iface"}
@@ -73,10 +76,9 @@ class TapConfig(bricks.Config):
                   "mode": bricks.String("off")}
 
 
-class Tap(bricks.Brick):
+class Tap(PrivilegedBrick):
 
     type = "Tap"
-    _needsudo = True
     config_factory = TapConfig
 
     def __init__(self, factory, name):
