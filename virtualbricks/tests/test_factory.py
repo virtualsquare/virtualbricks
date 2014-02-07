@@ -107,3 +107,16 @@ class TestFactory(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(list(self.factory.bricks), [])
         self.assertIsNot(brick.proc, None)
+
+    def test_stop_brick_error(self):
+        """
+        Report an error if the factory is stopped but a brick raise an error.
+        """
+
+        brick = self.factory.newbrick("_stub", "test_brick")
+        brick.poweron()
+        brick.poweroff = lambda kill=False: defer.fail(RuntimeError())
+        successResultOf(self, self.factory.stop())
+        errors = self.flushLoggedErrors(RuntimeError)
+        self.assertEqual(len(errors), 1)
+        self.assertIsNot(brick.proc, None)
