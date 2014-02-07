@@ -109,3 +109,24 @@ class IBuilder(Interface):
 
     def load_from(factory, item):
         """Return a new brick or link from the given item."""
+
+
+class IProcess(Interface):
+    """A class representing a process."""
+
+    pid = Attribute("The exit value of the process. C{None} if process is not "
+                    "termiated, C{int} otherwise.")
+
+    def signal_process(signo):
+        """
+        Send a signal to the given process.
+
+        @param signo: the signal to send to the process.
+        @type signo: C{int} or one of "TERM", "KILL" or "INT"
+        """
+
+    def write(data):
+        """Send data to the stdin of the process.
+
+        @type data: C{str}
+        """

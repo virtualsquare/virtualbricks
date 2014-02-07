@@ -24,8 +24,9 @@ import re
 
 from twisted.internet import protocol, reactor, error, defer
 from twisted.python import failure
+from zope.interface import implementer
 
-from virtualbricks import base, errors, settings, log
+from virtualbricks import base, errors, settings, log, interfaces
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
                                 SpinInt, Float, SpinFloat, Boolean, Object,
                                 ListOf)
@@ -65,6 +66,7 @@ class ProcessLogger(object):
         return self.logger.__get__(instance, owner)
 
 
+@implementer(interfaces.IProcess)
 class Process(protocol.ProcessProtocol):
 
     logger = ProcessLogger(log.Logger())
@@ -99,11 +101,26 @@ class Process(protocol.ProcessProtocol):
     def pid(self):
         return self.transport.pid
 
-    def signalProcess(self, signalID):
+    def signal_process(self, signalID):
         self.transport.signalProcess(signalID)
 
     def write(self, data):
         self.transport.write(data)
+
+
+@implementer(interfaces.IProcess)
+class FakeProcess:
+
+    pid = -1
+
+    def __init__(self, brick):
+        self.brick = brick
+
+    def signal_process(self, signo):
+        pass
+
+    def write(self, data):
+        pass
 
 
 class VDEProcessProtocol(Process):
@@ -261,7 +278,7 @@ class Brick(base.Base):
             return defer.succeed((self, self._last_status))
         logger.info(shutdown_brick, name=self.name, pid=self.proc.pid)
         try:
-            self.proc.signalProcess("KILL" if kill else "TERM")
+            self.proc.signal_process("KILL" if kill else "TERM")
         except OSError as e:
             return defer.fail(failure.Failure(e))
         except error.ProcessExitedAlready:
@@ -279,7 +296,7 @@ class Brick(base.Base):
 
     def send_signal(self, signal):
         if self.proc:
-            self.proc.signalProcess(signal)
+            self.proc.signal_process(signal)
 
     # brick <--> process interface
 

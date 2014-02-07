@@ -98,23 +98,6 @@ class Switch(bricks.Brick):
         self.send("port/setnumports %s\n" % arg)
 
 
-class FakeProcess:
-
-    pid = -1
-    terminated = False
-
-    def __init__(self, brick):
-        self.brick = brick
-
-    def poll(self):
-        if self.terminated:
-            return 0
-        return None
-
-    def send_signal(self, signo):
-        self.terminated = False
-
-
 class SwitchWrapperConfig(bricks.Config):
 
     parameters = {"path": bricks.String("")}
@@ -134,7 +117,7 @@ class SwitchWrapper(bricks.Brick):
         if self.proc is not None:
             return defer.succeed(self)
         elif os.path.exists(self.config["path"]):
-            self.proc = FakeProcess(self)
+            self.proc = bricks.FakeProcess(self)
             return defer.succeed(self)
         else:
             self.logger.debug(sock_not_exists, path=self.config["path"])

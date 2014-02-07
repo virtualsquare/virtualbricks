@@ -109,7 +109,7 @@ class TestBricks(unittest.TestCase):
 
     def test_poweroff_raise_OSError(self):
 
-        def signalProcess(signo):
+        def signal_process(signo):
             raise OSError(42, "The meaning of file")
 
         def check(failure):
@@ -118,7 +118,7 @@ class TestBricks(unittest.TestCase):
 
         def continue_test(brick):
             self.assertIsNot(brick.proc, None)
-            patch = self.patch(brick.proc, "signalProcess", signalProcess)
+            patch = self.patch(brick.proc, "signal_process", signal_process)
             d = brick.poweroff()
             return self.assertFailure(d, OSError).addBoth(patchr, patch)
 
@@ -129,7 +129,7 @@ class TestBricks(unittest.TestCase):
 
     def test_poweroff_raise_ProcessExitedAlready(self):
 
-        def signalProcess(signo):
+        def signal_process(signo):
             raise error.ProcessExitedAlready()
 
         def check(result, brick):
@@ -138,7 +138,7 @@ class TestBricks(unittest.TestCase):
 
         def continue_test(brick):
             self.assertIsNot(brick.proc, None)
-            patch = self.patch(brick.proc, "signalProcess", signalProcess)
+            patch = self.patch(brick.proc, "signal_process", signal_process)
             d = self.brick.poweroff().addCallback(check, brick)
             d.addBoth(patchr, patch)
             return d
