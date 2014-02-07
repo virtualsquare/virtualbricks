@@ -179,7 +179,6 @@ class ListOf(Parameter):
 class Base(object):
 
     # type = None  # if not set in a subclass will raise an AttributeError
-    _needsudo = False
     _name = None
     config_factory = Config
     logger = log.Logger()
@@ -203,7 +202,7 @@ class Base(object):
         return self.type
 
     def needsudo(self):
-        return self._needsudo
+        return False
 
     def set(self, attrs):
         for name, value in attrs.iteritems():
