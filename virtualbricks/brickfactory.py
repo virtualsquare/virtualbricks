@@ -107,7 +107,8 @@ class BrickFactory(object):
         for e in self.events:
             e.poweroff()
 
-        l = [brick.poweroff() for brick in self.bricks]
+        l = [brick.poweroff().addErrback(logger.failure_eb, brick_stop)
+             for brick in self.bricks if brick.proc]
         return defer.DeferredList(l, consumeErrors=True)
 
     def quit(self):
