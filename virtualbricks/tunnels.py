@@ -48,7 +48,7 @@ class TunnelListen(bricks.Brick):
         self.plugs.append(link.Plug(self))
 
     def sock_path(self):
-        if self.plugs[0].sock:
+        if self.configured():
             return self.plugs[0].sock.path.rstrip('[]')
         return ""
 
@@ -60,10 +60,10 @@ class TunnelListen(bricks.Brick):
         return _("disconnected")
 
     def prog(self):
-        return settings.get("vdepath") + "/vde_cryptcab"
+        return os.path.join(settings.get("vdepath"), "vde_cryptcab")
 
     def configured(self):
-        return self.plugs[0].sock is not None
+        return bool(self.plugs[0].sock)
 
     def args(self):
         # TODO: port to utils.getProcessOutput
@@ -82,10 +82,6 @@ class TunnelListen(bricks.Brick):
     #def post_poweroff(self):
     #    os.unlink("/tmp/tunnel_%s.key" % self.name)
     #    pass
-
-    # def add_plug(self, sock, mac=None, model=None):
-    #     self.plugs[0].connect(sock)
-    #     return self.plugs[0]
 
 
 class TunnelConnectConfig(TunnelListenConfig):

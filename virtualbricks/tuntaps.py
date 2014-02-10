@@ -93,7 +93,7 @@ class Tap(PrivilegedBrick):
         return ""
 
     def get_parameters(self):
-        if self.plugs[0].sock:
+        if self.configured():
             return _("plugged to %s ") % self.plugs[0].sock.brick.name
         return _("disconnected")
 
@@ -104,11 +104,7 @@ class Tap(PrivilegedBrick):
         pass
 
     def configured(self):
-        return self.plugs[0].sock
-
-    # def add_plug(self, sock, mac=None, model=None):
-    #     self.plugs[0].connect(sock)
-    #     return self.plugs[0]
+        return bool(self.plugs[0].sock)
 
     def post_poweron(self):
         # XXX: fixme
