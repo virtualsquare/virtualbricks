@@ -677,6 +677,9 @@ class BrickSelectionDialog(Window):
         self.action = action
         self.added = set()
 
+        # FIXME: this can cause a circular references with a C object and a
+        # conseguent memory leak with unexpected bugs and, unlikely,
+        # performance impact
         self.availables_f = bricks.filter_new()
         self.availables_f.set_visible_func(is_not_added, self.added)
         availables_treeview = self.get_object("availables_treeview")
