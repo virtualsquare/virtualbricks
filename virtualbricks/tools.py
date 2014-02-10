@@ -29,6 +29,7 @@ import struct
 from virtualbricks import log
 
 from twisted.internet import utils
+from twisted.python import constants
 
 logger = log.Logger()
 ksm_error = log.Event("Can not change ksm state. (failed command: {cmd})")
@@ -142,11 +143,29 @@ class Tempfile:
                 raise
 
 
-HEADER_FMT = r">BBBBI"
-COW_MAGIC = "MOOO"[::-1]
+GENERIC_HEADER_FMT = ">II"
+_L = struct.calcsize(GENERIC_HEADER_FMT)
+COW_MAGIC = 0x4f4f4f4d # OOOM
 COW_SIZE = 1024
-QCOW_MAGIC = "QFI\xfb"
-QCOW_HEADER_FMT = r">QI"
+QCOW_MAGIC = 0x514649fb  # \xfbIFQ
+QCOW_HEADER_FMT = ">QI"
+COWD_MAGIC = 0x44574f43  # COWD
+VMDK_MAGIC = 0x564d444b  # KDMV
+QED_MAGIC = 0x00444551  # \0DEQ
+VDI_HEADER_FMT = "<64cI"
+VDI_SIGNATURE = 0xbeda107f
+_VDI_L = struct.calcsize(VDI_HEADER_FMT)
+VPC_HEADER_FMT = "<8c"
+VPC_CREATOR = "conectix"
+_VPC_L = struct.calcsize(VPC_HEADER_FMT)
+CLOOP_MAGIC = """#!/bin/sh
+#V2.0 Format
+modprobe cloop file=$0 && mount -r -t iso9660 /dev/cloop $1
+"""
+CLOOP_HEADER_FMT = "{0}c".format(len(CLOOP_MAGIC))
+_CLOOP_L = struct.calcsize(CLOOP_HEADER_FMT)
+_MAX_HEADER = max(_L, _VDI_L, _VPC_L, _CLOOP_L)
+
 
 
 def get_backing_file_from_cow(fp):
@@ -169,8 +188,7 @@ class UnknowTypeError(Exception):
 
 def get_backing_file(fp):
     data = fp.read(8)
-    m1, m2, m3, m4, version = struct.unpack(HEADER_FMT, data)
-    magic = "".join(map(chr, (m1, m2, m3, m4)))
+    magic, version = struct.unpack(GENERIC_HEADER_FMT, data)
     if magic == COW_MAGIC:
         return get_backing_file_from_cow(fp)
     elif magic == QCOW_MAGIC and version in (1, 2):
@@ -269,3 +287,58 @@ def copyTo(self, destination, followLinks=True):
             writefile.close()
     elif not self.exists():
         raise OSError(errno.ENOENT, "No such file or directory")
+
+
+class DummyDict(dict):
+
+    __slots__ = ["value"]
+
+    def __init__(self, value):
+        self.value = value
+
+    def __getitem__(self, name):
+        return self.value
+
+
+class ImageFormat(constants.Names):
+
+    RAW = constants.NamedConstant()
+    QCOW2 = constants.NamedConstant()
+    QED = constants.NamedConstant()
+    QCOW = constants.NamedConstant()
+    COW = constants.NamedConstant()
+    VDI = constants.NamedConstant()
+    VMDK = constants.NamedConstant()
+    VPC = constants.NamedConstant()
+    CLOOP = constants.NamedConstant()
+    UNKNOWN = constants.NamedConstant()
+
+
+_type_map = {
+    COW_MAGIC: {1: ImageFormat.COW},
+    QCOW_MAGIC: {1: ImageFormat.QCOW, 2: ImageFormat.QCOW2},
+    COWD_MAGIC: {1: ImageFormat.VMDK},
+    VMDK_MAGIC: {1: ImageFormat.VMDK},
+    QED_MAGIC: DummyDict(ImageFormat.QED)
+}
+
+
+def image_type(data):
+    magic, version = struct.unpack(GENERIC_HEADER_FMT, data[:_L])
+    try:
+        return _type_map[magic][version]
+    except KeyError:
+        pass
+    _, signature = struct.unpack(VDI_HEADER_FMT, data[:_VDI_L])
+    if signature == VDI_SIGNATURE:
+        return ImageFormat.VDI
+    if struct.unpack(VPC_HEADER_FMT, data[:_VPC_L]) == VPC_CREATOR:
+        return ImageFormat.VPC
+    if struct.unpack(CLOOP_HEADER_FMT, data[:_CLOOP_L]) == CLOOP_MAGIC:
+        return ImageFormat.CLOOP
+    return ImageFormat.UNKNOWN
+
+
+def image_type_from_file(filename):
+    with open(filename) as fp:
+        return image_type(fp.read(_MAX_HEADER))
