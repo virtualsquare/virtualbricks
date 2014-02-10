@@ -296,8 +296,7 @@ class Disk:
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        cowname = os.path.join(self.basefolder,
-                               "%s_%s.cow" % (self.vm_name, self.device))
+        cowname = self.get_cow_path()
         try:
             return self._check_base(cowname)
         except IOError, e:
@@ -305,6 +304,10 @@ class Disk:
                 return self._create_cow(cowname)
             else:
                 raise
+
+    def get_cow_path(self):
+        return os.path.join(self.basefolder, "%s_%s.cow" % (self.vm_name,
+                                                            self.device))
 
     def get_real_disk_name(self):
         if self.image is None:
@@ -581,9 +584,13 @@ class VirtualMachine(bricks.Brick):
             self.release()
             return passthru
 
+        def clear_snapshot(passthru):
+            self.config["loadvm"] = ""
+            return passthru
+
         self.config["loadvm"] = snapshot
         d = bricks.Brick.poweron(self)
-        d.addCallback(acquire)
+        d.addCallback(acquire).addBoth(clear_snapshot)
         self._exited_d.addBoth(release)
         return d
 

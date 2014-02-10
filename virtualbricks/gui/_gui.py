@@ -21,7 +21,6 @@ import os
 import gtk
 from zope.interface import implementer
 from twisted.internet import reactor, utils, defer, error
-from twisted.python import failure
 
 from virtualbricks import (base, bricks, events, virtualmachines, link, log,
                            settings, tools)
@@ -34,6 +33,7 @@ cannot_rename = log.Event("Cannot rename Brick: it is in use.")
 snap_error = log.Event("Error on snapshot")
 invalid_name = log.Event("Invalid name!")
 resume_vm = log.Event("Resuming virtual machine {name}")
+savevm = log.Event("Save snapshot on virtual machine {name}")
 proc_signal = log.Event("Sending to process signal {signame}!")
 proc_restart = log.Event("Restarting process!")
 s_r_not_supported = log.Event("Suspend/Resume not supported on this disk.")
@@ -139,7 +139,7 @@ class VMPopupMenu(BrickPopupMenu):
         menu.append(resume)
         return menu
 
-    def snapshot(self, factory):
+    def resume(self, factory):
 
         def grep(out, pattern):
             if out.find(pattern) == -1:
@@ -149,24 +149,27 @@ class VMPopupMenu(BrickPopupMenu):
             if self.original.proc is not None:
                 self.original.send("loadvm virtualbricks\n")
             else:
-                self.original.poweron("virtualbricks")
+                return self.original.poweron("virtualbricks")
 
-        img = factory.get_image_by_name(self.original.get("hda"))
-        if img is not None:
-            args = ["snapshot", "-l", img.path]
-            output = utils.getProcessOutput("qemu-img", args, os.environ)
-            output.addCallback(grep, "virtualbricks")
-            output.addCallback(loadvm)
-            output.addErrback(logger.failure_eb, snap_error)
-            return output
-        try:
-            raise RuntimeError("No such image")
-        except:
-            return defer.fail(failure.Failure())
+        img = self.original.get("hda")
+        if img.cow:
+            path = img.get_cow_path()
+        elif img.image:
+            path = img.image.path
+        else:
+            logger.error(s_r_not_supported)
+            return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
+                                             "this disk.")))
+        args = ["snapshot", "-l", path]
+        output = utils.getProcessOutput("qemu-img", args, os.environ)
+        output.addCallback(grep, "virtualbricks")
+        output.addCallback(loadvm)
+        output.addErrback(logger.failure_eb, snap_error)
+        return output
 
     def on_resume_activate(self, menuitem, gui):
         logger.debug(resume_vm, name=self.original.get_name())
-        gui.user_wait_action(self.snapshot, gui.brickfactory)
+        gui.user_wait_action(self.resume(gui.brickfactory))
 
 
 interfaces.registerAdapter(VMPopupMenu, virtualmachines.VirtualMachine,
@@ -321,30 +324,27 @@ class VMJobMenu(JobMenu):
         return menu
 
     def suspend(self, factory):
-
-        def do_suspend(exit_code):
-            if exit_code == 0:
-                done = defer.Deferred()
-                self.original.send("savevm virtualbricks\n", done)
-                done.addCallback(lambda _: self.original.poweroff())
-            else:
-                logger.error(s_r_not_supported)
-
-        img = factory.get_image_by_name(self.original.get("hda"))
-        if not img:
+        img = self.original.get("hda")
+        if img.cow:
+            path = img.get_cow_path()
+        elif img.image:
+            path = img.image.path
+        else:
             logger.error(s_r_not_supported)
-            try:
-                raise RuntimeError(_("Suspend/Resume not supported on this "
-                                     "disk."))
-            except:
-                return defer.fail()
-        args = ["snapshot", "-c", "virtualbricks", img.path]
-        value = utils.getProcessValue("qemu-img", args, os.environ)
-        value.addCallback(do_suspend)
-        return value
+            return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
+                                             "this disk.")))
+
+        if tools.image_type_from_file(path) == tools.ImageFormat.QCOW2:
+            self.original.send("savevm virtualbricks\n")
+            return self.original.poweroff()
+        else:
+            logger.error(s_r_not_supported)
+            return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
+                                             "this disk.")))
 
     def on_suspend_activate(self, menuitem, gui):
-        gui.user_wait_action(self.suspend, gui.factory)
+        logger.debug(savevm, name=self.original.get_name())
+        gui.user_wait_action(self.suspend(gui.brickfactory))
 
     def on_powerdown_activate(self, menuitem):
         logger.info(send_acpi, event="powerdown")
