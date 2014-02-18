@@ -863,6 +863,35 @@ def get_element_at_click(treeview, event):
         return obj
 
 
+
+def _set_vlan(column, cell_renderer, model, itr):
+    vlan = model.get_path(itr)[0]
+    cell_renderer.set_property("text", vlan)
+
+
+def _set_connection(column, cell_renderer, model, iter):
+    link = model.get_value(iter, 0)
+    if link.mode == "hostonly":
+        conn = "Host"
+    elif link.sock:
+        conn = link.sock.brick.name
+    elif link.mode == "sock" and settings.femaleplugs:
+        conn = "Vde socket (female plug)"
+    else:
+        conn = "None"
+    cell_renderer.set_property("text", conn)
+
+
+def _set_model(column, cell_renderer, model, iter):
+    link = model.get_value(iter, 0)
+    cell_renderer.set_property("text", link.model)
+
+
+def _set_mac(column, cell_renderer, model, iter):
+    link = model.get_value(iter, 0)
+    cell_renderer.set_property("text", link.mac)
+
+
 class QemuConfigController(ConfigController):
 
     resource = "data/qemuconfig.ui"
@@ -955,42 +984,18 @@ class QemuConfigController(ConfigController):
             for sock in self.original.socks:
                 vmplugs.append((sock,))
 
-        def set_vlan(column, cell_renderer, model, itr):
-            vlan = model.get_path(itr)[0]
-            cell_renderer.set_property("text", vlan)
-
-        def set_connection(column, cell_renderer, model, iter):
-            link = model.get_value(iter, 0)
-            if link.mode == "hostonly":
-                conn = "Host"
-            elif link.sock:
-                conn = link.sock.brick.name
-            elif link.mode == "sock" and self.gui.config.femaleplugs:
-                conn = "Vde socket (female plug)"
-            else:
-                conn = "None"
-            cell_renderer.set_property("text", conn)
-
-        def set_model(column, cell_renderer, model, iter):
-            link = model.get_value(iter, 0)
-            cell_renderer.set_property("text", link.model)
-
-        def set_mac(column, cell_renderer, model, iter):
-            link = model.get_value(iter, 0)
-            cell_renderer.set_property("text", link.mac)
-
         vlan_c = self.get_object("vlan_treeviewcolumn")
         vlan_cr = self.get_object("vlan_cellrenderer")
-        vlan_c.set_cell_data_func(vlan_cr, set_vlan)
+        vlan_c.set_cell_data_func(vlan_cr, _set_vlan)
         connection_c = self.get_object("connection_treeviewcolumn")
         connection_cr = self.get_object("connection_cellrenderer")
-        connection_c.set_cell_data_func(connection_cr, set_connection)
+        connection_c.set_cell_data_func(connection_cr, _set_connection)
         model_c = self.get_object("model_treeviewcolumn")
         model_cr = self.get_object("model_cellrenderer")
-        model_c.set_cell_data_func(model_cr, set_model)
+        model_c.set_cell_data_func(model_cr, _set_model)
         mac_c = self.get_object("mac_treeviewcolumn")
         mac_cr = self.get_object("mac_cellrenderer")
-        mac_c.set_cell_data_func(mac_cr, set_mac)
+        mac_c.set_cell_data_func(mac_cr, _set_mac)
 
     def get_config_view(self, gui):
         self.gui = gui
