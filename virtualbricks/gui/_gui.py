@@ -1181,11 +1181,11 @@ class QemuConfigController(ConfigController):
             # XXX: why checking hotdel? is a method it is always true or raise
             # an exception if it is not defined
             link.hotdel()
-        link.brick.remove_plug(link)
+        self.original.remove_plug(link)
         itr = model.get_iter_first()
         while itr:
-            link = model.get_value(itr, 0)
-            if link is link:
+            plug = model.get_value(itr, 0)
+            if plug is link:
                 model.remove(itr)
                 break
             itr = model.iter_next(itr)
