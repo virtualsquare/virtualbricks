@@ -244,8 +244,8 @@ class BrickFactory(object):
     def do_del_brick(self, result, brick):
         socks = set(brick.socks)
         if socks:
-            nicknames = (s.nickname for s in socks)
-            logger.info(remove_socks, socks=lambda: ", ".join(nicknames))
+            logger.info(remove_socks,
+                        socks=", ".join(s.nickname for s in socks))
             for _brick in self.bricks:
                 for plug in _brick.plugs:
                     if plug.configured() and plug.sock in socks:
@@ -253,6 +253,9 @@ class BrickFactory(object):
                         plug.disconnect()
             for sock in [s for s in self.socks if s.brick is brick]:
                 self.socks.remove(sock)
+        for plug in brick.plugs:
+            if plug.configured():
+                plug.disconnect()
         self.bricks.remove(brick)
 
     def del_brick(self, brick):
