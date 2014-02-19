@@ -495,42 +495,25 @@ def AutosaveTimer(factory, interval=180):
 
 class AppLogger(app.AppLogger):
 
-    def _getLogObserver(self):
-        if self._logfilename == '-' or not self._logfilename:
-            logFile = sys.stdout
-        else:
-            logFile = logfile.LogFile.fromFullPath(self._logfilename)
-        return log.FileLogObserver(logFile)
+    observer = None
+
+    def __init__(self, options):
+        self.observerFactory = options.get("logger")
 
     def start(self, application):
-        from twisted.python import log as legacy_log
+        if self.observerFactory is not None:
+            self.observer = self.observerFactory()
 
-        self._sobserver = None
-        if self._observerFactory is not None:
-            self._observer = self._observerFactory()
-            if self._logfilename:
-                self._sobserver = self._getLogObserver()
-        elif self._logfilename:
-            self._observer = self._getLogObserver()
-
-        if self._observer is not None:
-            logger.publisher.addObserver(self._observer, False)
-        if self._sobserver is not None:
-            logger.publisher.addObserver(self._sobserver, False)
-        observer = log.LegacyObserver()
-        legacy_log.startLoggingWithObserver(observer, False)
-        logger.publisher.filteredPublisher.removeObserver(
-            logger.publisher.legacyLogObserver)
+        if self.observer is not None:
+            logger.publisher.addObserver(self.observer, False)
+        log.replaceTwistedLoggers()
         self._initialLog()
 
     def stop(self):
         logger.info(shut_down)
-        if self._observer is not None:
-            logger.publisher.removeObserver(self._observer)
-            self._observer = None
-        if self._sobserver:
-            logger.publisher.removeObserver(self._sobserver)
-            self._sobserver = None
+        if self.observer is not None:
+            logger.publisher.removeObserver(self.observer)
+            self.observer = None
 
 
 class Application:
@@ -630,11 +613,11 @@ class Application:
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", factory.stop)
-        reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
         project.restore_last(factory)
         reactor.addSystemEventTrigger("before", "shutdown",
                                       lambda: project.current.save(factory))
+        reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
             namespace = self.get_namespace()

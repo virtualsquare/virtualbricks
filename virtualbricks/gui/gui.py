@@ -1493,19 +1493,33 @@ TEXT_TAGS = [('debug', {'foreground': '#a29898'}),
              ('error', {'foreground': '#b8032e'})]
 
 
+def AppLoggerFactory(textbuffer):
+
+    observer = TextBufferObserver(textbuffer)
+
+    class AppLogger(brickfactory.AppLogger):
+
+        def start(self, application):
+            logger.publisher.addObserver(observer)
+            brickfactory.AppLogger.start(self, application)
+
+        def stop(self):
+            logger.publisher.removeObserver(observer)
+            brickfactory.AppLogger.stop(self)
+
+    return AppLogger
+
+
 class Application(brickfactory.Application):
 
     factory_factory = VisualFactory
 
     def __init__(self, config):
         self.textbuffer = gtk.TextBuffer()
-        config["logger"] = self.textbuffer_logger
-        brickfactory.Application.__init__(self, config)
-
-    def textbuffer_logger(self):
         for name, attrs in TEXT_TAGS:
             self.textbuffer.create_tag(name, **attrs)
-        return TextBufferObserver(self.textbuffer)
+        self.logger_factory = AppLoggerFactory(self.textbuffer)
+        brickfactory.Application.__init__(self, config)
 
     def install_locale(self):
         brickfactory.Application.install_locale(self)
