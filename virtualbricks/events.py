@@ -139,8 +139,8 @@ class Event(base.Base):
             return self
 
         self.scheduled = None
-        procs = [defer.maybeDeferred(action.perform()) for action in
-                 self.config["actions"]]
+        procs = [defer.maybeDeferred(action.perform, self.factory)
+                 for action in self.config["actions"]]
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)
 
