@@ -1006,6 +1006,8 @@ class QemuConfigController(ConfigController):
         for found in tools.check_missing_qemu(gui.config.get("qemupath"))[1]:
             if found.startswith("qemu-system-"):
                 model.append((found[12:], found))
+            elif found == "kvm":
+                pass
             else:
                 model.append((found, found))
         self._build_images_model(go("imagesmodel"),
