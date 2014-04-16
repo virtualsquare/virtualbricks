@@ -12,8 +12,10 @@
         <property name="model">liststore1</property>
         <property name="headers_clickable">False</property>
         <signal name="key-release-event" handler="on_bricks_treeview_key_release_event" swapped="no"/>
+        <signal name="drag-data-received" handler="on_bricks_treeview_drag_data_received" swapped="no"/>
         <signal name="row-activated" handler="on_bricks_treeview_row_activated" swapped="no"/>
         <signal name="button-release-event" handler="on_bricks_treeview_button_release_event" swapped="no"/>
+        <signal name="drag-data-get" handler="on_bricks_treeview_drag_data_get" swapped="no"/>
         <child>
           <object class="GtkTreeViewColumn" id="icon_treeviewcolumn">
             <property name="title" translatable="yes">Icon</property>

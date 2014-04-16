@@ -57,6 +57,16 @@ no_kvm = log.Event("No KVM support found on the local system. Check your "
     "active configuration. KVM will stay disabled.")
 cannot_write = log.Event("Cannot write to the specified location")
 select_file = log.Event("Select a file")
+dnd_no_socks = log.Event("I don't know what to do, bricks have no socks.")
+dnd_dest_brick_not_found = log.Event("Cannot found dest brick")
+dnd_source_brick_not_found = log.Event("Cannot find source brick {name}")
+dnd_no_dest = log.Event("No destination brick")
+dnd_same_brick = log.Event("Source and destination bricks are the same.")
+
+BRICK_TARGET_NAME = "brick-connect-target"
+BRICK_DRAG_TARGETS = [
+    (BRICK_TARGET_NAME, gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)
+]
 
 
 class SyncProtocol(protocol.ProcessProtocol):
@@ -543,8 +553,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         parameters_c = builder.get_object("parameters_treeviewcolumn")
         parameters_cr = builder.get_object("parameters_cellrenderer")
         parameters_c.set_cell_data_func(parameters_cr, set_parameters)
-        self.__bricks_treeview = builder.get_object("bricks_treeview")
-        self.__bricks_treeview.set_model(self.brickfactory.bricks)
+        self.__bricks_treeview = tv = builder.get_object("bricks_treeview")
+        tv.set_model(self.brickfactory.bricks)
+        tv.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, BRICK_DRAG_TARGETS,
+                                    gtk.gdk.ACTION_LINK)
+        tv.enable_model_drag_dest(BRICK_DRAG_TARGETS, gtk.gdk.ACTION_LINK)
 
     def check_gui_prerequisites(self):
         qmissing, _ = tools.check_missing_qemu(settings.get("qemupath"))
@@ -1385,6 +1398,42 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def set_sensitive(self):
         self.get_object("main_win").set_sensitive(True)
+
+    def on_bricks_treeview_drag_data_get(self, treeview, context, selection,
+                                         info, time):
+        treeselection = treeview.get_selection()
+        model, iter = treeselection.get_selected()
+        brick = model.get_value(iter, 0)
+        selection.set(selection.target, 8, brick.get_name())
+
+    def on_bricks_treeview_drag_data_received(self, treeview, context, x, y,
+                                              selection, info, time):
+        drop_info = treeview.get_dest_row_at_pos(x, y)
+        if drop_info:
+            path, position = drop_info
+            source_brick = self.brickfactory.get_brick_by_name(selection.data)
+            if source_brick:
+                # XXX log debug info
+                model = treeview.get_model()
+                dest_brick = model.get(model.get_iter(path), 0)[0]
+                if dest_brick:
+                    if dest_brick is not source_brick:
+                        pass
+                        if len(source_brick.socks) > 0:
+                            dest_brick.connect(source_brick.socks[0])
+                        elif len(dest_brick.socks) > 0:
+                            source_brick.connect(dest_brick.socks[0])
+                        else:
+                            log.info(dnd_no_socks)
+                    else:
+                        logger.debug(dnd_same_brick)
+                else:
+                    logger.debug(dnd_dest_brick_not_found)
+            else:
+                logger.debug(dnd_source_brick_not_found, name=selection.data)
+        else:
+            logger.debug(dnd_no_dest)
+        context.finish(True, False, time)
 
 
 class List(gtk.ListStore):
