@@ -19,7 +19,6 @@
 import os
 
 from twisted.internet import defer
-from twisted.python import failure
 
 from virtualbricks import settings, bricks, log, errors
 
@@ -121,8 +120,8 @@ class SwitchWrapper(bricks.Brick):
             return defer.succeed(self)
         else:
             self.logger.debug(sock_not_exists, path=self.config["path"])
-            return defer.fail(failure.Failure(errors.BadConfigError(
-                _("Socket does not exists: %s") % self.config["path"])))
+            msg = _("Socket does not exists: %s") % self.config["path"]
+            return defer.fail(errors.BadConfigError(msg))
 
     def poweroff(self, kill=False):
         self.proc = None

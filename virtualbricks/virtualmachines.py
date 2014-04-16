@@ -24,7 +24,6 @@ import shutil
 import itertools
 
 from twisted.internet import utils, defer
-from twisted.python import failure
 
 from virtualbricks import errors, tools, settings, bricks, log, project
 
@@ -266,7 +265,7 @@ class Disk:
     def _create_cow(self, cowname):
         if is_missing(settings.get("qemupath"), "qemu-img"):
             msg = _("qemu-img not found! I can't create a new image.")
-            return defer.fail(failure.Failure(errors.BadConfigError(msg)))
+            return defer.fail(errors.BadConfigError(msg))
 
         logger.info(new_cow, base=self._get_base())
         args = ["create", "-b", self._get_base(), "-f",
@@ -317,7 +316,7 @@ class Disk:
             try:
                 return self._get_cow_name()
             except (OSError, IOError) as e:
-                return defer.fail(failure.Failure(e))
+                return defer.fail(e)
         else:
             return defer.succeed(self.image.path)
 
