@@ -109,7 +109,12 @@ class Logger(_Logger):
 
     def failure_eb(self, failure, event, level=LogLevel.error, **kwargs):
         self.failure(event, failure, level, **kwargs)
-        return failure
+
+    def log_failure(self, deferred, event, **kwargs):
+        def log(failure):
+            self.failure(event, failure, LogLevel.error, **kwargs)
+            return failure
+        return deferred.addErrback(log)
 
 
 def getTimezoneOffset(when):

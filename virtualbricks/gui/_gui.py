@@ -164,7 +164,7 @@ class VMPopupMenu(BrickPopupMenu):
         output = utils.getProcessOutput("qemu-img", args, os.environ)
         output.addCallback(grep, "virtualbricks")
         output.addCallback(loadvm)
-        output.addErrback(logger.failure_eb, snap_error)
+        logger.log_failure(output, snap_error)
         return output
 
     def on_resume_activate(self, menuitem, gui):
