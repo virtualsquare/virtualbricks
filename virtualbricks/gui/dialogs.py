@@ -1014,7 +1014,7 @@ class CreateImageDialog(Window):
         exit = utils.getProcessOutputAndValue("qemu-img",
             ["create", "-f", fmt, pathname, size + unit], os.environ)
         exit.addCallback(_create_disk)
-        exit.addErrback(logger.failure_eb, img_create_err)
+        logger.log_failure(exit, img_create_err)
         return exit
 
     def on_CreateImageDialog_response(self, dialog, response_id):
@@ -1604,7 +1604,7 @@ class _HumbleImport:
         if open:
             deferred.addCallback(pass_through(project.restore, factory))
         deferred.addErrback(pass_through(project.delete))
-        deferred.addErrback(logger.failure_eb, error_on_import_project)
+        logger.log_failure(deferred, error_on_import_project)
         return deferred
 
     def get_images(self, project, entry, store1, store2):

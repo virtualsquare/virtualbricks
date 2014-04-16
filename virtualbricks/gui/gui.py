@@ -1138,7 +1138,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             os.environ)
         done.addCallback(
             lambda _: self.brickfactory.new_disk_image(filename, fullname))
-        done.addErrback(logger.failure_eb, create_image_error)
+        logger.log_failure(done, create_image_error)
         return done
 
     def on_button_create_image_clicked(self, widget=None, data=""):
