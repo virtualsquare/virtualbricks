@@ -45,28 +45,27 @@ class _Error(Exception):
 
 class VbShellCommand(str):
 
-    def perform(self):
-        return parse(self.factory, self)
+    def perform(self, factory):
+        return parse(factory, self)
 
 
 class ShellCommand(str):
 
-    def perform(self):
+    def perform(self, factory):
         return utils.getProcessValue("sh", self, os.environ)
 
 
 @implementer(interfaces.ITransport)
 class NullTransportAdapter:
 
-    __init__ = write = writeSequence = lambda s, d: None
-    loseConnection = getPeer = getHost = lambda s: None
-
-components.registerAdapter(NullTransportAdapter, None, interfaces.ITransport)
+    write = writeSequence = lambda s, d: None
+    __init__ = loseConnection = getPeer = getHost = lambda s: None
 
 
 def parse(factory, command, console=None):
     protocol = VBProtocol(factory)
-    protocol.makeConnection(interfaces.ITransport(console))
+    transport = interfaces.ITransport(console, NullTransportAdapter())
+    protocol.makeConnection(transport)
     protocol.lineReceived(command)
 
 
@@ -88,7 +87,7 @@ class Protocol(basic.LineOnlyReceiver):
             else:
                 self.default(line)
 
-    def default(self, parts):
+    def default(self, line):
         pass
 
     def connectionMade(self):
