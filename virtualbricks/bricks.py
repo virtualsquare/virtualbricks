@@ -23,7 +23,6 @@ import functools
 import re
 
 from twisted.internet import protocol, reactor, error, defer
-from twisted.python import failure
 from zope.interface import implementer
 
 from virtualbricks import base, errors, settings, log, interfaces
@@ -245,11 +244,11 @@ class Brick(base.Base):
             return defer.succeed(self)
 
         if not self.configured():
-            return defer.fail(failure.Failure(errors.BadConfigError(
-                _("Cannot start '%s': not configured") % self.name)))
+            return defer.fail(errors.BadConfigError(
+                _("Cannot start '%s': not configured") % self.name))
         if not self._properly_connected():
-            return defer.fail(failure.Failure(errors.NotConnectedError(
-                _("Cannot start '%s': not connected") % self.name)))
+            return defer.fail(errors.NotConnectedError(
+                _("Cannot start '%s': not connected") % self.name))
 
         self._started_d = started = defer.Deferred()
         self._exited_d = defer.Deferred()
@@ -280,7 +279,7 @@ class Brick(base.Base):
         try:
             self.proc.signal_process("KILL" if kill else "TERM")
         except OSError as e:
-            return defer.fail(failure.Failure(e))
+            return defer.fail(e)
         except error.ProcessExitedAlready:
             pass
         return self._exited_d
