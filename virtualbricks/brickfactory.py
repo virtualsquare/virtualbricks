@@ -28,7 +28,7 @@ import itertools
 from twisted.application import app
 from twisted.internet import defer, task, stdio, error
 from twisted.protocols import basic
-from twisted.python import failure, logfile
+from twisted.python import failure, log as legacyLog
 from twisted.conch.insults import insults
 from twisted.conch import manhole
 
@@ -507,6 +507,8 @@ class AppLogger(app.AppLogger):
         if self.observer is not None:
             logger.publisher.addObserver(self.observer, False)
         log.replaceTwistedLoggers()
+        legacyLog.defaultObserver.stop()
+        legacyLog.defaultObserver = None
         self._initialLog()
 
     def stop(self):
