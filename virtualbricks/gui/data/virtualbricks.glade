@@ -1178,6 +1178,7 @@ vdi</property>
                             <property name="top_attach">3</property>
                             <property name="bottom_attach">4</property>
                           </packing>
+                      </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
