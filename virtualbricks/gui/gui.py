@@ -306,7 +306,7 @@ class ProgressBar:
 
 
 class _Root(object):
-    # This object ensure that super calls are not forwarded to object.
+    # This object ensure that super() calls are not forwarded to object.
 
     def init(self, factory):
         pass
@@ -410,6 +410,18 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             logger.error(components_not_found, text=missing_text,
                 components=missing_components)
 
+        # Setup window global state pattern
+        self.__state_manager = _gui.StateManager()
+        # enable brick config button only if a brick is selected
+        self.__config_brick_btn_state = self.__state_manager._build_state(
+            None, self.get_object("configure_brick_toolbutton"))
+        self.__config_brick_btn_state.add_prerequisite(
+            self.__brick_selected)
+        # enable event config button only if a brick is selected
+        self.__config_event_btn_state = self.__state_manager._build_state(
+            None, self.get_object("configure_event_toolbutton"))
+        self.__config_event_btn_state.add_prerequisite(
+            self.__event_selected)
         self.init(factory)
 
         # attach the quit callback at the end, so it is not called if an
@@ -512,6 +524,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         parameters_c.set_cell_data_func(parameters_cr, set_parameters)
         self.__events_treeview = builder.get_object("events_treeview")
         self.__events_treeview.set_model(self.brickfactory.events)
+        selection = self.__events_treeview.get_selection()
+        selection.connect("changed", self.on_events_selection_changed)
 
     def setup_bricks(self):
         builder = self.__setup_treeview("data/bricks.ui",
@@ -558,6 +572,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         tv.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, BRICK_DRAG_TARGETS,
                                     gtk.gdk.ACTION_LINK)
         tv.enable_model_drag_dest(BRICK_DRAG_TARGETS, gtk.gdk.ACTION_LINK)
+        selection = tv.get_selection()
+        selection.connect("changed", self.on_bricks_selection_changed)
 
     def check_gui_prerequisites(self):
         qmissing, _ = tools.check_missing_qemu(settings.get("qemupath"))
@@ -981,6 +997,18 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             event.poweroff()
             events.row_changed(idx, events.get_iter(idx))
 
+    def __show_config_if_selected(self, treeview):
+        brick = self.__get_selection(treeview)
+        if brick:
+            self.curtain_up(brick)
+        return True
+
+    def on_configure_brick_toolbutton_clicked(self, toolbutton):
+        return self.__show_config_if_selected(self.__bricks_treeview)
+
+    def on_configure_event_toolbutton_clicked(self, toolbutton):
+        return self.__show_config_if_selected(self.__events_treeview)
+
     def show_brickactions(self):
         brick = self.__get_selection(self.__bricks_treeview)
         if brick.get_type() == "Qemu":
@@ -1399,12 +1427,15 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def set_sensitive(self):
         self.get_object("main_win").set_sensitive(True)
 
+    # Bricks tab signals
+
     def on_bricks_treeview_drag_data_get(self, treeview, context, selection,
                                          info, time):
         treeselection = treeview.get_selection()
         model, iter = treeselection.get_selected()
         brick = model.get_value(iter, 0)
         selection.set(selection.target, 8, brick.get_name())
+        return True
 
     def on_bricks_treeview_drag_data_received(self, treeview, context, x, y,
                                               selection, info, time):
@@ -1434,6 +1465,21 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         else:
             logger.debug(dnd_no_dest)
         context.finish(True, False, time)
+        return True
+
+    def on_bricks_selection_changed(self, selection):
+        self.__config_brick_btn_state.check()
+
+    def __brick_selected(self):
+        return bool(self.__get_selection(self.__bricks_treeview))
+
+    # Events tab signals
+
+    def on_events_selection_changed(self, selection):
+        self.__config_event_btn_state.check()
+
+    def __event_selected(self):
+        return bool(self.__get_selection(self.__events_treeview))
 
 
 class List(gtk.ListStore):

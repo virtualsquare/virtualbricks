@@ -1178,7 +1178,6 @@ vdi</property>
                             <property name="top_attach">3</property>
                             <property name="bottom_attach">4</property>
                           </packing>
-                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -2194,6 +2193,30 @@ qcow2
                         <property name="homogeneous">True</property>
                       </packing>
                     </child>
+                    <child>
+                      <widget class="GtkSeparatorToolItem" id="separatortoolitem3">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkToolButton" id="configure_brick_toolbutton">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Configure</property>
+                        <property name="use_underline">True</property>
+                        <property name="stock_id">gtk-edit</property>
+                        <signal name="clicked" handler="on_configure_brick_toolbutton_clicked"/>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="homogeneous">True</property>
+                      </packing>
+                    </child>
                   </widget>
                   <packing>
                     <property name="expand">False</property>
@@ -2281,6 +2304,30 @@ qcow2
                         <property name="use_underline">True</property>
                         <property name="stock_id">gtk-media-stop</property>
                         <signal name="clicked" handler="on_toolbutton_stop_all_events_clicked"/>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="homogeneous">True</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkSeparatorToolItem" id="separatortoolitem4">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </widget>
+                      <packing>
+                        <property name="expand">False</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <widget class="GtkToolButton" id="configure_event_toolbutton">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">configure</property>
+                        <property name="use_underline">True</property>
+                        <property name="stock_id">gtk-edit</property>
+                        <signal name="clicked" handler="on_configure_event_toolbutton_clicked"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
