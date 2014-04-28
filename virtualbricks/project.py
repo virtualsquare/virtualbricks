@@ -359,7 +359,7 @@ class Project:
         self._description_modified = True
 
 
-def restore_last_project(factory):
+def restore_last(factory):
     """Restore the last project if found or create a new one."""
 
     try:
@@ -385,6 +385,3 @@ def restore_last_project(factory):
                     return prj
                 except errors.ProjectExistsError:
                     pass
-
-
-restore_last = restore_last_project
