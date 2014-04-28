@@ -36,7 +36,7 @@ if False:  # pyflakes
 logger = log.Logger()
 sync_error = log.Event("Sync terminated unexpectedly")
 create_image_error = log.Event("Create image terminated unexpectedly")
-draw_topology = log.Event("drawing topology")
+drawing_topology = log.Event("drawing topology")
 top_invalid_format = log.Event("Error saving topology: Invalid image format")
 top_write_error = log.Event("Error saving topology: Could not write file")
 top_unknown = log.Event("Error saving topology: Unknown error")
@@ -121,7 +121,7 @@ BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, TOPOLOGY_TAB, README_TAB = range(5)
 
 class TopologyMixin(object):
 
-    _should_draw_topology = True
+    __should_draw_topology = False
     __topology = None
 
     # public interface
@@ -130,7 +130,7 @@ class TopologyMixin(object):
         if self.get_object("main_notebook").get_current_page() == TOPOLOGY_TAB:
             self._draw_topology()
         else:
-            self._should_draw_topology = True
+            self.__should_draw_topology = True
 
     # callbacks
 
@@ -149,8 +149,7 @@ class TopologyMixin(object):
             try:
                 if response_id == gtk.RESPONSE_OK:
                     try:
-                        if self._should_draw_topology:
-                            self._draw_topology()
+                        self._draw_topology_if_needed()
                         self.__topology.export(dialog.get_filename())
                     except KeyError:
                         logger.failure(top_invalid_format)
@@ -170,8 +169,7 @@ class TopologyMixin(object):
         chooser.show()
 
     def on_topology_action(self, widget, event):
-        if self._should_draw_topology:
-            self._draw_topology()
+        self._draw_topology_if_needed()
         assert self.__topology, "Topology not created"
         brick = self._get_brick_in(*event.get_coords())
         if brick:
@@ -180,6 +178,7 @@ class TopologyMixin(object):
                 menu.popup(event.button, event.time, self)
             elif event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
                 self.startstop_brick(brick)
+            return True
 
     # Notebook callbacks
 
@@ -208,18 +207,22 @@ class TopologyMixin(object):
         vadjustment = topology_scrolled.get_vadjustment()
         vadjustment.connect("value-changed", self.on_topology_v_scrolled)
 
-    def _draw_topology_if_on_page(self, page):
-        if page == TOPOLOGY_TAB and self._should_draw_topology:
-            self._draw_topology()
-
     def _get_brick_in(self, x, y):
         assert self.__topology, "Topology not created"
         for n in self.__topology.nodes:
             if n.here(x, y):
                 return self.brickfactory.get_brick_by_name(n.name)
 
+    def _draw_topology_if_on_page(self, page):
+        if page == TOPOLOGY_TAB and self.__should_draw_topology:
+            self._draw_topology()
+
+    def _draw_topology_if_needed(self):
+        if self.__should_draw_topology:
+            self._draw_topology()
+
     def _draw_topology(self):
-        logger.debug(draw_topology)
+        logger.debug(drawing_topology)
         if self.get_object('topology_tb').get_active():
             orientation = "TB"
         else:
@@ -227,10 +230,8 @@ class TopologyMixin(object):
         self.__topology = graphics.Topology(
             self.get_object('image_topology'),
             self.brickfactory.bricks, 1.00, orientation,
-            settings.VIRTUALBRICKS_HOME + "/")
-        # XXX: Disabled because connections are not tracked yet so changing a
-        # connection does not change the topology
-        # self._should_draw_topology = False
+            settings.VIRTUALBRICKS_HOME)
+        self.__should_draw_topology = False
 
 
 class ReadmeMixin(object):
@@ -371,7 +372,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
         # Connect all the signal from the factory to specific callbacks
         self.__row_changed_h = factory.bricks.connect("row-changed",
-                self.on_brick_changed)
+                self.on_bricks_model_changed)
+        self.__row_deleted_h = factory.bricks.connect("row-deleted",
+                self.on_bricks_model_deleted)
+        factory.connect("brick-changed", self.on_brick_changed, factory.bricks)
 
         # General settings (system properties)
         self.config = settings
@@ -456,7 +460,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def quit(self):
         self.brickfactory.bricks.disconnect(self.__row_changed_h)
+        self.brickfactory.bricks.disconnect(self.__row_deleted_h)
+        self.brickfactory.disconnect("brick-changed", self.on_brick_changed,
+                                     self.brickfactory.bricks)
         self.__row_changed_h = None
+        self.__row_deleted_h = None
 
     def __setup_treeview(self, resource, window_name, widget_name):
         ui = graphics.get_data("virtualbricks.gui", resource)
@@ -621,8 +629,20 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     """ Signal handlers                                           """
     """ ********************************************************     """
 
-    def on_brick_changed(self, model, path, iter):
+    def on_bricks_model_changed(self, model, path, itr):
         self.draw_topology()
+
+    def on_bricks_model_deleted(self, model, path):
+        self.draw_topology()
+
+    def on_brick_changed(self, brick, model):
+        itr = model.get_iter_first()
+        while itr:
+            if model.get(itr, 0)[0] == brick:
+                model.row_changed(model.get_path(itr), itr)
+                self.draw_topology()
+                break
+            itr = model.iter_next(itr)
 
     '''
     '    Systray management

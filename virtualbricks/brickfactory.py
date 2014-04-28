@@ -84,12 +84,47 @@ def install_brick_types(registry=None):
     return registry
 
 
+class Observable(object):
+
+    def __init__(self, *names):
+        self.__events = {}
+        for name in names:
+            self.add_event(name)
+
+    def add_event(self, name):
+        assert name not in self.__events, "Event %s already present" % name
+        self.__events[name] = []
+
+    def add_observer(self, name, callback, *args, **kwds):
+        assert name in self.__events, "Event %s not present" % name
+        self.__events[name].append((callback, args, kwds))
+
+    def remove_observer(self, name, callback, *args, **kwds):
+        assert name in self.__events, "Event %s not present" % name
+        self.__events[name].remove((callback, args, kwds))
+
+    def notify(self, name, emitter):
+        assert name in self.__events, "Event %s not present" % name
+        for callback, args, kwds in self.__events[name]:
+            callback(emitter, *args, **kwds)
+
+    def __len__(self):
+        return len(self.__events)
+
+    def __bool__(self):
+        return bool(self.__events)
+
+
 class BrickFactory(object):
     """This is the main class for the core engine.
 
     All the bricks are created and stored in the factory.
     It also contains a thread to manage the command console.
     """
+
+    # _restore is True during the restore of the project. Events are not
+    # propagated.
+    __restore = False
 
     def __init__(self, quit):
         self.quit_d = quit
@@ -98,6 +133,7 @@ class BrickFactory(object):
         self.socks = []
         self.disk_images = []
         self.__factories = install_brick_types()
+        self.__observable = Observable("brick-changed")
 
     def stop(self):
         logger.info(engine_bye)
@@ -113,6 +149,10 @@ class BrickFactory(object):
             self.quit_d.callback(None)
 
     def reset(self):
+        # XXX this is broken: if a brick is not stopped before the loop over
+        # all bricks is finished, the do_del_brick() method raise an
+        # exception. Don't know what will happen: maybe sockets not
+        # disconnected, bricks not stopped or anyway bad things.
         # hard reset
         for b in self.bricks:
             self.del_brick(b)
@@ -137,6 +177,19 @@ class BrickFactory(object):
                 logger.debug(type_present, type=type)
             self.__factories[type] = factory
             # self.__factories.setdefault(type, []).append(factory)
+
+    def brick_changed(self, brick):
+        if not self.__restore:
+            self.__observable.notify("brick-changed", brick)
+
+    def connect(self, name, callback, *args, **kwds):
+        self.__observable.add_observer(name, callback, *args, **kwds)
+
+    def disconnect(self, name, callback, *args, **kwds):
+        self.__observable.remove_observer(name, callback, *args, **kwds)
+
+    def set_restore(self, restore):
+        self.__restore = restore
 
     # [[[[[[[[[]]]]]]]]]
     # [   Disk Images  ]
@@ -199,6 +252,7 @@ class BrickFactory(object):
     def new_brick(self, type, name, host="", remote=False):
         brick = self._new_brick(type, name, host, remote)
         self.bricks.append(brick)
+        self.brick_changed(brick)
         return brick
 
     def _new_brick(self, type, name, host, remote):
@@ -265,9 +319,6 @@ class BrickFactory(object):
         for b in self.bricks:
             if b.name == name:
                 return b
-
-    def rename_brick(self, brick, name):
-        brick.name = self.normalize_name(name)
 
     # [[[[[[[[[]]]]]]]]]
     # [     Events     ]
@@ -394,12 +445,8 @@ class BrickFactory(object):
 
     # ###################
 
-    delbrick = del_brick
     dupbrick = dup_brick
-    renamebrick = rename_brick
-    delevent = del_event
     dupevent = dup_event
-    renameevent = rename_event
 
 
 class Manhole(manhole.Manhole):

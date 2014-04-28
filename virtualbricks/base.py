@@ -190,6 +190,7 @@ class Base(object):
 
     def set_name(self, name):
         self._name = name
+        self.factory.brick_changed(self)
 
     name = property(get_name, set_name)
 
@@ -211,6 +212,7 @@ class Base(object):
                 setter = getattr(self, "cbset_" + name, None)
                 if setter:
                     setter(value)
+        self.factory.brick_changed(self)
 
     def get(self, name):
         try:
@@ -237,4 +239,4 @@ class Base(object):
         fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
     def rename(self, name):
-        self.name = self.factory.normalize_name(name)
+        self.set_name(self.factory.normalize_name(name))
