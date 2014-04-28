@@ -99,9 +99,6 @@ class BrickFactory(object):
         self.disk_images = []
         self.__factories = install_brick_types()
 
-    def lock(self):
-        return self._lock
-
     def stop(self):
         logger.info(engine_bye)
         for e in self.events:
