@@ -122,15 +122,9 @@ BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, TOPOLOGY_TAB, README_TAB = range(5)
 class TopologyMixin(object):
 
     _should_draw_topology = True
-    topology = None
+    __topology = None
 
-    def __init__(self):
-        super(TopologyMixin, self).__init__()
-        ts = self.get_object("topology_scrolled")
-        ts.get_hadjustment().connect("value-changed",
-                                     self.on_topology_h_scrolled)
-        ts.get_vadjustment().connect("value-changed",
-                                     self.on_topology_v_scrolled)
+    # public interface
 
     def draw_topology(self, export=""):
         if self.get_object("main_notebook").get_current_page() == TOPOLOGY_TAB:
@@ -138,34 +132,26 @@ class TopologyMixin(object):
         else:
             self._should_draw_topology = True
 
-    def _draw_topology(self, export=""):
-        logger.debug(draw_topology)
-        # self.maintree.order()
-        if self.get_object('topology_tb').get_active():
-            orientation = "TB"
-        else:
-            orientation = "LR"
-        self.topology = graphics.Topology(
-            self.get_object('image_topology'),
-            self.brickfactory.bricks, 1.00, orientation, export,
-            settings.VIRTUALBRICKS_HOME + "/")
-        # self._should_draw_topology = False
+    # callbacks
 
     def on_topology_h_scrolled(self, adjustment):
-        self.topology.x_adj = adjustment.get_value()
+        self.__topology.x_adj = adjustment.get_value()
 
     def on_topology_v_scrolled(self, adjustment):
-        self.topology.y_adj = adjustment.get_value()
+        self.__topology.y_adj = adjustment.get_value()
 
-    def on_topology_redraw(self, widget=None, event=None, data=""):
+    def on_topology_orientation_toggled(self, togglebutton):
         self._draw_topology()
 
-    def on_topology_export(self, widget=None, event=None, data=""):
+    def on_topology_export_button_clicked(self, button):
         def on_response(dialog, response_id):
+            assert self.__topology, "Topology not created"
             try:
                 if response_id == gtk.RESPONSE_OK:
                     try:
-                        self._draw_topology(dialog.get_filename())
+                        if self._should_draw_topology:
+                            self._draw_topology()
+                        self.__topology.export(dialog.get_filename())
                     except KeyError:
                         logger.failure(top_invalid_format)
                     except IOError:
@@ -183,39 +169,68 @@ class TopologyMixin(object):
         chooser.connect("response", on_response)
         chooser.show()
 
-    def on_topology_action(self, widget=None, event=None, data=""):
+    def on_topology_action(self, widget, event):
         if self._should_draw_topology:
             self._draw_topology()
-        if self.topology:
-            for n in self.topology.nodes:
-                if n.here(event.x, event.y) and event.button == 3:
-                    brick = self.brickfactory.get_brick_by_name(n.name)
-                    if brick is not None:
-                        # self.maintree.set_selection(brick)
-                        self.show_brickactions()
-                if (n.here(event.x, event.y) and event.button == 1 and
-                        event.type == gtk.gdk._2BUTTON_PRESS):
-                    brick = self.brickfactory.get_brick_by_name(n.name)
-                    if brick is not None:
-                        # self.maintree.set_selection(brick)
-                        self.startstop_brick(brick)
-        self.curtain_down()
+        assert self.__topology, "Topology not created"
+        brick = self._get_brick_in(*event.get_coords())
+        if brick:
+            if event.button == 3:
+                menu = interfaces.IMenu(brick, None)
+                menu.popup(event.button, event.time, self)
+            elif event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+                self.startstop_brick(brick)
+
+    # Notebook callbacks
 
     def on_main_notebook_change_current_page(self, notebook, offset):
-        if (notebook.get_current_page() == TOPOLOGY_TAB and
-                self._should_draw_topology):
-            self._draw_topology()
+        self._draw_topology_if_on_page(notebook.get_current_page())
+        super(TopologyMixin, self).on_main_notebook_change_current_page(
+            notebook,  offset)
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
-        if page_num == TOPOLOGY_TAB and self._should_draw_topology:
-            self._draw_topology()
+        self._draw_topology_if_on_page(page_num)
         super(TopologyMixin, self).on_main_notebook_switch_page(
             notebook, _, page_num)
 
     def on_main_notebook_select_page(self, notebook, move_focus):
-        if (notebook.get_current_page() == TOPOLOGY_TAB and
-                self._should_draw_topology):
+        self._draw_topology_if_on_page(notebook.get_current_page())
+        super(TopologyMixin, self).on_main_notebook_select_page(
+            notebook, move_focus)
+
+    # VBGUI callbacks
+
+    def init(self, factory):
+        super(TopologyMixin, self).init(factory)
+        topology_scrolled = self.get_object("topology_scrolled")
+        hadjustment = topology_scrolled.get_hadjustment()
+        hadjustment.connect("value-changed", self.on_topology_h_scrolled)
+        vadjustment = topology_scrolled.get_vadjustment()
+        vadjustment.connect("value-changed", self.on_topology_v_scrolled)
+
+    def _draw_topology_if_on_page(self, page):
+        if page == TOPOLOGY_TAB and self._should_draw_topology:
             self._draw_topology()
+
+    def _get_brick_in(self, x, y):
+        assert self.__topology, "Topology not created"
+        for n in self.__topology.nodes:
+            if n.here(x, y):
+                return self.brickfactory.get_brick_by_name(n.name)
+
+    def _draw_topology(self):
+        logger.debug(draw_topology)
+        if self.get_object('topology_tb').get_active():
+            orientation = "TB"
+        else:
+            orientation = "LR"
+        self.__topology = graphics.Topology(
+            self.get_object('image_topology'),
+            self.brickfactory.bricks, 1.00, orientation,
+            settings.VIRTUALBRICKS_HOME + "/")
+        # XXX: Disabled because connections are not tracked yet so changing a
+        # connection does not change the topology
+        # self._should_draw_topology = False
 
 
 class ReadmeMixin(object):
@@ -311,8 +326,18 @@ class _Root(object):
     def init(self, factory):
         pass
 
+    # Notebook signals
+
     def on_main_notebook_switch_page(self, notebook, _, page_num):
         pass
+
+    def on_main_notebook_select_page(self, notebook, move_focus):
+        pass
+
+    def on_main_notebook_change_current_page(self, notebook, offset):
+        pass
+
+    # VBGUI signals
 
     def on_quit(self):
         pass
@@ -737,6 +762,15 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
         super(VBGUI, self).on_main_notebook_switch_page(notebook, _, page_num)
+        return True
+
+    def on_main_notebook_select_page(self, notebook, move_focus):
+        super(VBGUI, self).on_main_notebook_select_page(notebook, move_focus)
+        return True
+
+    def on_main_notebook_change_current_page(self, notebook, offset):
+        super(VBGUI, self).on_main_notebook_change_current_page(notebook,
+                                                                offset)
         return True
 
     # gui (programming) interface

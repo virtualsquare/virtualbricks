@@ -1178,7 +1178,7 @@ vdi</property>
                             <property name="top_attach">3</property>
                             <property name="bottom_attach">4</property>
                           </packing>
-                      </child>
+                        </child>
                       </widget>
                       <packing>
                         <property name="expand">True</property>
@@ -2405,11 +2405,11 @@ qcow2
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <widget class="GtkButton" id="button1">
+                      <widget class="GtkButton" id="topology_export_button">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <signal name="clicked" handler="on_topology_export"/>
+                        <signal name="clicked" handler="on_topology_export_button_clicked"/>
                         <child>
                           <widget class="GtkHBox" id="hbox48">
                             <property name="visible">True</property>
@@ -2455,7 +2455,7 @@ qcow2
                         <property name="receives_default">False</property>
                         <property name="active">True</property>
                         <property name="draw_indicator">True</property>
-                        <signal name="toggled" handler="on_topology_redraw"/>
+                        <signal name="toggled" handler="on_topology_orientation_toggled"/>
                       </widget>
                       <packing>
                         <property name="expand">False</property>
