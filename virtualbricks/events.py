@@ -143,6 +143,3 @@ class Event(base.Base):
                  for action in self.config["actions"]]
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)
-
-    change_state = toggle
-    doactions = do_actions
