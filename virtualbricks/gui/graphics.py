@@ -172,7 +172,6 @@ class Topology:
         img = Image.open(self.get_image_filename())
         x_siz, y_siz = img.size
         for line in open(self.get_plain_filename()).readlines():
-            #arg  = line.rstrip('\n').split(' ')
             arg = re.split('\s+', line.rstrip('\n'))
             if arg[0] == 'graph':
                 if float(arg[2]) != 0 and float(arg[3]) != 0:
