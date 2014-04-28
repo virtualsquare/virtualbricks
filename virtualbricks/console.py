@@ -166,7 +166,7 @@ class VBProtocol(Protocol):
             obj.poweroff()
         elif cmd[0] == "remove":
             if obj.get_type() == "Event":
-                self.delevent(obj)
+                self.factory.del_event(obj)
             elif isinstance(obj, bricks.Brick):
                 self.factory.del_brick(obj)
             else:
