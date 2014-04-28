@@ -766,8 +766,8 @@ class EventControllerMixin(object):
 
     def on_sh_cellrenderer_toggled(self, cell_renderer, path):
         model = self.get_object("actions_liststore")
-        iter = model.get_iter(path)
-        model.set_value(iter, 1, not cell_renderer.get_active())
+        model.set_value(model.get_iter(path), 1,
+                        not cell_renderer.get_active())
 
     def configure_event(self, event, attrs):
         model = self.get_object("actions_liststore")
