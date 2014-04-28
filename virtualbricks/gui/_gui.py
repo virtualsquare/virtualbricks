@@ -28,6 +28,9 @@ from virtualbricks import (base, bricks, events, virtualmachines, link, log,
 from virtualbricks.gui import graphics, dialogs, help, interfaces
 
 
+__metaclass__ = type
+
+
 logger = log.Logger("virtualbricks.gui.gui")
 cannot_rename = log.Event("Cannot rename Brick: it is in use.")
 snap_error = log.Event("Error on snapshot")

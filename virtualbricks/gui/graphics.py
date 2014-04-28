@@ -22,6 +22,7 @@ import sys
 import re
 import pkgutil
 from pkgutil import get_data
+import shutil
 
 import Image
 import pygraphviz as pgv
@@ -116,8 +117,9 @@ class Node:
 class Topology:
 
     def __init__(self, widget, bricks, scale=1.00, orientation="LR",
-                 export=None, tempdir="/tmp/"):
+                 tempdir="/tmp"):
         self.topowidget = widget
+        self.tempdir = tempdir
         self.topo = pgv.AGraph()
         self.topo.graph_attr['rankdir'] = orientation
         self.topo.graph_attr['ranksep'] = '2.0'
@@ -162,14 +164,14 @@ class Topology:
                     e.attr['decorate'] = 'true'
 
         #draw and save
-        self.topo.write(tempdir + "vde.dot")
+        self.topo.write(self.get_topo_filename())
         self.topo.layout('dot')
-        self.topo.draw(tempdir + "vde_topology.png")
-        self.topo.draw(tempdir + "vde_topology.plain")
+        self.topo.draw(self.get_image_filename())
+        self.topo.draw(self.get_plain_filename())
 
-        img = Image.open(tempdir + "vde_topology.png")
+        img = Image.open(self.get_image_filename())
         x_siz, y_siz = img.size
-        for line in open(tempdir + "vde_topology.plain").readlines():
+        for line in open(self.get_plain_filename()).readlines():
             #arg  = line.rstrip('\n').split(' ')
             arg = re.split('\s+', line.rstrip('\n'))
             if arg[0] == 'graph':
@@ -189,9 +191,19 @@ class Topology:
                 self.nodes.append(Node(self, arg[1], x, y))
         # Display on the widget
         if scale < 1.00:
-            img.resize((x_siz * scale, y_siz * scale)).save(
-                tempdir + "vde_topology.png")
+            img.resize((x_siz * scale, y_siz * scale))
+            img.save(self.get_image_filename())
 
-        self.topowidget.set_from_file(tempdir + "vde_topology.png")
-        if export:
-            img.save(export)
+        self.topowidget.set_from_file(self.get_image_filename())
+
+    def export(self, filename):
+        shutil.copy(self.get_image_filename(), filename)
+
+    def get_image_filename(self):
+        return os.path.join(self.tempdir, "vde_topology.png")
+
+    def get_plain_filename(self):
+        return os.path.join(self.tempdir, "vde_topology.plain")
+
+    def get_topo_filename(self):
+        return os.path.join(self.tempdir, "vde.dot")
