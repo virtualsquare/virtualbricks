@@ -46,7 +46,7 @@ class _Error(Exception):
 class VbShellCommand(str):
 
     def perform(self, factory):
-        return parse(factory, self)
+        parse(factory, self)
 
 
 class ShellCommand(str):
