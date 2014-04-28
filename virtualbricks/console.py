@@ -66,7 +66,7 @@ class VbShellCommand(String):
 class ShellCommand(String):
 
     def perform(self, factory):
-        return utils.getProcessValue("sh", self, os.environ)
+        return utils.getProcessValue("sh", ("-c", self), os.environ)
 
 
 @implementer(interfaces.ITransport)
