@@ -191,7 +191,7 @@ def get_backing_file(fp):
     magic, version = struct.unpack(GENERIC_HEADER_FMT, data)
     if magic == COW_MAGIC:
         return get_backing_file_from_cow(fp)
-    elif magic == QCOW_MAGIC and version in (1, 2):
+    elif magic == QCOW_MAGIC and version in (1, 2, 3):
         return get_backing_file_from_qcow(fp)
     raise UnknowTypeError()
 
