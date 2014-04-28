@@ -25,12 +25,12 @@ class TestEvents(unittest.TestCase):
         self.assertEqual(self.event.get_state(), _("running"))
 
     def test_change_state(self):
-        self.assertRaises(errors.BadConfigError, self.event.change_state)
+        self.assertRaises(errors.BadConfigError, self.event.toggle)
         self.event.config["actions"].append("")
         self.event.config["delay"] = 1024
-        self.event.change_state()
+        self.event.toggle()
         self.assertIsNot(self.event.scheduled, None)
-        self.event.change_state()
+        self.event.toggle()
         self.assertIs(self.event.scheduled, None)
 
     def test_get_parameters(self):
