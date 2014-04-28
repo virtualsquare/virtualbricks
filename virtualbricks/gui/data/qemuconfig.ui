@@ -2228,7 +2228,6 @@ disk image</property>
         </child>
         <child>
           <object class="GtkFrame" id="frame12">
-            <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label_xalign">0</property>
             <child>
@@ -2323,7 +2322,6 @@ disk image</property>
         </child>
         <child type="tab">
           <object class="GtkHBox" id="hbox5b">
-            <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
               <object class="GtkImage" id="image23">
