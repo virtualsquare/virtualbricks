@@ -226,7 +226,7 @@
         <col id="0" translatable="yes">e1000</col>
       </row>
       <row>
-        <col id="0" translatable="yes">virtio-net-pci</col>
+        <col id="0" translatable="yes">virtio</col>
       </row>
       <row>
         <col id="0" translatable="yes">i82551</col>
