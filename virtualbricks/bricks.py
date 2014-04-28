@@ -302,6 +302,7 @@ class Brick(base.Base):
     def process_started(self, proc):
         started, self._started_d = self._started_d, None
         started.callback(self)
+        self.factory.brick_changed(self)
 
     def process_ended(self, proc, status):
         self.proc = None
@@ -311,6 +312,7 @@ class Brick(base.Base):
         # behind a lambda (lambda _: None)
         exited, self._exited_d = self._exited_d, None
         exited.callback((self, status))
+        self.factory.brick_changed(self)
 
     # Interal interface
 
@@ -393,12 +395,14 @@ class Brick(base.Base):
         for p in self.plugs:
             if not p.configured():
                 p.connect(endpoint)
+                self.factory.brick_changed(self)
                 return
 
     def disconnect(self):
         for p in self.plugs:
             if p.configured():
                 p.disconnect()
+        self.factory.brick_changed(self)
 
     ############################
     ########### Poweron/Poweroff
