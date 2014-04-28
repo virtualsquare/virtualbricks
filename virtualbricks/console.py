@@ -43,13 +43,27 @@ class _Error(Exception):
     """Please don't use."""
 
 
-class VbShellCommand(str):
+class String(str):
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return str.__eq__(self, other)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return str.__hash__(self)
+
+
+class VbShellCommand(String):
 
     def perform(self, factory):
         parse(factory, self)
 
 
-class ShellCommand(str):
+class ShellCommand(String):
 
     def perform(self, factory):
         return utils.getProcessValue("sh", self, os.environ)
