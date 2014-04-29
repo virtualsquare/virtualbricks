@@ -1093,7 +1093,6 @@ class QemuConfigController(ConfigController):
                 label = value = line.strip()
             else:
                 if line:
-                    print line 
                     _, v = line.split(None, 1)
                     label = value = v.strip("'[]")
             itr = model.append((label, value))
