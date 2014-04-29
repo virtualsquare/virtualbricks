@@ -1092,8 +1092,10 @@ class QemuConfigController(ConfigController):
             if line.startswith(" "):
                 label = value = line.strip()
             else:
-                _, v = line.split(None, 1)
-                label = value = v.strip("'[]")
+                if line:
+                    print line 
+                    _, v = line.split(None, 1)
+                    label = value = v.strip("'[]")
             itr = model.append((label, value))
             if self.original.get("cpu") == value:
                 combobox.set_active_iter(itr)
