@@ -9,7 +9,7 @@
     <property name="program_name">Virtualbricks</property>
     <property name="version">(version unknown)</property>
     <property name="copyright" translatable="yes">Virtualbricks is licensed under the terms of the GPL (General Public License) Version 2.
-© 2013 the Virtualbricks team on Launchpad.
+© 2014 the Virtualbricks team on Launchpad.
 
 VDE - Virtual Distributed Ethernet -  © 2003-2011 Renzo Davoli.
 QEMU - Copyright © 2005-2011 Fabrice Bellard.
@@ -19,7 +19,7 @@ Debian package created and maintained by Francesco Namuri (franam@debian.org).
 
 If you find virtualbricks useful for your business, please consider making a donation.</property>
     <property name="comments" translatable="yes">Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and Virtual Distributed Ethernet.</property>
-    <property name="website">http://www.virtualbricks.eu/</property>
+    <property name="website">https://launchpad.net/virtualbrick</property>
     <property name="license" translatable="yes">                    GNU GENERAL PUBLIC LICENSE
                        Version 2, June 1991
 
