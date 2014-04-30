@@ -6,7 +6,6 @@
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">create new empty image</property>
     <property name="type_hint">dialog</property>
-    <signal name="delete-event" handler="on_windown_destroy" swapped="no"/>
     <signal name="response" handler="on_CommitImageDialog_response" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkVBox" id="dialog-vbox1">
@@ -180,7 +179,6 @@
                 <property name="can_default">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
-                <signal name="clicked" handler="on_dialog_close" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
