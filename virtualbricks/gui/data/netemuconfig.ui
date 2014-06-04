@@ -621,9 +621,6 @@
             <property name="can_focus">False</property>
             <child>
               <object class="GtkCellRendererText" id="sock0_cellrenderer"/>
-              <attributes>
-                <attribute name="text">0</attribute>
-              </attributes>
             </child>
           </object>
           <packing>
@@ -650,9 +647,6 @@
             <property name="can_focus">False</property>
             <child>
               <object class="GtkCellRendererText" id="sock1_cellrenderer"/>
-              <attributes>
-                <attribute name="text">0</attribute>
-              </attributes>
             </child>
           </object>
           <packing>
