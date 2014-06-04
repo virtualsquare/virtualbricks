@@ -510,17 +510,18 @@ def _set_text(column, cell_renderer, model, itr):
 class _PlugMixin(object):
 
     def configure_sock_combobox(self, combo, model, brick, plug, gui):
-        model.set_visible_func(_sock_should_visible)
-        combo.set_model(model)
+        filtered_model = model.filter_new()
+        filtered_model.set_visible_func(_sock_should_visible)
+        combo.set_model(filtered_model)
         cell = combo.get_cells()[0]
         combo.set_cell_data_func(cell, _set_text)
         if plug.configured():
-            itr = model.get_iter_first()
+            itr = filtered_model.get_iter_first()
             while itr:
-                if model[itr][0] is plug.sock:
+                if filtered_model[itr][0] is plug.sock:
                     combo.set_active_iter(itr)
                     break
-                itr = model.iter_next(itr)
+                itr = filtered_model.iter_next(itr)
 
     def connect_plug(self, plug, combo):
         itr = combo.get_active_iter()
@@ -534,10 +535,10 @@ class TapConfigController(_PlugMixin, ConfigController):
     resource = "data/tapconfig.ui"
 
     def get_config_view(self, gui):
-        model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
-        self.configure_sock_combobox(combo, model, self.original,
-                                     self.original.plugs[0], gui)
+        self.configure_sock_combobox(combo,
+                gui.brickfactory.socks.filter_new(), self.original,
+                self.original.plugs[0], gui)
 
         self.get_object("ip_entry").set_text(self.original.get("ip"))
         self.get_object("nm_entry").set_text(self.original.get("nm"))
@@ -576,10 +577,10 @@ class CaptureConfigController(_PlugMixin, ConfigController):
     resource = "data/captureconfig.ui"
 
     def get_config_view(self, gui):
-        model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox1")
-        self.configure_sock_combobox(combo, model, self.original,
-                                     self.original.plugs[0], gui)
+        self.configure_sock_combobox(combo,
+                gui.brickfactory.socks.filter_new(), self.original,
+                self.original.plugs[0], gui)
         combo2 = self.get_object("combobox2")
         model = combo2.get_model()
         with open("/proc/net/dev") as fd:
@@ -611,11 +612,11 @@ class WireConfigController(_PlugMixin, ConfigController):
     resource = "data/wireconfig.ui"
 
     def get_config_view(self, gui):
-        model = gui.brickfactory.socks.filter_new()
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
             combo = self.get_object(wname)
-            self.configure_sock_combobox(combo, model, self.original,
-                                         self.original.plugs[i], gui)
+            self.configure_sock_combobox(combo,
+                    gui.brickfactory.socks.filter_new(), self.original,
+                    self.original.plugs[i], gui)
 
         return self.get_object("vbox")
 
@@ -773,11 +774,11 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             go(button).connect("clicked", self.help.on_help_button_clicked)
 
         # setup plugs
-        model = gui.brickfactory.socks.filter_new()
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
             combo = self.get_object(wname)
-            self.configure_sock_combobox(combo, model, self.original,
-                                         self.original.plugs[i], gui)
+            self.configure_sock_combobox(combo,
+                    gui.brickfactory.socks.filter_new(), self.original,
+                    self.original.plugs[i], gui)
 
         return go("netemu_config_panel")
 
@@ -812,10 +813,10 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
     resource = "data/tunnellconfig.ui"
 
     def get_config_view(self, gui):
-        model = gui.brickfactory.socks.filter_new()
         combo = self.get_object("combobox")
-        self.configure_sock_combobox(combo, model, self.original,
-                                     self.original.plugs[0], gui)
+        self.configure_sock_combobox(combo,
+                gui.brickfactory.socks.filter_new(), self.original,
+                self.original.plugs[0], gui)
         port = self.get_object("port_spinbutton")
         port.set_value(self.original.get("port"))
         password = self.get_object("password_entry")
