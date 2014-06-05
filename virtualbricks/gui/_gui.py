@@ -1029,6 +1029,7 @@ class QemuConfigController(ConfigController):
                 go(wname).set_filename(cfg[pname])
         self.setup_netwoks_cards()
         go("cfg_Qemu_keyboard_text").set_text(cfg["keyboard"])
+        go("kopt_textbutton").set_text(cfg["kopt"])
         return self.get_object("box_vmconfig")
 
     def _config_set_combo(self, config, name, combo):
@@ -1063,6 +1064,7 @@ class QemuConfigController(ConfigController):
             if filename:
                 cfg[pname] = filename
         cfg["keyboard"] = self.get_object("cfg_Qemu_keyboard_text").get_text()
+        cfg["kopt"] = self.get_object("kopt_textbutton").get_text()
         self.original.set(cfg)
 
     def on_deviceen_radiobutton_toggled(self, radiobutton):

@@ -657,7 +657,8 @@ class VirtualMachine(bricks.Brick):
             res.extend(["-initrd", self.config["initrd"]])
         if (self.config["kopt"] and self.config["kernelenbl"] and
                 self.config["kernel"]):
-            res.extend(["-append", re.sub("\"", "", self.config["kopt"])])
+            res.extend(["-append", "'" + re.sub("\"", "", self.config["kopt"])
+                        + "'"])
         if self.config["gdb"]:
             res.extend(["-gdb", "tcp::%d" % self.config["gdbport"]])
         if self.config["vnc"]:
