@@ -2,21 +2,22 @@ from __future__ import absolute_import
 import os
 import os.path
 import re
+import fnmatch
 
 import virtualbricks
-from virtualbricks.tests import unittest, should_test_deployment, skipUnless
+from virtualbricks.tests import (unittest, should_test_deployment, skipUnless,
+                                 TEST_DATA_PATH)
 
 
 PATH = os.environ.get("PATH", "")
 DEPLOYMENT_PATH = os.environ.get("VIRTUALBRICKS_DEPLOYMENT_PATH", None)
 if DEPLOYMENT_PATH is None:
     DEPLOYMENT_PATH = os.path.dirname(virtualbricks.__file__)
-DATA_PATH = os.path.join(DEPLOYMENT_PATH, "gui", "data")
-COMMON_PREFIX = len(DATA_PATH) + 1
+GUI_DATA_PATH = os.path.join(DEPLOYMENT_PATH, "gui", "data")
 NORMALIZE_RE = re.compile("[^a-zA-Z0-9_]")
 
 
-DATA_FILES = set([
+GUI_DATA_FILES = set([
     "about.ui",
     "brickselection.ui",
     "bricks.ui",
@@ -70,6 +71,10 @@ DATA_FILES = set([
     "wire.png",
 ])
 
+TEST_DATA_FILES = set([
+    "qemu-img",
+])
+
 SCRIPTS = [
     "virtualbricks",
 ]
@@ -95,15 +100,32 @@ def test_{name}_not_tested(self):
 """
 
 
-@skipUnless(should_test_deployment(), "deployment tests not enabled")
-class TestDeployment(unittest.TestCase):
+@skipUnless(should_test_deployment(), "deployment tests are not enabled")
+class TestDeploymentGuiDataFiles(unittest.TestCase):
 
-    for datafile in DATA_FILES:
+    # test gui data files
+    for datafile in GUI_DATA_FILES:
         test_definition = _data_test_template.format(
-            data_path=DATA_PATH,
+            data_path=GUI_DATA_PATH,
             filename=datafile,
             name=NORMALIZE_RE.sub("_", datafile))
         exec test_definition
+
+
+@skipUnless(should_test_deployment(), "deployment tests are not enabled")
+class TestDeploymentTestDataFiles(unittest.TestCase):
+
+    # test gui data files
+    for datafile in TEST_DATA_FILES:
+        test_definition = _data_test_template.format(
+            data_path=TEST_DATA_PATH,
+            filename=datafile,
+            name=NORMALIZE_RE.sub("_", datafile))
+        exec test_definition
+
+
+@skipUnless(should_test_deployment(), "deployment tests are not enabled")
+class TestDeploymentScripts(unittest.TestCase):
 
     for script in SCRIPTS:
         test_definition = _script_test_template.format(
@@ -111,12 +133,42 @@ class TestDeployment(unittest.TestCase):
             name=NORMALIZE_RE.sub("_", script))
         exec test_definition
 
-    # all data files must be tested
-    for dirpath, dirnames, filenames in os.walk(DATA_PATH):
-        for datafile in filenames:
-            datafile = os.path.join(dirpath, datafile)[COMMON_PREFIX:]
-            if datafile not in DATA_FILES:
+
+def is_py_file(filename):
+    return filename.endswith(".py") or filename.endswith(".pyc")
+
+
+def is_gui_data_file(dirpath, filename):
+    cp = os.path.commonprefix((dirpath, GUI_DATA_PATH))
+    return (cp == GUI_DATA_PATH and
+            os.path.join(dirpath[len(cp)+1:], filename) in GUI_DATA_FILES)
+
+
+def is_test_data_file(dirpath, filename):
+    return dirpath.startswith(TEST_DATA_PATH) and filename in TEST_DATA_FILES
+
+
+def file_should_be_test_and_it_is_not(dirpath, filename):
+    # do not test files under DEPLOYMENT_PATH/tmp
+    tmpdir = os.path.join(DEPLOYMENT_PATH, "tmp")
+    if os.path.commonprefix((dirpath, tmpdir)) == tmpdir:
+        return False
+    # do not test swp files
+    if fnmatch.fnmatch(filename, ".*.sw?"):
+        return False
+    return (not (is_gui_data_file(dirpath, filename) or
+                 is_test_data_file(dirpath, filename)) and
+            not is_py_file(filename))
+
+
+@skipUnless(should_test_deployment(), "deployment tests are not enabled")
+class TestDeploymentDataFilesNotTested(unittest.TestCase):
+
+    for dirpath, dirnames, filenames in os.walk(DEPLOYMENT_PATH):
+        for filename in filenames:
+            if file_should_be_test_and_it_is_not(dirpath, filename):
+                # import pdb; pdb.set_trace()
                 test_definition = _all_data_template.format(
-                    filename=datafile,
-                    name=NORMALIZE_RE.sub("_", datafile))
+                    filename=os.path.join(dirpath, filename),
+                    name=NORMALIZE_RE.sub("_", filename))
                 exec test_definition
