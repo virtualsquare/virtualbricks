@@ -7,8 +7,7 @@ from twisted.python import filepath
 from twisted.internet import defer
 
 from virtualbricks import settings, project, configfile, errors
-from virtualbricks.tests import (patch_settings, stubs, failureResultOf,
-                                 create_manager)
+from virtualbricks.tests import (stubs, failureResultOf, create_manager)
 
 
 class ArchiveStub:
@@ -279,8 +278,7 @@ class TestProjectManager(TestBase, unittest.TestCase):
 
         PRJNAME = "test"
         self.create_project(PRJNAME)
-        vbppath = os.path.join(os.path.dirname(__file__), "test.vbp")
-        d = self.manager.extract(PRJNAME, vbppath)
+        d = self.manager.extract(PRJNAME, "/example/test.vbp")
         failureResultOf(self, d, errors.ProjectExistsError)
 
     def test_exists(self):

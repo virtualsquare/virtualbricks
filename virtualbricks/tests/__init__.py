@@ -11,6 +11,7 @@ from virtualbricks import settings
 __builtins__["_"] = str
 TEST_THREADS = 0x01
 TEST_DEPLOYMENT = 0x02
+TEST_DATA_PATH = os.path.join(os.path.dirname(__file__), "data")
 
 
 def should_test_threads():

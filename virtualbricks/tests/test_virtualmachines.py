@@ -6,10 +6,10 @@ import StringIO
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from virtualbricks import (link, virtualmachines as vm, errors, tests,
-                           settings, configfile, tools)
+from virtualbricks import (link, virtualmachines as vm, errors, settings,
+                           configfile, tools)
 from virtualbricks.tests import (stubs, test_link, successResultOf,
-                                 failureResultOf)
+                                 failureResultOf, TEST_DATA_PATH)
 
 
 def disks(vm):
@@ -261,8 +261,7 @@ class TestDisk(unittest.TestCase):
         settings.set("qemupath", "/supercali")
         failureResultOf(self, self.disk._create_cow("name"),
                         errors.BadConfigError)
-        qemupath = os.path.abspath(os.path.dirname(tests.__file__))
-        settings.set("qemupath", qemupath)
+        settings.set("qemupath", TEST_DATA_PATH)
         self.disk.image = ImageStub()
 
         def cb(ret):
