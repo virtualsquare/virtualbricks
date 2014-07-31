@@ -1785,7 +1785,10 @@ class ImportDialog(Window):
                                      self.get_object("liststore1"),
                                      self.get_object("liststore2"))
         ProgressBar(self.assistant).wait_for(deferred)
-        deferred.addBoth(pass_through(assistant.destroy))
+        return True
+
+    def on_ImportDialog_close(self, assistant):
+        assistant.destroy()
         return True
 
     def on_filechooserbutton_file_set(self, filechooser):
