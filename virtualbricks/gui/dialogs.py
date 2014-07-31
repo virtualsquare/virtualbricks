@@ -1216,6 +1216,7 @@ def ConfirmOverwriteDialog(fp, parent):
     button.show()
     dialog.add_action_widget(button, gtk.RESPONSE_ACCEPT)
     dialog.set_default_response(gtk.RESPONSE_ACCEPT)
+    return dialog
 
 
 class ExportProjectDialog(Window):
@@ -1395,10 +1396,10 @@ class ExportProjectDialog(Window):
                 "filename_entry").get_text())
             fp = filepath.FilePath(filename)
             if fp.exists():
-                dialog = ConfirmOverwriteDialog(fp, dialog)
-                dialog.connect("response", self.on_confirm_response, dialog,
+                cdialog = ConfirmOverwriteDialog(fp, dialog)
+                cdialog.connect("response", self.on_confirm_response, dialog,
                                fp.path)
-                dialog.show()
+                cdialog.show()
             else:
                 dialog.destroy()
                 self.do_export(fp.path)
