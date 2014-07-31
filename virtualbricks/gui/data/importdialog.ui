@@ -11,9 +11,13 @@
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="window_position">center</property>
+    <signal name="close" handler="on_ImportDialog_close" swapped="no"/>
     <signal name="apply" handler="on_ImportDialog_apply" swapped="no"/>
     <signal name="cancel" handler="on_ImportDialog_cancel" swapped="no"/>
     <signal name="prepare" handler="on_ImportDialog_prepare" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <placeholder/>
     </child>
