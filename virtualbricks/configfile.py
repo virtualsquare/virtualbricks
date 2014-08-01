@@ -258,6 +258,8 @@ class ConfigFile:
         if isinstance(str_or_obj, (basestring, filepath.FilePath)):
             if isinstance(str_or_obj, basestring):
                 fp = filepath.FilePath(str_or_obj)
+            else:
+                fp = str_or_obj
             restore_backup(fp, fp.sibling(fp.basename() + "~"))
             logger.info(open_project, path=fp.path)
             with fp.open() as fd:
