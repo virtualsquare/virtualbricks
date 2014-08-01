@@ -113,8 +113,14 @@ class TestConfigFile(unittest.TestCase):
         self.assertFalse(os.path.exists(tmpfile[0]))
 
     def test_restore(self):
+        """Restore a project."""
+
+        factory = stubs.Factory()
+        fp = filepath.FilePath(self.mktemp())
+        fp.setContent(CONFIG1)
         config = configfile.ConfigFile()
-        self.assertRaises(IOError, config.restore, None, self.mktemp())
+        config.restore(factory, fp)
+        self.assertIsNotNone(factory.get_brick_by_name("sender"))
 
     def _add_observer(self, event=None):
         observer = LoggingObserver()
