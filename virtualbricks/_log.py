@@ -726,6 +726,9 @@ class LegacyLogObserver(object):
 
 
     def __call__(self, event):
+        # if the event comes from the legacy machinery, do not send it back
+        if "message" in event and "isError" in event:
+            return
         prefix = "[{log_namespace}#{log_level.name}] ".format(**event)
 
         level = event["log_level"]

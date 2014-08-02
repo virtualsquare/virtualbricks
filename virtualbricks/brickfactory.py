@@ -550,9 +550,9 @@ class AppLogger(app.AppLogger):
 
         if self.observer is not None:
             logger.publisher.addObserver(self.observer, False)
-        log.replaceTwistedLoggers()
         legacyLog.defaultObserver.stop()
         legacyLog.defaultObserver = None
+        legacyLog.addObserver(log.LegacyAdapter())
         self._initialLog()
 
     def stop(self):
@@ -598,7 +598,7 @@ class Application:
                 return logging.CRITICAL
 
         root = logging.getLogger()
-        root.addHandler(log.LoggingToNewLogginAdapter())
+        root.addHandler(log.StdLoggingAdapter())
         if self.config["verbosity"]:
             root.setLevel(get_log_level(self.config["verbosity"]))
 
