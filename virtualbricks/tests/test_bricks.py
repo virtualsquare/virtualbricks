@@ -159,7 +159,7 @@ class TestVDEProcessProtocol(unittest.TestCase):
     PROMPT = "vde$ "
 
     def setUp(self):
-        brick = bricks.Brick(None, "test")
+        brick = bricks.Brick(stubs.Factory(), "test")
         brick._started_d = defer.Deferred()
         brick._exited_d = defer.Deferred()
         self.proto = bricks.VDEProcessProtocol(brick)
