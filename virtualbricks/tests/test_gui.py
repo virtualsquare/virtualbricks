@@ -1,7 +1,12 @@
-from twisted.trial import unittest
+import re
 
 import gtk
+import glib
+from twisted.trial import unittest
+from twisted.internet import defer
+from twisted.python import log as legacylog
 
+from virtualbricks import log
 from virtualbricks.gui import gui, _gui, interfaces
 from virtualbricks.tests import stubs, create_manager
 from virtualbricks.tests.test_project import TestBase
@@ -374,3 +379,73 @@ class TestCaptureController(TestController):
         self.assert_parameter_equal("iface", "")
         self.fail("TODO")
     test_config.todo = "Implement test utility for the plugmixin"
+
+
+class TestLoggingWindow(unittest.TestCase):
+
+    log_event = log.Event("test log event")
+
+    def assertRegexMatches(self, text, pattern, flags=0, msg=None):
+        if msg is None:
+            sep = "" if text.endswith("\n") else "\n"
+            msg = ("The string [0] does not match the pattern [1]\n"
+                   "[0] {0}{1}[1] {2}'".format(text, sep, pattern))
+        if not re.match(pattern, text, flags):
+            self.fail(msg)
+
+    def assertTextBufferEqual(self, textbuffer, pattern, flags=0, msg=None):
+        start = textbuffer.get_start_iter()
+        end = textbuffer.get_end_iter()
+        text = textbuffer.get_text(start, end)
+        self.assertRegexMatches(text, pattern, flags, msg)
+
+    def setUp(self):
+        self.textbuffer = gtk.TextBuffer()
+        for name, attrs in gui.TEXT_TAGS:
+            self.textbuffer.create_tag(name, **attrs)
+        self.observer = gui.TextBufferObserver(self.textbuffer)
+        self.logger = log.Logger()
+        self.logger.publisher.addObserver(self.observer)
+        self.addCleanup(self.logger.publisher.removeObserver, self.observer)
+        legacy_observer = log.LegacyAdapter()
+        legacylog.addObserver(legacy_observer)
+        self.addCleanup(legacylog.removeObserver, legacy_observer)
+
+    def exhaust_events(self):
+        loop = glib.MainLoop()
+        context = loop.get_context()
+        while context.pending():
+            context.iteration(False)
+
+    def build_pattern(self, msg, module="virtualbricks.tests.test_gui"):
+        if isinstance(msg, log.Event):
+            msg = msg.log_format
+        return r"^[0-9-: +]+ \[{0}\] {1}".format(module, msg)
+
+    def test_simple_log(self):
+        self.logger.info(self.log_event)
+        self.exhaust_events()
+        self.assertTextBufferEqual(self.textbuffer,
+                                   self.build_pattern(self.log_event))
+
+    def illegal_operation(self):
+        # this must a separated method so that the deferred is garbage
+        # collected
+        try:
+            1/0
+        except Exception as e:
+            d = defer.Deferred()
+            d.errback(e)
+
+    def test_deferred_gc(self):
+        self.illegal_operation()
+        self.exhaust_events()
+        line1 = self.build_pattern("Unhandled error in Deferred:\n",
+                                   "virtualbricks.log.LegacyAdapter")
+        line2 = self.build_pattern("\nTraceback \(most recent call last\):\n"
+                                   "Failure: exceptions.ZeroDivisionError: "
+                                   "integer division or modulo by zero",
+                                   "virtualbricks.log.LegacyAdapter")
+        self.assertTextBufferEqual(self.textbuffer, line1 + line2, re.MULTILINE)
+        self.flushLoggedErrors(ZeroDivisionError)
+

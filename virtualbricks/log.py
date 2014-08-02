@@ -38,8 +38,9 @@ __all__ = ["Event", "Logger", "InvalidLogLevelError", "LogLevel",
            "replaceTwistedLoggers"]
 
 
-def make_id(log_format):
-    module = inspect.currentframe().f_back.f_back.f_globals["__name__"]
+def make_id(log_format, module=None):
+    if module is None:
+        module = inspect.currentframe().f_back.f_back.f_globals["__name__"]
     params = urllib.urlencode(dict(format=log_format, module=module))
     uri = "http://virtualbricks.eu/ns/log/?" + params
     return uuid.uuid5(uuid.NAMESPACE_URL, uri)
@@ -47,10 +48,10 @@ def make_id(log_format):
 
 class Event(object):
 
-    def __init__(self, log_format, log_id=None):
+    def __init__(self, log_format, log_id=None, module=None):
         self.log_format = log_format
         if log_id is None:
-            log_id = make_id(log_format)
+            log_id = make_id(log_format, module)
         self.log_id = log_id
 
     def __call__(self, logger, level, **kwds):
@@ -204,7 +205,7 @@ def format_traceback(event):
 import logging
 
 
-class LoggingToNewLogginAdapter(logging.Handler):
+class StdLoggingAdapter(logging.Handler):
 
     logger = Logger()
     levels = {
@@ -218,14 +219,50 @@ class LoggingToNewLogginAdapter(logging.Handler):
     def emit(self, record):
         kw = dict(("rec_" + k, v) for k, v in record.__dict__.items())
         kw["log_record"] = True
-        try:
-            msg = self.format(record)
-        except Exception:
-            self.logger.failure("Unformattable event", **record.__dict__)
+        event = Event(self.format(record), module="virtualbricks.log.std")
+        if record.exc_info is not None:
+            tpe, value, tb = record.exc_info
+            self.logger.failure(event, failure.Failure(value, tpe, tb), **kw)
         else:
-            if record.exc_info is not None:
-                tpe, value, tb = record.exc_info
-                self.logger.failure(msg, failure.Failure(value, tpe, tb), **kw)
+            try:
+                level = self.levels[record.levelname]
+            except KeyError:
+                if record.levelno < logging.DEBUG:
+                    level = LogLevel.debug
+                elif record.levelno < logging.INFO:
+                    level = LogLevel.info
+                elif record.levelno < logging.WARNING:
+                    level = LogLevel.warn
+                else:
+                    level = LogLevel.error
+            event(self.logger, level, **kw)
+
+
+class LegacyAdapter:
+
+    logger = Logger()
+    levels = {
+        "DEBUG": LogLevel.debug,
+        "INFO": LogLevel.info,
+        "WARNING": LogLevel.warn,
+        "ERROR": LogLevel.error,
+        "CRITICAL": LogLevel.error
+    }
+
+    def __call__(self, event):
+        if "log_id" in event:
+            # don't play ping pong with the LegacyLogObserver
+            return
+        if isinstance(event["message"], basestring):
+            msg = event["message"]
+        else:
+            msg = "\n".join(event["message"])
+        ev = Event(msg, module="virtualbricks.log.legacy")
+        if event["isError"]:
+            fail = event.get("failure")
+            if fail:
+                self.logger.failure(ev, log_failure=fail, **event)
             else:
-                level = self.levels.get(record.levelname, LogLevel.info)
-                self.logger.emit(level, msg, **kw)
+                self.logger.error(ev, **event)
+        else:
+            self.logger.info(ev, **event)
