@@ -41,7 +41,7 @@ logger = log.Logger(__name__)
 process_started = log.Event("Process started")
 process_terminated = log.Event("Process terminated. {status()}")
 process_done = log.Event("Process terminated")
-event_unavailable = log.Event("Warning. The Event {event} attached to Brick "
+event_unavailable = log.Event("Warning. The Event {name} attached to Brick "
                               "{brick} is not available. Skipping execution.")
 shutdown_brick = log.Event("Shutting down {name} (pid: {pid})")
 start_brick = log.Event("Starting: {args()}")
@@ -379,7 +379,7 @@ class Brick(base.Base):
         if event:
             event.poweron()
         else:
-            logger.info(event_unavailable, event=name, brick=self.name)
+            logger.info(event_unavailable, name=name, brick=self.name)
 
     #############################
     # Console related operations.

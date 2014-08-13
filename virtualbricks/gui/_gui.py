@@ -40,7 +40,7 @@ savevm = log.Event("Save snapshot on virtual machine {name}")
 proc_signal = log.Event("Sending to process signal {signame}!")
 proc_restart = log.Event("Restarting process!")
 s_r_not_supported = log.Event("Suspend/Resume not supported on this disk.")
-send_acpi = log.Event("send ACPI {event}")
+send_acpi = log.Event("send ACPI {acpievent}")
 machine_type = log.Event("Error while retrieving machines types.")
 cpu_model = log.Event("Error while retrieving cpu model.")
 usb_access = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
@@ -350,11 +350,11 @@ class VMJobMenu(JobMenu):
         gui.user_wait_action(self.suspend(gui.brickfactory))
 
     def on_powerdown_activate(self, menuitem):
-        logger.info(send_acpi, event="powerdown")
+        logger.info(send_acpi, acpievent="powerdown")
         self.original.send("system_powerdown\n")
 
     def on_reset_activate(self, menuitem):
-        logger.info(send_acpi, event="reset")
+        logger.info(send_acpi, acpievent="reset")
         self.original.send("system_reset\n")
 
     def on_term_activate(self, menuitem, gui):
