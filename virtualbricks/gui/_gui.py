@@ -17,13 +17,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import string
 
 import gtk
 from zope.interface import implementer
 from twisted.internet import reactor, utils, defer, error
 
 from virtualbricks import (base, bricks, events, virtualmachines, link, log,
-                           settings, tools)
+                           settings, tools, qemu)
 
 from virtualbricks.gui import graphics, dialogs, help, interfaces
 
@@ -49,6 +50,8 @@ no_kvm = log.Event("No KVM support found on the system. Check your active "
 search_usb = log.Event("Searching USB devices")
 retr_usb = log.Event("Error while retrieving usb devices.")
 event_in_use = log.Event("Cannot rename event: it is in use.")
+retrieve_qemu_version_error = log.Event("Error while retrieving qemu version.")
+qemu_version_parsing_error = log.Event("Error while parsing qemu version")
 
 if False:  # pyflakes
     _ = str
@@ -379,6 +382,12 @@ class ConfigController(object):
         builder.add_from_file(graphics.get_filename("virtualbricks.gui",
                                                     self.resource))
         builder.connect_signals(self)
+
+    def __getattr__(self, name):
+        obj = self.builder.get_object(name)
+        if obj is None:
+            raise AttributeError(name)
+        return obj
 
     def on_ok_button_clicked(self, button, gui):
         self.configure_brick(gui)
@@ -896,6 +905,152 @@ def _set_mac(column, cell_renderer, model, iter):
     cell_renderer.set_property("text", link.mac)
 
 
+class ImageFormatter(string.Formatter):
+
+    def format(self, format_string, image):
+        if image is None:
+            return ""
+        return format(image, format_string)
+
+
+class ListControl:
+
+    def __init__(self, iview, formatting_enabled=False, format_string="",
+                 formatter=None, display_member="", value_member=""):
+        self.__formatting_enabled = formatting_enabled
+        self.__format_string = format_string
+        self.__formatter = formatter
+        self.__display_member = display_member
+        self.__value_member = value_member
+        self.__iview = iview
+        iview.set_cell_data_func(iview.get_cells()[0], self.__set_cell_data)
+
+    @classmethod
+    def for_entry(cls, iview):
+        return cls(iview, display_member="label", value_member="value")
+
+    @classmethod
+    def with_fmt(cls, iview, format_string, formatter=None):
+        return cls(iview, formatting_enabled=True, format_string=format_string,
+                   formatter=formatter)
+
+    def __set_cell_data(self, celllayout, cell, model, iter, data=None):
+        obj = model[iter][0]
+        if self.__formatting_enabled:
+            if self.__formatter is not None:
+                text = self.__formatter.format(self.__format_string, obj)
+            else:
+                text = format(obj, self.__format_string)
+        elif self.__display_member and obj is not None:
+            text = str(getattr(obj, self.__display_member))
+        else:
+            text = str(obj)
+        cell.set_property("text", text)
+
+    def _changed(self):
+        itr = self.__iview.get_active_iter()
+        if itr:
+            model = self.__iview.get_model()
+            model.row_changed(model.get_path(itr), itr)
+
+    def set_data_source(self, ilist):
+        model = self.__iview.get_model()
+        model.clear()
+        for row in ilist:
+            model.append((row, ))
+
+    def get_formatting_enabled(self):
+        return self.__formatting_enabled
+
+    def set_formatting_enabled(self, value):
+        self.format.__formatting_enabled = bool(value)
+
+    def get_format_string(self):
+        return self.__format_string
+
+    def set_format_string(self, value):
+        self.__format_string = str(value)
+
+    def get_formatter(self):
+        return self.__formatter
+
+    def set_formatter(self, value):
+        self.__formatter = value
+
+    def get_selected_index(self):
+        return self.__iview.get_model().get_index()
+
+    def set_selected_index(self, idx):
+        return self.__iview.get_model().set_index(idx)
+
+    def get_selected_value(self):
+        model = self.__iview.get_model()
+        itr = self.__iview.get_active_iter()
+        if itr:
+            obj = model[itr][0]
+            if self.__value_member:
+                return getattr(obj, self.__value_member)
+            else:
+                return obj
+
+    def set_selected_value(self, value):
+        model = self.__iview.get_model()
+        itr = model.get_iter_first()
+        while itr:
+            obj = model[itr][0]
+            if ((self.__value_member and getattr(obj, self.__value_member) ==
+                    value) or obj == value):
+                self.__iview.set_active_iter(itr)
+                break
+            itr = model.iter_next(itr)
+
+
+class ListEntry:
+
+    def __init__(self, value, label):
+        self.value = value
+        self.label = label
+
+    @classmethod
+    def from_tpl(cls, pair):
+        return cls(*pair)
+
+    def __format__(self, format_string):
+        if format_string == "l":
+            return str(self.label)
+        elif format_string == "v":
+            return str(self.value)
+        raise ValueError("Invalid format string " + repr(format_string))
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.value == other.value and self.label == other.label
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+BOOT_DEVICE = (
+    ("", "hd1"),
+    ("a", "floppy"),
+    ("d", "cdrom"),
+)
+
+SOUND_DEVICE = (
+    ("", "no audio"),
+    ("pcspk", "PC speaker"),
+    ("sb16", "Creative Sound Blaster 16"),
+    ("ac97", "Intel 82801AA AC97 Audio"),
+    ("es1370", "ENSONIQ AudioPCI ES1370"),
+)
+
+MOUNT_DEVICE = (
+    ("", "No"),
+    ("/dev/cdrom", "cdrom"),
+)
+
+
 class QemuConfigController(ConfigController):
 
     resource = "data/qemuconfig.ui"
@@ -926,23 +1081,6 @@ class QemuConfigController(ConfigController):
         ("initrdenbl", "initrdenbl_checkbutton"),
         ("gdb", "gdb_checkbutton")
     )
-    config_to_combo_mapping = (
-        ("boot", "boot_combobox"),
-        ("device", "device_combobox"),
-        ("argv0", "argv0_combobox"),
-        ("cpu", "cpu_combobox"),
-        ("machine", "machine_combobox"),
-        ("soundhw", "soundhw_combobox"),
-    )
-    hd_to_combo_mapping = (
-        ("hda", "hda_combobox"),
-        ("hdb", "hdb_combobox"),
-        ("hdc", "hdc_combobox"),
-        ("hdd", "hdd_combobox"),
-        ("fda", "fda_combobox"),
-        ("fdb", "fdb_combobox"),
-        ("mtdblock", "mtdblock_combobox")
-    )
     config_to_filechooser_mapping = (
         ("cdrom", "cdrom_filechooser"),
         ("kernel", "kernel_filechooser"),
@@ -956,27 +1094,6 @@ class QemuConfigController(ConfigController):
         ("vncN", "vncN_spinint"),
         ("gdbport", "gdbport_spinint")
     )
-
-    def _combo_select(self, combo, value):
-        model = combo.get_model()
-        itr = model.get_iter_first()
-        while itr:
-            if model[itr][1] == value:
-                combo.set_active_iter(itr)
-                break
-            itr = model.iter_next(itr)
-
-    def _set_text(self, layout, cell, model, itr):
-        cell.set_property("text", model[itr][0].name)
-
-    def _build_images_model(self, model, images):
-        model.clear()
-        model.append(("", None))
-        itr = images.get_iter_first()
-        while itr:
-            image = images[itr][0]
-            model.append((image.name, image))
-            itr = images.iter_next(itr)
 
     def setup_netwoks_cards(self):
         vmplugs = self.get_object("plugsmodel")
@@ -1002,28 +1119,81 @@ class QemuConfigController(ConfigController):
         mac_c.set_cell_data_func(mac_cr, _set_mac)
 
     def get_config_view(self, gui):
+
+        def install_qemu_version(version):
+            try:
+                qemu.parse_and_install(version)
+            except ValueError:
+                logger.exception(qemu_version_parsing_error)
+                close_panel(None)
+            else:
+                container = panel.get_parent()
+                container.remove(panel)
+                container.pack_start(self._get_config_view(gui))
+
+        def close_panel(_):
+            gui.curtain_down()
+
+        qemu_exe = os.path.join(gui.config.get('qemupath'), "kvm")
+        d = utils.getProcessOutput(qemu_exe, ["-version"])
+        logger.log_failure(d, retrieve_qemu_version_error)
+        d.addErrback(close_panel)
+        d.addCallback(install_qemu_version)
+
+        panel = gtk.Alignment(0.5, 0.5)
+        label = gtk.Label("Loading configuration...")
+        panel.add(label)
+        panel.show_all()
+        return panel
+
+    def _get_config_view(self, gui):
         self.gui = gui
         cfg = self.original.config
         go = self.get_object
-        argv0 = go("argv0_combobox")
-        model = argv0.get_model()
-        for found in tools.check_missing_qemu(gui.config.get("qemupath"))[1]:
-            if found.startswith("qemu-system-"):
-                model.append((found[12:], found))
-            elif found == "kvm":
-                pass
-            else:
-                model.append((found, found))
-        self._build_images_model(go("imagesmodel"),
-                                 self.original.factory.disk_images)
+
+        # argv0/cpu/machine comboboxes
+        self.lcArgv0 = ListControl.for_entry(self.cbArgv0)
+        self.lcCpu = ListControl.for_entry(self.cbCpu)
+        self.lcMachine = ListControl.for_entry(self.cbMachine)
+        exes = qemu.get_executables()
+        self.lcArgv0.set_data_source(map(ListEntry.from_tpl, exes))
+        self.lcArgv0.set_selected_value(cfg["argv0"])
+
+        # boot/sound/mount comboboxes
+        self.lcBoot = ListControl.for_entry(self.cbBoot)
+        self.lcBoot.set_data_source(map(ListEntry.from_tpl, BOOT_DEVICE))
+        self.lcBoot.set_selected_value(cfg["boot"])
+        self.lcSound = ListControl.for_entry(self.cbSound)
+        self.lcSound.set_data_source(map(ListEntry.from_tpl, SOUND_DEVICE))
+        self.lcSound.set_selected_value(cfg["soundhw"])
+        self.lcMount = ListControl.for_entry(self.cbMount)
+        self.lcMount.set_data_source(map(ListEntry.from_tpl, MOUNT_DEVICE))
+        self.lcMount.set_selected_value(cfg["device"])
+
+        # harddisks
+        images = [None] + list(self.original.factory.disk_images)
+        fmtr = ImageFormatter()
+        self.lcHda = ListControl.with_fmt(self.cbHda, "n", fmtr)
+        # all the comboboxes share the same treemodel
+        self.lcHda.set_data_source(images)
+        self.lcHda.set_selected_value(cfg["hda"].image)
+        self.lcHdb = ListControl.with_fmt(self.cbHdb, "n", fmtr)
+        self.lcHdb.set_selected_value(cfg["hdb"].image)
+        self.lcHdc = ListControl.with_fmt(self.cbHdc, "n", fmtr)
+        self.lcHdc.set_selected_value(cfg["hdc"].image)
+        self.lcHdd = ListControl.with_fmt(self.cbHdd, "n", fmtr)
+        self.lcHdd.set_selected_value(cfg["hdd"].image)
+        self.lcFda = ListControl.with_fmt(self.cbFda, "n", fmtr)
+        self.lcFda.set_selected_value(cfg["fda"].image)
+        self.lcFdb = ListControl.with_fmt(self.cbFdb, "n", fmtr)
+        self.lcFdb.set_selected_value(cfg["fdb"].image)
+        self.lcMtdblock = ListControl.with_fmt(self.cbMtdblock, "n", fmtr)
+        self.lcMtdblock.set_selected_value(cfg["mtdblock"].image)
+
         for pname, wname in self.config_to_widget_mapping:
             go(wname).set_active(cfg[pname])
         for pname, wname in self.config_to_spinint_mapping:
             go(wname).set_value(cfg[pname])
-        for pname, wname in self.config_to_combo_mapping:
-            self._combo_select(go(wname), cfg[pname])
-        for pname, wname in self.hd_to_combo_mapping:
-            self._combo_select(go(wname), self.original.config[pname].image)
         for pname, wname in self.config_to_filechooser_mapping:
             if cfg[pname]:
                 go(wname).set_filename(cfg[pname])
@@ -1032,33 +1202,33 @@ class QemuConfigController(ConfigController):
         go("kopt_textbutton").set_text(cfg["kopt"])
         return self.get_object("box_vmconfig")
 
-    def _config_set_combo(self, config, name, combo):
-        model = combo.get_model()
-        itr = combo.get_active_iter()
-        if itr:
-            obj = model[itr][1]
-            if obj is None:
-                obj = ""
-            config[name] = obj
-
-    def _hd_config_set_combo(self, disk, combo):
-        model = combo.get_model()
-        itr = combo.get_active_iter()
-        if itr:
-            img = model[itr][1]
-            disk.set_image(img)
-
     def configure_brick(self, gui):
         cfg = {}
+
+        # argv0/cpu/machine comboboxes
+        cfg["argv0"] = self.lcArgv0.get_selected_value() or ""
+        cfg["cpu"] = self.lcCpu.get_selected_value() or ""
+        cfg["machine"] = self.lcMachine.get_selected_value() or ""
+
+        # boot/sound/mount comboboxes
+        cfg["boot"] = self.lcBoot.get_selected_value()
+        cfg["soundhw"] = self.lcSound.get_selected_value()
+        cfg["device"] = self.lcMount.get_selected_value()
+
+        # harddisks
+        self.original.config["hda"].set_image(self.lcHda.get_selected_value())
+        self.original.config["hdb"].set_image(self.lcHdb.get_selected_value())
+        self.original.config["hdc"].set_image(self.lcHdc.get_selected_value())
+        self.original.config["hdd"].set_image(self.lcHdd.get_selected_value())
+        self.original.config["fda"].set_image(self.lcFda.get_selected_value())
+        self.original.config["fdb"].set_image(self.lcFdb.get_selected_value())
+        self.original.config["mtdblock"].set_image(
+            self.lcMtdblock.get_selected_value())
+
         for config_name, widget_name in self.config_to_widget_mapping:
             cfg[config_name] = self.get_object(widget_name).get_active()
         for pname, wname in self.config_to_spinint_mapping:
             cfg[pname] = self.get_object(wname).get_value_as_int()
-        for pname, wname in self.config_to_combo_mapping:
-            self._config_set_combo(cfg, pname, self.get_object(wname))
-        for pname, wname in self.hd_to_combo_mapping:
-            self._hd_config_set_combo(self.original.config[pname],
-                                      self.get_object(wname))
         for pname, wname in self.config_to_filechooser_mapping:
             filename = self.get_object(wname).get_filename()
             if filename:
@@ -1067,9 +1237,10 @@ class QemuConfigController(ConfigController):
         cfg["kopt"] = self.get_object("kopt_textbutton").get_text()
         self.original.set(cfg)
 
+    # signals
+
     def on_deviceen_radiobutton_toggled(self, radiobutton):
-        self.get_object("device_combobox").set_sensitive(
-            radiobutton.get_active())
+        self.cbMount.set_sensitive(radiobutton.get_active())
 
     def on_cdromen_radiobutton_toggled(self, radiobutton):
         self.get_object("cdrom_filechooser").set_sensitive(
@@ -1085,48 +1256,13 @@ class QemuConfigController(ConfigController):
         dialogs.CreateImageDialog(self.gui, self.gui.brickfactory).show(
             self.gui.get_object("main_win"))
 
-    def _update_cpu_combobox(self, output, combobox):
-        model = combobox.get_model()
-        model.clear()
-        lines = iter(output.splitlines())
-        if output.startswith("Available CPUs:"):
-            next(lines)
-        for line in lines:
-            if line.startswith(" "):
-                label = value = line.strip()
-            else:
-                if line:
-                    _, v = line.split(None, 1)
-                    label = value = v.strip("'[]")
-            itr = model.append((label, value))
-            if self.original.get("cpu") == value:
-                combobox.set_active_iter(itr)
-
-    def _update_machine_combobox(self, output, combobox):
-        model = combobox.get_model()
-        model.clear()
-        lines = iter(output.splitlines())
-        next(lines)
-        for line in lines:
-            value, label = line.split(None, 1)
-            itr = model.append((label, value))
-            if self.original.get("machine") == value:
-                combobox.set_active_iter(itr)
-
-    def on_argv0_combobox_changed(self, combobox):
-        itr = combobox.get_active_iter()
-        if itr:
-            argv0 = combobox.get_model()[itr][1]
-            exe = os.path.join(self.gui.config.get('qemupath'), argv0)
-            exit = utils.getProcessOutput(exe, ["-M", "?"])
-            cmb = self.get_object("machine_combobox")
-            exit.addCallback(self._update_machine_combobox, cmb)
-            exit.addErrback(logger.failure_eb, machine_type)
-
-            exit = utils.getProcessOutput(exe, ["-cpu", "?"])
-            cmb = self.get_object("cpu_combobox")
-            exit.addCallback(self._update_cpu_combobox, cmb)
-            exit.addErrback(logger.failure_eb, cpu_model)
+    def on_cbArgv0_changed(self, combobox):
+        arch = self.lcArgv0.get_selected_value()
+        if arch:
+            cpus = qemu.get_cpus(arch)
+            self.lcCpu.set_data_source(map(ListEntry.from_tpl, cpus))
+            machines = qemu.get_machines(arch)
+            self.lcMachine.set_data_source(map(ListEntry.from_tpl, machines))
 
     def on_kvm_checkbutton_toggled(self, togglebutton):
         if togglebutton.get_active():
@@ -1144,12 +1280,9 @@ class QemuConfigController(ConfigController):
         # disable incompatible options
         self.get_object("tdf_checkbutton").set_active(enabled)
         self.get_object("tdf_checkbutton").set_sensitive(enabled)
-        self._disable_qemu_combos(not enabled)
-
-    def _disable_qemu_combos(self, active):
-        self.get_object("argv0_combobox").set_sensitive(active)
-        self.get_object("cpu_combobox").set_sensitive(active)
-        self.get_object("machine_combobox").set_sensitive(active)
+        self.cbArgv0.set_sensitive(not enabled)
+        self.cbCpu.set_sensitive(not enabled)
+        self.cbMachine.set_sensitive(not enabled)
 
     def on_vnc_novga_checkbutton_toggled(self, togglebutton):
         novga = self.get_object("novga_checkbutton")

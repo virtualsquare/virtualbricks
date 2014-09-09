@@ -180,6 +180,15 @@ class Image:
     def save_to(self, fileobj):
         fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
 
+    def __format__(self, format_string):
+        if format_string == "n":
+            return str(self.name)
+        elif format_string == "p":
+            return str(self.path)
+        elif format_string == "d":
+            return str(self.get_description())
+        raise ValueError("invalid format string " + repr(format_string))
+
 
 def move(src, dst):
     try:
@@ -331,7 +340,7 @@ class Disk:
         return new
 
     def __repr__(self):
-        return "<Disk {self.device}({self.vm_name}) image={self.image} " \
+        return "<Disk {self.device}({self.vm_name}) image={self.image:p} " \
                 "readonly={readonly} cow={self.cow}>".format(
                     self=self, readonly=self.readonly())
 
