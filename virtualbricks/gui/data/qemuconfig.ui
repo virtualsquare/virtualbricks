@@ -37,33 +37,15 @@
   </object>
   <object class="GtkListStore" id="argv0model">
     <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Value -->
-      <column type="gchararray"/>
+      <!-- column-name object -->
+      <column type="PyObject"/>
     </columns>
   </object>
   <object class="GtkListStore" id="bootmodel">
     <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Value -->
-      <column type="gchararray"/>
+      <!-- column-name object -->
+      <column type="PyObject"/>
     </columns>
-    <data>
-      <row>
-        <col id="0">hd1</col>
-        <col id="1" translatable="yes"></col>
-      </row>
-      <row>
-        <col id="0">floppy</col>
-        <col id="1" translatable="yes">a</col>
-      </row>
-      <row>
-        <col id="0">cdrom</col>
-        <col id="1" translatable="yes">d</col>
-      </row>
-    </data>
   </object>
   <object class="GtkVBox" id="box_vmconfig">
     <property name="visible">True</property>
@@ -116,7 +98,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="boot_combobox">
+                                  <object class="GtkComboBox" id="cbBoot">
                                     <property name="width_request">150</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
@@ -124,9 +106,6 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="cellrenderer1"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -258,7 +237,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkComboBox" id="device_combobox">
+                              <object class="GtkComboBox" id="cbMount">
                                 <property name="width_request">180</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
@@ -266,9 +245,6 @@
                                 <property name="active">0</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="cellrenderer2"/>
-                                  <attributes>
-                                    <attribute name="text">0</attribute>
-                                  </attributes>
                                 </child>
                               </object>
                               <packing>
@@ -506,16 +482,13 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="mtdblock_combobox">
+                                  <object class="GtkComboBox" id="cbMtdblock">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="model">imagesmodel</property>
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="renderer9"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -636,16 +609,13 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="hda_combobox">
+                                  <object class="GtkComboBox" id="cbHda">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="model">imagesmodel</property>
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="renderer3"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -654,16 +624,13 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="hdb_combobox">
+                                  <object class="GtkComboBox" id="cbHdb">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="model">imagesmodel</property>
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="renderer4"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -674,16 +641,13 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="hdc_combobox">
+                                  <object class="GtkComboBox" id="cbHdc">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="model">imagesmodel</property>
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="renderer5"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -694,16 +658,13 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="hdd_combobox">
+                                  <object class="GtkComboBox" id="cbHdd">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="model">imagesmodel</property>
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="renderer6"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -714,16 +675,13 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="fda_combobox">
+                                  <object class="GtkComboBox" id="cbFda">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="model">imagesmodel</property>
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="renderer7"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -734,16 +692,13 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBox" id="fdb_combobox">
+                                  <object class="GtkComboBox" id="cbFdb">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="model">imagesmodel</property>
                                     <property name="active">0</property>
                                     <child>
                                       <object class="GtkCellRendererText" id="renderer8"/>
-                                      <attributes>
-                                        <attribute name="text">0</attribute>
-                                      </attributes>
                                     </child>
                                   </object>
                                   <packing>
@@ -970,16 +925,13 @@ disk image</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkComboBox" id="argv0_combobox">
+                              <object class="GtkComboBox" id="cbArgv0">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="model">argv0model</property>
-                                <signal name="changed" handler="on_argv0_combobox_changed" swapped="no"/>
+                                <signal name="changed" handler="on_cbArgv0_changed" swapped="no"/>
                                 <child>
                                   <object class="GtkCellRendererText" id="renderer10"/>
-                                  <attributes>
-                                    <attribute name="text">0</attribute>
-                                  </attributes>
                                 </child>
                               </object>
                               <packing>
@@ -1003,15 +955,12 @@ disk image</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkComboBox" id="cpu_combobox">
+                              <object class="GtkComboBox" id="cbCpu">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="model">cpumodel</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="renderer11"/>
-                                  <attributes>
-                                    <attribute name="text">0</attribute>
-                                  </attributes>
                                 </child>
                               </object>
                               <packing>
@@ -1035,15 +984,12 @@ disk image</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkComboBox" id="machine_combobox">
+                              <object class="GtkComboBox" id="cbMachine">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="model">machinemodel</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="renderer12"/>
-                                  <attributes>
-                                    <attribute name="text">0</attribute>
-                                  </attributes>
                                 </child>
                               </object>
                               <packing>
@@ -1188,7 +1134,7 @@ disk image</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkComboBox" id="soundhw_combobox">
+                              <object class="GtkComboBox" id="cbSound">
                                 <property name="width_request">220</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
@@ -1196,9 +1142,6 @@ disk image</property>
                                 <property name="active">0</property>
                                 <child>
                                   <object class="GtkCellRendererText" id="renderer13"/>
-                                  <attributes>
-                                    <attribute name="text">0</attribute>
-                                  </attributes>
                                 </child>
                               </object>
                               <packing>
@@ -2363,49 +2306,26 @@ disk image</property>
   </object>
   <object class="GtkListStore" id="cpumodel">
     <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Value -->
-      <column type="gchararray"/>
+      <!-- column-name object -->
+      <column type="PyObject"/>
     </columns>
   </object>
   <object class="GtkListStore" id="devicemodel">
     <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Value -->
-      <column type="gchararray"/>
+      <!-- column-name object -->
+      <column type="PyObject"/>
     </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes">No</col>
-        <col id="1" translatable="yes"></col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">cdrom</col>
-        <col id="1" translatable="yes">/dev/cdrom</col>
-      </row>
-    </data>
   </object>
   <object class="GtkListStore" id="imagesmodel">
     <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Value -->
+      <!-- column-name object -->
       <column type="PyObject"/>
     </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes"></col>
-      </row>
-    </data>
   </object>
   <object class="GtkListStore" id="machinemodel">
     <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Value -->
-      <column type="gchararray"/>
+      <!-- column-name object -->
+      <column type="PyObject"/>
     </columns>
   </object>
   <object class="GtkListStore" id="plugsmodel">
@@ -2416,32 +2336,8 @@ disk image</property>
   </object>
   <object class="GtkListStore" id="soundhwmodel">
     <columns>
-      <!-- column-name Label -->
-      <column type="gchararray"/>
-      <!-- column-name Value -->
-      <column type="gchararray"/>
+      <!-- column-name object -->
+      <column type="PyObject"/>
     </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes">no audio</col>
-        <col id="1" translatable="yes"></col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">PC speaker</col>
-        <col id="1" translatable="yes">pcspk</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Creative Sound Blaster 16</col>
-        <col id="1" translatable="yes">sb16</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">Intel 82801AA AC97 Audio</col>
-        <col id="1" translatable="yes">ac97</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">ENSONIQ AudioPCI ES1370</col>
-        <col id="1" translatable="yes">es1370</col>
-      </row>
-    </data>
   </object>
 </interface>
