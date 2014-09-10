@@ -3,6 +3,7 @@ from twisted.internet import defer
 from twisted.python import filepath
 
 from virtualbricks import project
+from virtualbricks.virtualmachines import UsbDevice
 from virtualbricks.gui import dialogs
 from virtualbricks.tests import (unittest, GtkTestCase, failureResultOf,
                                  successResultOf, stubs)
@@ -38,25 +39,23 @@ Bus 007 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
 
 class TestUsbDevWindow(unittest.TestCase):
 
-    def get_rows(self, usbdev):
-        model = gtk.ListStore(str, str)
-        view = gtk.TreeView(model)
-        w = UsbDevWindowStub(view, usbdev)
-        w._populate_model(model, OUTPUT.strip())
-        selection = view.get_selection()
-        _, rows = selection.get_selected_rows()
-        return map(list, map(model.__getitem__, rows))
+    def setUp(self):
+        self.devices = []
+        self.dlg = dialogs.UsbDevWindow(self.devices)
+        self.dlg.lcDevs.set_data_source(self.dlg.parse_lsusb(OUTPUT.strip()))
 
-    def test_populate_model(self):
-        self.assertEquals(self.get_rows([]), [])
-        self.assertEquals(self.get_rows(["0a5c:2110"]),
-                [["0a5c:2110", "Broadcom Corp. Bluetooth Controller"]])
-        self.assertEquals(self.get_rows(["1d6b:0001"]),
-                          [["1d6b:0001", "Linux Foundation 1.1 root hub"],
-                           ["1d6b:0001", "Linux Foundation 1.1 root hub"],
-                           ["1d6b:0001", "Linux Foundation 1.1 root hub"],
-                           ["1d6b:0001", "Linux Foundation 1.1 root hub"],
-                           ["1d6b:0001", "Linux Foundation 1.1 root hub"]])
+    def test_select_empty(self):
+        self.assertEquals(self.dlg.lcDevs.get_selected_values(), ())
+
+    def test_select_one(self):
+        self.dlg.lcDevs.set_selected_values([UsbDevice("0a5c:2110")])
+        self.assertEquals(self.dlg.lcDevs.get_selected_values(),
+            (UsbDevice("0a5c:2110"),))
+
+    def test_select_mores(self):
+        self.dlg.lcDevs.set_selected_values([UsbDevice("1d6b:0001")])
+        self.assertEquals(self.dlg.lcDevs.get_selected_values(),
+            (UsbDevice("1d6b:0001"),) * 5)
 
 
 class WindowStub(object):
