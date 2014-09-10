@@ -27,6 +27,7 @@ from virtualbricks import (base, bricks, events, virtualmachines, link, log,
                            settings, tools, qemu)
 
 from virtualbricks.gui import graphics, dialogs, help, interfaces
+from virtualbricks.gui.controls import ComboBox, ListEntry
 
 
 __metaclass__ = type
@@ -47,11 +48,10 @@ cpu_model = log.Event("Error while retrieving cpu model.")
 usb_access = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
 no_kvm = log.Event("No KVM support found on the system. Check your active "
                    "configuration. KVM will stay disabled.")
-search_usb = log.Event("Searching USB devices")
-retr_usb = log.Event("Error while retrieving usb devices.")
 event_in_use = log.Event("Cannot rename event: it is in use.")
 retrieve_qemu_version_error = log.Event("Error while retrieving qemu version.")
 qemu_version_parsing_error = log.Event("Error while parsing qemu version")
+building_controller_error = log.Event("Unknow error while building controller")
 
 if False:  # pyflakes
     _ = str
@@ -676,8 +676,6 @@ class State:
 @implementer(interfaces.IControl)
 class SensitiveControl:
 
-    tooltip = None
-
     def __init__(self, widget, tooltip=None):
         self.widget = widget
         self.tooltip = tooltip
@@ -691,6 +689,17 @@ class SensitiveControl:
             tooltip = self.tooltip
             self.tooltip = self.widget.get_tooltip_markup()
             self.widget.set_tooltip_markup(tooltip)
+
+
+@implementer(interfaces.IControl)
+class ActiveControl:
+
+    def __init__(self, widget):
+        self.widget = widget
+
+    def react(self, enable):
+        if self.widget.get_active() ^ enable:
+            self.widget.set_active(enable)
 
 
 @implementer(interfaces.IStateManager)
@@ -876,7 +885,6 @@ def get_element_at_click(treeview, event):
         return obj
 
 
-
 def _set_vlan(column, cell_renderer, model, itr):
     vlan = model.get_path(itr)[0]
     cell_renderer.set_property("text", vlan)
@@ -913,124 +921,6 @@ class ImageFormatter(string.Formatter):
         return format(image, format_string)
 
 
-class ListControl:
-
-    def __init__(self, iview, formatting_enabled=False, format_string="",
-                 formatter=None, display_member="", value_member=""):
-        self.__formatting_enabled = formatting_enabled
-        self.__format_string = format_string
-        self.__formatter = formatter
-        self.__display_member = display_member
-        self.__value_member = value_member
-        self.__iview = iview
-        iview.set_cell_data_func(iview.get_cells()[0], self.__set_cell_data)
-
-    @classmethod
-    def for_entry(cls, iview):
-        return cls(iview, display_member="label", value_member="value")
-
-    @classmethod
-    def with_fmt(cls, iview, format_string, formatter=None):
-        return cls(iview, formatting_enabled=True, format_string=format_string,
-                   formatter=formatter)
-
-    def __set_cell_data(self, celllayout, cell, model, iter, data=None):
-        obj = model[iter][0]
-        if self.__formatting_enabled:
-            if self.__formatter is not None:
-                text = self.__formatter.format(self.__format_string, obj)
-            else:
-                text = format(obj, self.__format_string)
-        elif self.__display_member and obj is not None:
-            text = str(getattr(obj, self.__display_member))
-        else:
-            text = str(obj)
-        cell.set_property("text", text)
-
-    def _changed(self):
-        itr = self.__iview.get_active_iter()
-        if itr:
-            model = self.__iview.get_model()
-            model.row_changed(model.get_path(itr), itr)
-
-    def set_data_source(self, ilist):
-        model = self.__iview.get_model()
-        model.clear()
-        for row in ilist:
-            model.append((row, ))
-
-    def get_formatting_enabled(self):
-        return self.__formatting_enabled
-
-    def set_formatting_enabled(self, value):
-        self.format.__formatting_enabled = bool(value)
-
-    def get_format_string(self):
-        return self.__format_string
-
-    def set_format_string(self, value):
-        self.__format_string = str(value)
-
-    def get_formatter(self):
-        return self.__formatter
-
-    def set_formatter(self, value):
-        self.__formatter = value
-
-    def get_selected_index(self):
-        return self.__iview.get_model().get_index()
-
-    def set_selected_index(self, idx):
-        return self.__iview.get_model().set_index(idx)
-
-    def get_selected_value(self):
-        model = self.__iview.get_model()
-        itr = self.__iview.get_active_iter()
-        if itr:
-            obj = model[itr][0]
-            if self.__value_member:
-                return getattr(obj, self.__value_member)
-            else:
-                return obj
-
-    def set_selected_value(self, value):
-        model = self.__iview.get_model()
-        itr = model.get_iter_first()
-        while itr:
-            obj = model[itr][0]
-            if ((self.__value_member and getattr(obj, self.__value_member) ==
-                    value) or obj == value):
-                self.__iview.set_active_iter(itr)
-                break
-            itr = model.iter_next(itr)
-
-
-class ListEntry:
-
-    def __init__(self, value, label):
-        self.value = value
-        self.label = label
-
-    @classmethod
-    def from_tpl(cls, pair):
-        return cls(*pair)
-
-    def __format__(self, format_string):
-        if format_string == "l":
-            return str(self.label)
-        elif format_string == "v":
-            return str(self.value)
-        raise ValueError("Invalid format string " + repr(format_string))
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.value == other.value and self.label == other.label
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-
 BOOT_DEVICE = (
     ("", "hd1"),
     ("a", "floppy"),
@@ -1051,13 +941,32 @@ MOUNT_DEVICE = (
 )
 
 
+class UsbState(State):
+
+    def __init__(self, togglebtn, button):
+        State.__init__(self)
+        tooltip = _("USB disabled or /dev/bus/usb not accessible")
+        self.add_control(SensitiveControl(button, tooltip))
+        self.add_control(ActiveControl(togglebtn))
+        self.add_prerequisite(lambda: self.usb_check(togglebtn))
+        togglebtn.connect("toggled", lambda cb: self.check())
+        self.check()
+
+    def usb_check(self, togglebutton):
+        active = togglebutton.get_active()
+        if active and not os.access("/dev/bus/usb", os.W_OK):
+            logger.error(usb_access)
+            return False
+        return active
+
+
 class QemuConfigController(ConfigController):
 
     resource = "data/qemuconfig.ui"
     config_to_widget_mapping = (
         ("snapshot", "snapshot_checkbutton"),
-        ("deviceen", "deviceen_radiobutton"),
-        ("cdromen", "cdromen_radiobutton"),
+        ("deviceen", "rbDeviceen"),
+        ("cdromen", "rbCdromen"),
         ("use_virtio", "virtio_checkbutton"),
         ("privatehda", "privatehda_checkbutton"),
         ("privatehdb", "privatehdb_checkbutton"),
@@ -1068,32 +977,34 @@ class QemuConfigController(ConfigController):
         ("privatemtdblock", "privatemtdblock_checkbutton"),
         ("kvm", "kvm_checkbutton"),
         ("kvmsm", "kvmsm_checkbutton"),
-        ("novga", "novga_checkbutton"),
+        ("novga", "cbNovga"),
         ("vga", "vga_checkbutton"),
-        ("vnc", "vnc_checkbutton"),
+        ("vnc", "cbVnc"),
         ("sdl", "sdl_checkbutton"),
         ("portrait", "portrait_checkbutton"),
-        ("usbmode", "usbmode_checkbutton"),
+        ("usbmode", "cbUsbmode"),
         ("rtc", "rtc_checkbutton"),
         ("tdf", "tdf_checkbutton"),
         ("serial", "serial_checkbutton"),
-        ("kernelenbl", "kernelenbl_checkbutton"),
-        ("initrdenbl", "initrdenbl_checkbutton"),
-        ("gdb", "gdb_checkbutton")
+        ("kernelenbl", "cbKernelen"),
+        ("initrdenbl", "cbInitrden"),
+        ("gdb", "cbGdb")
     )
     config_to_filechooser_mapping = (
-        ("cdrom", "cdrom_filechooser"),
-        ("kernel", "kernel_filechooser"),
-        ("initrd", "initrd_filechooser"),
+        ("cdrom", "fcCdrom"),
+        ("kernel", "fcKernel"),
+        ("initrd", "fcInitrd"),
         ("icon", "icon_filechooser")
     )
     config_to_spinint_mapping = (
         ("smp", "smp_spinint"),
         ("ram", "ram_spinint"),
         ("kvmsmem", "kvmsmem_spinint"),
-        ("vncN", "vncN_spinint"),
-        ("gdbport", "gdbport_spinint")
+        ("vncN", "siVncN"),
+        ("gdbport", "siGdbport")
     )
+
+    state_manager = None
 
     def setup_netwoks_cards(self):
         vmplugs = self.get_object("plugsmodel")
@@ -1121,24 +1032,20 @@ class QemuConfigController(ConfigController):
     def get_config_view(self, gui):
 
         def install_qemu_version(version):
-            try:
-                qemu.parse_and_install(version)
-            except ValueError:
-                logger.exception(qemu_version_parsing_error)
-                close_panel(None)
-            else:
-                container = panel.get_parent()
-                container.remove(panel)
-                container.pack_start(self._get_config_view(gui))
+            qemu.parse_and_install(version)
+            container = panel.get_parent()
+            container.remove(panel)
+            container.pack_start(self._get_config_view(gui))
 
-        def close_panel(_):
+        def close_panel(failure):
+            logger.failure(qemu_version_parsing_error, failure)
             gui.curtain_down()
 
         qemu_exe = os.path.join(gui.config.get('qemupath'), "kvm")
         d = utils.getProcessOutput(qemu_exe, ["-version"])
-        logger.log_failure(d, retrieve_qemu_version_error)
+        d.addCallbacks(install_qemu_version, logger.failure_eb,
+                       errbackArgs=(retrieve_qemu_version_error, True))
         d.addErrback(close_panel)
-        d.addCallback(install_qemu_version)
 
         panel = gtk.Alignment(0.5, 0.5)
         label = gtk.Label("Loading configuration...")
@@ -1148,48 +1055,68 @@ class QemuConfigController(ConfigController):
 
     def _get_config_view(self, gui):
         self.gui = gui
-        cfg = self.original.config
-        go = self.get_object
+        self.usb_devices = list(self.original.config["usbdevlist"])
+
+        self.state_manager = StateManager()
+        self.state_manager.add_checkbutton_active(self.rbDeviceen,
+            _("Mount cdrom option not active"), self.cbMount)
+        self.state_manager.add_checkbutton_active(self.rbCdromen,
+            _("File image option not active"), self.fcCdrom)
+        self.state_manager.add_checkbutton_not_active(self.cbNovga,
+            _("Graphical output disabled"), self.cbVnc, self.siVncN,
+            self.lblVnc)
+        self.state_manager.add_checkbutton_not_active(self.cbVnc,
+            _("VNC enabled"), self.cbNovga)
+        self.state_manager.add_checkbutton_active(self.cbKernelen,
+            _("Custom kernel selction option disabled"), self.fcKernel)
+        self.state_manager.add_checkbutton_active(self.cbInitrden,
+            _("Initrd option disabled"), self.fcInitrd)
+        self.state_manager.add_checkbutton_active(self.cbGdb,
+            _("Kernel debugging disabled"), self.siGdbport, self.lblGdbport)
+        self.state_manager.add_state(UsbState(self.cbUsbmode, self.btnBind))
 
         # argv0/cpu/machine comboboxes
-        self.lcArgv0 = ListControl.for_entry(self.cbArgv0)
-        self.lcCpu = ListControl.for_entry(self.cbCpu)
-        self.lcMachine = ListControl.for_entry(self.cbMachine)
+        self.lcArgv0 = ComboBox.for_entry(self.cbArgv0)
+        self.lcCpu = ComboBox.for_entry(self.cbCpu)
+        self.lcMachine = ComboBox.for_entry(self.cbMachine)
         exes = qemu.get_executables()
         self.lcArgv0.set_data_source(map(ListEntry.from_tpl, exes))
-        self.lcArgv0.set_selected_value(cfg["argv0"])
+        self.lcArgv0.set_selected_value(self.original.config["argv0"])
 
         # boot/sound/mount comboboxes
-        self.lcBoot = ListControl.for_entry(self.cbBoot)
+        self.lcBoot = ComboBox.for_entry(self.cbBoot)
         self.lcBoot.set_data_source(map(ListEntry.from_tpl, BOOT_DEVICE))
-        self.lcBoot.set_selected_value(cfg["boot"])
-        self.lcSound = ListControl.for_entry(self.cbSound)
+        self.lcBoot.set_selected_value(self.original.config["boot"])
+        self.lcSound = ComboBox.for_entry(self.cbSound)
         self.lcSound.set_data_source(map(ListEntry.from_tpl, SOUND_DEVICE))
-        self.lcSound.set_selected_value(cfg["soundhw"])
-        self.lcMount = ListControl.for_entry(self.cbMount)
+        self.lcSound.set_selected_value(self.original.config["soundhw"])
+        self.lcMount = ComboBox.for_entry(self.cbMount)
         self.lcMount.set_data_source(map(ListEntry.from_tpl, MOUNT_DEVICE))
-        self.lcMount.set_selected_value(cfg["device"])
+        self.lcMount.set_selected_value(self.original.config["device"])
 
         # harddisks
         images = [None] + list(self.original.factory.disk_images)
         fmtr = ImageFormatter()
-        self.lcHda = ListControl.with_fmt(self.cbHda, "n", fmtr)
+        self.lcHda = ComboBox.with_fmt(self.cbHda, "n", fmtr)
         # all the comboboxes share the same treemodel
         self.lcHda.set_data_source(images)
-        self.lcHda.set_selected_value(cfg["hda"].image)
-        self.lcHdb = ListControl.with_fmt(self.cbHdb, "n", fmtr)
-        self.lcHdb.set_selected_value(cfg["hdb"].image)
-        self.lcHdc = ListControl.with_fmt(self.cbHdc, "n", fmtr)
-        self.lcHdc.set_selected_value(cfg["hdc"].image)
-        self.lcHdd = ListControl.with_fmt(self.cbHdd, "n", fmtr)
-        self.lcHdd.set_selected_value(cfg["hdd"].image)
-        self.lcFda = ListControl.with_fmt(self.cbFda, "n", fmtr)
-        self.lcFda.set_selected_value(cfg["fda"].image)
-        self.lcFdb = ListControl.with_fmt(self.cbFdb, "n", fmtr)
-        self.lcFdb.set_selected_value(cfg["fdb"].image)
-        self.lcMtdblock = ListControl.with_fmt(self.cbMtdblock, "n", fmtr)
-        self.lcMtdblock.set_selected_value(cfg["mtdblock"].image)
+        self.lcHda.set_selected_value(self.original.config["hda"].image)
+        self.lcHdb = ComboBox.with_fmt(self.cbHdb, "n", fmtr)
+        self.lcHdb.set_selected_value(self.original.config["hdb"].image)
+        self.lcHdc = ComboBox.with_fmt(self.cbHdc, "n", fmtr)
+        self.lcHdc.set_selected_value(self.original.config["hdc"].image)
+        self.lcHdd = ComboBox.with_fmt(self.cbHdd, "n", fmtr)
+        self.lcHdd.set_selected_value(self.original.config["hdd"].image)
+        self.lcFda = ComboBox.with_fmt(self.cbFda, "n", fmtr)
+        self.lcFda.set_selected_value(self.original.config["fda"].image)
+        self.lcFdb = ComboBox.with_fmt(self.cbFdb, "n", fmtr)
+        self.lcFdb.set_selected_value(self.original.config["fdb"].image)
+        self.lcMtdblock = ComboBox.with_fmt(self.cbMtdblock, "n", fmtr)
+        self.lcMtdblock.set_selected_value(
+            self.original.config["mtdblock"].image)
 
+        cfg = self.original.config
+        go = self.get_object
         for pname, wname in self.config_to_widget_mapping:
             go(wname).set_active(cfg[pname])
         for pname, wname in self.config_to_spinint_mapping:
@@ -1235,16 +1162,15 @@ class QemuConfigController(ConfigController):
                 cfg[pname] = filename
         cfg["keyboard"] = self.get_object("cfg_Qemu_keyboard_text").get_text()
         cfg["kopt"] = self.get_object("kopt_textbutton").get_text()
+        if self.cbUsbmode.get_active():
+            devs = list(set(self.usb_devices))
+        else:
+            devs = []
+        cfg["usbdevlist"] = devs
+        self.original.update_usbdevlist(devs)
         self.original.set(cfg)
 
     # signals
-
-    def on_deviceen_radiobutton_toggled(self, radiobutton):
-        self.cbMount.set_sensitive(radiobutton.get_active())
-
-    def on_cdromen_radiobutton_toggled(self, radiobutton):
-        self.get_object("cdrom_filechooser").set_sensitive(
-            radiobutton.get_active())
 
     def on_newimage_button_clicked(self, button):
         dialogs.choose_new_image(self.gui, self.gui.brickfactory)
@@ -1284,39 +1210,8 @@ class QemuConfigController(ConfigController):
         self.cbCpu.set_sensitive(not enabled)
         self.cbMachine.set_sensitive(not enabled)
 
-    def on_vnc_novga_checkbutton_toggled(self, togglebutton):
-        novga = self.get_object("novga_checkbutton")
-        vnc = self.get_object("vnc_checkbutton")
-        active = not togglebutton.get_active()
-        if togglebutton is novga:
-            vnc.set_sensitive(active)
-            self.get_object("vncN_spinint").set_sensitive(active)
-            self.get_object("label17").set_sensitive(active)
-        else:
-            novga.set_sensitive(active)
-
-    def on_usbmode_checkbutton_toggled(self, togglebutton):
-        active = togglebutton.get_active()
-        if active and not os.access("/dev/bus/usb", os.W_OK):
-            logger.error(usb_access)
-            togglebutton.set_active(False)
-        else:
-            self.original.set({"usbmode": active})
-            if not active:
-                self.original.set({"usbdevlist": []})
-            self.get_object("bind_button").set_sensitive(active)
-
-    def on_bind_button_clicked(self, button):
-
-        def show_dialog(output):
-            dialogs.UsbDevWindow(self.gui, output.strip(), self.original).show(
-                self.gui.get_object("main_win"))
-
-        logger.info(search_usb)
-        devices_d = utils.getProcessOutput("lsusb", env=os.environ)
-        devices_d.addCallback(show_dialog)
-        devices_d.addErrback(logger.failure_eb, retr_usb)
-        self.gui.user_wait_action(devices_d)
+    def on_btnBind_clicked(self, button):
+        dialogs.UsbDevWindow.show_dialog(self.gui, self.usb_devices)
 
     def _remove_link(self, link, model):
         if link.brick.proc and link.hotdel:
@@ -1359,18 +1254,6 @@ class QemuConfigController(ConfigController):
         parent = self.gui.get_object("main_win")
         dialogs.AddEthernetDialog(self.gui.brickfactory, self.original,
                                   model).show(parent)
-
-    def on_kernelenbl_checkbutton_toggled(self, togglebutton):
-        self.get_object("kernel_filechooser").set_sensitive(
-            togglebutton.get_active())
-
-    def on_initrdenbl_checkbutton_toggled(self, togglebutton):
-        self.get_object("initrd_filechooser").set_sensitive(
-            togglebutton.get_active())
-
-    def on_gdb_checkbutton_toggled(self, togglebutton):
-        self.get_object("gdbport_spinint").set_sensitive(
-            togglebutton.get_active())
 
     def on_setdefaulticon_button_clicked(self, button):
         self.get_object("qemuicon").set_from_pixbuf(

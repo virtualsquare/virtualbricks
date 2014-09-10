@@ -43,6 +43,41 @@ acquire_lock = log.Event("Aquiring disk locks")
 release_lock = log.Event("Releasing disk locks")
 
 
+class UsbDevice:
+
+    def __init__(self, ID, desc=""):
+        self.ID = ID
+        self.desc = desc
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.ID == other.ID
+
+    def __ne__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.ID)
+
+    def __str__(self):
+        return str(self.ID)
+
+    def __repr__(self):
+        return str(self.ID)
+
+    def __format__(self, format_string):
+        if format_string == "id":
+            return str(self.ID)
+        elif format_string == "d":
+            return str(self.desc)
+        elif format_string == "":
+            return str(self)
+        raise ValueError("invalid format string" + repr(format_string))
+
+
 class Wrapper:
 
     def __init__(self, original):
@@ -474,6 +509,15 @@ class Device(bricks.Parameter):
         return ""
 
 
+class UsbDeviceParameter(bricks.String):
+
+    def from_string(self, in_string):
+        return UsbDevice(in_string)
+
+    def to_string(self, in_object):
+        return str(in_object)
+
+
 class VirtualMachineConfig(bricks.Config):
 
     parameters = {"name": bricks.String(""),
@@ -537,7 +581,7 @@ class VirtualMachineConfig(bricks.Config):
 
                   # usb settings
                   "usbmode": bricks.Boolean(False),
-                  "usbdevlist": bricks.ListOf(bricks.String("")),
+                  "usbdevlist": bricks.ListOf(UsbDeviceParameter("")),
 
                   # extra settings
                   "rtc": bricks.Boolean(False),
@@ -623,8 +667,8 @@ class VirtualMachine(bricks.Brick):
 
     def update_usbdevlist(self, dev):
         self.logger.debug(update_usb, old=self.config["usbdevlist"], new=dev)
-        for d in set(dev) - set(self.config["usbdevlist"]):
-            self.send("usb_add host:" + d + "\n")
+        for device in set(dev) - set(self.config["usbdevlist"]):
+            self.send("usb_add host:{0}\n".format(device))
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 

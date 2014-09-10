@@ -179,7 +179,7 @@
                             <property name="column_spacing">6</property>
                             <property name="row_spacing">3</property>
                             <child>
-                              <object class="GtkRadioButton" id="cdromen_radiobutton">
+                              <object class="GtkRadioButton" id="rbCdromen">
                                 <property name="label" translatable="yes">use image as cdrom</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -189,7 +189,6 @@
                                 <property name="use_underline">True</property>
                                 <property name="draw_indicator">True</property>
                                 <property name="group">nocdrom_radiobutton</property>
-                                <signal name="toggled" handler="on_cdromen_radiobutton_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="top_attach">2</property>
@@ -199,7 +198,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkRadioButton" id="deviceen_radiobutton">
+                              <object class="GtkRadioButton" id="rbDeviceen">
                                 <property name="label" translatable="yes">mount cdrom</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -209,7 +208,6 @@
                                 <property name="use_underline">True</property>
                                 <property name="draw_indicator">True</property>
                                 <property name="group">nocdrom_radiobutton</property>
-                                <signal name="toggled" handler="on_deviceen_radiobutton_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="top_attach">1</property>
@@ -270,7 +268,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkFileChooserButton" id="cdrom_filechooser">
+                              <object class="GtkFileChooserButton" id="fcCdrom">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                               </object>
@@ -1356,14 +1354,13 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <child>
-                                  <object class="GtkCheckButton" id="novga_checkbutton">
+                                  <object class="GtkCheckButton" id="cbNovga">
                                     <property name="label" translatable="yes">disable graphical output</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
                                     <property name="use_underline">True</property>
                                     <property name="draw_indicator">True</property>
-                                    <signal name="toggled" handler="on_vnc_novga_checkbutton_toggled" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -1410,14 +1407,13 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <child>
-                                  <object class="GtkCheckButton" id="vnc_checkbutton">
+                                  <object class="GtkCheckButton" id="cbVnc">
                                     <property name="label" translatable="yes">Start in vncserver</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
                                     <property name="use_underline">True</property>
                                     <property name="draw_indicator">True</property>
-                                    <signal name="toggled" handler="on_vnc_novga_checkbutton_toggled" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -1426,7 +1422,7 @@ disk image</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="label17">
+                                  <object class="GtkLabel" id="lblVnc">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="label" translatable="yes">on Display: </property>
@@ -1438,7 +1434,7 @@ disk image</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkSpinButton" id="vncN_spinint">
+                                  <object class="GtkSpinButton" id="siVncN">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">●</property>
@@ -1530,14 +1526,13 @@ disk image</property>
                             <property name="can_focus">False</property>
                             <property name="spacing">6</property>
                             <child>
-                              <object class="GtkCheckButton" id="usbmode_checkbutton">
+                              <object class="GtkCheckButton" id="cbUsbmode">
                                 <property name="label" translatable="yes">enable usb</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="use_underline">True</property>
                                 <property name="draw_indicator">True</property>
-                                <signal name="toggled" handler="on_usbmode_checkbutton_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -1546,13 +1541,12 @@ disk image</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="bind_button">
+                              <object class="GtkButton" id="btnBind">
                                 <property name="label" translatable="yes">Bind devices</property>
                                 <property name="visible">True</property>
-                                <property name="sensitive">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
-                                <signal name="clicked" handler="on_bind_button_clicked" swapped="no"/>
+                                <signal name="clicked" handler="on_btnBind_clicked" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -1961,13 +1955,12 @@ disk image</property>
                     <property name="column_spacing">6</property>
                     <property name="row_spacing">2</property>
                     <child>
-                      <object class="GtkCheckButton" id="kernelenbl_checkbutton">
+                      <object class="GtkCheckButton" id="cbKernelen">
                         <property name="label" translatable="yes">Use a custom kernel</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
                         <property name="draw_indicator">True</property>
-                        <signal name="toggled" handler="on_kernelenbl_checkbutton_toggled" swapped="no"/>
                       </object>
                       <packing>
                         <property name="x_options">GTK_FILL</property>
@@ -1975,13 +1968,12 @@ disk image</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkCheckButton" id="initrdenbl_checkbutton">
+                      <object class="GtkCheckButton" id="cbInitrden">
                         <property name="label" translatable="yes">Specify initial ramdisk</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
                         <property name="draw_indicator">True</property>
-                        <signal name="toggled" handler="on_initrdenbl_checkbutton_toggled" swapped="no"/>
                       </object>
                       <packing>
                         <property name="top_attach">1</property>
@@ -2025,14 +2017,13 @@ disk image</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkCheckButton" id="gdb_checkbutton">
+                      <object class="GtkCheckButton" id="cbGdb">
                         <property name="label" translatable="yes">Enable kernel debugging</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
                         <property name="xalign">1</property>
                         <property name="draw_indicator">True</property>
-                        <signal name="toggled" handler="on_gdb_checkbutton_toggled" swapped="no"/>
                       </object>
                       <packing>
                         <property name="top_attach">3</property>
@@ -2047,7 +2038,7 @@ disk image</property>
                         <property name="can_focus">False</property>
                         <property name="spacing">6</property>
                         <child>
-                          <object class="GtkLabel" id="label38">
+                          <object class="GtkLabel" id="lblGdbport">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="xalign">0</property>
@@ -2060,9 +2051,8 @@ disk image</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkSpinButton" id="gdbport_spinint">
+                          <object class="GtkSpinButton" id="siGdbport">
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
                             <property name="invisible_char">●</property>
                             <property name="invisible_char_set">True</property>
@@ -2089,10 +2079,9 @@ disk image</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkFileChooserButton" id="kernel_filechooser">
+                      <object class="GtkFileChooserButton" id="fcKernel">
                         <property name="width_request">200</property>
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                       </object>
                       <packing>
@@ -2103,10 +2092,9 @@ disk image</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkFileChooserButton" id="initrd_filechooser">
+                      <object class="GtkFileChooserButton" id="fcInitrd">
                         <property name="width_request">200</property>
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                       </object>
                       <packing>

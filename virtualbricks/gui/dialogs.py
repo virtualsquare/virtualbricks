@@ -84,6 +84,7 @@ import errno
 import tempfile
 import functools
 import re
+import string
 
 import pango
 import gtk
@@ -92,7 +93,7 @@ from twisted.python import filepath
 
 from virtualbricks import (version, tools, log, console, settings,
                            virtualmachines, project, errors)
-from virtualbricks.gui import graphics
+from virtualbricks.gui import graphics, controls
 
 
 if False:  # pyflakes
@@ -108,7 +109,6 @@ img_cannot_remove = log.Event("Cannot remove image {img}")
 bug_err_unknown = log.Event("Error on bug reporting")
 lsusb_out = log.Event("lsusb output:\n{out}")
 dev_found = log.Event("found {dev}")
-perm_error = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
 invalid_mac = log.Event("MAC address {mac} is not valid, generating "
                         "a random one")
 not_implemented = log.Event("Not implemented")
@@ -139,6 +139,8 @@ project_extracted = log.Event("Project has beed extracted in {path}")
 removing_temporary_project = log.Event("Remove temporary files in {path}")
 error_on_import_project = log.Event("An error occurred while import project")
 invalid_name = log.Event("Invalid name {name}")
+search_usb = log.Event("Searching USB devices")
+retr_usb = log.Event("Error while retrieving usb devices.")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -194,6 +196,12 @@ class Base(object):
                                                     self.resource))
         self.widget = builder.get_object(self._get_name())
         builder.connect_signals(self)
+
+    def __getattr__(self, name):
+        obj = self.builder.get_object(name)
+        if obj is None:
+            raise AttributeError(name)
+        return obj
 
     def get_object(self, name):
         return self.builder.get_object(name)
@@ -429,49 +437,42 @@ class UsbDevWindow(Window):
 
     resource = "data/usbdev.ui"
 
-    def __init__(self, gui, output, vm):
+    def __init__(self, usb_devices):
         Window.__init__(self)
-        self.gui = gui
-        self.vm = vm
-        logger.info(lsusb_out, out=output)
-        model = self.get_object("liststore1")
-        self._populate_model(model, output)
+        self.usb_devices = usb_devices
+        self.lcDevs = controls.ListStore.with_fmt(self.tvDevices,
+        "{0:id} {0:d}", string.Formatter())
+        self.tvDevices.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
-    def _populate_model(self, model, output):
-        for line in output.split("\n"):
+    @staticmethod
+    def parse_lsusb(output):
+        for line in output.splitlines():
             info = line.split(" ID ")[1]
             if " " in info:
                 code, descr = info.split(" ", 1)
-                model.append([code, descr])
-        treeview = self.get_object("treeview1")
-        selection = treeview.get_selection()
-        selection.set_mode(gtk.SELECTION_MULTIPLE)
-        currents = self.vm.config["usbdevlist"]
-        # if currents:
-        iter = model.get_iter_first()
-        while iter:
-            for dev in currents:
-                ndev = model.get_value(iter, 0)
-                if ndev == dev:
-                    selection.select_iter(iter)
-                    logger.debug(dev_found, dev=dev)
-                    break
-            iter = model.iter_next(iter)
+            else:
+                code, descr = info, ""
+            yield virtualmachines.UsbDevice(code, descr)
 
-    def on_ok_button_clicked(self, button):
-        treeview = self.get_object("treeview1")
-        selection = treeview.get_selection()
-        if selection:
-            model, paths = selection.get_selected_rows()
-            devs = [model[p[0]][0] for p in paths]
+    @classmethod
+    def show_dialog(cls, gui, usb_devices):
 
-            if devs and not os.access("/dev/bus/usb", os.W_OK):
-                logger.error(perm_error)
-                self.gui.gladefile.get_widget("cfg_Qemu_usbmode_check"
-                                             ).set_active(False)
+        def init(output):
+            output = output.strip()
+            logger.info(lsusb_out, out=output)
+            dlg = cls(usb_devices)
+            dlg.lcDevs.set_data_source(cls.parse_lsusb(output))
+            dlg.lcDevs.set_selected_values(usb_devices)
+            dlg.show(gui.get_object("main_win"))
 
-            self.vm.config["usbdevlist"] = devs
-            self.vm.update_usbdevlist(devs)
+        logger.info(search_usb)
+        d = utils.getProcessOutput("lsusb", env=os.environ)
+        d.addCallback(init)
+        d.addErrback(logger.failure_eb, retr_usb)
+        gui.user_wait_action(d)
+
+    def on_btnOk_clicked(self, button):
+        self.usb_devices[:] = self.lcDevs.get_selected_values()
         self.window.destroy()
 
 
