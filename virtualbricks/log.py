@@ -103,17 +103,19 @@ class Logger(_Logger):
         event(self, LogLevel.error, log_failure=failure.Failure(), **kwds)
 
     @expect_event
-    def failure(self, event, log_failure=None, level=LogLevel.error, **kwargs):
+    def failure(self, event, log_failure=None, **kwargs):
         if log_failure is None:
             log_failure = failure.Failure()
-        event(self, level, log_failure=log_failure, **kwargs)
+        event(self, LogLevel.error, log_failure=log_failure, **kwargs)
 
-    def failure_eb(self, failure, event, level=LogLevel.error, **kwargs):
-        self.failure(event, failure, level, **kwargs)
+    def failure_eb(self, failure, event, reraise=False, **kwargs):
+        self.failure(event, failure, **kwargs)
+        if reraise:
+            return failure
 
     def log_failure(self, deferred, event, **kwargs):
         def log(failure):
-            self.failure(event, failure, LogLevel.error, **kwargs)
+            self.failure(event, failure, **kwargs)
             return failure
         return deferred.addErrback(log)
 
