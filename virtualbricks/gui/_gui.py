@@ -1214,7 +1214,14 @@ class QemuConfigController(ConfigController):
 
     def _rebuild_images(self, model, *_):
         # all the comboboxes share the same treemodel
+        comboboxes = (self.lcHda, self.lcHdb, self.lcHdc, self.lcHdd,
+                      self.lcFda, self.lcFdb, self.lcMtdblock)
+        # preserve setted values
+        old_values = [cb.get_selected_value() for cb in comboboxes]
         self.lcHda.set_data_source([None] + list(model))
+        # restore values
+        for combobox, image in zip(comboboxes, old_values):
+            combobox.set_selected_value(image)
 
     # signals
 
