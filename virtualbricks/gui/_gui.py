@@ -1144,6 +1144,10 @@ class QemuConfigController(ConfigController):
 
         # harddisks
         images = [None] + list(self.original.factory.disk_images)
+        self.__handler_id1 = self.original.factory.disk_images.connect(
+            "row-changed", self._rebuild_images)
+        self.__handler_id2 = self.original.factory.disk_images.connect(
+            "row-deleted", self._rebuild_images)
         fmtr = ImageFormatter()
         self.lcHda = ComboBox.with_fmt(self.cbHda, "n", fmtr)
         # all the comboboxes share the same treemodel
@@ -1218,7 +1222,23 @@ class QemuConfigController(ConfigController):
         self.original.update_usbdevlist(devs)
         self.original.set(cfg)
 
+    def _rebuild_images(self, model, *_):
+        # all the comboboxes share the same treemodel
+        self.lcHda.set_data_source([None] + list(model))
+
     # signals
+
+    def on_ok_button_clicked(self, button, gui):
+        # NOTE: avoid circular dependencies with gtk objects
+        self.original.factory.disk_images.disconnect(self.__handler_id1)
+        self.original.factory.disk_images.disconnect(self.__handler_id2)
+        ConfigController.on_ok_button_clicked(self, button, gui)
+
+    def on_cancel_button_clicked(self, button, gui):
+        # NOTE: avoid circular dependencies with gtk objects
+        self.original.factory.disk_images.disconnect(self.__handler_id1)
+        self.original.factory.disk_images.disconnect(self.__handler_id2)
+        ConfigController.on_cancel_button_clicked(self, button, gui)
 
     def on_newimage_button_clicked(self, button):
         dialogs.choose_new_image(self.gui, self.gui.brickfactory)
