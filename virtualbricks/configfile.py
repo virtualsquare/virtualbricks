@@ -283,30 +283,15 @@ class ConfigFile:
             for item in configparser.Parser(fileobj):
                 interfaces.IBuilder(item).load_from(factory, item)
 
-    def build_link(self, factory, type):
-        if type == "sock":
-            return SockBuilder(factory)
-        elif type == "link":
-            return LinkBuilder(factory)
-        else:
-            logger.warn(link_type_error, type=type)
-
-    def build_type(self, factory, type, name):
-        if type == "Image":
-            return ImageBuilder(factory, name)
-        elif type == "Event":
-            return factory.new_event(name)
-        else:
-            return factory.new_brick(type, name)
-
 
 _config = ConfigFile()
 
 
 def save(factory, filename=None):
     if filename is None:
-        filename = os.path.join(settings.get("workspace"),
-                                settings.get("current_project"), ".project")
+        workspace = settings.get("workspace")
+        project = settings.get("current_project")
+        filename = os.path.join(workspace, project, ".project")
     _config.save(factory, filename)
 
 
@@ -319,6 +304,7 @@ def safe_save(factory, filename=None):
 
 def restore(factory, filename=None):
     if filename is None:
-        filename = os.path.join(settings.get("workspace"),
-                                settings.get("current_project"), ".project")
+        workspace = settings.get("workspace")
+        project = settings.get("current_project")
+        filename = os.path.join(workspace, project, ".project")
     _config.restore(factory, filename)
