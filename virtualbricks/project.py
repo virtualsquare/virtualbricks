@@ -296,11 +296,7 @@ class Project:
         settings.set("current_project", self.name)
         settings.VIRTUALBRICKS_HOME = self.path
         settings.store()
-        factory.set_restore(True)
-        try:
-            configfile.restore(factory, self.dot_project().path)
-        finally:
-            factory.set_restore(False)
+        configfile.restore(factory, self.dot_project().path)
 
     def save(self, factory):
         configfile.save(factory, self.dot_project().path)

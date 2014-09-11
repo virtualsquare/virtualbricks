@@ -116,6 +116,15 @@ def restore_backup(filename, fbackup):
         filename_back.remove()
 
 
+@contextlib.contextmanager
+def freeze_notify(obj):
+    obj.set_restore(True)
+    try:
+        yield
+    finally:
+        obj.set_restore(False)
+
+
 @implementer(interfaces.IBuilder)
 class SockBuilder:
 
@@ -181,7 +190,8 @@ class EventBuilder:
 
     def load_from(self, factory, section):
         event = factory.new_event(self.name)
-        event.load_from(section)
+        with freeze_notify(event):
+            event.load_from(section)
 
 
 @implementer(interfaces.IBuilder)
@@ -193,7 +203,8 @@ class BrickBuilder:
 
     def load_from(self, factory, section):
         brick = factory.new_brick(self.type, self.name)
-        brick.load_from(section)
+        with freeze_notify(brick):
+            brick.load_from(section)
 
 
 def brick_builder_factory(context):
@@ -268,8 +279,9 @@ class ConfigFile:
             self.restore_from(factory, str_or_obj)
 
     def restore_from(self, factory, fileobj):
-        for item in configparser.Parser(fileobj):
-            interfaces.IBuilder(item).load_from(factory, item)
+        with freeze_notify(factory):
+            for item in configparser.Parser(fileobj):
+                interfaces.IBuilder(item).load_from(factory, item)
 
     def build_link(self, factory, type):
         if type == "sock":

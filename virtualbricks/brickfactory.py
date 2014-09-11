@@ -35,6 +35,7 @@ from twisted.conch import manhole
 from virtualbricks import errors, settings, configfile, console, project, log
 from virtualbricks import (events, link, router, switches, tunnels, tuntaps,
                            virtualmachines, wires)
+from virtualbricks import observable
 
 
 if False:  # pyflakes
@@ -84,37 +85,6 @@ def install_brick_types(registry=None):
     return registry
 
 
-class Observable(object):
-
-    def __init__(self, *names):
-        self.__events = {}
-        for name in names:
-            self.add_event(name)
-
-    def add_event(self, name):
-        assert name not in self.__events, "Event %s already present" % name
-        self.__events[name] = []
-
-    def add_observer(self, name, callback, *args, **kwds):
-        assert name in self.__events, "Event %s not present" % name
-        self.__events[name].append((callback, args, kwds))
-
-    def remove_observer(self, name, callback, *args, **kwds):
-        assert name in self.__events, "Event %s not present" % name
-        self.__events[name].remove((callback, args, kwds))
-
-    def notify(self, name, emitter):
-        assert name in self.__events, "Event %s not present" % name
-        for callback, args, kwds in self.__events[name]:
-            callback(emitter, *args, **kwds)
-
-    def __len__(self):
-        return len(self.__events)
-
-    def __bool__(self):
-        return bool(self.__events)
-
-
 class BrickFactory(object):
     """This is the main class for the core engine.
 
@@ -133,7 +103,8 @@ class BrickFactory(object):
         self.socks = []
         self.disk_images = []
         self.__factories = install_brick_types()
-        self.__observable = Observable("brick-changed")
+        self.__observable = observable.Observable("brick-changed")
+        self.changed = observable.Event(self.__observable, "brick-changed")
 
     def stop(self):
         logger.info(engine_bye)
@@ -183,10 +154,10 @@ class BrickFactory(object):
             self.__observable.notify("brick-changed", brick)
 
     def connect(self, name, callback, *args, **kwds):
-        self.__observable.add_observer(name, callback, *args, **kwds)
+        self.__observable.add_observer(name, callback, args, kwds)
 
     def disconnect(self, name, callback, *args, **kwds):
-        self.__observable.remove_observer(name, callback, *args, **kwds)
+        self.__observable.remove_observer(name, callback, args, kwds)
 
     def set_restore(self, restore):
         self.__restore = restore
@@ -252,6 +223,7 @@ class BrickFactory(object):
     def new_brick(self, type, name, host="", remote=False):
         brick = self._new_brick(type, name, host, remote)
         self.bricks.append(brick)
+        brick.changed.connect(self.brick_changed)
         self.brick_changed(brick)
         return brick
 
@@ -308,6 +280,7 @@ class BrickFactory(object):
             if plug.configured():
                 plug.disconnect()
         self.bricks.remove(brick)
+        brick.changed.disconnect(self.brick_changed)
 
     def del_brick(self, brick):
         logger.info(remove_brick, brick=brick.name)

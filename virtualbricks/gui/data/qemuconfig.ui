@@ -1001,13 +1001,12 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <child>
-                                  <object class="GtkCheckButton" id="kvm_checkbutton">
+                                  <object class="GtkCheckButton" id="cbKvm">
                                     <property name="label" translatable="yes">KVM</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
                                     <property name="draw_indicator">True</property>
-                                    <signal name="toggled" handler="on_kvm_checkbutton_toggled" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -1249,7 +1248,7 @@ disk image</property>
                                 <property name="can_focus">False</property>
                                 <property name="spacing">3</property>
                                 <child>
-                                  <object class="GtkCheckButton" id="kvmsm_checkbutton">
+                                  <object class="GtkCheckButton" id="cbKvmsm">
                                     <property name="label" translatable="yes">KVM Shadow Memory:</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
@@ -1263,7 +1262,7 @@ disk image</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkSpinButton" id="kvmsmem_spinint">
+                                  <object class="GtkSpinButton" id="siKvmsmem">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">●</property>
@@ -1283,7 +1282,7 @@ disk image</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="label26">
+                                  <object class="GtkLabel" id="lblKvmsm">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="label" translatable="yes">MB</property>
@@ -1619,7 +1618,7 @@ disk image</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="tdf_checkbutton">
+                              <object class="GtkCheckButton" id="cbTdf">
                                 <property name="label" translatable="yes">Guest time drift compensation (TDF)</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
