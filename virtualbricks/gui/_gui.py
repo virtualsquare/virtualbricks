@@ -692,14 +692,31 @@ class SensitiveControl:
 
 
 @implementer(interfaces.IControl)
+class InsensitiveControl:
+
+    def __init__(self, widget, tooltip=None):
+        self.widget = widget
+        self.tooltip = widget.get_tooltip_markup()
+        widget.set_tooltip_markup(tooltip)
+
+    def react(self, enable):
+        disable = not enable
+        if self.widget.get_sensitive() ^ disable:
+            self.widget.set_sensitive(disable)
+            tooltip = self.tooltip
+            self.tooltip = self.widget.get_tooltip_markup()
+            self.widget.set_tooltip_markup(tooltip)
+
+
+@implementer(interfaces.IControl)
 class ActiveControl:
 
     def __init__(self, widget):
         self.widget = widget
 
     def react(self, enable):
-        if self.widget.get_active() ^ enable:
-            self.widget.set_active(enable)
+        if not enable:
+            self.widget.set_active(False)
 
 
 @implementer(interfaces.IStateManager)
@@ -947,17 +964,47 @@ class UsbState(State):
         State.__init__(self)
         tooltip = _("USB disabled or /dev/bus/usb not accessible")
         self.add_control(SensitiveControl(button, tooltip))
-        self.add_control(ActiveControl(togglebtn))
         self.add_prerequisite(lambda: self.usb_check(togglebtn))
         togglebtn.connect("toggled", lambda cb: self.check())
         self.check()
 
-    def usb_check(self, togglebutton):
-        active = togglebutton.get_active()
+    def usb_check(self, togglebtn):
+        active = togglebtn.get_active()
         if active and not os.access("/dev/bus/usb", os.W_OK):
+            togglebtn.set_active(False)
             logger.error(usb_access)
             return False
         return active
+
+
+class KvmState(State):
+
+    def __init__(self, togglebtn, controller, config):
+        State.__init__(self)
+        self.togglebtn = togglebtn
+        self.config = config
+        tooltip = _("KVM support not found")
+        self.add_control(SensitiveControl(controller.siKvmsmem, tooltip))
+        self.add_control(SensitiveControl(controller.cbKvmsm, tooltip))
+        self.add_control(SensitiveControl(controller.lblKvmsm, tooltip))
+        self.add_control(SensitiveControl(controller.cbTdf, tooltip))
+        self.add_control(ActiveControl(controller.cbTdf))
+        tooltip = _("KVM activated")
+        self.add_control(InsensitiveControl(controller.cbArgv0, tooltip))
+        self.add_control(InsensitiveControl(controller.cbCpu, tooltip))
+        self.add_control(InsensitiveControl(controller.cbMachine, tooltip))
+        self.add_prerequisite(self.check_kvm)
+        togglebtn.connect("toggled", lambda cb: self.check())
+        self.check()
+
+    def check_kvm(self):
+        if self.togglebtn.get_active():
+            supported = tools.check_kvm(self.config.get("qemupath"))
+            if not supported:
+                self.togglebtn.set_active(False)
+                logger.error(no_kvm)
+            return supported
+        return False
 
 
 class QemuConfigController(ConfigController):
@@ -975,8 +1022,8 @@ class QemuConfigController(ConfigController):
         ("privatefda", "privatefda_checkbutton"),
         ("privatefdb", "privatefdb_checkbutton"),
         ("privatemtdblock", "privatemtdblock_checkbutton"),
-        ("kvm", "kvm_checkbutton"),
-        ("kvmsm", "kvmsm_checkbutton"),
+        ("kvm", "cbKvm"),
+        ("kvmsm", "cbKvmsm"),
         ("novga", "cbNovga"),
         ("vga", "vga_checkbutton"),
         ("vnc", "cbVnc"),
@@ -984,7 +1031,7 @@ class QemuConfigController(ConfigController):
         ("portrait", "portrait_checkbutton"),
         ("usbmode", "cbUsbmode"),
         ("rtc", "rtc_checkbutton"),
-        ("tdf", "tdf_checkbutton"),
+        ("tdf", "cbTdf"),
         ("serial", "serial_checkbutton"),
         ("kernelenbl", "cbKernelen"),
         ("initrdenbl", "cbInitrden"),
@@ -999,7 +1046,7 @@ class QemuConfigController(ConfigController):
     config_to_spinint_mapping = (
         ("smp", "smp_spinint"),
         ("ram", "ram_spinint"),
-        ("kvmsmem", "kvmsmem_spinint"),
+        ("kvmsmem", "siKvmsmem"),
         ("vncN", "siVncN"),
         ("gdbport", "siGdbport")
     )
@@ -1074,6 +1121,7 @@ class QemuConfigController(ConfigController):
         self.state_manager.add_checkbutton_active(self.cbGdb,
             _("Kernel debugging disabled"), self.siGdbport, self.lblGdbport)
         self.state_manager.add_state(UsbState(self.cbUsbmode, self.btnBind))
+        self.state_manager.add_state(KvmState(self.cbKvm, self, gui.config))
 
         # argv0/cpu/machine comboboxes
         self.lcArgv0 = ComboBox.for_entry(self.cbArgv0)
@@ -1189,26 +1237,6 @@ class QemuConfigController(ConfigController):
             self.lcCpu.set_data_source(map(ListEntry.from_tpl, cpus))
             machines = qemu.get_machines(arch)
             self.lcMachine.set_data_source(map(ListEntry.from_tpl, machines))
-
-    def on_kvm_checkbutton_toggled(self, togglebutton):
-        if togglebutton.get_active():
-            kvm = tools.check_kvm(self.gui.config.get("qemupath"))
-            self._kvm_toggle_all(kvm)
-            togglebutton.set_active(kvm)
-            if not kvm:
-                logger.error(no_kvm)
-        else:
-            self._kvm_toggle_all(False)
-
-    def _kvm_toggle_all(self, enabled):
-        self.get_object("kvmsmem_spinint").set_sensitive(enabled)
-        self.get_object("kvmsm_checkbutton").set_sensitive(enabled)
-        # disable incompatible options
-        self.get_object("tdf_checkbutton").set_active(enabled)
-        self.get_object("tdf_checkbutton").set_sensitive(enabled)
-        self.cbArgv0.set_sensitive(not enabled)
-        self.cbCpu.set_sensitive(not enabled)
-        self.cbMachine.set_sensitive(not enabled)
 
     def on_btnBind_clicked(self, button):
         dialogs.UsbDevWindow.show_dialog(self.gui, self.usb_devices)

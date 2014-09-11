@@ -20,7 +20,7 @@ import re
 
 from twisted.python import reflect
 
-from virtualbricks import log
+from virtualbricks import log, observable
 
 
 if False:  # pyflakes
@@ -178,6 +178,7 @@ class ListOf(Parameter):
 
 class Base(object):
 
+    __restore = False
     # type = None  # if not set in a subclass will raise an AttributeError
     _name = None
     config_factory = Config
@@ -190,11 +191,13 @@ class Base(object):
 
     def set_name(self, name):
         self._name = name
-        self.factory.brick_changed(self)
+        self.notify_changed()
 
     name = property(get_name, set_name)
 
     def __init__(self, factory, name):
+        self.__observable = observable.Observable("changed")
+        self.changed = observable.Event(self.__observable, "changed")
         self.factory = factory
         self._name = name
         self.config = self.config_factory()
@@ -212,7 +215,7 @@ class Base(object):
                 setter = getattr(self, "cbset_" + name, None)
                 if setter:
                     setter(value)
-        self.factory.brick_changed(self)
+        self.notify_changed()
 
     def get(self, name):
         try:
@@ -240,3 +243,10 @@ class Base(object):
 
     def rename(self, name):
         self.set_name(self.factory.normalize_name(name))
+
+    def set_restore(self, restore):
+        self.__restore = restore
+
+    def notify_changed(self):
+        if not self.__restore:
+            self.__observable.notify("changed", self)
