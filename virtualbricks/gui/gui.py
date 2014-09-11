@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import sys
 
 import gobject
 import gtk
@@ -1551,33 +1552,25 @@ class List(gtk.ListStore):
         gtk.ListStore.append(self, (element, ))
 
     def remove(self, element):
-        i = self.get_iter_first()
-        while i:
-            el = self.get_value(i, 0)
+        itr = self.get_iter_first()
+        while itr:
+            el = self.get_value(itr, 0)
             if el is element:
-                return gtk.ListStore.remove(self, i)
-            i = self.iter_next(i)
-        raise ValueError("list.remove(x): x not in list")
-
-    # def __getitem__(self, key):
-    #     if isinstance(key, int):
-    #         return gtk.ListStore.__getitem__(self, key)[0]
-    #     elif isinstance(key, slice):
-    #         return [self[idx][0] for idx in xrange(*key.indices(len(self)))]
-    #     else:
-    #         raise TypeError
+                return gtk.ListStore.remove(self, itr)
+            itr = self.iter_next(itr)
+        raise ValueError("%r not in list" % (element, ))
 
     def __delitem__(self, key):
         if isinstance(key, int):
             gtk.ListStore.__delitem__(self, key)
         elif isinstance(key, slice):
-            if (key.start is None and key.stop is None and
+            if (key.start in (None, 0) and key.stop in (None, sys.maxint) and
                     key.step in (1, -1, None)):
                 self.clear()
             else:
-                raise TypeError
+                raise TypeError("Invalid slice %r" % (key, ))
         else:
-            raise TypeError
+            raise TypeError("Invalid key %r" % (key, ))
 
 
 class VisualFactory(brickfactory.BrickFactory):
