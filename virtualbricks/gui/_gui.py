@@ -958,55 +958,6 @@ MOUNT_DEVICE = (
 )
 
 
-class UsbState(State):
-
-    def __init__(self, togglebtn, button):
-        State.__init__(self)
-        tooltip = _("USB disabled or /dev/bus/usb not accessible")
-        self.add_control(SensitiveControl(button, tooltip))
-        self.add_prerequisite(lambda: self.usb_check(togglebtn))
-        togglebtn.connect("toggled", lambda cb: self.check())
-        self.check()
-
-    def usb_check(self, togglebtn):
-        active = togglebtn.get_active()
-        if active and not os.access("/dev/bus/usb", os.W_OK):
-            togglebtn.set_active(False)
-            logger.error(usb_access)
-            return False
-        return active
-
-
-class KvmState(State):
-
-    def __init__(self, togglebtn, controller, config):
-        State.__init__(self)
-        self.togglebtn = togglebtn
-        self.config = config
-        tooltip = _("KVM support not found")
-        self.add_control(SensitiveControl(controller.siKvmsmem, tooltip))
-        self.add_control(SensitiveControl(controller.cbKvmsm, tooltip))
-        self.add_control(SensitiveControl(controller.lblKvmsm, tooltip))
-        self.add_control(SensitiveControl(controller.cbTdf, tooltip))
-        self.add_control(ActiveControl(controller.cbTdf))
-        tooltip = _("KVM activated")
-        self.add_control(InsensitiveControl(controller.cbArgv0, tooltip))
-        self.add_control(InsensitiveControl(controller.cbCpu, tooltip))
-        self.add_control(InsensitiveControl(controller.cbMachine, tooltip))
-        self.add_prerequisite(self.check_kvm)
-        togglebtn.connect("toggled", lambda cb: self.check())
-        self.check()
-
-    def check_kvm(self):
-        if self.togglebtn.get_active():
-            supported = tools.check_kvm(self.config.get("qemupath"))
-            if not supported:
-                self.togglebtn.set_active(False)
-                logger.error(no_kvm)
-            return supported
-        return False
-
-
 class QemuConfigController(ConfigController):
 
     resource = "data/qemuconfig.ui"
@@ -1120,8 +1071,47 @@ class QemuConfigController(ConfigController):
             _("Initrd option disabled"), self.fcInitrd)
         self.state_manager.add_checkbutton_active(self.cbGdb,
             _("Kernel debugging disabled"), self.siGdbport, self.lblGdbport)
-        self.state_manager.add_state(UsbState(self.cbUsbmode, self.btnBind))
-        self.state_manager.add_state(KvmState(self.cbKvm, self, gui.config))
+
+        # usb options
+        def usb_check():
+            active = self.cbUsbmode.get_active()
+            if active and not os.access("/dev/bus/usb", os.W_OK):
+                self.cbUsbmode.set_active(False)
+                logger.error(usb_access)
+                return False
+            return active
+
+        usbstate = State()
+        tooltip = _("USB disabled or /dev/bus/usb not accessible")
+        usbstate.add_control(SensitiveControl(self.btnBind, tooltip))
+        usbstate.add_prerequisite(usb_check)
+        self.cbUsbmode.connect("toggled", lambda cb: usbstate.check())
+        usbstate.check()
+
+        # kvm options
+        def check_kvm():
+            if self.cbKvm.get_active():
+                supported = tools.check_kvm(gui.config.get("qemupath"))
+                if not supported:
+                    self.cbKvm.set_active(False)
+                    logger.error(no_kvm)
+                return supported
+            return False
+
+        kvmstate = State()
+        tooltip = _("KVM support not found")
+        kvmstate.add_control(SensitiveControl(self.siKvmsmem, tooltip))
+        kvmstate.add_control(SensitiveControl(self.cbKvmsm, tooltip))
+        kvmstate.add_control(SensitiveControl(self.lblKvmsm, tooltip))
+        kvmstate.add_control(SensitiveControl(self.cbTdf, tooltip))
+        kvmstate.add_control(ActiveControl(self.cbTdf))
+        tooltip = _("KVM activated")
+        kvmstate.add_control(InsensitiveControl(self.cbArgv0, tooltip))
+        kvmstate.add_control(InsensitiveControl(self.cbCpu, tooltip))
+        kvmstate.add_control(InsensitiveControl(self.cbMachine, tooltip))
+        kvmstate.add_prerequisite(check_kvm)
+        self.cbKvm.connect("toggled", lambda cb: kvmstate.check())
+        kvmstate.check()
 
         # argv0/cpu/machine comboboxes
         self.lcArgv0 = ComboBox.for_entry(self.cbArgv0)
