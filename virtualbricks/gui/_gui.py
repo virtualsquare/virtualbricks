@@ -25,7 +25,7 @@ from twisted.internet import reactor, utils, defer, error
 
 from virtualbricks import (base, bricks, events, virtualmachines, link, log,
                            settings, tools, qemu)
-
+from virtualbricks.tools import dispose
 from virtualbricks.gui import graphics, dialogs, help, interfaces
 from virtualbricks.gui.controls import ComboBox, ListEntry
 
@@ -389,8 +389,12 @@ class ConfigController(object):
             raise AttributeError(name)
         return obj
 
+    def __dispose__(self):
+        pass
+
     def on_ok_button_clicked(self, button, gui):
         self.configure_brick(gui)
+        dispose(self)
         gui.curtain_down()
 
     # def on_save_button_clicked(self, button, gui):
@@ -398,6 +402,7 @@ class ConfigController(object):
     #     self.configure_brick(gui)
 
     def on_cancel_button_clicked(self, button, gui):
+        dispose(self)
         gui.curtain_down()
 
     def get_object(self, name):
@@ -1134,14 +1139,12 @@ class QemuConfigController(ConfigController):
 
         # harddisks
         images = [None] + list(self.original.factory.disk_images)
-        self.__handler_id1 = self.original.factory.disk_images.connect(
-            "row-changed", self._rebuild_images)
-        self.__handler_id2 = self.original.factory.disk_images.connect(
-            "row-deleted", self._rebuild_images)
         fmtr = ImageFormatter()
         self.lcHda = ComboBox.with_fmt(self.cbHda, "n", fmtr)
         # all the comboboxes share the same treemodel
         self.lcHda.set_data_source(images)
+        self.original.factory.connect("image-added", self.lcHda.add)
+        self.original.factory.connect("image-removed", self.lcHda.remove)
         self.lcHda.set_selected_value(self.original.config["hda"].image)
         self.lcHdb = ComboBox.with_fmt(self.cbHdb, "n", fmtr)
         self.lcHdb.set_selected_value(self.original.config["hdb"].image)
@@ -1212,30 +1215,11 @@ class QemuConfigController(ConfigController):
         self.original.update_usbdevlist(devs)
         self.original.set(cfg)
 
-    def _rebuild_images(self, model, *_):
-        # all the comboboxes share the same treemodel
-        comboboxes = (self.lcHda, self.lcHdb, self.lcHdc, self.lcHdd,
-                      self.lcFda, self.lcFdb, self.lcMtdblock)
-        # preserve setted values
-        old_values = [cb.get_selected_value() for cb in comboboxes]
-        self.lcHda.set_data_source([None] + list(model))
-        # restore values
-        for combobox, image in zip(comboboxes, old_values):
-            combobox.set_selected_value(image)
+    def __dispose__(self):
+        self.original.factory.disconnect("image-added", self.lcHda.add)
+        self.original.factory.disconnect("image-removed", self.lcHda.remove)
 
     # signals
-
-    def on_ok_button_clicked(self, button, gui):
-        # NOTE: avoid circular dependencies with gtk objects
-        self.original.factory.disk_images.disconnect(self.__handler_id1)
-        self.original.factory.disk_images.disconnect(self.__handler_id2)
-        ConfigController.on_ok_button_clicked(self, button, gui)
-
-    def on_cancel_button_clicked(self, button, gui):
-        # NOTE: avoid circular dependencies with gtk objects
-        self.original.factory.disk_images.disconnect(self.__handler_id1)
-        self.original.factory.disk_images.disconnect(self.__handler_id2)
-        ConfigController.on_cancel_button_clicked(self, button, gui)
 
     def on_newimage_button_clicked(self, button):
         dialogs.choose_new_image(self.gui, self.gui.brickfactory)

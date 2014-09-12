@@ -1,6 +1,34 @@
 import gtk
 
 
+class AbstractList:
+
+    def __init__(self, view, value_member=""):
+        self._view = view
+        self._value_member = value_member
+
+    def set_data_source(self, lst):
+        model = self._view.get_model()
+        model.clear()
+        for row in lst:
+            model.append((row, ))
+
+    def add(self, value):
+        model = self._view.get_model()
+        model.append((value, ))
+
+    def remove(self, value):
+        model = self._view.get_model()
+        mbr = self._value_member
+        itr = model.get_iter_first()
+        while itr:
+            obj = model[itr][0]
+            if (mbr and getattr(obj, mbr) == value) or obj == value:
+                model.remove(itr)
+                return
+            itr = model.iter_next(itr)
+
+
 class ListEntry:
 
     def __init__(self, value, label):
@@ -29,16 +57,15 @@ class ListEntry:
         return not self.__eq__(other)
 
 
-class ListControl:
+class ListControl(AbstractList):
 
     def __init__(self, view, formatting_enabled=False, format_string="",
                  formatter=None, display_member="", value_member=""):
+        AbstractList.__init__(self, view, value_member)
         self._formatting_enabled = formatting_enabled
         self._format_string = format_string
         self._formatter = formatter
         self._display_member = display_member
-        self._value_member = value_member
-        self._view = view
 
     @classmethod
     def for_entry(cls, view):
@@ -48,12 +75,6 @@ class ListControl:
     def with_fmt(cls, view, format_string, formatter=None):
         return cls(view, formatting_enabled=True, format_string=format_string,
                    formatter=formatter)
-
-    def set_data_source(self, lst):
-        model = self._view.get_model()
-        model.clear()
-        for row in lst:
-            model.append((row, ))
 
     def get_formatting_enabled(self):
         return self._formatting_enabled
@@ -139,7 +160,6 @@ class ListStore(ListControl):
         cell = col.get_cell_renderers()[0]
         col.set_cell_data_func(cell, self._set_cell_data)
 
-
     def get_selected_values(self):
         selection = self._view.get_selection()
         mode = selection.get_mode()
@@ -183,3 +203,7 @@ class ListStore(ListControl):
                     if (mbr and getattr(obj, mbr) == value) or obj == value:
                         selection.select_iter(itr)
                     itr = model.iter_next(itr)
+
+
+class MulticolListStore(AbstractList):
+    pass

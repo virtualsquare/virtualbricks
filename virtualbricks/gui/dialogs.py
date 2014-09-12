@@ -93,6 +93,7 @@ from twisted.python import filepath
 
 from virtualbricks import (version, tools, log, console, settings,
                            virtualmachines, project, errors)
+from virtualbricks.tools import dispose
 from virtualbricks.gui import graphics, controls
 
 
@@ -171,6 +172,10 @@ def destroy_on_exit(func):
     return on_response
 
 
+def dispose(obj):
+    obj.__dispose__()
+
+
 class Base(object):
     """Base class to work with gtkbuilder files.
 
@@ -230,9 +235,16 @@ class Window(Base):
     def show(self, parent=None):
         if parent is not None:
             self.window.set_transient_for(parent)
+        self.window.connect("destroy", self.on_window_destroy)
         if self.on_destroy is not None:
             self.window.connect("destroy", lambda w: self.on_destroy())
         self.window.show()
+
+    def on_window_destroy(self, window):
+        dispose(self)
+
+    def __dispose__(self):
+        pass
 
 
 class AboutDialog(Window):
@@ -328,109 +340,103 @@ class DisksLibraryDialog(Window):
 
     resource = "data/disklibrary.ui"
     image = None
-    cols_cell = (
-        ("treeviewcolumn1", "cellrenderertext1", lambda i: i.name),
-        ("treeviewcolumn6", "cellrenderertext6", lambda i: i.path),
-        # ("treeviewcolumn2", "cellrenderertext2", lambda i: i.get_users()),
-        ("treeviewcolumn3", "cellrenderertext3", lambda i: i.repr_master()),
-        # ("treeviewcolumn4", "cellrenderertext4", lambda i: i.get_cows()),
-        ("treeviewcolumn5", "cellrenderertext5", lambda i: i.get_size())
-    )
 
     def __init__(self, factory):
         Window.__init__(self)
         self.factory = factory
-        self.tree_panel = self.get_object("treeview_panel")  # just handy
-        self.config_panel = self.get_object("config_panel")  # just handy
-        for column_name, cell_renderer_name, getter in self.cols_cell:
-            column = self.get_object(column_name)
-            cell_renderer = self.get_object(cell_renderer_name)
-            column.set_cell_data_func(cell_renderer, self._set_cell_data,
-                                      getter)
-        column = self.get_object("treeviewcolumn2")
-        cell_renderer = self.get_object("cellrenderertext2")
-        column.set_cell_data_func(cell_renderer, self._set_users)
-        column = self.get_object("treeviewcolumn4")
-        cell_renderer = self.get_object("cellrenderertext4")
-        column.set_cell_data_func(cell_renderer, self._set_cows)
-        self.get_object("treeview_diskimages").set_model(factory.disk_images)
+        self.images_control = controls.MulticolListStore(self.tvImages)
+        self.images_control.set_data_source(factory.disk_images)
+        factory.connect("image-added", self.images_control.add)
+        factory.connect("image-removed", self.images_control.remove)
+        self.tvcName.set_cell_data_func(self.crt1, self._set_name)
+        self.tvcPath.set_cell_data_func(self.crt2, self._set_path)
+        self.tvcUsed.set_cell_data_func(self.crt3, self._set_used_by)
+        self.tvcMaster.set_cell_data_func(self.crt4, self._set_master)
+        self.tvcCows.set_cell_data_func(self.crt5, self._set_cows)
+        self.tvcSize.set_cell_data_func(self.crt6, self._set_size)
 
-    def _set_cell_data(self, column, cell_renderer, model, iter, getter):
-        image = model.get_value(iter, 0)
-        self._set_text(cell_renderer, getter(image), image.exists())
+    def __dispose__(self):
+        self.factory.disconnect("image-added", self.images_control.add)
+        self.factory.disconnect("image-removed", self.images_control.remove)
 
-    def _set_text(self, cell_renderer, text, exists):
-        cell_renderer.set_property("text", text)
-        cell_renderer.set_property("foreground", "black" if exists else "grey")
+    def _set_name(self, column, cell, model, itr):
+        image = model[itr][0]
+        cell.set_property("text", image.name)
+        cell.set_property("foreground", "black" if image.exists() else "grey")
 
-    def _set_users(self, column, cell_renderer, model, itr):
-        def is_user(disk, image):
-            return disk.image is image
-        self._set_something(cell_renderer, model, itr, is_user)
+    def _set_path(self, column, cell, model, itr):
+        image = model[itr][0]
+        cell.set_property("text", image.path)
+        cell.set_property("foreground", "black" if image.exists() else "grey")
 
-    def _set_cows(self, column, cell_renderer, model, itr):
-        def is_cow(disk, image):
-            return disk.image is image and disk.cow
-        self._set_something(cell_renderer, model, itr, is_cow)
-
-    def _set_something(self, cell_renderer, model, itr, condition):
-        image = model.get_value(itr, 0)
+    def _set_used_by(self, column, cell, model, itr):
+        image = model[itr][0]
         c = 0
-        for brick in self.factory.bricks:
-            if brick.get_type() == "Qemu":
-                for disk in brick.disks():
-                    if condition(disk, image):
-                        c += 1
-        self._set_text(cell_renderer, str(c), image.exists())
+        for vm in filter(is_vm, self.factory.bricks):
+            for disk in vm.disks():
+                if disk.image is image:
+                    c += 1
+        cell.set_property("text", str(c))
+        cell.set_property("foreground", "black" if image.exists() else "grey")
 
-    def on_close_button_clicked(self, button):
+    def _set_master(self, column, cell, model, itr):
+        image = model[itr][0]
+        cell.set_property("text", image.repr_master())
+        cell.set_property("foreground", "black" if image.exists() else "grey")
+
+    def _set_cows(self, column, cell, model, itr):
+        image = model[itr][0]
+        c = 0
+        for vm in filter(is_vm, self.factory.bricks):
+            for disk in vm.disks():
+                if disk.image is image and disk.cow:
+                    c += 1
+        cell.set_property("text", str(c))
+        cell.set_property("foreground", "black" if image.exists() else "grey")
+
+    def _set_size(self, column, cell, model, itr):
+        image = model[itr][0]
+        cell.set_property("text", image.get_size())
+        cell.set_property("foreground", "black" if image.exists() else "grey")
+
+    def _show_config(self):
+        self.pnlList.hide()
+        self.pnlConfig.show()
+
+    def _hide_config(self):
+        self.pnlConfig.hide()
+        self.pnlList.show()
+
+    def on_btnClose_clicked(self, button):
         self.window.destroy()
 
-    def on_treeview_diskimages_row_activated(self, treeview, path, column):
-        self.image = treeview.get_model()[path][0]
-        self.tree_panel.hide()
-        self.config_panel.show()
+    def on_tvImages_row_activated(self, treeview, path, column):
+        model = treeview.get_model()
+        self.image = model[path][0]
+        self._show_config()
 
-    def on_revert_button_clicked(self, button):
-        self.config_panel.hide()
-        self.tree_panel.show()
+    def on_btnRevert_clicked(self, button):
+        self._hide_config()
 
-    def on_remove_button_clicked(self, button):
-        assert self.image is not None, \
-                "Called on_remove_button_clicked but self.image is not set."
+    def on_btnRemove_clicked(self, button):
         try:
             self.factory.remove_disk_image(self.image)
-        except Exception:
+        except: # XXX: catch only known exceptions
             logger.failure(img_cannot_remove, img=self.image)
-        self.tree_panel.show()
-        self.config_panel.hide()
+        self._hide_config()
 
-    def on_save_button_clicked(self, button):
-        assert self.image is not None, \
-                "Called on_save_button_clicked but no image is selected"
-        name = self.get_object("name_entry").get_text()
-        self.image.name = name
-        # host = self.get_object("host_entry").get_text()
-        # if host != self.image.host:
-        #     self.image.host = host
-        # ro = self.get_object("readonly_checkbutton").get_active()
-        # self.image.set_readonly(ro)
-        desc = self.get_object("description_entry").get_text()
-        if desc and self.image.description != desc:
-            self.image.description = desc
+    def on_btnSave_clicked(self, button):
+        self.image.name = self.etrName.get_text()
+        description = self.etrDescription.get_text()
+        if description and self.image.description != description:
+            self.image.description = description
         self.image = None
-        self.tree_panel.show()
-        self.config_panel.hide()
+        self._hide_config()
 
-    def on_diskimages_config_panel_show(self, panel):
-        assert self.image is not None, \
-                "Called on_diskimages_config_panel_show but image is None"
-        i, w = self.image, self.get_object
-        w("name_entry").set_text(i.name)
-        w("path_entry").set_text(i.path)
-        w("description_entry").set_text(i.description)
-        # w("readonly_checkbutton").set_active(i.is_readonly())
-        # w("host_entry").set_text(i.host or "")
+    def on_pnlConfig_show(self, panel):
+        self.etrName.set_text(self.image.name)
+        self.etrPath.set_text(self.image.path)
+        self.etrDescription.set_text(self.image.description)
 
 
 class UsbDevWindow(Window):

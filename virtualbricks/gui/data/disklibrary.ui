@@ -18,62 +18,62 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkScrolledWindow" id="treeview_panel">
+              <object class="GtkScrolledWindow" id="pnlList">
                 <property name="width_request">500</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hscrollbar_policy">automatic</property>
                 <child>
-                  <object class="GtkTreeView" id="treeview_diskimages">
+                  <object class="GtkTreeView" id="tvImages">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="model">liststore1</property>
-                    <signal name="row-activated" handler="on_treeview_diskimages_row_activated" swapped="no"/>
+                    <property name="model">lsImages</property>
+                    <signal name="row-activated" handler="on_tvImages_row_activated" swapped="no"/>
                     <child>
-                      <object class="GtkTreeViewColumn" id="treeviewcolumn1">
+                      <object class="GtkTreeViewColumn" id="tvcName">
                         <property name="title" translatable="yes">Image name</property>
                         <child>
-                          <object class="GtkCellRendererText" id="cellrenderertext1"/>
+                          <object class="GtkCellRendererText" id="crt1"/>
                         </child>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkTreeViewColumn" id="treeviewcolumn6">
+                      <object class="GtkTreeViewColumn" id="tvcPath">
                         <property name="title" translatable="yes">Path</property>
                         <child>
-                          <object class="GtkCellRendererText" id="cellrenderertext6"/>
+                          <object class="GtkCellRendererText" id="crt2"/>
                         </child>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkTreeViewColumn" id="treeviewcolumn2">
+                      <object class="GtkTreeViewColumn" id="tvcUsed">
                         <property name="title" translatable="yes">Used by</property>
                         <child>
-                          <object class="GtkCellRendererText" id="cellrenderertext2"/>
+                          <object class="GtkCellRendererText" id="crt3"/>
                         </child>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkTreeViewColumn" id="treeviewcolumn3">
+                      <object class="GtkTreeViewColumn" id="tvcMaster">
                         <property name="title" translatable="yes">Master Brick</property>
                         <child>
-                          <object class="GtkCellRendererText" id="cellrenderertext3"/>
+                          <object class="GtkCellRendererText" id="crt4"/>
                         </child>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkTreeViewColumn" id="treeviewcolumn4">
+                      <object class="GtkTreeViewColumn" id="tvcCows">
                         <property name="title" translatable="yes">COWs</property>
                         <child>
-                          <object class="GtkCellRendererText" id="cellrenderertext4"/>
+                          <object class="GtkCellRendererText" id="crt5"/>
                         </child>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkTreeViewColumn" id="treeviewcolumn5">
+                      <object class="GtkTreeViewColumn" id="tvcSize">
                         <property name="title" translatable="yes">Size (MB)</property>
                         <child>
-                          <object class="GtkCellRendererText" id="cellrenderertext5"/>
+                          <object class="GtkCellRendererText" id="crt6"/>
                         </child>
                       </object>
                     </child>
@@ -87,11 +87,11 @@
               </packing>
             </child>
             <child>
-              <object class="GtkFrame" id="config_panel">
+              <object class="GtkFrame" id="pnlConfig">
                 <property name="width_request">300</property>
                 <property name="can_focus">False</property>
                 <property name="label_xalign">0</property>
-                <signal name="show" handler="on_diskimages_config_panel_show" swapped="no"/>
+                <signal name="show" handler="on_pnlConfig_show" swapped="no"/>
                 <child>
                   <object class="GtkVBox" id="vbox2">
                     <property name="visible">True</property>
@@ -106,12 +106,12 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">False</property>
+                        <property name="fill">True</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="path_entry">
+                      <object class="GtkEntry" id="etrPath">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="editable">False</property>
@@ -124,7 +124,6 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="padding">5</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
@@ -154,7 +153,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="name_entry">
+                      <object class="GtkEntry" id="etrName">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">●</property>
@@ -166,7 +165,6 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="padding">5</property>
                         <property name="position">4</property>
                       </packing>
                     </child>
@@ -196,7 +194,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry" id="description_entry">
+                      <object class="GtkEntry" id="etrDescription">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">●</property>
@@ -207,67 +205,8 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="padding">5</property>
+                        <property name="fill">True</property>
                         <property name="position">7</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkHSeparator" id="hseparator1">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="padding">5</property>
-                        <property name="position">8</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label1">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Host:</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">9</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkEntry" id="host_entry">
-                        <property name="visible">True</property>
-                        <property name="sensitive">False</property>
-                        <property name="can_focus">True</property>
-                        <property name="invisible_char">●</property>
-                        <property name="primary_icon_activatable">False</property>
-                        <property name="secondary_icon_activatable">False</property>
-                        <property name="primary_icon_sensitive">True</property>
-                        <property name="secondary_icon_sensitive">True</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="padding">5</property>
-                        <property name="position">10</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkCheckButton" id="readonly_checkbutton">
-                        <property name="label" translatable="yes">Readonly</property>
-                        <property name="visible">True</property>
-                        <property name="sensitive">False</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">False</property>
-                        <property name="draw_indicator">True</property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">11</property>
                       </packing>
                     </child>
                     <child>
@@ -275,13 +214,13 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
-                          <object class="GtkButton" id="revert_button">
+                          <object class="GtkButton" id="btnRevert">
                             <property name="label">gtk-revert-to-saved</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="use_stock">True</property>
-                            <signal name="clicked" handler="on_revert_button_clicked" swapped="no"/>
+                            <signal name="clicked" handler="on_btnRevert_clicked" swapped="no"/>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -290,13 +229,13 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkButton" id="remove_button">
+                          <object class="GtkButton" id="btnRemove">
                             <property name="label">gtk-remove</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="use_stock">True</property>
-                            <signal name="clicked" handler="on_remove_button_clicked" swapped="no"/>
+                            <signal name="clicked" handler="on_btnRemove_clicked" swapped="no"/>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -305,13 +244,13 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkButton" id="save_button">
+                          <object class="GtkButton" id="btnSave">
                             <property name="label">gtk-save</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="use_stock">True</property>
-                            <signal name="clicked" handler="on_save_button_clicked" swapped="no"/>
+                            <signal name="clicked" handler="on_btnSave_clicked" swapped="no"/>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -321,9 +260,10 @@
                         </child>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
+                        <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">12</property>
+                        <property name="pack_type">end</property>
+                        <property name="position">8</property>
                       </packing>
                     </child>
                   </object>
@@ -351,13 +291,13 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="close_button">
+          <object class="GtkButton" id="btnClose">
             <property name="label">gtk-close</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="use_stock">True</property>
-            <signal name="clicked" handler="on_close_button_clicked" swapped="no"/>
+            <signal name="clicked" handler="on_btnClose_clicked" swapped="no"/>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -368,7 +308,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkListStore" id="liststore1">
+  <object class="GtkListStore" id="lsImages">
     <columns>
       <!-- column-name disk -->
       <column type="PyObject"/>

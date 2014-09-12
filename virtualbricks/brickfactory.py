@@ -95,6 +95,7 @@ class BrickFactory(object):
     # _restore is True during the restore of the project. Events are not
     # propagated.
     __restore = False
+    __signals = ("brick-changed", "image-added", "image-removed")
 
     def __init__(self, quit):
         self.quit_d = quit
@@ -103,7 +104,7 @@ class BrickFactory(object):
         self.socks = []
         self.disk_images = []
         self.__factories = install_brick_types()
-        self.__observable = observable.Observable("brick-changed")
+        self.__observable = observable.Observable(*self.__signals)
         self.changed = observable.Event(self.__observable, "brick-changed")
 
     def stop(self):
@@ -134,7 +135,8 @@ class BrickFactory(object):
         del self.events[:]
 
         del self.socks[:]
-        del self.disk_images[:]
+        for image in self.disk_images[:]:
+            self.remove_disk_image(image)
 
     def register_brick_type(self, factory, *types):
         """Register a new brick type.
@@ -152,6 +154,14 @@ class BrickFactory(object):
     def brick_changed(self, brick):
         if not self.__restore:
             self.__observable.notify("brick-changed", brick)
+
+    def image_added(self, image):
+        if not self.__restore:
+            self.__observable.notify("image-added", image)
+
+    def image_removed(self, image):
+        if not self.__restore:
+            self.__observable.notify("image-removed", image)
 
     def connect(self, name, callback, *args, **kwds):
         self.__observable.add_observer(name, callback, args, kwds)
@@ -175,6 +185,7 @@ class BrickFactory(object):
         img = virtualmachines.Image(self.normalize_name(name), path,
                                     description)
         self.disk_images.append(img)
+        self.image_added(img)
         return img
 
     def assert_path_not_in_use(self, path):
@@ -184,6 +195,7 @@ class BrickFactory(object):
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
+        self.image_removed(image)
 
     def get_image_by_name(self, name):
         """Return a disk image given its name or {None}."""
