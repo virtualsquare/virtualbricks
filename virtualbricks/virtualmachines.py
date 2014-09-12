@@ -216,7 +216,7 @@ class Image:
         fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
 
     def __format__(self, format_string):
-        if format_string == "n":
+        if format_string in ("n", ""):
             return str(self.name)
         elif format_string == "p":
             return str(self.path)

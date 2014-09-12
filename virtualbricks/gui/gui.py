@@ -1579,7 +1579,6 @@ class VisualFactory(brickfactory.BrickFactory):
         brickfactory.BrickFactory.__init__(self, quit)
         self.events = List()
         self.bricks = List()
-        self.disk_images = List()
         self.socks = List()
 
 

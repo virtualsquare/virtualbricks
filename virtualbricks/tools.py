@@ -342,3 +342,7 @@ def image_type(data):
 def image_type_from_file(filename):
     with open(filename) as fp:
         return image_type(fp.read(_MAX_HEADER))
+
+
+def dispose(obj):
+    obj.__dispose__()
