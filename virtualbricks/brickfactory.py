@@ -35,6 +35,7 @@ from twisted.conch import manhole
 from virtualbricks import errors, settings, configfile, console, project, log
 from virtualbricks import (events, link, router, switches, tunnels, tuntaps,
                            virtualmachines, wires)
+from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks import observable
 
 
@@ -92,10 +93,11 @@ class BrickFactory(object):
     It also contains a thread to manage the command console.
     """
 
-    # _restore is True during the restore of the project. Events are not
+    # __restore is True during the restore of the project. Events are not
     # propagated.
     __restore = False
-    __signals = ("brick-changed", "image-added", "image-removed")
+    __signals = ("brick-changed", "image-added", "image-removed",
+                 "image-changed")
 
     def __init__(self, quit):
         self.quit_d = quit
@@ -126,8 +128,10 @@ class BrickFactory(object):
         # exception. Don't know what will happen: maybe sockets not
         # disconnected, bricks not stopped or anyway bad things.
         # hard reset
-        for b in self.bricks:
-            self.del_brick(b)
+        for brick in self.bricks:
+            if is_virtualmachine(brick):
+                brick.image_changed.disconnect("image-chaged")
+            self.del_brick(brick)
         del self.bricks[:]
 
         for e in self.events:
@@ -151,17 +155,13 @@ class BrickFactory(object):
             self.__factories[type] = factory
             # self.__factories.setdefault(type, []).append(factory)
 
-    def brick_changed(self, brick):
+    def _brick_changed(self, brick):
         if not self.__restore:
             self.__observable.notify("brick-changed", brick)
 
-    def image_added(self, image):
+    def _image_changed(self, image):
         if not self.__restore:
-            self.__observable.notify("image-added", image)
-
-    def image_removed(self, image):
-        if not self.__restore:
-            self.__observable.notify("image-removed", image)
+            self.__observable.notify("image-changed", image)
 
     def connect(self, name, callback, *args, **kwds):
         self.__observable.add_observer(name, callback, args, kwds)
@@ -185,7 +185,8 @@ class BrickFactory(object):
         img = virtualmachines.Image(self.normalize_name(name), path,
                                     description)
         self.disk_images.append(img)
-        self.image_added(img)
+        if not self.__restore:
+            self.__observable.notify("image-added", img)
         return img
 
     def assert_path_not_in_use(self, path):
@@ -195,7 +196,8 @@ class BrickFactory(object):
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
-        self.image_removed(image)
+        if not self.__restore:
+            self.__observable.notify("image-removed", image)
 
     def get_image_by_name(self, name):
         """Return a disk image given its name or {None}."""
@@ -235,8 +237,10 @@ class BrickFactory(object):
     def new_brick(self, type, name, host="", remote=False):
         brick = self._new_brick(type, name, host, remote)
         self.bricks.append(brick)
-        brick.changed.connect(self.brick_changed)
-        self.brick_changed(brick)
+        brick.changed.connect(self._brick_changed)
+        if is_virtualmachine(brick):
+            brick.image_changed.connect(self._image_changed)
+        self._brick_changed(brick)
         return brick
 
     def _new_brick(self, type, name, host, remote):
@@ -292,7 +296,7 @@ class BrickFactory(object):
             if plug.configured():
                 plug.disconnect()
         self.bricks.remove(brick)
-        brick.changed.disconnect(self.brick_changed)
+        brick.changed.disconnect(self._brick_changed)
 
     def del_brick(self, brick):
         logger.info(remove_brick, brick=brick.name)

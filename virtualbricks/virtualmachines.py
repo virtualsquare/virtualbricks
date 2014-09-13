@@ -25,7 +25,8 @@ import itertools
 
 from twisted.internet import utils, defer
 
-from virtualbricks import errors, tools, settings, bricks, log, project
+from virtualbricks import (errors, tools, settings, bricks, log, project,
+                           observable)
 
 
 if False:
@@ -623,6 +624,9 @@ class VirtualMachine(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
+        self._observable.add_event("image-changed")
+        self.image_changed = observable.Event(self._observable,
+                                              "image-changed")
         self.config["name"] = name
         for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             self.config[dev] = Disk(self, dev)
@@ -828,8 +832,17 @@ class VirtualMachine(bricks.Brick):
         for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             yield self.config[hd]
 
+    def set_image(self, disk, image):
+        self.config[disk].image = image
+        if not self._restore:
+            self._observable.notify("image-changed", (self, image))
+
     def set_vm(self, disk):
         disk.VM = self
 
     cbset_hda = cbset_hdb = cbset_hdc = cbset_hdd = cbset_fda = cbset_fdb = \
             cbset_mtblock = set_vm
+
+
+def is_virtualmachine(brick):
+    return brick.get_type() == "Qemu"

@@ -28,6 +28,17 @@ class AbstractList:
                 return
             itr = model.iter_next(itr)
 
+    def on_changed(self, value):
+        model = self._view.get_model()
+        mbr = self._value_member
+        itr = model.get_iter_first()
+        while itr:
+            obj = model[itr][0]
+            if (mbr and getattr(obj, mbr) == value) or obj == value:
+                model.row_changed(model.get_path(itr), itr)
+                return
+            itr = model.iter_next(itr)
+
 
 class ListEntry:
 

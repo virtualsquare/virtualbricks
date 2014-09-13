@@ -1188,14 +1188,14 @@ class QemuConfigController(ConfigController):
         cfg["device"] = self.lcMount.get_selected_value()
 
         # harddisks
-        self.original.config["hda"].set_image(self.lcHda.get_selected_value())
-        self.original.config["hdb"].set_image(self.lcHdb.get_selected_value())
-        self.original.config["hdc"].set_image(self.lcHdc.get_selected_value())
-        self.original.config["hdd"].set_image(self.lcHdd.get_selected_value())
-        self.original.config["fda"].set_image(self.lcFda.get_selected_value())
-        self.original.config["fdb"].set_image(self.lcFdb.get_selected_value())
-        self.original.config["mtdblock"].set_image(
-            self.lcMtdblock.get_selected_value())
+        self.original.set_image("hda", self.lcHda.get_selected_value())
+        self.original.set_image("hdb", self.lcHdb.get_selected_value())
+        self.original.set_image("hdc", self.lcHdc.get_selected_value())
+        self.original.set_image("hdd", self.lcHdd.get_selected_value())
+        self.original.set_image("fda", self.lcFda.get_selected_value())
+        self.original.set_image("fdb", self.lcFdb.get_selected_value())
+        self.original.set_image("mtdblock",
+                                self.lcMtdblock.get_selected_value())
 
         for config_name, widget_name in self.config_to_widget_mapping:
             cfg[config_name] = self.get_object(widget_name).get_active()
