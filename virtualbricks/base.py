@@ -178,7 +178,7 @@ class ListOf(Parameter):
 
 class Base(object):
 
-    __restore = False
+    _restore = False
     # type = None  # if not set in a subclass will raise an AttributeError
     _name = None
     config_factory = Config
@@ -196,8 +196,8 @@ class Base(object):
     name = property(get_name, set_name)
 
     def __init__(self, factory, name):
-        self.__observable = observable.Observable("changed")
-        self.changed = observable.Event(self.__observable, "changed")
+        self._observable = observable.Observable("changed")
+        self.changed = observable.Event(self._observable, "changed")
         self.factory = factory
         self._name = name
         self.config = self.config_factory()
@@ -245,8 +245,8 @@ class Base(object):
         self.set_name(self.factory.normalize_name(name))
 
     def set_restore(self, restore):
-        self.__restore = restore
+        self._restore = restore
 
     def notify_changed(self):
-        if not self.__restore:
-            self.__observable.notify("changed", self)
+        if not self._restore:
+            self._observable.notify("changed", self)

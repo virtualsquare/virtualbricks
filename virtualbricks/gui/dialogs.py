@@ -93,6 +93,7 @@ from twisted.python import filepath
 
 from virtualbricks import (version, tools, log, console, settings,
                            virtualmachines, project, errors)
+from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.tools import dispose
 from virtualbricks.gui import graphics, controls
 
@@ -170,10 +171,6 @@ def destroy_on_exit(func):
         finally:
             dialog.destroy()
     return on_response
-
-
-def dispose(obj):
-    obj.__dispose__()
 
 
 class Base(object):
@@ -348,6 +345,7 @@ class DisksLibraryDialog(Window):
         self.images_control.set_data_source(factory.disk_images)
         factory.connect("image-added", self.images_control.add)
         factory.connect("image-removed", self.images_control.remove)
+        factory.connect("image-changed", self._on_image_changed)
         self.tvcName.set_cell_data_func(self.crt1, self._set_name)
         self.tvcPath.set_cell_data_func(self.crt2, self._set_path)
         self.tvcUsed.set_cell_data_func(self.crt3, self._set_used_by)
@@ -358,6 +356,7 @@ class DisksLibraryDialog(Window):
     def __dispose__(self):
         self.factory.disconnect("image-added", self.images_control.add)
         self.factory.disconnect("image-removed", self.images_control.remove)
+        self.factory.disconnect("image-changed", self._on_image_changed)
 
     def _set_name(self, column, cell, model, itr):
         image = model[itr][0]
@@ -372,7 +371,7 @@ class DisksLibraryDialog(Window):
     def _set_used_by(self, column, cell, model, itr):
         image = model[itr][0]
         c = 0
-        for vm in filter(is_vm, self.factory.bricks):
+        for vm in filter(is_virtualmachine, self.factory.bricks):
             for disk in vm.disks():
                 if disk.image is image:
                     c += 1
@@ -387,7 +386,7 @@ class DisksLibraryDialog(Window):
     def _set_cows(self, column, cell, model, itr):
         image = model[itr][0]
         c = 0
-        for vm in filter(is_vm, self.factory.bricks):
+        for vm in filter(is_virtualmachine, self.factory.bricks):
             for disk in vm.disks():
                 if disk.image is image and disk.cow:
                     c += 1
@@ -406,6 +405,10 @@ class DisksLibraryDialog(Window):
     def _hide_config(self):
         self.pnlConfig.hide()
         self.pnlList.show()
+
+    def _on_image_changed(self, brick_image):
+        brick, image = brick_image
+        self.images_control.on_changed(image)
 
     def on_btnClose_clicked(self, button):
         self.window.destroy()
@@ -1172,10 +1175,6 @@ class RenameProjectDialog(SimpleEntryDialog):
 
     def do_action(self, name):
         project.current.rename(name)
-
-
-def is_vm(brick):
-    return brick.get_type() == "Qemu"
 
 
 def has_cow(disk):
