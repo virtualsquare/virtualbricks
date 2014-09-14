@@ -2,17 +2,7 @@ from twisted.trial import unittest
 from twisted.internet import defer
 
 from virtualbricks import errors
-from virtualbricks.tests import stubs, successResultOf, failureResultOf
-
-
-class Stub2(object):
-
-    def __init__(self, factory, name):
-        self.factory = factory
-        self.name = name
-
-class Stub3(Stub2):
-    pass
+from virtualbricks.tests import stubs, successResultOf
 
 
 class TestFactory(unittest.TestCase):
@@ -44,17 +34,6 @@ class TestFactory(unittest.TestCase):
                           "event", "test_event")
         self.assertTrue(self.factory.newevent("Event", "event1"))
         self.assertFalse(self.factory.newevent("eVeNt", "event2"))
-
-    def test_register_new_type(self):
-        self.assertRaises(errors.InvalidTypeError, self.factory.new_brick,
-                          "stub2", "test")
-        self.factory.register_brick_type(Stub2, "stub2")
-        brick = self.factory.new_brick("stub2", "test")
-        self.assertIs(type(brick), Stub2)
-        # override an existing type
-        self.factory.register_brick_type(Stub3, "stub2")
-        brick = self.factory.new_brick("stub2", "test2")
-        self.assertIs(type(brick), Stub3)
 
     def test_dup_event(self):
         event = self.factory.new_event("test_event")
