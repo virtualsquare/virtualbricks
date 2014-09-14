@@ -130,7 +130,7 @@ class BrickFactory(object):
         # hard reset
         for brick in self.bricks:
             if is_virtualmachine(brick):
-                brick.image_changed.disconnect("image-chaged")
+                brick.image_changed.disconnect(self._image_changed)
             self.del_brick(brick)
         del self.bricks[:]
 
