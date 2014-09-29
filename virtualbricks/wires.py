@@ -48,9 +48,8 @@ class Wire(bricks.Brick):
             if self.plugs[0].sock:
                 p0 = self.plugs[0].sock.brick.name
             return _("Configured to connect {0} to {1}").format(p0, p1)
-        else:
-            return _("Not yet configured. Left plug is {0} and right plug is "
-                     "{1}").format(p0, p1)
+        return _("Not yet configured. Left plug is {0} and right plug is {1}"
+                ).format(p0, p1)
 
     def configured(self):
         return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))
