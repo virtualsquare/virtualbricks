@@ -96,7 +96,7 @@ from virtualbricks import (version, tools, log, console, settings,
                            virtualmachines, project, errors)
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.tools import dispose
-from virtualbricks.gui import graphics, controls, widgets
+from virtualbricks.gui import graphics, widgets
 
 
 if False:  # pyflakes
