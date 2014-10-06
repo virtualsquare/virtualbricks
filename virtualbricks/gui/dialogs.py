@@ -341,65 +341,45 @@ class DisksLibraryDialog(Window):
 
     resource = "data/disklibrary.ui"
     image = None
+    _binding_list = None
 
     def __init__(self, factory):
         Window.__init__(self)
         self.factory = factory
-        self.images_control = controls.MulticolListStore(self.tvImages)
-        self.images_control.set_data_source(factory.disk_images)
-        factory.connect("image-added", self.images_control.add)
-        factory.connect("image-removed", self.images_control.remove)
-        factory.connect("image-changed", self._on_image_changed)
-        self.tvcName.set_cell_data_func(self.crt1, self._set_name)
-        self.tvcPath.set_cell_data_func(self.crt2, self._set_path)
-        self.tvcUsed.set_cell_data_func(self.crt3, self._set_used_by)
-        self.tvcMaster.set_cell_data_func(self.crt4, self._set_master)
-        self.tvcCows.set_cell_data_func(self.crt5, self._set_cows)
-        self.tvcSize.set_cell_data_func(self.crt6, self._set_size)
+        self._binding_list = widgets.ImagesBindingList(factory)
+        self.lsImages.set_data_source(self._binding_list)
+        self.tvcName.set_cell_data_func(self.crt1, self.crt1.set_text)
+        self.tvcPath.set_cell_data_func(self.crt2, self.crt2.set_text)
+        self.tvcUsed.set_cell_data_func(self.crt3, self._set_used_by, factory)
+        self.tvcMaster.set_cell_data_func(self.crt4, self.crt4.set_text)
+        self.tvcCows.set_cell_data_func(self.crt5, self._set_cows, factory)
+        self.tvcSize.set_cell_data_func(self.crt6, self.crt6.set_text)
 
     def __dispose__(self):
-        self.factory.disconnect("image-added", self.images_control.add)
-        self.factory.disconnect("image-removed", self.images_control.remove)
-        self.factory.disconnect("image-changed", self._on_image_changed)
+        if self._binding_list is not None:
+            dispose(self._binding_list)
+            self._binding_list = None
 
-    def _set_name(self, column, cell, model, itr):
-        image = model[itr][0]
-        cell.set_property("text", image.name)
-        cell.set_property("foreground", "black" if image.exists() else "grey")
-
-    def _set_path(self, column, cell, model, itr):
-        image = model[itr][0]
-        cell.set_property("text", image.path)
-        cell.set_property("foreground", "black" if image.exists() else "grey")
-
-    def _set_used_by(self, column, cell, model, itr):
-        image = model[itr][0]
+    @staticmethod
+    def _set_used_by(column, cell, model, itr, factory):
+        image = model.get_value(itr, 0)
         c = 0
-        for vm in filter(is_virtualmachine, self.factory.bricks):
+        for vm in filter(is_virtualmachine, factory.bricks):
             for disk in vm.disks():
                 if disk.image is image:
                     c += 1
         cell.set_property("text", str(c))
         cell.set_property("foreground", "black" if image.exists() else "grey")
 
-    def _set_master(self, column, cell, model, itr):
-        image = model[itr][0]
-        cell.set_property("text", image.repr_master())
-        cell.set_property("foreground", "black" if image.exists() else "grey")
-
-    def _set_cows(self, column, cell, model, itr):
-        image = model[itr][0]
+    @staticmethod
+    def _set_cows(column, cell, model, itr, factory):
+        image = model.get_value(itr, 0)
         c = 0
-        for vm in filter(is_virtualmachine, self.factory.bricks):
+        for vm in filter(is_virtualmachine, factory.bricks):
             for disk in vm.disks():
                 if disk.image is image and disk.cow:
                     c += 1
         cell.set_property("text", str(c))
-        cell.set_property("foreground", "black" if image.exists() else "grey")
-
-    def _set_size(self, column, cell, model, itr):
-        image = model[itr][0]
-        cell.set_property("text", image.get_size())
         cell.set_property("foreground", "black" if image.exists() else "grey")
 
     def _show_config(self):
@@ -410,16 +390,12 @@ class DisksLibraryDialog(Window):
         self.pnlConfig.hide()
         self.pnlList.show()
 
-    def _on_image_changed(self, brick_image):
-        brick, image = brick_image
-        self.images_control.on_changed(image)
-
     def on_btnClose_clicked(self, button):
         self.window.destroy()
 
     def on_tvImages_row_activated(self, treeview, path, column):
         model = treeview.get_model()
-        self.image = model[path][0]
+        self.image = model.get_value(model.get_iter(path), 0)
         self._show_config()
 
     def on_btnRevert_clicked(self, button):
@@ -428,15 +404,13 @@ class DisksLibraryDialog(Window):
     def on_btnRemove_clicked(self, button):
         try:
             self.factory.remove_disk_image(self.image)
-        except: # XXX: catch only known exceptions
+        except:  # XXX: catch only known exceptions
             logger.failure(img_cannot_remove, img=self.image)
         self._hide_config()
 
     def on_btnSave_clicked(self, button):
-        self.image.name = self.etrName.get_text()
-        description = self.etrDescription.get_text()
-        if description and self.image.description != description:
-            self.image.description = description
+        self.image.set_name(self.etrName.get_text())
+        self.image.set_description(self.etrDescription.get_text())
         self.image = None
         self._hide_config()
 

@@ -155,9 +155,12 @@ class Image:
 
     readonly = False
     master = None
+    _description = None
+    _name = ""
 
     def __init__(self, name, path, description=""):
-        self.name = name
+        self.observable = observable.Observable("changed")
+        self._name = name
         self.path = os.path.abspath(path)
         if description:
             self.set_description(description)
@@ -166,20 +169,35 @@ class Image:
         return self.path + ".vbdescr"
 
     def set_description(self, descr):
-        try:
-            with open(self._description_file(), "w") as fp:
-                fp.write(descr)
-        except IOError:
-            pass
+        if descr != self._description:
+            self._description = descr
+            try:
+                with open(self._description_file(), "w") as fp:
+                    fp.write(descr)
+            except IOError:
+                pass
+            self.observable.notify("changed", self)
 
     def get_description(self):
-        try:
-            with open(self._description_file()) as fp:
-                return fp.read()
-        except IOError:
-            return ""
+        if self._description is None:
+            try:
+                with open(self._description_file()) as fp:
+                    return fp.read()
+            except IOError:
+                return ""
+        else:
+            return self._description
 
     description = property(get_description, set_description)
+
+    def set_name(self, value):
+        self._name = value
+        self.observable.notify("changed", self)
+
+    def get_name(self):
+        return self._name
+
+    name = property(get_name, set_name)
 
     def basename(self):
         return os.path.basename(self.path)
@@ -208,11 +226,6 @@ class Image:
         else:
             raise errors.LockedImageError(self, self.master)
 
-    def repr_master(self):
-        if self.master is None:
-            return ""
-        return repr(self.master)
-
     def save_to(self, fileobj):
         fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
 
@@ -223,6 +236,12 @@ class Image:
             return str(self.path)
         elif format_string == "d":
             return str(self.get_description())
+        elif format_string == "m":
+          if self.master is None:
+              return ""
+          return repr(self.master)
+        elif format_string == "s":
+          return self.get_size()
         raise ValueError("invalid format string " + repr(format_string))
 
 

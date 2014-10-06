@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
+  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
   <requires lib="gtk+" version="2.20"/>
   <!-- interface-naming-policy toplevel-contextual -->
   <object class="GtkWindow" id="DisksLibraryDialog">
@@ -33,7 +34,10 @@
                       <object class="GtkTreeViewColumn" id="tvcName">
                         <property name="title" translatable="yes">Image name</property>
                         <child>
-                          <object class="GtkCellRendererText" id="crt1"/>
+                          <object class="CellRendererFormattable" id="crt1">
+                            <property name="formatting_enabled">True</property>
+                            <property name="format_string">n</property>
+                          </object>
                         </child>
                       </object>
                     </child>
@@ -41,7 +45,10 @@
                       <object class="GtkTreeViewColumn" id="tvcPath">
                         <property name="title" translatable="yes">Path</property>
                         <child>
-                          <object class="GtkCellRendererText" id="crt2"/>
+                          <object class="CellRendererFormattable" id="crt2">
+                            <property name="formatting_enabled">True</property>
+                            <property name="format_string">p</property>
+                          </object>
                         </child>
                       </object>
                     </child>
@@ -57,7 +64,10 @@
                       <object class="GtkTreeViewColumn" id="tvcMaster">
                         <property name="title" translatable="yes">Master Brick</property>
                         <child>
-                          <object class="GtkCellRendererText" id="crt4"/>
+                          <object class="CellRendererFormattable" id="crt4">
+                            <property name="formatting_enabled">True</property>
+                            <property name="format_string">m</property>
+                          </object>
                         </child>
                       </object>
                     </child>
@@ -73,7 +83,10 @@
                       <object class="GtkTreeViewColumn" id="tvcSize">
                         <property name="title" translatable="yes">Size (MB)</property>
                         <child>
-                          <object class="GtkCellRendererText" id="crt6"/>
+                          <object class="CellRendererFormattable" id="crt6">
+                            <property name="formatting_enabled">True</property>
+                            <property name="format_string">s</property>
+                          </object>
                         </child>
                       </object>
                     </child>
@@ -308,7 +321,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkListStore" id="lsImages">
+  <object class="List" id="lsImages">
     <columns>
       <!-- column-name disk -->
       <column type="PyObject"/>
