@@ -427,9 +427,9 @@ class UsbDevWindow(Window):
     def __init__(self, usb_devices):
         Window.__init__(self)
         self.usb_devices = usb_devices
-        self.lcDevs = controls.ListStore.with_fmt(self.tvDevices,
-        "{0:id} {0:d}", string.Formatter())
-        self.tvDevices.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+        self.tvDevices.set_selection_mode(gtk.SELECTION_MULTIPLE)
+        self.crt.set_property("formatter", string.Formatter())
+        self.tvcDevs.set_cell_data_func(self.crt, self.crt.set_text)
 
     @staticmethod
     def parse_lsusb(output):
@@ -448,9 +448,9 @@ class UsbDevWindow(Window):
             output = output.strip()
             logger.info(lsusb_out, out=output)
             dlg = cls(usb_devices)
-            dlg.lcDevs.set_data_source(cls.parse_lsusb(output))
-            dlg.lcDevs.set_selected_values(usb_devices)
-            dlg.show(gui.get_object("main_win"))
+            dlg.lDevs.set_data_source(cls.parse_lsusb(output))
+            dlg.tvDevices.set_selected_values(usb_devices)
+            dlg.show(gui.wndMain)
 
         logger.info(search_usb)
         d = utils.getProcessOutput("lsusb", env=os.environ)
@@ -459,7 +459,7 @@ class UsbDevWindow(Window):
         gui.user_wait_action(d)
 
     def on_btnOk_clicked(self, button):
-        self.usb_devices[:] = self.lcDevs.get_selected_values()
+        self.usb_devices[:] = self.tvDevices.get_selected_values()
         self.window.destroy()
 
 

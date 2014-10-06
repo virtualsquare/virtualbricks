@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
+  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
   <requires lib="gtk+" version="2.24"/>
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="UsbDevWindow">
@@ -36,20 +37,20 @@
             <property name="hscrollbar_policy">automatic</property>
             <property name="vscrollbar_policy">automatic</property>
             <child>
-              <object class="GtkTreeView" id="tvDevices">
+              <object class="TreeView" id="tvDevices">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="model">liststore1</property>
+                <property name="model">lDevs</property>
                 <property name="headers_visible">False</property>
                 <property name="headers_clickable">False</property>
                 <property name="search_column">0</property>
                 <child>
-                  <object class="GtkTreeViewColumn" id="treeviewcolumn1">
-                    <property name="clickable">True</property>
-                    <property name="reorderable">True</property>
-                    <property name="sort_column_id">0</property>
+                  <object class="GtkTreeViewColumn" id="tvcDevs">
                     <child>
-                      <object class="GtkCellRendererText" id="cellrenderertext1"/>
+                      <object class="CellRendererFormattable" id="crt">
+                        <property name="formatting_enabled">True</property>
+                        <property name="format_string">{0:id} {0:d}</property>
+                      </object>
                     </child>
                   </object>
                 </child>
@@ -80,7 +81,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkListStore" id="liststore1">
+  <object class="List" id="lDevs">
     <columns>
       <!-- column-name usb_device -->
       <column type="PyObject"/>
