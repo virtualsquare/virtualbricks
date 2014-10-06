@@ -96,7 +96,7 @@ from virtualbricks import (version, tools, log, console, settings,
                            virtualmachines, project, errors)
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.tools import dispose
-from virtualbricks.gui import graphics, controls
+from virtualbricks.gui import graphics, controls, widgets
 
 
 if False:  # pyflakes
@@ -2099,3 +2099,51 @@ class SettingsDialog(Window):
             if response_id == gtk.RESPONSE_APPLY:
                 return
         dialog.destroy()
+
+
+class AttachEventDialog(Window):
+
+    resource = "data/attachevent.ui"
+
+    def __init__(self, brick, factory):
+        Window.__init__(self)
+        self.brick = brick
+        events = (e for e in factory.events if e.configured())
+        self.lEvents.set_data_source(events)
+        # event start
+        event_start = factory.get_event_by_name(brick.get("pon_vbevent"))
+        self.tvStart.set_selected_value(event_start)
+        self.tvcStartName.set_cell_data_func(self.crt1, self.crt1.set_text)
+        self.tvcStartParams.set_cell_data_func(self.crt2, self.crt2.set_text)
+        # event stop
+        event_stop = factory.get_event_by_name(brick.get("poff_vbevent"))
+        self.tvStop.set_selected_value(event_stop)
+        self.tvcStopName.set_cell_data_func(self.crt3, self.crt3.set_text)
+        self.tvcStopParams.set_cell_data_func(self.crt4, self.crt4.set_text)
+
+    def on_btnStartSelClear_clicked(self, button):
+        self.tvStart.set_selected_value(widgets.SELECT_NONE)
+        return True
+
+    def on_btnStopSelClear_clicked(self, button):
+        self.tvStop.set_selected_value(widgets.SELECT_NONE)
+        return True
+
+    def on_treeview_button_press_event(self, treeview, event):
+        if event.button == 1:
+            path = treeview.get_path_at_pos(int(event.x), int(event.y))
+            if path is None:
+                treeview.set_selected_value(widgets.SELECT_NONE)
+                return True
+
+    @destroy_on_exit
+    def on_AttachEventDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            event_start = self.tvStart.get_selected_value()
+            event_stop = self.tvStop.get_selected_value()
+            cfg = {
+                "pon_vbevent": event_start.name if event_start else "",
+                "poff_vbevent": event_stop.name if event_stop else "",
+            }
+            self.brick.set(cfg)
+        return True
