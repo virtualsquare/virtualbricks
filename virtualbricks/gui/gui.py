@@ -27,7 +27,7 @@ from zope.interface import implementer
 
 from virtualbricks import tools, settings, project, log, brickfactory
 
-from virtualbricks.gui import _gui, graphics, dialogs, interfaces
+from virtualbricks.gui import _gui, graphics, dialogs, interfaces, widgets
 
 
 if False:  # pyflakes
@@ -732,7 +732,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     '''
     def widgetnames(self):
         return ['main_win',
-        'dialog_settings',
         'menu_brickactions',
         'dialog_convertimage',
         ]
@@ -916,75 +915,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_item_quit_activate(self, menuitem):
         self.do_quit()
 
-    def on_item_settings_activate(self, widget=None, data=""):
-        self.get_object('filechooserbutton_qemupath').set_current_folder(
-            settings.get('qemupath'))
-        self.get_object('filechooserbutton_vdepath').set_current_folder(
-            settings.get('vdepath'))
-
-        cowfmt = settings.get('cowfmt')
-
-        if cowfmt == 'qcow2':
-            self.get_object('combo_cowfmt').set_active(2)
-        elif cowfmt == 'qcow':
-            self.get_object('combo_cowfmt').set_active(1)
-        else:  # default to cow
-            self.get_object('combo_cowfmt').set_active(0)
-
-        if self.disable_config_kvm:
-            self.get_object('check_kvm').set_sensitive(False)
-        else:
-            self.get_object('check_kvm').set_sensitive(True)
-
-        if self.disable_config_ksm:
-            self.get_object('check_ksm').set_sensitive(False)
-        else:
-            self.get_object('check_ksm').set_sensitive(True)
-
-        if settings.kvm:
-            self.get_object('check_kvm').set_active(True)
-        else:
-            self.get_object('check_kvm').set_active(False)
-
-        if settings.ksm:
-            self.get_object('check_ksm').set_active(True)
-        else:
-            self.get_object('check_ksm').set_active(False)
-
-        if settings.kqemu:
-            self.get_object('check_kqemu').set_active(True)
-        else:
-            self.get_object('check_kqemu').set_active(False)
-
-        if settings.femaleplugs:
-            self.get_object('check_femaleplugs').set_active(True)
-        else:
-            self.get_object('check_femaleplugs').set_active(False)
-
-        if settings.erroronloop:
-            self.get_object('check_erroronloop').set_active(True)
-        else:
-            self.get_object('check_erroronloop').set_active(False)
-
-        if settings.python:
-            self.get_object('check_python').set_active(True)
-        else:
-            self.get_object('check_python').set_active(False)
-
-        if settings.systray:
-            self.get_object('check_systray').set_active(True)
-        else:
-            self.get_object('check_systray').set_active(False)
-
-        if settings.show_missing:
-            self.get_object('check_show_missing').set_active(True)
-        else:
-            self.get_object('check_show_missing').set_active(False)
-
-        self.get_object('entry_term').set_text(settings.get('term'))
-        self.get_object('entry_sudo').set_text(settings.get('sudo'))
-        self.curtain_down()
-        self.show_window('dialog_settings')
+    def on_item_settings_activate(self, menuitem):
+        dialogs.SettingsDialog(self).show(self.wndMain)
+        return True
 
     def on_item_about_activate(self, widget=None, data=""):
         dialogs.AboutDialog().show()
@@ -1105,45 +1038,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                                                  self)
                 return True
 
-    def on_dialog_settings_delete_event(self, widget, event):
-        """we could use deletable property but deletable is only available in
-        GTK+ 2.10 and above"""
-        widget.hide()
-        return True
-
     def on_dialog_close(self, widget=None, data=""):
         self.show_window('')
         return True
-
-    def on_dialog_settings_response(self, dialog, response_id):
-        if response_id in (gtk.RESPONSE_APPLY, gtk.RESPONSE_OK):
-            logger.debug(apply_settings)
-            for k in "qemupath", "vdepath":
-                settings.set(k,
-                    self.get_object("filechooserbutton_" + k).get_filename())
-
-            settings.set("cowfmt",
-                 self.get_object("combo_cowfmt").get_active_text())
-            settings.set("kvm", self.get_active("check_kvm"))
-            settings.set("ksm", self.get_active("check_ksm"))
-            tools.enable_ksm(self.get_active("check_ksm"),
-                settings.get("sudo"))
-            settings.set("kqemu", self.get_active("check_kqemu"))
-            settings.set("python", self.get_active("check_python"))
-            settings.set("femaleplugs", self.get_active("check_femaleplugs"))
-            settings.set("erroronloop", self.get_active("check_erroronloop"))
-            settings.set("systray", self.get_active("check_systray"))
-            if self.get_active("check_systray"):
-                self.start_systray()
-            else:
-                self.stop_systray()
-            settings.set("show_missing", self.get_active("check_show_missing"))
-            settings.set("term", self.get_text("entry_term"))
-            settings.set("sudo", self.get_text("entry_sudo"))
-            settings.store()
-            if response_id == gtk.RESPONSE_APPLY:
-                return
-        dialog.hide()
 
     def on_dialog_attach_event_response(self, dialog, response_id):
         dialog.hide()
@@ -1226,70 +1123,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             if not kvm:
                 logger.error(no_kvm)
             widget.set_active(kvm)
-
-    def on_qemupath_changed(self, widget, data=None):
-        newpath = widget.get_filename()
-        missing_qemu = False
-        missing_kvm = False
-        missing, found = tools.check_missing_qemu(newpath)
-        lbl = self.get_object("label_qemupath_status")
-        if not os.access(newpath, os.X_OK):
-            lbl.set_markup('<span color="red">' + _("Error") + ':</SPAN>\n' +
-                           _("invalid path for qemu binaries"))
-            return
-
-        for t in missing:
-            if t == 'qemu':
-                missing_qemu = True
-            if t == 'kvm':
-                missing_kvm = True
-        if missing_qemu and missing_kvm:
-            lbl.set_markup('<span color="red">' + _("Error") + ':</span>\n' +
-                           _("cannot find neither qemu nor kvm in this path"))
-            return
-        txt = ""
-        if missing_qemu:
-            txt = ('<span color="red">' + _("Warning") + ':</span>\n' +
-                _("cannot find qemu, using kvm only\n"))
-
-        elif missing_kvm:
-            txt = ('<span color="yellow">' + _("Warning") + ':</span>\n' +
-                   _("kvm not found") + "." + _("KVM support disabled") +
-                   '.\n')
-        else:
-            txt = ('<span color="darkgreen">' + _("KVM and Qemu detected") +
-                   '.</span>\n')
-        arch = ""
-        rowlimit = 30
-        for i in found:
-            if i.startswith('qemu-system-'):
-                arch += i.split('qemu-system-')[1] + ", "
-                if (len(arch) > rowlimit):
-                    rowlimit += 30
-                    arch.rstrip(', ')
-                    arch += "\n"
-
-        if len(arch) > 0:
-            txt += _("additional targets supported") + ":\n"
-            txt += arch.rstrip(', ')
-        lbl.set_markup(txt)
-
-    def on_vdepath_changed(self, widget, data=None):
-        newpath = widget.get_filename()
-        missing = tools.check_missing_vde(newpath)
-        lbl = self.get_object("label_vdepath_status")
-        if not os.access(newpath, os.X_OK):
-            lbl.set_markup('<span color="red">' + _("Error") + ':</span>\n' +
-                           _("invalid path for vde binaries"))
-        elif len(missing) > 0:
-            txt = ('<span color="red">' + _("Warning, missing modules") +
-                   ':</span>\n')
-            for l in missing:
-                txt += l + "\n"
-            lbl.set_markup(txt)
-        else:
-            lbl.set_markup('<span color="darkgreen">' +
-                           _("All VDE components detected") + '.</span>\n')
 
     def on_show_messages_activate(self, menuitem, data=None):
         dialogs.LoggingWindow(self.messages_buffer).show()
