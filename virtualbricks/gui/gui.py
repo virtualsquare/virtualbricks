@@ -732,7 +732,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     '''
     def widgetnames(self):
         return ['main_win',
-        'menu_brickactions',
         'dialog_convertimage',
         ]
 
@@ -902,16 +901,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 return button.name.split("_")[1]
         return "Switch"
 
-    def set_sensitivegroup(self, l):
-        for i in l:
-            w = self.get_object(i)
-            w.set_sensitive(True)
-
-    def set_nonsensitivegroup(self, l):
-        for i in l:
-            w = self.get_object(i)
-            w.set_sensitive(False)
-
     def on_item_quit_activate(self, menuitem):
         self.do_quit()
 
@@ -980,15 +969,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_configure_event_toolbutton_clicked(self, toolbutton):
         return self.__show_config_if_selected(self.__events_treeview)
 
-    def show_brickactions(self):
-        brick = self.__get_selection(self.__bricks_treeview)
-        if brick.get_type() == "Qemu":
-            self.set_sensitivegroup(['vmresume'])
-        else:
-            self.set_nonsensitivegroup(['vmresume'])
-        self.get_object("brickaction_name").set_label(brick.name)
-        self.show_window('menu_brickactions')
-
     def on_bricks_treeview_button_release_event(self, treeview, event):
         if event.button == 3:
             pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
@@ -1041,35 +1021,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_dialog_close(self, widget=None, data=""):
         self.show_window('')
         return True
-
-    def on_dialog_attach_event_response(self, dialog, response_id):
-        dialog.hide()
-        if response_id == 1:
-            brick = self.__get_selection(self.__bricks_treeview)
-            startevents = self.get_object('start_events_avail_treeview')
-            stopevents = self.get_object('stop_events_avail_treeview')
-            model, iter_ = startevents.get_selection().get_selected()
-            if iter_:
-                brick.config["pon_vbevent"] = model[iter_][2]
-            else:
-                brick.config["pon_vbevent"] = ""
-            model, iter_ = stopevents.get_selection().get_selected()
-            if iter_:
-                brick.config["poff_vbevent"] = model[iter_][2]
-            else:
-                brick.config["poff_vbevent"] = ""
-
-        return True
-
-    def on_start_assign_nothing_button_clicked(self, widget=None, data=""):
-        startevents = self.get_object('start_events_avail_treeview')
-        treeselection = startevents.get_selection()
-        treeselection.unselect_all()
-
-    def on_stop_assign_nothing_button_clicked(self, widget=None, data=""):
-        stopevents = self.get_object('stop_events_avail_treeview')
-        treeselection = stopevents.get_selection()
-        treeselection.unselect_all()
 
     def on_item_create_image_activate(self, widget=None, data=""):
         dialogs.CreateImageDialog(self, self.brickfactory).show(
@@ -1126,85 +1077,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_show_messages_activate(self, menuitem, data=None):
         dialogs.LoggingWindow(self.messages_buffer).show()
-
-    def on_brick_attach_event(self, menuitem, data=None):
-        attach_event_window = self.get_object("dialog_attach_event")
-
-        # columns = (COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG) = range(4)
-        COL_ICON, COL_TYPE, COL_NAME, COL_CONFIG = range(4)
-
-        startavailevents = self.get_object('start_events_avail_treeview')
-        stopavailevents = self.get_object('stop_events_avail_treeview')
-
-        eventsmodel = gtk.ListStore(gtk.gdk.Pixbuf, str, str, str)
-
-        startavailevents.set_model(eventsmodel)
-        stopavailevents.set_model(eventsmodel)
-
-        treeviewselectionstart = startavailevents.get_selection()
-        treeviewselectionstart.unselect_all()
-        treeviewselectionstop = stopavailevents.get_selection()
-        treeviewselectionstop.unselect_all()
-        brick = self.__get_selection(self.__bricks_treeview)
-
-        for event in self.brickfactory.events:
-            if event.configured():
-                parameters = event.get_parameters()
-                if len(parameters) > 30:
-                    parameters = "%s..." % parameters[:30]
-                image = graphics.pixbuf_for_running_brick_at_size(event, 48,
-                                                                  48)
-                iter_ = eventsmodel.append([image, event.get_type(),
-                                            event.name, parameters])
-                if brick.config["pon_vbevent"] == event.name:
-                    treeviewselectionstart.select_iter(iter_)
-                if brick.config["poff_vbevent"] == event.name:
-                    treeviewselectionstop.select_iter(iter_)
-
-        cell = gtk.CellRendererPixbuf()
-        column_icon = gtk.TreeViewColumn(_("Icon"), cell, pixbuf=COL_ICON)
-        cell = gtk.CellRendererText()
-        column_type = gtk.TreeViewColumn(_("Type"), cell, text=COL_TYPE)
-        cell = gtk.CellRendererText()
-        column_name = gtk.TreeViewColumn(_("Name"), cell, text=COL_NAME)
-        cell = gtk.CellRendererText()
-        column_config = gtk.TreeViewColumn(_("Parameters"), cell,
-                                           text=COL_CONFIG)
-
-        # Clear columns
-        for c in startavailevents.get_columns():
-            startavailevents.remove_column(c)
-
-        for c in stopavailevents.get_columns():
-            stopavailevents.remove_column(c)
-
-        # Add columns
-        startavailevents.append_column(column_icon)
-        startavailevents.append_column(column_type)
-        startavailevents.append_column(column_name)
-        startavailevents.append_column(column_config)
-
-        cell = gtk.CellRendererPixbuf()
-        column_icon = gtk.TreeViewColumn(_("Icon"), cell, pixbuf=COL_ICON)
-        cell = gtk.CellRendererText()
-        column_type = gtk.TreeViewColumn(_("Type"), cell, text=COL_TYPE)
-        cell = gtk.CellRendererText()
-        column_name = gtk.TreeViewColumn(_("Name"), cell, text=COL_NAME)
-        cell = gtk.CellRendererText()
-        column_config = gtk.TreeViewColumn(_("Parameters"), cell,
-                                           text=COL_CONFIG)
-
-        stopavailevents.append_column(column_icon)
-        stopavailevents.append_column(column_type)
-        stopavailevents.append_column(column_name)
-        stopavailevents.append_column(column_config)
-
-        self.get_object('dialog_attach_event').\
-        set_title(_("Virtualbricks-Events to attach to the start/stop Brick "
-                    "Events"))
-
-        attach_event_window.show_all()
-        return True
 
     def on_project_open_activate(self, menuitem):
         dialog = dialogs.OpenProjectDialog(self)

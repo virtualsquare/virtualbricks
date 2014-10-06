@@ -131,7 +131,8 @@ class BrickPopupMenu(BaseMenu):
                     gui.get_object("main_win"))
 
     def on_attach_activate(self, menuitem, gui):
-        gui.on_brick_attach_event(menuitem)
+        dialogs.AttachEventDialog(self.original, gui.factory).show(gui.wndMain)
+        return True
 
 interfaces.registerAdapter(BrickPopupMenu, bricks.Brick, interfaces.IMenu)
 
