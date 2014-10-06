@@ -143,6 +143,8 @@ error_on_import_project = log.Event("An error occurred while import project")
 invalid_name = log.Event("Invalid name {name}")
 search_usb = log.Event("Searching USB devices")
 retr_usb = log.Event("Error while retrieving usb devices.")
+brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
+created = log.Event("Created successfully")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -167,7 +169,7 @@ def destroy_on_exit(func):
     @functools.wraps(func)
     def on_response(self, dialog, *args):
         try:
-            func(self, dialog, *args)
+            return func(self, dialog, *args)
         finally:
             dialog.destroy()
     return on_response
@@ -1962,3 +1964,29 @@ class RenameBrickDialog(RenameDialog):
         for fp in project.current.filepath.children():
             if fp.isfile() and regex.match(fp.basename()):
                 fp.moveTo(fp.sibling(regex.sub(new, fp.basename())))
+
+
+class NewBrickDialog(Window):
+
+    resource = "data/newbrick.ui"
+    _type = "Switch"
+
+    def __init__(self, factory):
+        Window.__init__(self)
+        self.factory = factory
+
+    def on_BrickType_toggled(self, radiobutton):
+        self._type = gtk.Buildable.get_name(radiobutton)[2:]
+        return True
+
+    @destroy_on_exit
+    def on_NewBrickDialog_response(self, dialog, response_id):
+        if response_id == gtk.RESPONSE_OK:
+            name = self.etrName.get_text()
+            try:
+                self.factory.new_brick(self._type, name)
+            except errors.InvalidNameError:
+                logger.error(brick_invalid_name)
+            else:
+                logger.debug(created)
+        return True

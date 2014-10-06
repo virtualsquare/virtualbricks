@@ -25,7 +25,7 @@ import gtk.glade
 from twisted.internet import error, defer, task, protocol, reactor
 from zope.interface import implementer
 
-from virtualbricks import tools, errors, settings, project, log, brickfactory
+from virtualbricks import tools, settings, project, log, brickfactory
 
 from virtualbricks.gui import _gui, graphics, dialogs, interfaces
 
@@ -46,7 +46,6 @@ components_not_found = log.Event("{text}\nThere are some components not "
     "found: {components} some functionalities may not be available.\nYou can "
     "disable this alert from the general settings.")
 brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
-created = log.Event("Created successfully")
 create_image_error = log.Event("Error on creating image")
 apply_settings = log.Event("Apply settings...")
 create_image = log.Event("Image creating.. ")
@@ -361,10 +360,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     """
 
     def __init__(self, factory, gladefile, quit, textbuffer=None):
-        self.brickfactory = factory
+        self.brickfactory = self.factory = factory
         self.gladefile = gladefile
         self.messages_buffer = textbuffer
         self.quit_d = quit
+        self.wndMain = gladefile.get_widget("main_win")
         TopologyMixin.__init__(self)
 
         self.widg = self.get_widgets(self.widgetnames())
@@ -733,7 +733,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def widgetnames(self):
         return ['main_win',
         'dialog_settings',
-        'dialog_newbrick',
         'menu_brickactions',
         'dialog_convertimage',
         ]
@@ -898,27 +897,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         elif response == gtk.RESPONSE_NO:
             return False
 
-    def on_newbrick_cancel(self, widget=None, data=""):
-        self.curtain_down()
-        self.show_window('')
-
     def selected_type(self, group):
         for button in group.get_group():
             if button.get_active():
                 return button.name.split("_")[1]
         return "Switch"
-
-    def on_newbrick_ok(self, widget=None, data=""):
-        self.show_window('')
-        self.curtain_down()
-        name = self.get_object('text_newbrickname').get_text()
-        ntype = self.selected_type(self.get_object("typebutton_Switch"))
-        try:
-            self.brickfactory.newbrick(ntype, name)
-        except errors.InvalidNameError:
-            logger.error(brick_invalid_name)
-        else:
-            logger.debug(created)
 
     def set_sensitivegroup(self, l):
         for i in l:
@@ -1228,10 +1211,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.curtain_down()
         self.user_wait_action(self.image_create)
 
-    def on_newbrick(self, widget=None, event=None, data=""):
-        self.curtain_down()
-        self.get_object('text_newbrickname').set_text("")
-        self.show_window('dialog_newbrick')
+    def on_newbrick(self, toolbutton):
+        dialogs.NewBrickDialog(self.factory).show(self.wndMain)
+        return True
 
     def on_newevent(self, widget=None, event=None, data=""):
         dialog = dialogs.NewEventDialog(self)
