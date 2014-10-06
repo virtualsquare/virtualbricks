@@ -3,10 +3,15 @@
 
 class Observable:
 
+    thawed = False
+
     def __init__(self, *names):
         self.__events = {}
         for name in names:
             self.add_event(name)
+
+    def set_thaw(self, value):
+        self.thawed = value
 
     def add_event(self, name):
         if name in self.__events:
@@ -30,8 +35,9 @@ class Observable:
     def notify(self, name, emitter):
         if name not in self.__events:
             raise ValueError("Event %s not present" % name)
-        for callback, args, kwds in self.__events[name]:
-            callback(emitter, *args, **kwds)
+        if not self.thawed:
+            for callback, args, kwds in self.__events[name]:
+                callback(emitter, *args, **kwds)
 
     def __len__(self):
         return len(self.__events)
@@ -55,3 +61,15 @@ class Event:
         if not callable(callback):
             raise TypeError("%r is not callable" % (callback, ))
         self.__observable.remove_observer(self.__name, callback, (), {})
+
+
+class thaw:
+
+    def __init__(self, observable):
+        self.observable = observable
+
+    def __enter__(self):
+        self.observable.set_thaw(True)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.observable.set_thaw(False)
