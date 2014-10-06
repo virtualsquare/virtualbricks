@@ -26,8 +26,7 @@ from twisted.internet import reactor, utils, defer, error
 from virtualbricks import (base, bricks, events, virtualmachines, link, log,
                            settings, tools, qemu)
 from virtualbricks.tools import dispose
-from virtualbricks.gui import graphics, dialogs, help, interfaces
-from virtualbricks.gui.controls import ComboBox, ListEntry
+from virtualbricks.gui import graphics, dialogs, help, interfaces, widgets
 
 
 __metaclass__ = type
@@ -964,6 +963,14 @@ MOUNT_DEVICE = (
 )
 
 
+class ImagesBindingList(widgets.ImagesBindingList):
+
+    def __iter__(self):
+        yield None
+        for image in widgets.ImagesBindingList.__iter__(self):
+            yield image
+
+
 class QemuConfigController(ConfigController):
 
     resource = "data/qemuconfig.ui"
@@ -1009,6 +1016,7 @@ class QemuConfigController(ConfigController):
     )
 
     state_manager = None
+    __images_list = None
 
     def setup_netwoks_cards(self):
         vmplugs = self.get_object("plugsmodel")
@@ -1120,46 +1128,53 @@ class QemuConfigController(ConfigController):
         kvmstate.check()
 
         # argv0/cpu/machine comboboxes
-        self.lcArgv0 = ComboBox.for_entry(self.cbArgv0)
-        self.lcCpu = ComboBox.for_entry(self.cbCpu)
-        self.lcMachine = ComboBox.for_entry(self.cbMachine)
         exes = qemu.get_executables()
-        self.lcArgv0.set_data_source(map(ListEntry.from_tpl, exes))
-        self.lcArgv0.set_selected_value(self.original.config["argv0"])
+        self.lArgv0.set_data_source(map(widgets.ListEntry.from_tuple, exes))
+        self.cbArgv0.set_selected_value(self.original.config["argv0"])
+        self.cbArgv0.set_cell_data_func(self.crf1, self.crf1.set_text)
+        self.cbCpu.set_cell_data_func(self.crf2, self.crf2.set_text)
+        self.cbMachine.set_cell_data_func(self.crf3, self.crf3.set_text)
 
         # boot/sound/mount comboboxes
-        self.lcBoot = ComboBox.for_entry(self.cbBoot)
-        self.lcBoot.set_data_source(map(ListEntry.from_tpl, BOOT_DEVICE))
-        self.lcBoot.set_selected_value(self.original.config["boot"])
-        self.lcSound = ComboBox.for_entry(self.cbSound)
-        self.lcSound.set_data_source(map(ListEntry.from_tpl, SOUND_DEVICE))
-        self.lcSound.set_selected_value(self.original.config["soundhw"])
-        self.lcMount = ComboBox.for_entry(self.cbMount)
-        self.lcMount.set_data_source(map(ListEntry.from_tpl, MOUNT_DEVICE))
-        self.lcMount.set_selected_value(self.original.config["device"])
+        boots = map(widgets.ListEntry.from_tuple, BOOT_DEVICE)
+        self.lBoot.set_data_source(boots)
+        self.cbBoot.set_selected_value(self.original.config["boot"])
+        self.cbBoot.set_cell_data_func(self.crf4, self.crf4.set_text)
+        sounds = map(widgets.ListEntry.from_tuple, SOUND_DEVICE)
+        self.lSound.set_data_source(sounds)
+        self.cbSound.set_selected_value(self.original.config["soundhw"])
+        self.cbSound.set_cell_data_func(self.crf5, self.crf5.set_text)
+        devices = map(widgets.ListEntry.from_tuple, MOUNT_DEVICE)
+        self.lDevice.set_data_source(devices)
+        self.cbMount.set_selected_value(self.original.config["device"])
+        self.cbMount.set_cell_data_func(self.crf6, self.crf6.set_text)
 
         # harddisks
-        images = [None] + list(self.original.factory.disk_images)
-        fmtr = ImageFormatter()
-        self.lcHda = ComboBox.with_fmt(self.cbHda, "n", fmtr)
-        # all the comboboxes share the same treemodel
-        self.lcHda.set_data_source(images)
-        self.original.factory.connect("image-added", self.lcHda.add)
-        self.original.factory.connect("image-removed", self.lcHda.remove)
-        self.lcHda.set_selected_value(self.original.config["hda"].image)
-        self.lcHdb = ComboBox.with_fmt(self.cbHdb, "n", fmtr)
-        self.lcHdb.set_selected_value(self.original.config["hdb"].image)
-        self.lcHdc = ComboBox.with_fmt(self.cbHdc, "n", fmtr)
-        self.lcHdc.set_selected_value(self.original.config["hdc"].image)
-        self.lcHdd = ComboBox.with_fmt(self.cbHdd, "n", fmtr)
-        self.lcHdd.set_selected_value(self.original.config["hdd"].image)
-        self.lcFda = ComboBox.with_fmt(self.cbFda, "n", fmtr)
-        self.lcFda.set_selected_value(self.original.config["fda"].image)
-        self.lcFdb = ComboBox.with_fmt(self.cbFdb, "n", fmtr)
-        self.lcFdb.set_selected_value(self.original.config["fdb"].image)
-        self.lcMtdblock = ComboBox.with_fmt(self.cbMtdblock, "n", fmtr)
-        self.lcMtdblock.set_selected_value(
+        self.__images_list = ImagesBindingList(gui.factory)
+        formatter = ImageFormatter()
+        self.lImages.set_data_source(self.__images_list)
+        self.cbHda.set_selected_value(self.original.config["hda"].image)
+        self.cbHda.set_cell_data_func(self.crf7, self.crf7.set_text)
+        self.crf7.set_property("formatter", formatter)
+        self.cbHdb.set_selected_value(self.original.config["hdb"].image)
+        self.cbHdb.set_cell_data_func(self.crf8, self.crf8.set_text)
+        self.crf8.set_property("formatter", formatter)
+        self.cbHdc.set_selected_value(self.original.config["hdc"].image)
+        self.cbHdc.set_cell_data_func(self.crf9, self.crf9.set_text)
+        self.crf9.set_property("formatter", formatter)
+        self.cbHdd.set_selected_value(self.original.config["hdd"].image)
+        self.cbHdd.set_cell_data_func(self.crf10, self.crf10.set_text)
+        self.crf10.set_property("formatter", formatter)
+        self.cbFda.set_selected_value(self.original.config["fda"].image)
+        self.cbFda.set_cell_data_func(self.crf11, self.crf11.set_text)
+        self.crf11.set_property("formatter", formatter)
+        self.cbFdb.set_selected_value(self.original.config["fdb"].image)
+        self.cbFdb.set_cell_data_func(self.crf12, self.crf12.set_text)
+        self.crf12.set_property("formatter", formatter)
+        self.cbMtdblock.set_selected_value(
             self.original.config["mtdblock"].image)
+        self.crf13.set_property("formatter", formatter)
+        self.cbMtdblock.set_cell_data_func(self.crf13, self.crf13.set_text)
 
         cfg = self.original.config
         go = self.get_object
@@ -1179,24 +1194,24 @@ class QemuConfigController(ConfigController):
         cfg = {}
 
         # argv0/cpu/machine comboboxes
-        cfg["argv0"] = self.lcArgv0.get_selected_value() or ""
-        cfg["cpu"] = self.lcCpu.get_selected_value() or ""
-        cfg["machine"] = self.lcMachine.get_selected_value() or ""
+        cfg["argv0"] = self.cbArgv0.get_selected_value() or ""
+        cfg["cpu"] = self.cbCpu.get_selected_value() or ""
+        cfg["machine"] = self.cbMachine.get_selected_value() or ""
 
         # boot/sound/mount comboboxes
-        cfg["boot"] = self.lcBoot.get_selected_value()
-        cfg["soundhw"] = self.lcSound.get_selected_value()
-        cfg["device"] = self.lcMount.get_selected_value()
+        cfg["boot"] = self.cbBoot.get_selected_value()
+        cfg["soundhw"] = self.cbSound.get_selected_value()
+        cfg["device"] = self.cbMount.get_selected_value()
 
         # harddisks
-        self.original.set_image("hda", self.lcHda.get_selected_value())
-        self.original.set_image("hdb", self.lcHdb.get_selected_value())
-        self.original.set_image("hdc", self.lcHdc.get_selected_value())
-        self.original.set_image("hdd", self.lcHdd.get_selected_value())
-        self.original.set_image("fda", self.lcFda.get_selected_value())
-        self.original.set_image("fdb", self.lcFdb.get_selected_value())
+        self.original.set_image("hda", self.cbHda.get_selected_value())
+        self.original.set_image("hdb", self.cbHdb.get_selected_value())
+        self.original.set_image("hdc", self.cbHdc.get_selected_value())
+        self.original.set_image("hdd", self.cbHdd.get_selected_value())
+        self.original.set_image("fda", self.cbFda.get_selected_value())
+        self.original.set_image("fdb", self.cbFdb.get_selected_value())
         self.original.set_image("mtdblock",
-                                self.lcMtdblock.get_selected_value())
+                                self.cbMtdblock.get_selected_value())
 
         for config_name, widget_name in self.config_to_widget_mapping:
             cfg[config_name] = self.get_object(widget_name).get_active()
@@ -1217,8 +1232,9 @@ class QemuConfigController(ConfigController):
         self.original.set(cfg)
 
     def __dispose__(self):
-        self.original.factory.disconnect("image-added", self.lcHda.add)
-        self.original.factory.disconnect("image-removed", self.lcHda.remove)
+        if self.__images_list is not None:
+            dispose(self.__images_list)
+            self.__images_list = None
 
     # signals
 
@@ -1230,15 +1246,16 @@ class QemuConfigController(ConfigController):
 
     def on_newempty_button_clicked(self, button):
         dialogs.CreateImageDialog(self.gui, self.gui.brickfactory).show(
-            self.gui.get_object("main_win"))
+            self.gui.wndMain)
 
     def on_cbArgv0_changed(self, combobox):
-        arch = self.lcArgv0.get_selected_value()
+        arch = self.cbArgv0.get_selected_value()
         if arch:
-            cpus = qemu.get_cpus(arch)
-            self.lcCpu.set_data_source(map(ListEntry.from_tpl, cpus))
-            machines = qemu.get_machines(arch)
-            self.lcMachine.set_data_source(map(ListEntry.from_tpl, machines))
+            cpus = map(widgets.ListEntry.from_tuple, qemu.get_cpus(arch))
+            self.lCpu.set_data_source(cpus)
+            machines = map(widgets.ListEntry.from_tuple,
+                           qemu.get_machines(arch))
+            self.lMachine.set_data_source(machines)
 
     def on_btnBind_clicked(self, button):
         dialogs.UsbDevWindow.show_dialog(self.gui, self.usb_devices)
@@ -1262,7 +1279,7 @@ class QemuConfigController(ConfigController):
         model = self.get_object("plugsmodel")
         remove = lambda _: self._remove_link(link, model)
         dialogs.ConfirmDialog(question, on_yes=remove).show(
-            self.gui.get_object("main_win"))
+            self.gui.wndMain)
 
     def on_networkcards_treeview_key_press_event(self, treeview, event):
         if gtk.gdk.keyval_from_name("Delete") == event.keyval:
@@ -1281,9 +1298,8 @@ class QemuConfigController(ConfigController):
 
     def on_addplug_button_clicked(self, button):
         model = self.get_object("plugsmodel")
-        parent = self.gui.get_object("main_win")
         dialogs.AddEthernetDialog(self.gui.brickfactory, self.original,
-                                  model).show(parent)
+                                  model).show(self.gui.wndMain)
 
     def on_setdefaulticon_button_clicked(self, button):
         self.get_object("qemuicon").set_from_pixbuf(
