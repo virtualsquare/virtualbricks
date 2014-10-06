@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 
 from virtualbricks.interfaces import registerAdapter
 
@@ -110,3 +110,10 @@ class IHelp(Interface):
         Callback that can be used to open the help window and show the help
         based on the name of the button.
         """
+
+
+class IBindingList(Interface):
+
+    changed = Attribute("IEvent, emitted when an item is changed")
+    added = Attribute("IEvent, emitted when an item is added")
+    removed = Attribute("IEvent, emitted when an item is removed")

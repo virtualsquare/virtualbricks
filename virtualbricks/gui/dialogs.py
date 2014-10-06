@@ -85,6 +85,7 @@ import tempfile
 import functools
 import re
 import string
+import textwrap
 
 import pango
 import gtk
@@ -145,6 +146,7 @@ search_usb = log.Event("Searching USB devices")
 retr_usb = log.Event("Error while retrieving usb devices.")
 brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
 created = log.Event("Created successfully")
+apply_settings = log.Event("Apply settings...")
 
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
@@ -1990,3 +1992,110 @@ class NewBrickDialog(Window):
             else:
                 logger.debug(created)
         return True
+
+
+class SettingsDialog(Window):
+
+    resource = "data/settings.ui"
+
+    def __init__(self, gui):
+        Window.__init__(self)
+        self.gui = gui
+        # general
+        self.etrTerm.set_text(settings.get("term"))
+        self.etrSudo.set_text(settings.get("sudo"))
+        self.cbSystray.set_active(settings.get("systray"))
+        self.cbShowMissing.set_active(settings.get("show_missing"))
+        # vde
+        self.fcbVdepath.set_current_folder(settings.get("vdepath"))
+        self.cbPython.set_active(settings.get("python"))
+        self.cbFemaleplugs.set_active(settings.get("femaleplugs"))
+        self.cbErroronloop.set_active(settings.get("erroronloop"))
+        # qemu/kvm
+        self.fcbQemupath.set_current_folder(settings.get("qemupath"))
+        self.lFormats.set_data_source(["cow", "qcow", "qcow2"])
+        self.cbCowfmt.set_selected_value(settings.get("cowfmt"))
+        self.cbCowfmt.set_cell_data_func(self.crt1, self.crt1.set_text)
+        self.cbKsm.set_active(settings.get("ksm"))
+        self.cbKsm.set_sensitive(tools.check_ksm())
+        self.cbKvm.set_active(settings.get("kvm"))
+        self.cbKvm.set_sensitive(tools.check_kvm(settings.get("qemupath")))
+        self.cbKqemu.set_active(settings.get("kqemu"))
+
+    def on_fcbVdepath_selection_changed(self, filechooser):
+        newpath = filechooser.get_filename()
+        missing = tools.check_missing_vde(newpath)
+        if not os.access(newpath, os.X_OK):
+            text = '<span color="red">{0}:</span>\n{1}'.format(
+                _("Error"), _("invalid path for vde binaries"))
+        elif len(missing) > 0:
+            text = '<span color="red">{0}:</span>\n'.format(
+                _("Warning, missing modules"))
+            for l in missing:
+                text += l + "\n"
+        else:
+            text = '<span color="darkgreen">{0}.</span>\n'.format(
+                _("All VDE components detected"))
+        self.lblVdepath.set_markup(text)
+
+    def on_fcbQemupath_selection_changed(self, filechooser):
+        newpath = filechooser.get_filename()
+        missing_qemu = missing_kvm = False
+        missing, found = tools.check_missing_qemu(newpath)
+        if "qemu" in missing:
+            missing_qemu = True
+        if "kvm" in missing:
+            missing_kvm = True
+        if not os.access(newpath, os.X_OK):
+            text = '<span color="red">{0}:</span>\n{1}'.format(
+                _("Error"), _("invalid path for qemu binaries"))
+        elif missing_qemu and missing_kvm:
+            text = '<span color="red">{0}:</span>\n{1}'.format(
+                _("Error"), _("cannot find neither qemu nor kvm in this path"))
+        else:
+            if missing_qemu:
+                text = '<span color="red">{0}:</span>\n{1}'.format(
+                    _("Warning"), _("cannot find qemu, using kvm only"))
+            elif missing_kvm:
+                text = '<span color="yellow">{0}:</span>\n{1}. {2}.\n'.format(
+                    _("Warning"), _("kvm not found"),
+                    _("KVM support disabled"))
+            else:
+                text = '<span color="darkgreen">{0}.</span>\n'.format(
+                    _("KVM and Qemu detected"))
+            arch = []
+            for f in found:
+                if f.startswith("qemu-system-"):
+                    arch.append(f[12:])
+            if arch:
+                text += "{0}:\n{1}".format(_("additional targets supported"),
+                                           textwrap.fill(" ".join(arch), 30))
+        self.lblQemupath.set_markup(text)
+
+    def on_SettingsDialog_response(self, dialog, response_id):
+        if response_id in (gtk.RESPONSE_APPLY, gtk.RESPONSE_OK):
+            logger.debug(apply_settings)
+            # general
+            settings.set("term", self.etrTerm.get_text())
+            settings.set("sudo", self.etrSudo.get_text())
+            settings.set("systray", self.cbSystray.get_active())
+            settings.set("show_missing", self.cbShowMissing.get_active())
+            # vde
+            settings.set('vdepath', self.fcbVdepath.get_current_folder())
+            settings.set("python", self.cbPython.get_active())
+            settings.set("femaleplugs", self.cbFemaleplugs.get_active())
+            settings.set("erroronloop", self.cbErroronloop.get_active())
+            # qemu/kvm
+            settings.set('qemupath', self.fcbQemupath.get_current_folder())
+            settings.set("cowfmt", self.cbCowfmt.get_selected_value())
+            settings.set("ksm", self.cbKsm.get_active())
+            settings.set("kvm", self.cbKvm.get_active())
+            settings.set("kqemu", self.cbKqemu.get_active())
+            tools.enable_ksm(self.cbKsm.get_active(), settings.get("sudo"))
+            if self.cbSystray.get_active():
+                self.gui.start_systray()
+            else:
+                self.gui.stop_systray()
+            if response_id == gtk.RESPONSE_APPLY:
+                return
+        dialog.destroy()
