@@ -75,9 +75,11 @@ def install_brick_types(registry=None):
         "wire": wires.Wire,
         "tunnelc": tunnels.TunnelConnect,
         "tunnel client": tunnels.TunnelConnect,
+        "tunnelclient": tunnels.TunnelConnect,
         "tunnelconnect": tunnels.TunnelConnect,
         "tunnell": tunnels.TunnelListen,
         "tunnel server": tunnels.TunnelListen,
+        "tunnelserver": tunnels.TunnelListen,
         "tunnellisten": tunnels.TunnelListen,
         "event": events.Event,
         "switchwrapper": switches.SwitchWrapper,
@@ -96,8 +98,9 @@ class BrickFactory(object):
     # __restore is True during the restore of the project. Events are not
     # propagated.
     __restore = False
-    __signals = ("brick-changed", "image-added", "image-removed",
-                 "image-changed")
+    __signals = ("brick-added", "brick-removed", "brick-changed",
+                 "image-added", "image-removed", "image-changed",
+                 "event-added", "event-removed", "event-changed")
 
     def __init__(self, quit):
         self.quit_d = quit
@@ -170,7 +173,8 @@ class BrickFactory(object):
         self.__observable.remove_observer(name, callback, args, kwds)
 
     def set_restore(self, restore):
-        self.__restore = restore
+        # self.__restore = restore
+        pass
 
     # [[[[[[[[[]]]]]]]]]
     # [   Disk Images  ]
@@ -240,7 +244,8 @@ class BrickFactory(object):
         brick.changed.connect(self._brick_changed)
         if is_virtualmachine(brick):
             brick.image_changed.connect(self._image_changed)
-        self._brick_changed(brick)
+        if not self.__restore:
+            self.__observable.notify("brick-added", brick)
         return brick
 
     def _new_brick(self, type, name, host, remote):
@@ -297,6 +302,8 @@ class BrickFactory(object):
                 plug.disconnect()
         self.bricks.remove(brick)
         brick.changed.disconnect(self._brick_changed)
+        if not self.__restore:
+            self.__observable.notify("brick-removed", brick)
 
     def del_brick(self, brick):
         logger.info(remove_brick, brick=brick.name)
@@ -324,6 +331,7 @@ class BrickFactory(object):
     def new_event(self, name):
         event = self._new_event(name)
         self.events.append(event)
+        self.__observable.notify("event-added", event)
         return event
 
     def _new_event(self, name):
@@ -350,6 +358,7 @@ class BrickFactory(object):
     def del_event(self, event):
         event.poweroff()
         self.events.remove(event)
+        self.__observable.notify("event-removed", event)
 
     def get_event_by_name(self, name):
         for e in self.events:
@@ -358,6 +367,7 @@ class BrickFactory(object):
 
     def rename_event(self, event, name):
         event.name = self.normalize_name(name)
+        self.__observable.notify("event-changed", event)
 
     ############################################
 

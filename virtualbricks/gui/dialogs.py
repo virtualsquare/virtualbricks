@@ -369,7 +369,6 @@ class DisksLibraryDialog(Window):
                 if disk.image is image:
                     c += 1
         cell.set_property("text", str(c))
-        cell.set_property("foreground", "black" if image.exists() else "grey")
 
     @staticmethod
     def _set_cows(column, cell, model, itr, factory):
@@ -380,7 +379,6 @@ class DisksLibraryDialog(Window):
                 if disk.image is image and disk.cow:
                     c += 1
         cell.set_property("text", str(c))
-        cell.set_property("foreground", "black" if image.exists() else "grey")
 
     def _show_config(self):
         self.pnlList.hide()
@@ -639,8 +637,7 @@ class NewEventDialog(Window):
                     dialog_n = ShellCommandDialog(event)
                 else:
                     raise RuntimeError("Invalid event type %s" % type)
-                dialog_n.window.set_transient_for(self.gui.widg["main_win"])
-                dialog_n.show()
+                dialog_n.show(self.gui.wndMain)
         finally:
             dialog.destroy()
 
@@ -934,7 +931,7 @@ class CommitImageDialog(Window):
 
 
 def choose_new_image(gui, factory):
-    main = gui.get_object("main_win")
+    main = gui.wndMain
     dialog = gtk.FileChooserDialog(_("Open a disk image"), main,
         gtk.FILE_CHOOSER_ACTION_OPEN,
         (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
