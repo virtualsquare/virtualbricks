@@ -126,8 +126,7 @@ class BrickPopupMenu(BaseMenu):
             logger.error(cannot_rename)
         else:
             dialogs.RenameBrickDialog(self.original,
-                gui.brickfactory.normalize_name).show(
-                    gui.get_object("main_win"))
+                gui.brickfactory.normalize_name).show(gui.wndMain)
 
     def on_attach_activate(self, menuitem, gui):
         dialogs.AttachEventDialog(self.original, gui.factory).show(gui.wndMain)
@@ -196,8 +195,7 @@ class EventPopupMenu(BaseMenu):
     def on_rename_activate(self, menuitem, gui):
         if not self.original.scheduled:
             dialogs.RenameDialog(self.original,
-                gui.brickfactory.normalize_name).show(
-                    gui.get_object("main_win"))
+                gui.brickfactory.normalize_name).show(gui.wndMain)
         else:
             logger.error(event_in_use)
 
@@ -226,9 +224,8 @@ class LinkMenu:
         menu.popup(None, None, None, button, time)
 
     def on_edit_activate(self, menuitem, controller, gui):
-        parent = gui.get_object("main_win")
         dialogs.EditEthernetDialog(gui.brickfactory, self.original.brick,
-                                   self.original).show(parent)
+                                   self.original).show(gui.wndMain)
 
     def on_remove_activate(self, menuitem, controller):
         controller.ask_remove_link(self.original)

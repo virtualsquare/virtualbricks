@@ -20,13 +20,12 @@ import sys
 
 import gobject
 import gtk
-import gtk.glade
 
 from twisted.internet import error, defer, task, protocol, reactor
 from zope.interface import implementer
 
-from virtualbricks import tools, settings, project, log, brickfactory
-
+from virtualbricks import tools, settings, project, log, brickfactory, bricks
+from virtualbricks.tools import dispose
 from virtualbricks.gui import _gui, graphics, dialogs, interfaces, widgets
 
 
@@ -114,6 +113,15 @@ def changed_brick_in_model(result, model):
             model.row_changed(path, model.get_iter(path))
             break
     return result
+
+
+def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
+    state = manager._build_state(tooltip, *widgets)
+    state.add_prerequisite(prerequisite)
+    selection = treeview.get_selection()
+    selection.connect("changed", lambda s: state.check())
+    state.check()
+    return state
 
 
 BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, TOPOLOGY_TAB, README_TAB = range(5)
@@ -315,7 +323,7 @@ class ProgressBar:
 
     def __init__(self, gui):
         self.freezer = dialogs.Freezer(gui.set_insensitive, gui.set_sensitive,
-            gui.get_object("main_win"))
+            gui.wndMain)
 
     def wait_for(self, something, *args):
         return self.freezer.wait_for(something, *args)
@@ -353,341 +361,180 @@ class _Root(object):
         pass
 
 
+class BricksBindingList(widgets.AbstractBindingList):
+
+    def __init__(self, factory):
+        widgets.AbstractBindingList.__init__(self, factory)
+        factory.connect("brick-added", self._on_added)
+        factory.connect("brick-removed", self._on_removed)
+        factory.connect("brick-changed", self._on_changed)
+
+    def __dispose__(self):
+        self._factory.disconnect("brick-added", self._on_added)
+        self._factory.disconnect("brick-removed", self._on_removed)
+        self._factory.disconnect("brick-changed", self._on_changed)
+
+    def __iter__(self):
+        return iter(self._factory.bricks)
+
+
+class EventsBindingList(widgets.AbstractBindingList):
+
+    def __init__(self, factory):
+        widgets.AbstractBindingList.__init__(self, factory)
+        factory.connect("event-added", self._on_added)
+        factory.connect("event-removed", self._on_removed)
+        factory.connect("event-changed", self._on_changed)
+
+    def __dispose__(self):
+        self._factory.disconnect("event-added", self._on_added)
+        self._factory.disconnect("event-removed", self._on_removed)
+        self._factory.disconnect("event-changed", self._on_changed)
+
+    def __iter__(self):
+        return iter(self._factory.events)
+
+
+def set_pixbuf(celllayout, cell, model, itr, data=None):
+    brick = model.get_value(itr, 0)
+    pixbuf = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
+    cell.set_property("pixbuf", pixbuf)
+
+
+def is_running(model, itr):
+    return bricks.is_running(model.get_value(itr, 0))
+
+
 class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     """
     The main GUI object for virtualbricks, containing all the configuration for
     the widgets and the connections to the main engine.
     """
 
-    def __init__(self, factory, gladefile, quit, textbuffer=None):
-        self.brickfactory = self.factory = factory
-        self.gladefile = gladefile
-        self.messages_buffer = textbuffer
-        self.quit_d = quit
-        self.wndMain = gladefile.get_widget("main_win")
-        TopologyMixin.__init__(self)
+    __bricks_binding_list = None
+    __events_binding_list = None
 
-        self.widg = self.get_widgets(self.widgetnames())
+    def __init__(self, factory, builder, quit, textbuffer=None):
+        self.factory = self.brickfactory = factory
+        self.builder = builder
+        self.quit_d = quit
+        self.config = settings
+        self.messages_buffer = textbuffer
 
         logger.info(start_virtualbricks)
-
-        # Connect all the signal from the factory to specific callbacks
-        self.__row_changed_h = factory.bricks.connect("row-changed",
-                self.on_bricks_model_changed)
-        self.__row_deleted_h = factory.bricks.connect("row-deleted",
-                self.on_bricks_model_deleted)
-        factory.connect("brick-changed", self.on_brick_changed, factory.bricks)
-
-        # General settings (system properties)
-        self.config = settings
-
-        # Show the main window
-        self.widg['main_win'].show()
-        self.get_object("main_win").connect("delete-event", self.delete_event)
-
-        # Set two useful file filters
-        self.vbl_filter = gtk.FileFilter()
-        self.vbl_filter.set_name(_("Virtualbricks Bricks List") + " (*.vbl)")
-        self.vbl_filter.add_pattern("*.vbl")
-        self.all_files_filter = gtk.FileFilter()
-        self.all_files_filter.set_name(_("All files"))
-        self.all_files_filter.add_pattern("*")
-
-        self.setup_bricks()
-        self.setup_events()
-        self.setup_joblist()
-
-        self.statusicon = None
+        self.__initialize_components()
+        factory.connect("brick-changed", self.on_brick_changed)
+        factory.connect("brick-added", self.on_brick_changed)
+        factory.connect("brick-removed", self.on_brick_changed)
         self.progressbar = ProgressBar(self)
-
-        ''' Tray icon '''
-        if settings.systray:
+        if settings.get("systray"):
             self.start_systray()
-
-        ''' Set the settings panel to bottom '''
-        self.curtain = self.get_object('vpaned_mainwindow')
-        self.curtain_down()
-
-        ''' Reset the selections for the TWs'''
-        self.vmplug_selected = None
-        self.joblist_selected = None
-
-        ''' Initialize threads, timers etc.'''
-        self.gladefile.signal_autoconnect(self)
+        self.builder.connect_signals(self)
         task.LoopingCall(self.running_bricks.refilter).start(2)
-
-        ''' Check GUI prerequisites '''
-        missing = self.check_gui_prerequisites()
-        self.disable_config_kvm = False
-        self.disable_config_ksm = False
-        missing_text = ""
-        missing_components = ""
-        if len(missing) > 0 and settings.show_missing:
-            for m in missing:
-                if m == "kvm":
-                    settings.set("kvm", "False")
-                    self.disable_config_kvm = True
-                    missing_text = (missing_text + "KVM not found: kvm support"
-                                    " will be disabled.\n")
-                elif m == "ksm":
-                    settings.set("kvm", "True")
-                    self.disable_config_ksm = True
-                    missing_text = (missing_text + "KSM not found in Linux. "
-                                    "Samepage memory will not work on this "
-                                    "system.\n")
-                else:
-                    missing_components = missing_components + ('%s ' % m)
-            logger.error(components_not_found, text=missing_text,
-                components=missing_components)
-
-        # Setup window global state pattern
         self.__state_manager = _gui.StateManager()
-        # enable brick config button only if a brick is selected
-        self.__config_brick_btn_state = self.__state_manager._build_state(
-            None, self.get_object("configure_brick_toolbutton"))
-        self.__config_brick_btn_state.add_prerequisite(
-            self.__brick_selected)
-        # enable event config button only if a brick is selected
-        self.__config_event_btn_state = self.__state_manager._build_state(
-            None, self.get_object("configure_event_toolbutton"))
-        self.__config_event_btn_state.add_prerequisite(
-            self.__event_selected)
+        state_add_selection(self.__state_manager, self.tvBricks,
+                            self.__brick_selected, _("No brick selected"),
+                            self.btnConfigure)
+        state_add_selection(self.__state_manager, self.tvEvents,
+                            self.__event_selected, _("No event selected"),
+                            self.btnConfigureEvent)
         self.init(factory)
+
+        # Check GUI prerequisites
+        self.__complain_on_missing_prerequisites()
 
         # attach the quit callback at the end, so it is not called if an
         # exception is raised before because of a syntax error of another kind
         # of error
         quit.addCallback(lambda _: self.on_quit())
 
-    def quit(self):
-        self.brickfactory.bricks.disconnect(self.__row_changed_h)
-        self.brickfactory.bricks.disconnect(self.__row_deleted_h)
-        self.brickfactory.disconnect("brick-changed", self.on_brick_changed,
-                                     self.brickfactory.bricks)
-        self.__row_changed_h = None
-        self.__row_deleted_h = None
+        # Show the main window
+        self.wndMain.show()
 
-    def __setup_treeview(self, resource, window_name, widget_name):
-        ui = graphics.get_data("virtualbricks.gui", resource)
-        builder = gtk.Builder()
-        builder.add_from_string(ui)
-        builder.connect_signals(self)
-        window = self.get_object(window_name)
-        widget = builder.get_object(widget_name)
-        widget.reparent(window)
-        return builder
+    def __initialize_components(self):
+        # bricks tab
+        set_text = widgets.CellRendererFormattable.set_text
+        self.tvcBrickIcon.set_cell_data_func(self.crp1, set_pixbuf)
+        self.tvcBrickStatus.set_cell_data_func(self.crt1, set_text)
+        self.tvcBrickType.set_cell_data_func(self.crt2, set_text)
+        self.tvcBrickName.set_cell_data_func(self.crt3, set_text)
+        self.tvcBrickParams.set_cell_data_func(self.crt4, set_text)
+        self.__bricks_binding_list = BricksBindingList(self.factory)
+        self.lBricks.set_data_source(self.__bricks_binding_list)
+        self.tvBricks.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
+                BRICK_DRAG_TARGETS, gtk.gdk.ACTION_LINK)
+        self.tvBricks.enable_model_drag_dest(BRICK_DRAG_TARGETS,
+                gtk.gdk.ACTION_LINK)
 
-    def setup_joblist(self):
-        builder = self.__setup_treeview("data/joblist.ui", "scrolledwindow1",
-                                        "joblist_treeview")
+        # events tab
+        self.tvcEventIcon.set_cell_data_func(self.crp2, set_pixbuf)
+        self.tvcEventStatus.set_cell_data_func(self.crt5, set_text)
+        self.tvcEventName.set_cell_data_func(self.crt6, set_text)
+        self.tvcEventParams.set_cell_data_func(self.crt7, set_text)
+        self.__events_binding_list = EventsBindingList(self.factory)
+        self.lEvents.set_data_source(self.__events_binding_list)
 
-        def set_icon(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            pixbuf = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
-            cell_renderer.set_property("pixbuf", pixbuf)
-
-        def set_pid(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            if brick.pid == -10:
-                pid = "python-thread   "
-            else:
-                pid = str(brick.pid)
-            cell_renderer.set_property("text", pid)
-
-        def set_type(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            cell_renderer.set_property("text", brick.get_type())
-
-        def set_name(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            cell_renderer.set_property("text", brick.name)
-
-        icon_c = builder.get_object("icon_treeviewcolumn")
-        icon_cr = builder.get_object("icon_cellrenderer")
-        icon_c.set_cell_data_func(icon_cr, set_icon)
-        pid_c = builder.get_object("pid_treeviewcolumn")
-        pid_cr = builder.get_object("pid_cellrenderer")
-        pid_c.set_cell_data_func(pid_cr, set_pid)
-        type_c = builder.get_object("type_treeviewcolumn")
-        type_cr = builder.get_object("type_cellrenderer")
-        type_c.set_cell_data_func(type_cr, set_type)
-        name_c = builder.get_object("name_treeviewcolumn")
-        name_cr = builder.get_object("name_cellrenderer")
-        name_c.set_cell_data_func(name_cr, set_name)
+        # jobs tab
+        self.tvcJobIcon.set_cell_data_func(self.crp3, set_pixbuf)
+        self.tvcJobPid.set_cell_data_func(self.crt8, set_text)
+        self.tvcJobType.set_cell_data_func(self.crt9, set_text)
+        self.tvcJobName.set_cell_data_func(self.crt10, set_text)
         self.running_bricks = self.brickfactory.bricks.filter_new()
-
-        def is_running(model, iter):
-            brick = model.get_value(iter, 0)
-            return brick and brick.proc is not None
-
         self.running_bricks.set_visible_func(is_running)
-        builder.get_object("joblist_treeview").set_model(self.running_bricks)
+        self.tvJobs.set_model(self.running_bricks)
 
-    def setup_events(self):
-        builder = self.__setup_treeview("data/events.ui",
-            "events_scrolledwindow", "events_treeview")
-
-        def set_icon(column, cell_renderer, model, iter):
-            event = model.get_value(iter, 0)
-            pixbuf = graphics.pixbuf_for_brick_at_size(event, 48, 48)
-            cell_renderer.set_property("pixbuf", pixbuf)
-
-        def set_status(column, cell_renderer, model, iter):
-            event = model.get_value(iter, 0)
-            cell_renderer.set_property("text", event.get_state())
-
-        def set_name(column, cell_renderer, model, iter):
-            event = model.get_value(iter, 0)
-            cell_renderer.set_property("text", event.name)
-
-        def set_parameters(column, cell_renderer, model, iter):
-            event = model.get_value(iter, 0)
-            cell_renderer.set_property("text", event.get_parameters())
-
-        icon_c = builder.get_object("icon_treeviewcolumn")
-        icon_cr = builder.get_object("icon_cellrenderer")
-        icon_c.set_cell_data_func(icon_cr, set_icon)
-        status_c = builder.get_object("status_treeviewcolumn")
-        status_cr = builder.get_object("status_cellrenderer")
-        status_c.set_cell_data_func(status_cr, set_status)
-        name_c = builder.get_object("name_treeviewcolumn")
-        name_cr = builder.get_object("name_cellrenderer")
-        name_c.set_cell_data_func(name_cr, set_name)
-        parameters_c = builder.get_object("parameters_treeviewcolumn")
-        parameters_cr = builder.get_object("parameters_cellrenderer")
-        parameters_c.set_cell_data_func(parameters_cr, set_parameters)
-        self.__events_treeview = builder.get_object("events_treeview")
-        self.__events_treeview.set_model(self.brickfactory.events)
-        selection = self.__events_treeview.get_selection()
-        selection.connect("changed", self.on_events_selection_changed)
-
-    def setup_bricks(self):
-        builder = self.__setup_treeview("data/bricks.ui",
-            "bricks_scrolledwindow", "bricks_treeview")
-
-        def set_icon(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            pixbuf = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
-            cell_renderer.set_property("pixbuf", pixbuf)
-
-        def set_status(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            cell_renderer.set_property("text", brick.get_state())
-
-        def set_type(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            cell_renderer.set_property("text", brick.get_type())
-
-        def set_name(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            cell_renderer.set_property("text", brick.name)
-
-        def set_parameters(column, cell_renderer, model, iter):
-            brick = model.get_value(iter, 0)
-            cell_renderer.set_property("text", brick.get_parameters())
-
-        icon_c = builder.get_object("icon_treeviewcolumn")
-        icon_cr = builder.get_object("icon_cellrenderer")
-        icon_c.set_cell_data_func(icon_cr, set_icon)
-        status_c = builder.get_object("status_treeviewcolumn")
-        status_cr = builder.get_object("status_cellrenderer")
-        status_c.set_cell_data_func(status_cr, set_status)
-        type_c = builder.get_object("type_treeviewcolumn")
-        type_cr = builder.get_object("type_cellrenderer")
-        type_c.set_cell_data_func(type_cr, set_type)
-        name_c = builder.get_object("name_treeviewcolumn")
-        name_cr = builder.get_object("name_cellrenderer")
-        name_c.set_cell_data_func(name_cr, set_name)
-        parameters_c = builder.get_object("parameters_treeviewcolumn")
-        parameters_cr = builder.get_object("parameters_cellrenderer")
-        parameters_c.set_cell_data_func(parameters_cr, set_parameters)
-        self.__bricks_treeview = tv = builder.get_object("bricks_treeview")
-        tv.set_model(self.brickfactory.bricks)
-        tv.enable_model_drag_source(gtk.gdk.BUTTON1_MASK, BRICK_DRAG_TARGETS,
-                                    gtk.gdk.ACTION_LINK)
-        tv.enable_model_drag_dest(BRICK_DRAG_TARGETS, gtk.gdk.ACTION_LINK)
-        selection = tv.get_selection()
-        selection.connect("changed", self.on_bricks_selection_changed)
-
-    def check_gui_prerequisites(self):
+    def __complain_on_missing_prerequisites(self):
         qmissing, _ = tools.check_missing_qemu(settings.get("qemupath"))
         vmissing = tools.check_missing_vde(settings.get("vdepath"))
-        ksmissing = []
-        if not os.access("/sys/kernel/mm/ksm", os.X_OK):
-            ksmissing.append("ksm")
-        return vmissing + qmissing + ksmissing
+        missing = vmissing + qmissing
+
+        if "kvm" in missing:
+            settings.set("kvm", False)
+        if not tools.check_ksm():
+            settings.set("ksm", False)
+            missing.append("ksm")
+        missing_text = []
+        missing_components = []
+        if len(missing) > 0 and settings.show_missing:
+            for m in missing:
+                if m == "kvm":
+                    missing_text.append("KVM not found: kvm support"
+                                    " will be disabled.")
+                elif m == "ksm":
+                    missing_text.append("KSM not found in Linux. "
+                                    "Samepage memory will not work on this "
+                                    "system.")
+                else:
+                    missing_components.append(m)
+            logger.error(components_not_found, text="\n".join(missing_text),
+                components=" ".join(missing_components))
+
+    def __dispose__(self):
+        self.factory.disconnect("brick-changed", self.on_brick_changed)
+        self.factory.disconnect("brick-added", self.on_brick_changed)
+        self.factory.disconnect("brick-removed", self.on_brick_changed)
+        if self.__bricks_binding_list is not None:
+            dispose(self.__bricks_binding_list)
+            self.__bricks_binding_list = None
+        if self.__events_binding_list is not None:
+            dispose(self.__events_binding_list)
+            self.__events_binding_list = None
+
+    def __getattr__(self, name):
+        obj = self.builder.get_object(name)
+        if obj is None:
+            raise AttributeError(name)
+        return obj
 
     def get_object(self, name):
-        return self.gladefile.get_widget(name)
-
-    def get_active(self, widget_name):
-        return self.get_object(widget_name).get_active()
-
-    def get_text(self, widget_name):
-        return self.get_object(widget_name).get_text()
+        return self.builder.get_object(name)
 
     """ ********************************************************     """
     """ Signal handlers                                           """
     """ ********************************************************     """
 
-    def on_bricks_model_changed(self, model, path, itr):
+    def on_brick_changed(self, brick):
         self.draw_topology()
-
-    def on_bricks_model_deleted(self, model, path):
-        self.draw_topology()
-
-    def on_brick_changed(self, brick, model):
-        itr = model.get_iter_first()
-        while itr:
-            if model.get(itr, 0)[0] == brick:
-                model.row_changed(model.get_path(itr), itr)
-                self.draw_topology()
-                break
-            itr = model.iter_next(itr)
-
-    '''
-    '    Systray management
-    '''
-    def start_systray(self):
-        if self.statusicon is None:
-            self.statusicon = gtk.StatusIcon()
-            self.statusicon.set_from_file(
-                graphics.get_image("virtualbricks.png"))
-            self.statusicon.set_tooltip("VirtualBricks Visible")
-            self.statusicon.connect('activate', self.on_systray_menu_toggle)
-            systray_menu = self.get_object("systray_menu")
-            self.statusicon.connect('popup-menu', self.systray_menu_popup,
-                                    systray_menu)
-
-        if not self.statusicon.get_visible():
-            self.statusicon.set_visible(True)
-
-    def systray_menu_popup(self, widget, button, time, data=None):
-        if button == 3 and data:
-            data.show_all()
-            data.popup(None, None, None, 3, time)
-
-    def stop_systray(self):
-        if self.statusicon is not None and self.statusicon.get_visible():
-            self.statusicon.set_visible(False)
-            self.statusicon = None
-
-    def systray_blinking(self, disable=False):
-        if self.statusicon is not None and self.statusicon.get_visible():
-            self.statusicon.set_blinking(not disable)
-
-    '''
-    '    Method to catch delete event from dialog windows.
-    '    Hide the main window into systray.
-    '''
-
-    def delete_event(self, window, event):
-        #don't delete; hide instead
-        if settings.systray and self.statusicon is not None:
-            self.get_object("main_win").hide_on_delete()
-            self.statusicon.set_tooltip("VirtualBricks Hidden")
-            return True
-        return False
 
     def curtain_down(self):
         self.get_object("main_notebook").show()
@@ -695,7 +542,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         configpanel = configframe.get_child()
         if configpanel:
             configpanel.destroy()
-            # configframe.remove(configpanel)
         configframe.hide()
         if project.current:
             self.set_title_default()
@@ -715,55 +561,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             if iter is not None:
                 return model.get_value(iter, 0)
 
-    '''
-    '    populate a list of all the widget whose names
-    '    are listed in parameter l
-    '''
-    def get_widgets(self, l):
-        r = dict()
-        for i in l:
-            r[i] = self.get_object(i)
-            r[i].hide()
-        return r
-
-    '''
-    '    Returns a list with all the
-    '    dialog windows names
-    '''
-    def widgetnames(self):
-        return ['main_win',
-        'dialog_convertimage',
-        ]
-
-    def show_window(self, name):
-        self.curtain_down()
-        for w in self.widg.keys():
-            if name == w or w == 'main_win':
-                if w.startswith('menu'):
-                    self.widg[w].popup(None, None, None, 3, 0)
-                else:
-                    self.widg[w].show()
-            elif not name.startswith('menu'):
-                self.widg[w].hide()
-
-    def pixbuf_scaled(self, filename):
-        if filename is None or filename == "":
-                return None
-        pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
-        width = pixbuf.get_width()
-        height = pixbuf.get_height()
-        if width <= height:
-            new_height = 48 * height / width
-            new_width = 48
-        else:
-            new_height = 48
-            new_width = 48 * width / height
-        pixbuf = pixbuf.scale_simple(new_width, new_height,
-                                     gtk.gdk.INTERP_BILINEAR)
-        return pixbuf
-
     def set_title(self, title):
-        self.get_object("main_win").set_title(title)
+        self.wndMain.set_title(title)
 
     def set_title_default(self):
         self.set_title("Virtualbricks (project: {0})".format(
@@ -797,6 +596,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         super(VBGUI, self).init(factory)
 
     def on_quit(self):
+        dispose(self)
         super(VBGUI, self).on_quit()
 
     def on_save(self):
@@ -814,19 +614,18 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         prj.restore(self.brickfactory)
         super(VBGUI, self).on_new(name)
 
-    def do_quit(self):
+    def do_quit(self, *_):
         self.quit_d.callback(None)
+        return True
 
     # end gui (programming) interface
 
-    def on_main_win_destroy_event(self, window):
-        self.do_quit()
-
-    def on_new_image_menuitem_activate(self, menuitem):
-        dialogs.choose_new_image(self, self.brickfactory)
-
-    def on_image_library_menuitem_activate(self, menuitem):
-        dialogs.DisksLibraryDialog(self.brickfactory).show()
+    def on_wndMain_delete_event(self, window, event):
+        #don't delete; hide instead
+        if settings.get("systray"):
+            window.hide()
+            self.statusicon.set_tooltip("Virtualbricks Hidden")
+            return True
 
     def ask_remove_brick(self, brick):
         if brick.proc is not None:
@@ -850,7 +649,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 on_yes_arg=what)
         if secondary_text is not None:
             dialog.format_secondary_text(secondary_text)
-        dialog.window.set_transient_for(self.widg["main_win"])
+        dialog.window.set_transient_for(self.wndMain)
         dialog.show()
 
     def on_bricks_treeview_key_release_event(self, treeview, event):
@@ -865,53 +664,120 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             if event is not None:
                 self.ask_remove_event(event)
 
-    def on_systray_menu_toggle(self, widget=None, data=""):
-        if self.statusicon.get_blinking():
-            self.systray_blinking(True)
-            return
+    # status icon handling
 
-        if not self.get_object("main_win").get_visible():
-            self.get_object("main_win").show()
+    def start_systray(self):
+        if not self.statusicon.get_visible():
+            self.statusicon.set_visible(True)
+
+    def stop_systray(self):
+        if self.statusicon.get_visible():
+            self.statusicon.set_visible(False)
+
+    def window_toggle(self):
+        if self.wndMain.get_visible():
             self.curtain_down()
-            self.statusicon.set_tooltip("the window is visible")
+            self.wndMain.hide()
+            self.statusicon.set_tooltip(_("Virtualbricks hidden"))
         else:
-            self.get_object("main_win").hide()
+            self.wndMain.show()
+            self.statusicon.set_tooltip(_("Virtualbricks visible"))
 
-    def on_systray_exit(self, widget=None, data=""):
-        self.do_quit()
+    def on_statusicon_activate(self, statusicon):
+        self.window_toggle()
 
-    def on_windown_destroy(self, widget=None, data=""):
-        widget.hide()
+    def on_statusicon_popup_menu(self, statusicon, button, time):
+        if button == 3:
+            self.menuSystray.popup(None, None, None, button, time)
+
+    def on_menuSystrayToggle_activate(self, menuitem):
+        self.window_toggle()
+
+    # menu items signals
+
+    def on_menuFileNew_activate(self, menuitem):
+        dialog = dialogs.NewProjectDialog(self)
+        dialog.on_destroy = self.set_title_default
+        dialog.show(self.wndMain)
         return True
 
-    def confirm(self, message):
-        dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
-                                   gtk.BUTTONS_YES_NO, message)
-        response = dialog.run()
-        dialog.destroy()
+    def on_menuFileOpen_activate(self, menuitem):
+        dialog = dialogs.OpenProjectDialog(self)
+        dialog.on_destroy = self.set_title_default
+        dialog.show(self.wndMain)
+        return True
 
-        if response == gtk.RESPONSE_YES:
-            return True
-        elif response == gtk.RESPONSE_NO:
-            return False
+    def on_menuFileRename_activate(self, menuitem):
+        dialog = dialogs.RenameProjectDialog(self)
+        dialog.on_destroy = self.set_title_default
+        dialog.show(self.wndMain)
+        return True
 
-    def selected_type(self, group):
-        for button in group.get_group():
-            if button.get_active():
-                return button.name.split("_")[1]
-        return "Switch"
+    def on_menuFileSave_activate(self, menuitem):
+        self.on_save()
+        return True
 
-    def on_item_quit_activate(self, menuitem):
-        self.do_quit()
+    def on_menuFileSaveAs_activate(self, menuitem):
+        self.on_save()
+        dialog = dialogs.SaveAsDialog(self.brickfactory, iter(project.manager))
+        dialog.show(self.wndMain)
+        return True
 
-    def on_item_settings_activate(self, menuitem):
+    def on_menuFileImport_activate(self, menuitem):
+        d = dialogs.ImportDialog(self.brickfactory)
+        d.on_destroy = self.set_title_default
+        d.show(self.wndMain)
+        return True
+
+    def on_menuFileExport_activate(self, menuitem):
+        self.on_save()
+        dialog = dialogs.ExportProjectDialog(ProgressBar(self),
+                                    project.current.filepath,
+                                    self.brickfactory.disk_images)
+        dialog.show(self.wndMain)
+        return True
+
+    def on_menuFileDelete_activate(self, menuitem):
+        dialogs.DeleteProjectDialog(self).show(self.wndMain)
+        return True
+
+    def on_menuSettingsPreferences_activate(self, menuitem):
         dialogs.SettingsDialog(self).show(self.wndMain)
         return True
 
-    def on_item_about_activate(self, widget=None, data=""):
-        dialogs.AboutDialog().show()
+    def on_menuViewMessages_activate(self, menuitem):
+        dialogs.LoggingWindow(self.messages_buffer).show()
+        return True
 
-    def on_toolbutton_start_all_clicked(self, widget=None, data=""):
+    def on_menuImagesCreate_activate(self, menuitem):
+        dialogs.CreateImageDialog(self, self.brickfactory).show(self.wndMain)
+        return True
+
+    def on_menuImagesNew_activate(self, menuitem):
+        dialogs.choose_new_image(self, self.brickfactory)
+        return True
+
+    def on_menuImagesCommit_activate(self, menuitem):
+        dialogs.CommitImageDialog(self.progressbar, self.brickfactory).show(
+            self.wndMain)
+        return True
+
+    def on_menuImagesLibrary_activate(self, menuitem):
+        dialogs.DisksLibraryDialog(self.brickfactory).show()
+        return True
+
+    def on_menuHelpAbout_activate(self, menuitem):
+        dialogs.AboutDialog().show(self.wndMain)
+        return True
+
+    # bricks toolbar
+
+    def on_btnNewBrick_clicked(self, toolbutton):
+        dialogs.NewBrickDialog(self.brickfactory).show(self.wndMain)
+        return True
+
+    def on_btnStartAll_clicked(self, toolbutton):
+        # TODO: look at the comment in on_btnStartAll_clicked
 
         def started_all(results):
             for success, value in results:
@@ -928,7 +794,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             l.append(d)
         defer.DeferredList(l, consumeErrors=True).addCallback(started_all)
 
-    def on_toolbutton_stop_all_clicked(self, widget=None, data=""):
+    def on_btnStopAll_clicked(self, toolbutton):
+        # TODO: need refactoring. filter refilter is not needed anymore,
+        # neither the call to changed
 
         def stopped_all(results):
             self.running_bricks.refilter()
@@ -942,32 +810,54 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             l.append(d)
         defer.DeferredList(l, consumeErrors=True).addCallback(stopped_all)
 
-    def on_toolbutton_start_all_events_clicked(self, widget=None, data=""):
+    def __show_config_if_selected(self, treeview):
+        brick = self.__get_selection(treeview)
+        if brick:
+            self.curtain_up(brick)
+
+    def on_btnConfigure_clicked(self, toolbutton):
+        self.__show_config_if_selected(self.tvBricks)
+        return True
+
+    # events toolbar
+
+    def on_btnNewEvent_clicked(self, toolbutton):
+        dialogs.NewEventDialog(self).show(self.wndMain)
+        return True
+
+    def on_btnStartAllEvents_clicked(self, toolbutton):
+        # TODO: look at the comment in on_btnStartAll_clicked
         self.curtain_down()
         events = self.brickfactory.events
         for idx, event in enumerate(events):
             d = event.poweron()
             d.addCallback(changed, gtk.TreeRowReference(events, idx))
             events.row_changed(idx, events.get_iter(idx))
+        return True
 
-    def on_toolbutton_stop_all_events_clicked(self, widget=None, data=""):
+    def on_btnStopAllEvents_clicked(self, toolbutton):
+        # TODO: look at the comment in on_btnStartAll_clicked
         self.curtain_down()
         events = self.brickfactory.events
         for idx, event in enumerate(events):
             event.poweroff()
             events.row_changed(idx, events.get_iter(idx))
-
-    def __show_config_if_selected(self, treeview):
-        brick = self.__get_selection(treeview)
-        if brick:
-            self.curtain_up(brick)
         return True
 
-    def on_configure_brick_toolbutton_clicked(self, toolbutton):
-        return self.__show_config_if_selected(self.__bricks_treeview)
+    def on_btnConfigureEvent_clicked(self, toolbutton):
+        self.__show_config_if_selected(self.tvEvents)
+        return True
 
-    def on_configure_event_toolbutton_clicked(self, toolbutton):
-        return self.__show_config_if_selected(self.__events_treeview)
+    def confirm(self, message):
+        dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
+                                   gtk.BUTTONS_YES_NO, message)
+        response = dialog.run()
+        dialog.destroy()
+
+        if response == gtk.RESPONSE_YES:
+            return True
+        elif response == gtk.RESPONSE_NO:
+            return False
 
     def on_bricks_treeview_button_release_event(self, treeview, event):
         if event.button == 3:
@@ -991,12 +881,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.startstop_brick(brick)
 
     def on_events_treeview_row_activated(self, treeview, path, column):
+        # TODO: look at the comment in on_btnStartAll_clicked
         model = treeview.get_model()
         event = model.get_value(model.get_iter(path), 0)
         event.toggle().addCallback(changed, gtk.TreeRowReference(model, path))
-
-    def on_focus_out(self, widget=None, event=None, data=""):
-        self.curtain_down()
 
     def startstop_brick(self, brick):
         d = brick.poweron() if brick.proc is None else brick.poweroff()
@@ -1017,14 +905,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 interfaces.IJobMenu(brick).popup(event.button, event.time,
                                                  self)
                 return True
-
-    def on_dialog_close(self, widget=None, data=""):
-        self.show_window('')
-        return True
-
-    def on_item_create_image_activate(self, widget=None, data=""):
-        dialogs.CreateImageDialog(self, self.brickfactory).show(
-            self.get_object("main_win"))
 
     def image_create(self):
         logger.info(create_image)
@@ -1059,104 +939,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.curtain_down()
         self.user_wait_action(self.image_create)
 
-    def on_newbrick(self, toolbutton):
-        dialogs.NewBrickDialog(self.factory).show(self.wndMain)
-        return True
-
-    def on_newevent(self, widget=None, event=None, data=""):
-        dialog = dialogs.NewEventDialog(self)
-        dialog.window.set_transient_for(self.widg["main_win"])
-        dialog.show()
-
-    def on_check_kvm(self, widget=None, event=None, data=""):
-        if widget.get_active():
-            kvm = tools.check_kvm(settings.get("qemupath"))
-            if not kvm:
-                logger.error(no_kvm)
-            widget.set_active(kvm)
-
-    def on_show_messages_activate(self, menuitem, data=None):
-        dialogs.LoggingWindow(self.messages_buffer).show()
-
-    def on_project_open_activate(self, menuitem):
-        dialog = dialogs.OpenProjectDialog(self)
-        dialog.on_destroy = self.set_title_default
-        dialog.show(self.get_object("main_win"))
-        return True
-
-    def on_project_delete_activate(self, menuitem):
-        dialogs.DeleteProjectDialog(self).show(self.get_object("main_win"))
-        return True
-
-    def on_rename_menuitem_activate(self, menuitem):
-        dialog = dialogs.RenameProjectDialog(self)
-        dialog.on_destroy = self.set_title_default
-        dialog.show(self.get_object("main_win"))
-        return True
-
-    def on_project_new_activate(self, menuitem):
-        dialog = dialogs.NewProjectDialog(self)
-        dialog.on_destroy = self.set_title_default
-        dialog.show(self.get_object("main_win"))
-        return True
-
-    def on_project_save_activate(self, menuitem):
-        self.on_save()
-
-    def on_project_saveas_activate(self, menuitem):
-        self.on_save()
-        dialog = dialogs.SaveAsDialog(self.brickfactory, iter(project.manager))
-        dialog.show(self.get_object("main_win"))
-        return True
-
-    def on_export_menuitem_activate(self, menuitem):
-        self.on_save()
-        dialog = dialogs.ExportProjectDialog(ProgressBar(self),
-                                    project.current.filepath,
-                                    self.brickfactory.disk_images)
-        dialog.show(self.get_object("main_win"))
-        return True
-
-    def on_import_menuitem_activate(self, menuitem):
-        d = dialogs.ImportDialog(self.brickfactory)
-        d.on_destroy = self.set_title_default
-        d.show(self.get_object("main_win"))
-
-    def do_image_convert(self, arg=None):
-        raise NotImplementedError("do_image_convert")
-        # src = self.get_object('filechooser_imageconvert_source').get_filename()
-        # fmt = self.get_object('combobox_imageconvert_format').get_active_text()
-        # # dst = src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
-        # src.rstrip(src.split('.')[-1]).rstrip('.')+'.'+fmt
-        # # self.user_wait_action(self.exec_image_convert)
-        # self.exec_image_convert()
-
-    def on_convertimage_convert(self, widget, event=None, data=None):
-        if (self.get_object('filechooser_imageconvert_source').get_filename()
-                is None):
-            logger.error(select_file)
-            return
-
-        # src = self.get_object('filechooser_imageconvert_source').get_filename()
-        # fmt = self.get_object('combobox_imageconvert_format').get_active_text()
-        filename = self.get_object(
-            'filechooser_imageconvert_source').get_filename()
-        if not os.access(os.path.dirname(filename), os.W_OK):
-            logger.error(cannot_write)
-        else:
-            self.do_image_convert()
-
-        self.show_window('')
-        return True
-
-    def on_commit_menuitem_activate(self, menuitem):
-        dialogs.CommitImageDialog(self.progressbar, self.brickfactory).show(
-            self.get_object("main_win"))
-
-    def on_convert_image(self, widget, event=None, data=None):
-        self.get_object('combobox_imageconvert_format').set_active(2)
-        self.show_window('dialog_convertimage')
-
     def user_wait_action(self, action, *args):
         return ProgressBar(self).wait_for(action, *args)
 
@@ -1164,10 +946,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return ProgressBar(self).wait_for(deferred)
 
     def set_insensitive(self):
-        self.get_object("main_win").set_sensitive(False)
+        self.wndMain.set_sensitive(False)
 
     def set_sensitive(self):
-        self.get_object("main_win").set_sensitive(True)
+        self.wndMain.set_sensitive(True)
 
     # Bricks tab signals
 
@@ -1209,19 +991,16 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         context.finish(True, False, time)
         return True
 
-    def on_bricks_selection_changed(self, selection):
-        self.__config_brick_btn_state.check()
-
     def __brick_selected(self):
-        return bool(self.__get_selection(self.__bricks_treeview))
+        return bool(self.__get_selection(self.tvBricks))
 
     # Events tab signals
 
     def on_events_selection_changed(self, selection):
-        self.__config_event_btn_state.check()
+        self.__state_event_config.check()
 
     def __event_selected(self):
-        return bool(self.__get_selection(self.__events_treeview))
+        return bool(self.__get_selection(self.tvEvents))
 
 
 class List(gtk.ListStore):
@@ -1349,26 +1128,21 @@ class Application(brickfactory.Application):
         self.logger_factory = AppLoggerFactory(self.textbuffer)
         brickfactory.Application.__init__(self, config)
 
-    def install_locale(self):
-        brickfactory.Application.install_locale(self)
-        gtk.glade.bindtextdomain("virtualbricks", "/usr/share/locale")
-        gtk.glade.textdomain("virtualbricks")
-
     def get_namespace(self):
         return {"gui": self.gui}
 
     def _run(self, factory, quit):
         # a bug in gtk2 make impossibile to use this and is not required anyway
         gtk.set_interactive(False)
-        gladefile = load_gladefile()
+        builder = load_ui()
         message_dialog = MessageDialogObserver()
         observer = log.FilteringLogObserver(message_dialog,
                                             (should_show_to_user,))
         logger.publisher.addObserver(observer, False)
         # disable default link_button action
         gtk.link_button_set_uri_hook(lambda b, s: None)
-        self.gui = VBGUI(factory, gladefile, quit, self.textbuffer)
-        message_dialog.set_parent(self.gui.widg["main_win"])
+        self.gui = VBGUI(factory, builder, quit, self.textbuffer)
+        message_dialog.set_parent(self.gui.wndMain)
 
     def run(self, reactor):
         ret = brickfactory.Application.run(self, reactor)
@@ -1376,10 +1150,13 @@ class Application(brickfactory.Application):
         return ret
 
 
-def load_gladefile():
+def load_ui():
     try:
-        gladefile = graphics.get_filename("virtualbricks.gui",
-                                    "data/virtualbricks.glade")
-        return gtk.glade.XML(gladefile)
+        builder = gtk.Builder()
+        builder.set_translation_domain("virtualbricks")
+        source = graphics.get_filename("virtualbricks.gui",
+                                       "data/virtualbricks.ui")
+        builder.add_from_file(source)
+        return builder
     except:
-        raise SystemExit("Cannot load gladefile")
+        raise SystemExit("Cannot load glade file")
