@@ -234,6 +234,8 @@ class ConfigFile:
         if isinstance(str_or_obj, (basestring, filepath.FilePath)):
             if isinstance(str_or_obj, basestring):
                 fp = filepath.FilePath(str_or_obj)
+            else:
+                fp = str_or_obj
             logger.debug(config_dump, path=fp.path)
             with backup(fp, fp.sibling(fp.basename() + "~")):
                 tmpfile = fp.sibling("." + fp.basename() + ".sav")

@@ -4,7 +4,7 @@ import StringIO
 from twisted.python import log, filepath
 
 from virtualbricks import configfile, configparser
-from virtualbricks.tests import unittest, stubs, LoggingObserver
+from virtualbricks.tests import unittest, stubs, LoggingObserver, Skip
 
 
 CONFIG1 = """
@@ -100,17 +100,14 @@ class TestConfigFile(unittest.TestCase):
         self.assertFalse(fbackup.exists())
 
     def test_save(self):
-        def save_to_string(f, fileobj):
-            self.assertTrue(filename)
-            self.assertTrue(os.path.exists(fileobj.name))
-            tmpfile.append(fileobj.name)
+        """Save a project."""
 
+        factory = stubs.Factory()
+        factory.new_brick("switch", "sw")
+        fp = filepath.FilePath(self.mktemp())
         config = configfile.ConfigFile()
-        config.save_to = save_to_string
-        filename = self.mktemp()
-        tmpfile = []
-        config.save(None, filename)
-        self.assertFalse(os.path.exists(tmpfile[0]))
+        config.save(factory, fp)
+        self.assertEqual(fp.getContent(), "[Switch:sw]\n\n")
 
     def test_restore(self):
         """Restore a project."""
@@ -255,3 +252,188 @@ class TestParser(unittest.TestCase):
         parser = configparser.Parser(StringIO.StringIO(line))
         expected = tuple(line[:-1].split("|"))
         self.assertEqual(list(parser), [expected])
+
+
+OLD_CONFIG_FILE = """
+[Project:/home/user/.virtualbricks.vbl]
+id=1
+[DiskImage:vtatpa.qcow2]
+path=@@IMAGEPATH@@
+[Qemu:test1]
+tdf=
+loadvm=
+rtc=
+kernel=
+pon_vbevent=
+ram=64
+sdl=
+privatefdb=
+privatefda=
+noacpi=
+keyboard=it
+portrait=
+privatehdd=
+serial=
+privatehda=*
+usbdevlist=
+privatehdc=
+privatehdb=
+kvmsmem=1
+soundhw=
+kvmsm=
+boot=
+vga=
+kernelenbl=
+smp=1
+machine=
+gdbport=1234
+device=
+basemtdblock=
+snapshot=*
+icon=
+initrdenbl=
+gdb=
+basefda=
+basefdb=
+vnc=
+basehdd=
+kvm=*
+basehdb=
+basehdc=
+basehda=vtatpa.qcow2
+privatemtdblock=
+cdrom=
+deviceen=
+kopt=
+vncN=1
+novga=
+poff_vbevent=
+name=test1
+argv0=qemu-system-i386
+initrd=
+usbmode=
+cpu=
+cdromen=
+[SwitchWrapper:sw1]
+numports=32
+pon_vbevent=
+poff_vbevent=
+path=/var/run/switch/sck
+"""
+
+
+def is_section(obj):
+    return isinstance(obj, configparser.Section)
+
+
+class FakeSection:
+
+    def __init__(self, type, name):
+        self.type = type
+        self.name = name
+
+    def __eq__(self, other):
+        return other.__eq__(self)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class SectionCmp:
+
+    def __init__(self, section):
+        self.section = section
+
+    @property
+    def type(self):
+        return self.section.type
+
+    @property
+    def name(self):
+        return self.section.name
+
+    def __eq__(self, other):
+        return self.type == other.type and self.name == other.name
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+def get_section(parser, type, name):
+    for obj in parser:
+        if is_section(obj) and obj.type == type and obj.name == name:
+            return obj
+
+
+class TestParseOldConfig(unittest.TestCase):
+
+    def setUp(self):
+        self.image = self.mktemp()
+        content = OLD_CONFIG_FILE.replace("@@IMAGEPATH@@", self.image, 1)
+        self.fp = StringIO.StringIO(content)
+
+    def test_sections(self):
+        parser = configparser.Parser(self.fp)
+        sections = [
+            FakeSection("Project", "/home/user/.virtualbricks.vbl"),
+            FakeSection("DiskImage", "vtatpa.qcow2"),
+            FakeSection("Qemu", "test1"),
+            FakeSection("SwitchWrapper", "sw1"),
+        ]
+        self.assertEqual([SectionCmp(s) for s in parser if is_section(s)],
+                         sections)
+
+    def test_disk_image(self):
+        parser = configparser.Parser(self.fp)
+        diskimage = get_section(parser, "DiskImage", "vtatpa.qcow2")
+        self.assertIsNot(diskimage, None)
+        self.assertEqual(dict(diskimage), {"path": self.image})
+
+    def test_switch_wrapper(self):
+        parser = configparser.Parser(self.fp)
+        sw = get_section(parser, "SwitchWrapper", "sw1")
+        self.assertIsNot(sw, None)
+        self.assertEqual(dict(sw), {"numports": "32", "pon_vbevent": "",
+                                    "poff_vbevent": "",
+                                    "path": "/var/run/switch/sck"})
+
+
+@Skip("Not yet supported")
+class TestLoadOldConfig(unittest.TestCase):
+
+    def setUp(self):
+        self.factory = stubs.Factory()
+        fp = filepath.FilePath(self.mktemp())
+        self.image = self.mktemp()
+        filepath.FilePath(self.image).touch()
+        fp.setContent(OLD_CONFIG_FILE.replace("@@IMAGEPATH@@", self.image, 1))
+        configfile.restore(self.factory, fp)
+
+    def test_sw(self):
+        """Test that the switchwrapper is resumed with right values."""
+
+        sw = self.factory.get_brick_by_name("sw1")
+        self.assertIsNotNone(sw)
+        self.assertEqual(sw.get("path"), "/var/run/switch/sck")
+        self.assertEqual(sw.get("pon_vbevent"), "")
+        self.assertEqual(sw.get("poff_vbevent"), "")
+
+    def test_vm(self):
+        """Test that the virtual machine is resumed with right values."""
+
+        vm = self.factory.get_brick_by_name("test1")
+        self.assertIsNotNone(vm)
+        self.assertEqual(vm.get("keyboard"), "it")
+        self.assertEqual(vm.get("privatehda"), True)
+        self.assertEqual(vm.get("kvm"), True)
+        self.assertEqual(vm.get("snapshot"), True)
+        self.assertEqual(vm.get("usbdevlist"), [])
+        self.assertEqual(vm.get("hda").image.path, os.path.abspath(self.image))
+        self.assertEqual(vm.get("pon_vbevent"), "")
+        self.assertEqual(vm.get("poff_vbevent"), "")
+
+    def test_image(self):
+        """Test that all the disk images are restored."""
+
+        image = self.factory.get_image_by_name("vtatpa.qcow2")
+        self.assertIsNotNone(image)
