@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
   <requires lib="gtk+" version="2.24"/>
+  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
   <!-- interface-naming-policy toplevel-contextual -->
+  <object class="List" id="lBricks">
+    <columns>
+      <!-- column-name brick -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
   <object class="List" id="lEvents">
     <columns>
       <!-- column-name event -->
       <column type="PyObject"/>
     </columns>
   </object>
-  <object class="List" id="lBricks">
-    <columns>
-      <!-- column-name brick -->
-      <column type="PyObject"/>
-    </columns>
+  <object class="GtkTreeModelFilter" id="lRunning">
+    <property name="child_model">lBricks</property>
   </object>
   <object class="GtkMenu" id="menuSystray">
     <property name="visible">True</property>
@@ -426,7 +429,7 @@
                     <property name="can_focus">True</property>
                     <property name="shadow_type">in</property>
                     <child>
-                      <object class="GtkTreeView" id="tvBricks">
+                      <object class="TreeView" id="tvBricks">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="model">lBricks</property>
@@ -440,7 +443,7 @@
                           <object class="GtkTreeViewColumn" id="tvcBrickIcon">
                             <property name="title" translatable="yes">Icon</property>
                             <child>
-                              <object class="GtkCellRendererPixbuf" id="crp1" />
+                              <object class="CellRendererBrickIcon" id="crp1"/>
                             </child>
                           </object>
                         </child>
@@ -449,8 +452,8 @@
                             <property name="title" translatable="yes">Status</property>
                             <child>
                               <object class="CellRendererFormattable" id="crt1">
-                                <property name="formatting_enabled">True</property>
                                 <property name="format_string">s</property>
+                                <property name="formatting_enabled">True</property>
                               </object>
                             </child>
                           </object>
@@ -460,8 +463,8 @@
                             <property name="title" translatable="yes">Type</property>
                             <child>
                               <object class="CellRendererFormattable" id="crt2">
-                                <property name="formatting_enabled">True</property>
                                 <property name="format_string">t</property>
+                                <property name="formatting_enabled">True</property>
                               </object>
                             </child>
                           </object>
@@ -471,8 +474,8 @@
                             <property name="title" translatable="yes">Name</property>
                             <child>
                               <object class="CellRendererFormattable" id="crt3">
-                                <property name="formatting_enabled">True</property>
                                 <property name="format_string">n</property>
+                                <property name="formatting_enabled">True</property>
                               </object>
                             </child>
                           </object>
@@ -482,8 +485,8 @@
                             <property name="title" translatable="yes">Parameters</property>
                             <child>
                               <object class="CellRendererFormattable" id="crt4">
-                                <property name="formatting_enabled">True</property>
                                 <property name="format_string">p</property>
+                                <property name="formatting_enabled">True</property>
                               </object>
                             </child>
                           </object>
@@ -607,7 +610,7 @@
                     <property name="can_focus">True</property>
                     <property name="shadow_type">in</property>
                     <child>
-                      <object class="GtkTreeView" id="tvEvents">
+                      <object class="TreeView" id="tvEvents">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="model">lEvents</property>
@@ -619,7 +622,7 @@
                           <object class="GtkTreeViewColumn" id="tvcEventIcon">
                             <property name="title" translatable="yes">Icon</property>
                             <child>
-                              <object class="GtkCellRendererPixbuf" id="crp2"/>
+                              <object class="CellRendererBrickIcon" id="crp2"/>
                             </child>
                           </object>
                         </child>
@@ -628,8 +631,8 @@
                             <property name="title" translatable="yes">Status</property>
                             <child>
                               <object class="CellRendererFormattable" id="crt5">
-                                <property name="formatting_enabled">True</property>
                                 <property name="format_string">s</property>
+                                <property name="formatting_enabled">True</property>
                               </object>
                             </child>
                           </object>
@@ -639,8 +642,8 @@
                             <property name="title" translatable="yes">Name</property>
                             <child>
                               <object class="CellRendererFormattable" id="crt6">
-                                <property name="formatting_enabled">True</property>
                                 <property name="format_string">n</property>
+                                <property name="formatting_enabled">True</property>
                               </object>
                             </child>
                           </object>
@@ -650,8 +653,8 @@
                             <property name="title" translatable="yes">Parameters</property>
                             <child>
                               <object class="CellRendererFormattable" id="crt7">
-                                <property name="formatting_enabled">True</property>
                                 <property name="format_string">p</property>
+                                <property name="formatting_enabled">True</property>
                               </object>
                             </child>
                           </object>
@@ -688,15 +691,16 @@
                 <property name="can_focus">True</property>
                 <property name="shadow_type">in</property>
                 <child>
-                  <object class="GtkTreeView" id="tvJobs">
+                  <object class="TreeView" id="tvJobs">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="model">lRunning</property>
                     <signal name="button-release-event" handler="on_joblist_treeview_button_release_event" swapped="no"/>
                     <child>
                       <object class="GtkTreeViewColumn" id="tvcJobIcon">
                         <property name="title" translatable="yes">Icon</property>
                         <child>
-                          <object class="GtkCellRendererPixbuf" id="crp3"/>
+                          <object class="CellRendererBrickIcon" id="crp3"/>
                         </child>
                       </object>
                     </child>
@@ -705,8 +709,8 @@
                         <property name="title" translatable="yes">Pid</property>
                         <child>
                           <object class="CellRendererFormattable" id="crt8">
-                            <property name="formatting_enabled">True</property>
                             <property name="format_string">d</property>
+                            <property name="formatting_enabled">True</property>
                           </object>
                         </child>
                       </object>
@@ -716,8 +720,8 @@
                         <property name="title" translatable="yes">Type</property>
                         <child>
                           <object class="CellRendererFormattable" id="crt9">
-                            <property name="formatting_enabled">True</property>
                             <property name="format_string">t</property>
+                            <property name="formatting_enabled">True</property>
                           </object>
                         </child>
                       </object>
@@ -727,8 +731,8 @@
                         <property name="title" translatable="yes">Name</property>
                         <child>
                           <object class="CellRendererFormattable" id="crt10">
-                            <property name="formatting_enabled">True</property>
                             <property name="format_string">n</property>
+                            <property name="formatting_enabled">True</property>
                           </object>
                         </child>
                       </object>

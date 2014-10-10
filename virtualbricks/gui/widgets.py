@@ -19,7 +19,7 @@ except NameError:
 
 def set_cells_data_func(column):
     for cell in column.get_cell_renderers():
-        column.set_cell_data_func(cell, cell.set_data)
+        column.set_cell_data_func(cell, cell.set_cell_data)
 
 
 class CellRendererFormattable(gtk.CellRendererText):
@@ -85,7 +85,7 @@ class CellRendererFormattable(gtk.CellRendererText):
             raise TypeError("Unknown property %r" % (pspec.name, ))
 
     @staticmethod
-    def set_data(cell_layout, cell, model, itr, data=None):
+    def set_cell_data(cell_layout, cell, model, itr, data=None):
         obj = model.get_value(itr, 0)
         if cell._formatting_enabled:
             if cell._formatter is not None:
@@ -98,17 +98,15 @@ class CellRendererFormattable(gtk.CellRendererText):
             text = str(obj)
         cell.set_property("text", text)
 
-    set_text = set_data
-
 
 class CellRendererBrickIcon(gtk.CellRendererPixbuf):
 
     __gtype_name__ = "CellRendererBrickIcon"
 
     @staticmethod
-    def set_data(cell_layout, cell, model, itr, data=None):
+    def set_cell_data(cell_layout, cell, model, itr, data=None):
         brick = model.get_value(itr, 0)
-        pixbuf = graphics.pixbuf_for_running_brick_at_size(brick, 48, 48)
+        pixbuf = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
         cell.set_property("pixbuf", pixbuf)
 
 
@@ -274,15 +272,11 @@ class TreeView(gtk.TreeView):
                 if not mbr:
                     raise TypeError
             except TypeError:
-                return tuple(self.__get_values(model, paths))
+                return tuple(model.get_value(model.get_iter(path), 0)
+                             for path in paths)
             else:
-                return tuple(getattr(obj, mbr) for obj in
-                             self.__get_values(model, paths))
-
-    @staticmethod
-    def __get_values(model, paths):
-        for path in paths:
-            yield model.get_value(model.get_iter(path), 0)
+                return tuple(getattr(model.get_value(model.get_iter(path), 0),
+                                     mbr) for path in paths)
 
     def set_selected_values(self, iterable):
         selection = self.get_selection()
@@ -318,6 +312,10 @@ class TreeView(gtk.TreeView):
                         if getattr(obj, mbr) == value:
                             selection.select_iter(itr)
                         itr = model.iter_next(itr)
+
+    def set_cells_data_func(self):
+        for column in self.get_columns():
+            set_cells_data_func(column)
 
 
 class ListEntry:

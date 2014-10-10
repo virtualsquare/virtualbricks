@@ -348,12 +348,12 @@ class DisksLibraryDialog(Window):
         self.factory = factory
         self._binding_list = widgets.ImagesBindingList(factory)
         self.lsImages.set_data_source(self._binding_list)
-        self.tvcName.set_cell_data_func(self.crt1, self.crt1.set_text)
-        self.tvcPath.set_cell_data_func(self.crt2, self.crt2.set_text)
+        self.tvcName.set_cell_data_func(self.crt1, self.crt1.set_cell_data)
+        self.tvcPath.set_cell_data_func(self.crt2, self.crt2.set_cell_data)
         self.tvcUsed.set_cell_data_func(self.crt3, self._set_used_by, factory)
-        self.tvcMaster.set_cell_data_func(self.crt4, self.crt4.set_text)
+        self.tvcMaster.set_cell_data_func(self.crt4, self.crt4.set_cell_data)
         self.tvcCows.set_cell_data_func(self.crt5, self._set_cows, factory)
-        self.tvcSize.set_cell_data_func(self.crt6, self.crt6.set_text)
+        self.tvcSize.set_cell_data_func(self.crt6, self.crt6.set_cell_data)
 
     def __dispose__(self):
         if self._binding_list is not None:
@@ -427,7 +427,7 @@ class UsbDevWindow(Window):
         self.usb_devices = usb_devices
         self.tvDevices.set_selection_mode(gtk.SELECTION_MULTIPLE)
         self.crt.set_property("formatter", string.Formatter())
-        self.tvcDevs.set_cell_data_func(self.crt, self.crt.set_text)
+        self.tvcDevs.set_cell_data_func(self.crt, self.crt.set_cell_data)
 
     @staticmethod
     def parse_lsusb(output):
@@ -1960,7 +1960,7 @@ class SettingsDialog(Window):
         self.fcbQemupath.set_current_folder(settings.get("qemupath"))
         self.lFormats.set_data_source(["cow", "qcow", "qcow2"])
         self.cbCowfmt.set_selected_value(settings.get("cowfmt"))
-        self.cbCowfmt.set_cell_data_func(self.crt1, self.crt1.set_text)
+        self.cbCowfmt.set_cell_data_func(self.crt1, self.crt1.set_cell_data)
         self.cbKsm.set_active(settings.get("ksm"))
         self.cbKsm.set_sensitive(tools.check_ksm())
         self.cbKvm.set_active(settings.get("kvm"))
@@ -2058,13 +2058,11 @@ class AttachEventDialog(Window):
         # event start
         event_start = factory.get_event_by_name(brick.get("pon_vbevent"))
         self.tvStart.set_selected_value(event_start)
-        self.tvcStartName.set_cell_data_func(self.crt1, self.crt1.set_text)
-        self.tvcStartParams.set_cell_data_func(self.crt2, self.crt2.set_text)
+        self.tvStart.set_cells_data_func()
         # event stop
         event_stop = factory.get_event_by_name(brick.get("poff_vbevent"))
         self.tvStop.set_selected_value(event_stop)
-        self.tvcStopName.set_cell_data_func(self.crt3, self.crt3.set_text)
-        self.tvcStopParams.set_cell_data_func(self.crt4, self.crt4.set_text)
+        self.tvStop.set_cells_data_func()
 
     def on_btnStartSelClear_clicked(self, button):
         self.tvStart.set_selected_value(widgets.SELECT_NONE)
