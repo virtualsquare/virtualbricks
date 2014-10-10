@@ -398,7 +398,6 @@ class TestParseOldConfig(unittest.TestCase):
                                     "path": "/var/run/switch/sck"})
 
 
-@Skip("Not yet supported")
 class TestLoadOldConfig(unittest.TestCase):
 
     def setUp(self):

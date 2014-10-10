@@ -22,6 +22,7 @@ import gobject
 import gtk
 
 from twisted.internet import error, defer, task, protocol, reactor
+from twisted.python import filepath
 from zope.interface import implementer
 
 from virtualbricks import tools, settings, project, log, brickfactory, bricks
@@ -245,6 +246,7 @@ class TopologyMixin(object):
 class ReadmeMixin(object):
 
     __deleyed_call = None
+    manager = project.manager
 
     def __get_buffer(self):
         return self.get_object("readme_textview").get_buffer()
@@ -263,14 +265,14 @@ class ReadmeMixin(object):
 
     def __save_readme(self):
         if self.__get_modified():
-            project.current.set_description(self.__get_text())
+            self.manager.current.set_description(self.__get_text())
             self.__set_modified(False)
 
     def __load_readme(self):
         buf = self.__get_buffer()
         buf.handler_block_by_func(self.__on_modify)
         try:
-            self.__set_text(project.current.get_description())
+            self.__set_text(self.manager.current.get_description())
             self.__set_modified(False)
         finally:
             buf.handler_unblock_by_func(self.__on_modify)
@@ -566,7 +568,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def set_title_default(self):
         self.set_title("Virtualbricks (project: {0})".format(
-            project.current.name))
+            project.manager.current.name))
 
     """ ******************************************************** """
     """                                                          """
@@ -601,17 +603,19 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_save(self):
         super(VBGUI, self).on_save()
-        project.current.save(self.brickfactory)
+        project.manager.save_current(self.brickfactory)
 
     def on_open(self, name):
         self.on_save()
-        project.manager.open(name, self.brickfactory)
+        prj = project.manager.get_project(name)
+        prj.open(self.brickfactory)
         super(VBGUI, self).on_open(name)
 
     def on_new(self, name):
         self.on_save()
-        prj = project.manager.create(name, self.brickfactory)
-        prj.restore(self.brickfactory)
+        prj = project.manager.get_project(name)
+        prj.create()
+        prj.open(self.brickfactory)
         super(VBGUI, self).on_new(name)
 
     def do_quit(self, *_):
@@ -719,7 +723,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_menuFileSaveAs_activate(self, menuitem):
         self.on_save()
-        dialog = dialogs.SaveAsDialog(self.brickfactory, iter(project.manager))
+        dialog = dialogs.SaveAsDialog(self.brickfactory,
+              (prj.name for prj in project.manager))
         dialog.show(self.wndMain)
         return True
 
@@ -732,8 +737,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def on_menuFileExport_activate(self, menuitem):
         self.on_save()
         dialog = dialogs.ExportProjectDialog(ProgressBar(self),
-                                    project.current.filepath,
-                                    self.brickfactory.disk_images)
+            filepath.FilePath(project.manager.current.path),
+            self.brickfactory.disk_images)
         dialog.show(self.wndMain)
         return True
 

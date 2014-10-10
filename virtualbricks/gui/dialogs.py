@@ -1075,7 +1075,7 @@ class ListProjectsDialog(Window):
         Window.show(self, parent)
 
     def get_projects(self):
-        return iter(project.manager)
+        return (prj.name for prj in project.manager)
 
     def populate(self, projects):
         model = self.get_object("liststore1")
@@ -1116,8 +1116,8 @@ class _ListProjectAbstract(ListProjectsDialog):
         Window.__init__(self)
 
     def get_projects(self):
-        curr = project.current.name
-        return (prj for prj in iter(project.manager) if prj != curr)
+        curr = project.manager.current
+        return (prj.name for prj in project.manager if prj != curr)
 
 
 class OpenProjectDialog(_ListProjectAbstract):
@@ -1139,7 +1139,7 @@ class DeleteProjectDialog(_ListProjectAbstract):
 
     @destroy_on_exit
     def do_action(self, dialog, response_id, name):
-        project.manager.delete(name)
+        project.manager.get_project(name).delete()
 
 
 class RenameProjectDialog(SimpleEntryDialog):
@@ -1149,7 +1149,7 @@ class RenameProjectDialog(SimpleEntryDialog):
         return _("New project name")
 
     def do_action(self, name):
-        project.current.rename(name)
+        project.manager.current.rename(name)
 
 
 def has_cow(disk):
@@ -1157,7 +1157,7 @@ def has_cow(disk):
 
 
 def cowname(brick, disk):
-    return os.path.join(project.current.path,
+    return os.path.join(project.manager.current.path,
                         "{0.name}_{1.device}.cow".format(brick, disk))
 
 
@@ -1208,6 +1208,8 @@ class ExportProjectDialog(Window):
     def __init__(self, progressbar, prjpath, disk_images):
         super(Window, self).__init__()
         self.progressbar = progressbar
+        if isinstance(prjpath, basestring):
+            prjpath = filepath.FilePath(prjpath)
         self.prjpath = prjpath
         self.image_files = [(image.name, filepath.FilePath(image.path))
                             for image in disk_images]
@@ -1349,7 +1351,7 @@ class ExportProjectDialog(Window):
         model = self.get_object("treestore1")
         model.row_changed((0,), model.get_iter((0,)))
 
-    def export(self, model, ancestor, filename):
+    def export(self, model, ancestor, filename, export=project.manager.export):
         files = []
         gather_selected(model, model.get_iter_first(), ancestor, files)
         for fp in self.required_files:
@@ -1358,7 +1360,7 @@ class ExportProjectDialog(Window):
         images = []
         if self.include_images:
             images = [(name, fp.path) for name, fp in self.image_files]
-        return project.manager.export(filename, files, images)
+        return export(filename, files, images)
 
     @destroy_on_exit
     def on_confirm_response(self, dialog, response_id, parent, filename):
@@ -1379,7 +1381,7 @@ class ExportProjectDialog(Window):
             if fp.exists():
                 cdialog = ConfirmOverwriteDialog(fp, dialog)
                 cdialog.connect("response", self.on_confirm_response, dialog,
-                               fp.path)
+                                fp.path)
                 cdialog.show()
             else:
                 dialog.destroy()
@@ -1500,7 +1502,7 @@ def all_paths_set(model):
 
 class _HumbleImport:
 
-    def step_1(self, dialog, model, path, extract=project.manager.extract):
+    def step_1(self, dialog, model, path, extract=project.manager.import_prj):
         archive_path = dialog.get_archive_path()
         if archive_path != dialog.archive_path:
             if dialog.project:
@@ -1526,7 +1528,7 @@ class _HumbleImport:
 
     def fill_model_cb(self, project, dialog, model, vipath):
         model.clear()
-        for name in (fp.basename() for fp in project.imported_images()):
+        for name in project.images():
             if name in dialog.images:
                 fp = vipath.child(os.path.basename(dialog.images[name]))
             else:
@@ -1554,7 +1556,8 @@ class _HumbleImport:
         w = dialog.get_object
         w("projectname_label").set_text(dialog.get_project_name())
         path_label = w("projectpath_label")
-        path = dialog.project.filepath.sibling(dialog.get_project_name()).path
+        fp = filepath.FilePath(dialog.project.path)
+        path = fp.sibling(dialog.get_project_name()).path
         path_label.set_text(path)
         path_label.set_tooltip_text(path)
         w("open_label").set_text(str(dialog.get_open()))
@@ -1584,17 +1587,16 @@ class _HumbleImport:
         deferred.addCallback(self.check_rebase)
         deferred.addCallback(lambda a: project.rename(name, overwrite))
         if open:
-            deferred.addCallback(pass_through(project.restore, factory))
+            deferred.addCallback(pass_through(project.open, factory))
         deferred.addErrback(pass_through(project.delete))
         logger.log_failure(deferred, error_on_import_project)
         return deferred
 
     def get_images(self, project, entry, store1, store2):
-        imagesfp = project.filepath.child(".images")
+        imagesfp = filepath.FilePath(project.path).child(".images")
         imgs = self.save_images(store1, imagesfp)
         self.remap_images(entry, store2, imgs)
-        with project.dot_project().open("w") as fp:
-            entry.dump(fp)
+        entry.save(project)
         return imgs
 
     def save_images(self, model, source):
@@ -1627,7 +1629,7 @@ class _HumbleImport:
         for name, path in images.iteritems():
             for vmname, dev in entry.device_for_image(name):
                 cow_name = "{0}_{1}.cow".format(vmname, dev)
-                cow = project.filepath.child(cow_name)
+                cow = filepath.FilePath(project.path).child(cow_name)
                 if cow.exists():
                     logger.debug(log_rebase, cow=cow.path, basefile=path.path)
                     lst.append(self.rebase(path.path, cow.path))
@@ -1766,7 +1768,7 @@ class ImportDialog(Window):
                                      self.get_open(),
                                      self.get_object("liststore1"),
                                      self.get_object("liststore2"))
-        ProgressBar(self.assistant).wait_for(deferred)
+        ProgressBar(assistant).wait_for(deferred)
         return True
 
     def on_ImportDialog_close(self, assistant):
@@ -1794,7 +1796,7 @@ class ImportDialog(Window):
     def set_import_sensitive(self, filename, name, overwrite_btn):
         page = self.get_object("intro_page")
         label = self.get_object("warn_label")
-        if name in set(project.manager):
+        if name in list(prj.name for prj in project.manager):
             overwrite_btn.set_visible(True)
             overwrite = overwrite_btn.get_active()
             label.set_visible(not overwrite)
@@ -1881,7 +1883,8 @@ class SaveAsDialog(Window):
     @destroy_on_exit
     def on_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            project.current.save_as(self.get_project_name(), self.factory)
+            project.manager.current.save_as(self.get_project_name(),
+                                            self.factory)
 
 
 class RenameDialog(Window):
@@ -1934,7 +1937,7 @@ class RenameBrickDialog(RenameDialog):
         self.original.rename(name)
         regex = re.compile("^{0}_([a-z0-9]+).cow$".format(old))
         new = r"{0}_\1.cow".format(self.original.name)
-        for fp in project.current.filepath.children():
+        for fp in filepath.FilePath(project.manager.current.path).children():
             if fp.isfile() and regex.match(fp.basename()):
                 fp.moveTo(fp.sibling(regex.sub(new, fp.basename())))
 

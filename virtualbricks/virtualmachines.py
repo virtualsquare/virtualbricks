@@ -270,7 +270,7 @@ class Disk:
 
     @property
     def basefolder(self):
-        return project.current.path
+        return project.manager.current.path
 
     @property
     def vm_name(self):

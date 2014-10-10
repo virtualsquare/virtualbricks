@@ -207,6 +207,14 @@ class BrickBuilder:
             brick.load_from(section)
 
 
+@implementer(interfaces.IBuilder)
+class SectionConsumer:
+
+    def load_from(self, factory, section):
+        for n, v in section:
+            pass
+
+
 def brick_builder_factory(context):
     if context.type == "Image":
         return ImageBuilder(context.name)
@@ -216,8 +224,73 @@ def brick_builder_factory(context):
         return BrickBuilder(context.type, context.name)
 
 
-interfaces.registerAdapter(brick_builder_factory, configparser.Section,
-                           interfaces.IBuilder)
+class CompatibleBuilder:
+
+    incompatibles = frozenset()
+
+    def __init__(self, type, name):
+        self.type = type
+        self.name = name
+
+    def transform(self, attr, value):
+        raise NotImplementedError()
+
+    def load_from(self, factory, section):
+        params = []
+        for attr, value in section:
+            if attr in self.incompatibles:
+                t = self.trasform(attr, value)
+                if t:
+                    params.append(t)
+            else:
+                params.append((attr, value))
+        return BrickBuilder(self.type, self.name).load_from(factory, params)
+
+
+@implementer(interfaces.IBuilder)
+class CompatibleVMBuilder(CompatibleBuilder):
+
+    type = "Qemu"
+    incompatibles = frozenset(["basehda", "basehdb", "basehdc", "basehdd",
+                               "basefda", "basefdb", "basemtdblock",
+                               "usbdevlist"])
+
+    def __init__(self, name):
+        self.name = name
+
+    def trasform(self, attr, value):
+        if attr.startswith("base"):
+            return attr[4:], value
+        return
+
+
+@implementer(interfaces.IBuilder)
+class CompatibleSwitchWrapperBuilder(CompatibleBuilder):
+
+    type = "SwitchWrapper"
+    incompatibles = frozenset(["numports"])
+
+    def __init__(self, name):
+        self.name = name
+
+    def trasform(self, attr, value):
+        return
+
+
+def compatible_brick_builder_factory(context):
+    if context.type == "Project":
+        return SectionConsumer()
+    elif context.type == "DiskImage":
+        context.type = "Image"
+    elif context.type == "Qemu":
+        return CompatibleVMBuilder(context.name)
+    elif context.type == "SwitchWrapper":
+        return CompatibleSwitchWrapperBuilder(context.name)
+    return brick_builder_factory(context)
+
+
+interfaces.registerAdapter(compatible_brick_builder_factory,
+                           configparser.Section, interfaces.IBuilder)
 
 
 class ConfigFile:
