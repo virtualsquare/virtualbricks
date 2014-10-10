@@ -4,7 +4,7 @@ import gtk
 
 from virtualbricks import observable
 from virtualbricks.tools import dispose
-from virtualbricks.gui import interfaces
+from virtualbricks.gui import interfaces, graphics
 
 
 if False:
@@ -15,6 +15,11 @@ try:
 except NameError:
     # needed to support glade
     _ = str
+
+
+def set_cells_data_func(column):
+    for cell in column.get_cell_renderers():
+        column.set_cell_data_func(cell, cell.set_data)
 
 
 class CellRendererFormattable(gtk.CellRendererText):
@@ -80,7 +85,7 @@ class CellRendererFormattable(gtk.CellRendererText):
             raise TypeError("Unknown property %r" % (pspec.name, ))
 
     @staticmethod
-    def set_text(cell_layout, cell, model, itr, data=None):
+    def set_data(cell_layout, cell, model, itr, data=None):
         obj = model.get_value(itr, 0)
         if cell._formatting_enabled:
             if cell._formatter is not None:
@@ -92,6 +97,19 @@ class CellRendererFormattable(gtk.CellRendererText):
         else:
             text = str(obj)
         cell.set_property("text", text)
+
+    set_text = set_data
+
+
+class CellRendererBrickIcon(gtk.CellRendererPixbuf):
+
+    __gtype_name__ = "CellRendererBrickIcon"
+
+    @staticmethod
+    def set_data(cell_layout, cell, model, itr, data=None):
+        brick = model.get_value(itr, 0)
+        pixbuf = graphics.pixbuf_for_running_brick_at_size(brick, 48, 48)
+        cell.set_property("pixbuf", pixbuf)
 
 
 SELECT_ALL = object()

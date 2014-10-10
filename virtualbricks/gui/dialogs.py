@@ -642,85 +642,56 @@ class NewEventDialog(Window):
             dialog.destroy()
 
 
-def is_not_added(model, iter, added):
-    brick = model.get_value(iter, 0)
-    return brick and brick not in added
-
-
-def is_added(model, iter, added):
-    brick = model.get_value(iter, 0)
-    return brick and brick in added
-
-
 class BrickSelectionDialog(Window):
 
     resource = "data/brickselection.ui"
 
     def __init__(self, event, action, bricks):
         Window.__init__(self)
-        self.event = event
-        self.action = action
-        self.added = set()
+        self._event = event
+        self._action = action
+        self._added = set()
+        self.lBricks.set_data_source(bricks)
+        self.tmfAvl.set_visible_func(self._is_not_added, self._added)
+        self.tmfAdd.set_visible_func(self._is_added, self._added)
+        self.crName1.set_property("formatter", string.Formatter())
+        self.crName2.set_property("formatter", string.Formatter())
+        widgets.set_cells_data_func(self.tvcAvailables)
+        widgets.set_cells_data_func(self.tvcAdded)
+        self.tmfAvl.refilter()
+        self.tmfAdd.refilter()
 
-        # FIXME: this can cause a circular references with a C object and a
-        # conseguent memory leak with unexpected bugs and, unlikely,
-        # performance impact
-        self.availables_f = bricks.filter_new()
-        self.availables_f.set_visible_func(is_not_added, self.added)
-        availables_treeview = self.get_object("availables_treeview")
-        availables_treeview.set_model(self.availables_f)
-        self.added_f = bricks.filter_new()
-        self.added_f.set_visible_func(is_added, self.added)
-        added_treeview = self.get_object("added_treeview")
-        added_treeview.set_model(self.added_f)
+    @staticmethod
+    def _is_not_added(model, itr, added):
+        brick = model.get_value(itr, 0)
+        return brick and brick not in added
 
-        avail_c = self.get_object("availables_treeviewcolumn")
-        icon_cr1 = self.get_object("icon_cellrenderer1")
-        avail_c.set_cell_data_func(icon_cr1, self.set_icon)
-        name_cr1 = self.get_object("name_cellrenderer1")
-        avail_c.set_cell_data_func(name_cr1, self.set_name)
-        added_c = self.get_object("added_treeviewcolumn")
-        icon_cr2 = self.get_object("icon_cellrenderer2")
-        added_c.set_cell_data_func(icon_cr2, self.set_icon)
-        name_cr2 = self.get_object("name_cellrenderer2")
-        added_c.set_cell_data_func(name_cr2, self.set_name)
+    @staticmethod
+    def _is_added(model, itr, added):
+        brick = model.get_value(itr, 0)
+        return brick and brick in added
 
-    def set_icon(self, column, cell_renderer, model, iter):
-        brick = model.get_value(iter, 0)
-        pixbuf = graphics.pixbuf_for_running_brick_at_size(brick, 48, 48)
-        cell_renderer.set_property("pixbuf", pixbuf)
+    def on_add(self, *_):
+        for brick in self.tvAvailables.get_selected_values():
+            self._added.add(brick)
+        self.tvAvailables.get_model().refilter()
+        self.tvAdded.get_model().refilter()
+        return True
 
-    def set_name(self, column, cell_renderer, model, iter):
-        brick = model.get_value(iter, 0)
-        cell_renderer.set_property("text", "{0} ({1})".format(
-            brick.name, brick.get_type()))
+    def on_remove(self, *_):
+        for brick in self.tvAdded.get_selected_values():
+            self._added.remove(brick)
+        self.tvAvailables.get_model().refilter()
+        self.tvAdded.get_model().refilter()
+        return True
 
-    def _move_to(self, treeview, action):
-        model, iter = treeview.get_selection().get_selected()
-        if iter:
-            action(model[iter][0])
-            self.added_f.refilter()
-            self.availables_f.refilter()
-
-    def on_add_button_clicked(self, button):
-        self._move_to(self.get_object("availables_treeview"), self.added.add)
-
-    def on_remove_button_clicked(self, button):
-        self._move_to(self.get_object("added_treeview"), self.added.remove)
-
-    def on_availables_treeview_row_activated(self, treeview, path, column):
-        self._move_to(treeview, self.added.add)
-
-    def on_added_treeview_row_activated(self, treeview, path, column):
-        self._move_to(treeview, self.added.remove)
-
+    @destroy_on_exit
     def on_BrickSelectionDialog_response(self, dialog, response_id):
         if response_id == gtk.RESPONSE_OK:
-            actions = [console.VbShellCommand("%s %s" % (b.name, self.action))
-                       for b in self.added]
-            self.event.set({"actions": actions})
+            act = self._action
+            actions = ("{0} {1}".format(b.name, act) for b in self._added)
+            self._event.set({"actions": map(console.VbShellCommand, actions)})
             logger.info(event_created)
-        dialog.destroy()
 
 
 class EventControllerMixin(object):
