@@ -33,8 +33,9 @@ from twisted.conch.insults import insults
 from twisted.conch import manhole
 
 from virtualbricks import errors, settings, configfile, console, project, log
-from virtualbricks import (events, link, router, switches, tunnels, tuntaps,
-                           virtualmachines, wires)
+from virtualbricks import bricks
+from virtualbricks import events, link, router, switches, tunnels, tuntaps
+from virtualbricks import virtualmachines, wires
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks import observable
 
@@ -126,11 +127,9 @@ class BrickFactory(object):
             self.quit_d.callback(None)
 
     def reset(self):
-        # XXX this is broken: if a brick is not stopped before the loop over
-        # all bricks is finished, the do_del_brick() method raise an
-        # exception. Don't know what will happen: maybe sockets not
-        # disconnected, bricks not stopped or anyway bad things.
-        # hard reset
+        if any(bricks.is_running(brick) for brick in self.bricks):
+            msg = _("Project cannot be closed: there are running bricks")
+            raise errors.BricksAreRunningError(msg)
         # Don't change the list while iterating over it
         for brick in list(self.bricks):
             if is_virtualmachine(brick):

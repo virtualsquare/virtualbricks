@@ -7,7 +7,7 @@ from twisted.internet import defer
 
 from virtualbricks import errors, project
 from virtualbricks._settings import Settings
-from virtualbricks.tests import get_filename, failureResultOf
+from virtualbricks.tests import get_filename, failureResultOf, stubs
 from virtualbricks.tests.stubs import Factory
 
 
@@ -312,6 +312,16 @@ class TestProject(unittest.TestCase):
         self.assertTrue(prj.exists())
         self.assertRaises(errors.ProjectExistsError, prj.create)
         prj.create(overwrite=True)
+
+    def test_close(self):
+        """A project cannot be closed if one or more bricks are running."""
+
+        factory = stubs.Factory()
+        brick = factory.new_brick("_stub", "test")
+        brick.poweron()
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        self.assertRaises(errors.BricksAreRunningError, prj.close, factory)
 
 
 class TestTarArchive(unittest.TestCase):

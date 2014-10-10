@@ -75,11 +75,9 @@ class StubBrick(bricks.Brick):
     config_factory = BrickStubConfig
 
     def poweron(self):
-        if self.proc is not None:
-            return defer.succeed(self)
-        else:
+        if not self.proc:
             self.proc = bricks.FakeProcess(self)
-            return defer.succeed(self)
+        return defer.succeed(self)
 
     def poweroff(self, kill=False):
         self.proc = None
