@@ -223,8 +223,8 @@ class Project:
             return
         if not self.exists():
             raise errors.ProjectNotExistsError(self.name)
-        logger.debug(open_project, name=self.name)
         self.close(factory, settings)
+        logger.debug(open_project, name=self.name)
         try:
             configfile.restore(factory, self._project.path)
         except EnvironmentError as e:

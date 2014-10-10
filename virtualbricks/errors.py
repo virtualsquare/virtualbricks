@@ -86,3 +86,7 @@ class ProjectNotExistsError(InvalidNameError):
 
 class InvalidArchiveError(Error):
     """The archive format is not recognized."""
+
+
+class BricksAreRunningError(Error):
+    """There is one or more brick that is running."""
