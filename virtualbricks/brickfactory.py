@@ -131,15 +131,15 @@ class BrickFactory(object):
         # exception. Don't know what will happen: maybe sockets not
         # disconnected, bricks not stopped or anyway bad things.
         # hard reset
-        for brick in self.bricks:
+        # Don't change the list while iterating over it
+        for brick in list(self.bricks):
             if is_virtualmachine(brick):
                 brick.image_changed.disconnect(self._image_changed)
             self.del_brick(brick)
-        del self.bricks[:]
 
-        for e in self.events:
+        # Don't change the list while iterating over it
+        for e in list(self.events):
             self.del_event(e)
-        del self.events[:]
 
         del self.socks[:]
         for image in self.disk_images[:]:
