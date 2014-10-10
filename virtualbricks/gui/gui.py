@@ -545,8 +545,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         if configpanel:
             configpanel.destroy()
         configframe.hide()
-        if project.current:
-            self.set_title_default()
+        self.set_title()
 
     def curtain_up(self, brick):
         configframe = self.get_object("configframe")
@@ -563,12 +562,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             if iter is not None:
                 return model.get_value(iter, 0)
 
-    def set_title(self, title):
-        self.wndMain.set_title(title)
-
-    def set_title_default(self):
-        self.set_title("Virtualbricks (project: {0})".format(
-            project.manager.current.name))
+    def set_title(self, title=None):
+        if title is None:
+            if project.manager.current:
+                name = project.manager.current.name
+                title = _("Virtualbricks (project: {0})").format(name)
+                self.wndMain.set_title(title)
+        else:
+            self.wndMain.set_title(title)
 
     """ ******************************************************** """
     """                                                          """
@@ -701,19 +702,19 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_menuFileNew_activate(self, menuitem):
         dialog = dialogs.NewProjectDialog(self)
-        dialog.on_destroy = self.set_title_default
+        dialog.on_destroy = self.set_title
         dialog.show(self.wndMain)
         return True
 
     def on_menuFileOpen_activate(self, menuitem):
         dialog = dialogs.OpenProjectDialog(self)
-        dialog.on_destroy = self.set_title_default
+        dialog.on_destroy = self.set_title
         dialog.show(self.wndMain)
         return True
 
     def on_menuFileRename_activate(self, menuitem):
         dialog = dialogs.RenameProjectDialog(self)
-        dialog.on_destroy = self.set_title_default
+        dialog.on_destroy = self.set_title
         dialog.show(self.wndMain)
         return True
 
@@ -730,7 +731,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_menuFileImport_activate(self, menuitem):
         d = dialogs.ImportDialog(self.brickfactory)
-        d.on_destroy = self.set_title_default
+        d.on_destroy = self.set_title
         d.show(self.wndMain)
         return True
 
@@ -1151,7 +1152,7 @@ class Application(brickfactory.Application):
 
     def run(self, reactor):
         ret = brickfactory.Application.run(self, reactor)
-        self.gui.set_title_default()
+        self.gui.set_title()
         return ret
 
 
