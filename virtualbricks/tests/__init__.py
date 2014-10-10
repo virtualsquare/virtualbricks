@@ -1,4 +1,5 @@
 import os
+import sys
 import types
 import functools
 import difflib
@@ -241,14 +242,8 @@ class LoggingObserver:
                             "not {1.__class__.__name__}".format(self, idx))
 
 
-def create_manager(testcase, factory):
-    from virtualbricks import project
-    from twisted.python import filepath
-
-    tmp = filepath.FilePath(testcase.mktemp())
-    tmp.makedirs()
-    tmp.child("vimages").makedirs()
-    patch_settings(testcase, workspace=tmp.path, current_project="new_project")
-    manager = project.ProjectManager()
-    testcase.addCleanup(manager.close, factory)
-    return tmp, manager
+def get_filename(resource):
+    mod = sys.modules["virtualbricks.tests"]
+    parts = resource.split("/")
+    parts[0:0] = [os.path.dirname(mod.__file__), "data"]
+    return os.path.join(*parts)

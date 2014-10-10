@@ -28,6 +28,11 @@ if False:  # pyflakes
 
 
 __metaclass__ = type
+logger = log.Logger()
+attribute_set = log.Event("Attribute {attr} set in {brick} with value "
+                          "{value}.")
+param_not_found = log.Event("Parameter {param} in {brick} not found. "
+                            "(val: {value})")
 
 
 class Config(dict):
@@ -211,6 +216,7 @@ class Base(object):
     def set(self, attrs):
         for name, value in attrs.iteritems():
             if value != self.config[name]:
+                logger.info(attribute_set, attr=name, brick=self, value=value)
                 self.config[name] = value
                 setter = getattr(self, "cbset_" + name, None)
                 if setter:
@@ -221,13 +227,18 @@ class Base(object):
         try:
             return self.config[name]
         except KeyError:
-            raise KeyError(_("%s config has no %s option.") % (self.name,
-                                                               name))
+            raise KeyError(_("%s config has no %s option.") %
+                           (self.name, name))
+
+    def _getvalue(self, name, value):
+        try:
+            return self.config.parameters[name].from_string_brick(value, self)
+        except KeyError:
+            logger.error(param_not_found, param=name, brick=self, value=value)
+            raise
 
     def load_from(self, section):
-        def getvalue(name, value):
-            return self.config.parameters[name].from_string_brick(value, self)
-        self.set(dict((n, getvalue(n, v)) for n, v in section))
+        self.set(dict((n, self._getvalue(n, v)) for n, v in section))
 
     def save_to(self, fileobj):
         opt_tmp = "{0}={1}"

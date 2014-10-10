@@ -1,250 +1,100 @@
-import os
 import StringIO
 import operator
 
 from twisted.trial import unittest
-from twisted.python import filepath
+from twisted.python.filepath import FilePath
 from twisted.internet import defer
 
-from virtualbricks import settings, project, configfile, errors
-from virtualbricks.tests import (stubs, failureResultOf, create_manager)
+from virtualbricks import errors, project
+from virtualbricks._settings import Settings
+from virtualbricks.tests import get_filename, failureResultOf
+from virtualbricks.tests.stubs import Factory
 
 
-class ArchiveStub:
-
-    create_args = None
-    extract_args = None
-
-    def create(self, pathname, files, images=()):
-        self.create_args = (pathname, files, images)
-        return defer.succeed(None)
-
-    def extract(self, pathname, destination):
-        self.extract_args = (pathname, destination)
-        return defer.succeed(None)
+NAME = "test_project"
 
 
-class TestBase(object):
+class TestProjectManager(unittest.TestCase):
 
-    def setUp(self):
-        self.factory = stubs.FactoryStub()
-        self.tmp, self.manager = create_manager(self, self.factory)
-
-
-class TestProject(TestBase, unittest.TestCase):
-
-    def assert_initial_status(self):
-        self.assertIs(project.current, None)
-        self.assertEqual(settings.VIRTUALBRICKS_HOME, settings.DEFAULT_HOME)
-
-    # XXX implement save on restore
-    # def test_restore_save(self):
-    #     def save_restore(f, prjname):
-    #         self.assertIs(f, self.factory)
-    #         self.assertTrue(filepath.FilePath(prjname).exists())
-
-    #     self.assert_initial_status()
-    #     prj = self.manager.create("test")
-    #     self.patch(configfile, "restore", save_restore)
-    #     self.patch(configfile, "save", save_restore)
-    #     prj.save(self.factory)
-    #     prj.restore(self.factory)
-
-    def test_restore_project_set_virtualbricks_home(self):
+    def test_path_exists(self):
         """
-        Every time a project is imported, settings.VIRTUALBRICKS_HOME is set
-        to the project's path.
+        All the projects are in path defined at contruction time. Assert that
+        that path exists.
         """
 
-        self.assert_initial_status()
-        self.patch(configfile, "restore", lambda fa, fi: None)
-        prj = self.manager.create("test")
-        prj.restore(self.factory)
-        self.assertEqual(prj.path, settings.VIRTUALBRICKS_HOME)
-        self.assertNotEqual(settings.VIRTUALBRICKS_HOME,
-                            settings.DEFAULT_HOME)
+        manager = project.ProjectManager(self.mktemp())
+        self.assertTrue(FilePath(manager.path).exists())
 
-    def test_open_create_set_current(self):
+    def test_exists_bizarre_name(self):
+        manager = project.ProjectManager(self.mktemp())
+        self.assertRaises(errors.InvalidNameError, manager.get_project,
+                          "test/bizarre")
+
+    def test_import_project_exists(self):
         """
-        Everytime ProjectManager's open or create are called,
-        virtualbricks.project.current is set to the current project.
+        Import a project but a project with the same name already exists.
         """
 
-        PROJECT1 = "new1"
-        PROJECT2 = "new2"
-        self.assert_initial_status()
-        self.manager.create(PROJECT1)
-        prj1 = self.manager.open(PROJECT1, self.factory)
-        self.assertIs(project.current, prj1)
-        prj2 = self.manager.create(PROJECT2)
-        prj2.restore(self.factory)
-        self.assertIs(project.current, prj2)
-        prj3 = self.manager.open(PROJECT1, self.factory)
-        self.assertIs(project.current, prj3)
-        # Two projects returned by two manager.open are different
-        self.assertIsNot(prj1, prj3)
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        d = manager.import_prj(NAME, "/example/test.vbp")
+        failureResultOf(self, d, errors.ProjectExistsError)
 
-    def test_files(self):
-        self.assert_initial_status()
-        prj = self.manager.create("test")
-        files = [prj.filepath.child(".project")]
-        self.assertEqual(list(prj.files()), files)
-        afile = prj.filepath.child("file")
-        afile.open("w").close()
-        files.append(afile)
-        self.assertEqual(sorted(prj.files()), sorted(files))
+    def test_import(self):
+        """Import a project."""
 
-    def test_copy(self):
-        """Create a copy of the project with a different name."""
+        def _assert(prj):
+            self.assertTrue(prj.exists())
+            self.assertEquals(prj.name, NAME)
 
-        NEW_PROJET_NAME = "copy"
-        project = self.manager.create("test")
-        new = project.copy(NEW_PROJET_NAME, stubs.FactoryStub())
-        self.assertTrue(new.filepath.exists())
-        self.assertNotEqual(project.filepath, new.filepath)
-
-    def test_rename(self):
-        """Rename a project."""
-
-        project = self.manager.create("test")
-        old_path = project.filepath
-        project.rename("test_rename")
-        self.assertEqual(project.name, "test_rename")
-        self.assertTrue(project.filepath.exists())
-        self.assertFalse(old_path.exists())
-
-    def test_rename_invalid(self):
-        """If an invalid name is given an exception is raised."""
-
-        project = self.manager.create("test")
-        self.assertRaises(errors.InvalidNameError, project.rename,
-                          "test/invalid")
-
-    def test_rename_invalid_pathological(self):
-        """If the name is really strange, the error is not raised."""
-
-        project = self.manager.create("test")
-        project.rename("test/../invalid")
-        self.assertEqual(project.name, "invalid")
-
-    def test_rename_exists(self):
-        """If a project with the same name exists an exception is raised."""
-
-        project = self.manager.create("test")
-        project = self.manager.create("test2")
-        self.assertRaises(errors.ProjectExistsError, project.rename,
-                          "test2")
-
-    def test_save(self):
-        """Save a project."""
-
-        project = self.manager.create("test")
-        data = project.dot_project().getContent()
-        self.factory.new_brick("vm", "test")
-        project.save(self.factory)
-        self.assertNotEqual(project.dot_project().getContent(), data)
-
-    def test_description(self):
-        """Return a description of brand new project."""
-
-        project = self.manager.create("test")
-        self.assertEqual(project.get_description(), "")
-
-    def test_set_description(self):
-        """Set the description of a project."""
-
-        DESCRIPTION = "hello world"
-        prj = self.manager.create("test")
-        prj.set_description(DESCRIPTION)
-        self.assertEqual(prj.get_description(), DESCRIPTION)
-
-    def test_save_description(self):
-        """Save the description when the project is saved."""
-
-        DESCRIPTION = "hello world"
-        prj = self.manager.create("test")
-        prj.set_description(DESCRIPTION)
-        self.assertFalse(prj.get_readme().exists())
-        prj.save(self.factory)
-        self.assertEqual(prj.get_readme().getContent(), DESCRIPTION)
-
-    def test_delete(self):
-        """Delete a project."""
-
-        prj = self.manager.create("test")
-        path = prj.path
-        self.assertTrue(prj.filepath.exists())
-        prj.delete()
-        self.assertFalse(os.path.isdir(path))
-
-
-class TestProjectManager(TestBase, unittest.TestCase):
-
-    def create_project(self, name):
-        prj = self.manager.create(name)
-        return prj.filepath
+        manager = project.ProjectManager(self.mktemp())
+        return manager.import_prj(NAME, get_filename("test.vbp"))
 
     def test_iter(self):
+        """
+        Iterating througt the manager returns the projects. The order is
+        arbitrary.
+        """
+
+        NAME1 = "prj1"
+        NAME2 = "prj2"
+        manager = project.ProjectManager(self.mktemp())
+        prj1 = manager.get_project(NAME1)
+        prj1.create()
+        prj2 = manager.get_project(NAME2)
+        prj2.create()
+        self.assertEqual(sorted(manager, key=lambda p: p.name), [prj1, prj2])
+
+    def test_iter2(self):
         """Returns only prooved projects."""
 
+        path = self.mktemp()
+        manager = project.ProjectManager(path)
         # a file is not a project
-        self.tmp.child("child1").touch()
-        self.manager.create("prj1")
+        FilePath(path).child("child1").touch()
+        prj = manager.get_project(NAME)
+        prj.create()
         # a directory without a .project file is not a project
-        self.tmp.child("prj2").makedirs()
-        self.assertEqual(list(self.manager), ["prj1"])
+        FilePath(path).child("prj2").makedirs()
+        self.assertEqual(list(manager), [prj])
 
-    def test_open_project(self):
-        """Simple open test."""
-
-        prjpath = self.create_project("prj1")
-        prj = self.manager.open("prj1", self.factory)
-        self.assertTrue(isinstance(prj, project.Project))
-        self.assertEqual(prj.filepath, prjpath)
-
-    def test_open_project_invalid_name(self):
+    def test_get_project_invalid_name(self):
         """Name could not contains path traversal."""
 
-        self.assertRaises(errors.InvalidNameError, self.manager.open,
-                          "../ciccio", None)
-
-    def test_open_project_does_not_exists(self):
-        """Try to open a project that does not exists."""
-
-        self.assertRaises(errors.ProjectNotExistsError, project.manager.open,
-                          "project", self.factory)
-
-    def test_open_project_does_not_exists_dot_project(self):
-        """Try to open a project but the .project file does not exists."""
-
-        path = self.create_project("project")
-        path.child(".project").remove()
-        self.assertFalse(path.child(".project").isfile())
-        self.assertRaises(errors.ProjectNotExistsError, project.manager.open,
-                          "project", self.factory)
-
-    def test_create_project(self):
-        """Create a project."""
-
-        self.assertEqual(settings.get("current_project"), "new_project")
-        prj = self.manager.create("prj")
-        self.assertNotEqual(settings.get("current_project"), prj.name)
-        self.assertTrue(prj.dot_project().isfile())
-
-    def test_create_project_already_exists(self):
-        """Create a project but it exists already."""
-
-        self.manager.create("prj")
-        self.assertRaises(errors.ProjectExistsError, self.manager.create,
-                          "prj")
+        manager = project.ProjectManager(self.mktemp())
+        self.assertRaises(errors.InvalidNameError, manager.get_project,
+                          "../ciccio")
 
     def test_restore_last_project(self):
         """Restore last used project."""
 
-        settings.set("current_project", "prj")
-        self.manager.create("prj")
-        prj = project.restore_last(self.factory)
-        self.assertEqual(prj.name, "prj")
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        settings = Settings(self.mktemp())
+        settings.set("current_project", NAME)
+        self.assertEqual(manager.restore_last(Factory(), settings), prj)
 
     def test_restore_last_project_not_exists(self):
         """
@@ -252,55 +102,223 @@ class TestProjectManager(TestBase, unittest.TestCase):
         same name but use a default name.
         """
 
-        settings.set("current_project", "prj")
-        self.assertFalse(self.tmp.child("prj").isdir())
-        prj = project.restore_last(self.factory)
+        settings = Settings(self.mktemp())
+        settings.set("current_project", NAME)
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        self.assertFalse(prj.exists())
+        prj = manager.restore_last(Factory(), settings)
         self.assertEqual(prj.name, settings.DEFAULT_PROJECT + "_0")
 
-    def test_delete_project(self):
-        """If a project does not exists, the error is not raised."""
 
-        fp = self.tmp.child("prj")
-        self.assertFalse(fp.exists())
-        self.manager.delete("prj")
-        self.manager.create("prj")
-        fp.changed()
-        self.assertTrue(fp.exists())
-        self.assertTrue(fp.child(".project").exists())
-        self.manager.delete("prj")
-        fp.changed()
-        self.assertFalse(fp.exists())
+class TestProject(unittest.TestCase):
 
-    def test_extract_project_exists(self):
+    def test_equality(self):
         """
-        Extract a project but a project with the same name already exists.
+        Two projects are equal if they have the same name and the same path.
         """
 
-        PRJNAME = "test"
-        self.create_project(PRJNAME)
-        d = self.manager.extract(PRJNAME, "/example/test.vbp")
-        failureResultOf(self, d, errors.ProjectExistsError)
+        manager = project.ProjectManager(self.mktemp())
+        prj1 = manager.get_project(NAME)
+        prj2 = manager.get_project(NAME)
+        self.assertEqual(prj1, prj2)
+
+    def test_delete(self):
+        """Delete a project."""
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        self.assertTrue(prj.exists())
+        prj.delete()
+        self.assertFalse(prj.exists())
+
+    def test_open(self):
+        """Open a project."""
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        prj.open(Factory(), Settings(self.mktemp()))
+
+    def test_open_project_does_not_exists(self):
+        """Try to open a project that does not exists."""
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        self.assertRaises(errors.ProjectNotExistsError, prj.open, Factory())
+
+    def test_open_project_set_virtualbricks_home(self):
+        """
+        Every time a project is opened, settings.VIRTUALBRICKS_HOME is set to
+        the project's path.
+        """
+
+        manager = project.ProjectManager(self.mktemp())
+        settings = Settings(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        self.assertEqual(settings.VIRTUALBRICKS_HOME, settings.DEFAULT_HOME)
+        prj.open(Factory(), settings)
+        self.assertEqual(prj.path, settings.VIRTUALBRICKS_HOME)
+        self.assertNotEqual(settings.VIRTUALBRICKS_HOME,
+                            settings.DEFAULT_HOME)
+
+    def test_save(self):
+        """Save a project."""
+
+        class ProjectCmp:
+            def __init__(self, prj):
+                self.data = prj._project.getContent()
+            def __eq__(self, other):
+                return not self.__ne__(other)
+            def __ne__(self, other):
+                return self.data != ProjectCmp(other).data
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        cmparator = ProjectCmp(prj)
+        factory = Factory()
+        factory.new_brick("vm", "test")
+        prj.save(factory)
+        self.assertNotEqual(cmparator, prj)
+
+    def test_save_after_delete(self):
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        prj.delete()
+        prj.save(Factory())
+        self.assertTrue(prj.exists())
+
+    def test_save_as(self):
+        """Create a copy of the project with a different name."""
+
+        NEW_PROJET_NAME = "copy"
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        new = prj.save_as(NEW_PROJET_NAME, Factory())
+        self.assertTrue(FilePath(new.path).exists())
+        self.assertNotEqual(prj.path, new.path)
+
+    def test_rename(self):
+        """Rename a project."""
+
+        NEWNAME = "rename_test"
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        self.assertTrue(prj.exists())
+        old_path = prj.path
+        prj.rename(NEWNAME, False, Settings(self.mktemp()))
+        self.assertEqual(prj.name, NEWNAME)
+        self.assertTrue(prj.exists())
+        self.assertNotEqual(prj.path, old_path)
+        self.assertFalse(FilePath(old_path).exists())
+
+    def test_rename_invalid(self):
+        """If an invalid name is given an exception is raised."""
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        self.assertRaises(errors.InvalidNameError, prj.rename, "test/invalid")
+
+    def test_rename_invalid_pathological(self):
+        """If the name is really strange, the error is not raised."""
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        prj.rename("test/../invalid", False, Settings(self.mktemp()))
+        self.assertEqual(prj.name, "invalid")
+
+    def test_rename_exists(self):
+        """If a project with the same name exists an exception is raised."""
+
+        NEWNAME = "test2"
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        manager.get_project(NEWNAME).create()
+        self.assertRaises(errors.ProjectExistsError, prj.rename, NEWNAME)
+
+    def test_description(self):
+        """Return a description of brand new project."""
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        self.assertEqual(prj.get_description(), "")
+
+    def test_set_description(self):
+        """Set the description of a project."""
+
+        DESCRIPTION = "hello world"
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.set_description(DESCRIPTION)
+        self.assertEqual(prj.get_description(), DESCRIPTION)
+
+    def test_save_description(self):
+        """Save the description when the project is saved."""
+
+        DESCRIPTION = "hello world"
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.set_description(DESCRIPTION)
+        readme = FilePath(prj.path).child("README")
+        self.assertFalse(readme.exists())
+        prj.save(Factory())
+        self.assertEqual(readme.getContent(), DESCRIPTION)
+
+    def test_files(self):
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        files = [FilePath(prj.path).child(".project")]
+        self.assertEqual(list(prj.files()), files)
+        afile = FilePath(prj.path).child("file")
+        afile.open("w").close()
+        files.append(afile)
+        self.assertEqual(sorted(prj.files()), sorted(files))
 
     def test_exists(self):
-        """Test the existance of a project."""
+        """Test if a project with certain name exists."""
 
-        NAME = "test"
-        self.assertFalse(self.manager.exists(NAME))
-        self.manager.create(NAME)
-        self.assertTrue(self.manager.exists(NAME))
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        self.assertFalse(prj.exists())
+        prj.create(NAME)
+        self.assertTrue(prj.exists())
 
-    def test_exists_bizarre_name(self):
-        self.assertRaises(errors.InvalidNameError, self.manager.exists,
-                          "test/bizarre")
+    def test_create(self):
+        """Create a new project."""
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        self.assertTrue(prj.exists())
+
+    def test_create_already_exists(self):
+        """
+        Create a new project but a project with the same name already exists.
+        """
+
+        manager = project.ProjectManager(self.mktemp())
+        prj = manager.get_project(NAME)
+        prj.create()
+        self.assertTrue(prj.exists())
+        self.assertRaises(errors.ProjectExistsError, prj.create)
+        prj.create(overwrite=True)
 
 
 class TestTarArchive(unittest.TestCase):
 
     def setUp(self):
-        self.exe = None
-        self.args = []
-        self.environ = None
-        self.archive = project.BsdTgz()
+        from virtualbricks import settings
+
         self.tmp = self.mktemp()
         self.patch(settings, "VIRTUALBRICKS_HOME", self.tmp)
 
@@ -313,15 +331,15 @@ class TestTarArchive(unittest.TestCase):
     def test_create(self):
         """Create a simple archive."""
 
-        self.archive.create("test.tgz", ["a", "b"],
-                            run=self.run_process)
+        archive = project.BsdTgz()
+        archive.create("test.tgz", ["a", "b"], run=self.run_process)
         self.assertEqual(self.args, ["cfzh", "test.tgz", "-C", self.tmp, "a",
                                      "b"])
 
     def test_create_images(self):
         """Create an archive with images."""
 
-        tmp = filepath.FilePath(self.mktemp())
+        tmp = FilePath(self.mktemp())
         tmp.makedirs()
         a = tmp.child("a")
         a.touch()
@@ -329,7 +347,8 @@ class TestTarArchive(unittest.TestCase):
         b.touch()
         files = ["a", "b"]
         images = [("img_a", a.path), ("img_b", b.path)]
-        self.archive.create("test.tgz", files, images, self.run_process)
+        archive = project.BsdTgz()
+        archive.create("test.tgz", files, images, self.run_process)
         expected = ["cfzh", "test.tgz", "-C", self.tmp, "a", "b",
                     ".images/img_a", ".images/img_b"]
         self.assertEqual(self.args, expected)
@@ -352,10 +371,10 @@ link|sender|sw1|rtl8139|00:11:22:33:44:55
 """
 
 
-class PseudoOerderedDict(dict):
+class PseudoOrderedDict(dict):
 
     def __init__(self, arg):
-        super(PseudoOerderedDict, self).__init__(arg)
+        super(PseudoOrderedDict, self).__init__(arg)
         self._order = map(operator.itemgetter(0), arg)
 
     def __iter__(self):
@@ -365,8 +384,8 @@ class PseudoOerderedDict(dict):
 class TestProjectEntry(unittest.TestCase):
 
     def setUp(self):
-        self.entry = project.ProjectEntry.from_fileobj(StringIO.StringIO(
-            PROJECT))
+        fp = StringIO.StringIO(PROJECT)
+        self.entry = project.ProjectEntry.from_fileobj(fp)
 
     def test_get_images(self):
         self.assertEqual(self.entry.get_images(),
@@ -404,7 +423,7 @@ class TestProjectEntry(unittest.TestCase):
             ("Image", "vtatpa.martin.qcow2"): {
                 "path": "/images/vtatpa.martin.qcow2"
             },
-            ("Qemu", "test"): PseudoOerderedDict([
+            ("Qemu", "test"): PseudoOrderedDict([
                 ("hda", "vtatpa.martin.qcow2"),
                 ("name", "test"),
                 ("privatehda", "*"),

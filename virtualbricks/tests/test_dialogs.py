@@ -40,22 +40,27 @@ Bus 007 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
 class TestUsbDevWindow(unittest.TestCase):
 
     def setUp(self):
-        self.devices = []
-        self.dlg = dialogs.UsbDevWindow(self.devices)
-        self.dlg.lcDevs.set_data_source(self.dlg.parse_lsusb(OUTPUT.strip()))
+        self.dlg = dialogs.UsbDevWindow([])
+        self.dlg.lDevs.set_data_source(self.dlg.parse_lsusb(OUTPUT.strip()))
+
+    def get_selected_values(self):
+        return self.dlg.tvDevices.get_selected_values()
+
+    def set_selected_values(self, lst):
+        self.dlg.tvDevices.set_selected_values(lst)
 
     def test_select_empty(self):
-        self.assertEquals(self.dlg.lcDevs.get_selected_values(), ())
+        self.assertEquals(self.get_selected_values(), ())
 
     def test_select_one(self):
-        self.dlg.lcDevs.set_selected_values([UsbDevice("0a5c:2110")])
-        self.assertEquals(self.dlg.lcDevs.get_selected_values(),
-            (UsbDevice("0a5c:2110"),))
+        self.set_selected_values([UsbDevice("0a5c:2110")])
+        self.assertEquals(self.get_selected_values(),
+                          (UsbDevice("0a5c:2110"),))
 
     def test_select_mores(self):
-        self.dlg.lcDevs.set_selected_values([UsbDevice("1d6b:0001")])
-        self.assertEquals(self.dlg.lcDevs.get_selected_values(),
-            (UsbDevice("1d6b:0001"),) * 5)
+        self.set_selected_values([UsbDevice("1d6b:0001")])
+        self.assertEquals(self.get_selected_values(),
+                          (UsbDevice("1d6b:0001"),) * 5)
 
 
 class WindowStub(object):
@@ -194,12 +199,11 @@ class TestExportDialog(GtkTestCase):
     #     raise NotImplementedError()
 
     def test_export(self):
-        self.patch(project.manager, "export", self.export)
         model = gtk.TreeStore(bool, bool, str, str, object)
         self.dialog.include_images = True
         self.dialog.image_files = [("a", filepath.FilePath("/images/a"))]
         ancestor = filepath.FilePath("/")
-        self.dialog.export(model, ancestor, "test.tgz")
+        self.dialog.export(model, ancestor, "test.tgz", self.export)
 
     def export(self, filename, files, images):
         for name in files:
@@ -285,26 +289,6 @@ class ImportDialogStub:
         return None
 
 
-class ProjectManager(project.ProjectManager):
-
-    def __init__(self, path):
-        self._workspace = filepath.FilePath(path)
-        self._workspace.makedirs()
-
-    def workspace(self):
-        return self._workspace
-
-    def open(self, name, factory):
-        prj = super(ProjectManager, self).open(name, factory)
-        prj.manager = self
-        return prj
-
-    def create(self, name, overwrite=False):
-        prj = super(ProjectManager, self).create(name, overwrite)
-        prj.manager = self
-        return prj
-
-
 class TestHumbleImport(GtkTestCase):
 
     project_name = "test"
@@ -314,7 +298,7 @@ class TestHumbleImport(GtkTestCase):
     extract_args = None
 
     def setUp(self):
-        self.manager = ProjectManager(self.mktemp())
+        self.manager = project.ProjectManager(self.mktemp())
         self.humble = dialogs._HumbleImport()
         self.dialog = ImportDialogStub(self.project_name, self.archive,
                                        self.overwrite, self.page)
@@ -340,7 +324,9 @@ class TestHumbleImport(GtkTestCase):
 
     def extract(self, *args):
         self.extract_args = args
-        return defer.succeed(self.manager.create(self.dialog.project_name))
+        prj = self.manager.get_project(self.dialog.project_name)
+        prj.create()
+        return defer.succeed(prj)
 
     def assert_extract_not_called(self, msg=None):
         if not msg:
@@ -360,12 +346,12 @@ class TestHumbleImport(GtkTestCase):
     def assert_project_exists(self, name, msg=None):
         if not msg:
             msg = "Project %s does not exists" % name
-        self.assertTrue(self.manager.exists(name), msg)
+        self.assertTrue(self.manager.get_project(name).exists(), msg)
 
     def assert_project_does_not_exists(self, name, msg=None):
         if not msg:
             msg = "Project %s does exists" % name
-        self.assertFalse(self.manager.exists(name), msg)
+        self.assertFalse(self.manager.get_project(name).exists(), msg)
 
 
 class TestImportStep1(TestHumbleImport):
@@ -375,7 +361,7 @@ class TestImportStep1(TestHumbleImport):
     def setUp(self):
         TestHumbleImport.setUp(self)
         self.model = gtk.ListStore(str, object, bool)
-        self.ipath = self.manager.project_path("vimages")
+        self.ipath = filepath.FilePath(self.manager.path).child("vimages")
 
     def test_same_archive_dont_extract(self):
         """If the archive is not changed, don't extract it again."""
@@ -426,9 +412,10 @@ class TestImportStep1(TestHumbleImport):
         """Found some image, fill the model set the page as complete."""
 
         def extract(name, path):
-            prj = self.manager.create(name)
+            prj = self.manager.get_project(name)
+            prj.create()
             # fake some image
-            fp = prj.filepath.child(".images")
+            fp = filepath.FilePath(prj.path).child(".images")
             fp.makedirs()
             fp.child("debian7.img").touch()
             fp.child("ubuntu.img").touch()

@@ -659,9 +659,9 @@ class Application:
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", factory.stop)
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
-        project.restore_last(factory)
+        project.manager.restore_last(factory)
         reactor.addSystemEventTrigger("before", "shutdown",
-                                      lambda: project.current.save(factory))
+                                      project.manager.save_current, factory)
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:
