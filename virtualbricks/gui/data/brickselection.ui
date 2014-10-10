@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk+" version="2.20"/>
+  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
   <!-- interface-naming-policy toplevel-contextual -->
-  <object class="GtkListStore" id="added_liststore">
+  <object class="List" id="lBricks">
     <columns>
-      <!-- column-name Bricks -->
+      <!-- column-name brick -->
       <column type="PyObject"/>
     </columns>
   </object>
-  <object class="GtkListStore" id="availables_liststore">
-    <columns>
-      <!-- column-name Bricks -->
-      <column type="PyObject"/>
-    </columns>
+  <object class="GtkTreeModelFilter" id="tmfAdd">
+    <property name="child_model">lBricks</property>
+  </object>
+  <object class="GtkTreeModelFilter" id="tmfAvl">
+    <property name="child_model">lBricks</property>
   </object>
   <object class="GtkDialog" id="BrickSelectionDialog">
     <property name="width_request">800</property>
@@ -83,19 +84,22 @@
                 <property name="hscrollbar_policy">automatic</property>
                 <property name="vscrollbar_policy">automatic</property>
                 <child>
-                  <object class="GtkTreeView" id="availables_treeview">
+                  <object class="TreeView" id="tvAvailables">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="model">availables_liststore</property>
-                    <signal name="row-activated" handler="on_availables_treeview_row_activated" swapped="no"/>
+                    <property name="model">tmfAvl</property>
+                    <signal name="row-activated" handler="on_add" swapped="no"/>
                     <child>
-                      <object class="GtkTreeViewColumn" id="availables_treeviewcolumn">
+                      <object class="GtkTreeViewColumn" id="tvcAvailables">
                         <property name="title" translatable="yes">Availables</property>
                         <child>
-                          <object class="GtkCellRendererPixbuf" id="icon_cellrenderer1"/>
+                          <object class="CellRendererBrickIcon" id="cri1"/>
                         </child>
                         <child>
-                          <object class="GtkCellRendererText" id="name_cellrenderer1"/>
+                          <object class="CellRendererFormattable" id="crName1">
+                            <property name="format_string">{0:n} ({0:t})</property>
+                            <property name="formatting_enabled">True</property>
+                          </object>
                         </child>
                       </object>
                     </child>
@@ -113,13 +117,13 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkButton" id="add_button">
+                  <object class="GtkButton" id="btnAdd">
                     <property name="label">gtk-add</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="use_stock">True</property>
-                    <signal name="clicked" handler="on_add_button_clicked" swapped="no"/>
+                    <signal name="clicked" handler="on_add" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -141,13 +145,13 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="remove_button">
+                  <object class="GtkButton" id="btnRemove">
                     <property name="label">gtk-remove</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="use_stock">True</property>
-                    <signal name="clicked" handler="on_remove_button_clicked" swapped="no"/>
+                    <signal name="clicked" handler="on_remove" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -170,19 +174,22 @@
                 <property name="hscrollbar_policy">automatic</property>
                 <property name="vscrollbar_policy">automatic</property>
                 <child>
-                  <object class="GtkTreeView" id="added_treeview">
+                  <object class="TreeView" id="tvAdded">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="model">added_liststore</property>
-                    <signal name="row-activated" handler="on_added_treeview_row_activated" swapped="no"/>
+                    <property name="model">tmfAdd</property>
+                    <signal name="row-activated" handler="on_remove" swapped="no"/>
                     <child>
-                      <object class="GtkTreeViewColumn" id="added_treeviewcolumn">
+                      <object class="GtkTreeViewColumn" id="tvcAdded">
                         <property name="title" translatable="yes">Added</property>
                         <child>
-                          <object class="GtkCellRendererPixbuf" id="icon_cellrenderer2"/>
+                          <object class="CellRendererBrickIcon" id="cri2"/>
                         </child>
                         <child>
-                          <object class="GtkCellRendererText" id="name_cellrenderer2"/>
+                          <object class="CellRendererFormattable" id="crName2">
+                            <property name="format_string">{0:n} ({0:t})</property>
+                            <property name="formatting_enabled">True</property>
+                          </object>
                         </child>
                       </object>
                     </child>
