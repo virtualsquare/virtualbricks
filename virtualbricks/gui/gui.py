@@ -25,8 +25,8 @@ from twisted.internet import error, defer, task, protocol, reactor
 from twisted.python import filepath
 from zope.interface import implementer
 
-from virtualbricks import tools, settings, project, log, brickfactory, bricks
-from virtualbricks.tools import dispose
+from virtualbricks import tools, settings, project, log, brickfactory
+from virtualbricks.tools import dispose, is_running
 from virtualbricks.gui import _gui, graphics, dialogs, interfaces, widgets
 
 
@@ -94,26 +94,6 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
         else:
             reactor.spawnProcess(SyncProtocol(self.done), "sync", ["sync"],
                 os.environ)
-
-
-def changed(brick, row):
-    if row.valid():
-        path = row.get_path()
-        model = row.get_model()
-        model.row_changed(path, model.get_iter(path))
-    return brick
-
-
-def changed_brick_in_model(result, model):
-    try:
-        brick, status = result
-    except TypeError:
-        brick = result
-    for path, brick_ in enumerate(model):
-        if brick is brick_:
-            model.row_changed(path, model.get_iter(path))
-            break
-    return result
 
 
 def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
@@ -397,14 +377,10 @@ class EventsBindingList(widgets.AbstractBindingList):
         return iter(self._factory.events)
 
 
-def set_pixbuf(celllayout, cell, model, itr, data=None):
+def is_running_filter(model, itr):
     brick = model.get_value(itr, 0)
-    pixbuf = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
-    cell.set_property("pixbuf", pixbuf)
-
-
-def is_running(model, itr):
-    return bricks.is_running(model.get_value(itr, 0))
+    if brick:
+        return is_running(brick)
 
 
 class VBGUI(TopologyMixin, ReadmeMixin, _Root):
@@ -432,7 +408,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         if settings.get("systray"):
             self.start_systray()
         self.builder.connect_signals(self)
-        task.LoopingCall(self.running_bricks.refilter).start(2)
+        task.LoopingCall(self.lRunning.refilter).start(2)
         self.__state_manager = _gui.StateManager()
         state_add_selection(self.__state_manager, self.tvBricks,
                             self.__brick_selected, _("No brick selected"),
@@ -455,12 +431,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def __initialize_components(self):
         # bricks tab
-        set_text = widgets.CellRendererFormattable.set_text
-        self.tvcBrickIcon.set_cell_data_func(self.crp1, set_pixbuf)
-        self.tvcBrickStatus.set_cell_data_func(self.crt1, set_text)
-        self.tvcBrickType.set_cell_data_func(self.crt2, set_text)
-        self.tvcBrickName.set_cell_data_func(self.crt3, set_text)
-        self.tvcBrickParams.set_cell_data_func(self.crt4, set_text)
+        self.tvBricks.set_cells_data_func()
         self.__bricks_binding_list = BricksBindingList(self.factory)
         self.lBricks.set_data_source(self.__bricks_binding_list)
         self.tvBricks.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
@@ -469,21 +440,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 gtk.gdk.ACTION_LINK)
 
         # events tab
-        self.tvcEventIcon.set_cell_data_func(self.crp2, set_pixbuf)
-        self.tvcEventStatus.set_cell_data_func(self.crt5, set_text)
-        self.tvcEventName.set_cell_data_func(self.crt6, set_text)
-        self.tvcEventParams.set_cell_data_func(self.crt7, set_text)
+        self.tvEvents.set_cells_data_func()
         self.__events_binding_list = EventsBindingList(self.factory)
         self.lEvents.set_data_source(self.__events_binding_list)
 
         # jobs tab
-        self.tvcJobIcon.set_cell_data_func(self.crp3, set_pixbuf)
-        self.tvcJobPid.set_cell_data_func(self.crt8, set_text)
-        self.tvcJobType.set_cell_data_func(self.crt9, set_text)
-        self.tvcJobName.set_cell_data_func(self.crt10, set_text)
-        self.running_bricks = self.brickfactory.bricks.filter_new()
-        self.running_bricks.set_visible_func(is_running)
-        self.tvJobs.set_model(self.running_bricks)
+        self.tvJobs.set_cells_data_func()
+        self.lRunning.set_visible_func(is_running_filter)
 
     def __complain_on_missing_prerequisites(self):
         qmissing, _ = tools.check_missing_qemu(settings.get("qemupath"))
@@ -554,13 +517,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.get_object("main_notebook").hide()
         self.set_title("Virtualbricks (Configuring Brick %s)" %
                        brick.get_name())
-
-    def __get_selection(self, treeview):
-        selection = treeview.get_selection()
-        if selection is not None:
-            model, iter = selection.get_selected()
-            if iter is not None:
-                return model.get_value(iter, 0)
 
     def set_title(self, title=None):
         if title is None:
@@ -659,13 +615,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_bricks_treeview_key_release_event(self, treeview, event):
         if gtk.gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
-            brick = self.__get_selection(treeview)
+            brick = treeview.get_selected_value()
             if brick is not None:
                 self.ask_remove_brick(brick)
 
     def on_events_treeview_key_release_event(self, treeview, event):
         if gtk.gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
-            event = self.__get_selection(treeview)
+            event = treeview.get_selected_value()
             if event is not None:
                 self.ask_remove_event(event)
 
@@ -681,7 +637,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def window_toggle(self):
         if self.wndMain.get_visible():
-            self.curtain_down()
             self.wndMain.hide()
             self.statusicon.set_tooltip(_("Virtualbricks hidden"))
         else:
@@ -783,47 +738,30 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_btnStartAll_clicked(self, toolbutton):
-        # TODO: look at the comment in on_btnStartAll_clicked
 
         def started_all(results):
             for success, value in results:
                 if not success:
                     logger.failure(not_started, value)
-            self.running_bricks.refilter()
 
-        self.curtain_down()
-        bricks = self.brickfactory.bricks
-        l = []
-        for idx, brick in enumerate(bricks):
-            d = brick.poweron()
-            d.addCallback(changed, gtk.TreeRowReference(bricks, idx))
-            l.append(d)
+        l = [brick.poweron() for brick in self.brickfactory.bricks]
         defer.DeferredList(l, consumeErrors=True).addCallback(started_all)
+        return True
 
     def on_btnStopAll_clicked(self, toolbutton):
-        # TODO: need refactoring. filter refilter is not needed anymore,
-        # neither the call to changed
-
-        def stopped_all(results):
-            self.running_bricks.refilter()
-
-        self.curtain_down()
-        bricks = self.brickfactory.bricks
-        l = []
-        for idx, brick in enumerate(bricks):
-            d = brick.poweroff()
-            d.addCallback(changed, gtk.TreeRowReference(bricks, idx))
-            l.append(d)
-        defer.DeferredList(l, consumeErrors=True).addCallback(stopped_all)
+        for brick in self.brickfactory.bricks:
+            brick.poweroff()
+        return True
 
     def __show_config_if_selected(self, treeview):
-        brick = self.__get_selection(treeview)
+        brick = treeview.get_selected_value()
         if brick:
             self.curtain_up(brick)
+            return True
+        return False
 
     def on_btnConfigure_clicked(self, toolbutton):
-        self.__show_config_if_selected(self.tvBricks)
-        return True
+        return self.__show_config_if_selected(self.tvBricks)
 
     # events toolbar
 
@@ -832,27 +770,17 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_btnStartAllEvents_clicked(self, toolbutton):
-        # TODO: look at the comment in on_btnStartAll_clicked
-        self.curtain_down()
-        events = self.brickfactory.events
-        for idx, event in enumerate(events):
-            d = event.poweron()
-            d.addCallback(changed, gtk.TreeRowReference(events, idx))
-            events.row_changed(idx, events.get_iter(idx))
+        for event in self.brickfactory.events:
+            event.poweron()
         return True
 
     def on_btnStopAllEvents_clicked(self, toolbutton):
-        # TODO: look at the comment in on_btnStartAll_clicked
-        self.curtain_down()
-        events = self.brickfactory.events
-        for idx, event in enumerate(events):
+        for event in self.brickfactory.events:
             event.poweroff()
-            events.row_changed(idx, events.get_iter(idx))
         return True
 
     def on_btnConfigureEvent_clicked(self, toolbutton):
-        self.__show_config_if_selected(self.tvEvents)
-        return True
+        return self.__show_config_if_selected(self.tvEvents)
 
     def confirm(self, message):
         dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
@@ -882,22 +810,19 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_bricks_treeview_row_activated(self, treeview, path, column):
         model = treeview.get_model()
-        iter = model.get_iter(path)
-        brick = model.get_value(iter, 0)
+        brick = model.get_value(model.get_iter(path), 0)
         self.startstop_brick(brick)
 
     def on_events_treeview_row_activated(self, treeview, path, column):
-        # TODO: look at the comment in on_btnStartAll_clicked
         model = treeview.get_model()
         event = model.get_value(model.get_iter(path), 0)
-        event.toggle().addCallback(changed, gtk.TreeRowReference(model, path))
+        event.toggle()
 
     def startstop_brick(self, brick):
-        d = brick.poweron() if brick.proc is None else brick.poweroff()
-        d.addCallback(changed_brick_in_model, self.brickfactory.bricks)
-        d.addCallback(lambda _: self.running_bricks.refilter())
-        d.addErrback(logger.failure_eb, stop_error if brick.proc else
-                     start_error)
+        if is_running(brick):
+            brick.poweroff().addErrback(logger.failure_eb, stop_error)
+        else:
+            brick.poweron().addErrback(logger.failure_eb, start_error)
 
     def on_joblist_treeview_button_release_event(self, treeview, event):
         if event.button == 3:
@@ -912,38 +837,34 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                                                  self)
                 return True
 
-    def image_create(self):
-        logger.info(create_image)
-        path = self.get_object(
-            "filechooserbutton_newimage_dest").get_filename() + "/"
-        filename = self.get_object("entry_newimage_name").get_text()
-        img_format = self.get_object(
-            "combobox_newimage_format").get_active_text()
-        img_size = str(self.get_object("spinbutton_newimage_size").get_value())
-        #Get size unit and remove the last character "B"
-        #because qemu-img want k, M, G or T suffixes.
-        unit = self.get_object(
-            "combobox_newimage_sizeunit").get_active_text()[1]
-        # XXX: use a two value combobox
-        if not filename:
-            logger.error(filename_empty)
-            return
-        if img_format == "Auto":
-            img_format = "raw"
-        fullname = "%s%s.%s" % (path, filename, img_format)
-        exe = "qemu-img"
-        args = [exe, "create", "-f", img_format, fullname, img_size + unit]
-        done = defer.Deferred()
-        reactor.spawnProcess(QemuImgCreateProtocol(done), exe, args,
-            os.environ)
-        done.addCallback(
-            lambda _: self.brickfactory.new_disk_image(filename, fullname))
-        logger.log_failure(done, create_image_error)
-        return done
-
-    def on_button_create_image_clicked(self, widget=None, data=""):
-        self.curtain_down()
-        self.user_wait_action(self.image_create)
+    # def image_create(self):
+    #     logger.info(create_image)
+    #     path = self.get_object(
+    #         "filechooserbutton_newimage_dest").get_filename() + "/"
+    #     filename = self.get_object("entry_newimage_name").get_text()
+    #     img_format = self.get_object(
+    #         "combobox_newimage_format").get_active_text()
+    #     img_size = str(self.get_object("spinbutton_newimage_size").get_value())
+    #     #Get size unit and remove the last character "B"
+    #     #because qemu-img want k, M, G or T suffixes.
+    #     unit = self.get_object(
+    #         "combobox_newimage_sizeunit").get_active_text()[1]
+    #     # XXX: use a two value combobox
+    #     if not filename:
+    #         logger.error(filename_empty)
+    #         return
+    #     if img_format == "Auto":
+    #         img_format = "raw"
+    #     fullname = "%s%s.%s" % (path, filename, img_format)
+    #     exe = "qemu-img"
+    #     args = [exe, "create", "-f", img_format, fullname, img_size + unit]
+    #     done = defer.Deferred()
+    #     reactor.spawnProcess(QemuImgCreateProtocol(done), exe, args,
+    #         os.environ)
+    #     done.addCallback(
+    #         lambda _: self.brickfactory.new_disk_image(filename, fullname))
+    #     logger.log_failure(done, create_image_error)
+    #     return done
 
     def user_wait_action(self, action, *args):
         return ProgressBar(self).wait_for(action, *args)
@@ -961,9 +882,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_bricks_treeview_drag_data_get(self, treeview, context, selection,
                                          info, time):
-        treeselection = treeview.get_selection()
-        model, iter = treeselection.get_selected()
-        brick = model.get_value(iter, 0)
+        brick = treeview.get_selected_value()
         selection.set(selection.target, 8, brick.get_name())
         return True
 
@@ -998,7 +917,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def __brick_selected(self):
-        return bool(self.__get_selection(self.tvBricks))
+        return bool(self.tvBricks.get_selected_value())
 
     # Events tab signals
 
@@ -1006,7 +925,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.__state_event_config.check()
 
     def __event_selected(self):
-        return bool(self.__get_selection(self.tvEvents))
+        return bool(self.tvEvents.get_selected_value())
 
 
 class List(gtk.ListStore):
@@ -1049,8 +968,6 @@ class VisualFactory(brickfactory.BrickFactory):
 
     def __init__(self, quit):
         brickfactory.BrickFactory.__init__(self, quit)
-        self.events = List()
-        self.bricks = List()
         self.socks = List()
 
 

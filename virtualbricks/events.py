@@ -66,6 +66,9 @@ class Event(base.Base):
     scheduled = None
     config_factory = EventConfig
 
+    def __isrunning__(self):
+      return self.scheduled is not None
+
     def get_state(self):
         """Return state of the event"""
 
@@ -113,6 +116,7 @@ class Event(base.Base):
         deferred = defer.Deferred()
         self.scheduled = reactor.callLater(self.config["delay"],
                                            self.do_actions, deferred)
+        self.notify_changed()
         return deferred
 
     def poweroff(self):
@@ -120,6 +124,7 @@ class Event(base.Base):
             return
         self.scheduled.cancel()
         self.scheduled = None
+        self.notify_changed()
 
     def toggle(self):
         if self.scheduled is not None:
@@ -143,3 +148,4 @@ class Event(base.Base):
                  for action in self.config["actions"]]
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)
+        self.notify_changed()

@@ -431,6 +431,9 @@ class Brick(base.Base):
             state = _("off")
         return state
 
+    def __isrunning__(self):
+        return self.proc is not None
+
     def __format__(self, format_string):
         if format_string == "d":
             if self.pid == -10:
@@ -440,7 +443,3 @@ class Brick(base.Base):
 
     def __repr__(self):
         return "<{0.type} {0.name}>".format(self)
-
-
-def is_running(brick):
-    return brick and brick.proc is not None

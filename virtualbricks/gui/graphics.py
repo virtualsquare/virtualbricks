@@ -28,6 +28,8 @@ import Image
 import pygraphviz as pgv
 import gtk.gdk
 
+from virtualbricks.tools import is_running
+
 
 __all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
            "pixbuf_for_brick_at_size", "pixbuf_for_brick_type",
@@ -61,16 +63,9 @@ def brick_icon(brick):
                         "data/" + brick.get_type().lower() + ".png")
 
 
-def is_running(brick):
-    if hasattr(brick, "proc"):
-        return brick.proc is not None
-    return True
-
-
 def saturate_if_stopped(brick, pixbuf):
-    if ((brick.get_type() == "Event" and brick.scheduled is None) or
-        (hasattr(brick, "proc") and brick.proc is None)):
-            pixbuf.saturate_and_pixelate(pixbuf, 0.0, True)
+    if not is_running(brick):
+        pixbuf.saturate_and_pixelate(pixbuf, 0.0, True)
     return pixbuf
 
 

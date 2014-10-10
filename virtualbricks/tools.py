@@ -346,3 +346,7 @@ def image_type_from_file(filename):
 
 def dispose(obj):
     obj.__dispose__()
+
+
+def is_running(brick):
+    return brick.__isrunning__()

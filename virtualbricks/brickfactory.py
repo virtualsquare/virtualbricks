@@ -33,11 +33,11 @@ from twisted.conch.insults import insults
 from twisted.conch import manhole
 
 from virtualbricks import errors, settings, configfile, console, project, log
-from virtualbricks import bricks
 from virtualbricks import events, link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks import observable
+from virtualbricks.tools import is_running
 
 
 if False:  # pyflakes
@@ -127,7 +127,7 @@ class BrickFactory(object):
             self.quit_d.callback(None)
 
     def reset(self):
-        if any(bricks.is_running(brick) for brick in self.bricks):
+        if any(is_running(brick) for brick in self.bricks):
             msg = _("Project cannot be closed: there are running bricks")
             raise errors.BricksAreRunningError(msg)
         # Don't change the list while iterating over it
@@ -160,6 +160,10 @@ class BrickFactory(object):
     def _brick_changed(self, brick):
         if not self.__restore:
             self.__observable.notify("brick-changed", brick)
+
+    def _event_changed(self, event):
+        if not self.__restore:
+            self.__observable.notify("event-changed", event)
 
     def _image_changed(self, image):
         if not self.__restore:
@@ -330,6 +334,7 @@ class BrickFactory(object):
     def new_event(self, name):
         event = self._new_event(name)
         self.events.append(event)
+        event.changed.connect(self._event_changed)
         self.__observable.notify("event-added", event)
         return event
 
@@ -356,6 +361,7 @@ class BrickFactory(object):
 
     def del_event(self, event):
         event.poweroff()
+        event.changed.disconnect(self._event_changed)
         self.events.remove(event)
         self.__observable.notify("event-removed", event)
 
