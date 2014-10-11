@@ -113,6 +113,10 @@ class BrickFactory(object):
         self.__observable = observable.Observable(*self.__signals)
         self.changed = observable.Event(self.__observable, "brick-changed")
 
+    def _notify(self, event, *args):
+        if not self.__restore:
+            self.__observable.notify(event, *args)
+
     def stop(self):
         logger.info(engine_bye)
         for e in self.events:
@@ -155,19 +159,6 @@ class BrickFactory(object):
             if type in self.__factories:
                 logger.debug(type_present, type=type)
             self.__factories[type] = factory
-            # self.__factories.setdefault(type, []).append(factory)
-
-    def _brick_changed(self, brick):
-        if not self.__restore:
-            self.__observable.notify("brick-changed", brick)
-
-    def _event_changed(self, event):
-        if not self.__restore:
-            self.__observable.notify("event-changed", event)
-
-    def _image_changed(self, image):
-        if not self.__restore:
-            self.__observable.notify("image-changed", image)
 
     def connect(self, name, callback, *args, **kwds):
         self.__observable.add_observer(name, callback, args, kwds)
@@ -179,9 +170,7 @@ class BrickFactory(object):
         # self.__restore = restore
         pass
 
-    # [[[[[[[[[]]]]]]]]]
-    # [   Disk Images  ]
-    # [[[[[[[[[]]]]]]]]]
+    # Disk Images
 
     def new_disk_image(self, name, path, description=""):
         """Add one disk image to the library."""
@@ -192,8 +181,7 @@ class BrickFactory(object):
         img = virtualmachines.Image(self.normalize_name(name), path,
                                     description)
         self.disk_images.append(img)
-        if not self.__restore:
-            self.__observable.notify("image-added", img)
+        self._notify("image-added", img)
         return img
 
     def assert_path_not_in_use(self, path):
@@ -203,8 +191,7 @@ class BrickFactory(object):
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
-        if not self.__restore:
-            self.__observable.notify("image-removed", image)
+        self._notify("image-removed", image)
 
     def get_image_by_name(self, name):
         """Return a disk image given its name or {None}."""
@@ -220,61 +207,32 @@ class BrickFactory(object):
             if img.path == path:
                 return img
 
-    # [[[[[[[[[]]]]]]]]]
-    # [     Bricks     ]
-    # [[[[[[[[[]]]]]]]]]
-
-    def newbrick(self, type, name, host="", remote=False):
-        """Old interface, use brickfactory.new_brick() instead.
-
-        Two possible method invocations:
-
-        arg1 == "remote"  |  arg1 = ntype
-        arg2 == type      |  arg2 = name
-        arg3 = name       |  arg3 = host
-        arg4 = host       |  arg4 = remote (boolean)
-        """
-
-        if name == "remote":
-            return self.new_brick(type=name, name=host, host=remote,
-                                   remote=True)
-        else:
-            return self.new_brick(type, name, host, remote)
+    # Bricks
 
     def new_brick(self, type, name, host="", remote=False):
-        brick = self._new_brick(type, name, host, remote)
-        self.bricks.append(brick)
-        brick.changed.connect(self._brick_changed)
-        if is_virtualmachine(brick):
-            brick.image_changed.connect(self._image_changed)
-        if not self.__restore:
-            self.__observable.notify("brick-added", brick)
-        return brick
-
-    def _new_brick(self, type, name, host, remote):
         """Return a new brick.
 
-        @param type: The type of new brick. Must be known.
+        @param type: The type of new brick.
         @type type: C{str}
         @param name: The name for the new brick. Must contains only letters,
             numbers, underscores, hyphens and points. Must not be already in
             use.
         @type name: C{str}
-        @param host: The host for the brick. Default: "".
-        @type type: C{str}
-        @param remote: If this brick is a remote brick. Default = False.
-        @type remote: C{bool}
-
         @return: the new brick.
-
         @raises: InvalidNameError, InvalidTypeError
         """
 
         try:
-            brick_type = self.__factories[type.lower()]
-            return brick_type(self, self.normalize_name(name))
+            Type = self.__factories[type.lower()]
         except KeyError:
             raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
+        brick = Type(self, self.normalize_name(name))
+        self.bricks.append(brick)
+        brick.changed.connect(self._brick_changed)
+        if is_virtualmachine(brick):
+            brick.image_changed.connect(self._image_changed)
+        self._notify("brick-added", brick)
+        return brick
 
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
@@ -305,8 +263,7 @@ class BrickFactory(object):
                 plug.disconnect()
         self.bricks.remove(brick)
         brick.changed.disconnect(self._brick_changed)
-        if not self.__restore:
-            self.__observable.notify("brick-removed", brick)
+        self._notify("brick-removed", brick)
 
     def del_brick(self, brick):
         logger.info(remove_brick, brick=brick.name)
@@ -319,42 +276,32 @@ class BrickFactory(object):
             if b.name == name:
                 return b
 
-    # [[[[[[[[[]]]]]]]]]
-    # [     Events     ]
-    # [[[[[[[[[]]]]]]]]]
+    def _brick_changed(self, brick):
+        self._notify("brick-changed", brick)
 
-    def newevent(self, type="", name=""):
-        """Old interface, use brickfactory.new_event() instead."""
-        if type not in ("event", "Event"):
-            logger.error(invalid_command, type=type, name=name)
-            return False
-        self.new_event(name)
-        return True
+    def _image_changed(self, image):
+        self._notify("image-changed", image)
+
+    # Events
 
     def new_event(self, name):
-        event = self._new_event(name)
-        self.events.append(event)
-        event.changed.connect(self._event_changed)
-        self.__observable.notify("event-added", event)
-        return event
-
-    def _new_event(self, name):
         """Create a new event.
 
         @arg name: The event name.
         @type name: C{str}
-
         @return: The new created event.
-
         @raises: InvalidNameError, InvalidTypeError
         """
 
         event = events.Event(self, self.normalize_name(name))
         logger.debug(new_event_ok, name=event.name)
+        self.events.append(event)
+        event.changed.connect(self._event_changed)
+        self._notify("event-added", event)
         return event
 
     def dup_event(self, event):
-        name = self.normalize(self.next_name("copy_of_" + event.name))
+        name = self.next_name("copy_of_" + event.name)
         new = self.new_event(name)
         new.config = copy.deepcopy(event.config)
         return new
@@ -363,7 +310,7 @@ class BrickFactory(object):
         event.poweroff()
         event.changed.disconnect(self._event_changed)
         self.events.remove(event)
-        self.__observable.notify("event-removed", event)
+        self._notify("event-removed", event)
 
     def get_event_by_name(self, name):
         for e in self.events:
@@ -372,29 +319,15 @@ class BrickFactory(object):
 
     def rename_event(self, event, name):
         event.name = self.normalize_name(name)
-        self.__observable.notify("event-changed", event)
+        self._event_changed(event)
 
-    ############################################
+    def _event_changed(self, event):
+        self._notify("event-changed", event)
 
     def next_name(self, name, suffix="_new"):
         while self.is_in_use(name):
             name += suffix
         return name
-
-    def normalize(self, name):
-        """Return the normalized name or raise an InvalidNameError."""
-
-        if not isinstance(name, str):
-            raise errors.InvalidNameError(_("Name must be a string"))
-        nname = name.strip()
-        if not re.search("\A[a-zA-Z]", nname):
-            raise errors.InvalidNameError(_("Name %s does not start with a "
-                                            "letter") % name)
-        nname = re.sub(' ', '_', nname)
-        if not re.search("\A[a-zA-Z0-9_\.-]+\Z", nname):
-            raise errors.InvalidNameError(_("Name must contains only letters, "
-                    "numbers, underscores, hyphens and points, %s") % name)
-        return nname
 
     def is_in_use(self, name):
         """used to determine whether the chosen name can be used or
@@ -414,7 +347,17 @@ class BrickFactory(object):
         @rase NameAlreadyInUseError: if the name is already in use.
         """
 
-        _name = self.normalize(name)
+        if not isinstance(name, str):
+            raise errors.InvalidNameError(_("Name must be a string"))
+        _name = name.strip()
+        if not re.search("\A[a-zA-Z]", _name):
+            msg = _("Name {0} does not start with a " "letter").format(name)
+            raise errors.InvalidNameError(msg)
+        _name = re.sub(' ', '_', _name)
+        if not re.search("\A[a-zA-Z0-9_\.-]+\Z", _name):
+            msg = _("Name must contains only letters, numbers, underscores, "
+                    "hyphens and points, {}").format(name)
+            raise errors.InvalidNameError(msg)
         if self.is_in_use(_name):
             raise errors.NameAlreadyInUseError(name)
         return _name
@@ -446,11 +389,6 @@ class BrickFactory(object):
         else:
             logger.debug(endpoint_not_found, nick=nick)
             return None
-
-    # ###################
-
-    dupbrick = dup_brick
-    dupevent = dup_event
 
 
 class Manhole(manhole.Manhole):

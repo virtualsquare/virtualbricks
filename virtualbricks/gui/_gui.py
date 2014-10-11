@@ -119,7 +119,7 @@ class BrickPopupMenu(BaseMenu):
         gui.ask_remove_brick(self.original)
 
     def on_copy_activate(self, menuitem, gui):
-        gui.brickfactory.dupbrick(self.original)
+        gui.brickfactory.dup_brick(self.original)
 
     def on_rename_activate(self, menuitem, gui):
         if self.original.proc is not None:
@@ -190,7 +190,7 @@ class EventPopupMenu(BaseMenu):
         gui.ask_remove_event(self.original)
 
     def on_copy_activate(self, menuitem, gui):
-        gui.brickfactory.dupevent(self.original)
+        gui.brickfactory.dup_event(self.original)
 
     def on_rename_activate(self, menuitem, gui):
         if not self.original.scheduled:

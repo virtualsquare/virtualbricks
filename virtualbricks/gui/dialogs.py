@@ -400,10 +400,7 @@ class DisksLibraryDialog(Window):
         self._hide_config()
 
     def on_btnRemove_clicked(self, button):
-        try:
-            self.factory.remove_disk_image(self.image)
-        except:  # XXX: catch only known exceptions
-            logger.failure(img_cannot_remove, img=self.image)
+        self.factory.remove_disk_image(self.image)
         self._hide_config()
 
     def on_btnSave_clicked(self, button):

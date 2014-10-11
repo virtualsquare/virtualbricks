@@ -1,98 +1,63 @@
 from twisted.trial import unittest
-from twisted.internet import defer
 
-from virtualbricks import errors
+from virtualbricks.tools import is_running
 from virtualbricks.tests import stubs, successResultOf
 
 
 class TestFactory(unittest.TestCase):
 
-    def setUp(self):
-        self.factory = stubs.FactoryStub()
+    def test_reset(self):
+        factory = stubs.Factory()
+        factory.new_brick("stub", "test_brick")
+        factory.reset()
+        self.assertEquals(factory.bricks, [])
 
-    def test_reset_config(self):
-        self.factory.new_brick("stub", "test_brick")
-        self.factory.reset()
-        self.assertEquals(self.factory.bricks, [])
-        # self.assertEquals(self.factory.events, [])
+    def test_new_brick(self):
+        factory = stubs.Factory()
+        NAME = "test_brick"
+        TYPE = "Stub"
+        brick = factory.new_brick("stub", NAME)
+        self.assertEqual(brick.get_type(), TYPE)
+        self.assertEqual(brick.get_name(), NAME)
 
-    def test_newbrick(self):
-        self.assertRaises(errors.InvalidNameError, self.factory.newbrick,
-                          "stub", "")
-        self.factory.newbrick("stub", "test_brick")
-        self.assertRaises(errors.InvalidNameError, self.factory.newbrick,
-                          "stub", "test_brick")
-
-    def test_newevent(self):
-        self.assertRaises(errors.InvalidNameError, self.factory.newevent,
-                          "event", "")
-        self.factory.newevent("event", "test_event")
-        self.assertRaises(errors.InvalidNameError, self.factory.newevent,
-                          "event", "test_event")
-        self.assertTrue(self.factory.newevent("Event", "event1"))
-        self.assertFalse(self.factory.newevent("eVeNt", "event2"))
+    def test_new_event(self):
+        factory = stubs.Factory()
+        NAME = "test_event"
+        event = factory.new_event(NAME)
+        self.assertEqual(event.get_type(), "Event")
+        self.assertEqual(event.get_name(), NAME)
 
     def test_dup_event(self):
-        event = self.factory.new_event("test_event")
-        copy = self.factory.dupevent(event)
+        factory = stubs.Factory()
+        event = factory.new_event("test_event")
+        copy = factory.dup_event(event)
         self.assertIsNot(copy, event)
-        self.assertEqual(copy.name, "copy_of_test_event")
-        self.assertIsNot(event.config, copy.config)
-        self.assertEqual(event.get("delay"), copy.get("delay"))
-        self.assertEqual(event.get("actions"), copy.get("actions"))
-        event.config["actions"] += ["new action"]
-        self.assertNotEqual(event.get("actions"), copy.get("actions"))
+        self.assertIsNot(copy.config, event.config)
+        self.assertEqual(copy.config, event.config)
 
     def test_dup_brick(self):
-        switch = self.factory.new_brick("switch", "switch")
-        switch2 = self.factory.dup_brick(switch)
+        factory = stubs.Factory()
+        switch = factory.new_brick("switch", "switch")
+        switch2 = factory.dup_brick(switch)
         self.assertIsNot(switch, switch2)
-        vm = self.factory.new_brick("vm", "vm")
-        vm2 = self.factory.dup_brick(vm)
-        self.assertIsNot(vm, vm2)
+        self.assertIsNot(switch.config, switch2.config)
+        self.assertEqual(switch.config, switch2.config)
 
     def test_del_brick(self):
         """Delete a brick from a factory."""
 
-        brick = self.factory.newbrick("_stub", "test_brick")
-        self.assertEqual(list(self.factory.bricks), [brick])
-        successResultOf(self, self.factory.del_brick(brick))
-        self.assertEqual(list(self.factory.bricks), [])
+        factory = stubs.Factory()
+        brick = factory.new_brick("stub", "test_brick")
+        self.assertEqual(factory.bricks, [brick])
+        successResultOf(self, factory.del_brick(brick))
+        self.assertEqual(factory.bricks, [])
 
     def test_del_running_brick(self):
         """If the brick is running, stop it and remove it."""
 
-        brick = self.factory.newbrick("_stub", "test_brick")
-        brick.poweron()
-        self.assertIsNot(brick.proc, None)
-        successResultOf(self, self.factory.del_brick(brick))
-        self.assertEqual(list(self.factory.bricks), [])
-        self.assertIs(brick.proc, None)
-
-    def test_del_remove_anyway(self):
-        """
-        If the brick is running and poweroff() raise an exception, remove the
-        brick anyway.
-        """
-
-        brick = self.factory.newbrick("_stub", "test_brick")
-        brick.poweron()
-        brick.poweroff = lambda kill=False: defer.fail(RuntimeError())
-        successResultOf(self, self.factory.del_brick(brick))
-        errors = self.flushLoggedErrors(RuntimeError)
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(list(self.factory.bricks), [])
-        self.assertIsNot(brick.proc, None)
-
-    def test_stop_brick_error(self):
-        """
-        Report an error if the factory is stopped but a brick raise an error.
-        """
-
-        brick = self.factory.newbrick("_stub", "test_brick")
-        brick.poweron()
-        brick.poweroff = lambda kill=False: defer.fail(RuntimeError())
-        successResultOf(self, self.factory.stop())
-        errors = self.flushLoggedErrors(RuntimeError)
-        self.assertEqual(len(errors), 1)
-        self.assertIsNot(brick.proc, None)
+        factory = stubs.Factory()
+        brick = factory.new_brick("_stub", "test_brick")
+        self.assertEqual(brick, successResultOf(self, brick.poweron()))
+        self.assertEqual(None, successResultOf(self, factory.del_brick(brick)))
+        self.assertEqual(factory.bricks, [])
+        self.assertNot(is_running(brick))
