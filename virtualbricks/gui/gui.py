@@ -46,17 +46,9 @@ components_not_found = log.Event("{text}\nThere are some components not "
     "found: {components} some functionalities may not be available.\nYou can "
     "disable this alert from the general settings.")
 brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
-create_image_error = log.Event("Error on creating image")
-apply_settings = log.Event("Apply settings...")
-create_image = log.Event("Image creating.. ")
-filename_empty = log.Event("Choose a filename first!")
 not_started = log.Event("Brick not started.")
 stop_error = log.Event("Error on stopping brick.")
 start_error = log.Event("Error on starting brick.")
-no_kvm = log.Event("No KVM support found on the local system. Check your "
-    "active configuration. KVM will stay disabled.")
-cannot_write = log.Event("Cannot write to the specified location")
-select_file = log.Event("Select a file")
 dnd_no_socks = log.Event("I don't know what to do, bricks have no socks.")
 dnd_dest_brick_not_found = log.Event("Cannot found dest brick")
 dnd_source_brick_not_found = log.Event("Cannot find source brick {name}")
@@ -836,35 +828,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 interfaces.IJobMenu(brick).popup(event.button, event.time,
                                                  self)
                 return True
-
-    # def image_create(self):
-    #     logger.info(create_image)
-    #     path = self.get_object(
-    #         "filechooserbutton_newimage_dest").get_filename() + "/"
-    #     filename = self.get_object("entry_newimage_name").get_text()
-    #     img_format = self.get_object(
-    #         "combobox_newimage_format").get_active_text()
-    #     img_size = str(self.get_object("spinbutton_newimage_size").get_value())
-    #     #Get size unit and remove the last character "B"
-    #     #because qemu-img want k, M, G or T suffixes.
-    #     unit = self.get_object(
-    #         "combobox_newimage_sizeunit").get_active_text()[1]
-    #     # XXX: use a two value combobox
-    #     if not filename:
-    #         logger.error(filename_empty)
-    #         return
-    #     if img_format == "Auto":
-    #         img_format = "raw"
-    #     fullname = "%s%s.%s" % (path, filename, img_format)
-    #     exe = "qemu-img"
-    #     args = [exe, "create", "-f", img_format, fullname, img_size + unit]
-    #     done = defer.Deferred()
-    #     reactor.spawnProcess(QemuImgCreateProtocol(done), exe, args,
-    #         os.environ)
-    #     done.addCallback(
-    #         lambda _: self.brickfactory.new_disk_image(filename, fullname))
-    #     logger.log_failure(done, create_image_error)
-    #     return done
 
     def user_wait_action(self, action, *args):
         return ProgressBar(self).wait_for(action, *args)
