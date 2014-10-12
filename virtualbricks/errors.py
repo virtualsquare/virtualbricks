@@ -88,5 +88,5 @@ class InvalidArchiveError(Error):
     """The archive format is not recognized."""
 
 
-class BricksAreRunningError(Error):
+class BrickRunningError(Error):
     """There is one or more brick that is running."""

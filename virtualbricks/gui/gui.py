@@ -326,7 +326,6 @@ class JobMenu:
         logger.debug(proc_signal, signame="SIGKILL")
         try:
             d = self.original.poweroff(kill=True)
-            d.addCallback(self._refilter, gui.running_bricks)
         except error.ProcessExitedAlready:
             pass
 
@@ -387,7 +386,6 @@ class VMJobMenu(JobMenu):
     def on_term_activate(self, menuitem, gui):
         logger.debug(proc_signal, signame="SIGTERM")
         d = self.original.poweroff(term=True)
-        d.addCallback(self._refilter, gui.running_bricks)
 
 registerAdapter(VMJobMenu, VirtualMachine, IJobMenu)
 
@@ -1580,10 +1578,10 @@ class ReadmeMixin(object):
         self.__load_readme()
         super(ReadmeMixin, self).on_open(name)
 
-    def on_quit(self):
+    def on_quit(self, factory):
         self.__cancel_delayed_save()
         self.__save_readme()
-        super(ReadmeMixin, self).on_quit()
+        super(ReadmeMixin, self).on_quit(factory)
 
 
 class ProgressBar:
@@ -1615,7 +1613,7 @@ class _Root(object):
 
     # VBGUI signals
 
-    def on_quit(self):
+    def on_quit(self, factory):
         pass
 
     def on_save(self):
@@ -1677,10 +1675,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     __bricks_binding_list = None
     __events_binding_list = None
 
-    def __init__(self, factory, builder, quit, textbuffer=None):
+    def __init__(self, factory, builder, textbuffer=None):
         self.factory = self.brickfactory = factory
         self.builder = builder
-        self.quit_d = quit
         self.config = settings
         self.messages_buffer = textbuffer
 
@@ -1709,7 +1706,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         # attach the quit callback at the end, so it is not called if an
         # exception is raised before because of a syntax error of another kind
         # of error
-        quit.addCallback(lambda _: self.on_quit())
+        factory.connect("quit", self.on_quit)
 
         # Show the main window
         self.wndMain.show()
@@ -1839,9 +1836,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def init(self, factory):
         super(VBGUI, self).init(factory)
 
-    def on_quit(self):
+    def on_quit(self, factory):
         dispose(self)
-        super(VBGUI, self).on_quit()
+        super(VBGUI, self).on_quit(factory)
 
     def on_save(self):
         super(VBGUI, self).on_save()
@@ -1861,7 +1858,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         super(VBGUI, self).on_new(name)
 
     def do_quit(self, *_):
-        self.quit_d.callback(None)
+        self.factory.quit()
         return True
 
     # end gui (programming) interface
@@ -1874,12 +1871,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             return True
 
     def ask_remove_brick(self, brick):
-        if brick.proc is not None:
-            other = _("\nThe brick is still running, it will be "
-                    "killed before being deleted!")
-        else:
-            other = None
-        self.__ask_for_deletion(self.brickfactory.del_brick, brick, other)
+        self.__ask_for_deletion(self.brickfactory.del_brick, brick)
 
     def ask_remove_event(self, event):
         if event.scheduled is not None:
@@ -2309,7 +2301,7 @@ class Application(brickfactory.Application):
     def get_namespace(self):
         return {"gui": self.gui}
 
-    def _run(self, factory, quit):
+    def _run(self, factory):
         # a bug in gtk2 make impossibile to use this and is not required anyway
         gtk.set_interactive(False)
         builder = load_ui()
@@ -2319,7 +2311,7 @@ class Application(brickfactory.Application):
         logger.publisher.addObserver(observer, False)
         # disable default link_button action
         gtk.link_button_set_uri_hook(lambda b, s: None)
-        self.gui = VBGUI(factory, builder, quit, self.textbuffer)
+        self.gui = VBGUI(factory, builder, self.textbuffer)
         message_dialog.set_parent(self.gui.wndMain)
 
     def run(self, reactor):

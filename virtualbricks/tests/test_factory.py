@@ -2,6 +2,7 @@ from twisted.trial import unittest
 
 from virtualbricks.tools import is_running
 from virtualbricks.tests import stubs, successResultOf
+from virtualbricks.errors import BrickRunningError
 
 
 class TestFactory(unittest.TestCase):
@@ -49,15 +50,15 @@ class TestFactory(unittest.TestCase):
         factory = stubs.Factory()
         brick = factory.new_brick("stub", "test_brick")
         self.assertEqual(factory.bricks, [brick])
-        successResultOf(self, factory.del_brick(brick))
+        factory.del_brick(brick)
         self.assertEqual(factory.bricks, [])
 
     def test_del_running_brick(self):
-        """If the brick is running, stop it and remove it."""
+        """If the brick is running, it cannot be removed."""
 
         factory = stubs.Factory()
         brick = factory.new_brick("_stub", "test_brick")
         self.assertEqual(brick, successResultOf(self, brick.poweron()))
-        self.assertEqual(None, successResultOf(self, factory.del_brick(brick)))
-        self.assertEqual(factory.bricks, [])
-        self.assertNot(is_running(brick))
+        self.assertRaises(BrickRunningError, factory.del_brick, brick)
+        self.assertEqual(factory.bricks, [brick])
+        self.assertTrue(is_running(brick))
