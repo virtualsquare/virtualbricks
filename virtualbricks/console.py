@@ -21,10 +21,9 @@ import textwrap
 
 from twisted.internet import interfaces, utils
 from twisted.protocols import basic
-from twisted.python import components
 from zope.interface import implementer
 
-from virtualbricks import version, errors, log, settings
+from virtualbricks import version, bricks, errors, log, settings
 
 
 logger = log.Logger()
@@ -98,6 +97,8 @@ class Protocol(basic.LineOnlyReceiver):
                     handler(*parts[1:])
                 except TypeError:
                     self.sendLine("invalid number of arguments")
+                except Exception as e:
+                    self.sendLine(str(e))
             else:
                 self.default(line)
 
@@ -171,8 +172,6 @@ class VBProtocol(Protocol):
 
     def brick_action(self, obj, cmd):
         """brick action dispatcher"""
-        # XXX: cyclic imports
-        from virtualbricks import bricks
 
         if cmd[0] == "on":
             obj.poweron()
@@ -210,8 +209,8 @@ class VBProtocol(Protocol):
         self.brick_action(obj, args[1:])
 
     def do_quit(self):
-        logger.info(quit_loop)
         self.factory.quit()
+        logger.info(quit_loop)
 
     def do_help(self):
         self.sendLine(textwrap.dedent(self.__doc__))

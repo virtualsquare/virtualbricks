@@ -100,7 +100,8 @@ class BrickFactory(object):
     __restore = False
     __signals = ("brick-added", "brick-removed", "brick-changed",
                  "image-added", "image-removed", "image-changed",
-                 "event-added", "event-removed", "event-changed")
+                 "event-added", "event-removed", "event-changed",
+                 "quit")
 
     def __init__(self, quit):
         self.quit_d = quit
@@ -113,7 +114,7 @@ class BrickFactory(object):
         self.changed = observable.Event(self.__observable, "brick-changed")
 
     def _notify(self, event, *args):
-        if not self.__restore:
+        # if not self.__restore:
             self.__observable.notify(event, *args)
 
     def stop(self):
@@ -126,13 +127,17 @@ class BrickFactory(object):
         return defer.DeferredList(l, consumeErrors=True)
 
     def quit(self):
+        if any(is_running(brick) for brick in self.bricks):
+            msg = _("Cannot close virtualbricks: there are running bricks")
+            raise errors.BrickRunningError(msg)
+        self._notify("quit", self)
         if not self.quit_d.called:
             self.quit_d.callback(None)
 
     def reset(self):
         if any(is_running(brick) for brick in self.bricks):
             msg = _("Project cannot be closed: there are running bricks")
-            raise errors.BricksAreRunningError(msg)
+            raise errors.BrickRunningError(msg)
         # Don't change the list while iterating over it
         for brick in list(self.bricks):
             if is_virtualmachine(brick):
@@ -245,7 +250,11 @@ class BrickFactory(object):
 
         return new_brick
 
-    def do_del_brick(self, result, brick):
+    def del_brick(self, brick):
+        if is_running(brick):
+            msg = "Cannot delete brick {0:n}: brick is running".format(brick)
+            raise errors.BrickRunningError(msg)
+        logger.info(remove_brick, brick=brick.name)
         socks = set(brick.socks)
         if socks:
             logger.info(remove_socks,
@@ -263,12 +272,6 @@ class BrickFactory(object):
         self.bricks.remove(brick)
         brick.changed.disconnect(self._brick_changed)
         self._notify("brick-removed", brick)
-
-    def del_brick(self, brick):
-        logger.info(remove_brick, brick=brick.name)
-        return brick.poweroff(
-                ).addErrback(logger.failure_eb, brick_stop
-                ).addBoth(self.do_del_brick, brick)
 
     def get_brick_by_name(self, name):
         for b in self.bricks:
@@ -592,7 +595,7 @@ class Application:
         self.install_home()
         quit = defer.Deferred()
         factory = self.factory_factory(quit)
-        self._run(factory, quit)
+        self._run(factory)
         if self.config["verbosity"] >= 2 and not self.config["daemon"]:
             import signal
             import pdb
@@ -616,5 +619,5 @@ class Application:
         self.install_sys_hooks()
         return quit
 
-    def _run(self, factory, quit):
+    def _run(self, factory):
         pass
