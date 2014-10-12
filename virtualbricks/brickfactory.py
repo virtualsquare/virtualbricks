@@ -117,19 +117,13 @@ class BrickFactory(object):
         # if not self.__restore:
             self.__observable.notify(event, *args)
 
-    def stop(self):
-        logger.info(engine_bye)
-        for e in self.events:
-            e.poweroff()
-
-        l = [brick.poweroff().addErrback(logger.failure_eb, brick_stop)
-             for brick in self.bricks if brick.proc]
-        return defer.DeferredList(l, consumeErrors=True)
-
     def quit(self):
         if any(is_running(brick) for brick in self.bricks):
             msg = _("Cannot close virtualbricks: there are running bricks")
             raise errors.BrickRunningError(msg)
+        logger.info(engine_bye)
+        for e in self.events:
+            e.poweroff()
         self._notify("quit", self)
         if not self.quit_d.called:
             self.quit_d.callback(None)
@@ -602,7 +596,6 @@ class Application:
             signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
-        reactor.addSystemEventTrigger("before", "shutdown", factory.stop)
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
         project.manager.restore_last(factory)
         reactor.addSystemEventTrigger("before", "shutdown",
