@@ -3,7 +3,7 @@ from twisted.trial import unittest
 import gtk
 
 from virtualbricks import project, _settings
-from virtualbricks.gui import gui, _gui, interfaces
+from virtualbricks.gui import gui, interfaces
 from virtualbricks.tests import stubs
 
 
@@ -57,8 +57,8 @@ class TestStateFramework(unittest.TestCase):
         both true in the ultimate stage.
         """
 
-        for b, ret in (True, _gui.YES), (False, _gui.NO), (True, _gui.MAYBE):
-            pre = _gui.CompoundPrerequisite(lambda: ret)
+        for b, ret in (True, gui.YES), (False, gui.NO), (True, gui.MAYBE):
+            pre = gui.CompoundPrerequisite(lambda: ret)
             if b:
                 self.assertTrue(pre())
             else:
@@ -73,9 +73,9 @@ class TestStateFramework(unittest.TestCase):
         def prerequisite():
             l.append(True)
 
-        for check, ret in (False, _gui.NO), (True, _gui.YES):
+        for check, ret in (False, gui.NO), (True, gui.YES):
             l = []
-            pre = _gui.CompoundPrerequisite(lambda: ret, prerequisite)
+            pre = gui.CompoundPrerequisite(lambda: ret, prerequisite)
             if check:
                 self.assertTrue(pre())
             else:
@@ -92,9 +92,9 @@ class TestStateFramework(unittest.TestCase):
             l[1] = 1
 
         l = [0, 0]
-        pre1 = _gui.CompoundPrerequisite(lambda: _gui.MAYBE, prerequisite1)
-        pre2 = _gui.CompoundPrerequisite(lambda: _gui.YES, prerequisite2)
-        pre = _gui.CompoundPrerequisite(pre1, pre2)
+        pre1 = gui.CompoundPrerequisite(lambda: gui.MAYBE, prerequisite1)
+        pre2 = gui.CompoundPrerequisite(lambda: gui.YES, prerequisite2)
+        pre = gui.CompoundPrerequisite(pre1, pre2)
         self.assertTrue(pre())
         self.assertEqual(l, [1, 0])
 
@@ -108,7 +108,7 @@ class TestStateFramework(unittest.TestCase):
             def react(self, status):
                 self.status = status
 
-        state = _gui.State()
+        state = gui.State()
         state.add_prerequisite(lambda: True)
         control = Control()
         state.add_control(control)
@@ -119,7 +119,7 @@ class TestStateFramework(unittest.TestCase):
         """Test a checkbutton that controls another widgets."""
 
         TOOLTIP = "Disabled"
-        manager = _gui.StateManager()
+        manager = gui.StateManager()
         checkbutton = CheckButtonStub()
         widget = WidgetStub()
         self.assertTrue(widget.sensitive)
@@ -132,7 +132,7 @@ class TestStateFramework(unittest.TestCase):
         """Enable a widget if the checkbutton is not active."""
 
         TOOLTIP = "Disabled"
-        manager = _gui.StateManager()
+        manager = gui.StateManager()
         checkbutton = CheckButtonStub()
         widget = WidgetStub()
         self.assertTrue(widget.sensitive)
