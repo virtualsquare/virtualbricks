@@ -321,7 +321,7 @@ class TestProject(unittest.TestCase):
         brick.poweron()
         manager = project.ProjectManager(self.mktemp())
         prj = manager.get_project(NAME)
-        self.assertRaises(errors.BricksAreRunningError, prj.close, factory)
+        self.assertRaises(errors.BrickRunningError, prj.close, factory)
 
 
 class TestTarArchive(unittest.TestCase):
