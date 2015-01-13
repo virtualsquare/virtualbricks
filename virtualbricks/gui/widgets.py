@@ -98,6 +98,8 @@ class CellRendererFormattable(gtk.CellRendererText):
             text = str(obj)
         cell.set_property("text", text)
 
+    set_text = set_cell_data
+
 
 class CellRendererBrickIcon(gtk.CellRendererPixbuf):
 
