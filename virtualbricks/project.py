@@ -442,15 +442,19 @@ class ProjectManager2(ProjectManager):
             except errors.ProjectExistsError:
                 pass
 
-    def open(self, name, factory, settings=settings, oldformat=True):
-        prj = self.get_project(name)
+    def get_project(self, name):
         try:
-            return prj.open(factory, settings)
+            prj = ProjectManager.get_project(self, name)
         except errors.InvalidNameError:
             fp = filepath.FilePath(name)
-            if fp.isfile() and oldformat:
-                prj = self.upgrade(fp)
-                return prj.open(factory, settings)
-            raise
+            if not fp.isfile():
+                raise
+            prj = self.upgrade(fp)
+        return prj
+
+    def open(self, name, factory, settings=settings, oldformat=True):
+        prj = self.get_project(name)
+        return prj.open(factory, settings)
+
 
 manager = ProjectManager2()
