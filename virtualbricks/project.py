@@ -225,18 +225,32 @@ class Project:
             raise errors.ProjectNotExistsError(self.name)
         self.close(factory, settings)
         logger.debug(open_project, name=self.name)
-        try:
-            configfile.restore(factory, self._project.path)
-        except EnvironmentError as e:
-            if e.errno in (errno.ENOENT, errno.ENOTDIR):
-                raise errors.ProjectNotExistsError(self.name)
-            raise
-        # if an exception is raised, these values are not changed, i.e. they
-        # are the default
-        self._manager.current = self
+        
+        # save the old setting parameters
+        # Bug #1410679 
+        old_proj = settings.get("current_project")
+        old_vbhome = settings.VIRTUALBRICKS_HOME
+        # save new setting parameters
+        # Bug #1410679 
         settings.set("current_project", self.name)
         settings.VIRTUALBRICKS_HOME = self.path
         settings.store()
+
+        try:
+            configfile.restore(factory, self._project.path)
+        except EnvironmentError as e:
+            # if an exception is raised then revert settings to the
+            # default values
+            # Bug #1410679 
+            settings.set("current_project", old_proj)
+            settings.VIRTUALBRICKS_HOME = old_vbhome
+            settings.store()
+            if e.errno in (errno.ENOENT, errno.ENOTDIR):
+                raise errors.ProjectNotExistsError(self.name)
+            raise
+        # if an exception is raised, this value is not changed, i.e. it 
+        # is the default
+        self._manager.current = self
         return self
 
     def close(self, factory, settings=settings):
