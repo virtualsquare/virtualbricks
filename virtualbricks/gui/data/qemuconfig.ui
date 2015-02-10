@@ -1688,7 +1688,7 @@ disk image</property>
                                   <object class="GtkEntry" id="cfg_Qemu_keyboard_text">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="max_length">2</property>
+                                    <property name="max_length">5</property>
                                     <property name="invisible_char">●</property>
                                     <property name="invisible_char_set">True</property>
                                     <property name="primary_icon_activatable">False</property>
