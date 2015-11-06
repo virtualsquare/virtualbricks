@@ -2,5 +2,5 @@
 	section="Applications/Emulators"\
 	title="Virtualbricks"\
 	longtitle="a solution for easy setup and management of qemu"\
-	icon="virtualbricks.xpm"\
+	icon="/usr/share/pixmaps/virtualbricks.xpm"\
 	command="/usr/bin/virtualbricks"
