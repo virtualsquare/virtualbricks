@@ -52,6 +52,9 @@ class InstallData(install_data.install_data):
         install_data.install_data.run(self)
         self.execute(self.remove_temps, ())
 
+data_images = glob.glob("virtualbricks/gui/data/*.png")
+data_helps = glob.glob("virtualbricks/gui/data/help/*")
+data_glade_ui = glob.glob("virtualbricks/gui/data/*.ui")
 
 setup(name="virtualbricks",
       version=version.short(),
@@ -66,10 +69,12 @@ setup(name="virtualbricks",
                 "virtualbricks.gui",
                 "virtualbricks.scripts",
                 "virtualbricks.tests"],
-      package_data={"virtualbricks.gui": ["data/help/*.txt", "data/*.png",
-                                          "data/*.ui"],
-                    "virtualbricks.tests": ["data/*"]},
-      data_files=[("share/applications", ["share/virtualbricks.desktop"])],
+      package_data={"virtualbricks.tests": ["data/*"]},
+      data_files=[("share/applications", ["share/virtualbricks.desktop"]),
+                  ("share/pixmaps", ["share/virtualbricks.xpm"]),
+                  ("share/virtualbricks", data_images + data_glade_ui +
+                   data_helps),
+                 ],
       scripts=["bin/virtualbricks"],
       requires=["twisted (>=12.0.0)", "zope.interface (>=3.5)"],
       cmdclass={"install_data": InstallData}

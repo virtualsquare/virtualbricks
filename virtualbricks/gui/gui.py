@@ -400,8 +400,7 @@ class ConfigController(object):
         self.original = original
         self.builder = builder = gtk.Builder()
         builder.set_translation_domain(self.domain)
-        builder.add_from_file(graphics.get_filename("virtualbricks.gui",
-                                                    self.resource))
+        builder.add_from_file(graphics.get_data_filename(self.resource))
         builder.connect_signals(self)
 
     def __getattr__(self, name):
@@ -454,7 +453,7 @@ class ConfigController(object):
 
 class EventConfigController(ConfigController, dialogs.EventControllerMixin):
 
-    resource = "data/eventconfig.ui"
+    resource = "eventconfig.ui"
 
     def get_config_view(self, gui):
         self.setup_controller(self.original)
@@ -494,7 +493,7 @@ registerAdapter(EventConfigController, Event, IConfigController)
 
 class SwitchConfigController(ConfigController):
 
-    resource = "data/switchconfig.ui"
+    resource = "switchconfig.ui"
 
     def get_config_view(self, gui):
         self.get_object("fstp_checkbutton").set_active(
@@ -520,7 +519,7 @@ class SwitchConfigController(ConfigController):
 
 class SwitchWrapperConfigController(ConfigController):
 
-    resource = "data/switchwrapperconfig.ui"
+    resource = "switchwrapperconfig.ui"
 
     def get_config_view(self, gui):
         self.get_object("entry").set_text(self.original.get("path"))
@@ -566,7 +565,7 @@ class _PlugMixin(object):
 
 class TapConfigController(_PlugMixin, ConfigController):
 
-    resource = "data/tapconfig.ui"
+    resource = "tapconfig.ui"
 
     def get_config_view(self, gui):
         combo = self.get_object("combobox")
@@ -608,7 +607,7 @@ class TapConfigController(_PlugMixin, ConfigController):
 
 class CaptureConfigController(_PlugMixin, ConfigController):
 
-    resource = "data/captureconfig.ui"
+    resource = "captureconfig.ui"
 
     def get_config_view(self, gui):
         combo = self.get_object("combobox1")
@@ -643,7 +642,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
 
 class WireConfigController(_PlugMixin, ConfigController):
 
-    resource = "data/wireconfig.ui"
+    resource = "wireconfig.ui"
 
     def get_config_view(self, gui):
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
@@ -782,7 +781,7 @@ class StateManager:
 
 class NetemuConfigController(_PlugMixin, ConfigController):
 
-    resource = "data/netemuconfig.ui"
+    resource = "netemuconfig.ui"
     state_manager = None
     help = help.Help()
     config_to_checkbutton_mapping = (
@@ -870,7 +869,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
 
 class TunnelListenConfigController(_PlugMixin, ConfigController):
 
-    resource = "data/tunnellconfig.ui"
+    resource = "tunnellconfig.ui"
 
     def get_config_view(self, gui):
         combo = self.get_object("combobox")
@@ -993,7 +992,7 @@ class ImagesBindingList(widgets.ImagesBindingList):
 
 class QemuConfigController(ConfigController):
 
-    resource = "data/qemuconfig.ui"
+    resource = "qemuconfig.ui"
     config_to_widget_mapping = (
         ("snapshot", "snapshot_checkbutton"),
         ("deviceen", "rbDeviceen"),
@@ -2324,8 +2323,7 @@ def load_ui():
     try:
         builder = gtk.Builder()
         builder.set_translation_domain("virtualbricks")
-        source = graphics.get_filename("virtualbricks.gui",
-                                       "data/virtualbricks.ui")
+        source = graphics.get_data_filename("virtualbricks.ui")
         builder.add_from_file(source)
         return builder
     except:
