@@ -189,8 +189,7 @@ class Base(object):
     def __init__(self):
         self.builder = builder = gtk.Builder()
         builder.set_translation_domain(self.domain)
-        builder.add_from_file(graphics.get_filename("virtualbricks.gui",
-                                                    self.resource))
+        builder.add_from_file(graphics.get_data_filename(self.resource))
         self.widget = builder.get_object(self._get_name())
         builder.connect_signals(self)
 
@@ -241,7 +240,7 @@ class Window(Base):
 
 class AboutDialog(Window):
 
-    resource = "data/about.ui"
+    resource = "about.ui"
 
     def __init__(self):
         Window.__init__(self)
@@ -252,7 +251,7 @@ class AboutDialog(Window):
 
 class LoggingWindow(Window):
 
-    resource = "data/logging.ui"
+    resource = "logging.ui"
 
     def __init__(self, textbuffer):
         Window.__init__(self)
@@ -330,7 +329,7 @@ class LoggingWindow(Window):
 
 class DisksLibraryDialog(Window):
 
-    resource = "data/disklibrary.ui"
+    resource = "disklibrary.ui"
     image = None
     _binding_list = None
 
@@ -408,7 +407,7 @@ class DisksLibraryDialog(Window):
 
 class UsbDevWindow(Window):
 
-    resource = "data/usbdev.ui"
+    resource = "usbdev.ui"
 
     def __init__(self, usb_devices):
         Window.__init__(self)
@@ -451,7 +450,7 @@ class UsbDevWindow(Window):
 
 class BaseEthernetDialog(Window):
 
-    resource = "data/ethernetdialog.ui"
+    resource = "ethernetdialog.ui"
     name = "EthernetDialog"
 
     def __init__(self, factory, brick):
@@ -558,7 +557,7 @@ class EditEthernetDialog(BaseEthernetDialog):
 
 class ConfirmDialog(Window):
 
-    resource = "data/confirmdialog.ui"
+    resource = "confirmdialog.ui"
 
     def __init__(self, question, on_yes=None, on_yes_arg=None, on_no=None,
                  on_no_arg=None, ):
@@ -582,7 +581,7 @@ class ConfirmDialog(Window):
 
 class NewEventDialog(Window):
 
-    resource = "data/newevent.ui"
+    resource = "newevent.ui"
 
     def __init__(self, gui):
         Window.__init__(self)
@@ -632,7 +631,7 @@ class NewEventDialog(Window):
 
 class BrickSelectionDialog(Window):
 
-    resource = "data/brickselection.ui"
+    resource = "brickselection.ui"
 
     def __init__(self, event, action, bricks):
         Window.__init__(self)
@@ -684,7 +683,7 @@ class BrickSelectionDialog(Window):
 
 class EventControllerMixin(object):
 
-    resource = "data/eventconfig.ui"
+    resource = "eventconfig.ui"
 
     def setup_controller(self, event):
         self.get_object("action_treeview").get_selection().set_mode(
@@ -722,7 +721,7 @@ class EventControllerMixin(object):
 
 class ShellCommandDialog(Window, EventControllerMixin):
 
-    resource = "data/eventcommand.ui"
+    resource = "eventcommand.ui"
 
     def __init__(self, event):
         Window.__init__(self)
@@ -743,7 +742,7 @@ def disks_of(brick):
 
 class CommitImageDialog(Window):
 
-    resource = "data/commitdialog.ui"
+    resource = "commitdialog.ui"
     parent = None
     _set_label_d = None
 
@@ -903,7 +902,7 @@ def choose_new_image(gui, factory):
 
 class LoadImageDialog(Window):
 
-    resource = "data/loadimagedialog.ui"
+    resource = "loadimagedialog.ui"
 
     def __init__(self, factory, pathname):
         Window.__init__(self)
@@ -939,7 +938,7 @@ class LoadImageDialog(Window):
 
 class CreateImageDialog(Window):
 
-    resource = "data/createimagedialog.ui"
+    resource = "createimagedialog.ui"
 
     def __init__(self, gui, factory):
         self.gui = gui
@@ -996,7 +995,7 @@ class CreateImageDialog(Window):
 
 class SimpleEntryDialog(Window):
 
-    resource = "data/simpleentry.ui"
+    resource = "simpleentry.ui"
     name = "SimpleEntryDialog"
     description = ""
 
@@ -1023,7 +1022,7 @@ class NewProjectDialog(SimpleEntryDialog):
 
 class ListProjectsDialog(Window):
 
-    resource = "data/listprojects.ui"
+    resource = "listprojects.ui"
     name = "ListProjectsDialog"
     title = ""
 
@@ -1161,7 +1160,7 @@ def ConfirmOverwriteDialog(fp, parent):
 
 class ExportProjectDialog(Window):
 
-    resource = "data/exportproject.ui"
+    resource = "exportproject.ui"
     include_images = False
 
     def __init__(self, progressbar, prjpath, disk_images):
@@ -1410,7 +1409,7 @@ class Freezer:
         self.freeze = freeze
         self.unfreeze = unfreeze
         builder = gtk.Builder()
-        res = graphics.get_filename("virtualbricks.gui", "data/userwait.ui")
+        res = graphics.get_data_filename("userwait.ui")
         builder.add_from_file(res)
         self.progressbar = builder.get_object("progressbar")
         self.window = builder.get_object("UserWaitWindow")
@@ -1607,7 +1606,7 @@ class _HumbleImport:
 
 class ImportDialog(Window):
 
-    resource = "data/importdialog.ui"
+    resource = "importdialog.ui"
     NAME, PATH, SELECTED = range(3)
     archive_path = None
     project = None
@@ -1806,7 +1805,7 @@ class ImportDialog(Window):
 
 class SaveAsDialog(Window):
 
-    resource = "data/saveas.ui"
+    resource = "saveas.ui"
     home = filepath.FilePath(settings.DEFAULT_HOME)
 
     def __init__(self, factory, projects):
@@ -1848,7 +1847,7 @@ class SaveAsDialog(Window):
 
 class RenameDialog(Window):
 
-    resource = "data/renamedialog.ui"
+    resource = "renamedialog.ui"
     name = "RenameDialog"
 
     def __init__(self, original, checker=None):
@@ -1903,7 +1902,7 @@ class RenameBrickDialog(RenameDialog):
 
 class NewBrickDialog(Window):
 
-    resource = "data/newbrick.ui"
+    resource = "newbrick.ui"
     _type = "Switch"
 
     def __init__(self, factory):
@@ -1929,7 +1928,7 @@ class NewBrickDialog(Window):
 
 class SettingsDialog(Window):
 
-    resource = "data/settings.ui"
+    resource = "settings.ui"
 
     def __init__(self, gui):
         Window.__init__(self)
@@ -2036,7 +2035,7 @@ class SettingsDialog(Window):
 
 class AttachEventDialog(Window):
 
-    resource = "data/attachevent.ui"
+    resource = "attachevent.ui"
 
     def __init__(self, brick, factory):
         Window.__init__(self)
