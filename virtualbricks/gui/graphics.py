@@ -38,7 +38,7 @@ __all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
 
 
 def get_data_filename(resource):
-    syswide = os.path.join(sys.prefix, resource)
+    syswide = os.path.join(sys.prefix, "share", "virtualbricks", resource)
     if os.path.exists(syswide):
         return syswide
     return get_filename("virtualbricks.gui", os.path.join("data", resource))
