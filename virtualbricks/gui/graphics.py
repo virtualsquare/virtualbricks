@@ -34,7 +34,14 @@ from virtualbricks.tools import is_running
 __all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
            "pixbuf_for_brick_at_size", "pixbuf_for_brick_type",
            "pixbuf_for_running_brick", "pixbuf_for_running_brick_at_size",
-           "Node", "Topology"]
+           "Node", "Topology", "get_data_filename"]
+
+
+def get_data_filename(resource):
+    syswide = os.path.join(sys.prefix, resource)
+    if os.path.exists(syswide):
+        return syswide
+    return get_filename("virtualbricks.gui", os.path.join("data", resource))
 
 
 def get_filename(package, resource):
@@ -48,7 +55,7 @@ def get_filename(package, resource):
 
 
 def get_image(name):
-    return get_filename("virtualbricks.gui", "data/" + name)
+    return get_data_filename(name)
 
 
 def has_custom_icon(brick):
@@ -59,8 +66,7 @@ def brick_icon(brick):
     if has_custom_icon(brick):
         return brick.config["icon"]
     else:
-        return get_filename("virtualbricks.gui",
-                        "data/" + brick.get_type().lower() + ".png")
+        return get_data_filename(brick.get_type().lower() + ".png")
 
 
 def saturate_if_stopped(brick, pixbuf):
@@ -82,7 +88,9 @@ def pixbuf_for_brick(brick):
 
 
 def pixbuf_for_brick_type(type):
-    filename = get_filename("virtualbricks.gui", "data/%s.png" % type.lower())
+    filename = get_data_filename("%s.png" % type.lower())
+    if filename is None:
+        return None
     return gtk.gdk.pixbuf_new_from_file(filename)
 
 
