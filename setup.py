@@ -71,6 +71,7 @@ setup(name="virtualbricks",
                 "virtualbricks.tests"],
       package_data={"virtualbricks.tests": ["data/*"]},
       data_files=[("share/applications", ["share/virtualbricks.desktop"]),
+                  ("share/pixmaps", ["share/virtualbricks.xpm"]),
                   ("share/virtualbricks", data_images + data_glade_ui +
                    data_helps),
                  ],
