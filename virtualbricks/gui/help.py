@@ -63,8 +63,8 @@ class Help:
 
     def get_help(self, argument):
         try:
-            path = os.path.join("data", "help", argument + ".txt")
-            with open(graphics.get_filename("virtualbricks.gui", path)) as fp:
+            path = os.path.join("help", argument + ".txt")
+            with open(graphics.get_data_filename(path)) as fp:
                 return fp.read()
         except IOError as e:
             if e.errno == errno.ENOENT:
