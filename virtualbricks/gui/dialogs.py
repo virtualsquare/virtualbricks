@@ -89,8 +89,17 @@ import textwrap
 
 import pango
 import gtk
+import twisted
 from twisted.internet import utils, defer, task, error
 from twisted.python import filepath
+if twisted.__version__ >= '15.0.2':
+    # This is an ugly hack but virtualbricks is not really ready for
+    # Python3
+    def mktempfn():
+        return filepath._secureEnoughString(project.manager.path)
+else:
+    def mktempfn():
+        return filepath._secureEnoughString()
 
 from virtualbricks import (version, tools, log, console, settings,
                            virtualmachines, project, errors)
@@ -1466,7 +1475,7 @@ class _HumbleImport:
             if dialog.project:
                 dialog.project.delete()
             dialog.archive_path = archive_path
-            d = extract(filepath._secureEnoughString(), archive_path)
+            d = extract(mktempfn(), archive_path)
             d.addCallback(self.extract_cb, dialog)
             d.addCallback(self.fill_model_cb, dialog, model, path)
             d.addErrback(self.extract_eb, dialog)
