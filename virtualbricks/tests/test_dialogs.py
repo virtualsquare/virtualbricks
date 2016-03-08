@@ -427,7 +427,11 @@ class TestImportStep1(TestHumbleImport):
         model = gtk.ListStore(str, object, bool)
         model.append(("debian7.img", self.ipath.child("debian7.img"), True))
         model.append(("ubuntu.img", self.ipath.child("ubuntu.img"), True))
-        self.assert_tree_model_equal(self.model, model)
+        model1s = gtk.TreeModelSort(self.model)
+        model1s.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        model2s = gtk.TreeModelSort(model)
+        model2s.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        self.assert_tree_model_equal(model1s, model2s)
 
 
 # class TestHumbleImportStep2(TestHumbleImport):
