@@ -22,6 +22,7 @@ import inspect
 import urllib
 import uuid
 import functools
+import collections
 
 from twisted.python import util, failure
 
@@ -69,6 +70,16 @@ class Event(object):
 
     def __hash__(self):
         return int(self.log_id)
+
+    def __eq__(self, other):
+        if isinstance(other, Event):
+            return self.log_id == other.log_id
+        elif isinstance(other, collections.Mapping):
+            return "log_id" in other and other["log_id"] == self.log_id
+        return NotImplemented
+
+    def __ne__(self, other):
+        return not self == other
 
 
 def expect_event(func):
@@ -240,6 +251,10 @@ class StdLoggingAdapter(logging.Handler):
             event(self.logger, level, **kw)
 
 
+double_format_error = Event("Log event has both 'format' and '_format' keys. "
+                            "Discarding '_format' ({ev[_format]})")
+
+
 class LegacyAdapter:
 
     logger = Logger()
@@ -255,6 +270,11 @@ class LegacyAdapter:
         if "log_id" in event:
             # don't play ping pong with the LegacyLogObserver
             return
+        if "format" in event:
+            if "_format" in event:
+                self.logger.error(double_format_error, ev=event)
+            event["_format"] = event["format"]
+            del event["format"]
         if isinstance(event["message"], basestring):
             msg = event["message"]
         else:
