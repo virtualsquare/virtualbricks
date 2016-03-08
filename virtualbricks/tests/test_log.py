@@ -1,9 +1,11 @@
 import logging
 
+import twisted
 from twisted.trial import unittest
 from twisted.python import log as legacylog
 
 from virtualbricks import log
+from virtualbricks.tests import skipUnless
 
 
 logger = log.Logger()
@@ -11,27 +13,13 @@ test_event = log.Event("This is a test event")
 test_event_2 = log.Event("This is another test event")
 
 
-class Observer:
-
-    def __init__(self):
-        self.events = []
+class Observer(list):
 
     def __call__(self, event):
-        self.events.append(event)
+        self.append(event)
 
-
-class EventCmp:
-
-    def __init__(self, event):
-        self.event = event
-
-    def __eq__(self, other):
-        if isinstance(other, dict):
-            return self.event.is_(other)
-        return NotImplemented
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    def __hash__(self):
+        return object.__hash__(self)
 
 
 def install_observer(test_case):
@@ -50,7 +38,7 @@ class TestLog(unittest.TestCase):
         """Send a simple event."""
 
         logger.info(test_event)
-        self.assertEqual(self.observer.events, [EventCmp(test_event)])
+        self.assertEqual(self.observer, [test_event])
 
     def test_tap(self):
         """Collect only specific events. Here test_event_2 is not collected."""
@@ -59,7 +47,7 @@ class TestLog(unittest.TestCase):
         self.addCleanup(test_event.tap(observer, logger.publisher))
         logger.info(test_event)
         logger.info(test_event_2)
-        self.assertEqual(observer.events, [EventCmp(test_event)])
+        self.assertEqual(observer, [test_event])
 
     def test_info_event_attrs(self):
         """
@@ -69,8 +57,8 @@ class TestLog(unittest.TestCase):
         """
 
         logger.info(test_event)
-        self.assertEqual(self.observer.events, [EventCmp(test_event)])
-        self.assertEqual(sorted(self.observer.events[0].keys()),
+        self.assertEqual(self.observer, [test_event])
+        self.assertEqual(sorted(self.observer[0].keys()),
                          ["format", "logLevel", "log_format", "log_id",
                           "log_legacy", "log_level", "log_logger",
                           "log_namespace", "log_source", "log_time"])
@@ -82,7 +70,7 @@ class TestLog(unittest.TestCase):
             "virtualbricks.tests.test_log", log.LogLevel.warn)
         self.addCleanup(logger.publisher.levels.clearLogLevels)
         logger.info(test_event)
-        self.assertEqual(len(self.observer.events), 0)
+        self.assertEqual(len(self.observer), 0)
 
     def test_legacy_emitter(self):
         """Test the events logged with the legacy logger are not lost."""
@@ -93,7 +81,7 @@ class TestLog(unittest.TestCase):
         legacylog.msg("test")
         legacylog.err(RuntimeError("error"))
         err = self.flushLoggedErrors(RuntimeError)
-        self.assertEqual(len(self.observer.events), 2)
+        self.assertEqual(len(self.observer), 2)
         self.assertEqual(len(err), 1)
 
     def test_legacy_observer(self):
@@ -106,7 +94,7 @@ class TestLog(unittest.TestCase):
         legacylog.addObserver(observer)
         self.addCleanup(legacylog.removeObserver, observer)
         logger.info(test_event)
-        self.assertEqual(observer.events, [EventCmp(test_event)])
+        self.assertEqual(observer, [test_event])
 
     def test_legacy_observer_ignore_debug(self):
         """
@@ -117,7 +105,37 @@ class TestLog(unittest.TestCase):
         legacylog.addObserver(observer)
         self.addCleanup(legacylog.removeObserver, observer)
         logger.debug(test_event)
-        self.assertEqual(observer.events, [])
+        self.assertEqual(observer, [])
+
+    @skipUnless(twisted.__version__ >= "15.2.0",
+                "New behavior in twisted 15.2.0")
+    def test_legacy_rename_format_key(self):
+        """
+        If the event has a 'format' key, rename it to '_format'.
+        """
+
+        legacy_observer = log.LegacyAdapter()
+        legacylog.addObserver(legacy_observer)
+        self.addCleanup(legacylog.removeObserver, legacy_observer)
+        legacylog.msg("test")
+        self.assertEqual(len(self.observer), 1)
+        event = self.observer[0]
+        self.assertNotIn("format", event)
+        self.assertIn("_format", event)
+
+    @skipUnless(twisted.__version__ >= "15.2.0",
+                "New behavior in twisted 15.2.0")
+    def test_legacy_has_both_format_and__format(self):
+        """
+        An error is reported if an event has both 'format' and '_format' keys.
+        """
+
+        legacy_observer = log.LegacyAdapter()
+        legacylog.addObserver(legacy_observer)
+        self.addCleanup(legacylog.removeObserver, legacy_observer)
+        legacylog.msg("test", _format="%(test)s")
+        self.assertEqual(len(self.observer), 2)
+        self.assertEqual(self.observer[0], log.double_format_error)
 
 
 class TestStdLogging(unittest.TestCase):
@@ -138,8 +156,8 @@ class TestStdLogging(unittest.TestCase):
         except:
             logging.exception("exp")
         self.flushLoggedErrors(RuntimeError)
-        self.assertEqual(len(self.observer.events), 1)
-        self.assertEqual(self.observer.events[0]["log_format"].split("\n")[0], "exp")
+        self.assertEqual(len(self.observer), 1)
+        self.assertEqual(self.observer[0]["log_format"].split("\n")[0], "exp")
 
     def test_event_has_log_id(self):
         """
@@ -148,5 +166,5 @@ class TestStdLogging(unittest.TestCase):
         """
 
         logging.warn("test")
-        self.assertEqual(len(self.observer.events), 1)
-        self.assertIn("log_id", self.observer.events[0])
+        self.assertEqual(len(self.observer), 1)
+        self.assertIn("log_id", self.observer[0])
