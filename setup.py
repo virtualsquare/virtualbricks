@@ -24,7 +24,7 @@ import glob
 from distutils.command import install_data
 from distutils.core import setup
 
-from virtualbricks import version
+from virtualbricks import __version__
 
 
 class InstallData(install_data.install_data):
@@ -57,7 +57,7 @@ data_helps = glob.glob("virtualbricks/gui/data/help/*")
 data_glade_ui = glob.glob("virtualbricks/gui/data/*.ui")
 
 setup(name="virtualbricks",
-      version=version.short(),
+      version=__version__,
       description="Virtualbricks Virtualization Tools",
       author="Daniele Lacamera, Rainer Haage, Francesco Apollonio, "
             "Pierre-Louis Bonicoli, Simone Abbati",
