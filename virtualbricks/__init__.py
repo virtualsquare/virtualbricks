@@ -17,5 +17,5 @@
 
 from virtualbricks import versions
 
-version = versions.Version("virtualbricks", 1, 0, 2, None)
+version = versions.Version("virtualbricks", 1, 0, 3, 1)
 __version__ = str(version)
