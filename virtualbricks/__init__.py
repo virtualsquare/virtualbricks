@@ -18,3 +18,4 @@
 from virtualbricks import versions
 
 version = versions.Version("virtualbricks", 1, 0, 2, None)
+__version__ = str(version)
