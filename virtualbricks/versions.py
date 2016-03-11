@@ -51,7 +51,7 @@ class Version(_Version):
         if self.prerelease is None:
             pre = ""
         else:
-            pre = "pre%s" % (self.prerelease,)
+            pre = "~pre%s" % (self.prerelease,)
         return '%d.%d.%d%s' % (self.major,
                                self.minor,
                                self.micro,
