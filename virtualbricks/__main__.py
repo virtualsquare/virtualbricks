@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2013 Virtualbricks team
 
