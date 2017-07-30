@@ -101,7 +101,8 @@ else:
     def mktempfn():
         return filepath._secureEnoughString()
 
-from virtualbricks import (version, tools, log, console, settings,
+from virtualbricks import __version__
+from virtualbricks import (tools, log, console, settings,
                            virtualmachines, project, errors)
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.tools import dispose
@@ -253,7 +254,7 @@ class AboutDialog(Window):
 
     def __init__(self):
         Window.__init__(self)
-        self.window.set_version(version.short())
+        self.window.set_version(__version__)
         # to handle show() instead of run()
         self.window.connect("response", lambda d, r: d.destroy())
 
