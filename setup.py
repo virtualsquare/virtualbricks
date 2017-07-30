@@ -19,7 +19,7 @@
 import os.path
 import glob
 
-from distutils.command.install_data import install_data as install_data_legacy
+from distutils.command.install_data import install_data as _install_data
 from setuptools import setup
 
 def _get_version():
@@ -34,10 +34,10 @@ def _get_version():
     raise RuntimeError('cannot find version')
 
 
-class install_data(install_data_legacy):
+class install_data(_install_data):
 
     def initialize_options(self):
-        install_data.install_data.initialize_options(self)
+        _install_data.initialize_options(self)
         self.tmpdirs = []
 
     def compile_mo(self):
@@ -59,7 +59,7 @@ class install_data(install_data_legacy):
 
     def run(self):
         self.execute(self.compile_mo, ())
-        install_data.install_data.run(self)
+        _install_data.run(self)
         self.execute(self.remove_temps, ())
 
 
