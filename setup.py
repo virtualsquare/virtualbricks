@@ -17,23 +17,22 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os.path
-import tempfile
-import shutil
 import glob
 
-from distutils.command import install_data
-from distutils.core import setup
+from distutils.command.install_data import install_data as install_data_legacy
+from setuptools import setup
 
 from virtualbricks import __version__
 
 
-class InstallData(install_data.install_data):
+class install_data(install_data_legacy):
 
     def initialize_options(self):
         install_data.install_data.initialize_options(self)
         self.tmpdirs = []
 
     def compile_mo(self):
+        import tempfile
         for filename in glob.iglob("locale/virtualbricks/??.po"):
             lang, _ = os.path.basename(filename).split(".")
             tmpdir = tempfile.mkdtemp()
@@ -45,6 +44,7 @@ class InstallData(install_data.install_data):
             )
 
     def remove_temps(self):
+        import shutil
         for tmpdir in self.tmpdirs:
             shutil.rmtree(tmpdir)
 
@@ -54,9 +54,10 @@ class InstallData(install_data.install_data):
         self.execute(self.remove_temps, ())
 
 
-data_images = glob.glob("virtualbricks/gui/data/*.png")
-data_helps = glob.glob("virtualbricks/gui/data/help/*")
-data_glade_ui = glob.glob("virtualbricks/gui/data/*.ui")
+DATA_IMAGES = glob.glob("virtualbricks/gui/data/*.png")
+DATA_HELPS = glob.glob("virtualbricks/gui/data/help/*")
+DATA_GLADE_UI = glob.glob("virtualbricks/gui/data/*.ui")
+DATA_FILES = DATA_IMAGES + DATA_GLADE_UI + DATA_HELPS
 
 
 setup(
@@ -64,7 +65,7 @@ setup(
     version=__version__,
     description="Virtualbricks Virtualization Tools",
     author="Daniele Lacamera, Rainer Haage, Francesco Apollonio, "
-          "Pierre-Louis Bonicoli, Simone Abbati",
+           "Pierre-Louis Bonicoli, Simone Abbati",
     author_email="qemulator-list@createweb.de",
     url="http://www.virtualbricks.eu/",
     license="GPLv2",
@@ -79,9 +80,14 @@ setup(
     data_files=[
         ("share/applications", ["share/virtualbricks.desktop"]),
         ("share/pixmaps", ["share/virtualbricks.xpm"]),
-        ("share/virtualbricks", data_images + data_glade_ui + data_helps),
+        ("share/virtualbricks", DATA_FILES),
     ],
     scripts=["bin/virtualbricks"],
-    requires=["twisted (>=12.0.0)", "zope.interface (>=3.5)"],
-    cmdclass={"install_data": InstallData}
+    install_requires=[
+        "Twisted>=12.0.0",
+        "zope.interface>=3.5"
+    ],
+    cmdclass={
+        "install_data": install_data
+    }
 )
