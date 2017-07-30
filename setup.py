@@ -35,13 +35,14 @@ class InstallData(install_data.install_data):
 
     def compile_mo(self):
         for filename in glob.iglob("locale/virtualbricks/??.po"):
-            l, _ = os.path.basename(filename).split(".")
+            lang, _ = os.path.basename(filename).split(".")
             tmpdir = tempfile.mkdtemp()
             self.tmpdirs.append(tmpdir)
-            outfile = "%s/virtualbricks.mo" % tmpdir
+            outfile = "{0}/virtualbricks.mo".format(tmpdir)
             self.spawn(["msgfmt", "-o", outfile, filename])
-            self.data_files.append(("share/locale/%s/LC_MESSAGES" % l,
-                                    [outfile]))
+            self.data_files.append(
+                ("share/locale/{0}/LC_MESSAGES".format(lang), [outfile])
+            )
 
     def remove_temps(self):
         for tmpdir in self.tmpdirs:
@@ -52,30 +53,35 @@ class InstallData(install_data.install_data):
         install_data.install_data.run(self)
         self.execute(self.remove_temps, ())
 
+
 data_images = glob.glob("virtualbricks/gui/data/*.png")
 data_helps = glob.glob("virtualbricks/gui/data/help/*")
 data_glade_ui = glob.glob("virtualbricks/gui/data/*.ui")
 
-setup(name="virtualbricks",
-      version=__version__,
-      description="Virtualbricks Virtualization Tools",
-      author="Daniele Lacamera, Rainer Haage, Francesco Apollonio, "
-            "Pierre-Louis Bonicoli, Simone Abbati",
-      author_email="qemulator-list@createweb.de",
-      url="http://www.virtualbricks.eu/",
-      license="GPLv2",
-      platforms=["linux2", "linux"],
-      packages=["virtualbricks",
-                "virtualbricks.gui",
-                "virtualbricks.scripts",
-                "virtualbricks.tests"],
-      package_data={"virtualbricks.tests": ["data/*"]},
-      data_files=[("share/applications", ["share/virtualbricks.desktop"]),
-                  ("share/pixmaps", ["share/virtualbricks.xpm"]),
-                  ("share/virtualbricks", data_images + data_glade_ui +
-                   data_helps),
-                 ],
-      scripts=["bin/virtualbricks"],
-      requires=["twisted (>=12.0.0)", "zope.interface (>=3.5)"],
-      cmdclass={"install_data": InstallData}
-     )
+
+setup(
+    name="virtualbricks",
+    version=__version__,
+    description="Virtualbricks Virtualization Tools",
+    author="Daniele Lacamera, Rainer Haage, Francesco Apollonio, "
+          "Pierre-Louis Bonicoli, Simone Abbati",
+    author_email="qemulator-list@createweb.de",
+    url="http://www.virtualbricks.eu/",
+    license="GPLv2",
+    platforms=["linux2", "linux"],
+    packages=[
+        "virtualbricks",
+        "virtualbricks.gui",
+        "virtualbricks.scripts",
+        "virtualbricks.tests"
+    ],
+    package_data={"virtualbricks.tests": ["data/*"]},
+    data_files=[
+        ("share/applications", ["share/virtualbricks.desktop"]),
+        ("share/pixmaps", ["share/virtualbricks.xpm"]),
+        ("share/virtualbricks", data_images + data_glade_ui + data_helps),
+    ],
+    scripts=["bin/virtualbricks"],
+    requires=["twisted (>=12.0.0)", "zope.interface (>=3.5)"],
+    cmdclass={"install_data": InstallData}
+)
