@@ -64,10 +64,8 @@ setup(
     name="virtualbricks",
     version=__version__,
     description="Virtualbricks Virtualization Tools",
-    author="Daniele Lacamera, Rainer Haage, Francesco Apollonio, "
-           "Pierre-Louis Bonicoli, Simone Abbati",
-    author_email="qemulator-list@createweb.de",
-    url="http://www.virtualbricks.eu/",
+    author="Virtualbricks team",
+    url="https://launchpad.net/virtualbrick",
     license="GPLv2",
     platforms=["linux2", "linux"],
     packages=[
@@ -93,5 +91,13 @@ setup(
     },
     cmdclass={
         "install_data": install_data
-    }
+    },
+    classifiers=[
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2 :: Only',
+        'Environment :: X11 Applications :: GTK',
+        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
+        'Operating System :: POSIX :: Linux',
+    ],
 )
