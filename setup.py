@@ -82,11 +82,15 @@ setup(
         ("share/pixmaps", ["share/virtualbricks.xpm"]),
         ("share/virtualbricks", DATA_FILES),
     ],
-    scripts=["bin/virtualbricks"],
     install_requires=[
         "Twisted>=12.0.0",
         "zope.interface>=3.5"
     ],
+    entry_points={
+        'console_scripts': [
+            'virtualbricks = virtualbricks.scripts.virtualbricks:run'
+        ]
+    },
     cmdclass={
         "install_data": install_data
     }
