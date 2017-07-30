@@ -23,7 +23,7 @@ from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from zope.interface import implementer
 
-from virtualbricks import version, bricks, errors, log, settings
+from virtualbricks import __version__, bricks, errors, log, settings
 
 
 logger = log.Logger()
@@ -161,7 +161,7 @@ class VBProtocol(Protocol):
         #     self._is_first = True
         #     intro = self.intro.format(version=virtualbricks.version.short())
         #     self.transport.write(intro)
-        intro = self.intro.format(version=version.short())
+        intro = self.intro.format(version=__version__)
         self.transport.write(intro)
         self.transport.write(self.prompt)
 

@@ -22,7 +22,16 @@ import glob
 from distutils.command.install_data import install_data as install_data_legacy
 from setuptools import setup
 
-from virtualbricks import __version__
+def _get_version():
+    filename = os.path.join('virtualbricks', '__init__.py')
+    var = '__version__'
+    glb = {}
+    with open(filename) as fp:
+        for line in fp:
+            if var in line:
+                exec(line, glb)
+                return glb[var ]
+    raise RuntimeError('cannot find version')
 
 
 class install_data(install_data_legacy):
@@ -62,7 +71,7 @@ DATA_FILES = DATA_IMAGES + DATA_GLADE_UI + DATA_HELPS
 
 setup(
     name="virtualbricks",
-    version=__version__,
+    version=_get_version(),
     description="Virtualbricks Virtualization Tools",
     author="Virtualbricks team",
     url="https://launchpad.net/virtualbrick",
