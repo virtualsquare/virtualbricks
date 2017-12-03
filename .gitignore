@@ -16,3 +16,4 @@ share/virtualbricks.glade
 ./.coverage
 ./htmlcov
 virtualbricks.egg-info/
+tags
