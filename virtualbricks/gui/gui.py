@@ -23,7 +23,7 @@ import string
 import gobject
 import gtk
 
-from twisted.internet import error, defer, task, protocol, reactor, utils
+from twisted.internet import error, defer, task, protocol, reactor
 from twisted.python import filepath
 from zope.interface import implementer
 
@@ -31,6 +31,7 @@ from virtualbricks.interfaces import registerAdapter
 from virtualbricks.gui.interfaces import (IMenu, IJobMenu, IConfigController,
                                           IPrerequisite, IState, IControl,
                                           IStateManager)
+from virtualbricks._spawn import getQemuOutput
 from virtualbricks.bricks import Brick
 from virtualbricks.events import Event
 from virtualbricks.link import Plug, Sock
@@ -183,7 +184,7 @@ class VMPopupMenu(BrickPopupMenu):
             return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
                                              "this disk.")))
         args = ["snapshot", "-l", path]
-        output = utils.getProcessOutput("qemu-img", args, os.environ)
+        output = getQemuOutput("qemu-img", args, os.environ)
         output.addCallback(grep, "virtualbricks")
         output.addCallback(loadvm)
         logger.log_failure(output, snap_error)
@@ -1072,8 +1073,7 @@ class QemuConfigController(ConfigController):
             logger.failure(qemu_version_parsing_error, failure)
             gui.curtain_down()
 
-        qemu_exe = os.path.join(gui.config.get('qemupath'), "kvm")
-        d = utils.getProcessOutput(qemu_exe, ["-version"])
+        d = getQemuOutput("kvm", ["-version"])
         d.addCallbacks(install_qemu_version, logger.failure_eb,
                        errbackArgs=(retrieve_qemu_version_error, True))
         d.addErrback(close_panel)
@@ -1122,9 +1122,9 @@ class QemuConfigController(ConfigController):
         usbstate.check()
 
         # kvm options
-        def check_kvm():
+        def _check_kvm():
             if self.cbKvm.get_active():
-                supported = tools.check_kvm(gui.config.get("qemupath"))
+                supported = tools.check_kvm()
                 if not supported:
                     self.cbKvm.set_active(False)
                     logger.error(no_kvm)
@@ -1142,7 +1142,7 @@ class QemuConfigController(ConfigController):
         kvmstate.add_control(InsensitiveControl(self.cbArgv0, tooltip))
         kvmstate.add_control(InsensitiveControl(self.cbCpu, tooltip))
         kvmstate.add_control(InsensitiveControl(self.cbMachine, tooltip))
-        kvmstate.add_prerequisite(check_kvm)
+        kvmstate.add_prerequisite(_check_kvm)
         self.cbKvm.connect("toggled", lambda cb: kvmstate.check())
         kvmstate.check()
 
@@ -1730,8 +1730,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.lRunning.set_visible_func(is_running_filter)
 
     def __complain_on_missing_prerequisites(self):
-        qmissing, _ = tools.check_missing_qemu(settings.get("qemupath"))
-        vmissing = tools.check_missing_vde(settings.get("vdepath"))
+        qmissing, _ = tools.check_missing_qemu()
+        vmissing = tools.check_missing_vde()
         missing = vmissing + qmissing
 
         if "kvm" in missing:

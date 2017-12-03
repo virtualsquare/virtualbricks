@@ -15,7 +15,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from virtualbricks import bricks, settings
+from virtualbricks import bricks
+from virtualbricks._spawn import abspath_vde
 
 
 class Router(bricks.Brick):
@@ -35,7 +36,7 @@ class Router(bricks.Brick):
         return "Work in progress..."
 
     def prog(self):
-        return settings.get("vdepath") + "/vde_router"
+        return abspath_vde('vde_router')
 
     def configured(self):
         return True

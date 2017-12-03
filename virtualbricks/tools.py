@@ -72,8 +72,18 @@ def stack_trace():
     return "\n".join(out)
 
 
-def check_missing(path, files):
-    return [f for f in files if not os.access(os.path.join(path, f), os.X_OK)]
+def _check_missing(default_paths, files):
+    if not default_paths:
+        default_paths = os.environ.get('PATH', '.').split(':')
+    elif isinstance(default_paths, basestring):
+        default_paths = [default_paths]
+    for filename in files:
+        for path in default_paths:
+            if os.access(os.path.join(path, filename), os.X_OK):
+                break
+        else:
+            yield filename
+
 
 vde_bins = ["vde_switch", "vde_plug", "vde_cryptcab", "dpipe", "vdeterm",
     "vde_plug2tap", "wirefilter", "vde_router"]
@@ -87,17 +97,27 @@ qemu_bins = ["qemu", "kvm", "qemu-system-arm", "qemu-system-cris",
     "qemu-img"]
 
 
-def check_missing_vde(path):
-    return check_missing(path, vde_bins)
+def check_missing_vde(path=None):
+    if path is None:
+        from virtualbricks import settings
+        path = settings.get('vdepath')
+    return list(_check_missing(path, vde_bins))
 
 
-def check_missing_qemu(path):
-    missing = check_missing(path, qemu_bins)
+def check_missing_qemu(path=None):
+    if path is None:
+        from virtualbricks import settings
+        path = settings.get('qemupath')
+    missing = list(_check_missing(path, qemu_bins))
     return missing, sorted(set(qemu_bins) - set(missing))
 
 
-def check_kvm(path):
-    if not os.access(os.path.join(path, "kvm"), os.X_OK):
+def check_kvm(path=None):
+    if path is None:
+        from virtualbricks import settings
+        path = settings.get('qemupath')
+    missing = list(_check_missing(path, ['kvm']))
+    if missing:
         return False
     if not os.access("/sys/class/misc/kvm", os.X_OK):
         return False

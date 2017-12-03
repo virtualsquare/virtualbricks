@@ -20,6 +20,7 @@ import os
 from collections import OrderedDict as odict
 
 from virtualbricks import bricks, link, settings
+from virtualbricks._spawn import abspath_vde
 
 if False:  # pyflakes
     _ = str
@@ -59,7 +60,7 @@ class Capture(PrivilegedBrick):
         return _("Interface %s disconnected") % self.config["iface"]
 
     def prog(self):
-        return settings.get("vdepath") + "/vde_pcapplug"
+        return abspath_vde('vde_pcapplug')
 
     def open_console(self):
         pass
@@ -98,7 +99,7 @@ class Tap(PrivilegedBrick):
         return _("disconnected")
 
     def prog(self):
-        return os.path.join(settings.get("vdepath"), "vde_plug2tap")
+        return abspath_vde('vde_plug2tap')
 
     def open_console(self):
         pass

@@ -21,6 +21,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import settings, bricks, log, errors
+from virtualbricks._spawn import abspath_vde
 
 
 if False:  # pyflakes
@@ -78,7 +79,7 @@ class Switch(bricks.Brick):
         return _("Ports: ") + "%d%s%s" % (self.config["numports"], fstp, hub)
 
     def prog(self):
-        return settings.get("vdepath") + "/vde_switch"
+        return abspath_vde('vde_switch')
 
     def configured(self):
         return self.socks[0].has_valid_path()

@@ -29,6 +29,7 @@ from virtualbricks import base, errors, settings, log, interfaces
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
                                 SpinInt, Float, SpinFloat, Boolean, Object,
                                 ListOf)
+from virtualbricks._spawn import abspath_vde
 
 
 __all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
@@ -411,7 +412,7 @@ class Brick(base.Base):
     def open_console(self):
         term = settings.get("term")
         args = [term, "-e",
-                os.path.join(settings.get("vdepath"), self.term_command),
+                abspath_vde(self.term_command),
                 self.console()]
         get_args = lambda: " ".join(args)
         logger.info(open_console, name=self.name, args=get_args)

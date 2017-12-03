@@ -27,6 +27,7 @@ from twisted.internet import utils, defer
 
 from virtualbricks import (errors, tools, settings, bricks, log, project,
                            observable)
+from virtualbricks._spawn import getQemuOutputAndValue, abspath_qemu
 
 
 if False:
@@ -255,10 +256,6 @@ def move(src, dst):
             raise
 
 
-def is_missing(path, file):
-    return not os.access(os.path.join(path, file), os.X_OK)
-
-
 class Disk:
 
     sync_cmd = "sync"
@@ -327,15 +324,14 @@ class Disk:
         return exit
 
     def _create_cow(self, cowname):
-        if is_missing(settings.get("qemupath"), "qemu-img"):
+        if abspath_qemu('qemu-img') is None:
             msg = _("qemu-img not found! I can't create a new image.")
             return defer.fail(errors.BadConfigError(msg))
 
         logger.info(new_cow, base=self._get_base())
         args = ["create", "-b", self._get_base(), "-f",
                 settings.get("cowfmt"), cowname]
-        exe = os.path.join(settings.get("qemupath"), "qemu-img")
-        exit = utils.getProcessOutputAndValue(exe, args, os.environ)
+        exit = getQemuOutputAndValue("qemu-img", args, os.environ)
         exit.addCallback(self._sync)
         exit.addCallback(lambda _: cowname)
         return exit
@@ -704,11 +700,12 @@ class VirtualMachine(bricks.Brick):
 
     def prog(self):
         if self.config["argv0"] and not self.config["kvm"]:
-            return os.path.join(settings.get("qemupath"), self.config["argv0"])
+            arg0 = self.config['argv0']
         elif self.config["kvm"]:
-            return os.path.join(settings.get("qemupath"), "kvm")
+            arg0 = 'kvm'
         else:
-            return os.path.join(settings.get("qemupath"), "qemu")
+            arg0 = 'qemu-system-x86_64'
+        return abspath_qemu(arg0)
 
     def args(self):
         d = defer.gatherResults([disk.args() for disk in self.disks()])
