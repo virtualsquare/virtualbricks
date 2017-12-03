@@ -1969,7 +1969,6 @@ class SettingsDialog(Window):
         self.cbKsm.set_sensitive(tools.check_ksm())
         self.cbKvm.set_active(settings.get("kvm"))
         self.cbKvm.set_sensitive(tools.check_kvm())
-        self.cbKqemu.set_active(settings.get("kqemu"))
 
     def on_fcbVdepath_selection_changed(self, filechooser):
         newpath = filechooser.get_filename()
@@ -2043,7 +2042,6 @@ class SettingsDialog(Window):
             settings.set("cowfmt", self.cbCowfmt.get_selected_value())
             settings.set("ksm", self.cbKsm.get_active())
             settings.set("kvm", self.cbKvm.get_active())
-            settings.set("kqemu", self.cbKqemu.get_active())
             tools.enable_ksm(self.cbKsm.get_active(), settings.get("sudo"))
             if self.cbSystray.get_active():
                 self.gui.start_systray()
