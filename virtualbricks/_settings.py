@@ -19,6 +19,7 @@ import os
 import ConfigParser
 
 from virtualbricks import tools, log
+from virtualbricks.errors import NoOptionError
 
 
 if False:  # pyflakes
@@ -98,10 +99,16 @@ class Settings:
 
     def get(self, attr):
         if attr in self.__boolean_values__:
-            return self.config.getboolean(self.DEFAULT_SECTION, attr)
+            try:
+                return self.config.getboolean(self.DEFAULT_SECTION, attr)
+            except ConfigParser.NoOptionError:
+                raise NoOptionError(attr)
         if attr == 'sudo' and os.getuid() == 0:
             return ''
-        return self.config.get(self.DEFAULT_SECTION, str(attr))
+        try:
+            return self.config.get(self.DEFAULT_SECTION, str(attr))
+        except ConfigParser.NoOptionError:
+            raise NoOptionError(attr)
 
     def set(self, attr, value):
         self.config.set(self.DEFAULT_SECTION, attr, str(value))
