@@ -90,3 +90,7 @@ class InvalidArchiveError(Error):
 
 class BrickRunningError(Error):
     """There is one or more brick that is running."""
+
+
+class NoOptionError(Error):
+    '''The config file has no such option.'''

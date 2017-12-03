@@ -108,6 +108,7 @@ from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.tools import dispose
 from virtualbricks.gui import graphics, widgets
 from virtualbricks._spawn import getQemuOutputAndValue
+from virtualbricks.errors import NoOptionError
 
 
 if False:  # pyflakes
@@ -1949,12 +1950,18 @@ class SettingsDialog(Window):
         self.cbSystray.set_active(settings.get("systray"))
         self.cbShowMissing.set_active(settings.get("show_missing"))
         # vde
-        self.fcbVdepath.set_current_folder(settings.get('vdepath', ''))
+        try:
+            self.fcbVdepath.set_current_folder(settings.get('vdepath'))
+        except NoOptionError:
+            pass
         self.cbPython.set_active(settings.get("python"))
         self.cbFemaleplugs.set_active(settings.get("femaleplugs"))
         self.cbErroronloop.set_active(settings.get("erroronloop"))
         # qemu/kvm
-        self.fcbQemupath.set_current_folder(settings.get('qemupath', ''))
+        try:
+            self.fcbQemupath.set_current_folder(settings.get('qemupath'))
+        except NoOptionError:
+            pass
         self.lFormats.set_data_source(["cow", "qcow", "qcow2"])
         self.cbCowfmt.set_selected_value(settings.get("cowfmt"))
         self.cbCowfmt.set_cell_data_func(self.crt1, self.crt1.set_cell_data)
