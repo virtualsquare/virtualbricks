@@ -18,7 +18,8 @@
 
 import os
 
-from virtualbricks import settings, bricks, link, log
+from virtualbricks import bricks, link, log
+from virtualbricks._spawn import abspath_vde
 
 
 logger = log.Logger()
@@ -60,7 +61,7 @@ class TunnelListen(bricks.Brick):
         return _("disconnected")
 
     def prog(self):
-        return os.path.join(settings.get("vdepath"), "vde_cryptcab")
+        return abspath_vde('vde_cryptcab')
 
     def configured(self):
         return bool(self.plugs[0].sock)

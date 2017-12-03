@@ -16,10 +16,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
 import re
 
-from virtualbricks import bricks, settings
+from virtualbricks import bricks
+from virtualbricks._spawn import abspath_vde
 
 if False:  # pyflakes
     _ = str
@@ -55,14 +55,14 @@ class Wire(bricks.Brick):
         return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))
 
     def prog(self):
-        return os.path.join(settings.get("vdepath"), "dpipe")
+        return abspath_vde('dpipe'),
 
     def args(self):
         return [self.prog(),
-                os.path.join(settings.get("vdepath"), "vde_plug"),
+                abspath_vde('vde_plug'),
                 # XXX: this is awful
                 self.plugs[0].sock.path.rstrip('[]'), "=",
-                os.path.join(settings.get("vdepath"), "vde_plug"),
+                abspath_vde('vde_plug'),
                 self.plugs[1].sock.path.rstrip('[]')]
 
 class NetemuConfig(bricks.Config):
