@@ -4,9 +4,18 @@ from twisted.internet.utils import getProcessOutput, getProcessOutputAndValue
 
 def _abspath_exe(path, executable, return_relative=True):
     if '/' in executable:
-        return executable
+        if os.access(executable, os.X_OK) or return_relative:
+            return executable
+        else:
+            return None
     if isinstance(path, basestring) and path != '':
-        return os.path.join(path, executable)
+        abspath = os.path.join(path, executable)
+        if os.access(abspath, os.X_OK):
+            return abspath
+        elif return_relative:
+            return executable
+        else:
+            return None
     paths = os.environ.get('PATH', '.').split(':')
     for path in paths:
         if os.access(os.path.join(path, executable), os.X_OK):
@@ -22,10 +31,9 @@ def getQemuOutput(executable, args=(), env={}, path=None, reactor=None,
     return getProcessOutput(exe, args, env, path, reactor, errortoo)
 
 
-def getQemuOutputAndValue(executable, args=(), env={}, path=None, reactor=None,
-                          errortoo=0):
+def getQemuOutputAndValue(executable, args=(), env={}, path=None, reactor=None):
     exe = abspath_qemu(executable)
-    return getProcessOutputAndValue(exe, args, env, path, reactor, errortoo)
+    return getProcessOutputAndValue(exe, args, env, path, reactor)
 
 
 def getVdeOutput(executable, args=(), env={}, path=None, reactor=None,

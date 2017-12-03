@@ -324,7 +324,7 @@ class Disk:
         return exit
 
     def _create_cow(self, cowname):
-        if abspath_qemu('qemu-img') is None:
+        if abspath_qemu('qemu-img', return_relative=False) is None:
             msg = _("qemu-img not found! I can't create a new image.")
             return defer.fail(errors.BadConfigError(msg))
 
