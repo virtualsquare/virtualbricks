@@ -107,6 +107,7 @@ from virtualbricks import (tools, log, console, settings,
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.tools import dispose
 from virtualbricks.gui import graphics, widgets
+from virtualbricks._spawn import getQemuOutputAndValue
 
 
 if False:  # pyflakes
@@ -774,8 +775,7 @@ class CommitImageDialog(Window):
             if exit_status != 0:
                 logger.error(commit_failed, err=err)
 
-        d = utils.getProcessOutputAndValue("qemu-img", ["commit", path],
-                                           os.environ)
+        d = getQemuOutputAndValue("qemu-img", ["commit", path], os.environ)
         d.addCallback(log_err)
         return d
 
@@ -854,8 +854,8 @@ class CommitImageDialog(Window):
             self._set_label_d.cancel()
         filename = filechooser.get_filename()
         if os.access(filename, os.R_OK):
-            code = utils.getProcessOutputAndValue("qemu-img",
-                    ["info", filename], os.environ)
+            code = getQemuOutputAndValue("qemu-img", ["info", filename],
+                                         os.environ)
             code.addCallback(self._commit_image_show_result)
             self._set_label_d = code
             return code
@@ -964,7 +964,7 @@ class CreateImageDialog(Window):
             else:
                 return self.factory.new_disk_image(name, pathname)
 
-        exit = utils.getProcessOutputAndValue("qemu-img",
+        exit = getQemuOutputAndValue("qemu-img",
             ["create", "-f", fmt, pathname, size + unit], os.environ)
         exit.addCallback(_create_disk)
         logger.log_failure(exit, img_create_err)
@@ -1949,19 +1949,19 @@ class SettingsDialog(Window):
         self.cbSystray.set_active(settings.get("systray"))
         self.cbShowMissing.set_active(settings.get("show_missing"))
         # vde
-        self.fcbVdepath.set_current_folder(settings.get("vdepath"))
+        self.fcbVdepath.set_current_folder(settings.get('vdepath', ''))
         self.cbPython.set_active(settings.get("python"))
         self.cbFemaleplugs.set_active(settings.get("femaleplugs"))
         self.cbErroronloop.set_active(settings.get("erroronloop"))
         # qemu/kvm
-        self.fcbQemupath.set_current_folder(settings.get("qemupath"))
+        self.fcbQemupath.set_current_folder(settings.get('qemupath', ''))
         self.lFormats.set_data_source(["cow", "qcow", "qcow2"])
         self.cbCowfmt.set_selected_value(settings.get("cowfmt"))
         self.cbCowfmt.set_cell_data_func(self.crt1, self.crt1.set_cell_data)
         self.cbKsm.set_active(settings.get("ksm"))
         self.cbKsm.set_sensitive(tools.check_ksm())
         self.cbKvm.set_active(settings.get("kvm"))
-        self.cbKvm.set_sensitive(tools.check_kvm(settings.get("qemupath")))
+        self.cbKvm.set_sensitive(tools.check_kvm())
         self.cbKqemu.set_active(settings.get("kqemu"))
 
     def on_fcbVdepath_selection_changed(self, filechooser):
@@ -2023,12 +2023,16 @@ class SettingsDialog(Window):
             settings.set("systray", self.cbSystray.get_active())
             settings.set("show_missing", self.cbShowMissing.get_active())
             # vde
-            settings.set('vdepath', self.fcbVdepath.get_current_folder())
+            vdepath = self.fcbVdepath.get_current_folder()
+            if vdepath is not None:
+                settings.set('vdepath', vdepath)
             settings.set("python", self.cbPython.get_active())
             settings.set("femaleplugs", self.cbFemaleplugs.get_active())
             settings.set("erroronloop", self.cbErroronloop.get_active())
             # qemu/kvm
-            settings.set('qemupath', self.fcbQemupath.get_current_folder())
+            qemupath = self.fcbQemupath.get_current_folder()
+            if qemupath is not None:
+                settings.set('qemupath', qemupath)
             settings.set("cowfmt", self.cbCowfmt.get_selected_value())
             settings.set("ksm", self.cbKsm.get_active())
             settings.set("kvm", self.cbKvm.get_active())
