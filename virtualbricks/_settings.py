@@ -44,7 +44,6 @@ DEFAULT_CONF = {
     "sudo": "/usr/bin/gksu",
     "kvm": False,
     "ksm": False,
-    "kqemu": False,
     "cdroms": "",
     "python": False,
     "femaleplugs": False,
@@ -76,7 +75,7 @@ class Settings:
 
             return type.__new__(cls, name, bases, dct)
 
-    __boolean_values__ = ('kvm', 'ksm', 'kqemu', 'python', 'femaleplugs',
+    __boolean_values__ = ('kvm', 'ksm', 'python', 'femaleplugs',
                           'erroronloop', 'systray', 'show_missing')
     DEFAULT_SECTION = "Main"
     DEFAULT_PROJECT = DEFAULT_PROJECT

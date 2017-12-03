@@ -25,7 +25,6 @@ term = /usr/bin/xterm
 baseimages = /home/user/.virtualbricks
 femaleplugs = False
 vdepath = /usr/bin
-kqemu = False
 python = True
 current_project = /home/user/.virtualbricks/.virtualbricks.vbl
 sudo = /usr/bin/gksu
