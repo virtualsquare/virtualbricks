@@ -238,11 +238,11 @@ class Image:
         elif format_string == "d":
             return str(self.get_description())
         elif format_string == "m":
-          if self.master is None:
-              return ""
-          return repr(self.master)
+            if self.master is None:
+                return ""
+            return repr(self.master)
         elif format_string == "s":
-          return self.get_size()
+            return self.get_size()
         raise ValueError("invalid format string " + repr(format_string))
 
 
@@ -484,7 +484,6 @@ VM_COMMAND_BUILDER = {
         # "-pcidevice": "",
         # "-enable-nesting": "",
         # "-nvram": "",
-        "-tdf": "tdf",
         "#kvmsm": "kvmsm",
         "#kvmsmem": "kvmsmem",
         # "-mem-path": "",
@@ -636,6 +635,7 @@ class VirtualMachine(bricks.Brick):
     command_builder = VM_COMMAND_BUILDER
     config_factory = VirtualMachineConfig
     process_protocol = bricks.Process
+    default_arg0 = 'qemu-system-x86_64'
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -699,12 +699,10 @@ class VirtualMachine(bricks.Brick):
         return True
 
     def prog(self):
-        if self.config["argv0"] and not self.config["kvm"]:
+        if self.config["argv0"]:
             arg0 = self.config['argv0']
-        elif self.config["kvm"]:
-            arg0 = 'kvm'
         else:
-            arg0 = 'qemu-system-x86_64'
+            arg0 = self.default_arg0
         return abspath_qemu(arg0)
 
     def args(self):
@@ -714,11 +712,21 @@ class VirtualMachine(bricks.Brick):
 
     def __args(self, results):
         res = [self.prog()]
-        if not self.config["kvm"]:
-            if self.config["machine"] != "":
-                res.extend(["-M", self.config["machine"]])
-            if self.config["cpu"]:
-                res.extend(["-cpu", self.config["cpu"]])
+        if (self.config['kvm'] or self.config['machine'] or
+                self.config['kvmsm']):
+            props = []
+            if self.config["machine"]:
+                props.append('type={}'.format(self.config["machine"]))
+            if self.config['kvm']:
+                props.append('accel=kvm:tcg')
+            if self.config["kvmsm"]:
+                props.append(
+                    'kvm_shadow_mem={}'.format(self.config["kvmsmem"])
+                )
+            res.extend(['-machine', ','.join(props)])
+
+        if self.config["cpu"]:
+            res.extend(["-cpu", self.config["cpu"]])
         res.extend(list(self.build_cmd_line()))
         if self.config["novga"]:
             res.extend(["-display", "none"])
@@ -730,8 +738,10 @@ class VirtualMachine(bricks.Brick):
             res.extend(["-initrd", self.config["initrd"]])
         if (self.config["kopt"] and self.config["kernelenbl"] and
                 self.config["kernel"]):
-            res.extend(["-append", "'" + re.sub("\"", "", self.config["kopt"])
-                        + "'"])
+            res.extend([
+                "-append",
+                "'{0}'".format(re.sub("\"", "", self.config["kopt"]))
+            ])
         if self.config["gdb"]:
             res.extend(["-gdb", "tcp::%d" % self.config["gdbport"]])
         if self.config["vnc"]:
@@ -768,12 +778,15 @@ class VirtualMachine(bricks.Brick):
                 res.extend(["-cdrom", self.config["cdrom"]])
         elif self.config["deviceen"] and self.config["device"]:
                 res.extend(["-cdrom", self.config["device"]])
-        if self.config["rtc"]:
-            res.extend(["-rtc", "base=localtime"])
+        if (self.config["rtc"] or self.config["tdf"]):
+            rtcarg = []
+            if self.config['rtc']:
+                rtcarg.append('base=localtime')
+            if self.config['tdf']:
+                rtcarg.append('driftfix=slew')
+            res.extend(['-rtc', ','.join(rtcarg)])
         if len(self.config["keyboard"]) == 2:
             res.extend(["-k", self.config["keyboard"]])
-        if self.config["kvmsm"]:
-            res.extend(["-kvm-shadow-memory", self.config["kvmsmem"]])
         if self.config["serial"]:
             res.extend(["-serial", "unix:%s/%s_serial,server,nowait" %
                         (settings.VIRTUALBRICKS_HOME, self.name)])

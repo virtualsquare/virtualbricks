@@ -1957,7 +1957,7 @@ class SettingsDialog(Window):
         self.cbPython.set_active(settings.get("python"))
         self.cbFemaleplugs.set_active(settings.get("femaleplugs"))
         self.cbErroronloop.set_active(settings.get("erroronloop"))
-        # qemu/kvm
+        # qemu
         try:
             self.fcbQemupath.set_current_folder(settings.get('qemupath'))
         except NoOptionError:
@@ -1967,8 +1967,6 @@ class SettingsDialog(Window):
         self.cbCowfmt.set_cell_data_func(self.crt1, self.crt1.set_cell_data)
         self.cbKsm.set_active(settings.get("ksm"))
         self.cbKsm.set_sensitive(tools.check_ksm())
-        self.cbKvm.set_active(settings.get("kvm"))
-        self.cbKvm.set_sensitive(tools.check_kvm())
 
     def on_fcbVdepath_selection_changed(self, filechooser):
         newpath = filechooser.get_filename()
@@ -1988,29 +1986,20 @@ class SettingsDialog(Window):
 
     def on_fcbQemupath_selection_changed(self, filechooser):
         newpath = filechooser.get_filename()
-        missing_qemu = missing_kvm = False
+        missing_qemu = False
         missing, found = tools.check_missing_qemu(newpath)
         if "qemu" in missing:
             missing_qemu = True
-        if "kvm" in missing:
-            missing_kvm = True
         if not os.access(newpath, os.X_OK):
             text = '<span color="red">{0}:</span>\n{1}'.format(
                 _("Error"), _("invalid path for qemu binaries"))
-        elif missing_qemu and missing_kvm:
-            text = '<span color="red">{0}:</span>\n{1}'.format(
-                _("Error"), _("cannot find neither qemu nor kvm in this path"))
         else:
             if missing_qemu:
                 text = '<span color="red">{0}:</span>\n{1}'.format(
                     _("Warning"), _("cannot find qemu, using kvm only"))
-            elif missing_kvm:
-                text = '<span color="yellow">{0}:</span>\n{1}. {2}.\n'.format(
-                    _("Warning"), _("kvm not found"),
-                    _("KVM support disabled"))
             else:
                 text = '<span color="darkgreen">{0}.</span>\n'.format(
-                    _("KVM and Qemu detected"))
+                    _("Qemu detected"))
             arch = []
             for f in found:
                 if f.startswith("qemu-system-"):
@@ -2035,13 +2024,12 @@ class SettingsDialog(Window):
             settings.set("python", self.cbPython.get_active())
             settings.set("femaleplugs", self.cbFemaleplugs.get_active())
             settings.set("erroronloop", self.cbErroronloop.get_active())
-            # qemu/kvm
+            # qemu
             qemupath = self.fcbQemupath.get_current_folder()
             if qemupath is not None:
                 settings.set('qemupath', qemupath)
             settings.set("cowfmt", self.cbCowfmt.get_selected_value())
             settings.set("ksm", self.cbKsm.get_active())
-            settings.set("kvm", self.cbKvm.get_active())
             tools.enable_ksm(self.cbKsm.get_active(), settings.get("sudo"))
             if self.cbSystray.get_active():
                 self.gui.start_systray()
