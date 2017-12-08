@@ -88,7 +88,7 @@ def _check_missing(default_paths, files):
 vde_bins = ["vde_switch", "vde_plug", "vde_cryptcab", "dpipe", "vdeterm",
     "vde_plug2tap", "wirefilter", "vde_router"]
 
-qemu_bins = ["qemu", "kvm", "qemu-system-arm", "qemu-system-cris",
+qemu_bins = ["qemu", "qemu-system-arm", "qemu-system-cris",
     "qemu-system-i386", "qemu-system-m68k", "qemu-system-microblaze",
     "qemu-system-mips", "qemu-system-mips64", "qemu-system-mips64el",
     "qemu-system-mipsel", "qemu-system-ppc", "qemu-system-ppc64",
@@ -113,15 +113,7 @@ def check_missing_qemu(path=None):
 
 
 def check_kvm(path=None):
-    if path is None:
-        from virtualbricks import settings
-        path = settings.get('qemupath')
-    missing = list(_check_missing(path, ['kvm']))
-    if missing:
-        return False
-    if not os.access("/sys/class/misc/kvm", os.X_OK):
-        return False
-    return True
+    return os.access("/dev/kvm", os.X_OK)
 
 
 def check_ksm():

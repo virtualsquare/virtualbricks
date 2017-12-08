@@ -1073,7 +1073,7 @@ class QemuConfigController(ConfigController):
             logger.failure(qemu_version_parsing_error, failure)
             gui.curtain_down()
 
-        d = getQemuOutput("kvm", ["-version"])
+        d = getQemuOutput("qemu-system-x86_64", ["-version"])
         d.addCallbacks(install_qemu_version, logger.failure_eb,
                        errbackArgs=(retrieve_qemu_version_error, True))
         d.addErrback(close_panel)
@@ -1132,16 +1132,6 @@ class QemuConfigController(ConfigController):
             return False
 
         kvmstate = State()
-        tooltip = _("KVM support not found")
-        kvmstate.add_control(SensitiveControl(self.siKvmsmem, tooltip))
-        kvmstate.add_control(SensitiveControl(self.cbKvmsm, tooltip))
-        kvmstate.add_control(SensitiveControl(self.lblKvmsm, tooltip))
-        kvmstate.add_control(SensitiveControl(self.cbTdf, tooltip))
-        kvmstate.add_control(ActiveControl(self.cbTdf))
-        tooltip = _("KVM activated")
-        kvmstate.add_control(InsensitiveControl(self.cbArgv0, tooltip))
-        kvmstate.add_control(InsensitiveControl(self.cbCpu, tooltip))
-        kvmstate.add_control(InsensitiveControl(self.cbMachine, tooltip))
         kvmstate.add_prerequisite(_check_kvm)
         self.cbKvm.connect("toggled", lambda cb: kvmstate.check())
         kvmstate.check()
@@ -1734,8 +1724,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         vmissing = tools.check_missing_vde()
         missing = vmissing + qmissing
 
-        if "kvm" in missing:
-            settings.set("kvm", False)
         if not tools.check_ksm():
             settings.set("ksm", False)
             missing.append("ksm")
@@ -1743,10 +1731,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         missing_components = []
         if len(missing) > 0 and settings.show_missing:
             for m in missing:
-                if m == "kvm":
-                    missing_text.append("KVM not found: kvm support"
-                                    " will be disabled.")
-                elif m == "ksm":
+                if m == "ksm":
                     missing_text.append("KSM not found in Linux. "
                                     "Samepage memory will not work on this "
                                     "system.")
