@@ -1,9 +1,10 @@
 [Desktop Entry]
-Version=1.0.3pre1
+Version=1.0.5
 Name=Virtualbricks
+GenericName=Virtualbricks
 Comment=Manage your virtual network and virtual machines
 Exec=virtualbricks
 Icon=virtualbricks
 Terminal=true
 Type=Application
-Categories=GNOME;Application;Emulator;Utility;
+Categories=System;Emulator;
