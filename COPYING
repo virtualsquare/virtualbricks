@@ -1,13 +1,54 @@
-Virtualbricks is copyright 2011 by Daniele Lacamera, Rainer Haage and the Virtualbricks development team.
-Virtualbricks development team: Daniele Lacamera, Francesco Apollonio, Simone Abbati, Pierre-Louis Bonicoli, Rainer Haage, Fabio Viola.
+Virtualbricks is copyright 2018 by Virtualbricks team.
 
-All the software in this directory and in all the subdirectories is licensed under the terms of GNU GPL v.2, http://www.gnu.org/licenses/gpl-2.0.html
-unless stated differently.
+Virtualbricks team:
 
-All the icons are created by Fabio Viola and released under the terms of CC BY-NC-SA v.3 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
-- Icons 'Connect' and 'Disconnect' are fairly based on 'plug' icon created by cablout (http://openclipart.org/user-detail/caboulot) (Public Domain)
-- Icons 'Wire' and 'Wirefilter' are fairly based on 'tango network wired' icon created by warszawianka
+- Daniele Lacamera
+- Francesco Apollonio
+- Simone Abbati
+- Pierre-Louis Bonicoli
+- Rainer Haage
+- Fabio Viola
+- Marco Giusti
+- Carlo Caini
+
+All the software in this directory and in all the subdirectories is
+licensed under the terms of GNU GPL V2 unless stated differently.
+
+--
+
+The file virtualbrics/_log.py is copyrighted by Apple Inc.
+
+Copyright (c) 2006-2013 Apple Inc. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+--
+
+The file virtualbrics/_backport.py is copyrighted by Twisted Matrix
+Laboratories.
+
+--
+
+All the icons are created by Fabio Viola and released under the terms of
+CC BY-NC-SA v.3 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+
+Icons 'Connect' and 'Disconnect' are fairly based on 'plug' icon created
+by cablout (http://openclipart.org/user-detail/caboulot) (Public Domain)
+
+Icons 'Wire' and 'Wirefilter' are fairly based on 'tango network wired'
+icon created by warszawianka
 (http://openclipart.org/user-detail/warszawianka) (Public+Domain)
-- Icon 'Event' is fairly based on 'tango appointment new' icon created by warszawianka 
-(http://openclipart.org/user-detail/warszawianka) (Public Domain)
 
+Icon 'Event' is fairly based on 'tango appointment new' icon created by
+warszawianka (http://openclipart.org/user-detail/warszawianka) (Public
+Domain)

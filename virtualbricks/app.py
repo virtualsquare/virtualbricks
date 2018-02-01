@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2013 Virtualbricks team
+# Copyright (C) 2018 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ class Options(usage.Options):
     longdesc = """Virtualbricks - a vde/qemu gui written in python and
     GTK/Glade.
 
-    Copyright (C) Virtualbricks team"""
+    Copyright (C) 2018 Virtualbricks team"""
 
     optFlags = [
         ["noterm", None, "Do not show the terminal."],
