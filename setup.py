@@ -66,7 +66,8 @@ class install_data(_install_data):
 DATA_IMAGES = glob.glob("virtualbricks/gui/data/*.png")
 DATA_HELPS = glob.glob("virtualbricks/gui/data/help/*")
 DATA_GLADE_UI = glob.glob("virtualbricks/gui/data/*.ui")
-DATA_FILES = DATA_IMAGES + DATA_GLADE_UI + DATA_HELPS
+QEMU_SPEC_FILES = glob.glob('share/qemu_specs_*.*')
+DATA_FILES = DATA_IMAGES + DATA_GLADE_UI + DATA_HELPS + QEMU_SPEC_FILES
 
 
 setup(
