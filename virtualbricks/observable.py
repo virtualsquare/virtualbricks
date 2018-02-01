@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2013 Virtualbricks team
+# Copyright (C) 2018 Virtualbricks team
 
 class Observable:
 
