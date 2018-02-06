@@ -74,8 +74,9 @@ setup(
     name="virtualbricks",
     version=_get_version(),
     description="Virtualbricks Virtualization Tools",
+    long_description=open('README').read(),
     author="Virtualbricks team",
-    url="https://launchpad.net/virtualbrick",
+    url='https://github.com/virtualsquare/virtualbricks',
     license="GPLv2",
     platforms=["linux2", "linux"],
     packages=[
@@ -91,6 +92,9 @@ setup(
         ("share/virtualbricks", DATA_FILES),
     ],
     install_requires=[
+        'mock',
+        'Pillow',
+        'pygraphviz',
         "Twisted>=12.0.0",
         "zope.interface>=3.5"
     ],
