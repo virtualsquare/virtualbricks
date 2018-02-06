@@ -1,0 +1,27 @@
+=============
+Virtualbricks
+=============
+
+Virtualbricks is a frontend for the management of Qemu Virtual Machines
+(VMs) and VDE virtualized network devices (switches, channel emulators,
+etc.). Although it can be used to manage isolated VMs, its peculiar aim
+is to design and manage testbeds consisting of many VMs interconnected
+by VDE elements. In other words, it allows to extend the concept of VM
+to testbeds, which thanks to Virtualbricks can become entirely
+software-defined.
+
+Installation
+============
+
+Virtualbricks is installable with pip but it won't work. Virtualbricks
+depends on pygtk and pygtk is not installable via pip. The first
+solution is to install pygtk from your distribution's packages and to
+install Virtualbricks with pip::
+
+    pip install --user .
+
+The second solution is to install Virtualbricks from the DEB or RPM
+packages. Available soon.
+
+
+.. vim: ft=rst tw=72
