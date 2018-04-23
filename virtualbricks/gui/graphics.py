@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_graphics -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2013 Virtualbricks team
+# Copyright (C) 2018 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# This module is ported to new GTK3 using PyGObject
+
 import os
 import os.path
 import sys
@@ -26,7 +28,9 @@ import shutil
 
 import Image
 import pygraphviz as pgv
-import gtk.gdk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 
 from virtualbricks.tools import is_running
 
@@ -77,13 +81,13 @@ def saturate_if_stopped(brick, pixbuf):
 
 def pixbuf_for_brick_at_size(brick, width, height):
     filename = brick_icon(brick)
-    pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(filename, width, height)
+    pixbuf = Gtk.GdkPixbuf.Pixbuf.new_from_file_at_size(filename, width, height)
     return saturate_if_stopped(brick, pixbuf)
 
 
 def pixbuf_for_brick(brick):
     filename = brick_icon(brick)
-    pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+    pixbuf = Gtk.GdkPixbuf.Pixbuf.new_from_file(filename)
     return saturate_if_stopped(brick, pixbuf)
 
 
@@ -91,15 +95,15 @@ def pixbuf_for_brick_type(type):
     filename = get_data_filename("%s.png" % type.lower())
     if filename is None:
         return None
-    return gtk.gdk.pixbuf_new_from_file(filename)
+    return Gtk.GdkPixbuf.Pixbuf.new_from_file(filename)
 
 
 def pixbuf_for_running_brick(brick):
-    return gtk.gdk.pixbuf_new_from_file(brick_icon(brick))
+    return Gtk.GdkPixbuf.Pixbuf.new_from_file(brick_icon(brick))
 
 
 def pixbuf_for_running_brick_at_size(brick, witdh, height):
-    return gtk.gdk.pixbuf_new_from_file_at_size(brick_icon(brick),
+    return Gtk.GdkPixbuf.Pixbuf.new_from_file_at_size(brick_icon(brick),
             witdh, height)
 
 

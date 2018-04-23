@@ -1,6 +1,29 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2018 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+# This module is ported to new GTK3 using PyGObject
+
 from zope.interface import implementer
-import gobject
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from gi.repository import GObject
+
 
 from virtualbricks import observable
 from virtualbricks.tools import dispose
@@ -22,36 +45,36 @@ def set_cells_data_func(column):
         column.set_cell_data_func(cell, cell.set_cell_data)
 
 
-class CellRendererFormattable(gtk.CellRendererText):
+class CellRendererFormattable(Gtk.CellRendererText):
 
     __gtype_name__ = "CellRendererFormattable"
     __gproperties__ = {
         "formatting-enabled": (
-            gobject.TYPE_BOOLEAN,
+            GObject.TYPE_BOOLEAN,
             _("Enable formatting"),
             _("Whether enable formatting"),
             False,
-            gobject.PARAM_READWRITE
+            GObject.PARAM_READWRITE
         ),
         "format-string": (
-            gobject.TYPE_STRING,
+            GObject.TYPE_STRING,
             _("Format string"),
             _("The format string understand by the builtin format()"),
             "",
-            gobject.PARAM_READWRITE
+            GObject.PARAM_READWRITE
         ),
         "formatter": (
-            gobject.TYPE_PYOBJECT,
+            GObject.TYPE_PYOBJECT,
             _("Custom formatter"),
             _("An instance of string.Formatter() class"),
-            gobject.PARAM_READWRITE
+            GObject.PARAM_READWRITE
         ),
         "display-member": (
-            gobject.TYPE_STRING,
+            GObject.TYPE_STRING,
             _("Display member"),
             _("The member used to display the text"),
             "",
-            gobject.PARAM_READWRITE
+            GObject.PARAM_READWRITE
         )
     }
 
@@ -101,7 +124,7 @@ class CellRendererFormattable(gtk.CellRendererText):
     set_text = set_cell_data
 
 
-class CellRendererBrickIcon(gtk.CellRendererPixbuf):
+class CellRendererBrickIcon(Gtk.CellRendererPixbuf):
 
     __gtype_name__ = "CellRendererBrickIcon"
 
@@ -116,23 +139,23 @@ SELECT_ALL = object()
 SELECT_NONE = object()
 
 
-class List(gtk.ListStore):
+class List(Gtk.ListStore):
 
     __gtype_name__ = "List"
     __gproperties__ = {
         "value-member": (
-            gobject.TYPE_STRING,
+            GObject.TYPE_STRING,
             _("Value member"),
             _(""),
             "",
-            gobject.PARAM_READWRITE
+            GObject.PARAM_READWRITE
         ),
     }
     _value_member = ""
     _ibinding_list = None
 
     def __init__(self):
-        gtk.ListStore.__init__(self, gobject.TYPE_PYOBJECT)
+        Gtk.ListStore.__init__(self, GObject.TYPE_PYOBJECT)
 
     def do_get_property(self, pspec):
         if pspec.name == "value-member":
@@ -222,7 +245,7 @@ class ImagesBindingList(AbstractBindingList):
         return iter(self._factory.disk_images)
 
 
-class TreeView(gtk.TreeView):
+class TreeView(Gtk.TreeView):
 
     __gtype_name__ = "TreeView"
 
@@ -234,8 +257,8 @@ class TreeView(gtk.TreeView):
 
     def get_selected_value(self):
         mode = self.get_selection().get_mode()
-        if mode in (gtk.SELECTION_NONE, gtk.SELECTION_SINGLE,
-                    gtk.SELECTION_BROWSE):
+        if mode in (Gtk.SelectionMode.NONE, Gtk.SelectionMode.SINGLE,
+                    Gtk.SelectionMode.BROWSE):
             values = self.get_selected_values()
             if values:
                 return values[0]
@@ -245,7 +268,7 @@ class TreeView(gtk.TreeView):
     def set_selected_value(self, value):
         if value is SELECT_ALL:
             raise ValueError("Cannot select more than one node")
-        elif self.get_selection().get_mode() == gtk.SELECTION_NONE:
+        elif self.get_selection().get_mode() == Gtk.SelectionMode.NONE:
             raise ValueError("Cannot select any node")
         else:
             self.set_selected_values((value, ))
@@ -253,9 +276,9 @@ class TreeView(gtk.TreeView):
     def get_selected_values(self):
         selection = self.get_selection()
         mode = selection.get_mode()
-        if mode == gtk.SELECTION_NONE:
+        if mode == Gtk.SelectionMode.NONE:
             return ()
-        elif mode in (gtk.SELECTION_SINGLE, gtk.SELECTION_BROWSE):
+        elif mode in (Gtk.SelectionMode.SINGLE, Gtk.SelectionMode.BROWSE):
             model, itr = selection.get_selected()
             if itr is None:
                 return ()
@@ -284,12 +307,12 @@ class TreeView(gtk.TreeView):
         selection = self.get_selection()
         mode = selection.get_mode()
         if iterable is SELECT_ALL:
-            if mode != gtk.SELECTION_MULTIPLE:
+            if mode != Gtk.SelectionMode.MULTIPLE:
                 raise ValueError("Cannot select all the nodes")
             selection.select_all()
         elif iterable is SELECT_NONE:
             selection.unselect_all()
-        elif mode == gtk.SELECTION_NONE:
+        elif mode == Gtk.SelectionMode.NONE:
             raise ValueError("Cannot select any node")
         else:
             model = self.get_model()
@@ -348,7 +371,7 @@ class ListEntry:
         return not self.__eq__(other)
 
 
-class ComboBox(gtk.ComboBox):
+class ComboBox(Gtk.ComboBox):
 
     __gtype_name__ = "ComboBox"
 
