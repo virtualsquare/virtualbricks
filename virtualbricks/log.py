@@ -31,6 +31,16 @@ from virtualbricks._log import (InvalidLogLevelError, LogLevel, formatEvent,
     LogPublisher, PredicateResult, ILogFilterPredicate, FilteringLogObserver,
     LogLevelFilterPredicate, LegacyLogObserver, replaceTwistedLoggers)
 
+import six
+
+if six.PY3:
+    def encodingFunc(dictionary):
+        return urllib.parse.urlencode(dictionary)
+else:
+    def encodingFunc(dictionary):
+        return urllib.urlencode(dictionary)
+
+
 __all__ = ["Event", "Logger", "InvalidLogLevelError", "LogLevel",
            "formatEvent", "Logger", "LegacyLogger", "ILogObserver",
            "ILegacyLogObserver", "LogPublisher", "PredicateResult",
@@ -42,7 +52,7 @@ __all__ = ["Event", "Logger", "InvalidLogLevelError", "LogLevel",
 def make_id(log_format, module=None):
     if module is None:
         module = inspect.currentframe().f_back.f_back.f_globals["__name__"]
-    params = urllib.urlencode(dict(format=log_format, module=module))
+    params = encodingFunc(dict(format=log_format, module=module))
     uri = "http://virtualbricks.eu/ns/log/?" + params
     return uuid.uuid5(uuid.NAMESPACE_URL, uri)
 

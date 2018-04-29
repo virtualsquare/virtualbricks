@@ -358,7 +358,7 @@ class Disk:
         cowname = self.get_cow_path()
         try:
             return self._check_base(cowname)
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.ENOENT:
                 return self._create_cow(cowname)
             else:

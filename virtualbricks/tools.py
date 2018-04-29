@@ -150,7 +150,7 @@ class Tempfile:
     def __exit__(self, exc_type, exc_value, traceback):
         try:
             os.remove(self.filename)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
 

@@ -16,7 +16,15 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import ConfigParser
+import six
+if six.PY3:
+    from six.moves import configparser
+    def parserFactory():
+        return configparser.SafeConfigParser()
+else:
+    import ConfigParser
+    def parserFactory():
+        return ConfigParser.SafeConfigParser()
 
 from virtualbricks import tools, log
 from virtualbricks.errors import NoOptionError
@@ -88,7 +96,7 @@ class Settings:
 
     def __init__(self, filename=CONFIGFILE):
         self.filename = filename
-        self.config = ConfigParser.SafeConfigParser()
+        self.config = parserFactory()
         self.config.add_section(self.DEFAULT_SECTION)
         for key, value in DEFAULT_CONF.items():
             self.config.set(self.DEFAULT_SECTION, key, str(value))

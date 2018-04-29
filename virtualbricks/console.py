@@ -25,6 +25,21 @@ from zope.interface import implementer
 
 from virtualbricks import __version__, bricks, errors, log, settings
 
+import six
+if six.PY3:
+    def iterOverMade():
+        for protocol in self.sub_protocols.values():
+            protocol.makeConnection(self.transport)
+    def iterOverLost():
+        for protocol in self.sub_protocols.values():
+            protocol.connectionLost(reason)
+else:
+    def iterOverMade():
+        for protocol in self.sub_protocols.itervalues():
+            protocol.makeConnection(self.transport)
+    def iterOverLost():
+        for protocol in self.sub_protocols.itervalues():
+            protocol.connectionLost(reason)
 
 logger = log.Logger()
 socket_error = log.Event("Error on socket")
@@ -106,12 +121,10 @@ class Protocol(basic.LineOnlyReceiver):
         pass
 
     def connectionMade(self):
-        for protocol in self.sub_protocols.itervalues():
-            protocol.makeConnection(self.transport)
+        iterOverMade()
 
     def connectionLost(self, reason):
-        for protocol in self.sub_protocols.itervalues():
-            protocol.connectionLost(reason)
+        iterOverLost()
 
 
 class VBProtocol(Protocol):
@@ -252,7 +265,7 @@ class VBProtocol(Protocol):
         else:
             try:
                 self.factory.new_brick(typ, name)
-            except (errors.InvalidTypeError, errors.InvalidNameError), e:
+            except (errors.InvalidTypeError, errors.InvalidNameError) as e:
                 self.sendLine(str(e))
 
     def do_list(self):
