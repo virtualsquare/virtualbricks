@@ -74,7 +74,7 @@ setup(
     version=_get_version(),
     description="Virtualbricks Virtualization Tools",
     author="Virtualbricks team",
-    url="https://launchpad.net/virtualbrick",
+    url="https://github.com/virtualsquare/virtualbricks",
     license="GPLv2",
     platforms=["linux2", "linux"],
     packages=[
