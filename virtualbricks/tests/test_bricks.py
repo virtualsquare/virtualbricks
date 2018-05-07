@@ -53,7 +53,7 @@ class TestBricks(unittest.TestCase):
     def setUp(self):
         self.factory = stubs.FactoryStub()
         self.brick = stubs.BrickStub(self.factory, "test")
-
+    #_cmd_line().sort() rende il test green... per quale motivo...
     def test_args(self):
         self.assertEqual(self.brick.build_cmd_line(),
                          ["-a", "arg1", "-c", "-d", "d"])
@@ -171,9 +171,9 @@ class TestBricks(unittest.TestCase):
 
 class TestVDEProcessProtocol(unittest.TestCase):
 
-    CMD1 = "bandwidth LR 125000"
-    CMD2 = "bandwidth RL 120000"
-    PROMPT = "vde$ "
+    CMD1 = b"bandwidth LR 125000"
+    CMD2 = b"bandwidth RL 120000"
+    PROMPT = b"vde$ "
 
     def setUp(self):
         brick = bricks.Brick(stubs.Factory(), "test")

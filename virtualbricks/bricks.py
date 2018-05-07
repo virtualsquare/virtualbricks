@@ -134,7 +134,7 @@ class VDEProcessProtocol(Process):
     """
 
     _buffer = ""
-    delimiter = "\n"
+    delimiter = u"\n"
     prompt = re.compile(r"^vde(?:\[[^]]*\]:|\$) ", re.MULTILINE)
     PIPELINE_SIZE = 1
 
@@ -349,6 +349,8 @@ class Brick(base.Base):
                     if not switch.startswith("*"):
                         res.append(switch)
                     res.append(value)
+        #res.sort()
+        #print(res)
         return res
 
     def _poweron(self, ignore):

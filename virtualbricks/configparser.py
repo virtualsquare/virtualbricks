@@ -79,7 +79,7 @@ class Parser:
 
         line = self.fileobj.readline()
         while line:
-            if line.startswith("#") or self.EMPTY.match(line):
+            if line.startswith('#') or self.EMPTY.match(line):
                 line = self.fileobj.readline()
                 continue
             match = self.SECTION_HEADER.match(line)
