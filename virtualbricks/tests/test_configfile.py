@@ -16,13 +16,22 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import StringIO
+import six
 
 from twisted.python import log, filepath
 
 from virtualbricks import configfile, configparser
 from virtualbricks.tests import unittest, stubs, LoggingObserver, Skip
 
+if six.PY3:
+    import io
+    def stringIOFactory(line):
+        return six.StringIO(line)
+else:
+    import StringIO
+    def stringIOFactory(line):
+        return StringIO.StringIO(line)
+    
 
 CONFIG1 = """
 [Image:martin]
@@ -108,7 +117,7 @@ class TestConfigFile(unittest.TestCase):
         filename = self.mktemp()
         original = filepath.FilePath(filename)
         with original.create() as fp:
-            fp.write("a")
+            fp.write(b"a")
         fbackup = original.sibling(original.basename() + "~")
         self.assertFalse(fbackup.exists())
         with configfile.backup(original, fbackup):
@@ -214,7 +223,7 @@ class TestConfigFile(unittest.TestCase):
 class TestParser(unittest.TestCase):
 
     def test_iter(self):
-        sio = StringIO.StringIO(CONFIG1)
+        sio = stringIOFactory(CONFIG1)
         parser = configparser.Parser(sio)
         itr = iter(parser)
         sec1 = next(itr)
@@ -240,7 +249,7 @@ class TestParser(unittest.TestCase):
         """
 
         line = "link|vm1-ng|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
-        parser = configparser.Parser(StringIO.StringIO(line))
+        parser = configparser.Parser(stringIOFactory(line))
         expected = tuple(line.split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -248,14 +257,14 @@ class TestParser(unittest.TestCase):
         """Bricks' name must start with a letter."""
 
         line = "link|1-brick|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
-        parser = configparser.Parser(StringIO.StringIO(line))
+        parser = configparser.Parser(stringIOFactory(line))
         self.assertEqual(list(parser), [])
 
     def test_hostonly_link(self):
         """Test a hostonly link."""
 
         line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55"
-        parser = configparser.Parser(StringIO.StringIO(line))
+        parser = configparser.Parser(stringIOFactory(line))
         expected = tuple(line.split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -266,7 +275,7 @@ class TestParser(unittest.TestCase):
         """
 
         line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55\n"
-        parser = configparser.Parser(StringIO.StringIO(line))
+        parser = configparser.Parser(stringIOFactory(line))
         expected = tuple(line[:-1].split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -387,7 +396,7 @@ class TestParseOldConfig(unittest.TestCase):
     def setUp(self):
         self.image = self.mktemp()
         content = OLD_CONFIG_FILE.replace("@@IMAGEPATH@@", self.image, 1)
-        self.fp = StringIO.StringIO(content)
+        self.fp = stringIOFactory(content)
 
     def test_sections(self):
         parser = configparser.Parser(self.fp)
@@ -422,7 +431,9 @@ class TestLoadOldConfig(unittest.TestCase):
         fp = filepath.FilePath(self.mktemp())
         self.image = self.mktemp()
         filepath.FilePath(self.image).touch()
-        fp.setContent(OLD_CONFIG_FILE.replace("@@IMAGEPATH@@", self.image, 1))
+        filecontent = OLD_CONFIG_FILE.replace(
+            "@@IMAGEPATH@@", self.image, 1).encode('ascii')
+        fp.setContent(filecontent)
         configfile.restore(self.factory, fp)
 
     def test_sw(self):
