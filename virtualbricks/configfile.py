@@ -312,7 +312,7 @@ class ConfigFile:
             logger.debug(config_dump, path=fp.path)
             with backup(fp, fp.sibling(fp.basename() + "~")):
                 tmpfile = fp.sibling("." + fp.basename() + ".sav")
-                with tmpfile.open("w") as fd:
+                with open(tmpfile.path, "wt") as fd:
                     self.save_to(factory, fd)
                 tmpfile.moveTo(fp)
         else:
@@ -348,7 +348,7 @@ class ConfigFile:
                 fp = str_or_obj
             restore_backup(fp, fp.sibling(fp.basename() + "~"))
             logger.info(open_project, path=fp.path)
-            with fp.open() as fd:
+            with open(fp.path,"rt") as fd:
                 self.restore_from(factory, fd)
         else:
             self.restore_from(factory, str_or_obj)
