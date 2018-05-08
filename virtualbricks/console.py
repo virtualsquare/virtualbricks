@@ -22,24 +22,8 @@ import textwrap
 from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from zope.interface import implementer
-
 from virtualbricks import __version__, bricks, errors, log, settings
-
 import six
-if six.PY3:
-    def iterOverMade():
-        for protocol in self.sub_protocols.values():
-            protocol.makeConnection(self.transport)
-    def iterOverLost():
-        for protocol in self.sub_protocols.values():
-            protocol.connectionLost(reason)
-else:
-    def iterOverMade():
-        for protocol in self.sub_protocols.itervalues():
-            protocol.makeConnection(self.transport)
-    def iterOverLost():
-        for protocol in self.sub_protocols.itervalues():
-            protocol.connectionLost(reason)
 
 logger = log.Logger()
 socket_error = log.Event("Error on socket")
@@ -121,10 +105,13 @@ class Protocol(basic.LineOnlyReceiver):
         pass
 
     def connectionMade(self):
-        iterOverMade()
+        for protocol in six.itervalues(self.sub_protocols):
+            protocol.makeConnection(self.transport)
+        
 
     def connectionLost(self, reason):
-        iterOverLost()
+        for protocol in six.itervalues(self.sub_protocols):
+            protocol.connectionLost(reason)
 
 
 class VBProtocol(Protocol):
