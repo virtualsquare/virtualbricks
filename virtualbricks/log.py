@@ -24,6 +24,7 @@ import uuid
 import functools
 import collections
 
+
 from twisted.python import util, failure
 
 from virtualbricks._log import (InvalidLogLevelError, LogLevel, formatEvent,
@@ -97,6 +98,12 @@ def expect_event(func):
     def wrapper(self, event, *args, **kwds):
         if isinstance(event, str):
             event = Event(event)
+        elif isinstance(event, bytes):
+            event = Event(event)
+        elif isinstance(event, six.text_type):
+            event = Event(event)        
+        elif not callable(event):
+            raise ValueError("func object was not callable nor str or byte")
         return func(self, event, *args, **kwds)
     return wrapper
 

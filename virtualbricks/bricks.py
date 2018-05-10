@@ -147,8 +147,8 @@ class VDEProcessProtocol(Process):
         """
         Translates bytes into lines, and calls ack_received.
         """
-
-        acks = self.prompt.split(self._buffer + data)
+        
+        acks = self.prompt.split(self._buffer + data.decode("utf-8"))
         self._buffer = acks.pop(-1)
         for ack in acks:
             self.ack_received(ack)
@@ -172,9 +172,9 @@ class VDEProcessProtocol(Process):
     def _send_command(self):
         cmd = self.queue[0]
         self.logger.info(cmd)
-        if cmd.endswith(self.delimiter):
+        if cmd.decode("utf-8").endswith(self.delimiter):
             return self.transport.write(cmd)
-        return self.transport.writeSequence((cmd, self.delimiter))
+        return self.transport.writeSequence((cmd, self.delimiter.encode("utf-8")))
 
     def outReceived(self, data):
         self.data_received(data)
