@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from collections import OrderedDict
 from twisted.internet import defer
 
 from virtualbricks import brickfactory, bricks, virtualmachines as vm
@@ -54,7 +55,7 @@ class BrickStubConfig(bricks.Config):
 class BrickStub(BrickStubMixin, bricks.Brick):
 
     type = "Stub"
-    command_builder = {"-a": "a", "# -b": "b", "-c": "c", "-d": hook}
+    command_builder = OrderedDict([("-a", "a"), ("# -b", "b"), ("-c", "c"), ("-d", hook)])
     config_factory = BrickStubConfig
 
     def __init__(self, factory, name):
