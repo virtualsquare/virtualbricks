@@ -337,6 +337,7 @@ class Brick(base.Base):
         # TODO: documents the behavior of all cases (#, *, etc.)
         res = []
 
+        # import pdb; pdb.set_trace()
         for switch, value in self.command_builder.items():
             if not switch.startswith("#"):
                 if callable(value):

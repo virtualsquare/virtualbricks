@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import StringIO
+import six
 import textwrap
 
 from zope.interface import implementer
@@ -40,7 +40,7 @@ class FileTransportAdapter:
 
     loseConnection = getPeer = getHost = lambda s: None
 
-components.registerAdapter(FileTransportAdapter, StringIO.StringIO,
+components.registerAdapter(FileTransportAdapter, six.StringIO,
                            interfaces.ITransport)
 
 
@@ -48,7 +48,7 @@ class TestProtocol(unittest.TestCase):
 
     def setUp(self):
         self.factory = stubs.FactoryStub()
-        self.stdout = StringIO.StringIO()
+        self.stdout = six.StringIO()
 
     def parse(self, cmd):
         console.parse(self.factory, cmd, self.stdout)

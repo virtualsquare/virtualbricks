@@ -16,6 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from collections import OrderedDict
 import os
 
 from twisted.internet import defer
@@ -53,18 +54,19 @@ class Switch(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.command_builder = {"-x": "hub",
-                                # "-x": "hubmode",
-                                "-n": "numports",
-                                "-F": "fstp",
-                                "--macaddr": "macaddr",
-                                "-m": "mode",
-                                "-g": "group",
-                                "--priority": "priority",
-                                "--mgmtmode": "mgmtmode",
-                                "--mgmtgroup": "mgmtgroup",
-                                "-s": self.path,
-                                "-M": self.console}
+        self.command_builder = OrderedDict([
+                ("-x", "hub"),
+                ("-n", "numports"),
+                ("-F", "fstp"),
+                ("--macaddr", "macaddr"),
+                ("-m", "mode"),
+                ("-g", "group"),
+                ("--priority", "priority"),
+                ("--mgmtmode", "mgmtmode"),
+                ("--mgmtgroup", "mgmtgroup"),
+                ("-s", self.path),
+                ("-M", self.console)
+        ])
         sock = factory.new_sock(self, self.name + "_port")
         sock.path = self.path()
         self.socks.append(sock)
