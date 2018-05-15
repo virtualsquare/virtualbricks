@@ -20,7 +20,7 @@ import six
 
 from twisted.python import log, filepath
 
-from virtualbricks import configfile, configparser
+from virtualbricks import configfile, _configparser
 from virtualbricks.tests import unittest, stubs, LoggingObserver, Skip
 
 def file_text_from_bytes(filepath):
@@ -153,7 +153,7 @@ class TestConfigFile(unittest.TestCase):
 
         BRICKNAME = "new_brick"
         observer = self._add_observer(configfile.brick_not_found)
-        link = configparser.Link("sock", BRICKNAME, "name", "model", "mac")
+        link = _configparser.Link("sock", BRICKNAME, "name", "model", "mac")
         configfile.SockBuilder().load_from(stubs.FactoryStub(), link)
         self.assertEqual(len(observer), 1)
         self.assertEqual(observer[0]["brick"], BRICKNAME)
@@ -164,7 +164,7 @@ class TestConfigFile(unittest.TestCase):
         BRICKNAME = "new_brick"
         factory = stubs.FactoryStub()
         brick = factory.new_brick("vm", BRICKNAME)
-        link = configparser.Link("sock", BRICKNAME, None, None, None)
+        link = _configparser.Link("sock", BRICKNAME, None, None, None)
         configfile.SockBuilder().load_from(factory, link)
         self.assertEqual(len(factory.socks), 1)
         self.assertIs(factory.socks[0].brick, brick)
@@ -177,7 +177,7 @@ class TestConfigFile(unittest.TestCase):
 
         BRICKNAME = "new_brick"
         observer = self._add_observer(configfile.brick_not_found)
-        link = configparser.Link("link", BRICKNAME, "name", "model", "mac")
+        link = _configparser.Link("link", BRICKNAME, "name", "model", "mac")
         configfile.LinkBuilder().load_from(stubs.FactoryStub(), link)
         self.assertEqual(len(observer), 1)
         self.assertEqual(observer[0]["brick"], BRICKNAME)
@@ -194,7 +194,7 @@ class TestConfigFile(unittest.TestCase):
         observer = self._add_observer(configfile.sock_not_found)
         brick = factory.new_brick("vm", BRICKNAME)
         self.assertEqual(len(brick.plugs), 0)
-        link = configparser.Link("link", BRICKNAME, SOCKNAME, "model", "mac")
+        link = _configparser.Link("link", BRICKNAME, SOCKNAME, "model", "mac")
         configfile.LinkBuilder().load_from(factory, link)
         self.assertEqual(len(brick.plugs), 0)
         self.assertEqual(len(observer), 1)
@@ -209,7 +209,7 @@ class TestConfigFile(unittest.TestCase):
         brick.add_sock()
         self.assertEqual(len(brick.plugs), 0)
         NICKNAME = "{0}_sock_eth0".format(BRICKNAME)
-        link = configparser.Link("link", BRICKNAME, NICKNAME, "model", "mac")
+        link = _configparser.Link("link", BRICKNAME, NICKNAME, "model", "mac")
         configfile.LinkBuilder().load_from(factory, link)
         self.assertEqual(len(brick.plugs), 1)
 
@@ -218,7 +218,7 @@ class TestParser(unittest.TestCase):
 
     def test_iter(self):
         sio = six.StringIO(CONFIG1)
-        parser = configparser.Parser(sio)
+        parser = _configparser.Parser(sio)
         itr = iter(parser)
         sec1 = next(itr)
         self.assertEqual(sec1.type, "Image")
@@ -243,7 +243,7 @@ class TestParser(unittest.TestCase):
         """
 
         line = "link|vm1-ng|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
-        parser = configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(six.StringIO(line))
         expected = tuple(line.split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -251,14 +251,14 @@ class TestParser(unittest.TestCase):
         """Bricks' name must start with a letter."""
 
         line = "link|1-brick|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
-        parser = configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(six.StringIO(line))
         self.assertEqual(list(parser), [])
 
     def test_hostonly_link(self):
         """Test a hostonly link."""
 
         line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55"
-        parser = configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(six.StringIO(line))
         expected = tuple(line.split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -269,7 +269,7 @@ class TestParser(unittest.TestCase):
         """
 
         line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55\n"
-        parser = configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(six.StringIO(line))
         expected = tuple(line[:-1].split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -343,7 +343,7 @@ path=/var/run/switch/sck
 
 
 def is_section(obj):
-    return isinstance(obj, configparser.Section)
+    return isinstance(obj, _configparser.Section)
 
 
 class FakeSection:
@@ -393,7 +393,7 @@ class TestParseOldConfig(unittest.TestCase):
         self.fp = six.StringIO(content)
 
     def test_sections(self):
-        parser = configparser.Parser(self.fp)
+        parser = _configparser.Parser(self.fp)
         sections = [
             FakeSection("Project", "/home/user/.virtualbricks.vbl"),
             FakeSection("DiskImage", "vtatpa.qcow2"),
@@ -404,13 +404,13 @@ class TestParseOldConfig(unittest.TestCase):
                          sections)
 
     def test_disk_image(self):
-        parser = configparser.Parser(self.fp)
+        parser = _configparser.Parser(self.fp)
         diskimage = get_section(parser, "DiskImage", "vtatpa.qcow2")
         self.assertIsNot(diskimage, None)
         self.assertEqual(dict(diskimage), {"path": self.image})
 
     def test_switch_wrapper(self):
-        parser = configparser.Parser(self.fp)
+        parser = _configparser.Parser(self.fp)
         sw = get_section(parser, "SwitchWrapper", "sw1")
         self.assertIsNot(sw, None)
         self.assertEqual(dict(sw), {"numports": "32", "pon_vbevent": "",

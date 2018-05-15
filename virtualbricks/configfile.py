@@ -25,7 +25,7 @@ import six
 from twisted.python import filepath
 from zope.interface import implementer
 
-from virtualbricks import interfaces, settings, configparser, log
+from virtualbricks import interfaces, settings, _configparser, log
 
 
 if False:  # pyflakes
@@ -161,7 +161,7 @@ def link_builder_factory(context):
         return LinkBuilder()
 
 
-interfaces.registerAdapter(link_builder_factory, configparser.Link,
+interfaces.registerAdapter(link_builder_factory, _configparser.Link,
                            interfaces.IBuilder)
 
 
@@ -290,7 +290,7 @@ def compatible_brick_builder_factory(context):
 
 
 interfaces.registerAdapter(compatible_brick_builder_factory,
-                           configparser.Section, interfaces.IBuilder)
+                           _configparser.Section, interfaces.IBuilder)
 
 
 class ConfigFile:
@@ -355,7 +355,7 @@ class ConfigFile:
 
     def restore_from(self, factory, fileobj):
         with freeze_notify(factory):
-            for item in configparser.Parser(fileobj):
+            for item in _configparser.Parser(fileobj):
                 interfaces.IBuilder(item).load_from(factory, item)
 
 

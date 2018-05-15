@@ -24,7 +24,7 @@ import re
 from twisted.internet import utils, error, defer
 from twisted.python import filepath
 
-from virtualbricks import (settings, configfile, log, errors, configparser,
+from virtualbricks import (settings, configfile, log, errors, _configparser,
                            tools)
 
 
@@ -112,7 +112,7 @@ class ProjectEntry:
     def from_fileobj(cls, fileobj):
         links = []
         sections = {}
-        for item in configparser.Parser(fileobj):
+        for item in _configparser.Parser(fileobj):
             if isinstance(item, tuple):
                 links.append(item)
             else:
