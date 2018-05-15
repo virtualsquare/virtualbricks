@@ -41,7 +41,7 @@ except NameError:
 
 
 def set_cells_data_func(column):
-    for cell in column.get_cell_renderers():
+    for cell in column.get_cells():
         column.set_cell_data_func(cell, cell.set_cell_data)
 
 
