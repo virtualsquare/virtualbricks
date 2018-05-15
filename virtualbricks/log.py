@@ -292,7 +292,7 @@ class LegacyAdapter:
                 self.logger.error(double_format_error, ev=event)
             event["_format"] = event["format"]
             del event["format"]
-        if isinstance(event["message"], basestring):
+        if isinstance(event["message"], six.string_types):
             msg = event["message"]
         else:
             msg = "\n".join(event["message"])
