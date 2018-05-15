@@ -17,22 +17,7 @@
 
 import os
 import six
-
 from six.moves import configparser
-
-# if six.PY3:
-#     from six.moves import configparser
-#     def parserFactory():
-#         return configparser.SafeConfigParser()
-#     def raiseParserError():
-#         return configparser.NoOptionError
-# else:
-#     import ConfigParser
-#     def parserFactory():
-#         return ConfigParser.SafeConfigParser()
-#     def raiseParserError():
-#         return Configparser.NoOptionError
-
 from virtualbricks import tools, log
 from virtualbricks.errors import NoOptionError
 
