@@ -26,7 +26,7 @@ else:
     def seek_end(fileobj):
         fileobj.seek(-1, os.SEEK_END)
 
-from virtualbricks import base, configparser
+from virtualbricks import base, _configparser
 from virtualbricks.tests import unittest, stubs
 
 
@@ -190,7 +190,7 @@ class TestBase(unittest.TestCase):
         seek_end(sio)
         sio.write("# this is a comment")
         sio.seek(0)
-        section = next(iter(configparser.Parser(sio)))
+        section = next(iter(_configparser.Parser(sio)))
         self.brick.load_from(section)
         for p, v in (("bool", False), ("float", 0.1), ("int", 43),
                      ("spinint", 31), ("str", "b")):

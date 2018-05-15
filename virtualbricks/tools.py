@@ -186,7 +186,7 @@ def get_backing_file_from_cow(fp):
 
 
 def get_backing_file_from_qcow(fp):
-    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
+    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12).encode("utf-8"))
     if size == 0:
         return ""
     else:
@@ -197,7 +197,7 @@ def get_backing_file_from_qcow(fp):
 class UnknowTypeError(Exception):
     pass
 
-
+#struct.error: unpack requires a bytes object of length 8 ... tried encode but not working
 def get_backing_file(fp):
     data = fp.read(8)
     magic, version = struct.unpack(GENERIC_HEADER_FMT, data)

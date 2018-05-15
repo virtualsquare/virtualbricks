@@ -20,6 +20,7 @@ import os
 import errno
 import itertools
 import re
+import six
 
 from twisted.internet import utils, error, defer
 from twisted.python import filepath
@@ -194,7 +195,7 @@ class Project:
     _description_modified = False
 
     def __init__(self, path, manager):
-        if isinstance(path, basestring):
+        if isinstance(path, six.string_types):
             path = filepath.FilePath(path)
         self._path = path
         self._manager = manager
