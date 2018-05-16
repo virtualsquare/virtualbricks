@@ -291,7 +291,7 @@ class Project:
                     return self.save(factory, True)
             raise
         if self._description_modified:
-            self._path.child("README").setContent(self._description)
+            self._path.child("README").setContent((self._description).encode("utf-8"))
             self._description_modified = False
 
     def save_as(self, name, factory):
