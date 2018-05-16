@@ -213,7 +213,8 @@ class VBProtocol(Protocol):
         logger.info(quit_loop)
 
     def do_help(self):
-        self.sendLine(textwrap.dedent(self.__doc__))
+        line = textwrap.dedent(self.__doc__)
+        self.sendLine(line)
 
     def do_event(self, name, *args):
         event = self.factory.get_event_by_name(name)

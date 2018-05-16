@@ -36,14 +36,14 @@ class MockLock(object):
         pass
 
 
-HELLO = "/hello/backingfile"
-COW_HEADER = "OOOM\x00\x00\x00\x02" + HELLO + "\x00" * 1006
-QCOW_HEADER = "QFI\xfb\x00\x00\x00\x01" + struct.pack(">Q", 20).decode("utf-8") + \
-        struct.pack(">I", len(HELLO)).decode("utf-8") + HELLO
-QCOW_HEADER0 = "QFI\xfb\x00\x00\x00\x01" + "\x00" * 12
-QCOW_HEADER2 = "QFI\xfb\x00\x00\x00\x02" + struct.pack(">Q", 20).decode("utf-8") + \
-        struct.pack(">I", len(HELLO)).decode("utf-8") + HELLO
-UNKNOWN_HEADER = "MOOO\x00\x00\x00\x02"
+HELLO = b"/hello/backingfile"
+COW_HEADER = b"OOOM\x00\x00\x00\x02" + HELLO + b"\x00" * 1006
+QCOW_HEADER = b"QFI\xfb\x00\x00\x00\x01" + struct.pack(">Q", 20) + \
+        struct.pack(">I", len(HELLO)) + HELLO
+QCOW_HEADER0 = b"QFI\xfb\x00\x00\x00\x01" + b"\x00" * 12
+QCOW_HEADER2 = b"QFI\xfb\x00\x00\x00\x02" + struct.pack(">Q", 20) + \
+        struct.pack(">I", len(HELLO)) + HELLO
+UNKNOWN_HEADER = b"MOOO\x00\x00\x00\x02"
 
 
 class TestTools(unittest.TestCase):

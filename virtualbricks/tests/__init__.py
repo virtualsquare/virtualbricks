@@ -20,6 +20,7 @@ import sys
 import types
 import functools
 import difflib
+import six
 
 from twisted.trial import unittest
 from twisted.python import failure
@@ -48,7 +49,7 @@ def Skip(reason):
     # This decorator is camelcase because otherwise importing it cause all the
     # tests to skip because trial look deep in test method, class, module
     def decorator(test_item):
-        if not isinstance(test_item, (type, types.ClassType)):
+        if not isinstance(test_item, (type, six.class_types)):
             @functools.wraps(test_item)
             def skip_wrapper(*args, **kwargs):
                 raise unittest.SkipTest(reason)
