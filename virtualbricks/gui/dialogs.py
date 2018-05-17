@@ -943,7 +943,7 @@ class LoadImageDialog(Window):
         if response_id == Gtk.ResponseType.OK:
             name = self.get_object("name_entry").get_text()
             buf = self.get_object("description_textview").get_buffer()
-            desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
+            desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), include_hidden_chars=True)
             try:
                 self.factory.new_disk_image(name, self.pathname, desc)
             except:
