@@ -93,6 +93,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import Gtk
+from gi.repository import Gdk
 from gi.repository import Pango
 import twisted
 from twisted.internet import utils, defer, task, error
@@ -605,14 +606,14 @@ class NewEventDialog(Window):
         self.gui = gui
 
     def on_delay_entry_key_press_event(self, entry, event):
-        if Gtk.Gdk.keyval_name(event.keyval) not in VALIDKEY:
+        if Gdk.keyval_name(event.keyval) not in VALIDKEY:
             return True
-        elif Gtk.Gdk.keyval_name(event.keyval) == "Return":
+        elif Gdk.keyval_name(event.keyval) == "Return":
             self.window.response(Gtk.ResponseType.OK)
             return True
 
     def on_name_entry_key_press_event(self, entry, event):
-        if Gtk.Gdk.keyval_name(event.keyval) == "Return":
+        if Gdk.keyval_name(event.keyval) == "Return":
             self.window.response(Gtk.ResponseType.OK)
             return True
 
@@ -1691,7 +1692,7 @@ class ImportDialog(Window):
         chooser.set_destroy_with_parent(True)
         chooser.set_position(Gtk.WindowPosition.CENTER)
         chooser.set_do_overwrite_confirmation(True)
-        chooser.set_type_hint(Gtk.Gdk.WindowTypeHint.DIALOG)
+        chooser.set_type_hint(Gdk.WindowTypeHint.DIALOG)
         chooser.connect("response", self.on_filechooserdialog_response, model,
                         path)
         return chooser

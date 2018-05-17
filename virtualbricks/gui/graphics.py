@@ -31,6 +31,7 @@ import pygraphviz as pgv
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+from gi.repository import GdkPixbuf
 
 from virtualbricks.tools import is_running
 
@@ -81,13 +82,13 @@ def saturate_if_stopped(brick, pixbuf):
 
 def pixbuf_for_brick_at_size(brick, width, height):
     filename = brick_icon(brick)
-    pixbuf = Gtk.GdkPixbuf.Pixbuf.new_from_file_at_size(filename, width, height)
+    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(filename, width, height)
     return saturate_if_stopped(brick, pixbuf)
 
 
 def pixbuf_for_brick(brick):
     filename = brick_icon(brick)
-    pixbuf = Gtk.GdkPixbuf.Pixbuf.new_from_file(filename)
+    pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
     return saturate_if_stopped(brick, pixbuf)
 
 
@@ -95,15 +96,15 @@ def pixbuf_for_brick_type(type):
     filename = get_data_filename("%s.png" % type.lower())
     if filename is None:
         return None
-    return Gtk.GdkPixbuf.Pixbuf.new_from_file(filename)
+    return GdkPixbuf.Pixbuf.new_from_file(filename)
 
 
 def pixbuf_for_running_brick(brick):
-    return Gtk.GdkPixbuf.Pixbuf.new_from_file(brick_icon(brick))
+    return GdkPixbuf.Pixbuf.new_from_file(brick_icon(brick))
 
 
 def pixbuf_for_running_brick_at_size(brick, witdh, height):
-    return Gtk.GdkPixbuf.Pixbuf.new_from_file_at_size(brick_icon(brick),
+    return GdkPixbuf.Pixbuf.new_from_file_at_size(brick_icon(brick),
             witdh, height)
 
 

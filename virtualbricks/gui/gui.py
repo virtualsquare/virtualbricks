@@ -24,6 +24,7 @@ import string
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+from gi.repository import Gdk
 from gi.repository import GObject
 
 from twisted.internet import error, defer, task, protocol, reactor
@@ -477,11 +478,11 @@ class EventConfigController(ConfigController, dialogs.EventControllerMixin):
         self.configure_event(self.original, attributes)
 
     def on_delay_entry_key_press_event(self, entry, event):
-        if Gtk.Gdk.keyval_name(event.keyval) not in dialogs.VALIDKEY:
+        if Gdk.keyval_name(event.keyval) not in dialogs.VALIDKEY:
             return True
 
     def on_action_treeview_key_press_event(self, treeview, event):
-        if Gtk.Gdk.keyval_name(event.keyval) == "Delete":
+        if Gdk.keyval_name(event.keyval) == "Delete":
             selection = treeview.get_selection()
             model, selected = selection.get_selected_rows()
             rows = []
@@ -1297,7 +1298,7 @@ class QemuConfigController(ConfigController):
             self.gui.wndMain)
 
     def on_networkcards_treeview_key_press_event(self, treeview, event):
-        if Gtk.Gdk.keyval_from_name("Delete") == event.keyval:
+        if Gdk.keyval_from_name("Delete") == event.keyval:
             link = get_selection(treeview)
             if link is not None:
                 self.ask_remove_link(link)
@@ -1443,7 +1444,7 @@ class TopologyMixin(object):
         if brick:
             if event.button == 3:
                 IMenu(brick, None).popup(event.button, event.time, self)
-            elif event.button == 1 and event.type == Gtk.Gdk.EventType._2BUTTON_PRESS:
+            elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
                 self.startstop_brick(brick)
             return True
 
@@ -1711,10 +1712,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.tvBricks.set_cells_data_func()
         self.__bricks_binding_list = BricksBindingList(self.factory)
         self.lBricks.set_data_source(self.__bricks_binding_list)
-        self.tvBricks.enable_model_drag_source(Gtk.Gdk.ModifierType.BUTTON1_MASK,
-                BRICK_DRAG_TARGETS, Gtk.Gdk.DragAction.LINK)
+        self.tvBricks.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK,
+                BRICK_DRAG_TARGETS, Gdk.DragAction.LINK)
         self.tvBricks.enable_model_drag_dest(BRICK_DRAG_TARGETS,
-                Gtk.Gdk.DragAction.LINK)
+                Gdk.DragAction.LINK)
 
         # events tab
         self.tvEvents.set_cells_data_func()
@@ -1881,13 +1882,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         dialog.show()
 
     def on_bricks_treeview_key_release_event(self, treeview, event):
-        if Gtk.Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
+        if Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
             brick = treeview.get_selected_value()
             if brick is not None:
                 self.ask_remove_brick(brick)
 
     def on_events_treeview_key_release_event(self, treeview, event):
-        if Gtk.Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
+        if Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
             event = treeview.get_selected_value()
             if event is not None:
                 self.ask_remove_event(event)
