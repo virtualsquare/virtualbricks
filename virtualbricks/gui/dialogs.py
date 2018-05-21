@@ -1847,7 +1847,7 @@ class SaveAsDialog(Window):
             self.set_invalid(True)
         else:
             model = self.model
-            itr = model.get_iter_root()
+            itr = model.get_iter_first()
             while itr:
                 if model.get_value(itr, 0) == name:
                     self.set_invalid(True)
