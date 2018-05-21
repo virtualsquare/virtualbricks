@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.20"/>
-  <!-- interface-naming-policy toplevel-contextual -->
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkImage" id="image1">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -36,12 +36,12 @@
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_NewEventDialog_response" swapped="no"/>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="dialog-vbox1">
+      <object class="GtkBox" id="dialog-vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area1">
+          <object class="GtkButtonBox" id="dialog-action_area1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
@@ -101,6 +101,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image1</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="active">True</property>
                     <property name="draw_indicator">True</property>
@@ -118,6 +119,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image2</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">True</property>
                     <property name="group">start_button</property>
@@ -136,6 +138,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image3</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">True</property>
                     <property name="group">start_button</property>
@@ -165,6 +168,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image4</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">True</property>
                     <property name="group">start_button</property>
@@ -182,6 +186,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image5</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">True</property>
                     <property name="group">start_button</property>
@@ -217,8 +222,8 @@
               <object class="GtkLabel" id="label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">Event name:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="x_options">GTK_FILL</property>
@@ -228,8 +233,8 @@
               <object class="GtkLabel" id="label2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">Delay:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="top_attach">1</property>
@@ -244,8 +249,6 @@
                 <property name="invisible_char">●</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
                 <signal name="key-press-event" handler="on_name_entry_key_press_event" swapped="no"/>
               </object>
               <packing>
@@ -261,8 +264,6 @@
                 <property name="text" translatable="yes">10</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
                 <signal name="key-press-event" handler="on_delay_entry_key_press_event" swapped="no"/>
               </object>
               <packing>
