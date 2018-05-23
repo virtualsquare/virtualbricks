@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.24"/>
-  <!-- interface-naming-policy project-wide -->
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkAdjustment" id="adjustment1">
     <property name="upper">1073741824</property>
     <property name="value">75000</property>
@@ -63,8 +63,8 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="tooltip_text" translatable="yes">Maximum size of the packet queue. Exceeding packets are discarded.</property>
-        <property name="xalign">0</property>
         <property name="label" translatable="yes">buffer lenght (Byte; 0=no limit)</property>
+        <property name="xalign">0</property>
       </object>
       <packing>
         <property name="top_attach">3</property>
@@ -78,8 +78,8 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="tooltip_text" translatable="yes">Extra delay (in milliseconds). This delay is added to the real communication delay. Packets are temporarily stored and resent after the delay.</property>
-        <property name="xalign">0</property>
         <property name="label" translatable="yes">propagation delay (one way; ms)</property>
+        <property name="xalign">0</property>
       </object>
       <packing>
         <property name="top_attach">4</property>
@@ -93,8 +93,8 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="tooltip_text" translatable="yes">Percentage of loss as a floating point number.</property>
-        <property name="xalign">0</property>
         <property name="label" translatable="yes">loss rate (in %, [0,100] real)</property>
+        <property name="xalign">0</property>
       </object>
       <packing>
         <property name="top_attach">5</property>
@@ -108,8 +108,8 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="tooltip_text" translatable="yes">Sender is not prevented from sending packets, delivery is delayed to limit the bandwidth to the desired value (like a bottleneck along the path).</property>
-        <property name="xalign">0</property>
         <property name="label" translatable="yes">bandwidth (Byte/s; 0=no limit)</property>
+        <property name="xalign">0</property>
       </object>
       <packing>
         <property name="top_attach">6</property>
@@ -144,6 +144,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
             <property name="focus_on_click">False</property>
+            <property name="xalign">0.5</property>
             <property name="draw_indicator">True</property>
           </object>
         </child>
@@ -168,6 +169,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
             <property name="focus_on_click">False</property>
+            <property name="xalign">0.5</property>
             <property name="draw_indicator">True</property>
           </object>
         </child>
@@ -192,6 +194,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
             <property name="focus_on_click">False</property>
+            <property name="xalign">0.5</property>
             <property name="draw_indicator">True</property>
           </object>
         </child>
@@ -216,6 +219,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
             <property name="focus_on_click">False</property>
+            <property name="xalign">0.5</property>
             <property name="draw_indicator">True</property>
           </object>
         </child>
@@ -290,8 +294,8 @@
           <object class="GtkLabel" id="label7">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="xalign">0</property>
             <property name="label" translatable="yes">Reverse link</property>
+            <property name="xalign">0</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -314,11 +318,8 @@
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment1</property>
         <property name="numeric">True</property>
       </object>
@@ -336,11 +337,8 @@
         <property name="sensitive">False</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment2</property>
         <property name="numeric">True</property>
       </object>
@@ -357,11 +355,8 @@
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment3</property>
         <property name="numeric">True</property>
       </object>
@@ -379,11 +374,8 @@
         <property name="sensitive">False</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment4</property>
         <property name="numeric">True</property>
       </object>
@@ -400,11 +392,8 @@
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment5</property>
         <property name="digits">2</property>
         <property name="numeric">True</property>
@@ -423,11 +412,8 @@
         <property name="sensitive">False</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment6</property>
         <property name="numeric">True</property>
       </object>
@@ -444,11 +430,8 @@
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment7</property>
         <property name="numeric">True</property>
       </object>
@@ -466,11 +449,8 @@
         <property name="sensitive">False</property>
         <property name="can_focus">True</property>
         <property name="invisible_char">●</property>
-        <property name="invisible_char_set">True</property>
         <property name="primary_icon_activatable">False</property>
         <property name="secondary_icon_activatable">False</property>
-        <property name="primary_icon_sensitive">True</property>
-        <property name="secondary_icon_sensitive">True</property>
         <property name="adjustment">adjustment8</property>
         <property name="numeric">True</property>
       </object>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.24"/>
-  <!-- interface-naming-policy project-wide -->
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkListStore" id="liststore1">
     <columns>
       <!-- column-name Interface -->
@@ -19,8 +19,8 @@
       <object class="GtkLabel" id="label1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="xalign">0</property>
         <property name="label" translatable="yes">Connect to:</property>
+        <property name="xalign">0</property>
       </object>
       <packing>
         <property name="x_options">GTK_FILL</property>
@@ -31,8 +31,8 @@
       <object class="GtkLabel" id="label2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="xalign">0</property>
         <property name="label" translatable="yes">Capture interface:</property>
+        <property name="xalign">0</property>
       </object>
       <packing>
         <property name="top_attach">1</property>
