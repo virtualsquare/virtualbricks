@@ -52,7 +52,9 @@ DEFAULT_CONF = {
     "workspace": DEFAULT_WORKSPACE,
     "current_project": DEFAULT_PROJECT,
     "cowfmt": "qcow2",
-    "show_missing": True
+    "show_missing": True,
+    "qemupath": "/usr/bin",
+    "vdepath": "/usr/bin",
 }
 
 
