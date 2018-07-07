@@ -26,7 +26,7 @@ import pkgutil
 from pkgutil import get_data
 import shutil
 
-import Image
+from PIL import Image
 import pygraphviz as pgv
 import gi
 gi.require_version("Gtk", "3.0")
