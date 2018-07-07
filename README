@@ -13,15 +13,19 @@ software-defined.
 Installation
 ============
 
-Virtualbricks is installable with pip but it won't work. Virtualbricks
-depends on pygtk and pygtk is not installable via pip. The first
-solution is to install pygtk from your distribution's packages and to
-install Virtualbricks with pip::
+Virtualbricks is installable with pip but it won't work. It depends
+indeed on pygtk which is not installable via pip. The first solution is
+to install pygtk from your distribution's packages and to install
+Virtualbricks with pip::
 
-    pip install --user .
+   pip install --user .
 
 The second solution is to install Virtualbricks from the DEB or RPM
 packages. Available soon.
 
+Note also that if you install Virtualbricks with pip, you must be able
+to install the dependencies, most notably pygraphviz. Pygraphviz
+requires a compiler, pkg-config and the development libraries for
+graphviz (libgraphviz-dev in Debian).
 
 .. vim: ft=rst tw=72
