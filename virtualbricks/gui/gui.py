@@ -16,12 +16,16 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# This module is ported to new GTK3 using PyGObject
+
 import os
 import sys
 import string
-
-import gobject
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from gi.repository import Gdk
+from gi.repository import GObject
 
 from twisted.internet import error, defer, task, protocol, reactor
 from twisted.python import filepath
@@ -81,7 +85,7 @@ no_kvm = log.Event("No KVM support found on the system. Check your active "
 
 BRICK_TARGET_NAME = "brick-connect-target"
 BRICK_DRAG_TARGETS = [
-    (BRICK_TARGET_NAME, gtk.TARGET_SAME_WIDGET | gtk.TARGET_SAME_APP, 0)
+    (BRICK_TARGET_NAME, Gtk.TargetFlags.SAME_WIDGET | Gtk.TargetFlags.SAME_APP, 0)
 ]
 
 
@@ -92,22 +96,22 @@ class BaseMenu:
         self.original = brick
 
     def build(self, gui):
-        menu = gtk.Menu()
-        menu.append(gtk.MenuItem(self.original.get_name(), False))
-        menu.append(gtk.SeparatorMenuItem())
-        start_stop = gtk.MenuItem("_Start/Stop")
+        menu = Gtk.Menu()
+        menu.append(Gtk.MenuItem(self.original.get_name(), False))
+        menu.append(Gtk.SeparatorMenuItem())
+        start_stop = Gtk.MenuItem("_Start/Stop")
         start_stop.connect("activate", self.on_startstop_activate, gui)
         menu.append(start_stop)
-        delete = gtk.MenuItem("_Delete")
+        delete = Gtk.MenuItem("_Delete")
         delete.connect("activate", self.on_delete_activate, gui)
         menu.append(delete)
-        copy = gtk.MenuItem("Make a C_opy")
+        copy = Gtk.MenuItem("Make a C_opy")
         copy.connect("activate", self.on_copy_activate, gui)
         menu.append(copy)
-        rename = gtk.MenuItem("Re_name")
+        rename = Gtk.MenuItem("Re_name")
         rename.connect("activate", self.on_rename_activate, gui)
         menu.append(rename)
-        configure = gtk.MenuItem("_Configure")
+        configure = Gtk.MenuItem("_Configure")
         configure.connect("activate", self.on_configure_activate, gui)
         menu.append(configure)
         return menu
@@ -125,7 +129,7 @@ class BrickPopupMenu(BaseMenu):
 
     def build(self, gui):
         menu = BaseMenu.build(self, gui)
-        attach = gtk.MenuItem("_Attach Event")
+        attach = Gtk.MenuItem("_Attach Event")
         attach.connect("activate", self.on_attach_activate, gui)
         menu.append(attach)
         return menu
@@ -157,7 +161,7 @@ class VMPopupMenu(BrickPopupMenu):
 
     def build(self, gui):
         menu = BrickPopupMenu.build(self, gui)
-        resume = gtk.MenuItem("_Resume VM")
+        resume = Gtk.MenuItem("_Resume VM")
         resume.connect("activate", self.on_resume_activate, gui)
         menu.append(resume)
         return menu
@@ -226,11 +230,11 @@ class LinkMenu:
         self.original = original
 
     def build(self, controller, gui):
-        menu = gtk.Menu()
-        edit = gtk.MenuItem(_("Edit"))
+        menu = Gtk.Menu()
+        edit = Gtk.MenuItem(_("Edit"))
         edit.connect("activate", self.on_edit_activate, controller, gui)
         menu.append(edit)
-        remove = gtk.MenuItem(_("Remove"))
+        remove = Gtk.MenuItem(_("Remove"))
         remove.connect("activate", self.on_remove_activate, controller)
         menu.append(remove)
         return menu
@@ -259,24 +263,24 @@ class JobMenu:
         self.original = original
 
     def build(self, gui):
-        menu = gtk.Menu()
-        open = gtk.MenuItem(_("Open control monitor"))
+        menu = Gtk.Menu()
+        open = Gtk.MenuItem(_("Open control monitor"))
         open.connect("activate", self.on_open_activate)
         menu.append(open)
-        menu.append(gtk.SeparatorMenuItem())
-        stop = gtk.ImageMenuItem(gtk.STOCK_STOP)
+        menu.append(Gtk.SeparatorMenuItem())
+        stop = Gtk.ImageMenuItem(Gtk.STOCK_STOP)
         stop.connect("activate", self.on_stop_activate)
         menu.append(stop)
-        cont = gtk.ImageMenuItem(gtk.STOCK_MEDIA_PLAY)
+        cont = Gtk.ImageMenuItem(Gtk.STOCK_MEDIA_PLAY)
         cont.set_label(_("Continue"))
         cont.connect("activate", self.on_cont_activate)
         menu.append(cont)
-        menu.append(gtk.SeparatorMenuItem())
-        reset = gtk.ImageMenuItem(gtk.STOCK_REDO)
+        menu.append(Gtk.SeparatorMenuItem())
+        reset = Gtk.ImageMenuItem(Gtk.STOCK_REDO)
         reset.set_label(_("Restart"))
         reset.connect("activate", self.on_reset_activate)
         menu.append(reset)
-        kill = gtk.ImageMenuItem(gtk.STOCK_STOP)
+        kill = Gtk.ImageMenuItem(Gtk.STOCK_STOP)
         kill.set_label(_("Kill"))
         kill.connect("activate", self.on_kill_activate, gui)
         menu.append(kill)
@@ -337,17 +341,17 @@ class VMJobMenu(JobMenu):
 
     def build(self, gui):
         menu = JobMenu.build(self, gui)
-        suspend = gtk.MenuItem(_("Suspend virtual machine"))
+        suspend = Gtk.MenuItem(_("Suspend virtual machine"))
         suspend.connect("activate", self.on_suspend_activate, gui)
         menu.insert(suspend, 5)
-        powerdown = gtk.MenuItem(_("Send ACPI powerdown"))
+        powerdown = Gtk.MenuItem(_("Send ACPI powerdown"))
         powerdown.connect("activate", self.on_powerdown_activate)
         menu.insert(powerdown, 6)
-        reset = gtk.MenuItem(_("Send ACPI hard reset"))
+        reset = Gtk.MenuItem(_("Send ACPI hard reset"))
         reset.connect("activate", self.on_reset_activate)
         menu.insert(reset, 7)
-        menu.insert(gtk.SeparatorMenuItem(), 8)
-        term = gtk.ImageMenuItem(gtk.STOCK_DELETE)
+        menu.insert(Gtk.SeparatorMenuItem(), 8)
+        term = Gtk.ImageMenuItem(Gtk.STOCK_DELETE)
         term.set_label(_("Terminate"))
         term.connect("activate", self.on_term_activate, gui)
         menu.insert(term, 10)
@@ -399,7 +403,7 @@ class ConfigController(object):
 
     def __init__(self, original):
         self.original = original
-        self.builder = builder = gtk.Builder()
+        self.builder = builder = Gtk.Builder()
         builder.set_translation_domain(self.domain)
         builder.add_from_file(graphics.get_data_filename(self.resource))
         builder.connect_signals(self)
@@ -430,25 +434,27 @@ class ConfigController(object):
         return self.builder.get_object(name)
 
     def get_view(self, gui):
-        bbox = gtk.HButtonBox()
-        bbox.set_layout(gtk.BUTTONBOX_END)
+        bbox = Gtk.HButtonBox()
+        bbox.set_layout(Gtk.ButtonBoxStyle.END)
         bbox.set_spacing(5)
-        ok_button = gtk.Button(stock=gtk.STOCK_OK)
+        ok_button = Gtk.Button(stock=Gtk.STOCK_OK)
         ok_button.connect("clicked", self.on_ok_button_clicked, gui)
         bbox.add(ok_button)
         bbox.set_child_secondary(ok_button, False)
-        # save_button = gtk.Button(stock=gtk.STOCK_SAVE)
+        # save_button = Gtk.Button(stock=Gtk.STOCK_SAVE)
         # save_button.connect("clicked", self.on_save_button_clicked, gui)
         # bbox.add(save_button)
-        cancel_button = gtk.Button(stock=gtk.STOCK_CANCEL)
+        cancel_button = Gtk.Button(stock=Gtk.STOCK_CANCEL)
         cancel_button.connect("clicked", self.on_cancel_button_clicked, gui)
         bbox.add(cancel_button)
         bbox.set_child_secondary(cancel_button, True)
-        box = gtk.VBox()
-        box.pack_end(bbox, False)
-        box.pack_end(gtk.HSeparator(), False, False, 3)
+	#VBox and HBox are deprecated, the suggestion is to use Orientation in the builder of a Box
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL) 
+	#methods pack_start and pack_end must have 4 arguments. If they are not specified, use default values : True, True, 0	
+        box.pack_end(bbox, False, True, 0)
+        box.pack_end(Gtk.HSeparator(), False, False, 3)
         box.show_all()
-        box.pack_start(self.get_config_view(gui))
+        box.pack_start(self.get_config_view(gui), True, True, 0)
         return box
 
 
@@ -472,16 +478,16 @@ class EventConfigController(ConfigController, dialogs.EventControllerMixin):
         self.configure_event(self.original, attributes)
 
     def on_delay_entry_key_press_event(self, entry, event):
-        if gtk.gdk.keyval_name(event.keyval) not in dialogs.VALIDKEY:
+        if Gdk.keyval_name(event.keyval) not in dialogs.VALIDKEY:
             return True
 
     def on_action_treeview_key_press_event(self, treeview, event):
-        if gtk.gdk.keyval_name(event.keyval) == "Delete":
+        if Gdk.keyval_name(event.keyval) == "Delete":
             selection = treeview.get_selection()
             model, selected = selection.get_selected_rows()
             rows = []
             for path in selected:
-                rows.append(gtk.TreeRowReference(model, path))
+                rows.append(Gtk.TreeRowReference(model, path))
             for row in rows:
                 iter = model.get_iter(row.get_path())
                 next = model.iter_next(iter)
@@ -1078,8 +1084,9 @@ class QemuConfigController(ConfigController):
                        errbackArgs=(retrieve_qemu_version_error, True))
         d.addErrback(close_panel)
 
-        panel = gtk.Alignment(0.5, 0.5)
-        label = gtk.Label("Loading configuration...")
+        #panel = Gtk.Alignment(0.5, 0.5) new default values for xscale and yscale are 1, before : 0
+	panel = Gtk.Alignment(0.5, 0.5, 0.0, 0.0)
+        label = Gtk.Label("Loading configuration...")
         panel.add(label)
         panel.show_all()
         return panel
@@ -1291,7 +1298,7 @@ class QemuConfigController(ConfigController):
             self.gui.wndMain)
 
     def on_networkcards_treeview_key_press_event(self, treeview, event):
-        if gtk.gdk.keyval_from_name("Delete") == event.keyval:
+        if Gdk.keyval_from_name("Delete") == event.keyval:
             link = get_selection(treeview)
             if link is not None:
                 self.ask_remove_link(link)
@@ -1409,7 +1416,7 @@ class TopologyMixin(object):
         def on_response(dialog, response_id):
             assert self.__topology, "Topology not created"
             try:
-                if response_id == gtk.RESPONSE_OK:
+                if response_id == Gtk.ResponseType.OK:
                     try:
                         self._draw_topology_if_needed()
                         self.__topology.export(dialog.get_filename())
@@ -1422,10 +1429,10 @@ class TopologyMixin(object):
             finally:
                 dialog.destroy()
 
-        chooser = gtk.FileChooserDialog(title=_("Select an image file"),
-                action=gtk.FILE_CHOOSER_ACTION_OPEN,
-                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                        gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        chooser = Gtk.FileChooserDialog(title=_("Select an image file"),
+                action=Gtk.FileChooserAction.OPEN,
+                buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                        Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
         chooser.set_do_overwrite_confirmation(True)
         chooser.connect("response", on_response)
         chooser.show()
@@ -1437,7 +1444,7 @@ class TopologyMixin(object):
         if brick:
             if event.button == 3:
                 IMenu(brick, None).popup(event.button, event.time, self)
-            elif event.button == 1 and event.type == gtk.gdk._2BUTTON_PRESS:
+            elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
                 self.startstop_brick(brick)
             return True
 
@@ -1705,10 +1712,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.tvBricks.set_cells_data_func()
         self.__bricks_binding_list = BricksBindingList(self.factory)
         self.lBricks.set_data_source(self.__bricks_binding_list)
-        self.tvBricks.enable_model_drag_source(gtk.gdk.BUTTON1_MASK,
-                BRICK_DRAG_TARGETS, gtk.gdk.ACTION_LINK)
+        self.tvBricks.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK,
+                BRICK_DRAG_TARGETS, Gdk.DragAction.LINK)
         self.tvBricks.enable_model_drag_dest(BRICK_DRAG_TARGETS,
-                gtk.gdk.ACTION_LINK)
+                Gdk.DragAction.LINK)
 
         # events tab
         self.tvEvents.set_cells_data_func()
@@ -1875,13 +1882,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         dialog.show()
 
     def on_bricks_treeview_key_release_event(self, treeview, event):
-        if gtk.gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
+        if Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
             brick = treeview.get_selected_value()
             if brick is not None:
                 self.ask_remove_brick(brick)
 
     def on_events_treeview_key_release_event(self, treeview, event):
-        if gtk.gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
+        if Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
             event = treeview.get_selected_value()
             if event is not None:
                 self.ask_remove_event(event)
@@ -2044,14 +2051,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return self.__show_config_if_selected(self.tvEvents)
 
     def confirm(self, message):
-        dialog = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
-                                   gtk.BUTTONS_YES_NO, message)
+        dialog = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.INFO,
+                                   Gtk.ButtonsType.YES_NO, message)
         response = dialog.run()
         dialog.destroy()
 
-        if response == gtk.RESPONSE_YES:
+        if response == Gtk.ResponseType.YES:
             return True
-        elif response == gtk.RESPONSE_NO:
+        elif response == Gtk.ResponseType.NO:
             return False
 
     def on_bricks_treeview_button_release_event(self, treeview, event):
@@ -2159,10 +2166,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return bool(self.tvEvents.get_selected_value())
 
 
-class List(gtk.ListStore):
+class List(Gtk.ListStore):
 
     def __init__(self):
-        gtk.ListStore.__init__(self, object)
+        Gtk.ListStore.__init__(self, object)
 
     def __iter__(self):
         i = self.get_iter_first()
@@ -2171,20 +2178,20 @@ class List(gtk.ListStore):
             i = self.iter_next(i)
 
     def append(self, element):
-        gtk.ListStore.append(self, (element, ))
+        Gtk.ListStore.append(self, (element, ))
 
     def remove(self, element):
         itr = self.get_iter_first()
         while itr:
             el = self.get_value(itr, 0)
             if el is element:
-                return gtk.ListStore.remove(self, itr)
+                return Gtk.ListStore.remove(self, itr)
             itr = self.iter_next(itr)
         raise ValueError("%r not in list" % (element, ))
 
     def __delitem__(self, key):
         if isinstance(key, int):
-            gtk.ListStore.__delitem__(self, key)
+            Gtk.ListStore.__delitem__(self, key)
         elif isinstance(key, slice):
             if (key.start in (None, 0) and key.stop in (None, sys.maxint) and
                     key.step in (1, -1, None)):
@@ -2235,8 +2242,8 @@ class MessageDialogObserver:
         self.__parent = parent
 
     def __call__(self, event):
-        dialog = gtk.MessageDialog(self.__parent, gtk.DIALOG_MODAL,
-                gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE)
+        dialog = Gtk.MessageDialog(self.__parent, Gtk.DialogFlags.MODAL,
+                Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE)
         dialog.set_property('text', log.formatEvent(event))
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.show()
@@ -2276,7 +2283,7 @@ class Application(brickfactory.Application):
     factory_factory = VisualFactory
 
     def __init__(self, config):
-        self.textbuffer = gtk.TextBuffer()
+        self.textbuffer = Gtk.TextBuffer()
         for name, attrs in TEXT_TAGS:
             self.textbuffer.create_tag(name, **attrs)
         self.logger_factory = AppLoggerFactory(self.textbuffer)
@@ -2306,7 +2313,7 @@ class Application(brickfactory.Application):
 
 def load_ui():
     try:
-        builder = gtk.Builder()
+        builder = Gtk.Builder()
         builder.set_translation_domain("virtualbricks")
         source = graphics.get_data_filename("virtualbricks.ui")
         builder.add_from_file(source)

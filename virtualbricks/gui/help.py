@@ -19,7 +19,9 @@ import os
 import errno
 import re
 
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 from zope.interface import implementer
 
 from virtualbricks.gui import graphics, interfaces
@@ -43,17 +45,17 @@ class UnknonwHelpError(HelpError):
 class HelpWindow:
 
     def __init__(self):
-        self.window = window = gtk.Window()
+        self.window = window = Gtk.Window()
         window.set_resizable(True)
         window.set_size_request(350, 300)
         window.set_title("Virtualbricks - help")
-        textview = gtk.TextView()
+        textview = Gtk.TextView()
         textview.set_editable(False)
         textview.set_cursor_visible(False)
-        textview.set_wrap_mode(gtk.WRAP_WORD)
+        textview.set_wrap_mode(Gtk.WrapMode.WORD)
         self.textbuffer = textview.get_buffer()
-        sw = gtk.ScrolledWindow()
-        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         sw.add(textview)
         window.add(sw)
         window.show_all()
@@ -101,7 +103,7 @@ class Help:
         return window
 
     def on_help_button_clicked(self, button):
-        match = self.RE.match(gtk.Buildable.get_name(button))
+        match = self.RE.match(Gtk.Buildable.get_name(button))
         if match:
             self.show_help_window(self.get_help(match.group(1)))
             return True

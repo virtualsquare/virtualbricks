@@ -1,7 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.20"/>
-  <!-- interface-naming-policy toplevel-contextual -->
+  <requires lib="gtk+" version="3.0"/>
+  <object class="GtkListStore" id="netmodel_model">
+    <columns>
+      <!-- column-name label -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">rtl8139</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">e1000</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">virtio-net-pci</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">i82551</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">i82557b</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">i82559er</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">ne2k_pci</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">pcnet</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">ne2k_isa</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="sock_model">
+    <columns>
+      <!-- column-name label -->
+      <column type="gchararray"/>
+      <!-- column-name value -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
   <object class="GtkDialog" id="EthernetDialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -10,12 +53,12 @@
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_EthernetDialog_response" swapped="no"/>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="vbox1">
+      <object class="GtkBox" id="vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">16</property>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area1">
+          <object class="GtkButtonBox" id="dialog-action_area1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
@@ -79,8 +122,8 @@
               <object class="GtkLabel" id="label2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">Model:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="y_options"/>
@@ -90,8 +133,8 @@
               <object class="GtkLabel" id="label3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">Connect to:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="top_attach">1</property>
@@ -107,8 +150,8 @@
                   <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="xalign">0</property>
                     <property name="label" translatable="yes">Mac address:</property>
+                    <property name="xalign">0</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -146,8 +189,6 @@
                 <property name="invisible_char">●</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -212,48 +253,5 @@
       <action-widget response="-6">button3</action-widget>
       <action-widget response="-5">ok_button</action-widget>
     </action-widgets>
-  </object>
-  <object class="GtkListStore" id="netmodel_model">
-    <columns>
-      <!-- column-name label -->
-      <column type="gchararray"/>
-    </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes">rtl8139</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">e1000</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">virtio-net-pci</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">i82551</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">i82557b</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">i82559er</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">ne2k_pci</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">pcnet</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes">ne2k_isa</col>
-      </row>
-    </data>
-  </object>
-  <object class="GtkListStore" id="sock_model">
-    <columns>
-      <!-- column-name label -->
-      <column type="gchararray"/>
-      <!-- column-name value -->
-      <column type="PyObject"/>
-    </columns>
   </object>
 </interface>
