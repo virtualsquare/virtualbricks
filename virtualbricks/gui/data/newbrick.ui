@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.24"/>
-  <!-- interface-naming-policy toplevel-contextual -->
-  <object class="GtkImage" id="image10">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="pixbuf">router.png</property>
-  </object>
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkImage" id="image1">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="pixbuf">switch.png</property>
+  </object>
+  <object class="GtkImage" id="image10">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="pixbuf">router.png</property>
   </object>
   <object class="GtkImage" id="image2">
     <property name="visible">True</property>
@@ -60,12 +60,12 @@
     <property name="type_hint">dialog</property>
     <signal name="response" handler="on_NewBrickDialog_response" swapped="no"/>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="dialog-vbox1">
+      <object class="GtkBox" id="dialog-vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area1">
+          <object class="GtkButtonBox" id="dialog-action_area1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
@@ -123,6 +123,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image1</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <signal name="toggled" handler="on_BrickType_toggled" swapped="no"/>
@@ -140,6 +141,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image2</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="active">True</property>
                     <property name="draw_indicator">False</property>
@@ -159,6 +161,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image3</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -177,6 +180,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image4</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -195,6 +199,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image5</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -225,6 +230,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image6</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -243,6 +249,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image7</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -261,6 +268,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image8</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -279,6 +287,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image9</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -297,6 +306,7 @@
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="image">image10</property>
+                    <property name="xalign">0.5</property>
                     <property name="image_position">top</property>
                     <property name="draw_indicator">False</property>
                     <property name="group">rbSwitch</property>
@@ -344,11 +354,8 @@
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
                 <property name="activates_default">True</property>
-                <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
               </object>
               <packing>
                 <property name="expand">True</property>

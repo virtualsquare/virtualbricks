@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.20"/>
-  <!-- interface-naming-policy project-wide -->
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkListStore" id="liststore1">
     <columns>
       <!-- column-name Link -->
@@ -17,6 +17,9 @@
         <property name="model">liststore1</property>
         <signal name="button-release-event" handler="on_networkcards_treeview_button_release_event" swapped="no"/>
         <signal name="key-press-event" handler="on_networkcards_treeview_key_press_event" swapped="no"/>
+        <child internal-child="selection">
+          <object class="GtkTreeSelection" id="treeview-selection1"/>
+        </child>
         <child>
           <object class="GtkTreeViewColumn" id="vlan_treeviewcolumn">
             <property name="title" translatable="yes">Eth</property>

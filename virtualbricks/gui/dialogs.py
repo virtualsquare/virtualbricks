@@ -16,6 +16,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# This module is ported to new GTK3 using PyGObject
+
 """
 Utility module to work with gtkbuilder.
 
@@ -87,8 +89,12 @@ import re
 import string
 import textwrap
 
-import pango
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Pango", "1.0")
+from gi.repository import Gtk
+from gi.repository import Gdk
+from gi.repository import Pango
 import twisted
 from twisted.internet import utils, defer, task, error
 from twisted.python import filepath
@@ -199,7 +205,7 @@ class Base(object):
     name = None
 
     def __init__(self):
-        self.builder = builder = gtk.Builder()
+        self.builder = builder = Gtk.Builder()
         builder.set_translation_domain(self.domain)
         builder.add_from_file(graphics.get_data_filename(self.resource))
         self.widget = builder.get_object(self._get_name())
@@ -298,17 +304,17 @@ class LoggingWindow(Window):
         self.textbuffer.set_text("")
 
     def on_savebutton_clicked(self, button):
-        chooser = gtk.FileChooserDialog(title=_("Save as..."),
-                action=gtk.FILE_CHOOSER_ACTION_SAVE,
-                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                        gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        chooser = Gtk.FileChooserDialog(title=_("Save as..."),
+                action=Gtk.FileChooserAction.SAVE,
+                buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                        Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
         chooser.set_do_overwrite_confirmation(True)
         chooser.connect("response", self.__on_dialog_response)
         chooser.show()
 
     def __on_dialog_response(self, dialog, response_id):
         try:
-            if response_id == gtk.RESPONSE_OK:
+            if response_id == Gtk.ResponseType.OK:
                 with open(dialog.get_filename(), "w") as fp:
                     fp.write(self.textbuffer.get_property("text"))
         finally:
@@ -318,7 +324,7 @@ class LoggingWindow(Window):
         logger.info(bug_send)
         fd, filename = tempfile.mkstemp()
         os.write(fd, self.textbuffer.get_property("text"))
-        gtk.link_button_set_uri_hook(None)
+        #gtk.link_button_set_uri_hook(None) 	(REMOVED in GTK3)
         exit_d = utils.getProcessOutputAndValue("xdg-email",
             ["--utf8", "--body", BODY, "--attach", filename,
              "new@bugs.launchpad.net"],
@@ -424,7 +430,7 @@ class UsbDevWindow(Window):
     def __init__(self, usb_devices):
         Window.__init__(self)
         self.usb_devices = usb_devices
-        self.tvDevices.set_selection_mode(gtk.SELECTION_MULTIPLE)
+        self.tvDevices.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         self.crt.set_property("formatter", string.Formatter())
         self.tvcDevs.set_cell_data_func(self.crt, self.crt.set_cell_data)
 
@@ -490,7 +496,7 @@ class BaseEthernetDialog(Window):
         self.get_object("mac_entry").set_text(tools.random_mac())
 
     def on_EthernetDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             combo = self.get_object("sock_combo")
             sock = combo.get_model().get_value(combo.get_active_iter(), 1)
             combo = self.get_object("model_combo")
@@ -532,7 +538,7 @@ class EditEthernetDialog(BaseEthernetDialog):
         self.setup()
         self.get_object("title_label").set_label(
             "<b>Edit ethernet interface</b>")
-        self.get_object("ok_button").set_property("label", gtk.STOCK_OK)
+        self.get_object("ok_button").set_property("label", Gtk.STOCK_OK)
         self.get_object("mac_entry").set_text(self.plug.mac)
         model = self.get_object("netmodel_model")
         itr = model.get_iter_first()
@@ -584,9 +590,9 @@ class ConfirmDialog(Window):
         self.window.format_secondary_text(text)
 
     def on_ConfirmDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_YES and self.on_yes:
+        if response_id == Gtk.ResponseType.YES and self.on_yes:
             self.on_yes(self.on_yes_arg)
-        elif response_id == gtk.RESPONSE_NO and self.on_no:
+        elif response_id == Gtk.ResponseType.NO and self.on_no:
             self.on_no(self.on_no_arg)
         dialog.destroy()
 
@@ -600,15 +606,15 @@ class NewEventDialog(Window):
         self.gui = gui
 
     def on_delay_entry_key_press_event(self, entry, event):
-        if gtk.gdk.keyval_name(event.keyval) not in VALIDKEY:
+        if Gdk.keyval_name(event.keyval) not in VALIDKEY:
             return True
-        elif gtk.gdk.keyval_name(event.keyval) == "Return":
-            self.window.response(gtk.RESPONSE_OK)
+        elif Gdk.keyval_name(event.keyval) == "Return":
+            self.window.response(Gtk.ResponseType.OK)
             return True
 
     def on_name_entry_key_press_event(self, entry, event):
-        if gtk.gdk.keyval_name(event.keyval) == "Return":
-            self.window.response(gtk.RESPONSE_OK)
+        if Gdk.keyval_name(event.keyval) == "Return":
+            self.window.response(Gtk.ResponseType.OK)
             return True
 
     def get_event_type(self):
@@ -620,7 +626,7 @@ class NewEventDialog(Window):
 
     def on_NewEventDialog_response(self, dialog, response_id):
         try:
-            if response_id == gtk.RESPONSE_OK:
+            if response_id == Gtk.ResponseType.OK:
                 name = self.get_object("name_entry").get_text()
                 delay = self.get_object("delay_entry").get_text()
                 type = self.get_event_type()
@@ -686,7 +692,7 @@ class BrickSelectionDialog(Window):
 
     @destroy_on_exit
     def on_BrickSelectionDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             act = self._action
             actions = ("{0} {1}".format(b.name, act) for b in self._added)
             self._event.set({"actions": map(console.VbShellCommand, actions)})
@@ -699,7 +705,7 @@ class EventControllerMixin(object):
 
     def setup_controller(self, event):
         self.get_object("action_treeview").get_selection().set_mode(
-            gtk.SELECTION_MULTIPLE)
+            Gtk.SelectionMode.MULTIPLE)
         self.get_object("sh_cellrenderer").set_activatable(True)
         self.get_object("action_cellrenderer").set_property("editable", True)
         model = self.get_object("actions_liststore")
@@ -741,7 +747,7 @@ class ShellCommandDialog(Window, EventControllerMixin):
         self.setup_controller(event)
 
     def on_ShellCommandDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             self.configure_event(self.event, {})
         dialog.destroy()
 
@@ -816,7 +822,7 @@ class CommitImageDialog(Window):
             logger.error(img_invalid)
 
     def on_CommitImageDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             if self.get_object("file_radiobutton").get_active():
                 pathname = self.get_object(
                     "cowpath_filechooser").get_filename()
@@ -901,11 +907,11 @@ class CommitImageDialog(Window):
 
 def choose_new_image(gui, factory):
     main = gui.wndMain
-    dialog = gtk.FileChooserDialog(_("Open a disk image"), main,
-        gtk.FILE_CHOOSER_ACTION_OPEN,
-        (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-         gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-    if dialog.run() == gtk.RESPONSE_OK:
+    dialog = Gtk.FileChooserDialog(_("Open a disk image"), main,
+        Gtk.FileChooserAction.OPEN,
+        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+         Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+    if dialog.run() == Gtk.ResponseType.OK:
         pathname = dialog.get_filename()
         LoadImageDialog(factory, pathname).show(main)
     dialog.destroy()
@@ -935,10 +941,10 @@ class LoadImageDialog(Window):
             return ""
 
     def on_LoadImageDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             name = self.get_object("name_entry").get_text()
             buf = self.get_object("description_textview").get_buffer()
-            desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
+            desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), include_hidden_chars=True)
             try:
                 self.factory.new_disk_image(name, self.pathname, desc)
             except:
@@ -972,7 +978,7 @@ class CreateImageDialog(Window):
         return exit
 
     def on_CreateImageDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             logger.info(img_create)
             name = self.get_object("name_entry").get_text()
             if not name:
@@ -1017,7 +1023,7 @@ class SimpleEntryDialog(Window):
 
     @destroy_on_exit
     def on_SimpleEntryDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             self.do_action(self.get_object("name_entry").get_text())
 
 
@@ -1062,11 +1068,11 @@ class ListProjectsDialog(Window):
         itr = model.get_iter(path)
         if itr:
             name = model.get_value(itr, 0)
-            self.do_action(self.window, gtk.RESPONSE_OK, name)
+            self.do_action(self.window, Gtk.ResponseType.OK, name)
         return True
 
     def on_ListProjectsDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             name = self.get_project_name()
             if name is not None:
                 self.do_action(dialog, response_id, name)
@@ -1151,21 +1157,22 @@ SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 def ConfirmOverwriteDialog(fp, parent):
     question = _("A file named \"{0}\" already exists.  Do you want to "
                  "replace it?").format(fp.basename())
-    dialog = gtk.MessageDialog(parent, gtk.DIALOG_MODAL |
-                               gtk.DIALOG_DESTROY_WITH_PARENT,
-                               gtk.MESSAGE_QUESTION,
+# gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT
+# not existing in GTK3, documentation suggests to put 0
+    dialog = Gtk.MessageDialog(parent, 0, 	
+                               Gtk.MessageType.QUESTION,
                                message_format=question)
     dialog.format_secondary_text(_("The file already exists in \"{0}\". "
                                    "Replacing it will overwrite its "
                                    "contents.").format(fp.dirname()))
-    dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
-    button = gtk.Button(_("_Replace"))
+    dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+    button = Gtk.Button(_("_Replace"))
     button.set_can_default(True)
-    button.set_image(gtk.image_new_from_stock(gtk.STOCK_SAVE_AS,
-                                              gtk.ICON_SIZE_BUTTON))
+    button.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_SAVE_AS,
+                                              Gtk.IconSize.BUTTON))
     button.show()
-    dialog.add_action_widget(button, gtk.RESPONSE_ACCEPT)
-    dialog.set_default_response(gtk.RESPONSE_ACCEPT)
+    dialog.add_action_widget(button, Gtk.ResponseType.ACCEPT)
+    dialog.set_default_response(Gtk.ResponseType.ACCEPT)
     return dialog
 
 
@@ -1196,7 +1203,7 @@ class ExportProjectDialog(Window):
             if child in self.required_files | self.internal_files:
                 dirnames.remove(dirname)
             else:
-                row = (True, True, gtk.STOCK_DIRECTORY, dirname, child)
+                row = (True, True, Gtk.STOCK_DIRECTORY, dirname, child)
                 nodes[child.path] = model.append(parent, row)
 
     def append_files(self, dirpath, filenames, model, parent):
@@ -1204,11 +1211,11 @@ class ExportProjectDialog(Window):
             child = dirpath.child(filename)
             if (child not in self.required_files | self.internal_files and
                     child.isfile() and not child.islink()):
-                row = (True, True, gtk.STOCK_FILE, filename, child)
+                row = (True, True, Gtk.STOCK_FILE, filename, child)
                 model.append(parent, row)
 
     def build_path_tree(self, model, prjpath):
-        row = (True, True, gtk.STOCK_DIRECTORY, prjpath.basename(), prjpath)
+        row = (True, True, Gtk.STOCK_DIRECTORY, prjpath.basename(), prjpath)
         root = model.append(None, row)
         nodes = {prjpath.path: root}
         for dirpath, dirnames, filenames in os.walk(prjpath.path):
@@ -1221,7 +1228,7 @@ class ExportProjectDialog(Window):
         model = self.get_object("treestore1")
         self.build_path_tree(model, self.prjpath)
         pixbuf_cr = self.get_object("icon_cellrenderer")
-        pixbuf_cr.set_property("stock-size", gtk.ICON_SIZE_MENU)
+        pixbuf_cr.set_property("stock-size", Gtk.IconSize.MENU)
         size_c = self.get_object("treeviewcolumn2")
         size_cr = self.get_object("size_cellrenderer")
         size_c.set_cell_data_func(size_cr, self._set_size)
@@ -1285,7 +1292,7 @@ class ExportProjectDialog(Window):
 
     @destroy_on_exit
     def on_filechooser_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             filename = dialog.get_filename()
             if filename is None:
                 self.get_object("export_button").set_sensitive(False)
@@ -1300,11 +1307,11 @@ class ExportProjectDialog(Window):
                 self.get_object("export_button").set_sensitive(True)
 
     def on_open_button_clicked(self, button):
-        chooser = gtk.FileChooserDialog(title=_("Export project"),
-                action=gtk.FILE_CHOOSER_ACTION_SAVE,
-                buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                         gtk.STOCK_SAVE, gtk.RESPONSE_OK))
-        vbp = gtk.FileFilter()
+        chooser = Gtk.FileChooserDialog(title=_("Export project"),
+                action=Gtk.FileChooserAction.SAVE,
+                buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                         Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+        vbp = Gtk.FileFilter()
         vbp.add_pattern("*.vbp")
         chooser.set_filter(vbp)
         chooser.connect("response", self.on_filechooser_response)
@@ -1333,7 +1340,7 @@ class ExportProjectDialog(Window):
 
     @destroy_on_exit
     def on_confirm_response(self, dialog, response_id, parent, filename):
-        if response_id == gtk.RESPONSE_ACCEPT:
+        if response_id == Gtk.ResponseType.ACCEPT:
             parent.destroy()
             self.do_export(filename)
 
@@ -1343,7 +1350,7 @@ class ExportProjectDialog(Window):
         self.progressbar.wait_for(self.export(model, ancestor, filename))
 
     def on_ExportProjectDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             filename = self._normalize_filename(self.get_object(
                 "filename_entry").get_text())
             fp = filepath.FilePath(filename)
@@ -1408,8 +1415,8 @@ def _set_path_remap(column, cell_renderer, model, iter, colid):
         cell_renderer.set_properties(font_desc=None, foreground=None,
                                      text=path.path)
     else:
-        font = pango.FontDescription()
-        font.set_style(pango.STYLE_ITALIC)
+        font = Pango.FontDescription()
+        font.set_style(Pango.Style.ITALIC)
         cell_renderer.set_properties(font_desc=font, foreground="gray",
                                      text="(Click here to select an image)")
 
@@ -1419,7 +1426,7 @@ class Freezer:
     def __init__(self, freeze, unfreeze, parent):
         self.freeze = freeze
         self.unfreeze = unfreeze
-        builder = gtk.Builder()
+        builder = Gtk.Builder()
         res = graphics.get_data_filename("userwait.ui")
         builder.add_from_file(res)
         self.progressbar = builder.get_object("progressbar")
@@ -1537,13 +1544,13 @@ class _HumbleImport:
         vbox = w("vbox1")
         vbox.foreach(vbox.remove)
         for i, (name, dest) in enumerate(iter_model(store)):
-            nlabel = gtk.Label(name + ":")
+            nlabel = Gtk.Label(name + ":")
             nlabel.set_alignment(0.0, 0.5)
-            dlabel = gtk.Label(dest.path)
+            dlabel = Gtk.Label(dest.path)
             dlabel.set_tooltip_text(dest.path)
             dlabel.set_alignment(0.0, 0.5)
             dlabel.set_ellipsize(pango.ELLIPSIZE_MIDDLE)
-            box = gtk.HBox(spacing=5)
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
             box.pack_start(nlabel, False, True, 0)
             box.pack_start(dlabel, True, True, 0)
             vbox.pack_start(box, False, True, 3)
@@ -1676,29 +1683,29 @@ class ImportDialog(Window):
         return self.get_object("overwritecheckbutton").get_active()
 
     def get_filechooserdialog(self, model, path, title, action, stock_id):
-        chooser = gtk.FileChooserDialog(title, self.window, action,
-                (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                 stock_id, gtk.RESPONSE_OK))
+        chooser = Gtk.FileChooserDialog(title, self.window, action,
+                (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                 stock_id, Gtk.ResponseType.OK))
         chooser.set_modal(True)
         chooser.set_select_multiple(False)
         chooser.set_transient_for(self.window)
         chooser.set_destroy_with_parent(True)
-        chooser.set_position(gtk.WIN_POS_CENTER)
+        chooser.set_position(Gtk.WindowPosition.CENTER)
         chooser.set_do_overwrite_confirmation(True)
-        chooser.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
+        chooser.set_type_hint(Gdk.WindowTypeHint.DIALOG)
         chooser.connect("response", self.on_filechooserdialog_response, model,
                         path)
         return chooser
 
     def get_save_filechooserdialog(self, model, path):
         return self.get_filechooserdialog(model, path, _("Save image as..."),
-                                           gtk.FILE_CHOOSER_ACTION_SAVE,
-                                           gtk.STOCK_SAVE)
+                                           Gtk.FileChooserAction.SAVE,
+                                           Gtk.STOCK_SAVE)
 
     def get_map_filechooserdialog(self, model, path):
         return self.get_filechooserdialog(model, path, _("Map image as..."),
-                                           gtk.FILE_CHOOSER_ACTION_OPEN,
-                                           gtk.STOCK_OPEN)
+                                           Gtk.FileChooserAction.OPEN,
+                                           Gtk.STOCK_OPEN)
 
     # callbacks
 
@@ -1805,7 +1812,7 @@ class ImportDialog(Window):
                 return True
 
     def on_filechooserdialog_response(self, dialog, response_id, model, path):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             filename = dialog.get_filename()
             if filename is not None:
                 model.set_value(model.get_iter(path), self.PATH,
@@ -1840,7 +1847,7 @@ class SaveAsDialog(Window):
             self.set_invalid(True)
         else:
             model = self.model
-            itr = model.get_iter_root()
+            itr = model.get_iter_first()
             while itr:
                 if model.get_value(itr, 0) == name:
                     self.set_invalid(True)
@@ -1851,7 +1858,7 @@ class SaveAsDialog(Window):
 
     @destroy_on_exit
     def on_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             project.manager.current.save_as(self.get_project_name(),
                                             self.factory)
 
@@ -1888,7 +1895,7 @@ class RenameDialog(Window):
 
     @destroy_on_exit
     def on_RenameDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             name = self.get_name()
             try:
                 self.rename(name)
@@ -1921,12 +1928,12 @@ class NewBrickDialog(Window):
         self.factory = factory
 
     def on_BrickType_toggled(self, radiobutton):
-        self._type = gtk.Buildable.get_name(radiobutton)[2:]
+        self._type = Gtk.Buildable.get_name(radiobutton)[2:]
         return True
 
     @destroy_on_exit
     def on_NewBrickDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             name = self.etrName.get_text()
             try:
                 self.factory.new_brick(self._type, name)
@@ -2010,7 +2017,7 @@ class SettingsDialog(Window):
         self.lblQemupath.set_markup(text)
 
     def on_SettingsDialog_response(self, dialog, response_id):
-        if response_id in (gtk.RESPONSE_APPLY, gtk.RESPONSE_OK):
+        if response_id in (Gtk.ResponseType.APPLY, Gtk.ResponseType.OK):
             logger.debug(apply_settings)
             # general
             settings.set("term", self.etrTerm.get_text())
@@ -2035,7 +2042,7 @@ class SettingsDialog(Window):
                 self.gui.start_systray()
             else:
                 self.gui.stop_systray()
-            if response_id == gtk.RESPONSE_APPLY:
+            if response_id == Gtk.ResponseType.APPLY:
                 return
         dialog.destroy()
 
@@ -2075,7 +2082,7 @@ class AttachEventDialog(Window):
 
     @destroy_on_exit
     def on_AttachEventDialog_response(self, dialog, response_id):
-        if response_id == gtk.RESPONSE_OK:
+        if response_id == Gtk.ResponseType.OK:
             event_start = self.tvStart.get_selected_value()
             event_stop = self.tvStop.get_selected_value()
             cfg = {

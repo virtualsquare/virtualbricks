@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
-  <requires lib="gtk+" version="2.24"/>
-  <!-- interface-naming-policy toplevel-contextual -->
+  <requires lib="gtk+" version="3.0"/>
+  <requires lib="virtualbricks.gui.widgets" version="0.1"/>
   <object class="GtkAdjustment" id="adjustment1">
     <property name="lower">1</property>
     <property name="upper">64</property>
@@ -37,16 +37,56 @@
     <property name="page_increment">10</property>
   </object>
   <object class="List" id="lArgv0">
-    <property name="value-member">value</property>
+    <property name="value_member">value</property>
     <columns>
       <!-- column-name object -->
       <column type="PyObject"/>
     </columns>
   </object>
   <object class="List" id="lBoot">
-    <property name="value-member">value</property>
+    <property name="value_member">value</property>
     <columns>
       <!-- column-name object -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="List" id="lCpu">
+    <property name="value_member">value</property>
+    <columns>
+      <!-- column-name object -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="List" id="lDevice">
+    <property name="value_member">value</property>
+    <columns>
+      <!-- column-name object -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="List" id="lImages">
+    <columns>
+      <!-- column-name object -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="List" id="lMachine">
+    <property name="value_member">value</property>
+    <columns>
+      <!-- column-name object -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="List" id="lSound">
+    <property name="value_member">value</property>
+    <columns>
+      <!-- column-name object -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="GtkListStore" id="plugsmodel">
+    <columns>
+      <!-- column-name Link -->
       <column type="PyObject"/>
     </columns>
   </object>
@@ -91,8 +131,8 @@
                                   <object class="GtkLabel" id="label1">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">boot as device</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -109,7 +149,7 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf4">
-                                        <property name="display-member">label</property>
+                                        <property name="display_member">label</property>
                                       </object>
                                     </child>
                                   </object>
@@ -135,6 +175,7 @@
                                 <property name="has_tooltip">True</property>
                                 <property name="tooltip_text" translatable="yes">write to temporary files instead of disk image files</property>
                                 <property name="use_underline">True</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -192,6 +233,7 @@
                                 <property name="has_tooltip">True</property>
                                 <property name="tooltip_text" translatable="yes">use one of the image files in the default folder as cdrom device</property>
                                 <property name="use_underline">True</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                                 <property name="group">nocdrom_radiobutton</property>
                               </object>
@@ -211,6 +253,7 @@
                                 <property name="has_tooltip">True</property>
                                 <property name="tooltip_text" translatable="yes">mount local cdrom Drive</property>
                                 <property name="use_underline">True</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                                 <property name="group">nocdrom_radiobutton</property>
                               </object>
@@ -231,6 +274,7 @@
                                 <property name="tooltip_text" translatable="yes">don´t use any cdrom device</property>
                                 <property name="relief">none</property>
                                 <property name="use_underline">True</property>
+                                <property name="xalign">0.5</property>
                                 <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
                               </object>
@@ -248,7 +292,7 @@
                                 <property name="active">0</property>
                                 <child>
                                   <object class="CellRendererFormattable" id="crf6">
-                                    <property name="display-member">label</property>
+                                    <property name="display_member">label</property>
                                   </object>
                                 </child>
                               </object>
@@ -341,7 +385,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="stock">gtk-harddisk</property>
-                                    <property name="icon-size">3</property>
+                                    <property name="icon_size">3</property>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -353,8 +397,8 @@
                                   <object class="GtkLabel" id="label123">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Select images for Qemu volumes</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -375,6 +419,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -395,8 +440,8 @@
                                   <object class="GtkLabel" id="label4">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">fdb:</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="top_attach">5</property>
@@ -409,8 +454,8 @@
                                   <object class="GtkLabel" id="label5">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">fda:</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="top_attach">4</property>
@@ -423,8 +468,8 @@
                                   <object class="GtkLabel" id="label6">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">hdd:</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="top_attach">3</property>
@@ -437,8 +482,8 @@
                                   <object class="GtkLabel" id="label7">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">hdc:</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="top_attach">2</property>
@@ -451,8 +496,8 @@
                                   <object class="GtkLabel" id="label8">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">hdb:</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="top_attach">1</property>
@@ -465,8 +510,8 @@
                                   <object class="GtkLabel" id="label9">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">hda:</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="x_options">GTK_FILL</property>
@@ -494,8 +539,8 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf13">
-                                        <property name="formatting-enabled">True</property>
-                                        <property name="format-string">n</property>
+                                        <property name="format_string">n</property>
+                                        <property name="formatting_enabled">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -512,6 +557,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -526,6 +572,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -542,6 +589,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -558,6 +606,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -574,6 +623,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -590,6 +640,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -606,6 +657,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -624,8 +676,8 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf7">
-                                        <property name="formatting-enabled">True</property>
-                                        <property name="format-string">n</property>
+                                        <property name="format_string">n</property>
+                                        <property name="formatting_enabled">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -642,8 +694,8 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf8">
-                                        <property name="formatting-enabled">True</property>
-                                        <property name="format-string">n</property>
+                                        <property name="format_string">n</property>
+                                        <property name="formatting_enabled">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -662,8 +714,8 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf9">
-                                        <property name="formatting-enabled">True</property>
-                                        <property name="format-string">n</property>
+                                        <property name="format_string">n</property>
+                                        <property name="formatting_enabled">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -682,8 +734,8 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf10">
-                                        <property name="formatting-enabled">True</property>
-                                        <property name="format-string">n</property>
+                                        <property name="format_string">n</property>
+                                        <property name="formatting_enabled">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -702,8 +754,8 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf11">
-                                        <property name="formatting-enabled">True</property>
-                                        <property name="format-string">n</property>
+                                        <property name="format_string">n</property>
+                                        <property name="formatting_enabled">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -722,8 +774,8 @@
                                     <property name="active">0</property>
                                     <child>
                                       <object class="CellRendererFormattable" id="crf12">
-                                        <property name="formatting-enabled">True</property>
-                                        <property name="format-string">n</property>
+                                        <property name="format_string">n</property>
+                                        <property name="formatting_enabled">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -920,9 +972,9 @@ disk image</property>
                                   <object class="GtkLabel" id="label13">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Architecture:</property>
                                     <property name="use_markup">True</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -958,7 +1010,7 @@ disk image</property>
                                 <signal name="changed" handler="on_cbArgv0_changed" swapped="no"/>
                                 <child>
                                   <object class="CellRendererFormattable" id="crf1">
-                                    <property name="display-member">label</property>
+                                    <property name="display_member">label</property>
                                   </object>
                                 </child>
                               </object>
@@ -972,9 +1024,9 @@ disk image</property>
                               <object class="GtkLabel" id="label14">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="xalign">0</property>
                                 <property name="label" translatable="yes">CPU Type:</property>
                                 <property name="use_markup">True</property>
+                                <property name="xalign">0</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -989,7 +1041,7 @@ disk image</property>
                                 <property name="model">lCpu</property>
                                 <child>
                                   <object class="CellRendererFormattable" id="crf2">
-                                    <property name="display-member">label</property>
+                                    <property name="display_member">label</property>
                                   </object>
                                 </child>
                               </object>
@@ -1003,9 +1055,9 @@ disk image</property>
                               <object class="GtkLabel" id="label15">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="xalign">0</property>
                                 <property name="label" translatable="yes">Machine type:</property>
                                 <property name="use_markup">True</property>
+                                <property name="xalign">0</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -1020,7 +1072,7 @@ disk image</property>
                                 <property name="model">lMachine</property>
                                 <child>
                                   <object class="CellRendererFormattable" id="crf3">
-                                    <property name="display-member">label</property>
+                                    <property name="display_member">label</property>
                                   </object>
                                 </child>
                               </object>
@@ -1040,6 +1092,7 @@ disk image</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -1052,9 +1105,9 @@ disk image</property>
                                   <object class="GtkLabel" id="label16">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">1</property>
                                     <property name="xpad">3</property>
                                     <property name="label" translatable="yes">Number of CPUs:</property>
+                                    <property name="xalign">1</property>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -1069,11 +1122,8 @@ disk image</property>
                                     <property name="can_focus">True</property>
                                     <property name="max_length">2</property>
                                     <property name="invisible_char">●</property>
-                                    <property name="invisible_char_set">True</property>
                                     <property name="primary_icon_activatable">False</property>
                                     <property name="secondary_icon_activatable">False</property>
-                                    <property name="primary_icon_sensitive">True</property>
-                                    <property name="secondary_icon_sensitive">True</property>
                                     <property name="adjustment">adjustment1</property>
                                     <property name="numeric">True</property>
                                     <property name="update_policy">if-valid</property>
@@ -1173,7 +1223,7 @@ disk image</property>
                                 <property name="active">0</property>
                                 <child>
                                   <object class="CellRendererFormattable" id="crf5">
-                                    <property name="display-member">label</property>
+                                    <property name="display_member">label</property>
                                   </object>
                                 </child>
                               </object>
@@ -1229,8 +1279,8 @@ disk image</property>
                                   <object class="GtkLabel" id="label24">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="xalign">0</property>
                                     <property name="label" translatable="yes">Used RAM:</property>
+                                    <property name="xalign">0</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -1244,11 +1294,8 @@ disk image</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">●</property>
-                                    <property name="invisible_char_set">True</property>
                                     <property name="primary_icon_activatable">False</property>
                                     <property name="secondary_icon_activatable">False</property>
-                                    <property name="primary_icon_sensitive">True</property>
-                                    <property name="secondary_icon_sensitive">True</property>
                                     <property name="adjustment">adjustment3</property>
                                     <property name="climb_rate">1</property>
                                     <property name="numeric">True</property>
@@ -1289,6 +1336,7 @@ disk image</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -1302,11 +1350,8 @@ disk image</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">●</property>
-                                    <property name="invisible_char_set">True</property>
                                     <property name="primary_icon_activatable">False</property>
                                     <property name="secondary_icon_activatable">False</property>
-                                    <property name="primary_icon_sensitive">True</property>
-                                    <property name="secondary_icon_sensitive">True</property>
                                     <property name="adjustment">adjustment4</property>
                                     <property name="climb_rate">1</property>
                                     <property name="numeric">True</property>
@@ -1395,6 +1440,7 @@ disk image</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
                                     <property name="use_underline">True</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -1429,6 +1475,7 @@ disk image</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="use_underline">True</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1448,6 +1495,7 @@ disk image</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
                                     <property name="use_underline">True</property>
+                                    <property name="xalign">0.5</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
                                   <packing>
@@ -1473,11 +1521,8 @@ disk image</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">●</property>
-                                    <property name="invisible_char_set">True</property>
                                     <property name="primary_icon_activatable">False</property>
                                     <property name="secondary_icon_activatable">False</property>
-                                    <property name="primary_icon_sensitive">True</property>
-                                    <property name="secondary_icon_sensitive">True</property>
                                     <property name="adjustment">adjustment2</property>
                                     <property name="climb_rate">1</property>
                                     <property name="numeric">True</property>
@@ -1501,6 +1546,7 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1515,6 +1561,7 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1567,6 +1614,7 @@ disk image</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="use_underline">True</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1645,6 +1693,7 @@ disk image</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="use_underline">True</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1659,6 +1708,7 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1690,11 +1740,8 @@ disk image</property>
                                     <property name="can_focus">True</property>
                                     <property name="max_length">5</property>
                                     <property name="invisible_char">●</property>
-                                    <property name="invisible_char_set">True</property>
                                     <property name="primary_icon_activatable">False</property>
                                     <property name="secondary_icon_activatable">False</property>
-                                    <property name="primary_icon_sensitive">True</property>
-                                    <property name="secondary_icon_sensitive">True</property>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -1715,6 +1762,7 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
+                                <property name="xalign">0.5</property>
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
@@ -1796,9 +1844,9 @@ disk image</property>
               <object class="GtkLabel" id="label29">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">&lt;b&gt;Network cards&lt;/b&gt;</property>
                 <property name="use_markup">True</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1810,15 +1858,16 @@ disk image</property>
               <object class="GtkScrolledWindow" id="scrolledwindow1">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="hscrollbar_policy">automatic</property>
-                <property name="vscrollbar_policy">automatic</property>
                 <child>
                   <object class="GtkTreeView" id="networkcards_treeview">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="model">plugsmodel</property>
-                    <signal name="key-press-event" handler="on_networkcards_treeview_key_press_event" swapped="no"/>
                     <signal name="button-release-event" handler="on_networkcards_treeview_button_release_event" swapped="no"/>
+                    <signal name="key-press-event" handler="on_networkcards_treeview_key_press_event" swapped="no"/>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection" id="treeview-selection1"/>
+                    </child>
                     <child>
                       <object class="GtkTreeViewColumn" id="vlan_treeviewcolumn">
                         <property name="title" translatable="yes">Nic</property>
@@ -1995,6 +2044,7 @@ disk image</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
+                        <property name="xalign">0.5</property>
                         <property name="draw_indicator">True</property>
                       </object>
                       <packing>
@@ -2008,6 +2058,7 @@ disk image</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
+                        <property name="xalign">0.5</property>
                         <property name="draw_indicator">True</property>
                       </object>
                       <packing>
@@ -2022,11 +2073,8 @@ disk image</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="invisible_char">●</property>
-                        <property name="invisible_char_set">True</property>
                         <property name="primary_icon_activatable">False</property>
                         <property name="secondary_icon_activatable">False</property>
-                        <property name="primary_icon_sensitive">True</property>
-                        <property name="secondary_icon_sensitive">True</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -2041,8 +2089,8 @@ disk image</property>
                       <object class="GtkLabel" id="label_32">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="xalign">0.10000000149011612</property>
                         <property name="label" translatable="yes">Parameters to append to command line:</property>
+                        <property name="xalign">0.10000000149011612</property>
                       </object>
                       <packing>
                         <property name="top_attach">2</property>
@@ -2076,8 +2124,8 @@ disk image</property>
                           <object class="GtkLabel" id="lblGdbport">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="xalign">0</property>
                             <property name="label" translatable="yes">GNU debugger TCP port:</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -2090,11 +2138,8 @@ disk image</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="invisible_char">●</property>
-                            <property name="invisible_char_set">True</property>
                             <property name="primary_icon_activatable">False</property>
                             <property name="secondary_icon_activatable">False</property>
-                            <property name="primary_icon_sensitive">True</property>
-                            <property name="secondary_icon_sensitive">True</property>
                             <property name="adjustment">adjustment5</property>
                           </object>
                           <packing>
@@ -2239,7 +2284,7 @@ disk image</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="stock">gtk-delete</property>
-                                <property name="icon-size">2</property>
+                                <property name="icon_size">2</property>
                               </object>
                             </child>
                           </object>
@@ -2326,45 +2371,5 @@ disk image</property>
         <property name="position">0</property>
       </packing>
     </child>
-  </object>
-  <object class="List" id="lCpu">
-    <property name="value-member">value</property>
-    <columns>
-      <!-- column-name object -->
-      <column type="PyObject"/>
-    </columns>
-  </object>
-  <object class="List" id="lDevice">
-    <property name="value-member">value</property>
-    <columns>
-      <!-- column-name object -->
-      <column type="PyObject"/>
-    </columns>
-  </object>
-  <object class="List" id="lImages">
-    <columns>
-      <!-- column-name object -->
-      <column type="PyObject"/>
-    </columns>
-  </object>
-  <object class="List" id="lMachine">
-    <property name="value-member">value</property>
-    <columns>
-      <!-- column-name object -->
-      <column type="PyObject"/>
-    </columns>
-  </object>
-  <object class="GtkListStore" id="plugsmodel">
-    <columns>
-      <!-- column-name Link -->
-      <column type="PyObject"/>
-    </columns>
-  </object>
-  <object class="List" id="lSound">
-    <property name="value-member">value</property>
-    <columns>
-      <!-- column-name object -->
-      <column type="PyObject"/>
-    </columns>
   </object>
 </interface>
