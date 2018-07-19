@@ -18,3 +18,4 @@ _trial_temp/
 virtualbricks.egg-info/
 tags
 *.pyc
+__pycache__/
