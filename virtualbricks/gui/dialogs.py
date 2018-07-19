@@ -347,7 +347,8 @@ class LoggingWindow(Window):
             dict(os.environ, MM_NOTTTY="1")
         )
 
-        def success((out, err, code)):
+        def success(codes):
+            out, err, code = codes
             if code == 0:
                 logger.info(bug_sent)
             elif code in BUG_REPORT_ERRORS:
@@ -795,7 +796,8 @@ class CommitImageDialog(Window):
 
     def _do_image_commit(self, path):
 
-        def log_err((out, err, exit_status)):
+        def log_err(codes):
+            out, err, exit_status = codes
             if exit_status != 0:
                 logger.error(commit_failed, err=err)
 
@@ -862,7 +864,8 @@ class CommitImageDialog(Window):
         self.get_object("cow_checkbutton").set_visible(not active)
         self.get_object("msg_label").set_visible(False)
 
-    def _commit_image_show_result(self, (out, err, code)):
+    def _commit_image_show_result(self, codes):
+        out, err, code = codes
         if code != 0:
             logger.error(base_not_found, err=err)
         else:
