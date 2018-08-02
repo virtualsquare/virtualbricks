@@ -173,7 +173,7 @@ def patch_settings(suite, **kwds):
 def pformat_tree(tree, sep="", indent=2):
     lst = []
     n_cols = tree.get_n_columns()
-    pformat_subtree(tree, tree.get_iter_root(), lst, n_cols, sep, indent, 0)
+    pformat_subtree(tree, tree.get_iter_first(), lst, n_cols, sep, indent, 0)
     return lst
 
 
@@ -197,8 +197,8 @@ class GtkTestCase(unittest.TestCase):
             tmsg = "Invalid type for column {0}: {1}, {2}".format(i, type1,
                                                                   type2)
             self.assertEqual(type1, type2, tmsg)
-        root1 = tree1.get_iter_root()
-        root2 = tree2.get_iter_root()
+        root1 = tree1.get_iter_first()
+        root2 = tree2.get_iter_first()
         self.assert_subtree_model_equal(tree1, root1, tree2, root2, msg)
 
     def assert_subtree_model_equal(self, tree1, itr1, tree2, itr2, msg=None):
