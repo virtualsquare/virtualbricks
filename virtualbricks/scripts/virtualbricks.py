@@ -25,6 +25,6 @@ def make_application(config):
 
 
 def run():
-    from twisted.internet import gtk2reactor
-    gtk2reactor.install()
+    from twisted.internet import gtk3reactor
+    gtk3reactor.install()
     app.run_app(app.LockedApplication(make_application), app.Options())

@@ -2294,14 +2294,14 @@ class Application(brickfactory.Application):
 
     def _run(self, factory):
         # a bug in gtk2 make impossibile to use this and is not required anyway
-        gtk.set_interactive(False)
+        #gtk.set_interactive(False)
         builder = load_ui()
         message_dialog = MessageDialogObserver()
         observer = log.FilteringLogObserver(message_dialog,
                                             (should_show_to_user,))
         logger.publisher.addObserver(observer, False)
         # disable default link_button action
-        gtk.link_button_set_uri_hook(lambda b, s: None)
+        #gtk.link_button_set_uri_hook(lambda b, s: None)
         self.gui = VBGUI(factory, builder, self.textbuffer)
         message_dialog.set_parent(self.gui.wndMain)
 
