@@ -1387,7 +1387,7 @@ def pass_through(function, *args, **kwds):
 
 
 def iter_model(model, *columns):
-    itr = model.get_iter_root()
+    itr = model.get_iter_first()
     if not columns:
         columns = range(model.get_n_columns())
     while itr:
@@ -1549,7 +1549,7 @@ class _HumbleImport:
             dlabel = Gtk.Label(dest.path)
             dlabel.set_tooltip_text(dest.path)
             dlabel.set_alignment(0.0, 0.5)
-            dlabel.set_ellipsize(pango.ELLIPSIZE_MIDDLE)
+            dlabel.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
             box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
             box.pack_start(nlabel, False, True, 0)
             box.pack_start(dlabel, True, True, 0)
