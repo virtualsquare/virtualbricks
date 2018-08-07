@@ -452,7 +452,7 @@ class ConfigController(object):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 	#methods pack_start and pack_end must have 4 arguments. If they are not specified, use default values : True, True, 0	
         box.pack_end(bbox, False, True, 0)
-        box.pack_end(Gtk.HSeparator(), False, False, 3)
+        box.pack_end(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 3)
         box.show_all()
         box.pack_start(self.get_config_view(gui), True, True, 0)
         return box
