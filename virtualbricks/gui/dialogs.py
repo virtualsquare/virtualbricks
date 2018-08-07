@@ -1234,16 +1234,16 @@ class ExportProjectDialog(Window):
         size_c.set_cell_data_func(size_cr, self._set_size)
         self.get_object("selected_cellrenderer").connect(
             "toggled", self.on_selected_cellrenderer_toggled, model)
-        self.get_object("treeview1").expand_row(0, False)
+        self.get_object("treeview1").expand_row(Gtk.TreePath(0), False)
         Window.show(self, parent_w)
 
-    def _set_size(self, column, cellrenderer, model, itr):
+    def _set_size(self, column, cellrenderer, model, itr, data=None):
         fp = model.get_value(itr, FILEPATH)
         if fp.isfile():
             cellrenderer.set_property("text", tools.fmtsize(fp.getsize()))
         else:
             size = self._calc_size(model, itr)
-            if model.get_path(itr) == (0,):
+            if model.get_path(itr) == Gtk.TreePath((0,)):
                 size += sum(fp.getsize() for fp in self.required_files if
                             fp.exists())
                 if self.include_images:
@@ -1325,7 +1325,7 @@ class ExportProjectDialog(Window):
     def on_include_images_checkbutton_toggled(self, checkbutton):
         self.include_images = checkbutton.get_active()
         model = self.get_object("treestore1")
-        model.row_changed((0,), model.get_iter((0,)))
+        model.row_changed(Gtk.TreePath((0,)), model.get_iter(Gtk.TreePath((0,))))
 
     def export(self, model, ancestor, filename, export=project.manager.export):
         files = []
