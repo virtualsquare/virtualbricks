@@ -119,7 +119,7 @@ class BaseMenu:
     def popup(self, button, time, gui):
         menu = self.build(gui)
         menu.show_all()
-        menu.popup(None, None, None, button, time)
+        menu.popup(None, None, None, None, button, time)
 
     def on_configure_activate(self, menuitem, gui):
         gui.curtain_up(self.original)
@@ -242,7 +242,7 @@ class LinkMenu:
     def popup(self, button, time, controller, gui):
         menu = self.build(controller, gui)
         menu.show_all()
-        menu.popup(None, None, None, button, time)
+        menu.popup(None, None, None, None, button, time)
 
     def on_edit_activate(self, menuitem, controller, gui):
         dialogs.EditEthernetDialog(gui.brickfactory, self.original.brick,
@@ -289,7 +289,7 @@ class JobMenu:
     def popup(self, button, time, gui):
         menu = self.build(gui)
         menu.show_all()
-        menu.popup(None, None, None, button, time)
+        menu.popup(None, None, None, None, button, time)
 
     @staticmethod
     def _cancel_call(passthru, call):
@@ -449,7 +449,7 @@ class ConfigController(object):
         bbox.add(cancel_button)
         bbox.set_child_secondary(cancel_button, True)
 	#VBox and HBox are deprecated, the suggestion is to use Orientation in the builder of a Box
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL) 
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 	#methods pack_start and pack_end must have 4 arguments. If they are not specified, use default values : True, True, 0	
         box.pack_end(bbox, False, True, 0)
         box.pack_end(Gtk.HSeparator(), False, False, 3)
@@ -633,7 +633,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
                     if self.original.get("iface") == name:
                         combo2.set_active_iter(itr)
 
-        return self.get_object("table1")
+        return self.get_object("grid1")
 
     def configure_brick(self, gui):
         self.connect_plug(self.original.plugs[0], self.get_object("combobox1"))
@@ -1656,7 +1656,7 @@ class EventsBindingList(widgets.AbstractBindingList):
         return iter(self._factory.events)
 
 
-def is_running_filter(model, itr):
+def is_running_filter(model, itr, data):
     brick = model.get_value(itr, 0)
     if brick:
         return is_running(brick)
