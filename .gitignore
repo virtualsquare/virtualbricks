@@ -18,3 +18,4 @@ share/virtualbricks.glade
 virtualbricks.egg-info/
 tags
 *.pyc
+*.ui~
