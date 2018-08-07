@@ -2217,7 +2217,7 @@ class TextBufferObserver:
         self.textbuffer = textbuffer
 
     def __call__(self, event):
-        gobject.idle_add(self.emit, event)
+        GObject.idle_add(self.emit, event)
 
     def emit(self, event):
         entry = "{iso8601_time} [{log_namespace}] {msg}\n{traceback}"
