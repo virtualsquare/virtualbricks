@@ -112,12 +112,10 @@
           </packing>
         </child>
         <child>
-          <object class="GtkTable" id="table1">
+          <object class="GtkGrid" id="grid1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="n_rows">3</property>
-            <property name="n_columns">2</property>
-            <property name="homogeneous">True</property>
+            <property name="row_homogeneous">True</property>
             <child>
               <object class="GtkLabel" id="label2">
                 <property name="visible">True</property>
@@ -126,7 +124,26 @@
                 <property name="xalign">0</property>
               </object>
               <packing>
-                <property name="y_options"/>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="model_combo">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">netmodel_model</property>
+                <property name="active">0</property>
+                <child>
+                  <object class="GtkCellRendererText" id="renderer2"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
               </packing>
             </child>
             <child>
@@ -137,13 +154,29 @@
                 <property name="xalign">0</property>
               </object>
               <packing>
+                <property name="left_attach">0</property>
                 <property name="top_attach">1</property>
-                <property name="bottom_attach">2</property>
-                <property name="y_options"/>
               </packing>
             </child>
             <child>
-              <object class="GtkHBox" id="hbox1">
+              <object class="GtkComboBox" id="sock_combo">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">sock_model</property>
+                <child>
+                  <object class="GtkCellRendererText" id="renderer1"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox" id="box1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
@@ -154,7 +187,7 @@
                     <property name="xalign">0</property>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
+                    <property name="expand">True</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
@@ -177,9 +210,8 @@
                 </child>
               </object>
               <packing>
+                <property name="left_attach">0</property>
                 <property name="top_attach">2</property>
-                <property name="bottom_attach">3</property>
-                <property name="y_options"/>
               </packing>
             </child>
             <child>
@@ -192,57 +224,12 @@
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
                 <property name="top_attach">2</property>
-                <property name="bottom_attach">3</property>
-                <property name="y_options"/>
-                <property name="y_padding">5</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkComboBox" id="sock_combo">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="model">sock_model</property>
-                <child>
-                  <object class="GtkCellRendererText" id="renderer1"/>
-                  <attributes>
-                    <attribute name="text">0</attribute>
-                  </attributes>
-                </child>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-                <property name="top_attach">1</property>
-                <property name="bottom_attach">2</property>
-                <property name="y_options"/>
-                <property name="y_padding">5</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkComboBox" id="model_combo">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="model">netmodel_model</property>
-                <property name="active">0</property>
-                <child>
-                  <object class="GtkCellRendererText" id="renderer2"/>
-                  <attributes>
-                    <attribute name="text">0</attribute>
-                  </attributes>
-                </child>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-                <property name="y_options"/>
-                <property name="y_padding">5</property>
               </packing>
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">2</property>
           </packing>
