@@ -719,6 +719,8 @@ class SensitiveControl:
             self.widget.set_sensitive(sensitive)
             tooltip = self.tooltip
             self.tooltip = self.widget.get_tooltip_markup()
+            if tooltip is None:
+                tooltip = ""
             self.widget.set_tooltip_markup(tooltip)
 
 
