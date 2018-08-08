@@ -2,11 +2,11 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.0"/>
-  <object class="GtkVBox" id="vbox">
+  <object class="GtkBox" id="vbox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkHBox" id="hbox">
+      <object class="GtkBox" id="hbox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">6</property>
