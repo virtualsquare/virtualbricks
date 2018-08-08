@@ -16,9 +16,10 @@
     <property name="decorated">False</property>
     <property name="deletable">False</property>
     <child>
-      <object class="GtkVBox" id="vbox1">
+      <object class="GtkBox" id="vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
         <child>
           <object class="GtkLabel" id="Pleaselabel">
             <property name="visible">True</property>
