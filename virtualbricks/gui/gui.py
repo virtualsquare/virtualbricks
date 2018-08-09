@@ -536,7 +536,7 @@ class SwitchWrapperConfigController(ConfigController):
         self.original.set({"path": self.get_object("entry").get_text()})
 
 
-def _sock_should_visible(model, iter):
+def _sock_should_visible(model, iter, data):
     sock = model.get_value(iter, 0)
     return sock and (sock.brick.get_type().startswith('Switch') or
                      settings.femaleplugs)
@@ -1087,7 +1087,7 @@ class QemuConfigController(ConfigController):
         d.addErrback(close_panel)
 
         #panel = Gtk.Alignment(0.5, 0.5) new default values for xscale and yscale are 1, before : 0
-	panel = Gtk.Alignment(0.5, 0.5, 0.0, 0.0)
+	panel = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0.0)
         label = Gtk.Label("Loading configuration...")
         panel.add(label)
         panel.show_all()
