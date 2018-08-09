@@ -17,11 +17,12 @@
     <property name="window_position">center</property>
     <property name="urgency_hint">True</property>
     <child>
-      <object class="GtkVBox" id="vbox1">
+      <object class="GtkBox" id="vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
         <child>
-          <object class="GtkHBox" id="hbox1">
+          <object class="GtkBox" id="hbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
@@ -114,10 +115,11 @@
                 <property name="label_xalign">0</property>
                 <signal name="show" handler="on_pnlConfig_show" swapped="no"/>
                 <child>
-                  <object class="GtkVBox" id="vbox2">
+                  <object class="GtkBox" id="vbox2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="border_width">4</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <object class="GtkLabel" id="label6">
                         <property name="visible">True</property>
@@ -147,7 +149,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkHSeparator" id="hseparator2">
+                      <object class="GtkSeparator" id="hseparator2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                       </object>
@@ -186,7 +188,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkHSeparator" id="hseparator3">
+                      <object class="GtkSeparator" id="hseparator3">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                       </object>
@@ -225,7 +227,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkHButtonBox" id="hbuttonbox2">
+                      <object class="GtkButtonBox" id="hbuttonbox2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
@@ -278,7 +280,7 @@
                         <property name="expand">False</property>
                         <property name="fill">True</property>
                         <property name="pack_type">end</property>
-                        <property name="position">8</property>
+                        <property name="position">9</property>
                       </packing>
                     </child>
                   </object>
