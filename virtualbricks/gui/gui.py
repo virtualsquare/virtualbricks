@@ -719,6 +719,7 @@ class SensitiveControl:
             self.widget.set_sensitive(sensitive)
             tooltip = self.tooltip
             self.tooltip = self.widget.get_tooltip_markup()
+            #In Gtk3 seems that None value to set_tooltip_markup is valid, but it breaks
             if tooltip is None:
                 tooltip = ""
             self.widget.set_tooltip_markup(tooltip)
@@ -900,7 +901,7 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
 
 class TunnelClientConfigController(TunnelListenConfigController):
 
-    resource = "data/tunnelcconfig.ui"
+    resource = "tunnelcconfig.ui"
 
     def get_config_view(self, gui):
         host = self.get_object("host_entry")
