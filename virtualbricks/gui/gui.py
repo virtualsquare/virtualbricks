@@ -1076,7 +1076,7 @@ class QemuConfigController(ConfigController):
             qemu.parse_and_install(version)
             container = panel.get_parent()
             container.remove(panel)
-            container.pack_start(self._get_config_view(gui))
+            container.pack_start(self._get_config_view(gui), True, True, 0)
 
         def close_panel(failure):
             logger.failure(qemu_version_parsing_error, failure)
