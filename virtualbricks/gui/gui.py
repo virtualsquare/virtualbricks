@@ -434,7 +434,7 @@ class ConfigController(object):
         return self.builder.get_object(name)
 
     def get_view(self, gui):
-        bbox = Gtk.HButtonBox()
+        bbox = Gtk.ButtonBox(orientation=Gtk.Orientation.HORIZONTAL)
         bbox.set_layout(Gtk.ButtonBoxStyle.END)
         bbox.set_spacing(5)
         ok_button = Gtk.Button(stock=Gtk.STOCK_OK)
