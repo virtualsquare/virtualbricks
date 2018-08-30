@@ -936,12 +936,12 @@ def get_element_at_click(treeview, event):
         return obj
 
 
-def _set_vlan(column, cell_renderer, model, itr):
+def _set_vlan(column, cell_renderer, model, itr, data=None):
     vlan = model.get_path(itr)[0]
-    cell_renderer.set_property("text", vlan)
+    cell_renderer.set_property("text", str(vlan))
 
 
-def _set_connection(column, cell_renderer, model, iter):
+def _set_connection(column, cell_renderer, model, iter, data=None):
     link = model.get_value(iter, 0)
     if link.mode == "hostonly":
         conn = "Host"
@@ -954,12 +954,12 @@ def _set_connection(column, cell_renderer, model, iter):
     cell_renderer.set_property("text", conn)
 
 
-def _set_model(column, cell_renderer, model, iter):
+def _set_model(column, cell_renderer, model, iter, data=None):
     link = model.get_value(iter, 0)
     cell_renderer.set_property("text", link.model)
 
 
-def _set_mac(column, cell_renderer, model, iter):
+def _set_mac(column, cell_renderer, model, iter, data=None):
     link = model.get_value(iter, 0)
     cell_renderer.set_property("text", link.mac)
 
