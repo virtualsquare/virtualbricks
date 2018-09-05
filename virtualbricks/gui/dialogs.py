@@ -1157,9 +1157,7 @@ SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 def ConfirmOverwriteDialog(fp, parent):
     question = _("A file named \"{0}\" already exists.  Do you want to "
                  "replace it?").format(fp.basename())
-# gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT
-# not existing in GTK3, documentation suggests to put 0
-    dialog = Gtk.MessageDialog(parent, 0, 	
+    dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT, 	
                                Gtk.MessageType.QUESTION,
                                message_format=question)
     dialog.format_secondary_text(_("The file already exists in \"{0}\". "
