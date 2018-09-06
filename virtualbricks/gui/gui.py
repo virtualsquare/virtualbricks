@@ -100,19 +100,19 @@ class BaseMenu:
         menu = _menu
         menu.append(Gtk.MenuItem(self.original.get_name(), False))
         menu.append(Gtk.SeparatorMenuItem())
-        start_stop = Gtk.MenuItem("_Start/Stop")
+        start_stop = Gtk.MenuItem.new_with_mnemonic("_Start/Stop")
         start_stop.connect("activate", self.on_startstop_activate, gui)
         menu.append(start_stop)
-        delete = Gtk.MenuItem("_Delete")
+        delete = Gtk.MenuItem.new_with_mnemonic("_Delete")
         delete.connect("activate", self.on_delete_activate, gui)
         menu.append(delete)
-        copy = Gtk.MenuItem("Make a C_opy")
+        copy = Gtk.MenuItem.new_with_mnemonic("Make a C_opy")
         copy.connect("activate", self.on_copy_activate, gui)
         menu.append(copy)
-        rename = Gtk.MenuItem("Re_name")
+        rename = Gtk.MenuItem.new_with_mnemonic("Re_name")
         rename.connect("activate", self.on_rename_activate, gui)
         menu.append(rename)
-        configure = Gtk.MenuItem("_Configure")
+        configure = Gtk.MenuItem.new_with_mnemonic("_Configure")
         configure.connect("activate", self.on_configure_activate, gui)
         menu.append(configure)
         return menu
@@ -130,7 +130,7 @@ class BrickPopupMenu(BaseMenu):
 
     def build(self, gui):
         menu = BaseMenu.build(self, gui)
-        attach = Gtk.MenuItem("_Attach Event")
+        attach = Gtk.MenuItem.new_with_mnemonic("_Attach Event")
         attach.connect("activate", self.on_attach_activate, gui)
         menu.append(attach)
         return menu
@@ -163,7 +163,7 @@ class VMPopupMenu(BrickPopupMenu):
 
     def build(self, gui):
         menu = BrickPopupMenu.build(self, gui)
-        resume = Gtk.MenuItem("_Resume VM")
+        resume = Gtk.MenuItem.new_with_mnemonic("_Resume VM")
         resume.connect("activate", self.on_resume_activate, gui)
         menu.append(resume)
         return menu
