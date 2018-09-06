@@ -96,7 +96,8 @@ class BaseMenu:
         self.original = brick
 
     def build(self, gui):
-        menu = Gtk.Menu()
+	_clear_menu()
+        menu = _menu
         menu.append(Gtk.MenuItem(self.original.get_name(), False))
         menu.append(Gtk.SeparatorMenuItem())
         start_stop = Gtk.MenuItem("_Start/Stop")
@@ -136,6 +137,7 @@ class BrickPopupMenu(BaseMenu):
 
     def on_startstop_activate(self, menuitem, gui):
         gui.startstop_brick(self.original)
+	_clear_menu()
 
     def on_delete_activate(self, menuitem, gui):
         gui.ask_remove_brick(self.original)
@@ -230,7 +232,8 @@ class LinkMenu:
         self.original = original
 
     def build(self, controller, gui):
-        menu = Gtk.Menu()
+	_clear_menu()
+        menu = _menu
         edit = Gtk.MenuItem(_("Edit"))
         edit.connect("activate", self.on_edit_activate, controller, gui)
         menu.append(edit)
@@ -263,7 +266,8 @@ class JobMenu:
         self.original = original
 
     def build(self, gui):
-        menu = Gtk.Menu()
+	_clear_menu()
+        menu = _menu
         open = Gtk.MenuItem(_("Open control monitor"))
         open.connect("activate", self.on_open_activate)
         menu.append(open)
@@ -2073,7 +2077,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 treeview.set_cursor(path, col, 0)
                 model = treeview.get_model()
                 obj = model.get_value(model.get_iter(path), 0)
-                IMenu(obj).popup(event.button, event.time, self)
+                menu = IMenu(obj)
+                menu.popup(event.button, event.time, self)
             return True
 
     def on_events_treeview_button_release_event(self, treeview, event):
@@ -2104,7 +2109,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 treeview.set_cursor(path, col, 0)
                 model = treeview.get_model()
                 brick = model.get_value(model.get_iter(path), 0)
-                IJobMenu(brick).popup(event.button, event.time, self)
+                menu = IJobMenu(brick)
+                menu.popup(event.button, event.time, self)
                 return True
 
     def user_wait_action(self, action, *args):
@@ -2167,6 +2173,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def __event_selected(self):
         return bool(self.tvEvents.get_selected_value())
+
+# These instructions keep a reference of a popup menu and reinitialize it
+
+def _clear_menu():
+    global _menu 
+    _menu = Gtk.Menu()
+
+_menu = Gtk.Menu()
 
 
 class List(Gtk.ListStore):
