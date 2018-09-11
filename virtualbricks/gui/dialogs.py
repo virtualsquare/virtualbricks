@@ -306,8 +306,8 @@ class LoggingWindow(Window):
     def on_savebutton_clicked(self, button):
         chooser = Gtk.FileChooserDialog(title=_("Save as..."),
                 action=Gtk.FileChooserAction.SAVE,
-                buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                        Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+                buttons=("gtk-cancel",Gtk.ResponseType.CANCEL,
+                        "gtk-save", Gtk.ResponseType.OK))
         chooser.set_do_overwrite_confirmation(True)
         chooser.connect("response", self.__on_dialog_response)
         chooser.show()
@@ -538,7 +538,7 @@ class EditEthernetDialog(BaseEthernetDialog):
         self.setup()
         self.get_object("title_label").set_label(
             "<b>Edit ethernet interface</b>")
-        self.get_object("ok_button").set_property("label", Gtk.STOCK_OK)
+        self.get_object("ok_button").set_property("label", "gtk-ok")
         self.get_object("mac_entry").set_text(self.plug.mac)
         model = self.get_object("netmodel_model")
         itr = model.get_iter_first()
@@ -909,8 +909,8 @@ def choose_new_image(gui, factory):
     main = gui.wndMain
     dialog = Gtk.FileChooserDialog(_("Open a disk image"), main,
         Gtk.FileChooserAction.OPEN,
-        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-         Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        ("gtk-cancel", Gtk.ResponseType.CANCEL,
+         "gtk-open", Gtk.ResponseType.OK))
     if dialog.run() == Gtk.ResponseType.OK:
         pathname = dialog.get_filename()
         LoadImageDialog(factory, pathname).show(main)
@@ -1163,10 +1163,10 @@ def ConfirmOverwriteDialog(fp, parent):
     dialog.format_secondary_text(_("The file already exists in \"{0}\". "
                                    "Replacing it will overwrite its "
                                    "contents.").format(fp.dirname()))
-    dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
-    button = Gtk.Button(_("_Replace"))
+    dialog.add_button("gtk-cancel", Gtk.ResponseType.CANCEL)
+    button = Gtk.Button.new_with_mnemonic(_("_Replace"))
     button.set_can_default(True)
-    button.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_SAVE_AS,
+    button.set_image(Gtk.Image.new_from_icon_name("gtk-save-as",
                                               Gtk.IconSize.BUTTON))
     button.show()
     dialog.add_action_widget(button, Gtk.ResponseType.ACCEPT)
@@ -1201,7 +1201,7 @@ class ExportProjectDialog(Window):
             if child in self.required_files | self.internal_files:
                 dirnames.remove(dirname)
             else:
-                row = (True, True, Gtk.STOCK_DIRECTORY, dirname, child)
+                row = (True, True, "gtk-directory", dirname, child)
                 nodes[child.path] = model.append(parent, row)
 
     def append_files(self, dirpath, filenames, model, parent):
@@ -1209,11 +1209,11 @@ class ExportProjectDialog(Window):
             child = dirpath.child(filename)
             if (child not in self.required_files | self.internal_files and
                     child.isfile() and not child.islink()):
-                row = (True, True, Gtk.STOCK_FILE, filename, child)
+                row = (True, True, "gtk-file", filename, child)
                 model.append(parent, row)
 
     def build_path_tree(self, model, prjpath):
-        row = (True, True, Gtk.STOCK_DIRECTORY, prjpath.basename(), prjpath)
+        row = (True, True, "gtk-directory", prjpath.basename(), prjpath)
         root = model.append(None, row)
         nodes = {prjpath.path: root}
         for dirpath, dirnames, filenames in os.walk(prjpath.path):
@@ -1307,8 +1307,8 @@ class ExportProjectDialog(Window):
     def on_open_button_clicked(self, button):
         chooser = Gtk.FileChooserDialog(title=_("Export project"),
                 action=Gtk.FileChooserAction.SAVE,
-                buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                         Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+                buttons=("gtk-cancel", Gtk.ResponseType.CANCEL,
+                         "gtk-save", Gtk.ResponseType.OK))
         vbp = Gtk.FileFilter()
         vbp.add_pattern("*.vbp")
         chooser.set_filter(vbp)
@@ -1682,7 +1682,7 @@ class ImportDialog(Window):
 
     def get_filechooserdialog(self, model, path, title, action, stock_id):
         chooser = Gtk.FileChooserDialog(title, self.window, action,
-                (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                ("gtk-cancel", Gtk.ResponseType.CANCEL,
                  stock_id, Gtk.ResponseType.OK))
         chooser.set_modal(True)
         chooser.set_select_multiple(False)
@@ -1698,12 +1698,12 @@ class ImportDialog(Window):
     def get_save_filechooserdialog(self, model, path):
         return self.get_filechooserdialog(model, path, _("Save image as..."),
                                            Gtk.FileChooserAction.SAVE,
-                                           Gtk.STOCK_SAVE)
+                                           "gtk-save")
 
     def get_map_filechooserdialog(self, model, path):
         return self.get_filechooserdialog(model, path, _("Map image as..."),
                                            Gtk.FileChooserAction.OPEN,
-                                           Gtk.STOCK_OPEN)
+                                           "gtk-open")
 
     # callbacks
 
