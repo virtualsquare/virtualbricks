@@ -1543,10 +1543,12 @@ class _HumbleImport:
         vbox.foreach(vbox.remove)
         for i, (name, dest) in enumerate(iter_model(store)):
             nlabel = Gtk.Label(name + ":")
-            nlabel.set_alignment(0.0, 0.5)
+            nlabel.props.halign = 0.0
+            nlabel.props.valign = 0.5
             dlabel = Gtk.Label(dest.path)
             dlabel.set_tooltip_text(dest.path)
-            dlabel.set_alignment(0.0, 0.5)
+            dlabel.props.halign = 0.0
+            dlabel.props.valign = 0.5
             dlabel.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
             box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
             box.pack_start(nlabel, False, True, 0)
