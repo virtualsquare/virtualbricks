@@ -46,6 +46,7 @@
       <object class="GtkGrid" id="intro_page">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="margin_left">5</property>
         <property name="resize_mode">immediate</property>
         <property name="row_spacing">3</property>
         <property name="column_spacing">6</property>
@@ -152,6 +153,7 @@
       <object class="GtkScrolledWindow" id="save_images_page">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
+        <property name="margin_left">5</property>
         <child>
           <object class="GtkTreeView" id="treeview1">
             <property name="visible">True</property>
@@ -211,6 +213,7 @@
       <object class="GtkScrolledWindow" id="map_images_page">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
+        <property name="margin_left">5</property>
         <child>
           <object class="GtkTreeView" id="treeview2">
             <property name="visible">True</property>
@@ -253,6 +256,7 @@
       <object class="GtkBox" id="vbox2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="margin_left">5</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkBox" id="hbox3">
