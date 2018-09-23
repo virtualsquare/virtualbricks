@@ -97,7 +97,7 @@ def get_specs(version):
 
 
 QEMU_VERSION_RE = re.compile(
-    r'^(QEMU emulator|qemu-[\w-]+)'
+    r'^(QEMU emulator|qemu-[\w_-]+)'
     r' version '
     r'(?P<version>\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)'
 )
