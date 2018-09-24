@@ -27,5 +27,7 @@ Note also that if you install Virtualbricks with pip, you must be able
 to install the dependencies, most notably pygraphviz. Pygraphviz
 requires a compiler, pkg-config and the development libraries for
 graphviz (libgraphviz-dev in Debian).
+DrfAy0pH2LinCY1wUREPbhbfZdn/CnSDneOGUffnyIxSkiDTm9NoUY43SugyMr9qxXNc2NRCL5vd
+o4D9J6Ql
 
 .. vim: ft=rst tw=72
