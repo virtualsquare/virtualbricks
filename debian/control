@@ -8,23 +8,12 @@ Standards-Version: 3.9.2
 
 Package: virtualbricks
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, python-gtk2, python-glade2, libglade2-0, python-pygraphviz, python-imaging, vde2
-Recommends: qemu, gksu, vde2-cryptcab
-Suggests: python-eggtrayicon, kvm-qemu
+Depends: ${misc:Depends}, ${python:Depends}, python-gtk2, python-pygraphviz, python-pil, python-zope.interface (>= 3.6.1), vde2, vde-netemu, qemu, qemu-utils, xdg-utils, python-twisted (>= 12.0.0), bsdtar, xterm
+Recommends: gksu, vde2-cryptcab
 Homepage: http://virtualbricks.eu/
-Provides: qemulator
-Replaces: qemulator (<< 0.5-4)
-Breaks: qemulator (<< 0.5-4)
 Description: is a Virtualization suite for qemu/kvm VMs and vde2 networks
- Virtualbricks is a fully featured virtualization suite and a complete GUI to
- manage Qemu/KVM and Virtual Distributed Ethernet. It provides easy but
- detailed device configuration interface, programmable control of the running
- processes and a graphical interactive view of the virtual network topology.
-
-Package: qemulator
-Depends: virtualbricks, ${misc:Depends}
-Architecture: all
-Section: oldlibs
-Description: transitional dummy package to virtualbriks
- This is a transitional package to virtualbricks, and can be safely removed
- after the installation is complete.
+ Virtualbricks is a fully featured virtualization suite and a complete
+ GUI to manage Qemu/KVM and Virtual Distributed Ethernet. It provides
+ easy but detailed device configuration interface, programmable control
+ of the running processes and a graphical interactive view of the
+ virtual network topology.
