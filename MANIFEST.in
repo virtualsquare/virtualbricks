@@ -3,6 +3,5 @@ include glade-catalog.xml
 include l10nextract.sh
 include LICENCE
 include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
-recursive-include debian *
 recursive-include share *
 recursive-include tests *
