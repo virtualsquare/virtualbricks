@@ -92,12 +92,14 @@ setup(
         ("share/virtualbricks", DATA_FILES),
     ],
     install_requires=[
-        'mock',
         'Pillow',
         'pygraphviz',
         "Twisted>=12.0.0",
         "zope.interface>=3.5"
     ],
+    extras_require={
+        'test': ['mock']
+    },
     entry_points={
         'console_scripts': [
             'virtualbricks = virtualbricks.scripts.virtualbricks:run'
