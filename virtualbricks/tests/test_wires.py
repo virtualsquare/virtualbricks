@@ -22,7 +22,7 @@ except ImportError:
 from twisted.trial import unittest
 
 from virtualbricks import wires, link, settings
-from virtualbricks.tests import stubs
+from virtualbricks.tests import stubs, skipUnless
 
 
 class TestNetemu(unittest.TestCase):
@@ -58,6 +58,7 @@ class TestNetemu(unittest.TestCase):
                 "--nofifo"]
         self.assertEqual(self.netemu.args(), args)
 
+    @skipUnless(mock is not None, "Mock library not installed")
     def test_live_management(self):
         """
         If set a *sync parameter, the corrisponding left-to-right and right to
@@ -78,9 +79,7 @@ class TestNetemu(unittest.TestCase):
         self.netemu.cbset_delay.assert_called_once_with(1)
         self.netemu.cbset_delayr.assert_called_once_with(2)
 
-    if mock is None:
-        test_live_management.skip = "Mock library not installed"
-
+    @skipUnless(mock is not None,  "Mock library not installed")
     def test_live_management_2(self):
         """Same as precedent but symmetric."""
 
@@ -101,7 +100,3 @@ class TestNetemu(unittest.TestCase):
         self.netemu.cbset_delay.assert_called_once_with(1)
         self.netemu.cbset_delayr.assert_called_once_with(2)
         self.netemu.send.assert_called_once_with("delay 1\n")
-
-    if mock is None:
-        test_live_management_2.skip = "Mock library not installed"
-
