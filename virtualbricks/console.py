@@ -107,7 +107,6 @@ class Protocol(basic.LineOnlyReceiver):
     def connectionMade(self):
         for protocol in six.itervalues(self.sub_protocols):
             protocol.makeConnection(self.transport)
-        
 
     def connectionLost(self, reason):
         for protocol in six.itervalues(self.sub_protocols):
@@ -142,11 +141,13 @@ class VBProtocol(Protocol):
     # _is_first = False
     delimiter = "\n"
     prompt = "virtualbricks> "
-    intro = ("Virtualbricks, version {version}\n"
+    intro = (
+        "Virtualbricks, version {version}\n"
         "Copyright (C) 2018 Virtualbricks team\n"
         "This is free software; see the source code for copying conditions.\n"
         "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
-        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
+        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n"
+    )
 
     def __init__(self, factory):
         Protocol.__init__(self, factory)
@@ -297,8 +298,7 @@ class VBProtocol(Protocol):
                 if b.get_type() == "Qemu":
                     if pl.mode == "vde":
                         s = "\tlink connected to %s with a %s (%s) card"
-                        self.sendLine(s % (pl.sock.nickname, pl.model,
-                                               pl.mac))
+                        self.sendLine(s % (pl.sock.nickname, pl.model, pl.mac))
                     else:
                         s = "\tuserlink connected with a %s (%s) card"
                         self.sendLine(s % (pl.model, pl.mac))
