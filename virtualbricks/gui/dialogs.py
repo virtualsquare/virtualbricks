@@ -98,14 +98,6 @@ from gi.repository import Pango
 import twisted
 from twisted.internet import utils, defer, task, error
 from twisted.python import filepath
-if twisted.__version__ >= '15.0.2':
-    # This is an ugly hack but virtualbricks is not really ready for
-    # Python3
-    def mktempfn():
-        return filepath._secureEnoughString(project.manager.path)
-else:
-    def mktempfn():
-        return filepath._secureEnoughString()
 
 from virtualbricks import __version__
 from virtualbricks import (tools, log, console, settings,
@@ -119,6 +111,14 @@ from virtualbricks.errors import NoOptionError
 
 if False:  # pyflakes
     _ = str
+if twisted.__version__ >= '15.0.2':
+    # This is an ugly hack but virtualbricks is not really ready for
+    # Python3
+    def mktempfn():
+        return filepath._secureEnoughString(project.manager.path)
+else:
+    def mktempfn():
+        return filepath._secureEnoughString()
 
 logger = log.Logger()
 bug_send = log.Event("Sending report bug")
@@ -277,8 +277,11 @@ class LoggingWindow(Window):
         self.__bottom = True
         textview = self.get_object("textview")
         textview.set_buffer(textbuffer)
-        self.__insert_text_h = textbuffer.connect("changed",
-                self.on_textbuffer_changed, textview)
+        self.__insert_text_h = textbuffer.connect(
+            "changed",
+            self.on_textbuffer_changed,
+            textview
+        )
         vadjustment = self.get_object("scrolledwindow1").get_vadjustment()
         vadjustment.connect("value-changed", self.on_vadjustment_value_changed)
         self.scroll_to_end(textview, textbuffer)
@@ -304,10 +307,16 @@ class LoggingWindow(Window):
         self.textbuffer.set_text("")
 
     def on_savebutton_clicked(self, button):
-        chooser = Gtk.FileChooserDialog(title=_("Save as..."),
-                action=Gtk.FileChooserAction.SAVE,
-                buttons=("gtk-cancel",Gtk.ResponseType.CANCEL,
-                        "gtk-save", Gtk.ResponseType.OK))
+        chooser = Gtk.FileChooserDialog(
+            title=_("Save as..."),
+            action=Gtk.FileChooserAction.SAVE,
+            buttons=(
+                "gtk-cancel",
+                Gtk.ResponseType.CANCEL,
+                "gtk-save",
+                Gtk.ResponseType.OK
+            )
+        )
         chooser.set_do_overwrite_confirmation(True)
         chooser.connect("response", self.__on_dialog_response)
         chooser.show()
@@ -324,11 +333,19 @@ class LoggingWindow(Window):
         logger.info(bug_send)
         fd, filename = tempfile.mkstemp()
         os.write(fd, self.textbuffer.get_property("text"))
-        #gtk.link_button_set_uri_hook(None) 	(REMOVED in GTK3)
-        exit_d = utils.getProcessOutputAndValue("xdg-email",
-            ["--utf8", "--body", BODY, "--attach", filename,
-             "new@bugs.launchpad.net"],
-            dict(os.environ, MM_NOTTTY="1"))
+        # gtk.link_button_set_uri_hook(None) 	(REMOVED in GTK3)
+        exit_d = utils.getProcessOutputAndValue(
+            "xdg-email",
+            [
+                "--utf8",
+                "--body",
+                BODY,
+                "--attach",
+                filename,
+                "new@bugs.launchpad.net"
+            ],
+            dict(os.environ, MM_NOTTTY="1")
+        )
 
         def success((out, err, code)):
             if code == 0:
@@ -815,8 +832,10 @@ class CommitImageDialog(Window):
                 ConfirmDialog(question, on_yes=self._commit_vm,
                               on_yes_arg=img).show(self.parent)
             else:
-                pathname = os.path.join(img.basefolder,
-                        "{0.vm_name}_{0.device}.cow".format(img))
+                pathname = os.path.join(
+                    img.basefolder,
+                    "{0.vm_name}_{0.device}.cow".format(img)
+                )
                 self.commit_file(pathname)
         else:
             logger.error(img_invalid)
@@ -907,10 +926,17 @@ class CommitImageDialog(Window):
 
 def choose_new_image(gui, factory):
     main = gui.wndMain
-    dialog = Gtk.FileChooserDialog(_("Open a disk image"), main,
+    dialog = Gtk.FileChooserDialog(
+        _("Open a disk image"),
+        main,
         Gtk.FileChooserAction.OPEN,
-        ("gtk-cancel", Gtk.ResponseType.CANCEL,
-         "gtk-open", Gtk.ResponseType.OK))
+        (
+            "gtk-cancel",
+            Gtk.ResponseType.CANCEL,
+            "gtk-open",
+            Gtk.ResponseType.OK
+        )
+    )
     if dialog.run() == Gtk.ResponseType.OK:
         pathname = dialog.get_filename()
         LoadImageDialog(factory, pathname).show(main)
@@ -944,10 +970,14 @@ class LoadImageDialog(Window):
         if response_id == Gtk.ResponseType.OK:
             name = self.get_object("name_entry").get_text()
             buf = self.get_object("description_textview").get_buffer()
-            desc = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), include_hidden_chars=True)
+            desc = buf.get_text(
+                buf.get_start_iter(),
+                buf.get_end_iter(),
+                include_hidden_chars=True
+            )
             try:
                 self.factory.new_disk_image(name, self.pathname, desc)
-            except:
+            except BaseException:
                 dialog.destroy()
                 raise
         dialog.destroy()
@@ -971,8 +1001,10 @@ class CreateImageDialog(Window):
             else:
                 return self.factory.new_disk_image(name, pathname)
 
-        exit = getQemuOutputAndValue("qemu-img",
-            ["create", "-f", fmt, pathname, size + unit], os.environ)
+        exit = getQemuOutputAndValue(
+            "qemu-img",
+            ["create", "-f", fmt, pathname, size + unit], os.environ
+        )
         exit.addCallback(_create_disk)
         logger.log_failure(exit, img_create_err)
         return exit
@@ -1157,17 +1189,24 @@ SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 def ConfirmOverwriteDialog(fp, parent):
     question = _("A file named \"{0}\" already exists.  Do you want to "
                  "replace it?").format(fp.basename())
-    dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT, 	
-                               Gtk.MessageType.QUESTION,
-                               message_format=question)
+    dialog = Gtk.MessageDialog(
+        parent,
+        Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+        Gtk.MessageType.QUESTION,
+        message_format=question
+    )
     dialog.format_secondary_text(_("The file already exists in \"{0}\". "
                                    "Replacing it will overwrite its "
                                    "contents.").format(fp.dirname()))
     dialog.add_button("gtk-cancel", Gtk.ResponseType.CANCEL)
     button = Gtk.Button.new_with_mnemonic(_("_Replace"))
     button.set_can_default(True)
-    button.set_image(Gtk.Image.new_from_icon_name("gtk-save-as",
-                                              Gtk.IconSize.BUTTON))
+    button.set_image(
+        Gtk.Image.new_from_icon_name(
+            "gtk-save-as",
+            Gtk.IconSize.BUTTON
+        )
+    )
     button.show()
     dialog.add_action_widget(button, Gtk.ResponseType.ACCEPT)
     dialog.set_default_response(Gtk.ResponseType.ACCEPT)
@@ -1305,10 +1344,15 @@ class ExportProjectDialog(Window):
                 self.get_object("export_button").set_sensitive(True)
 
     def on_open_button_clicked(self, button):
-        chooser = Gtk.FileChooserDialog(title=_("Export project"),
-                action=Gtk.FileChooserAction.SAVE,
-                buttons=("gtk-cancel", Gtk.ResponseType.CANCEL,
-                         "gtk-save", Gtk.ResponseType.OK))
+        chooser = Gtk.FileChooserDialog(
+            title=_("Export project"),
+            action=Gtk.FileChooserAction.SAVE,
+            buttons=(
+                "gtk-cancel",
+                Gtk.ResponseType.CANCEL,
+                "gtk-save", Gtk.ResponseType.OK
+            )
+        )
         vbp = Gtk.FileFilter()
         vbp.add_pattern("*.vbp")
         chooser.set_filter(vbp)
@@ -1323,7 +1367,10 @@ class ExportProjectDialog(Window):
     def on_include_images_checkbutton_toggled(self, checkbutton):
         self.include_images = checkbutton.get_active()
         model = self.get_object("treestore1")
-        model.row_changed(Gtk.TreePath((0,)), model.get_iter(Gtk.TreePath((0,))))
+        model.row_changed(
+            Gtk.TreePath((0,)),
+            model.get_iter(Gtk.TreePath((0,)))
+        )
 
     def export(self, model, ancestor, filename, export=project.manager.export):
         files = []
@@ -1491,8 +1538,10 @@ class _HumbleImport:
     def extract_cb(self, project, dialog):
         logger.debug(project_extracted, path=project.path)
         dialog.project = project
-        dialog.images = dict((name, section["path"]) for (_, name), section in
-                              project.get_descriptor().get_images())
+        dialog.images = dict(
+            (name, section["path"]) for (_, name), section
+            in project.get_descriptor().get_images()
+        )
         return project
 
     def extract_eb(self, fail, dialog):
@@ -1683,9 +1732,17 @@ class ImportDialog(Window):
         return self.get_object("overwritecheckbutton").get_active()
 
     def get_filechooserdialog(self, model, path, title, action, stock_id):
-        chooser = Gtk.FileChooserDialog(title, self.window, action,
-                ("gtk-cancel", Gtk.ResponseType.CANCEL,
-                 stock_id, Gtk.ResponseType.OK))
+        chooser = Gtk.FileChooserDialog(
+            title,
+            self.window,
+            action,
+            (
+                "gtk-cancel",
+                Gtk.ResponseType.CANCEL,
+                stock_id,
+                Gtk.ResponseType.OK
+            )
+        )
         chooser.set_modal(True)
         chooser.set_select_multiple(False)
         chooser.set_transient_for(self.window)
@@ -1698,14 +1755,22 @@ class ImportDialog(Window):
         return chooser
 
     def get_save_filechooserdialog(self, model, path):
-        return self.get_filechooserdialog(model, path, _("Save image as..."),
-                                           Gtk.FileChooserAction.SAVE,
-                                           "gtk-save")
+        return self.get_filechooserdialog(
+            model,
+            path,
+            _("Save image as..."),
+            Gtk.FileChooserAction.SAVE,
+            "gtk-save"
+        )
 
     def get_map_filechooserdialog(self, model, path):
-        return self.get_filechooserdialog(model, path, _("Map image as..."),
-                                           Gtk.FileChooserAction.OPEN,
-                                           "gtk-open")
+        return self.get_filechooserdialog(
+            model,
+            path,
+            _("Map image as..."),
+            Gtk.FileChooserAction.OPEN,
+            "gtk-open"
+        )
 
     # callbacks
 
@@ -1718,8 +1783,11 @@ class ImportDialog(Window):
             pass
         elif page_num == 1:
             ws = settings.get("workspace")
-            deferred = self.humble.step_1(self, self.get_object("liststore1"),
-                    filepath.FilePath(ws).child("vimages"))
+            deferred = self.humble.step_1(
+                self,
+                self.get_object("liststore1"),
+                filepath.FilePath(ws).child("vimages")
+            )
             if deferred:
                 ProgressBar(self.assistant).wait_for(deferred)
         elif page_num == 2:
