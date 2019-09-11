@@ -113,7 +113,7 @@ def check_missing_qemu(path=None):
 
 
 def check_kvm(path=None):
-    return os.access("/dev/kvm", os.X_OK)
+    return os.access("/dev/kvm", os.R_OK & os.W_OK)
 
 
 def check_ksm():
