@@ -1137,7 +1137,7 @@ class QemuConfigController(ConfigController):
                        errbackArgs=(retrieve_qemu_version_error, True))
         d.addErrback(close_panel)
 
-        #panel = Gtk.Alignment(0.5, 0.5) new default values for xscale and yscale are 1, before : 0
+        # panel = Gtk.Alignment(0.5, 0.5) new default values for xscale and yscale are 1, before : 0
         panel = Gtk.Alignment(0.5, 0.5, 0.0, 0.0)
         label = Gtk.Label("Loading configuration...")
         panel.pack_start(label, True, True, 0)
@@ -1972,8 +1972,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def __ask_for_deletion(self, on_yes, what, secondary_text=None):
         question = _("Do you really want to delete %s (%s)?") % (
+<<<<<<< HEAD
             what.name, what.get_type()
         )
+=======
+            what.name, what.get_type())
+>>>>>>> Better code style
         dialog = dialogs.ConfirmDialog(
             question,
             on_yes=on_yes,
