@@ -163,13 +163,13 @@ class VBProtocol(Protocol):
         #     intro = self.intro.format(version=virtualbricks.version.short())
         #     self.transport.write(intro)
         intro = self.intro.format(version=__version__)
-        self.transport.write(intro)
-        self.transport.write(self.prompt)
+        self.transport.write(intro.encode())
+        self.transport.write(self.prompt.encode())
 
     def lineReceived(self, line):
         Protocol.lineReceived(self, line)
         if line != "python":  # :-(
-            self.transport.write(self.prompt)
+            self.transport.write(self.prompt.encode())
 
     def brick_action(self, obj, cmd):
         """brick action dispatcher"""
