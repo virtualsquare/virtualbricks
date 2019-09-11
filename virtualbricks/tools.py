@@ -20,6 +20,7 @@
 import os
 import sys
 import errno
+from pathlib import Path
 import random
 import re
 import functools
@@ -75,11 +76,11 @@ def stack_trace():
 def _check_missing(default_paths, files):
     if not default_paths:
         default_paths = os.environ.get('PATH', '.').split(':')
-    elif isinstance(default_paths, basestring):
+    elif isinstance(default_paths, str):
         default_paths = [default_paths]
     for filename in files:
-        for path in default_paths:
-            if os.access(os.path.join(path, filename), os.X_OK):
+        for directory in default_paths:
+            if os.access(Path(directory, filename), os.X_OK):
                 break
         else:
             yield filename
