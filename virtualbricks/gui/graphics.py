@@ -28,9 +28,6 @@ import shutil
 
 from PIL import Image
 import pygraphviz as pgv
-import gi
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
 from gi.repository import GdkPixbuf
 
 from virtualbricks.tools import is_running
@@ -104,8 +101,11 @@ def pixbuf_for_running_brick(brick):
 
 
 def pixbuf_for_running_brick_at_size(brick, witdh, height):
-    return GdkPixbuf.Pixbuf.new_from_file_at_size(brick_icon(brick),
-            witdh, height)
+    return GdkPixbuf.Pixbuf.new_from_file_at_size(
+        brick_icon(brick),
+        witdh,
+        height
+    )
 
 
 class Node:
@@ -171,7 +171,7 @@ class Topology:
                     e.attr['name'] = "      "
                     e.attr['decorate'] = 'true'
 
-        #draw and save
+        # draw and save
         self.topo.write(self.get_topo_filename())
         self.topo.layout('dot')
         self.topo.draw(self.get_image_filename())
@@ -180,7 +180,7 @@ class Topology:
         img = Image.open(self.get_image_filename())
         x_siz, y_siz = img.size
         for line in open(self.get_plain_filename()).readlines():
-            arg = re.split('\s+', line.rstrip('\n'))
+            arg = re.split(r'\s+', line.rstrip('\n'))
             if arg[0] == 'graph':
                 if float(arg[2]) != 0 and float(arg[3]) != 0:
                     x_fact = scale * (x_siz / float(arg[2]))
