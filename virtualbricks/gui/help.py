@@ -76,7 +76,7 @@ class HelpWindow:
 @implementer(interfaces.IHelp)
 class Help:
 
-    RE = re.compile("^(\w+)_help_button$")
+    RE = re.compile(r"^(\w+)_help_button$")
     window_factory = HelpWindow
     window = None
 
