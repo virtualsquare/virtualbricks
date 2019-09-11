@@ -56,9 +56,11 @@ top_invalid_format = log.Event("Error saving topology: Invalid image format")
 top_write_error = log.Event("Error saving topology: Could not write file")
 top_unknown = log.Event("Error saving topology: Unknown error")
 start_virtualbricks = log.Event("Starting VirtualBricks")
-components_not_found = log.Event("{text}\nThere are some components not "
+components_not_found = log.Event(
+    "{text}\nThere are some components not "
     "found: {components} some functionalities may not be available.\nYou can "
-    "disable this alert from the general settings.")
+    "disable this alert from the general settings."
+)
 brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
 not_started = log.Event("Brick not started.")
 stop_error = log.Event("Error on stopping brick.")
@@ -85,7 +87,11 @@ no_kvm = log.Event("No KVM support found on the system. Check your active "
 
 BRICK_TARGET_NAME = "brick-connect-target"
 BRICK_DRAG_TARGETS = [
-    (BRICK_TARGET_NAME, Gtk.TargetFlags.SAME_WIDGET | Gtk.TargetFlags.SAME_APP, 0)
+    (
+        BRICK_TARGET_NAME,
+        Gtk.TargetFlags.SAME_WIDGET | Gtk.TargetFlags.SAME_APP,
+        0
+    )
 ]
 
 
@@ -96,7 +102,7 @@ class BaseMenu:
         self.original = brick
 
     def build(self, gui):
-	_clear_menu()
+        _clear_menu()
         menu = _menu
         menu.append(Gtk.MenuItem(self.original.get_name(), False))
         menu.append(Gtk.SeparatorMenuItem())
@@ -137,7 +143,7 @@ class BrickPopupMenu(BaseMenu):
 
     def on_startstop_activate(self, menuitem, gui):
         gui.startstop_brick(self.original)
-	_clear_menu()
+        _clear_menu()
 
     def on_delete_activate(self, menuitem, gui):
         gui.ask_remove_brick(self.original)
@@ -149,12 +155,15 @@ class BrickPopupMenu(BaseMenu):
         if self.original.proc is not None:
             logger.error(cannot_rename)
         else:
-            dialogs.RenameBrickDialog(self.original,
-                gui.brickfactory.normalize_name).show(gui.wndMain)
+            dialogs.RenameBrickDialog(
+                self.original,
+                gui.brickfactory.normalize_name
+            ).show(gui.wndMain)
 
     def on_attach_activate(self, menuitem, gui):
         dialogs.AttachEventDialog(self.original, gui.factory).show(gui.wndMain)
         return True
+
 
 registerAdapter(BrickPopupMenu, Brick, IMenu)
 
@@ -217,10 +226,13 @@ class EventPopupMenu(BaseMenu):
 
     def on_rename_activate(self, menuitem, gui):
         if not self.original.scheduled:
-            dialogs.RenameDialog(self.original,
-                gui.brickfactory.normalize_name).show(gui.wndMain)
+            dialogs.RenameDialog(
+                self.original,
+                gui.brickfactory.normalize_name
+            ).show(gui.wndMain)
         else:
             logger.error(event_in_use)
+
 
 registerAdapter(EventPopupMenu, Event, IMenu)
 
@@ -232,7 +244,7 @@ class LinkMenu:
         self.original = original
 
     def build(self, controller, gui):
-	_clear_menu()
+        _clear_menu()
         menu = _menu
         edit = Gtk.MenuItem(_("Edit"))
         edit.connect("activate", self.on_edit_activate, controller, gui)
@@ -266,7 +278,7 @@ class JobMenu:
         self.original = original
 
     def build(self, gui):
-	_clear_menu()
+        _clear_menu()
         menu = _menu
         open = Gtk.MenuItem(_("Open control monitor"))
         open.connect("activate", self.on_open_activate)
@@ -334,9 +346,10 @@ class JobMenu:
     def on_kill_activate(self, menuitem, gui):
         logger.debug(proc_signal, signame="SIGKILL")
         try:
-            d = self.original.poweroff(kill=True)
+            self.original.poweroff(kill=True)
         except error.ProcessExitedAlready:
             pass
+
 
 registerAdapter(JobMenu, Brick, IJobMenu)
 
@@ -394,7 +407,8 @@ class VMJobMenu(JobMenu):
 
     def on_term_activate(self, menuitem, gui):
         logger.debug(proc_signal, signame="SIGTERM")
-        d = self.original.poweroff(term=True)
+        self.original.poweroff(term=True)
+
 
 registerAdapter(VMJobMenu, VirtualMachine, IJobMenu)
 
@@ -442,24 +456,31 @@ class ConfigController(object):
         bbox.set_layout(Gtk.ButtonBoxStyle.END)
         bbox.set_spacing(5)
         ok_button = Gtk.Button.new_with_mnemonic(_("_OK"))
-	ok_button.props.always_show_image = True
+        ok_button.props.always_show_image = True
         ok_button.connect("clicked", self.on_ok_button_clicked, gui)
         bbox.add(ok_button)
         bbox.set_child_secondary(ok_button, False)
         # save_button = Gtk.Button.new_with_mnemonic(_("_Save"))
-	# save_button.props.always_show_image = True
+        # save_button.props.always_show_image = True
         # save_button.connect("clicked", self.on_save_button_clicked, gui)
         # bbox.add(save_button)
         cancel_button = Gtk.Button.new_with_mnemonic(_("_Cancel"))
-	cancel_button.props.always_show_image = True
+        cancel_button.props.always_show_image = True
         cancel_button.connect("clicked", self.on_cancel_button_clicked, gui)
         bbox.add(cancel_button)
         bbox.set_child_secondary(cancel_button, True)
-	#VBox and HBox are deprecated, the suggestion is to use Orientation in the builder of a Box
+        # VBox and HBox are deprecated, the suggestion is to use
+        # Orientation in the builder of a Box
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-	#methods pack_start and pack_end must have 4 arguments. If they are not specified, use default values : True, True, 0	
+        # methods pack_start and pack_end must have 4 arguments. If they
+        # are not specified, use default values : True, True, 0
         box.pack_end(bbox, False, True, 0)
-        box.pack_end(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 3)
+        box.pack_end(
+            Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),
+            False,
+            False,
+            3
+        )
         box.show_all()
         box.pack_start(self.get_config_view(gui), True, True, 0)
         return box
@@ -501,6 +522,7 @@ class EventConfigController(ConfigController, dialogs.EventControllerMixin):
                 model.remove(iter)
                 if next is None:
                     self.model.append(("", False))
+
 
 registerAdapter(EventConfigController, Event, IConfigController)
 
@@ -583,9 +605,13 @@ class TapConfigController(_PlugMixin, ConfigController):
 
     def get_config_view(self, gui):
         combo = self.get_object("combobox")
-        self.configure_sock_combobox(combo,
-                gui.brickfactory.socks.filter_new(), self.original,
-                self.original.plugs[0], gui)
+        self.configure_sock_combobox(
+            combo,
+            gui.brickfactory.socks.filter_new(),
+            self.original,
+            self.original.plugs[0],
+            gui
+        )
 
         self.get_object("ip_entry").set_text(self.original.get("ip"))
         self.get_object("nm_entry").set_text(self.original.get("nm"))
@@ -625,9 +651,13 @@ class CaptureConfigController(_PlugMixin, ConfigController):
 
     def get_config_view(self, gui):
         combo = self.get_object("combobox1")
-        self.configure_sock_combobox(combo,
-                gui.brickfactory.socks.filter_new(), self.original,
-                self.original.plugs[0], gui)
+        self.configure_sock_combobox(
+            combo,
+            gui.brickfactory.socks.filter_new(),
+            self.original,
+            self.original.plugs[0],
+            gui
+        )
         combo2 = self.get_object("combobox2")
         model = combo2.get_model()
         with open("/proc/net/dev") as fd:
@@ -661,9 +691,13 @@ class WireConfigController(_PlugMixin, ConfigController):
     def get_config_view(self, gui):
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
             combo = self.get_object(wname)
-            self.configure_sock_combobox(combo,
-                    gui.brickfactory.socks.filter_new(), self.original,
-                    self.original.plugs[i], gui)
+            self.configure_sock_combobox(
+                combo,
+                gui.brickfactory.socks.filter_new(),
+                self.original,
+                self.original.plugs[i],
+                gui
+            )
 
         return self.get_object("vbox")
 
@@ -726,7 +760,8 @@ class SensitiveControl:
             self.widget.set_sensitive(sensitive)
             tooltip = self.tooltip
             self.tooltip = self.widget.get_tooltip_markup()
-            #In Gtk3 seems that None value to set_tooltip_markup is valid, but it breaks
+            # In Gtk3 seems that None value to set_tooltip_markup is
+            # valid, but it breaks
             if tooltip is None:
                 tooltip = ""
             self.widget.set_tooltip_markup(tooltip)
@@ -852,9 +887,13 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         # setup plugs
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
             combo = self.get_object(wname)
-            self.configure_sock_combobox(combo,
-                    gui.brickfactory.socks.filter_new(), self.original,
-                    self.original.plugs[i], gui)
+            self.configure_sock_combobox(
+                combo,
+                gui.brickfactory.socks.filter_new(),
+                self.original,
+                self.original.plugs[i],
+                gui
+            )
 
         return go("netemu_config_panel")
 
@@ -890,9 +929,13 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
 
     def get_config_view(self, gui):
         combo = self.get_object("combobox")
-        self.configure_sock_combobox(combo,
-                gui.brickfactory.socks.filter_new(), self.original,
-                self.original.plugs[0], gui)
+        self.configure_sock_combobox(
+            combo,
+            gui.brickfactory.socks.filter_new(),
+            self.original,
+            self.original.plugs[0],
+            gui
+        )
         port = self.get_object("port_spinbutton")
         port.set_value(self.original.get("port"))
         password = self.get_object("password_entry")
@@ -1094,9 +1137,9 @@ class QemuConfigController(ConfigController):
                        errbackArgs=(retrieve_qemu_version_error, True))
         d.addErrback(close_panel)
 
-	panel = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        panel = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         label = Gtk.Label("Loading configuration...")
-	panel.pack_start(label, True, True, 0)
+        panel.pack_start(label, True, True, 0)
         panel.show_all()
         return panel
 
@@ -1105,21 +1148,44 @@ class QemuConfigController(ConfigController):
         self.usb_devices = list(self.original.config["usbdevlist"])
 
         self.state_manager = StateManager()
-        self.state_manager.add_checkbutton_active(self.rbDeviceen,
-            _("Mount cdrom option not active"), self.cbMount)
-        self.state_manager.add_checkbutton_active(self.rbCdromen,
-            _("File image option not active"), self.fcCdrom)
-        self.state_manager.add_checkbutton_not_active(self.cbNovga,
-            _("Graphical output disabled"), self.cbVnc, self.siVncN,
-            self.lblVnc)
-        self.state_manager.add_checkbutton_not_active(self.cbVnc,
-            _("VNC enabled"), self.cbNovga)
-        self.state_manager.add_checkbutton_active(self.cbKernelen,
-            _("Custom kernel selction option disabled"), self.fcKernel)
-        self.state_manager.add_checkbutton_active(self.cbInitrden,
-            _("Initrd option disabled"), self.fcInitrd)
-        self.state_manager.add_checkbutton_active(self.cbGdb,
-            _("Kernel debugging disabled"), self.siGdbport, self.lblGdbport)
+        self.state_manager.add_checkbutton_active(
+            self.rbDeviceen,
+            _("Mount cdrom option not active"),
+            self.cbMount
+        )
+        self.state_manager.add_checkbutton_active(
+            self.rbCdromen,
+            _("File image option not active"),
+            self.fcCdrom
+        )
+        self.state_manager.add_checkbutton_not_active(
+            self.cbNovga,
+            _("Graphical output disabled"),
+            self.cbVnc,
+            self.siVncN,
+            self.lblVnc
+        )
+        self.state_manager.add_checkbutton_not_active(
+            self.cbVnc,
+            _("VNC enabled"),
+            self.cbNovga
+        )
+        self.state_manager.add_checkbutton_active(
+            self.cbKernelen,
+            _("Custom kernel selction option disabled"),
+            self.fcKernel
+        )
+        self.state_manager.add_checkbutton_active(
+            self.cbInitrden,
+            _("Initrd option disabled"),
+            self.fcInitrd
+        )
+        self.state_manager.add_checkbutton_active(
+            self.cbGdb,
+            _("Kernel debugging disabled"),
+            self.siGdbport,
+            self.lblGdbport
+        )
 
         # usb options
         def usb_check():
@@ -1355,6 +1421,7 @@ def config_panel_factory(context):
     elif type == "Qemu":
         return QemuConfigController(context)
 
+
 registerAdapter(config_panel_factory, Brick, IConfigController)
 
 
@@ -1381,8 +1448,12 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
             logger.failure(create_image_error, status)
             self.done.errback(None)
         else:
-            reactor.spawnProcess(SyncProtocol(self.done), "sync", ["sync"],
-                os.environ)
+            reactor.spawnProcess(
+                SyncProtocol(self.done),
+                "sync",
+                ["sync"],
+                os.environ
+            )
 
 
 def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
@@ -1438,10 +1509,16 @@ class TopologyMixin(object):
             finally:
                 dialog.destroy()
 
-        chooser = Gtk.FileChooserDialog(title=_("Select an image file"),
-                action=Gtk.FileChooserAction.OPEN,
-                buttons=("_Cancel", Gtk.ResponseType.CANCEL,
-                        "_Save", Gtk.ResponseType.OK))
+        chooser = Gtk.FileChooserDialog(
+            title=_("Select an image file"),
+            action=Gtk.FileChooserAction.OPEN,
+            buttons=(
+                "_Cancel",
+                Gtk.ResponseType.CANCEL,
+                "_Save",
+                Gtk.ResponseType.OK
+            )
+        )
         chooser.set_do_overwrite_confirmation(True)
         chooser.connect("response", on_response)
         chooser.show()
@@ -1592,8 +1669,11 @@ class ReadmeMixin(object):
 class ProgressBar:
 
     def __init__(self, gui):
-        self.freezer = dialogs.Freezer(gui.set_insensitive, gui.set_sensitive,
-            gui.wndMain)
+        self.freezer = dialogs.Freezer(
+            gui.set_insensitive,
+            gui.set_sensitive,
+            gui.wndMain
+        )
 
     def wait_for(self, something, *args):
         return self.freezer.wait_for(something, *args)
@@ -1721,10 +1801,15 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.tvBricks.set_cells_data_func()
         self.__bricks_binding_list = BricksBindingList(self.factory)
         self.lBricks.set_data_source(self.__bricks_binding_list)
-        self.tvBricks.enable_model_drag_source(Gdk.ModifierType.BUTTON1_MASK,
-                BRICK_DRAG_TARGETS, Gdk.DragAction.LINK)
-        self.tvBricks.enable_model_drag_dest(BRICK_DRAG_TARGETS,
-                Gdk.DragAction.LINK)
+        self.tvBricks.enable_model_drag_source(
+            Gdk.ModifierType.BUTTON1_MASK,
+            BRICK_DRAG_TARGETS,
+            Gdk.DragAction.LINK
+        )
+        self.tvBricks.enable_model_drag_dest(
+            BRICK_DRAG_TARGETS,
+            Gdk.DragAction.LINK
+        )
 
         # events tab
         self.tvEvents.set_cells_data_func()
@@ -1748,13 +1833,17 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         if len(missing) > 0 and settings.show_missing:
             for m in missing:
                 if m == "ksm":
-                    missing_text.append("KSM not found in Linux. "
-                                    "Samepage memory will not work on this "
-                                    "system.")
+                    missing_text.append(
+                        "KSM not found in Linux. Samepage memory will"
+                        " not work on this system."
+                    )
                 else:
                     missing_components.append(m)
-            logger.error(components_not_found, text="\n".join(missing_text),
-                components=" ".join(missing_components))
+            logger.error(
+                components_not_found,
+                text="\n".join(missing_text),
+                components=" ".join(missing_components)
+            )
 
     def __dispose__(self):
         self.factory.disconnect("brick-changed", self.on_brick_changed)
@@ -1864,7 +1953,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     # end gui (programming) interface
 
     def on_wndMain_delete_event(self, window, event):
-        #don't delete; hide instead
+        # don't delete; hide instead
         if settings.get("systray"):
             window.hide()
             self.statusicon.set_tooltip("Virtualbricks Hidden")
@@ -1882,9 +1971,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def __ask_for_deletion(self, on_yes, what, secondary_text=None):
         question = _("Do you really want to delete %s (%s)?") % (
-            what.name, what.get_type())
-        dialog = dialogs.ConfirmDialog(question, on_yes=on_yes,
-                on_yes_arg=what)
+            what.name, what.get_type()
+        )
+        dialog = dialogs.ConfirmDialog(
+            question,
+            on_yes=on_yes,
+            on_yes_arg=what
+        )
         if secondary_text is not None:
             dialog.format_secondary_text(secondary_text)
         dialog.window.set_transient_for(self.wndMain)
@@ -1956,8 +2049,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_menuFileSaveAs_activate(self, menuitem):
         self.on_save()
-        dialog = dialogs.SaveAsDialog(self.brickfactory,
-              (prj.name for prj in project.manager))
+        dialog = dialogs.SaveAsDialog(
+            self.brickfactory,
+            (prj.name for prj in project.manager)
+        )
         dialog.show(self.wndMain)
         return True
 
@@ -1969,9 +2064,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_menuFileExport_activate(self, menuitem):
         self.on_save()
-        dialog = dialogs.ExportProjectDialog(ProgressBar(self),
+        dialog = dialogs.ExportProjectDialog(
+            ProgressBar(self),
             filepath.FilePath(project.manager.current.path),
-            self.brickfactory.disk_images)
+            self.brickfactory.disk_images
+        )
         dialog.show(self.wndMain)
         return True
 
@@ -2060,8 +2157,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return self.__show_config_if_selected(self.tvEvents)
 
     def confirm(self, message):
-        dialog = Gtk.MessageDialog(None, Gtk.DialogFlags.MODAL, Gtk.MessageType.INFO,
-                                   Gtk.ButtonsType.YES_NO, message)
+        dialog = Gtk.MessageDialog(
+            None,
+            Gtk.DialogFlags.MODAL,
+            Gtk.MessageType.INFO,
+            Gtk.ButtonsType.YES_NO,
+            message
+        )
         response = dialog.run()
         dialog.destroy()
 
@@ -2176,10 +2278,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def __event_selected(self):
         return bool(self.tvEvents.get_selected_value())
 
-# These instructions keep a reference of a popup menu and reinitialize it
 
+# These instructions keep a reference of a popup menu and reinitialize
+# it
 def _clear_menu():
-    global _menu 
+    global _menu
     _menu = Gtk.Menu()
 
 _menu = Gtk.Menu()
@@ -2261,8 +2364,12 @@ class MessageDialogObserver:
         self.__parent = parent
 
     def __call__(self, event):
-        dialog = Gtk.MessageDialog(self.__parent, Gtk.DialogFlags.MODAL,
-                Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE)
+        dialog = Gtk.MessageDialog(
+            self.__parent,
+            Gtk.DialogFlags.MODAL,
+            Gtk.MessageType.ERROR,
+            Gtk.ButtonsType.CLOSE
+        )
         dialog.set_property('text', log.formatEvent(event))
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.show()
@@ -2313,14 +2420,14 @@ class Application(brickfactory.Application):
 
     def _run(self, factory):
         # a bug in gtk2 make impossibile to use this and is not required anyway
-        #gtk.set_interactive(False)
+        # gtk.set_interactive(False)
         builder = load_ui()
         message_dialog = MessageDialogObserver()
         observer = log.FilteringLogObserver(message_dialog,
                                             (should_show_to_user,))
         logger.publisher.addObserver(observer, False)
         # disable default link_button action
-        #gtk.link_button_set_uri_hook(lambda b, s: None)
+        # gtk.link_button_set_uri_hook(lambda b, s: None)
         self.gui = VBGUI(factory, builder, self.textbuffer)
         message_dialog.set_parent(self.gui.wndMain)
 
