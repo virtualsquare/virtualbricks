@@ -2316,7 +2316,7 @@ class List(Gtk.ListStore):
         if isinstance(key, int):
             Gtk.ListStore.__delitem__(self, key)
         elif isinstance(key, slice):
-            if (key.start in (None, 0) and key.stop in (None, sys.maxint) and
+            if (key.start in (None, 0) and key.stop in (None, sys.maxsize) and
                     key.step in (1, -1, None)):
                 self.clear()
             else:
