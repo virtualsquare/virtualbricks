@@ -106,7 +106,7 @@ class Options(usage.Options):
 def run_app(Application, config):
     try:
         config.parseOptions()
-    except usage.error, ue:
+    except usage.error as ue:
         raise SystemExit("%s: %s" % (sys.argv[0], ue))
     _backport.react(Application(config).run, ())
 
