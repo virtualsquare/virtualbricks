@@ -25,6 +25,8 @@ def make_application(config):
 
 
 def run():
+    import gi
+    gi.require_version("Gtk", "3.0")
     from twisted.internet import gtk3reactor
     gtk3reactor.install()
     app.run_app(app.LockedApplication(make_application), app.Options())
