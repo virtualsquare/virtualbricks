@@ -759,20 +759,20 @@ class VirtualMachine(bricks.Brick):
         else:
             for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
                 res.append("-device")
-                res.append("{1.model},vlan={0},mac={1.mac},id=eth{0}".format(
+                res.append("{1.model},mac={1.mac},id=vx{0},netdev=vx{0}".format(
                     i, link))
                 if link.sock and link.sock.mode == "hostonly":
-                    res.extend(("-net", "user,vlan={0}".format(i)))
+                    res.extend(("-netdev", "user,id=vx{0}".format(i)))
                 elif link.mode == "vde":
-                    res.append("-net")
-                    res.append("vde,vlan={0},sock={1}".format(
+                    res.append("-netdev")
+                    res.append("vde,id=vx{0},sock={1}".format(
                         i, link.sock.path.rstrip('[]')))
                 elif link.mode == "sock":
-                    res.append("-net")
-                    res.append("vde,vlan={0},sock={1}".format(
+                    res.append("-netdev")
+                    res.append("vde,id=vx{0},sock={1}".format(
                         i, link.path))
                 else:
-                    res.extend(["-net", "user"])
+                    res.extend(["-netdev", "user"])
 
         if self.config["cdromen"] and self.config["cdrom"]:
                 res.extend(["-cdrom", self.config["cdrom"]])
