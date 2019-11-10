@@ -20,40 +20,27 @@
 
 import os
 import os.path
-import sys
 import re
-import pkgutil
-from pkgutil import get_data
 import shutil
 
 from PIL import Image
 import pygraphviz as pgv
 from gi.repository import GdkPixbuf
 
+from virtualbricks.path import get_resource_filename
 from virtualbricks.tools import is_running
 
 
-__all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
-           "pixbuf_for_brick_at_size", "pixbuf_for_brick_type",
-           "pixbuf_for_running_brick", "pixbuf_for_running_brick_at_size",
-           "Node", "Topology", "get_data_filename"]
+__all__ = [
+    "get_image", "pixbuf_for_brick", "pixbuf_for_brick_at_size",
+    "pixbuf_for_brick_type", "pixbuf_for_running_brick",
+    "pixbuf_for_running_brick_at_size", "Node", "Topology",
+    "get_data_filename"
+]
 
 
 def get_data_filename(resource):
-    syswide = os.path.join(sys.prefix, "share", "virtualbricks", resource)
-    if os.path.exists(syswide):
-        return syswide
-    return get_filename("virtualbricks.gui", os.path.join("data", resource))
-
-
-def get_filename(package, resource):
-    loader = pkgutil.get_loader(package)
-    mod = sys.modules.get(package) or loader.load_module(package)
-    if mod is None or not hasattr(mod, "__file__"):
-        return None
-    parts = resource.split("/")
-    parts.insert(0, os.path.dirname(mod.__file__))
-    return os.path.join(*parts)
+    return get_resource_filename("virtualbricks.gui", resource)
 
 
 def get_image(name):

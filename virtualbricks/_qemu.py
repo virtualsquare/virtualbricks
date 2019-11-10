@@ -15,12 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import errno
 import json
-import os.path
-import pkgutil
 import re
-import sys
+from virtualbricks.path import read_data
 
 
 IN_MEMORY = ':memory:'
@@ -51,24 +48,10 @@ def load_data(version, ext):
         return IN_MEMORY_SPECS[version]
     name = version.replace('.', '_')
     filename = 'qemu_specs_{0}.{1}'.format(name, ext)
-    syswide = os.path.join(sys.prefix, 'share', 'virtualbricks', filename)
-    # Try system wide specs files
-    try:
-        with open(syswide) as fp:
-            return fp.read()
-    except IOError as exc:
-        if exc.errno != errno.ENOENT:
-            raise
-    # Try package data files
-    try:
-        data = pkgutil.get_data('virtualbricks', filename)
-    except IOError as exc:
-        if exc.errno == errno.ENOENT:
-            raise SpecsNotFound(ENOSPECS.format(version=version))
-        raise
-    if data is None:
-        raise SpecsNotFound(ENOSPECS.format(version=version))
-    return data
+    data = read_data('virtualbricks.gui', filename)
+    if data is not None:
+        return data
+    raise SpecsNotFound(ENOSPECS.format(version=version))
 
 
 def load_spec(version):
