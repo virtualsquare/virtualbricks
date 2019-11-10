@@ -17,3 +17,5 @@ share/virtualbricks.glade
 ./htmlcov
 virtualbricks.egg-info/
 tags
+*.pyc
+*.ui~

@@ -40,3 +40,5 @@ class Router(bricks.Brick):
 
     def configured(self):
         return True
+
+	#TODO: Implement configuration interface

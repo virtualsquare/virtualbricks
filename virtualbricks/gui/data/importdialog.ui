@@ -1,7 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.24"/>
-  <!-- interface-naming-policy project-wide -->
+  <requires lib="gtk+" version="3.12"/>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-add</property>
+  </object>
+  <object class="GtkListStore" id="liststore1">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name path -->
+      <column type="PyObject"/>
+      <!-- column-name selected -->
+      <column type="gboolean"/>
+    </columns>
+  </object>
+  <object class="GtkListStore" id="liststore2">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name path -->
+      <column type="PyObject"/>
+    </columns>
+    <signal name="row-changed" handler="on_liststore2_row_changed" swapped="no"/>
+  </object>
   <object class="GtkAssistant" id="ImportDialog">
     <property name="width_request">450</property>
     <property name="height_request">400</property>
@@ -11,72 +35,55 @@
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <property name="window_position">center</property>
-    <signal name="close" handler="on_ImportDialog_close" swapped="no"/>
     <signal name="apply" handler="on_ImportDialog_apply" swapped="no"/>
     <signal name="cancel" handler="on_ImportDialog_cancel" swapped="no"/>
+    <signal name="close" handler="on_ImportDialog_close" swapped="no"/>
     <signal name="prepare" handler="on_ImportDialog_prepare" swapped="no"/>
     <child>
       <placeholder/>
     </child>
     <child>
-      <placeholder/>
-    </child>
-    <child>
-      <placeholder/>
-    </child>
-    <child>
-      <object class="GtkTable" id="intro_page">
+      <object class="GtkGrid" id="intro_page">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="n_rows">5</property>
-        <property name="n_columns">2</property>
-        <property name="column_spacing">6</property>
+        <property name="margin_left">5</property>
+        <property name="resize_mode">immediate</property>
         <property name="row_spacing">3</property>
+        <property name="column_spacing">6</property>
         <child>
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="xalign">0</property>
             <property name="label" translatable="yes">Project name:</property>
           </object>
           <packing>
+            <property name="left_attach">0</property>
             <property name="top_attach">1</property>
-            <property name="bottom_attach">2</property>
-            <property name="x_options">GTK_FILL</property>
-            <property name="y_options">GTK_FILL</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="label3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="xalign">0</property>
             <property name="label" translatable="yes">File:</property>
+            <property name="justify">right</property>
+            <property name="xalign">0</property>
           </object>
           <packing>
-            <property name="x_options">GTK_FILL</property>
-            <property name="y_options">GTK_FILL</property>
+            <property name="left_attach">0</property>
+            <property name="top_attach">0</property>
           </packing>
         </child>
         <child>
           <object class="GtkEntry" id="prjname_entry">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="invisible_char">●</property>
-            <property name="invisible_char_set">True</property>
-            <property name="primary_icon_activatable">False</property>
             <property name="secondary_icon_activatable">False</property>
-            <property name="primary_icon_sensitive">True</property>
-            <property name="secondary_icon_sensitive">True</property>
             <signal name="changed" handler="on_prjname_entry_changed" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="right_attach">2</property>
             <property name="top_attach">1</property>
-            <property name="bottom_attach">2</property>
-            <property name="x_options">GTK_FILL</property>
-            <property name="y_options">GTK_FILL</property>
           </packing>
         </child>
         <child>
@@ -87,8 +94,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="right_attach">2</property>
-            <property name="y_options">GTK_FILL</property>
+            <property name="top_attach">0</property>
           </packing>
         </child>
         <child>
@@ -97,30 +103,29 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
+            <property name="xalign">0</property>
             <property name="draw_indicator">True</property>
           </object>
           <packing>
-            <property name="right_attach">2</property>
+            <property name="left_attach">0</property>
             <property name="top_attach">2</property>
-            <property name="bottom_attach">3</property>
-            <property name="x_options">GTK_FILL</property>
-            <property name="y_options">GTK_FILL</property>
+            <property name="width">2</property>
           </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="overwritecheckbutton">
             <property name="label" translatable="yes">Overwrite existing project</property>
+            <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
+            <property name="xalign">0</property>
             <property name="draw_indicator">True</property>
             <signal name="toggled" handler="on_overwritecheckbutton_toggled" swapped="no"/>
           </object>
           <packing>
-            <property name="right_attach">2</property>
+            <property name="left_attach">0</property>
             <property name="top_attach">3</property>
-            <property name="bottom_attach">4</property>
-            <property name="x_options">GTK_FILL</property>
-            <property name="y_options">GTK_FILL</property>
+            <property name="width">2</property>
           </packing>
         </child>
         <child>
@@ -132,25 +137,23 @@
             </attributes>
           </object>
           <packing>
-            <property name="right_attach">2</property>
+            <property name="left_attach">0</property>
             <property name="top_attach">4</property>
-            <property name="bottom_attach">5</property>
-            <property name="x_options">GTK_FILL</property>
-            <property name="y_options">GTK_FILL</property>
+            <property name="width">2</property>
           </packing>
         </child>
       </object>
       <packing>
         <property name="page_type">intro</property>
         <property name="title" translatable="yes">Import project</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkScrolledWindow" id="save_images_page">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
-        <property name="hscrollbar_policy">automatic</property>
-        <property name="vscrollbar_policy">automatic</property>
+        <property name="margin_left">5</property>
         <child>
           <object class="GtkTreeView" id="treeview1">
             <property name="visible">True</property>
@@ -159,6 +162,9 @@
             <property name="headers_clickable">False</property>
             <property name="search_column">0</property>
             <property name="enable_grid_lines">both</property>
+            <child internal-child="selection">
+              <object class="GtkTreeSelection" id="treeview-selection1"/>
+            </child>
             <child>
               <object class="GtkTreeViewColumn" id="treeviewcolumn1">
                 <property name="title" translatable="yes">Save</property>
@@ -197,14 +203,17 @@
       <packing>
         <property name="title" translatable="yes">Save images</property>
         <property name="complete">True</property>
+        <property name="has_padding">False</property>
       </packing>
+    </child>
+    <child>
+      <placeholder/>
     </child>
     <child>
       <object class="GtkScrolledWindow" id="map_images_page">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
-        <property name="hscrollbar_policy">automatic</property>
-        <property name="vscrollbar_policy">automatic</property>
+        <property name="margin_left">5</property>
         <child>
           <object class="GtkTreeView" id="treeview2">
             <property name="visible">True</property>
@@ -213,6 +222,9 @@
             <property name="headers_clickable">False</property>
             <property name="search_column">0</property>
             <property name="enable_grid_lines">both</property>
+            <child internal-child="selection">
+              <object class="GtkTreeSelection" id="treeview-selection2"/>
+            </child>
             <child>
               <object class="GtkTreeViewColumn" id="treeviewcolumn4">
                 <property name="title" translatable="yes">Image name</property>
@@ -237,14 +249,17 @@
       </object>
       <packing>
         <property name="title" translatable="yes">Remap images</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
-      <object class="GtkVBox" id="vbox2">
+      <object class="GtkBox" id="vbox2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="margin_left">5</property>
+        <property name="orientation">vertical</property>
         <child>
-          <object class="GtkHBox" id="hbox3">
+          <object class="GtkBox" id="hbox3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="spacing">5</property>
@@ -252,8 +267,8 @@
               <object class="GtkLabel" id="label4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">Project name:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -265,8 +280,8 @@
               <object class="GtkLabel" id="projectname_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">testproject</property>
+                <property name="xalign">0</property>
                 <attributes>
                   <attribute name="weight" value="bold"/>
                 </attributes>
@@ -281,21 +296,20 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="padding">3</property>
             <property name="position">0</property>
           </packing>
         </child>
         <child>
-          <object class="GtkHBox" id="hbox4">
+          <object class="GtkBox" id="hbox4">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="spacing">4</property>
+            <property name="spacing">5</property>
             <child>
               <object class="GtkLabel" id="label6">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">Project path:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -307,11 +321,11 @@
               <object class="GtkLabel" id="projectpath_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">/home/bob/.virtualbricks/testproject</property>
                 <property name="wrap">True</property>
                 <property name="wrap_mode">char</property>
                 <property name="ellipsize">middle</property>
+                <property name="xalign">0</property>
                 <attributes>
                   <attribute name="weight" value="bold"/>
                 </attributes>
@@ -326,12 +340,11 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="padding">3</property>
             <property name="position">1</property>
           </packing>
         </child>
         <child>
-          <object class="GtkHBox" id="hbox1">
+          <object class="GtkBox" id="hbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="spacing">5</property>
@@ -339,8 +352,8 @@
               <object class="GtkLabel" id="label5">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">Open:</property>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -352,8 +365,8 @@
               <object class="GtkLabel" id="open_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">False</property>
+                <property name="xalign">0</property>
                 <attributes>
                   <attribute name="weight" value="bold"/>
                 </attributes>
@@ -368,21 +381,19 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="padding">3</property>
             <property name="position">2</property>
           </packing>
         </child>
         <child>
-          <object class="GtkHBox" id="hbox2">
+          <object class="GtkBox" id="hbox2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="spacing">5</property>
             <child>
               <object class="GtkLabel" id="label14">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="label" translatable="yes">existing project overwritten:</property>
                 <property name="xalign">0</property>
-                <property name="label" translatable="yes">existsing project overwritten:</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -394,8 +405,8 @@
               <object class="GtkLabel" id="overwrite_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
                 <property name="label" translatable="yes">False</property>
+                <property name="xalign">0</property>
                 <attributes>
                   <attribute name="weight" value="bold"/>
                 </attributes>
@@ -410,7 +421,6 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="padding">3</property>
             <property name="position">3</property>
           </packing>
         </child>
@@ -418,9 +428,9 @@
           <object class="GtkLabel" id="label8">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Images imported:</property>
             <property name="xalign">0</property>
             <property name="yalign">0</property>
-            <property name="label" translatable="yes">Images imported:</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -433,9 +443,9 @@
           <object class="GtkLabel" id="imported_label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="xalign">0</property>
             <property name="label" translatable="yes">debian 7
 ubuntu 12.04</property>
+            <property name="xalign">0</property>
             <attributes>
               <attribute name="weight" value="bold"/>
             </attributes>
@@ -451,8 +461,8 @@ ubuntu 12.04</property>
           <object class="GtkLabel" id="label10">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="xalign">0</property>
             <property name="label" translatable="yes">Images mapped:</property>
+            <property name="xalign">0</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -462,9 +472,18 @@ ubuntu 12.04</property>
           </packing>
         </child>
         <child>
-          <object class="GtkVBox" id="vbox1">
+          <object class="GtkBox" id="vbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="expand">True</property>
@@ -475,33 +494,17 @@ ubuntu 12.04</property>
       </object>
       <packing>
         <property name="page_type">confirm</property>
-        <property name="title" translatable="yes">Import project</property>
         <property name="complete">True</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
-  </object>
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-add</property>
-  </object>
-  <object class="GtkListStore" id="liststore1">
-    <columns>
-      <!-- column-name name -->
-      <column type="gchararray"/>
-      <!-- column-name path -->
-      <column type="PyObject"/>
-      <!-- column-name selected -->
-      <column type="gboolean"/>
-    </columns>
-  </object>
-  <object class="GtkListStore" id="liststore2">
-    <columns>
-      <!-- column-name name -->
-      <column type="gchararray"/>
-      <!-- column-name path -->
-      <column type="PyObject"/>
-    </columns>
-    <signal name="row-changed" handler="on_liststore2_row_changed" swapped="no"/>
+    <child internal-child="action_area">
+      <object class="GtkBox" id="assistant-action_area2">
+        <property name="can_focus">False</property>
+      </object>
+      <packing>
+        <property name="has_padding">False</property>
+      </packing>
+    </child>
   </object>
 </interface>

@@ -16,42 +16,31 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# This module is ported to new GTK3 using PyGObject
+
 import os
 import os.path
-import sys
 import re
-import pkgutil
-from pkgutil import get_data
 import shutil
 
 from PIL import Image
 import pygraphviz as pgv
-import gtk.gdk
+from gi.repository import GdkPixbuf
 
+from virtualbricks.path import get_resource_filename
 from virtualbricks.tools import is_running
 
 
-__all__ = ["get_filename", "get_data", "get_image", "pixbuf_for_brick",
-           "pixbuf_for_brick_at_size", "pixbuf_for_brick_type",
-           "pixbuf_for_running_brick", "pixbuf_for_running_brick_at_size",
-           "Node", "Topology", "get_data_filename"]
+__all__ = [
+    "get_image", "pixbuf_for_brick", "pixbuf_for_brick_at_size",
+    "pixbuf_for_brick_type", "pixbuf_for_running_brick",
+    "pixbuf_for_running_brick_at_size", "Node", "Topology",
+    "get_data_filename"
+]
 
 
 def get_data_filename(resource):
-    syswide = os.path.join(sys.prefix, "share", "virtualbricks", resource)
-    if os.path.exists(syswide):
-        return syswide
-    return get_filename("virtualbricks.gui", os.path.join("data", resource))
-
-
-def get_filename(package, resource):
-    loader = pkgutil.get_loader(package)
-    mod = sys.modules.get(package) or loader.load_module(package)
-    if mod is None or not hasattr(mod, "__file__"):
-        return None
-    parts = resource.split("/")
-    parts.insert(0, os.path.dirname(mod.__file__))
-    return os.path.join(*parts)
+    return get_resource_filename("virtualbricks.gui", resource)
 
 
 def get_image(name):
@@ -77,13 +66,13 @@ def saturate_if_stopped(brick, pixbuf):
 
 def pixbuf_for_brick_at_size(brick, width, height):
     filename = brick_icon(brick)
-    pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(filename, width, height)
+    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(filename, width, height)
     return saturate_if_stopped(brick, pixbuf)
 
 
 def pixbuf_for_brick(brick):
     filename = brick_icon(brick)
-    pixbuf = gtk.gdk.pixbuf_new_from_file(filename)
+    pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
     return saturate_if_stopped(brick, pixbuf)
 
 
@@ -91,16 +80,19 @@ def pixbuf_for_brick_type(type):
     filename = get_data_filename("%s.png" % type.lower())
     if filename is None:
         return None
-    return gtk.gdk.pixbuf_new_from_file(filename)
+    return GdkPixbuf.Pixbuf.new_from_file(filename)
 
 
 def pixbuf_for_running_brick(brick):
-    return gtk.gdk.pixbuf_new_from_file(brick_icon(brick))
+    return GdkPixbuf.Pixbuf.new_from_file(brick_icon(brick))
 
 
 def pixbuf_for_running_brick_at_size(brick, witdh, height):
-    return gtk.gdk.pixbuf_new_from_file_at_size(brick_icon(brick),
-            witdh, height)
+    return GdkPixbuf.Pixbuf.new_from_file_at_size(
+        brick_icon(brick),
+        witdh,
+        height
+    )
 
 
 class Node:
@@ -166,7 +158,7 @@ class Topology:
                     e.attr['name'] = "      "
                     e.attr['decorate'] = 'true'
 
-        #draw and save
+        # draw and save
         self.topo.write(self.get_topo_filename())
         self.topo.layout('dot')
         self.topo.draw(self.get_image_filename())
@@ -175,7 +167,7 @@ class Topology:
         img = Image.open(self.get_image_filename())
         x_siz, y_siz = img.size
         for line in open(self.get_plain_filename()).readlines():
-            arg = re.split('\s+', line.rstrip('\n'))
+            arg = re.split(r'\s+', line.rstrip('\n'))
             if arg[0] == 'graph':
                 if float(arg[2]) != 0 and float(arg[3]) != 0:
                     x_fact = scale * (x_siz / float(arg[2]))
