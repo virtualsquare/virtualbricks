@@ -1972,12 +1972,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def __ask_for_deletion(self, on_yes, what, secondary_text=None):
         question = _("Do you really want to delete %s (%s)?") % (
-<<<<<<< HEAD
             what.name, what.get_type()
         )
-=======
-            what.name, what.get_type())
->>>>>>> Better code style
         dialog = dialogs.ConfirmDialog(
             question,
             on_yes=on_yes,
