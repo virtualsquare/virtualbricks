@@ -16,6 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import locale
 import os
 import textwrap
 
@@ -86,8 +87,11 @@ class Protocol(basic.LineOnlyReceiver):
     def __init__(self, factory):
         self.factory = factory
         self.sub_protocols = {}
+        self.encoding = locale.getpreferredencoding(do_setlocale=False)
 
     def lineReceived(self, line):
+        if isinstance(line, bytes):
+            line = str(line, encoding=self.encoding)
         parts = line.split()
         if parts:
             handler = getattr(self, "do_" + parts[0], None)
@@ -100,6 +104,11 @@ class Protocol(basic.LineOnlyReceiver):
                     self.sendLine(str(e))
             else:
                 self.default(line)
+
+    def sendLine(self, line):
+        if isinstance(line, str):
+            line = bytes(line, encoding=self.encoding)
+        super().sendLine(line)
 
     def default(self, line):
         pass
@@ -139,7 +148,7 @@ class VBProtocol(Protocol):
     """
 
     # _is_first = False
-    delimiter = "\n"
+    delimiter = b"\n"
     prompt = "virtualbricks> "
     intro = (
         "Virtualbricks, version {version}\n"
