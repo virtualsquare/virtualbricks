@@ -405,7 +405,7 @@ class Console(basic.LineOnlyReceiver):
 
     inner_protocol = None
     protocol = None
-    delimiter = "\n"
+    delimiter = b"\n"
 
     def __init__(self, factory, namespace={}):
         self.factory = factory
