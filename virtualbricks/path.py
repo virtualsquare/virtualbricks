@@ -22,7 +22,7 @@ def _resource_paths(package, resource):
     # script, the data files are installed in very strange
     # locations. For example, this was a real case, the data files were in
     # /usr/local/lib/python2.7/dist-packages/... (continue)
-    #       .../virtualbricks-1.0.12-py2.7.egg/share/virtualbricks
+    #       .../virtualbricks-$VERSION-py$PYVERSION.egg/share/virtualbricks
     for vpath in virtualbricks.__path__:
         yield joinpath(dirname(vpath), 'share', 'virtualbricks', filename)
     # I did my best, I give up.
