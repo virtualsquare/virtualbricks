@@ -1,57 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <requires lib="gtk+" version="2.24"/>
-  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
-  <!-- interface-naming-policy toplevel-contextual -->
+  <requires lib="gtk+" version="3.12"/>
+  <requires lib="virtualbricks.gui.widgets" version="0.1"/>
   <object class="List" id="lBricks">
     <columns>
       <!-- column-name brick -->
       <column type="PyObject"/>
     </columns>
   </object>
+  <object class="GtkTreeModelFilter" id="lRunning">
+    <property name="child_model">lBricks</property>
+  </object>
   <object class="List" id="lEvents">
     <columns>
       <!-- column-name event -->
       <column type="PyObject"/>
     </columns>
-  </object>
-  <object class="GtkTreeModelFilter" id="lRunning">
-    <property name="child_model">lBricks</property>
-  </object>
-  <object class="GtkMenu" id="menuSystray">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <child>
-      <object class="GtkMenuItem" id="menuSystrayToggle">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Toggle window</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="on_menuSystrayToggle_activate" swapped="no"/>
-      </object>
-    </child>
-    <child>
-      <object class="GtkSeparatorMenuItem" id="separatormenuitem4">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="menuSystrayClose">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Close</property>
-        <property name="use_underline">True</property>
-        <signal name="activate" handler="do_quit" swapped="no"/>
-      </object>
-    </child>
-  </object>
-  <object class="GtkStatusIcon" id="statusicon">
-    <property name="pixbuf">virtualbricks.png</property>
-    <property name="has_tooltip">True</property>
-    <property name="tooltip_text" translatable="yes">Virtualbricks visible</property>
-    <signal name="activate" handler="on_statusicon_activate" swapped="no"/>
-    <signal name="popup-menu" handler="on_statusicon_popup_menu" swapped="no"/>
   </object>
   <object class="GtkWindow" id="wndMain">
     <property name="width_request">800</property>
@@ -63,17 +28,17 @@
     <property name="default_width">850</property>
     <property name="default_height">600</property>
     <property name="icon">virtualbricks.png</property>
-    <signal name="destroy" handler="do_quit" swapped="no"/>
     <signal name="delete-event" handler="on_wndMain_delete_event" swapped="no"/>
+    <signal name="destroy" handler="do_quit" swapped="no"/>
     <child>
-      <object class="GtkVBox" id="vbox1">
+      <object class="GtkBox" id="vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
         <child>
           <object class="GtkMenuBar" id="menubar1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="extension_events">all</property>
             <child>
               <object class="GtkMenuItem" id="menuFile">
                 <property name="visible">True</property>
@@ -107,8 +72,8 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <accelerator key="o" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                         <signal name="activate" handler="on_menuFileOpen_activate" swapped="no"/>
+                        <accelerator key="o" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                       </object>
                     </child>
                     <child>
@@ -127,8 +92,8 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <accelerator key="s" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                         <signal name="activate" handler="on_menuFileSave_activate" swapped="no"/>
+                        <accelerator key="s" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                       </object>
                     </child>
                     <child>
@@ -181,8 +146,8 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <accelerator key="q" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                         <signal name="activate" handler="do_quit" swapped="no"/>
+                        <accelerator key="q" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                       </object>
                     </child>
                   </object>
@@ -206,8 +171,8 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <accelerator key="p" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                         <signal name="activate" handler="on_menuSettingsPreferences_activate" swapped="no"/>
+                        <accelerator key="p" signal="activate" modifiers="GDK_CONTROL_MASK"/>
                       </object>
                     </child>
                   </object>
@@ -310,8 +275,8 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <accelerator key="F1" signal="activate"/>
                         <signal name="activate" handler="on_menuHelpAbout_activate" swapped="no"/>
+                        <accelerator key="F1" signal="activate"/>
                       </object>
                     </child>
                   </object>
@@ -330,12 +295,13 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <signal name="change-current-page" handler="on_main_notebook_change_current_page" swapped="no"/>
-            <signal name="switch-page" handler="on_main_notebook_switch_page" swapped="no"/>
             <signal name="select-page" handler="on_main_notebook_select_page" swapped="no"/>
+            <signal name="switch-page" handler="on_main_notebook_switch_page" swapped="no"/>
             <child>
-              <object class="GtkVBox" id="vbox11">
+              <object class="GtkBox" id="vbox11">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkToolbar" id="tlbBricks">
                     <property name="visible">True</property>
@@ -362,6 +328,7 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
+                        <property name="homogeneous">False</property>
                       </packing>
                     </child>
                     <child>
@@ -399,6 +366,7 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
+                        <property name="homogeneous">False</property>
                       </packing>
                     </child>
                     <child>
@@ -434,11 +402,14 @@
                         <property name="can_focus">True</property>
                         <property name="model">lBricks</property>
                         <property name="headers_clickable">False</property>
-                        <signal name="key-release-event" handler="on_bricks_treeview_key_release_event" swapped="no"/>
-                        <signal name="drag-data-received" handler="on_bricks_treeview_drag_data_received" swapped="no"/>
-                        <signal name="row-activated" handler="on_bricks_treeview_row_activated" swapped="no"/>
                         <signal name="button-release-event" handler="on_bricks_treeview_button_release_event" swapped="no"/>
                         <signal name="drag-data-get" handler="on_bricks_treeview_drag_data_get" swapped="no"/>
+                        <signal name="drag-data-received" handler="on_bricks_treeview_drag_data_received" swapped="no"/>
+                        <signal name="key-release-event" handler="on_bricks_treeview_key_release_event" swapped="no"/>
+                        <signal name="row-activated" handler="on_bricks_treeview_row_activated" swapped="no"/>
+                        <child internal-child="selection">
+                          <object class="GtkTreeSelection" id="treeview-selection1"/>
+                        </child>
                         <child>
                           <object class="GtkTreeViewColumn" id="tvcBrickIcon">
                             <property name="title" translatable="yes">Icon</property>
@@ -514,9 +485,10 @@
               </packing>
             </child>
             <child>
-              <object class="GtkVBox" id="vbox16">
+              <object class="GtkBox" id="vbox16">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkToolbar" id="toolbar2">
                     <property name="visible">True</property>
@@ -543,6 +515,7 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
+                        <property name="homogeneous">False</property>
                       </packing>
                     </child>
                     <child>
@@ -580,6 +553,7 @@
                       </object>
                       <packing>
                         <property name="expand">False</property>
+                        <property name="homogeneous">False</property>
                       </packing>
                     </child>
                     <child>
@@ -615,9 +589,12 @@
                         <property name="can_focus">True</property>
                         <property name="model">lEvents</property>
                         <property name="headers_clickable">False</property>
+                        <signal name="button-release-event" handler="on_events_treeview_button_release_event" swapped="no"/>
                         <signal name="key-release-event" handler="on_events_treeview_key_release_event" swapped="no"/>
                         <signal name="row-activated" handler="on_events_treeview_row_activated" swapped="no"/>
-                        <signal name="button-release-event" handler="on_events_treeview_button_release_event" swapped="no"/>
+                        <child internal-child="selection">
+                          <object class="GtkTreeSelection" id="treeview-selection2"/>
+                        </child>
                         <child>
                           <object class="GtkTreeViewColumn" id="tvcEventIcon">
                             <property name="title" translatable="yes">Icon</property>
@@ -696,6 +673,9 @@
                     <property name="can_focus">True</property>
                     <property name="model">lRunning</property>
                     <signal name="button-release-event" handler="on_joblist_treeview_button_release_event" swapped="no"/>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection" id="treeview-selection3"/>
+                    </child>
                     <child>
                       <object class="GtkTreeViewColumn" id="tvcJobIcon">
                         <property name="title" translatable="yes">Icon</property>
@@ -748,9 +728,9 @@
               <object class="GtkLabel" id="runningComponentsLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="yalign">0.47999998927116394</property>
                 <property name="label" translatable="yes">R_unning</property>
                 <property name="use_underline">True</property>
+                <property name="yalign">0.47999998927116394</property>
               </object>
               <packing>
                 <property name="position">2</property>
@@ -758,11 +738,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkVBox" id="vbox17">
+              <object class="GtkBox" id="vbox17">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkHBox" id="hbox47">
+                  <object class="GtkBox" id="hbox47">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
@@ -772,7 +753,7 @@
                         <property name="receives_default">True</property>
                         <signal name="clicked" handler="on_topology_export_button_clicked" swapped="no"/>
                         <child>
-                          <object class="GtkHBox" id="hbox48">
+                          <object class="GtkBox" id="hbox48">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <child>
@@ -814,6 +795,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
+                        <property name="xalign">0.5</property>
                         <property name="active">True</property>
                         <property name="draw_indicator">True</property>
                         <signal name="toggled" handler="on_topology_orientation_toggled" swapped="no"/>
@@ -830,6 +812,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
+                        <property name="xalign">0.5</property>
                         <property name="draw_indicator">True</property>
                         <property name="group">topology_lr</property>
                       </object>
@@ -842,7 +825,7 @@
                   </object>
                   <packing>
                     <property name="expand">False</property>
-                    <property name="fill">False</property>
+                    <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
@@ -896,8 +879,6 @@
               <object class="GtkScrolledWindow" id="scrolledwindow2">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="hscrollbar_policy">automatic</property>
-                <property name="vscrollbar_policy">automatic</property>
                 <child>
                   <object class="GtkTextView" id="readme_textview">
                     <property name="visible">True</property>
@@ -947,5 +928,40 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkMenu" id="menuSystray">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkMenuItem" id="menuSystrayToggle">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Toggle window</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_menuSystrayToggle_activate" swapped="no"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem" id="separatormenuitem4">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="menuSystrayClose">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Close</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="do_quit" swapped="no"/>
+      </object>
+    </child>
+  </object>
+  <object class="GtkStatusIcon" id="statusicon">
+    <property name="pixbuf">virtualbricks.png</property>
+    <property name="has_tooltip">True</property>
+    <property name="tooltip_text" translatable="yes">Virtualbricks visible</property>
+    <signal name="activate" handler="on_statusicon_activate" swapped="no"/>
+    <signal name="popup-menu" handler="on_statusicon_popup_menu" swapped="no"/>
   </object>
 </interface>

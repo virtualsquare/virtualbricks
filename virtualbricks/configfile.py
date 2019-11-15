@@ -21,11 +21,11 @@ import os.path
 import errno
 import traceback
 import contextlib
-
+import six
 from twisted.python import filepath
 from zope.interface import implementer
 
-from virtualbricks import interfaces, settings, configparser, log
+from virtualbricks import interfaces, settings, _configparser, log
 
 
 if False:  # pyflakes
@@ -161,7 +161,7 @@ def link_builder_factory(context):
         return LinkBuilder()
 
 
-interfaces.registerAdapter(link_builder_factory, configparser.Link,
+interfaces.registerAdapter(link_builder_factory, _configparser.Link,
                            interfaces.IBuilder)
 
 
@@ -290,7 +290,7 @@ def compatible_brick_builder_factory(context):
 
 
 interfaces.registerAdapter(compatible_brick_builder_factory,
-                           configparser.Section, interfaces.IBuilder)
+                           _configparser.Section, interfaces.IBuilder)
 
 
 class ConfigFile:
@@ -304,15 +304,15 @@ class ConfigFile:
                           interface.
         """
 
-        if isinstance(str_or_obj, (basestring, filepath.FilePath)):
-            if isinstance(str_or_obj, basestring):
+        if isinstance(str_or_obj, (six.string_types, filepath.FilePath)):
+            if isinstance(str_or_obj, six.string_types):
                 fp = filepath.FilePath(str_or_obj)
             else:
                 fp = str_or_obj
             logger.debug(config_dump, path=fp.path)
             with backup(fp, fp.sibling(fp.basename() + "~")):
                 tmpfile = fp.sibling("." + fp.basename() + ".sav")
-                with tmpfile.open("w") as fd:
+                with open(tmpfile.path, "wt") as fd:
                     self.save_to(factory, fd)
                 tmpfile.moveTo(fp)
         else:
@@ -341,21 +341,21 @@ class ConfigFile:
             plug.save_to(fileobj)
 
     def restore(self, factory, str_or_obj):
-        if isinstance(str_or_obj, (basestring, filepath.FilePath)):
-            if isinstance(str_or_obj, basestring):
+        if isinstance(str_or_obj, (six.string_types, filepath.FilePath)):
+            if isinstance(str_or_obj, six.string_types):
                 fp = filepath.FilePath(str_or_obj)
             else:
                 fp = str_or_obj
             restore_backup(fp, fp.sibling(fp.basename() + "~"))
             logger.info(open_project, path=fp.path)
-            with fp.open() as fd:
+            with open(fp.path,"rt") as fd:
                 self.restore_from(factory, fd)
         else:
             self.restore_from(factory, str_or_obj)
 
     def restore_from(self, factory, fileobj):
         with freeze_notify(factory):
-            for item in configparser.Parser(fileobj):
+            for item in _configparser.Parser(fileobj):
                 interfaces.IBuilder(item).load_from(factory, item)
 
 

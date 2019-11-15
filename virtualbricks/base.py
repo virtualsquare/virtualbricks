@@ -22,6 +22,62 @@ from twisted.python import reflect
 
 from virtualbricks import log, observable
 
+import six
+if six.PY3:
+    def iterFixItem(self):
+        super(Config, self).__init__((n, v.default) for n, v
+                                     in self.parameters.items())
+    def iterFixKeys(self,write):
+        for key in sorted(self.keys()):
+            write("%s=%s" % (key, self[key]))
+    def iterFixItemAttrs(self,attrs):
+        for name, value in attrs.items():
+            if value != self.config[name]:
+                logger.info(attribute_set, attr=name, brick=self, value=value)
+                self.config[name] = value
+                setter = getattr(self, "cbset_" + name, None)
+                if setter:
+                    setter(value)
+        self.notify_changed()
+    def iterFixSave(self,fileobj):
+        opt_tmp = "{0}={1}"
+        l = []
+        for name, param in sorted(self.config.parameters.items()):
+            if self.config[name] != param.default:
+                value = param.to_string_brick(self.config[name], self)
+                l.append(opt_tmp.format(name, value))
+        if l:
+            l.append("")
+        tmp = "[{0}:{1}]\n{2}\n"
+        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
+
+else:
+    def iterFixItem(self):
+        super(Config, self).__init__((n, v.default) for n, v
+                                     in self.parameters.iteritems())
+    def iterFixKeys(self,write):
+        for key in sorted(self.iterkeys()):
+            write("%s=%s" % (key, self[key]))
+    def iterFixItemAttrs(self,attrs):
+        for name, value in attrs.iteritems():
+            if value != self.config[name]:
+                logger.info(attribute_set, attr=name, brick=self, value=value)
+                self.config[name] = value
+                setter = getattr(self, "cbset_" + name, None)
+                if setter:
+                    setter(value)
+        self.notify_changed()
+    def iterFixSave(self,fileobj):
+        opt_tmp = "{0}={1}"
+        l = []
+        for name, param in sorted(self.config.parameters.iteritems()):
+            if self.config[name] != param.default:
+                value = param.to_string_brick(self.config[name], self)
+                l.append(opt_tmp.format(name, value))
+        if l:
+            l.append("")
+        tmp = "[{0}:{1}]\n{2}\n"
+        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
 if False:  # pyflakes
     _ = str
@@ -44,8 +100,7 @@ class Config(dict):
         parameters = {}
         reflect.accumulateClassDict(self.__class__, "parameters", parameters)
         self.parameters = parameters
-        super(Config, self).__init__((n, v.default) for n, v
-                                     in parameters.iteritems())
+        iterFixItem(self)
 
     # dict interface
 
@@ -70,8 +125,7 @@ class Config(dict):
         return self.parameters[name].to_string(self[name])
 
     def dump(self, write):
-        for key in sorted(self.iterkeys()):
-            write("%s=%s" % (key, self[key]))
+        iterFixKeys(self,write)
 
 
 class Parameter:
@@ -214,14 +268,7 @@ class Base(object):
         return False
 
     def set(self, attrs):
-        for name, value in attrs.iteritems():
-            if value != self.config[name]:
-                logger.info(attribute_set, attr=name, brick=self, value=value)
-                self.config[name] = value
-                setter = getattr(self, "cbset_" + name, None)
-                if setter:
-                    setter(value)
-        self.notify_changed()
+        iterFixItemAttrs(self,attrs)
 
     def get(self, name):
         try:
@@ -241,16 +288,7 @@ class Base(object):
         self.set(dict((n, self._getvalue(n, v)) for n, v in section))
 
     def save_to(self, fileobj):
-        opt_tmp = "{0}={1}"
-        l = []
-        for name, param in sorted(self.config.parameters.iteritems()):
-            if self.config[name] != param.default:
-                value = param.to_string_brick(self.config[name], self)
-                l.append(opt_tmp.format(name, value))
-        if l:
-            l.append("")
-        tmp = "[{0}:{1}]\n{2}\n"
-        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
+        iterFixSave(self,fileobj)
 
     def rename(self, name):
         self.set_name(self.factory.normalize_name(name))

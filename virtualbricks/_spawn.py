@@ -15,7 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import locale
 import os
+import six
 from twisted.internet.utils import getProcessOutput, getProcessOutputAndValue
 
 
@@ -25,7 +27,7 @@ def _abspath_exe(path, executable, return_relative=True):
             return executable
         else:
             return None
-    if isinstance(path, basestring) and path != '':
+    if isinstance(path, six.string_types) and path != '':
         abspath = os.path.join(path, executable)
         if os.access(abspath, os.X_OK):
             return abspath
@@ -42,10 +44,17 @@ def _abspath_exe(path, executable, return_relative=True):
         return executable
 
 
+def _encode(value):
+    assert isinstance(value, bytes)
+    encoding = locale.getpreferredencoding()
+    return str(value, encoding, 'strict')
+
+
 def getQemuOutput(executable, args=(), env={}, path=None, reactor=None,
                   errortoo=0):
     exe = abspath_qemu(executable)
-    return getProcessOutput(exe, args, env, path, reactor, errortoo)
+    d = getProcessOutput(exe, args, env, path, reactor, errortoo)
+    return d.addCallback(_encode)
 
 
 def getQemuOutputAndValue(executable, args=(), env={}, path=None, reactor=None):

@@ -174,7 +174,7 @@ pythonLogLevelMapping = {
 
 def formatEvent(event):
     """
-    Formats an event as a L{unicode}, using the format in
+    Formats an event as a L{str}, using the format in
     C{event["log_format"]}.
 
     This implementation should never raise an exception; if the formatting
@@ -183,7 +183,7 @@ def formatEvent(event):
 
     @param event: a logging event
 
-    @return: a L{unicode}
+    @return: a L{str}
     """
     try:
         format = event.get("log_format", None)
@@ -191,16 +191,16 @@ def formatEvent(event):
         if format is None:
             raise ValueError("No log format provided")
 
-        # Make sure format is unicode.
+        # Make sure format is str.
         if isinstance(format, bytes):
             # If we get bytes, assume it's UTF-8 bytes
             format = format.decode("utf-8")
 
-        elif isinstance(format, unicode):
+        elif isinstance(format, str):
             pass
 
         else:
-            raise TypeError("Log format must be unicode or bytes, not {0!r}"
+            raise TypeError("Log format must be str or bytes, not {0!r}"
                             .format(format))
 
         return formatWithCall(format, event)
@@ -214,14 +214,14 @@ def formatEvent(event):
 
 def formatUnformattableEvent(event, error):
     """
-    Formats an event as a L{unicode} that describes the event
+    Formats an event as a L{str} that describes the event
     generically and a formatting error.
 
     @param event: a logging event
 
     @param error: the formatting error
 
-    @return: a L{unicode}
+    @return: a L{str}
     """
     try:
         return (
@@ -875,7 +875,7 @@ class CallMapping(object):
 
 def formatWithCall(formatString, mapping):
     """
-    Format a string like L{unicode.format}, but:
+    Format a string like L{str.format}, but:
 
         - taking only a name mapping; no positional arguments
 
@@ -892,16 +892,14 @@ def formatWithCall(formatString, mapping):
         'just a string, a function.'
 
     @param formatString: A PEP-3101 format string.
-    @type formatString: L{unicode}
+    @type formatString: L{str}
 
     @param mapping: A L{dict}-like object to format.
 
     @return: The string with formatted values interpolated.
-    @rtype: L{unicode}
+    @rtype: L{str}
     """
-    return unicode(
-        theFormatter.vformat(formatString, (), CallMapping(mapping))
-    )
+    return theFormatter.vformat(formatString, (), CallMapping(mapping))
 
 theFormatter = Formatter()
 

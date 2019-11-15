@@ -134,7 +134,7 @@ class VDEProcessProtocol(Process):
     """
 
     _buffer = ""
-    delimiter = "\n"
+    delimiter = u"\n"
     prompt = re.compile(r"^vde(?:\[[^]]*\]:|\$) ", re.MULTILINE)
     PIPELINE_SIZE = 1
 
@@ -147,8 +147,8 @@ class VDEProcessProtocol(Process):
         """
         Translates bytes into lines, and calls ack_received.
         """
-
-        acks = self.prompt.split(self._buffer + data)
+        
+        acks = self.prompt.split(self._buffer + data.decode("utf-8"))
         self._buffer = acks.pop(-1)
         for ack in acks:
             self.ack_received(ack)
@@ -172,9 +172,9 @@ class VDEProcessProtocol(Process):
     def _send_command(self):
         cmd = self.queue[0]
         self.logger.info(cmd)
-        if cmd.endswith(self.delimiter):
+        if cmd.decode("utf-8").endswith(self.delimiter):
             return self.transport.write(cmd)
-        return self.transport.writeSequence((cmd, self.delimiter))
+        return self.transport.writeSequence((cmd, self.delimiter.encode("utf-8")))
 
     def outReceived(self, data):
         self.data_received(data)
@@ -337,6 +337,7 @@ class Brick(base.Base):
         # TODO: documents the behavior of all cases (#, *, etc.)
         res = []
 
+        # import pdb; pdb.set_trace()
         for switch, value in self.command_builder.items():
             if not switch.startswith("#"):
                 if callable(value):
@@ -349,6 +350,8 @@ class Brick(base.Base):
                     if not switch.startswith("*"):
                         res.append(switch)
                     res.append(value)
+        #res.sort()
+        #print(res)
         return res
 
     def _poweron(self, ignore):

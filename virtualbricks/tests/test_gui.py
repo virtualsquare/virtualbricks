@@ -17,7 +17,9 @@
 
 from twisted.trial import unittest
 
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 
 from virtualbricks import project, _settings
 from virtualbricks.gui import gui, interfaces
@@ -165,7 +167,7 @@ class TestStateFramework(unittest.TestCase):
 class Readme(gui.ReadmeMixin, gui._Root):
 
     def __init__(self, manager):
-        self.textview = gtk.TextView()
+        self.textview = Gtk.TextView()
         self.manager = manager
 
     def set_text(self, text):
@@ -178,8 +180,8 @@ class Readme(gui.ReadmeMixin, gui._Root):
     def init(self, factory):
         super(Readme, self).init(factory)
 
-    def on_quit(self):
-        super(Readme, self).on_quit()
+    def on_quit(self, factory):
+        super(Readme, self).on_quit(factory)
 
 
 class TestReadme(unittest.TestCase):
@@ -196,7 +198,7 @@ class TestReadme(unittest.TestCase):
         readme_tab.init(factory)
         readme_tab.set_text(DESC)
         self.assertEqual(prj.get_description(), "")
-        readme_tab.on_quit()
+        readme_tab.on_quit(factory)
         self.assertEqual(prj.get_description(), DESC)
 
 

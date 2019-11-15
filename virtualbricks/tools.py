@@ -20,6 +20,7 @@
 import os
 import sys
 import errno
+from pathlib import Path
 import random
 import re
 import functools
@@ -75,11 +76,11 @@ def stack_trace():
 def _check_missing(default_paths, files):
     if not default_paths:
         default_paths = os.environ.get('PATH', '.').split(':')
-    elif isinstance(default_paths, basestring):
+    elif isinstance(default_paths, str):
         default_paths = [default_paths]
     for filename in files:
-        for path in default_paths:
-            if os.access(os.path.join(path, filename), os.X_OK):
+        for directory in default_paths:
+            if os.access(Path(directory, filename), os.X_OK):
                 break
         else:
             yield filename
@@ -150,7 +151,7 @@ class Tempfile:
     def __exit__(self, exc_type, exc_value, traceback):
         try:
             os.remove(self.filename)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
 
@@ -186,7 +187,7 @@ def get_backing_file_from_cow(fp):
 
 
 def get_backing_file_from_qcow(fp):
-    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
+    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12).encode("utf-8"))
     if size == 0:
         return ""
     else:
@@ -197,7 +198,7 @@ def get_backing_file_from_qcow(fp):
 class UnknowTypeError(Exception):
     pass
 
-
+#struct.error: unpack requires a bytes object of length 8 ... tried encode but not working
 def get_backing_file(fp):
     data = fp.read(8)
     magic, version = struct.unpack(GENERIC_HEADER_FMT, data)

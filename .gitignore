@@ -12,8 +12,10 @@ dist/
 tmp/
 build/
 share/virtualbricks.glade
-./_trial_temp*/
+_trial_temp/
 ./.coverage
 ./htmlcov
 virtualbricks.egg-info/
 tags
+*.pyc
+__pycache__/

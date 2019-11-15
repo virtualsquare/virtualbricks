@@ -15,7 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 from twisted.internet import defer
 from twisted.python import filepath
 
@@ -91,28 +93,28 @@ class ExportProjectDialog(WindowStub, dialogs.ExportProjectDialog):
     pass
 
 MODEL = {
-    (0, 1, gtk.STOCK_DIRECTORY, "root", None): {
-        (0, 1, gtk.STOCK_DIRECTORY, "A", None): {
-            (0, 1, gtk.STOCK_FILE, "a", None): {},
-            (0, 1, gtk.STOCK_FILE, "b", None): {},
-            (0, 1, gtk.STOCK_FILE, "c", None): {},
+    (0, 1, Gtk.STOCK_DIRECTORY, "root", None): {
+        (0, 1, Gtk.STOCK_DIRECTORY, "A", None): {
+            (0, 1, Gtk.STOCK_FILE, "a", None): {},
+            (0, 1, Gtk.STOCK_FILE, "b", None): {},
+            (0, 1, Gtk.STOCK_FILE, "c", None): {},
         },
-        (0, 1, gtk.STOCK_DIRECTORY, "B", None): {
-            (0, 1, gtk.STOCK_FILE, "a", None): {},
-            (0, 1, gtk.STOCK_FILE, "b", None): {},
-            (0, 1, gtk.STOCK_FILE, "c", None): {},
+        (0, 1, Gtk.STOCK_DIRECTORY, "B", None): {
+            (0, 1, Gtk.STOCK_FILE, "a", None): {},
+            (0, 1, Gtk.STOCK_FILE, "b", None): {},
+            (0, 1, Gtk.STOCK_FILE, "c", None): {},
         },
-        (0, 1, gtk.STOCK_DIRECTORY, "C", None): {
-            (0, 1, gtk.STOCK_FILE, "a", None): {},
-            (0, 1, gtk.STOCK_FILE, "b", None): {},
-            (0, 1, gtk.STOCK_FILE, "c", None): {},
+        (0, 1, Gtk.STOCK_DIRECTORY, "C", None): {
+            (0, 1, Gtk.STOCK_FILE, "a", None): {},
+            (0, 1, Gtk.STOCK_FILE, "b", None): {},
+            (0, 1, Gtk.STOCK_FILE, "c", None): {},
         }
     }
 }
 
 
 def build_model():
-    model = gtk.TreeStore(bool, bool, str, str, object)
+    model = Gtk.TreeStore(bool, bool, str, str, object)
     root = MODEL.keys()[0]
     insert_children(model, None, root, MODEL[root])
     return model
@@ -200,15 +202,15 @@ class TestExportDialog(GtkTestCase):
         self.create_file(self.prjpath, ".project")
         self.create_file(self.prjpath, "vde.dot")
         self.create_file(self.prjpath, "vde_topology.plain")
-        tree1 = gtk.TreeStore(bool, bool, str, str, object)
-        tree2 = gtk.TreeStore(bool, bool, str, str, object)
+        tree1 = Gtk.TreeStore(bool, bool, str, str, object)
+        tree2 = Gtk.TreeStore(bool, bool, str, str, object)
         self.dialog.build_path_tree(tree1, self.prjpath)
-        ritr = tree2.append(None, (True, True, gtk.STOCK_DIRECTORY,
+        ritr = tree2.append(None, (True, True, Gtk.STOCK_DIRECTORY,
                                    self.prjpath.basename(), self.prjpath))
-        Ai = tree2.append(ritr, (True, True, gtk.STOCK_DIRECTORY,
+        Ai = tree2.append(ritr, (True, True, Gtk.STOCK_DIRECTORY,
                                   A.basename(), A))
-        tree2.append(Ai, (True, True, gtk.STOCK_FILE, a.basename(), a))
-        tree2.append(ritr, (True, True, gtk.STOCK_FILE, b.basename(), b))
+        tree2.append(Ai, (True, True, Gtk.STOCK_FILE, a.basename(), a))
+        tree2.append(ritr, (True, True, Gtk.STOCK_FILE, b.basename(), b))
         self.assert_tree_model_equal(tree1, tree2)
 
     # def test_build_tree_path_dont_recurse_internal_dirs(self):
@@ -216,7 +218,7 @@ class TestExportDialog(GtkTestCase):
     #     raise NotImplementedError()
 
     def test_export(self):
-        model = gtk.TreeStore(bool, bool, str, str, object)
+        model = Gtk.TreeStore(bool, bool, str, str, object)
         self.dialog.include_images = True
         self.dialog.image_files = [("a", filepath.FilePath("/images/a"))]
         ancestor = filepath.FilePath("/")
@@ -377,7 +379,7 @@ class TestImportStep1(TestHumbleImport):
 
     def setUp(self):
         TestHumbleImport.setUp(self)
-        self.model = gtk.ListStore(str, object, bool)
+        self.model = Gtk.ListStore(str, object, bool)
         self.ipath = filepath.FilePath(self.manager.path).child("vimages")
 
     def test_same_archive_dont_extract(self):
@@ -441,13 +443,13 @@ class TestImportStep1(TestHumbleImport):
 
         successResultOf(self, self.humble.step_1(self.dialog, self.model,
                                                  self.ipath, extract))
-        model = gtk.ListStore(str, object, bool)
+        model = Gtk.ListStore(str, object, bool)
         model.append(("debian7.img", self.ipath.child("debian7.img"), True))
         model.append(("ubuntu.img", self.ipath.child("ubuntu.img"), True))
-        model1s = gtk.TreeModelSort(self.model)
-        model1s.set_sort_column_id(0, gtk.SORT_ASCENDING)
-        model2s = gtk.TreeModelSort(model)
-        model2s.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        model1s = Gtk.TreeModelSort(self.model)
+        model1s.set_sort_column_id(0, Gtk.SortType.ASCENDING)
+        model2s = Gtk.TreeModelSort(model)
+        model2s.set_sort_column_id(0, Gtk.SortType.ASCENDING)
         self.assert_tree_model_equal(model1s, model2s)
 
 
@@ -457,7 +459,7 @@ class TestImportStep1(TestHumbleImport):
 
 #     def setUp(self):
 #         TestHumbleImport.setUp(self)
-#         self.model = gtk.ListStore(str, object, bool)
+#         self.model = Gtk.ListStore(str, object, bool)
 #         self.ipath = self.manager.project_path("vimages")
 #         # self.dialog.project = self.project = self.manager.create("test")
 #         # self.dialog.images = {}
@@ -476,8 +478,8 @@ class TestImportStep1(TestHumbleImport):
     # def setUp(self):
     #     TestHumbleImport.setUp(self)
     #     self.dialog.images = {}
-    #     self.store1 = gtk.ListStore(str, object, bool)
-    #     self.store2 = gtk.ListStore(str, object)
+    #     self.store1 = Gtk.ListStore(str, object, bool)
+    #     self.store2 = Gtk.ListStore(str, object)
 
     # def test_no_images(self):
     #     """
@@ -521,8 +523,8 @@ class TestImportStep1(TestHumbleImport):
     # def setUp(self):
     #     TestHumbleImport.setUp(self)
     #     self.dialog.images = {}
-    #     self.store1 = gtk.ListStore(str, object, bool)
-    #     self.store2 = gtk.ListStore(str, object)
+    #     self.store1 = Gtk.ListStore(str, object, bool)
+    #     self.store2 = Gtk.ListStore(str, object)
     #     self.dialog.project = self.project = self.manager.create("test")
 
     # def test_no_come_back(self):

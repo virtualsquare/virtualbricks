@@ -16,15 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import locale
 import os
 import textwrap
 
 from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from zope.interface import implementer
-
 from virtualbricks import __version__, bricks, errors, log, settings
-
+import six
 
 logger = log.Logger()
 socket_error = log.Event("Error on socket")
@@ -87,8 +87,11 @@ class Protocol(basic.LineOnlyReceiver):
     def __init__(self, factory):
         self.factory = factory
         self.sub_protocols = {}
+        self.encoding = locale.getpreferredencoding(do_setlocale=False)
 
     def lineReceived(self, line):
+        if isinstance(line, bytes):
+            line = str(line, encoding=self.encoding)
         parts = line.split()
         if parts:
             handler = getattr(self, "do_" + parts[0], None)
@@ -102,15 +105,20 @@ class Protocol(basic.LineOnlyReceiver):
             else:
                 self.default(line)
 
+    def sendLine(self, line):
+        if isinstance(line, str):
+            line = bytes(line, encoding=self.encoding)
+        super().sendLine(line)
+
     def default(self, line):
         pass
 
     def connectionMade(self):
-        for protocol in self.sub_protocols.itervalues():
+        for protocol in six.itervalues(self.sub_protocols):
             protocol.makeConnection(self.transport)
 
     def connectionLost(self, reason):
-        for protocol in self.sub_protocols.itervalues():
+        for protocol in six.itervalues(self.sub_protocols):
             protocol.connectionLost(reason)
 
 
@@ -140,13 +148,15 @@ class VBProtocol(Protocol):
     """
 
     # _is_first = False
-    delimiter = "\n"
+    delimiter = b"\n"
     prompt = "virtualbricks> "
-    intro = ("Virtualbricks, version {version}\n"
+    intro = (
+        "Virtualbricks, version {version}\n"
         "Copyright (C) 2018 Virtualbricks team\n"
         "This is free software; see the source code for copying conditions.\n"
         "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
-        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n")
+        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n"
+    )
 
     def __init__(self, factory):
         Protocol.__init__(self, factory)
@@ -162,13 +172,13 @@ class VBProtocol(Protocol):
         #     intro = self.intro.format(version=virtualbricks.version.short())
         #     self.transport.write(intro)
         intro = self.intro.format(version=__version__)
-        self.transport.write(intro)
-        self.transport.write(self.prompt)
+        self.transport.write(intro.encode())
+        self.transport.write(self.prompt.encode())
 
     def lineReceived(self, line):
         Protocol.lineReceived(self, line)
         if line != "python":  # :-(
-            self.transport.write(self.prompt)
+            self.transport.write(self.prompt.encode())
 
     def brick_action(self, obj, cmd):
         """brick action dispatcher"""
@@ -213,7 +223,8 @@ class VBProtocol(Protocol):
         logger.info(quit_loop)
 
     def do_help(self):
-        self.sendLine(textwrap.dedent(self.__doc__))
+        line = textwrap.dedent(self.__doc__)
+        self.sendLine(line)
 
     def do_event(self, name, *args):
         event = self.factory.get_event_by_name(name)
@@ -252,7 +263,7 @@ class VBProtocol(Protocol):
         else:
             try:
                 self.factory.new_brick(typ, name)
-            except (errors.InvalidTypeError, errors.InvalidNameError), e:
+            except (errors.InvalidTypeError, errors.InvalidNameError) as e:
                 self.sendLine(str(e))
 
     def do_list(self):
@@ -296,8 +307,7 @@ class VBProtocol(Protocol):
                 if b.get_type() == "Qemu":
                     if pl.mode == "vde":
                         s = "\tlink connected to %s with a %s (%s) card"
-                        self.sendLine(s % (pl.sock.nickname, pl.model,
-                                               pl.mac))
+                        self.sendLine(s % (pl.sock.nickname, pl.model, pl.mac))
                     else:
                         s = "\tuserlink connected with a %s (%s) card"
                         self.sendLine(s % (pl.model, pl.mac))

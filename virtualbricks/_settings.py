@@ -16,8 +16,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import ConfigParser
-
+import six
+from six.moves import configparser
 from virtualbricks import tools, log
 from virtualbricks.errors import NoOptionError
 
@@ -58,24 +58,25 @@ DEFAULT_CONF = {
 }
 
 
-class Settings:
+class SettingsMeta(type):
 
-    class __metaclass__(type):
+    def __new__(cls, name, bases, dct):
 
-        def __new__(cls, name, bases, dct):
+        def make_property(opt):
 
-            def make_property(opt):
+            def get(self):
+                return self.config.getboolean(self.DEFAULT_SECTION, opt)
 
-                def get(self):
-                    return self.config.getboolean(self.DEFAULT_SECTION, opt)
+            dct["get_" + opt] = get
+            dct[opt] = property(get)
 
-                dct["get_" + opt] = get
-                dct[opt] = property(get)
+        for opt in dct["__boolean_values__"]:
+            make_property(opt)
 
-            for opt in dct["__boolean_values__"]:
-                make_property(opt)
+        return type.__new__(cls, name, bases, dct)
 
-            return type.__new__(cls, name, bases, dct)
+
+class Settings(six.with_metaclass(SettingsMeta)):
 
     __boolean_values__ = ('kvm', 'ksm', 'python', 'femaleplugs',
                           'erroronloop', 'systray', 'show_missing')
@@ -88,7 +89,7 @@ class Settings:
 
     def __init__(self, filename=CONFIGFILE):
         self.filename = filename
-        self.config = ConfigParser.SafeConfigParser()
+        self.config = configparser.SafeConfigParser()
         self.config.add_section(self.DEFAULT_SECTION)
         for key, value in DEFAULT_CONF.items():
             self.config.set(self.DEFAULT_SECTION, key, str(value))
@@ -102,13 +103,13 @@ class Settings:
         if attr in self.__boolean_values__:
             try:
                 return self.config.getboolean(self.DEFAULT_SECTION, attr)
-            except ConfigParser.NoOptionError:
+            except configparser.NoOptionError:
                 raise NoOptionError(attr)
         if attr == 'sudo' and os.getuid() == 0:
             return ''
         try:
             return self.config.get(self.DEFAULT_SECTION, str(attr))
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             raise NoOptionError(attr)
 
     def set(self, attr, value):
@@ -125,8 +126,8 @@ class Settings:
                 self.install()
             else:
                 logger.info(config_loaded, filename=self.filename)
-                tools.enable_ksm(self.ksm, self.get("sudo"))
-        except ConfigParser.Error:
+                tools.enable_ksm(self.get('ksm'), self.get("sudo"))
+        except configparser.Error:
             logger.exception(cannot_read_config, filename=self.filename)
 
     def install(self):

@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <!-- interface-requires virtualbricks.gui.widgets 0.1 -->
-  <requires lib="gtk+" version="2.20"/>
-  <!-- interface-naming-policy toplevel-contextual -->
+  <requires lib="gtk+" version="3.12"/>
+  <requires lib="virtualbricks.gui.widgets" version="0.1"/>
+  <object class="List" id="lsImages">
+    <columns>
+      <!-- column-name disk -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
   <object class="GtkWindow" id="DisksLibraryDialog">
     <property name="width_request">800</property>
     <property name="height_request">350</property>
@@ -11,11 +17,12 @@
     <property name="window_position">center</property>
     <property name="urgency_hint">True</property>
     <child>
-      <object class="GtkVBox" id="vbox1">
+      <object class="GtkBox" id="vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
         <child>
-          <object class="GtkHBox" id="hbox1">
+          <object class="GtkBox" id="hbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
@@ -23,20 +30,22 @@
                 <property name="width_request">500</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="hscrollbar_policy">automatic</property>
                 <child>
                   <object class="GtkTreeView" id="tvImages">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="model">lsImages</property>
                     <signal name="row-activated" handler="on_tvImages_row_activated" swapped="no"/>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection" id="treeview-selection1"/>
+                    </child>
                     <child>
                       <object class="GtkTreeViewColumn" id="tvcName">
                         <property name="title" translatable="yes">Image name</property>
                         <child>
                           <object class="CellRendererFormattable" id="crt1">
-                            <property name="formatting_enabled">True</property>
                             <property name="format_string">n</property>
+                            <property name="formatting_enabled">True</property>
                           </object>
                         </child>
                       </object>
@@ -46,8 +55,8 @@
                         <property name="title" translatable="yes">Path</property>
                         <child>
                           <object class="CellRendererFormattable" id="crt2">
-                            <property name="formatting_enabled">True</property>
                             <property name="format_string">p</property>
+                            <property name="formatting_enabled">True</property>
                           </object>
                         </child>
                       </object>
@@ -65,8 +74,8 @@
                         <property name="title" translatable="yes">Master Brick</property>
                         <child>
                           <object class="CellRendererFormattable" id="crt4">
-                            <property name="formatting_enabled">True</property>
                             <property name="format_string">m</property>
+                            <property name="formatting_enabled">True</property>
                           </object>
                         </child>
                       </object>
@@ -84,8 +93,8 @@
                         <property name="title" translatable="yes">Size (MB)</property>
                         <child>
                           <object class="CellRendererFormattable" id="crt6">
-                            <property name="formatting_enabled">True</property>
                             <property name="format_string">s</property>
+                            <property name="formatting_enabled">True</property>
                           </object>
                         </child>
                       </object>
@@ -106,16 +115,17 @@
                 <property name="label_xalign">0</property>
                 <signal name="show" handler="on_pnlConfig_show" swapped="no"/>
                 <child>
-                  <object class="GtkVBox" id="vbox2">
+                  <object class="GtkBox" id="vbox2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="border_width">4</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <object class="GtkLabel" id="label6">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">Image path:</property>
+                        <property name="xalign">0</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -131,8 +141,6 @@
                         <property name="invisible_char">●</property>
                         <property name="primary_icon_activatable">False</property>
                         <property name="secondary_icon_activatable">False</property>
-                        <property name="primary_icon_sensitive">True</property>
-                        <property name="secondary_icon_sensitive">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -141,7 +149,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkHSeparator" id="hseparator2">
+                      <object class="GtkSeparator" id="hseparator2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                       </object>
@@ -156,8 +164,8 @@
                       <object class="GtkLabel" id="label7">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">Virtualbricks name:</property>
+                        <property name="xalign">0</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -172,8 +180,6 @@
                         <property name="invisible_char">●</property>
                         <property name="primary_icon_activatable">False</property>
                         <property name="secondary_icon_activatable">False</property>
-                        <property name="primary_icon_sensitive">True</property>
-                        <property name="secondary_icon_sensitive">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -182,7 +188,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkHSeparator" id="hseparator3">
+                      <object class="GtkSeparator" id="hseparator3">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                       </object>
@@ -197,8 +203,8 @@
                       <object class="GtkLabel" id="label8">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">Short description:</property>
+                        <property name="xalign">0</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -213,8 +219,6 @@
                         <property name="invisible_char">●</property>
                         <property name="primary_icon_activatable">False</property>
                         <property name="secondary_icon_activatable">False</property>
-                        <property name="primary_icon_sensitive">True</property>
-                        <property name="secondary_icon_sensitive">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -223,7 +227,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkHButtonBox" id="hbuttonbox2">
+                      <object class="GtkButtonBox" id="hbuttonbox2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
@@ -276,7 +280,7 @@
                         <property name="expand">False</property>
                         <property name="fill">True</property>
                         <property name="pack_type">end</property>
-                        <property name="position">8</property>
+                        <property name="position">9</property>
                       </packing>
                     </child>
                   </object>
@@ -320,11 +324,5 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="List" id="lsImages">
-    <columns>
-      <!-- column-name disk -->
-      <column type="PyObject"/>
-    </columns>
   </object>
 </interface>

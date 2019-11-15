@@ -20,6 +20,8 @@ import os
 from virtualbricks import switches, errors, settings
 from virtualbricks.tests import unittest, stubs
 
+settings.load()
+
 
 class TestSwitch(unittest.TestCase):
 
@@ -48,10 +50,13 @@ class TestSwitch(unittest.TestCase):
     def test_args(self):
         sw1 = switches.Switch(stubs.FactoryStub(), "test_switch")
         self.assertEqual(sw1.args(),
-             ["/usr/bin/vde_switch", "-M",
-              os.path.join(settings.VIRTUALBRICKS_HOME, "test_switch.mgmt"),
-              "-n", "32", "-s",
-              os.path.join(settings.VIRTUALBRICKS_HOME, "test_switch.ctl")])
+            [
+                "/usr/bin/vde_switch",
+                "-n", "32",
+                "-s", os.path.join(settings.VIRTUALBRICKS_HOME, "test_switch.ctl"),
+                "-M", os.path.join(settings.VIRTUALBRICKS_HOME, "test_switch.mgmt")
+            ]
+        )
 
 
 class TestSwitchWrapper(unittest.TestCase):
