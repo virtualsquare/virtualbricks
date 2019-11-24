@@ -1,0 +1,60 @@
+stages:
+    - build
+
+variables:
+    FULLNAME: Marco Giusti
+    DEBEMAIL: marco.giusti@posteo.de
+
+.build-template: &build-deb
+    stage: build
+    before_script:
+        - apt-get update
+        - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools imagemagick
+        - export VB_VERSION="$(python3 setup.py -V)"
+        - export "VB_DEB_VERSION=${VB_VERSION}-0~${CI_JOB_NAME}1"
+        - mkdir dist
+        - cp -R . ../virtualbricks-"$VB_VERSION"
+        - cd ../virtualbricks-"$VB_VERSION"
+    script:
+        - debchange --newversion "$VB_DEB_VERSION" "New upstream version"
+        - debchange --release --distribution "${CI_JOB_NAME}" ""
+        - dpkg-buildpackage -us -uc
+        - cp ../virtualbricks_"$VB_DEB_VERSION"* ../virtualbricks/dist/
+    artifacts:
+        paths:
+            - dist/*
+
+# Debian 9, oldstable
+stretch:
+    <<: *build-deb
+    image: debian:stretch
+
+# Debian 10, stable
+buster:
+    <<: *build-deb
+    image: debian:buster
+
+# Debian 11, testing
+bullseye:
+    <<: *build-deb
+    image: debian:bullseye
+
+# Debian unstable
+sid:
+    <<: *build-deb
+    image: debian:sid
+
+# Ubuntu 18.04 LTS
+bionic:
+    <<: *build-deb
+    image: ubuntu:bionic
+
+# Ubuntu 19.04
+disco:
+    <<: *build-deb
+    image: ubuntu:disco
+
+# Ubuntu 19.10
+eoan:
+    <<: *build-deb
+    image: ubuntu:eoan
