@@ -13,3 +13,13 @@ __pycache__/
 /tmp/
 # Debian package build artifacts
 .pybuild/
+/debian/.debhelper/
+/debian/files
+/debian/virtualbricks.debhelper.log
+/debian/virtualbricks.postinst.debhelper
+/debian/virtualbricks.postrm.debhelper
+/debian/virtualbricks.substvars
+/debian/virtualbricks/
+/debian/debhelper-build-stamp
+/debian/usr/
+/debian/virtualbricks.prerm.debhelper
