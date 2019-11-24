@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_console -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -152,7 +152,7 @@ class VBProtocol(Protocol):
     prompt = "virtualbricks> "
     intro = (
         "Virtualbricks, version {version}\n"
-        "Copyright (C) 2018 Virtualbricks team\n"
+        "Copyright (C) 2019 Virtualbricks team\n"
         "This is free software; see the source code for copying conditions.\n"
         "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
         "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n"

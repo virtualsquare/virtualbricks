@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_log -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ def expect_event(func):
         elif isinstance(event, bytes):
             event = Event(event)
         elif isinstance(event, six.text_type):
-            event = Event(event)        
+            event = Event(event)
         elif not callable(event):
             raise ValueError("func object was not callable nor str or byte")
         return func(self, event, *args, **kwds)
