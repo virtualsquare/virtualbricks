@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_configfile -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

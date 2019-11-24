@@ -8,7 +8,7 @@
     <property name="type_hint">dialog</property>
     <property name="program_name">Virtualbricks</property>
     <property name="version">(version unknown)</property>
-    <property name="copyright" translatable="yes">Copyright © 2018 Virtualbricks team
+    <property name="copyright" translatable="yes">Copyright © 2019 Virtualbricks team
 VDE - Copyright © 2003-2011 Renzo Davoli.
 QEMU - Copyright © 2005-2011 Fabrice Bellard.
 QEMU is a trademark of Fabrice Bellard.

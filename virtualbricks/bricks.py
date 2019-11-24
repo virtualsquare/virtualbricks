@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_bricks -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -147,7 +147,7 @@ class VDEProcessProtocol(Process):
         """
         Translates bytes into lines, and calls ack_received.
         """
-        
+
         acks = self.prompt.split(self._buffer + data.decode("utf-8"))
         self._buffer = acks.pop(-1)
         for ack in acks:
