@@ -1,10 +1,6 @@
 stages:
     - build
 
-variables:
-    FULLNAME: Marco Giusti
-    DEBEMAIL: marco.giusti@posteo.de
-
 .build-template: &build-deb
     stage: build
     before_script:
