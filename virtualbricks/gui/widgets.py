@@ -142,7 +142,7 @@ class List(Gtk.ListStore):
         "value-member": (
             GObject.TYPE_STRING,
             _("Value member"),
-            _(""),
+            "",
             "",
             GObject.PARAM_READWRITE
         ),

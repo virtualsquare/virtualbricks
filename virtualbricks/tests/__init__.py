@@ -20,7 +20,6 @@ import sys
 import types
 import functools
 import difflib
-import six
 
 from twisted.trial import unittest
 from twisted.python import failure
@@ -49,7 +48,7 @@ def Skip(reason):
     # This decorator is camelcase because otherwise importing it cause all the
     # tests to skip because trial look deep in test method, class, module
     def decorator(test_item):
-        if not isinstance(test_item, (type, six.class_types)):
+        if not isinstance(test_item, type):
             @functools.wraps(test_item)
             def skip_wrapper(*args, **kwargs):
                 raise unittest.SkipTest(reason)
@@ -159,15 +158,15 @@ def failureResultOf(self, deferred, *expectedExceptionTypes):
 
 
 def restore_settings(olds):
-    for k, v in olds.iteritems():
+    for k, v in olds.items():
         settings.set(k, v)
 
 
 def patch_settings(suite, **kwds):
-    olds = dict((k, settings.get(k)) for k in kwds.iterkeys())
+    olds = dict((k, settings.get(k)) for k in kwds.keys())
     suite.addCleanup(restore_settings, olds)
     suite.patch(settings, "store", lambda: None)
-    for k, v in kwds.iteritems():
+    for k, v in kwds.items():
         settings.set(k, v)
 
 

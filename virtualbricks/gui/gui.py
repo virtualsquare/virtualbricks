@@ -1968,9 +1968,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.__ask_for_deletion(self.brickfactory.del_event, event, other)
 
     def __ask_for_deletion(self, on_yes, what, secondary_text=None):
-        question = _("Do you really want to delete %s (%s)?") % (
-            what.name, what.get_type()
-        )
+        question = _("Do you really want to delete %(brick)s (%(type)s)?") % {
+            'brick': what.name,
+            'type': what.get_type()}
         dialog = dialogs.ConfirmDialog(
             question,
             on_yes=on_yes,
