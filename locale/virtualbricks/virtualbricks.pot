@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# Copyright (C) YEAR Virtualbricks team
+# This file is distributed under the same license as the Virtualbricks package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: virtualbricks 0.4\n"
-"Report-Msgid-Bugs-To: qemulator-list@createweb.de\n"
-"POT-Creation-Date: 2011-06-01 22:47+0200\n"
+"Project-Id-Version: Virtualbricks 2.0.0a1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-12-07 09:18+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,10 +18,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: share/virtualbricks.template.glade:10
+#: virtualbricks/gui/data/virtualbricks.ui:26
 msgid "Virtualbricks"
 msgstr ""
 
 #: share/virtualbricks.template.glade:27
+#: virtualbricks/gui/data/virtualbricks.ui:46
 msgid "_File"
 msgstr ""
 
@@ -46,6 +48,7 @@ msgid "_Save project as..."
 msgstr ""
 
 #: share/virtualbricks.template.glade:132
+#: virtualbricks/gui/data/virtualbricks.ui:161
 msgid "_Settings"
 msgstr ""
 
@@ -62,10 +65,12 @@ msgid "auto hide stored settings"
 msgstr ""
 
 #: share/virtualbricks.template.glade:171
+#: virtualbricks/gui/data/virtualbricks.ui:186
 msgid "_View"
 msgstr ""
 
 #: share/virtualbricks.template.glade:179
+#: virtualbricks/gui/data/virtualbricks.ui:196
 msgid "_Messages"
 msgstr ""
 
@@ -78,10 +83,12 @@ msgid "Not implemented yet"
 msgstr ""
 
 #: share/virtualbricks.template.glade:199
+#: virtualbricks/gui/data/virtualbricks.ui:219
 msgid "_Create new image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:211
+#: virtualbricks/gui/data/virtualbricks.ui:265
 msgid "_Help"
 msgstr ""
 
@@ -98,14 +105,17 @@ msgid "<b>Bricks:</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:298
+#: virtualbricks/gui/data/virtualbricks.ui:314
 msgid "New Brick"
 msgstr ""
 
 #: share/virtualbricks.template.glade:320
+#: virtualbricks/gui/data/virtualbricks.ui:338
 msgid "Start All Bricks"
 msgstr ""
 
 #: share/virtualbricks.template.glade:334
+#: virtualbricks/gui/data/virtualbricks.ui:352
 msgid "Stop All Bricks"
 msgstr ""
 
@@ -120,14 +130,17 @@ msgid "Bricks"
 msgstr ""
 
 #: share/virtualbricks.template.glade:396
+#: virtualbricks/gui/data/virtualbricks.ui:501
 msgid "New Event"
 msgstr ""
 
 #: share/virtualbricks.template.glade:418
+#: virtualbricks/gui/data/virtualbricks.ui:525
 msgid "Start All Events"
 msgstr ""
 
 #: share/virtualbricks.template.glade:432
+#: virtualbricks/gui/data/virtualbricks.ui:539
 msgid "Stop All Events"
 msgstr ""
 
@@ -160,14 +173,17 @@ msgid "Remote Sessions"
 msgstr ""
 
 #: share/virtualbricks.template.glade:637
+#: virtualbricks/gui/data/virtualbricks.ui:775
 msgid "Export as Image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:653
+#: virtualbricks/gui/data/virtualbricks.ui:794
 msgid "Expand Horizontally"
 msgstr ""
 
 #: share/virtualbricks.template.glade:668
+#: virtualbricks/gui/data/virtualbricks.ui:811
 msgid "Expand Vertically"
 msgstr ""
 
@@ -184,42 +200,52 @@ msgid "Show settings"
 msgstr ""
 
 #: share/virtualbricks.template.glade:839
+#: virtualbricks/gui/data/qemuconfig.ui:131
 msgid "boot as device"
 msgstr ""
 
 #: share/virtualbricks.template.glade:871
+#: virtualbricks/gui/data/qemuconfig.ui:168
 msgid "Snapshot mode"
 msgstr ""
 
 #: share/virtualbricks.template.glade:876
+#: virtualbricks/gui/data/qemuconfig.ui:173
 msgid "write to temporary files instead of disk image files"
 msgstr ""
 
 #: share/virtualbricks.template.glade:902
+#: virtualbricks/gui/data/qemuconfig.ui:190
 msgid "<b>boot options</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:931
+#: virtualbricks/gui/data/qemuconfig.ui:253
 msgid "use image as cdrom"
 msgstr ""
 
 #: share/virtualbricks.template.glade:936
+#: virtualbricks/gui/data/qemuconfig.ui:258
 msgid "use one of the image files in the default folder as cdrom device"
 msgstr ""
 
 #: share/virtualbricks.template.glade:951
+#: virtualbricks/gui/data/qemuconfig.ui:235
 msgid "mount cdrom"
 msgstr ""
 
 #: share/virtualbricks.template.glade:956
+#: virtualbricks/gui/data/qemuconfig.ui:240
 msgid "mount local cdrom Drive"
 msgstr ""
 
 #: share/virtualbricks.template.glade:970
+#: virtualbricks/gui/data/qemuconfig.ui:216
 msgid "no cdrom"
 msgstr ""
 
 #: share/virtualbricks.template.glade:975
+#: virtualbricks/gui/data/qemuconfig.ui:221
 msgid "don´t use any cdrom device"
 msgstr ""
 
@@ -228,10 +254,12 @@ msgid "/dev/cdrom\n"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1062
+#: virtualbricks/gui/data/qemuconfig.ui:314
 msgid "<b>cdrom device</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1110
+#: virtualbricks/gui/data/qemuconfig.ui:371
 msgid "Select images for Qemu volumes"
 msgstr ""
 
@@ -272,15 +300,24 @@ msgstr ""
 #: share/virtualbricks.template.glade:1530
 #: share/virtualbricks.template.glade:1573
 #: share/virtualbricks.template.glade:1616
+#: virtualbricks/gui/data/qemuconfig.ui:597
+#: virtualbricks/gui/data/qemuconfig.ui:611
+#: virtualbricks/gui/data/qemuconfig.ui:625
+#: virtualbricks/gui/data/qemuconfig.ui:639
+#: virtualbricks/gui/data/qemuconfig.ui:653
+#: virtualbricks/gui/data/qemuconfig.ui:667
+#: virtualbricks/gui/data/qemuconfig.ui:681
 msgid "Private COW"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1648
+#: virtualbricks/gui/data/qemuconfig.ui:730
 msgid "<b>additional media</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1685
 #: share/virtualbricks.template.glade:12420
+#: virtualbricks/gui/data/qemuconfig.ui:846
 msgid "Drives"
 msgstr ""
 
@@ -308,18 +345,22 @@ msgid "Machine type"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1816
+#: virtualbricks/gui/data/qemuconfig.ui:1008
 msgid "KVM"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1833
+#: virtualbricks/gui/data/qemuconfig.ui:1026
 msgid "Number of CPUs:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1870
+#: virtualbricks/gui/data/qemuconfig.ui:1067
 msgid "<b>System and machine</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1928
+#: virtualbricks/gui/data/qemuconfig.ui:1340
 msgid "disable graphical output"
 msgstr ""
 
@@ -328,6 +369,7 @@ msgid "disable graphical output and redirect serial I/Os to console"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1960
+#: virtualbricks/gui/data/qemuconfig.ui:1375
 msgid "Use VGA instead of Default"
 msgstr ""
 
@@ -338,6 +380,7 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:1980
+#: virtualbricks/gui/data/qemuconfig.ui:1395
 msgid "Start in vncserver"
 msgstr ""
 
@@ -346,6 +389,7 @@ msgid "start emulation in a VNC server on display"
 msgstr ""
 
 #: share/virtualbricks.template.glade:1999
+#: virtualbricks/gui/data/qemuconfig.ui:1413
 msgid "on Display: "
 msgstr ""
 
@@ -354,18 +398,22 @@ msgid "select Dsiplay for VNC server"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2029
+#: virtualbricks/gui/data/qemuconfig.ui:1447
 msgid "SDL"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2041
+#: virtualbricks/gui/data/qemuconfig.ui:1462
 msgid "Portrait"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2063
+#: virtualbricks/gui/data/qemuconfig.ui:1481
 msgid "<b>Display Options</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2092
+#: virtualbricks/gui/data/qemuconfig.ui:1508
 msgid "enable usb"
 msgstr ""
 
@@ -374,10 +422,12 @@ msgid "enable access to usb"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2128
+#: virtualbricks/gui/data/qemuconfig.ui:1554
 msgid "<b>USB settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2165
+#: virtualbricks/gui/data/qemuconfig.ui:1582
 msgid "Set realtime clock to local time"
 msgstr ""
 
@@ -386,6 +436,7 @@ msgid "set the real time clock to local time [default=utc]"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2182
+#: virtualbricks/gui/data/qemuconfig.ui:1598
 msgid "Guest time drift compensation (TDF)"
 msgstr ""
 
@@ -394,10 +445,12 @@ msgid "Keyboard: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:2230
+#: virtualbricks/gui/data/qemuconfig.ui:1652
 msgid "Serial"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2247
+#: virtualbricks/gui/data/qemuconfig.ui:1671
 msgid "<b>Extra Settings</b>"
 msgstr ""
 
@@ -417,10 +470,12 @@ msgid " \n"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2337
+#: virtualbricks/gui/data/qemuconfig.ui:1153
 msgid "<b>Audio Device Settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2366
+#: virtualbricks/gui/data/qemuconfig.ui:1188
 msgid "Used RAM:"
 msgstr ""
 
@@ -434,10 +489,12 @@ msgid "KVM Shadow Memory: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:2457
+#: virtualbricks/gui/data/qemuconfig.ui:1296
 msgid "<b>Memory Settings</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2518
+#: virtualbricks/gui/data/qemuconfig.ui:1714
 msgid "System"
 msgstr ""
 
@@ -459,6 +516,11 @@ msgstr ""
 
 #: share/virtualbricks.template.glade:2650
 #: share/virtualbricks.template.glade:9938
+#: virtualbricks/gui/data/tunnellconfig.ui:21
+#: virtualbricks/gui/data/ethernetdialog.ui:153
+#: virtualbricks/gui/data/tapconfig.ui:65
+#: virtualbricks/gui/data/tunnelcconfig.ui:27
+#: virtualbricks/gui/data/captureconfig.ui:20
 msgid "Connect to:"
 msgstr ""
 
@@ -481,18 +543,22 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:2705
+#: virtualbricks/gui/data/ethernetdialog.ui:186
 msgid "Mac address:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2726
+#: virtualbricks/gui/data/ethernetdialog.ui:197
 msgid "Randomize"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2756
+#: virtualbricks/gui/data/qemuconfig.ui:1820
 msgid "Set up a new network card"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2783
+#: virtualbricks/gui/data/qemuconfig.ui:1850
 msgid "Add Network card"
 msgstr ""
 
@@ -500,7 +566,7 @@ msgstr ""
 msgid "Edit selected network card or redirection"
 msgstr ""
 
-#: share/virtualbricks.template.glade:2836
+#: share/virtualbricks.template.glade:2836 virtualbricks/gui/gui.py:248
 msgid "Edit"
 msgstr ""
 
@@ -509,7 +575,7 @@ msgid "Remove selected network card or redirection"
 msgstr ""
 
 #: share/virtualbricks.template.glade:2890
-#: share/virtualbricks.template.glade:11339
+#: share/virtualbricks.template.glade:11339 virtualbricks/gui/gui.py:251
 msgid "Remove"
 msgstr ""
 
@@ -522,51 +588,64 @@ msgid "SMB Share"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3031
+#: virtualbricks/gui/data/qemuconfig.ui:1737
 msgid "<b>Network cards</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3064
+#: virtualbricks/gui/data/qemuconfig.ui:1898
 msgid "Network"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3092
+#: virtualbricks/gui/data/qemuconfig.ui:1930
 msgid "Use a custom kernel"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3105
+#: virtualbricks/gui/data/qemuconfig.ui:1944
 msgid "Specify initial ramdisk"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3136
+#: virtualbricks/gui/data/qemuconfig.ui:1960
 msgid "Parameters to append to command line:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3248
+#: virtualbricks/gui/data/qemuconfig.ui:1970
 msgid "Enable kernel debugging"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3263
+#: virtualbricks/gui/data/qemuconfig.ui:2026
 msgid "GNU debugger TCP port:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3296
+#: virtualbricks/gui/data/qemuconfig.ui:2062
 msgid "<b>Booting Linux</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3323
+#: virtualbricks/gui/data/qemuconfig.ui:2091
 msgid "Customize Linux Boot"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3416
+#: virtualbricks/gui/data/qemuconfig.ui:2181
 msgid "<b>Virtual Machine Icon</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3456
+#: virtualbricks/gui/data/qemuconfig.ui:2209
 msgid "Others"
 msgstr ""
 
 #: share/virtualbricks.template.glade:3510
 #: share/virtualbricks.template.glade:10163
+#: virtualbricks/gui/data/netemuconfig.ui:76
+#: virtualbricks/gui/data/wireconfig.ui:35
 msgid "<=== connect ===>"
 msgstr ""
 
@@ -864,10 +943,12 @@ msgid "Number of ports: "
 msgstr ""
 
 #: share/virtualbricks.template.glade:9863
+#: virtualbricks/gui/data/switchconfig.ui:46
 msgid "Use FSTP"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9875
+#: virtualbricks/gui/data/switchconfig.ui:60
 msgid "Hub mode"
 msgstr ""
 
@@ -882,14 +963,17 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:9978
+#: virtualbricks/gui/data/tapconfig.ui:12
 msgid "Don't touch interface settings"
 msgstr ""
 
 #: share/virtualbricks.template.glade:9988
+#: virtualbricks/gui/data/tapconfig.ui:27
 msgid "Use DHCP"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10003
+#: virtualbricks/gui/data/tapconfig.ui:42
 msgid "Manual settings"
 msgstr ""
 
@@ -906,10 +990,12 @@ msgid "Gateway:  "
 msgstr ""
 
 #: share/virtualbricks.template.glade:10065
+#: virtualbricks/gui/data/tapconfig.ui:124
 msgid "10.0.0.1"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10080
+#: virtualbricks/gui/data/tapconfig.ui:152
 msgid "255.0.0.0"
 msgstr ""
 
@@ -919,6 +1005,7 @@ msgstr ""
 
 #: share/virtualbricks.template.glade:10214
 #: share/virtualbricks.template.glade:14239
+#: virtualbricks/gui/data/newevent.ui:250
 msgid "Delay:"
 msgstr ""
 
@@ -954,14 +1041,18 @@ msgstr ""
 
 #: share/virtualbricks.template.glade:10485
 #: share/virtualbricks.template.glade:13817
+#: virtualbricks/gui/data/newbrick.ui:274
 msgid "Tunnel Server"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10510
+#: virtualbricks/gui/data/tunnellconfig.ui:72
+#: virtualbricks/gui/data/tunnelcconfig.ui:90
 msgid "Password:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10521
+#: virtualbricks/gui/data/tunnelcconfig.ui:64
 msgid "Local port:"
 msgstr ""
 
@@ -974,6 +1065,7 @@ msgid "<b>WAIT...</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10708
+#: virtualbricks/gui/data/settings.ui:16
 msgid "Virtualbricks Settings"
 msgstr ""
 
@@ -989,6 +1081,9 @@ msgstr ""
 #: share/virtualbricks.template.glade:10900
 #: share/virtualbricks.template.glade:11049
 #: share/virtualbricks.template.glade:11133
+#: virtualbricks/gui/data/settings.ui:234
+#: virtualbricks/gui/data/settings.ui:387
+#: virtualbricks/gui/data/settings.ui:451
 msgid "Select A Folder"
 msgstr ""
 
@@ -1001,18 +1096,22 @@ msgid "X-window sudo command"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10797
+#: virtualbricks/gui/data/settings.ui:115
 msgid "your favorite x-terminal-emulator"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10811
+#: virtualbricks/gui/data/settings.ui:142
 msgid "command to perform administrative actions on your system"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10835
+#: virtualbricks/gui/data/settings.ui:154
 msgid "Enable SysTray"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10856
+#: virtualbricks/gui/data/settings.ui:188
 msgid "<b>General</b>"
 msgstr ""
 
@@ -1021,21 +1120,26 @@ msgid "VDE binaries path"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10898
+#: virtualbricks/gui/data/settings.ui:231
 msgid "Path for vde components installed on the system"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10913
 #: share/virtualbricks.template.glade:11062
+#: virtualbricks/gui/data/settings.ui:246
+#: virtualbricks/gui/data/settings.ui:399
 msgid "Status:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10929
+#: virtualbricks/gui/data/settings.ui:266
 msgid ""
 "<span color=\"red\">Error:</span>\n"
 "invalid path for vde binaries"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10956
+#: virtualbricks/gui/data/settings.ui:283
 msgid "Use python support"
 msgstr ""
 
@@ -1044,6 +1148,7 @@ msgid "Use native python support from libvdeplug"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10969
+#: virtualbricks/gui/data/settings.ui:298
 msgid "Allow female plugs on devices"
 msgstr ""
 
@@ -1052,6 +1157,7 @@ msgid "Allow use of female plugs with all brick types"
 msgstr ""
 
 #: share/virtualbricks.template.glade:10982
+#: virtualbricks/gui/data/settings.ui:313
 msgid "Network topology loop detection"
 msgstr ""
 
@@ -1070,16 +1176,19 @@ msgid "Qemu/KVM binaries path"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11047
+#: virtualbricks/gui/data/settings.ui:384
 msgid "Path for qemu and kvm binaries"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11078
+#: virtualbricks/gui/data/settings.ui:418
 msgid ""
 "<span color=\"red\">Error:</span>\n"
 "invalid path for qemu/kvm binaries"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11125
+#: virtualbricks/gui/data/settings.ui:437
 msgid "Disk images repository"
 msgstr ""
 
@@ -1092,6 +1201,7 @@ msgid "Disk Images"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11177
+#: virtualbricks/gui/data/settings.ui:525
 msgid "Use KVM"
 msgstr ""
 
@@ -1100,6 +1210,7 @@ msgid "Allow the use of kernel-based virtual machine (recommended)"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11191
+#: virtualbricks/gui/data/settings.ui:540
 msgid "Enable KSM"
 msgstr ""
 
@@ -1142,6 +1253,7 @@ msgid "Add"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11367
+#: virtualbricks/gui/data/settings.ui:490
 msgid "<b>Qemu/KVM </b>"
 msgstr ""
 
@@ -1150,6 +1262,7 @@ msgid "Add Bookmark"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11468
+#: virtualbricks/gui/data/createimagedialog.ui:180
 msgid "Name:"
 msgstr ""
 
@@ -1200,6 +1313,7 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:11750
+#: virtualbricks/gui/data/commitdialog.ui:15
 msgid "create new empty image"
 msgstr ""
 
@@ -1212,6 +1326,7 @@ msgid "Target Folder for the new image"
 msgstr ""
 
 #: share/virtualbricks.template.glade:11790
+#: virtualbricks/gui/data/commitdialog.ui:139
 msgid "Select A Directory"
 msgstr ""
 
@@ -1239,6 +1354,7 @@ msgid ""
 msgstr ""
 
 #: share/virtualbricks.template.glade:11897
+#: virtualbricks/gui/data/exportproject.ui:131
 msgid "Size"
 msgstr ""
 
@@ -1376,7 +1492,7 @@ msgstr ""
 msgid "Send ACPI poweroff"
 msgstr ""
 
-#: share/virtualbricks.template.glade:12632
+#: share/virtualbricks.template.glade:12632 virtualbricks/gui/gui.py:366
 msgid "Send ACPI hard reset"
 msgstr ""
 
@@ -1478,6 +1594,7 @@ msgid "Address:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13430
+#: virtualbricks/gui/data/tapconfig.ui:137
 msgid "Netmask:"
 msgstr ""
 
@@ -1498,10 +1615,12 @@ msgid "Ok"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13574
+#: virtualbricks/gui/data/newbrick.ui:122
 msgid "Switch"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13613
+#: virtualbricks/gui/data/newbrick.ui:141
 msgid "Wire"
 msgstr ""
 
@@ -1510,14 +1629,17 @@ msgid "Wirefilter"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13691
+#: virtualbricks/gui/data/newbrick.ui:182
 msgid "Tap"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13739
+#: virtualbricks/gui/data/newbrick.ui:234
 msgid "Tunnel Client"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13778
+#: virtualbricks/gui/data/newbrick.ui:254
 msgid "Virtual Machine"
 msgstr ""
 
@@ -1526,6 +1648,7 @@ msgid "Run on remote host:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:13890
+#: virtualbricks/gui/data/newbrick.ui:354
 msgid "Brick name:"
 msgstr ""
 
@@ -1556,10 +1679,12 @@ msgid "Events Collation"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14221
+#: virtualbricks/gui/data/newevent.ui:224
 msgid "Event name:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14251
+#: virtualbricks/gui/data/newevent.ui:263
 msgid "10"
 msgstr ""
 
@@ -1574,7 +1699,7 @@ msgid "_Start/Stop"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14346
-#: share/virtualbricks.template.glade:14801
+#: share/virtualbricks.template.glade:14801 virtualbricks/gui/gui.py:370
 msgid "_Delete"
 msgstr ""
 
@@ -1607,14 +1732,17 @@ msgstr ""
 
 #: share/virtualbricks.template.glade:14502
 #: share/virtualbricks.template.glade:14850
+#: virtualbricks/gui/data/renamedialog.ui:71
 msgid "Choose a new name:"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14569
+#: virtualbricks/gui/data/userwait.ui:9
 msgid "Virtualbricks: action in progress"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14584
+#: virtualbricks/gui/data/userwait.ui:27
 msgid "Please wait"
 msgstr ""
 
@@ -1623,6 +1751,7 @@ msgid "Select Image file"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14674
+#: virtualbricks/gui/data/virtualbricks.ui:939
 msgid "Toggle window"
 msgstr ""
 
@@ -1645,6 +1774,7 @@ msgid "New event name"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14918
+#: virtualbricks/gui/data/brickselection.ui:23
 msgid "Bricks to add to the event"
 msgstr ""
 
@@ -1653,6 +1783,7 @@ msgid "<b>Bricks available</b>"
 msgstr ""
 
 #: share/virtualbricks.template.glade:14979
+#: virtualbricks/gui/data/brickselection.ui:141
 msgid ""
 "--->\n"
 "<---"
@@ -1739,21 +1870,29 @@ msgid "error opening internal console"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:777 virtualbricks/brickfactory.py:834
+#: virtualbricks/events.py:76 virtualbricks/tests/test_events.py:42
+#: virtualbricks/bricks.py:431
 msgid "running"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:779 virtualbricks/brickfactory.py:1082
 #: virtualbricks/brickfactory.py:1144 virtualbricks/brickfactory.py:1149
 #: virtualbricks/brickfactory.py:1151 virtualbricks/brickfactory.py:1888
-#: virtualbricks/brickfactory.py:1940
+#: virtualbricks/brickfactory.py:1940 virtualbricks/tunnels.py:61
+#: virtualbricks/tunnels.py:118 virtualbricks/tuntaps.py:101
+#: virtualbricks/bricks.py:433 virtualbricks/wires.py:38
+#: virtualbricks/wires.py:39 virtualbricks/wires.py:45
 msgid "disconnected"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:781 virtualbricks/brickfactory.py:838
+#: virtualbricks/events.py:80 virtualbricks/tests/test_events.py:40
+#: virtualbricks/bricks.py:435
 msgid "off"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:836
+#: virtualbricks/brickfactory.py:836 virtualbricks/events.py:78
+#: virtualbricks/tests/test_events.py:37
 msgid "unconfigured"
 msgstr ""
 
@@ -1775,7 +1914,7 @@ msgstr ""
 msgid "Ports:"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1080
+#: virtualbricks/brickfactory.py:1080 virtualbricks/tuntaps.py:100
 #, python-format
 msgid "plugged to %s "
 msgstr ""
@@ -1797,18 +1936,19 @@ msgid "and right plug is"
 msgstr ""
 
 #: virtualbricks/brickfactory.py:1886 virtualbricks/brickfactory.py:1937
+#: virtualbricks/tunnels.py:58 virtualbricks/tunnels.py:115
 msgid "plugged to"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1887
+#: virtualbricks/brickfactory.py:1887 virtualbricks/tunnels.py:59
 msgid "listening to udp:"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:1938
+#: virtualbricks/brickfactory.py:1938 virtualbricks/tunnels.py:116
 msgid ", connecting to udp://"
 msgstr ""
 
-#: virtualbricks/brickfactory.py:2209
+#: virtualbricks/brickfactory.py:2209 virtualbricks/virtualmachines.py:682
 msgid "command:"
 msgstr ""
 
@@ -1824,6 +1964,8 @@ msgstr ""
 #: virtualbricks/gui/gui.py:199 virtualbricks/gui/gui.py:221
 #: virtualbricks/gui/gui.py:1140 virtualbricks/gui/gui.py:1162
 #: virtualbricks/gui/gui.py:2739 virtualbricks/gui/gui.py:2761
+#: virtualbricks/gui/data/virtualbricks.ui:434
+#: virtualbricks/gui/data/virtualbricks.ui:700
 msgid "Type"
 msgstr ""
 
@@ -1831,6 +1973,13 @@ msgstr ""
 #: virtualbricks/gui/gui.py:204 virtualbricks/gui/gui.py:223
 #: virtualbricks/gui/gui.py:1142 virtualbricks/gui/gui.py:1164
 #: virtualbricks/gui/gui.py:2741 virtualbricks/gui/gui.py:2763
+#: virtualbricks/gui/data/exportproject.ui:107
+#: virtualbricks/gui/data/virtualbricks.ui:445
+#: virtualbricks/gui/data/virtualbricks.ui:619
+#: virtualbricks/gui/data/virtualbricks.ui:711
+#: virtualbricks/gui/data/attachevent.ui:117
+#: virtualbricks/gui/data/attachevent.ui:162
+#: virtualbricks/gui/data/loadimagedialog.ui:82
 msgid "Name"
 msgstr ""
 
@@ -1838,19 +1987,25 @@ msgstr ""
 #: virtualbricks/gui/gui.py:132 virtualbricks/gui/gui.py:181
 #: virtualbricks/gui/gui.py:214 virtualbricks/gui/gui.py:1138
 #: virtualbricks/gui/gui.py:1160 virtualbricks/gui/gui.py:2737
-#: virtualbricks/gui/gui.py:2759
+#: virtualbricks/gui/gui.py:2759 virtualbricks/gui/data/virtualbricks.ui:415
+#: virtualbricks/gui/data/virtualbricks.ui:600
+#: virtualbricks/gui/data/virtualbricks.ui:681
 msgid "Icon"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:197
-#: virtualbricks/gui/gui.py:219
+#: virtualbricks/gui/gui.py:219 virtualbricks/gui/data/virtualbricks.ui:423
+#: virtualbricks/gui/data/virtualbricks.ui:608
 msgid "Status"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:109 virtualbricks/gui/gui.py:206
 #: virtualbricks/gui/gui.py:225 virtualbricks/gui/gui.py:1144
 #: virtualbricks/gui/gui.py:1166 virtualbricks/gui/gui.py:2743
-#: virtualbricks/gui/gui.py:2765
+#: virtualbricks/gui/gui.py:2765 virtualbricks/gui/data/virtualbricks.ui:456
+#: virtualbricks/gui/data/virtualbricks.ui:630
+#: virtualbricks/gui/data/attachevent.ui:128
+#: virtualbricks/gui/data/attachevent.ui:173
 msgid "Parameters"
 msgstr ""
 
@@ -1867,6 +2022,8 @@ msgid "Command"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:336 virtualbricks/gui/gui.py:1097
+#: virtualbricks/gui/data/eventconfig.ui:86
+#: virtualbricks/gui/data/eventcommand.ui:105
 msgid "Host shell command"
 msgstr ""
 
@@ -2005,12 +2162,12 @@ msgid ""
 "Packets longer than specified size are discarded."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1599
+#: virtualbricks/gui/gui.py:1599 virtualbricks/bricks.py:249
 #, python-format
 msgid "Cannot start '%s': not configured"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:1604
+#: virtualbricks/gui/gui.py:1604 virtualbricks/bricks.py:252
 #, python-format
 msgid "Cannot start '%s': not connected"
 msgstr ""
@@ -2087,11 +2244,12 @@ msgid "Cannot rename Event: it is in use."
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2272 virtualbricks/gui/gui.py:2281
-#: virtualbricks/gui/gui.py:2311
+#: virtualbricks/gui/gui.py:2311 virtualbricks/gui/dialogs.py:2052
+#: virtualbricks/gui/dialogs.py:2071
 msgid "Error"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2272
+#: virtualbricks/gui/gui.py:2272 virtualbricks/gui/dialogs.py:2071
 msgid "invalid path for qemu binaries"
 msgstr ""
 
@@ -2100,6 +2258,7 @@ msgid "cannot find neither qemu nor kvm in this path"
 msgstr ""
 
 #: virtualbricks/gui/gui.py:2285 virtualbricks/gui/gui.py:2288
+#: virtualbricks/gui/dialogs.py:2075
 msgid "Warning"
 msgstr ""
 
@@ -2119,19 +2278,19 @@ msgstr ""
 msgid "KVM and Qemu detected"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2302
+#: virtualbricks/gui/gui.py:2302 virtualbricks/gui/dialogs.py:2084
 msgid "additional targets supported"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2311
+#: virtualbricks/gui/gui.py:2311 virtualbricks/gui/dialogs.py:2052
 msgid "invalid path for vde binaries"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2313
+#: virtualbricks/gui/gui.py:2313 virtualbricks/gui/dialogs.py:2055
 msgid "Warning, missing modules"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2318
+#: virtualbricks/gui/gui.py:2318 virtualbricks/gui/dialogs.py:2060
 msgid "All VDE components detected"
 msgstr ""
 
@@ -2146,11 +2305,12 @@ msgid ""
 "will stay disabled."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2558
+#: virtualbricks/gui/gui.py:2558 virtualbricks/gui/gui.py:198
+#: virtualbricks/gui/gui.py:384 virtualbricks/gui/gui.py:392
 msgid "Suspend/Resume not supported on this disk."
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2583
+#: virtualbricks/gui/gui.py:2583 virtualbricks/gui/gui.py:183
 msgid "Cannot find suspend point."
 msgstr ""
 
@@ -2166,7 +2326,7 @@ msgstr ""
 msgid "Error saving topology: Unknown error"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2774
+#: virtualbricks/gui/gui.py:2774 virtualbricks/gui/data/attachevent.ui:17
 msgid "Virtualbricks-Events to attach to the start/stop Brick Events"
 msgstr ""
 
@@ -2188,7 +2348,7 @@ msgstr ""
 msgid "All files"
 msgstr ""
 
-#: virtualbricks/gui/gui.py:2802
+#: virtualbricks/gui/gui.py:2802 virtualbricks/gui/dialogs.py:309
 msgid "Save as..."
 msgstr ""
 
@@ -2216,4 +2376,1041 @@ msgstr ""
 
 #: virtualbricks/settings.py:97
 msgid "Cannot save default configuration"
+msgstr ""
+
+#: virtualbricks/switches.py:81
+msgid "Ports: "
+msgstr ""
+
+#: virtualbricks/switches.py:126
+#, python-format
+msgid "Socket does not exists: %s"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:50
+msgid "Enable formatting"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:51
+msgid "Whether enable formatting"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:57
+msgid "Format string"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:58
+msgid "The format string understand by the builtin format()"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:64
+msgid "Custom formatter"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:65
+msgid "An instance of string.Formatter() class"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:70
+msgid "Display member"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:71
+msgid "The member used to display the text"
+msgstr ""
+
+#: virtualbricks/gui/widgets.py:144
+msgid "Value member"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:282
+msgid "Open control monitor"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:286 virtualbricks/gui/gui.py:298
+msgid "_Stop"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:289
+msgid "_Play"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:290
+msgid "Continue"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:294
+msgid "_Redo"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:295
+msgid "Restart"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:299
+msgid "Kill"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:360
+msgid "Suspend virtual machine"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:363
+msgid "Send ACPI powerdown"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:371
+msgid "Terminate"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:457
+msgid "_OK"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:466
+msgid "_Cancel"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:878
+msgid "Disabled because set symmetric"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1151
+msgid "Mount cdrom option not active"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1156
+msgid "File image option not active"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1161
+msgid "Graphical output disabled"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1168
+msgid "VNC enabled"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1173
+msgid "Custom kernel selction option disabled"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1178
+msgid "Initrd option disabled"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1183
+msgid "Kernel debugging disabled"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1198
+msgid "USB disabled or /dev/bus/usb not accessible"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1367
+msgid "Do you really want to delete the network interface?"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1511
+msgid "Select an image file"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1779
+msgid "No brick selected"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1782
+msgid "No event selected"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1894
+#, python-brace-format
+msgid "Virtualbricks (project: {0})"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1965
+msgid "The event is in use, it will be stopped before."
+msgstr ""
+
+#: virtualbricks/gui/gui.py:1971
+#, python-format
+msgid "Do you really want to delete %(brick)s (%(type)s)?"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:2009
+msgid "Virtualbricks hidden"
+msgstr ""
+
+#: virtualbricks/gui/gui.py:2012 virtualbricks/gui/data/virtualbricks.ui:963
+msgid "Virtualbricks visible"
+msgstr ""
+
+#: virtualbricks/gui/data/exportproject.ui:29 virtualbricks/gui/dialogs.py:1349
+msgid "Export project"
+msgstr ""
+
+#: virtualbricks/gui/data/exportproject.ui:58
+msgid "Export"
+msgstr ""
+
+#: virtualbricks/gui/data/exportproject.ui:83
+msgid "Choose the files to include in the project"
+msgstr ""
+
+#: virtualbricks/gui/data/exportproject.ui:155
+#: virtualbricks/gui/data/importdialog.ui:68
+msgid "File:"
+msgstr ""
+
+#: virtualbricks/gui/data/exportproject.ui:202
+msgid "Include base disk images (slow)"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:16
+msgid "Virtualbricks - Configure Disk Images"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:44
+#: virtualbricks/gui/data/importdialog.ui:183
+#: virtualbricks/gui/data/importdialog.ui:230
+msgid "Image name"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:55
+msgid "Path"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:66
+msgid "Used by"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:74
+msgid "Master Brick"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:85
+msgid "COWs"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:93
+msgid "Size (MB)"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:127
+msgid "Image path:"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:167
+msgid "Virtualbricks name:"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:206
+msgid "Short description:"
+msgstr ""
+
+#: virtualbricks/gui/data/disklibrary.ui:292
+#: virtualbricks/gui/data/loadimagedialog.ui:62
+msgid "<b>disk image</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:389
+msgid "Use virtio block devices"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:413
+msgid "hda:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:425
+msgid "hdb:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:437
+msgid "hdc:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:449
+msgid "hdd:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:461
+msgid "fda:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:697
+msgid "fdb:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:709
+msgid "mtdblock:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:758
+msgid ""
+"New image\n"
+"from file"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:773
+msgid ""
+"Configure \n"
+"disk images"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:788
+msgid ""
+"New (empty)\n"
+"disk image"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:807
+msgid "<b>disk images</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:892
+msgid "Architecture:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:944
+msgid "CPU Type:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:975
+msgid "Machine type:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1101
+msgid "Emulated Soundcard:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1219
+#: virtualbricks/gui/data/qemuconfig.ui:1275
+msgid "MB"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1241
+msgid "KVM Shadow Memory:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1524
+msgid "Bind devices"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1620
+msgid "Keyboard:"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1763
+msgid "Nic"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1774
+#: virtualbricks/gui/data/networkcards.ui:35
+msgid "Connection"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1785
+#: virtualbricks/gui/data/networkcards.ui:45
+msgid "Model"
+msgstr ""
+
+#: virtualbricks/gui/data/qemuconfig.ui:1796
+#: virtualbricks/gui/data/networkcards.ui:55
+msgid "MAC address"
+msgstr ""
+
+#: virtualbricks/gui/data/renamedialog.ui:8
+msgid "Virtualbricks - Rename brick"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:34
+msgid "Virtualbricks - Import project"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:57
+#: virtualbricks/gui/data/importdialog.ui:270
+msgid "Project name:"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:102
+msgid "Open after import"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:117
+msgid "Overwrite existing project"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:134
+msgid "A project with such name already exists."
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:148
+msgid "Import project"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:170
+msgid "Save"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:194
+#: virtualbricks/gui/data/importdialog.ui:241
+msgid "Image path"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:204
+msgid "Save images"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:251
+msgid "Remap images"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:283
+msgid "testproject"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:311
+msgid "Project path:"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:324
+msgid "/home/bob/.virtualbricks/testproject"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:355
+msgid "Open:"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:368
+#: virtualbricks/gui/data/importdialog.ui:408
+msgid "False"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:395
+msgid "existing project overwritten:"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:431
+msgid "Images imported:"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:446
+msgid ""
+"debian 7\n"
+"ubuntu 12.04"
+msgstr ""
+
+#: virtualbricks/gui/data/importdialog.ui:464
+msgid "Images mapped:"
+msgstr ""
+
+#: virtualbricks/gui/data/commitdialog.ui:29
+msgid "Commit"
+msgstr ""
+
+#: virtualbricks/gui/data/commitdialog.ui:74
+msgid "<b>Commit COW changes to base image</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/commitdialog.ui:89
+msgid "Commit _COW file changes"
+msgstr ""
+
+#: virtualbricks/gui/data/commitdialog.ui:107
+msgid "Commit _Virtual Machine changes"
+msgstr ""
+
+#: virtualbricks/gui/data/commitdialog.ui:175
+msgid "Commit changes on private COW"
+msgstr ""
+
+#: virtualbricks/gui/data/commitdialog.ui:191
+msgid "label"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:19
+msgid "Auto"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:22
+msgid "raw"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:25
+msgid "qcow"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:28
+msgid "qcow2"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:31
+msgid "cow"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:34
+msgid "vmdk"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:37
+msgid "cloop"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:48
+msgid "Kb"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:51
+msgid "Mb"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:54
+msgid "Gb"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:62
+msgid "Create new Image"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:123
+msgid "<b>Create new empty disk image</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:137
+msgid "Target folder for the new image"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:151
+msgid "Select a Directory"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:206
+msgid "Format:"
+msgstr ""
+
+#: virtualbricks/gui/data/createimagedialog.ui:237
+msgid "Size:"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:83
+msgid "_Rename project"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:113
+msgid "_Import project"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:122
+msgid "E_xport project"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:131
+msgid "_Delete project"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:209
+msgid "_Disk images"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:228
+msgid "_New image from file"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:237
+msgid "Co_mmit cow image"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:252
+msgid "Images library"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:377
+#: virtualbricks/gui/data/virtualbricks.ui:564
+msgid "Configure"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:480
+msgid "_Bricks"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:657
+msgid "_Events"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:689
+msgid "Pid"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:731
+msgid "R_unning"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:870
+msgid "_Topology"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:897
+msgid "Readme"
+msgstr ""
+
+#: virtualbricks/gui/data/virtualbricks.ui:954
+msgid "Close"
+msgstr ""
+
+#: virtualbricks/gui/data/newevent.ui:100
+msgid "Brick start"
+msgstr ""
+
+#: virtualbricks/gui/data/newevent.ui:118
+msgid "Brick stop"
+msgstr ""
+
+#: virtualbricks/gui/data/newevent.ui:136
+msgid "Brick config"
+msgstr ""
+
+#: virtualbricks/gui/data/newevent.ui:167
+msgid "Free shell command"
+msgstr ""
+
+#: virtualbricks/gui/data/newevent.ui:185
+msgid "Events collation"
+msgstr ""
+
+#: virtualbricks/gui/data/about.ui:11
+msgid ""
+"Copyright © 2019 Virtualbricks team\n"
+"VDE - Copyright © 2003-2011 Renzo Davoli.\n"
+"QEMU - Copyright © 2005-2011 Fabrice Bellard.\n"
+"QEMU is a trademark of Fabrice Bellard.\n"
+"Icons by Fabio Viola, Licensed under CC BY-NC-SA 3.0. See COPYING for more "
+"details.\n"
+"Debian package created and maintained by Francesco Namuri (franam@debian."
+"org)."
+msgstr ""
+
+#: virtualbricks/gui/data/about.ui:17
+msgid "Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and VDE."
+msgstr ""
+
+#: virtualbricks/gui/data/about.ui:19
+msgid ""
+"This program is free software; you can redistribute it and/or modify\n"
+"it under the terms of the GNU General Public License as published by\n"
+"the Free Software Foundation; either version 2 of the License, or\n"
+"(at your option) any later version.\n"
+"\n"
+"This program is distributed in the hope that it will be useful,\n"
+"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"GNU General Public License for more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License along\n"
+"with this program; if not, write to the Free Software Foundation, Inc.,\n"
+"51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA."
+msgstr ""
+
+#: virtualbricks/gui/data/switchconfig.ui:21
+msgid "Number of ports:"
+msgstr ""
+
+#: virtualbricks/gui/data/tunnellconfig.ui:46
+msgid "Listen port:"
+msgstr ""
+
+#: virtualbricks/gui/data/eventconfig.ui:27
+msgid "Delay (seconds):"
+msgstr ""
+
+#: virtualbricks/gui/data/eventconfig.ui:71
+#: virtualbricks/gui/data/eventcommand.ui:90
+msgid "Action"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:12
+msgid "rtl8139"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:15
+msgid "e1000"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:18
+msgid "virtio-net-pci"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:21
+msgid "i82551"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:24
+msgid "i82557b"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:27
+msgid "i82559er"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:30
+msgid "ne2k_pci"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:33
+msgid "pcnet"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:36
+msgid "ne2k_isa"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:105
+msgid "<b>New ethernet interface</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/ethernetdialog.ui:123
+msgid "Model:"
+msgstr ""
+
+#: virtualbricks/gui/data/logging.ui:9
+msgid "Virtualbricks logging"
+msgstr ""
+
+#: virtualbricks/gui/data/logging.ui:59
+msgid "report bug"
+msgstr ""
+
+#: virtualbricks/gui/data/attachevent.ui:79
+msgid "<b>Start event selection</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/attachevent.ui:91
+msgid "<b>Stop event selection</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/attachevent.ui:192
+msgid "Assing nothing"
+msgstr ""
+
+#: virtualbricks/gui/data/attachevent.ui:205
+msgid "Assign nothing"
+msgstr ""
+
+#: virtualbricks/gui/data/listprojects.ui:70
+msgid "Select project"
+msgstr ""
+
+#: virtualbricks/gui/data/listprojects.ui:95
+#: virtualbricks/gui/data/saveas.ui:96
+msgid "column"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:102
+msgid "X-window terminal command:"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:129
+msgid "X-window sudo command:"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:169
+msgid "Warn about Missing Components at Startup"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:198
+msgid "General"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:218
+msgid "Binaries path:"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:332
+msgid "<b>Vde options</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:345
+msgid "Vde"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:371
+msgid "Qemu/KVM binaries path:"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:462
+msgid "Private COW format"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:559
+msgid "<b>X86 optimizations</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/settings.ui:579
+msgid "Qemu/KVM"
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:125
+msgid "Forward link"
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:174
+msgid "Reverse link"
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:193
+msgid "Asymmetric"
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:204
+msgid "Maximum size of the packet queue. Exceeding packets are discarded."
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:205
+msgid "buffer lenght (Byte; 0=no limit)"
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:217
+msgid ""
+"Extra delay (in milliseconds). This delay is added to the real communication "
+"delay. Packets are temporarily stored and resent after the delay."
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:218
+msgid "propagation delay (one way; ms)"
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:230
+msgid "Percentage of loss as a floating point number."
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:231
+msgid "loss rate (in %, [0,100] real)"
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:243
+msgid ""
+"Sender is not prevented from sending packets, delivery is delayed to limit "
+"the bandwidth to the desired value (like a bottleneck along the path)."
+msgstr ""
+
+#: virtualbricks/gui/data/netemuconfig.ui:244
+msgid "bandwidth (Byte/s; 0=no limit)"
+msgstr ""
+
+#: virtualbricks/gui/data/brickselection.ui:95
+msgid "Availables"
+msgstr ""
+
+#: virtualbricks/gui/data/brickselection.ui:187
+msgid "Added"
+msgstr ""
+
+#: virtualbricks/gui/data/networkcards.ui:25
+msgid "Eth"
+msgstr ""
+
+#: virtualbricks/gui/data/tapconfig.ui:109
+msgid "IP Address:"
+msgstr ""
+
+#: virtualbricks/gui/data/tapconfig.ui:165
+msgid "Gateway:"
+msgstr ""
+
+#: virtualbricks/gui/data/newbrick.ui:162
+msgid "Netemu"
+msgstr ""
+
+#: virtualbricks/gui/data/newbrick.ui:202
+msgid "Switch Wrapper"
+msgstr ""
+
+#: virtualbricks/gui/data/newbrick.ui:294
+msgid "Capture Interface"
+msgstr ""
+
+#: virtualbricks/gui/data/newbrick.ui:314
+msgid "Router"
+msgstr ""
+
+#: virtualbricks/gui/data/tunnelcconfig.ui:52
+msgid "Tunnel server host:"
+msgstr ""
+
+#: virtualbricks/gui/data/tunnelcconfig.ui:135
+msgid "Port:"
+msgstr ""
+
+#: virtualbricks/gui/data/usbdev.ui:29
+msgid "<b>Use CTRL+Click to select multiple devices</b>"
+msgstr ""
+
+#: virtualbricks/gui/data/saveas.ui:70
+msgid "Existing projects:"
+msgstr ""
+
+#: virtualbricks/gui/data/saveas.ui:123
+msgid "New project name:"
+msgstr ""
+
+#: virtualbricks/gui/data/loadimagedialog.ui:107
+msgid "Description"
+msgstr ""
+
+#: virtualbricks/gui/data/switchwrapperconfig.ui:13
+msgid "Path to switch:"
+msgstr ""
+
+#: virtualbricks/gui/data/eventcommand.ui:68
+msgid "Enter command (each line is an action)"
+msgstr ""
+
+#: virtualbricks/gui/data/simpleentry.ui:60 virtualbricks/gui/dialogs.py:1067
+msgid "Project name"
+msgstr ""
+
+#: virtualbricks/gui/data/captureconfig.ui:45
+msgid "Capture interface:"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:876
+msgid "Base not found (invalid cow?)"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:931
+msgid "Open a disk image"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1135
+msgid "Virtualbricks - Open project"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1146
+msgid "Virtualbricks - Delete project"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1157
+msgid "New project name"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1191
+#, python-brace-format
+msgid "A file named \"{0}\" already exists.  Do you want to replace it?"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1199
+#, python-brace-format
+msgid ""
+"The file already exists in \"{0}\". Replacing it will overwrite its contents."
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1203
+msgid "_Replace"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1762
+msgid "Save image as..."
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:1771
+msgid "Map image as..."
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:2075
+msgid "cannot find qemu, using kvm only"
+msgstr ""
+
+#: virtualbricks/gui/dialogs.py:2078
+msgid "Qemu detected"
+msgstr ""
+
+#: virtualbricks/events.py:50
+msgid "Invalid command type."
+msgstr ""
+
+#: virtualbricks/events.py:87
+#, python-format
+msgid "Delay: %d"
+msgstr ""
+
+#: virtualbricks/events.py:89
+msgid "Actions:"
+msgstr ""
+
+#: virtualbricks/tuntaps.py:56
+msgid "No interface selected"
+msgstr ""
+
+#: virtualbricks/tuntaps.py:58
+#, python-format
+msgid "Interface %(interface)s plugged to %(socket)s "
+msgstr ""
+
+#: virtualbricks/tuntaps.py:62
+#, python-format
+msgid "Interface %s disconnected"
+msgstr ""
+
+#: virtualbricks/bricks.py:334
+msgid "Brick.prog() not implemented."
+msgstr ""
+
+#: virtualbricks/wires.py:46 virtualbricks/wires.py:50
+#, python-brace-format
+msgid "Configured to connect {0} to {1}"
+msgstr ""
+
+#: virtualbricks/wires.py:51
+#, python-brace-format
+msgid "Not yet configured. Left plug is {0} and right plug is {1}"
+msgstr ""
+
+#: virtualbricks/errors.py:34
+#, python-format
+msgid "Normalized name %s already in use"
+msgstr ""
+
+#: virtualbricks/virtualmachines.py:328
+msgid "qemu-img not found! I can't create a new image."
+msgstr ""
+
+#: virtualbricks/base.py:53
+#, python-format
+msgid "Parameter %s not found"
+msgstr ""
+
+#: virtualbricks/base.py:124
+#, python-brace-format
+msgid "value out range {0} ({1}, {2})"
+msgstr ""
+
+#: virtualbricks/base.py:230
+#, python-format
+msgid "%(config)s config has no %(option)s option."
+msgstr ""
+
+#: virtualbricks/brickfactory.py:122
+msgid "Cannot close virtualbricks: there are running bricks"
+msgstr ""
+
+#: virtualbricks/brickfactory.py:133
+msgid "Project cannot be closed: there are running bricks"
+msgstr ""
+
+#: virtualbricks/brickfactory.py:226
+#, python-format
+msgid "Invalid brick type %s"
+msgstr ""
+
+#: virtualbricks/brickfactory.py:347
+msgid "Name must be a string"
+msgstr ""
+
+#: virtualbricks/brickfactory.py:350
+#, python-brace-format
+msgid "Name {0} does not start with a letter"
+msgstr ""
+
+#: virtualbricks/brickfactory.py:354
+msgid ""
+"Name must contains only letters, numbers, underscores, hyphens and points, {}"
 msgstr ""
