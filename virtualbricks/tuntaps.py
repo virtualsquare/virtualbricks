@@ -55,8 +55,10 @@ class Capture(PrivilegedBrick):
         if self.config["iface"] == "":
             return _("No interface selected")
         if self.plugs[0].sock:
-            return _("Interface %s plugged to %s ") % (
-                self.config["iface"], self.plugs[0].sock.brick.name)
+            return _("Interface %(interface)s plugged to %(socket)s ") % {
+                'interface': self.config["iface"],
+                'socket': self.plugs[0].sock.brick.name
+            }
         return _("Interface %s disconnected") % self.config["iface"]
 
     def prog(self):
