@@ -337,7 +337,7 @@ class Disk:
         return exit
 
     def _check_base(self, cowname):
-        with open(cowname) as fp:
+        with open(cowname, 'rb') as fp:
             backing_file = tools.get_backing_file(fp)
         if backing_file == self._get_base():
             return defer.succeed(cowname)
@@ -670,7 +670,7 @@ class VirtualMachine(bricks.Brick):
             return defer.succeed((self, self._last_status))
         elif not any((kill, term)):
             self.logger.info(powerdown, vm=self)
-            self.send("system_powerdown\n")
+            self.send(b"system_powerdown\n")
             return self._exited_d
         if term:
             return bricks.Brick.poweroff(self)

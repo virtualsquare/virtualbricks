@@ -17,14 +17,6 @@
 
 import os
 import copy
-import six
-
-if six.PY3:
-    def seek_end(fileobj):
-        fileobj.seek(0, os.SEEK_END)
-else:
-    def seek_end(fileobj):
-        fileobj.seek(-1, os.SEEK_END)
 
 from virtualbricks import base, _configparser
 from virtualbricks.tests import unittest, stubs
@@ -173,7 +165,7 @@ class TestBase(unittest.TestCase):
         self.brick = BaseStub(self.factory, "base")
 
     def test_save_to(self):
-        sio = six.StringIO()
+        sio = io.StringIO()
         self.brick.save_to(sio)
         self.assertEqual(sio.getvalue(), "[Stub:base]\n\n")
         self.brick.config["bool"] = False
@@ -186,8 +178,8 @@ class TestBase(unittest.TestCase):
         self.assertEqual(sio.getvalue(), DUMP)
 
     def test_restore_from(self):
-        sio = six.StringIO(DUMP)
-        seek_end(sio)
+        sio = io.StringIO(DUMP)
+        sio.seek(0, os.SEEK_END)
         sio.write("# this is a comment")
         sio.seek(0)
         section = next(iter(_configparser.Parser(sio)))

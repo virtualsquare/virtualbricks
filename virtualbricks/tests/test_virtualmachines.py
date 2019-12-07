@@ -18,7 +18,7 @@
 import os.path
 import errno
 import copy
-import six
+import io
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -209,14 +209,14 @@ class TestPlugWithHostOnlySock(unittest.TestCase):
         d.callback(self.vm)
 
     def test_config_save(self):
-        sio = six.StringIO()
+        sio = io.StringIO()
         configfile.ConfigFile().save_to(self.factory, sio)
         self.assertEqual(sio.getvalue(), HOSTONLY_CONFIG)
 
     def test_config_resume(self):
         self.factory.del_brick(self.vm)
         self.assertEqual(len(self.factory.bricks), 0)
-        sio = six.StringIO(HOSTONLY_CONFIG)
+        sio = io.StringIO(HOSTONLY_CONFIG)
         configfile.ConfigFile().restore_from(self.factory, sio)
         self.assertEqual(len(self.factory.bricks), 1)
         vm1 = self.factory.get_brick_by_name("vm")

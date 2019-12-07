@@ -20,7 +20,6 @@ import os
 import errno
 import itertools
 import re
-import six
 
 from twisted.internet import utils, error, defer
 from twisted.python import filepath
@@ -178,7 +177,7 @@ class ProjectEntry:
             fileobj.write("{0}\n".format("|".join(link)))
 
     def save(self, project):
-        with project._project.open("w") as fp:
+        with open(project._project.path, 'wt') as fp:
             self.dump(fp)
 
 
@@ -195,7 +194,7 @@ class Project:
     _description_modified = False
 
     def __init__(self, path, manager):
-        if isinstance(path, six.string_types):
+        if isinstance(path, str):
             path = filepath.FilePath(path)
         self._path = path
         self._manager = manager
@@ -339,7 +338,7 @@ class Project:
         return (fp for fp in self._path.walk() if fp.isfile())
 
     def get_descriptor(self):
-        with self._project.open() as fp:
+        with open(self._project.path, 'rt') as fp:
             return ProjectEntry.from_fileobj(fp)
 
     def images(self):

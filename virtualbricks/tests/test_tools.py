@@ -18,7 +18,7 @@
 import os
 import os.path
 import struct
-import six
+import io
 
 from virtualbricks import tools
 from virtualbricks.tests import unittest
@@ -68,28 +68,28 @@ class TestTools(unittest.TestCase):
             self.assertFalse(os.path.isfile(filename))
 
     def test_backing_file_from_cow(self):
-        sio = six.StringIO(COW_HEADER[8:])
+        sio = io.StringIO(COW_HEADER[8:])
         backing_file = tools.get_backing_file_from_cow(sio)
         self.assertEqual(backing_file, HELLO)
 
     def test_backing_file_from_qcow0(self):
-        sio = six.StringIO(QCOW_HEADER0[8:])
+        sio = io.StringIO(QCOW_HEADER0[8:])
         backing_file = tools.get_backing_file_from_qcow(sio)
         self.assertEqual(backing_file, "")
 
     def test_backing_file_from_qcow(self):
-        sio = six.StringIO(QCOW_HEADER)
+        sio = io.StringIO(QCOW_HEADER)
         sio.seek(8)
         backing_file = tools.get_backing_file_from_qcow(sio)
         self.assertEqual(backing_file, HELLO)
 
     def test_backing_file(self):
         for header in COW_HEADER, QCOW_HEADER, QCOW_HEADER2:
-            sio = six.StringIO(header)
+            sio = io.StringIO(header)
             backing_file = tools.get_backing_file(sio)
             self.assertEqual(backing_file, "/hello/backingfile")
 
-        sio = six.StringIO(UNKNOWN_HEADER)
+        sio = io.StringIO(UNKNOWN_HEADER)
         self.assertRaises(tools.UnknowTypeError, tools.get_backing_file, sio)
 
     def test_fmtsize(self):
