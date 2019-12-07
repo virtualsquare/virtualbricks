@@ -32,15 +32,6 @@ from virtualbricks._log import (InvalidLogLevelError, LogLevel, formatEvent,
     LogPublisher, PredicateResult, ILogFilterPredicate, FilteringLogObserver,
     LogLevelFilterPredicate, LegacyLogObserver, replaceTwistedLoggers)
 
-import six
-
-if six.PY3:
-    def encodingFunc(dictionary):
-        return urllib.parse.urlencode(dictionary)
-else:
-    def encodingFunc(dictionary):
-        return urllib.urlencode(dictionary)
-
 
 __all__ = ["Event", "Logger", "InvalidLogLevelError", "LogLevel",
            "formatEvent", "Logger", "LegacyLogger", "ILogObserver",
@@ -53,7 +44,7 @@ __all__ = ["Event", "Logger", "InvalidLogLevelError", "LogLevel",
 def make_id(log_format, module=None):
     if module is None:
         module = inspect.currentframe().f_back.f_back.f_globals["__name__"]
-    params = encodingFunc(dict(format=log_format, module=module))
+    params = urllib.parse.urlencode(dict(format=log_format, module=module))
     uri = "http://virtualbricks.eu/ns/log/?" + params
     return uuid.uuid5(uuid.NAMESPACE_URL, uri)
 
@@ -100,7 +91,7 @@ def expect_event(func):
             event = Event(event)
         elif isinstance(event, bytes):
             event = Event(event)
-        elif isinstance(event, six.text_type):
+        elif isinstance(event, str):
             event = Event(event)
         elif not callable(event):
             raise ValueError("func object was not callable nor str or byte")
@@ -292,7 +283,7 @@ class LegacyAdapter:
                 self.logger.error(double_format_error, ev=event)
             event["_format"] = event["format"]
             del event["format"]
-        if isinstance(event["message"], six.string_types):
+        if isinstance(event["message"], str):
             msg = event["message"]
         else:
             msg = "\n".join(event["message"])

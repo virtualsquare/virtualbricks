@@ -1222,7 +1222,7 @@ class ExportProjectDialog(Window):
     def __init__(self, progressbar, prjpath, disk_images):
         super(Window, self).__init__()
         self.progressbar = progressbar
-        if isinstance(prjpath, basestring):
+        if isinstance(prjpath, str):
             prjpath = filepath.FilePath(prjpath)
         self.prjpath = prjpath
         self.image_files = [(image.name, filepath.FilePath(image.path))
@@ -1644,7 +1644,7 @@ class _HumbleImport:
         return saved
 
     def remap_images(self, entry, store, saved):
-        for name, destination in saved.iteritems():
+        for name, destination in saved.items():
             entry.remap_image(name, destination.path)
         for name, path in iter_model(store):
             entry.remap_image(name, path.path)
@@ -1652,7 +1652,7 @@ class _HumbleImport:
 
     def rebase_all(self, project, images, entry):
         lst = []
-        for name, path in images.iteritems():
+        for name, path in images.items():
             for vmname, dev in entry.device_for_image(name):
                 cow_name = "{0}_{1}.cow".format(vmname, dev)
                 cow = filepath.FilePath(project.path).child(cow_name)

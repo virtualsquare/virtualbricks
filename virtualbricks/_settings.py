@@ -15,9 +15,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import configparser
 import os
-import six
-from six.moves import configparser
 from virtualbricks import tools, log
 from virtualbricks.errors import NoOptionError
 
@@ -76,7 +75,7 @@ class SettingsMeta(type):
         return type.__new__(cls, name, bases, dct)
 
 
-class Settings(six.with_metaclass(SettingsMeta)):
+class Settings(metaclass=SettingsMeta):
 
     __boolean_values__ = ('kvm', 'ksm', 'python', 'femaleplugs',
                           'erroronloop', 'systray', 'show_missing')

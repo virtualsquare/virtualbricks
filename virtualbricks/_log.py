@@ -916,7 +916,7 @@ def replaceTwistedLoggers():
     """
     log = Logger()
 
-    for moduleName, module in sys.modules.iteritems():
+    for moduleName, module in sys.modules.items():
         # Oddly, this happens
         if module is None:
             continue
@@ -929,7 +929,7 @@ def replaceTwistedLoggers():
         if moduleName == __name__:
             continue
 
-        for name, obj in module.__dict__.iteritems():
+        for name, obj in module.__dict__.items():
             legacyLogger = LegacyLogger(logger=Logger(namespace=module.__name__))
 
             if obj is twisted.python.log:

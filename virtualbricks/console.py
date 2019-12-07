@@ -24,7 +24,6 @@ from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from zope.interface import implementer
 from virtualbricks import __version__, bricks, errors, log, settings
-import six
 
 logger = log.Logger()
 socket_error = log.Event("Error on socket")
@@ -114,11 +113,11 @@ class Protocol(basic.LineOnlyReceiver):
         pass
 
     def connectionMade(self):
-        for protocol in six.itervalues(self.sub_protocols):
+        for protocol in self.sub_protocols.values():
             protocol.makeConnection(self.transport)
 
     def connectionLost(self, reason):
-        for protocol in six.itervalues(self.sub_protocols):
+        for protocol in self.sub_protocols.values():
             protocol.connectionLost(reason)
 
 
