@@ -8,15 +8,14 @@ trap "rm $TMPFILE" EXIT
 
 find virtualbricks/ -type f -name '*.py' -or -name '*.ui' > $TMPFILE
 xgettext \
-    -d virtualbricks \
-    -plocale/virtualbricks \
-    -ovirtualbricks.pot \
+    --files-from=$TMPFILE \
+    --output=virtualbricks.pot \
+    --output-dir=locale/virtualbricks \
+    --from-code=utf-8 \
+    --join-existing \
     --copyright-holder="Virtualbricks team" \
     --package-name=Virtualbricks \
-    --package-version=$(python setup.py -V) \
-    --msgid-bugs-address=qemulator-list@createweb.de \
-    --from-code=utf-8 \
-    --files-from=$TMPFILE
+    --package-version=$(python setup.py -V)
 
 for lang in $LANGUAGES;
 do
