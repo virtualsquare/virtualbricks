@@ -226,8 +226,10 @@ class Base(object):
         try:
             return self.config[name]
         except KeyError:
-            raise KeyError(_("%s config has no %s option.") %
-                           (self.name, name))
+            raise KeyError(
+                _("%(config)s config has no %(option)s option.") % {
+                    'config': self.name,
+                    'option': name})
 
     def _getvalue(self, name, value):
         try:
