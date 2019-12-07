@@ -17,7 +17,6 @@
 
 import locale
 import os
-import six
 from twisted.internet.utils import getProcessOutput, getProcessOutputAndValue
 
 
@@ -27,7 +26,7 @@ def _abspath_exe(path, executable, return_relative=True):
             return executable
         else:
             return None
-    if isinstance(path, six.string_types) and path != '':
+    if isinstance(path, str) and path != '':
         abspath = os.path.join(path, executable)
         if os.access(abspath, os.X_OK):
             return abspath

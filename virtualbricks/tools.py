@@ -183,11 +183,11 @@ _MAX_HEADER = max(_L, _VDI_L, _VPC_L, _CLOOP_L)
 
 def get_backing_file_from_cow(fp):
     data = fp.read(COW_SIZE)
-    return data.rstrip("\x00")
+    return data.rstrip(b"\x00")
 
 
 def get_backing_file_from_qcow(fp):
-    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12).encode("utf-8"))
+    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
     if size == 0:
         return ""
     else:
@@ -212,7 +212,7 @@ def get_backing_file(fp):
 def backing_files_for(files):
     for file in files:
         try:
-            with open(file) as fp:
+            with open(file, 'rb') as fp:
                 yield get_backing_file(fp)
         except UnknowTypeError:
             pass
@@ -353,7 +353,7 @@ def image_type(data):
 
 
 def image_type_from_file(filename):
-    with open(filename) as fp:
+    with open(filename, 'rb') as fp:
         return image_type(fp.read(_MAX_HEADER))
 
 

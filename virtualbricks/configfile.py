@@ -21,7 +21,6 @@ import os.path
 import errno
 import traceback
 import contextlib
-import six
 from twisted.python import filepath
 from zope.interface import implementer
 
@@ -304,8 +303,8 @@ class ConfigFile:
                           interface.
         """
 
-        if isinstance(str_or_obj, (six.string_types, filepath.FilePath)):
-            if isinstance(str_or_obj, six.string_types):
+        if isinstance(str_or_obj, (str, filepath.FilePath)):
+            if isinstance(str_or_obj, str):
                 fp = filepath.FilePath(str_or_obj)
             else:
                 fp = str_or_obj
@@ -341,8 +340,8 @@ class ConfigFile:
             plug.save_to(fileobj)
 
     def restore(self, factory, str_or_obj):
-        if isinstance(str_or_obj, (six.string_types, filepath.FilePath)):
-            if isinstance(str_or_obj, six.string_types):
+        if isinstance(str_or_obj, (str, filepath.FilePath)):
+            if isinstance(str_or_obj, str):
                 fp = filepath.FilePath(str_or_obj)
             else:
                 fp = str_or_obj

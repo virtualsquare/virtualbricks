@@ -1,9 +1,27 @@
-COMMONS="--package-name=virtualbricks --package-version=1.0 --msgid-bugs-address=qemulator-list@createweb.de"
-JOIN="-j"
+#!/bin/sh
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2019 Virtualbricks team
+
 LANGUAGES="it nl es fr de"
-SOURCES="share/*.glade `find virtualbricks/ -type f`"
-xgettext -plocale/virtualbricks -ovirtualbricks.pot $COMMONS $SOURCES
-for l in $LANGUAGES;
+TMPFILE=$(mktemp)
+trap "rm $TMPFILE" EXIT
+
+find virtualbricks/ -type f -name '*.py' -or -name '*.ui' > $TMPFILE
+xgettext \
+    --files-from=$TMPFILE \
+    --output=virtualbricks.pot \
+    --output-dir=locale/virtualbricks \
+    --from-code=utf-8 \
+    --join-existing \
+    --copyright-holder="Virtualbricks team" \
+    --package-name=Virtualbricks \
+    --package-version=$(python setup.py -V)
+
+for lang in $LANGUAGES;
 do
-  xgettext -plocale/virtualbricks -o$l.po $JOIN $COMMONS $SOURCES;
+  msgmerge \
+      --update \
+      locale/virtualbricks/${lang}.po \
+      --lang=$lang \
+      locale/virtualbricks/virtualbricks.pot
 done

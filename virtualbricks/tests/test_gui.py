@@ -246,7 +246,7 @@ class TestController(unittest.TestCase):
     def assert_parameters_equal(self, names=(), values=(), **kwds):
         for name, value in zip(names, values):
             self.assert_parameter_equal(name, value)
-        for name, value in kwds.iteritems():
+        for name, value in kwds.items():
             self.assert_parameter_equal(name, value)
 
     def assert_text_equal(self, name, text):
