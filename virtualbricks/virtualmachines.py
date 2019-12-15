@@ -23,11 +23,12 @@ import datetime
 import shutil
 import itertools
 
-from twisted.internet import utils, defer
+from twisted.internet import defer
 
 from virtualbricks import (errors, tools, settings, bricks, log, project,
                            observable)
 from virtualbricks._spawn import getQemuOutputAndValue, abspath_qemu
+from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 
 
 if False:
@@ -35,9 +36,19 @@ if False:
 
 __metaclass__ = type
 logger = log.Logger()
-new_cow = log.Event("Creating a new private COW from {base} image.")
-invalid_base = log.Event("{cowname} private cow found with a different base "
-                         "image ({base}): moving it in {path}")
+new_cow = log.Event(
+    'Creating a new private COW from a base image. backing_file={backing_file}'
+)
+use_backing_file = log.Event(
+    'Using  backing file for private cow. backing_file={backing_file}'
+    ' image_file={imagefile}'
+)
+invalid_base = log.Event(
+    'Private cow found with a different backing image. Backup the private cow'
+    ' and use a new one. private_cow={private_cow}'
+    ' expected_backing_file={expected_backing_file}'
+    ' found_backing_file={found_backing_file} backup_file={backup_file}'
+)
 powerdown = log.Event("Sending powerdown to {vm}")
 update_usb = log.Event("update_usbdevlist: old {old} - new {new}")
 own_err = log.Event("plug {plug} does not belong to {brick}")
@@ -258,142 +269,210 @@ def move(src, dst):
 
 class Disk:
 
-    sync_cmd = "sync"
-    image = None
-
     @property
     def cow(self):
-        return self.VM.config["private" + self.device]
+        return self.is_cow()
 
-    @property
-    def basefolder(self):
+    def __init__(self, vm, dev, image=None):
+        """
+        :param VirtualMachines vm:
+        :param str dev:
+        :param Optional[Image] image:
+        """
+
+        self.vm = vm
+        self.device = dev
+        self.image = image
+
+    def is_cow(self):
+        return self.vm.config['private' + self.device]
+
+    def _basefolder(self):
         return project.manager.current.path
 
-    @property
-    def vm_name(self):
-        return self.VM.name
-
-    def __init__(self, VM, dev):
-        self.VM = VM
-        self.device = dev
-
-    def _virtio_args_cb(self, disk_name):
-        return ["-drive", "file={0},if=virtio".format(disk_name)]
-
-    def _args_cb(self, disk_name):
-        return ["-" + self.device, disk_name]
-
     def args(self):
+
+        def cb(disk_name):
+            if self.vm.get('use_virtio'):
+                return ['-drive', 'file={0},if=virtio'.format(disk_name)]
+            else:
+                return ['-' + self.device, disk_name]
+
         if self.image:
             d = self.get_real_disk_name()
-            if self.VM.get("use_virtio"):
-                d.addCallback(self._virtio_args_cb)
-            else:
-                d.addCallback(self._args_cb)
+            d.addCallback(cb)
             return d
         else:
+            # TODO: check!! Maybe return a failure?
             return defer.succeed([])
 
     def set_image(self, image):
         self.image = image
 
     def acquire(self):
-        if self.image and not self.cow and not self.readonly():
+        self.lock_image()
+
+    def lock_image(self):
+        """
+        Acquire a lock on the image. The image can be locked multiple times by
+        the same disk but the first call to unlock_image will release all the
+        locks.
+
+        If the image is a private COW or in readonly mode, the image won't be
+        locked.
+        """
+
+        if self.image is not None and not self.is_cow() and not self.readonly():
             self.image.acquire(self)
 
     def release(self):
-        if self.image and not self.cow and not self.readonly():
+        self.unlock_image()
+
+    def unlock_image(self):
+        """
+        Release the lock on the image.
+        """
+
+        if self.image is not None and not self.is_cow() and not self.readonly():
             self.image.release(self)
 
-    def _get_base(self):
-        return self.image.path
+    def _new_disk_image_differential(self, filename):
+        """
+        Create a new disk image for Qemu with the given name. The new disk
+        image is a differential of this disk image (self.image.path).
 
-    def _sync(self, ret):
+        :param str filename: the name of the new disk image.
+        :return: A Deferred that fires when the image has been created.
+        :rtype: twisted.internet.defer.Deferred[None]
+        """
 
-        def complain_on_error(ret):
-            out, err, code = ret
-            if code != 0:
-                raise RuntimeError("sync failed\n%s" % err)
-
-        out, err, code = ret
-        if code != 0:
-            raise RuntimeError("Cannot create private COW\n%s" % err)
-
-        exit = utils.getProcessOutputAndValue(self.sync_cmd, env=os.environ)
-        exit.addCallback(complain_on_error)
-        return exit
-
-    def _create_cow(self, cowname):
+        assert self.image is not None
         if abspath_qemu('qemu-img', return_relative=False) is None:
-            msg = _("qemu-img not found! I can't create a new image.")
+            msg = _('qemu-img not found! I can\'t create a new image.')
             return defer.fail(errors.BadConfigError(msg))
 
-        logger.info(new_cow, base=self._get_base())
-        args = ["create", "-b", self._get_base(), "-f",
-                settings.get("cowfmt"), cowname]
-        exit = getQemuOutputAndValue("qemu-img", args, os.environ)
-        exit.addCallback(self._sync)
-        exit.addCallback(lambda _: cowname)
-        return exit
+        def complain_on_error(command_info):
+            stdout, stderr, exit_status = command_info
+            if exit_status != 0:
+                raise RuntimeError(f'Cannot create private COW\n{stderr}')
 
-    def _check_base(self, cowname):
-        with open(cowname, 'rb') as fp:
-            backing_file = tools.get_backing_file(fp)
-        if backing_file == self._get_base():
-            return defer.succeed(cowname)
+        logger.info(new_cow, backup_file=self.image.path)
+        args = [
+            'create', '-b', self.image.path, '-f', settings.get('cowfmt'),
+            filename
+        ]
+        deferred = getQemuOutputAndValue('qemu-img', args, os.environ)
+        deferred.addCallback(complain_on_error)
+        deferred.addCallback(discard_first_arg(sync))
+        # Always return None, independently of the return from sync
+        deferred.addCallback(lambda _: None)
+        return deferred
+
+    def _ensure_private_image_cow(self, image_file):
+        """
+        Ensure that the private disk image exists and its backing file is this
+        disk image (self.image.path).
+
+        If the file does not exist, it is created.
+
+        If the file ``image_file`` exists, check that its backing file is this
+        disk image. If the backing file is correct, do nothing. If the file
+        exists but the backing file is the wrong one or it is an unknown file
+        type, backup the file and create a new private image file
+
+        :param str image_file: the private cow image file for which we search
+            the backing file.
+        :rtype: twisted.internet.defer.Deferred[None]
+        """
+
+        assert self.image is not None
+
+        try:
+            os.makedirs(self._basefolder())
+        except FileExistsError:
+            pass
+        except Exception:
+            return defer.fail()
+        try:
+            backing_file = tools.get_backing_file(image_file)
+        except FileNotFoundError:
+            # TODO
+            # logger.debug(new_private_image_file, image_file=image_file)
+            return self._new_disk_image_differential(image_file)
+        except NotCowFileError:
+            # TODO
+            # logger.debug(invalid_image_file, image_file=image_file)
+            return self._new_disk_image_differential(image_file)
+        except Exception:
+            # Any IOError
+            return defer.fail()
+        expected_backing_file = self.image.path
+        if backing_file == expected_backing_file:
+            logger.debug(use_backing_file, imagefile=image_file,
+                         backing_file=backing_file)
+            return defer.succeed(None)
         else:
-            dt = datetime.datetime.now()
-            cowback = cowname + ".back-" + dt.strftime("%Y-%m-%d_%H-%M-%S")
-            logger.debug(invalid_base, cowname=cowname, base=backing_file,
-                         path=cowback)
-            move(cowname, cowback)
-            return self._create_cow(cowname).addCallback(lambda _: cowname)
-
-    def _get_cow_name(self):
-        try:
-            os.makedirs(self.basefolder)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        cowname = self.get_cow_path()
-        try:
-            return self._check_base(cowname)
-        except IOError as e:
-            if e.errno == errno.ENOENT:
-                return self._create_cow(cowname)
-            else:
-                raise
+            now = datetime.datetime.now()
+            backup_file = f'{image_file}.bak-{now:%Y%m%d-%H%M%S}'
+            logger.warn(
+                invalid_base,
+                private_cow=image_file,
+                expected_backing_file=expected_backing_file,
+                found_backing_file=backing_file,
+                backup_file=backup_file
+            )
+            move(image_file, backup_file)
+            return self._new_disk_image_differential(image_file)
 
     def get_cow_path(self):
-        return os.path.join(self.basefolder, "%s_%s.cow" % (self.vm_name,
-                                                            self.device))
+        """
+        Return the fullpath of the (private) image file that will be used for
+        this disk devide.
+
+        :rtype: str
+        """
+
+        filename = f'{self.vm.name}_{self.device}.cow'
+        return os.path.join(self._basefolder(), filename)
 
     def get_real_disk_name(self):
+        return self.disk_image_path()
+
+    def disk_image_path(self):
+        """
+        Return the path of the image used with this disk.
+
+        If the image is differential, ensure that it exists and the backing
+        file is the correct one.
+
+        :rtype: twisted.internet.defer.Deferred[str]
+        """
+
+        # TODO: what if the image file does not exist?
+        # assert self.image is not None
         if self.image is None:
             # XXX: this should be really an error
-            return defer.succeed("")
-        elif self.cow:
-            try:
-                return self._get_cow_name()
-            except (OSError, IOError) as e:
-                return defer.fail(e)
+            return defer.succeed('No image file set for this disk')
+        if self.is_cow():
+            private_image_path = self.get_cow_path()
+            deferred = self._ensure_private_image_cow(private_image_path)
+            deferred.addCallback(lambda _: private_image_path)
+            return deferred
         else:
             return defer.succeed(self.image.path)
 
     def readonly(self):
-        return self.VM.config["snapshot"]
+        return self.vm.config['snapshot']
 
     def __deepcopy__(self, memo):
-        new = type(self)(self.VM, self.device)
-        new.sync_cmd = self.sync_cmd
-        if self.image is not None:
-            new.set_image(self.image)
+        new = self.__class__(self.vm, self.device, self.image)
         return new
 
     def __repr__(self):
-        return "<Disk {self.device}({self.vm_name}) image={self.image:p} " \
-                "readonly={readonly} cow={self.cow}>".format(
-                    self=self, readonly=self.readonly())
+        return (
+            f'<Disk {self.device}({self.vm.name}) image={self.image:p} '
+            f'readonly={self.readonly()} cow={self.is_cow()}>'
+        )
 
 
 VM_COMMAND_BUILDER = {
@@ -867,7 +946,7 @@ class VirtualMachine(bricks.Brick):
             self._observable.notify("image-changed", (self, image))
 
     def set_vm(self, disk):
-        disk.VM = self
+        disk.vm = self
 
     cbset_hda = cbset_hdb = cbset_hdc = cbset_hdd = cbset_fda = cbset_fdb = \
             cbset_mtblock = set_vm
