@@ -412,8 +412,8 @@ class Disk:
                          backing_file=backing_file)
             return defer.succeed(None)
         else:
-            dt = datetime.datetime.now()
-            backup_file = image_file + '.back-' + dt.strftime('%Y%m%d-%H%M%S')
+            now = datetime.datetime.now()
+            backup_file = f'{image_file}.bak-{now:%Y%m%d-%H%M%S}'
             logger.warn(
                 invalid_base,
                 private_cow=image_file,
