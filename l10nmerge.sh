@@ -2,7 +2,7 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
-LANGUAGES="it nl es fr de du"
+LANGUAGES="it nl es fr de"
 
 for lang in $LANGUAGES;
 do
