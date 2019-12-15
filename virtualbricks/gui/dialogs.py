@@ -1965,6 +1965,7 @@ class RenameDialog(Window):
 class RenameBrickDialog(RenameDialog):
 
     def rename(self, name):
+        # TODO: move this function to Disk
         old = self.original.name
         self.original.rename(name)
         regex = re.compile("^{0}_([a-z0-9]+).cow$".format(old))
