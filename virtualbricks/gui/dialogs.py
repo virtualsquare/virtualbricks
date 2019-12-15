@@ -1156,15 +1156,6 @@ class RenameProjectDialog(SimpleEntryDialog):
         project.manager.current.rename(name)
 
 
-def has_cow(disk):
-    return disk.image and disk.is_cow()
-
-
-def cowname(brick, disk):
-    return os.path.join(project.manager.current.path,
-                        "{0.name}_{1.device}.cow".format(brick, disk))
-
-
 def gather_selected(model, parent, workspace, lst):
     itr = model.iter_children(parent)
     while itr:
