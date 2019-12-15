@@ -1,7 +1,6 @@
-include COPYING
-include LICENCE
+include COPYING LICENCE
 include glade-catalog.xml
-include l10nextract.sh
+include l10nextract.sh l10nmerge.sh
 include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
 recursive-include share *
 # include Debian files

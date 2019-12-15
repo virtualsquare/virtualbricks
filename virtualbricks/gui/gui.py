@@ -189,7 +189,7 @@ class VMPopupMenu(BrickPopupMenu):
                 return self.original.poweron("virtualbricks")
 
         img = self.original.get("hda")
-        if img.cow:
+        if img.is_cow():
             path = img.get_cow_path()
         elif img.image:
             path = img.image.path
@@ -375,7 +375,7 @@ class VMJobMenu(JobMenu):
 
     def suspend(self, factory):
         img = self.original.get("hda")
-        if img.cow:
+        if img.is_cow():
             path = img.get_cow_path()
         elif img.image:
             path = img.image.path

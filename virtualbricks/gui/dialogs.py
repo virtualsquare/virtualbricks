@@ -400,7 +400,7 @@ class DisksLibraryDialog(Window):
         c = 0
         for vm in filter(is_virtualmachine, factory.bricks):
             for disk in vm.disks():
-                if disk.image is image and disk.cow:
+                if disk.image is image and disk.is_cow():
                     c += 1
         cell.set_property("text", str(c))
 
@@ -785,7 +785,7 @@ class CommitImageDialog(Window):
         self.progessbar = progessbar
         model = self.get_object("model1")
         for brick in factory.bricks:
-            for disk in (disk for disk in disks_of(brick) if disk.cow):
+            for disk in (disk for disk in disks_of(brick) if disk.is_cow()):
                 model.append((disk.device + " on " + brick.name, disk))
 
     def show(self, parent=None):
@@ -832,11 +832,7 @@ class CommitImageDialog(Window):
                 ConfirmDialog(question, on_yes=self._commit_vm,
                               on_yes_arg=img).show(self.parent)
             else:
-                pathname = os.path.join(
-                    img.basefolder,
-                    "{0.vm_name}_{0.device}.cow".format(img)
-                )
-                self.commit_file(pathname)
+                self.commit_file(img.get_cow_path())
         else:
             logger.error(img_invalid)
 
@@ -1158,15 +1154,6 @@ class RenameProjectDialog(SimpleEntryDialog):
 
     def do_action(self, name):
         project.manager.current.rename(name)
-
-
-def has_cow(disk):
-    return disk.image and disk.cow
-
-
-def cowname(brick, disk):
-    return os.path.join(project.manager.current.path,
-                        "{0.name}_{1.device}.cow".format(brick, disk))
 
 
 def gather_selected(model, parent, workspace, lst):
@@ -1978,6 +1965,7 @@ class RenameDialog(Window):
 class RenameBrickDialog(RenameDialog):
 
     def rename(self, name):
+        # TODO: move this function to Disk
         old = self.original.name
         self.original.rename(name)
         regex = re.compile("^{0}_([a-z0-9]+).cow$".format(old))

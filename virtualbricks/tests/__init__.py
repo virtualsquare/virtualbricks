@@ -17,7 +17,6 @@
 
 import os
 import sys
-import types
 import functools
 import difflib
 
@@ -157,15 +156,19 @@ def failureResultOf(self, deferred, *expectedExceptionTypes):
         return result[0]
 
 
-def restore_settings(olds):
-    for k, v in olds.items():
-        settings.set(k, v)
+def patch_settings(test_case, **kwds):
+    """
+    :param unittest.TestCase test_case:
+    :param Dict[str, str]: the new settings to change.
+    """
 
+    def restore():
+        for k, v in orig_settings.items():
+            settings.set(k, v)
 
-def patch_settings(suite, **kwds):
-    olds = dict((k, settings.get(k)) for k in kwds.keys())
-    suite.addCleanup(restore_settings, olds)
-    suite.patch(settings, "store", lambda: None)
+    orig_settings = dict((k, settings.get(k)) for k in kwds.keys())
+    test_case.addCleanup(restore)
+    test_case.patch(settings, "store", lambda: None)
     for k, v in kwds.items():
         settings.set(k, v)
 
