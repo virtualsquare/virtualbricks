@@ -400,7 +400,7 @@ class DisksLibraryDialog(Window):
         c = 0
         for vm in filter(is_virtualmachine, factory.bricks):
             for disk in vm.disks():
-                if disk.image is image and disk.cow:
+                if disk.image is image and disk.is_cow():
                     c += 1
         cell.set_property("text", str(c))
 
@@ -785,7 +785,7 @@ class CommitImageDialog(Window):
         self.progessbar = progessbar
         model = self.get_object("model1")
         for brick in factory.bricks:
-            for disk in (disk for disk in disks_of(brick) if disk.cow):
+            for disk in (disk for disk in disks_of(brick) if disk.is_cow()):
                 model.append((disk.device + " on " + brick.name, disk))
 
     def show(self, parent=None):
@@ -832,11 +832,7 @@ class CommitImageDialog(Window):
                 ConfirmDialog(question, on_yes=self._commit_vm,
                               on_yes_arg=img).show(self.parent)
             else:
-                pathname = os.path.join(
-                    img.basefolder,
-                    "{0.vm_name}_{0.device}.cow".format(img)
-                )
-                self.commit_file(pathname)
+                self.commit_file(img.get_cow_path())
         else:
             logger.error(img_invalid)
 
@@ -1161,7 +1157,7 @@ class RenameProjectDialog(SimpleEntryDialog):
 
 
 def has_cow(disk):
-    return disk.image and disk.cow
+    return disk.image and disk.is_cow()
 
 
 def cowname(brick, disk):

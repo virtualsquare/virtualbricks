@@ -23,7 +23,7 @@ import errno
 from pathlib import Path
 import random
 import re
-import functools
+from functools import update_wrapper, wraps
 import tempfile
 import struct
 
@@ -42,7 +42,7 @@ def random_mac():
         random.getrandbits(8), random.getrandbits(8), random.getrandbits(8),
         random.getrandbits(8))
 
-RandMac = random_mac
+
 MAC_RE = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
 
 
@@ -51,7 +51,7 @@ def mac_is_valid(mac):
 
 
 def synchronize(func, lock):
-    @functools.wraps(func)
+    @wraps(func)
     def wrapper(*args, **kwds):
         with lock:
             return func(*args, **kwds)
@@ -158,7 +158,7 @@ class Tempfile:
 
 GENERIC_HEADER_FMT = ">II"
 _L = struct.calcsize(GENERIC_HEADER_FMT)
-COW_MAGIC = 0x4f4f4f4d # OOOM
+COW_MAGIC = 0x4f4f4f4d  # OOOM
 COW_SIZE = 1024
 QCOW_MAGIC = 0x514649fb  # \xfbIFQ
 QCOW_HEADER_FMT = ">QI"
@@ -180,42 +180,38 @@ _CLOOP_L = struct.calcsize(CLOOP_HEADER_FMT)
 _MAX_HEADER = max(_L, _VDI_L, _VPC_L, _CLOOP_L)
 
 
-
-def get_backing_file_from_cow(fp):
-    data = fp.read(COW_SIZE)
-    return data.rstrip(b"\x00")
-
-
-def get_backing_file_from_qcow(fp):
-    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
-    if size == 0:
-        return ""
-    else:
-        fp.seek(offset)
-        return fp.read(size)
-
-
-class UnknowTypeError(Exception):
+class NotCowFileError(ValueError):
     pass
 
-#struct.error: unpack requires a bytes object of length 8 ... tried encode but not working
-def get_backing_file(fp):
-    data = fp.read(8)
-    magic, version = struct.unpack(GENERIC_HEADER_FMT, data)
-    if magic == COW_MAGIC:
-        return get_backing_file_from_cow(fp)
-    elif magic == QCOW_MAGIC and version in (1, 2, 3):
-        return get_backing_file_from_qcow(fp)
-    raise UnknowTypeError()
 
+def get_backing_file(filename):
+    """
+    Extract the backing file from a image file. Return the filename as str,
+    None if there is not backing file or raise NotCowFileError if the format is
+    unknown.
 
-def backing_files_for(files):
-    for file in files:
-        try:
-            with open(file, 'rb') as fp:
-                yield get_backing_file(fp)
-        except UnknowTypeError:
-            pass
+    :type filename: str
+    :rtype: str
+    :raises NotCowFileError: if the file is not recognized.
+    :raises FileNotFound: it the file does not exists.
+    """
+
+    with open(filename, 'rb') as fp:
+        header = fp.read(8)
+        magic, version = struct.unpack(GENERIC_HEADER_FMT, header)
+        if magic == COW_MAGIC:
+            backing_filename_bytes = fp.read(COW_SIZE).rstrip(b"\x00")
+        elif magic == QCOW_MAGIC and version in (1, 2, 3):
+            offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
+            if size == 0:
+                return None
+            else:
+                fp.seek(offset)
+                backing_filename_bytes = fp.read(size)
+        else:
+            raise NotCowFileError()
+    # I hope the file encoding is ASCII, otherwise I don't know what to do
+    return backing_filename_bytes.decode('ascii')
 
 
 def fmtsize(size):
@@ -363,3 +359,42 @@ def dispose(obj):
 
 def is_running(brick):
     return brick.__isrunning__()
+
+
+def sync():
+    """
+    Run the sync command wrapped in a deferred. Raise RuntimeError if the
+    command fails.
+
+    :rtype: twisted.internet.defer.Deferred[None]
+    """
+
+    def complain_on_error(command_info):
+        stdout, stderr, exit_status = command_info
+        if exit_status != 0:
+            raise RuntimeError(f'sync failed\n{stderr}')
+
+    deferred = utils.getProcessOutputAndValue('sync', env=os.environ)
+    deferred.addCallback(complain_on_error)
+    return deferred
+
+
+def discard_first_arg(func, *args, **kwds):
+    """
+    Call func with the given parameters but discard the first one. Useful used
+    together with Deferred `addCallback()`. Ex.
+
+        deferred = getProcessValue(['echo', 'hello world'])
+        deferred.addCallback(discard_first_arg(print 'hello world2'))
+
+    :param Callable func: the function to wrap.
+    :param Tuple args: optional parameters to pass to func.
+    :param Dict[str, Any] kwds: optional keyword parameters to pass to func.
+    :rtype: Callable
+    """
+
+    def wrapper(first_arg, *fargs, **fkwds):
+        newkwds = {**kwds, **fkwds}
+        return func(*args, *fargs, **newkwds)
+    update_wrapper(wrapper, func)
+    return wrapper
