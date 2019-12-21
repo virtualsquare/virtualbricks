@@ -290,7 +290,9 @@ class Project:
                     return self.save(factory, True)
             raise
         if self._description_modified:
-            self._path.child("README").setContent((self._description).encode("utf-8"))
+            text = self._description
+            with open(self._path.child('README').path, 'wt') as fp:
+                fp.write(text)
             self._description_modified = False
 
     def save_as(self, name, factory):
@@ -323,11 +325,10 @@ class Project:
     def get_description(self):
         if self._description is None:
             try:
-                self._description = self._path.child("README").getContent()
-            except IOError as e:
-                if e.errno != errno.ENOENT:
-                    raise
-                self._description = ""
+                with open(self._path.child('README').path) as fp:
+                    self._description = fp.read()
+            except FileNotFoundError:
+                self._description = ''
         return self._description
 
     def set_description(self, text):
