@@ -89,7 +89,6 @@ import re
 import string
 import textwrap
 
-import gi
 from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import Pango
@@ -167,11 +166,6 @@ BUG_REPORT_ERRORS = {
     4: "The action failed.",
     5: "No permission to read one of the files passed on the command line."
 }
-
-BODY = """-- DO NOT MODIFY THE FOLLOWING LINES --
-
- affects virtualbrick
-"""
 
 
 def destroy_on_exit(func):
@@ -267,98 +261,170 @@ class AboutDialog(Window):
 
 class LoggingWindow(Window):
 
-    resource = "logging.ui"
+    resource = 'logging.ui'
+    scroll_tolerance = 100
 
     def __init__(self, textbuffer):
+        """
+        :type textbuffer: Gtk.TextBuffer
+        """
+
         Window.__init__(self)
-        self.textbuffer = textbuffer
-        self.__bottom = True
-        textview = self.get_object("textview")
+        self._textbuffer = textbuffer
+        self._scroll_to_bottom = True
+        textview = self.get_object('textview')
         textview.set_buffer(textbuffer)
-        self.__insert_text_h = textbuffer.connect(
-            "changed",
+        self._on_textbuffer_changed_handler = textbuffer.connect(
+            'changed',
             self.on_textbuffer_changed,
             textview
         )
-        vadjustment = self.get_object("scrolledwindow1").get_vadjustment()
-        vadjustment.connect("value-changed", self.on_vadjustment_value_changed)
+        vadjustment = self.get_object('scrolledwindow1').get_vadjustment()
+        vadjustment.connect('value-changed', self.on_vadjustment_value_changed)
         self.scroll_to_end(textview, textbuffer)
 
     def scroll_to_end(self, textview, textbuffer):
-        textview.scroll_to_mark(textbuffer.get_mark("end"), 0, True, 0, 1)
+        """
+        Scroll the view to the bottom.
+
+        :type textview: Gtk.TextView
+        :type textbuffer: Gtk.TextBuffer
+        """
+
+        textview.scroll_to_mark(textbuffer.get_mark('end'), 0, True, 0, 1)
 
     def on_textbuffer_changed(self, textbuffer, textview):
-        if self.__bottom:
+        """
+        Scroll the view to the bottom, following the messages as the arrive,
+        but only if the user did not scroll up.
+
+        :type textbuffer: Gtk.TextBuffer
+        :type textview: Gtk.TextView
+        """
+
+        if self._scroll_to_bottom:
             self.scroll_to_end(textview, textbuffer)
 
-    def on_vadjustment_value_changed(self, adj):
-        self.__bottom = adj.get_value() + adj.get_page_size() == \
-                adj.get_upper()
+    def on_vadjustment_value_changed(self, adjustment):
+        """
+        Check if the window should automatically scroll to the bottom when new
+        messages arrives.
+
+        :type adjustment: Gtk.Adjustment
+        """
+
+        self._scroll_to_bottom = (
+            # current offset from top
+            adjustment.get_value() +
+            # The visible size
+            adjustment.get_page_size() >=
+            # The maximum value for the adjustment
+            adjustment.get_upper() -
+            self.scroll_tolerance
+        )
 
     def on_LoggingWindow_destroy(self, window):
-        self.textbuffer.disconnect(self.__insert_text_h)
+        """
+        Remove the handled we connected when the logging window opened.
+
+        :type adjustment: Gtk.Window
+        """
+
+        self._textbuffer.disconnect(self._on_textbuffer_changed_handler)
 
     def on_closebutton_clicked(self, button):
+        """
+        Close the window.
+
+        :type adjustment: Gtk.Button
+        """
+
         self.window.destroy()
 
     def on_cleanbutton_clicked(self, button):
-        self.textbuffer.set_text("")
+        """
+        Clean the logging window.
+
+        :type adjustment: Gtk.Button
+        """
+
+        self._textbuffer.set_text('')
 
     def on_savebutton_clicked(self, button):
+        """
+        Save the message to a file.
+
+        :type adjustment: Gtk.Button
+        """
+
         chooser = Gtk.FileChooserDialog(
-            title=_("Save as..."),
+            title=_('Save as...'),
             action=Gtk.FileChooserAction.SAVE,
             buttons=(
-                "gtk-cancel",
-                Gtk.ResponseType.CANCEL,
-                "gtk-save",
-                Gtk.ResponseType.OK
+                'gtk-cancel', Gtk.ResponseType.CANCEL,
+                'gtk-save', Gtk.ResponseType.OK
             )
         )
         chooser.set_do_overwrite_confirmation(True)
-        chooser.connect("response", self.__on_dialog_response)
+        text = self._textbuffer.get_property('text')
+        chooser.connect('response', self._on_dialog_response, text)
         chooser.show()
 
-    def __on_dialog_response(self, dialog, response_id):
+    def _on_dialog_response(self, dialog, response_id, text):
         try:
             if response_id == Gtk.ResponseType.OK:
-                with open(dialog.get_filename(), "w") as fp:
-                    fp.write(self.textbuffer.get_property("text"))
+                with open(dialog.get_filename(), 'w') as fp:
+                    fp.write(text)
         finally:
             dialog.destroy()
 
-    def on_reportbugbutton_clicked(self, button):
-        logger.info(bug_send)
-        fd, filename = tempfile.mkstemp()
-        os.write(fd, self.textbuffer.get_property("text"))
-        # gtk.link_button_set_uri_hook(None) 	(REMOVED in GTK3)
-        exit_d = utils.getProcessOutputAndValue(
-            "xdg-email",
-            [
-                "--utf8",
-                "--body",
-                BODY,
-                "--attach",
-                filename,
-                "new@bugs.launchpad.net"
-            ],
-            dict(os.environ, MM_NOTTTY="1")
-        )
+    def on_reportbugbutton_activate_link(self, button):
+        """
+        Handle the click on report bug button
 
-        def success(codes):
-            out, err, code = codes
+        :type button: Gtk.LinkButton
+        """
+
+        logger.info(bug_send)
+
+        def xdg_email_exit_cb(codes):
+            stdout, stderr, code = codes
             if code == 0:
                 logger.info(bug_sent)
             elif code in BUG_REPORT_ERRORS:
                 logger.error(bug_error, err=BUG_REPORT_ERRORS[code],
-                             stderr=err, hide_to_user=True)
+                             stderr=stderr, hide_to_user=True)
             else:
-                logger.error(bug_report_fail, code=code, stderr=err,
+                logger.error(bug_report_fail, code=code, stderr=stderr,
                              hide_to_user=True)
 
-        exit_d.addCallback(success)
-        exit_d.addErrback(logger.failure_eb, bug_err_unknown)
-        exit_d.addBoth(lambda _: os.close(fd))
+        body = textwrap.dedent(
+            f'''
+
+
+
+
+            Please keep the following lines as they are.
+            The attachment contains the logs of Virtualbricks.
+
+            Virtualbricks version: {__version__}
+            '''
+        )
+        messages = self._textbuffer.get_property('text')
+        # Do not remove the file once xdg-email exits.
+        fd, filename = tempfile.mkstemp(prefix='virtualbricks_log_', text=True)
+        with os.fdopen(fd, mode='wt', encoding='utf8') as fp:
+            fp.write(messages)
+        params = [
+            '--utf8', '--subject', '[Virtualbricks] ', '--body', body,
+            '--attach', filename
+        ]
+        env = dict(os.environ, MM_NOTTTY='1')
+        proc_d = utils.getProcessOutputAndValue('xdg-email', params, env)
+        proc_d.addCallback(xdg_email_exit_cb)
+        proc_d.addErrback(logger.failure_eb, bug_err_unknown)
+        # Stop the propagation of activate-link signal
+        return True
 
 
 class DisksLibraryDialog(Window):
