@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkWindow" id="LoggingWindow">
@@ -10,6 +10,9 @@
     <property name="window_position">center-on-parent</property>
     <property name="destroy_with_parent">True</property>
     <signal name="destroy" handler="on_LoggingWindow_destroy" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <object class="GtkBox" id="vbox1">
         <property name="visible">True</property>
@@ -62,8 +65,7 @@
                 <property name="receives_default">True</property>
                 <property name="has_tooltip">True</property>
                 <property name="relief">none</property>
-                <property name="uri">mailto:new@bugs.launchpad.net</property>
-                <signal name="clicked" handler="on_reportbugbutton_clicked" swapped="no"/>
+                <signal name="activate-link" handler="on_reportbugbutton_activate_link" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
