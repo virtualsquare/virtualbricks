@@ -1267,6 +1267,20 @@ def ConfirmOverwriteDialog(fp, parent):
     return dialog
 
 
+def normalize_project_filename(filename):
+    """
+    Assure that the project filename uses the "vbp" extension.
+
+    :type filename: str
+    :rtype: str
+    """
+
+    if filename[-4:] == '.vbp':
+        return filename
+    else:
+        return f'{filename}.vbp'
+
+
 class ExportProjectDialog(Window):
 
     resource = "exportproject.ui"
@@ -1353,11 +1367,6 @@ class ExportProjectDialog(Window):
             size += fp.getsize()
         return size
 
-    def _normalize_filename(self, filename):
-        if filename[-4:] != ".vbp":
-            return filename + ".vbp"
-        return filename
-
     def on_selected_cellrenderer_toggled(self, cellrenderer, path, model):
         itr = model.get_iter(path)
         model[itr][SELECTED] = not model[itr][SELECTED]
@@ -1391,10 +1400,8 @@ class ExportProjectDialog(Window):
                 dialog.unselect_all()
                 self.get_object("export_button").set_sensitive(False)
             else:
-                filename = self._normalize_filename(filename)
-                txt = filename.decode(sys.getfilesystemencoding()).encode(
-                    "utf8")
-                self.get_object("filename_entry").set_text(txt)
+                filename = normalize_project_filename(filename)
+                self.get_object("filename_entry").set_text(filename)
                 self.get_object("export_button").set_sensitive(True)
 
     def on_open_button_clicked(self, button):
@@ -1450,9 +1457,8 @@ class ExportProjectDialog(Window):
 
     def on_ExportProjectDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
-            filename = self._normalize_filename(self.get_object(
-                "filename_entry").get_text())
-            fp = filepath.FilePath(filename)
+            filename = self.get_object('filename_entry').get_text()
+            fp = filepath.FilePath(normalize_project_filename(filename))
             if fp.exists():
                 cdialog = ConfirmOverwriteDialog(fp, dialog)
                 cdialog.connect("response", self.on_confirm_response, dialog,
