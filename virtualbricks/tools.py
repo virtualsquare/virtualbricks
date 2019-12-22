@@ -156,62 +156,64 @@ class Tempfile:
                 raise
 
 
-GENERIC_HEADER_FMT = ">II"
-_L = struct.calcsize(GENERIC_HEADER_FMT)
+GENERIC_HEADER = '>II'
+GENERIC_HEADER_LEN = struct.calcsize(GENERIC_HEADER)
 COW_MAGIC = 0x4f4f4f4d  # OOOM
-COW_SIZE = 1024
-QCOW_MAGIC = 0x514649fb  # \xfbIFQ
-QCOW_HEADER_FMT = ">QI"
+COW_BACKING_FILENAME_SIZE = 1024
+QCOW_MAGIC = 0x514649fb  # \xfbIFQ, QFI\xfb
+QCOW_HEADER = '>QI'
 COWD_MAGIC = 0x44574f43  # COWD
 VMDK_MAGIC = 0x564d444b  # KDMV
 QED_MAGIC = 0x00444551  # \0DEQ
-VDI_HEADER_FMT = "<64cI"
+VDI_HEADER = '<64sI'
+VDI_HEADER_LEN = struct.calcsize(VDI_HEADER)
 VDI_SIGNATURE = 0xbeda107f
-_VDI_L = struct.calcsize(VDI_HEADER_FMT)
-VPC_HEADER_FMT = "<8c"
-VPC_CREATOR = "conectix"
-_VPC_L = struct.calcsize(VPC_HEADER_FMT)
-CLOOP_MAGIC = """#!/bin/sh
+VPC_HEADER = '<8c'
+VPC_CREATOR = 'conectix'
+VPC_HEADER_LEN = struct.calcsize(VPC_HEADER)
+CLOOP_MAGIC = '''#!/bin/sh
 #V2.0 Format
 modprobe cloop file=$0 && mount -r -t iso9660 /dev/cloop $1
-"""
-CLOOP_HEADER_FMT = "{0}c".format(len(CLOOP_MAGIC))
-_CLOOP_L = struct.calcsize(CLOOP_HEADER_FMT)
-_MAX_HEADER = max(_L, _VDI_L, _VPC_L, _CLOOP_L)
+'''
+CLOOP_HEADER = '{0}c'.format(len(CLOOP_MAGIC))
+CLOOP_HEADER_LEN = struct.calcsize(CLOOP_HEADER)
+MAX_HEADER_LENGTH = max(
+    GENERIC_HEADER_LEN, VDI_HEADER_LEN, VPC_HEADER_LEN, CLOOP_HEADER_LEN
+)
 
 
 class NotCowFileError(ValueError):
     pass
 
 
-def get_backing_file(filename):
+def get_backing_file(imagefile):
     """
-    Extract the backing file from a image file. Return the filename as str,
+    Extract the backing file from a image file. Return the imagefile as str,
     None if there is not backing file or raise NotCowFileError if the format is
     unknown.
 
-    :type filename: str
+    :type imagefile: str
     :rtype: str
     :raises NotCowFileError: if the file is not recognized.
     :raises FileNotFound: it the file does not exists.
     """
 
-    with open(filename, 'rb') as fp:
+    with open(imagefile, 'rb') as fp:
         header = fp.read(8)
-        magic, version = struct.unpack(GENERIC_HEADER_FMT, header)
+        magic, version = struct.unpack(GENERIC_HEADER, header)
         if magic == COW_MAGIC:
-            backing_filename_bytes = fp.read(COW_SIZE).rstrip(b"\x00")
+            backing_b = fp.read(COW_BACKING_FILENAME_SIZE).rstrip(b'\x00')
         elif magic == QCOW_MAGIC and version in (1, 2, 3):
-            offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12))
+            offset, size = struct.unpack(QCOW_HEADER, fp.read(12))
             if size == 0:
                 return None
             else:
                 fp.seek(offset)
-                backing_filename_bytes = fp.read(size)
+                backing_b = fp.read(size)
         else:
             raise NotCowFileError()
     # I hope the file encoding is ASCII, otherwise I don't know what to do
-    return backing_filename_bytes.decode('ascii')
+    return backing_b.decode('ascii')
 
 
 def fmtsize(size):
@@ -298,21 +300,11 @@ def copyTo(self, destination, followLinks=True):
         raise OSError(errno.ENOENT, "No such file or directory")
 
 
-class DummyDict(dict):
-
-    __slots__ = ["value"]
-
-    def __init__(self, value):
-        self.value = value
-
-    def __getitem__(self, name):
-        return self.value
-
-
 class ImageFormat(constants.Names):
 
     RAW = constants.NamedConstant()
     QCOW2 = constants.NamedConstant()
+    QCOW3 = constants.NamedConstant()
     QED = constants.NamedConstant()
     QCOW = constants.NamedConstant()
     COW = constants.NamedConstant()
@@ -325,32 +317,44 @@ class ImageFormat(constants.Names):
 
 _type_map = {
     COW_MAGIC: {1: ImageFormat.COW},
-    QCOW_MAGIC: {1: ImageFormat.QCOW, 2: ImageFormat.QCOW2},
+    QCOW_MAGIC: {
+        1: ImageFormat.QCOW,
+        2: ImageFormat.QCOW2,
+        3: ImageFormat.QCOW3
+    },
     COWD_MAGIC: {1: ImageFormat.VMDK},
     VMDK_MAGIC: {1: ImageFormat.VMDK},
-    QED_MAGIC: DummyDict(ImageFormat.QED)
 }
 
 
 def image_type(data):
-    magic, version = struct.unpack(GENERIC_HEADER_FMT, data[:_L])
+    """
+    Guess the image type inspecting the first bytes of the file.
+    Return ImageFormat.UNKNOWN if the image type is... unknown.
+
+    :type data: bytes
+    :rtype: ImageFormat
+    """
+
+    magic, version = struct.unpack(GENERIC_HEADER, data[:GENERIC_HEADER_LEN])
+    if magic == QED_MAGIC:
+        return ImageFormat.QED
     try:
         return _type_map[magic][version]
     except KeyError:
         pass
-    _, signature = struct.unpack(VDI_HEADER_FMT, data[:_VDI_L])
-    if signature == VDI_SIGNATURE:
+    if struct.unpack(VDI_HEADER, data[:VDI_HEADER_LEN])[1] == VDI_SIGNATURE:
         return ImageFormat.VDI
-    if struct.unpack(VPC_HEADER_FMT, data[:_VPC_L]) == VPC_CREATOR:
+    if struct.unpack(VPC_HEADER, data[:VPC_HEADER_LEN]) == VPC_CREATOR:
         return ImageFormat.VPC
-    if struct.unpack(CLOOP_HEADER_FMT, data[:_CLOOP_L]) == CLOOP_MAGIC:
+    if struct.unpack(CLOOP_HEADER, data[:CLOOP_HEADER_LEN]) == CLOOP_MAGIC:
         return ImageFormat.CLOOP
     return ImageFormat.UNKNOWN
 
 
 def image_type_from_file(filename):
     with open(filename, 'rb') as fp:
-        return image_type(fp.read(_MAX_HEADER))
+        return image_type(fp.read(MAX_HEADER_LENGTH))
 
 
 def dispose(obj):

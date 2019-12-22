@@ -383,9 +383,9 @@ class VMJobMenu(JobMenu):
             logger.error(s_r_not_supported)
             return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
                                              "this disk.")))
-
-        if tools.image_type_from_file(path) == tools.ImageFormat.QCOW2:
-            self.original.send("savevm virtualbricks\n")
+        image_type = tools.image_type_from_file(path)
+        if image_type in (tools.ImageFormat.QCOW2, tools.ImageFormat.QCOW3):
+            self.original.send(b'savevm virtualbricks\n')
             return self.original.poweroff()
         else:
             logger.error(s_r_not_supported)
