@@ -1523,42 +1523,59 @@ def _set_path_remap(column, cell_renderer, model, iter, colid):
 class Freezer:
 
     def __init__(self, freeze, unfreeze, parent):
-        self.freeze = freeze
-        self.unfreeze = unfreeze
+        """
+        :type freeze: Callable
+        :type unfreeze: Callable
+        :type parent: Optional[Gtk.Window]
+        """
+
+        self.freeze_parent_window = freeze
+        self.unfreeze_parent_window = unfreeze
         builder = Gtk.Builder()
-        res = graphics.get_data_filename("userwait.ui")
-        builder.add_from_file(res)
+        resource = graphics.get_data_filename("userwait.ui")
+        builder.add_from_file(resource)
         self.progressbar = builder.get_object("progressbar")
-        self.window = builder.get_object("UserWaitWindow")
-        self.window.set_transient_for(parent)
-        self.window.set_modal(True)
+        self.wait_window = builder.get_object("UserWaitWindow")
+        self.wait_window.set_transient_for(parent)
+        self.wait_window.set_modal(True)
 
-    def wait_for(self, something, *args):
-        if isinstance(something, defer.Deferred):
-            return self.wait_for_deferred(something)
-        elif hasattr(something, "__call__"):
-            return self.wait_for_action(something, *args)
-        raise RuntimeError("Invalid argument")
+    def wait_for(self, deferred, *args):
+        """
+        :type deferred: Union[twisted.internet.defer.Deferred[Any], Callable]
+        :type args: Tuple[Any]
+        :rtype: twisted.internet.defer.Deferred[Any]
+        """
 
-    def wait_for_action(self, action, *args):
-        done = defer.maybeDeferred(action, *args)
-        return self.wait_for_deferred(done)
-
-    def wait_for_deferred(self, deferred):
-        deferred.addBoth(self.stop, self.start())
+        if not isinstance(deferred, defer.Deferred):
+            if callable(deferred):
+                deferred = defer.maybeDeferred(deferred, *args)
+            else:
+                raise RuntimeError('Invalid argument')
+        pulse = self.start()
+        deferred.addBoth(self.stop, pulse)
         return deferred
 
     def start(self):
-        self.freeze()
-        self.window.show_all()
-        lc = task.LoopingCall(self.progressbar.pulse)
-        lc.start(0.2, False)
-        return lc
+        """
+        :rtype: twisted.internet.task.LoopingCall
+        """
 
-    def stop(self, passthru, lc):
-        self.window.destroy()
-        self.unfreeze()
-        lc.stop()
+        self.freeze_parent_window()
+        self.wait_window.show_all()
+        looping_call = task.LoopingCall(self.progressbar.pulse)
+        looping_call.start(0.2, False)
+        return looping_call
+
+    def stop(self, passthru, looping_call):
+        """
+        :type passthru: Any
+        :type looping_call: twisted.internet.task.LoopingCall
+        :rtype: Any
+        """
+
+        looping_call.stop()
+        self.wait_window.destroy()
+        self.unfreeze_parent_window()
         return passthru
 
 
