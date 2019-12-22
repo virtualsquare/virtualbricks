@@ -206,7 +206,7 @@ class VMPopupMenu(BrickPopupMenu):
 
     def on_resume_activate(self, menuitem, gui):
         logger.debug(resume_vm, name=self.original.get_name())
-        gui.user_wait_action(self.resume(gui.brickfactory))
+        ProgressBar(gui).wait_for(self.resume(gui.brickfactory))
 
 
 registerAdapter(VMPopupMenu, VirtualMachine, IMenu)
@@ -394,7 +394,8 @@ class VMJobMenu(JobMenu):
 
     def on_suspend_activate(self, menuitem, gui):
         logger.debug(savevm, name=self.original.get_name())
-        gui.user_wait_action(self.suspend(gui.brickfactory))
+        # TODO: this blocks forever if the machine does not stop.
+        ProgressBar(gui).wait_for(self.suspend(gui.brickfactory))
 
     def on_powerdown_activate(self, menuitem):
         logger.info(send_acpi, acpievent="powerdown")
@@ -1769,7 +1770,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         factory.connect("brick-changed", self.on_brick_changed)
         factory.connect("brick-added", self.on_brick_changed)
         factory.connect("brick-removed", self.on_brick_changed)
-        self.progressbar = ProgressBar(self)
         if settings.get("systray"):
             self.start_systray()
         self.builder.connect_signals(self)
@@ -2091,8 +2091,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuImagesCommit_activate(self, menuitem):
-        dialogs.CommitImageDialog(self.progressbar, self.brickfactory).show(
-            self.wndMain)
+        dialog =dialogs.CommitImageDialog(ProgressBar(self), self.brickfactory)
+        dialog.show(self.wndMain)
         return True
 
     def on_menuImagesLibrary_activate(self, menuitem):
@@ -2216,10 +2216,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 return True
 
     def user_wait_action(self, action, *args):
-        return ProgressBar(self).wait_for(action, *args)
-
-    def user_wait_deferred(self, deferred):
-        return ProgressBar(self).wait_for(deferred)
+        ProgressBar(self).wait_for(action, *args)
 
     def set_insensitive(self):
         self.wndMain.set_sensitive(False)
