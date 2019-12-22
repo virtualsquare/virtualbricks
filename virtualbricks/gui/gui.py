@@ -184,7 +184,7 @@ class VMPopupMenu(BrickPopupMenu):
 
         def loadvm(_):
             if self.original.proc is not None:
-                self.original.send("loadvm virtualbricks\n")
+                self.original.send(b"loadvm virtualbricks\n")
             else:
                 return self.original.poweron("virtualbricks")
 
@@ -399,11 +399,11 @@ class VMJobMenu(JobMenu):
 
     def on_powerdown_activate(self, menuitem):
         logger.info(send_acpi, acpievent="powerdown")
-        self.original.send("system_powerdown\n")
+        self.original.send(b"system_powerdown\n")
 
     def on_reset_activate(self, menuitem):
         logger.info(send_acpi, acpievent="reset")
-        self.original.send("system_reset\n")
+        self.original.send(b"system_reset\n")
 
     def on_term_activate(self, menuitem, gui):
         logger.debug(proc_signal, signame="SIGTERM")
