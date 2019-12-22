@@ -1510,7 +1510,7 @@ class TopologyMixin(object):
 
         chooser = Gtk.FileChooserDialog(
             title=_("Select an image file"),
-            action=Gtk.FileChooserAction.OPEN,
+            action=Gtk.FileChooserAction.SAVE,
             buttons=(
                 "_Cancel",
                 Gtk.ResponseType.CANCEL,
