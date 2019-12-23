@@ -184,7 +184,7 @@ class VMPopupMenu(BrickPopupMenu):
 
         def loadvm(_):
             if self.original.proc is not None:
-                self.original.send("loadvm virtualbricks\n")
+                self.original.send(b"loadvm virtualbricks\n")
             else:
                 return self.original.poweron("virtualbricks")
 
@@ -206,7 +206,7 @@ class VMPopupMenu(BrickPopupMenu):
 
     def on_resume_activate(self, menuitem, gui):
         logger.debug(resume_vm, name=self.original.get_name())
-        gui.user_wait_action(self.resume(gui.brickfactory))
+        ProgressBar(gui).wait_for(self.resume(gui.brickfactory))
 
 
 registerAdapter(VMPopupMenu, VirtualMachine, IMenu)
@@ -383,9 +383,9 @@ class VMJobMenu(JobMenu):
             logger.error(s_r_not_supported)
             return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
                                              "this disk.")))
-
-        if tools.image_type_from_file(path) == tools.ImageFormat.QCOW2:
-            self.original.send("savevm virtualbricks\n")
+        image_type = tools.image_type_from_file(path)
+        if image_type in (tools.ImageFormat.QCOW2, tools.ImageFormat.QCOW3):
+            self.original.send(b'savevm virtualbricks\n')
             return self.original.poweroff()
         else:
             logger.error(s_r_not_supported)
@@ -394,15 +394,16 @@ class VMJobMenu(JobMenu):
 
     def on_suspend_activate(self, menuitem, gui):
         logger.debug(savevm, name=self.original.get_name())
-        gui.user_wait_action(self.suspend(gui.brickfactory))
+        # TODO: this blocks forever if the machine does not stop.
+        ProgressBar(gui).wait_for(self.suspend(gui.brickfactory))
 
     def on_powerdown_activate(self, menuitem):
         logger.info(send_acpi, acpievent="powerdown")
-        self.original.send("system_powerdown\n")
+        self.original.send(b"system_powerdown\n")
 
     def on_reset_activate(self, menuitem):
         logger.info(send_acpi, acpievent="reset")
-        self.original.send("system_reset\n")
+        self.original.send(b"system_reset\n")
 
     def on_term_activate(self, menuitem, gui):
         logger.debug(proc_signal, signame="SIGTERM")
@@ -1509,7 +1510,7 @@ class TopologyMixin(object):
 
         chooser = Gtk.FileChooserDialog(
             title=_("Select an image file"),
-            action=Gtk.FileChooserAction.OPEN,
+            action=Gtk.FileChooserAction.SAVE,
             buttons=(
                 "_Cancel",
                 Gtk.ResponseType.CANCEL,
@@ -1769,7 +1770,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         factory.connect("brick-changed", self.on_brick_changed)
         factory.connect("brick-added", self.on_brick_changed)
         factory.connect("brick-removed", self.on_brick_changed)
-        self.progressbar = ProgressBar(self)
         if settings.get("systray"):
             self.start_systray()
         self.builder.connect_signals(self)
@@ -2091,8 +2091,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuImagesCommit_activate(self, menuitem):
-        dialogs.CommitImageDialog(self.progressbar, self.brickfactory).show(
-            self.wndMain)
+        dialog =dialogs.CommitImageDialog(ProgressBar(self), self.brickfactory)
+        dialog.show(self.wndMain)
         return True
 
     def on_menuImagesLibrary_activate(self, menuitem):
@@ -2216,10 +2216,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 return True
 
     def user_wait_action(self, action, *args):
-        return ProgressBar(self).wait_for(action, *args)
-
-    def user_wait_deferred(self, deferred):
-        return ProgressBar(self).wait_for(deferred)
+        ProgressBar(self).wait_for(action, *args)
 
     def set_insensitive(self):
         self.wndMain.set_sensitive(False)
