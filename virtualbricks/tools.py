@@ -124,6 +124,12 @@ KSM_PATH = '/sys/kernel/mm/ksm/run'
 
 
 def check_ksm():
+    """
+    Check if KSM is enabled in the machine.
+
+    :rtype: bool
+    """
+
     try:
         with open(KSM_PATH) as fp:
             return bool(int(fp.readline()))
@@ -131,30 +137,34 @@ def check_ksm():
         return False
 
 
-def _check_toggle_ksm_cb(exit_code, cmd):
+def _check_set_ksm_cb(exit_code, cmd):
     """
     :type exit_code: bool
     :type cmd: str
-    :rtype: None
+    :rtype: bool
     """
 
     if exit_code:  # exit state != 0
         logger.error(ksm_error, cmd=cmd)
+    return check_ksm()
 
 
 def set_ksm(enable):
     """
+    Enable or disable KSM support in the machine.
+
     :type enable: bool
-    :rtype: twisted.internet.defer.Deferred[None]
+    :rtype: twisted.internet.defer.Deferred[bool]
     """
 
-    if enable ^ check_ksm():
+    ksm_enabled = check_ksm()
+    if enable ^ ksm_enabled:
         enable = 1 if enable else 0
         cmd = f'echo {enable} > {KSM_PATH}'
         try:
             sudo = settings.get('sudo')
         except NoOptionError:
-            sudo = False
+            sudo = None
         if sudo:
             d = utils.getProcessValue(
                 sudo,
@@ -164,15 +174,17 @@ def set_ksm(enable):
         else:
             shell_exe = os.environ.get('SHELL', '/bin/sh')
             d = utils.getProcessValue(shell_exe, ['-c', cmd], env=os.environ)
-        d.addCallback(_check_toggle_ksm_cb, cmd)
+        d.addCallback(_check_set_ksm_cb, cmd)
         return d
     else:
-        return defer.succeed(None)
+        return defer.succeed(ksm_enabled)
 
 
 def enable_ksm():
     """
-    :rtype: twisted.internet.defer.Deferred[None]
+    Enable KSM support in the host machine.
+
+    :rtype: twisted.internet.defer.Deferred[bool]
     """
 
     return set_ksm(enable=1)
@@ -180,7 +192,9 @@ def enable_ksm():
 
 def disable_ksm():
     """
-    :rtype: twisted.internet.defer.Deferred[None]
+    Disable KSM support in the host machine.
+
+    :rtype: twisted.internet.defer.Deferred[bool]
     """
 
     return set_ksm(enable=0)

@@ -128,6 +128,8 @@ class Settings(metaclass=SettingsMeta):
             else:
                 logger.info(config_loaded, filename=self.filename)
                 if self.get('ksm'):
+                    # TODO: the deferred is not checked and we don't know
+                    # exactly well it will fire.
                     enable_ksm()
         except configparser.Error:
             logger.exception(cannot_read_config, filename=self.filename)
