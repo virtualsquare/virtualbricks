@@ -17,7 +17,7 @@
 
 import configparser
 import os
-from virtualbricks import tools, log
+from virtualbricks import log
 from virtualbricks.errors import NoOptionError
 
 
@@ -119,18 +119,23 @@ class Settings(metaclass=SettingsMeta):
             self.config.write(fp)
 
     def load(self):
+        from virtualbricks.tools import enable_ksm
+
         try:
             parsed = self.config.read(self.filename)
             if not parsed:
                 self.install()
             else:
                 logger.info(config_loaded, filename=self.filename)
-                tools.enable_ksm(self.get('ksm'), self.get("sudo"))
+                if self.get('ksm'):
+                    enable_ksm()
         except configparser.Error:
             logger.exception(cannot_read_config, filename=self.filename)
 
     def install(self):
-        self.set("ksm", tools.check_ksm())
+        from virtualbricks.tools import check_ksm
+
+        self.set("ksm", check_ksm())
         try:
             self.store()
             logger.info(config_installed, filename=self.filename)
