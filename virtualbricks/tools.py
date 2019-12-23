@@ -163,41 +163,14 @@ def set_ksm(enable):
         cmd = f'echo {enable} > {KSM_PATH}'
         try:
             sudo = settings.get('sudo')
+            args = ['--', 'su', '-c', cmd]
+            d = utils.getProcessValue(sudo, args, env=os.environ)
         except NoOptionError:
-            sudo = None
-        if sudo:
-            d = utils.getProcessValue(
-                sudo,
-                ['--', 'su', '-c', cmd],
-                env=os.environ
-            )
-        else:
             shell_exe = os.environ.get('SHELL', '/bin/sh')
             d = utils.getProcessValue(shell_exe, ['-c', cmd], env=os.environ)
-        d.addCallback(_check_set_ksm_cb, cmd)
-        return d
+        return d.addCallback(_check_set_ksm_cb, cmd)
     else:
         return defer.succeed(ksm_enabled)
-
-
-def enable_ksm():
-    """
-    Enable KSM support in the host machine.
-
-    :rtype: twisted.internet.defer.Deferred[bool]
-    """
-
-    return set_ksm(enable=1)
-
-
-def disable_ksm():
-    """
-    Disable KSM support in the host machine.
-
-    :rtype: twisted.internet.defer.Deferred[bool]
-    """
-
-    return set_ksm(enable=0)
 
 
 class Tempfile:
