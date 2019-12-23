@@ -119,7 +119,7 @@ class Settings(metaclass=SettingsMeta):
             self.config.write(fp)
 
     def load(self):
-        from virtualbricks.tools import enable_ksm
+        from virtualbricks.tools import set_ksm
 
         try:
             parsed = self.config.read(self.filename)
@@ -130,7 +130,7 @@ class Settings(metaclass=SettingsMeta):
                 if self.get('ksm'):
                     # TODO: the deferred is not checked and we don't know
                     # exactly well it will fire.
-                    enable_ksm()
+                    set_ksm(enable=True)
         except configparser.Error:
             logger.exception(cannot_read_config, filename=self.filename)
 
