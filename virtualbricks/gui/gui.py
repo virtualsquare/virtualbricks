@@ -1351,10 +1351,10 @@ class QemuConfigController(ConfigController):
         dialogs.UsbDevWindow.show_dialog(self.gui, self.usb_devices)
 
     def _remove_link(self, link, model):
-        if link.brick.proc and link.hotdel:
-            # XXX: why checking hotdel? is a method it is always true or raise
-            # an exception if it is not defined
-            link.hotdel()
+        # if link.brick.proc and link.hotdel:
+        #     # XXX: why checking hotdel? is a method it is always true or raise
+        #     # an exception if it is not defined
+        #     link.hotdel()
         self.original.remove_plug(link)
         itr = model.get_iter_first()
         while itr:
