@@ -27,10 +27,13 @@ from functools import update_wrapper, wraps
 import tempfile
 import struct
 
-from virtualbricks import log
-
+from twisted.internet import defer
 from twisted.internet import utils
 from twisted.python import constants
+
+from virtualbricks import log
+from virtualbricks import settings
+from virtualbricks.errors import NoOptionError
 
 logger = log.Logger()
 ksm_error = log.Event("Can not change ksm state. (failed command: {cmd})")
@@ -117,29 +120,70 @@ def check_kvm(path=None):
     return os.access("/dev/kvm", os.R_OK & os.W_OK)
 
 
+KSM_PATH = '/sys/kernel/mm/ksm/run'
+
+
 def check_ksm():
     try:
-        with open("/sys/kernel/mm/ksm/run") as fp:
+        with open(KSM_PATH) as fp:
             return bool(int(fp.readline()))
     except IOError:
         return False
 
 
-def _check_cb(exit_code, cmd):
+def _check_toggle_ksm_cb(exit_code, cmd):
+    """
+    :type exit_code: bool
+    :type cmd: str
+    :rtype: None
+    """
+
     if exit_code:  # exit state != 0
         logger.error(ksm_error, cmd=cmd)
 
 
-def enable_ksm(enable, sudo):
+def set_ksm(enable):
+    """
+    :type enable: bool
+    :rtype: twisted.internet.defer.Deferred[None]
+    """
+
     if enable ^ check_ksm():
-        cmd = "echo {0:d} > /sys/kernel/mm/ksm/run".format(enable)
+        enable = 1 if enable else 0
+        cmd = f'echo {enable} > {KSM_PATH}'
+        try:
+            sudo = settings.get('sudo')
+        except NoOptionError:
+            sudo = False
         if sudo:
-            d = utils.getProcessValue(sudo,
-                ["--", "su", "-c", cmd], env=os.environ)
+            d = utils.getProcessValue(
+                sudo,
+                ['--', 'su', '-c', cmd],
+                env=os.environ
+            )
         else:
-            d = utils.getProcessValue(os.environ.get("SHELL", "/bin/sh"),
-                ["-c", cmd], env=os.environ)
-        d.addCallback(_check_cb, cmd)
+            shell_exe = os.environ.get('SHELL', '/bin/sh')
+            d = utils.getProcessValue(shell_exe, ['-c', cmd], env=os.environ)
+        d.addCallback(_check_toggle_ksm_cb, cmd)
+        return d
+    else:
+        return defer.succeed(None)
+
+
+def enable_ksm():
+    """
+    :rtype: twisted.internet.defer.Deferred[None]
+    """
+
+    return set_ksm(enable=1)
+
+
+def disable_ksm():
+    """
+    :rtype: twisted.internet.defer.Deferred[None]
+    """
+
+    return set_ksm(enable=0)
 
 
 class Tempfile:

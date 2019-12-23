@@ -81,7 +81,6 @@ advised and possible with gtk-builder-convert.
 """
 
 import os
-import sys
 import errno
 import tempfile
 import functools
@@ -97,13 +96,19 @@ from twisted.internet import utils, defer, task, error
 from twisted.python import filepath
 
 from virtualbricks import __version__
-from virtualbricks import (tools, log, console, settings,
-                           virtualmachines, project, errors)
-from virtualbricks.virtualmachines import is_virtualmachine
-from virtualbricks.tools import dispose
-from virtualbricks.gui import graphics, widgets
+from virtualbricks import console
+from virtualbricks import errors
+from virtualbricks import log
+from virtualbricks import project
+from virtualbricks import settings
+from virtualbricks import tools
+from virtualbricks import virtualmachines
+from virtualbricks._settings import DEFAULT_CONF
 from virtualbricks._spawn import getQemuOutputAndValue
 from virtualbricks.errors import NoOptionError
+from virtualbricks.gui import graphics, widgets
+from virtualbricks.tools import dispose
+from virtualbricks.virtualmachines import is_virtualmachine
 
 
 if False:  # pyflakes
@@ -2090,107 +2095,156 @@ class NewBrickDialog(Window):
         return True
 
 
+_marker = object()
+
+
+def settings_get_default(name, default=_marker):
+    try:
+        return settings.get(name)
+    except NoOptionError as exc:
+        if default is _marker:
+            try:
+                return DEFAULT_CONF[name]
+            except KeyError:
+                raise exc
+        else:
+            return default
+
+
+def combobox_get_active_value(combobox, column, default=None):
+    model = combobox.get_model()
+    itr = combobox.get_active_iter()
+    if itr:
+        obj = model.get_value(itr, column)
+        return obj
+    else:
+        return default
+
+def combobox_set_active_value(combobox, value, column):
+    model = combobox.get_model()
+    itr = model.get_iter_first()
+    while itr:
+        obj = model.get_value(itr, column)
+        if obj == value:
+            combobox.set_active_iter(itr)
+            break
+        itr = model.iter_next(itr)
+
+
 class SettingsDialog(Window):
 
-    resource = "settings.ui"
+    resource = 'settings.ui'
+    name = 'SettingsDialog'
 
-    def __init__(self, gui):
-        Window.__init__(self)
-        self.gui = gui
-        # general
-        self.etrTerm.set_text(settings.get("term"))
-        self.etrSudo.set_text(settings.get("sudo"))
-        self.cbSystray.set_active(settings.get("systray"))
-        self.cbShowMissing.set_active(settings.get("show_missing"))
-        # vde
-        try:
-            self.fcbVdepath.set_current_folder(settings.get('vdepath'))
-        except NoOptionError:
-            pass
-        self.cbPython.set_active(settings.get("python"))
-        self.cbFemaleplugs.set_active(settings.get("femaleplugs"))
-        self.cbErroronloop.set_active(settings.get("erroronloop"))
-        # qemu
-        try:
-            self.fcbQemupath.set_current_folder(settings.get('qemupath'))
-        except NoOptionError:
-            pass
-        self.lFormats.set_data_source(["cow", "qcow", "qcow2"])
-        self.cbCowfmt.set_selected_value(settings.get("cowfmt"))
-        self.cbCowfmt.set_cell_data_func(self.crt1, self.crt1.set_cell_data)
-        self.cbKsm.set_active(settings.get("ksm"))
-        self.cbKsm.set_sensitive(tools.check_ksm())
+    def __init__(self, virtualbricks_gui):
+        """
+        :type virtualbricks_gui: virtualbricks.gui.gui.VBGUI
+        """
 
-    def on_fcbVdepath_selection_changed(self, filechooser):
-        newpath = filechooser.get_filename()
-        missing = tools.check_missing_vde(newpath)
-        if not os.access(newpath, os.X_OK):
-            text = '<span color="red">{0}:</span>\n{1}'.format(
-                _("Error"), _("invalid path for vde binaries"))
-        elif len(missing) > 0:
-            text = '<span color="red">{0}:</span>\n'.format(
-                _("Warning, missing modules"))
-            for l in missing:
-                text += l + "\n"
-        else:
-            text = '<span color="darkgreen">{0}.</span>\n'.format(
-                _("All VDE components detected"))
-        self.lblVdepath.set_markup(text)
-
-    def on_fcbQemupath_selection_changed(self, filechooser):
-        newpath = filechooser.get_filename()
-        missing_qemu = False
-        missing, found = tools.check_missing_qemu(newpath)
-        if "qemu" in missing:
-            missing_qemu = True
-        if not os.access(newpath, os.X_OK):
-            text = '<span color="red">{0}:</span>\n{1}'.format(
-                _("Error"), _("invalid path for qemu binaries"))
-        else:
-            if missing_qemu:
-                text = '<span color="red">{0}:</span>\n{1}'.format(
-                    _("Warning"), _("cannot find qemu, using kvm only"))
-            else:
-                text = '<span color="darkgreen">{0}.</span>\n'.format(
-                    _("Qemu detected"))
-            arch = []
-            for f in found:
-                if f.startswith("qemu-system-"):
-                    arch.append(f[12:])
-            if arch:
-                text += "{0}:\n{1}".format(_("additional targets supported"),
-                                           textwrap.fill(" ".join(arch), 30))
-        self.lblQemupath.set_markup(text)
+        super().__init__()
+        self._setting_ksm_deferred = None
+        self.virtualbricks_gui = virtualbricks_gui
+        self.load_settings()
 
     def on_SettingsDialog_response(self, dialog, response_id):
-        if response_id in (Gtk.ResponseType.APPLY, Gtk.ResponseType.OK):
-            logger.debug(apply_settings)
-            # general
-            settings.set("term", self.etrTerm.get_text())
-            settings.set("sudo", self.etrSudo.get_text())
-            settings.set("systray", self.cbSystray.get_active())
-            settings.set("show_missing", self.cbShowMissing.get_active())
-            # vde
-            vdepath = self.fcbVdepath.get_current_folder()
-            if vdepath is not None:
-                settings.set('vdepath', vdepath)
-            settings.set("python", self.cbPython.get_active())
-            settings.set("femaleplugs", self.cbFemaleplugs.get_active())
-            settings.set("erroronloop", self.cbErroronloop.get_active())
-            # qemu
-            qemupath = self.fcbQemupath.get_current_folder()
-            if qemupath is not None:
-                settings.set('qemupath', qemupath)
-            settings.set("cowfmt", self.cbCowfmt.get_selected_value())
-            settings.set("ksm", self.cbKsm.get_active())
-            tools.enable_ksm(self.cbKsm.get_active(), settings.get("sudo"))
-            if self.cbSystray.get_active():
-                self.gui.start_systray()
-            else:
-                self.gui.stop_systray()
-            if response_id == Gtk.ResponseType.APPLY:
-                return
+        """
+        :type dialog: Gtk.Dialog
+        :type response_id: Gtk.ResponseType
+        """
+
+        if response_id == Gtk.ResponseType.OK:
+            self.store_settings()
         dialog.destroy()
+        return True
+
+    def on_SettingsDialog_delete_event(self, dialog, event):
+        """
+        :type dialog: Gtk.Dialog
+        :type event: Gdk.Event
+        """
+
+        if self._setting_ksm_deferred is not None:
+            # We are setting KSM, prevent the dialog to close.
+            return True
+
+    def on_enableKsmSwitch_active_notify(self, switch, param):
+        """
+        :type button: Gtk.Switch
+        :type param: gobject.GParamSpec
+        :rtype: bool
+        """
+
+        def enable_ksm_cb(passthru, switch):
+            """
+            :type passthru: Any
+            :type switch: Gtk.Switch
+            :rtype: Any
+            """
+
+            self._setting_ksm_deferred = None
+            switch.set_sensitive(True)
+            if not tools.check_ksm():
+                switch.set_active(False)
+            return passthru
+
+        if self._setting_ksm_deferred is not None:
+            # If we are already setting KSM, do nothing.
+            return
+        if switch.get_active():
+            switch.set_sensitive(False)
+            deferred = tools.enable_ksm()
+            deferred.addBoth(enable_ksm_cb, switch)
+            self._setting_ksm_deferred = deferred
+        return True
+
+    def load_settings(self):
+        # General tab
+        self.termEntry.set_text(settings_get_default('term'))
+        self.sudoEntry.set_text(settings_get_default('sudo'))
+        self.systraySwitch.set_active(settings_get_default('systray'))
+        self.warnMissingSwitch.set_active(settings_get_default('show_missing'))
+        # VDE tab
+        self.vdePathFileChooserButton.set_current_folder(
+            settings_get_default('vdepath'))
+        self.usePythonSwitch.set_active(settings_get_default('python'))
+        self.femalePlugsSwitch.set_active(settings_get_default('femaleplugs'))
+        self.loopDetectionSwitch.set_active(
+            settings_get_default('erroronloop'))
+        # Qemu tab
+        self.qemuPathFileChooserButton.set_current_folder(
+            settings_get_default('qemupath'))
+        combobox_set_active_value(self.cowFormatComboBox,
+                                  settings_get_default('cowfmt'), 0)
+        self.enableKsmSwitch.set_active(settings_get_default('ksm'))
+
+    def store_settings(self):
+        logger.debug(apply_settings)
+        # General tab
+        settings.set('term', self.termEntry.get_text())
+        settings.set('sudo', self.sudoEntry.get_text())
+        settings.set('systray', self.systraySwitch.get_active())
+        settings.set('show_missing', self.warnMissingSwitch.get_active())
+        # VDE tab
+        vdepath = self.vdePathFileChooserButton.get_current_folder()
+        if vdepath is not None:
+            settings.set('vdepath', vdepath)
+        settings.set('python', self.usePythonSwitch.get_active())
+        settings.set('femaleplugs', self.femalePlugsSwitch.get_active())
+        settings.set('erroronloop', self.loopDetectionSwitch.get_active())
+        # Qemu tab
+        qemupath = self.qemuPathFileChooserButton.get_current_folder()
+        if qemupath is not None:
+            settings.set('qemupath', qemupath)
+        cowfmt = combobox_get_active_value(self.cowFormatComboBox, 0,
+                                           DEFAULT_CONF['cowfmt'])
+        settings.set('cowfmt', cowfmt)
+        ksm_active = self.enableKsmSwitch.get_active()
+        settings.set('ksm', ksm_active)
+        tools.set_ksm(ksm_active)
+        if self.systraySwitch.get_active():
+            self.virtualbricks_gui.start_systray()
+        else:
+            self.virtualbricks_gui.stop_systray()
 
 
 class AttachEventDialog(Window):
