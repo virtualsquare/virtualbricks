@@ -2112,6 +2112,15 @@ def settings_get_default(name, default=_marker):
 
 
 def combobox_get_active_value(combobox, column, default=None):
+    """
+    Get current active value in combobox at the given column.
+
+    :type combobox: Gtk.ComboBox
+    :type column: int
+    :type default: Any
+    :rtype: Any
+    """
+
     model = combobox.get_model()
     itr = combobox.get_active_iter()
     if itr:
@@ -2120,7 +2129,17 @@ def combobox_get_active_value(combobox, column, default=None):
     else:
         return default
 
+
 def combobox_set_active_value(combobox, value, column):
+    """
+    Set the current active value in the ComboBox to value if found.
+
+    :type combobox: Gtk.ComboBox
+    :type value: Any
+    :type column: int
+    :rtype: None
+    """
+
     model = combobox.get_model()
     itr = model.get_iter_first()
     while itr:
@@ -2174,28 +2193,31 @@ class SettingsDialog(Window):
         :rtype: bool
         """
 
-        def enable_ksm_cb(passthru, switch):
+        self.toggle_ksm()
+        return False
+
+    def toggle_ksm(self):
+
+        def set_ksm_cb(ksm_enabled):
             """
-            :type passthru: Any
-            :type switch: Gtk.Switch
-            :rtype: Any
+            :type ksm_enabled: bool
+            :rtype: None
             """
 
             self._setting_ksm_deferred = None
-            switch.set_sensitive(True)
-            if not tools.check_ksm():
-                switch.set_active(False)
-            return passthru
+            self.enableKsmSwitch.set_sensitive(True)
+            if self.enableKsmSwitch.get_active() != ksm_enabled:
+                self.enableKsmSwitch.set_active(ksm_enabled)
 
         if self._setting_ksm_deferred is not None:
             # If we are already setting KSM, do nothing.
             return
-        if switch.get_active():
-            switch.set_sensitive(False)
-            deferred = tools.enable_ksm()
-            deferred.addBoth(enable_ksm_cb, switch)
-            self._setting_ksm_deferred = deferred
-        return True
+        # disable the switch, try to change the value of KSM and reactivate
+        # the switch
+        self.enableKsmSwitch.set_sensitive(False)
+        deferred = tools.set_ksm(enable=self.enableKsmSwitch.get_active())
+        deferred.addBoth(set_ksm_cb)
+        self._setting_ksm_deferred = deferred
 
     def load_settings(self):
         # General tab
