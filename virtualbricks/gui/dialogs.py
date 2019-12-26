@@ -2251,6 +2251,7 @@ class SettingsDialog(_Window):
         self._builder.connect_signals(self)
         self.load_settings()
 
+    @destroy_on_exit
     def on_SettingsDialog_response(self, dialog, response_id):
         """
         :type dialog: Gtk.Dialog
@@ -2259,7 +2260,6 @@ class SettingsDialog(_Window):
 
         if response_id == Gtk.ResponseType.OK:
             self.store_settings()
-        dialog.destroy()
         return True
 
     def on_SettingsDialog_delete_event(self, dialog, event):
