@@ -20,8 +20,17 @@ from zope.interface import Interface, Attribute
 from virtualbricks.interfaces import registerAdapter
 
 
-__all__ = ["registerAdapter", "IMenu", "IJobMenu", "IConfigController",
-           "IState", "IControl", "IStateManager"]
+__all__ = [
+    'registerAdapter',
+    'IMenu',
+    'IJobMenu',
+    'IConfigController',
+    'IState',
+    'IControl',
+    'IStateManager',
+    'IWidgetBuilder',
+    'IWindow'
+]
 
 
 class IMenu(Interface):
@@ -117,3 +126,43 @@ class IBindingList(Interface):
     changed = Attribute("IEvent, emitted when an item is changed")
     added = Attribute("IEvent, emitted when an item is added")
     removed = Attribute("IEvent, emitted when an item is removed")
+
+
+class IWidgetBuilder(Interface):
+
+    def get_object(name):
+        """
+        Gets the object named name.
+
+        :type name: str
+        :rtype: Any
+        """
+
+    def connect_signals(handler):
+        """
+        Connect signals specified by this builder to a name, handler
+        mapping.
+
+        :type handler: Any
+        :rtype: None
+        """
+
+
+class IWindow(Interface):
+
+    def __getattr__(name):
+        """
+        Return the widget with this name.
+
+        :type name: str
+        :rtype: Any
+        """
+
+    def show(parent=None):
+        """
+        Show the main window. If parent is specified, this window is marked as
+        transient for it.
+
+        :type parent: Optional[Gtk.Window]
+        :rtype: None
+        """

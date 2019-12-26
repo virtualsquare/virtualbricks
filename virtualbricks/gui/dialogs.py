@@ -94,6 +94,7 @@ from gi.repository import Pango
 import twisted
 from twisted.internet import utils, defer, task, error
 from twisted.python import filepath
+from zope.interface import implementer
 
 from virtualbricks import __version__
 from virtualbricks import console
@@ -107,6 +108,7 @@ from virtualbricks._settings import DEFAULT_CONF
 from virtualbricks._spawn import getQemuOutputAndValue
 from virtualbricks.errors import NoOptionError
 from virtualbricks.gui import graphics, widgets
+from virtualbricks.gui.interfaces import IWidgetBuilder, IWindow
 from virtualbricks.tools import dispose
 from virtualbricks.virtualmachines import is_virtualmachine
 
@@ -121,6 +123,10 @@ if twisted.__version__ >= '15.0.2':
 else:
     def mktempfn():
         return filepath._secureEnoughString()
+
+
+_MARKER = object()
+
 
 logger = log.Logger()
 bug_send = log.Event("Sending report bug")
@@ -251,6 +257,100 @@ class Window(Base):
 
     def __dispose__(self):
         pass
+
+
+@implementer(IWidgetBuilder)
+class BuilderHelper:
+
+    def __init__(self, resource, translation_domain='virtualbricks'):
+        """
+        :param str resource: the Gtk.Builder resource file. Only the basename.
+        :type translation_domain: str
+        """
+
+        self.builder = builder = Gtk.Builder()
+        builder.set_translation_domain(translation_domain)
+        builder.add_from_file(graphics.get_data_filename(resource))
+
+    def get_object(self, name, default=_MARKER):
+        """
+        Return the widget in the Gtk.Builder with name ``name``. If no widget
+        is found WidgetNotFound is raised or a default is returned if given.
+
+        :type name: str
+        :type default: Any
+        :type default: Any
+        """
+
+        widget = self.builder.get_object(name)
+        if widget is None:
+            if default is _MARKER:
+                raise errors.WidgetNotFound(name)
+            else:
+                return default
+        else:
+            return widget
+
+    def connect_signals(self, signal_handler):
+        """
+        Connect the signals degined in the Gtk.Builder file to signal_handler.
+
+        :type signal_handler: Any
+        :rtype: None
+        """
+
+        self.builder.connect_signals(signal_handler)
+
+
+@implementer(IWindow)
+class _Window:
+    """
+    Base class for all dialogs.
+
+    All sub-classes must define _builder attribute of type
+    IWidgetBuilder.
+    """
+
+    on_destroy = None
+    name = None
+
+    def __getattr__(self, name):
+        """
+        Return the widget with this name.
+
+        :type name: str
+        :rtype: Any
+        """
+
+        return self._builder.get_object(name)
+
+    def get_name(self):
+        """
+        Return the name of the window widget.
+
+        :rtype: str
+        """
+
+        if self.name is not None:
+            return self.name
+        else:
+            return self.__class__.__name__
+
+    def window(self):
+        """
+        Return then main window.
+
+        :rtype: Gtk.Window
+        """
+
+        return self._builder.get_object(self.get_name())
+
+    def show(self, parent=None):
+        if parent is not None:
+            self.window().set_transient_for(parent)
+        if self.on_destroy is not None:
+            self.window().connect("destroy", lambda w: self.on_destroy())
+        self.window().show()
 
 
 class AboutDialog(Window):
@@ -2095,14 +2195,11 @@ class NewBrickDialog(Window):
         return True
 
 
-_marker = object()
-
-
-def settings_get_default(name, default=_marker):
+def settings_get_default(name, default=_MARKER):
     try:
         return settings.get(name)
     except NoOptionError as exc:
-        if default is _marker:
+        if default is _MARKER:
             try:
                 return DEFAULT_CONF[name]
             except KeyError:
@@ -2150,9 +2247,8 @@ def combobox_set_active_value(combobox, value, column):
         itr = model.iter_next(itr)
 
 
-class SettingsDialog(Window):
+class SettingsDialog(_Window):
 
-    resource = 'settings.ui'
     name = 'SettingsDialog'
 
     def __init__(self, virtualbricks_gui):
@@ -2160,9 +2256,10 @@ class SettingsDialog(Window):
         :type virtualbricks_gui: virtualbricks.gui.gui.VBGUI
         """
 
-        super().__init__()
         self._setting_ksm_deferred = None
         self.virtualbricks_gui = virtualbricks_gui
+        self._builder = BuilderHelper('settings.ui')
+        self._builder.connect_signals(self)
         self.load_settings()
 
     def on_SettingsDialog_response(self, dialog, response_id):

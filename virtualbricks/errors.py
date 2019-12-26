@@ -94,3 +94,9 @@ class BrickRunningError(Error):
 
 class NoOptionError(Error):
     '''The config file has no such option.'''
+
+
+class WidgetNotFound(Error):
+    """
+    A Gtk.Builder resource does not define a specific widget.
+    """
