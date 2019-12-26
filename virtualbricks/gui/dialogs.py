@@ -305,7 +305,7 @@ class BuilderHelper:
 @implementer(IWindow)
 class _Window:
     """
-    Base class for all dialogs.
+    Base class for all windows.
 
     All sub-classes must define _builder attribute of type
     IWidgetBuilder.
@@ -324,33 +324,22 @@ class _Window:
 
         return self._builder.get_object(name)
 
-    def get_name(self):
+    def _get_name(self):
         """
         Return the name of the window widget.
 
         :rtype: str
         """
 
-        if self.name is not None:
-            return self.name
-        else:
-            return self.__class__.__name__
-
-    def window(self):
-        """
-        Return then main window.
-
-        :rtype: Gtk.Window
-        """
-
-        return self._builder.get_object(self.get_name())
+        return self.name or self.__class__.__name__
 
     def show(self, parent=None):
+        window = self._builder.get_object(self._get_name())
         if parent is not None:
-            self.window().set_transient_for(parent)
+            window.set_transient_for(parent)
         if self.on_destroy is not None:
-            self.window().connect("destroy", lambda w: self.on_destroy())
-        self.window().show()
+            window.connect("destroy", lambda w: self.on_destroy())
+        window.show()
 
 
 class AboutDialog(Window):
