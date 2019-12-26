@@ -88,6 +88,33 @@ def install_brick_types(registry=None):
     return registry
 
 
+def normalize_brick_name(name):
+    """
+    Return the new normalized name or raise InvalidNameError.
+
+    Leading and trailing spaces are trimmed and spaces are replaced with
+    underscores.
+
+    :param str name: the chosen name for the brick.
+    :raise InvalidNameError: if the name is invalid (malformatted of
+        contains invalid characters).
+    """
+
+    if not isinstance(name, str):
+        raise errors.InvalidNameError(_('Name must be a string'))
+    if name == '':
+        raise errors.InvalidNameError(_('Name is empty'))
+    normalized_name = re.sub(r'\s+', '_', name.strip())
+    if not re.search(r'\A[a-zA-Z]', normalized_name):
+        msg = _('Name {brick_name} must start with a letter')
+        raise errors.InvalidNameError(msg.format(brick_name=name))
+    if not re.search(r'\A[a-zA-Z0-9_\.-]+\Z', normalized_name):
+        msg = _('Name must contains only letters, numbers, underscores, '
+                'hyphens and points, {brick_name}').format(brick_name=name)
+        raise errors.InvalidNameError(msg)
+    return normalized_name
+
+
 class BrickFactory(object):
     """This is the main class for the core engine.
 
@@ -336,27 +363,18 @@ class BrickFactory(object):
 
     def normalize_name(self, name):
         """
-        Return the new normalized name.
+        Return the new normalized name or raise InvalidNameError.
 
-        @raise InvalidNameError: if the name is invalid (malformatted of
+        :param str name: the chosen name for the brick.
+        :raise InvalidNameError: if the name is invalid (malformatted of
             contains invalid characters).
-        @rase NameAlreadyInUseError: if the name is already in use.
+        :raise NameAlreadyInUseError: if the name is already in use.
         """
 
-        if not isinstance(name, str):
-            raise errors.InvalidNameError(_("Name must be a string"))
-        _name = name.strip()
-        if not re.search("\A[a-zA-Z]", _name):
-            msg = _("Name {0} does not start with a " "letter").format(name)
-            raise errors.InvalidNameError(msg)
-        _name = re.sub(' ', '_', _name)
-        if not re.search("\A[a-zA-Z0-9_\.-]+\Z", _name):
-            msg = _("Name must contains only letters, numbers, underscores, "
-                    "hyphens and points, {}").format(name)
-            raise errors.InvalidNameError(msg)
-        if self.is_in_use(_name):
-            raise errors.NameAlreadyInUseError(name)
-        return _name
+        normalized_name = normalize_brick_name(name)
+        if self.is_in_use(normalized_name):
+            raise errors.NameAlreadyInUseError(normalized_name)
+        return normalized_name
 
     def new_plug(self, brick):
         return link.Plug(brick)
