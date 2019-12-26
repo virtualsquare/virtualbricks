@@ -2158,26 +2158,29 @@ class RenameBrickDialog(RenameDialog):
                 fp.moveTo(fp.sibling(regex.sub(new, fp.basename())))
 
 
-class NewBrickDialog(Window):
-
-    resource = "newbrick.ui"
-    _type = "Switch"
+class NewBrickDialog(_Window):
 
     def __init__(self, factory):
-        Window.__init__(self)
-        self.factory = factory
+        self._factory = factory
+        self._builder = BuilderHelper('newbrick.ui')
+        self._builder.connect_signals(self)
+        self._type = 'switch'
 
-    def on_BrickType_toggled(self, radiobutton):
-        self._type = Gtk.Buildable.get_name(radiobutton)[2:]
+    def on_radiobutton_toggled(self, radiobutton):
+        if radiobutton.get_active():
+            self._type = radiobutton.get_name()
         return True
 
     @destroy_on_exit
     def on_NewBrickDialog_response(self, dialog, response_id):
+        # TODO: do not close the dialog if the name is invalid and set the
+        # status of the entry
         if response_id == Gtk.ResponseType.OK:
-            name = self.etrName.get_text()
+            name = self.brickNameEntry.get_text()
             try:
-                self.factory.new_brick(self._type, name)
+                self._factory.new_brick(self._type, name)
             except errors.InvalidNameError:
+                # TODO: report the name
                 logger.error(brick_invalid_name)
             else:
                 logger.debug(created)
