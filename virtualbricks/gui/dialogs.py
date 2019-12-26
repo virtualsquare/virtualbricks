@@ -106,7 +106,9 @@ from virtualbricks import tools
 from virtualbricks import virtualmachines
 from virtualbricks._settings import DEFAULT_CONF
 from virtualbricks._spawn import getQemuOutputAndValue
-from virtualbricks.errors import NoOptionError
+from virtualbricks.errors import (
+    NoOptionError, InvalidNameError, NameAlreadyInUseError
+)
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IWidgetBuilder, IWindow
 from virtualbricks.tools import dispose
@@ -2166,15 +2168,50 @@ class NewBrickDialog(_Window):
         self._builder.connect_signals(self)
         self._type = 'switch'
 
+    def _set_error(self, tooltip):
+        style_context = self.brickNameEntry.get_style_context()
+        style_context.add_class('error')
+        self.brickNameEntry.set_tooltip_markup(tooltip)
+        self.okButton.set_sensitive(False)
+
+    def _reset_error(self):
+        style_context = self.brickNameEntry.get_style_context()
+        style_context.remove_class('error')
+        self.brickNameEntry.set_tooltip_text(None)
+        self.okButton.set_sensitive(True)
+
     def on_radiobutton_toggled(self, radiobutton):
         if radiobutton.get_active():
             self._type = radiobutton.get_name()
         return True
 
+    def on_brickNameEntry_changed(self, entry):
+        """
+        Set the status of the entry based on brick name validity.
+
+        :type entry: Gtk.Entry
+        :rtype: bool
+        """
+
+        brick_name = entry.get_text()
+        if not brick_name:
+            self._reset_error()
+            self.okButton.set_sensitive(False)
+            return
+        try:
+            self._factory.normalize_name(brick_name)
+            self._reset_error()
+        except NameAlreadyInUseError:
+            tooltip = (
+                f'Name <span weight="bold">{brick_name}</span>'
+                ' is already in use'
+            )
+            self._set_error(tooltip)
+        except InvalidNameError as exc:
+            self._set_error(str(exc))
+
     @destroy_on_exit
     def on_NewBrickDialog_response(self, dialog, response_id):
-        # TODO: do not close the dialog if the name is invalid and set the
-        # status of the entry
         if response_id == Gtk.ResponseType.OK:
             name = self.brickNameEntry.get_text()
             try:
