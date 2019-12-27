@@ -84,7 +84,6 @@ import os
 import errno
 import tempfile
 import functools
-import re
 import string
 import textwrap
 
@@ -2104,83 +2103,125 @@ class SaveAsDialog(Window):
                                             self.factory)
 
 
-class RenameDialog(Window):
+class RenameDialog(_Window):
 
-    resource = "renamedialog.ui"
-    name = "RenameDialog"
+    def __init__(self, brickfactory, brick):
+        """
+        :type brickfactory: virtualbricks.brickfactory.BrickFactory
+        :type brick: Union[virtualbricks.bricks.Brick,
+            virtualbricks.events.Event]
+        :rtype: None
+        """
 
-    def __init__(self, original, checker=None):
-        Window.__init__(self)
-        self.original = original
-        entry = self.get_entry()
-        entry.set_text(original.name)
-        if checker:
-            self.set_sensitive(False)
-            entry.connect("changed", self.on_changed, checker)
-
-    def get_entry(self):
-        return self.get_object("name_entry")
-
-    def set_sensitive(self, sensitive):
-        self.get_object("ok_button").set_sensitive(sensitive)
-
-    def get_name(self):
-        return self.get_entry().get_text()
-
-    def on_changed(self, entry, check):
-        try:
-            check(self.get_name())
-            self.set_sensitive(True)
-        except errors.InvalidNameError:
-            self.set_sensitive(False)
-
-    @destroy_on_exit
-    def on_RenameDialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.OK:
-            name = self.get_name()
-            try:
-                self.rename(name)
-            except errors.InvalidNameError:
-                logger.error(invalid_name, name=name)
-
-    def rename(self, name):
-        self.original.rename(name)
-
-
-class RenameBrickDialog(RenameDialog):
-
-    def rename(self, name):
-        # TODO: move this function to Disk
-        old = self.original.name
-        self.original.rename(name)
-        regex = re.compile("^{0}_([a-z0-9]+).cow$".format(old))
-        new = r"{0}_\1.cow".format(self.original.name)
-        for fp in filepath.FilePath(project.manager.current.path).children():
-            if fp.isfile() and regex.match(fp.basename()):
-                fp.moveTo(fp.sibling(regex.sub(new, fp.basename())))
-
-
-class NewBrickDialog(_Window):
-
-    def __init__(self, factory):
-        self._factory = factory
-        self._builder = BuilderHelper('newbrick.ui')
+        self._factory = brickfactory
+        self._brick = brick
+        self._prev_name = brick.name
+        self._builder = BuilderHelper('renamedialog.ui')
         self._builder.connect_signals(self)
-        self._type = 'switch'
+        self.brickNameEntry.set_text(brick.name)
 
     def _set_error(self, tooltip):
+        """
+        :type tooltip: str
+        :rtype: None
+        """
+
         style_context = self.brickNameEntry.get_style_context()
         style_context.add_class('error')
         self.brickNameEntry.set_tooltip_markup(tooltip)
         self.okButton.set_sensitive(False)
 
     def _reset_error(self):
+        """
+        :rtype: None
+        """
+
+        style_context = self.brickNameEntry.get_style_context()
+        style_context.remove_class('error')
+        self.brickNameEntry.set_tooltip_text(None)
+        self.okButton.set_sensitive(True)
+
+    def on_brickNameEntry_changed(self, entry):
+        """
+        Set the status of the entry based on brick name validity.
+
+        :type entry: Gtk.Entry
+        :rtype: bool
+        """
+
+        brick_name = entry.get_text()
+        if not brick_name or brick_name == self._prev_name:
+            self._reset_error()
+            self.okButton.set_sensitive(False)
+            return
+        try:
+            self._factory.normalize_name(brick_name)
+            self._reset_error()
+        except NameAlreadyInUseError:
+            tooltip = (
+                f'Name <span weight="bold">{brick_name}</span>'
+                ' is already in use'
+            )
+            self._set_error(tooltip)
+        except InvalidNameError as exc:
+            self._set_error(str(exc))
+        return True
+
+    @destroy_on_exit
+    def on_RenameDialog_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.OK:
+            name = self.brickNameEntry.get_text()
+            try:
+                self._brick.rename(name)
+                # TODO: add debugging log
+                # logger.debug(renamed)
+            except errors.InvalidNameError:
+                # TODO: check the difference between invalid_name and
+                # brick_invalid_name
+                logger.error(invalid_name, name=name)
+        return True
+
+
+class NewBrickDialog(_Window):
+
+    def __init__(self, factory):
+        """
+        :type brickfactory: virtualbricks.brickfactory.BrickFactory
+        :rtype: None
+        """
+
+        self._factory = factory
+        self._builder = BuilderHelper('newbrick.ui')
+        self._builder.connect_signals(self)
+        self._type = 'switch'
+
+    def _set_error(self, tooltip):
+        """
+        :type tooltip: str
+        :rtype: None
+        """
+
+        style_context = self.brickNameEntry.get_style_context()
+        style_context.add_class('error')
+        self.brickNameEntry.set_tooltip_markup(tooltip)
+        self.okButton.set_sensitive(False)
+
+    def _reset_error(self):
+        """
+        :rtype: None
+        """
+
         style_context = self.brickNameEntry.get_style_context()
         style_context.remove_class('error')
         self.brickNameEntry.set_tooltip_text(None)
         self.okButton.set_sensitive(True)
 
     def on_radiobutton_toggled(self, radiobutton):
+        """
+        :type radiobutton: Gtk.RadioButton
+        :rtype: bool
+        """
+
         if radiobutton.get_active():
             self._type = radiobutton.get_name()
         return True
@@ -2209,9 +2250,16 @@ class NewBrickDialog(_Window):
             self._set_error(tooltip)
         except InvalidNameError as exc:
             self._set_error(str(exc))
+        return True
 
     @destroy_on_exit
     def on_NewBrickDialog_response(self, dialog, response_id):
+        """
+        :type dialog: Gtk.Dialog
+        :type response_id: Gtk.ResponseType
+        :rtype: bool
+        """
+
         if response_id == Gtk.ResponseType.OK:
             name = self.brickNameEntry.get_text()
             try:

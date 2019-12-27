@@ -16,12 +16,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
-import errno
-import re
 import datetime
-import shutil
+import errno
 import itertools
+import os
+import pathlib
+import re
+import shutil
 
 from twisted.internet import defer
 
@@ -724,6 +725,32 @@ class VirtualMachine(bricks.Brick):
         self.config["name"] = name
         for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             self.config[dev] = Disk(self, dev)
+
+    def rename(self, new_name):
+        """
+        Override Brick.rename() to rename also the disks.
+
+        :type new_name: str
+        :rtype: None
+        """
+
+        # TODO: logs
+        # TODO: rewind in case of error
+        prev_name = super().rename(new_name)
+        project_path = pathlib.Path(project.manager.current.path)
+        disk_regex = re.compile(
+            f'{prev_name}_'                               # vm name
+            '(?P<disk>[a-z0-9]+)'                         # disk
+            '.cow'                                        # extension
+            r'(?P<bak_suffix>\.(?:bak|back)-[0-9\-_]+)?'  # backup suffix
+            '$'                                           # end
+        )
+        new_name_repl = fr'{new_name}_\g<disk>.cow\g<bak_suffix>'
+        for path in project_path.iterdir():
+            if path.is_file() and disk_regex.match(path.name):
+                new_disk_name = disk_regex.sub(new_name_repl, path.name)
+                path.rename(project_path.joinpath(new_disk_name))
+        return prev_name
 
     def poweron(self, snapshot=""):
         def acquire(passthru):

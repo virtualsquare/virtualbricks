@@ -254,7 +254,9 @@ class Base(object):
         fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
     def rename(self, name):
+        prev_name = self._name
         self.set_name(self.factory.normalize_name(name))
+        return prev_name
 
     def set_restore(self, restore):
         self._restore = restore
