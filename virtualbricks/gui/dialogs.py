@@ -343,16 +343,15 @@ class _Window:
         window.show()
 
 
-class AboutDialog(Window):
-
-    resource = "about.ui"
+class AboutDialog(_Window):
 
     def __init__(self):
-        Window.__init__(self)
-        self.window.set_version(__version__)
-        # to handle show() instead of run()
-        self.window.connect("response", lambda d, r: d.destroy())
+        self._builder = BuilderHelper('about.ui')
+        self._builder.connect_signals(self)
+        self.AboutDialog.set_version(__version__)
 
+    def on_AboutDialog_response(self, dialog, response):
+        dialog.destroy()
 
 class LoggingWindow(Window):
 

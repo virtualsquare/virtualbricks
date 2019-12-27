@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkAboutDialog" id="AboutDialog">
     <property name="can_focus">False</property>
-    <property name="border_width">5</property>
+    <property name="modal">True</property>
     <property name="type_hint">dialog</property>
     <property name="program_name">Virtualbricks</property>
     <property name="version">(version unknown)</property>
@@ -14,7 +14,7 @@ QEMU - Copyright © 2005-2011 Fabrice Bellard.
 QEMU is a trademark of Fabrice Bellard.
 Icons by Fabio Viola, Licensed under CC BY-NC-SA 3.0. See COPYING for more details.
 Debian package created and maintained by Francesco Namuri (franam@debian.org).</property>
-    <property name="comments" translatable="yes">Virtualbricks is a GNU/Linux desktop gui for Qemu/KVM and VDE.</property>
+    <property name="comments" translatable="yes">Virtualbricks is a GNU/Linux desktop gui for Qemu and VDE.</property>
     <property name="website">https://github.com/virtualsquare/virtualbricks</property>
     <property name="license" translatable="yes">This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -63,21 +63,29 @@ warszawianka
 (Public Domain)
 </property>
     <property name="logo">virtualbricks.png</property>
+    <signal name="response" handler="on_AboutDialog_response" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child internal-child="vbox">
-      <object class="GtkBox" id="dialog-vbox2">
-        <property name="visible">True</property>
+      <object class="GtkBox">
         <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox" id="dialog-action_area2">
-            <property name="visible">True</property>
+          <object class="GtkButtonBox">
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="pack_type">end</property>
+            <property name="fill">False</property>
             <property name="position">0</property>
           </packing>
         </child>
