@@ -154,10 +154,8 @@ class BrickPopupMenu(BaseMenu):
         if self.original.proc is not None:
             logger.error(cannot_rename)
         else:
-            dialogs.RenameBrickDialog(
-                self.original,
-                gui.brickfactory.normalize_name
-            ).show(gui.wndMain)
+            dialog = dialogs.RenameDialog(gui.brickfactory, self.original)
+            dialog.show(gui.wndMain)
 
     def on_attach_activate(self, menuitem, gui):
         dialogs.AttachEventDialog(self.original, gui.factory).show(gui.wndMain)
@@ -225,10 +223,8 @@ class EventPopupMenu(BaseMenu):
 
     def on_rename_activate(self, menuitem, gui):
         if not self.original.scheduled:
-            dialogs.RenameDialog(
-                self.original,
-                gui.brickfactory.normalize_name
-            ).show(gui.wndMain)
+            dialog = dialogs.RenameDialog(gui.brickfactory, self.original)
+            dialog.show(gui.wndMain)
         else:
             logger.error(event_in_use)
 
