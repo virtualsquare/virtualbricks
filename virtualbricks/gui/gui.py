@@ -2326,7 +2326,6 @@ class VisualFactory(brickfactory.BrickFactory):
 class TextBufferObserver:
 
     def __init__(self, textbuffer):
-        textbuffer.create_mark("end", textbuffer.get_end_iter(), False)
         self.textbuffer = textbuffer
 
     def __call__(self, event):
@@ -2339,11 +2338,11 @@ class TextBufferObserver:
         else:
             event["traceback"] = ""
         event["iso8601_time"] = log.format_time(event["log_time"])
-        msg = entry.format(msg=log.formatEvent(event), **event)
-        mark = self.textbuffer.get_mark("end")
-        iter = self.textbuffer.get_iter_at_mark(mark)
-        self.textbuffer.insert_with_tags_by_name(iter, msg,
-                                                 event["log_level"].name)
+        self.textbuffer.insert_with_tags_by_name(
+            self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark('end')),
+            entry.format(msg=log.formatEvent(event), **event),
+            event["log_level"].name
+        )
 
 
 class MessageDialogObserver:
@@ -2400,10 +2399,15 @@ class Application(brickfactory.Application):
     factory_factory = VisualFactory
 
     def __init__(self, config):
-        self.textbuffer = Gtk.TextBuffer()
+        self.textbuffer = textbuffer = Gtk.TextBuffer()
+        textbuffer.create_mark(
+            mark_name='end',
+            where=textbuffer.get_end_iter(),
+            left_gravity=False
+        )
         for name, attrs in TEXT_TAGS:
             self.textbuffer.create_tag(name, **attrs)
-        self.logger_factory = AppLoggerFactory(self.textbuffer)
+        self.logger_factory = AppLoggerFactory(textbuffer)
         brickfactory.Application.__init__(self, config)
 
     def get_namespace(self):
