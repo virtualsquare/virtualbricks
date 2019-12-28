@@ -3,8 +3,8 @@
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkWindow" id="LoggingWindow">
-    <property name="width_request">500</property>
-    <property name="height_request">300</property>
+    <property name="width_request">700</property>
+    <property name="height_request">450</property>
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Virtualbricks logging</property>
     <property name="window_position">center-on-parent</property>
@@ -14,14 +14,16 @@
       <placeholder/>
     </child>
     <child>
-      <object class="GtkBox" id="vbox1">
+      <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
+        <property name="spacing">5</property>
         <child>
-          <object class="GtkScrolledWindow" id="scrolledwindow1">
+          <object class="GtkScrolledWindow">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <signal name="scroll-event" handler="on_scrolledwindow_scroll_event" swapped="no"/>
             <child>
               <object class="GtkTextView" id="textview">
                 <property name="visible">True</property>
@@ -41,31 +43,20 @@
           </packing>
         </child>
         <child>
-          <object class="GtkSeparator" id="hseparator1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButtonBox" id="buttonbox2">
+          <object class="GtkButtonBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="spacing">5</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkLinkButton" id="reportbugbutton">
+              <object class="GtkLinkButton" id="reportBugLinkButton">
                 <property name="label" translatable="yes">report bug</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="has_tooltip">True</property>
                 <property name="relief">none</property>
-                <signal name="activate-link" handler="on_reportbugbutton_activate_link" swapped="no"/>
+                <signal name="activate-link" handler="on_reportBugLinkButton_activate_link" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -75,13 +66,13 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="savebutton">
+              <object class="GtkButton" id="saveButton">
                 <property name="label">gtk-save</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
-                <signal name="clicked" handler="on_savebutton_clicked" swapped="no"/>
+                <signal name="clicked" handler="on_saveButton_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -90,13 +81,13 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="cleanbutton">
+              <object class="GtkButton" id="clearButton">
                 <property name="label">gtk-clear</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
-                <signal name="clicked" handler="on_cleanbutton_clicked" swapped="no"/>
+                <signal name="clicked" handler="on_clearButton_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -105,13 +96,13 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="closebutton">
+              <object class="GtkButton" id="closeButton">
                 <property name="label">gtk-close</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
-                <signal name="clicked" handler="on_closebutton_clicked" swapped="no"/>
+                <signal name="clicked" handler="on_closeButton_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -123,7 +114,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">2</property>
+            <property name="position">1</property>
           </packing>
         </child>
       </object>

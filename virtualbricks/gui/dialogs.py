@@ -353,29 +353,27 @@ class AboutDialog(_Window):
     def on_AboutDialog_response(self, dialog, response):
         dialog.destroy()
 
-class LoggingWindow(Window):
 
-    resource = 'logging.ui'
-    scroll_tolerance = 100
+class LoggingWindow(_Window):
+
+    scroll_tolerance = 50
 
     def __init__(self, textbuffer):
         """
         :type textbuffer: Gtk.TextBuffer
         """
 
-        Window.__init__(self)
         self._textbuffer = textbuffer
+        self._builder = BuilderHelper('logging.ui')
+        self._builder.connect_signals(self)
         self._scroll_to_bottom = True
-        textview = self.get_object('textview')
-        textview.set_buffer(textbuffer)
+        self.textview.set_buffer(textbuffer)
         self._on_textbuffer_changed_handler = textbuffer.connect(
             'changed',
             self.on_textbuffer_changed,
-            textview
+            self.textview
         )
-        vadjustment = self.get_object('scrolledwindow1').get_vadjustment()
-        vadjustment.connect('value-changed', self.on_vadjustment_value_changed)
-        self.scroll_to_end(textview, textbuffer)
+        self.scroll_to_end(self.textview, textbuffer)
 
     def scroll_to_end(self, textview, textbuffer):
         """
@@ -385,7 +383,33 @@ class LoggingWindow(Window):
         :type textbuffer: Gtk.TextBuffer
         """
 
-        textview.scroll_to_mark(textbuffer.get_mark('end'), 0, True, 0, 1)
+        textview.scroll_to_mark(
+            mark=textbuffer.get_mark('end'),
+            within_margin=0.0,
+            use_align=True,
+            xalign=0,  # left
+            yalign=1  # bottom
+        )
+
+    def on_scrolledwindow_scroll_event(self, window, event):
+        """
+        Check if the window should automatically scroll to the bottom when new
+        messages arrives.
+
+        :type window: Gtk.ScrolledWindow
+        :type event: Gdk.EventScroll
+        :rtype: bool
+        """
+
+        adjustment = window.get_vadjustment()
+        self._scroll_to_bottom = (
+            adjustment.get_value()  # current offset from top
+            >=
+            adjustment.get_upper() -  # The maximum value for the adjustment
+            adjustment.get_page_size() -  # The visible size
+            self.scroll_tolerance
+        )
+        return False
 
     def on_textbuffer_changed(self, textbuffer, textview):
         """
@@ -398,24 +422,7 @@ class LoggingWindow(Window):
 
         if self._scroll_to_bottom:
             self.scroll_to_end(textview, textbuffer)
-
-    def on_vadjustment_value_changed(self, adjustment):
-        """
-        Check if the window should automatically scroll to the bottom when new
-        messages arrives.
-
-        :type adjustment: Gtk.Adjustment
-        """
-
-        self._scroll_to_bottom = (
-            # current offset from top
-            adjustment.get_value() +
-            # The visible size
-            adjustment.get_page_size() >=
-            # The maximum value for the adjustment
-            adjustment.get_upper() -
-            self.scroll_tolerance
-        )
+        return True
 
     def on_LoggingWindow_destroy(self, window):
         """
@@ -425,17 +432,19 @@ class LoggingWindow(Window):
         """
 
         self._textbuffer.disconnect(self._on_textbuffer_changed_handler)
+        return True
 
-    def on_closebutton_clicked(self, button):
+    def on_closeButton_clicked(self, button):
         """
         Close the window.
 
         :type adjustment: Gtk.Button
         """
 
-        self.window.destroy()
+        self.LoggingWindow.destroy()
+        return True
 
-    def on_cleanbutton_clicked(self, button):
+    def on_clearButton_clicked(self, button):
         """
         Clean the logging window.
 
@@ -443,8 +452,9 @@ class LoggingWindow(Window):
         """
 
         self._textbuffer.set_text('')
+        return True
 
-    def on_savebutton_clicked(self, button):
+    def on_saveButton_clicked(self, button):
         """
         Save the message to a file.
 
@@ -453,6 +463,7 @@ class LoggingWindow(Window):
 
         chooser = Gtk.FileChooserDialog(
             title=_('Save as...'),
+            parent=self.LoggingWindow,
             action=Gtk.FileChooserAction.SAVE,
             buttons=(
                 'gtk-cancel', Gtk.ResponseType.CANCEL,
@@ -460,19 +471,21 @@ class LoggingWindow(Window):
             )
         )
         chooser.set_do_overwrite_confirmation(True)
-        text = self._textbuffer.get_property('text')
-        chooser.connect('response', self._on_dialog_response, text)
+        chooser.connect('response', self.on_saveDialog_response)
         chooser.show()
+        return True
 
-    def _on_dialog_response(self, dialog, response_id, text):
+    def on_saveDialog_response(self, dialog, response_id):
         try:
             if response_id == Gtk.ResponseType.OK:
+                text = self._textbuffer.get_property('text')
                 with open(dialog.get_filename(), 'w') as fp:
                     fp.write(text)
         finally:
             dialog.destroy()
+        return True
 
-    def on_reportbugbutton_activate_link(self, button):
+    def on_reportBugLinkButton_activate_link(self, button):
         """
         Handle the click on report bug button
 
