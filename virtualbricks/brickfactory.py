@@ -235,7 +235,7 @@ class BrickFactory(object):
         return self._disk_images_path_idx.get(path)
 
     def iter_disk_images(self):
-        return iter(self._disk_images_path_idx)
+        return iter(self._disk_images)
 
     # Bricks
 
