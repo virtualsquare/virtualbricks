@@ -80,15 +80,21 @@ results are not always excellent. A window at time conversion is highly
 advised and possible with gtk-builder-convert.
 """
 
-import os
+from contextlib import contextmanager
 import errno
-import tempfile
 import functools
+import os
+from os.path import (
+    basename,
+    splitext
+)
 import string
+import tempfile
 import textwrap
 
-from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import GObject
+from gi.repository import Gtk
 from gi.repository import Pango
 import twisted
 from twisted.internet import utils, defer, task, error
@@ -106,7 +112,10 @@ from virtualbricks import virtualmachines
 from virtualbricks._settings import DEFAULT_CONF
 from virtualbricks._spawn import getQemuOutputAndValue
 from virtualbricks.errors import (
-    NoOptionError, InvalidNameError, NameAlreadyInUseError
+    ImageAlreadyInUseError,
+    InvalidNameError,
+    NameAlreadyInUseError,
+    NoOptionError,
 )
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IWidgetBuilder, IWindow
@@ -1094,63 +1103,146 @@ class CommitImageDialog(Window):
         self.set_label(button=button)
 
 
-def choose_new_image(gui, factory):
-    main = gui.wndMain
-    dialog = Gtk.FileChooserDialog(
-        _("Open a disk image"),
-        main,
-        Gtk.FileChooserAction.OPEN,
-        (
-            "gtk-cancel",
-            Gtk.ResponseType.CANCEL,
-            "gtk-open",
-            Gtk.ResponseType.OK
-        )
-    )
-    if dialog.run() == Gtk.ResponseType.OK:
-        pathname = dialog.get_filename()
-        LoadImageDialog(factory, pathname).show(main)
-    dialog.destroy()
-
-
-class LoadImageDialog(Window):
-
-    resource = "loadimagedialog.ui"
-
-    def __init__(self, factory, pathname):
-        Window.__init__(self)
-        self.pathname = pathname
-        self.factory = factory
-
-    def show(self, parent=None):
-        name = os.path.basename(self.pathname)
-        self.get_object("name_entry").set_text(name)
-        buf = self.get_object("description_textview").get_buffer()
-        buf.set_text(self.load_desc())
-        Window.show(self, parent)
-
-    def load_desc(self):
+def block_signal_handler(g_object, handler_id):
+    @contextmanager
+    def inner():
+        GObject.signal_handler_block(g_object, handler_id)
         try:
-            with open(self.pathname + ".vbdescr") as fd:
-                return fd.read()
-        except IOError:
-            return ""
+            yield
+        finally:
+            GObject.signal_handler_unblock(g_object, handler_id)
+    return inner
 
+
+class LoadImageDialog(_Window):
+
+    def __init__(self, brickfactory):
+        self._brickfactory = brickfactory
+        self._name_set = False
+        self._description_set = False
+        self._builder = BuilderHelper('loadimagedialog.ui')
+        self._builder.connect_signals(self)
+        self._block_image_name_entry_changed = block_signal_handler(
+            self.imageNameEntry,
+            self.imageNameEntry.connect(
+                'changed',
+                self.on_imageNameEntry_changed
+            )
+        )
+        self._block_description_textbuffer_changed = block_signal_handler(
+            self.descriptionTextBuffer,
+            self.descriptionTextBuffer.connect(
+                'changed',
+                self.on_descriptionTextBuffer_changed
+            )
+        )
+        self._image_path_error = None
+        self._name_error = None
+
+    def _load_desc(self, pathname):
+        try:
+            with open(pathname + '.vbdescr') as fd:
+                return fd.read()
+        except FileNotFoundError:
+            return ''
+
+    def _set_error(self):
+        """
+        :rtype: None
+        """
+
+        file_chooser_button = self.imageFileChooserButton
+        image_name_entry = self.imageNameEntry
+        if self._image_path_error is not None:
+            file_chooser_button.get_style_context().add_class('error')
+            file_chooser_button.set_tooltip_markup(self._image_path_error)
+        else:
+            file_chooser_button.get_style_context().remove_class('error')
+            file_chooser_button.set_tooltip_text(None)
+        if self._name_error:
+            image_name_entry.get_style_context().add_class('error')
+            image_name_entry.set_tooltip_markup(self._name_error)
+        else:
+            image_name_entry.get_style_context().remove_class('error')
+            image_name_entry.set_tooltip_markup(None)
+        if self._image_path_error is not None or self._name_error is not None:
+            self.okButton.set_sensitive(False)
+        else:
+            self.okButton.set_sensitive(
+                file_chooser_button.get_filename() is not None
+                and image_name_entry.get_text() != ''
+            )
+
+    def _check_name(self):
+        image_name = self.imageNameEntry.get_text()
+        if image_name == '':
+            self._name_error = None
+        else:
+            try:
+                self._brickfactory.normalize_name(image_name)
+                self._name_error = None
+            except NameAlreadyInUseError:
+                self._name_error = (
+                    f'Name <span weight="bold">{image_name}</span>'
+                    ' is already in use'
+                )
+            except InvalidNameError as exc:
+                self._name_error = str(exc)
+
+    def on_imageFileChooserButton_file_set(self, filechooserbutton):
+        """
+        :type filechooserbutton: Gtk.FileChooserButton
+        :rtype: bool
+        """
+
+        filepath = filechooserbutton.get_filename()
+        if filepath is None:
+            self._image_path_error = None
+            return True
+        try:
+            self._brickfactory.check_image_not_in_use(filepath)
+            self._image_path_error = None
+        except ImageAlreadyInUseError:
+            self._image_path_error = 'Image is already in use'
+        if not self._name_set:
+            image_name, ext = splitext(basename(filepath))
+            with self._block_image_name_entry_changed():
+                self.imageNameEntry.set_text(image_name)
+            self._check_name()
+        if not self._description_set:
+            with self._block_description_textbuffer_changed():
+                self.descriptionTextBuffer.set_text(self._load_desc(filepath))
+        self._set_error()
+        return True
+
+    def on_imageNameEntry_changed(self, entry):
+        """
+        :type entry: Gtk.Entry
+        :rtype: bool
+        """
+
+        self._name_set = entry.get_text() != ''
+        self._check_name()
+        self._set_error()
+        return True
+
+    def on_descriptionTextBuffer_changed(self, textbuffer):
+        """
+        :type textbuffer: Gtk.TextBuffer
+        :rtype: bool
+        """
+
+        self._description_set = textbuffer.get_property('text') != ''
+        return True
+
+    @destroy_on_exit
     def on_LoadImageDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
-            name = self.get_object("name_entry").get_text()
-            buf = self.get_object("description_textview").get_buffer()
-            desc = buf.get_text(
-                buf.get_start_iter(),
-                buf.get_end_iter(),
-                include_hidden_chars=True
-            )
-            try:
-                self.factory.new_disk_image(name, self.pathname, desc)
-            except BaseException:
-                dialog.destroy()
-                raise
-        dialog.destroy()
+            name = self.imageNameEntry.get_text()
+            description = self.descriptionTextBuffer.get_property('text')
+            filepath = self.imageFileChooserButton.get_filename()
+            self._brickfactory.new_disk_image(name, filepath, description)
+        return True
 
 
 class CreateImageDialog(Window):

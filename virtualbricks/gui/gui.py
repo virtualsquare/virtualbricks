@@ -1325,7 +1325,7 @@ class QemuConfigController(ConfigController):
     # signals
 
     def on_newimage_button_clicked(self, button):
-        dialogs.choose_new_image(self.gui, self.gui.brickfactory)
+        dialogs.LoadImageDialog(self.gui.brickfactory).show(self.gui.wndMain)
 
     def on_configimage_button_clicked(self, button):
         dialogs.DisksLibraryDialog(self.original.factory).show()
@@ -2083,7 +2083,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuImagesNew_activate(self, menuitem):
-        dialogs.choose_new_image(self, self.brickfactory)
+        dialogs.LoadImageDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_menuImagesCommit_activate(self, menuitem):
