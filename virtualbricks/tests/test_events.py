@@ -16,9 +16,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from twisted.trial import unittest
-from twisted.internet import defer
 
-from virtualbricks import events, errors
+from virtualbricks.errors import BadConfigError
+from virtualbricks.events import Event
 from virtualbricks.tests import stubs, Skip
 
 
@@ -30,7 +30,7 @@ class TestEvents(unittest.TestCase):
 
     def setUp(self):
         self.factory = stubs.FactoryStub()
-        self.event = events.Event(self.factory, "test_event")
+        self.event = Event(self.factory, "test_event")
 
     def test_base(self):
         self.assertFalse(self.event.configured())
@@ -42,7 +42,7 @@ class TestEvents(unittest.TestCase):
         self.assertEqual(self.event.get_state(), _("running"))
 
     def test_change_state(self):
-        self.assertRaises(errors.BadConfigError, self.event.toggle)
+        self.assertRaises(BadConfigError, self.event.toggle)
         self.event.config["actions"].append("")
         self.event.config["delay"] = 1024
         self.event.toggle()
@@ -61,7 +61,7 @@ class TestEvents(unittest.TestCase):
 
     @Skip("Use clock facilities")
     def test_poweron(self):
-        self.assertRaises(errors.BadConfigError, self.event.poweron)
+        self.assertRaises(BadConfigError, self.event.poweron)
         self.event.config["actions"].append("")
         self.event.config["delay"] = 0.00001
         return self.event.poweron()

@@ -273,8 +273,8 @@ class VBProtocol(Protocol):
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         self.sendLine("\nEvents")
         self.sendLine("-" * 20)
-        for obj in self.factory.events:
-            self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
+        for event in self.factory.iter_events():
+            self.sendLine("%s (%s)" % (event.name, event.get_type()))
         # self.sendLine("End of list.")
 
     def do_config(self, *args):

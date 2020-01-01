@@ -33,11 +33,12 @@ from twisted.conch.insults import insults
 from twisted.conch import manhole
 
 from virtualbricks import errors, settings, configfile, console, project, log
-from virtualbricks import events, link, router, switches, tunnels, tuntaps
+from virtualbricks import link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
-from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks import observable
+from virtualbricks.events import Event
 from virtualbricks.tools import is_running
+from virtualbricks.virtualmachines import is_virtualmachine
 
 
 if False:  # pyflakes
@@ -81,7 +82,7 @@ def install_brick_types(registry=None):
         "tunnel server": tunnels.TunnelListen,
         "tunnelserver": tunnels.TunnelListen,
         "tunnellisten": tunnels.TunnelListen,
-        "event": events.Event,
+        "event": Event,
         "switchwrapper": switches.SwitchWrapper,
         "router": router.Router,
     })
@@ -133,7 +134,8 @@ class BrickFactory(object):
     def __init__(self, quit):
         self.quit_d = quit
         self.bricks = []
-        self.events = []
+        self._events = []
+        self._events_idx = {}
         self.socks = []
         self.disk_images = []
         self.__factories = install_brick_types()
@@ -149,7 +151,7 @@ class BrickFactory(object):
             msg = _("Cannot close virtualbricks: there are running bricks")
             raise errors.BrickRunningError(msg)
         logger.info(engine_bye)
-        for e in self.events:
+        for e in self._events:
             e.poweroff()
         self._notify("quit", self)
         if not self.quit_d.called:
@@ -166,7 +168,7 @@ class BrickFactory(object):
             self.del_brick(brick)
 
         # Don't change the list while iterating over it
-        for e in list(self.events):
+        for e in list(self._events):
             self.del_event(e)
 
         del self.socks[:]
@@ -324,9 +326,11 @@ class BrickFactory(object):
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        event = events.Event(self, self.normalize_name(name))
-        logger.debug(new_event_ok, name=event.name)
-        self.events.append(event)
+        name = self.normalize_name(name)
+        event = Event(self, name)
+        logger.debug(new_event_ok, name=name)
+        self._events.append(event)
+        self._events_idx[name] = event
         event.changed.connect(self._event_changed)
         self._notify("event-added", event)
         return event
@@ -340,31 +344,37 @@ class BrickFactory(object):
     def del_event(self, event):
         event.poweroff()
         event.changed.disconnect(self._event_changed)
-        self.events.remove(event)
+        self._events.remove(event)
+        del self._events_idx[event.name]
         self._notify("event-removed", event)
 
     def get_event_by_name(self, name):
-        for e in self.events:
-            if e.name == name:
-                return e
+        return self._events_idx.get(name)
 
     def rename_event(self, event, name):
         event.name = self.normalize_name(name)
         self._event_changed(event)
 
+    def iter_events(self):
+        return iter(self._events)
+
     def _event_changed(self, event):
         self._notify("event-changed", event)
 
-    def next_name(self, name, suffix="_new"):
+    def next_name(self, name):
+        c = 1
+        orig_name = name
         while self.is_in_use(name):
-            name += suffix
+            name = f'{orig_name}.{c}'
         return name
 
     def is_in_use(self, name):
         """used to determine whether the chosen name can be used or
         it has already a duplicate among bricks or events."""
 
-        for o in itertools.chain(self.bricks, self.events, self.disk_images):
+        if self.get_event_by_name(name) is not None:
+            return True
+        for o in itertools.chain(self.bricks, self.disk_images):
             if o.name == name:
                 return True
         return False

@@ -321,7 +321,7 @@ class ConfigFile:
         for img in factory.disk_images:
             img.save_to(fileobj)
 
-        for event in factory.events:
+        for event in factory.iter_events():
             event.save_to(fileobj)
 
         socks = []
