@@ -106,11 +106,11 @@ def normalize_brick_name(name):
         raise errors.InvalidNameError(_('Name is empty'))
     normalized_name = re.sub(r'\s+', '_', name.strip())
     if not re.search(r'\A[a-zA-Z]', normalized_name):
-        msg = _('Name {brick_name} must start with a letter')
+        msg = _('Name must start with a letter')
         raise errors.InvalidNameError(msg.format(brick_name=name))
     if not re.search(r'\A[a-zA-Z0-9_\.-]+\Z', normalized_name):
         msg = _('Name must contains only letters, numbers, underscores, '
-                'hyphens and points, {brick_name}').format(brick_name=name)
+                'hyphens and points').format(brick_name=name)
         raise errors.InvalidNameError(msg)
     return normalized_name
 
@@ -202,17 +202,25 @@ class BrickFactory(object):
 
         logger.info(create_image, path=path)
         path = os.path.abspath(path)
-        self.assert_path_not_in_use(path)
+        self.check_image_not_in_use(path)
         img = virtualmachines.Image(self.normalize_name(name), path,
                                     description)
         self.disk_images.append(img)
         self._notify("image-added", img)
         return img
 
-    def assert_path_not_in_use(self, path):
+    def check_image_not_in_use(self, image_path):
+        """
+        Check that the image is not in use by a disk.
+
+        This check can't be made 100% safe but it is good enough for our uses.
+
+        :param str image_path: the path of the image file.
+        """
+
         for img in self.disk_images:
-            if img.path == path:
-                raise errors.ImageAlreadyInUseError(path)
+            if img.path == image_path:
+                raise errors.ImageAlreadyInUseError(image_path)
 
     def remove_disk_image(self, image):
         self.disk_images.remove(image)
