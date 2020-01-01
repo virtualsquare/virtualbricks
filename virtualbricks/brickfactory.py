@@ -36,6 +36,7 @@ from virtualbricks import errors, settings, configfile, console, project, log
 from virtualbricks import link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
 from virtualbricks import observable
+from virtualbricks.errors import NameAlreadyInUseError
 from virtualbricks.events import Event
 from virtualbricks.tools import is_running
 from virtualbricks.virtualmachines import is_virtualmachine
@@ -326,7 +327,9 @@ class BrickFactory(object):
         @raises: InvalidNameError, InvalidTypeError
         """
 
-        name = self.normalize_name(name)
+        name = normalize_brick_name(name)
+        if name in self._events_idx:
+            raise NameAlreadyInUseError(name)
         event = Event(self, name)
         logger.debug(new_event_ok, name=name)
         self._events.append(event)
