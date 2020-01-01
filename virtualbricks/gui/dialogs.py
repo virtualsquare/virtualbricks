@@ -890,9 +890,12 @@ class BrickSelectionDialog(Window):
     @destroy_on_exit
     def on_BrickSelectionDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
-            act = self._action
-            actions = ("{0} {1}".format(b.name, act) for b in self._added)
-            self._event.set({"actions": map(console.VbShellCommand, actions)})
+            self._event.set({
+                'actions': [
+                    console.VbShellCommand(f'{brick.name} {self._action}')
+                    for brick in self._added
+                ]
+            })
             logger.info(event_created)
 
 
