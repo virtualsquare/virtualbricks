@@ -112,7 +112,6 @@ from virtualbricks import virtualmachines
 from virtualbricks._settings import DEFAULT_CONF
 from virtualbricks._spawn import getQemuOutputAndValue
 from virtualbricks.errors import (
-    ImageAlreadyInUseError,
     InvalidNameError,
     NameAlreadyInUseError,
     NoOptionError,
@@ -1199,11 +1198,10 @@ class LoadImageDialog(_Window):
         if filepath is None:
             self._image_path_error = None
             return True
-        try:
-            self._brickfactory.check_image_not_in_use(filepath)
-            self._image_path_error = None
-        except ImageAlreadyInUseError:
+        if self._brickfactory.get_image_by_path(filepath) is not None:
             self._image_path_error = 'Image is already in use'
+        else:
+            self._image_path_error = None
         if not self._name_set:
             image_name, ext = splitext(basename(filepath))
             with self._block_image_name_entry_changed():
@@ -1485,16 +1483,16 @@ class ExportProjectDialog(Window):
     resource = "exportproject.ui"
     include_images = False
 
-    def __init__(self, progressbar, prjpath, disk_images):
+    def __init__(self, progressbar, prjpath, iter_disk_images):
         super(Window, self).__init__()
         self.progressbar = progressbar
         if isinstance(prjpath, str):
             prjpath = filepath.FilePath(prjpath)
         self.prjpath = prjpath
-        self.image_files = [(image.name, filepath.FilePath(image.path))
-                            for image in disk_images]
-        # self.image_files = set(filepath.FilePath(image.path) for image in
-        #                         disk_images)
+        self.image_files = [
+            (image.name, filepath.FilePath(image.path))
+            for image in iter_disk_images
+        ]
         self.required_files = set([prjpath.child(".project"),
                                    prjpath.child("README")])
         self.internal_files = set([prjpath.child("vde.dot"),

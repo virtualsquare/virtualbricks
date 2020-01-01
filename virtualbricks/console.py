@@ -328,7 +328,7 @@ class VBProtocol(Protocol):
 class ImagesProtocol(Protocol):
 
     def do_list(self):
-        for img in self.factory.disk_images:
+        for img in self.factory.iter_disk_images():
             self.sendLine("%s, %s" % (img.name, img.path))
 
     # def do_files(self):
