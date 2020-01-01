@@ -2061,7 +2061,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         dialog = dialogs.ExportProjectDialog(
             ProgressBar(self),
             filepath.FilePath(project.manager.current.path),
-            self.brickfactory.disk_images
+            self.brickfactory.iter_disk_images()
         )
         dialog.show(self.wndMain)
         return True

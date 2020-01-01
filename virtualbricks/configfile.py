@@ -318,7 +318,7 @@ class ConfigFile:
             self.save_to(factory, str_or_obj)
 
     def save_to(self, factory, fileobj):
-        for img in factory.disk_images:
+        for img in factory.iter_disk_images():
             img.save_to(fileobj)
 
         for event in factory.iter_events():

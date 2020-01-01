@@ -23,7 +23,6 @@ import termios
 import tty
 import re
 import copy
-import itertools
 
 from twisted.application import app
 from twisted.internet import defer, task, stdio, error
@@ -138,7 +137,9 @@ class BrickFactory(object):
         self._events = []
         self._events_idx = {}
         self.socks = []
-        self.disk_images = []
+        self._disk_images = []
+        self._disk_images_name_idx = {}
+        self._disk_images_path_idx = {}
         self.__factories = install_brick_types()
         self.__observable = observable.Observable(*self.__signals)
         self.changed = observable.Event(self.__observable, "brick-changed")
@@ -173,7 +174,7 @@ class BrickFactory(object):
             self.del_event(e)
 
         del self.socks[:]
-        for image in self.disk_images[:]:
+        for image in self._disk_images[:]:
             self.remove_disk_image(image)
 
     def register_brick_type(self, factory, *types):
@@ -204,44 +205,37 @@ class BrickFactory(object):
         """Add one disk image to the library."""
 
         logger.info(create_image, path=path)
+        name = normalize_brick_name(name)
         path = os.path.abspath(path)
-        self.check_image_not_in_use(path)
-        img = virtualmachines.Image(self.normalize_name(name), path,
-                                    description)
-        self.disk_images.append(img)
+        if self.get_image_by_name(name) is not None:
+            raise NameAlreadyInUseError(name)
+        if self.get_image_by_path(path) is not None:
+            raise errors.ImageAlreadyInUseError(path)
+        img = virtualmachines.Image(name, path, description)
+        self._disk_images.append(img)
+        self._disk_images_name_idx[name] = img
+        self._disk_images_path_idx[path] = img
         self._notify("image-added", img)
         return img
 
-    def check_image_not_in_use(self, image_path):
-        """
-        Check that the image is not in use by a disk.
-
-        This check can't be made 100% safe but it is good enough for our uses.
-
-        :param str image_path: the path of the image file.
-        """
-
-        for img in self.disk_images:
-            if img.path == image_path:
-                raise errors.ImageAlreadyInUseError(image_path)
-
     def remove_disk_image(self, image):
-        self.disk_images.remove(image)
+        self._disk_images.remove(image)
+        del self._disk_images_name_idx[image.name]
+        del self._disk_images_path_idx[image.path]
         self._notify("image-removed", image)
 
     def get_image_by_name(self, name):
         """Return a disk image given its name or {None}."""
 
-        for img in self.disk_images:
-            if img.name == name:
-                return img
+        return self._disk_images_name_idx.get(name)
 
     def get_image_by_path(self, path):
         """Get disk image object from the image library by its path."""
 
-        for img in self.disk_images:
-            if img.path == path:
-                return img
+        return self._disk_images_path_idx.get(path)
+
+    def iter_disk_images(self):
+        return iter(self._disk_images_path_idx)
 
     # Bricks
 
@@ -377,7 +371,9 @@ class BrickFactory(object):
 
         if self.get_event_by_name(name) is not None:
             return True
-        for o in itertools.chain(self.bricks, self.disk_images):
+        if self.get_image_by_name(name) is not None:
+            return True
+        for o in self.bricks:
             if o.name == name:
                 return True
         return False
