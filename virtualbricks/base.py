@@ -174,10 +174,10 @@ class ListOf(Parameter):
 
     def from_string(self, in_string):
         strings = eval(in_string, {}, {})
-        return map(self.element_type.from_string, strings)
+        return [self.element_type.from_string(s) for s in strings]
 
     def to_string(self, in_object):
-        return str(map(self.element_type.to_string, in_object))
+        return str([self.element_type.to_string(obj) for obj in in_object])
 
 
 class Base(object):
