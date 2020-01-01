@@ -1737,7 +1737,7 @@ class EventsBindingList(widgets.AbstractBindingList):
         self._factory.disconnect("event-changed", self._on_changed)
 
     def __iter__(self):
-        return iter(self._factory.events)
+        return self._factory.iter_events()
 
 
 def is_running_filter(model, itr, data):
@@ -2138,12 +2138,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_btnStartAllEvents_clicked(self, toolbutton):
-        for event in self.brickfactory.events:
+        for event in self.brickfactory.iter_events():
             event.poweron()
         return True
 
     def on_btnStopAllEvents_clicked(self, toolbutton):
-        for event in self.brickfactory.events:
+        for event in self.brickfactory.iter_events():
             event.poweroff()
         return True
 

@@ -2554,7 +2554,7 @@ class AttachEventDialog(Window):
     def __init__(self, brick, factory):
         Window.__init__(self)
         self.brick = brick
-        events = (e for e in factory.events if e.configured())
+        events = (e for e in factory.iter_events() if e.configured())
         self.lEvents.set_data_source(events)
         # event start
         event_start = factory.get_event_by_name(brick.get("pon_vbevent"))
