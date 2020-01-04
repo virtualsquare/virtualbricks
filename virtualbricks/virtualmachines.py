@@ -23,12 +23,13 @@ import os
 import pathlib
 import re
 import shutil
+import warnings
 
 from twisted.internet import defer
 
-from virtualbricks import (errors, tools, settings, bricks, log, project,
-                           observable)
+from virtualbricks import errors, tools, settings, bricks, log, project
 from virtualbricks._spawn import getQemuOutputAndValue, abspath_qemu
+from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 
 
@@ -164,83 +165,171 @@ class _HostonlySock:
 hostonly_sock = _HostonlySock()
 
 
+def sizeof_fmt(num, suffix='B'):
+    """
+    :type num: Union[float, int, str]
+    :type suffix: str
+    :rtype: str
+    """
+
+    num = float(num)
+    for unit in '', 'Ki', 'Mi':
+        if abs(num) < 1024.0:
+            return f'{num:.1f}{unit}{suffix}'
+        num /= 1024.0
+    return f'{num:.1f}Gi{suffix}'
+
+
 class Image:
 
     readonly = False
     master = None
-    _description = None
-    _name = ""
 
-    def __init__(self, name, path, description=""):
-        self.observable = observable.Observable("changed")
+    def __init__(self, name, path, description=''):
+        """
+        :type name: str
+        :type path: str
+        :type description: str
+        """
+
         self._name = name
-        self.path = os.path.abspath(path)
-        if description:
-            self.set_description(description)
-
-    def _description_file(self):
-        return self.path + ".vbdescr"
-
-    def set_description(self, descr):
-        if descr != self._description:
-            self._description = descr
-            try:
-                with open(self._description_file(), "w") as fp:
-                    fp.write(descr)
-            except IOError:
-                pass
-            self.observable.notify("changed", self)
-
-    def get_description(self):
-        if self._description is None:
-            try:
-                with open(self._description_file()) as fp:
-                    return fp.read()
-            except IOError:
-                return ""
-        else:
-            return self._description
-
-    description = property(get_description, set_description)
-
-    def set_name(self, value):
-        self._name = value
-        self.observable.notify("changed", self)
+        self._path = os.path.abspath(path)
+        self._description = description
+        self.changed = Event(Observable(), 'changed')
 
     def get_name(self):
+        """
+        :rtype: str
+        """
+
         return self._name
 
-    name = property(get_name, set_name)
+    def set_name(self, value):
+        """
+        :type value: str
+        """
+
+        self._name = value
+        self.changed.notify(self)
+
+    def _get_name_prop(self):
+        warnings.warn('Image.name', DeprecationWarning)
+        return self.get_name()
+
+    def _set_name_prop(self, value):
+        warnings.warn('Image.name', DeprecationWarning)
+        return self.set_name(value)
+
+    name = property(_get_name_prop, _set_name_prop)
+
+    def get_path(self):
+        """
+        :rtype: str
+        """
+
+        return self._path
+
+    def set_path(self, value):
+        """
+        :type value: str
+        """
+
+        self._path = value
+        self.changed.notify(self)
+
+    def _get_path_prop(self):
+        warnings.warn('Image.path', DeprecationWarning)
+        return self.get_path()
+
+    def _set_path_prop(self, value):
+        warnings.warn('Image.path', DeprecationWarning)
+        return self.set_path(value)
+
+    path = property(_get_path_prop, _set_path_prop)
+
+    def get_description(self):
+        """
+        :rtype: str
+        """
+
+        return self._description
+
+    def set_description(self, description):
+        """
+        :type value: str
+        """
+
+        if self._description != description:
+            self._description = description
+            self.changed.notify(self)
+
+    def _get_description_prop(self):
+        warnings.warn('Image.description', DeprecationWarning)
+        return self.get_description()
+
+    def _set_description_prop(self, value):
+        warnings.warn('Image.description', DeprecationWarning)
+        return self.set_description(value)
+
+    description = property(_get_description_prop, _set_description_prop)
 
     def basename(self):
         return os.path.basename(self.path)
 
     def get_size(self):
+        """
+        :rtype: str
+        """
+
         if not self.exists():
-            return "0"
-        size = os.path.getsize(self.path)
-        if size > 1000000:
-            return str(size / 1000000)
-        else:
-            return str(size / 1000000.0)
+            return '0B'
+        return sizeof_fmt(os.path.getsize(self.path))
 
     def exists(self):
         return os.path.exists(self.path)
 
     def acquire(self, disk):
-        if self.master in (None, disk):
+        """
+        :type disk: virtualbricks.virtualmachines.Disk
+        :rtype: None
+        """
+
+        if self.master is None:
             self.master = disk
+        elif self.master is disk:
+            # TODO: check this case
+            pass
         else:
             raise errors.LockedImageError(self, self.master)
 
     def release(self, disk):
+        """
+        :type disk: virtualbricks.virtualmachines.Disk
+        :rtype: None
+        """
+
+        # TODO: remove parameter
         if self.master is disk:
             self.master = None
         else:
             raise errors.LockedImageError(self, self.master)
 
     def save_to(self, fileobj):
-        fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
+        """
+        Save the configuration of this disk image to fileobj.
+
+        :type fileobj: io.TextIOBase
+        """
+
+        # TODO: horrible but I need a quit solution for flattening the
+        # description to one line until _configparser will be replaced by the
+        # stdlib configparser.
+        description = '<nl>'.join(self.get_description().splitlines())
+        fileobj.write(
+            f'[Image:{self.name}]\n'
+            f'path={self.path}\n'
+            f'description={description}\n\n'
+        )
 
     def __format__(self, format_string):
         if format_string in ("n", ""):
@@ -720,8 +809,7 @@ class VirtualMachine(bricks.Brick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self._observable.add_event("image-changed")
-        self.image_changed = observable.Event(self._observable,
-                                              "image-changed")
+        self.image_changed = Event(self._observable, 'image-changed')
         self.config["name"] = name
         for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             self.config[dev] = Disk(self, dev)

@@ -281,6 +281,9 @@ class BuilderHelper:
         builder.set_translation_domain(translation_domain)
         builder.add_from_file(graphics.get_data_filename(resource))
 
+    def __getattr__(self, name):
+        return self.get_object(name)
+
     def get_object(self, name, default=_MARKER):
         """
         Return the widget in the Gtk.Builder with name ``name``. If no widget
@@ -320,8 +323,13 @@ class _Window:
     IWidgetBuilder.
     """
 
+    _builder = None
     on_destroy = None
     name = None
+
+    @property
+    def w(self):
+        return self._builder
 
     def __getattr__(self, name):
         """
@@ -331,6 +339,7 @@ class _Window:
         :rtype: Any
         """
 
+        assert self._builder is not None
         return self._builder.get_object(name)
 
     def _get_name(self):
@@ -343,6 +352,7 @@ class _Window:
         return self.name or self.__class__.__name__
 
     def show(self, parent=None):
+        assert self._builder is not None
         window = self._builder.get_object(self._get_name())
         if parent is not None:
             window.set_transient_for(parent)
@@ -542,82 +552,227 @@ class LoggingWindow(_Window):
         return True
 
 
-class DisksLibraryDialog(Window):
+def iter_tree_model(tree_model):
+    """
+    :type disk_image: virtualbricks.virtualmachines.Image
+    :rtype: Generator[Tuple[Any, Gtk.TreeIter]]
+    """
 
-    resource = "disklibrary.ui"
-    image = None
-    _binding_list = None
+    itr = tree_model.get_iter_first()
+    while itr:
+        value = tree_model.get_value(itr, 0)
+        yield value, itr
+        itr = tree_model.iter_next(itr)
 
-    def __init__(self, factory):
-        Window.__init__(self)
-        self.factory = factory
-        self._binding_list = widgets.ImagesBindingList(factory)
-        self.lsImages.set_data_source(self._binding_list)
-        self.tvcName.set_cell_data_func(self.crt1, self.crt1.set_cell_data)
-        self.tvcPath.set_cell_data_func(self.crt2, self.crt2.set_cell_data)
-        self.tvcUsed.set_cell_data_func(self.crt3, self._set_used_by, factory)
-        self.tvcMaster.set_cell_data_func(self.crt4, self.crt4.set_cell_data)
-        self.tvcCows.set_cell_data_func(self.crt5, self._set_cows, factory)
-        self.tvcSize.set_cell_data_func(self.crt6, self.crt6.set_cell_data)
 
-    def __dispose__(self):
-        if self._binding_list is not None:
-            dispose(self._binding_list)
-            self._binding_list = None
+class DisksLibraryWindow(_Window):
 
     @staticmethod
-    def _set_used_by(column, cell, model, itr, factory):
-        image = model.get_value(itr, 0)
-        c = 0
-        for vm in filter(is_virtualmachine, factory.bricks):
-            for disk in vm.disks():
-                if disk.image is image:
-                    c += 1
-        cell.set_property("text", str(c))
+    def set_cell_name(tree_column, cell, tree_model, tree_itr, data):
+        disk_image = tree_model.get_value(tree_itr, 0)
+        cell.set_property('text', disk_image.get_name())
+        return True
 
     @staticmethod
-    def _set_cows(column, cell, model, itr, factory):
-        image = model.get_value(itr, 0)
-        c = 0
-        for vm in filter(is_virtualmachine, factory.bricks):
+    def set_cell_path(tree_column, cell, tree_model, itr, data):
+        disk_image = tree_model.get_value(itr, 0)
+        cell.set_property('text', str(disk_image.path))
+        return True
+
+    @staticmethod
+    def set_cell_used_by(tree_column, cell, tree_model, itr, brickfactory):
+        disk_image = tree_model.get_value(itr, 0)
+        count = 0
+        for vm in filter(is_virtualmachine, brickfactory.bricks):
             for disk in vm.disks():
-                if disk.image is image and disk.is_cow():
-                    c += 1
-        cell.set_property("text", str(c))
+                if disk.image is disk_image and disk.is_cow():
+                    count += 1
+        cell.set_property("text", str(count))
 
-    def _show_config(self):
-        self.pnlList.hide()
-        self.pnlConfig.show()
+    @staticmethod
+    def set_cell_master_brick(tree_column, cell, tree_model, itr, data):
+        disk_image = tree_model.get_value(itr, 0)
+        text = '' if disk_image.master is None else repr(disk_image.master)
+        cell.set_property('text', text)
+        return True
 
-    def _hide_config(self):
-        self.pnlConfig.hide()
-        self.pnlList.show()
+    @staticmethod
+    def set_cell_cows(tree_column, cell, tree_model, itr, brickfactory):
+        disk_image = tree_model.get_value(itr, 0)
+        num_cows = 0
+        for vm in filter(is_virtualmachine, brickfactory.bricks):
+            for disk in vm.disks():
+                if disk.image is disk_image and disk.is_cow():
+                    num_cows += 1
+        cell.set_property("text", str(num_cows))
+        return True
 
-    def on_btnClose_clicked(self, button):
-        self.window.destroy()
+    @staticmethod
+    def set_cell_size(tree_column, cell, tree_model, itr, data):
+        disk_image = tree_model.get_value(itr, 0)
+        cell.set_property('text', disk_image.get_size())
+        return True
 
-    def on_tvImages_row_activated(self, treeview, path, column):
-        model = treeview.get_model()
-        self.image = model.get_value(model.get_iter(path), 0)
-        self._show_config()
+    def __init__(self, brickfactory):
+        """
+        :type brickfactory: virtualbricks.brickfactory.BrickFactory
+        """
 
-    def on_btnRevert_clicked(self, button):
-        self._hide_config()
+        self._brickfactory = brickfactory
+        self._builder = BuilderHelper('disklibrary.ui')
+        self._builder.connect_signals(self)
+        self._disk_image = None
+        tree_view = self.w.imagesTreeView
+        tree_selection = tree_view.get_selection()
+        tree_selection.set_mode(Gtk.SelectionMode.SINGLE)
+        self._on_selection_changed_handler = tree_selection.connect(
+            'changed', self.on_selection_changed)
+        self._tree_model = tree_model = Gtk.ListStore(object)
+        for disk_image in brickfactory.iter_disk_images():
+            # TODO: use brickfactory.image_changed event once fixed
+            disk_image.changed.connect(self.on_disk_image_changed, tree_model)
+            tree_model.append([disk_image])
+        tree_view.set_model(tree_model)
+        self.w.nameTreeViewColumn.set_cell_data_func(
+            self.w.nameCellRendererText, self.set_cell_name)
+        self.w.pathTreeViewColumn.set_cell_data_func(
+            self.w.pathCellRendererText, self.set_cell_path)
+        self.w.usedByTreeViewColumn.set_cell_data_func(
+            self.w.usedByCellRendererText, self.set_cell_used_by, brickfactory)
+        self.w.masterBrickTreeViewColumn.set_cell_data_func(
+            self.w.masterBrickCellRendererText, self.set_cell_master_brick)
+        self.w.cowsTreeViewColumn.set_cell_data_func(
+            self.w.cowsCellRendererText, self.set_cell_cows, brickfactory)
+        self.w.sizeTreeViewColumn.set_cell_data_func(
+            self.w.sizeCellRendererText, self.set_cell_size)
+        brickfactory.connect(
+            'image-added', self.on_disk_image_added, tree_model)
+        # brickfactory.connect(
+        #     'image-changed', self.on_disk_image_changed, tree_model)
+        brickfactory.connect(
+            'image-removed', self.on_disk_image_removed, tree_model)
 
-    def on_btnRemove_clicked(self, button):
-        self.factory.remove_disk_image(self.image)
-        self._hide_config()
+    def _show_edit_screen(self, disk_image):
+        """
+        :type disk_image: virtualbricks.virtualmachines.Image
+        """
 
-    def on_btnSave_clicked(self, button):
-        self.image.set_name(self.etrName.get_text())
-        self.image.set_description(self.etrDescription.get_text())
-        self.image = None
-        self._hide_config()
+        self._disk_image = disk_image
+        self.w.pathFileChooserButton.set_filename(disk_image.path)
+        self.w.nameEntry.set_text(disk_image.get_name())
+        self.w.descriptionTextBuffer.set_text(disk_image.get_description())
+        self.w.stackWidget.set_visible_child(self.w.editImageBox)
 
-    def on_pnlConfig_show(self, panel):
-        self.etrName.set_text(self.image.name)
-        self.etrPath.set_text(self.image.path)
-        self.etrDescription.set_text(self.image.description)
+    def _hide_edit_screen(self):
+        self._disk_image = None
+        self.w.stackWidget.set_visible_child(self.w.imageListBox)
+
+    def on_selection_changed(self, tree_selection):
+        """
+        Show or hide the edit button if a disk image has been selected.
+
+        :type tree_selection: Gtk.TreeSelection
+        """
+
+        tree_model, itr = tree_selection.get_selected()
+        self.w.editButton.set_sensitive(itr is not None)
+        return True
+
+    def on_disk_image_added(self, disk_image, tree_model):
+        """
+        :type disk_image: virtualbricks.virtualmachines.Image
+        :type tree_model: Gtk.TreeModel
+        """
+
+        disk_image.changed.connect(self.on_disk_image_changed, tree_model)
+        tree_model.append([disk_image])
+
+    def on_disk_image_changed(self, disk_image, tree_model):
+        """
+        :type disk_image: virtualbricks.virtualmachines.Image
+        :type tree_model: Gtk.TreeModel
+        """
+
+        for obj, itr in iter_tree_model(tree_model):
+            if obj == disk_image:
+                tree_model.row_changed(tree_model.get_path(itr), itr)
+                break
+
+    def on_disk_image_removed(self, disk_image, tree_model):
+        """
+        :type disk_image: virtualbricks.virtualmachines.Image
+        :type tree_model: Gtk.TreeModel
+        """
+
+        for obj, itr in iter_tree_model(tree_model):
+            if obj == disk_image:
+                # TODO: remove once fixed image-changed events in brickfactory
+                disk_image.changed.disconnect(
+                    self.on_disk_image_changed, tree_model)
+                tree_model.remove(itr)
+                break
+
+    def on_imagesTreeView_row_activated(self, tree_view, path, column):
+        """
+        :type tree_view: Gtk.TreeView
+        :type path: Gtk.TreePath
+        :type column: Gtk.TreeViewColumn
+        """
+
+        model = tree_view.get_model()
+        disk_image = model.get_value(model.get_iter(path), 0)
+        self._show_edit_screen(disk_image)
+        return True
+
+    def on_pathFileChooserButton_file_set(self, file_choser_button):
+        filename = file_choser_button.get_filename()
+        if filename is not None and self.w.nameEntry.get_text() == '':
+            self.w.nameEntry.set_text(os.path.basename(filename))
+        return True
+
+    def on_cancelButton_clicked(self, button):
+        self._hide_edit_screen()
+        return True
+
+    def on_removeButton_clicked(self, button):
+        assert self._disk_image is not None
+        # TODO: ask for confirmation
+        self._brickfactory.remove_disk_image(self._disk_image)
+        self._hide_edit_screen()
+        return True
+
+    def on_saveButton_clicked(self, button):
+        assert self._disk_image is not None
+        # self._disk_image.set_path(self.w.pathFileChooserButton.get_filename())
+        self._disk_image.path = self.w.pathFileChooserButton.get_filename()
+        self._disk_image.set_name(self.w.nameEntry.get_text())
+        description = self.w.descriptionTextBuffer.get_property('text')
+        self._disk_image.set_description(description)
+        self._hide_edit_screen()
+        return True
+
+    def on_editButton_clicked(self, button):
+        tree_selection = self.w.imagesTreeView.get_selection()
+        tree_model, itr = tree_selection.get_selected()
+        assert itr is not None
+        disk_image = tree_model.get_value(itr, 0)
+        self._show_edit_screen(disk_image)
+        return True
+
+    def on_closeButton_clicked(self, button):
+        self.w.DisksLibraryWindow.destroy()
+        return True
+
+    def on_destroy(self, window=None):
+        for disk_image, itr in iter_tree_model(self._tree_model):
+            # TODO: remove once fixed image-changed events in brickfactory
+            disk_image.changed.disconnect(
+                self.on_disk_image_changed, self._tree_model)
+        self._brickfactory.disconnect(
+            'image-added', self.on_disk_image_added, self._tree_model)
+        self._brickfactory.disconnect(
+            'image-removed', self.on_disk_image_removed, self._tree_model)
+        return True
 
 
 class UsbDevWindow(Window):
