@@ -21,27 +21,26 @@
 import os
 import sys
 import string
-import gi
-from gi.repository import Gtk
-from gi.repository import Gdk
-from gi.repository import GObject
 
+from gi.repository import GObject, Gdk, Gtk
 from twisted.internet import error, defer, task, protocol, reactor
 from twisted.python import filepath
 from zope.interface import implementer
 
-from virtualbricks.interfaces import registerAdapter
-from virtualbricks.gui.interfaces import (IMenu, IJobMenu, IConfigController,
-                                          IPrerequisite, IState, IControl,
-                                          IStateManager)
+from virtualbricks import tools, settings, project, log, brickfactory, qemu
 from virtualbricks._spawn import getQemuOutput
 from virtualbricks.bricks import Brick
 from virtualbricks.events import Event
-from virtualbricks.link import Plug, Sock
-from virtualbricks.virtualmachines import VirtualMachine
-from virtualbricks import tools, settings, project, log, brickfactory, qemu
-from virtualbricks.tools import dispose, is_running
 from virtualbricks.gui import graphics, dialogs, widgets, help
+from virtualbricks.gui.dialogs import DisksLibraryWindow
+from virtualbricks.gui.interfaces import (
+    IMenu, IJobMenu, IConfigController, IPrerequisite, IState, IControl,
+    IStateManager
+)
+from virtualbricks.interfaces import registerAdapter
+from virtualbricks.link import Plug, Sock
+from virtualbricks.tools import dispose, is_running
+from virtualbricks.virtualmachines import VirtualMachine
 
 
 if False:  # pyflakes
@@ -1328,7 +1327,7 @@ class QemuConfigController(ConfigController):
         dialogs.LoadImageDialog(self.gui.brickfactory).show(self.gui.wndMain)
 
     def on_configimage_button_clicked(self, button):
-        dialogs.DisksLibraryDialog(self.original.factory).show()
+        DisksLibraryWindow(self.original.factory).show()
 
     def on_newempty_button_clicked(self, button):
         dialogs.CreateImageDialog(self.gui, self.gui.brickfactory).show(
@@ -2092,7 +2091,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuImagesLibrary_activate(self, menuitem):
-        dialogs.DisksLibraryDialog(self.brickfactory).show()
+        DisksLibraryWindow(self.brickfactory).show()
         return True
 
     def on_menuHelpAbout_activate(self, menuitem):

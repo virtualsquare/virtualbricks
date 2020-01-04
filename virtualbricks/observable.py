@@ -15,7 +15,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from contextlib import contextmanager
+
+
 class Observable:
+    # TODO: investigate if weakref.WeakValueDictionary can be used to ease the
+    # disponse of observables.
 
     thawed = False
 
@@ -65,6 +70,11 @@ class Event:
     def __init__(self, observable, name):
         self.__observable = observable
         self.__name = name
+        self.__thawed = False
+        try:
+            observable.add_event(name)
+        except ValueError:
+            pass
 
     def connect(self, callback, *args, **kwds):
         if not callable(callback):
@@ -74,16 +84,16 @@ class Event:
     def disconnect(self, callback, *args, **kwds):
         if not callable(callback):
             raise TypeError("%r is not callable" % (callback, ))
-        self.__observable.remove_observer(self.__name, callback, (), {})
+        self.__observable.remove_observer(self.__name, callback, args, kwds)
 
+    def notify(self, emitter):
+        if not self.__thawed:
+            self.__observable.notify(self.__name, emitter)
 
-class thaw:
-
-    def __init__(self, observable):
-        self.observable = observable
-
-    def __enter__(self):
-        self.observable.set_thaw(True)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.observable.set_thaw(False)
+    @contextmanager
+    def thaw(self):
+        self.__thawed = True
+        try:
+            yield
+        finally:
+            self.__thawed = False
