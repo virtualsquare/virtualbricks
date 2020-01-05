@@ -39,7 +39,8 @@ from virtualbricks.gui.dialogs import (
     LoggingWindow,
     NewBrickDialog,
     RenameDialog,
-    SettingsDialog
+    SettingsDialog,
+    UsbDevDialog
 )
 from virtualbricks.gui.interfaces import (
     IMenu, IJobMenu, IConfigController, IPrerequisite, IState, IControl,
@@ -48,7 +49,7 @@ from virtualbricks.gui.interfaces import (
 from virtualbricks.interfaces import registerAdapter
 from virtualbricks.link import Plug, Sock
 from virtualbricks.tools import dispose, is_running
-from virtualbricks.virtualmachines import VirtualMachine
+from virtualbricks.virtualmachines import VirtualMachine, get_usb_devices
 
 
 if False:  # pyflakes
@@ -90,6 +91,7 @@ retrieve_qemu_version_error = log.Event("Error while retrieving qemu version.")
 usb_access = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
 no_kvm = log.Event("No KVM support found on the system. Check your active "
                    "configuration. KVM will stay disabled.")
+retr_usb = log.Event('Error while retrieving usb devices.')
 
 BRICK_TARGET_NAME = "brick-connect-target"
 BRICK_DRAG_TARGETS = [
@@ -1349,7 +1351,15 @@ class QemuConfigController(ConfigController):
             self.lMachine.set_data_source(machines)
 
     def on_btnBind_clicked(self, button):
-        dialogs.UsbDevWindow.show_dialog(self.gui, self.usb_devices)
+
+        def show_usb_devices_dialog(found_usb_devices):
+            dialog = UsbDevDialog(found_usb_devices, self.usb_devices)
+            dialog.show(self.gui.wndMain)
+
+        deferred = get_usb_devices()
+        deferred.addCallback(show_usb_devices_dialog)
+        deferred.addErrback(logger.failure_eb, retr_usb)
+        self.gui.user_wait_action(deferred)
 
     def _remove_link(self, link, model):
         # if link.brick.proc and link.hotdel:
