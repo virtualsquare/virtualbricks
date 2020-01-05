@@ -169,8 +169,6 @@ project_extracted = log.Event("Project has beed extracted in {path}")
 removing_temporary_project = log.Event("Remove temporary files in {path}")
 error_on_import_project = log.Event("An error occurred while import project")
 invalid_name = log.Event("Invalid name {name}")
-search_usb = log.Event("Searching USB devices")
-retr_usb = log.Event("Error while retrieving usb devices.")
 brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
 created = log.Event("Created successfully")
 apply_settings = log.Event("Apply settings...")
@@ -780,47 +778,60 @@ class DisksLibraryWindow(_Window):
         return True
 
 
-class UsbDevWindow(Window):
-
-    resource = "usbdev.ui"
-
-    def __init__(self, usb_devices):
-        Window.__init__(self)
-        self.usb_devices = usb_devices
-        self.tvDevices.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
-        self.crt.set_property("formatter", string.Formatter())
-        self.tvcDevs.set_cell_data_func(self.crt, self.crt.set_cell_data)
+class UsbDevDialog(_Dialog):
 
     @staticmethod
-    def parse_lsusb(output):
-        for line in output.splitlines():
-            info = line.split(" ID ")[1]
-            if " " in info:
-                code, descr = info.split(" ", 1)
-            else:
-                code, descr = info, ""
-            yield virtualmachines.UsbDevice(code, descr)
+    def set_cell_id(tree_column, cell, tree_model, tree_itr, data):
+        usb_dev = tree_model.get_value(tree_itr, 1)
+        cell.set_property('text', usb_dev.id)
+        return True
 
-    @classmethod
-    def show_dialog(cls, gui, usb_devices):
+    @staticmethod
+    def set_cell_description(tree_column, cell, tree_model, tree_itr, data):
+        usb_dev = tree_model.get_value(tree_itr, 1)
+        cell.set_property('text', usb_dev.description)
+        return True
 
-        def init(output):
-            output = output.strip()
-            logger.info(lsusb_out, out=output)
-            dlg = cls(usb_devices)
-            dlg.lDevs.set_data_source(cls.parse_lsusb(output))
-            dlg.tvDevices.set_selected_values(usb_devices)
-            dlg.show(gui.wndMain)
+    def __init__(self, usb_devices, selected_devices):
+        """
+        :type usb_devices: List[virtualbricks.virtualmachines.UsbDevice]
+        :type selected_devices: List[virtualbricks.virtualmachines.UsbDevice]
+        """
 
-        logger.info(search_usb)
-        d = utils.getProcessOutput("lsusb", env=os.environ)
-        d.addCallback(init)
-        d.addErrback(logger.failure_eb, retr_usb)
-        gui.user_wait_action(d)
+        self._usb_devices = usb_devices
+        self._selected_devices = selected_devices
+        self._builder = BuilderHelper('usbdev2.ui')
+        self._builder.connect_signals(self)
+        self._tree_model = tree_model = Gtk.ListStore(bool, object)
+        for device in usb_devices:
+            selected = device in selected_devices
+            tree_model.append((selected, device))
+        self.w.devicesTreeView.set_model(tree_model)
+        self.w.selectedCellRendererToggle.set_radio(False)
+        self.w.idTreeViewColumn.set_cell_data_func(
+            self.w.idCellRendererText, self.set_cell_id)
+        self.w.descriptionTreeViewColumn.set_cell_data_func(
+            self.w.descriptionCellRendererText, self.set_cell_description)
 
-    def on_btnOk_clicked(self, button):
-        self.usb_devices[:] = self.tvDevices.get_selected_values()
-        self.window.destroy()
+    def on_selectedCellRendererToggle_toggled(self, cell_renderer, path):
+        """
+        :type cell_renderer: Gtk.CellRendererToggle
+        :type path: Gtk.TreePath
+        """
+
+        tree_iter = self._tree_model.get_iter(path)
+        selected = self._tree_model.get_value(tree_iter, 0)
+        self._tree_model.set_value(tree_iter, 0, not selected)
+        return True
+
+    @destroy_on_exit
+    def on_UsbDevDialog_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.OK:
+            new_selected_devices = [
+                device for selected, device in self._tree_model if selected
+            ]
+            self._selected_devices[:] = new_selected_devices
+        return True
 
 
 class BaseEthernetDialog(Window):

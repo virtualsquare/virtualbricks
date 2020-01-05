@@ -43,17 +43,25 @@ def _abspath_exe(path, executable, return_relative=True):
         return executable
 
 
-def _encode(value):
-    assert isinstance(value, bytes)
+def encode_proc_output(output):
+    """
+    Encode process output. Virtualbricks works on Linux systems only so we
+    don't care for other platforms.
+
+    :type output: bytes
+    :rtype: str
+    """
+
+    assert isinstance(output, bytes)
     encoding = locale.getpreferredencoding()
-    return str(value, encoding, 'strict')
+    return str(output, encoding, 'strict')
 
 
 def getQemuOutput(executable, args=(), env={}, path=None, reactor=None,
                   errortoo=0):
     exe = abspath_qemu(executable)
     d = getProcessOutput(exe, args, env, path, reactor, errortoo)
-    return d.addCallback(_encode)
+    return d.addCallback(encode_proc_output)
 
 
 def getQemuOutputAndValue(executable, args=(), env={}, path=None, reactor=None):

@@ -16,6 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from dataclasses import dataclass
 import datetime
 import errno
 import itertools
@@ -26,9 +27,12 @@ import shutil
 import warnings
 
 from twisted.internet import defer
+from twisted.internet.utils import getProcessOutput
 
 from virtualbricks import errors, tools, settings, bricks, log, project
-from virtualbricks._spawn import getQemuOutputAndValue, abspath_qemu
+from virtualbricks._spawn import (
+    abspath_qemu, encode_proc_output, getQemuOutputAndValue
+)
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 
@@ -56,41 +60,76 @@ update_usb = log.Event("update_usbdevlist: old {old} - new {new}")
 own_err = log.Event("plug {plug} does not belong to {brick}")
 acquire_lock = log.Event("Aquiring disk locks")
 release_lock = log.Event("Releasing disk locks")
+search_usb = log.Event('Searching USB devices')
 
 
+@dataclass
 class UsbDevice:
 
-    def __init__(self, ID, desc=""):
-        self.ID = ID
-        self.desc = desc
+    id: str
+    description: str
 
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.ID == other.ID
+    @classmethod
+    def parse_line(cls, line):
+        """
+        :type line: str
+        :rtype: Optional[UsbDevice]
+        """
 
-    def __ne__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return not self.__eq__(other)
+        matchobj = LSUSB_REGEX.search(line)
+        if matchobj:
+            dev_id = matchobj.group('id')
+            description = matchobj.group('description').strip()
+            return cls(dev_id, description)
 
-    def __hash__(self):
-        return hash(self.ID)
+    @property
+    def ID(self):
+        return self.id
+
+    @property
+    def desc(self):
+        return self.description
 
     def __str__(self):
-        return str(self.ID)
+        return self.id
 
-    def __repr__(self):
-        return str(self.ID)
+    # def __repr__(self):
+    #     return self.id
 
     def __format__(self, format_string):
-        if format_string == "id":
-            return str(self.ID)
-        elif format_string == "d":
-            return str(self.desc)
-        elif format_string == "":
-            return str(self)
-        raise ValueError("invalid format string" + repr(format_string))
+        if format_string == 'id' or format_string == '':
+            return self.id
+        elif format_string == 'd':
+            return self.description
+        raise ValueError('invalid format string {format_string!r}')
+
+
+LSUSB_REGEX = re.compile(
+    r'(?P<id>\w{4}:\w{4})'
+    r'(?:\s(?P<description>.+))?$'
+)
+
+
+def _parse_lsusb_output(stdout):
+    """
+    :type output: str
+    :rtype: List[UsbDevice]
+    """
+
+    devices = map(UsbDevice.parse_line, stdout.splitlines())
+    return list(filter(None, devices))
+
+
+def get_usb_devices():
+    """
+    :rtype: twisted.internet.defer.Deferred[List[UsbDevice]]
+    """
+
+    logger.info(search_usb)
+    deferred = getProcessOutput('lsusb', env=os.environ)
+    deferred.addCallback(encode_proc_output)
+    deferred.addCallback(_parse_lsusb_output)
+    return deferred
 
 
 class Wrapper:
@@ -883,9 +922,9 @@ class VirtualMachine(bricks.Brick):
         return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
-        self.logger.debug(update_usb, old=self.config["usbdevlist"], new=dev)
-        for device in set(dev) - set(self.config["usbdevlist"]):
-            self.send("usb_add host:{0}\n".format(device))
+        self.logger.debug(update_usb, old=self.config['usbdevlist'], new=dev)
+        for usb_dev in set(dev) - set(self.config['usbdevlist']):
+            self.send(f'usb_add host:{usb_dev.id}\n')
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 
@@ -948,8 +987,8 @@ class VirtualMachine(bricks.Brick):
             res.extend(["-vga", "std"])
 
         if self.config["usbmode"]:
-            for dev in self.config["usbdevlist"]:
-                res.extend(["-usbdevice", "host:%s" % dev])
+            for usb_dev in self.config["usbdevlist"]:
+                res.extend(['-usbdevice', f'host:{usb_dev.id}'])
 
         res.extend(["-name", self.name])
         if not self.plugs and not self.socks:
