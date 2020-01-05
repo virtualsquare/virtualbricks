@@ -91,6 +91,7 @@ from os.path import (
 import string
 import tempfile
 import textwrap
+import warnings
 
 from gi.repository import Gdk
 from gi.repository import GObject
@@ -117,7 +118,7 @@ from virtualbricks.errors import (
     NoOptionError,
 )
 from virtualbricks.gui import graphics, widgets
-from virtualbricks.gui.interfaces import IWidgetBuilder, IWindow
+from virtualbricks.gui.interfaces import IDialog, IWidgetBuilder, IWindow
 from virtualbricks.tools import dispose
 from virtualbricks.virtualmachines import is_virtualmachine
 
@@ -340,6 +341,7 @@ class _Window:
         """
 
         assert self._builder is not None
+        warnings.warn('_Window.__getattr__', DeprecationWarning)
         return self._builder.get_object(name)
 
     def _get_name(self):
@@ -351,22 +353,34 @@ class _Window:
 
         return self.name or self.__class__.__name__
 
-    def show(self, parent=None):
+    def show(self):
         assert self._builder is not None
         window = self._builder.get_object(self._get_name())
-        if parent is not None:
-            window.set_transient_for(parent)
         if self.on_destroy is not None:
             window.connect("destroy", lambda w: self.on_destroy())
         window.show()
 
 
-class AboutDialog(_Window):
+@implementer(IDialog)
+class _Dialog(_Window):
+
+    def show(self, parent):
+        """
+        :type parent: Gtk.Window
+        """
+
+        assert self._builder is not None
+        window = self._builder.get_object(self._get_name())
+        window.set_transient_for(parent)
+        super().show()
+
+
+class AboutDialog(_Dialog):
 
     def __init__(self):
         self._builder = BuilderHelper('about.ui')
         self._builder.connect_signals(self)
-        self.AboutDialog.set_version(__version__)
+        self.w.AboutDialog.set_version(__version__)
 
     def on_AboutDialog_response(self, dialog, response):
         dialog.destroy()
@@ -385,13 +399,13 @@ class LoggingWindow(_Window):
         self._builder = BuilderHelper('logging.ui')
         self._builder.connect_signals(self)
         self._scroll_to_bottom = True
-        self.textview.set_buffer(textbuffer)
+        self.w.textview.set_buffer(textbuffer)
         self._on_textbuffer_changed_handler = textbuffer.connect(
             'changed',
             self.on_textbuffer_changed,
-            self.textview
+            self.w.textview
         )
-        self.scroll_to_end(self.textview, textbuffer)
+        self.scroll_to_end(self.w.textview, textbuffer)
 
     def scroll_to_end(self, textview, textbuffer):
         """
@@ -459,7 +473,7 @@ class LoggingWindow(_Window):
         :type adjustment: Gtk.Button
         """
 
-        self.LoggingWindow.destroy()
+        self.w.LoggingWindow.destroy()
         return True
 
     def on_clearButton_clicked(self, button):
@@ -481,7 +495,7 @@ class LoggingWindow(_Window):
 
         chooser = Gtk.FileChooserDialog(
             title=_('Save as...'),
-            parent=self.LoggingWindow,
+            parent=self.w.LoggingWindow,
             action=Gtk.FileChooserAction.SAVE,
             buttons=(
                 'gtk-cancel', Gtk.ResponseType.CANCEL,
@@ -1262,7 +1276,7 @@ def block_signal_handler(g_object, handler_id):
     return inner
 
 
-class LoadImageDialog(_Window):
+class LoadImageDialog(_Dialog):
 
     def __init__(self, brickfactory):
         self._brickfactory = brickfactory
@@ -1271,15 +1285,15 @@ class LoadImageDialog(_Window):
         self._builder = BuilderHelper('loadimagedialog.ui')
         self._builder.connect_signals(self)
         self._block_image_name_entry_changed = block_signal_handler(
-            self.imageNameEntry,
-            self.imageNameEntry.connect(
+            self.w.imageNameEntry,
+            self.w.imageNameEntry.connect(
                 'changed',
                 self.on_imageNameEntry_changed
             )
         )
         self._block_description_textbuffer_changed = block_signal_handler(
-            self.descriptionTextBuffer,
-            self.descriptionTextBuffer.connect(
+            self.w.descriptionTextBuffer,
+            self.w.descriptionTextBuffer.connect(
                 'changed',
                 self.on_descriptionTextBuffer_changed
             )
@@ -1299,8 +1313,8 @@ class LoadImageDialog(_Window):
         :rtype: None
         """
 
-        file_chooser_button = self.imageFileChooserButton
-        image_name_entry = self.imageNameEntry
+        file_chooser_button = self.w.imageFileChooserButton
+        image_name_entry = self.w.imageNameEntry
         if self._image_path_error is not None:
             file_chooser_button.get_style_context().add_class('error')
             file_chooser_button.set_tooltip_markup(self._image_path_error)
@@ -1314,15 +1328,15 @@ class LoadImageDialog(_Window):
             image_name_entry.get_style_context().remove_class('error')
             image_name_entry.set_tooltip_markup(None)
         if self._image_path_error is not None or self._name_error is not None:
-            self.okButton.set_sensitive(False)
+            self.w.okButton.set_sensitive(False)
         else:
-            self.okButton.set_sensitive(
+            self.w.okButton.set_sensitive(
                 file_chooser_button.get_filename() is not None
                 and image_name_entry.get_text() != ''
             )
 
     def _check_name(self):
-        image_name = self.imageNameEntry.get_text()
+        image_name = self.w.imageNameEntry.get_text()
         if image_name == '':
             self._name_error = None
         else:
@@ -1354,11 +1368,11 @@ class LoadImageDialog(_Window):
         if not self._name_set:
             image_name, ext = splitext(basename(filepath))
             with self._block_image_name_entry_changed():
-                self.imageNameEntry.set_text(image_name)
+                self.w.imageNameEntry.set_text(image_name)
             self._check_name()
         if not self._description_set:
             with self._block_description_textbuffer_changed():
-                self.descriptionTextBuffer.set_text(self._load_desc(filepath))
+                self.w.descriptionTextBuffer.set_text(self._load_desc(filepath))
         self._set_error()
         return True
 
@@ -1385,9 +1399,9 @@ class LoadImageDialog(_Window):
     @destroy_on_exit
     def on_LoadImageDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
-            name = self.imageNameEntry.get_text()
-            description = self.descriptionTextBuffer.get_property('text')
-            filepath = self.imageFileChooserButton.get_filename()
+            name = self.w.imageNameEntry.get_text()
+            description = self.w.descriptionTextBuffer.get_property('text')
+            filepath = self.w.imageFileChooserButton.get_filename()
             self._brickfactory.new_disk_image(name, filepath, description)
         return True
 
@@ -2354,7 +2368,7 @@ class SaveAsDialog(Window):
                                             self.factory)
 
 
-class RenameDialog(_Window):
+class RenameDialog(_Dialog):
 
     def __init__(self, brickfactory, brick):
         """
@@ -2369,7 +2383,7 @@ class RenameDialog(_Window):
         self._prev_name = brick.name
         self._builder = BuilderHelper('renamedialog.ui')
         self._builder.connect_signals(self)
-        self.brickNameEntry.set_text(brick.name)
+        self.w.brickNameEntry.set_text(brick.name)
 
     def _set_error(self, tooltip):
         """
@@ -2377,20 +2391,20 @@ class RenameDialog(_Window):
         :rtype: None
         """
 
-        style_context = self.brickNameEntry.get_style_context()
+        style_context = self.w.brickNameEntry.get_style_context()
         style_context.add_class('error')
-        self.brickNameEntry.set_tooltip_markup(tooltip)
-        self.okButton.set_sensitive(False)
+        self.w.brickNameEntry.set_tooltip_markup(tooltip)
+        self.w.okButton.set_sensitive(False)
 
     def _reset_error(self):
         """
         :rtype: None
         """
 
-        style_context = self.brickNameEntry.get_style_context()
+        style_context = self.w.brickNameEntry.get_style_context()
         style_context.remove_class('error')
-        self.brickNameEntry.set_tooltip_text(None)
-        self.okButton.set_sensitive(True)
+        self.w.brickNameEntry.set_tooltip_text(None)
+        self.w.okButton.set_sensitive(True)
 
     def on_brickNameEntry_changed(self, entry):
         """
@@ -2403,7 +2417,7 @@ class RenameDialog(_Window):
         brick_name = entry.get_text()
         if not brick_name or brick_name == self._prev_name:
             self._reset_error()
-            self.okButton.set_sensitive(False)
+            self.w.okButton.set_sensitive(False)
             return
         try:
             self._factory.normalize_name(brick_name)
@@ -2421,7 +2435,7 @@ class RenameDialog(_Window):
     @destroy_on_exit
     def on_RenameDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
-            name = self.brickNameEntry.get_text()
+            name = self.w.brickNameEntry.get_text()
             try:
                 self._brick.rename(name)
                 # TODO: add debugging log
@@ -2433,7 +2447,7 @@ class RenameDialog(_Window):
         return True
 
 
-class NewBrickDialog(_Window):
+class NewBrickDialog(_Dialog):
 
     def __init__(self, factory):
         """
@@ -2452,20 +2466,20 @@ class NewBrickDialog(_Window):
         :rtype: None
         """
 
-        style_context = self.brickNameEntry.get_style_context()
+        style_context = self.w.brickNameEntry.get_style_context()
         style_context.add_class('error')
-        self.brickNameEntry.set_tooltip_markup(tooltip)
-        self.okButton.set_sensitive(False)
+        self.w.brickNameEntry.set_tooltip_markup(tooltip)
+        self.w.okButton.set_sensitive(False)
 
     def _reset_error(self):
         """
         :rtype: None
         """
 
-        style_context = self.brickNameEntry.get_style_context()
+        style_context = self.w.brickNameEntry.get_style_context()
         style_context.remove_class('error')
-        self.brickNameEntry.set_tooltip_text(None)
-        self.okButton.set_sensitive(True)
+        self.w.brickNameEntry.set_tooltip_text(None)
+        self.w.okButton.set_sensitive(True)
 
     def on_radiobutton_toggled(self, radiobutton):
         """
@@ -2488,7 +2502,7 @@ class NewBrickDialog(_Window):
         brick_name = entry.get_text()
         if not brick_name:
             self._reset_error()
-            self.okButton.set_sensitive(False)
+            self.w.okButton.set_sensitive(False)
             return
         try:
             self._factory.normalize_name(brick_name)
@@ -2512,7 +2526,7 @@ class NewBrickDialog(_Window):
         """
 
         if response_id == Gtk.ResponseType.OK:
-            name = self.brickNameEntry.get_text()
+            name = self.w.brickNameEntry.get_text()
             try:
                 self._factory.new_brick(self._type, name)
             except errors.InvalidNameError:
@@ -2575,7 +2589,7 @@ def combobox_set_active_value(combobox, value, column):
         itr = model.iter_next(itr)
 
 
-class SettingsDialog(_Window):
+class SettingsDialog(_Dialog):
 
     name = 'SettingsDialog'
 
@@ -2630,65 +2644,65 @@ class SettingsDialog(_Window):
             """
 
             self._setting_ksm_deferred = None
-            self.enableKsmSwitch.set_sensitive(True)
-            if self.enableKsmSwitch.get_active() != ksm_enabled:
-                self.enableKsmSwitch.set_active(ksm_enabled)
+            self.w.enableKsmSwitch.set_sensitive(True)
+            if self.w.enableKsmSwitch.get_active() != ksm_enabled:
+                self.w.enableKsmSwitch.set_active(ksm_enabled)
 
         if self._setting_ksm_deferred is not None:
             # If we are already setting KSM, do nothing.
             return
         # disable the switch, try to change the value of KSM and reactivate
         # the switch
-        self.enableKsmSwitch.set_sensitive(False)
-        deferred = tools.set_ksm(enable=self.enableKsmSwitch.get_active())
+        self.w.enableKsmSwitch.set_sensitive(False)
+        deferred = tools.set_ksm(enable=self.w.enableKsmSwitch.get_active())
         deferred.addBoth(set_ksm_cb)
         self._setting_ksm_deferred = deferred
 
     def load_settings(self):
         # General tab
-        self.termEntry.set_text(settings_get_default('term'))
-        self.sudoEntry.set_text(settings_get_default('sudo'))
-        self.systraySwitch.set_active(settings_get_default('systray'))
-        self.warnMissingSwitch.set_active(settings_get_default('show_missing'))
+        self.w.termEntry.set_text(settings_get_default('term'))
+        self.w.sudoEntry.set_text(settings_get_default('sudo'))
+        self.w.systraySwitch.set_active(settings_get_default('systray'))
+        self.w.warnMissingSwitch.set_active(settings_get_default('show_missing'))
         # VDE tab
-        self.vdePathFileChooserButton.set_current_folder(
+        self.w.vdePathFileChooserButton.set_current_folder(
             settings_get_default('vdepath'))
-        self.usePythonSwitch.set_active(settings_get_default('python'))
-        self.femalePlugsSwitch.set_active(settings_get_default('femaleplugs'))
-        self.loopDetectionSwitch.set_active(
+        self.w.usePythonSwitch.set_active(settings_get_default('python'))
+        self.w.femalePlugsSwitch.set_active(settings_get_default('femaleplugs'))
+        self.w.loopDetectionSwitch.set_active(
             settings_get_default('erroronloop'))
         # Qemu tab
-        self.qemuPathFileChooserButton.set_current_folder(
+        self.w.qemuPathFileChooserButton.set_current_folder(
             settings_get_default('qemupath'))
-        combobox_set_active_value(self.cowFormatComboBox,
+        combobox_set_active_value(self.w.cowFormatComboBox,
                                   settings_get_default('cowfmt'), 0)
-        self.enableKsmSwitch.set_active(settings_get_default('ksm'))
+        self.w.enableKsmSwitch.set_active(settings_get_default('ksm'))
 
     def store_settings(self):
         logger.debug(apply_settings)
         # General tab
-        settings.set('term', self.termEntry.get_text())
-        settings.set('sudo', self.sudoEntry.get_text())
-        settings.set('systray', self.systraySwitch.get_active())
-        settings.set('show_missing', self.warnMissingSwitch.get_active())
+        settings.set('term', self.w.termEntry.get_text())
+        settings.set('sudo', self.w.sudoEntry.get_text())
+        settings.set('systray', self.w.systraySwitch.get_active())
+        settings.set('show_missing', self.w.warnMissingSwitch.get_active())
         # VDE tab
-        vdepath = self.vdePathFileChooserButton.get_current_folder()
+        vdepath = self.w.vdePathFileChooserButton.get_current_folder()
         if vdepath is not None:
             settings.set('vdepath', vdepath)
-        settings.set('python', self.usePythonSwitch.get_active())
-        settings.set('femaleplugs', self.femalePlugsSwitch.get_active())
-        settings.set('erroronloop', self.loopDetectionSwitch.get_active())
+        settings.set('python', self.w.usePythonSwitch.get_active())
+        settings.set('femaleplugs', self.w.femalePlugsSwitch.get_active())
+        settings.set('erroronloop', self.w.loopDetectionSwitch.get_active())
         # Qemu tab
-        qemupath = self.qemuPathFileChooserButton.get_current_folder()
+        qemupath = self.w.qemuPathFileChooserButton.get_current_folder()
         if qemupath is not None:
             settings.set('qemupath', qemupath)
-        cowfmt = combobox_get_active_value(self.cowFormatComboBox, 0,
+        cowfmt = combobox_get_active_value(self.w.cowFormatComboBox, 0,
                                            DEFAULT_CONF['cowfmt'])
         settings.set('cowfmt', cowfmt)
-        ksm_active = self.enableKsmSwitch.get_active()
+        ksm_active = self.w.enableKsmSwitch.get_active()
         settings.set('ksm', ksm_active)
         tools.set_ksm(ksm_active)
-        if self.systraySwitch.get_active():
+        if self.w.systraySwitch.get_active():
             self.virtualbricks_gui.start_systray()
         else:
             self.virtualbricks_gui.stop_systray()
