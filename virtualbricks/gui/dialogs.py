@@ -629,8 +629,6 @@ class DisksLibraryWindow(_Window):
             'changed', self.on_selection_changed)
         self._tree_model = tree_model = Gtk.ListStore(object)
         for disk_image in brickfactory.iter_disk_images():
-            # TODO: use brickfactory.image_changed event once fixed
-            disk_image.changed.connect(self.on_disk_image_changed, tree_model)
             tree_model.append([disk_image])
         tree_view.set_model(tree_model)
         self.w.nameTreeViewColumn.set_cell_data_func(
@@ -645,12 +643,11 @@ class DisksLibraryWindow(_Window):
             self.w.cowsCellRendererText, self.set_cell_cows, brickfactory)
         self.w.sizeTreeViewColumn.set_cell_data_func(
             self.w.sizeCellRendererText, self.set_cell_size)
-        brickfactory.connect(
-            'image-added', self.on_disk_image_added, tree_model)
-        # brickfactory.connect(
-        #     'image-changed', self.on_disk_image_changed, tree_model)
-        brickfactory.connect(
-            'image-removed', self.on_disk_image_removed, tree_model)
+        brickfactory.image_added.connect(self.on_disk_image_added, tree_model)
+        brickfactory.image_changed.connect(
+            self.on_disk_image_changed, tree_model)
+        brickfactory.image_removed.connect(
+            self.on_disk_image_removed, tree_model)
 
     def _show_edit_screen(self, disk_image):
         """
@@ -684,7 +681,6 @@ class DisksLibraryWindow(_Window):
         :type tree_model: Gtk.TreeModel
         """
 
-        disk_image.changed.connect(self.on_disk_image_changed, tree_model)
         tree_model.append([disk_image])
 
     def on_disk_image_changed(self, disk_image, tree_model):
@@ -706,9 +702,6 @@ class DisksLibraryWindow(_Window):
 
         for obj, itr in iter_tree_model(tree_model):
             if obj == disk_image:
-                # TODO: remove once fixed image-changed events in brickfactory
-                disk_image.changed.disconnect(
-                    self.on_disk_image_changed, tree_model)
                 tree_model.remove(itr)
                 break
 
@@ -764,14 +757,12 @@ class DisksLibraryWindow(_Window):
         return True
 
     def on_destroy(self, window=None):
-        for disk_image, itr in iter_tree_model(self._tree_model):
-            # TODO: remove once fixed image-changed events in brickfactory
-            disk_image.changed.disconnect(
-                self.on_disk_image_changed, self._tree_model)
-        self._brickfactory.disconnect(
-            'image-added', self.on_disk_image_added, self._tree_model)
-        self._brickfactory.disconnect(
-            'image-removed', self.on_disk_image_removed, self._tree_model)
+        self._brickfactory.image_added.disconnect(
+            self.on_disk_image_added, self._tree_model)
+        self._brickfactory.image_changed.disconnect(
+            self.on_disk_image_changed, self._tree_model)
+        self._brickfactory.image_removed.disconnect(
+            self.on_disk_image_removed, self._tree_model)
         return True
 
 
