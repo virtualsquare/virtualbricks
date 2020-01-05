@@ -32,7 +32,15 @@ from virtualbricks._spawn import getQemuOutput
 from virtualbricks.bricks import Brick
 from virtualbricks.events import Event
 from virtualbricks.gui import graphics, dialogs, widgets, help
-from virtualbricks.gui.dialogs import DisksLibraryWindow
+from virtualbricks.gui.dialogs import (
+    AboutDialog,
+    DisksLibraryWindow,
+    LoadImageDialog,
+    LoggingWindow,
+    NewBrickDialog,
+    RenameDialog,
+    SettingsDialog
+)
 from virtualbricks.gui.interfaces import (
     IMenu, IJobMenu, IConfigController, IPrerequisite, IState, IControl,
     IStateManager
@@ -153,8 +161,7 @@ class BrickPopupMenu(BaseMenu):
         if self.original.proc is not None:
             logger.error(cannot_rename)
         else:
-            dialog = dialogs.RenameDialog(gui.brickfactory, self.original)
-            dialog.show(gui.wndMain)
+            RenameDialog(gui.brickfactory, self.original).show(gui.wndMain)
 
     def on_attach_activate(self, menuitem, gui):
         dialogs.AttachEventDialog(self.original, gui.factory).show(gui.wndMain)
@@ -222,8 +229,7 @@ class EventPopupMenu(BaseMenu):
 
     def on_rename_activate(self, menuitem, gui):
         if not self.original.scheduled:
-            dialog = dialogs.RenameDialog(gui.brickfactory, self.original)
-            dialog.show(gui.wndMain)
+            RenameDialog(gui.brickfactory, self.original).show(gui.wndMain)
         else:
             logger.error(event_in_use)
 
@@ -1324,7 +1330,7 @@ class QemuConfigController(ConfigController):
     # signals
 
     def on_newimage_button_clicked(self, button):
-        dialogs.LoadImageDialog(self.gui.brickfactory).show(self.gui.wndMain)
+        LoadImageDialog(self.gui.brickfactory).show(self.gui.wndMain)
 
     def on_configimage_button_clicked(self, button):
         DisksLibraryWindow(self.original.factory).show()
@@ -2070,11 +2076,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuSettingsPreferences_activate(self, menuitem):
-        dialogs.SettingsDialog(self).show(self.wndMain)
+        SettingsDialog(self).show(self.wndMain)
         return True
 
     def on_menuViewMessages_activate(self, menuitem):
-        dialogs.LoggingWindow(self.messages_buffer).show()
+        LoggingWindow(self.messages_buffer).show()
         return True
 
     def on_menuImagesCreate_activate(self, menuitem):
@@ -2095,13 +2101,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuHelpAbout_activate(self, menuitem):
-        dialogs.AboutDialog().show(self.wndMain)
+        AboutDialog().show(self.wndMain)
         return True
 
     # bricks toolbar
 
     def on_btnNewBrick_clicked(self, toolbutton):
-        dialogs.NewBrickDialog(self.brickfactory).show(self.wndMain)
+        NewBrickDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_btnStartAll_clicked(self, toolbutton):

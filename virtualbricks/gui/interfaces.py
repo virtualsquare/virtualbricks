@@ -128,7 +128,18 @@ class IBindingList(Interface):
     removed = Attribute("IEvent, emitted when an item is removed")
 
 
-class IWidgetBuilder(Interface):
+class IWidgetGetter(Interface):
+
+    def __getattr__(name):
+        """
+        Return the widget with this name.
+
+        :type name: str
+        :rtype: Any
+        """
+
+
+class IWidgetBuilder(IWidgetGetter):
 
     def get_object(name):
         """
@@ -150,19 +161,30 @@ class IWidgetBuilder(Interface):
 
 class IWindow(Interface):
 
-    def __getattr__(name):
+    w = Attribute(
         """
-        Return the widget with this name.
+        Object that implement IWidgetGetter protocol and returns the widgets
+        from the builder (Gtk.Builder) object defined for this window.
+        """
+    )
 
-        :type name: str
-        :rtype: Any
+    def show():
         """
-
-    def show(parent=None):
-        """
-        Show the main window. If parent is specified, this window is marked as
+        Show the window. If parent is specified, this window is marked as
         transient for it.
 
         :type parent: Optional[Gtk.Window]
+        :rtype: None
+        """
+
+
+class IDialog(IWindow):
+
+    def show(parent):
+        """
+        Show the dialog.
+
+        :param Gtk.Window parent: the parent for which this dialog is marked as
+            transient for.
         :rtype: None
         """
