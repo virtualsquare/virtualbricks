@@ -347,6 +347,10 @@ class Image:
         raise ValueError("invalid format string " + repr(format_string))
 
 
+def is_disk_image(brick):
+    return isinstance(brick, Image)
+
+
 def move(src, dst):
     try:
         os.rename(src, dst)
