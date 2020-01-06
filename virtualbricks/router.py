@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from virtualbricks import bricks
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 
 class Router(bricks.Brick):
