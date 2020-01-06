@@ -30,9 +30,7 @@ from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
 
 from virtualbricks import errors, tools, settings, bricks, log, project
-from virtualbricks._spawn import (
-    abspath_qemu, encode_proc_output, getQemuOutputAndValue
-)
+from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 
@@ -480,22 +478,13 @@ class Disk:
         """
 
         assert self.image is not None
-        if abspath_qemu('qemu-img', return_relative=False) is None:
-            msg = _('qemu-img not found! I can\'t create a new image.')
-            return defer.fail(errors.BadConfigError(msg))
-
-        def complain_on_error(command_info):
-            stdout, stderr, exit_status = command_info
-            if exit_status != 0:
-                raise RuntimeError(f'Cannot create private COW\n{stderr}')
 
         logger.info(new_cow, backup_file=self.image.path)
         args = [
             'create', '-b', self.image.path, '-f', settings.get('cowfmt'),
             filename
         ]
-        deferred = getQemuOutputAndValue('qemu-img', args, os.environ)
-        deferred.addCallback(complain_on_error)
+        deferred = qemu_img(args)
         deferred.addCallback(discard_first_arg(sync))
         # Always return None, independently of the return from sync
         deferred.addCallback(lambda _: None)

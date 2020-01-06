@@ -19,7 +19,7 @@
 import os
 
 from virtualbricks import bricks, link, log
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 
 logger = log.Logger()

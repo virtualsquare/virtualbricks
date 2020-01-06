@@ -16,6 +16,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+if False:  # pyflakes
+    _ = str
+
+
 class Error(Exception):
     pass
 
@@ -100,3 +104,14 @@ class WidgetNotFound(Error):
     """
     A Gtk.Builder resource does not define a specific widget.
     """
+
+
+class CommandError(Exception):
+    """
+    One utility command failed. Ex. qemu-img.
+    """
+
+    def __init__(self, exit_code, stderr):
+        super().__init__(stderr)
+        self.exit_code = exit_code
+        self.stderr = stderr
