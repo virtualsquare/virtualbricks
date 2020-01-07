@@ -28,12 +28,13 @@ from twisted.python import filepath
 from zope.interface import implementer
 
 from virtualbricks import tools, settings, project, log, brickfactory, qemu
-from virtualbricks._spawn import getQemuOutput
+from virtualbricks.spawn import getQemuOutput, qemu_img
 from virtualbricks.bricks import Brick
 from virtualbricks.events import Event
 from virtualbricks.gui import graphics, dialogs, widgets, help
 from virtualbricks.gui.dialogs import (
     AboutDialog,
+    CommitImageDialog,
     DisksLibraryWindow,
     LoadImageDialog,
     LoggingWindow,
@@ -203,8 +204,7 @@ class VMPopupMenu(BrickPopupMenu):
             logger.error(s_r_not_supported)
             return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
                                              "this disk.")))
-        args = ["snapshot", "-l", path]
-        output = getQemuOutput("qemu-img", args, os.environ)
+        output = qemu_img(['snapshot', '-l', path])
         output.addCallback(grep, "virtualbricks")
         output.addCallback(loadvm)
         logger.log_failure(output, snap_error)
@@ -2102,8 +2102,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuImagesCommit_activate(self, menuitem):
-        dialog =dialogs.CommitImageDialog(ProgressBar(self), self.brickfactory)
-        dialog.show(self.wndMain)
+        CommitImageDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_menuImagesLibrary_activate(self, menuitem):
