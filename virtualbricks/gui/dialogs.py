@@ -111,7 +111,7 @@ from virtualbricks import settings
 from virtualbricks import tools
 from virtualbricks import virtualmachines
 from virtualbricks._settings import DEFAULT_CONF
-from virtualbricks._spawn import getQemuOutputAndValue
+from virtualbricks.spawn import qemu_commit_image, qemu_img
 from virtualbricks.errors import (
     InvalidNameError,
     NameAlreadyInUseError,
@@ -1124,156 +1124,185 @@ class ShellCommandDialog(Window, EventControllerMixin):
 
 
 def disks_of(brick):
-    if brick.get_type() == "Qemu":
-        for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
+    if is_virtualmachine(brick):
+        for dev in 'hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock':
             yield brick.config[dev]
 
 
-class CommitImageDialog(Window):
+class CommitImageDialog(_Dialog):
 
-    resource = "commitdialog.ui"
-    parent = None
-    _set_label_d = None
+    @staticmethod
+    def set_cell_title(tree_column, cell, tree_model, tree_itr):
+        disk = tree_model.get_value(tree_itr, 0)
+        cell.set_property('text', f'{disk.device} on {disk.vm.get_name()}')
+        return True
 
-    def __init__(self, progessbar, factory):
-        Window.__init__(self)
-        self.progessbar = progessbar
-        model = self.get_object("model1")
-        for brick in factory.bricks:
+    def __init__(self, brickfactory):
+        self._builder = BuilderHelper('commitimagedialog.ui')
+        self._builder.connect_signals(self)
+        self._tree_model = tree_model = Gtk.ListStore(object)
+        for brick in filter(is_virtualmachine, brickfactory.iter_bricks()):
             for disk in (disk for disk in disks_of(brick) if disk.is_cow()):
-                model.append((disk.device + " on " + brick.name, disk))
+                tree_model.append([disk])
+        self.w.disksComboBox.set_model(tree_model)
+        self.w.disksComboBox.set_cell_data_func(
+            self.w.diskCellRendererText, self.set_cell_title)
 
-    def show(self, parent=None):
-        self.parent = parent
-        Window.show(self, parent)
+    def do_commit_cow(self):
+        filepath = self.w.cowFileChooserButton.get_filename()
+        assert filepath is not None
+        deferred = qemu_commit_image(filepath)
+        ProgressBarDialog(deferred).show(self.w.CommitImageDialog)
+        # return deferred
 
-    def _do_image_commit(self, path):
+    def do_commit_vm(self):
+        # TODO: logger.warning(commit_vm_not_implemented)
+        logger.warn(not_implemented)
 
-        def log_err(codes):
-            out, err, exit_status = codes
-            if exit_status != 0:
-                logger.error(commit_failed, err=err)
-
-        d = getQemuOutputAndValue("qemu-img", ["commit", path], os.environ)
-        d.addCallback(log_err)
-        return d
-
-    def do_image_commit(self, path):
-        self.window.destroy()
-        self.progessbar.wait_for(self._do_image_commit, path)
-
-    def commit_file(self, pathname):
-        question = ("Warning: the base image will be updated to the\n"
-                    "changes contained in the COW. This operation\n"
-                    "cannot be undone. Are you sure?")
-        ConfirmDialog(question, on_yes=self.do_image_commit,
-                      on_yes_arg=pathname).show(self.parent)
-
-    def _commit_vm(self, img):
-        logger.warning(not_implemented)
-        # img.VM.commit_disks()
-        self.window.destroy()
-
-    def commit_vm(self):
-        combobox = self.get_object("disk_combo")
-        model = combobox.get_model()
-        itr = combobox.get_active_iter()
-        if itr:
-            img = model[itr][1]
-            if not self.get_object("cow_checkbutton").get_active():
-                question = ("Warning: the private COW image will be "
-                            "updated.\nThis operation cannot be undone.\n"
-                            "Are you sure?")
-                ConfirmDialog(question, on_yes=self._commit_vm,
-                              on_yes_arg=img).show(self.parent)
-            else:
-                self.commit_file(img.get_cow_path())
-        else:
-            logger.error(img_invalid)
+    def on_disksComboBox_changed(self, combobox):
+        # itr = combobox.get_active_iter()
+        # tree_model = combobox.get_model()
+        # if itr is not None:
+        #     selected_disk = tree_model.get_value(itr, 0)
+        return True
 
     def on_CommitImageDialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.OK:
-            if self.get_object("file_radiobutton").get_active():
-                pathname = self.get_object(
-                    "cowpath_filechooser").get_filename()
-                self.commit_file(pathname)
-            else:
-                self.commit_vm()
-        else:
+        if response_id == Gtk.ResponseType.APPLY:
+            action_name = self.w.stack.get_visible_child_name()
+            action = getattr(self, f'do_{action_name}')
+            action()
+        elif response_id == Gtk.ResponseType.CLOSE:
             dialog.destroy()
+        return True
 
-    def on_file_radiobutton_toggled(self, button):
-        active = button.get_active()
-        filechooser = self.get_object("cowpath_filechooser")
-        filechooser.set_visible(active)
-        filechooser.unselect_all()
-        combo = self.get_object("disk_combo")
-        combo.set_visible(not active)
-        combo.set_active(-1)
-        self.get_object("cow_checkbutton").set_visible(not active)
-        self.get_object("msg_label").set_visible(False)
 
-    def _commit_image_show_result(self, codes):
-        out, err, code = codes
-        if code != 0:
-            logger.error(base_not_found, err=err)
-        else:
-            label = self.get_object("msg_label")
-            for line in out.splitlines():
-                if line.startswith("backing file: "):
-                    label.set_text(line)
-                    break
-            else:
-                label.set_text(_("Base not found (invalid cow?)"))
-            label.set_visible(True)
+# class CommitImageDialog(Window):
 
-    def on_cowpath_filechooser_file_set(self, filechooser):
-        if self._set_label_d is not None:
-            self._set_label_d.cancel()
-        filename = filechooser.get_filename()
-        if os.access(filename, os.R_OK):
-            code = getQemuOutputAndValue("qemu-img", ["info", filename],
-                                         os.environ)
-            code.addCallback(self._commit_image_show_result)
-            self._set_label_d = code
-            return code
+#     resource = "commitdialog.ui"
+#     parent = None
+#     _set_label_d = None
 
-    def set_label(self, combobox=None, button=None):
-        if self._set_label_d is not None:
-            self._set_label_d.cancel()
-        if combobox is None:
-            combobox = self.get_object("disk_combo")
-        if button is None:
-            button = self.get_object("cow_checkbutton")
-        label = self.get_object("msg_label")
-        label.set_visible(False)
-        model = combobox.get_model()
-        itr = combobox.get_active_iter()
-        if itr is not None:
-            disk = model[itr][1]
-            base = disk.image and disk.image.path or None
-            if base and button.get_active():
-                # XXX: make disk.get_real_disk_name's deferred cancellable
-                deferred = disk.get_real_disk_name()
-                deferred.addCallback(label.set_text)
-                deferred.addCallback(lambda _: label.set_visible(True))
-                deferred.addErrback(logger.failure_eb, img_combo)
-                self._set_label_d = deferred
-            elif base:
-                label.set_visible(True)
-                label.set_text(base)
-            else:
-                label.set_visible(True)
-                label.set_text("base not found")
-        else:
-            label.set_visible(True)
-            label.set_text("base not found")
+#     def __init__(self, progessbar, factory):
+#         Window.__init__(self)
+#         self.progessbar = progessbar
+#         model = self.get_object("model1")
+#         for brick in factory.bricks:
+#             for disk in (disk for disk in disks_of(brick) if disk.is_cow()):
+#                 model.append((disk.device + " on " + brick.name, disk))
 
-    def on_disk_combo_changed(self, combobox):
-        self.set_label(combobox=combobox)
+#     def show(self, parent=None):
+#         self.parent = parent
+#         Window.show(self, parent)
 
-    def on_cow_checkbutton_toggled(self, button):
-        self.set_label(button=button)
+#     def do_image_commit(self, path):
+#         self.window.destroy()
+#         self.progessbar.wait_for(qemu_commit_image, path)
+
+#     def commit_file(self, pathname):
+#         question = ("Warning: the base image will be updated to the\n"
+#                     "changes contained in the COW. This operation\n"
+#                     "cannot be undone. Are you sure?")
+#         ConfirmDialog(question, on_yes=self.do_image_commit,
+#                       on_yes_arg=pathname).show(self.parent)
+
+#     def _commit_vm(self, img):
+#         logger.warning(not_implemented)
+#         # img.VM.commit_disks()
+#         self.window.destroy()
+
+#     def commit_vm(self):
+#         combobox = self.get_object("disk_combo")
+#         model = combobox.get_model()
+#         itr = combobox.get_active_iter()
+#         if itr:
+#             img = model[itr][1]
+#             if not self.get_object("cow_checkbutton").get_active():
+#                 question = ("Warning: the private COW image will be "
+#                             "updated.\nThis operation cannot be undone.\n"
+#                             "Are you sure?")
+#                 ConfirmDialog(question, on_yes=self._commit_vm,
+#                               on_yes_arg=img).show(self.parent)
+#             else:
+#                 self.commit_file(img.get_cow_path())
+#         else:
+#             logger.error(img_invalid)
+
+#     def on_CommitImageDialog_response(self, dialog, response_id):
+#         if response_id == Gtk.ResponseType.OK:
+#             if self.get_object("file_radiobutton").get_active():
+#                 pathname = self.get_object(
+#                     "cowpath_filechooser").get_filename()
+#                 self.commit_file(pathname)
+#             else:
+#                 self.commit_vm()
+#         else:
+#             dialog.destroy()
+
+#     def on_file_radiobutton_toggled(self, button):
+#         active = button.get_active()
+#         filechooser = self.get_object("cowpath_filechooser")
+#         filechooser.set_visible(active)
+#         filechooser.unselect_all()
+#         combo = self.get_object("disk_combo")
+#         combo.set_visible(not active)
+#         combo.set_active(-1)
+#         self.get_object("cow_checkbutton").set_visible(not active)
+#         self.get_object("msg_label").set_visible(False)
+
+#     def _commit_image_show_result(self, img_info):
+#         label = self.get_object("msg_label")
+#         try:
+#             label.set_text(img_info[0]['backing-filename'])
+#         except KeyError:
+#             label.set_text(_("Base not found (invalid cow?)"))
+#         label.set_visible(True)
+
+#     def on_cowpath_filechooser_file_set(self, filechooser):
+#         if self._set_label_d is not None:
+#             self._set_label_d.cancel()
+#         filename = filechooser.get_filename()
+#         if os.access(filename, os.R_OK):
+#             deferred = qemu_img_info(filename)
+#             deferred.addCallback(self._commit_image_show_result)
+#             self._set_label_d = deferred
+#             return deferred
+
+#     def set_label(self, combobox=None, button=None):
+#         if self._set_label_d is not None:
+#             self._set_label_d.cancel()
+#         if combobox is None:
+#             combobox = self.get_object("disk_combo")
+#         if button is None:
+#             button = self.get_object("cow_checkbutton")
+#         label = self.get_object("msg_label")
+#         label.set_visible(False)
+#         model = combobox.get_model()
+#         itr = combobox.get_active_iter()
+#         if itr is not None:
+#             disk = model[itr][1]
+#             base = disk.image and disk.image.path or None
+#             if base and button.get_active():
+#                 # XXX: make disk.get_real_disk_name's deferred cancellable
+#                 deferred = disk.get_real_disk_name()
+#                 deferred.addCallback(label.set_text)
+#                 deferred.addCallback(lambda _: label.set_visible(True))
+#                 deferred.addErrback(logger.failure_eb, img_combo)
+#                 self._set_label_d = deferred
+#             elif base:
+#                 label.set_visible(True)
+#                 label.set_text(base)
+#             else:
+#                 label.set_visible(True)
+#                 label.set_text("base not found")
+#         else:
+#             label.set_visible(True)
+#             label.set_text("base not found")
+
+#     def on_disk_combo_changed(self, combobox):
+#         self.set_label(combobox=combobox)
+
+#     def on_cow_checkbutton_toggled(self, button):
+#         self.set_label(button=button)
 
 
 def block_signal_handler(g_object, handler_id):
@@ -1427,19 +1456,8 @@ class CreateImageDialog(Window):
         Window.__init__(self)
 
     def create_image(self, name, pathname, fmt, size, unit):
-
-        def _create_disk(result):
-            out, err, code = result
-            if code:
-                logger.error(err)
-            else:
-                return self.factory.new_disk_image(name, pathname)
-
-        exit = getQemuOutputAndValue(
-            "qemu-img",
-            ["create", "-f", fmt, pathname, size + unit], os.environ
-        )
-        exit.addCallback(_create_disk)
+        exit = qemu_img(['create', '-f', fmt, pathname, size + unit])
+        exit.addCallback((lambda stdout: name, pathname))
         logger.log_failure(exit, img_create_err)
         return exit
 
@@ -1963,6 +1981,40 @@ class ProgressBar:
 
     def wait_for(self, something, *args):
         return self.freezer.wait_for(something, *args)
+
+
+class ProgressBarDialog(_Dialog):
+
+    def __init__(self, deferred):
+        """
+        :type deferred: twisted.internet.defer.Deferred
+        """
+
+        self._deferred = deferred
+        self._builder = BuilderHelper('progressbardialog.ui')
+        self._builder.connect_signals(self)
+
+    def show(self, parent):
+        """
+        :type parent: Gtk.Window
+        :rtype: None
+        """
+
+        looping_call = task.LoopingCall(self.w.progressbar.pulse)
+        looping_call.start(0.2, False)
+        self._deferred.addBoth(self._stop, looping_call)
+        super().show(parent)
+
+    def _stop(self, passthru, looping_call):
+        """
+        :type passthru: Any
+        :type looping_call: twisted.internet.task.LoopingCall
+        :rtype: Any
+        """
+
+        looping_call.stop()
+        self.w.ProgressBarDialog.destroy()
+        return passthru
 
 
 def all_paths_set(model):
