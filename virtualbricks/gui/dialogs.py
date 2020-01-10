@@ -278,7 +278,10 @@ class BuilderHelper:
 
         self.builder = builder = Gtk.Builder()
         builder.set_translation_domain(translation_domain)
-        builder.add_from_file(graphics.get_data_filename(resource))
+        builder_filename = graphics.get_data_filename(resource)
+        if builder_filename is None:
+            raise FileNotFoundError(f'File not found {resource!r}')
+        builder.add_from_file(builder_filename)
 
     def __getattr__(self, name):
         return self.get_object(name)
@@ -800,7 +803,7 @@ class UsbDevDialog(_Dialog):
 
         self._usb_devices = usb_devices
         self._selected_devices = selected_devices
-        self._builder = BuilderHelper('usbdev2.ui')
+        self._builder = BuilderHelper('usbdev.ui')
         self._builder.connect_signals(self)
         self._tree_model = tree_model = Gtk.ListStore(bool, object)
         for device in usb_devices:
