@@ -91,7 +91,6 @@ from os.path import (
 import string
 import tempfile
 import textwrap
-import warnings
 
 from gi.repository import Gdk
 from gi.repository import GObject
@@ -333,18 +332,6 @@ class _Window:
     def w(self):
         return self._builder
 
-    def __getattr__(self, name):
-        """
-        Return the widget with this name.
-
-        :type name: str
-        :rtype: Any
-        """
-
-        assert self._builder is not None
-        warnings.warn('_Window.__getattr__', DeprecationWarning)
-        return self._builder.get_object(name)
-
     def _get_name(self):
         """
         Return the name of the window widget.
@@ -354,9 +341,18 @@ class _Window:
 
         return self.name or self.__class__.__name__
 
+    def _get_window(self):
+        """
+        Return the window widget.
+
+        :rtype: Gtk.Window
+        """
+
+        return self._builder.get_object(self._get_name())
+
     def show(self):
         assert self._builder is not None
-        window = self._builder.get_object(self._get_name())
+        window = self._get_window()
         if self.on_destroy is not None:
             window.connect("destroy", lambda w: self.on_destroy())
         window.show()
@@ -371,8 +367,7 @@ class _Dialog(_Window):
         """
 
         assert self._builder is not None
-        window = self._builder.get_object(self._get_name())
-        window.set_transient_for(parent)
+        self._get_window().set_transient_for(parent)
         super().show()
 
 
@@ -944,27 +939,97 @@ class EditEthernetDialog(BaseEthernetDialog):
                 self.plug.model = model
 
 
-class ConfirmDialog(Window):
+class ConfirmDialog(_Dialog):
 
-    resource = "confirmdialog.ui"
+    def _get_name(self):
+        return 'ConfirmDialog'
 
-    def __init__(self, question, on_yes=None, on_yes_arg=None, on_no=None,
-                 on_no_arg=None, ):
-        Window.__init__(self)
-        self.window.set_markup(question)
-        self.on_yes = on_yes
-        self.on_yes_arg = on_yes_arg
-        self.on_no = on_no
-        self.on_no_arg = on_no_arg
+    def set_primary_text(self, text, markup=False):
+        """
+        Set the text for the primary label.
 
-    def format_secondary_text(self, text):
-        self.window.format_secondary_text(text)
+        :type text: str
+        :type markup: bool
+        """
+
+        if text is not None:
+            self.w.primaryLabel.show()
+            if markup:
+                self.w.primaryLabel.set_markup(text)
+            else:
+                self.w.primaryLabel.set_text(text)
+        else:
+            self.w.primaryLabel.hide()
+
+    def set_secondary_text(self, text, markup=False):
+        """
+        Set the text for the primary label.
+
+        :type text: Optional[str]
+        :type markup: bool
+        """
+
+        if text is not None:
+            self.w.secondaryLabel.show()
+            if markup:
+                self.w.secondaryLabel.set_markup(text)
+            else:
+                self.w.secondaryLabel.set_text(text)
+        else:
+            self.w.secondaryLabel.hide()
+
+
+class DeleteBrickConfirmDialog(ConfirmDialog):
+
+    def __init__(self, brickfactory, brick):
+        self._brickfactory = brickfactory
+        self._brick = brick
+        self._builder = BuilderHelper('confirmdialog.ui')
+        self._builder.connect_signals(self)
+        qst_fmt = _('Do you really want to delete {brick} ({type})?')
+        question = qst_fmt.format(brick=brick.name, type=brick.get_type())
+        self.set_primary_text(question)
 
     def on_ConfirmDialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.YES and self.on_yes:
-            self.on_yes(self.on_yes_arg)
-        elif response_id == Gtk.ResponseType.NO and self.on_no:
-            self.on_no(self.on_no_arg)
+        if response_id == Gtk.ResponseType.YES:
+            self._brickfactory.del_brick(self._brick)
+        dialog.destroy()
+
+
+class DeleteEventConfirmDialog(ConfirmDialog):
+
+    def __init__(self, brickfactory, event):
+        self._brickfactory = brickfactory
+        self._event = event
+        self._builder = BuilderHelper('confirmdialog.ui')
+        self._builder.connect_signals(self)
+        qst_fmt = _('Do you really want to delete {event} ({type})?')
+        question = qst_fmt.format(event=event.name, type=event.get_type())
+        self.set_primary_text(question)
+        if event.scheduled is not None:
+            self.set_secondary_text(
+                _('The event is in use, it will be stopped before.')
+            )
+
+    def on_ConfirmDialog_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.YES:
+            self._brickfactory.del_event(self._event)
+        dialog.destroy()
+
+
+class DeleteLinkConfirmDialog(ConfirmDialog):
+
+    def __init__(self, qemu_config_controller, link):
+        self._qemu_config_controller =  qemu_config_controller
+        self._link = link
+        self._builder = BuilderHelper('confirmdialog.ui')
+        self._builder.connect_signals(self)
+        question = _('Do you really want to delete the network interface?')
+        self.set_primary_text(question)
+
+    def on_ConfirmDialog_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.YES:
+            self._qemu_config_controller._remove_link(self._link)
         dialog.destroy()
 
 

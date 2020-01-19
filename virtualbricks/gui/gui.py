@@ -35,6 +35,9 @@ from virtualbricks.gui import graphics, dialogs, widgets, help
 from virtualbricks.gui.dialogs import (
     AboutDialog,
     CommitImageDialog,
+    DeleteBrickConfirmDialog,
+    DeleteEventConfirmDialog,
+    DeleteLinkConfirmDialog,
     DisksLibraryWindow,
     LoadImageDialog,
     LoggingWindow,
@@ -1361,12 +1364,13 @@ class QemuConfigController(ConfigController):
         deferred.addErrback(logger.failure_eb, retr_usb)
         self.gui.user_wait_action(deferred)
 
-    def _remove_link(self, link, model):
+    def _remove_link(self, link):
         # if link.brick.proc and link.hotdel:
         #     # XXX: why checking hotdel? is a method it is always true or raise
         #     # an exception if it is not defined
         #     link.hotdel()
         self.original.remove_plug(link)
+        model = self.get_object('plugsmodel')
         itr = model.get_iter_first()
         while itr:
             plug = model.get_value(itr, 0)
@@ -1376,11 +1380,7 @@ class QemuConfigController(ConfigController):
             itr = model.iter_next(itr)
 
     def ask_remove_link(self, link):
-        question = _("Do you really want to delete the network interface?")
-        model = self.get_object("plugsmodel")
-        remove = lambda _: self._remove_link(link, model)
-        dialogs.ConfirmDialog(question, on_yes=remove).show(
-            self.gui.wndMain)
+        DeleteLinkConfirmDialog(self, link).show(self.gui.wndMain)
 
     def on_networkcards_treeview_key_press_event(self, treeview, event):
         if Gdk.keyval_from_name("Delete") == event.keyval:
@@ -1969,28 +1969,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             return True
 
     def ask_remove_brick(self, brick):
-        self.__ask_for_deletion(self.brickfactory.del_brick, brick)
+        DeleteBrickConfirmDialog(self.brickfactory, brick).show(self.wndMain)
 
     def ask_remove_event(self, event):
-        if event.scheduled is not None:
-            other = _("The event is in use, it will be stopped before.")
-        else:
-            other = None
-        self.__ask_for_deletion(self.brickfactory.del_event, event, other)
-
-    def __ask_for_deletion(self, on_yes, what, secondary_text=None):
-        question = _("Do you really want to delete %(brick)s (%(type)s)?") % {
-            'brick': what.name,
-            'type': what.get_type()}
-        dialog = dialogs.ConfirmDialog(
-            question,
-            on_yes=on_yes,
-            on_yes_arg=what
-        )
-        if secondary_text is not None:
-            dialog.format_secondary_text(secondary_text)
-        dialog.window.set_transient_for(self.wndMain)
-        dialog.show()
+        DeleteEventConfirmDialog(self.brickfactory, event).show(self.wndMain)
 
     def on_bricks_treeview_key_release_event(self, treeview, event):
         if Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
