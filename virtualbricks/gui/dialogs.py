@@ -88,6 +88,7 @@ from os.path import (
     basename,
     splitext
 )
+from pathlib import Path
 import string
 import tempfile
 import textwrap
@@ -105,7 +106,6 @@ from virtualbricks import __version__
 from virtualbricks import console
 from virtualbricks import errors
 from virtualbricks import log
-from virtualbricks import project
 from virtualbricks import settings
 from virtualbricks import tools
 from virtualbricks import virtualmachines
@@ -118,6 +118,7 @@ from virtualbricks.errors import (
 )
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IDialog, IWidgetBuilder, IWindow
+from virtualbricks.project import manager as project_manager
 from virtualbricks.tools import dispose
 from virtualbricks.virtualmachines import is_virtualmachine
 
@@ -128,7 +129,7 @@ if twisted.__version__ >= '15.0.2':
     # This is an ugly hack but virtualbricks is not really ready for
     # Python3
     def mktempfn():
-        return filepath._secureEnoughString(project.manager.path)
+        return filepath._secureEnoughString(project_manager.path)
 else:
     def mktempfn():
         return filepath._secureEnoughString()
@@ -330,6 +331,8 @@ class _Window:
 
     @property
     def w(self):
+        if self._builder is None:
+            raise AttributeError('_builder is not set')
         return self._builder
 
     def _get_name(self):
@@ -939,10 +942,9 @@ class EditEthernetDialog(BaseEthernetDialog):
                 self.plug.model = model
 
 
-class ConfirmDialog(_Dialog):
+class _ConfirmDialog(_Dialog):
 
-    def _get_name(self):
-        return 'ConfirmDialog'
+    name = 'ConfirmDialog'
 
     def set_primary_text(self, text, markup=False):
         """
@@ -979,7 +981,7 @@ class ConfirmDialog(_Dialog):
             self.w.secondaryLabel.hide()
 
 
-class DeleteBrickConfirmDialog(ConfirmDialog):
+class DeleteBrickConfirmDialog(_ConfirmDialog):
 
     def __init__(self, brickfactory, brick):
         self._brickfactory = brickfactory
@@ -996,7 +998,7 @@ class DeleteBrickConfirmDialog(ConfirmDialog):
         dialog.destroy()
 
 
-class DeleteEventConfirmDialog(ConfirmDialog):
+class DeleteEventConfirmDialog(_ConfirmDialog):
 
     def __init__(self, brickfactory, event):
         self._brickfactory = brickfactory
@@ -1017,7 +1019,7 @@ class DeleteEventConfirmDialog(ConfirmDialog):
         dialog.destroy()
 
 
-class DeleteLinkConfirmDialog(ConfirmDialog):
+class DeleteLinkConfirmDialog(_ConfirmDialog):
 
     def __init__(self, qemu_config_controller, link):
         self._qemu_config_controller =  qemu_config_controller
@@ -1589,84 +1591,96 @@ class NewProjectDialog(SimpleEntryDialog):
         self.gui.on_new(name)
 
 
-class ListProjectsDialog(Window):
+class _ProjectListDialog(_Dialog):
 
-    resource = "listprojects.ui"
-    name = "ListProjectsDialog"
-    title = ""
-
-    def show(self, parent=None):
-        self.populate(self.get_projects())
-        if self.title:
-            self.window.set_title(self.title)
-        Window.show(self, parent)
-
-    def get_projects(self):
-        return (prj.name for prj in project.manager)
-
-    def populate(self, projects):
-        model = self.get_object("liststore1")
-        for prj in projects:
-            model.append((prj, ))
-
-    def get_project_name(self):
-        treeview = self.get_object("treeview")
-        model, itr = treeview.get_selection().get_selected()
-        if itr:
-            return model.get_value(itr, 0)
-
-    def on_treeview_row_activated(self, treeview, path, column):
-        model = treeview.get_model()
-        itr = model.get_iter(path)
-        if itr:
-            name = model.get_value(itr, 0)
-            self.do_action(self.window, Gtk.ResponseType.OK, name)
-        return True
-
-    def on_ListProjectsDialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.OK:
-            name = self.get_project_name()
-            if name is not None:
-                self.do_action(dialog, response_id, name)
-        else:
-            dialog.destroy()
-        return True
-
-    def do_action(self, dialog, response_id, name):
-        pass
-
-
-class _ListProjectAbstract(ListProjectsDialog):
+    name = 'ProjectListDialog'
+    title = None
 
     def __init__(self, gui):
-        self.gui = gui
-        Window.__init__(self)
+        self._gui = gui
+        self._builder = BuilderHelper('projectlistdialog.ui')
+        self._builder.connect_signals(self)
+        tree_selection = self.w.projectsTreeView.get_selection()
+        tree_model, tree_iter = tree_selection.get_selected()
+        for project in project_manager:
+            if project != project_manager.current:
+                tree_model.append([project.name])
+        if self.title is not None:
+            self._get_window().set_title(self.title)
+        tree_selection.unselect_all()
 
-    def get_projects(self):
-        curr = project.manager.current
-        return (prj.name for prj in project.manager if prj != curr)
+    def do_action(self, name):
+        raise NotImplementedError('_ProjectListDialog.do_action')
+
+    def _do_action_if_selected(self, tree_selection):
+        model, tree_iter = tree_selection.get_selected()
+        if tree_iter:
+            name = model.get_value(tree_iter, 0)
+            self.do_action(name)
+
+    def on_projectsTreeSelection_changed(self, tree_selection):
+        model, tree_iter = tree_selection.get_selected()
+        button_is_sensitive = tree_iter is not None
+        self.w.okButton.set_sensitive(button_is_sensitive)
+
+    def on_projectsTreeView_row_activated(self, treeview, path, column):
+        model = treeview.get_model()
+        tree_iter = model.get_iter(path)
+        if tree_iter:
+            name = model.get_value(tree_iter, 0)
+            self.do_action(name)
+        return True
+
+    def on_ProjectListDialog_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.OK:
+            tree_selection = self.w.projectsTreeView.get_selection()
+            self._do_action_if_selected(tree_selection)
+        dialog.destroy()
+        return True
 
 
-class OpenProjectDialog(_ListProjectAbstract):
+class OpenProjectDialog(_ProjectListDialog):
 
     @property
     def title(self):
-        return _("Virtualbricks - Open project")
+        return _('Virtualbricks - Open project')
 
-    @destroy_on_exit
-    def do_action(self, dialog, response_id, name):
+    def do_action(self, name):
         self.gui.on_open(name)
+        self.gui.set_title()
+        self._get_window().destroy()
 
 
-class DeleteProjectDialog(_ListProjectAbstract):
+class DeleteProjectConfirmDialog(_ConfirmDialog):
+
+    def __init__(self, name, tree_model):
+        self._name = name
+        self._tree_model = tree_model
+        self._builder = BuilderHelper('confirmdialog.ui')
+        self._builder.connect_signals(self)
+        question_fmt = _('Do you really want to delete the project {name}?')
+        self.set_primary_text(question_fmt.format(name=name))
+
+    def on_ConfirmDialog_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.YES:
+            project_manager.get_project(self._name).delete()
+            for project_name, tree_iter in iter_tree_model(self._tree_model):
+                if project_name == self._name:
+                    self._tree_model.remove(tree_iter)
+                    break
+        dialog.destroy()
+        return True
+
+
+class DeleteProjectDialog(_ProjectListDialog):
 
     @property
     def title(self):
-        return _("Virtualbricks - Delete project")
+        return _('Virtualbricks - Delete project')
 
-    @destroy_on_exit
-    def do_action(self, dialog, response_id, name):
-        project.manager.get_project(name).delete()
+    def do_action(self, name):
+        tree_model = self.w.projectsListstore
+        DeleteProjectConfirmDialog(name, tree_model).show(self._get_window())
 
 
 class RenameProjectDialog(SimpleEntryDialog):
@@ -1676,7 +1690,7 @@ class RenameProjectDialog(SimpleEntryDialog):
         return _("New project name")
 
     def do_action(self, name):
-        project.manager.current.rename(name)
+        project_manager.current.rename(name)
 
 
 def gather_selected(model, parent, workspace, lst):
@@ -1890,7 +1904,7 @@ class ExportProjectDialog(Window):
             model.get_iter(Gtk.TreePath((0,)))
         )
 
-    def export(self, model, ancestor, filename, export=project.manager.export):
+    def export(self, model, ancestor, filename, export=project_manager.export):
         files = []
         gather_selected(model, model.get_iter_first(), ancestor, files)
         for fp in self.required_files:
@@ -2091,7 +2105,7 @@ def all_paths_set(model):
 
 class _HumbleImport:
 
-    def step_1(self, dialog, model, path, extract=project.manager.import_prj):
+    def step_1(self, dialog, model, path, extract=project_manager.import_prj):
         archive_path = dialog.get_archive_path()
         if archive_path != dialog.archive_path:
             if dialog.project:
@@ -2408,7 +2422,7 @@ class ImportDialog(Window):
     def set_import_sensitive(self, filename, name, overwrite_btn):
         page = self.get_object("intro_page")
         label = self.get_object("warn_label")
-        if name in list(prj.name for prj in project.manager):
+        if name in list(prj.name for prj in project_manager):
             overwrite_btn.set_visible(True)
             overwrite = overwrite_btn.get_active()
             label.set_visible(not overwrite)
@@ -2457,46 +2471,67 @@ class ImportDialog(Window):
         return True
 
 
-class SaveAsDialog(Window):
+class SaveProjectAsDialog(_Dialog):
 
-    resource = "saveas.ui"
-    home = filepath.FilePath(settings.DEFAULT_HOME)
+    def __init__(self, brickfactory):
+        self._brickfactory = brickfactory
+        self._builder = BuilderHelper('saveprojectasdialog.ui')
+        self._builder.connect_signals(self)
+        model = self.w.projectsListstore
+        for project in project_manager:
+            model.append([project.name])
 
-    def __init__(self, factory, projects):
-        Window.__init__(self)
-        self.factory = factory
-        self.model = model = self.get_object("liststore1")
-        for prj in projects:
-            model.append((prj, ))
+    def _set_error(self, tooltip):
+        """
+        :type tooltip: str
+        :rtype: None
+        """
 
-    def get_project_name(self):
-        return self.get_object("name_entry").get_text()
+        style_context = self.w.projectNameEntry.get_style_context()
+        style_context.add_class('error')
+        self.w.projectNameEntry.set_tooltip_markup(tooltip)
+        self.w.okButton.set_sensitive(False)
 
-    def set_invalid(self, invalid):
-        self.get_object("ok_button").set_sensitive(not invalid)
+    def _reset_error(self):
+        """
+        :rtype: None
+        """
 
-    def on_name_entry_changed(self, entry):
-        name = entry.get_text()
+        style_context = self.w.projectNameEntry.get_style_context()
+        style_context.remove_class('error')
+        self.w.projectNameEntry.set_tooltip_text(None)
+        self.w.okButton.set_sensitive(True)
+
+    def on_projectNameEntry_changed(self, entry):
+        new_project_name = entry.get_text()
+        if not new_project_name:
+            self._reset_error()
+            self.w.okButton.set_sensitive(False)
+            return
+        elif new_project_name == project_manager.current.name:
+            self._set_error(_('New project name is the same as previous name'))
+            return
         try:
-            self.home.child(name)
-        except filepath.InsecurePath:
-            self.set_invalid(True)
+            Path(new_project_name).relative_to(settings.DEFAULT_HOME)
+        except ValueError:
+            # TODO: explain why name is invalid
+            self._set_error(_('Invalid project name'))
+        for project in project_manager:
+            if new_project_name == project.name:
+                tooltip = _('A project with the same name already exists')
+                self._set_error(tooltip)
+                break
         else:
-            model = self.model
-            itr = model.get_iter_first()
-            while itr:
-                if model.get_value(itr, 0) == name:
-                    self.set_invalid(True)
-                    break
-                itr = model.iter_next(itr)
-            else:
-                self.set_invalid(False)
+            self._reset_error()
 
-    @destroy_on_exit
-    def on_response(self, dialog, response_id):
+    def on_SaveProjectAsDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
-            project.manager.current.save_as(self.get_project_name(),
-                                            self.factory)
+            # TODO: show progress bar
+            project_manager.current.save_as(
+                self.w.projectNameEntry.get_text(),
+                self._brickfactory
+            )
+        dialog.destroy()
 
 
 class RenameDialog(_Dialog):

@@ -38,11 +38,14 @@ from virtualbricks.gui.dialogs import (
     DeleteBrickConfirmDialog,
     DeleteEventConfirmDialog,
     DeleteLinkConfirmDialog,
+    DeleteProjectDialog,
     DisksLibraryWindow,
     LoadImageDialog,
     LoggingWindow,
     NewBrickDialog,
+    OpenProjectDialog,
     RenameDialog,
+    SaveProjectAsDialog,
     SettingsDialog,
     UsbDevDialog
 )
@@ -2023,9 +2026,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuFileOpen_activate(self, menuitem):
-        dialog = dialogs.OpenProjectDialog(self)
-        dialog.on_destroy = self.set_title
-        dialog.show(self.wndMain)
+        OpenProjectDialog(self).show(self.wndMain)
         return True
 
     def on_menuFileRename_activate(self, menuitem):
@@ -2040,11 +2041,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_menuFileSaveAs_activate(self, menuitem):
         self.on_save()
-        dialog = dialogs.SaveAsDialog(
-            self.brickfactory,
-            (prj.name for prj in project.manager)
-        )
-        dialog.show(self.wndMain)
+        SaveProjectAsDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_menuFileImport_activate(self, menuitem):
@@ -2064,7 +2061,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuFileDelete_activate(self, menuitem):
-        dialogs.DeleteProjectDialog(self).show(self.wndMain)
+        DeleteProjectDialog(self).show(self.wndMain)
         return True
 
     def on_menuSettingsPreferences_activate(self, menuitem):
