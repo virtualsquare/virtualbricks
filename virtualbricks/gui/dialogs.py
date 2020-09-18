@@ -156,9 +156,9 @@ base_not_found = log.Event("Base not found (invalid cow?)\nstderr:\n{err}")
 img_combo = log.Event("Setting image for combobox")
 img_create_err = log.Event("Error on creating image")
 img_create = log.Event("Creating image...")
-img_choose = log.Event("Choose a filename first!")
-img_invalid_type = log.Event("Invalid value for format combo, assuming raw")
-img_invalid_unit = log.Event("Invalid value for unit combo, assuming Mb")
+# img_choose = log.Event("Choose a filename first!")
+# img_invalid_type = log.Event("Invalid value for format combo, assuming raw")
+# img_invalid_unit = log.Event("Invalid value for unit combo, assuming Mb")
 extract_err = log.Event("Error on import project")
 log_rebase = log.Event("Rebasing {cow} to {basefile}")
 rebase_error = log.Event("Error on rebase")
@@ -1516,51 +1516,99 @@ class LoadImageDialog(_Dialog):
         return True
 
 
-class CreateImageDialog(Window):
+class QemuCreateArgs:
 
-    resource = "createimagedialog.ui"
+    def __init__(self, name, pathname, fileformat, size):
+        self.name = name
+        self.pathname = pathname
+        self.fileformat = fileformat
+        self.size = size
+
+
+class CreateImageDialog(_Dialog):
 
     def __init__(self, gui, factory):
         self.gui = gui
-        self.factory = factory
-        Window.__init__(self)
+        # self.factory = factory
+        self._builder = BuilderHelper('createimagedialog.ui')
+        self._builder.connect_signals(self)
 
-    def create_image(self, name, pathname, fmt, size, unit):
-        exit = qemu_img(['create', '-f', fmt, pathname, size + unit])
-        exit.addCallback((lambda stdout: name, pathname))
-        logger.log_failure(exit, img_create_err)
-        return exit
+    def _get_create_image_args(self):
+        name = self.w.imageNameEntry.get_text()
+        if not name:
+            raise ValueError("empty name")
+        folder = self.w.folderFileChooserButton.get_filename()
+        fileformat = self._get_fileformat()
+        pathname = f"{folder}/{name}.{fileformat}"
+        size = self._get_size()
+        return QemuCreateArgs(name, pathname, fileformat, size)
+
+    def _get_fileformat(self):
+        model = self.w.formatComboBox.get_model()
+        itr = self.w.formatComboBox.get_active_iter()
+        if itr is not None:
+            fileformat = model[itr][0]
+            if fileformat == "Auto":
+                fileformat = "raw"
+            return fileformat
+        else:
+            raise ValueError('invalid fileformat')
+
+    def _get_size(self):
+        size = self.w.sizeSpinButton.get_value_as_int()
+        # Get size unit and remove the last character "B"
+        # because qemu-img want k, M, G or T suffixes.
+        model = self.w.unitComboBox.get_model()
+        itr = self.w.unitComboBox.get_active_iter()
+        if itr is not None:
+            unit = model[itr][0][0]
+        else:
+            raise ValueError('invalid size')
+        return f'{size}{unit}'
+
+    def _toggle_dialog_response(self):
+        enable = True
+        try:
+            self._get_create_image_args()
+        except ValueError:
+            enable = False
+        self.w.createButton.set_sensitive(enable)
+
+    def create_image(self, args):
+        done_deferred = qemu_img([
+            'create', '-f', args.fileformat, args.pathname, args.size
+        ])
+        done_deferred.addCallback((lambda stdout: args.name, args.pathname))
+        logger.log_failure(done_deferred, img_create_err)
+        return done_deferred
+
+    # Events
+
+    def on_imageNameEntry_changed(self, *args):
+        self._toggle_dialog_response()
+        return True
+
+    def on_folderFileChooserButton_file_set(self, *args):
+        self._toggle_dialog_response()
+        return True
+
+    def on_formatComboBox_changed(self, *args):
+        self._toggle_dialog_response()
+        return True
+
+    def on_sizeSpinButton_value_changed(self, *args):
+        self._toggle_dialog_response()
+        return True
+
+    def on_unitComboBox_changed(self, *args):
+        self._toggle_dialog_response()
+        return True
 
     def on_CreateImageDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
             logger.info(img_create)
-            name = self.get_object("name_entry").get_text()
-            if not name:
-                logger.error(img_choose)
-                return
-            folder = self.get_object("folder_filechooserbutton").get_filename()
-            fmt_cmb = self.get_object("format_combobox")
-            itr = fmt_cmb.get_active_iter()
-            if itr:
-                fmt = fmt_cmb.get_model()[itr][0]
-                if fmt == "Auto":
-                    fmt = "raw"
-            else:
-                logger.info(img_invalid_type)
-                fmt = "raw"
-            size = str(self.get_object("size_spinbutton").get_value_as_int())
-            # Get size unit and remove the last character "B"
-            # because qemu-img want k, M, G or T suffixes.
-            unit_cmb = self.get_object("unit_combobox")
-            itr = unit_cmb.get_active_iter()
-            if itr:
-                unit = unit_cmb.get_model()[itr][0][0]
-            else:
-                logger.info(img_invalid_unit)
-                unit = "M"
-            pathname = "%s/%s.%s" % (folder, name, fmt)
-            self.gui.user_wait_action(self.create_image(name, pathname, fmt,
-                                                        size, unit))
+            args = self._get_create_image_args()
+            self.gui.user_wait_action(self.create_image(args))
         dialog.destroy()
 
 
