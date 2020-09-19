@@ -2,7 +2,7 @@ stages:
     - build
 
 variables:
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND: noninteractive
 
 .build-template: &build-deb
     stage: build
