@@ -16,18 +16,22 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
-import errno
-import re
+from dataclasses import dataclass
 import datetime
-import shutil
+import errno
 import itertools
+import os
+import pathlib
+import re
+import shutil
+import warnings
 
 from twisted.internet import defer
+from twisted.internet.utils import getProcessOutput
 
-from virtualbricks import (errors, tools, settings, bricks, log, project,
-                           observable)
-from virtualbricks._spawn import getQemuOutputAndValue, abspath_qemu
+from virtualbricks import errors, tools, settings, bricks, log, project
+from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
+from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 
 
@@ -54,41 +58,76 @@ update_usb = log.Event("update_usbdevlist: old {old} - new {new}")
 own_err = log.Event("plug {plug} does not belong to {brick}")
 acquire_lock = log.Event("Aquiring disk locks")
 release_lock = log.Event("Releasing disk locks")
+search_usb = log.Event('Searching USB devices')
 
 
+@dataclass
 class UsbDevice:
 
-    def __init__(self, ID, desc=""):
-        self.ID = ID
-        self.desc = desc
+    id: str
+    description: str
 
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.ID == other.ID
+    @classmethod
+    def parse_line(cls, line):
+        """
+        :type line: str
+        :rtype: Optional[UsbDevice]
+        """
 
-    def __ne__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return not self.__eq__(other)
+        matchobj = LSUSB_REGEX.search(line)
+        if matchobj:
+            dev_id = matchobj.group('id')
+            description = matchobj.group('description').strip()
+            return cls(dev_id, description)
 
-    def __hash__(self):
-        return hash(self.ID)
+    @property
+    def ID(self):
+        return self.id
+
+    @property
+    def desc(self):
+        return self.description
 
     def __str__(self):
-        return str(self.ID)
+        return self.id
 
-    def __repr__(self):
-        return str(self.ID)
+    # def __repr__(self):
+    #     return self.id
 
     def __format__(self, format_string):
-        if format_string == "id":
-            return str(self.ID)
-        elif format_string == "d":
-            return str(self.desc)
-        elif format_string == "":
-            return str(self)
-        raise ValueError("invalid format string" + repr(format_string))
+        if format_string == 'id' or format_string == '':
+            return self.id
+        elif format_string == 'd':
+            return self.description
+        raise ValueError('invalid format string {format_string!r}')
+
+
+LSUSB_REGEX = re.compile(
+    r'(?P<id>\w{4}:\w{4})'
+    r'(?:\s(?P<description>.+))?$'
+)
+
+
+def _parse_lsusb_output(stdout):
+    """
+    :type output: str
+    :rtype: List[UsbDevice]
+    """
+
+    devices = map(UsbDevice.parse_line, stdout.splitlines())
+    return list(filter(None, devices))
+
+
+def get_usb_devices():
+    """
+    :rtype: twisted.internet.defer.Deferred[List[UsbDevice]]
+    """
+
+    logger.info(search_usb)
+    deferred = getProcessOutput('lsusb', env=os.environ)
+    deferred.addCallback(encode_proc_output)
+    deferred.addCallback(_parse_lsusb_output)
+    return deferred
 
 
 class Wrapper:
@@ -163,83 +202,171 @@ class _HostonlySock:
 hostonly_sock = _HostonlySock()
 
 
+def sizeof_fmt(num, suffix='B'):
+    """
+    :type num: Union[float, int, str]
+    :type suffix: str
+    :rtype: str
+    """
+
+    num = float(num)
+    for unit in '', 'Ki', 'Mi':
+        if abs(num) < 1024.0:
+            return f'{num:.1f}{unit}{suffix}'
+        num /= 1024.0
+    return f'{num:.1f}Gi{suffix}'
+
+
 class Image:
 
     readonly = False
     master = None
-    _description = None
-    _name = ""
 
-    def __init__(self, name, path, description=""):
-        self.observable = observable.Observable("changed")
+    def __init__(self, name, path, description=''):
+        """
+        :type name: str
+        :type path: str
+        :type description: str
+        """
+
         self._name = name
-        self.path = os.path.abspath(path)
-        if description:
-            self.set_description(description)
-
-    def _description_file(self):
-        return self.path + ".vbdescr"
-
-    def set_description(self, descr):
-        if descr != self._description:
-            self._description = descr
-            try:
-                with open(self._description_file(), "w") as fp:
-                    fp.write(descr)
-            except IOError:
-                pass
-            self.observable.notify("changed", self)
-
-    def get_description(self):
-        if self._description is None:
-            try:
-                with open(self._description_file()) as fp:
-                    return fp.read()
-            except IOError:
-                return ""
-        else:
-            return self._description
-
-    description = property(get_description, set_description)
-
-    def set_name(self, value):
-        self._name = value
-        self.observable.notify("changed", self)
+        self._path = os.path.abspath(path)
+        self._description = description
+        self.changed = Event(Observable(), 'changed')
 
     def get_name(self):
+        """
+        :rtype: str
+        """
+
         return self._name
 
-    name = property(get_name, set_name)
+    def set_name(self, value):
+        """
+        :type value: str
+        """
+
+        self._name = value
+        self.changed.notify(self)
+
+    def _get_name_prop(self):
+        warnings.warn('Image.name', DeprecationWarning)
+        return self.get_name()
+
+    def _set_name_prop(self, value):
+        warnings.warn('Image.name', DeprecationWarning)
+        return self.set_name(value)
+
+    name = property(_get_name_prop, _set_name_prop)
+
+    def get_path(self):
+        """
+        :rtype: str
+        """
+
+        return self._path
+
+    def set_path(self, value):
+        """
+        :type value: str
+        """
+
+        self._path = value
+        self.changed.notify(self)
+
+    def _get_path_prop(self):
+        warnings.warn('Image.path', DeprecationWarning)
+        return self.get_path()
+
+    def _set_path_prop(self, value):
+        warnings.warn('Image.path', DeprecationWarning)
+        return self.set_path(value)
+
+    path = property(_get_path_prop, _set_path_prop)
+
+    def get_description(self):
+        """
+        :rtype: str
+        """
+
+        return self._description
+
+    def set_description(self, description):
+        """
+        :type value: str
+        """
+
+        if self._description != description:
+            self._description = description
+            self.changed.notify(self)
+
+    def _get_description_prop(self):
+        warnings.warn('Image.description', DeprecationWarning)
+        return self.get_description()
+
+    def _set_description_prop(self, value):
+        warnings.warn('Image.description', DeprecationWarning)
+        return self.set_description(value)
+
+    description = property(_get_description_prop, _set_description_prop)
 
     def basename(self):
         return os.path.basename(self.path)
 
     def get_size(self):
+        """
+        :rtype: str
+        """
+
         if not self.exists():
-            return "0"
-        size = os.path.getsize(self.path)
-        if size > 1000000:
-            return str(size / 1000000)
-        else:
-            return str(size / 1000000.0)
+            return '0B'
+        return sizeof_fmt(os.path.getsize(self.path))
 
     def exists(self):
         return os.path.exists(self.path)
 
     def acquire(self, disk):
-        if self.master in (None, disk):
+        """
+        :type disk: virtualbricks.virtualmachines.Disk
+        :rtype: None
+        """
+
+        if self.master is None:
             self.master = disk
+        elif self.master is disk:
+            # TODO: check this case
+            pass
         else:
             raise errors.LockedImageError(self, self.master)
 
     def release(self, disk):
+        """
+        :type disk: virtualbricks.virtualmachines.Disk
+        :rtype: None
+        """
+
+        # TODO: remove parameter
         if self.master is disk:
             self.master = None
         else:
             raise errors.LockedImageError(self, self.master)
 
     def save_to(self, fileobj):
-        fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
+        """
+        Save the configuration of this disk image to fileobj.
+
+        :type fileobj: io.TextIOBase
+        """
+
+        # TODO: horrible but I need a quit solution for flattening the
+        # description to one line until _configparser will be replaced by the
+        # stdlib configparser.
+        description = '<nl>'.join(self.get_description().splitlines())
+        fileobj.write(
+            f'[Image:{self.name}]\n'
+            f'path={self.path}\n'
+            f'description={description}\n\n'
+        )
 
     def __format__(self, format_string):
         if format_string in ("n", ""):
@@ -255,6 +382,10 @@ class Image:
         elif format_string == "s":
             return self.get_size()
         raise ValueError("invalid format string " + repr(format_string))
+
+
+def is_disk_image(brick):
+    return isinstance(brick, Image)
 
 
 def move(src, dst):
@@ -347,22 +478,13 @@ class Disk:
         """
 
         assert self.image is not None
-        if abspath_qemu('qemu-img', return_relative=False) is None:
-            msg = _('qemu-img not found! I can\'t create a new image.')
-            return defer.fail(errors.BadConfigError(msg))
-
-        def complain_on_error(command_info):
-            stdout, stderr, exit_status = command_info
-            if exit_status != 0:
-                raise RuntimeError(f'Cannot create private COW\n{stderr}')
 
         logger.info(new_cow, backup_file=self.image.path)
         args = [
             'create', '-b', self.image.path, '-f', settings.get('cowfmt'),
             filename
         ]
-        deferred = getQemuOutputAndValue('qemu-img', args, os.environ)
-        deferred.addCallback(complain_on_error)
+        deferred = qemu_img(args)
         deferred.addCallback(discard_first_arg(sync))
         # Always return None, independently of the return from sync
         deferred.addCallback(lambda _: None)
@@ -719,11 +841,36 @@ class VirtualMachine(bricks.Brick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self._observable.add_event("image-changed")
-        self.image_changed = observable.Event(self._observable,
-                                              "image-changed")
+        self.image_changed = Event(self._observable, 'image-changed')
         self.config["name"] = name
         for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             self.config[dev] = Disk(self, dev)
+
+    def rename(self, new_name):
+        """
+        Override Brick.rename() to rename also the disks.
+
+        :type new_name: str
+        :rtype: None
+        """
+
+        # TODO: logs
+        # TODO: rewind in case of error
+        prev_name = super().rename(new_name)
+        project_path = pathlib.Path(project.manager.current.path)
+        disk_regex = re.compile(
+            f'{prev_name}_'                               # vm name
+            '(?P<disk>[a-z0-9]+)'                         # disk
+            '.cow'                                        # extension
+            r'(?P<bak_suffix>\.(?:bak|back)-[0-9\-_]+)?'  # backup suffix
+            '$'                                           # end
+        )
+        new_name_repl = fr'{new_name}_\g<disk>.cow\g<bak_suffix>'
+        for path in project_path.iterdir():
+            if path.is_file() and disk_regex.match(path.name):
+                new_disk_name = disk_regex.sub(new_name_repl, path.name)
+                path.rename(project_path.joinpath(new_disk_name))
+        return prev_name
 
     def poweron(self, snapshot=""):
         def acquire(passthru):
@@ -764,9 +911,9 @@ class VirtualMachine(bricks.Brick):
         return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
-        self.logger.debug(update_usb, old=self.config["usbdevlist"], new=dev)
-        for device in set(dev) - set(self.config["usbdevlist"]):
-            self.send("usb_add host:{0}\n".format(device))
+        self.logger.debug(update_usb, old=self.config['usbdevlist'], new=dev)
+        for usb_dev in set(dev) - set(self.config['usbdevlist']):
+            self.send(f'usb_add host:{usb_dev.id}\n')
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 
@@ -829,8 +976,8 @@ class VirtualMachine(bricks.Brick):
             res.extend(["-vga", "std"])
 
         if self.config["usbmode"]:
-            for dev in self.config["usbdevlist"]:
-                res.extend(["-usbdevice", "host:%s" % dev])
+            for usb_dev in self.config["usbdevlist"]:
+                res.extend(['-usbdevice', f'host:{usb_dev.id}'])
 
         res.extend(["-name", self.name])
         if not self.plugs and not self.socks:

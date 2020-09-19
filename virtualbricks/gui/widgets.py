@@ -238,7 +238,7 @@ class ImagesBindingList(AbstractBindingList):
         self._factory.disconnect("image-changed", self._on_changed)
 
     def __iter__(self):
-        return iter(self._factory.disk_images)
+        return self._factory.iter_disk_images()
 
 
 class TreeView(Gtk.TreeView):

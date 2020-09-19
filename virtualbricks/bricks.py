@@ -29,7 +29,7 @@ from virtualbricks import base, errors, settings, log, interfaces
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
                                 SpinInt, Float, SpinFloat, Boolean, Object,
                                 ListOf)
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 
 __all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",

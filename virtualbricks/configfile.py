@@ -172,13 +172,16 @@ class ImageBuilder:
 
     def load_from(self, factory, section):
         logger.debug(image_found, name=self.name)
-        path = dict(section).get("path", "")
+        section = dict(section)
+        # TODO: if path not in section log error
+        path = section.get('path', '')
+        description = '\n'.join(section.get('description', '').split('<nl>'))
         if factory.is_in_use(self.name):
             logger.info(skip_image, name=self.name)
         elif not os.access(path, os.R_OK):
             logger.info(skip_image_noa)
         else:
-            return factory.new_disk_image(self.name, path)
+            return factory.new_disk_image(self.name, path, description)
 
 
 @implementer(interfaces.IBuilder)
@@ -318,10 +321,10 @@ class ConfigFile:
             self.save_to(factory, str_or_obj)
 
     def save_to(self, factory, fileobj):
-        for img in factory.disk_images:
+        for img in factory.iter_disk_images():
             img.save_to(fileobj)
 
-        for event in factory.events:
+        for event in factory.iter_events():
             event.save_to(fileobj)
 
         socks = []

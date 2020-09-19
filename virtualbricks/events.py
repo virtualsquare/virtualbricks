@@ -149,3 +149,7 @@ class Event(base.Base):
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)
         self.notify_changed()
+
+
+def is_event(brick):
+    return brick.get_type() == 'Event'

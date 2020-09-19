@@ -22,7 +22,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import settings, bricks, log, errors
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 
 if False:  # pyflakes
