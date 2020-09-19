@@ -20,7 +20,7 @@ import os
 from collections import OrderedDict as odict
 
 from virtualbricks import bricks, link, settings
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 if False:  # pyflakes
     _ = str

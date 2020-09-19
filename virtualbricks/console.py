@@ -273,8 +273,8 @@ class VBProtocol(Protocol):
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         self.sendLine("\nEvents")
         self.sendLine("-" * 20)
-        for obj in self.factory.events:
-            self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
+        for event in self.factory.iter_events():
+            self.sendLine("%s (%s)" % (event.name, event.get_type()))
         # self.sendLine("End of list.")
 
     def do_config(self, *args):
@@ -328,7 +328,7 @@ class VBProtocol(Protocol):
 class ImagesProtocol(Protocol):
 
     def do_list(self):
-        for img in self.factory.disk_images:
+        for img in self.factory.iter_disk_images():
             self.sendLine("%s, %s" % (img.name, img.path))
 
     # def do_files(self):

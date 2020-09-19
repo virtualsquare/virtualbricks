@@ -84,6 +84,7 @@ class TestProtocol(unittest.TestCase):
         self.flushLoggedErrors(TypeError)
 
     def test_new_event(self):
+        # TODO: failing, to refactor
         self.parse("new event test_event")
         self.assertEquals(len(self.factory.events), 1)
         self.assertEquals(self.factory.events[0].name, "test_event")

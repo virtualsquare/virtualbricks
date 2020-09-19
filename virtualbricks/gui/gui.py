@@ -21,27 +21,42 @@
 import os
 import sys
 import string
-import gi
-from gi.repository import Gtk
-from gi.repository import Gdk
-from gi.repository import GObject
 
+from gi.repository import GObject, Gdk, Gtk
 from twisted.internet import error, defer, task, protocol, reactor
 from twisted.python import filepath
 from zope.interface import implementer
 
-from virtualbricks.interfaces import registerAdapter
-from virtualbricks.gui.interfaces import (IMenu, IJobMenu, IConfigController,
-                                          IPrerequisite, IState, IControl,
-                                          IStateManager)
-from virtualbricks._spawn import getQemuOutput
+from virtualbricks import tools, settings, project, log, brickfactory, qemu
+from virtualbricks.spawn import getQemuOutput, qemu_img
 from virtualbricks.bricks import Brick
 from virtualbricks.events import Event
-from virtualbricks.link import Plug, Sock
-from virtualbricks.virtualmachines import VirtualMachine
-from virtualbricks import tools, settings, project, log, brickfactory, qemu
-from virtualbricks.tools import dispose, is_running
 from virtualbricks.gui import graphics, dialogs, widgets, help
+from virtualbricks.gui.dialogs import (
+    AboutDialog,
+    CommitImageDialog,
+    DeleteBrickConfirmDialog,
+    DeleteEventConfirmDialog,
+    DeleteLinkConfirmDialog,
+    DeleteProjectDialog,
+    DisksLibraryWindow,
+    LoadImageDialog,
+    LoggingWindow,
+    NewBrickDialog,
+    OpenProjectDialog,
+    RenameDialog,
+    SaveProjectAsDialog,
+    SettingsDialog,
+    UsbDevDialog
+)
+from virtualbricks.gui.interfaces import (
+    IMenu, IJobMenu, IConfigController, IPrerequisite, IState, IControl,
+    IStateManager
+)
+from virtualbricks.interfaces import registerAdapter
+from virtualbricks.link import Plug, Sock
+from virtualbricks.tools import dispose, is_running
+from virtualbricks.virtualmachines import VirtualMachine, get_usb_devices
 
 
 if False:  # pyflakes
@@ -83,6 +98,7 @@ retrieve_qemu_version_error = log.Event("Error while retrieving qemu version.")
 usb_access = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
 no_kvm = log.Event("No KVM support found on the system. Check your active "
                    "configuration. KVM will stay disabled.")
+retr_usb = log.Event('Error while retrieving usb devices.')
 
 BRICK_TARGET_NAME = "brick-connect-target"
 BRICK_DRAG_TARGETS = [
@@ -154,10 +170,7 @@ class BrickPopupMenu(BaseMenu):
         if self.original.proc is not None:
             logger.error(cannot_rename)
         else:
-            dialogs.RenameBrickDialog(
-                self.original,
-                gui.brickfactory.normalize_name
-            ).show(gui.wndMain)
+            RenameDialog(gui.brickfactory, self.original).show(gui.wndMain)
 
     def on_attach_activate(self, menuitem, gui):
         dialogs.AttachEventDialog(self.original, gui.factory).show(gui.wndMain)
@@ -197,8 +210,7 @@ class VMPopupMenu(BrickPopupMenu):
             logger.error(s_r_not_supported)
             return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
                                              "this disk.")))
-        args = ["snapshot", "-l", path]
-        output = getQemuOutput("qemu-img", args, os.environ)
+        output = qemu_img(['snapshot', '-l', path])
         output.addCallback(grep, "virtualbricks")
         output.addCallback(loadvm)
         logger.log_failure(output, snap_error)
@@ -225,10 +237,7 @@ class EventPopupMenu(BaseMenu):
 
     def on_rename_activate(self, menuitem, gui):
         if not self.original.scheduled:
-            dialogs.RenameDialog(
-                self.original,
-                gui.brickfactory.normalize_name
-            ).show(gui.wndMain)
+            RenameDialog(gui.brickfactory, self.original).show(gui.wndMain)
         else:
             logger.error(event_in_use)
 
@@ -1329,10 +1338,10 @@ class QemuConfigController(ConfigController):
     # signals
 
     def on_newimage_button_clicked(self, button):
-        dialogs.choose_new_image(self.gui, self.gui.brickfactory)
+        LoadImageDialog(self.gui.brickfactory).show(self.gui.wndMain)
 
     def on_configimage_button_clicked(self, button):
-        dialogs.DisksLibraryDialog(self.original.factory).show()
+        DisksLibraryWindow(self.original.factory).show()
 
     def on_newempty_button_clicked(self, button):
         dialogs.CreateImageDialog(self.gui, self.gui.brickfactory).show(
@@ -1348,14 +1357,23 @@ class QemuConfigController(ConfigController):
             self.lMachine.set_data_source(machines)
 
     def on_btnBind_clicked(self, button):
-        dialogs.UsbDevWindow.show_dialog(self.gui, self.usb_devices)
 
-    def _remove_link(self, link, model):
-        if link.brick.proc and link.hotdel:
-            # XXX: why checking hotdel? is a method it is always true or raise
-            # an exception if it is not defined
-            link.hotdel()
+        def show_usb_devices_dialog(found_usb_devices):
+            dialog = UsbDevDialog(found_usb_devices, self.usb_devices)
+            dialog.show(self.gui.wndMain)
+
+        deferred = get_usb_devices()
+        deferred.addCallback(show_usb_devices_dialog)
+        deferred.addErrback(logger.failure_eb, retr_usb)
+        self.gui.user_wait_action(deferred)
+
+    def _remove_link(self, link):
+        # if link.brick.proc and link.hotdel:
+        #     # XXX: why checking hotdel? is a method it is always true or raise
+        #     # an exception if it is not defined
+        #     link.hotdel()
         self.original.remove_plug(link)
+        model = self.get_object('plugsmodel')
         itr = model.get_iter_first()
         while itr:
             plug = model.get_value(itr, 0)
@@ -1365,11 +1383,7 @@ class QemuConfigController(ConfigController):
             itr = model.iter_next(itr)
 
     def ask_remove_link(self, link):
-        question = _("Do you really want to delete the network interface?")
-        model = self.get_object("plugsmodel")
-        remove = lambda _: self._remove_link(link, model)
-        dialogs.ConfirmDialog(question, on_yes=remove).show(
-            self.gui.wndMain)
+        DeleteLinkConfirmDialog(self, link).show(self.gui.wndMain)
 
     def on_networkcards_treeview_key_press_event(self, treeview, event):
         if Gdk.keyval_from_name("Delete") == event.keyval:
@@ -1741,7 +1755,7 @@ class EventsBindingList(widgets.AbstractBindingList):
         self._factory.disconnect("event-changed", self._on_changed)
 
     def __iter__(self):
-        return iter(self._factory.events)
+        return self._factory.iter_events()
 
 
 def is_running_filter(model, itr, data):
@@ -1958,28 +1972,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             return True
 
     def ask_remove_brick(self, brick):
-        self.__ask_for_deletion(self.brickfactory.del_brick, brick)
+        DeleteBrickConfirmDialog(self.brickfactory, brick).show(self.wndMain)
 
     def ask_remove_event(self, event):
-        if event.scheduled is not None:
-            other = _("The event is in use, it will be stopped before.")
-        else:
-            other = None
-        self.__ask_for_deletion(self.brickfactory.del_event, event, other)
-
-    def __ask_for_deletion(self, on_yes, what, secondary_text=None):
-        question = _("Do you really want to delete %(brick)s (%(type)s)?") % {
-            'brick': what.name,
-            'type': what.get_type()}
-        dialog = dialogs.ConfirmDialog(
-            question,
-            on_yes=on_yes,
-            on_yes_arg=what
-        )
-        if secondary_text is not None:
-            dialog.format_secondary_text(secondary_text)
-        dialog.window.set_transient_for(self.wndMain)
-        dialog.show()
+        DeleteEventConfirmDialog(self.brickfactory, event).show(self.wndMain)
 
     def on_bricks_treeview_key_release_event(self, treeview, event):
         if Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
@@ -2030,9 +2026,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuFileOpen_activate(self, menuitem):
-        dialog = dialogs.OpenProjectDialog(self)
-        dialog.on_destroy = self.set_title
-        dialog.show(self.wndMain)
+        OpenProjectDialog(self).show(self.wndMain)
         return True
 
     def on_menuFileRename_activate(self, menuitem):
@@ -2047,11 +2041,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_menuFileSaveAs_activate(self, menuitem):
         self.on_save()
-        dialog = dialogs.SaveAsDialog(
-            self.brickfactory,
-            (prj.name for prj in project.manager)
-        )
-        dialog.show(self.wndMain)
+        SaveProjectAsDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_menuFileImport_activate(self, menuitem):
@@ -2065,21 +2055,21 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         dialog = dialogs.ExportProjectDialog(
             ProgressBar(self),
             filepath.FilePath(project.manager.current.path),
-            self.brickfactory.disk_images
+            self.brickfactory.iter_disk_images()
         )
         dialog.show(self.wndMain)
         return True
 
     def on_menuFileDelete_activate(self, menuitem):
-        dialogs.DeleteProjectDialog(self).show(self.wndMain)
+        DeleteProjectDialog(self).show(self.wndMain)
         return True
 
     def on_menuSettingsPreferences_activate(self, menuitem):
-        dialogs.SettingsDialog(self).show(self.wndMain)
+        SettingsDialog(self).show(self.wndMain)
         return True
 
     def on_menuViewMessages_activate(self, menuitem):
-        dialogs.LoggingWindow(self.messages_buffer).show()
+        LoggingWindow(self.messages_buffer).show()
         return True
 
     def on_menuImagesCreate_activate(self, menuitem):
@@ -2087,26 +2077,25 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_menuImagesNew_activate(self, menuitem):
-        dialogs.choose_new_image(self, self.brickfactory)
+        dialogs.LoadImageDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_menuImagesCommit_activate(self, menuitem):
-        dialog =dialogs.CommitImageDialog(ProgressBar(self), self.brickfactory)
-        dialog.show(self.wndMain)
+        CommitImageDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_menuImagesLibrary_activate(self, menuitem):
-        dialogs.DisksLibraryDialog(self.brickfactory).show()
+        DisksLibraryWindow(self.brickfactory).show()
         return True
 
     def on_menuHelpAbout_activate(self, menuitem):
-        dialogs.AboutDialog().show(self.wndMain)
+        AboutDialog().show(self.wndMain)
         return True
 
     # bricks toolbar
 
     def on_btnNewBrick_clicked(self, toolbutton):
-        dialogs.NewBrickDialog(self.brickfactory).show(self.wndMain)
+        NewBrickDialog(self.brickfactory).show(self.wndMain)
         return True
 
     def on_btnStartAll_clicked(self, toolbutton):
@@ -2142,12 +2131,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_btnStartAllEvents_clicked(self, toolbutton):
-        for event in self.brickfactory.events:
+        for event in self.brickfactory.iter_events():
             event.poweron()
         return True
 
     def on_btnStopAllEvents_clicked(self, toolbutton):
-        for event in self.brickfactory.events:
+        for event in self.brickfactory.iter_events():
             event.poweroff()
         return True
 
@@ -2330,7 +2319,6 @@ class VisualFactory(brickfactory.BrickFactory):
 class TextBufferObserver:
 
     def __init__(self, textbuffer):
-        textbuffer.create_mark("end", textbuffer.get_end_iter(), False)
         self.textbuffer = textbuffer
 
     def __call__(self, event):
@@ -2343,11 +2331,11 @@ class TextBufferObserver:
         else:
             event["traceback"] = ""
         event["iso8601_time"] = log.format_time(event["log_time"])
-        msg = entry.format(msg=log.formatEvent(event), **event)
-        mark = self.textbuffer.get_mark("end")
-        iter = self.textbuffer.get_iter_at_mark(mark)
-        self.textbuffer.insert_with_tags_by_name(iter, msg,
-                                                 event["log_level"].name)
+        self.textbuffer.insert_with_tags_by_name(
+            self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark('end')),
+            entry.format(msg=log.formatEvent(event), **event),
+            event["log_level"].name
+        )
 
 
 class MessageDialogObserver:
@@ -2404,10 +2392,15 @@ class Application(brickfactory.Application):
     factory_factory = VisualFactory
 
     def __init__(self, config):
-        self.textbuffer = Gtk.TextBuffer()
+        self.textbuffer = textbuffer = Gtk.TextBuffer()
+        textbuffer.create_mark(
+            mark_name='end',
+            where=textbuffer.get_end_iter(),
+            left_gravity=False
+        )
         for name, attrs in TEXT_TAGS:
             self.textbuffer.create_tag(name, **attrs)
-        self.logger_factory = AppLoggerFactory(self.textbuffer)
+        self.logger_factory = AppLoggerFactory(textbuffer)
         brickfactory.Application.__init__(self, config)
 
     def get_namespace(self):
