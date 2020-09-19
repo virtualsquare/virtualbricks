@@ -54,3 +54,8 @@ disco:
 eoan:
     <<: *build-deb
     image: ubuntu:eoan
+
+# Ubuntu 20.04
+focal:
+    <<: *build-deb
+    image: ubuntu:focal
