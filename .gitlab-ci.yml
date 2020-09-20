@@ -3,6 +3,8 @@ stages:
 
 variables:
     DEBIAN_FRONTEND: noninteractive
+    DEBEMAIL: marco.giusti3@studio.unibo.it
+    FULLNAME: Marco Giusti
 
 .build-template: &build-deb
     stage: build
@@ -23,42 +25,42 @@ variables:
         paths:
             - dist/*
 
-# Debian 9, oldstable
-stretch:
+# Debian 9, stretch, oldstable
+debian-9:
     <<: *build-deb
     image: debian:stretch
 
-# Debian 10, stable
-buster:
+# Debian 10, buster, stable
+debian-10:
     <<: *build-deb
     image: debian:buster
 
-# Debian 11, testing
-bullseye:
+# Debian 11, bullseye, testing
+debian-11:
     <<: *build-deb
     image: debian:bullseye
 
-# Debian unstable
-sid:
+# Debian unstable, sid
+debian-sid:
     <<: *build-deb
     image: debian:sid
 
-# Ubuntu 18.04 LTS
-bionic:
+# Ubuntu 16.04 LTS, trusty
+ubuntu-16.04:
+    <<: *build-deb
+    image: ubuntu:trusty
+
+# Ubuntu 18.04 LTS, bionic
+ubuntu-18.04:
     <<: *build-deb
     image: ubuntu:bionic
 
-# Ubuntu 19.04
-disco:
-    <<: *build-deb
-    image: ubuntu:disco
-
-# Ubuntu 19.10
-eoan:
+# Ubuntu 19.10, eoan
+ubuntu-19.10:
     <<: *build-deb
     image: ubuntu:eoan
 
-# Ubuntu 20.04
-focal:
+# Ubuntu 20.04 LTS, focal
+ubuntu-20.04:
     <<: *build-deb
     image: ubuntu:focal
