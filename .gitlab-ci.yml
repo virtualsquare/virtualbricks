@@ -52,12 +52,12 @@ debian-sid:
     variables:
         DISTRIBUTION: sid
 
-# Ubuntu 16.04 LTS, trusty
+# Ubuntu 16.04 LTS, xenial
 ubuntu-16.04:
     <<: *build-deb
-    image: ubuntu:trusty
+    image: ubuntu:xenial
     variables:
-        DISTRIBUTION: trusty
+        DISTRIBUTION: xenial
 
 # Ubuntu 18.04 LTS, bionic
 ubuntu-18.04:
