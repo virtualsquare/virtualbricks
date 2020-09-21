@@ -11,13 +11,13 @@ variables:
         - apt-get update
         - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools imagemagick
         - export VB_VERSION="$(python3 setup.py -V)"
-        - export "VB_DEB_VERSION=${VB_VERSION}-0~${CI_JOB_NAME}1"
+        - export "VB_DEB_VERSION=${VB_VERSION}-0~${DISTRIBUTION}1"
         - mkdir dist
         - cp -R . ../virtualbricks-"$VB_VERSION"
         - cd ../virtualbricks-"$VB_VERSION"
     script:
         - debchange --newversion "$VB_DEB_VERSION" "New upstream version"
-        - debchange --release --distribution "${CI_JOB_NAME}" ""
+        - debchange --release --distribution "${DISTRIBUTION}" ""
         - dpkg-buildpackage -us -uc
         - cp ../virtualbricks_"$VB_DEB_VERSION"* ../virtualbricks/dist/
     artifacts:
@@ -28,38 +28,47 @@ variables:
 debian-9:
     <<: *build-deb
     image: debian:stretch
+    variables:
+        DISTRIBUTION: stretch
 
 # Debian 10, buster, stable
 debian-10:
     <<: *build-deb
     image: debian:buster
+    variables:
+        DISTRIBUTION: buster
 
 # Debian 11, bullseye, testing
 debian-11:
     <<: *build-deb
     image: debian:bullseye
+    variables:
+        DISTRIBUTION: bullseye
 
 # Debian unstable, sid
 debian-sid:
     <<: *build-deb
     image: debian:sid
+    variables:
+        DISTRIBUTION: sid
 
 # Ubuntu 16.04 LTS, trusty
 ubuntu-16.04:
     <<: *build-deb
     image: ubuntu:trusty
+    variables:
+        DISTRIBUTION: trusty
 
 # Ubuntu 18.04 LTS, bionic
 ubuntu-18.04:
     <<: *build-deb
     image: ubuntu:bionic
-
-# Ubuntu 19.10, eoan
-ubuntu-19.10:
-    <<: *build-deb
-    image: ubuntu:eoan
+    variables:
+        DISTRIBUTION: bionic
 
 # Ubuntu 20.04 LTS, focal
 ubuntu-20.04:
     <<: *build-deb
     image: ubuntu:focal
+    variables:
+        DISTRIBUTION: focal
