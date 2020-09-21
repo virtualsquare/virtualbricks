@@ -3,8 +3,7 @@ stages:
 
 variables:
     DEBIAN_FRONTEND: noninteractive
-    DEBEMAIL: marco.giusti3@studio.unibo.it
-    FULLNAME: Marco Giusti
+    DEBEMAIL: Marco Giusti <marco.giusti3@studio.unibo.it>
 
 .build-template: &build-deb
     stage: build
