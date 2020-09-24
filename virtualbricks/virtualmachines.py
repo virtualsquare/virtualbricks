@@ -16,7 +16,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from dataclasses import dataclass
 import datetime
 import errno
 import itertools
@@ -61,7 +60,6 @@ release_lock = log.Event("Releasing disk locks")
 search_usb = log.Event('Searching USB devices')
 
 
-@dataclass
 class UsbDevice:
 
     id: str
@@ -88,11 +86,30 @@ class UsbDevice:
     def desc(self):
         return self.description
 
+    def __init__(self, id, description):
+        self.id = id
+        self.description = description
+
+
     def __str__(self):
         return self.id
 
-    # def __repr__(self):
-    #     return self.id
+    def __repr__(self):
+        return self.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.id == other.id
+
+    def __ne__(self, other):
+        equal = self.__eq__(other)
+        if equal is NotImplemented:
+            return NotImplemented
+        return not equal
 
     def __format__(self, format_string):
         if format_string == 'id' or format_string == '':
