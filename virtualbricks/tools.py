@@ -160,7 +160,8 @@ def set_ksm(enable):
     ksm_enabled = check_ksm()
     if enable ^ ksm_enabled:
         enable = 1 if enable else 0
-        cmd = f'echo {enable} > {KSM_PATH}'
+        cmd = 'echo {enable} > {KSM_PATH}'.format(enable=enable,
+                                                  KSM_PATH=KSM_PATH)
         try:
             sudo = settings.get('sudo')
             args = ['--', 'su', '-c', cmd]
@@ -407,7 +408,7 @@ def sync():
     def complain_on_error(command_info):
         stdout, stderr, exit_status = command_info
         if exit_status != 0:
-            raise RuntimeError(f'sync failed\n{stderr}')
+            raise RuntimeError('sync failed\n{stderr}'.format(stderr=stderr))
 
     deferred = utils.getProcessOutputAndValue('sync', env=os.environ)
     deferred.addCallback(complain_on_error)

@@ -280,7 +280,7 @@ class BuilderHelper:
         builder.set_translation_domain(translation_domain)
         builder_filename = graphics.get_data_filename(resource)
         if builder_filename is None:
-            raise FileNotFoundError(f'File not found {resource!r}')
+            raise FileNotFoundError('File not found {resource!r}'.format(resource=resource))
         builder.add_from_file(builder_filename)
 
     def __getattr__(self, name):
@@ -537,7 +537,7 @@ class LoggingWindow(_Window):
                              hide_to_user=True)
 
         body = textwrap.dedent(
-            f'''
+            '''
 
 
 
@@ -546,7 +546,7 @@ class LoggingWindow(_Window):
             The attachment contains the logs of Virtualbricks.
 
             Virtualbricks version: {__version__}
-            '''
+            '''.format(__version__=__version__)
         )
         messages = self._textbuffer.get_property('text')
         # Do not remove the file once xdg-email exits.
@@ -1133,7 +1133,7 @@ class BrickSelectionDialog(Window):
         if response_id == Gtk.ResponseType.OK:
             self._event.set({
                 'actions': [
-                    console.VbShellCommand(f'{brick.name} {self._action}')
+                    console.VbShellCommand('{brick.name} {self._action}'.format(brick=brick, self=self))
                     for brick in self._added
                 ]
             })
@@ -1204,7 +1204,7 @@ class CommitImageDialog(_Dialog):
     @staticmethod
     def set_cell_title(tree_column, cell, tree_model, tree_itr):
         disk = tree_model.get_value(tree_itr, 0)
-        cell.set_property('text', f'{disk.device} on {disk.vm.get_name()}')
+        cell.set_property('text', '{disk.device} on {vm_name}'.format(disk=disk, vm_name=disk.vm.get_name()))
         return True
 
     def __init__(self, brickfactory):
@@ -1239,7 +1239,7 @@ class CommitImageDialog(_Dialog):
     def on_CommitImageDialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.APPLY:
             action_name = self.w.stack.get_visible_child_name()
-            action = getattr(self, f'do_{action_name}')
+            action = getattr(self, 'do_' + action_name)
             action()
         elif response_id == Gtk.ResponseType.CLOSE:
             dialog.destroy()
@@ -1455,9 +1455,9 @@ class LoadImageDialog(_Dialog):
                 self._name_error = None
             except NameAlreadyInUseError:
                 self._name_error = (
-                    f'Name <span weight="bold">{image_name}</span>'
+                    'Name <span weight="bold">{image_name}</span>'
                     ' is already in use'
-                )
+                ).format(image_name=image_name)
             except InvalidNameError as exc:
                 self._name_error = str(exc)
 
@@ -1539,7 +1539,7 @@ class CreateImageDialog(_Dialog):
             raise ValueError("empty name")
         folder = self.w.folderFileChooserButton.get_filename()
         fileformat = self._get_fileformat()
-        pathname = f"{folder}/{name}.{fileformat}"
+        pathname = "{folder}/{name}.{fileformat}".format(folder=folder, name=name, fileformat=fileformat)
         size = self._get_size()
         return QemuCreateArgs(name, pathname, fileformat, size)
 
@@ -1564,7 +1564,7 @@ class CreateImageDialog(_Dialog):
             unit = model[itr][0][0]
         else:
             raise ValueError('invalid size')
-        return f'{size}{unit}'
+        return '{size}{unit}'.format(size=size, unit=unit)
 
     def _toggle_dialog_response(self):
         enable = True
@@ -1797,7 +1797,7 @@ def normalize_project_filename(filename):
     if filename[-4:] == '.vbp':
         return filename
     else:
-        return f'{filename}.vbp'
+        return '{filename}.vbp'.format(filename=filename)
 
 
 class ExportProjectDialog(Window):
@@ -2638,9 +2638,9 @@ class RenameDialog(_Dialog):
             self._reset_error()
         except NameAlreadyInUseError:
             tooltip = (
-                f'Name <span weight="bold">{brick_name}</span>'
+                'Name <span weight="bold">{brick_name}</span>'
                 ' is already in use'
-            )
+            ).format(brick_name=brick_name)
             self._set_error(tooltip)
         except InvalidNameError as exc:
             self._set_error(str(exc))
@@ -2723,9 +2723,9 @@ class NewBrickDialog(_Dialog):
             self._reset_error()
         except NameAlreadyInUseError:
             tooltip = (
-                f'Name <span weight="bold">{brick_name}</span>'
+                'Name <span weight="bold">{brick_name}</span>'
                 ' is already in use'
-            )
+            ).format(brick_name=brick_name)
             self._set_error(tooltip)
         except InvalidNameError as exc:
             self._set_error(str(exc))
