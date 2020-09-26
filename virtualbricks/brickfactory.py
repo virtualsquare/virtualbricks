@@ -378,7 +378,7 @@ class BrickFactory(object):
         c = 1
         orig_name = name
         while self.is_in_use(name):
-            name = f'{orig_name}.{c}'
+            name = '{orig_name}.{c}'.format(orig_name=orig_name, c=c)
         return name
 
     def is_in_use(self, name):

@@ -311,7 +311,7 @@ class TestDisk(unittest.TestCase):
         failure.check(RuntimeError)
         self.assertEqual(
             failure.getErrorMessage(),
-            f'Cannot create private COW\n{STDERR}'
+            'Cannot create private COW\n{STDERR}'.format(STDERR=STDERR)
         )
         mock_sync.assert_not_called()
 
@@ -441,9 +441,9 @@ class TestDisk(unittest.TestCase):
 
     def assert_image_locked_by(self, image, disk):
         msg = (
-            f'Image locked by {image.master},'
-            f' expected to be locked by {disk}'
-        )
+            'Image locked by {image_master},'
+            ' expected to be locked by {disk}'
+        ).format(image_master=image.master, disk=disk)
         self.assertIs(image.master, disk, msg)
 
     def assert_image_not_locked(self, image):

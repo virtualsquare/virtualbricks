@@ -35,18 +35,18 @@ class Observable:
         self.__events[name] = []
 
     def add_observer(self, name, callback, args, kwds):
-        assert callable(callback), f'{callable!r} is not callable'
-        assert name in self.__events, f'Event {name} not present'
+        assert callable(callback), '{0!r} is not callable'.format(callable)
+        assert name in self.__events, 'Event {0} not present'.format(name)
         assert (callback, args, kwds) not in self.__events[name]
         self.__events[name].append((callback, args, kwds))
 
     def remove_observer(self, name, callback, args, kwds):
-        assert callable(callback), f'{callable!r} is not callable'
-        assert name in self.__events, f'Event {name} not present'
+        assert callable(callback), '{0!r} is not callable'.format(callable)
+        assert name in self.__events, 'Event {0} not present'.format(name)
         self.__events[name].remove((callback, args, kwds))
 
     def notify(self, name, emitter):
-        assert name in self.__events, f'Event {name} not present'
+        assert name in self.__events, 'Event {0} not present'.format(name)
         if not self._thawed:
             for callback, args, kwds in self.__events[name]:
                 callback(emitter, *args, **kwds)
@@ -70,11 +70,11 @@ class Signal:
             pass
 
     def connect(self, callback, *args, **kwds):
-        assert callable(callback), f'{callable!r} is not callable'
+        assert callable(callback), '{0!r} is not callable'.format(callable)
         self.__observable.add_observer(self.__name, callback, args, kwds)
 
     def disconnect(self, callback, *args, **kwds):
-        assert callable(callback), f'{callable!r} is not callable'
+        assert callable(callback), '{0!r} is not callable'.format(callable)
         self.__observable.remove_observer(self.__name, callback, args, kwds)
 
     def notify(self, emitter):

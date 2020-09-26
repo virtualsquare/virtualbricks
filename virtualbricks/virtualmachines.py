@@ -16,7 +16,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from dataclasses import dataclass
 import datetime
 import errno
 import itertools
@@ -61,7 +60,6 @@ release_lock = log.Event("Releasing disk locks")
 search_usb = log.Event('Searching USB devices')
 
 
-@dataclass
 class UsbDevice:
 
     id: str
@@ -88,11 +86,30 @@ class UsbDevice:
     def desc(self):
         return self.description
 
+    def __init__(self, id, description):
+        self.id = id
+        self.description = description
+
+
     def __str__(self):
         return self.id
 
-    # def __repr__(self):
-    #     return self.id
+    def __repr__(self):
+        return self.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.id == other.id
+
+    def __ne__(self, other):
+        equal = self.__eq__(other)
+        if equal is NotImplemented:
+            return NotImplemented
+        return not equal
 
     def __format__(self, format_string):
         if format_string == 'id' or format_string == '':
@@ -212,9 +229,9 @@ def sizeof_fmt(num, suffix='B'):
     num = float(num)
     for unit in '', 'Ki', 'Mi':
         if abs(num) < 1024.0:
-            return f'{num:.1f}{unit}{suffix}'
+            return '{num:.1f}{unit}{suffix}'.format(num=num, unit=unit, suffix=suffix)
         num /= 1024.0
-    return f'{num:.1f}Gi{suffix}'
+    return '{num:.1f}Gi{suffix}'.format(num=num, suffix=suffix)
 
 
 class Image:
@@ -362,11 +379,11 @@ class Image:
         # description to one line until _configparser will be replaced by the
         # stdlib configparser.
         description = '<nl>'.join(self.get_description().splitlines())
-        fileobj.write(
-            f'[Image:{self.name}]\n'
-            f'path={self.path}\n'
-            f'description={description}\n\n'
-        )
+        fileobj.write((
+            '[Image:{self.name}]\n'
+            'path={self.path}\n'
+            'description={description}\n\n'
+        ).format(self=self, description=description)
 
     def __format__(self, format_string):
         if format_string in ("n", ""):
@@ -535,7 +552,7 @@ class Disk:
             return defer.succeed(None)
         else:
             now = datetime.datetime.now()
-            backup_file = f'{image_file}.bak-{now:%Y%m%d-%H%M%S}'
+            backup_file = '{image_file}.bak-{now:%Y%m%d-%H%M%S}'.format(image_file=image_file, now=now)
             logger.warn(
                 invalid_base,
                 private_cow=image_file,
@@ -554,7 +571,7 @@ class Disk:
         :rtype: str
         """
 
-        filename = f'{self.vm.name}_{self.device}.cow'
+        filename = '{self.vm.name}_{self.device}.cow'.format(self=self)
         return os.path.join(self._basefolder(), filename)
 
     def get_real_disk_name(self):
@@ -592,9 +609,9 @@ class Disk:
 
     def __repr__(self):
         return (
-            f'<Disk {self.device}({self.vm.name}) image={self.image:p} '
-            f'readonly={self.readonly()} cow={self.is_cow()}>'
-        )
+            '<Disk {self.device}({self.vm.name}) image={self.image:p} '
+            'readonly={readonly} cow={is_cow}>'
+        ).format(self=self, readonly=self.readonly(), is_cow=self.is_cow())
 
 
 VM_COMMAND_BUILDER = {
@@ -858,14 +875,14 @@ class VirtualMachine(bricks.Brick):
         # TODO: rewind in case of error
         prev_name = super().rename(new_name)
         project_path = pathlib.Path(project.manager.current.path)
-        disk_regex = re.compile(
-            f'{prev_name}_'                               # vm name
+        disk_regex = re.compile((
+            '{prev_name}_'                                # vm name
             '(?P<disk>[a-z0-9]+)'                         # disk
             '.cow'                                        # extension
             r'(?P<bak_suffix>\.(?:bak|back)-[0-9\-_]+)?'  # backup suffix
             '$'                                           # end
-        )
-        new_name_repl = fr'{new_name}_\g<disk>.cow\g<bak_suffix>'
+        ).format(prev_name=prev_name))
+        new_name_repl = r'{new_name}_\g<disk>.cow\g<bak_suffix>'.format(new_name=new_name)
         for path in project_path.iterdir():
             if path.is_file() and disk_regex.match(path.name):
                 new_disk_name = disk_regex.sub(new_name_repl, path.name)
@@ -913,7 +930,7 @@ class VirtualMachine(bricks.Brick):
     def update_usbdevlist(self, dev):
         self.logger.debug(update_usb, old=self.config['usbdevlist'], new=dev)
         for usb_dev in set(dev) - set(self.config['usbdevlist']):
-            self.send(f'usb_add host:{usb_dev.id}\n')
+            self.send('usb_add host:{usb_dev.id}\n'.format(usb_dev=usb_dev))
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 
@@ -977,7 +994,8 @@ class VirtualMachine(bricks.Brick):
 
         if self.config["usbmode"]:
             for usb_dev in self.config["usbdevlist"]:
-                res.extend(['-usbdevice', f'host:{usb_dev.id}'])
+                res.extend(['-usbdevice',
+                            'host:{usb_dev.id}'.format(usb_dev=usb_dev)])
 
         res.extend(["-name", self.name])
         if not self.plugs and not self.socks:
