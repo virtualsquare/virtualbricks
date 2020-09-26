@@ -62,9 +62,6 @@ search_usb = log.Event('Searching USB devices')
 
 class UsbDevice:
 
-    id: str
-    description: str
-
     @classmethod
     def parse_line(cls, line):
         """
@@ -383,7 +380,7 @@ class Image:
             '[Image:{self.name}]\n'
             'path={self.path}\n'
             'description={description}\n\n'
-        ).format(self=self, description=description)
+        ).format(self=self, description=description))
 
     def __format__(self, format_string):
         if format_string in ("n", ""):
