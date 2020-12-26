@@ -918,8 +918,16 @@ class VirtualMachine(bricks.Brick):
             return bricks.Brick.poweroff(self, kill)
 
     def get_parameters(self):
+        try:
+            command = self.prog()
+        except FileNotFoundError:
+            if self.config["argv0"]:
+                command = self.config['argv0']
+            else:
+                command = self.default_arg0
+
         ram = self.config["ram"]
-        txt = [_("command:") + " %s, ram: %s" % (self.prog(), ram)]
+        txt = [_("command:") + " %s, ram: %s" % (command, ram)]
         for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
             txt.append("eth%d: %s" % (i, _get_nick(link)))
         return ", ".join(txt)
@@ -927,7 +935,7 @@ class VirtualMachine(bricks.Brick):
     def update_usbdevlist(self, dev):
         self.logger.debug(update_usb, old=self.config['usbdevlist'], new=dev)
         for usb_dev in set(dev) - set(self.config['usbdevlist']):
-            self.send('usb_add host:{usb_dev.id}\n'.format(usb_dev=usb_dev))
+            self.send(b'usb_add host:%s\n' % (usb_dev.id,))
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 
