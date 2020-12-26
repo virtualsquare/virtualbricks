@@ -24,13 +24,6 @@ variables:
         paths:
             - dist/*
 
-# Debian 9, stretch, oldstable
-debian-9:
-    <<: *build-deb
-    image: debian:stretch
-    variables:
-        DISTRIBUTION: stretch
-
 # Debian 10, buster, stable
 debian-10:
     <<: *build-deb
@@ -52,20 +45,6 @@ debian-sid:
     variables:
         DISTRIBUTION: sid
 
-# Ubuntu 14.04 LTS, trusty
-ubuntu-14.04:
-    <<: *build-deb
-    image: ubuntu:trusty
-    variables:
-        DISTRIBUTION: trusty
-
-# Ubuntu 16.04 LTS, xenial
-ubuntu-16.04:
-    <<: *build-deb
-    image: ubuntu:xenial
-    variables:
-        DISTRIBUTION: xenial
-
 # Ubuntu 18.04 LTS, bionic
 ubuntu-18.04:
     <<: *build-deb
@@ -79,3 +58,10 @@ ubuntu-20.04:
     image: ubuntu:focal
     variables:
         DISTRIBUTION: focal
+
+# Ubuntu 20.10 groovy
+ubuntu-20.10:
+    <<: *build-deb
+    image: ubuntu:groovy
+    variables:
+        DISTRIBUTION: groovy
