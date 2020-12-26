@@ -59,28 +59,39 @@ class IBrick(Interface):
                      C{twisted.internet.interfaces.IProcessTransport""")
 
     def get_type():
-        """Return the type of brick."""
+        """
+        Return the type of brick.
+        """
 
     def poweron():
-        """Start the brick.
+        """
+        Start the brick.
 
-        Return a deferred that fires when the brick is started."""
+        Return a deferred that fires when the brick is started.
+        """
 
     def poweroff():
-        """Stop the brick.
+        """
+        Stop the brick.
 
-        Return a deferred that fires when the brick is stopped."""
+        Return a deferred that fires when the brick is stopped.
+        """
 
     def get_parameters():
-        """Actually used only in the main tree to show the list of the
-        parameters"""
+        """
+        Used only in the main tree to show the list of the parameters.
+        """
         # XXX: remove this method
 
     def configure(attrlist):
-        """Configure the brick"""
+        """
+        Configure the brick.
+        """
 
     def __eq__(other):
-        """Compare two bricks"""
+        """
+        Compare two bricks.
+        """
         # XXX: maybe should use is keyword?
 
     # to be controlled
@@ -128,5 +139,5 @@ class IProcess(Interface):
     def write(data):
         """Send data to the stdin of the process.
 
-        @type data: C{str}
+        @type data: C{bytes}
         """
