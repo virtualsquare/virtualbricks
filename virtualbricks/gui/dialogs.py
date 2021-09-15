@@ -1538,6 +1538,8 @@ class CreateImageDialog(_Dialog):
         if not name:
             raise ValueError("empty name")
         folder = self.w.folderFileChooserButton.get_filename()
+        if folder is None:
+            raise ValueError("folder not chosen")
         fileformat = self._get_fileformat()
         pathname = "{folder}/{name}.{fileformat}".format(folder=folder, name=name, fileformat=fileformat)
         size = self._get_size()
@@ -1575,10 +1577,14 @@ class CreateImageDialog(_Dialog):
         self.w.createButton.set_sensitive(enable)
 
     def create_image(self, args):
+
+        def return_name_pathname(stdout):
+            return args.name, args.pathname
+
         done_deferred = qemu_img([
             'create', '-f', args.fileformat, args.pathname, args.size
         ])
-        done_deferred.addCallback((lambda stdout: args.name, args.pathname))
+        done_deferred.addCallback(return_name_pathname)
         logger.log_failure(done_deferred, img_create_err)
         return done_deferred
 
