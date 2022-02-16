@@ -40,7 +40,7 @@ Pietrofrancesco Apollonio
 .. image:: {static}/images/pietrofrancesco_apollonio.jpeg
    :align: right
    :alt: Picture of Pietrofrancesco Apollonio.
-   :class: portrait
+   :class: right
    :height: 800
    :width: 800
    :scale: 25%
