@@ -1,10 +1,10 @@
-=======
-Authors
-=======
+======
+Autori
+======
 
 :date: 2021-11-17
 :slug: authors
-:lang: en
+:lang: it
 :page-order: 2
 
 .. _carlo-caini:
