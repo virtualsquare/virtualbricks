@@ -25,7 +25,7 @@ LINKS = (
 SOCIAL = (
     ('Carlo Caini', '/pages/authors.html#carlo-caini'),
     ('Daniele Lacamera', '/pages/authors.html#daniele-lacamera'),
-    ('Francesco Apollonio', '/pages/authors.html#francesco-apollonio'),
+    ('Pietrofrancesco Apollonio', '/pages/authors.html#pietrofrancesco-apollonio'),
     ('Marco Giusti', '/pages/authors.html#marco-giusti'),
 )
 
