@@ -7,10 +7,16 @@ Autori
 :lang: it
 :page-order: 2
 
-.. _carlo-caini:
 
 Carlo Caini
 ===========
+
+.. image:: {static}/images/carlo_caini.jpg
+   :alt: Picture of Prof. Carlo Caini.
+   :class: left
+   :width: 831
+   :height: 973
+   :scale: 20%
 
 Carlo Caini received the Master degree in Electrical Engineering “summa
 cum laude” from the University of Bologna, in 1986. Since 1990 he has
@@ -31,20 +37,47 @@ software components for these environments.
 
 .. __: https://www.unibo.it/it/didattica/insegnamenti/insegnamento/2021/401933
 
+
 Daniele Lacamera
 ================
 
-TODO
+.. image:: {static}/images/daniele_lacamera.jpg
+   :alt: Picture of Daniele Lacamera.
+   :class: right
+   :width: 600
+   :height: 600
+   :scale: 25%
+
+Aliquid quasi alias quam qui et sunt minima minima. At dolorum quam iure
+numquam qui tempore et explicabo. Ut repellendus aut non.
+
+Eos sunt optio ut ad vero. Et omnis quia nobis quasi reprehenderit
+architecto. Modi omnis nesciunt quia consectetur provident. Iure
+inventore voluptas ratione magnam repellendus. Earum voluptatibus
+dolorem fugiat modi ad asperiores. Voluptatem tempore eveniet neque nam.
+
+Magnam est perspiciatis cumque ducimus. Numquam officiis facilis odio.
+Qui adipisci voluptatem ipsam ut enim neque eum aut. Cum magnam dolorum
+iste commodi. Deserunt qui omnis nulla repellat ad nesciunt qui id.
+
+Maiores totam vitae minima voluptatum. Aliquid vel amet nulla impedit
+eius laboriosam omnis itaque. Explicabo delectus numquam laboriosam
+voluptatem. Et sunt iste aperiam qui iure.
+
+Ex et tempore minima. Et dolore aut natus aut aliquid. Quia deleniti
+reiciendis doloremque est non sed aut. Ipsa velit dolore iste fuga nulla
+tempora veritatis. Et culpa accusantium laudantium impedit adipisci
+voluptatem hic rerum.
+
 
 Pietrofrancesco Apollonio
 =========================
 
 .. image:: {static}/images/pietrofrancesco_apollonio.jpeg
-   :align: right
    :alt: Picture of Pietrofrancesco Apollonio.
-   :class: right
-   :height: 800
+   :class: left
    :width: 800
+   :height: 800
    :scale: 25%
 
 Attualmente lavoro come Senior Tech Lead nel settore prop tech,
@@ -112,7 +145,38 @@ riguarda la parte di simulazione dell'hardware, programmazione a basso
 livello in assembler ARM, realizzazione dei moduli del kernel Linux e
 realizzazione di librerie per realizzare lo strato software.
 
+
 Marco Giusti
 ============
 
-Some guy.
+.. image:: {static}/images/marco_giusti.png
+   :alt: Picture of Marco Giusti.
+   :class: right
+   :width: 860
+   :height: 931
+   :scale: 25%
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque id
+lacinia lectus. Phasellus bibendum vel lacus et pharetra. Pellentesque
+habitant morbi tristique senectus et netus et malesuada fames ac turpis
+egestas. Nam in urna ex. Ut erat nisl, commodo eget venenatis nec,
+cursus nec odio. Vestibulum pellentesque massa quis ipsum dictum
+vulputate vel id risus. Ut aliquet bibendum diam ut efficitur. Aenean et
+velit commodo, laoreet elit facilisis, pellentesque libero. Ut pulvinar
+neque non odio congue elementum. Donec a mauris finibus, tincidunt eros
+sed, ultrices urna. Fusce ut est luctus, ultricies ligula in, interdum
+quam. Sed sit amet ligula nec sem sagittis faucibus. Morbi a sodales
+dui. Nunc vel urna a neque blandit tristique non eu felis. Nulla
+sagittis, nisl id viverra vehicula, est neque lobortis sem, et sodales
+odio orci at neque.
+
+Donec vehicula lacinia feugiat. In quis elit tempor, fermentum odio non,
+vulputate dolor. Nunc facilisis suscipit purus eu varius. Nunc blandit
+justo sed velit mattis, non tincidunt nisl lacinia. Aenean at justo
+interdum, consectetur sapien in, imperdiet ipsum. Fusce ornare efficitur
+turpis, vitae ullamcorper tellus malesuada eu. Maecenas sit amet arcu
+convallis, rhoncus est non, accumsan est. Donec consequat hendrerit
+lectus, id dictum nunc ullamcorper vel. Donec fringilla commodo leo, sed
+aliquet lorem aliquam a. Cras auctor sit amet velit ac sodales.
+Phasellus et neque pharetra, ullamcorper massa et, laoreet tellus. Proin
+scelerisque vel dui non sodales. Integer vel auctor tortor. 

@@ -23,10 +23,10 @@ LINKS = (
 
 # Social widget
 SOCIAL = (
-    ('Carlo Caini', '/virtualbricks/pages/authors.html#carlo-caini'),
-    ('Daniele Lacamera', '/virtualbricks/pages/authors.html#daniele-lacamera'),
-    ('Pietrofrancesco Apollonio', '/virtualbricks/pages/authors.html#pietrofrancesco-apollonio'),
-    ('Marco Giusti', '/virtualbricks/pages/authors.html#marco-giusti'),
+    ('Carlo Caini', '/pages/authors.html#carlo-caini'),
+    ('Daniele Lacamera', '/pages/authors.html#daniele-lacamera'),
+    ('Pietrofrancesco Apollonio', '/pages/authors.html#pietrofrancesco-apollonio'),
+    ('Marco Giusti', '/pages/authors.html#marco-giusti'),
 )
 
 DEFAULT_PAGINATION = 10

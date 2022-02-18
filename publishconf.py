@@ -16,7 +16,10 @@ CATEGORY_FEED_ATOM = 'feeds/{slug}.atom.xml'
 
 DELETE_OUTPUT_DIRECTORY = True
 
-# Following items are often useful when publishing
-
-#DISQUS_SITENAME = ""
-#GOOGLE_ANALYTICS = ""
+# Social widget
+SOCIAL = (
+    ('Carlo Caini', '/virtualbricks/pages/authors.html#carlo-caini'),
+    ('Daniele Lacamera', '/virtualbricks/pages/authors.html#daniele-lacamera'),
+    ('Pietrofrancesco Apollonio', '/virtualbricks/pages/authors.html#pietrofrancesco-apollonio'),
+    ('Marco Giusti', '/virtualbricks/pages/authors.html#marco-giusti'),
+)
