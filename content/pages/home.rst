@@ -1,12 +1,13 @@
 Virtualbricks
-##############
+#############
 
 :date: 2021-11-18 07:27
 :page-order: 1
 :save_as: index.html
-:slug: virtualbricks
+:slug: home
 :summary: Virtualbricks home page
-:url:
+:lang: en
+:url: index.html
 
 Virtualbricks is a virtualization solution for GNU/Linux platforms. In
 brief, Virtualbricks is a frontend for the management of Qemu/KVM
