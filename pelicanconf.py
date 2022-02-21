@@ -1,3 +1,9 @@
+from os.path import abspath, dirname, join as joinpath
+
+
+curdir = dirname(abspath(__file__))
+
+
 AUTHOR = 'Virtualbricks Team'
 SITENAME = 'Virtualbricks'
 SITEURL = ''
@@ -38,3 +44,9 @@ INDEX_SAVE_AS = "news.html"
 
 # Ordering content
 PAGE_ORDER_BY = 'page-order'
+
+# Theme
+THEME = "notmyidea"
+THEME_TEMPLATES_OVERRIDES = [
+    joinpath(curdir, "themes/notmyidea"),
+]
