@@ -1694,8 +1694,8 @@ class OpenProjectDialog(_ProjectListDialog):
         return _('Virtualbricks - Open project')
 
     def do_action(self, name):
-        self.gui.on_open(name)
-        self.gui.set_title()
+        self._gui.on_open(name)
+        self._gui.set_title()
         self._get_window().destroy()
 
 
