@@ -2291,7 +2291,7 @@ class _HumbleImport:
         return defer.DeferredList(lst)
 
     def rebase(self, backing_file, cow, run=utils.getProcessOutputAndValue):
-        args = ["rebase", "-u", "-b", backing_file, cow]
+        args = ["rebase", "-u", "-b", backing_file, "-F", "qcow2", cow]
         d = run("qemu-img", args, os.environ)
         return d.addCallback(complain_on_error)
 
