@@ -44,22 +44,22 @@ debian-sid:
     <<: *build-deb
     image: debian:sid
 
-# Ubuntu 16.04 LTS, trusty
+# Ubuntu 16.04 LTS, xenial
 ubuntu-16.04:
     <<: *build-deb
-    image: ubuntu:trusty
+    image: ubuntu:16.04
 
 # Ubuntu 18.04 LTS, bionic
 ubuntu-18.04:
     <<: *build-deb
-    image: ubuntu:bionic
-
-# Ubuntu 19.10, eoan
-ubuntu-19.10:
-    <<: *build-deb
-    image: ubuntu:eoan
+    image: ubuntu:18.04
 
 # Ubuntu 20.04 LTS, focal
 ubuntu-20.04:
     <<: *build-deb
-    image: ubuntu:focal
+    image: ubuntu:20.04
+
+# Ubuntu 22.04 LTS, jammy
+ubuntu-22.04:
+    <<: *build-deb
+    image: ubuntu:22.04
