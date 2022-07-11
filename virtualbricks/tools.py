@@ -243,8 +243,7 @@ def get_backing_file(imagefile):
                 backing_b = fp.read(size)
         else:
             raise NotCowFileError()
-    # I hope the file encoding is ASCII, otherwise I don't know what to do
-    return backing_b.decode('ascii')
+    return os.fsdecode(backing_b)
 
 
 def fmtsize(size):

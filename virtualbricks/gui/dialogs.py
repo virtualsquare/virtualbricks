@@ -1538,6 +1538,8 @@ class CreateImageDialog(_Dialog):
         if not name:
             raise ValueError("empty name")
         folder = self.w.folderFileChooserButton.get_filename()
+        if folder is None:
+            raise ValueError("folder not chosen")
         fileformat = self._get_fileformat()
         pathname = f"{folder}/{name}.{fileformat}"
         size = self._get_size()
