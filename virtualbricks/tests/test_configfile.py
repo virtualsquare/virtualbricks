@@ -425,8 +425,8 @@ class TestLoadOldConfig(unittest.TestCase):
         fp = filepath.FilePath(self.mktemp())
         self.image = self.mktemp()
         filepath.FilePath(self.image).touch()
-        filecontent = OLD_CONFIG_FILE.replace(
-            "@@IMAGEPATH@@", self.image, 1).encode('ascii')
+        filecontent = os.fsencode(OLD_CONFIG_FILE.replace(
+            "@@IMAGEPATH@@", self.image, 1))
         fp.setContent(filecontent)
         configfile.restore(self.factory, fp)
 

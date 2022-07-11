@@ -23,3 +23,6 @@ __pycache__/
 /debian/debhelper-build-stamp
 /debian/usr/
 /debian/virtualbricks.prerm.debhelper
+
+# Vim swap files
+*.sw?

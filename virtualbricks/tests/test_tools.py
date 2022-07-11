@@ -36,7 +36,7 @@ class MockLock(object):
 
 
 BACKING_FILENAME = '/hello/backingfile'
-BACKING_FILENAME_B = BACKING_FILENAME.encode('ascii')
+BACKING_FILENAME_B = os.fsencode(BACKING_FILENAME)
 COW_HEADER = b"OOOM\x00\x00\x00\x02" + BACKING_FILENAME_B + b"\x00" * 1006
 QCOW_HEADER = b"QFI\xfb\x00\x00\x00\x01" + struct.pack(">Q", 20) + \
         struct.pack(">I", len(BACKING_FILENAME_B)) + BACKING_FILENAME_B

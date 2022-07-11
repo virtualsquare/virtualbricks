@@ -148,13 +148,13 @@ class VBProtocol(Protocol):
 
     # _is_first = False
     delimiter = b"\n"
-    prompt = "virtualbricks> "
+    prompt = b"virtualbricks> "
     intro = (
-        "Virtualbricks, version {version}\n"
-        "Copyright (C) 2019 Virtualbricks team\n"
-        "This is free software; see the source code for copying conditions.\n"
-        "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
-        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n"
+        b"Virtualbricks, version %s\n"
+        b"Copyright (C) 2022 Virtualbricks team\n"
+        b"This is free software; see the source code for copying conditions.\n"
+        b"There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
+        b"FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n"
     )
 
     def __init__(self, factory):
@@ -170,14 +170,14 @@ class VBProtocol(Protocol):
         #     self._is_first = True
         #     intro = self.intro.format(version=virtualbricks.version.short())
         #     self.transport.write(intro)
-        intro = self.intro.format(version=__version__)
-        self.transport.write(intro.encode())
-        self.transport.write(self.prompt.encode())
+        intro = self.intro % (__version__.encode('ascii'),)
+        self.transport.write(intro)
+        self.transport.write(self.prompt)
 
     def lineReceived(self, line):
         Protocol.lineReceived(self, line)
         if line != "python":  # :-(
-            self.transport.write(self.prompt.encode())
+            self.transport.write(self.prompt)
 
     def brick_action(self, obj, cmd):
         """brick action dispatcher"""
