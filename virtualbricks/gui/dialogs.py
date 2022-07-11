@@ -1694,8 +1694,8 @@ class OpenProjectDialog(_ProjectListDialog):
         return _('Virtualbricks - Open project')
 
     def do_action(self, name):
-        self.gui.on_open(name)
-        self.gui.set_title()
+        self._gui.on_open(name)
+        self._gui.set_title()
         self._get_window().destroy()
 
 
@@ -2291,7 +2291,7 @@ class _HumbleImport:
         return defer.DeferredList(lst)
 
     def rebase(self, backing_file, cow, run=utils.getProcessOutputAndValue):
-        args = ["rebase", "-u", "-b", backing_file, cow]
+        args = ["rebase", "-u", "-b", backing_file, "-F", "qcow2", cow]
         d = run("qemu-img", args, os.environ)
         return d.addCallback(complain_on_error)
 
