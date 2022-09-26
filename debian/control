@@ -8,7 +8,7 @@ Standards-Version: 4.3.0
 
 Package: virtualbricks
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, python3-gi, python3-pygraphviz, python3-pil, python3-zope.interface, vde2, qemu-system, qemu-utils, xdg-utils, python3-twisted, bsdtar, xterm
+Depends: ${misc:Depends}, ${python3:Depends}, python3-gi, python3-pygraphviz, python3-pil, python3-zope.interface, vde2, qemu-system, qemu-utils, xdg-utils, python3-twisted, libarchive-tools, xterm
 Recommends: gksu, vde2-cryptcab
 Homepage: https://github.com/virtualsquare/virtualbricks
 Description: is a Virtualization suite for qemu/kvm VMs and vde2 networks
