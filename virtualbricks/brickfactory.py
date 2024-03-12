@@ -589,7 +589,7 @@ class Application:
         locale.setlocale(locale.LC_ALL, '')
         import gettext
 
-        gettext.install('virtualbricks', codeset='utf8', names=["gettext"])
+        gettext.install('virtualbricks', names=["gettext"])
 
     def install_settings(self):
         settings.load()

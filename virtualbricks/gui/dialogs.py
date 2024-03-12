@@ -1580,7 +1580,7 @@ class CreateImageDialog(_Dialog):
         done_deferred = qemu_img([
             'create', '-f', args.fileformat, args.pathname, args.size
         ])
-        done_deferred.addCallback((lambda stdout: args.name, args.pathname))
+        done_deferred.addCallback(lambda stdout: (args.name, args.pathname))
         logger.log_failure(done_deferred, img_create_err)
         return done_deferred
 
