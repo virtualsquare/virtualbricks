@@ -479,10 +479,10 @@ class Disk:
 
         assert self.image is not None
 
-        logger.info(new_cow, backup_file=self.image.path)
+        logger.info(new_cow, backing_file=self.image.path)
         args = [
-            'create', '-b', self.image.path, '-f', settings.get('cowfmt'),
-            filename
+            'create', '-f', settings.get('cowfmt'), '-b', self.image.path,
+            "-F", settings.get('cowfmt'), filename
         ]
         deferred = qemu_img(args)
         deferred.addCallback(discard_first_arg(sync))
