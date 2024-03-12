@@ -24,19 +24,33 @@ variables:
         paths:
             - dist/*
 
-# Debian 10, buster, stable
+# Debian 10, buster, old-stable
 debian-10:
     <<: *build-deb
     image: debian:buster
     variables:
       DISTRIBUTION: buster
 
-# Debian 11, bullseye, testing
+# Debian 11, bullseye, old-stable
 debian-11:
     <<: *build-deb
     image: debian:bullseye
     variables:
       DISTRIBUTION: bullseye
+
+# Debian 12, bookworm, stable
+debian-12:
+    <<: *build-deb
+    image: debian:bookworm
+    variables:
+      DISTRIBUTION: bookworm
+
+# Debian 13, trixie, testing
+debian-13:
+    <<: *build-deb
+    image: debian:trixie
+    variables:
+      DISTRIBUTION: trixie
 
 # Debian unstable, sid
 debian-sid:
