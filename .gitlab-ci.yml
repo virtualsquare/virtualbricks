@@ -7,6 +7,7 @@ variables:
 
 .build-template: &build-deb
     stage: build
+    image: debian:$DISTRIBUTION
     before_script:
         - apt-get update
         - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools imagemagick
@@ -27,55 +28,47 @@ variables:
 # Debian 10, buster, old-stable
 debian-10:
     <<: *build-deb
-    image: debian:buster
     variables:
       DISTRIBUTION: buster
 
 # Debian 11, bullseye, old-stable
 debian-11:
     <<: *build-deb
-    image: debian:bullseye
     variables:
       DISTRIBUTION: bullseye
 
 # Debian 12, bookworm, stable
 debian-12:
     <<: *build-deb
-    image: debian:bookworm
     variables:
       DISTRIBUTION: bookworm
 
 # Debian 13, trixie, testing
 debian-13:
     <<: *build-deb
-    image: debian:trixie
     variables:
       DISTRIBUTION: trixie
 
 # Debian unstable, sid
 debian-sid:
     <<: *build-deb
-    image: debian:sid
     variables:
       DISTRIBUTION: sid
-
-# Ubuntu 18.04 LTS, bionic
-ubuntu-18.04:
-    <<: *build-deb
-    image: ubuntu:18.04
-    variables:
-      DISTRIBUTION: bionic
 
 # Ubuntu 20.04 LTS, focal
 ubuntu-20.04:
     <<: *build-deb
-    image: ubuntu:20.04
     variables:
       DISTRIBUTION: focal
 
 # Ubuntu 22.04 LTS, jammy
 ubuntu-22.04:
     <<: *build-deb
-    image: ubuntu:22.04
     variables:
       DISTRIBUTION: jammy
+
+# Ubuntu 24.04 LTS, noble
+ubuntu-22.04:
+    <<: *build-deb
+    variables:
+      DISTRIBUTION: noble
