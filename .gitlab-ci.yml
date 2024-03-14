@@ -62,20 +62,20 @@ debian-sid:
 # Ubuntu 20.04 LTS, focal
 ubuntu-20.04:
     <<: *build-deb
-    image: debian:focal
+    image: ubuntu:focal
     variables:
       DISTRIBUTION: focal
 
 # Ubuntu 22.04 LTS, jammy
 ubuntu-22.04:
     <<: *build-deb
-    image: debian:jammy
+    image: ubuntu:jammy
     variables:
       DISTRIBUTION: jammy
 
 # Ubuntu 24.04 LTS, noble
 ubuntu-24.04:
     <<: *build-deb
-    image: debian:noble
+    image: ubuntu:noble
     variables:
       DISTRIBUTION: noble
