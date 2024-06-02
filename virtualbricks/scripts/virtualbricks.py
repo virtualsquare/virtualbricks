@@ -16,7 +16,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from __future__ import absolute_import
-from virtualbricks import app
 
 
 def make_application(config):
@@ -27,6 +26,9 @@ def make_application(config):
 def run():
     import gi
     gi.require_version("Gtk", "3.0")
+    gi.require_version("Gdk", "3.0")
     from twisted.internet import gtk3reactor
+    from virtualbricks import app
+
     gtk3reactor.install()
     app.run_app(app.LockedApplication(make_application), app.Options())
