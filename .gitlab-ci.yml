@@ -9,6 +9,13 @@ variables:
     stage: build
     before_script:
         - apt-get update
+        # install download-secure-file to be able to access the secure files in .secure_files/
+        - apt-get install -y curl
+        - curl --silent https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
+        # Import the GnuPG key necessary to sign the changes file.
+        - gpg --import .secure_files/public.key
+        - gpg --import .secure_files/private.key
+        # install the build dependencies
         - apt-get install -y build-essential debhelper devscripts dh-python python3-all python3-setuptools imagemagick
         - export VB_VERSION="$(python3 setup.py -V)"
         - export "VB_DEB_VERSION=${VB_VERSION}-0~${DISTRIBUTION}1"
@@ -18,20 +25,20 @@ variables:
     script:
         - debchange --newversion "$VB_DEB_VERSION" "New upstream version"
         - debchange --release --distribution "${DISTRIBUTION}" ""
-        - dpkg-buildpackage -us -uc
+        - dpkg-buildpackage -us
         - cp ../virtualbricks_"$VB_DEB_VERSION"* ../virtualbricks/dist/
     artifacts:
         paths:
             - dist/*
 
-# Debian 10, buster, old-stable
+# Debian 10, buster, oldoldstable
 debian-10:
     <<: *build-deb
     image: debian:buster
     variables:
       DISTRIBUTION: buster
 
-# Debian 11, bullseye, old-stable
+# Debian 11, bullseye, oldstable
 debian-11:
     <<: *build-deb
     image: debian:bullseye
