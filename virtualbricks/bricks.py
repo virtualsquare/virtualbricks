@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_bricks -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 import os
 import collections
 import functools
+import locale
 import re
 
 from twisted.internet import protocol, reactor, error, defer
@@ -29,7 +30,7 @@ from virtualbricks import base, errors, settings, log, interfaces
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
                                 SpinInt, Float, SpinFloat, Boolean, Object,
                                 ListOf)
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 
 __all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
@@ -38,18 +39,21 @@ __all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
 if False:  # pyflakes
     _ = str
 
+
+system_encoding = locale.getpreferredencoding(do_setlocale=True)
+
 logger = log.Logger(__name__)
 process_started = log.Event("Process started")
-process_terminated = log.Event("Process terminated. {status()}")
+process_terminated = log.Event("Process terminated. {status}")
 process_done = log.Event("Process terminated")
 event_unavailable = log.Event("Warning. The Event {name} attached to Brick "
                               "{brick} is not available. Skipping execution.")
 shutdown_brick = log.Event("Shutting down {name} (pid: {pid})")
-start_brick = log.Event("Starting: {args()}")
-open_console = log.Event("Opening console for {name}\n%{args()}\n")
+start_brick = log.Event("Starting: {args}")
+open_console = log.Event("Opening console for {name}\n%{args}\n")
 console_done = log.Event("Console terminated\n{status}")
 console_terminated = log.Event("Console terminated\n{status}\nProcess stdout:"
-                               "\n{out()}\nProcess stderr:\n{err()}\n")
+                               "\n{out}\nProcess stderr:\n{err}\n")
 invalid_ack = log.Event("ACK received but no command sent.")
 
 
@@ -82,11 +86,11 @@ class Process(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         if status.check(error.ProcessTerminated):
-            self.logger.error(process_terminated,
-                              status=lambda: " ".join(status.value.args))
+            status = " ".join(status.value.args)
+            self.logger.error(process_terminated, status=status)
         else:
             assert status.check(error.ProcessDone)
-            self.logger.info(process_terminated, status=lambda: "")
+            self.logger.info(process_terminated, status="Done")
         self.brick.process_ended(self, status)
 
     def outReceived(self, data):
@@ -133,9 +137,9 @@ class VDEProcessProtocol(Process):
     @cvar delimiter: The line-ending delimiter to use.
     """
 
-    _buffer = ""
-    delimiter = u"\n"
-    prompt = re.compile(r"^vde(?:\[[^]]*\]:|\$) ", re.MULTILINE)
+    _buffer = b""
+    delimiter = b"\n"
+    prompt = re.compile(rb"^vde(?:\[[^]]*\]:|\$) ", re.MULTILINE)
     PIPELINE_SIZE = 1
 
     def __init__(self, brick):
@@ -143,17 +147,18 @@ class VDEProcessProtocol(Process):
         self.queue = collections.deque()
 
 
-    def data_received(self, data):
+    def _data_received(self, data):
         """
-        Translates bytes into lines, and calls ack_received.
+        Translates bytes into lines, and calls _ack_received.
         """
-        
-        acks = self.prompt.split(self._buffer + data.decode("utf-8"))
+
+        assert isinstance(data, bytes)
+        acks = self.prompt.split(self._buffer + data)
         self._buffer = acks.pop(-1)
         for ack in acks:
-            self.ack_received(ack)
+            self._ack_received(ack)
 
-    def ack_received(self, ack):
+    def _ack_received(self, ack):
         self.logger.info(ack)
         try:
             self.queue.popleft()
@@ -164,23 +169,21 @@ class VDEProcessProtocol(Process):
             if len(self.queue):
                 self._send_command()
 
-    def send_command(self, cmd):
-        self.queue.append(cmd)
-        if 0 < len(self.queue) <= self.PIPELINE_SIZE:
-            self._send_command()
-
     def _send_command(self):
         cmd = self.queue[0]
         self.logger.info(cmd)
-        if cmd.decode("utf-8").endswith(self.delimiter):
+        if cmd.endswith(self.delimiter):
             return self.transport.write(cmd)
-        return self.transport.writeSequence((cmd, self.delimiter.encode("utf-8")))
+        else:
+            return self.transport.writeSequence((cmd, self.delimiter))
 
     def outReceived(self, data):
-        self.data_received(data)
+        self._data_received(data)
 
     def write(self, cmd):
-        self.send_command(cmd)
+        self.queue.append(cmd)
+        if 0 < len(self.queue) <= self.PIPELINE_SIZE:
+            self._send_command()
 
 
 class TermProtocol(protocol.ProcessProtocol):
@@ -202,17 +205,22 @@ class TermProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         if isinstance(status.value, error.ProcessTerminated):
-            self.logger.error(console_terminated, status=status.value,
-                              out=lambda: "".join(self.out),
-                              err=lambda: "".join(self.err))
+            self.logger.error(
+                console_terminated,
+                status=status.value,
+                out="".join(self.out),
+                err="".join(self.err)
+            )
         else:
             self.logger.info(console_done, status=status.value)
 
 
 class Config(_Config):
 
-    parameters = {"pon_vbevent": String(""),
-                  "poff_vbevent": String("")}
+    parameters = {
+        "pon_vbevent": String(""),
+        "poff_vbevent": String("")
+    }
 
 
 class Brick(base.Base):
@@ -344,7 +352,7 @@ class Brick(base.Base):
                     value = value()
                 else:
                     value = self.config.get(value)
-                if value is "*":
+                if value == "*":
                     res.append(switch)
                 elif value is not None and len(value) > 0:
                     if not switch.startswith("*"):
@@ -358,7 +366,7 @@ class Brick(base.Base):
 
         def start_process(value):
             prog, args = value
-            logger.info(start_brick, args=lambda: " ".join(args))
+            logger.info(start_brick, args=" ".join(args))
             # usePTY?
             if self.needsudo():
                 prog = settings.get("sudo")
@@ -414,14 +422,12 @@ class Brick(base.Base):
 
     def open_console(self):
         term = settings.get("term")
-        args = [term, "-e",
-                abspath_vde(self.term_command),
-                self.console()]
-        get_args = lambda: " ".join(args)
-        logger.info(open_console, name=self.name, args=get_args)
+        args = [term, "-e", abspath_vde(self.term_command), self.console()]
+        logger.info(open_console, name=self.name, args=" ".join(args))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)
 
     def send(self, data):
+        assert isinstance(data, bytes)
         if self.proc:
             self.proc.write(data)
 

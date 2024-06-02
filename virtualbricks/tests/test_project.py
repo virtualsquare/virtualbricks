@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import six
+import io
 import operator
 
 from twisted.trial import unittest
@@ -411,7 +411,7 @@ class PseudoOrderedDict(dict):
 class TestProjectEntry(unittest.TestCase):
 
     def setUp(self):
-        fp = six.StringIO(PROJECT)
+        fp = io.StringIO(PROJECT)
         self.entry = project.ProjectEntry.from_fileobj(fp)
 
     def test_get_images(self):
@@ -459,6 +459,6 @@ class TestProjectEntry(unittest.TestCase):
             ]),
         }
         links = [("link", "sender", "sw1", "rtl8139", "00:11:22:33:44:55")]
-        sio = six.StringIO()
+        sio = io.StringIO()
         project.ProjectEntry(sections, links).dump(sio)
         self.assertEquals(sio.getvalue(), PROJECT)

@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,8 +20,17 @@ from zope.interface import Interface, Attribute
 from virtualbricks.interfaces import registerAdapter
 
 
-__all__ = ["registerAdapter", "IMenu", "IJobMenu", "IConfigController",
-           "IState", "IControl", "IStateManager"]
+__all__ = [
+    'registerAdapter',
+    'IMenu',
+    'IJobMenu',
+    'IConfigController',
+    'IState',
+    'IControl',
+    'IStateManager',
+    'IWidgetBuilder',
+    'IWindow'
+]
 
 
 class IMenu(Interface):
@@ -117,3 +126,65 @@ class IBindingList(Interface):
     changed = Attribute("IEvent, emitted when an item is changed")
     added = Attribute("IEvent, emitted when an item is added")
     removed = Attribute("IEvent, emitted when an item is removed")
+
+
+class IWidgetGetter(Interface):
+
+    def __getattr__(name):
+        """
+        Return the widget with this name.
+
+        :type name: str
+        :rtype: Any
+        """
+
+
+class IWidgetBuilder(IWidgetGetter):
+
+    def get_object(name):
+        """
+        Gets the object named name.
+
+        :type name: str
+        :rtype: Any
+        """
+
+    def connect_signals(handler):
+        """
+        Connect signals specified by this builder to a name, handler
+        mapping.
+
+        :type handler: Any
+        :rtype: None
+        """
+
+
+class IWindow(Interface):
+
+    w = Attribute(
+        """
+        Object that implement IWidgetGetter protocol and returns the widgets
+        from the builder (Gtk.Builder) object defined for this window.
+        """
+    )
+
+    def show():
+        """
+        Show the window. If parent is specified, this window is marked as
+        transient for it.
+
+        :type parent: Optional[Gtk.Window]
+        :rtype: None
+        """
+
+
+class IDialog(IWindow):
+
+    def show(parent):
+        """
+        Show the dialog.
+
+        :param Gtk.Window parent: the parent for which this dialog is marked as
+            transient for.
+        :rtype: None
+        """

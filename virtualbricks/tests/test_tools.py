@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 import os
 import os.path
 import struct
-import six
 
 from virtualbricks import tools
 from virtualbricks.tests import unittest
@@ -36,13 +35,14 @@ class MockLock(object):
         pass
 
 
-HELLO = b"/hello/backingfile"
-COW_HEADER = b"OOOM\x00\x00\x00\x02" + HELLO + b"\x00" * 1006
+BACKING_FILENAME = '/hello/backingfile'
+BACKING_FILENAME_B = os.fsencode(BACKING_FILENAME)
+COW_HEADER = b"OOOM\x00\x00\x00\x02" + BACKING_FILENAME_B + b"\x00" * 1006
 QCOW_HEADER = b"QFI\xfb\x00\x00\x00\x01" + struct.pack(">Q", 20) + \
-        struct.pack(">I", len(HELLO)) + HELLO
+        struct.pack(">I", len(BACKING_FILENAME_B)) + BACKING_FILENAME_B
 QCOW_HEADER0 = b"QFI\xfb\x00\x00\x00\x01" + b"\x00" * 12
 QCOW_HEADER2 = b"QFI\xfb\x00\x00\x00\x02" + struct.pack(">Q", 20) + \
-        struct.pack(">I", len(HELLO)) + HELLO
+        struct.pack(">I", len(BACKING_FILENAME_B)) + BACKING_FILENAME_B
 UNKNOWN_HEADER = b"MOOO\x00\x00\x00\x02"
 
 
@@ -67,30 +67,31 @@ class TestTools(unittest.TestCase):
         except RuntimeError:
             self.assertFalse(os.path.isfile(filename))
 
-    def test_backing_file_from_cow(self):
-        sio = six.StringIO(COW_HEADER[8:])
-        backing_file = tools.get_backing_file_from_cow(sio)
-        self.assertEqual(backing_file, HELLO)
+    def _create_image(self, content):
+        filename = self.mktemp()
+        with open(filename, 'wb') as fp:
+            fp.write(content)
+        return filename
 
-    def test_backing_file_from_qcow0(self):
-        sio = six.StringIO(QCOW_HEADER0[8:])
-        backing_file = tools.get_backing_file_from_qcow(sio)
-        self.assertEqual(backing_file, "")
+    def test_backing_file_cow(self):
+        imagefile = self._create_image(COW_HEADER)
+        backing_file = tools.get_backing_file(imagefile)
+        self.assertEqual(backing_file, BACKING_FILENAME)
 
-    def test_backing_file_from_qcow(self):
-        sio = six.StringIO(QCOW_HEADER)
-        sio.seek(8)
-        backing_file = tools.get_backing_file_from_qcow(sio)
-        self.assertEqual(backing_file, HELLO)
+    def test_backing_file_qcow_no_filename(self):
+        imagefile = self._create_image(QCOW_HEADER0)
+        backing_file = tools.get_backing_file(imagefile)
+        self.assertEqual(backing_file, None)
 
-    def test_backing_file(self):
-        for header in COW_HEADER, QCOW_HEADER, QCOW_HEADER2:
-            sio = six.StringIO(header)
-            backing_file = tools.get_backing_file(sio)
-            self.assertEqual(backing_file, "/hello/backingfile")
+    def test_backing_file_qcow(self):
+        imagefile = self._create_image(QCOW_HEADER)
+        backing_file = tools.get_backing_file(imagefile)
+        self.assertEqual(backing_file, BACKING_FILENAME)
 
-        sio = six.StringIO(UNKNOWN_HEADER)
-        self.assertRaises(tools.UnknowTypeError, tools.get_backing_file, sio)
+    def test_backing_file_unknown_format(self):
+        imagefile = self._create_image(UNKNOWN_HEADER)
+        with self.assertRaises(tools.NotCowFileError):
+            tools.get_backing_file(imagefile)
 
     def test_fmtsize(self):
         """Basic fmtusage."""

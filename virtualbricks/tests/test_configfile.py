@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import six
+import io
 
 from twisted.python import log, filepath
 
@@ -217,7 +217,7 @@ class TestConfigFile(unittest.TestCase):
 class TestParser(unittest.TestCase):
 
     def test_iter(self):
-        sio = six.StringIO(CONFIG1)
+        sio = io.StringIO(CONFIG1)
         parser = _configparser.Parser(sio)
         itr = iter(parser)
         sec1 = next(itr)
@@ -243,7 +243,7 @@ class TestParser(unittest.TestCase):
         """
 
         line = "link|vm1-ng|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
-        parser = _configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(io.StringIO(line))
         expected = tuple(line.split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -251,14 +251,14 @@ class TestParser(unittest.TestCase):
         """Bricks' name must start with a letter."""
 
         line = "link|1-brick|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
-        parser = _configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(io.StringIO(line))
         self.assertEqual(list(parser), [])
 
     def test_hostonly_link(self):
         """Test a hostonly link."""
 
         line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55"
-        parser = _configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(io.StringIO(line))
         expected = tuple(line.split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -269,7 +269,7 @@ class TestParser(unittest.TestCase):
         """
 
         line = "link|vm|_hostonly|rtl8139|00:11:22:33:44:55\n"
-        parser = _configparser.Parser(six.StringIO(line))
+        parser = _configparser.Parser(io.StringIO(line))
         expected = tuple(line[:-1].split("|"))
         self.assertEqual(list(parser), [expected])
 
@@ -390,7 +390,7 @@ class TestParseOldConfig(unittest.TestCase):
     def setUp(self):
         self.image = self.mktemp()
         content = OLD_CONFIG_FILE.replace("@@IMAGEPATH@@", self.image, 1)
-        self.fp = six.StringIO(content)
+        self.fp = io.StringIO(content)
 
     def test_sections(self):
         parser = _configparser.Parser(self.fp)
@@ -425,8 +425,8 @@ class TestLoadOldConfig(unittest.TestCase):
         fp = filepath.FilePath(self.mktemp())
         self.image = self.mktemp()
         filepath.FilePath(self.image).touch()
-        filecontent = OLD_CONFIG_FILE.replace(
-            "@@IMAGEPATH@@", self.image, 1).encode('ascii')
+        filecontent = os.fsencode(OLD_CONFIG_FILE.replace(
+            "@@IMAGEPATH@@", self.image, 1))
         fp.setContent(filecontent)
         configfile.restore(self.factory, fp)
 

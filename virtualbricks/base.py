@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_base -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,62 +22,6 @@ from twisted.python import reflect
 
 from virtualbricks import log, observable
 
-import six
-if six.PY3:
-    def iterFixItem(self):
-        super(Config, self).__init__((n, v.default) for n, v
-                                     in self.parameters.items())
-    def iterFixKeys(self,write):
-        for key in sorted(self.keys()):
-            write("%s=%s" % (key, self[key]))
-    def iterFixItemAttrs(self,attrs):
-        for name, value in attrs.items():
-            if value != self.config[name]:
-                logger.info(attribute_set, attr=name, brick=self, value=value)
-                self.config[name] = value
-                setter = getattr(self, "cbset_" + name, None)
-                if setter:
-                    setter(value)
-        self.notify_changed()
-    def iterFixSave(self,fileobj):
-        opt_tmp = "{0}={1}"
-        l = []
-        for name, param in sorted(self.config.parameters.items()):
-            if self.config[name] != param.default:
-                value = param.to_string_brick(self.config[name], self)
-                l.append(opt_tmp.format(name, value))
-        if l:
-            l.append("")
-        tmp = "[{0}:{1}]\n{2}\n"
-        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
-
-else:
-    def iterFixItem(self):
-        super(Config, self).__init__((n, v.default) for n, v
-                                     in self.parameters.iteritems())
-    def iterFixKeys(self,write):
-        for key in sorted(self.iterkeys()):
-            write("%s=%s" % (key, self[key]))
-    def iterFixItemAttrs(self,attrs):
-        for name, value in attrs.iteritems():
-            if value != self.config[name]:
-                logger.info(attribute_set, attr=name, brick=self, value=value)
-                self.config[name] = value
-                setter = getattr(self, "cbset_" + name, None)
-                if setter:
-                    setter(value)
-        self.notify_changed()
-    def iterFixSave(self,fileobj):
-        opt_tmp = "{0}={1}"
-        l = []
-        for name, param in sorted(self.config.parameters.iteritems()):
-            if self.config[name] != param.default:
-                value = param.to_string_brick(self.config[name], self)
-                l.append(opt_tmp.format(name, value))
-        if l:
-            l.append("")
-        tmp = "[{0}:{1}]\n{2}\n"
-        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
 if False:  # pyflakes
     _ = str
@@ -100,7 +44,7 @@ class Config(dict):
         parameters = {}
         reflect.accumulateClassDict(self.__class__, "parameters", parameters)
         self.parameters = parameters
-        iterFixItem(self)
+        super().__init__((n, v.default) for n, v in self.parameters.items())
 
     # dict interface
 
@@ -125,7 +69,8 @@ class Config(dict):
         return self.parameters[name].to_string(self[name])
 
     def dump(self, write):
-        iterFixKeys(self,write)
+        for key, value in sorted(self.items()):
+            write("%s=%s" % (key, value))
 
 
 class Parameter:
@@ -229,10 +174,10 @@ class ListOf(Parameter):
 
     def from_string(self, in_string):
         strings = eval(in_string, {}, {})
-        return map(self.element_type.from_string, strings)
+        return [self.element_type.from_string(s) for s in strings]
 
     def to_string(self, in_object):
-        return str(map(self.element_type.to_string, in_object))
+        return str([self.element_type.to_string(obj) for obj in in_object])
 
 
 class Base(object):
@@ -268,14 +213,23 @@ class Base(object):
         return False
 
     def set(self, attrs):
-        iterFixItemAttrs(self,attrs)
+        for name, value in attrs.items():
+            if value != self.config[name]:
+                logger.info(attribute_set, attr=name, brick=self, value=value)
+                self.config[name] = value
+                setter = getattr(self, "cbset_" + name, None)
+                if setter:
+                    setter(value)
+        self.notify_changed()
 
     def get(self, name):
         try:
             return self.config[name]
         except KeyError:
-            raise KeyError(_("%s config has no %s option.") %
-                           (self.name, name))
+            raise KeyError(
+                _("%(config)s config has no %(option)s option.") % {
+                    'config': self.name,
+                    'option': name})
 
     def _getvalue(self, name, value):
         try:
@@ -288,10 +242,19 @@ class Base(object):
         self.set(dict((n, self._getvalue(n, v)) for n, v in section))
 
     def save_to(self, fileobj):
-        iterFixSave(self,fileobj)
+        opt_tmp = "{0}={1}"
+        l = []
+        for name, param in sorted(self.config.parameters.items()):
+            if self.config[name] != param.default:
+                value = param.to_string_brick(self.config[name], self)
+                l.append(opt_tmp.format(name, value))
+        if l:
+            l.append("")
+        tmp = "[{0}:{1}]\n{2}\n"
+        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
     def rename(self, name):
-        self.set_name(self.factory.normalize_name(name))
+        return self.factory.rename(self, name)
 
     def set_restore(self, restore):
         self._restore = restore

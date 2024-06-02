@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import six
+import io
 import textwrap
 
 from zope.interface import implementer
@@ -40,7 +40,7 @@ class FileTransportAdapter:
 
     loseConnection = getPeer = getHost = lambda s: None
 
-components.registerAdapter(FileTransportAdapter, six.StringIO,
+components.registerAdapter(FileTransportAdapter, io.StringIO,
                            interfaces.ITransport)
 
 
@@ -48,7 +48,7 @@ class TestProtocol(unittest.TestCase):
 
     def setUp(self):
         self.factory = stubs.FactoryStub()
-        self.stdout = six.StringIO()
+        self.stdout = io.StringIO()
 
     def parse(self, cmd):
         console.parse(self.factory, cmd, self.stdout)
@@ -84,6 +84,7 @@ class TestProtocol(unittest.TestCase):
         self.flushLoggedErrors(TypeError)
 
     def test_new_event(self):
+        # TODO: failing, to refactor
         self.parse("new event test_event")
         self.assertEquals(len(self.factory.events), 1)
         self.assertEquals(self.factory.events[0].name, "test_event")

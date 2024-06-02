@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,10 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+if False:  # pyflakes
+    _ = str
 
 
 class Error(Exception):
@@ -94,3 +98,20 @@ class BrickRunningError(Error):
 
 class NoOptionError(Error):
     '''The config file has no such option.'''
+
+
+class WidgetNotFound(Error):
+    """
+    A Gtk.Builder resource does not define a specific widget.
+    """
+
+
+class CommandError(Exception):
+    """
+    One utility command failed. Ex. qemu-img.
+    """
+
+    def __init__(self, exit_code, stderr):
+        super().__init__(stderr)
+        self.exit_code = exit_code
+        self.stderr = stderr

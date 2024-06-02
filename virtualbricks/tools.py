@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_tools -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,14 +23,17 @@ import errno
 from pathlib import Path
 import random
 import re
-import functools
+from functools import update_wrapper, wraps
 import tempfile
 import struct
 
-from virtualbricks import log
-
+from twisted.internet import defer
 from twisted.internet import utils
 from twisted.python import constants
+
+from virtualbricks import log
+from virtualbricks import settings
+from virtualbricks.errors import NoOptionError
 
 logger = log.Logger()
 ksm_error = log.Event("Can not change ksm state. (failed command: {cmd})")
@@ -42,7 +45,7 @@ def random_mac():
         random.getrandbits(8), random.getrandbits(8), random.getrandbits(8),
         random.getrandbits(8))
 
-RandMac = random_mac
+
 MAC_RE = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
 
 
@@ -51,7 +54,7 @@ def mac_is_valid(mac):
 
 
 def synchronize(func, lock):
-    @functools.wraps(func)
+    @wraps(func)
     def wrapper(*args, **kwds):
         with lock:
             return func(*args, **kwds)
@@ -117,29 +120,57 @@ def check_kvm(path=None):
     return os.access("/dev/kvm", os.R_OK & os.W_OK)
 
 
+KSM_PATH = '/sys/kernel/mm/ksm/run'
+
+
 def check_ksm():
+    """
+    Check if KSM is enabled in the machine.
+
+    :rtype: bool
+    """
+
     try:
-        with open("/sys/kernel/mm/ksm/run") as fp:
+        with open(KSM_PATH) as fp:
             return bool(int(fp.readline()))
     except IOError:
         return False
 
 
-def _check_cb(exit_code, cmd):
+def _check_set_ksm_cb(exit_code, cmd):
+    """
+    :type exit_code: bool
+    :type cmd: str
+    :rtype: bool
+    """
+
     if exit_code:  # exit state != 0
         logger.error(ksm_error, cmd=cmd)
+    return check_ksm()
 
 
-def enable_ksm(enable, sudo):
-    if enable ^ check_ksm():
-        cmd = "echo {0:d} > /sys/kernel/mm/ksm/run".format(enable)
-        if sudo:
-            d = utils.getProcessValue(sudo,
-                ["--", "su", "-c", cmd], env=os.environ)
-        else:
-            d = utils.getProcessValue(os.environ.get("SHELL", "/bin/sh"),
-                ["-c", cmd], env=os.environ)
-        d.addCallback(_check_cb, cmd)
+def set_ksm(enable):
+    """
+    Enable or disable KSM support in the machine.
+
+    :type enable: bool
+    :rtype: twisted.internet.defer.Deferred[bool]
+    """
+
+    ksm_enabled = check_ksm()
+    if enable ^ ksm_enabled:
+        enable = 1 if enable else 0
+        cmd = f'echo {enable} > {KSM_PATH}'
+        try:
+            sudo = settings.get('sudo')
+            args = ['--', 'su', '-c', cmd]
+            d = utils.getProcessValue(sudo, args, env=os.environ)
+        except NoOptionError:
+            shell_exe = os.environ.get('SHELL', '/bin/sh')
+            d = utils.getProcessValue(shell_exe, ['-c', cmd], env=os.environ)
+        return d.addCallback(_check_set_ksm_cb, cmd)
+    else:
+        return defer.succeed(ksm_enabled)
 
 
 class Tempfile:
@@ -156,66 +187,63 @@ class Tempfile:
                 raise
 
 
-GENERIC_HEADER_FMT = ">II"
-_L = struct.calcsize(GENERIC_HEADER_FMT)
-COW_MAGIC = 0x4f4f4f4d # OOOM
-COW_SIZE = 1024
-QCOW_MAGIC = 0x514649fb  # \xfbIFQ
-QCOW_HEADER_FMT = ">QI"
+GENERIC_HEADER = '>II'
+GENERIC_HEADER_LEN = struct.calcsize(GENERIC_HEADER)
+COW_MAGIC = 0x4f4f4f4d  # OOOM
+COW_BACKING_FILENAME_SIZE = 1024
+QCOW_MAGIC = 0x514649fb  # \xfbIFQ, QFI\xfb
+QCOW_HEADER = '>QI'
 COWD_MAGIC = 0x44574f43  # COWD
 VMDK_MAGIC = 0x564d444b  # KDMV
 QED_MAGIC = 0x00444551  # \0DEQ
-VDI_HEADER_FMT = "<64cI"
+VDI_HEADER = '<64sI'
+VDI_HEADER_LEN = struct.calcsize(VDI_HEADER)
 VDI_SIGNATURE = 0xbeda107f
-_VDI_L = struct.calcsize(VDI_HEADER_FMT)
-VPC_HEADER_FMT = "<8c"
-VPC_CREATOR = "conectix"
-_VPC_L = struct.calcsize(VPC_HEADER_FMT)
-CLOOP_MAGIC = """#!/bin/sh
+VPC_HEADER = '<8c'
+VPC_CREATOR = 'conectix'
+VPC_HEADER_LEN = struct.calcsize(VPC_HEADER)
+CLOOP_MAGIC = '''#!/bin/sh
 #V2.0 Format
 modprobe cloop file=$0 && mount -r -t iso9660 /dev/cloop $1
-"""
-CLOOP_HEADER_FMT = "{0}c".format(len(CLOOP_MAGIC))
-_CLOOP_L = struct.calcsize(CLOOP_HEADER_FMT)
-_MAX_HEADER = max(_L, _VDI_L, _VPC_L, _CLOOP_L)
+'''
+CLOOP_HEADER = '{0}c'.format(len(CLOOP_MAGIC))
+CLOOP_HEADER_LEN = struct.calcsize(CLOOP_HEADER)
+MAX_HEADER_LENGTH = max(
+    GENERIC_HEADER_LEN, VDI_HEADER_LEN, VPC_HEADER_LEN, CLOOP_HEADER_LEN
+)
 
 
-
-def get_backing_file_from_cow(fp):
-    data = fp.read(COW_SIZE)
-    return data.rstrip("\x00")
-
-
-def get_backing_file_from_qcow(fp):
-    offset, size = struct.unpack(QCOW_HEADER_FMT, fp.read(12).encode("utf-8"))
-    if size == 0:
-        return ""
-    else:
-        fp.seek(offset)
-        return fp.read(size)
-
-
-class UnknowTypeError(Exception):
+class NotCowFileError(ValueError):
     pass
 
-#struct.error: unpack requires a bytes object of length 8 ... tried encode but not working
-def get_backing_file(fp):
-    data = fp.read(8)
-    magic, version = struct.unpack(GENERIC_HEADER_FMT, data)
-    if magic == COW_MAGIC:
-        return get_backing_file_from_cow(fp)
-    elif magic == QCOW_MAGIC and version in (1, 2, 3):
-        return get_backing_file_from_qcow(fp)
-    raise UnknowTypeError()
 
+def get_backing_file(imagefile):
+    """
+    Extract the backing file from a image file. Return the imagefile as str,
+    None if there is not backing file or raise NotCowFileError if the format is
+    unknown.
 
-def backing_files_for(files):
-    for file in files:
-        try:
-            with open(file) as fp:
-                yield get_backing_file(fp)
-        except UnknowTypeError:
-            pass
+    :type imagefile: str
+    :rtype: str
+    :raises NotCowFileError: if the file is not recognized.
+    :raises FileNotFound: it the file does not exists.
+    """
+
+    with open(imagefile, 'rb') as fp:
+        header = fp.read(8)
+        magic, version = struct.unpack(GENERIC_HEADER, header)
+        if magic == COW_MAGIC:
+            backing_b = fp.read(COW_BACKING_FILENAME_SIZE).rstrip(b'\x00')
+        elif magic == QCOW_MAGIC and version in (1, 2, 3):
+            offset, size = struct.unpack(QCOW_HEADER, fp.read(12))
+            if size == 0:
+                return None
+            else:
+                fp.seek(offset)
+                backing_b = fp.read(size)
+        else:
+            raise NotCowFileError()
+    return os.fsdecode(backing_b)
 
 
 def fmtsize(size):
@@ -302,21 +330,11 @@ def copyTo(self, destination, followLinks=True):
         raise OSError(errno.ENOENT, "No such file or directory")
 
 
-class DummyDict(dict):
-
-    __slots__ = ["value"]
-
-    def __init__(self, value):
-        self.value = value
-
-    def __getitem__(self, name):
-        return self.value
-
-
 class ImageFormat(constants.Names):
 
     RAW = constants.NamedConstant()
     QCOW2 = constants.NamedConstant()
+    QCOW3 = constants.NamedConstant()
     QED = constants.NamedConstant()
     QCOW = constants.NamedConstant()
     COW = constants.NamedConstant()
@@ -329,32 +347,44 @@ class ImageFormat(constants.Names):
 
 _type_map = {
     COW_MAGIC: {1: ImageFormat.COW},
-    QCOW_MAGIC: {1: ImageFormat.QCOW, 2: ImageFormat.QCOW2},
+    QCOW_MAGIC: {
+        1: ImageFormat.QCOW,
+        2: ImageFormat.QCOW2,
+        3: ImageFormat.QCOW3
+    },
     COWD_MAGIC: {1: ImageFormat.VMDK},
     VMDK_MAGIC: {1: ImageFormat.VMDK},
-    QED_MAGIC: DummyDict(ImageFormat.QED)
 }
 
 
 def image_type(data):
-    magic, version = struct.unpack(GENERIC_HEADER_FMT, data[:_L])
+    """
+    Guess the image type inspecting the first bytes of the file.
+    Return ImageFormat.UNKNOWN if the image type is... unknown.
+
+    :type data: bytes
+    :rtype: ImageFormat
+    """
+
+    magic, version = struct.unpack(GENERIC_HEADER, data[:GENERIC_HEADER_LEN])
+    if magic == QED_MAGIC:
+        return ImageFormat.QED
     try:
         return _type_map[magic][version]
     except KeyError:
         pass
-    _, signature = struct.unpack(VDI_HEADER_FMT, data[:_VDI_L])
-    if signature == VDI_SIGNATURE:
+    if struct.unpack(VDI_HEADER, data[:VDI_HEADER_LEN])[1] == VDI_SIGNATURE:
         return ImageFormat.VDI
-    if struct.unpack(VPC_HEADER_FMT, data[:_VPC_L]) == VPC_CREATOR:
+    if struct.unpack(VPC_HEADER, data[:VPC_HEADER_LEN]) == VPC_CREATOR:
         return ImageFormat.VPC
-    if struct.unpack(CLOOP_HEADER_FMT, data[:_CLOOP_L]) == CLOOP_MAGIC:
+    if struct.unpack(CLOOP_HEADER, data[:CLOOP_HEADER_LEN]) == CLOOP_MAGIC:
         return ImageFormat.CLOOP
     return ImageFormat.UNKNOWN
 
 
 def image_type_from_file(filename):
-    with open(filename) as fp:
-        return image_type(fp.read(_MAX_HEADER))
+    with open(filename, 'rb') as fp:
+        return image_type(fp.read(MAX_HEADER_LENGTH))
 
 
 def dispose(obj):
@@ -363,3 +393,42 @@ def dispose(obj):
 
 def is_running(brick):
     return brick.__isrunning__()
+
+
+def sync():
+    """
+    Run the sync command wrapped in a deferred. Raise RuntimeError if the
+    command fails.
+
+    :rtype: twisted.internet.defer.Deferred[None]
+    """
+
+    def complain_on_error(command_info):
+        stdout, stderr, exit_status = command_info
+        if exit_status != 0:
+            raise RuntimeError(f'sync failed\n{stderr}')
+
+    deferred = utils.getProcessOutputAndValue('sync', env=os.environ)
+    deferred.addCallback(complain_on_error)
+    return deferred
+
+
+def discard_first_arg(func, *args, **kwds):
+    """
+    Call func with the given parameters but discard the first one. Useful used
+    together with Deferred `addCallback()`. Ex.
+
+        deferred = getProcessValue(['echo', 'hello world'])
+        deferred.addCallback(discard_first_arg(print 'hello world2'))
+
+    :param Callable func: the function to wrap.
+    :param Tuple args: optional parameters to pass to func.
+    :param Dict[str, Any] kwds: optional keyword parameters to pass to func.
+    :rtype: Callable
+    """
+
+    def wrapper(first_arg, *fargs, **fkwds):
+        newkwds = {**kwds, **fkwds}
+        return func(*args, *fargs, **newkwds)
+    update_wrapper(wrapper, func)
+    return wrapper

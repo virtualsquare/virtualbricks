@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_virtualmachines -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,18 +16,23 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
-import errno
-import re
+from dataclasses import dataclass
 import datetime
-import shutil
+import errno
 import itertools
+import os
+import pathlib
+import re
+import shutil
+import warnings
 
-from twisted.internet import utils, defer
+from twisted.internet import defer
+from twisted.internet.utils import getProcessOutput
 
-from virtualbricks import (errors, tools, settings, bricks, log, project,
-                           observable)
-from virtualbricks._spawn import getQemuOutputAndValue, abspath_qemu
+from virtualbricks import errors, tools, settings, bricks, log, project
+from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
+from virtualbricks.observable import Event, Observable
+from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 
 
 if False:
@@ -35,49 +40,94 @@ if False:
 
 __metaclass__ = type
 logger = log.Logger()
-new_cow = log.Event("Creating a new private COW from {base} image.")
-invalid_base = log.Event("{cowname} private cow found with a different base "
-                         "image ({base}): moving it in {path}")
+new_cow = log.Event(
+    'Creating a new private COW from a base image. backing_file={backing_file}'
+)
+use_backing_file = log.Event(
+    'Using  backing file for private cow. backing_file={backing_file}'
+    ' image_file={imagefile}'
+)
+invalid_base = log.Event(
+    'Private cow found with a different backing image. Backup the private cow'
+    ' and use a new one. private_cow={private_cow}'
+    ' expected_backing_file={expected_backing_file}'
+    ' found_backing_file={found_backing_file} backup_file={backup_file}'
+)
 powerdown = log.Event("Sending powerdown to {vm}")
 update_usb = log.Event("update_usbdevlist: old {old} - new {new}")
 own_err = log.Event("plug {plug} does not belong to {brick}")
 acquire_lock = log.Event("Aquiring disk locks")
 release_lock = log.Event("Releasing disk locks")
+search_usb = log.Event('Searching USB devices')
 
 
+@dataclass
 class UsbDevice:
 
-    def __init__(self, ID, desc=""):
-        self.ID = ID
-        self.desc = desc
+    id: str
+    description: str
 
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.ID == other.ID
+    @classmethod
+    def parse_line(cls, line):
+        """
+        :type line: str
+        :rtype: Optional[UsbDevice]
+        """
 
-    def __ne__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return not self.__eq__(other)
+        matchobj = LSUSB_REGEX.search(line)
+        if matchobj:
+            dev_id = matchobj.group('id')
+            description = matchobj.group('description').strip()
+            return cls(dev_id, description)
 
-    def __hash__(self):
-        return hash(self.ID)
+    @property
+    def ID(self):
+        return self.id
+
+    @property
+    def desc(self):
+        return self.description
 
     def __str__(self):
-        return str(self.ID)
+        return self.id
 
-    def __repr__(self):
-        return str(self.ID)
+    # def __repr__(self):
+    #     return self.id
 
     def __format__(self, format_string):
-        if format_string == "id":
-            return str(self.ID)
-        elif format_string == "d":
-            return str(self.desc)
-        elif format_string == "":
-            return str(self)
-        raise ValueError("invalid format string" + repr(format_string))
+        if format_string == 'id' or format_string == '':
+            return self.id
+        elif format_string == 'd':
+            return self.description
+        raise ValueError('invalid format string {format_string!r}')
+
+
+LSUSB_REGEX = re.compile(
+    r'(?P<id>\w{4}:\w{4})'
+    r'(?:\s(?P<description>.+))?$'
+)
+
+
+def _parse_lsusb_output(stdout):
+    """
+    :type output: str
+    :rtype: List[UsbDevice]
+    """
+
+    devices = map(UsbDevice.parse_line, stdout.splitlines())
+    return list(filter(None, devices))
+
+
+def get_usb_devices():
+    """
+    :rtype: twisted.internet.defer.Deferred[List[UsbDevice]]
+    """
+
+    logger.info(search_usb)
+    deferred = getProcessOutput('lsusb', env=os.environ)
+    deferred.addCallback(encode_proc_output)
+    deferred.addCallback(_parse_lsusb_output)
+    return deferred
 
 
 class Wrapper:
@@ -152,83 +202,171 @@ class _HostonlySock:
 hostonly_sock = _HostonlySock()
 
 
+def sizeof_fmt(num, suffix='B'):
+    """
+    :type num: Union[float, int, str]
+    :type suffix: str
+    :rtype: str
+    """
+
+    num = float(num)
+    for unit in '', 'Ki', 'Mi':
+        if abs(num) < 1024.0:
+            return f'{num:.1f}{unit}{suffix}'
+        num /= 1024.0
+    return f'{num:.1f}Gi{suffix}'
+
+
 class Image:
 
     readonly = False
     master = None
-    _description = None
-    _name = ""
 
-    def __init__(self, name, path, description=""):
-        self.observable = observable.Observable("changed")
+    def __init__(self, name, path, description=''):
+        """
+        :type name: str
+        :type path: str
+        :type description: str
+        """
+
         self._name = name
-        self.path = os.path.abspath(path)
-        if description:
-            self.set_description(description)
-
-    def _description_file(self):
-        return self.path + ".vbdescr"
-
-    def set_description(self, descr):
-        if descr != self._description:
-            self._description = descr
-            try:
-                with open(self._description_file(), "w") as fp:
-                    fp.write(descr)
-            except IOError:
-                pass
-            self.observable.notify("changed", self)
-
-    def get_description(self):
-        if self._description is None:
-            try:
-                with open(self._description_file()) as fp:
-                    return fp.read()
-            except IOError:
-                return ""
-        else:
-            return self._description
-
-    description = property(get_description, set_description)
-
-    def set_name(self, value):
-        self._name = value
-        self.observable.notify("changed", self)
+        self._path = os.path.abspath(path)
+        self._description = description
+        self.changed = Event(Observable(), 'changed')
 
     def get_name(self):
+        """
+        :rtype: str
+        """
+
         return self._name
 
-    name = property(get_name, set_name)
+    def set_name(self, value):
+        """
+        :type value: str
+        """
+
+        self._name = value
+        self.changed.notify(self)
+
+    def _get_name_prop(self):
+        warnings.warn('Image.name', DeprecationWarning)
+        return self.get_name()
+
+    def _set_name_prop(self, value):
+        warnings.warn('Image.name', DeprecationWarning)
+        return self.set_name(value)
+
+    name = property(_get_name_prop, _set_name_prop)
+
+    def get_path(self):
+        """
+        :rtype: str
+        """
+
+        return self._path
+
+    def set_path(self, value):
+        """
+        :type value: str
+        """
+
+        self._path = value
+        self.changed.notify(self)
+
+    def _get_path_prop(self):
+        warnings.warn('Image.path', DeprecationWarning)
+        return self.get_path()
+
+    def _set_path_prop(self, value):
+        warnings.warn('Image.path', DeprecationWarning)
+        return self.set_path(value)
+
+    path = property(_get_path_prop, _set_path_prop)
+
+    def get_description(self):
+        """
+        :rtype: str
+        """
+
+        return self._description
+
+    def set_description(self, description):
+        """
+        :type value: str
+        """
+
+        if self._description != description:
+            self._description = description
+            self.changed.notify(self)
+
+    def _get_description_prop(self):
+        warnings.warn('Image.description', DeprecationWarning)
+        return self.get_description()
+
+    def _set_description_prop(self, value):
+        warnings.warn('Image.description', DeprecationWarning)
+        return self.set_description(value)
+
+    description = property(_get_description_prop, _set_description_prop)
 
     def basename(self):
         return os.path.basename(self.path)
 
     def get_size(self):
+        """
+        :rtype: str
+        """
+
         if not self.exists():
-            return "0"
-        size = os.path.getsize(self.path)
-        if size > 1000000:
-            return str(size / 1000000)
-        else:
-            return str(size / 1000000.0)
+            return '0B'
+        return sizeof_fmt(os.path.getsize(self.path))
 
     def exists(self):
         return os.path.exists(self.path)
 
     def acquire(self, disk):
-        if self.master in (None, disk):
+        """
+        :type disk: virtualbricks.virtualmachines.Disk
+        :rtype: None
+        """
+
+        if self.master is None:
             self.master = disk
+        elif self.master is disk:
+            # TODO: check this case
+            pass
         else:
             raise errors.LockedImageError(self, self.master)
 
     def release(self, disk):
+        """
+        :type disk: virtualbricks.virtualmachines.Disk
+        :rtype: None
+        """
+
+        # TODO: remove parameter
         if self.master is disk:
             self.master = None
         else:
             raise errors.LockedImageError(self, self.master)
 
     def save_to(self, fileobj):
-        fileobj.write("[Image:{0.name}]\npath={0.path}\n\n".format(self))
+        """
+        Save the configuration of this disk image to fileobj.
+
+        :type fileobj: io.TextIOBase
+        """
+
+        # TODO: horrible but I need a quit solution for flattening the
+        # description to one line until _configparser will be replaced by the
+        # stdlib configparser.
+        description = '<nl>'.join(self.get_description().splitlines())
+        fileobj.write(
+            f'[Image:{self.name}]\n'
+            f'path={self.path}\n'
+            f'description={description}\n\n'
+        )
 
     def __format__(self, format_string):
         if format_string in ("n", ""):
@@ -246,6 +384,10 @@ class Image:
         raise ValueError("invalid format string " + repr(format_string))
 
 
+def is_disk_image(brick):
+    return isinstance(brick, Image)
+
+
 def move(src, dst):
     try:
         os.rename(src, dst)
@@ -258,142 +400,201 @@ def move(src, dst):
 
 class Disk:
 
-    sync_cmd = "sync"
-    image = None
-
     @property
     def cow(self):
-        return self.VM.config["private" + self.device]
+        return self.is_cow()
 
-    @property
-    def basefolder(self):
+    def __init__(self, vm, dev, image=None):
+        """
+        :param VirtualMachines vm:
+        :param str dev:
+        :param Optional[Image] image:
+        """
+
+        self.vm = vm
+        self.device = dev
+        self.image = image
+
+    def is_cow(self):
+        return self.vm.config['private' + self.device]
+
+    def _basefolder(self):
         return project.manager.current.path
 
-    @property
-    def vm_name(self):
-        return self.VM.name
-
-    def __init__(self, VM, dev):
-        self.VM = VM
-        self.device = dev
-
-    def _virtio_args_cb(self, disk_name):
-        return ["-drive", "file={0},if=virtio".format(disk_name)]
-
-    def _args_cb(self, disk_name):
-        return ["-" + self.device, disk_name]
-
     def args(self):
+
+        def cb(disk_name):
+            if self.vm.get('use_virtio'):
+                return ['-drive', 'file={0},if=virtio'.format(disk_name)]
+            else:
+                return ['-' + self.device, disk_name]
+
         if self.image:
             d = self.get_real_disk_name()
-            if self.VM.get("use_virtio"):
-                d.addCallback(self._virtio_args_cb)
-            else:
-                d.addCallback(self._args_cb)
+            d.addCallback(cb)
             return d
         else:
+            # TODO: check!! Maybe return a failure?
             return defer.succeed([])
 
     def set_image(self, image):
         self.image = image
 
     def acquire(self):
-        if self.image and not self.cow and not self.readonly():
+        self.lock_image()
+
+    def lock_image(self):
+        """
+        Acquire a lock on the image. The image can be locked multiple times by
+        the same disk but the first call to unlock_image will release all the
+        locks.
+
+        If the image is a private COW or in readonly mode, the image won't be
+        locked.
+        """
+
+        if self.image is not None and not self.is_cow() and not self.readonly():
             self.image.acquire(self)
 
     def release(self):
-        if self.image and not self.cow and not self.readonly():
+        self.unlock_image()
+
+    def unlock_image(self):
+        """
+        Release the lock on the image.
+        """
+
+        if self.image is not None and not self.is_cow() and not self.readonly():
             self.image.release(self)
 
-    def _get_base(self):
-        return self.image.path
+    def _new_disk_image_differential(self, filename):
+        """
+        Create a new disk image for Qemu with the given name. The new disk
+        image is a differential of this disk image (self.image.path).
 
-    def _sync(self, ret):
+        :param str filename: the name of the new disk image.
+        :return: A Deferred that fires when the image has been created.
+        :rtype: twisted.internet.defer.Deferred[None]
+        """
 
-        def complain_on_error(ret):
-            out, err, code = ret
-            if code != 0:
-                raise RuntimeError("sync failed\n%s" % err)
+        assert self.image is not None
 
-        out, err, code = ret
-        if code != 0:
-            raise RuntimeError("Cannot create private COW\n%s" % err)
+        logger.info(new_cow, backing_file=self.image.path)
+        args = [
+            'create', '-f', settings.get('cowfmt'), '-b', self.image.path,
+            "-F", settings.get('cowfmt'), filename
+        ]
+        deferred = qemu_img(args)
+        deferred.addCallback(discard_first_arg(sync))
+        # Always return None, independently of the return from sync
+        deferred.addCallback(lambda _: None)
+        return deferred
 
-        exit = utils.getProcessOutputAndValue(self.sync_cmd, env=os.environ)
-        exit.addCallback(complain_on_error)
-        return exit
+    def _ensure_private_image_cow(self, image_file):
+        """
+        Ensure that the private disk image exists and its backing file is this
+        disk image (self.image.path).
 
-    def _create_cow(self, cowname):
-        if abspath_qemu('qemu-img', return_relative=False) is None:
-            msg = _("qemu-img not found! I can't create a new image.")
-            return defer.fail(errors.BadConfigError(msg))
+        If the file does not exist, it is created.
 
-        logger.info(new_cow, base=self._get_base())
-        args = ["create", "-b", self._get_base(), "-f",
-                settings.get("cowfmt"), cowname]
-        exit = getQemuOutputAndValue("qemu-img", args, os.environ)
-        exit.addCallback(self._sync)
-        exit.addCallback(lambda _: cowname)
-        return exit
+        If the file ``image_file`` exists, check that its backing file is this
+        disk image. If the backing file is correct, do nothing. If the file
+        exists but the backing file is the wrong one or it is an unknown file
+        type, backup the file and create a new private image file
 
-    def _check_base(self, cowname):
-        with open(cowname) as fp:
-            backing_file = tools.get_backing_file(fp)
-        if backing_file == self._get_base():
-            return defer.succeed(cowname)
+        :param str image_file: the private cow image file for which we search
+            the backing file.
+        :rtype: twisted.internet.defer.Deferred[None]
+        """
+
+        assert self.image is not None
+
+        try:
+            os.makedirs(self._basefolder())
+        except FileExistsError:
+            pass
+        except Exception:
+            return defer.fail()
+        try:
+            backing_file = tools.get_backing_file(image_file)
+        except FileNotFoundError:
+            # TODO
+            # logger.debug(new_private_image_file, image_file=image_file)
+            return self._new_disk_image_differential(image_file)
+        except NotCowFileError:
+            # TODO
+            # logger.debug(invalid_image_file, image_file=image_file)
+            return self._new_disk_image_differential(image_file)
+        except Exception:
+            # Any IOError
+            return defer.fail()
+        expected_backing_file = self.image.path
+        if backing_file == expected_backing_file:
+            logger.debug(use_backing_file, imagefile=image_file,
+                         backing_file=backing_file)
+            return defer.succeed(None)
         else:
-            dt = datetime.datetime.now()
-            cowback = cowname + ".back-" + dt.strftime("%Y-%m-%d_%H-%M-%S")
-            logger.debug(invalid_base, cowname=cowname, base=backing_file,
-                         path=cowback)
-            move(cowname, cowback)
-            return self._create_cow(cowname).addCallback(lambda _: cowname)
-
-    def _get_cow_name(self):
-        try:
-            os.makedirs(self.basefolder)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        cowname = self.get_cow_path()
-        try:
-            return self._check_base(cowname)
-        except IOError as e:
-            if e.errno == errno.ENOENT:
-                return self._create_cow(cowname)
-            else:
-                raise
+            now = datetime.datetime.now()
+            backup_file = f'{image_file}.bak-{now:%Y%m%d-%H%M%S}'
+            logger.warn(
+                invalid_base,
+                private_cow=image_file,
+                expected_backing_file=expected_backing_file,
+                found_backing_file=backing_file,
+                backup_file=backup_file
+            )
+            move(image_file, backup_file)
+            return self._new_disk_image_differential(image_file)
 
     def get_cow_path(self):
-        return os.path.join(self.basefolder, "%s_%s.cow" % (self.vm_name,
-                                                            self.device))
+        """
+        Return the fullpath of the (private) image file that will be used for
+        this disk devide.
+
+        :rtype: str
+        """
+
+        filename = f'{self.vm.name}_{self.device}.cow'
+        return os.path.join(self._basefolder(), filename)
 
     def get_real_disk_name(self):
+        return self.disk_image_path()
+
+    def disk_image_path(self):
+        """
+        Return the path of the image used with this disk.
+
+        If the image is differential, ensure that it exists and the backing
+        file is the correct one.
+
+        :rtype: twisted.internet.defer.Deferred[str]
+        """
+
+        # TODO: what if the image file does not exist?
+        # assert self.image is not None
         if self.image is None:
             # XXX: this should be really an error
-            return defer.succeed("")
-        elif self.cow:
-            try:
-                return self._get_cow_name()
-            except (OSError, IOError) as e:
-                return defer.fail(e)
+            return defer.succeed('No image file set for this disk')
+        if self.is_cow():
+            private_image_path = self.get_cow_path()
+            deferred = self._ensure_private_image_cow(private_image_path)
+            deferred.addCallback(lambda _: private_image_path)
+            return deferred
         else:
             return defer.succeed(self.image.path)
 
     def readonly(self):
-        return self.VM.config["snapshot"]
+        return self.vm.config['snapshot']
 
     def __deepcopy__(self, memo):
-        new = type(self)(self.VM, self.device)
-        new.sync_cmd = self.sync_cmd
-        if self.image is not None:
-            new.set_image(self.image)
+        new = self.__class__(self.vm, self.device, self.image)
         return new
 
     def __repr__(self):
-        return "<Disk {self.device}({self.vm_name}) image={self.image:p} " \
-                "readonly={readonly} cow={self.cow}>".format(
-                    self=self, readonly=self.readonly())
+        return (
+            f'<Disk {self.device}({self.vm.name}) image={self.image:p} '
+            f'readonly={self.readonly()} cow={self.is_cow()}>'
+        )
 
 
 VM_COMMAND_BUILDER = {
@@ -640,11 +841,36 @@ class VirtualMachine(bricks.Brick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self._observable.add_event("image-changed")
-        self.image_changed = observable.Event(self._observable,
-                                              "image-changed")
+        self.image_changed = Event(self._observable, 'image-changed')
         self.config["name"] = name
         for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             self.config[dev] = Disk(self, dev)
+
+    def rename(self, new_name):
+        """
+        Override Brick.rename() to rename also the disks.
+
+        :type new_name: str
+        :rtype: None
+        """
+
+        # TODO: logs
+        # TODO: rewind in case of error
+        prev_name = super().rename(new_name)
+        project_path = pathlib.Path(project.manager.current.path)
+        disk_regex = re.compile(
+            f'{prev_name}_'                               # vm name
+            '(?P<disk>[a-z0-9]+)'                         # disk
+            '.cow'                                        # extension
+            r'(?P<bak_suffix>\.(?:bak|back)-[0-9\-_]+)?'  # backup suffix
+            '$'                                           # end
+        )
+        new_name_repl = fr'{new_name}_\g<disk>.cow\g<bak_suffix>'
+        for path in project_path.iterdir():
+            if path.is_file() and disk_regex.match(path.name):
+                new_disk_name = disk_regex.sub(new_name_repl, path.name)
+                path.rename(project_path.joinpath(new_disk_name))
+        return prev_name
 
     def poweron(self, snapshot=""):
         def acquire(passthru):
@@ -670,7 +896,7 @@ class VirtualMachine(bricks.Brick):
             return defer.succeed((self, self._last_status))
         elif not any((kill, term)):
             self.logger.info(powerdown, vm=self)
-            self.send("system_powerdown\n")
+            self.send(b"system_powerdown\n")
             return self._exited_d
         if term:
             return bricks.Brick.poweroff(self)
@@ -678,16 +904,24 @@ class VirtualMachine(bricks.Brick):
             return bricks.Brick.poweroff(self, kill)
 
     def get_parameters(self):
+        try:
+            command = self.prog()
+        except FileNotFoundError:
+            if self.config["argv0"]:
+                command = self.config['argv0']
+            else:
+                command = self.default_arg0
+
         ram = self.config["ram"]
-        txt = [_("command:") + " %s, ram: %s" % (self.prog(), ram)]
+        txt = [_("command:") + " %s, ram: %s" % (command, ram)]
         for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
             txt.append("eth%d: %s" % (i, _get_nick(link)))
         return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
-        self.logger.debug(update_usb, old=self.config["usbdevlist"], new=dev)
-        for device in set(dev) - set(self.config["usbdevlist"]):
-            self.send("usb_add host:{0}\n".format(device))
+        self.logger.debug(update_usb, old=self.config['usbdevlist'], new=dev)
+        for usb_dev in set(dev) - set(self.config['usbdevlist']):
+            self.send(b'usb_add host:%s\n' % (usb_dev.id,))
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 
@@ -750,8 +984,8 @@ class VirtualMachine(bricks.Brick):
             res.extend(["-vga", "std"])
 
         if self.config["usbmode"]:
-            for dev in self.config["usbdevlist"]:
-                res.extend(["-usbdevice", "host:%s" % dev])
+            for usb_dev in self.config["usbdevlist"]:
+                res.extend(['-usbdevice', f'host:{usb_dev.id}'])
 
         res.extend(["-name", self.name])
         if not self.plugs and not self.socks:
@@ -867,7 +1101,7 @@ class VirtualMachine(bricks.Brick):
             self._observable.notify("image-changed", (self, image))
 
     def set_vm(self, disk):
-        disk.VM = self
+        disk.vm = self
 
     cbset_hda = cbset_hdb = cbset_hdc = cbset_hdd = cbset_fda = cbset_fdb = \
             cbset_mtblock = set_vm

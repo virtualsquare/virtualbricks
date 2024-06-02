@@ -1,38 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.22.1 -->
 <interface>
-  <requires lib="gtk+" version="3.12"/>
-  <object class="GtkListStore" id="liststore1">
+  <requires lib="gtk+" version="3.16"/>
+  <object class="GtkListStore" id="projectsListstore">
     <columns>
       <!-- column-name name -->
       <column type="gchararray"/>
     </columns>
   </object>
-  <object class="GtkDialog" id="ListProjectsDialog">
+  <object class="GtkDialog" id="ProjectListDialog">
     <property name="width_request">300</property>
     <property name="height_request">300</property>
     <property name="can_focus">False</property>
-    <property name="border_width">5</property>
     <property name="modal">True</property>
     <property name="type_hint">dialog</property>
-    <signal name="response" handler="on_ListProjectsDialog_response" swapped="no"/>
+    <signal name="response" handler="on_ProjectListDialog_response" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child internal-child="vbox">
-      <object class="GtkBox" id="dialog-vbox1">
+      <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkButtonBox" id="dialog-action_area1">
+          <object class="GtkButtonBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="button2">
-                <property name="label">gtk-cancel</property>
+              <object class="GtkButton" id="cancelButton">
+                <property name="label">Cancel</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="has_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -41,12 +44,14 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button1">
-                <property name="label">gtk-ok</property>
+              <object class="GtkButton" id="okButton">
+                <property name="label">OK</property>
                 <property name="visible">True</property>
+                <property name="sensitive">False</property>
                 <property name="can_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="has_default">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -63,10 +68,11 @@
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label1">
+          <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="ypad">6</property>
+            <property name="margin_top">6</property>
+            <property name="margin_bottom">6</property>
             <property name="label" translatable="yes">Select project</property>
           </object>
           <packing>
@@ -76,25 +82,27 @@
           </packing>
         </child>
         <child>
-          <object class="GtkScrolledWindow" id="scrolledwindow1">
+          <object class="GtkScrolledWindow">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <child>
-              <object class="GtkTreeView" id="treeview">
+              <object class="GtkTreeView" id="projectsTreeView">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="model">liststore1</property>
+                <property name="model">projectsListstore</property>
                 <property name="headers_visible">False</property>
                 <property name="search_column">0</property>
-                <signal name="row-activated" handler="on_treeview_row_activated" swapped="no"/>
+                <signal name="row-activated" handler="on_projectsTreeView_row_activated" swapped="no"/>
                 <child internal-child="selection">
-                  <object class="GtkTreeSelection" id="treeview-selection1"/>
+                  <object class="GtkTreeSelection" id="projectsTreeSelection">
+                    <signal name="changed" handler="on_projectsTreeSelection_changed" swapped="no"/>
+                  </object>
                 </child>
                 <child>
-                  <object class="GtkTreeViewColumn" id="treeviewcolumn1">
+                  <object class="GtkTreeViewColumn">
                     <property name="title" translatable="yes">column</property>
                     <child>
-                      <object class="GtkCellRendererText" id="cellrenderertext1"/>
+                      <object class="GtkCellRendererText"/>
                       <attributes>
                         <attribute name="text">0</attribute>
                       </attributes>
@@ -113,8 +121,8 @@
       </object>
     </child>
     <action-widgets>
-      <action-widget response="-6">button2</action-widget>
-      <action-widget response="-5">button1</action-widget>
+      <action-widget response="-6">cancelButton</action-widget>
+      <action-widget response="-5">okButton</action-widget>
     </action-widgets>
   </object>
 </interface>

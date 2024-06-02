@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_wires -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 import re
 
 from virtualbricks import bricks
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 if False:  # pyflakes
     _ = str
@@ -88,7 +88,7 @@ class NetemuConfig(bricks.Config):
 
 class WFProcessProtocol(bricks.VDEProcessProtocol):
 
-    prompt = re.compile(r"^VDEwf\$ ", re.M)
+    prompt = re.compile(rb"^VDEwf\$ ", re.M)
 
 
 class Netemu(Wire):
@@ -160,13 +160,13 @@ class Netemu(Wire):
 
     def cbset_chanbufsize(self, value):
         if self.config["chanbufsizesymm"]:
-            self.send("chanbufsize {0}\n".format(value))
+            self.send(b"chanbufsize %d\n" % (value,))
         else:
-            self.send("chanbufsize LR {0}\n".format(value))
+            self.send(b"chanbufsize LR %d\n" % (value,))
 
     def cbset_chanbufsizer(self, value):
         if not self.config["chanbufsizesymm"]:
-            self.send("chanbufsize RL {0}\n".format(value))
+            self.send(b"chanbufsize RL %d\n" % (value,))
 
     def cbset_chanbufsizesymm(self, value):
         self.cbset_chanbufsize(self.config["chanbufsize"])
@@ -174,13 +174,13 @@ class Netemu(Wire):
 
     def cbset_delay(self, value):
         if self.config["delaysymm"]:
-            self.send("delay {0}\n".format(value))
+            self.send(b"delay %d\n" % (value,))
         else:
-            self.send("delay LR {0}\n".format(value))
+            self.send(b"delay LR %d\n" % (value,))
 
     def cbset_delayr(self, value):
         if not self.config["delaysymm"]:
-            self.send("delay RL {0}\n".format(value))
+            self.send(b"delay RL %d\n" % (value,))
 
     def cbset_delaysymm(self, value):
         self.cbset_delay(self.config["delay"])
@@ -188,13 +188,13 @@ class Netemu(Wire):
 
     def cbset_loss(self, value):
         if self.config["losssymm"]:
-            self.send("loss {0}\n".format(value))
+            self.send(b"loss %f\n" % (value,))
         else:
-            self.send("loss LR {0}\n".format(value))
+            self.send(b"loss LR %f\n" % (value,))
 
     def cbset_lossr(self, value):
         if not self.config["losssymm"]:
-            self.send("loss RL {0}\n".format(value))
+            self.send(b"loss RL %f\n" % (value,))
 
     def cbset_losssymm(self, value):
         self.cbset_loss(self.config["loss"])
@@ -202,13 +202,13 @@ class Netemu(Wire):
 
     def cbset_bandwidth(self, value):
         if self.config["bandwidthsymm"]:
-            self.send("bandwidth {0}\n".format(value))
+            self.send(b"bandwidth %d\n" % (value,))
         else:
-            self.send("bandwidth LR {0}\n".format(value))
+            self.send(b"bandwidth LR %d\n" % (value,))
 
     def cbset_bandwidthr(self, value):
         if not self.config["bandwidthsymm"]:
-            self.send("bandwidth RL {0}\n".format(value))
+            self.send(b"bandwidth RL %d\n" % (value,))
 
     def cbset_bandwidthsymm(self, value):
         self.cbset_bandwidth(self.config["bandwidth"])

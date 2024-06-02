@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_tuntaps -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ import os
 from collections import OrderedDict as odict
 
 from virtualbricks import bricks, link, settings
-from virtualbricks._spawn import abspath_vde
+from virtualbricks.spawn import abspath_vde
 
 if False:  # pyflakes
     _ = str
@@ -55,8 +55,10 @@ class Capture(PrivilegedBrick):
         if self.config["iface"] == "":
             return _("No interface selected")
         if self.plugs[0].sock:
-            return _("Interface %s plugged to %s ") % (
-                self.config["iface"], self.plugs[0].sock.brick.name)
+            return _("Interface %(interface)s plugged to %(socket)s ") % {
+                'interface': self.config["iface"],
+                'socket': self.plugs[0].sock.brick.name
+            }
         return _("Interface %s disconnected") % self.config["iface"]
 
     def prog(self):

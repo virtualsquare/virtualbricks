@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import configparser
 import os
-import six
-from six.moves import configparser
-from virtualbricks import tools, log
+from virtualbricks import log
 from virtualbricks.errors import NoOptionError
 
 
@@ -76,7 +75,7 @@ class SettingsMeta(type):
         return type.__new__(cls, name, bases, dct)
 
 
-class Settings(six.with_metaclass(SettingsMeta)):
+class Settings(metaclass=SettingsMeta):
 
     __boolean_values__ = ('kvm', 'ksm', 'python', 'femaleplugs',
                           'erroronloop', 'systray', 'show_missing')
@@ -89,7 +88,7 @@ class Settings(six.with_metaclass(SettingsMeta)):
 
     def __init__(self, filename=CONFIGFILE):
         self.filename = filename
-        self.config = configparser.SafeConfigParser()
+        self.config = configparser.ConfigParser()
         self.config.add_section(self.DEFAULT_SECTION)
         for key, value in DEFAULT_CONF.items():
             self.config.set(self.DEFAULT_SECTION, key, str(value))
@@ -120,18 +119,25 @@ class Settings(six.with_metaclass(SettingsMeta)):
             self.config.write(fp)
 
     def load(self):
+        from virtualbricks.tools import set_ksm
+
         try:
             parsed = self.config.read(self.filename)
             if not parsed:
                 self.install()
             else:
                 logger.info(config_loaded, filename=self.filename)
-                tools.enable_ksm(self.get('ksm'), self.get("sudo"))
+                if self.get('ksm'):
+                    # TODO: the deferred is not checked and we don't know
+                    # exactly well it will fire.
+                    set_ksm(enable=True)
         except configparser.Error:
             logger.exception(cannot_read_config, filename=self.filename)
 
     def install(self):
-        self.set("ksm", tools.check_ksm())
+        from virtualbricks.tools import check_ksm
+
+        self.set("ksm", check_ksm())
         try:
             self.store()
             logger.info(config_installed, filename=self.filename)

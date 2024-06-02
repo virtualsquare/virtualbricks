@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_events -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -149,3 +149,7 @@ class Event(base.Base):
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)
         self.notify_changed()
+
+
+def is_event(brick):
+    return brick.get_type() == 'Event'

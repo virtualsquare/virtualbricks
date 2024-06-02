@@ -1,5 +1,5 @@
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 from twisted.trial import unittest
 
 import gi
-gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from virtualbricks import project, _settings
@@ -247,7 +246,7 @@ class TestController(unittest.TestCase):
     def assert_parameters_equal(self, names=(), values=(), **kwds):
         for name, value in zip(names, values):
             self.assert_parameter_equal(name, value)
-        for name, value in kwds.iteritems():
+        for name, value in kwds.items():
             self.assert_parameter_equal(name, value)
 
     def assert_text_equal(self, name, text):

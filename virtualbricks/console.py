@@ -1,6 +1,6 @@
 # -*- test-case-name: virtualbricks.tests.test_console -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
-# Copyright (C) 2018 Virtualbricks team
+# Copyright (C) 2019 Virtualbricks team
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from zope.interface import implementer
 from virtualbricks import __version__, bricks, errors, log, settings
-import six
 
 logger = log.Logger()
 socket_error = log.Event("Error on socket")
@@ -114,11 +113,11 @@ class Protocol(basic.LineOnlyReceiver):
         pass
 
     def connectionMade(self):
-        for protocol in six.itervalues(self.sub_protocols):
+        for protocol in self.sub_protocols.values():
             protocol.makeConnection(self.transport)
 
     def connectionLost(self, reason):
-        for protocol in six.itervalues(self.sub_protocols):
+        for protocol in self.sub_protocols.values():
             protocol.connectionLost(reason)
 
 
@@ -149,13 +148,13 @@ class VBProtocol(Protocol):
 
     # _is_first = False
     delimiter = b"\n"
-    prompt = "virtualbricks> "
+    prompt = b"virtualbricks> "
     intro = (
-        "Virtualbricks, version {version}\n"
-        "Copyright (C) 2018 Virtualbricks team\n"
-        "This is free software; see the source code for copying conditions.\n"
-        "There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
-        "FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n"
+        b"Virtualbricks, version %s\n"
+        b"Copyright (C) 2022 Virtualbricks team\n"
+        b"This is free software; see the source code for copying conditions.\n"
+        b"There is ABSOLUTELY NO WARRANTY; not even for MERCHANTABILITY or\n"
+        b"FITNESS FOR A PARTICULAR PURPOSE.  For details, type `warranty'.\n\n"
     )
 
     def __init__(self, factory):
@@ -171,14 +170,14 @@ class VBProtocol(Protocol):
         #     self._is_first = True
         #     intro = self.intro.format(version=virtualbricks.version.short())
         #     self.transport.write(intro)
-        intro = self.intro.format(version=__version__)
-        self.transport.write(intro.encode())
-        self.transport.write(self.prompt.encode())
+        intro = self.intro % (__version__.encode('ascii'),)
+        self.transport.write(intro)
+        self.transport.write(self.prompt)
 
     def lineReceived(self, line):
         Protocol.lineReceived(self, line)
         if line != "python":  # :-(
-            self.transport.write(self.prompt.encode())
+            self.transport.write(self.prompt)
 
     def brick_action(self, obj, cmd):
         """brick action dispatcher"""
@@ -274,8 +273,8 @@ class VBProtocol(Protocol):
             self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
         self.sendLine("\nEvents")
         self.sendLine("-" * 20)
-        for obj in self.factory.events:
-            self.sendLine("%s (%s)" % (obj.name, obj.get_type()))
+        for event in self.factory.iter_events():
+            self.sendLine("%s (%s)" % (event.name, event.get_type()))
         # self.sendLine("End of list.")
 
     def do_config(self, *args):
@@ -329,7 +328,7 @@ class VBProtocol(Protocol):
 class ImagesProtocol(Protocol):
 
     def do_list(self):
-        for img in self.factory.disk_images:
+        for img in self.factory.iter_disk_images():
             self.sendLine("%s, %s" % (img.name, img.path))
 
     # def do_files(self):
