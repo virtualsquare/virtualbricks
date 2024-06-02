@@ -25,7 +25,7 @@ variables:
     script:
         - debchange --newversion "$VB_DEB_VERSION" "New upstream version"
         - debchange --release --distribution "${DISTRIBUTION}" ""
-        - dpkg-buildpackage -us
+        - dpkg-buildpackage
         - cp ../virtualbricks_"$VB_DEB_VERSION"* ../virtualbricks/dist/
     artifacts:
         paths:
