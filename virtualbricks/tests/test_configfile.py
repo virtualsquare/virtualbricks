@@ -239,7 +239,7 @@ class TestParser(unittest.TestCase):
     def test_link_with_minus(self):
         """
         Bricks' name can contains the following characters (in regex notation):
-        [\w.-]. Check that the parser parse correctly the links.
+        [\\w.-]. Check that the parser parse correctly the links.
         """
 
         line = "link|vm1-ng|switchwrapper_port|rtl8139|00:aa:1a:a2:b8:ec"
