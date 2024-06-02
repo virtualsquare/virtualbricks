@@ -10,7 +10,7 @@ variables:
     before_script:
         - apt-get update
         # install download-secure-file to be able to access the secure files in .secure_files/
-        - apt-get install -y curl
+        - apt-get install -y curl gpg
         - curl --silent https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
         # Import the GnuPG key necessary to sign the changes file.
         - gpg --import .secure_files/public.key
