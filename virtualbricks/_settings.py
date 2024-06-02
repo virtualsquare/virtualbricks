@@ -88,7 +88,7 @@ class Settings(metaclass=SettingsMeta):
 
     def __init__(self, filename=CONFIGFILE):
         self.filename = filename
-        self.config = configparser.SafeConfigParser()
+        self.config = configparser.ConfigParser()
         self.config.add_section(self.DEFAULT_SECTION)
         for key, value in DEFAULT_CONF.items():
             self.config.set(self.DEFAULT_SECTION, key, str(value))
