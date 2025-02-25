@@ -29,7 +29,7 @@ import struct
 
 from twisted.internet import defer
 from twisted.internet import utils
-from twisted.python import constants
+import constantly as constants
 
 from virtualbricks import log
 from virtualbricks import settings

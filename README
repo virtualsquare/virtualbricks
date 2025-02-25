@@ -28,4 +28,6 @@ to install the dependencies, most notably pygraphviz. Pygraphviz
 requires a compiler, pkg-config and the development libraries for
 graphviz (libgraphviz-dev in Debian).
 
+If you prefer to use pkexec instead of the default gksu (now deprecated)
+remeber to change the corresponding line in `~/.virtualbricks.conf`.
 .. vim: ft=rst tw=72
