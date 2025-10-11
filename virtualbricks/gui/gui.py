@@ -18,6 +18,7 @@
 
 # This module is ported to new GTK3 using PyGObject
 
+from copy import deepcopy
 import os
 import sys
 import string
@@ -842,7 +843,7 @@ class StateManager:
 
 class NetemuConfigController(_PlugMixin, ConfigController):
 
-    resource = "netemuconfig.ui"
+    resource = "nemuconfig.ui"
     state_manager = None
     help = help.Help()
     config_to_checkbutton_mapping = (
@@ -871,14 +872,18 @@ class NetemuConfigController(_PlugMixin, ConfigController):
     )
 
     def get_config_view(self, gui):
+
+        # when creating a new item, the set function is not called
+        if self.original.markov_manager is None:
+            self.original.init_markov()
+
+        # original parameters
+        self.temp = deepcopy(self.original.markov_manager)
+        self.tempStates = self.temp.states
+        self.tempWeights = self.temp.weights
+
         go = self.get_object
-        get = self.original.get
-        for pname, wname in self.config_to_checkbutton_mapping:
-            go(wname).set_active(not get(pname))
-        for pname, wname in self.config_to_spinint_mapping:
-            go(wname).set_value(get(pname))
-        for pname, wname in self.config_to_spinfloat_mapping:
-            go(wname).set_value(get(pname))
+        self.update(False, self.original.currentState)
 
         self.state_manager = manager = StateManager()
         params = ("chanbufsize", "delay", "loss", "bandwidth")
@@ -888,10 +893,18 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             tooltip = _("Disabled because set symmetric")
             spinbutton = go(param + "r_spinbutton")
             manager.add_checkbutton_active(checkbutton, tooltip, spinbutton)
+        
+        self.time_spinbutton.set_value(self.original.transPeriod)
 
         # setup help buttons
         for button in self.help_buttons:
             go(button).connect("clicked", self.help.on_help_button_clicked)
+
+        # markov buttons
+        go("add_state_button").connect("clicked", self.on_add_state)
+        go("edit_state_button").connect("clicked", self.on_edit_state)
+        go("remove_state_button").connect("clicked", self.on_remove_state)
+        go("update_weight_button").connect("clicked", self.on_update_weight)
 
         # setup plugs
         for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
@@ -905,9 +918,8 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             )
 
         return go("netemu_config_panel")
-
-    def configure_brick(self, gui):
-        cfg = {}
+    
+    def getconfig(self, cfg):
         go = self.get_object
         for config_name, widget_name in self.config_to_checkbutton_mapping:
             cfg[config_name] = not go(widget_name).get_active()
@@ -915,6 +927,11 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             cfg[pname] = go(wname).get_value_as_int()
         for pname, wname in self.config_to_spinfloat_mapping:
             cfg[pname] = go(wname).get_value()
+
+    def configure_brick(self, gui):
+        cfg = {}
+        self.getconfig(cfg)
+        cfg["name"] = self.get_object("stateEntry").get_text()
         self.original.set(cfg)
 
         # configure plug
@@ -930,6 +947,147 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.get_object("lossr_spinbutton").set_value(0)
         self.get_object("bandwidth_spinbutton").set_value(125000)
         self.get_object("bandwidthr_spinbutton").set_value(125000)
+
+    # save all parameters, calling this function has the same effect of calling each save function then communicating with the emulator 
+    def on_ok_button_clicked(self, button, gui):
+        go = self.get_object
+
+        self.original.markov_manager.states = self.tempStates
+        self.original.markov_manager.weights = self.tempWeights
+
+        transPeriod = go("time_spinbutton").get_value_as_int()
+        if transPeriod is not None:
+            self.original.transPeriod = transPeriod
+
+        index = go("cbState").get_selected_value()
+        if index is not None:
+            self.original.config = self.tempStates[index]
+            self.getconfig(self.original.config)
+            self.original.config["name"] = go("stateEntry").get_text()
+
+            self.original.currentState = index
+
+            otherIndex = go("cbWeight").get_selected_value()
+            if otherIndex is not None:
+                self.original.markov_manager.weights[index][otherIndex] = float(go("weight_spinbutton").get_value_as_int())
+        else:
+            self.original.config = self.tempStates[0]
+            self.original.currentState = 0
+            
+        self.original.update()
+
+        # configure plug
+        for i, wname in enumerate(("sock0_combobox", "sock1_combobox")):
+            self.connect_plug(self.original.plugs[i], self.get_object(wname))
+
+        dispose(self)
+        gui.curtain_down()
+    
+    # save channel configuration
+    def on_save_button_clicked(self, button):
+        index = self.get_object("cbState").get_selected_value()
+        if index is not None:
+            self.getconfig(self.tempStates[index])
+
+    # update the gui without user intervention
+    # parameters:
+    #   noCombo: if true, the comboboxes representating the states are not updated
+    #   index: the index of the state list
+
+    def update(self, noCombo, index):
+        go = self.get_object
+        for pname, wname in self.config_to_checkbutton_mapping:
+            go(wname).set_active(not self.tempStates[index][pname])
+        for pname, wname in self.config_to_spinint_mapping:
+            go(wname).set_value(self.tempStates[index][pname])
+        for pname, wname in self.config_to_spinfloat_mapping:
+            go(wname).set_value(self.tempStates[index][pname])
+
+        go("labelState").set_text("Selected state: " + str(index))
+        go("stateEntry").set_text(self.tempStates[index]["name"])
+
+        states = list()
+        exstates = list()
+        for i, state in enumerate(self.tempStates):
+            states.append(widgets.ListEntry(i, str(i) + " (" + state["name"] + ")"))
+            if i != index:
+                exstates.append(widgets.ListEntry(i, str(i) + " (" + state["name"] + ")"))
+
+        go("lexState").set_data_source(exstates)
+
+        if len(exstates):
+            go("cbWeight").set_selected_value(exstates[0].value)
+            go("cbWeight").set_cell_data_func(self.crf11, self.crf11.set_text)
+            go("weight_spinbutton").set_editable(True)
+            go("update_weight_button").set_sensitive(True)
+            go("time_spinbutton").set_editable(True)
+        else:
+            go("weight_spinbutton").set_value(0.0)
+            go("weight_spinbutton").set_editable(False)
+            go("update_weight_button").set_sensitive(False)
+            go("time_spinbutton").set_editable(False)
+
+        if noCombo:
+            return
+        
+        go("lState").set_data_source(states)
+        go("cbState").set_selected_value(index)
+        go("cbState").set_cell_data_func(self.crf1, self.crf1.set_text)
+
+    def on_add_state(self, button):
+        index = self.get_object("cbState").get_selected_value()
+        if index is not None:
+            self.temp.add(index + 1)
+            self.update(False, index + 1)
+
+    def on_remove_state(self, button):
+        index = self.get_object("cbState").get_selected_value()
+        if index is not None:
+            self.temp.remove(index)
+            self.update(False, min(index, len(self.tempStates) - 1))
+
+    def on_edit_state(self, button):
+        go = self.get_object
+        index = go("cbState").get_selected_value()
+        if index is not None:
+            text = go("stateEntry").get_text()
+            if text is None:
+                return
+            
+            # no name duplicates
+            for state in self.tempStates:
+                if state["name"] == text:
+                    return
+                
+            self.tempStates[index]["name"] = text
+            self.update(False, index)
+
+    def on_update_weight(self, button):
+        go = self.get_object
+        index = go("cbState").get_selected_value()
+        if index is not None:
+            otherIndex = go("cbWeight").get_selected_value()
+            if otherIndex is not None:
+                self.tempWeights[index][otherIndex] = float(go("weight_spinbutton").get_value_as_int())
+
+    def on_cbState_changed(self, combobox):
+        index = self.get_object("cbState").get_selected_value()
+        if index is not None:
+            self.update(True, index)
+
+    def on_cbWeight_changed(self, combobox):
+        go = self.get_object
+        index = go("cbWeight").get_selected_value()
+        if index is not None:
+            otherIndex = go("cbState").get_selected_value()
+            if otherIndex is not None and otherIndex < len(self.tempWeights):
+                value = self.tempWeights[otherIndex][index]
+                maxWeight = 100
+                for weight in self.tempWeights[otherIndex]:
+                    maxWeight -= weight
+                maxWeight += value
+                go("probAdjustment").set_upper(maxWeight)
+                go("weight_spinbutton").set_value(value)
 
 
 class TunnelListenConfigController(_PlugMixin, ConfigController):

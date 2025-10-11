@@ -87,7 +87,7 @@ class Options(usage.Options):
     def opt_version(self):
         """Print version and exit."""
         from virtualbricks import __version__
-        print("Virtualbrics", __version__)
+        print("Virtualbricks", __version__)
         sys.exit(0)
 
     def postOptions(self):

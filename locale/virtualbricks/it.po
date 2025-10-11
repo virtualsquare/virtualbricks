@@ -3368,7 +3368,7 @@ msgid "Maximum size of the packet queue. Exceeding packets are discarded."
 msgstr ""
 
 #: virtualbricks/gui/data/netemuconfig.ui:205
-msgid "buffer lenght (Byte; 0=no limit)"
+msgid "buffer length (Byte; 0=no limit)"
 msgstr ""
 
 #: virtualbricks/gui/data/netemuconfig.ui:217
