@@ -254,10 +254,12 @@ class Netemu(Wire):
         
         for i, state in enumerate(self.markov_manager.states):
             self.currentState = i
+            self.config = self.markov_manager.states[self.currentState]
             for name, value in state.items():
                 self._update(name, value)
         
         self.currentState = currentState
+        self.config = self.markov_manager.states[self.currentState]
 
         # weight attributes
 
@@ -359,23 +361,19 @@ class Netemu(Wire):
         new_opt_tmp = "state{0}.{1}"
         double_opt_tmp = "{0}[{1}]"
 
-        fileobj.write("#Syntax used by the old versions (only one state);\nAdded for backwards compatibility only\n")
-
         l = []
         for name, param in sorted(self.markov_manager.states[0].parameters.items()):
             if name != "name" and self.markov_manager.states[0][name] != param.default:
                 value = param.to_string_brick(self.markov_manager.states[0][name], self)
                 l.append(opt_tmp.format(name, value))
-        tmp = "[{0}:{1}]\n{2}\n"
+        tmp = "[{0}:{1}]\n#Syntax used by the old versions (only one state); added for backwards compatibility only\n\n{2}\n"
         fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
         if len(self.markov_manager.states) == 1:
             fileobj.write("\n")
             return
         
-        fileobj.write("- #Syntax used by newer versions\n")
-        fileobj.write(opt_tmp.format("states", len(self.markov_manager.states)))
-        fileobj.write("\n")
+        fileobj.write("- #Syntax used by newer versions\n" + opt_tmp.format("states", len(self.markov_manager.states)) + "\n")
 
         for i, state in enumerate(self.markov_manager.states):
             l = []
@@ -422,7 +420,6 @@ class Netemu(Wire):
                 self.set(cfg)
                 if not line.startswith("-"):
                     section.fileobj.seek(curpos)
-                    self.config = self.markov_manager.states[0]
                     return
                 
                 done = True
@@ -492,7 +489,4 @@ class Netemu(Wire):
                         line = section.fileobj.readline()
                     else:   
                         section.fileobj.seek(curpos)
-                        self.config = self.markov_manager.states[0]
                         return
-
-        self.config = self.markov_manager.states[0]
