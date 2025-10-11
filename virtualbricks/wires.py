@@ -366,11 +366,12 @@ class Netemu(Wire):
             if name != "name" and self.markov_manager.states[0][name] != param.default:
                 value = param.to_string_brick(self.markov_manager.states[0][name], self)
                 l.append(opt_tmp.format(name, value))
-        tmp = "[{0}:{1}]\n#Syntax used by the old versions (only one state); added for backwards compatibility only\n\n{2}\n"
+        tmp = "[{0}:{1}]\n#Syntax used by the old versions (only one state); added for backwards compatibility only\n\n{2}"
+        if l:
+            l.append("\n")
         fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
 
         if len(self.markov_manager.states) == 1:
-            fileobj.write("\n")
             return
         
         fileobj.write("- #Syntax used by newer versions\n" + opt_tmp.format("states", len(self.markov_manager.states)) + "\n")
@@ -390,8 +391,8 @@ class Netemu(Wire):
             fileobj.write("\n".join(l))
         
         if self.transPeriod != 100:
-            fileobj.write(opt_tmp.format("transperiod", self.transPeriod))
-        fileobj.write("\n\n")
+            fileobj.write(opt_tmp.format("transperiod", self.transPeriod) + "\n")
+        fileobj.write("\n")
 
     def load_from(self, section):
 
