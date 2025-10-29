@@ -27,7 +27,7 @@ if False:  # pyflakes
 
 process_ended = log.Event("Process ended with exit code {code}")
 event_error = log.Event("Error in event action. See the log for more "
-                        "informations")
+                        "information")
 
 
 class Command(base.String):

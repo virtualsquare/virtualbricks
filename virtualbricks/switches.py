@@ -91,13 +91,13 @@ class Switch(bricks.Brick):
         self.socks[0].path = path
 
     def cbset_fstp(self, arg=False):
-        self.send("fstp/setfstp %d\n" % bool(arg))
+        self.send(b"fstp/setfstp %d\n" % bool(arg))
 
     def cbset_hub(self, arg=False):
-        self.send("port/sethub %d\n" % bool(arg))
+        self.send(b"port/sethub %d\n" % bool(arg))
 
-    def cbset_numports(self, arg="32"):
-        self.send("port/setnumports %s\n" % arg)
+    def cbset_numports(self, arg=32):
+        self.send(b"port/setnumports %d\n" % arg)
 
 
 class SwitchWrapperConfig(bricks.Config):

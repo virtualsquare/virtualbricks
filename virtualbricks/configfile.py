@@ -47,7 +47,7 @@ project_saved = log.Event("Saved project to {filename}.")
 cannot_restore_backup = log.Event("Cannot restore backup file {filename}.\n"
                                   "{traceback}")
 backup_restored = log.Event("A backup file for the current project has been "
-                            "restored.\nYou can find more informations "
+                            "restored.\nYou can find more information "
                             "looking in View->Messages.")
 image_found = log.Event("Found Disk image {name}")
 skip_image = log.Event("Skipping disk image, name '{name}' already in use")
