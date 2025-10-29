@@ -81,14 +81,14 @@ ubuntu-24.04:
       DISTRIBUTION: noble
 
 # Ubuntu 25.04, plucky
-ubuntu-24.04:
+ubuntu-25.04:
     <<: *build-deb
     image: ubuntu:plucky
     variables:
       DISTRIBUTION: plucky
 
 # Ubuntu 25.10, questing
-ubuntu-24.04:
+ubuntu-25.10:
     <<: *build-deb
     image: ubuntu:questing
     variables:
