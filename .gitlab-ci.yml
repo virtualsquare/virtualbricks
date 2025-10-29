@@ -31,28 +31,21 @@ variables:
         paths:
             - dist/*
 
-# Debian 10, buster, oldoldstable
-debian-10:
-    <<: *build-deb
-    image: debian:buster
-    variables:
-      DISTRIBUTION: buster
-
-# Debian 11, bullseye, oldstable
+# Debian 11, bullseye
 debian-11:
     <<: *build-deb
     image: debian:bullseye
     variables:
       DISTRIBUTION: bullseye
 
-# Debian 12, bookworm, stable
+# Debian 12, bookworm
 debian-12:
     <<: *build-deb
     image: debian:bookworm
     variables:
       DISTRIBUTION: bookworm
 
-# Debian 13, trixie, testing
+# Debian 13, trixie
 debian-13:
     <<: *build-deb
     image: debian:trixie
@@ -86,3 +79,17 @@ ubuntu-24.04:
     image: ubuntu:noble
     variables:
       DISTRIBUTION: noble
+
+# Ubuntu 25.04, plucky
+ubuntu-24.04:
+    <<: *build-deb
+    image: ubuntu:plucky
+    variables:
+      DISTRIBUTION: plucky
+
+# Ubuntu 25.10, questing
+ubuntu-24.04:
+    <<: *build-deb
+    image: ubuntu:questing
+    variables:
+      DISTRIBUTION: questing
