@@ -1,4 +1,4 @@
-Virtualbricks is copyright 2019 by Virtualbricks team.
+Virtualbricks was copyrighted on 2019 by Virtualbricks team.
 
 Virtualbricks team:
 
@@ -12,13 +12,14 @@ Virtualbricks team:
 - Carlo Caini
 - Alessandro Paoletti
 - Danilo Belvedere
+- Nicola Tentoni
 
 All the software in this directory and in all the subdirectories is
 licensed under the terms of GNU GPL V2 unless stated differently.
 
 --
 
-The file virtualbrics/_log.py is copyrighted by Apple Inc.
+The file virtualbricks/_log.py is copyrighted by Apple Inc.
 
 Copyright (c) 2006-2013 Apple Inc. All rights reserved.
 
@@ -36,7 +37,7 @@ limitations under the License.
 
 --
 
-The file virtualbrics/_backport.py is copyrighted by Twisted Matrix
+The file virtualbricks/_backport.py is copyrighted by Twisted Matrix
 Laboratories.
 
 Permission is hereby granted, free of charge, to any person obtaining
