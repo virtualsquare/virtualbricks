@@ -95,8 +95,9 @@ setup(
         'Pillow',
         'pygraphviz',
         "Twisted>=12.0.0",
+        "constantly",
         "zope.interface>=3.5",
-        "PyGObject"
+        "PyGObject",
     ],
     extras_require={
         'test': ['mock']
