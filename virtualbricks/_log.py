@@ -74,7 +74,7 @@ import logging
 import time
 
 from zope.interface import Interface, implementer
-from twisted.python.constants import NamedConstant, Names
+from constantly import NamedConstant, Names
 from twisted.python.failure import Failure
 from twisted.python.reflect import safe_str
 import twisted.python.log
