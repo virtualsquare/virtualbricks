@@ -843,7 +843,7 @@ class StateManager:
 
 class NetemuConfigController(_PlugMixin, ConfigController):
 
-    resource = "nemuconfig.ui"
+    resource = "netemuconfig.ui"
     state_manager = None
     help = help.Help()
     config_to_checkbutton_mapping = (

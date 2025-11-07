@@ -57,7 +57,7 @@ GUI_DATA_FILES = set([
     "loadimagedialog.ui",
     "logging.ui",
     "networkcards.ui",
-    "nemuconfig.ui",
+    "netemuconfig.ui",
     "netemu.png",
     "newevent.ui",
     "qemuconfig.ui",
