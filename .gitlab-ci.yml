@@ -45,6 +45,13 @@ debian-13:
     variables:
       DISTRIBUTION: trixie
 
+# Debian 14, forky
+debian-14:
+    <<: *build-deb
+    image: debian:forky
+    variables:
+      DISTRIBUTION: forky
+
 # Debian unstable, sid
 debian-sid:
     <<: *build-deb
