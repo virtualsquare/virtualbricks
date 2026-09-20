@@ -31,13 +31,6 @@ variables:
         paths:
             - dist/*
 
-# Debian 11, bullseye
-debian-11:
-    <<: *build-deb
-    image: debian:bullseye
-    variables:
-      DISTRIBUTION: bullseye
-
 # Debian 12, bookworm
 debian-12:
     <<: *build-deb
@@ -80,16 +73,9 @@ ubuntu-24.04:
     variables:
       DISTRIBUTION: noble
 
-# Ubuntu 25.04, plucky
-ubuntu-25.04:
+# Ubuntu 26.04, questing
+ubuntu-26.04:
     <<: *build-deb
-    image: ubuntu:plucky
+    image: ubuntu:resolute
     variables:
-      DISTRIBUTION: plucky
-
-# Ubuntu 25.10, questing
-ubuntu-25.10:
-    <<: *build-deb
-    image: ubuntu:questing
-    variables:
-      DISTRIBUTION: questing
+      DISTRIBUTION: resolute
