@@ -29,7 +29,6 @@ __all__ = [
     'IControl',
     'IStateManager',
     'IWidgetBuilder',
-    'IWindow'
 ]
 
 
@@ -155,36 +154,5 @@ class IWidgetBuilder(IWidgetGetter):
         mapping.
 
         :type handler: Any
-        :rtype: None
-        """
-
-
-class IWindow(Interface):
-
-    w = Attribute(
-        """
-        Object that implement IWidgetGetter protocol and returns the widgets
-        from the builder (Gtk.Builder) object defined for this window.
-        """
-    )
-
-    def show():
-        """
-        Show the window. If parent is specified, this window is marked as
-        transient for it.
-
-        :type parent: Optional[Gtk.Window]
-        :rtype: None
-        """
-
-
-class IDialog(IWindow):
-
-    def show(parent):
-        """
-        Show the dialog.
-
-        :param Gtk.Window parent: the parent for which this dialog is marked as
-            transient for.
         :rtype: None
         """

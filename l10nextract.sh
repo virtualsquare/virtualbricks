@@ -5,7 +5,7 @@
 TMPFILE=$(mktemp)
 trap "rm $TMPFILE" EXIT
 
-find virtualbricks/ -type f -name '*.py' -or -name '*.ui' > $TMPFILE
+find virtualbricks/ -type f -name '*.py' > $TMPFILE
 xgettext \
     --files-from=$TMPFILE \
     --output=virtualbricks.pot \

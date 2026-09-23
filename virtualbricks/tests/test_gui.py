@@ -22,6 +22,8 @@ from gi.repository import Gtk
 
 from virtualbricks import project, _settings
 from virtualbricks.gui import gui, interfaces
+from virtualbricks.gui.windows import base
+from virtualbricks.gui.windows.virtualbricks import ReadmeMixin, _Root
 from virtualbricks.tests import stubs
 
 
@@ -75,8 +77,8 @@ class TestStateFramework(unittest.TestCase):
         both true in the ultimate stage.
         """
 
-        for b, ret in (True, gui.YES), (False, gui.NO), (True, gui.MAYBE):
-            pre = gui.CompoundPrerequisite(lambda: ret)
+        for b, ret in (True, base.YES), (False, base.NO), (True, base.MAYBE):
+            pre = base.CompoundPrerequisite(lambda: ret)
             if b:
                 self.assertTrue(pre())
             else:
@@ -91,9 +93,9 @@ class TestStateFramework(unittest.TestCase):
         def prerequisite():
             l.append(True)
 
-        for check, ret in (False, gui.NO), (True, gui.YES):
+        for check, ret in (False, base.NO), (True, base.YES):
             l = []
-            pre = gui.CompoundPrerequisite(lambda: ret, prerequisite)
+            pre = base.CompoundPrerequisite(lambda: ret, prerequisite)
             if check:
                 self.assertTrue(pre())
             else:
@@ -110,9 +112,9 @@ class TestStateFramework(unittest.TestCase):
             l[1] = 1
 
         l = [0, 0]
-        pre1 = gui.CompoundPrerequisite(lambda: gui.MAYBE, prerequisite1)
-        pre2 = gui.CompoundPrerequisite(lambda: gui.YES, prerequisite2)
-        pre = gui.CompoundPrerequisite(pre1, pre2)
+        pre1 = base.CompoundPrerequisite(lambda: base.MAYBE, prerequisite1)
+        pre2 = base.CompoundPrerequisite(lambda: base.YES, prerequisite2)
+        pre = base.CompoundPrerequisite(pre1, pre2)
         self.assertTrue(pre())
         self.assertEqual(l, [1, 0])
 
@@ -126,7 +128,7 @@ class TestStateFramework(unittest.TestCase):
             def react(self, status):
                 self.status = status
 
-        state = gui.State()
+        state = base.State()
         state.add_prerequisite(lambda: True)
         control = Control()
         state.add_control(control)
@@ -137,7 +139,7 @@ class TestStateFramework(unittest.TestCase):
         """Test a checkbutton that controls another widgets."""
 
         TOOLTIP = "Disabled"
-        manager = gui.StateManager()
+        manager = base.StateManager()
         checkbutton = CheckButtonStub()
         widget = WidgetStub()
         self.assertTrue(widget.sensitive)
@@ -150,7 +152,7 @@ class TestStateFramework(unittest.TestCase):
         """Enable a widget if the checkbutton is not active."""
 
         TOOLTIP = "Disabled"
-        manager = gui.StateManager()
+        manager = base.StateManager()
         checkbutton = CheckButtonStub()
         widget = WidgetStub()
         self.assertTrue(widget.sensitive)
@@ -163,18 +165,14 @@ class TestStateFramework(unittest.TestCase):
         self.assertEqual(widget.tooltip, TOOLTIP)
 
 
-class Readme(gui.ReadmeMixin, gui._Root):
+class Readme(ReadmeMixin, _Root):
 
     def __init__(self, manager):
-        self.textview = Gtk.TextView()
+        self.readme_text = Gtk.TextView()
         self.manager = manager
 
     def set_text(self, text):
-        self.textview.get_buffer().set_text(text)
-
-    def get_object(self, name):
-        if name == "readme_textview":
-            return self.textview
+        self.readme_text.get_buffer().set_text(text)
 
     def init(self, factory):
         super(Readme, self).init(factory)
@@ -219,7 +217,7 @@ class TestController(unittest.TestCase):
         raise NotImplementedError()
 
     def get_object(self, name):
-        return self.controller.get_object(name)
+        return getattr(self.controller, name)
 
     def configure_brick(self):
         self.controller.configure_brick(self.gui)
@@ -228,7 +226,7 @@ class TestController(unittest.TestCase):
         self.controller.get_config_view(self.gui)
 
     def _assert_active_equal(self, name, status):
-        self.assertEqual(self.controller.get_object(name).get_active(), status)
+        self.assertEqual(getattr(self.controller, name).get_active(), status)
 
     def assert_active(self, name):
         self._assert_active_equal(name, True)
@@ -237,7 +235,7 @@ class TestController(unittest.TestCase):
         self._assert_active_equal(name, False)
 
     def assert_spinbutton_value(self, name, value):
-        self.assertEqual(self.controller.get_object(name).get_value_as_int(),
+        self.assertEqual(getattr(self.controller, name).get_value_as_int(),
                          value)
 
     def assert_parameter_equal(self, name, value):
@@ -250,7 +248,7 @@ class TestController(unittest.TestCase):
             self.assert_parameter_equal(name, value)
 
     def assert_text_equal(self, name, text):
-        self.assertEqual(self.controller.get_object(name).get_text(), text)
+        self.assertEqual(getattr(self.controller, name).get_text(), text)
 
 
 class TestSwitchController(TestController):
@@ -264,18 +262,18 @@ class TestSwitchController(TestController):
 
         self.brick.set({"fstp": False, "hub": False, "numports": 2})
         self.get_config_view()
-        self.assert_not_active("fstp_checkbutton")
-        self.assert_not_active("hub_checkbutton")
-        self.assert_spinbutton_value("ports_spinbutton", 2)
+        self.assert_not_active("fstp_check")
+        self.assert_not_active("hub_check")
+        self.assert_spinbutton_value("ports_spin", 2)
 
     def test_config(self):
         """Set the switch parameters."""
 
         self.assert_parameters_equal(("fstp", "hub", "numports"),
                                      (False, False, 32))
-        self.get_object("fstp_checkbutton").set_active(True)
-        self.get_object("hub_checkbutton").set_active(False)
-        self.get_object("ports_spinbutton").set_value(31)
+        self.get_object("fstp_check").set_active(True)
+        self.get_object("hub_check").set_active(False)
+        self.get_object("ports_spin").set_value(31)
         self.configure_brick()
         self.assert_parameters_equal(("fstp", "hub", "numports"),
                                      (True, False, 31))
@@ -294,13 +292,13 @@ class TestSwitchWrapperController(TestController):
 
         self.brick.set({"path": self.PATH})
         self.get_config_view()
-        self.assert_text_equal("entry", self.PATH)
+        self.assert_text_equal("path_entry", self.PATH)
 
     def test_config(self):
         """Set the switch wrapper parameters."""
 
         self.assert_parameter_equal("path", "")
-        self.get_object("entry").set_text(self.PATH)
+        self.get_object("path_entry").set_text(self.PATH)
         self.configure_brick()
         self.assert_parameter_equal("path", self.PATH)
 
@@ -323,9 +321,9 @@ class TestTapController(TestController):
         self.assert_text_equal("ip_entry", "0.0.0.0")
         self.assert_text_equal("nm_entry", "0.0.0.0")
         self.assert_text_equal("gw_entry", "0.0.0.0")
-        self.assert_not_active("nocfg_radiobutton")
-        self.assert_active("dhcp_radiobutton")
-        self.assert_active("manual_radiobutton")
+        self.assert_not_active("nocfg_radio")
+        self.assert_active("dhcp_radio")
+        self.assert_active("manual_radio")
     test_view.todo = "Implement test utility for the plugmixin"
 
     def assert_initial(self):
@@ -340,7 +338,7 @@ class TestTapController(TestController):
         """Set the tap parameters for no network configuration."""
 
         self.assert_initial()
-        self.get_object("nocfg_radiobutton").set_active(True)
+        self.get_object("nocfg_radio").set_active(True)
         self.configure_brick()
         self.assert_parameters_equal(ip="10.0.0.1",
                                      nm="255.255.255.0",
@@ -351,7 +349,7 @@ class TestTapController(TestController):
         """Set the tap parameters for dhcp."""
 
         self.assert_initial()
-        self.get_object("dhcp_radiobutton").set_active(True)
+        self.get_object("dhcp_radio").set_active(True)
         self.configure_brick()
         self.assert_parameters_equal(ip="10.0.0.1",
                                      nm="255.255.255.0",
@@ -365,7 +363,7 @@ class TestTapController(TestController):
         NM = "255.255.0.0"
         GW = "192.168.179.1"
         self.assert_initial()
-        self.get_object("manual_radiobutton").set_active(True)
+        self.get_object("manual_radio").set_active(True)
         self.get_object("ip_entry").set_text(IP)
         self.get_object("nm_entry").set_text(NM)
         self.get_object("gw_entry").set_text(GW)

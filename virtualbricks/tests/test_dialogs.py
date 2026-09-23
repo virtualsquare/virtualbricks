@@ -21,64 +21,9 @@ from twisted.internet import defer
 from twisted.python import filepath
 
 from virtualbricks import project
-from virtualbricks.virtualmachines import UsbDevice
-from virtualbricks.gui import dialogs
+from virtualbricks.gui.windows import exportproject, importdialog
 from virtualbricks.tests import (unittest, GtkTestCase, failureResultOf,
                                  successResultOf, stubs)
-
-
-class Object:
-    pass
-
-
-class UsbDevWindowStub(dialogs.UsbDevWindow):
-
-    def __init__(self, treeview, usbdev):
-        self.view = treeview
-        self.vm = Object()
-        self.vm.config = {"usbdevlist": usbdev}
-
-    def get_object(self, name):
-        return self.view
-
-
-OUTPUT = """
-Bus 003 Device 002: ID 0a5c:2110 Broadcom Corp. Bluetooth Controller
-Bus 004 Device 002: ID 4168:1010
-Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 005 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 006 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 007 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-"""
-
-
-class TestUsbDevWindow(unittest.TestCase):
-
-    def setUp(self):
-        self.dlg = dialogs.UsbDevWindow([])
-        self.dlg.lDevs.set_data_source(self.dlg.parse_lsusb(OUTPUT.strip()))
-
-    def get_selected_values(self):
-        return self.dlg.tvDevices.get_selected_values()
-
-    def set_selected_values(self, lst):
-        self.dlg.tvDevices.set_selected_values(lst)
-
-    def test_select_empty(self):
-        self.assertEquals(self.get_selected_values(), ())
-
-    def test_select_one(self):
-        self.set_selected_values([UsbDevice("0a5c:2110")])
-        self.assertEquals(self.get_selected_values(),
-                          (UsbDevice("0a5c:2110"),))
-
-    def test_select_mores(self):
-        self.set_selected_values([UsbDevice("1d6b:0001")])
-        self.assertEquals(self.get_selected_values(),
-                          (UsbDevice("1d6b:0001"),) * 5)
 
 
 class WindowStub(object):
@@ -87,7 +32,7 @@ class WindowStub(object):
         super(WindowStub, self).__init__(_, prjpath, disk_images)
 
 
-class ExportProjectDialog(WindowStub, dialogs.ExportProjectDialog):
+class ExportProjectDialog(WindowStub, exportproject.ExportProjectDialog):
 
     pass
 
@@ -231,32 +176,6 @@ class TestExportDialog(GtkTestCase):
             self.assertIsInstance(path, str)
 
 
-class Container:
-
-    def __init__(self, children=None, **kwds):
-        self.children = children or []
-        self.__dict__.update(kwds)
-
-    def foreach(self, function, data):
-        function(self, data)
-        for child in self.children:
-            child.foreach(function, data)
-
-    def get_data(self, name):
-        return self.__dict__.get(name, None)
-
-
-class TestImageMapDialog(unittest.TestCase):
-
-    def test_accumulate_data(self):
-        c1 = Container(data="a")
-        c2 = Container(data="b")
-        root = Container((c1, c2))
-        lst = dialogs.accumulate_data(root, "data")
-        expected = [("a", c1), ("b", c2)]
-        self.assertEqual(lst, expected)
-
-
 class ImportDialogStub:
 
     project = None
@@ -317,7 +236,7 @@ class TestHumbleImport(GtkTestCase):
 
     def setUp(self):
         self.manager = project.ProjectManager(self.mktemp())
-        self.humble = dialogs._HumbleImport()
+        self.humble = importdialog._HumbleImport()
         self.dialog = ImportDialogStub(self.project_name, self.archive,
                                        self.overwrite, self.page)
 
@@ -579,7 +498,7 @@ class AssistantStub:
         self.completed[page] = complete
 
 
-class ImportDialog(dialogs.ImportDialog):
+class ImportDialog(importdialog.ImportDialog):
 
     assistant = None
 
