@@ -729,77 +729,114 @@ VM_COMMAND_BUILDER = {
 DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
 
 
-def _disk_fields():
-    # In the project file each disk is a table: [disks.hda] image, private.
-    fields = {}
-    for dev in DISK_DEVICES:
-        fields[dev] = schema.field(
-            Ref("image"), default="", path=("disks", dev, "image")
-        )
-        fields["private" + dev] = schema.field(
-            Bool(), default=False, path=("disks", dev, "private")
-        )
-    return fields
+def _image(dev):
+    """
+    The field of the image of a disk device, such as ``hda``.
+
+    It holds the name of an image of the project, or "" for none, and the
+    project file writes it as the ``image`` key of the ``[disks.<dev>]``
+    table of the brick, not as a key named after the device.
+
+    Without this function each disk field would repeat the kind, the default
+    and the path. Leaving the path out changes the format of the project file:
+    the field would then be written as a top-level ``hda = "..."`` key of the
+    brick, which the project files of format 1 don't have.
+    """
+
+    return schema.field(Ref("image"), default="", path=("disks", dev, "image"))
 
 
-VirtualMachineConfig = schema.make_class(
-    "VirtualMachineConfig",
-    {
-        # boot options
-        "boot": schema.field(Str(), default=""),
-        "snapshot": schema.field(Bool(), default=False),
-        # cdrom device
-        "deviceen": schema.field(Bool(), default=False),
-        "device": schema.field(Str(), default=""),
-        "cdromen": schema.field(Bool(), default=False),
-        "cdrom": schema.field(Path(), default=""),
-        # additional media
-        "use_virtio": schema.field(Bool(), default=False),
-        # system and machine
-        "argv0": schema.field(Str(), default="qemu-system-i386"),
-        "cpu": schema.field(Str(), default=""),
-        "machine": schema.field(Str(), default=""),
-        "kvm": schema.field(Bool(), default=False),
-        "smp": schema.field(Int(1, 64), default=1),
-        # audio device soundcard
-        "soundhw": schema.field(Str(), default=""),
-        # memory device settings
-        "ram": schema.field(Int(1, 99999), default=64),
-        "kvmsm": schema.field(Bool(), default=False),
-        "kvmsmem": schema.field(Int(0, 99999), default=1),
-        # display options
-        "novga": schema.field(Bool(), default=False),
-        "vga": schema.field(Bool(), default=False),
-        "vnc": schema.field(Bool(), default=False),
-        "vncN": schema.field(Int(0, 500), default=1),
-        "sdl": schema.field(Bool(), default=False),
-        "portrait": schema.field(Bool(), default=False),
-        # usb settings
-        "usbmode": schema.field(Bool(), default=False),
-        "usbdevlist": schema.field(ListOf(UsbDeviceKind()), factory=list),
-        # extra settings
-        "rtc": schema.field(Bool(), default=False),
-        "tdf": schema.field(Bool(), default=False),
-        "keyboard": schema.field(Str(), default=""),
-        "serial": schema.field(Bool(), default=False),
-        # booting linux
-        "kernelenbl": schema.field(Bool(), default=False),
-        "kernel": schema.field(Path(), default=""),
-        "initrdenbl": schema.field(Bool(), default=False),
-        "initrd": schema.field(Path(), default=""),
-        "kopt": schema.field(Str(), default=""),
-        "gdb": schema.field(Bool(), default=False),
-        "gdbport": schema.field(Int(1, 65535), default=1234),
-        # virtual machine icon
-        "icon": schema.field(Path(), default=""),
-        # others
-        "noacpi": schema.field(Str(), default=""),
-        "stdout": schema.field(Str(), default=""),
-        "loadvm": schema.field(Str(), default=""),
-        **_disk_fields(),
-    },
-    bases=(bricks.BrickConfig,),
-)
+def _private(dev):
+    """
+    The field that makes a disk device, such as ``hda``, private.
+
+    When it's true the virtual machine writes to its own copy-on-write file,
+    ``<vm>_<dev>.cow`` in the project directory, and the image stays as it is.
+    The project file writes it as the ``private`` key of the ``[disks.<dev>]``
+    table of the brick.
+
+    As for :func:`_image`, without this function each field would repeat the
+    kind, the default and the path, and leaving the path out would write a
+    top-level ``privatehda = ...`` key instead, a different file format.
+    """
+
+    return schema.field(Bool(), default=False, path=("disks", dev, "private"))
+
+
+@schema.define
+class VirtualMachineConfig(bricks.BrickConfig):
+    """
+    The configuration of a virtual machine.
+
+    The order of the fields is the order of the keys in the project file.
+    """
+
+    # boot options
+    boot = schema.field(Str(), default="")
+    snapshot = schema.field(Bool(), default=False)
+    # cdrom device
+    deviceen = schema.field(Bool(), default=False)
+    device = schema.field(Str(), default="")
+    cdromen = schema.field(Bool(), default=False)
+    cdrom = schema.field(Path(), default="")
+    # additional media
+    use_virtio = schema.field(Bool(), default=False)
+    # system and machine
+    argv0 = schema.field(Str(), default="qemu-system-i386")
+    cpu = schema.field(Str(), default="")
+    machine = schema.field(Str(), default="")
+    kvm = schema.field(Bool(), default=False)
+    smp = schema.field(Int(1, 64), default=1)
+    # audio device soundcard
+    soundhw = schema.field(Str(), default="")
+    # memory device settings
+    ram = schema.field(Int(1, 99999), default=64)
+    kvmsm = schema.field(Bool(), default=False)
+    kvmsmem = schema.field(Int(0, 99999), default=1)
+    # display options
+    novga = schema.field(Bool(), default=False)
+    vga = schema.field(Bool(), default=False)
+    vnc = schema.field(Bool(), default=False)
+    vncN = schema.field(Int(0, 500), default=1)
+    sdl = schema.field(Bool(), default=False)
+    portrait = schema.field(Bool(), default=False)
+    # usb settings
+    usbmode = schema.field(Bool(), default=False)
+    usbdevlist = schema.field(ListOf(UsbDeviceKind()), factory=list)
+    # extra settings
+    rtc = schema.field(Bool(), default=False)
+    tdf = schema.field(Bool(), default=False)
+    keyboard = schema.field(Str(), default="")
+    serial = schema.field(Bool(), default=False)
+    # booting linux
+    kernelenbl = schema.field(Bool(), default=False)
+    kernel = schema.field(Path(), default="")
+    initrdenbl = schema.field(Bool(), default=False)
+    initrd = schema.field(Path(), default="")
+    kopt = schema.field(Str(), default="")
+    gdb = schema.field(Bool(), default=False)
+    gdbport = schema.field(Int(1, 65535), default=1234)
+    # virtual machine icon
+    icon = schema.field(Path(), default="")
+    # others
+    noacpi = schema.field(Str(), default="")
+    stdout = schema.field(Str(), default="")
+    loadvm = schema.field(Str(), default="")
+    # the disks, one per device of DISK_DEVICES, in the same order
+    hda = _image("hda")
+    privatehda = _private("hda")
+    hdb = _image("hdb")
+    privatehdb = _private("hdb")
+    hdc = _image("hdc")
+    privatehdc = _private("hdc")
+    hdd = _image("hdd")
+    privatehdd = _private("hdd")
+    fda = _image("fda")
+    privatefda = _private("fda")
+    fdb = _image("fdb")
+    privatefdb = _private("fdb")
+    mtdblock = _image("mtdblock")
+    privatemtdblock = _private("mtdblock")
 
 
 def _get_nick(link):
