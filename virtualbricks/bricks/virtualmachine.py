@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_virtualmachines -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_virtualmachine -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -354,7 +354,7 @@ class Image:
 
     def acquire(self, disk):
         """
-        :type disk: virtualbricks.virtualmachines.Disk
+        :type disk: virtualbricks.bricks.virtualmachine.Disk
         :rtype: None
         """
 
@@ -368,7 +368,7 @@ class Image:
 
     def release(self, disk):
         """
-        :type disk: virtualbricks.virtualmachines.Disk
+        :type disk: virtualbricks.bricks.virtualmachine.Disk
         :rtype: None
         """
 

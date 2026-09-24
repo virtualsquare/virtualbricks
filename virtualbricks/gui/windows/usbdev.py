@@ -47,8 +47,8 @@ class UsbDevDialog(_Dialog):
 
     def __init__(self, usb_devices, selected_devices):
         """
-        :type usb_devices: List[virtualbricks.virtualmachines.UsbDevice]
-        :type selected_devices: List[virtualbricks.virtualmachines.UsbDevice]
+        :type usb_devices: List[virtualbricks.bricks.virtualmachine.UsbDevice]
+        :type selected_devices: List[virtualbricks.bricks.virtualmachine.UsbDevice]
         """
 
         self._usb_devices = usb_devices

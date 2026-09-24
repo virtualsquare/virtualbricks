@@ -28,7 +28,7 @@ from gi.repository import Gdk, Gtk, Pango
 from twisted.logger import Logger
 
 from virtualbricks.spawn import qemu_commit_image
-from virtualbricks.virtualmachines import is_virtualmachine
+from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.gui.windows.base import _, _Dialog, pango_attr_list
 from virtualbricks.gui.windows.progressbardialog import ProgressBarDialog
 

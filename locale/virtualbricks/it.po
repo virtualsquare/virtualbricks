@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 23:12+0200\n"
+"POT-Creation-Date: 2026-09-24 23:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -51,32 +51,88 @@ msgstr ""
 msgid "Invalid brick type %s"
 msgstr ""
 
-#: virtualbricks/bricks.py
+#: virtualbricks/bricks/capture.py
+msgid "No interface selected"
+msgstr ""
+
+#: virtualbricks/bricks/capture.py
+#, python-format
+msgid "Interface %(interface)s plugged to %(socket)s "
+msgstr ""
+
+#: virtualbricks/bricks/capture.py
+#, fuzzy, python-format
+msgid "Interface %s disconnected"
+msgstr "disconnesso"
+
+#: virtualbricks/bricks/__init__.py
 #, python-format
 msgid "Cannot start '%s': not configured"
 msgstr "Impossibile avviare '%s': non configurato"
 
-#: virtualbricks/bricks.py
+#: virtualbricks/bricks/__init__.py
 #, python-format
 msgid "Cannot start '%s': not connected"
 msgstr "Impossibile avviare '%s': non connesso"
 
-#: virtualbricks/bricks.py
+#: virtualbricks/bricks/__init__.py
 msgid "Brick.prog() not implemented."
 msgstr ""
 
-#: virtualbricks/bricks.py virtualbricks/events.py
+#: virtualbricks/bricks/__init__.py virtualbricks/events.py
 msgid "running"
 msgstr "acceso"
 
-#: virtualbricks/bricks.py virtualbricks/tunnels.py virtualbricks/tuntaps.py
-#: virtualbricks/wires.py
+#: virtualbricks/bricks/__init__.py virtualbricks/bricks/tap.py
+#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
+#: virtualbricks/bricks/wire.py
 msgid "disconnected"
 msgstr "disconnesso"
 
-#: virtualbricks/bricks.py virtualbricks/events.py
+#: virtualbricks/bricks/__init__.py virtualbricks/events.py
 msgid "off"
 msgstr "spento"
+
+#: virtualbricks/bricks/switch.py
+#, fuzzy
+msgid "Ports: "
+msgstr "Porte:"
+
+#: virtualbricks/bricks/switchwrapper.py
+#, python-format
+msgid "Socket does not exists: %s"
+msgstr ""
+
+#: virtualbricks/bricks/tap.py
+#, python-format
+msgid "plugged to %s "
+msgstr "connesso a %s"
+
+#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
+msgid "plugged to"
+msgstr "connesso a"
+
+#: virtualbricks/bricks/tunnelconnect.py
+msgid ", connecting to udp://"
+msgstr ", connessione a udp://"
+
+#: virtualbricks/bricks/tunnellisten.py
+msgid "listening to udp:"
+msgstr "in ascolto su udp:"
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "command:"
+msgstr "comando:"
+
+#: virtualbricks/bricks/wire.py
+#, fuzzy, python-brace-format
+msgid "Configured to connect {0} to {1}"
+msgstr "Configurato per connettere"
+
+#: virtualbricks/bricks/wire.py
+#, python-brace-format
+msgid "Not yet configured. Left plug is {0} and right plug is {1}"
+msgstr ""
 
 #: virtualbricks/errors.py
 #, python-format
@@ -1975,61 +2031,6 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
-
-#: virtualbricks/switches.py
-#, fuzzy
-msgid "Ports: "
-msgstr "Porte:"
-
-#: virtualbricks/switches.py
-#, python-format
-msgid "Socket does not exists: %s"
-msgstr ""
-
-#: virtualbricks/tunnels.py
-msgid "plugged to"
-msgstr "connesso a"
-
-#: virtualbricks/tunnels.py
-msgid "listening to udp:"
-msgstr "in ascolto su udp:"
-
-#: virtualbricks/tunnels.py
-msgid ", connecting to udp://"
-msgstr ", connessione a udp://"
-
-#: virtualbricks/tuntaps.py
-msgid "No interface selected"
-msgstr ""
-
-#: virtualbricks/tuntaps.py
-#, python-format
-msgid "Interface %(interface)s plugged to %(socket)s "
-msgstr ""
-
-#: virtualbricks/tuntaps.py
-#, fuzzy, python-format
-msgid "Interface %s disconnected"
-msgstr "disconnesso"
-
-#: virtualbricks/tuntaps.py
-#, python-format
-msgid "plugged to %s "
-msgstr "connesso a %s"
-
-#: virtualbricks/virtualmachines.py
-msgid "command:"
-msgstr "comando:"
-
-#: virtualbricks/wires.py
-#, fuzzy, python-brace-format
-msgid "Configured to connect {0} to {1}"
-msgstr "Configurato per connettere"
-
-#: virtualbricks/wires.py
-#, python-brace-format
-msgid "Not yet configured. Left plug is {0} and right plug is {1}"
-msgstr ""
 
 #, fuzzy
 #~ msgid "Virtualbricks logging"

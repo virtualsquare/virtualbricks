@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_bricks -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_bricks -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,6 +16,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""
+The bricks: the base class of every brick and the processes they run.
+
+Each brick has its own module: capture, netemu (network emulator), router,
+switch, switchwrapper, tap, tunnelconnect (tunnel client), tunnellisten
+(tunnel server), virtualmachine and wire.
+"""
 
 import os
 import collections
@@ -33,7 +40,7 @@ from virtualbricks.config.schema import Ref
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
-__all__ = ["Brick", "BrickConfig"]
+__all__ = ["Brick", "BrickConfig", "PrivilegedBrick"]
 
 
 system_encoding = locale.getpreferredencoding(do_setlocale=True)
@@ -503,3 +510,10 @@ class Brick(base.Base):
 
     def __repr__(self):
         return "<{0.type} {0.name}>".format(self)
+
+
+class PrivilegedBrick(Brick):
+    """A brick that runs with sudo unless Virtualbricks runs as root."""
+
+    def needsudo(self):
+        return os.geteuid() != 0

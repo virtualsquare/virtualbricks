@@ -16,39 +16,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-"""The capture and tap bricks."""
+"""The tap."""
 
 import os
 
-
-from virtualbricks import tuntaps
 from virtualbricks.config import settings
 from virtualbricks.tests import (
     CommandTestCase,
 )
-
-
-class TestCapture(CommandTestCase):
-
-    def test_capture(self):
-        capture = self.factory.new_brick("capture", "cap")
-        self.assertEqual(capture.get_parameters(), "No interface selected")
-        capture.set({"iface": "eth0"})
-        self.assertEqual(
-            capture.get_parameters(), "Interface eth0 disconnected"
-        )
-        self.assertFalse(capture.configured())
-        self.assertEqual(capture.sock_path(), "")
-        sw = self.factory.new_brick("switch", "sw")
-        capture.plugs[0].connect(sw.socks[0])
-        self.assertEqual(
-            capture.get_parameters(), "Interface eth0 plugged to sw "
-        )
-        self.assertEqual(capture.sock_path(), sw.socks[0].path.rstrip("[]"))
-        self.assertTrue(capture.configured())
-        self.assertEqual(
-            capture.prog(), os.path.join(self.bin, "vde_pcapplug")
-        )
 
 
 class TestTap(CommandTestCase):
@@ -57,7 +32,7 @@ class TestTap(CommandTestCase):
         tap = self.factory.new_brick("tap", "tap0")
         tap.set(values)
         commands = []
-        self.patch(tuntaps.os, "system", commands.append)
+        self.patch(os, "system", commands.append)
         # post_poweron is never called and calls a method that is not there
         tap.start_related_events = lambda on: None
         return tap, commands

@@ -83,7 +83,7 @@ def destroy_on_exit(func: Callable) -> Callable:
 
 def iter_tree_model(tree_model):
     """
-    :type disk_image: virtualbricks.virtualmachines.Image
+    :type disk_image: virtualbricks.bricks.virtualmachine.Image
     :rtype: Generator[Tuple[Any, Gtk.TreeIter]]
     """
 

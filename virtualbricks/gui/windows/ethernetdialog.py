@@ -27,7 +27,8 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import tools, virtualmachines
+from virtualbricks import tools
+from virtualbricks.bricks import virtualmachine
 from virtualbricks.config import settings
 from virtualbricks.gui.windows.base import _, Window
 
@@ -215,7 +216,7 @@ class BaseEthernetDialog(Window):
     def setup(self):
         socks = self.sock_store
         socks.append(
-            ("Host-only ad hoc network", virtualmachines.hostonly_sock)
+            ("Host-only ad hoc network", virtualmachine.hostonly_sock)
         )
         if settings.get("femaleplugs"):
             socks.append(("Vde socket", "_sock"))

@@ -28,7 +28,7 @@ from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.virtualmachines import is_virtualmachine
+from virtualbricks.bricks.virtualmachine import is_virtualmachine
 from virtualbricks.gui.windows.base import (
     _,
     _Window,
@@ -357,7 +357,7 @@ class DisksLibraryWindow(_Window):
 
     def _show_edit_screen(self, disk_image):
         """
-        :type disk_image: virtualbricks.virtualmachines.Image
+        :type disk_image: virtualbricks.bricks.virtualmachine.Image
         """
 
         self._disk_image = disk_image
@@ -383,7 +383,7 @@ class DisksLibraryWindow(_Window):
 
     def on_disk_image_added(self, disk_image, tree_model):
         """
-        :type disk_image: virtualbricks.virtualmachines.Image
+        :type disk_image: virtualbricks.bricks.virtualmachine.Image
         :type tree_model: Gtk.TreeModel
         """
 
@@ -391,7 +391,7 @@ class DisksLibraryWindow(_Window):
 
     def on_disk_image_changed(self, disk_image, tree_model):
         """
-        :type disk_image: virtualbricks.virtualmachines.Image
+        :type disk_image: virtualbricks.bricks.virtualmachine.Image
         :type tree_model: Gtk.TreeModel
         """
 
@@ -402,7 +402,7 @@ class DisksLibraryWindow(_Window):
 
     def on_disk_image_removed(self, disk_image, tree_model):
         """
-        :type disk_image: virtualbricks.virtualmachines.Image
+        :type disk_image: virtualbricks.bricks.virtualmachine.Image
         :type tree_model: Gtk.TreeModel
         """
 

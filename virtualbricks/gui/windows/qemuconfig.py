@@ -36,7 +36,7 @@ from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IMenu
 from virtualbricks.spawn import getQemuOutput
 from virtualbricks.tools import dispose
-from virtualbricks.virtualmachines import get_usb_devices
+from virtualbricks.bricks.virtualmachine import get_usb_devices
 from virtualbricks.gui.windows.base import (
     _,
     ConfigController,

@@ -60,7 +60,7 @@ from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.i18n import _
 from virtualbricks.interfaces import registerAdapter
 from virtualbricks.link import Plug, Sock
-from virtualbricks.virtualmachines import VirtualMachine
+from virtualbricks.bricks.virtualmachine import VirtualMachine
 
 logger = Logger()
 sync_error = "Sync terminated unexpectedly"

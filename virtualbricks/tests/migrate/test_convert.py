@@ -32,7 +32,7 @@ from virtualbricks.tests.migrate.fixtures import (
     PROJECT,
     WAN,
 )
-from virtualbricks.virtualmachines import UsbDevice, UsbDeviceKind
+from virtualbricks.bricks.virtualmachine import UsbDevice, UsbDeviceKind
 
 
 def messages(report, level=None):

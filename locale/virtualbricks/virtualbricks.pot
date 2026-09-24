@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 23:12+0200\n"
+"POT-Creation-Date: 2026-09-24 23:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -53,31 +53,86 @@ msgstr ""
 msgid "Invalid brick type %s"
 msgstr ""
 
-#: virtualbricks/bricks.py
+#: virtualbricks/bricks/capture.py
+msgid "No interface selected"
+msgstr ""
+
+#: virtualbricks/bricks/capture.py
+#, python-format
+msgid "Interface %(interface)s plugged to %(socket)s "
+msgstr ""
+
+#: virtualbricks/bricks/capture.py
+#, python-format
+msgid "Interface %s disconnected"
+msgstr ""
+
+#: virtualbricks/bricks/__init__.py
 #, python-format
 msgid "Cannot start '%s': not configured"
 msgstr ""
 
-#: virtualbricks/bricks.py
+#: virtualbricks/bricks/__init__.py
 #, python-format
 msgid "Cannot start '%s': not connected"
 msgstr ""
 
-#: virtualbricks/bricks.py
+#: virtualbricks/bricks/__init__.py
 msgid "Brick.prog() not implemented."
 msgstr ""
 
-#: virtualbricks/bricks.py virtualbricks/events.py
+#: virtualbricks/bricks/__init__.py virtualbricks/events.py
 msgid "running"
 msgstr ""
 
-#: virtualbricks/bricks.py virtualbricks/tunnels.py virtualbricks/tuntaps.py
-#: virtualbricks/wires.py
+#: virtualbricks/bricks/__init__.py virtualbricks/bricks/tap.py
+#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
+#: virtualbricks/bricks/wire.py
 msgid "disconnected"
 msgstr ""
 
-#: virtualbricks/bricks.py virtualbricks/events.py
+#: virtualbricks/bricks/__init__.py virtualbricks/events.py
 msgid "off"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+msgid "Ports: "
+msgstr ""
+
+#: virtualbricks/bricks/switchwrapper.py
+#, python-format
+msgid "Socket does not exists: %s"
+msgstr ""
+
+#: virtualbricks/bricks/tap.py
+#, python-format
+msgid "plugged to %s "
+msgstr ""
+
+#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
+msgid "plugged to"
+msgstr ""
+
+#: virtualbricks/bricks/tunnelconnect.py
+msgid ", connecting to udp://"
+msgstr ""
+
+#: virtualbricks/bricks/tunnellisten.py
+msgid "listening to udp:"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "command:"
+msgstr ""
+
+#: virtualbricks/bricks/wire.py
+#, python-brace-format
+msgid "Configured to connect {0} to {1}"
+msgstr ""
+
+#: virtualbricks/bricks/wire.py
+#, python-brace-format
+msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""
 
 #: virtualbricks/errors.py
@@ -1825,58 +1880,4 @@ msgstr ""
 #: virtualbricks/spawn.py
 #, python-brace-format
 msgid "{exe} not found"
-msgstr ""
-
-#: virtualbricks/switches.py
-msgid "Ports: "
-msgstr ""
-
-#: virtualbricks/switches.py
-#, python-format
-msgid "Socket does not exists: %s"
-msgstr ""
-
-#: virtualbricks/tunnels.py
-msgid "plugged to"
-msgstr ""
-
-#: virtualbricks/tunnels.py
-msgid "listening to udp:"
-msgstr ""
-
-#: virtualbricks/tunnels.py
-msgid ", connecting to udp://"
-msgstr ""
-
-#: virtualbricks/tuntaps.py
-msgid "No interface selected"
-msgstr ""
-
-#: virtualbricks/tuntaps.py
-#, python-format
-msgid "Interface %(interface)s plugged to %(socket)s "
-msgstr ""
-
-#: virtualbricks/tuntaps.py
-#, python-format
-msgid "Interface %s disconnected"
-msgstr ""
-
-#: virtualbricks/tuntaps.py
-#, python-format
-msgid "plugged to %s "
-msgstr ""
-
-#: virtualbricks/virtualmachines.py
-msgid "command:"
-msgstr ""
-
-#: virtualbricks/wires.py
-#, python-brace-format
-msgid "Configured to connect {0} to {1}"
-msgstr ""
-
-#: virtualbricks/wires.py
-#, python-brace-format
-msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""

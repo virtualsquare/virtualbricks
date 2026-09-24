@@ -26,7 +26,7 @@ from virtualbricks.config import tomlfile
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.report import Report
 from virtualbricks.tests import isolate, make_factory, reset_settings
-from virtualbricks.virtualmachines import UsbDevice
+from virtualbricks.bricks.virtualmachine import UsbDevice
 
 
 def build_lab(factory, image_path="/images/deb.qcow2"):

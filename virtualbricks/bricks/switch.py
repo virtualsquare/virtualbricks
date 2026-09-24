@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_switches -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_switch -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,18 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""A switch: vde_switch."""
+
 from collections import OrderedDict
-import os
 
-from twisted.internet import defer
-
-from virtualbricks import bricks, errors
+from virtualbricks import bricks
 from virtualbricks.config import schema
-from virtualbricks.config.schema import Bool, Int, Path
+from virtualbricks.config.schema import Bool, Int
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
-
-sock_not_exists = "Socket does not exists: {path}"
 
 
 @schema.define
@@ -100,44 +97,3 @@ class Switch(bricks.Brick):
 
     def cbset_numports(self, arg=32):
         self.send(b"port/setnumports %d\n" % arg)
-
-
-@schema.define
-class SwitchWrapperConfig(bricks.BrickConfig):
-
-    path = schema.field(Path(), default="")
-
-
-class SwitchWrapper(bricks.Brick):
-
-    type = "SwitchWrapper"
-    pid = -1
-    config_factory = SwitchWrapperConfig
-
-    def __init__(self, factory, name):
-        bricks.Brick.__init__(self, factory, name)
-        self.socks.append(factory.new_sock(self, self.name + "_port"))
-
-    def poweron(self):
-        if self.proc is not None:
-            return defer.succeed(self)
-        elif os.path.exists(self.config.path):
-            self.proc = bricks.FakeProcess(self)
-            return defer.succeed(self)
-        else:
-            self.logger.debug(sock_not_exists, path=self.config.path)
-            msg = _("Socket does not exists: %s") % self.config.path
-            return defer.fail(errors.BadConfigError(msg))
-
-    def poweroff(self, kill=False):
-        self.proc = None
-        return defer.succeed((self, None))
-
-    def get_parameters(self):
-        return self.config.path
-
-    def configured(self):
-        return self.socks[0].has_valid_path()
-
-    def cbset_path(self, path):
-        self.socks[0].path = path

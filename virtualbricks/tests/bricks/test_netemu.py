@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-"""The wires and the network emulator."""
+"""The network emulator."""
 
 from virtualbricks.config import schema
 from virtualbricks.config.report import Report
@@ -25,7 +25,7 @@ from virtualbricks.tests import (
     CommandTestCase,
     pairs,
 )
-from virtualbricks.wires import (
+from virtualbricks.bricks.netemu import (
     BRICK_KEYS,
     STATE_KEYS,
     NetemuConfig,

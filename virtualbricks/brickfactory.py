@@ -43,14 +43,16 @@ from twisted.logger import (
 from virtualbricks import errors, console, project, locations
 from virtualbricks.config import settings, schema
 from virtualbricks import i18n
-from virtualbricks import link, router, switches, tunnels, tuntaps
-from virtualbricks import virtualmachines, wires
+from virtualbricks import link
+from virtualbricks.bricks import capture, netemu, router, switch
+from virtualbricks.bricks import switchwrapper, tap, tunnelconnect
+from virtualbricks.bricks import tunnellisten, virtualmachine, wire
 from virtualbricks.errors import NameAlreadyInUseError
 from virtualbricks.events import Event, is_event
 from virtualbricks.i18n import _
 from virtualbricks.observable import Event as Signal, Observable
 from virtualbricks.tools import is_running
-from virtualbricks.virtualmachines import is_disk_image
+from virtualbricks.bricks.virtualmachine import is_disk_image
 
 logger = Logger()
 reg_basic_types = "Registering basic types"
@@ -74,24 +76,24 @@ def install_brick_types(registry=None):
     logger.debug(reg_basic_types)
     registry.update(
         {
-            "switch": switches.Switch,
-            "tap": tuntaps.Tap,
-            "capture": tuntaps.Capture,
-            "vm": virtualmachines.VirtualMachine,
-            "qemu": virtualmachines.VirtualMachine,
-            "wirefilter": wires.Netemu,
-            "netemu": wires.Netemu,
-            "wire": wires.Wire,
-            "tunnelc": tunnels.TunnelConnect,
-            "tunnel client": tunnels.TunnelConnect,
-            "tunnelclient": tunnels.TunnelConnect,
-            "tunnelconnect": tunnels.TunnelConnect,
-            "tunnell": tunnels.TunnelListen,
-            "tunnel server": tunnels.TunnelListen,
-            "tunnelserver": tunnels.TunnelListen,
-            "tunnellisten": tunnels.TunnelListen,
+            "switch": switch.Switch,
+            "tap": tap.Tap,
+            "capture": capture.Capture,
+            "vm": virtualmachine.VirtualMachine,
+            "qemu": virtualmachine.VirtualMachine,
+            "wirefilter": netemu.Netemu,
+            "netemu": netemu.Netemu,
+            "wire": wire.Wire,
+            "tunnelc": tunnelconnect.TunnelConnect,
+            "tunnel client": tunnelconnect.TunnelConnect,
+            "tunnelclient": tunnelconnect.TunnelConnect,
+            "tunnelconnect": tunnelconnect.TunnelConnect,
+            "tunnell": tunnellisten.TunnelListen,
+            "tunnel server": tunnellisten.TunnelListen,
+            "tunnelserver": tunnellisten.TunnelListen,
+            "tunnellisten": tunnellisten.TunnelListen,
             "event": Event,
-            "switchwrapper": switches.SwitchWrapper,
+            "switchwrapper": switchwrapper.SwitchWrapper,
             "router": router.Router,
         }
     )
@@ -221,7 +223,7 @@ class BrickFactory:
             raise NameAlreadyInUseError(new_name)
         if self.get_image_by_path(path) is not None:
             raise errors.ImageAlreadyInUseError(path)
-        disk_image = virtualmachines.Image(new_name, path, description)
+        disk_image = virtualmachine.Image(new_name, path, description)
         self._disk_images[new_name] = disk_image
         disk_image.changed.connect(self.image_changed.notify)
         self.image_added.notify(disk_image)
@@ -237,7 +239,7 @@ class BrickFactory:
         Return a disk image given its name.
 
         :type name: str
-        :rtype: Optional[virtualbricks.virtualmachines.Image]
+        :rtype: Optional[virtualbricks.bricks.virtualmachine.Image]
         """
 
         return self._disk_images.get(name)
@@ -247,7 +249,7 @@ class BrickFactory:
         Get disk image object from the image library by its path.
 
         :type path: str
-        :rtype: Optional[virtualbricks.virtualmachines.Image]
+        :rtype: Optional[virtualbricks.bricks.virtualmachine.Image]
         """
 
         for disk_image in self._disk_images.values():
@@ -256,7 +258,7 @@ class BrickFactory:
 
     def iter_disk_images(self):
         """
-        :rtype: Iterable[virtualbricks.virtualmachines.Image]
+        :rtype: Iterable[virtualbricks.bricks.virtualmachine.Image]
         """
 
         return iter(self._disk_images.values())
@@ -464,7 +466,7 @@ class BrickFactory:
 
     def get_sock_by_name(self, name):
         if name == "_hostonly":
-            return virtualmachines.hostonly_sock
+            return virtualmachine.hostonly_sock
         for sock in self.socks:
             if sock.nickname == name:
                 return sock

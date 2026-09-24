@@ -105,7 +105,7 @@ def part_name(namespace):
         ("virtualbricks.project", _("Project")),
         ("virtualbricks.console", _("Console")),
         ("virtualbricks.events", _("Events")),
-        ("virtualbricks.virtualmachines", _("Virtual machines")),
+        ("virtualbricks.bricks.virtualmachine", _("Virtual machines")),
         ("virtualbricks.bricks", _("Bricks")),
         ("virtualbricks.link", _("Connections")),
         ("virtualbricks", "Virtualbricks"),

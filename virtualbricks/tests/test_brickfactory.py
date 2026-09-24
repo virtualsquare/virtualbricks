@@ -37,7 +37,7 @@ from virtualbricks.tests.migrate.fixtures import (
     write_project,
     write_settings,
 )
-from virtualbricks.virtualmachines import UsbDevice
+from virtualbricks.bricks.virtualmachine import UsbDevice
 
 
 class TestFactory(BrickTestCase):

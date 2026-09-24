@@ -284,8 +284,8 @@
           <table class="wide">
             <thead><tr><th>Where</th><th>What</th><th>Why</th></tr></thead>
             <tbody>
-              <tr><td><code>bricks.py</code>, <code>Process</code></td><td><code>outReceived</code> and <code>errReceived</code> log with <code>stream="stdout"</code> or <code>"stderr"</code>. Their levels are unchanged: info and error, with <code>hide_to_user</code> for stderr.</td><td>To tell program output from Virtualbricks' own messages.</td></tr>
-              <tr><td><code>bricks.py</code>, <code>Brick</code></td><td>“Starting: …”, “Shutting down …”, “Opening console for …” and the message about a missing event log with <code>self.logger</code> instead of the module's logger.</td><td>So their source is the brick, not “Bricks”.</td></tr>
+              <tr><td><code>bricks/__init__.py</code>, <code>Process</code></td><td><code>outReceived</code> and <code>errReceived</code> log with <code>stream="stdout"</code> or <code>"stderr"</code>. Their levels are unchanged: info and error, with <code>hide_to_user</code> for stderr.</td><td>To tell program output from Virtualbricks' own messages.</td></tr>
+              <tr><td><code>bricks/__init__.py</code>, <code>Brick</code></td><td>“Starting: …”, “Shutting down …”, “Opening console for …” and the message about a missing event log with <code>self.logger</code> instead of the module's logger.</td><td>So their source is the brick, not “Bricks”.</td></tr>
               <tr><td><code>gui.py</code></td><td><code>Application</code> creates a <code>MessageLog</code> instead of a <code>Gtk.TextBuffer</code>, and <code>AppLoggerFactory</code> feeds it through a <code>MessageLogObserver</code>. <code>TextBufferObserver</code> and <code>TEXT_TAGS</code> are gone.</td><td>The model replaces the shared buffer.</td></tr>
               <tr><td><code>gui/windows/virtualbricks.py</code></td><td><code>VBGUI(factory, messages=None)</code> keeps <code>self.messages</code>, a new <code>MessageLog</code> when none is given, and opens <code>LoggingWindow(self.messages)</code>.</td><td>It used to pass the buffer.</td></tr>
             </tbody>
@@ -300,7 +300,7 @@
           <li><strong>The console stays light on a dark desktop theme.</strong></li>
           <li><strong>Each window filters and folds on its own.</strong> Clear still empties them all.</li>
           <li><strong>Save and Report a bug</strong> write every message, whatever the filter, in the same format as before.</li>
-          <li><strong>In the log file,</strong> the four brick messages above change namespace, for example from <code>virtualbricks.bricks</code> to <code>virtualbricks.switches.Switch</code>.</li>
+          <li><strong>In the log file,</strong> the four brick messages above change namespace, for example from <code>virtualbricks.bricks</code> to <code>virtualbricks.bricks.switch.Switch</code>.</li>
           <li><strong>The window</strong> is titled “Messages” instead of “Virtualbricks logging” and opens at 900 × 560; the old one only had a minimum size of 700 × 450.</li>
         </ul>
       </section>
@@ -324,7 +324,7 @@
             <tbody>
               <tr><td><code>virtualbricks/gui/messages.py</code> (new)</td><td><code>Entry</code>, <code>entry_from_event()</code>, <code>describe_source()</code>, <code>part_name()</code>, <code>type_name()</code>, <code>Filter</code> and <code>parse_filter()</code>, <code>MessageLog</code>, <code>MessageLogObserver</code>. No GTK widgets: only <code>GLib.idle_add</code>.</td></tr>
               <tr><td><code>virtualbricks/gui/windows/logging.py</code></td><td>Rewritten: the icon helpers, <code>ConsoleView</code> and <code>LoggingWindow</code>, which keeps the old name and the bug report.</td></tr>
-              <tr><td><code>virtualbricks/gui/gui.py</code>, <code>…/windows/virtualbricks.py</code>, <code>virtualbricks/bricks.py</code></td><td>The changes <a href="#outside">above</a>.</td></tr>
+              <tr><td><code>virtualbricks/gui/gui.py</code>, <code>…/windows/virtualbricks.py</code>, <code>virtualbricks/bricks/__init__.py</code></td><td>The changes <a href="#outside">above</a>.</td></tr>
             </tbody>
           </table>
         </div>

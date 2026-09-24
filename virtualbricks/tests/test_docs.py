@@ -50,8 +50,8 @@ from virtualbricks.config.schema import (
 )
 from virtualbricks.events import EventConfig
 from virtualbricks.tests import isolate, make_factory, reset_settings
-from virtualbricks.virtualmachines import DISK_DEVICES
-from virtualbricks.wires import BRICK_KEYS, STATE_KEYS, NetemuConfig
+from virtualbricks.bricks.virtualmachine import DISK_DEVICES
+from virtualbricks.bricks.netemu import BRICK_KEYS, STATE_KEYS, NetemuConfig
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 MAN = os.path.join(ROOT, "docs", "man")

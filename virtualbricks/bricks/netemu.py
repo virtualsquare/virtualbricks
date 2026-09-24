@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_wires -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_netemu -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,59 +16,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""A network emulator: wirefilter, a wire with a Markov chain of states."""
+
 import re
 
 from virtualbricks import bricks
+from virtualbricks.bricks.wire import Wire
 from virtualbricks.config import schema
 from virtualbricks.config.schema import Bool, Float, Int, ListOf, Record, Str
-from virtualbricks.i18n import _
-from virtualbricks.spawn import abspath_vde
-
-
-class Wire(bricks.Brick):
-
-    type = "Wire"
-    connections = "endpoints"
-
-    def __init__(self, factory, name):
-        bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(factory.new_plug(self))
-        self.plugs.append(factory.new_plug(self))
-
-    def get_parameters(self):
-        p0 = _("disconnected")
-        p1 = _("disconnected")
-        if len(self.plugs) == 2:
-            if self.plugs[0].sock:
-                p0 = self.plugs[0].sock.brick.name
-            if self.plugs[1].sock:
-                p1 = self.plugs[1].sock.brick.name
-            if p0 != _("disconnected") and p1 != _("disconnected"):
-                return _("Configured to connect {0} to {1}").format(p0, p1)
-        elif len(self.plugs) == 1:
-            if self.plugs[0].sock:
-                p0 = self.plugs[0].sock.brick.name
-            return _("Configured to connect {0} to {1}").format(p0, p1)
-        return _(
-            "Not yet configured. Left plug is {0} and right plug is {1}"
-        ).format(p0, p1)
-
-    def configured(self):
-        return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))
-
-    def prog(self):
-        return (abspath_vde("dpipe"),)
-
-    def args(self):
-        return [
-            self.prog(),
-            abspath_vde("vde_plug"),
-            # XXX: this is awful
-            self.plugs[0].sock.path.rstrip("[]"),
-            "=",
-            abspath_vde("vde_plug"),
-            self.plugs[1].sock.path.rstrip("[]"),
-        ]
 
 
 @schema.define

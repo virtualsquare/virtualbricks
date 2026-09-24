@@ -147,7 +147,11 @@ def convert_value(kind, text):
 def _convert_item(kind, text):
     from virtualbricks import console
     from virtualbricks.events import EventAction
-    from virtualbricks.virtualmachines import USB_ID, UsbDevice, UsbDeviceKind
+    from virtualbricks.bricks.virtualmachine import (
+        USB_ID,
+        UsbDevice,
+        UsbDeviceKind,
+    )
 
     if isinstance(kind, EventAction):
         command, _, rest = text.partition(" ")

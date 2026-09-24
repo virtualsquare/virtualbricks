@@ -30,7 +30,7 @@ from virtualbricks.tests import (
     CommandTestCase,
     adjacent,
 )
-from virtualbricks.virtualmachines import (
+from virtualbricks.bricks.virtualmachine import (
     UsbDevice,
     UsbDeviceKind,
     hostonly_sock,

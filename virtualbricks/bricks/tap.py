@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_tuntaps -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_tap -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,64 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""A tap: vde_plug2tap, a tap interface of the host plugged to a switch."""
+
 import os
-from collections import OrderedDict as odict
 
 from virtualbricks import bricks, link
 from virtualbricks.config import schema, settings
-from virtualbricks.config.schema import Choice, IPv4, Str
+from virtualbricks.config.schema import Choice, IPv4
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
-
-
-class PrivilegedBrick(bricks.Brick):
-
-    def needsudo(self):
-        return os.geteuid() != 0
-
-
-@schema.define
-class CaptureConfig(bricks.BrickConfig):
-
-    iface = schema.field(Str(), default="")
-
-
-class Capture(PrivilegedBrick):
-
-    type = "Capture"
-    config_factory = CaptureConfig
-    connections = "connect"
-
-    def __init__(self, factory, name):
-        bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(link.Plug(self))
-        self.command_builder = odict(
-            (("-s", self.sock_path), ("*iface", "iface"))
-        )
-
-    def sock_path(self):
-        if self.plugs[0].sock:
-            return self.plugs[0].sock.path.rstrip("[]")
-        return ""
-
-    def get_parameters(self):
-        if self.config.iface == "":
-            return _("No interface selected")
-        if self.plugs[0].sock:
-            return _("Interface %(interface)s plugged to %(socket)s ") % {
-                "interface": self.config.iface,
-                "socket": self.plugs[0].sock.brick.name,
-            }
-        return _("Interface %s disconnected") % self.config.iface
-
-    def prog(self):
-        return abspath_vde("vde_pcapplug")
-
-    def open_console(self):
-        pass
-
-    def configured(self):
-        return self.plugs[0].sock and self.config.iface
 
 
 @schema.define
@@ -85,7 +36,7 @@ class TapConfig(bricks.BrickConfig):
     mode = schema.field(Choice("off", "dhcp", "manual"), default="off")
 
 
-class Tap(PrivilegedBrick):
+class Tap(bricks.PrivilegedBrick):
 
     type = "Tap"
     config_factory = TapConfig
