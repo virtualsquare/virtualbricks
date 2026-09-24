@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 18:12+0200\n"
+"POT-Creation-Date: 2026-09-24 23:12+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -162,6 +162,96 @@ msgstr ""
 msgid "Terminate"
 msgstr ""
 
+#: virtualbricks/gui/messages.py
+msgid "Main window"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "Windows"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "Migration"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Settings"
+msgstr "_Preferencias"
+
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/messages.py
+msgid "Console"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "Events"
+msgstr "Eventos"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Virtual machines"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+msgid "Bricks"
+msgstr "Bricks (Bloques)"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Connections"
+msgstr "Conectar con:"
+
+#: virtualbricks/gui/messages.py
+msgid "capture"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "event"
+msgstr "Eventos"
+
+#: virtualbricks/gui/messages.py
+msgid "network emulator"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "virtual machine"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/gui/messages.py
+msgid "router"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "switch"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "switch wrapper"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "tap"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "tunnel client"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "tunnel server"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "wire"
+msgstr ""
+
 #: virtualbricks/gui/widgets.py
 msgid "Enable formatting"
 msgstr ""
@@ -236,7 +326,8 @@ msgstr ""
 msgid "_OK"
 msgstr ""
 
-#: virtualbricks/gui/windows/base.py virtualbricks/migrate/gui.py
+#: virtualbricks/gui/windows/base.py virtualbricks/gui/windows/logging.py
+#: virtualbricks/migrate/gui.py
 msgid "_Cancel"
 msgstr ""
 
@@ -694,16 +785,149 @@ msgid "Load disk image"
 msgstr "<b> dispositivo de CD-ROM </b>"
 
 #: virtualbricks/gui/windows/logging.py
-#, fuzzy
-msgid "Virtualbricks logging"
-msgstr "Virtualbricks"
-
-#: virtualbricks/gui/windows/logging.py
-msgid "report bug"
+msgid "%A %d %B %Y"
 msgstr ""
 
 #: virtualbricks/gui/windows/logging.py
-msgid "Save as..."
+msgid "%A %d %B %Y, %H:%M:%S"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "pid {pid}"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "Output of the program on {stream}"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Debug"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Info"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Warning"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Error"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Critical"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "{0} more line"
+msgid_plural "{0} more lines"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "traceback, {0} call"
+msgid_plural "traceback, {0} calls"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy
+msgid "Messages"
+msgstr "_Mensajes"
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Filter, for example level:warning source:tap0"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Menu"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Following"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Show the newest messages as they arrive"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy
+msgid "Expand all"
+msgstr "Expandir verticalmente"
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Collapse all"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Save…"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Report a bug…"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Clear"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} message"
+msgid_plural "{0} messages"
+msgstr[0] "_Mensajes"
+msgstr[1] "_Mensajes"
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} of {1} message"
+msgid_plural "{0} of {1} messages"
+msgstr[0] "_Mensajes"
+msgstr[1] "_Mensajes"
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "{0} error"
+msgid_plural "{0} errors"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "{0} warning"
+msgid_plural "{0} warnings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "{0} line of program output"
+msgid_plural "{0} lines of program output"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Following the newest"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Paused"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy
+msgid "Save the messages"
+msgstr "_Mensajes"
+
+#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
+msgid "_Save"
 msgstr ""
 
 #: virtualbricks/gui/windows/netemuconfig.py
@@ -1621,15 +1845,6 @@ msgid "Write to"
 msgstr ""
 
 #: virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "Project"
-msgstr "_Abrir proyecto"
-
-#: virtualbricks/migrate/gui.py
-msgid "Bricks"
-msgstr "Bricks (Bloques)"
-
-#: virtualbricks/migrate/gui.py
 msgid "Save report…"
 msgstr ""
 
@@ -1681,10 +1896,6 @@ msgstr ""
 
 #: virtualbricks/migrate/gui.py
 msgid "Save report"
-msgstr ""
-
-#: virtualbricks/migrate/gui.py
-msgid "_Save"
 msgstr ""
 
 #: virtualbricks/spawn.py
@@ -1746,6 +1957,10 @@ msgstr ""
 msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""
 
+#, fuzzy
+#~ msgid "Virtualbricks logging"
+#~ msgstr "Virtualbricks"
+
 #~ msgid "_Recent Projects..."
 #~ msgstr "Proyectos _Recientes"
 
@@ -1795,9 +2010,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Puedes usar \"drag & drop\" para añadir un evento a una colación, y doble "
 #~ "click para arrancar o pararlos"
-
-#~ msgid "Events"
-#~ msgstr "Eventos"
 
 #~ msgid ""
 #~ "Click to select an enty for use or edit its configuration, rightclick for "

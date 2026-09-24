@@ -21,16 +21,14 @@
 import os
 import sys
 
-from gi.repository import GObject, Gtk
+from gi.repository import Gtk
 from twisted.internet import error, defer, protocol, reactor
 from twisted.logger import (
     FilteringLogObserver,
-    ILogObserver,
     LogLevel,
     LogLevelFilterPredicate,
     Logger,
     PredicateResult,
-    eventAsText,
     formatEvent,
     globalLogPublisher,
 )
@@ -58,6 +56,7 @@ from virtualbricks.gui.windows import (
     VBGUI,
 )
 from virtualbricks.gui.interfaces import IMenu, IJobMenu, IConfigController
+from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.i18n import _
 from virtualbricks.interfaces import registerAdapter
 from virtualbricks.link import Plug, Sock
@@ -516,23 +515,6 @@ class VisualFactory(brickfactory.BrickFactory):
         self.socks = List()
 
 
-@implementer(ILogObserver)
-class TextBufferObserver:
-
-    def __init__(self, textbuffer):
-        self.textbuffer = textbuffer
-
-    def __call__(self, event):
-        GObject.idle_add(self.emit, event)
-
-    def emit(self, event):
-        self.textbuffer.insert_with_tags_by_name(
-            self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark("end")),
-            eventAsText(event) + "\n",
-            event["log_level"].name,
-        )
-
-
 class MessageDialogObserver:
 
     def __init__(self, parent=None):
@@ -561,19 +543,10 @@ def should_show_to_user(event):
     return PredicateResult.maybe
 
 
-TEXT_TAGS = [
-    ("debug", {"foreground": "#a29898"}),
-    ("info", {}),
-    ("warn", {"foreground": "#ff9500"}),
-    ("error", {"foreground": "#b8032e"}),
-    ("critical", {"foreground": "#b8032e", "weight": 700}),
-]
-
-
-def AppLoggerFactory(textbuffer):
+def AppLoggerFactory(messages):
 
     observer = FilteringLogObserver(
-        TextBufferObserver(textbuffer),
+        MessageLogObserver(messages),
         [LogLevelFilterPredicate(LogLevel.info)],
     )
 
@@ -590,15 +563,9 @@ class Application(brickfactory.Application):
     factory_factory = VisualFactory
 
     def __init__(self, config):
-        self.textbuffer = textbuffer = Gtk.TextBuffer()
-        textbuffer.create_mark(
-            mark_name="end",
-            where=textbuffer.get_end_iter(),
-            left_gravity=False,
-        )
-        for name, attrs in TEXT_TAGS:
-            self.textbuffer.create_tag(name, **attrs)
-        self.logger_factory = AppLoggerFactory(textbuffer)
+        # the messages of this run, for the messages window
+        self.messages = MessageLog()
+        self.logger_factory = AppLoggerFactory(self.messages)
         brickfactory.Application.__init__(self, config)
 
     def get_namespace(self):
@@ -612,7 +579,7 @@ class Application(brickfactory.Application):
         globalLogPublisher.addObserver(observer)
         # disable default link_button action
         # gtk.link_button_set_uri_hook(lambda b, s: None)
-        self.gui = VBGUI(factory, self.textbuffer)
+        self.gui = VBGUI(factory, self.messages)
         message_dialog.set_parent(self.gui.window)
 
     def migrate(self):

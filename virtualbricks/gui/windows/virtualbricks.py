@@ -47,6 +47,7 @@ from virtualbricks.gui.windows.disklibrary import DisksLibraryWindow
 from virtualbricks.gui.windows.exportproject import ExportProjectDialog
 from virtualbricks.gui.windows.importdialog import ImportDialog
 from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
+from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.windows.logging import LoggingWindow
 from virtualbricks.gui.windows.newbrick import NewBrickDialog
 from virtualbricks.gui.windows.newevent import NewEventDialog
@@ -400,11 +401,12 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     __bricks_binding_list = None
     __events_binding_list = None
 
-    def __init__(self, factory, textbuffer=None):
+    def __init__(self, factory, messages=None):
         self.factory = self.brickfactory = factory
         self.build_ui()
         self.config = settings
-        self.messages_buffer = textbuffer
+        # the messages of this run, see virtualbricks.gui.messages
+        self.messages = MessageLog() if messages is None else messages
 
         logger.info(start_virtualbricks)
         self.__initialize_components()
@@ -1497,7 +1499,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_view_messages_item_activate(self, menuitem):
-        LoggingWindow(self.messages_buffer).show()
+        LoggingWindow(self.messages).show()
         return True
 
     def on_images_create_item_activate(self, menuitem):

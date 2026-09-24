@@ -98,11 +98,19 @@ class Process(protocol.ProcessProtocol):
             self.logger.info(process_terminated, status="Done")
         self.brick.process_ended(self, status)
 
+    # The output of the program, marked with its stream for the messages
+    # window.
+
     def outReceived(self, data):
-        self.logger.info("{output}", output=_decode(data))
+        self.logger.info("{output}", output=_decode(data), stream="stdout")
 
     def errReceived(self, data):
-        self.logger.error("{output}", output=_decode(data), hide_to_user=True)
+        self.logger.error(
+            "{output}",
+            output=_decode(data),
+            stream="stderr",
+            hide_to_user=True,
+        )
 
     # new interface
 
@@ -295,7 +303,7 @@ class Brick(base.Base):
     def poweroff(self, kill=False):
         if self.proc is None:
             return defer.succeed((self, self._last_status))
-        logger.info(shutdown_brick, name=self.name, pid=self.proc.pid)
+        self.logger.info(shutdown_brick, name=self.name, pid=self.proc.pid)
         try:
             self.proc.signal_process("KILL" if kill else "TERM")
         except OSError as e:
@@ -402,7 +410,7 @@ class Brick(base.Base):
 
         def start_process(value):
             prog, args = value
-            logger.info(start_brick, args=" ".join(args))
+            self.logger.info(start_brick, args=" ".join(args))
             # usePTY?
             if self.needsudo():
                 prog = settings.get("sudo")
@@ -430,7 +438,7 @@ class Brick(base.Base):
         if event:
             event.poweron()
         else:
-            logger.info(event_unavailable, name=name, brick=self.name)
+            self.logger.info(event_unavailable, name=name, brick=self.name)
 
     #############################
     # Console related operations.
@@ -465,7 +473,7 @@ class Brick(base.Base):
     def open_console(self):
         term = settings.get("term")
         args = [term, "-e", abspath_vde(self.term_command), self.console()]
-        logger.info(open_console, name=self.name, args=" ".join(args))
+        self.logger.info(open_console, name=self.name, args=" ".join(args))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)
 
     def send(self, data):

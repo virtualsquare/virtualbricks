@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 18:12+0200\n"
+"POT-Creation-Date: 2026-09-24 23:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -165,6 +165,103 @@ msgstr "Ca_ncella"
 msgid "Terminate"
 msgstr ""
 
+#: virtualbricks/gui/messages.py
+msgid "Main window"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "Windows"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Migration"
+msgstr "Controlla la configurazione"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Settings"
+msgstr "_Impostazioni"
+
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Project"
+msgstr "Nome Evento:"
+
+#: virtualbricks/gui/messages.py
+msgid "Console"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+msgid "Events"
+msgstr "Eventi"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Virtual machines"
+msgstr "Macchina Virtuale"
+
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+msgid "Bricks"
+msgstr "Mattoni"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Connections"
+msgstr "Connetti a"
+
+#: virtualbricks/gui/messages.py
+msgid "capture"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "event"
+msgstr "Eventi"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "network emulator"
+msgstr "resetta emulazione"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "virtual machine"
+msgstr "Macchina Virtuale"
+
+#: virtualbricks/gui/messages.py
+msgid "router"
+msgstr ""
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "switch"
+msgstr "Switch"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "switch wrapper"
+msgstr "Switch"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "tap"
+msgstr "Tap"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "tunnel client"
+msgstr "Tunnel Client"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "tunnel server"
+msgstr "Tunnel Server"
+
+#: virtualbricks/gui/messages.py
+msgid "wire"
+msgstr ""
+
 #: virtualbricks/gui/widgets.py
 #, fuzzy
 msgid "Enable formatting"
@@ -242,7 +339,8 @@ msgstr "Assegna niente"
 msgid "_OK"
 msgstr ""
 
-#: virtualbricks/gui/windows/base.py virtualbricks/migrate/gui.py
+#: virtualbricks/gui/windows/base.py virtualbricks/gui/windows/logging.py
+#: virtualbricks/migrate/gui.py
 #, fuzzy
 msgid "_Cancel"
 msgstr "Annulla"
@@ -726,18 +824,150 @@ msgid "Load disk image"
 msgstr "immagini disco"
 
 #: virtualbricks/gui/windows/logging.py
-#, fuzzy
-msgid "Virtualbricks logging"
-msgstr "Impostazioni Virtualbricks"
+msgid "%A %d %B %Y"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "%A %d %B %Y, %H:%M:%S"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "pid {pid}"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "Output of the program on {stream}"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Debug"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Info"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Warning"
+msgstr "Attenzione"
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Error"
+msgstr "Errore"
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Critical"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "{0} more line"
+msgid_plural "{0} more lines"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "traceback, {0} call"
+msgid_plural "traceback, {0} calls"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Messages"
+msgstr "Messaggi"
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Filter, for example level:warning source:tap0"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Menu"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Following"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Show the newest messages as they arrive"
+msgstr ""
 
 #: virtualbricks/gui/windows/logging.py
 #, fuzzy
-msgid "report bug"
+msgid "Expand all"
+msgstr "Espandi Verticalmente"
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Collapse all"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Save…"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy
+msgid "Report a bug…"
 msgstr "porta"
 
 #: virtualbricks/gui/windows/logging.py
-msgid "Save as..."
+msgid "Clear"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} message"
+msgid_plural "{0} messages"
+msgstr[0] "messaggio"
+msgstr[1] "messaggio"
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} of {1} message"
+msgid_plural "{0} of {1} messages"
+msgstr[0] "messaggio"
+msgstr[1] "messaggio"
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "{0} error"
+msgid_plural "{0} errors"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} warning"
+msgid_plural "{0} warnings"
+msgstr[0] "Attenzione"
+msgstr[1] "Attenzione"
+
+#: virtualbricks/gui/windows/logging.py
+#, python-brace-format
+msgid "{0} line of program output"
+msgid_plural "{0} lines of program output"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Following the newest"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+msgid "Paused"
+msgstr ""
+
+#: virtualbricks/gui/windows/logging.py
+#, fuzzy
+msgid "Save the messages"
 msgstr "Salva come..."
+
+#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
+msgid "_Save"
+msgstr ""
 
 #: virtualbricks/gui/windows/netemuconfig.py
 #: virtualbricks/gui/windows/wireconfig.py
@@ -1687,15 +1917,6 @@ msgid "Write to"
 msgstr ""
 
 #: virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "Project"
-msgstr "Nome Evento:"
-
-#: virtualbricks/migrate/gui.py
-msgid "Bricks"
-msgstr "Mattoni"
-
-#: virtualbricks/migrate/gui.py
 msgid "Save report…"
 msgstr ""
 
@@ -1749,10 +1970,6 @@ msgstr ""
 #, fuzzy
 msgid "Save report"
 msgstr "Salvare il progetto corrente?"
-
-#: virtualbricks/migrate/gui.py
-msgid "_Save"
-msgstr ""
 
 #: virtualbricks/spawn.py
 #, fuzzy, python-brace-format
@@ -1813,6 +2030,13 @@ msgstr "Configurato per connettere"
 #, python-brace-format
 msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Virtualbricks logging"
+#~ msgstr "Impostazioni Virtualbricks"
+
+#~ msgid "Save as..."
+#~ msgstr "Salva come..."
 
 #, fuzzy, python-format
 #~ msgid "Parameter %s not found"
@@ -1894,9 +2118,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Si può usare il drag and drop per aggiungere un evento ad una collezione "
 #~ "di eventi e il doppio click per per avviarli/fermarli."
-
-#~ msgid "Events"
-#~ msgstr "Eventi"
 
 #~ msgid ""
 #~ "Click to select an enty for use or edit its configuration, rightclick for "
@@ -2139,9 +2360,6 @@ msgstr ""
 #~ msgid "port:"
 #~ msgstr "porta:"
 
-#~ msgid "Tunnel Server"
-#~ msgstr "Tunnel Server"
-
 #~ msgid "<b>Tunnel client Configuration</b>"
 #~ msgstr "<b>Configurazione Tunnel client</b>"
 
@@ -2330,9 +2548,6 @@ msgstr ""
 #~ msgid "kill emulation immediately"
 #~ msgstr "uccidi emulazione immediatamente"
 
-#~ msgid "reset emulation"
-#~ msgstr "resetta emulazione"
-
 #~ msgid "pause emulation"
 #~ msgstr "sospendi emulazione"
 
@@ -2504,20 +2719,11 @@ msgstr ""
 #~ msgid "Ok"
 #~ msgstr "Ok"
 
-#~ msgid "Switch"
-#~ msgstr "Switch"
-
 #~ msgid "Wire"
 #~ msgstr "Wire"
 
 #~ msgid "Wirefilter"
 #~ msgstr "Wirefilter"
-
-#~ msgid "Tunnel Client"
-#~ msgstr "Tunnel Client"
-
-#~ msgid "Virtual Machine"
-#~ msgstr "Macchina Virtuale"
 
 #~ msgid "Event type selection"
 #~ msgstr "Selezione del tipo di evento"
@@ -2589,9 +2795,6 @@ msgstr ""
 
 #~ msgid "<b>Bricks added</b>"
 #~ msgstr "<b>Mattoni aggiunti</b>"
-
-#~ msgid "Messages"
-#~ msgstr "Messaggi"
 
 #~ msgid "<b>Start Event selection</b>"
 #~ msgstr "<b>Selezione Evento di avvio</b>"
@@ -2747,17 +2950,11 @@ msgstr ""
 #~ msgid "Cannot rename Event: it is in use."
 #~ msgstr "Impossibile rinominare Evento: è in uso."
 
-#~ msgid "Error"
-#~ msgstr "Errore"
-
 #~ msgid "invalid path for qemu binaries"
 #~ msgstr "percorso non valido per i binari di qemu"
 
 #~ msgid "cannot find neither qemu nor kvm in this path"
 #~ msgstr "né qemu né kvm sono stati trovati in questo percorso"
-
-#~ msgid "Warning"
-#~ msgstr "Attenzione"
 
 #~ msgid "cannot find qemu, using kvm only\n"
 #~ msgstr "non trovo qemu, uso solo kvm\n"
@@ -2882,10 +3079,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "<b>X86 optimizations</b>"
 #~ msgstr "Ottimizzazioni X86"
-
-#, fuzzy
-#~ msgid "Switch Wrapper"
-#~ msgstr "Switch"
 
 #, fuzzy
 #~ msgid "cannot find qemu, using kvm only"
