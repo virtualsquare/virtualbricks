@@ -51,7 +51,7 @@ from virtualbricks.config.schema import (
 from virtualbricks.events import EventConfig
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.virtualmachines import DISK_DEVICES
-from virtualbricks.wires import NetemuState
+from virtualbricks.wires import BRICK_KEYS, STATE_KEYS, NetemuConfig
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 MAN = os.path.join(ROOT, "docs", "man")
@@ -232,7 +232,7 @@ class TestProjects(DocsTestCase):
             }
             if "states" in table:
                 # the keys of a state are documented with the brick
-                own.update(schema.dump(NetemuState()))
+                own.update(schema.dump(NetemuConfig(), exclude=BRICK_KEYS))
             self.check_defaults(brick_type, own, brick_type)
             config_names = set(schema.names(brick.config))
             self.check_kinds(
@@ -270,10 +270,10 @@ class TestProjects(DocsTestCase):
 
     def test_netemu_states(self):
         entries = self.entries("netemu")
-        state = schema.dump(NetemuState())
+        state = schema.dump(NetemuConfig(), exclude=BRICK_KEYS)
         for name, value in state.items():
             self.assertEqual(entries[name][2], toml(value), name)
-        self.check_kinds("netemu", NetemuState)
+        self.check_kinds("netemu", NetemuConfig, STATE_KEYS)
 
 
 class TestManPage(DocsTestCase):

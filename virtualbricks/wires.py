@@ -71,32 +71,34 @@ class Wire(bricks.Brick):
         ]
 
 
-def _state_fields():
-    return {
-        "name": schema.field(Str(), default="default name"),
-        "bandwidth": schema.field(Int(), default=125000),
-        "bandwidthr": schema.field(Int(), default=125000),
-        "bandwidthsymm": schema.field(Bool(), default=True),
-        "delay": schema.field(Int(), default=0),
-        "delayr": schema.field(Int(), default=0),
-        "delaysymm": schema.field(Bool(), default=True),
-        "chanbufsize": schema.field(Int(), default=75000),
-        "chanbufsizer": schema.field(Int(), default=75000),
-        "chanbufsizesymm": schema.field(Bool(), default=True),
-        "loss": schema.field(Float(0, 100), default=0.0),
-        "lossr": schema.field(Float(0, 100), default=0.0),
-        "losssymm": schema.field(Bool(), default=True),
-    }
+@schema.define
+class NetemuConfig(bricks.BrickConfig):
+    """
+    The configuration of a Netemu: its events and a state of its Markov chain.
+
+    Each state is a NetemuConfig, and every state has the events of the brick.
+    The config of the brick is its current state. In the project file the
+    events are keys of the brick and the states are tables without them.
+    """
+
+    name = schema.field(Str(), default="default name")
+    bandwidth = schema.field(Int(), default=125000)
+    bandwidthr = schema.field(Int(), default=125000)
+    bandwidthsymm = schema.field(Bool(), default=True)
+    delay = schema.field(Int(), default=0)
+    delayr = schema.field(Int(), default=0)
+    delaysymm = schema.field(Bool(), default=True)
+    chanbufsize = schema.field(Int(), default=75000)
+    chanbufsizer = schema.field(Int(), default=75000)
+    chanbufsizesymm = schema.field(Bool(), default=True)
+    loss = schema.field(Float(0, 100), default=0.0)
+    lossr = schema.field(Float(0, 100), default=0.0)
+    losssymm = schema.field(Bool(), default=True)
 
 
-# One Markov state, as written in the project file.
-NetemuState = schema.make_class("NetemuState", _state_fields())
-# The configuration of a Netemu is its current state.
-NetemuConfig = schema.make_class(
-    "NetemuConfig", _state_fields(), bases=(bricks.BrickConfig,)
-)
-STATE_KEYS = frozenset(schema.names(NetemuState))
 BRICK_KEYS = frozenset(schema.names(bricks.BrickConfig))
+# The keys of a state in the project file.
+STATE_KEYS = frozenset(schema.names(NetemuConfig)) - BRICK_KEYS
 
 
 @schema.define
@@ -108,8 +110,8 @@ class NetemuTable(bricks.BrickConfig):
         ListOf(ListOf(Float(0))), factory=lambda: [[0.0]]
     )
     states = schema.field(
-        ListOf(Record(NetemuState), min_length=1),
-        factory=lambda: [NetemuState()],
+        ListOf(Record(NetemuConfig, exclude=BRICK_KEYS), min_length=1),
+        factory=lambda: [NetemuConfig()],
     )
 
 
@@ -302,11 +304,11 @@ class Netemu(Wire):
 
     def load_config_table(self, table, report, where, ignore):
         data = schema.load(NetemuTable, table, report, where, ignore=ignore)
-        events = {name: getattr(data, name) for name in BRICK_KEYS}
-        states = [
-            NetemuConfig(**schema.values(state), **events)
-            for state in data.states
-        ]
+        states = data.states
+        # the states are read without the events, which are the brick's
+        for state in states:
+            for name in BRICK_KEYS:
+                setattr(state, name, getattr(data, name))
         size = len(states)
         weights = data.transitions
         if len(weights) != size or any(len(row) != size for row in weights):

@@ -50,7 +50,6 @@ __all__ = [
     "fields",
     "kind_of",
     "load",
-    "make_class",
     "names",
     "parse",
     "references",
@@ -235,22 +234,28 @@ class Choice(Str):
 
 
 class Record(Kind):
-    """A nested schema, stored as a TOML table."""
+    """
+    A nested schema, stored as a TOML table.
 
-    def __init__(self, cls):
+    The fields named in ``exclude`` are not stored: they keep their default
+    when the table is read, and in the table they are unknown fields.
+    """
+
+    def __init__(self, cls, exclude=()):
         self.cls = cls
+        self.exclude = frozenset(exclude)
 
     def check(self, value):
         if not isinstance(value, self.cls):
             raise ValueError(f"{value!r} is not a {self.cls.__name__}")
 
     def to_data(self, value):
-        return dump(value)
+        return dump(value, exclude=self.exclude)
 
     def from_data(self, data, report, where):
         if not isinstance(data, dict):
             raise ValueError(f"{_describe(data)} is not a table")
-        return load(self.cls, data, report, where)
+        return load(self.cls, data, report, where, exclude=self.exclude)
 
     def format(self, value):
         return "{…}"
@@ -338,18 +343,6 @@ def field(
         factory=factory,
         validator=_validator(kind),
         metadata={_KEY: FieldInfo(kind, label, help, path)},
-    )
-
-
-def make_class(name, fields, bases=()):
-    """Create a schema class from a dict of fields, like :func:`define`."""
-
-    return attr.make_class(
-        name,
-        fields,
-        bases=bases or (object,),
-        slots=True,
-        on_setattr=attr.setters.validate,
     )
 
 

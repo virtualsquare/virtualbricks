@@ -25,7 +25,12 @@ from virtualbricks.tests import (
     CommandTestCase,
     pairs,
 )
-from virtualbricks.wires import NetemuConfig, NetemuState
+from virtualbricks.wires import (
+    BRICK_KEYS,
+    STATE_KEYS,
+    NetemuConfig,
+    NetemuTable,
+)
 
 
 class TestNetemu(BrickTestCase):
@@ -87,9 +92,14 @@ class TestNetemu(BrickTestCase):
         )
 
     def test_state_schema(self):
+        # a state is the config without the events of the brick
         self.assertEqual(
-            len(schema.names(NetemuConfig)), len(schema.names(NetemuState)) + 2
+            STATE_KEYS | BRICK_KEYS, frozenset(schema.names(NetemuConfig))
         )
+        self.assertEqual(STATE_KEYS & BRICK_KEYS, frozenset())
+        self.assertEqual(len(STATE_KEYS), 13)
+        [state] = schema.dump(NetemuTable())["states"]
+        self.assertEqual(frozenset(state), STATE_KEYS)
 
     def test_update_sends_every_state(self):
         netemu = self.factory.new_brick("netemu", "wan")

@@ -221,6 +221,19 @@ class TestRecord(unittest.TestCase):
             kind.from_data("a", Report(), "d")
         self.assertEqual(kind.format(Disk()), "{…}")
 
+    def test_exclude(self):
+        kind = Record(Disk, exclude={"private"})
+        self.assertEqual(kind.to_data(Disk("a", True)), {"image": "a"})
+        report = Report()
+        disk = kind.from_data({"image": "a"}, report, "d")
+        # an excluded field keeps its default, and is not expected
+        self.assertEqual(disk, Disk("a", False))
+        self.assertEqual(len(report), 0)
+        kind.from_data({"image": "a", "private": True}, report, "d")
+        self.assertEqual(
+            [str(m) for m in report], ["d.private: unknown field, dropped"]
+        )
+
 
 class TestListOf(unittest.TestCase):
 
@@ -294,19 +307,6 @@ class TestFields(unittest.TestCase):
         values = schema.values(machine)
         self.assertEqual(values["ram"], 100)
         self.assertEqual(len(values), 9)
-
-    def test_make_class(self):
-        cls = schema.make_class(
-            "Made", {"size": schema.field(Int(0, 9), default=1)}, (Disk,)
-        )
-        made = cls()
-        self.assertEqual(schema.names(made), ["image", "private", "size"])
-        self.assertRaises(ValueError, setattr, made, "size", 10)
-        self.assertRaises(AttributeError, setattr, made, "other", 1)
-        plain = schema.make_class(
-            "Plain", {"a": schema.field(Int(), default=0)}
-        )
-        self.assertEqual(plain().a, 0)
 
     def test_copies_are_independent(self):
         machine = Machine()
