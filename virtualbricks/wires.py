@@ -378,7 +378,7 @@ class Netemu(Wire):
         new_opt_tmp = "state{0}.{1}"
         double_opt_tmp = "{0}[{1}]"
 
-        l = []
+        options = []
         for name, param in sorted(
             self.markov_manager.states[0].parameters.items()
         ):
@@ -389,11 +389,13 @@ class Netemu(Wire):
                 value = param.to_string_brick(
                     self.markov_manager.states[0][name], self
                 )
-                l.append(opt_tmp.format(name, value))
+                options.append(opt_tmp.format(name, value))
         tmp = "[{0}:{1}]\n#Syntax used by the old versions (only one state); added for backwards compatibility only\n\n{2}"
-        if l:
-            l.append("\n")
-        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
+        if options:
+            options.append("\n")
+        fileobj.write(
+            tmp.format(self.get_type(), self.name, "\n".join(options))
+        )
 
         if len(self.markov_manager.states) == 1:
             return
@@ -405,17 +407,17 @@ class Netemu(Wire):
         )
 
         for i, state in enumerate(self.markov_manager.states):
-            l = []
+            options = []
             for name, param in sorted(state.parameters.items()):
                 if state[name] != param.default:
                     value = param.to_string_brick(state[name], self)
-                    l.append(
+                    options.append(
                         opt_tmp.format(new_opt_tmp.format(i, name), value)
                     )
 
             for j, weight in enumerate(self.markov_manager.weights[i]):
                 if j != i and weight != 0:
-                    l.append(
+                    options.append(
                         opt_tmp.format(
                             new_opt_tmp.format(
                                 i, double_opt_tmp.format("probability", j)
@@ -424,8 +426,8 @@ class Netemu(Wire):
                         )
                     )
 
-            l.append("")
-            fileobj.write("\n".join(l))
+            options.append("")
+            fileobj.write("\n".join(options))
 
         if self.transPeriod != 100:
             fileobj.write(

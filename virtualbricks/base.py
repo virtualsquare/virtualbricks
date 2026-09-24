@@ -244,15 +244,17 @@ class Base:
 
     def save_to(self, fileobj):
         opt_tmp = "{0}={1}"
-        l = []
+        options = []
         for name, param in sorted(self.config.parameters.items()):
             if self.config[name] != param.default:
                 value = param.to_string_brick(self.config[name], self)
-                l.append(opt_tmp.format(name, value))
-        if l:
-            l.append("")
+                options.append(opt_tmp.format(name, value))
+        if options:
+            options.append("")
         tmp = "[{0}:{1}]\n{2}\n"
-        fileobj.write(tmp.format(self.get_type(), self.name, "\n".join(l)))
+        fileobj.write(
+            tmp.format(self.get_type(), self.name, "\n".join(options))
+        )
 
     def rename(self, name):
         return self.factory.rename(self, name)

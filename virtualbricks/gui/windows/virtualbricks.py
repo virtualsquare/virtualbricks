@@ -146,7 +146,7 @@ class TopologyMixin:
                         logger.failure(top_invalid_format)
                     except IOError:
                         logger.failure(top_write_error)
-                    except:
+                    except Exception:
                         logger.failure(top_unknown)
             finally:
                 dialog.destroy()
@@ -1533,8 +1533,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                 if not success:
                     logger.failure(not_started, value)
 
-        l = [brick.poweron() for brick in self.brickfactory.bricks]
-        defer.DeferredList(l, consumeErrors=True).addCallback(started_all)
+        deferreds = [brick.poweron() for brick in self.brickfactory.bricks]
+        defer.DeferredList(deferreds, consumeErrors=True).addCallback(
+            started_all
+        )
         return True
 
     def on_stop_all_button_clicked(self, toolbutton):

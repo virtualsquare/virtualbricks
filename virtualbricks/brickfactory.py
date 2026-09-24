@@ -557,9 +557,9 @@ class Console(basic.LineOnlyReceiver):
 
 
 def AutosaveTimer(factory, interval=180):
-    l = task.LoopingCall(configfile.safe_save, factory)
-    l.start(interval, now=False)
-    return l
+    timer = task.LoopingCall(configfile.safe_save, factory)
+    timer.start(interval, now=False)
+    return timer
 
 
 def log_level(verbosity):

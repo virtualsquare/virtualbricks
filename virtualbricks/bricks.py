@@ -363,8 +363,10 @@ class Brick(base.Base):
         return False
 
     def _check_links(self):
-        l = [plug.connected() for plug in self.plugs]
-        return defer.DeferredList(l, fireOnOneErrback=True, consumeErrors=True)
+        deferreds = [plug.connected() for plug in self.plugs]
+        return defer.DeferredList(
+            deferreds, fireOnOneErrback=True, consumeErrors=True
+        )
 
     def args(self):
         return [self.prog()] + self.build_cmd_line()
@@ -405,8 +407,11 @@ class Brick(base.Base):
             self.proc = self.process_protocol(self)
             reactor.spawnProcess(self.proc, prog, args, os.environ)
 
-        l = [defer.maybeDeferred(self.prog), defer.maybeDeferred(self.args)]
-        d = defer.gatherResults(l, consumeErrors=True)
+        deferreds = [
+            defer.maybeDeferred(self.prog),
+            defer.maybeDeferred(self.args),
+        ]
+        d = defer.gatherResults(deferreds, consumeErrors=True)
         d.addCallback(start_process)
         return d
 
