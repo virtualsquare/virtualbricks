@@ -25,6 +25,14 @@ DOMAIN = "virtualbricks"
 SOURCE_LOCALEDIR = join(dirname(dirname(abspath(__file__))), "locale")
 
 
+def _(message: str) -> str:
+    return gettext.dgettext(DOMAIN, message)
+
+
+def ngettext(singular: str, plural: str, count: int) -> str:
+    return gettext.dngettext(DOMAIN, singular, plural, count)
+
+
 def find_localedir():
     """
     Return the directory that holds the compiled catalogs, or None.

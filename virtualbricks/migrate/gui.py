@@ -26,7 +26,6 @@ messages of the selected row. Check runs the migration without writing
 anything, Migrate writes.
 """
 
-import gettext
 import os
 import sys
 import tempfile
@@ -40,20 +39,13 @@ from twisted.internet import defer, task
 from twisted.logger import Logger
 
 from virtualbricks import i18n, locations
+from virtualbricks.i18n import _, ngettext
 from virtualbricks.migrate import engine
 from virtualbricks.config.report import ERROR, INFO, WARNING
 
 logger = Logger()
 NAME, BRICKS, STATUS = range(3)
 LEVEL_COLORS = {INFO: "#56655f", WARNING: "#7a4800", ERROR: "#982b22"}
-
-
-def _(message):
-    return gettext.dgettext(i18n.DOMAIN, message)
-
-
-def ngettext(singular, plural, count):
-    return gettext.dngettext(i18n.DOMAIN, singular, plural, count)
 
 
 def status_text(item):

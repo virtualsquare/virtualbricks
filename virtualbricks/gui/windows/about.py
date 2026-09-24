@@ -5,7 +5,6 @@ The UI is the Virtualbricks "About" dialog: a ``Gtk.AboutDialog`` with the
 program name, version, copyright, license, website, authors, artists and logo.
 """
 
-import gettext
 from typing import List
 
 import gi
@@ -18,13 +17,9 @@ from gi.repository import Gdk, GdkPixbuf, Gtk
 
 from virtualbricks import __version__
 from virtualbricks.gui import graphics
+from virtualbricks.i18n import _
 
 TRANSLATION_DOMAIN = "virtualbricks"
-
-
-def _(message: str) -> str:
-    """Translate ``message`` like Gtk.Builder does for translatable="yes"."""
-    return gettext.dgettext(TRANSLATION_DOMAIN, message)
 
 
 COPYRIGHT = """\

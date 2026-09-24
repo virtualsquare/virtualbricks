@@ -28,7 +28,6 @@ the widgets and the plugs of the brick configuration panels.
 """
 
 import functools
-import gettext
 from typing import Callable
 
 import gi
@@ -47,20 +46,10 @@ from virtualbricks.gui.interfaces import (
     IState,
     IStateManager,
 )
+from virtualbricks.i18n import _
 from virtualbricks.tools import dispose
 
 TRANSLATION_DOMAIN = "virtualbricks"
-
-
-def _(message: str) -> str:
-    """
-    Translate ``message``.
-
-    Gtk.Builder used this translation domain for the strings marked as
-    translatable in the Glade files.
-    """
-
-    return gettext.dgettext(TRANSLATION_DOMAIN, message)
 
 
 def load_pixbuf(name: str) -> GdkPixbuf.Pixbuf:
