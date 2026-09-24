@@ -19,6 +19,7 @@
 import os
 import errno
 import sys
+import threading
 import termios
 import tty
 import re
@@ -623,29 +624,14 @@ class Application:
         settings.load()
 
     def install_sys_hooks(self):
-        import threading
-
         sys.excepthook = self.excepthook
+        threading.excepthook = self.thread_excepthook
 
-        # Workaround for sys.excepthook thread bug
-        # See: http://bugs.python.org/issue1230540#msg91244
-        old_init = threading.Thread.__init__
-
-        def init(self, *args, **kwargs):
-            old_init(self, *args, **kwargs)
-            run_old = self.run
-
-            def run_with_except_hook(*args, **kw):
-                try:
-                    run_old(*args, **kw)
-                except (KeyboardInterrupt, SystemExit):
-                    raise
-                except:
-                    sys.excepthook(*sys.exc_info())
-
-            self.run = run_with_except_hook
-
-        threading.Thread.__init__ = init
+    def thread_excepthook(self, args):
+        # Like threading's default hook, a thread may exit silently.
+        if args.exc_type is SystemExit:
+            return
+        self.excepthook(args.exc_type, args.exc_value, args.exc_traceback)
 
     def excepthook(self, exc_type, exc_value, traceback):
         if exc_type in (SystemExit, KeyboardInterrupt):
