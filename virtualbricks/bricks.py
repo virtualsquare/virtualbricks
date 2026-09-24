@@ -214,8 +214,8 @@ class TermProtocol(protocol.ProcessProtocol):
             self.logger.error(
                 console_terminated,
                 status=status.value,
-                out="".join(self.out),
-                err="".join(self.err)
+                out=_decode(b"".join(self.out)),
+                err=_decode(b"".join(self.err))
             )
         else:
             self.logger.info(console_done, status=status.value)
