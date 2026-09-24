@@ -1,0 +1,1225 @@
+<title>Virtualbricks Configuration Redesign</title>
+<meta name="description" content="The design, now implemented: TOML settings and project files, one schema per brick type, and a one-shot migration from the old formats.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  /* window mockup */
+  .mock {
+    margin: 18px 0 10px;
+    max-width: 760px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -18px rgba(10, 30, 25, 0.45);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .mock-bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 9px 12px;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--rule);
+  }
+  .mock-bar .title { grid-column: 2; font: 600 14px/1.2 var(--font-head); }
+  .mock-bar .x { grid-column: 3; justify-self: end; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 500 14px/1 var(--font-body); color: var(--muted); background: var(--surface); }
+  .mock-body { padding: 16px; display: grid; gap: 14px; }
+  .mock-form { display: grid; gap: 8px; }
+  .mock-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: center; }
+  @media (min-width: 560px) { .mock-row { grid-template-columns: 8.5em minmax(0, 1fr); gap: 10px; } }
+  .mock-row > span:first-child { color: var(--muted); }
+  .mock-field {
+    display: block;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font: 13px/1.5 var(--font-mono);
+    background: var(--ground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .mock-choice { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+  .mock-choice .mock-field { flex: 1 1 12em; }
+  .mock table { font-size: 13.5px; }
+  .mock td, .mock th { padding-block: 6px; }
+  .mock tr.sel td { background: var(--accent-soft); }
+  .mock tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 8px; }
+  .chip {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font: 500 12px/1 var(--font-mono);
+    padding: 4px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); }
+  .chip.warn { color: var(--decide); background: var(--decide-soft); }
+  .chip.fail { color: var(--risk); background: var(--risk-soft); }
+  .chip.run { color: var(--accent); background: var(--accent-soft); }
+  .chip.wait { color: var(--muted); background: var(--code-bg); }
+  .mock-progress { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .mock-progress .track { height: 8px; border-radius: 4px; background: var(--code-bg); overflow: hidden; }
+  .mock-progress .fill { height: 100%; width: 72%; background: var(--accent); }
+  .mock-log { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; display: grid; gap: 7px; background: var(--ground); }
+  .mock-log .head { font: 600 13px/1.2 var(--font-head); }
+  .mock-log div.msg { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); gap: 8px; font-size: 13px; }
+  .mock-log .loc { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .mock-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .btn {
+    display: inline-block;
+    font: 500 13.5px/1 var(--font-body);
+    padding: 8px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .mock-note { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Design · implemented, for review</div>
+    <h1>Virtualbricks Configuration Redesign</h1>
+    <p class="lede">How settings and projects are stored, described and upgraded: one readable format, one schema per brick type, and a migration that runs once, so the rest of the code only knows the new files.</p>
+    <ul class="meta">
+      <li><b>virtualbricks</b> 2.1.0</li>
+      <li>branch <b>mg/abandon-glade</b> at 1166fa9</li>
+      <li>revision 4 · 24 September 2026</li>
+      <li><span class="status">All decided · implemented, not committed</span></li>
+    </ul>
+    <p class="revision"><strong>What changed:</strong> revision 2 applied your decisions on D1–D10. Project files now hold their full configuration and their own settings, the lock stays global, and the migration gained a command with input and output folders and the <code>virtualbricks-migrate</code> window (<a href="#tools">§11</a>). Revision 3 settles S1–S3, so every question in <a href="#decisions">§13</a> is now decided. Revision 4 follows the implementation: the configuration modules live in <code>virtualbricks.config</code> and the tests mirror the package (<a href="#code">§12</a>), <code>LOCK_FILE</code> moved to <code>app.py</code>, and the migration command opens its window with <code>--gui</code> (<a href="#tools">§11</a>).</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#today"><span>2</span>How it works today</a></li>
+        <li><a href="#problems"><span>3</span>Problems worth fixing</a></li>
+        <li><a href="#goals"><span>4</span>Goals and non-goals</a></li>
+        <li><a href="#format"><span>5</span>File format</a></li>
+        <li><a href="#layout"><span>6</span>Where files live</a></li>
+        <li><a href="#project-file"><span>7</span>The project file</a></li>
+        <li><a href="#projects"><span>8</span>Projects</a></li>
+        <li><a href="#settings"><span>9</span>Settings and state</a></li>
+        <li><a href="#schemas"><span>10</span>Schemas per brick type</a></li>
+        <li><a href="#migration"><span>11</span>Migration</a></li>
+        <li><a href="#plan"><span>12</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>13</span>Decisions</a></li>
+        <li><a href="#later"><span>14</span>Later</a></li>
+        <li><a href="#versions"><span>A</span>Package versions</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">§1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Format</dt><dd>TOML for every file. It's read with <code>tomllib</code> on Python 3.11+, or with <code>tomli</code> on Ubuntu 22.04's Python 3.10, and written with <code>tomlkit</code>. Both distributions package all three.</dd></div>
+          <div><dt>Files</dt><dd>Three kinds of file, split by who owns them:
+            <ul>
+              <li><code>settings.toml</code> for your preferences;</li>
+              <li><code>state.toml</code> for what the app remembers;</li>
+              <li><code>project.toml</code> in each project.</li>
+            </ul>
+            Sockets move to your private runtime directory (<code>$XDG_RUNTIME_DIR</code>). The lock stays global at <code>/tmp/vb.lock</code> for now.</dd></div>
+          <div><dt>Projects</dt><dd>A project is a directory in the workspace with a versioned manifest. The manifest holds the full configuration, defaults included, plus the project's own settings, which start as a copy of the app settings. One project is open at a time, as today.</dd></div>
+          <div><dt>Schemas</dt><dd>Each brick type declares one schema as an attrs class: typed fields with defaults, limits and references. The loader, the writer, validation, the console's <code>config</code> command and rename all read it.</dd></div>
+          <div><dt>Migration</dt><dd>One engine that understands every old format, with three ways to run it:
+            <ul>
+              <li>automatically at startup, in a window;</li>
+              <li>as <code>python -m virtualbricks.migrate INPUT OUTPUT</code> on copies;</li>
+              <li>from the <code>virtualbricks-migrate</code> window, also opened by <code>--gui</code>.</li>
+            </ul>
+            Old files are never touched, and old <code>.vbp</code> archives stay importable.</dd></div>
+        </dl>
+      </section>
+
+      <section id="today">
+        <h2><span class="num">§2</span>How it works today</h2>
+        <p>Configuration lives in two places with two different formats, and running bricks put their sockets inside the project.</p>
+        <figure class="code">
+          <figcaption>on disk today</figcaption>
+<pre><code>~/.virtualbricks.conf             <span class="c">INI, one [Main] section, every key written</span>
+~/.virtualbricks/                 <span class="c">workspace (setting "workspace")</span>
+├── vimages/                      <span class="c">images saved when a project is imported</span>
+└── new_project/                  <span class="c">one directory per project</span>
+    ├── .project                  <span class="c">bricks, events, images, links</span>
+    ├── .project~  .project.back  <span class="c">crash-recovery copies around a save</span>
+    ├── README                    <span class="c">project description</span>
+    ├── sender_hda.cow            <span class="c">private copy-on-write disks</span>
+    └── sw1.ctl  sw1.mgmt  …      <span class="c">sockets, created while bricks run</span>
+/tmp/vb.lock                      <span class="c">single-instance lock, one for all users</span></code></pre>
+        </figure>
+
+        <h3>A project file</h3>
+        <p>A project file is a list of <code>[Type:name]</code> sections of <code>key=value</code> lines, followed by the connections as separate <code>link</code> lines. This is the sample from the old test suite:</p>
+        <figure class="code">
+          <figcaption>.project</figcaption>
+<pre><code><span class="h">[Image:martin]</span>
+path=/vimages/vtatpa.martin.qcow2
+
+<span class="h">[Qemu:sender]</span>
+hda=martin
+kvm=*
+name=sender
+privatehda=*
+tdf=*
+
+<span class="h">[Wirefilter:wf]</span>
+
+<span class="h">[Switch:sw1]</span>
+
+link|sender|sw1_port|rtl8139|00:aa:79:71:be:61</code></pre>
+        </figure>
+        <p>The link line says that brick <code>sender</code> has a plug into the socket <code>sw1_port</code>, with an rtl8139 card and that MAC address. Only values that differ from the default are written: <code>kvm=*</code> means true, and a missing key means the default.</p>
+
+        <h3>The brick types</h3>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>Type in the file</th><th>Module</th><th class="nowrap">Own fields</th><th>What doesn't fit the flat format</th></tr></thead>
+            <tbody>
+              <tr><td><code>Qemu</code></td><td>virtualmachines.py</td><td class="num">54</td><td>25 booleans. Disks are flattened into 7 device and 7 <code>private…</code> keys, network cards live in link lines, and the USB devices are a list.</td></tr>
+              <tr><td><code>Netemu</code> (formerly <code>Wirefilter</code>)</td><td>wires.py</td><td class="num">13 per state</td><td>Several Markov states and a transition matrix, written in a second syntax inside the same section.</td></tr>
+              <tr><td><code>Wire</code></td><td>wires.py</td><td class="num">0</td><td>Its two ends are defined by the order of its link lines.</td></tr>
+              <tr><td><code>Switch</code></td><td>switches.py</td><td class="num">3</td><td>—</td></tr>
+              <tr><td><code>SwitchWrapper</code></td><td>switches.py</td><td class="num">1</td><td>—</td></tr>
+              <tr><td><code>Tap</code></td><td>tuntaps.py</td><td class="num">4</td><td><code>mode</code> is one of off, dhcp or manual, stored as free text.</td></tr>
+              <tr><td><code>Capture</code></td><td>tuntaps.py</td><td class="num">1</td><td>—</td></tr>
+              <tr><td><code>TunnelListen</code></td><td>tunnels.py</td><td class="num">2</td><td>—</td></tr>
+              <tr><td><code>TunnelConnect</code></td><td>tunnels.py</td><td class="num">2 + 2</td><td>Inherits the listener's fields.</td></tr>
+              <tr><td><code>Router</code></td><td>router.py</td><td class="num">1</td><td>Its only field repeats the brick name.</td></tr>
+              <tr><td><code>Event</code></td><td>events.py</td><td class="num">2</td><td>Its actions are a Python list literal.</td></tr>
+              <tr><td><code>Image</code></td><td>virtualmachines.py</td><td class="num">2</td><td>Line breaks in the description are stored as <code>&lt;nl&gt;</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Every brick also has <code>pon_vbevent</code> and <code>poff_vbevent</code>, the events that run when it starts and when it stops.</p>
+
+        <h3>A schema already exists, in embryo</h3>
+        <p>Each type declares a <code>parameters</code> dict of <code>Parameter</code> objects: <code>String</code>, <code>Integer</code>, <code>SpinInt</code>, <code>SpinFloat</code>, <code>Boolean</code>, <code>ListOf</code>, plus the special <code>Device</code>, <code>Command</code> and <code>UsbDeviceParameter</code>. A parameter converts one value to and from its text form in the file, and the spin kinds carry a range.</p>
+        <p>That's the seed of what you're asking for, but it has three limits. It's tied to the text format, it checks nothing beyond ranges, and it can't describe nested data such as a VM's network cards or Netemu's states.</p>
+      </section>
+
+      <section id="problems">
+        <h2><span class="num">§3</span>Problems worth fixing</h2>
+        <div class="callout risk">
+          <span class="label">Security · fix independently of this redesign</span>
+          <p><strong>Opening a project can run code.</strong> <code>ListOf.from_string</code> calls <code>eval()</code> on text from the file (<code>base.py:177</code>). Passing empty globals doesn't help, because <code>eval</code> still reaches the builtins. A crafted value such as <code>[__import__('os').system(…)]</code> runs when the project opens; I confirmed this with <code>os.getcwd()</code>.</p>
+          <p>Event actions and VM USB lists use <code>ListOf</code>, and projects arrive from other people as <code>.vbp</code> archives.</p>
+        </div>
+
+        <h3>Bugs found while reading</h3>
+        <ul>
+          <li><strong>A saved USB device list can't be loaded.</strong> The writer stores bare ids, but <code>UsbDeviceParameter.from_string</code> calls <code>UsbDevice(id)</code>, and <code>UsbDevice</code> needs an id and a description (<code>virtualmachines.py:746</code>). Opening such a project fails with a <code>TypeError</code>.</li>
+          <li><strong>A wire whose left end is unconnected comes back with its right end on the left.</strong> The unconnected plug is saved as <code>link|wf||…</code>, which the parser ignores, and the loader then gives the next link to the first free plug.</li>
+          <li><strong>Renaming an event breaks the bricks that use it.</strong> Their <code>pon_vbevent</code> and <code>poff_vbevent</code> keep the old name, because references are plain strings and rename only updates the factory's own index.</li>
+          <li><strong>The MAC address pattern accepts g and h as hex digits</strong> (<code>_configparser.py:69</code>).</li>
+          <li><strong>Only one user per machine can run Virtualbricks.</strong> While one user runs it, or after their instance crashed, another user can't start it. <code>/tmp/vb.lock</code> is shared, and the lock check raises a permission error on the other user's lock. This stays as it is for now (<a class="ref done" href="#decisions">D3</a>, <a href="#later">§14</a>).</li>
+        </ul>
+
+        <h3>The format</h3>
+        <ul>
+          <li><strong>Three dialects.</strong> Settings are configparser INI, and projects use a hand-written line format with its own parser. Netemu adds a second syntax inside its own section and reads it by seeking in the file object (<code>wires.py:376–564</code>).
+            <ul><li>Two different writers produce project files: <code>Base.save_to</code> writes <code>key=value</code> and <code>ProjectEntry.dump</code> writes <code>key = value</code>.</li></ul></li>
+          <li><strong>Values are text whose meaning depends on the parameter.</strong>
+            <ul>
+              <li>Booleans are <code>*</code> or empty, and the command-line builder tests for <code>"*"</code> directly (<code>bricks.py:388</code>).</li>
+              <li>Lists are Python literals.</li>
+              <li>Image descriptions join their lines with <code>&lt;nl&gt;</code>.</li>
+            </ul></li>
+          <li><strong>Meaning hidden in line order.</strong> The order of the link lines decides a VM's card order and a wire's left and right ends, which Netemu's LR and RL values refer to.</li>
+          <li><strong>No version number.</strong> The compatibility code for older files runs on every load, forever, and decides by guessing. It covers the <code>Wirefilter</code>, <code>DiskImage</code> and <code>Project</code> sections, Qemu <code>base…</code> keys and SwitchWrapper <code>numports</code> (<code>configfile.py:274–329</code>), and single-file projects (<code>project.py:460</code>).</li>
+        </ul>
+
+        <h3>Defaults</h3>
+        <ul>
+          <li><strong>Projects store only values that differ from the default</strong> (<code>base.py:247</code>). Changing a default in the code silently changes every existing project.</li>
+          <li><strong>Settings do the opposite.</strong> The file always contains every key, defaults included, so a changed default never reaches existing users. The default <code>sudo</code> is still <code>/usr/bin/gksu</code>, which current distributions no longer ship.</li>
+        </ul>
+
+        <h3>State and layout</h3>
+        <ul>
+          <li><strong>Opening a project changes a global path.</strong> It reassigns <code>settings.VIRTUALBRICKS_HOME</code> to the project directory (<code>project.py:249</code>, <code>335</code>), and socket paths are derived from it every time they're used (<code>bricks.py:437</code>, <code>switches.py:52</code>).</li>
+          <li><strong>Opening a project rewrites your settings file,</strong> because <code>current_project</code> is stored there.</li>
+          <li><strong>Sockets are created inside the project directory.</strong> They end up in copies and exports, and a deep workspace path can exceed the 107 bytes allowed for a Unix socket path.</li>
+          <li><code>Project.exists()</code> creates the directory and deletes it again to find out (<code>project.py:289</code>).</li>
+        </ul>
+      </section>
+
+      <section id="goals">
+        <h2><span class="num">§4</span>Goals and non-goals</h2>
+        <h3>Goals</h3>
+        <ul>
+          <li>One format for every file: readable, editable by hand, with real booleans, numbers and lists.</li>
+          <li>One schema per brick type, read by everything that loads, saves, validates or edits a brick.</li>
+          <li>Self-describing projects: versioned, complete (every value and the settings they depend on), and with no global state tied to the open one.</li>
+          <li>Old formats handled in one place, once. The runtime reads and writes only the current format.</li>
+          <li>A migration you can try on copies and watch as it runs.</li>
+          <li>Only packages available in Ubuntu 22.04 and Debian 13.</li>
+        </ul>
+        <h3>Non-goals</h3>
+        <ul>
+          <li>Changing how QEMU and VDE are started: the command lines stay the same.</li>
+          <li>Redesigning the configuration dialogs: they keep their layout and get validation from the schema.</li>
+          <li>Moving disk images or private COW files.</li>
+          <li>Project templates, projects outside the workspace and several open projects <a class="ref done" href="#decisions">D6</a>.</li>
+          <li>Merging hand edits into an open project. While a project is open the app owns <code>project.toml</code> and overwrites it at the next autosave.</li>
+        </ul>
+      </section>
+
+      <section id="format">
+        <h2><span class="num">§5</span>File format</h2>
+        <p>The format has to be written by the app, since autosave runs every three minutes. It also has to be read back without surprises and still be pleasant to open in an editor.</p>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th></th><th>TOML</th><th>YAML</th><th>JSON</th><th>INI</th></tr></thead>
+            <tbody>
+              <tr><td>Reader on Python 3.10</td><td><code>tomli</code> (packaged)</td><td>PyYAML</td><td class="yes">stdlib</td><td class="yes">stdlib</td></tr>
+              <tr><td>Reader on Python 3.11+</td><td class="yes">stdlib <code>tomllib</code></td><td>PyYAML</td><td class="yes">stdlib</td><td class="yes">stdlib</td></tr>
+              <tr><td>Writer</td><td><code>tomlkit</code> or <code>tomli-w</code></td><td>PyYAML</td><td class="yes">stdlib</td><td class="yes">stdlib</td></tr>
+              <tr><td>Nested data (cards, states)</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="no">no</td></tr>
+              <tr><td>Typed values</td><td class="yes">yes, strings always quoted</td><td class="no">guesses types</td><td class="yes">yes</td><td class="no">all strings</td></tr>
+              <tr><td>Comments</td><td class="yes">yes, kept by tomlkit</td><td>lost on rewrite</td><td class="no">none</td><td>lost on rewrite</td></tr>
+              <tr><td>Editing by hand</td><td class="yes">good</td><td>good, indentation-sensitive</td><td class="no">poor</td><td>good for flat data</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Decided: TOML</strong> <a class="ref done" href="#decisions">D1</a>, <strong>written with <code>tomlkit</code></strong> <a class="ref done" href="#decisions">D2</a>. YAML's type guessing does bite in these files, because MAC addresses are everywhere. PyYAML reads QEMU's default <code>52:54:00:12:34:56</code> as the integer 41135085296 unless it's quoted, and <code>no</code> as false. I tested this with PyYAML 6.0.3.</p>
+
+        <h3>TOML caveats</h3>
+        <ul>
+          <li><strong>There's no null.</strong> An unset reference is an empty string (<code>pon_vbevent = ""</code>). Since every field is written, a missing key only shows up in a hand-edited file.</li>
+          <li><strong>Dots in brick names need quoting.</strong> Brick names may contain a dot, which TOML reads as a key separator. The writer quotes such names (<code>[bricks."vm.1"]</code>), and hand edits must too.</li>
+          <li><strong>Why tomlkit rather than tomli-w.</strong>
+            <ul>
+              <li><code>tomli-w</code> 1.0.0, the version in both distributions, puts each record on one long line and every number of a matrix on its own line. It also escapes line breaks.</li>
+              <li><code>tomlkit</code> 0.9.2, Ubuntu 22.04's version, writes records as <code>[[…]]</code> blocks and keeps short arrays on one line. It also keeps comments when it rewrites a file, which matters for a hand-edited <code>settings.toml</code>.</li>
+            </ul></li>
+          <li><strong>Multi-line text stays out.</strong> The project description remains in <code>README</code>.</li>
+        </ul>
+      </section>
+
+      <section id="layout">
+        <h2><span class="num">§6</span>Where files live</h2>
+        <p>Files are split by owner and lifetime: what you set, what the app remembers, what exists only while bricks run, and the projects themselves.</p>
+        <figure class="code">
+          <figcaption>on disk after the migration</figcaption>
+<pre><code>~/.config/virtualbricks/settings.toml     <span class="c">$XDG_CONFIG_HOME: your preferences</span>
+~/.local/state/virtualbricks/state.toml   <span class="c">$XDG_STATE_HOME: current project, written by the app</span>
+/run/user/1000/virtualbricks/             <span class="c">$XDG_RUNTIME_DIR: gone at logout</span>
+└── ospf-lab/  sw1.ctl  sender_serial  …  <span class="c">sockets, per project</span>
+/tmp/vb.lock                              <span class="c">the lock, global as today</span>
+~/.virtualbricks/                         <span class="c">workspace, same place as today</span>
+├── vimages/
+└── ospf-lab/
+    ├── project.toml                      <span class="c">the manifest (new)</span>
+    ├── README                            <span class="c">description (unchanged)</span>
+    ├── sender_hda.cow                    <span class="c">private disks (unchanged)</span>
+    └── .project                          <span class="c">the old file, left as it was</span>
+~/.virtualbricks.conf                     <span class="c">the old settings, left as they were</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong><code>settings.toml</code> changes only when you change a setting.</strong> Switching projects writes <code>state.toml</code> instead.</li>
+          <li><strong>The runtime directory is private and short.</strong> It belongs to your user, is cleared at logout, and keeps socket paths well under the 107-byte limit. If <code>$XDG_RUNTIME_DIR</code> isn't set, the app falls back to a <code>0700</code> directory under <code>/tmp</code> named after your user id.</li>
+          <li><strong>The lock stays <code>/tmp/vb.lock</code></strong> <a class="ref done" href="#decisions">D3</a>. A per-user lock is noted for later in <a href="#later">§14</a>.</li>
+          <li><strong>The workspace stays where it is.</strong> It holds gigabytes of images, and paths inside projects point into it.</li>
+          <li><strong>Moving sockets changes their paths.</strong> Anyone who attaches an outside tool to <code>~/.virtualbricks/&lt;project&gt;/sw1.ctl</code> needs the new path, so the switch's panel should show it.</li>
+        </ul>
+      </section>
+
+      <section id="project-file">
+        <h2><span class="num">§7</span>The project file</h2>
+        <p>This example lab has a VM, two switches, a tap, a Netemu link with two Markov states and a start event. Every field is written; where this document shortens a brick, a <code># …</code> comment says what's left out. The other comments are for this document too, and the app doesn't write any.</p>
+        <figure class="code">
+          <figcaption>ospf-lab/project.toml (shortened)</figcaption>
+<pre><code>format = 1                                  <span class="c"># file format version</span>
+
+<span class="h">[settings]</span>                                  <span class="c"># copied from the app settings at creation</span>
+cowfmt = "qcow2"
+erroronloop = false
+femaleplugs = false
+qemupath = "/usr/bin"
+vdepath = "/usr/bin"
+
+<span class="h">[images.martin]</span>
+path = "/home/alice/.virtualbricks/vimages/vtatpa.martin.qcow2"
+description = "Debian 12 base image"
+
+<span class="h">[events.start_lab]</span>
+delay = 5
+actions = [
+    { kind = "vb", command = "sender on" },
+    { kind = "shell", command = "logger lab started" },
+]
+
+<span class="h">[bricks.sender]</span>
+type = "qemu"
+pon_vbevent = ""
+poff_vbevent = ""
+argv0 = "qemu-system-x86_64"
+kvm = true
+ram = 1024
+smp = 1
+<span class="c"># … 35 more fields, each written with its value</span>
+
+<span class="h">[bricks.sender.disks.hda]</span>                   <span class="c"># was hda=martin + privatehda=*</span>
+image = "martin"
+private = true
+<span class="c"># … hdb to mtdblock follow, each with image = "" and private = false</span>
+
+<span class="h">[[bricks.sender.nics]]</span>                      <span class="c"># first card in the guest</span>
+kind = "plug"
+connect = "sw1"
+model = "rtl8139"
+mac = "00:aa:79:71:be:61"
+
+<span class="h">[[bricks.sender.nics]]</span>                      <span class="c"># second card: QEMU user networking</span>
+kind = "hostonly"
+model = "e1000"
+mac = "52:54:00:12:34:56"
+
+<span class="h">[bricks.sw1]</span>
+type = "switch"
+pon_vbevent = "start_lab"
+poff_vbevent = ""
+numports = 16
+hub = false
+fstp = true
+
+<span class="h">[bricks.tap0]</span>
+type = "tap"
+pon_vbevent = ""
+poff_vbevent = ""
+connect = "sw2"
+mode = "manual"
+ip = "10.0.0.1"
+nm = "255.255.255.0"
+gw = ""
+
+<span class="h">[bricks.wan]</span>
+type = "netemu"
+pon_vbevent = ""
+poff_vbevent = ""
+endpoints = ["sw1", "sw2"]                  <span class="c"># left, right: LR is sw1 → sw2</span>
+transperiod = 100
+transitions = [[0.0, 0.2], [0.5, 0.0]]      <span class="c"># probability of state i → j</span>
+
+<span class="h">[[bricks.wan.states]]</span>
+name = "good"
+bandwidth = 125000
+bandwidthr = 125000
+bandwidthsymm = true
+delay = 10
+delayr = 0
+delaysymm = true
+chanbufsize = 75000
+chanbufsizer = 75000
+chanbufsizesymm = true
+loss = 0.0
+lossr = 0.0
+losssymm = true
+
+<span class="h">[[bricks.wan.states]]</span>
+name = "congested"
+delay = 200
+delayr = 50
+delaysymm = false
+loss = 2.5
+<span class="c"># … the other fields, written as in the first state</span></code></pre>
+        </figure>
+
+        <h3>Rules</h3>
+        <ul>
+          <li><strong><code>format</code> is the file's version.</strong> The app reads only the current version. Older files go through the migration first, and newer ones are refused with a message that a newer Virtualbricks wrote them.</li>
+          <li><strong><code>[settings]</code> is the project's own copy of the per-project settings</strong> <a class="ref done" href="#decisions">D5</a>. It's always complete and overrides the app settings while the project is open (<a href="#projects">§8</a>).</li>
+          <li><strong><code>images</code>, <code>events</code> and <code>bricks</code> are tables keyed by name.</strong> TOML itself rejects duplicate keys. The loader also checks, as the app does today, that no name is used in more than one of the three.</li>
+          <li><strong><code>type</code> is the lowercase registry name</strong> <a class="ref done" href="#decisions">D7</a>: <code>qemu</code>, <code>switch</code>, <code>switchwrapper</code>, <code>tap</code>, <code>capture</code>, <code>wire</code>, <code>netemu</code>, <code>tunnellisten</code>, <code>tunnelconnect</code> or <code>router</code>. The old <code>Wirefilter</code> becomes <code>netemu</code>.</li>
+          <li><strong>Every field is written, defaults included</strong> <a class="ref done" href="#decisions">D4</a>. When a default changes in the code, existing projects keep their stored value, and only new bricks get the new default. Adding a field is a format change whose step writes the field, with its default, into older files.</li>
+          <li><strong>Hand-edited files are read leniently.</strong> A missing field takes its default, and an unknown field is dropped at the next save. Both are reported in the messages window.</li>
+          <li><strong>Connections belong to the brick that owns the plug, in an explicit order.</strong> The separate link lines disappear.
+            <ul>
+              <li><code>connect</code> for bricks with one plug (tap, capture, tunnels).</li>
+              <li><code>endpoints = [left, right]</code> for wires and Netemu. An unconnected end is <code>""</code>, so an end can no longer change sides (<a href="#problems">§3</a>).</li>
+              <li>A <code>nics</code> list for VMs, in the order the guest sees the cards.</li>
+            </ul></li>
+          <li><strong>A connection names its target.</strong> <code>"sw1"</code> is a brick's only socket, and <code>"vm2:sock_eth1"</code> is a VM's socket card. <code>kind = "hostonly"</code> replaces the <code>_hostonly</code> pseudo-socket.</li>
+          <li><strong>Each disk becomes <code>disks.&lt;device&gt; = { image, private }</code></strong>, replacing the <code>hdX</code> and <code>privatehdX</code> pairs. All seven devices are written, unused ones with an empty image.</li>
+          <li><strong>A <code>name</code> field that only repeats the brick name is dropped</strong>, for VMs and routers. Netemu states keep theirs, because there it names the state.</li>
+        </ul>
+
+        <h3>From today's file to project.toml</h3>
+        <p>The sample from <a href="#today">§2</a>, before and after the migration. The migration fills every field the old file left out with today's default, so the project behaves exactly as before.</p>
+        <div class="compare">
+          <figure class="code">
+            <figcaption>.project today</figcaption>
+<pre><code><span class="h">[Image:martin]</span>
+path=/vimages/vtatpa.martin.qcow2
+
+<span class="h">[Qemu:sender]</span>
+hda=martin
+kvm=*
+name=sender
+privatehda=*
+tdf=*
+
+<span class="h">[Wirefilter:wf]</span>
+
+<span class="h">[Switch:sw1]</span>
+
+link|sender|sw1_port|rtl8139|00:aa:79:71:be:61</code></pre>
+          </figure>
+          <figure class="code">
+            <figcaption>project.toml (shortened)</figcaption>
+<pre><code>format = 1
+
+<span class="h">[settings]</span>                        <span class="c"># from your app settings</span>
+cowfmt = "qcow2"
+erroronloop = false
+femaleplugs = false
+qemupath = "/usr/bin"
+vdepath = "/usr/bin"
+
+<span class="h">[images.martin]</span>
+path = "/vimages/vtatpa.martin.qcow2"
+description = ""
+
+<span class="h">[bricks.sender]</span>
+type = "qemu"
+pon_vbevent = ""
+poff_vbevent = ""
+argv0 = "qemu-system-i386"        <span class="c"># today's default</span>
+kvm = true
+ram = 64
+tdf = true
+<span class="c"># … 35 more fields, at today's defaults</span>
+
+<span class="h">[bricks.sender.disks.hda]</span>
+image = "martin"
+private = true
+<span class="c"># … the other six devices, empty</span>
+
+<span class="h">[[bricks.sender.nics]]</span>
+kind = "plug"
+connect = "sw1"
+model = "rtl8139"
+mac = "00:aa:79:71:be:61"
+
+<span class="h">[bricks.sw1]</span>
+type = "switch"
+pon_vbevent = ""
+poff_vbevent = ""
+numports = 32
+hub = false
+fstp = false
+
+<span class="h">[bricks.wf]</span>
+type = "netemu"
+pon_vbevent = ""
+poff_vbevent = ""
+endpoints = ["", ""]              <span class="c"># both ends unconnected</span>
+transperiod = 100
+transitions = [[0.0]]
+
+<span class="h">[[bricks.wf.states]]</span>
+name = "default name"
+<span class="c"># … the other 12 fields, at today's defaults</span></code></pre>
+          </figure>
+        </div>
+      </section>
+
+      <section id="projects">
+        <h2><span class="num">§8</span>Projects</h2>
+        <p>A project is a directory in the workspace with a <code>project.toml</code>, and one project is open at a time, as today <a class="ref done" href="#decisions">D6</a>. Its name is the directory name and isn't repeated inside, so renaming a project stays a directory rename.</p>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>What</th><th>Where</th><th>Belongs to</th></tr></thead>
+            <tbody>
+              <tr><td>Bricks, events, image library, connections</td><td><code>project.toml</code></td><td>the project</td></tr>
+              <tr><td>Per-project settings</td><td><code>project.toml</code>, <code>[settings]</code></td><td>the project</td></tr>
+              <tr><td>Description</td><td><code>README</code></td><td>the project</td></tr>
+              <tr><td>Private disks</td><td><code>&lt;vm&gt;_&lt;device&gt;.cow</code></td><td>the project</td></tr>
+              <tr><td>App settings, including the starting values for new projects</td><td><code>settings.toml</code></td><td>you</td></tr>
+              <tr><td>Current project</td><td><code>state.toml</code></td><td>you, written by the app</td></tr>
+              <tr><td>Sockets</td><td>runtime directory</td><td>this login session</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Per-project settings</h3>
+        <ul>
+          <li><strong>A new project starts from the app settings.</strong> Creating a project copies the current values of the per-project settings into its <code>[settings]</code>.</li>
+          <li><strong>From then on the project's copy wins.</strong> While the project is open, every per-project setting comes from its <code>[settings]</code>, and app-only settings come from <code>settings.toml</code>.</li>
+          <li><strong>Migrated projects get a copy of your migrated app settings,</strong> so they behave exactly as they do today.</li>
+          <li><strong>The settings window gets three groups:</strong> Application (the app-only settings), This project (the open project's copy) and New projects start with (the starting values in <code>settings.toml</code>).</li>
+          <li><strong>The per-project settings</strong> are <code>cowfmt</code>, <code>erroronloop</code>, <code>femaleplugs</code>, <code>qemupath</code> and <code>vdepath</code>. The rest stay app-only, because they're about you or your machine rather than the lab <a class="ref done" href="#decisions">S2</a>.</li>
+          <li><strong>Imports carry the other machine's paths.</strong> An imported project's <code>qemupath</code> and <code>vdepath</code> may not exist on your machine. The import dialog shows them next to this machine's values, and preselects this machine's when the project's paths don't exist here <a class="ref done" href="#decisions">S3</a>.</li>
+        </ul>
+
+        <h3>Lifecycle</h3>
+        <ul>
+          <li><strong>Create</strong> writes a manifest with <code>format = 1</code> and a complete <code>[settings]</code>. Today it creates an empty <code>.project</code>.</li>
+          <li><strong>Open</strong> loads the manifest, validates it, builds the bricks and records the project in <code>state.toml</code>. Nothing global changes: the open project is an object, and runtime paths come from the runtime directory plus the project name.</li>
+          <li><strong>Save</strong> writes a temporary file, syncs it and renames it over <code>project.toml</code>. The rename is atomic, so the <code>.project~</code> and <code>.project.back</code> recovery at startup goes away.</li>
+          <li><strong>Rename and copy</strong> stay directory operations. Private disks are named after the VMs, not the project.</li>
+          <li><strong>Export</strong> archives the directory as today, and there are no sockets left in it to skip.</li>
+          <li><strong>Import</strong> extracts the archive and, if it holds a legacy <code>.project</code>, migrates it first <a class="ref done" href="#decisions">D9</a>. The existing image remapping and COW rebasing then edit the manifest through the schema instead of <code>ProjectEntry</code>.</li>
+          <li><strong>A project exists</strong> when its <code>project.toml</code> exists.</li>
+        </ul>
+      </section>
+
+      <section id="settings">
+        <h2><span class="num">§9</span>Settings and state</h2>
+        <div class="compare">
+          <figure class="code">
+            <figcaption>~/.config/virtualbricks/settings.toml</figcaption>
+<pre><code>format = 1
+workspace = "/home/alice/.virtualbricks"
+term = "/usr/bin/xterm"
+sudo = "/usr/bin/pkexec"
+ksm = false
+systray = true
+show_missing = true
+cowfmt = "qcow2"           <span class="c"># this key and the ones</span>
+erroronloop = false        <span class="c"># below also start each</span>
+femaleplugs = false        <span class="c"># new project</span>
+qemupath = "/usr/bin"
+vdepath = "/usr/bin"</code></pre>
+          </figure>
+          <figure class="code">
+            <figcaption>~/.local/state/virtualbricks/state.toml</figcaption>
+<pre><code>format = 1
+current_project = "ospf-lab"</code></pre>
+          </figure>
+        </div>
+        <ul>
+          <li><strong>Every setting is written, like in project files</strong> <a class="ref done" href="#decisions">S1</a>. Opening the file shows all of them, and a default that changes in the code reaches existing users only through a format step.</li>
+          <li><strong>App-only settings:</strong> <code>workspace</code>, <code>term</code>, <code>sudo</code>, <code>ksm</code>, <code>systray</code> and <code>show_missing</code>.</li>
+          <li><strong>Per-project settings:</strong> <code>cowfmt</code>, <code>erroronloop</code>, <code>femaleplugs</code>, <code>qemupath</code> and <code>vdepath</code>. Here they're the starting values for new projects <a class="ref done" href="#decisions">S2</a>.</li>
+          <li><strong>Dropped because nothing reads them</strong> <a class="ref done" href="#decisions">D10</a>:
+            <ul>
+              <li><code>alt-term</code> and <code>cdroms</code>;</li>
+              <li><code>kvm</code>, since each VM has its own <code>kvm</code> field;</li>
+              <li><code>python</code>, which the settings window writes but nothing reads.</li>
+            </ul></li>
+          <li><strong>Settings get a schema too,</strong> with each key marked app-only or per-project.</li>
+          <li><strong>Settings become a normal object loaded at startup.</strong> The settings module stops replacing itself in <code>sys.modules</code> when it's imported.</li>
+        </ul>
+      </section>
+
+      <section id="schemas">
+        <h2><span class="num">§10</span>Schemas per brick type</h2>
+        <p>A schema is an ordered list of fields. Each field has:</p>
+        <ul>
+          <li>a name, a type and a default;</li>
+          <li>optional limits;</li>
+          <li>whether it refers to something else in the project;</li>
+          <li>a translatable label and help text for the GUI.</li>
+        </ul>
+
+        <h3>Field types</h3>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>Type</th><th>In TOML</th><th>Checked</th><th>Used for</th></tr></thead>
+            <tbody>
+              <tr><td>bool</td><td>true / false</td><td>—</td><td><code>kvm</code>, <code>fstp</code></td></tr>
+              <tr><td>integer</td><td>number</td><td>optional min and max</td><td><code>numports</code> 1–128, <code>ram</code> 1–99999</td></tr>
+              <tr><td>float</td><td>number</td><td>optional min and max</td><td><code>loss</code> 0–100</td></tr>
+              <tr><td>string</td><td>string</td><td>optional pattern</td><td><code>argv0</code>, <code>kopt</code></td></tr>
+              <tr><td>choice</td><td>string</td><td>one of a fixed set</td><td>tap <code>mode</code>: off, dhcp, manual</td></tr>
+              <tr><td>path</td><td>string</td><td>relative paths resolve against the project</td><td>image <code>path</code>, <code>kernel</code></td></tr>
+              <tr><td>MAC address</td><td>string</td><td>six hex pairs</td><td>card <code>mac</code></td></tr>
+              <tr><td>IPv4 address</td><td>string</td><td>valid address, or empty when optional</td><td>tap <code>ip</code>, <code>nm</code>, <code>gw</code></td></tr>
+              <tr><td>reference</td><td>string, <code>""</code> for none</td><td>the target exists in the project</td><td>disk image, <code>pon_vbevent</code>, <code>connect</code></td></tr>
+              <tr><td>record</td><td>table</td><td>its own fields</td><td>a disk, a card, a Markov state</td></tr>
+              <tr><td>list</td><td>array</td><td>one item type, optional length</td><td><code>nics</code>, <code>states</code>, event <code>actions</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Two small schemas and two big ones</h3>
+        <p>Every brick type also gets <code>pon_vbevent</code> and <code>poff_vbevent</code>, as references to events.</p>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>Type</th><th>Field</th><th>Kind</th><th>Default</th><th>Limits</th></tr></thead>
+            <tbody>
+              <tr><td rowspan="3"><code>switch</code></td><td><code>numports</code></td><td>integer</td><td>32</td><td>1–128</td></tr>
+              <tr><td><code>hub</code></td><td>bool</td><td>false</td><td></td></tr>
+              <tr><td><code>fstp</code></td><td>bool</td><td>false</td><td></td></tr>
+              <tr><td rowspan="5"><code>tap</code></td><td><code>connect</code></td><td>reference to a socket</td><td>none</td><td>needed to start</td></tr>
+              <tr><td><code>mode</code></td><td>choice</td><td>off</td><td>off, dhcp, manual</td></tr>
+              <tr><td><code>ip</code></td><td>IPv4</td><td>10.0.0.1</td><td></td></tr>
+              <tr><td><code>nm</code></td><td>IPv4</td><td>255.255.255.0</td><td></td></tr>
+              <tr><td><code>gw</code></td><td>IPv4</td><td>none</td><td>optional</td></tr>
+              <tr><td rowspan="5"><code>qemu</code> (excerpt)</td><td><code>disks.&lt;device&gt;</code></td><td>record</td><td>empty image</td><td>device is hda, hdb, hdc, hdd, fda, fdb or mtdblock; <code>image</code> is a reference, <code>private</code> a bool</td></tr>
+              <tr><td><code>nics</code></td><td>list of records</td><td>empty</td><td><code>kind</code> is plug, socket or hostonly; <code>connect</code> is for plugs only, <code>name</code> for sockets only; <code>model</code> defaults to rtl8139; <code>mac</code> is random at creation</td></tr>
+              <tr><td><code>ram</code></td><td>integer</td><td>64</td><td>1–99999</td></tr>
+              <tr><td><code>smp</code></td><td>integer</td><td>1</td><td>1–64</td></tr>
+              <tr><td><code>usbdevlist</code></td><td>list of records</td><td>empty</td><td><code>id</code> like <code>1d6b:0002</code></td></tr>
+              <tr><td rowspan="4"><code>netemu</code></td><td><code>endpoints</code></td><td>list of references</td><td>two empty ends</td><td>exactly two: left, right</td></tr>
+              <tr><td><code>states</code></td><td>list of records</td><td>one default state</td><td>at least one; each has <code>name</code> and the 12 link fields</td></tr>
+              <tr><td><code>transitions</code></td><td>list of lists of floats</td><td>zeros</td><td>square, one row per state</td></tr>
+              <tr><td><code>transperiod</code></td><td>integer</td><td>100</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>What reads the schema</h3>
+        <ul>
+          <li><strong>The loader</strong> turns a table into a typed config, and an error names the exact place: <code>bricks.sw1.numports: 500 is outside 1–128</code>.</li>
+          <li><strong>The writer</strong> turns it back, in schema order, writing every field.</li>
+          <li><strong>The console's <code>sw1 config numports=64</code></strong> parses the text by field type, which today's <code>Parameter.from_string</code> does.</li>
+          <li><strong>The configuration dialogs</strong> validate before OK and offer references as pickers.</li>
+          <li><strong>Reference checks and rename.</strong> The loader checks references when it reads a project, and rename updates every reference to the renamed item.
+            <ul><li>Event actions stay free text (<code>sender on</code>), so renaming a brick can't rewrite them. The rename dialog can warn about them instead.</li></ul></li>
+          <li><strong>The migration</strong> validates a converted project before it writes it.</li>
+          <li><strong>Optionally, a generated JSON Schema</strong> lets editors complete and check <code>project.toml</code>, for example the Even Better TOML extension through taplo.</li>
+        </ul>
+
+        <h3>The config holds data only</h3>
+        <p>Today a VM's disk fields hold live <code>Disk</code> objects bound to <code>Image</code> objects, and Netemu swaps <code>self.config</code> for the current Markov state. In the new model the config is plain data. Bricks build their runtime objects (disks, image locks, sockets) from it, and the command-line builders read typed values instead of testing for <code>"*"</code>.</p>
+
+        <h3>How a schema is declared</h3>
+        <p><strong>Decided: attrs classes with attribute access</strong> <a class="ref done" href="#decisions">D8</a>. Fields are read as <code>config.numports</code>, and the 139 <code>config["…"]</code> sites get a mechanical rewrite. These alternatives were considered:</p>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>Option</th><th>For</th><th>Against</th></tr></thead>
+            <tbody>
+              <tr><td><strong>attrs classes</strong> (chosen)</td><td>Already installed: Twisted requires attrs 19.2 or later, and Ubuntu 22.04 ships 21.2. Typed fields, defaults, validators that run on assignment and per-field metadata, all readable by the loader, writer and console.</td><td>attrs 21.2 has no <code>attrs</code> namespace and no <code>validators.ge/le</code>, so the code uses <code>attr.</code> and its own range check. Serialization is ours to write: cattrs is 1.9 on 22.04 and 24.1 on Debian 13, too far apart to rely on.</td></tr>
+              <tr><td>stdlib dataclasses</td><td>No dependency at all.</td><td>No validation on assignment, so every set needs a hook.</td></tr>
+              <tr><td>Extend today's <code>Parameter</code> dicts</td><td>Smallest change.</td><td>We keep owning a small schema library, and nested records and lists are new code anyway.</td></tr>
+              <tr><td>pydantic</td><td>Validation and serialization included.</td><td>Ubuntu 22.04 ships 1.9 and Debian 13 ships 2.10, whose APIs are incompatible.</td></tr>
+              <tr><td>JSON Schema documents</td><td>Language-neutral, with editor support.</td><td>No Python types or defaults. Better generated from the Python schema than written by hand.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>A single registry maps each type name to its brick class and schema. It replaces the hard-coded type list in <code>ProjectEntry.get_bricks</code> (<code>project.py:135</code>) and the alias table in <code>install_brick_types</code>.</p>
+      </section>
+
+      <section id="migration">
+        <h2><span class="num">§11</span>Migration</h2>
+        <p>One module, <code>virtualbricks.migrate</code>, is the only code that knows the old formats. Today's parser and compatibility builders move into it, and everything else reads and writes the new files. It stays for good, so old <code>.vbp</code> archives remain importable <a class="ref done" href="#decisions">D9</a>.</p>
+
+        <h3>What it does</h3>
+        <ol>
+          <li><strong>Lock.</strong> When the command or the window migrates your real files, it holds the app's lock, <code>/tmp/vb.lock</code> (<code>LOCK_FILE</code> in <code>app.py</code>), so the app can't run at the same time. If Virtualbricks is already running, the command exits with status 3 and the window asks you to close it. At startup the app holds the lock already. Migrating copies into a test folder, and a dry run, need no lock.</li>
+          <li><strong>Settings.</strong> It converts <code>.virtualbricks.conf</code>.
+            <ul>
+              <li>It drops the keys nothing reads and keeps every other value as it is.</li>
+              <li>It warns about programs and directories that don't exist, such as <code>sudo = /usr/bin/gksu</code>.</li>
+              <li>It moves <code>current_project</code> to <code>state.toml</code> and writes <code>settings.toml</code> in full.</li>
+            </ul></li>
+          <li><strong>Single-file projects</strong> left in the workspace, which <code>ProjectManager2.upgrade</code> handles today, become project directories first.</li>
+          <li><strong>Projects.</strong> For each project directory without a <code>project.toml</code>:
+            <ol type="a">
+              <li>Finish an interrupted save the way today's loader does, putting <code>.project~</code> back over <code>.project</code>.</li>
+              <li>Parse <code>.project</code> with the old reader, which tracks line numbers for the messages.</li>
+              <li>Convert it section by section, filling every field the file left out with today's default.</li>
+              <li>Add <code>[settings]</code> from the migrated app settings.</li>
+              <li>Validate the result against the current schemas.</li>
+              <li>Write <code>project.toml</code> atomically.</li>
+            </ol></li>
+          <li><strong>Report,</strong> for each project, what was converted, what was dropped and why, and any errors.</li>
+        </ol>
+
+        <h3 id="tools">Three ways to run it</h3>
+        <p>The engine is one function, and each of these calls it:</p>
+        <ul>
+          <li><strong>At startup,</strong> when the app finds old files and no new ones. It migrates your real files in place, showing the migration window described below with its destination fixed to "in place". The app continues when you close the window. Without a display, the report goes to the log instead.</li>
+          <li><strong>From a terminal,</strong> with an input folder and an output folder, so you can test on copies without touching <code>~/.virtualbricks</code>:
+            <ul><li><code>--in-place</code> instead of the two folders migrates your real files, like startup does.</li></ul></li>
+          <li><strong>In a window,</strong> which shows the projects, the progress and the errors. Three commands open it, and they take the same options:
+            <ul>
+              <li><code>virtualbricks-migrate</code>, installed with the app;</li>
+              <li><code>python -m virtualbricks.migrate --gui</code>;</li>
+              <li><code>python -m virtualbricks.migrate.gui</code>.</li>
+            </ul>
+            The folders, <code>--settings</code> and <code>--in-place</code> fill in the form, and the window checks them when you press Check or Migrate. <code>--copy-files</code>, <code>--dry-run</code> and <code>-v</code> are for the terminal only; in the window, Check is the dry run.</li>
+        </ul>
+
+        <figure class="code">
+          <figcaption>terminal</figcaption>
+<pre><code>$ python -m virtualbricks.migrate --settings ~/.virtualbricks.conf ~/vb-copy /tmp/vb-test
+settings      migrated   1 warning
+new_project   migrated
+ospf-lab      migrated   2 warnings
+old-demo      failed     1 error
+
+settings
+  <span class="w">warning</span>  .virtualbricks.conf:4  sudo: /usr/bin/gksu doesn't exist on this machine; kept
+ospf-lab
+  <span class="w">warning</span>  .project:3   [Image:martin] /vimages/vtatpa.martin.qcow2 not found; kept in the library
+  <span class="w">warning</span>  .project:41  link|vm9|sw1_port|…: no brick named vm9; link dropped
+old-demo
+  <span class="e">error</span>    .project:31  [Switch:sw1] defined twice (first at line 9); project not migrated
+
+2 of 3 projects migrated, 1 failed. Report: /tmp/vb-test/migration-report.txt</code></pre>
+        </figure>
+        <ul>
+          <li><strong><code>INPUT</code></strong> is an old workspace: a folder of project directories, for example a copy of <code>~/.virtualbricks</code>. It's only read.</li>
+          <li><strong><code>OUTPUT</code></strong> must be new or empty. It receives the layout below.</li>
+          <li><strong><code>--settings FILE</code></strong> also migrates an old settings file. Without it, projects get today's default settings.</li>
+          <li><strong><code>--copy-files</code></strong> also copies each project's disks and other files. It's off by default, because private disks can be large.</li>
+          <li><strong><code>--dry-run</code></strong> converts and validates everything but writes nothing, and <code>-v</code> also prints informational messages such as "Wirefilter became netemu".</li>
+          <li><strong><code>--gui</code></strong> opens the window instead, filled with the other options: <code>python -m virtualbricks.migrate --gui ~/vb-copy /tmp/vb-test</code>.</li>
+          <li><strong>Exit status:</strong> 0 when every project migrated (warnings are fine), 1 when at least one failed, 2 for bad arguments, and 3 when Virtualbricks is running and <code>--in-place</code> was given.</li>
+        </ul>
+        <figure class="code">
+          <figcaption>/tmp/vb-test after a test run</figcaption>
+<pre><code>/tmp/vb-test/
+├── config/virtualbricks/settings.toml   <span class="c">workspace = "/tmp/vb-test/workspace"</span>
+├── state/virtualbricks/state.toml
+├── workspace/
+│   ├── new_project/  project.toml  README
+│   └── ospf-lab/     project.toml  README
+└── migration-report.txt</code></pre>
+        </figure>
+        <ul>
+          <li><strong>The output is laid out like the XDG directories,</strong> so you can open the result in the app without touching your real files: <code>XDG_CONFIG_HOME=/tmp/vb-test/config XDG_STATE_HOME=/tmp/vb-test/state virtualbricks</code>.</li>
+          <li><strong>Close your normal instance first,</strong> because the lock is still global.</li>
+          <li><strong>Without <code>--copy-files</code>,</strong> a VM with a private disk starts from a new copy-on-write image.</li>
+        </ul>
+
+        <h3>The virtualbricks-migrate window</h3>
+        <div class="mock" role="img" aria-label="Mockup of the virtualbricks-migrate window during a migration: a list of projects with their status, a progress bar and the messages of the selected project">
+          <div class="mock-bar"><span class="title">Virtualbricks migration</span><span class="x" aria-hidden="true">×</span></div>
+          <div class="mock-body">
+            <div class="mock-form">
+              <div class="mock-row"><span>Old workspace</span><span class="mock-field">~/.virtualbricks</span></div>
+              <div class="mock-row"><span>Old settings</span><span class="mock-field">~/.virtualbricks.conf</span></div>
+              <div class="mock-row"><span>Write to</span><span class="mock-choice"><span>○ In place</span><span>◉ Folder</span><span class="mock-field">/tmp/vb-test</span></span></div>
+            </div>
+            <div class="scroll" style="margin: 0;">
+              <table>
+                <thead><tr><th>Project</th><th class="nowrap">Bricks</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>settings</td><td class="num">—</td><td><span class="chip warn">⚠ 1 warning</span></td></tr>
+                  <tr><td>new_project</td><td class="num">0</td><td><span class="chip ok">✓ Migrated</span></td></tr>
+                  <tr class="sel"><td>ospf-lab</td><td class="num">12</td><td><span class="chip warn">⚠ 2 warnings</span></td></tr>
+                  <tr><td>old-demo</td><td class="num">5</td><td><span class="chip fail">✗ Failed</span></td></tr>
+                  <tr><td>lab2</td><td class="num">3</td><td><span class="chip run">↻ Migrating</span></td></tr>
+                  <tr><td>ipv6-test</td><td class="num">7</td><td><span class="chip wait">· Waiting</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="mock-progress">
+              <span>Migrating lab2 · 4 of 5 projects</span>
+              <div class="track"><div class="fill"></div></div>
+            </div>
+            <div class="mock-log">
+              <div class="head">ospf-lab</div>
+              <div class="msg"><span class="chip warn">warning</span><span><span class="loc">.project:3</span> [Image:martin] /vimages/vtatpa.martin.qcow2 not found; kept in the library</span></div>
+              <div class="msg"><span class="chip warn">warning</span><span><span class="loc">.project:41</span> link|vm9|sw1_port|…: no brick named vm9; link dropped</span></div>
+              <div class="msg"><span class="chip wait">info</span><span><span class="loc">.project:17</span> [Wirefilter:wf] became netemu</span></div>
+            </div>
+            <div class="mock-actions"><span class="btn">Save report…</span><span class="btn">Check</span><span class="btn primary">Migrate</span></div>
+          </div>
+        </div>
+        <p class="mock-note">Mockup, not the final layout. It would be a GTK window built the same way as the other windows in <code>gui/windows/</code>.</p>
+        <ul>
+          <li><strong>Check</strong> runs the whole conversion without writing anything, so you see the problems first. <strong>Migrate</strong> then writes.</li>
+          <li><strong>A project with errors is skipped</strong> and stays untouched, and the others still migrate.</li>
+          <li><strong>Selecting a project shows its messages.</strong> Each message names the file, the line and the section.</li>
+          <li><strong>Started on its own, the window writes to a new folder</strong> under <code>/tmp</code>. "In place" has to be chosen explicitly. At startup the app opens the same window, fixed to in place.</li>
+          <li><strong>Save report</strong> writes the same text as <code>migration-report.txt</code>.</li>
+        </ul>
+
+        <h3>Old format rules</h3>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>Today</th><th>After migration</th><th>Code today</th></tr></thead>
+            <tbody>
+              <tr><td>any key the file leaves out</td><td>written with today's default</td><td>base.py:247</td></tr>
+              <tr><td><code>[Wirefilter:x]</code>, <code>[DiskImage:x]</code>, <code>[Project:x]</code></td><td><code>netemu</code>, an image, dropped</td><td>configfile.py:312</td></tr>
+              <tr><td>Qemu <code>basehda</code> … <code>basemtdblock</code></td><td>disks, as the current keys</td><td>configfile.py:274</td></tr>
+              <tr><td>SwitchWrapper <code>numports</code></td><td>dropped</td><td>configfile.py:300</td></tr>
+              <tr><td><code>*</code>, <code>true</code>, <code>yes</code> and empty</td><td><code>true</code> or <code>false</code></td><td>base.py:145</td></tr>
+              <tr><td>Python-literal lists</td><td>arrays, parsed with <code>ast.literal_eval</code>, never <code>eval</code></td><td>base.py:177</td></tr>
+              <tr><td><code>add …</code> and <code>addsh …</code> actions</td><td><code>{ kind = "vb" }</code> or <code>{ kind = "shell" }</code> with the <code>command</code></td><td>events.py:31</td></tr>
+              <tr><td><code>hdX</code> + <code>privatehdX</code></td><td><code>disks.hdX = { image, private }</code></td><td>virtualmachines.py:726</td></tr>
+              <tr><td><code>usbdevlist</code> of bare ids</td><td>a list of <code>{ id }</code> records</td><td>virtualmachines.py:746</td></tr>
+              <tr><td><code>name</code> repeating the brick name (qemu, router)</td><td>dropped</td><td>virtualmachines.py:755, router.py:28</td></tr>
+              <tr><td>Netemu flat keys plus the <code>- #Syntax used by newer versions</code> block (<code>states=</code>, <code>stateN.key=</code>, <code>stateN.probability[M]=</code>, <code>transperiod=</code>)</td><td><code>states</code>, <code>transitions</code>, <code>transperiod</code></td><td>wires.py:376–564</td></tr>
+              <tr><td><code>link|owner|socket|model|mac</code></td><td>the owner's <code>connect</code>, <code>endpoints</code> or <code>nics</code>, in line order</td><td>link.py:92, configfile.py:159</td></tr>
+              <tr><td><code>link|wf||…</code> (an unconnected plug)</td><td>an empty end, in its position</td><td>link.py:92</td></tr>
+              <tr><td><code>sock|vm|vm_sock_ethN|model|mac</code></td><td>a <code>nics</code> entry with <code>kind = "socket"</code> and <code>name = "sock_ethN"</code>, after the plugs, which is how QEMU numbers the cards today</td><td>configfile.py:372, virtualmachines.py:915</td></tr>
+              <tr><td>the <code>_hostonly</code> target</td><td><code>kind = "hostonly"</code></td><td>virtualmachines.py:190</td></tr>
+              <tr><td><code>&lt;nl&gt;</code> in image descriptions</td><td>real line breaks</td><td>virtualmachines.py:361</td></tr>
+              <tr><td><code>[Main]</code> in <code>.virtualbricks.conf</code></td><td><code>settings.toml</code>, <code>state.toml</code> and each project's <code>[settings]</code></td><td>_settings.py</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Safety</h3>
+        <ul>
+          <li><strong>Old files are never modified, moved or deleted.</strong> Going back to 2.1 still works, but 2.1 won't see changes made after the migration.</li>
+          <li><strong>Running it twice is harmless:</strong> a project that already has a <code>project.toml</code> is skipped.</li>
+          <li><strong>A project fails only when it can't be represented,</strong> for example two sections with the same name, or when its files can't be read or written. It stays untouched and is listed in the report.</li>
+          <li><strong>An invalid value falls back to the default with a warning</strong>, instead of failing the whole project. An example is a MAC address containing g.</li>
+          <li><strong>Images whose file is missing are kept.</strong> Today's loader drops them silently (<code>configfile.py:202</code>).</li>
+        </ul>
+
+        <h3>Future format changes</h3>
+        <p>Each file carries <code>format</code>. A format change is a numbered step that rewrites the plain table from version N to N+1. Adding a field is one: its step writes the new field with its default. The loader applies the missing steps before the schema sees the data, and the next save writes the new number.</p>
+        <p>Each step comes with fixture files of before and after. This keeps the runtime single-format for every later change too.</p>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">§12</span>Implementation plan</h2>
+        <p><strong>Done on the branch, not committed yet.</strong> All five steps below are implemented, with 381 tests. The tests cover every line and branch of <code>virtualbricks.config</code>, <code>project.py</code> and <code>virtualbricks.migrate</code>. They pass on the repository's Python 3.10, on an Ubuntu 22.04 set (Twisted 22.1, attrs 21.2, tomli 1.2.2, tomlkit 0.9.2) and on Debian 13's Python 3.13.</p>
+        <ol>
+          <li><strong>Schemas.</strong>
+            <ul>
+              <li>Add the registry and one attrs schema per type, plus one for settings.</li>
+              <li>Configs hold typed data, and the command-line builders and the console read typed values.</li>
+              <li>Rewrite the <code>config["…"]</code> sites to attributes.</li>
+              <li>Files don't change yet: the old reader and writer go through the schema, so this can land in small steps with tests.</li>
+            </ul></li>
+          <li><strong>New files.</strong>
+            <ul>
+              <li>TOML reader and writer for projects, settings and state.</li>
+              <li>Per-project settings, and the three groups in the settings window.</li>
+              <li>A project lifecycle without <code>VIRTUALBRICKS_HOME</code>.</li>
+              <li>The runtime directory for sockets, and atomic save.</li>
+            </ul></li>
+          <li><strong>Migration engine.</strong> Move the old reader into <code>virtualbricks.migrate</code>, give it line numbers, and add the report and the import path.</li>
+          <li><strong>Migration front ends.</strong>
+            <ul>
+              <li>The <code>python -m virtualbricks.migrate</code> command, with input and output folders and <code>--in-place</code>.</li>
+              <li>The <code>virtualbricks-migrate</code> window, registered under <code>[project.gui-scripts]</code> in <code>pyproject.toml</code>.</li>
+              <li>The startup hook that opens the window.</li>
+            </ul></li>
+          <li><strong>Cleanup.</strong> Delete <code>ProjectEntry</code>, the <code>CompatibleBuilder</code> classes, <code>ProjectManager2</code> and the <code>Parameter</code> classes.</li>
+        </ol>
+        <h3 id="code">Where the code lives</h3>
+        <figure class="code">
+          <figcaption>virtualbricks/</figcaption>
+<pre><code>app.py                  <span class="c">the launcher, and LOCK_FILE</span>
+project.py              <span class="c">projects in the workspace: create, open, save, import, export</span>
+config/                 <span class="c">the configuration</span>
+├── locations.py        <span class="c">XDG paths and the runtime directory</span>
+├── schema.py           <span class="c">field kinds, load and dump</span>
+├── tomlfile.py         <span class="c">reading, and atomic writing</span>
+├── report.py           <span class="c">the messages of a load or a migration</span>
+├── settings.py         <span class="c">app settings, per-project settings, state</span>
+└── projectfile.py      <span class="c">project.toml: write, upgrade, restore</span>
+migrate/                <span class="c">the only code that reads the old formats</span>
+├── legacy.py           <span class="c">the old readers, with line numbers</span>
+├── convert.py          <span class="c">old sections and values to the new data</span>
+├── engine.py           <span class="c">discovery, migration, report, lock</span>
+├── cli.py              <span class="c">python -m virtualbricks.migrate, virtualbricks-migrate</span>
+└── gui.py              <span class="c">the migration window</span></code></pre>
+        </figure>
+        <p><code>project.py</code> stays at the top level: it manages the workspace and its archives, and most of the app uses it.</p>
+
+        <h3>Tests</h3>
+        <p>The test suite, removed in <code>8584bba</code>, is back. Its layout mirrors the package: the tests of <code>virtualbricks/migrate/gui.py</code> are in <code>virtualbricks/tests/migrate/test_gui.py</code>. Test modules keep the <code>test_</code> prefix, because trial only collects those when it walks a package.</p>
+        <figure class="code">
+          <figcaption>virtualbricks/tests/</figcaption>
+<pre><code>__init__.py             <span class="c">isolate(), reset_settings(), fake programs</span>
+config/test_schema.py … <span class="c">one module per module of config/</span>
+migrate/fixtures.py     <span class="c">files written by the old versions</span>
+migrate/test_cli.py …   <span class="c">one module per module of migrate/</span>
+gui/__init__.py         <span class="c">window tests, skipped without a display</span>
+gui/windows/test_settings.py …
+test_project.py, test_bricks.py, test_virtualmachines.py …</code></pre>
+        </figure>
+        <p>Run them with <code>PYTHONPATH=. python -m twisted.trial virtualbricks.tests</code>. Every test gets its own home, XDG directories and lock file, so it never touches your files or a running Virtualbricks.</p>
+        <ul>
+          <li><strong>Migration fixtures.</strong> The engine, the command and the window run on fixture workspaces in temporary folders, and the tests check the files they write and every message of the report.</li>
+          <li><strong>Their sources.</strong> The old fixtures (the sample above and the <code>PROJECT</code> and <code>HOSTONLY_CONFIG</code> projects) come first, then new ones for Netemu with several states, events, USB lists, VM socket cards and unconnected wire ends.</li>
+          <li><strong>Per brick type:</strong> a round-trip test, and tests for its error messages.</li>
+        </ul>
+        <p><strong>Dependencies.</strong> The new ones are <code>tomli</code> (only below Python 3.11) and <code>tomlkit</code>. For Debian packaging that means <code>python3-tomli</code> on Ubuntu 22.04, and <code>python3-tomlkit</code> on both.</p>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">§13</span>Decisions</h2>
+        <h3>All decided on 24 September</h3>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>#</th><th>Question</th><th>Decision</th></tr></thead>
+            <tbody>
+              <tr><td class="nowrap"><span class="ref done">D1</span></td><td>File format</td><td>TOML</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D2</span></td><td>TOML writer</td><td><code>tomlkit</code></td></tr>
+              <tr><td class="nowrap"><span class="ref done">D3</span></td><td>File locations</td><td>Settings and state under XDG, sockets in the runtime directory, workspace unchanged. The lock stays global at <code>/tmp/vb.lock</code> for now, and a per-user lock is kept for later (<a href="#later">§14</a>).</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D4</span></td><td>Defaults in project files</td><td>Save the full configuration, defaults included</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D5</span></td><td>Per-project settings</td><td>Yes. They override the app settings, and the app settings are the starting values of a new project</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D6</span></td><td>Scope of project support</td><td>No templates, no projects outside the workspace, one project open at a time</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D7</span></td><td>Field and type names</td><td>Keep today's field names and lowercase the type names. Change only structure: disks, nics, endpoints, states.</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D8</span></td><td>Schema vehicle and access</td><td>attrs classes, attribute access</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D9</span></td><td>Importing old <code>.vbp</code> archives</td><td>Supported for good; the migration module stays</td></tr>
+              <tr><td class="nowrap"><span class="ref done">D10</span></td><td>Unused settings</td><td>Drop <code>alt-term</code>, <code>cdroms</code>, <code>kvm</code> and <code>python</code></td></tr>
+              <tr><td class="nowrap"><span class="ref done">S1</span></td><td>Writing <code>settings.toml</code></td><td>In full, like project files</td></tr>
+              <tr><td class="nowrap"><span class="ref done">S2</span></td><td>Which settings are per project</td><td><code>cowfmt</code>, <code>erroronloop</code>, <code>femaleplugs</code>, <code>qemupath</code> and <code>vdepath</code>. App-only: <code>workspace</code>, <code>term</code>, <code>sudo</code>, <code>ksm</code>, <code>systray</code> and <code>show_missing</code>.</td></tr>
+              <tr><td class="nowrap"><span class="ref done">S3</span></td><td>Another machine's paths in an imported project</td><td>The import dialog shows <code>qemupath</code> and <code>vdepath</code> next to this machine's values, and preselects this machine's when the project's paths don't exist here</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Nothing is left open. The bugs in <a href="#problems">§3</a> can be fixed now, independently of all this. The <code>eval()</code> fix is the urgent one.</p>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">§14</span>Later</h2>
+        <ul>
+          <li><strong>A per-user lock</strong>, from D3. The lock would move into <code>$XDG_RUNTIME_DIR</code>, next to the sockets, so users on the same machine stop blocking each other (<a href="#problems">§3</a>). It would also let a test instance run next to your normal one. <code>LOCK_FILE</code> in <code>app.py</code> is the one place to change, and the migration takes the lock through the same constant.</li>
+        </ul>
+      </section>
+
+      <section id="versions">
+        <h2><span class="num">A</span>Package versions</h2>
+        <p>These come from Launchpad (Ubuntu 22.04) and sources.debian.org (Debian 13), checked on 24 September 2026.</p>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Package</th><th class="nowrap">Ubuntu 22.04</th><th class="nowrap">Debian 13</th><th>Role here</th></tr></thead>
+            <tbody>
+              <tr><td>Python</td><td class="num">3.10</td><td class="num">3.13</td><td><code>tomllib</code> exists from 3.11</td></tr>
+              <tr><td>tomli</td><td class="num">1.2.2</td><td class="num">2.2.1</td><td>reader on 3.10</td></tr>
+              <tr><td>tomlkit</td><td class="num">0.9.2</td><td class="num">0.13.2</td><td>writer</td></tr>
+              <tr><td>tomli-w</td><td class="num">1.0.0</td><td class="num">1.0.0</td><td>not used</td></tr>
+              <tr><td>attrs</td><td class="num">21.2.0</td><td class="num">25.3.0</td><td>schemas; already required by Twisted</td></tr>
+              <tr><td>cattrs</td><td class="num">1.9.0</td><td class="num">24.1.2</td><td>not used: versions too far apart</td></tr>
+              <tr><td>pydantic</td><td class="num">1.9.0</td><td class="num">2.10.6</td><td>not used: v1 and v2 APIs</td></tr>
+              <tr><td>PyYAML</td><td class="num">5.4.1</td><td class="num">6.0.2</td><td>not used</td></tr>
+              <tr><td>jsonschema</td><td class="num">3.2.0</td><td class="num">4.19.2</td><td>optional, for the editor schema</td></tr>
+              <tr><td>msgspec</td><td>—</td><td class="num">0.19.0</td><td>not in Ubuntu 22.04</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="footnote">Code references are to commit 1166fa9. The old file samples come from the test suite as it was before 8584bba. The library behaviour quoted here (attrs 21.2, tomli 1.2.2, tomli-w 1.0.0, tomlkit 0.9.2, PyYAML 6.0.3) was checked by running those versions.</p>
+      </section>
+    </main>
+  </div>
+</div>

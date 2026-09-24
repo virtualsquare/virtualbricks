@@ -15,9 +15,12 @@ dependencies = [
     "Pillow>=9.0",
     "pygraphviz>=1.7",
     "Twisted>=22.1",
+    "attrs>=20.1",
     "constantly>=15.1",
     "zope.interface>=5.4",
     "PyGObject>=3.42",
+    "tomli>=1.2; python_version < '3.11'",
+    "tomlkit>=0.9",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -26,7 +29,7 @@ classifiers = [
 ]
 
 [dependency-groups]
-test = []
+test = ["coverage>=6.2"]
 dev = [
     { include-group = "test" },
     "black>=26.5",
@@ -40,6 +43,9 @@ Homepage = "https://github.com/virtualsquare/virtualbricks"
 
 [project.scripts]
 virtualbricks = "virtualbricks.scripts.virtualbricks:run"
+
+[project.gui-scripts]
+virtualbricks-migrate = "virtualbricks.migrate.cli:gui_main"
 
 [tool.setuptools]
 platforms = ["linux"]
@@ -66,6 +72,16 @@ include = ["virtualbricks*"]
 "share/locale/fr/LC_MESSAGES" = ["locale/fr/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/it/LC_MESSAGES" = ["locale/it/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/nl/LC_MESSAGES" = ["locale/nl/LC_MESSAGES/virtualbricks.mo"]
+
+[tool.coverage.run]
+branch = true
+source = ["virtualbricks"]
+omit = ["virtualbricks/tests/*", "virtualbricks/migrate/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
 
 [tool.black]
 line-length = 79

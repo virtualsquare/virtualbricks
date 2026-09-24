@@ -21,6 +21,8 @@ import os
 from twisted.logger import Logger
 
 from virtualbricks import bricks, link
+from virtualbricks.config import schema
+from virtualbricks.config.schema import Int, Str
 from virtualbricks.spawn import abspath_vde
 
 logger = Logger()
@@ -30,18 +32,18 @@ if False:  # pyflakes
     _ = str
 
 
-class TunnelListenConfig(bricks.Config):
+@schema.define
+class TunnelListenConfig(bricks.BrickConfig):
 
-    parameters = {
-        "password": bricks.String(""),
-        "port": bricks.SpinInt(7667, 1, 65535),
-    }
+    password = schema.field(Str(), default="")
+    port = schema.field(Int(1, 65535), default=7667)
 
 
 class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
     config_factory = TunnelListenConfig
+    connections = "connect"
     command_builder = {"-s": None, "#password": "password", "-p": "port"}
 
     def __init__(self, factory, name):
@@ -63,7 +65,7 @@ class TunnelListen(bricks.Brick):
                 + " "
                 + _("listening to udp:")
                 + " "
-                + self.config.get("port")
+                + str(self.config.port)
             )
         return _("disconnected")
 
@@ -76,7 +78,7 @@ class TunnelListen(bricks.Brick):
     def args(self):
         # TODO: port to utils.getProcessOutput
         pwdgen = "echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (
-            self.config["password"],
+            self.config.password,
             self.name,
         )
         exitstatus = os.system(pwdgen)
@@ -94,12 +96,11 @@ class TunnelListen(bricks.Brick):
     #    pass
 
 
+@schema.define
 class TunnelConnectConfig(TunnelListenConfig):
 
-    parameters = {
-        "host": bricks.String(""),
-        "localport": bricks.SpinInt(10771, 1, 65535),
-    }
+    host = schema.field(Str(), default="")
+    localport = schema.field(Int(1, 65535), default=10771)
 
 
 class TunnelConnect(TunnelListen):
@@ -119,8 +120,8 @@ class TunnelConnect(TunnelListen):
         self.command_builder["-c"] = self.get_host
 
     def get_host(self):
-        if self.config["host"]:
-            return "{0}:{1}".format(self.config["host"], self.config["port"])
+        if self.config.host:
+            return "{0}:{1}".format(self.config.host, self.config.port)
         return ""
 
     def get_parameters(self):
@@ -130,10 +131,10 @@ class TunnelConnect(TunnelListen):
                 + " "
                 + self.plugs[0].sock.brick.name
                 + _(", connecting to udp://")
-                + self.config["host"]
+                + self.config.host
             )
 
         return _("disconnected")
 
     def configured(self):
-        return self.plugs[0].sock is not None and self.config["host"]
+        return self.plugs[0].sock is not None and self.config.host

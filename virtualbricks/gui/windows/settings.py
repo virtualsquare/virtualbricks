@@ -27,28 +27,97 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import settings, tools
-from virtualbricks._settings import DEFAULT_CONF
-from virtualbricks.errors import NoOptionError
+from virtualbricks import project, tools
+from virtualbricks.config import settings
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
 
-_MARKER = object()
 logger = Logger()
 
 apply_settings = "Apply settings..."
 
 
-def settings_get_default(name, default=_MARKER):
-    try:
-        return settings.get(name)
-    except NoOptionError as exc:
-        if default is _MARKER:
-            try:
-                return DEFAULT_CONF[name]
-            except KeyError:
-                raise exc
-        else:
-            return default
+def _grid():
+    return Gtk.Grid(
+        visible=True,
+        can_focus=False,
+        margin_top=4,
+        margin_bottom=4,
+        row_spacing=4,
+        column_spacing=4,
+    )
+
+
+def _label(text):
+    return Gtk.Label(
+        visible=True, can_focus=False, halign=Gtk.Align.START, label=text
+    )
+
+
+def _switch():
+    return Gtk.Switch(visible=True, can_focus=True, halign=Gtk.Align.START)
+
+
+def _folder_chooser():
+    return Gtk.FileChooserButton(
+        visible=True, can_focus=False, hexpand=True, title=""
+    )
+
+
+class ProjectSettingsWidgets:
+    """The per-project settings, of the open project or of new projects."""
+
+    def __init__(self, note):
+        self.grid = grid = _grid()
+        grid.attach(
+            Gtk.Label(visible=True, label=note, xalign=0, wrap=True),
+            0,
+            0,
+            2,
+            1,
+        )
+        self.vdepath_chooser = _folder_chooser()
+        self.femaleplugs_switch = _switch()
+        self.erroronloop_switch = _switch()
+        self.qemupath_chooser = _folder_chooser()
+        formats = Gtk.ListStore(str)
+        for cow_format in settings.COW_FORMATS:
+            formats.append([cow_format])
+        self.cowfmt_combo = Gtk.ComboBox(
+            visible=True, can_focus=False, hexpand=True, model=formats
+        )
+        cell = Gtk.CellRendererText()
+        self.cowfmt_combo.pack_start(cell, False)
+        self.cowfmt_combo.add_attribute(cell, "text", 0)
+        rows = (
+            (_("VDE binaries path"), self.vdepath_chooser),
+            (_("Allow female plugs on devices"), self.femaleplugs_switch),
+            (_("Network topology loop detection"), self.erroronloop_switch),
+            (_("Qemu binaries path"), self.qemupath_chooser),
+            (_("Private COW format"), self.cowfmt_combo),
+        )
+        for row, (text, widget) in enumerate(rows, 1):
+            grid.attach(_label(text), 0, row, 1, 1)
+            grid.attach(widget, 1, row, 1, 1)
+
+    def load(self, get):
+        self.vdepath_chooser.set_current_folder(get("vdepath"))
+        self.femaleplugs_switch.set_active(get("femaleplugs"))
+        self.erroronloop_switch.set_active(get("erroronloop"))
+        self.qemupath_chooser.set_current_folder(get("qemupath"))
+        combobox_set_active_value(self.cowfmt_combo, get("cowfmt"), 0)
+
+    def store(self, set):
+        vdepath = self.vdepath_chooser.get_current_folder()
+        if vdepath is not None:
+            set("vdepath", vdepath)
+        set("femaleplugs", self.femaleplugs_switch.get_active())
+        set("erroronloop", self.erroronloop_switch.get_active())
+        qemupath = self.qemupath_chooser.get_current_folder()
+        if qemupath is not None:
+            set("qemupath", qemupath)
+        cowfmt = combobox_get_active_value(self.cowfmt_combo, 0)
+        if cowfmt is not None:
+            set("cowfmt", cowfmt)
 
 
 def combobox_get_active_value(combobox, column, default=None):
@@ -92,7 +161,8 @@ def combobox_set_active_value(combobox, value, column):
 
 class SettingsDialog(_Dialog):
     """
-    The preferences of Virtualbricks: general, VDE and Qemu tabs.
+    The preferences: of the application, of the open project and the ones
+    new projects start with.
     """
 
     def __init__(self, virtualbricks_gui):
@@ -107,12 +177,6 @@ class SettingsDialog(_Dialog):
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``settings.ui``."""
-
-        # cowFormatListStore (Gtk.ListStore)
-        cow_format_list_store = Gtk.ListStore(str)
-        cow_format_list_store.append(["cow"])
-        cow_format_list_store.append(["qcow"])
-        cow_format_list_store.append(["qcow2"])
 
         # dialog (Gtk.Dialog)
         self.dialog = Gtk.Dialog(
@@ -174,194 +238,29 @@ class SettingsDialog(_Dialog):
             fill=True,
         )
         content_area.child_set(action_area, expand=False, fill=False)
-        notebook1 = Gtk.Notebook(visible=True, can_focus=True)
-        grid1 = Gtk.Grid(
-            visible=True,
-            can_focus=False,
-            margin_top=4,
-            margin_bottom=4,
-            row_spacing=4,
-            column_spacing=4,
+        notebook = Gtk.Notebook(visible=True, can_focus=True)
+        notebook.append_page(
+            self._build_application_page(),
+            Gtk.Label(visible=True, label=_("Application")),
         )
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("X-window terminal command"),
+        self.project_widgets = ProjectSettingsWidgets(
+            _(
+                "These settings belong to the open project: changing them "
+                "doesn't change the other projects."
+            )
         )
-        grid1.attach(label1, 0, 0, 1, 1)
-        label2 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("X-window sudo command"),
+        notebook.append_page(
+            self.project_widgets.grid,
+            Gtk.Label(visible=True, label=_("This project")),
         )
-        grid1.attach(label2, 0, 1, 1, 1)
-        self.term_entry = Gtk.Entry(visible=True, can_focus=True, hexpand=True)
-        grid1.attach(self.term_entry, 1, 0, 1, 1)
-        self.sudo_entry = Gtk.Entry(visible=True, can_focus=True, hexpand=True)
-        grid1.attach(self.sudo_entry, 1, 1, 1, 1)
-        self.systray_switch = Gtk.Switch(
-            visible=True,
-            can_focus=True,
-            halign=Gtk.Align.START,
+        self.new_project_widgets = ProjectSettingsWidgets(
+            _("A new project starts with these settings.")
         )
-        grid1.attach(self.systray_switch, 1, 2, 1, 1)
-        self.warn_missing_switch = Gtk.Switch(
-            visible=True,
-            can_focus=True,
-            halign=Gtk.Align.START,
+        notebook.append_page(
+            self.new_project_widgets.grid,
+            Gtk.Label(visible=True, label=_("New projects")),
         )
-        grid1.attach(self.warn_missing_switch, 1, 3, 1, 1)
-        label3 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Enable systray"),
-        )
-        grid1.attach(label3, 0, 2, 1, 1)
-        label4 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Warn about missing components at startup"),
-        )
-        grid1.attach(label4, 0, 3, 1, 1)
-        label5 = Gtk.Label(visible=True, can_focus=False, label=_("General"))
-        notebook1.append_page(grid1, label5)
-        grid2 = Gtk.Grid(
-            visible=True,
-            can_focus=False,
-            margin_top=4,
-            margin_bottom=4,
-            row_spacing=4,
-            column_spacing=4,
-        )
-        label6 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Binaries path"),
-        )
-        grid2.attach(label6, 0, 0, 1, 1)
-        self.vde_path_chooser = Gtk.FileChooserButton(
-            visible=True,
-            can_focus=False,
-            hexpand=True,
-            title="",
-        )
-        grid2.attach(self.vde_path_chooser, 1, 0, 1, 1)
-        label7 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Use python support"),
-        )
-        grid2.attach(label7, 0, 1, 1, 1)
-        self.use_python_switch = Gtk.Switch(
-            visible=True,
-            can_focus=True,
-            halign=Gtk.Align.START,
-        )
-        grid2.attach(self.use_python_switch, 1, 1, 1, 1)
-        self.female_plugs_switch = Gtk.Switch(
-            visible=True,
-            can_focus=True,
-            halign=Gtk.Align.START,
-        )
-        grid2.attach(self.female_plugs_switch, 1, 2, 1, 1)
-        self.loop_detection_switch = Gtk.Switch(
-            visible=True,
-            can_focus=True,
-            halign=Gtk.Align.START,
-        )
-        grid2.attach(self.loop_detection_switch, 1, 3, 1, 1)
-        label8 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Allow female plugs on devices"),
-        )
-        grid2.attach(label8, 0, 2, 1, 1)
-        label9 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Network topology loop detection"),
-        )
-        grid2.attach(label9, 0, 3, 1, 1)
-        label10 = Gtk.Label(visible=True, can_focus=False, label=_("VDE"))
-        notebook1.append_page(grid2, label10)
-        grid3 = Gtk.Grid(
-            width_request=-1,
-            visible=True,
-            can_focus=False,
-            margin_top=4,
-            margin_bottom=4,
-            row_spacing=4,
-            column_spacing=4,
-        )
-        label11 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Qemu binaries path"),
-        )
-        grid3.attach(label11, 0, 0, 1, 1)
-        label12 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Private COW format"),
-        )
-        grid3.attach(label12, 0, 1, 1, 1)
-        self.cow_format_combo = Gtk.ComboBox(
-            visible=True,
-            can_focus=False,
-            hexpand=True,
-            model=cow_format_list_store,
-            active=2,
-        )
-        cell_renderer_text1 = Gtk.CellRendererText()
-        self.cow_format_combo.pack_start(cell_renderer_text1, False)
-        self.cow_format_combo.add_attribute(cell_renderer_text1, "text", 0)
-        grid3.attach(self.cow_format_combo, 1, 1, 1, 1)
-        self.qemu_path_chooser = Gtk.FileChooserButton(
-            visible=True,
-            can_focus=False,
-            hexpand=True,
-            title="",
-        )
-        grid3.attach(self.qemu_path_chooser, 1, 0, 1, 1)
-        use_kvm_switch = Gtk.Switch(
-            visible=True,
-            can_focus=True,
-            halign=Gtk.Align.START,
-        )
-        grid3.attach(use_kvm_switch, 1, 2, 1, 1)
-        self.enable_ksm_switch = Gtk.Switch(
-            visible=True,
-            can_focus=True,
-            halign=Gtk.Align.START,
-        )
-        grid3.attach(self.enable_ksm_switch, 1, 3, 1, 1)
-        label13 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Use KVM"),
-        )
-        grid3.attach(label13, 0, 2, 1, 1)
-        label14 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            halign=Gtk.Align.START,
-            label=_("Enable KSM"),
-        )
-        grid3.attach(label14, 0, 3, 1, 1)
-        label15 = Gtk.Label(visible=True, can_focus=False, label=_("Qemu"))
-        notebook1.append_page(grid3, label15)
-        content_area.pack_start(notebook1, True, True, 0)
+        content_area.pack_start(notebook, True, True, 0)
 
         # Signals
         self.dialog.connect(
@@ -376,6 +275,28 @@ class SettingsDialog(_Dialog):
             "notify::active",
             self.on_enable_ksm_switch_active_notify,
         )
+
+    def _build_application_page(self):
+        grid = _grid()
+        self.term_entry = Gtk.Entry(visible=True, can_focus=True, hexpand=True)
+        self.sudo_entry = Gtk.Entry(visible=True, can_focus=True, hexpand=True)
+        self.systray_switch = _switch()
+        self.warn_missing_switch = _switch()
+        self.enable_ksm_switch = _switch()
+        rows = (
+            (_("X-window terminal command"), self.term_entry),
+            (_("X-window sudo command"), self.sudo_entry),
+            (_("Enable systray"), self.systray_switch),
+            (
+                _("Warn about missing components at startup"),
+                self.warn_missing_switch,
+            ),
+            (_("Enable KSM"), self.enable_ksm_switch),
+        )
+        for row, (text, widget) in enumerate(rows):
+            grid.attach(_label(text), 0, row, 1, 1)
+            grid.attach(widget, 1, row, 1, 1)
+        return grid
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
@@ -435,58 +356,32 @@ class SettingsDialog(_Dialog):
         self._setting_ksm_deferred = deferred
 
     def load_settings(self):
-        # General tab
-        self.term_entry.set_text(settings_get_default("term"))
-        self.sudo_entry.set_text(settings_get_default("sudo"))
-        self.systray_switch.set_active(settings_get_default("systray"))
-        self.warn_missing_switch.set_active(
-            settings_get_default("show_missing")
-        )
-        # VDE tab
-        self.vde_path_chooser.set_current_folder(
-            settings_get_default("vdepath")
-        )
-        self.use_python_switch.set_active(settings_get_default("python"))
-        self.female_plugs_switch.set_active(
-            settings_get_default("femaleplugs")
-        )
-        self.loop_detection_switch.set_active(
-            settings_get_default("erroronloop")
-        )
-        # Qemu tab
-        self.qemu_path_chooser.set_current_folder(
-            settings_get_default("qemupath")
-        )
-        combobox_set_active_value(
-            self.cow_format_combo, settings_get_default("cowfmt"), 0
-        )
-        self.enable_ksm_switch.set_active(settings_get_default("ksm"))
+        self.term_entry.set_text(settings.get_app("term"))
+        self.sudo_entry.set_text(settings.get_app("sudo"))
+        self.systray_switch.set_active(settings.get_app("systray"))
+        self.warn_missing_switch.set_active(settings.get_app("show_missing"))
+        self.enable_ksm_switch.set_active(settings.get_app("ksm"))
+        self.new_project_widgets.load(settings.get_app)
+        if settings.project_settings() is None:
+            self.project_widgets.load(settings.get_app)
+            self.project_widgets.grid.set_sensitive(False)
+        else:
+            self.project_widgets.load(settings.get)
 
     def store_settings(self):
         logger.debug(apply_settings)
-        # General tab
-        settings.set("term", self.term_entry.get_text())
-        settings.set("sudo", self.sudo_entry.get_text())
-        settings.set("systray", self.systray_switch.get_active())
-        settings.set("show_missing", self.warn_missing_switch.get_active())
-        # VDE tab
-        vdepath = self.vde_path_chooser.get_current_folder()
-        if vdepath is not None:
-            settings.set("vdepath", vdepath)
-        settings.set("python", self.use_python_switch.get_active())
-        settings.set("femaleplugs", self.female_plugs_switch.get_active())
-        settings.set("erroronloop", self.loop_detection_switch.get_active())
-        # Qemu tab
-        qemupath = self.qemu_path_chooser.get_current_folder()
-        if qemupath is not None:
-            settings.set("qemupath", qemupath)
-        cowfmt = combobox_get_active_value(
-            self.cow_format_combo, 0, DEFAULT_CONF["cowfmt"]
-        )
-        settings.set("cowfmt", cowfmt)
+        settings.set_app("term", self.term_entry.get_text())
+        settings.set_app("sudo", self.sudo_entry.get_text())
+        settings.set_app("systray", self.systray_switch.get_active())
+        settings.set_app("show_missing", self.warn_missing_switch.get_active())
+        self.new_project_widgets.store(settings.set_app)
+        if settings.project_settings() is not None:
+            self.project_widgets.store(settings.set)
+            project.manager.save_current(self.virtualbricks_gui.brickfactory)
         ksm_active = self.enable_ksm_switch.get_active()
-        settings.set("ksm", ksm_active)
+        settings.set_app("ksm", ksm_active)
         tools.set_ksm(ksm_active)
+        settings.store()
         if self.systray_switch.get_active():
             self.virtualbricks_gui.start_systray()
         else:

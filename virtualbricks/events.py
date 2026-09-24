@@ -18,7 +18,9 @@
 
 from twisted.internet import reactor, defer
 
-from virtualbricks import base, errors, console
+from virtualbricks import base, console, errors
+from virtualbricks.config import schema
+from virtualbricks.config.schema import Int
 
 if False:  # pyflakes
     _ = str
@@ -28,36 +30,48 @@ process_ended = "Process ended with exit code {code}"
 event_error = "Error in event action. See the log for more " "information"
 
 
-class Command(base.String):
+class EventAction(schema.Kind):
+    """A console command ("vb") or a shell command ("shell")."""
 
-    def from_string(self, in_object):
-        if in_object.startswith("add "):
-            factory = console.VbShellCommand
-        elif in_object.startswith("addsh "):
-            factory = console.ShellCommand
-        else:
-            raise RuntimeError()
-        return factory(in_object.split(" ", 1)[1])
+    kinds = {"vb": console.VbShellCommand, "shell": console.ShellCommand}
 
-    def to_string(self, in_object):
-        if isinstance(in_object, console.VbShellCommand):
-            return "add " + in_object
-        elif isinstance(in_object, console.ShellCommand):
-            return "addsh " + in_object
-        else:
-            raise RuntimeError(_("Invalid command type."))
+    def check(self, value):
+        if not isinstance(value, tuple(self.kinds.values())):
+            raise ValueError(f"{value!r} is not an event action")
+
+    def to_data(self, value):
+        for kind, cls in self.kinds.items():
+            if isinstance(value, cls):
+                return {"kind": kind, "command": str(value)}
+
+    def from_data(self, data, report, where):
+        if not isinstance(data, dict):
+            raise ValueError(f"{data!r} is not a table")
+        kind = data.get("kind")
+        command = data.get("command")
+        if kind not in self.kinds:
+            raise ValueError(f"{kind!r} is not vb or shell")
+        if not isinstance(command, str):
+            raise ValueError(f"{command!r} is not a command")
+        for key in data.keys() - {"kind", "command"}:
+            report.warning("unknown field, dropped", f"{where}.{key}")
+        return self.kinds[kind](command)
+
+    def format(self, value):
+        return _describe_action(value)
 
 
-class EventConfig(base.Config):
+def _describe_action(action):
+    if isinstance(action, console.ShellCommand):
+        return f'shell "{action}"'
+    return f'vb "{action}"'
 
-    parameters = {
-        "actions": base.ListOf(Command("")),
-        "delay": base.Integer(0),
-    }
 
-    def __init__(self):
-        base.Config.__init__(self)
-        self["actions"] = []
+@schema.define
+class EventConfig:
+
+    actions = schema.field(schema.ListOf(EventAction()), factory=list)
+    delay = schema.field(Int(), default=0)
 
 
 class Event(base.Base):
@@ -81,14 +95,14 @@ class Event(base.Base):
         return state
 
     def configured(self):
-        return len(self.config["actions"]) > 0 and self.config["delay"] > 0
+        return len(self.config.actions) > 0 and self.config.delay > 0
 
     def get_parameters(self):
-        tempstr = _("Delay: %d") % self.config["delay"]
-        if len(self.config["actions"]) > 0:
+        tempstr = _("Delay: %d") % self.config.delay
+        if len(self.config.actions) > 0:
             tempstr += "; " + _("Actions:")
             # Add actions cutting the tail if it's too long
-            for s in self.config["actions"]:
+            for s in self.config.actions:
                 if isinstance(s, console.ShellCommand):
                     tempstr += ' "*%s",' % s
                 else:
@@ -115,7 +129,7 @@ class Event(base.Base):
 
         deferred = defer.Deferred()
         self.scheduled = reactor.callLater(
-            self.config["delay"], self.do_actions, deferred
+            self.config.delay, self.do_actions, deferred
         )
         self.notify_changed()
         return deferred
@@ -147,7 +161,7 @@ class Event(base.Base):
         self.scheduled = None
         procs = [
             defer.maybeDeferred(action.perform, self.factory)
-            for action in self.config["actions"]
+            for action in self.config.actions
         ]
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)

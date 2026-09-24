@@ -20,16 +20,6 @@ msgstr ""
 
 #: virtualbricks/base.py
 #, python-format
-msgid "Parameter %s not found"
-msgstr ""
-
-#: virtualbricks/base.py
-#, python-brace-format
-msgid "value out range {0} ({1}, {2})"
-msgstr ""
-
-#: virtualbricks/base.py
-#, python-format
 msgid "%(config)s config has no %(option)s option."
 msgstr ""
 
@@ -93,10 +83,6 @@ msgstr ""
 #: virtualbricks/errors.py
 #, python-format
 msgid "Normalized name %s already in use"
-msgstr ""
-
-#: virtualbricks/events.py
-msgid "Invalid command type."
 msgstr ""
 
 #: virtualbricks/events.py
@@ -585,6 +571,11 @@ msgstr "_Fichero"
 
 #: virtualbricks/gui/windows/exportproject.py
 msgid "Include base disk images (slow)"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "Use {0} of this machine, {1}, instead of {2}"
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
@@ -1230,8 +1221,54 @@ msgid "A project with the same name already exists"
 msgstr ""
 
 #: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "VDE binaries path"
+msgstr "Creación de imagen"
+
+#: virtualbricks/gui/windows/settings.py
+msgid "Allow female plugs on devices"
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+msgid "Network topology loop detection"
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+msgid "Qemu binaries path"
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "Private COW format"
+msgstr "Private COW"
+
+#: virtualbricks/gui/windows/settings.py
 msgid "Virtualbricks Settings"
 msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+msgid "Application"
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+msgid ""
+"These settings belong to the open project: changing them doesn't change the "
+"other projects."
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "This project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/windows/settings.py
+msgid "A new project starts with these settings."
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "New projects"
+msgstr "Guardar proyecto como"
 
 #: virtualbricks/gui/windows/settings.py
 msgid "X-window terminal command"
@@ -1250,49 +1287,7 @@ msgid "Warn about missing components at startup"
 msgstr ""
 
 #: virtualbricks/gui/windows/settings.py
-msgid "General"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Binaries path"
-msgstr "Creación de imagen"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Use python support"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Allow female plugs on devices"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Network topology loop detection"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-msgid "VDE"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Qemu binaries path"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Private COW format"
-msgstr "Private COW"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Use KVM"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
 msgid "Enable KSM"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Qemu"
 msgstr ""
 
 #: virtualbricks/gui/windows/simpleentry.py

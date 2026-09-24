@@ -52,12 +52,12 @@ def get_image(name):
 
 
 def has_custom_icon(brick):
-    return "icon" in brick.config and brick.config["icon"]
+    return getattr(brick.config, "icon", "")
 
 
 def brick_icon(brick):
     if has_custom_icon(brick):
-        return brick.config["icon"]
+        return brick.config.icon
     else:
         return get_data_filename(brick.get_type().lower() + ".png")
 

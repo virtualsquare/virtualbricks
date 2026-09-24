@@ -28,7 +28,8 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.python import filepath
 
-from virtualbricks import settings, tools
+from virtualbricks import tools
+from virtualbricks.config import locations
 from virtualbricks.project import manager as project_manager
 from virtualbricks.gui.windows.base import _, destroy_on_exit, Window
 
@@ -109,13 +110,16 @@ class ExportProjectDialog(Window):
             for image in iter_disk_images
         ]
         self.required_files = set(
-            [prjpath.child(".project"), prjpath.child("README")]
+            [prjpath.child(locations.PROJECT_FILE), prjpath.child("README")]
         )
         self.internal_files = set(
             [
                 prjpath.child("vde.dot"),
                 prjpath.child("vde_topology.plain"),
                 prjpath.child(".images"),
+                # the files of an older version, left by the migration
+                prjpath.child(locations.LEGACY_PROJECT_FILE),
+                prjpath.child(locations.LEGACY_PROJECT_FILE + "~"),
             ]
         )
 
@@ -443,7 +447,7 @@ class ExportProjectDialog(Window):
         images = []
         if self.include_images:
             images = [(name, fp.path) for name, fp in self.image_files]
-        return export(filename, files, images)
+        return export(filename, ancestor.path, files, images)
 
     @destroy_on_exit
     def on_confirm_response(self, dialog, response_id, parent, filename):
@@ -453,7 +457,7 @@ class ExportProjectDialog(Window):
 
     def do_export(self, filename):
         model = self.files_store
-        ancestor = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
+        ancestor = self.prjpath
         self.progressbar.wait_for(self.export(model, ancestor, filename))
 
     def on_dialog_response(self, dialog, response_id):

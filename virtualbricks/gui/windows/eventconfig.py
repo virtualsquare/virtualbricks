@@ -40,7 +40,7 @@ class EventControllerMixin:
         self.shell_cell.set_activatable(True)
         self.action_cell.set_property("editable", True)
         model = self.actions_store
-        for action in event.config["actions"]:
+        for action in event.config.actions:
             model.append((action, isinstance(action, console.ShellCommand)))
         model.append(("", False))
 
@@ -159,13 +159,13 @@ class EventConfigController(ConfigController, EventControllerMixin):
     def get_config_view(self, gui):
         self.setup_controller(self.original)
         entry = self.delay_entry
-        entry.set_text(self.original.config.get("delay"))
+        entry.set_text(str(self.original.config.delay))
         return self.panel
 
     def configure_brick(self, gui):
         attributes = {}
         text = self.delay_entry.get_text()
-        if self.original.config.get("delay") != text:
+        if str(self.original.config.delay) != text:
             if not text:
                 text = 0
             attributes["delay"] = int(text)

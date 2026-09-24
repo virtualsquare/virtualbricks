@@ -21,7 +21,9 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import settings, bricks, errors
+from virtualbricks import bricks, errors
+from virtualbricks.config import schema
+from virtualbricks.config.schema import Bool, Int, Path
 from virtualbricks.spawn import abspath_vde
 
 if False:  # pyflakes
@@ -30,13 +32,12 @@ if False:  # pyflakes
 sock_not_exists = "Socket does not exists: {path}"
 
 
-class SwitchConfig(bricks.Config):
+@schema.define
+class SwitchConfig(bricks.BrickConfig):
 
-    parameters = {
-        "numports": bricks.SpinInt(32, 1, 128),
-        "hub": bricks.Boolean(False),
-        "fstp": bricks.Boolean(False),
-    }
+    numports = schema.field(Int(1, 128), default=32)
+    hub = schema.field(Bool(), default=False)
+    fstp = schema.field(Bool(), default=False)
 
 
 class Switch(bricks.Brick):
@@ -49,7 +50,7 @@ class Switch(bricks.Brick):
         self._name = name
         for so in self.socks:
             so.nickname = name + "_port"
-            so.path = os.path.join(settings.VIRTUALBRICKS_HOME, name + ".ctl")
+            so.path = self.path()
 
     name = property(bricks.Brick.get_name, set_name)
 
@@ -77,11 +78,11 @@ class Switch(bricks.Brick):
     def get_parameters(self):
         fstp = ""
         hub = ""
-        if self.config["fstp"]:
+        if self.config.fstp:
             fstp = ", FSTP"
-        if self.config["hub"]:
+        if self.config.hub:
             hub = ", HUB"
-        return _("Ports: ") + "%d%s%s" % (self.config["numports"], fstp, hub)
+        return _("Ports: ") + "%d%s%s" % (self.config.numports, fstp, hub)
 
     def prog(self):
         return abspath_vde("vde_switch")
@@ -103,9 +104,10 @@ class Switch(bricks.Brick):
         self.send(b"port/setnumports %d\n" % arg)
 
 
-class SwitchWrapperConfig(bricks.Config):
+@schema.define
+class SwitchWrapperConfig(bricks.BrickConfig):
 
-    parameters = {"path": bricks.String("")}
+    path = schema.field(Path(), default="")
 
 
 class SwitchWrapper(bricks.Brick):
@@ -121,12 +123,12 @@ class SwitchWrapper(bricks.Brick):
     def poweron(self):
         if self.proc is not None:
             return defer.succeed(self)
-        elif os.path.exists(self.config["path"]):
+        elif os.path.exists(self.config.path):
             self.proc = bricks.FakeProcess(self)
             return defer.succeed(self)
         else:
-            self.logger.debug(sock_not_exists, path=self.config["path"])
-            msg = _("Socket does not exists: %s") % self.config["path"]
+            self.logger.debug(sock_not_exists, path=self.config.path)
+            msg = _("Socket does not exists: %s") % self.config.path
             return defer.fail(errors.BadConfigError(msg))
 
     def poweroff(self, kill=False):
@@ -134,7 +136,7 @@ class SwitchWrapper(bricks.Brick):
         return defer.succeed((self, None))
 
     def get_parameters(self):
-        return self.config["path"]
+        return self.config.path
 
     def configured(self):
         return self.socks[0].has_valid_path()

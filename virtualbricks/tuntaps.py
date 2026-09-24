@@ -19,7 +19,9 @@
 import os
 from collections import OrderedDict as odict
 
-from virtualbricks import bricks, link, settings
+from virtualbricks import bricks, link
+from virtualbricks.config import schema, settings
+from virtualbricks.config.schema import Choice, IPv4, Str
 from virtualbricks.spawn import abspath_vde
 
 if False:  # pyflakes
@@ -32,15 +34,17 @@ class PrivilegedBrick(bricks.Brick):
         return os.geteuid() != 0
 
 
-class CaptureConfig(bricks.Config):
+@schema.define
+class CaptureConfig(bricks.BrickConfig):
 
-    parameters = {"iface": bricks.String("")}
+    iface = schema.field(Str(), default="")
 
 
 class Capture(PrivilegedBrick):
 
     type = "Capture"
     config_factory = CaptureConfig
+    connections = "connect"
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -55,14 +59,14 @@ class Capture(PrivilegedBrick):
         return ""
 
     def get_parameters(self):
-        if self.config["iface"] == "":
+        if self.config.iface == "":
             return _("No interface selected")
         if self.plugs[0].sock:
             return _("Interface %(interface)s plugged to %(socket)s ") % {
-                "interface": self.config["iface"],
+                "interface": self.config.iface,
                 "socket": self.plugs[0].sock.brick.name,
             }
-        return _("Interface %s disconnected") % self.config["iface"]
+        return _("Interface %s disconnected") % self.config.iface
 
     def prog(self):
         return abspath_vde("vde_pcapplug")
@@ -71,23 +75,23 @@ class Capture(PrivilegedBrick):
         pass
 
     def configured(self):
-        return self.plugs[0].sock and self.config["iface"]
+        return self.plugs[0].sock and self.config.iface
 
 
-class TapConfig(bricks.Config):
+@schema.define
+class TapConfig(bricks.BrickConfig):
 
-    parameters = {
-        "ip": bricks.String("10.0.0.1"),
-        "nm": bricks.String("255.255.255.0"),
-        "gw": bricks.String(""),
-        "mode": bricks.String("off"),
-    }
+    ip = schema.field(IPv4(), default="10.0.0.1")
+    nm = schema.field(IPv4(), default="255.255.255.0")
+    gw = schema.field(IPv4(optional=True), default="")
+    mode = schema.field(Choice("off", "dhcp", "manual"), default="off")
 
 
 class Tap(PrivilegedBrick):
 
     type = "Tap"
     config_factory = TapConfig
+    connections = "connect"
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -117,14 +121,14 @@ class Tap(PrivilegedBrick):
     def post_poweron(self):
         # XXX: fixme
         self.start_related_events(on=True)
-        if self.config["mode"] == "dhcp":
+        if self.config.mode == "dhcp":
             if self.needsudo():
                 os.system(
                     settings.get("sudo") + ' "dhclient ' + self.name + '"'
                 )
             else:
                 os.system("dhclient " + self.name)
-        elif self.config["mode"] == "manual":
+        elif self.config.mode == "manual":
             if self.needsudo():
                 # XXX Ugly, can't we ioctls?
                 os.system(
@@ -132,16 +136,16 @@ class Tap(PrivilegedBrick):
                     + ' "/sbin/ifconfig '
                     + self.name
                     + " "
-                    + self.config["ip"]
+                    + self.config.ip
                     + " netmask "
-                    + self.config["nm"]
+                    + self.config.nm
                     + '"'
                 )
-                if len(self.config["gw"]) > 0:
+                if len(self.config.gw) > 0:
                     os.system(
                         settings.get("sudo")
                         + ' "/sbin/route add default gw '
-                        + self.config["gw"]
+                        + self.config.gw
                         + " dev "
                         + self.name
                         + '"'
@@ -151,14 +155,14 @@ class Tap(PrivilegedBrick):
                     "/sbin/ifconfig "
                     + self.name
                     + " "
-                    + self.config["ip"]
+                    + self.config.ip
                     + " netmask "
-                    + self.config["nm"]
+                    + self.config.nm
                 )
-                if len(self.config["gw"]) > 0:
+                if len(self.config.gw) > 0:
                     os.system(
                         "/sbin/route add default gw "
-                        + self.config["gw"]
+                        + self.config.gw
                         + " dev "
                         + self.name
                     )

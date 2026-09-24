@@ -30,7 +30,8 @@ from twisted.internet import defer, reactor, task
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import project, settings, tools
+from virtualbricks import project, tools
+from virtualbricks.config import settings
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IConfigController, IJobMenu, IMenu
 from virtualbricks.tools import dispose, is_running
@@ -228,7 +229,7 @@ class TopologyMixin:
             self.brickfactory.bricks,
             1.00,
             orientation,
-            settings.VIRTUALBRICKS_HOME,
+            self.brickfactory.runtime_dir,
         )
         self.__should_draw_topology = False
 
@@ -1275,7 +1276,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             missing.append("ksm")
         missing_text = []
         missing_components = []
-        if len(missing) > 0 and settings.show_missing:
+        if len(missing) > 0 and settings.get("show_missing"):
             for m in missing:
                 if m == "ksm":
                     missing_text.append(

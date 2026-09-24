@@ -30,7 +30,8 @@ from gi.repository import Gdk, Gtk, Pango
 
 from twisted.logger import Logger
 
-from virtualbricks import qemu, settings, tools
+from virtualbricks import qemu, tools
+from virtualbricks.config import settings
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IMenu
 from virtualbricks.spawn import getQemuOutput
@@ -92,7 +93,7 @@ def _set_connection(column, cell_renderer, model, iter, data=None):
         conn = "Host"
     elif link.sock:
         conn = link.sock.brick.name
-    elif link.mode == "sock" and settings.femaleplugs:
+    elif link.mode == "sock" and settings.get("femaleplugs"):
         conn = "Vde socket (female plug)"
     else:
         conn = "None"
@@ -1540,7 +1541,7 @@ class QemuConfigController(ConfigController):
         for plug in self.original.plugs:
             vmplugs.append((plug,))
 
-        if self.gui.config.femaleplugs:
+        if settings.get("femaleplugs"):
             for sock in self.original.socks:
                 vmplugs.append((sock,))
 
@@ -1584,7 +1585,7 @@ class QemuConfigController(ConfigController):
 
     def _get_config_view(self, gui):
         self.gui = gui
-        self.usb_devices = list(self.original.config["usbdevlist"])
+        self.usb_devices = list(self.original.config.usbdevlist)
 
         self.state_manager = StateManager()
         self.state_manager.add_checkbutton_active(
@@ -1658,7 +1659,7 @@ class QemuConfigController(ConfigController):
         self.argv0_store.set_data_source(
             map(widgets.ListEntry.from_tuple, exes)
         )
-        self.argv0_combo.set_selected_value(self.original.config["argv0"])
+        self.argv0_combo.set_selected_value(self.original.config.argv0)
         self.argv0_combo.set_cell_data_func(
             self.argv0_cell, self.argv0_cell.set_text
         )
@@ -1672,19 +1673,19 @@ class QemuConfigController(ConfigController):
         # boot/sound/mount comboboxes
         boots = map(widgets.ListEntry.from_tuple, BOOT_DEVICE)
         self.boot_store.set_data_source(boots)
-        self.boot_combo.set_selected_value(self.original.config["boot"])
+        self.boot_combo.set_selected_value(self.original.config.boot)
         self.boot_combo.set_cell_data_func(
             self.boot_cell, self.boot_cell.set_text
         )
         sounds = map(widgets.ListEntry.from_tuple, SOUND_DEVICE)
         self.sound_store.set_data_source(sounds)
-        self.sound_combo.set_selected_value(self.original.config["soundhw"])
+        self.sound_combo.set_selected_value(self.original.config.soundhw)
         self.sound_combo.set_cell_data_func(
             self.sound_cell, self.sound_cell.set_text
         )
         devices = map(widgets.ListEntry.from_tuple, MOUNT_DEVICE)
         self.device_store.set_data_source(devices)
-        self.mount_combo.set_selected_value(self.original.config["device"])
+        self.mount_combo.set_selected_value(self.original.config.device)
         self.mount_combo.set_cell_data_func(
             self.mount_cell, self.mount_cell.set_text
         )
@@ -1693,38 +1694,38 @@ class QemuConfigController(ConfigController):
         self.__images_list = ImagesBindingList(gui.factory)
         formatter = ImageFormatter()
         self.images_store.set_data_source(self.__images_list)
-        self.hda_combo.set_selected_value(self.original.config["hda"].image)
+        self.hda_combo.set_selected_value(self.original.disk("hda").image)
         self.hda_combo.set_cell_data_func(
             self.hda_cell, self.hda_cell.set_text
         )
         self.hda_cell.set_property("formatter", formatter)
-        self.hdb_combo.set_selected_value(self.original.config["hdb"].image)
+        self.hdb_combo.set_selected_value(self.original.disk("hdb").image)
         self.hdb_combo.set_cell_data_func(
             self.hdb_cell, self.hdb_cell.set_text
         )
         self.hdb_cell.set_property("formatter", formatter)
-        self.hdc_combo.set_selected_value(self.original.config["hdc"].image)
+        self.hdc_combo.set_selected_value(self.original.disk("hdc").image)
         self.hdc_combo.set_cell_data_func(
             self.hdc_cell, self.hdc_cell.set_text
         )
         self.hdc_cell.set_property("formatter", formatter)
-        self.hdd_combo.set_selected_value(self.original.config["hdd"].image)
+        self.hdd_combo.set_selected_value(self.original.disk("hdd").image)
         self.hdd_combo.set_cell_data_func(
             self.hdd_cell, self.hdd_cell.set_text
         )
         self.hdd_cell.set_property("formatter", formatter)
-        self.fda_combo.set_selected_value(self.original.config["fda"].image)
+        self.fda_combo.set_selected_value(self.original.disk("fda").image)
         self.fda_combo.set_cell_data_func(
             self.fda_cell, self.fda_cell.set_text
         )
         self.fda_cell.set_property("formatter", formatter)
-        self.fdb_combo.set_selected_value(self.original.config["fdb"].image)
+        self.fdb_combo.set_selected_value(self.original.disk("fdb").image)
         self.fdb_combo.set_cell_data_func(
             self.fdb_cell, self.fdb_cell.set_text
         )
         self.fdb_cell.set_property("formatter", formatter)
         self.mtdblock_combo.set_selected_value(
-            self.original.config["mtdblock"].image
+            self.original.disk("mtdblock").image
         )
         self.mtdblock_cell.set_property("formatter", formatter)
         self.mtdblock_combo.set_cell_data_func(
@@ -1733,15 +1734,15 @@ class QemuConfigController(ConfigController):
 
         cfg = self.original.config
         for pname, wname in self.config_to_widget_mapping:
-            getattr(self, wname).set_active(cfg[pname])
+            getattr(self, wname).set_active(getattr(cfg, pname))
         for pname, wname in self.config_to_spinint_mapping:
-            getattr(self, wname).set_value(cfg[pname])
+            getattr(self, wname).set_value(getattr(cfg, pname))
         for pname, wname in self.config_to_filechooser_mapping:
-            if cfg[pname]:
-                getattr(self, wname).set_filename(cfg[pname])
+            if getattr(cfg, pname):
+                getattr(self, wname).set_filename(getattr(cfg, pname))
         self.setup_netwoks_cards()
-        self.keyboard_entry.set_text(cfg["keyboard"])
-        self.kernel_options_entry.set_text(cfg["kopt"])
+        self.keyboard_entry.set_text(cfg.keyboard)
+        self.kernel_options_entry.set_text(cfg.kopt)
         return self.panel
 
     def configure_brick(self, gui):

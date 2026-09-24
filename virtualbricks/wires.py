@@ -19,6 +19,8 @@
 import re
 
 from virtualbricks import bricks
+from virtualbricks.config import schema
+from virtualbricks.config.schema import Bool, Float, Int, ListOf, Record, Str
 from virtualbricks.spawn import abspath_vde
 
 if False:  # pyflakes
@@ -28,6 +30,7 @@ if False:  # pyflakes
 class Wire(bricks.Brick):
 
     type = "Wire"
+    connections = "endpoints"
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -70,24 +73,46 @@ class Wire(bricks.Brick):
         ]
 
 
-# these parameters no longer represent the only configuration Netemu has, but rather the highlighted configuration such that other functions can still be used
-class NetemuConfig(bricks.Config):
-
-    parameters = {
-        "name": bricks.String("default name"),
-        "bandwidth": bricks.Integer(125000),
-        "bandwidthr": bricks.Integer(125000),
-        "bandwidthsymm": bricks.Boolean(True),
-        "delay": bricks.Integer(0),
-        "delayr": bricks.Integer(0),
-        "delaysymm": bricks.Boolean(True),
-        "chanbufsize": bricks.Integer(75000),
-        "chanbufsizer": bricks.Integer(75000),
-        "chanbufsizesymm": bricks.Boolean(True),
-        "loss": bricks.SpinFloat(0, 0, 100),
-        "lossr": bricks.SpinFloat(0, 0, 100),
-        "losssymm": bricks.Boolean(True),
+def _state_fields():
+    return {
+        "name": schema.field(Str(), default="default name"),
+        "bandwidth": schema.field(Int(), default=125000),
+        "bandwidthr": schema.field(Int(), default=125000),
+        "bandwidthsymm": schema.field(Bool(), default=True),
+        "delay": schema.field(Int(), default=0),
+        "delayr": schema.field(Int(), default=0),
+        "delaysymm": schema.field(Bool(), default=True),
+        "chanbufsize": schema.field(Int(), default=75000),
+        "chanbufsizer": schema.field(Int(), default=75000),
+        "chanbufsizesymm": schema.field(Bool(), default=True),
+        "loss": schema.field(Float(0, 100), default=0.0),
+        "lossr": schema.field(Float(0, 100), default=0.0),
+        "losssymm": schema.field(Bool(), default=True),
     }
+
+
+# One Markov state, as written in the project file.
+NetemuState = schema.make_class("NetemuState", _state_fields())
+# The configuration of a Netemu is its current state.
+NetemuConfig = schema.make_class(
+    "NetemuConfig", _state_fields(), bases=(bricks.BrickConfig,)
+)
+STATE_KEYS = frozenset(schema.names(NetemuState))
+BRICK_KEYS = frozenset(schema.names(bricks.BrickConfig))
+
+
+@schema.define
+class NetemuTable(bricks.BrickConfig):
+    """The table of a Netemu in the project file."""
+
+    transperiod = schema.field(Int(1), default=100)
+    transitions = schema.field(
+        ListOf(ListOf(Float(0))), factory=lambda: [[0.0]]
+    )
+    states = schema.field(
+        ListOf(Record(NetemuState), min_length=1),
+        factory=lambda: [NetemuState()],
+    )
 
 
 # Each channel emulator has its instance of this manager class
@@ -104,21 +129,25 @@ class MarkovConfig:
     # append a new state with default config at the end of the state list
     # all weights to and from the new state are 0 by default
     def add(self, index):
-        new = NetemuConfig()  # create a new config instance for each state
+        # the events belong to the brick, so every state has the same ones
+        new = NetemuConfig(
+            pon_vbevent=self.states[0].pon_vbevent,
+            poff_vbevent=self.states[0].poff_vbevent,
+        )
         length = len(self.states)
         self.weights.insert(index, list())
 
         unavailable = []
         defaultOccupied = False
-        defaultName = NetemuConfig.parameters["name"].default
+        defaultName = schema.default(NetemuConfig, "name")
 
         for i, state in enumerate(self.states):
             self.weights[i].insert(index, 0.0)
             self.weights[index].append(0.0)
 
             # default naming of each state uses the default name + a positive integer at the end (e.g. default name 0, default name 1...)
-            if state["name"].startswith(defaultName):
-                args = state["name"].split(" ")
+            if state.name.startswith(defaultName):
+                args = state.name.split(" ")
                 defaultArgsLen = len(defaultName.split(" "))
                 if len(args) == defaultArgsLen + 1:
                     num = args[defaultArgsLen]
@@ -137,11 +166,11 @@ class MarkovConfig:
 
         for i, num in enumerate(unavailable):
             if str(i) != num:
-                new["name"] += " " + str(i)
+                new.name += " " + str(i)
                 self.states.insert(index, new)
                 return
 
-        new["name"] += " " + str(len(unavailable))
+        new.name += " " + str(len(unavailable))
         self.states.insert(index, new)
 
     # delete a state and all weights from and to the state
@@ -170,9 +199,7 @@ class Netemu(Wire):
 
     def __init__(self, factory, name):
         Wire.__init__(self, factory, name)
-        self.markov_manager = (
-            None  # don't know what the default config is yet....
-        )
+        self.markov_manager = MarkovConfig(self.config)
         self.currentState = (
             0  # used for GUI updating and communicating to Netemu
         )
@@ -200,32 +227,32 @@ class Netemu(Wire):
         ]
 
         # Bandwidth
-        if self.config["bandwidthsymm"]:
-            res.extend(["-b", str(self.config["bandwidth"])])
+        if self.config.bandwidthsymm:
+            res.extend(["-b", str(self.config.bandwidth)])
         else:
-            res.extend(["-b", "LR {0}".format(self.config["bandwidth"])])
-            res.extend(["-b", "RL {0}".format(self.config["bandwidthr"])])
+            res.extend(["-b", "LR {0}".format(self.config.bandwidth)])
+            res.extend(["-b", "RL {0}".format(self.config.bandwidthr)])
 
         # Delay
-        if self.config["delaysymm"]:
-            res.extend(["-d", str(self.config["delay"])])
+        if self.config.delaysymm:
+            res.extend(["-d", str(self.config.delay)])
         else:
-            res.extend(["-d", "LR {0}".format(self.config["delay"])])
-            res.extend(["-d", "RL {0}".format(self.config["delayr"])])
+            res.extend(["-d", "LR {0}".format(self.config.delay)])
+            res.extend(["-d", "RL {0}".format(self.config.delayr)])
 
         # Chanbufsize
-        if self.config["chanbufsizesymm"]:
-            res.extend(["-c", str(self.config["chanbufsize"])])
+        if self.config.chanbufsizesymm:
+            res.extend(["-c", str(self.config.chanbufsize)])
         else:
-            res.extend(["-c", "LR {0}".format(self.config["chanbufsize"])])
-            res.extend(["-c", "RL {0}".format(self.config["chanbufsizer"])])
+            res.extend(["-c", "LR {0}".format(self.config.chanbufsize)])
+            res.extend(["-c", "RL {0}".format(self.config.chanbufsizer)])
 
         # Loss
-        if self.config["losssymm"]:
-            res.extend(["-l", str(self.config["loss"])])
+        if self.config.losssymm:
+            res.extend(["-l", str(self.config.loss)])
         else:
-            res.extend(["-l", "LR {0}".format(self.config["loss"])])
-            res.extend(["-l", "RL {0}".format(self.config["lossr"])])
+            res.extend(["-l", "LR {0}".format(self.config.loss)])
+            res.extend(["-l", "RL {0}".format(self.config.lossr)])
 
         res.extend(bricks.Brick.build_cmd_line(self))
         return res
@@ -242,17 +269,60 @@ class Netemu(Wire):
         self._set(attrs, "bandwidthsymm", "bandwidth", "bandwidthr")
         self._set(attrs, "losssymm", "loss", "lossr")
         Wire.set(self, attrs)
-
-        # this is called while reading the save file which always reads at least 1 state
-        if self.markov_manager is None:
-            self.init_markov()
+        # the events belong to the brick, so every state has the same ones
+        for name in BRICK_KEYS:
+            value = getattr(self.config, name)
+            for state in self.markov_manager.states:
+                setattr(state, name, value)
 
     def _set(self, attrs, symm, left_to_right, right_to_left):
-        if symm in attrs and attrs[symm] != self.config[symm]:
+        if symm in attrs and attrs[symm] != getattr(self.config, symm):
             if left_to_right in attrs:
-                self.config[left_to_right] = attrs.pop(left_to_right)
+                setattr(self.config, left_to_right, attrs.pop(left_to_right))
             if right_to_left in attrs:
-                self.config[right_to_left] = attrs.pop(right_to_left)
+                setattr(self.config, right_to_left, attrs.pop(right_to_left))
+
+    def rename_references(self, target, old, new):
+        changed = False
+        for state in self.markov_manager.states:
+            if schema.rename_references(state, target, old, new):
+                changed = True
+        return changed
+
+    def config_table(self):
+        table = schema.dump(self.config, exclude=STATE_KEYS)
+        table["transperiod"] = self.transPeriod
+        table["transitions"] = [
+            [float(weight) for weight in row]
+            for row in self.markov_manager.weights
+        ]
+        table["states"] = [
+            schema.dump(state, exclude=BRICK_KEYS)
+            for state in self.markov_manager.states
+        ]
+        return table
+
+    def load_config_table(self, table, report, where, ignore):
+        data = schema.load(NetemuTable, table, report, where, ignore=ignore)
+        events = {name: getattr(data, name) for name in BRICK_KEYS}
+        states = [
+            NetemuConfig(**schema.values(state), **events)
+            for state in data.states
+        ]
+        size = len(states)
+        weights = data.transitions
+        if len(weights) != size or any(len(row) != size for row in weights):
+            report.warning(
+                f"is not a {size}×{size} matrix, using zeros",
+                f"{where}.transitions",
+            )
+            weights = [[0.0] * size for _ in range(size)]
+        self.markov_manager = MarkovConfig(states[0])
+        self.markov_manager.states = states
+        self.markov_manager.weights = weights
+        self.transPeriod = data.transperiod
+        self.currentState = self.startupState = 0
+        self.config = states[0]
 
     # the set functions in base.py and wires.py are not suitable anymore for communicating with the emulator
     def update(self):
@@ -268,7 +338,7 @@ class Netemu(Wire):
         for i, state in enumerate(self.markov_manager.states):
             self.currentState = i
             self.config = self.markov_manager.states[self.currentState]
-            for name, value in state.items():
+            for name, value in schema.values(state).items():
                 self._update(name, value)
 
         self.currentState = currentState
@@ -314,251 +384,57 @@ class Netemu(Wire):
         )
 
     def cbset_chanbufsize(self, value):
-        if self.config["chanbufsizesymm"]:
+        if self.config.chanbufsizesymm:
             self.send(b"chanbufsize %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"chanbufsize LR %d[%d]\n" % (value, self.currentState))
 
     def cbset_chanbufsizer(self, value):
-        if not self.config["chanbufsizesymm"]:
+        if not self.config.chanbufsizesymm:
             self.send(b"chanbufsize RL %d[%d]\n" % (value, self.currentState))
 
     def cbset_chanbufsizesymm(self, value):
-        self.cbset_chanbufsize(self.config["chanbufsize"])
-        self.cbset_chanbufsizer(self.config["chanbufsizer"])
+        self.cbset_chanbufsize(self.config.chanbufsize)
+        self.cbset_chanbufsizer(self.config.chanbufsizer)
 
     def cbset_delay(self, value):
-        if self.config["delaysymm"]:
+        if self.config.delaysymm:
             self.send(b"delay %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"delay LR %d[%d]\n" % (value, self.currentState))
 
     def cbset_delayr(self, value):
-        if not self.config["delaysymm"]:
+        if not self.config.delaysymm:
             self.send(b"delay RL %d[%d]\n" % (value, self.currentState))
 
     def cbset_delaysymm(self, value):
-        self.cbset_delay(self.config["delay"])
-        self.cbset_delayr(self.config["delayr"])
+        self.cbset_delay(self.config.delay)
+        self.cbset_delayr(self.config.delayr)
 
     def cbset_loss(self, value):
-        if self.config["losssymm"]:
+        if self.config.losssymm:
             self.send(b"loss %f[%d]\n" % (value, self.currentState))
         else:
             self.send(b"loss LR %f[%d]\n" % (value, self.currentState))
 
     def cbset_lossr(self, value):
-        if not self.config["losssymm"]:
+        if not self.config.losssymm:
             self.send(b"loss RL %f[%d]\n" % (value, self.currentState))
 
     def cbset_losssymm(self, value):
-        self.cbset_loss(self.config["loss"])
-        self.cbset_lossr(self.config["lossr"])
+        self.cbset_loss(self.config.loss)
+        self.cbset_lossr(self.config.lossr)
 
     def cbset_bandwidth(self, value):
-        if self.config["bandwidthsymm"]:
+        if self.config.bandwidthsymm:
             self.send(b"bandwidth %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"bandwidth LR %d[%d]\n" % (value, self.currentState))
 
     def cbset_bandwidthr(self, value):
-        if not self.config["bandwidthsymm"]:
+        if not self.config.bandwidthsymm:
             self.send(b"bandwidth RL %d[%d]\n" % (value, self.currentState))
 
     def cbset_bandwidthsymm(self, value):
-        self.cbset_bandwidth(self.config["bandwidth"])
-        self.cbset_bandwidthr(self.config["bandwidthr"])
-
-    # custom save and load functions to keep the information about all states, weights and time step without breaking compatibility with older versions
-    # all fields are saved if different from their default values
-    # in case of multiple states, state 0 fields will appear duplicated
-
-    def save_to(self, fileobj):
-        opt_tmp = "{0}={1}"
-        new_opt_tmp = "state{0}.{1}"
-        double_opt_tmp = "{0}[{1}]"
-
-        options = []
-        for name, param in sorted(
-            self.markov_manager.states[0].parameters.items()
-        ):
-            if (
-                name != "name"
-                and self.markov_manager.states[0][name] != param.default
-            ):
-                value = param.to_string_brick(
-                    self.markov_manager.states[0][name], self
-                )
-                options.append(opt_tmp.format(name, value))
-        tmp = "[{0}:{1}]\n#Syntax used by the old versions (only one state); added for backwards compatibility only\n\n{2}"
-        if options:
-            options.append("\n")
-        fileobj.write(
-            tmp.format(self.get_type(), self.name, "\n".join(options))
-        )
-
-        if len(self.markov_manager.states) == 1:
-            return
-
-        fileobj.write(
-            "- #Syntax used by newer versions\n"
-            + opt_tmp.format("states", len(self.markov_manager.states))
-            + "\n"
-        )
-
-        for i, state in enumerate(self.markov_manager.states):
-            options = []
-            for name, param in sorted(state.parameters.items()):
-                if state[name] != param.default:
-                    value = param.to_string_brick(state[name], self)
-                    options.append(
-                        opt_tmp.format(new_opt_tmp.format(i, name), value)
-                    )
-
-            for j, weight in enumerate(self.markov_manager.weights[i]):
-                if j != i and weight != 0:
-                    options.append(
-                        opt_tmp.format(
-                            new_opt_tmp.format(
-                                i, double_opt_tmp.format("probability", j)
-                            ),
-                            weight,
-                        )
-                    )
-
-            options.append("")
-            fileobj.write("\n".join(options))
-
-        if self.transPeriod != 100:
-            fileobj.write(
-                opt_tmp.format("transperiod", self.transPeriod) + "\n"
-            )
-        fileobj.write("\n")
-
-    def load_from(self, section):
-
-        # first state
-
-        done = False
-        curpos = section.fileobj.tell()
-        line = section.fileobj.readline()
-        cfg = {}
-        while not done and line:
-            if line.startswith("#") or section.EMPTY.match(line):
-                curpos = section.fileobj.tell()
-                line = section.fileobj.readline()
-                continue  # ...
-            match = section.CONFIG_LINE.match(line)
-            if match:
-                name, value = match.groups()
-                if value is None:
-                    # value is None when the parameter is not set
-                    value = ""
-                if self.config.parameters.get(name):
-                    cfg[name] = self._getvalue(name, value)
-                curpos = section.fileobj.tell()
-                line = section.fileobj.readline()
-            else:
-                self.set(cfg)
-                if not line.startswith("-"):
-                    section.fileobj.seek(curpos)
-                    return
-
-                done = True
-
-        errorMsg = "Error parsing argument {arg}, {exception}."
-        cfg = {}
-        line = section.fileobj.readline()
-        curpos = section.fileobj.tell()
-        STATE_LINE = re.compile(r"^state([0-9]+)\.(\w+)\s*=\s*(.*)$")
-        DOUBLE_STATE_LINE = re.compile(
-            r"^state([0-9]+)\.(\w+)\[([0-9]+)\]\s*=\s*(.*)$"
-        )
-
-        while line:
-            if line.startswith("#") or section.EMPTY.match(line):
-                curpos = section.fileobj.tell()
-                line = section.fileobj.readline()
-                continue  # ...
-
-            match = DOUBLE_STATE_LINE.match(line)
-            if match:
-                state, name, stateTo, value = match.groups()
-                if state.isnumeric() and stateTo.isnumeric():
-                    if value is None:
-                        # value is None when the parameter is not set
-                        value = ""
-                    try:
-                        if (
-                            name == "probability"
-                            and max(int(state), int(stateTo))
-                            < len(self.markov_manager.states)
-                            and int(state) != int(stateTo)
-                        ):
-                            self.markov_manager.weights[int(state)][
-                                int(stateTo)
-                            ] = float(value)
-                    except ValueError:
-                        self.logger.error(
-                            errorMsg,
-                            arg="state" + state + "." + name,
-                            exception="Value Error",
-                        )
-                curpos = section.fileobj.tell()
-                line = section.fileobj.readline()
-
-            else:
-                match = STATE_LINE.match(line)
-                if match:
-                    state, name, value = match.groups()
-                    if state.isnumeric():
-                        if value is None:
-                            # value is None when the parameter is not set
-                            value = ""
-                        try:
-                            if int(state) < len(
-                                self.markov_manager.states
-                            ) and self.config.parameters.get(name):
-                                self.markov_manager.states[int(state)][
-                                    name
-                                ] = self._getvalue(name, value)
-                        except ValueError:
-                            self.logger.error(
-                                errorMsg,
-                                arg="state" + state + "." + name,
-                                exception="Value Error",
-                            )
-                    curpos = section.fileobj.tell()
-                    line = section.fileobj.readline()
-
-                else:
-                    match = section.CONFIG_LINE.match(line)
-                    if match:
-                        name, value = match.groups()
-                        if value is None:
-                            # value is None when the parameter is not set
-                            value = ""
-                        try:
-                            if name.startswith("states") and value.isnumeric():
-                                for i in range(
-                                    len(self.markov_manager.states), int(value)
-                                ):
-                                    self.markov_manager.add(i)
-
-                            elif (
-                                name.startswith("transperiod")
-                                and value.isnumeric()
-                            ):
-                                self.transPeriod = int(value)
-                        except ValueError:
-                            self.logger.error(
-                                errorMsg,
-                                arg="state" + state + "." + name,
-                                exception="Value Error",
-                            )
-
-                        curpos = section.fileobj.tell()
-                        line = section.fileobj.readline()
-                    else:
-                        section.fileobj.seek(curpos)
-                        return
+        self.cbset_bandwidth(self.config.bandwidth)
+        self.cbset_bandwidthr(self.config.bandwidthr)

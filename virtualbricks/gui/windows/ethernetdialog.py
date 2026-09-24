@@ -27,7 +27,8 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import settings, tools, virtualmachines
+from virtualbricks import tools, virtualmachines
+from virtualbricks.config import settings
 from virtualbricks.gui.windows.base import _, Window
 
 logger = Logger()
@@ -216,7 +217,7 @@ class BaseEthernetDialog(Window):
         socks.append(
             ("Host-only ad hoc network", virtualmachines.hostonly_sock)
         )
-        if settings.femaleplugs:
+        if settings.get("femaleplugs"):
             socks.append(("Vde socket", "_sock"))
             for sock in self.factory.socks:
                 socks.append((sock.nickname, sock))
@@ -287,7 +288,7 @@ class EditEthernetDialog(BaseEthernetDialog):
             itr = model.iter_next(itr)
 
         socks = self.sock_store
-        if self.plug.mode == "sock" and settings.femaleplugs:
+        if self.plug.mode == "sock" and settings.get("femaleplugs"):
             self.sock_combo.set_active(1)
         else:
             itr = socks.get_iter_first()

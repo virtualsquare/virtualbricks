@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_factory -*-
+# -*- test-case-name: virtualbricks.tests.test_brickfactory -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -17,13 +17,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import errno
 import sys
 import threading
 import termios
 import tty
 import re
 import copy
+import itertools
 
 from twisted.application import app
 from twisted.internet import defer, task, stdio, error
@@ -40,8 +40,10 @@ from twisted.logger import (
     globalLogPublisher,
 )
 
-from virtualbricks import errors, settings, configfile, console, project
+from virtualbricks import errors, console, project
+from virtualbricks.config import settings, schema
 from virtualbricks import i18n
+from virtualbricks.config import locations
 from virtualbricks import link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
 from virtualbricks.errors import NameAlreadyInUseError
@@ -145,6 +147,9 @@ class BrickFactory:
         self._events = {}
         self.socks = []
         self._disk_images = {}
+        # Where the sockets of the running bricks are; each open project
+        # gets a directory of its own.
+        self.runtime_dir = locations.runtime_dir()
         self.__factories = install_brick_types()
         self.__observable = observable = Observable("quit")
         self.changed = Signal(observable, "brick-changed")
@@ -290,8 +295,7 @@ class BrickFactory:
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
-        # Copy only strings, and not objects, into new vm config
-        new_brick.set(copy.deepcopy(brick.config))
+        new_brick.set(copy.deepcopy(schema.values(brick.config)))
 
         for p in brick.plugs:
             if p.sock is not None:
@@ -382,7 +386,7 @@ class BrickFactory:
         :rtype: Optional[virtualbricks.events.Event]
         """
 
-        return self._disk_images.get(name)
+        return self._events.get(name)
 
     def iter_events(self):
         return iter(self._events.values())
@@ -392,6 +396,7 @@ class BrickFactory:
         orig_name = name
         while self.is_in_use(name):
             name = f"{orig_name}.{c}"
+            c += 1
         return name
 
     def is_in_use(self, name):
@@ -416,16 +421,25 @@ class BrickFactory:
         return None
 
     def rename(self, brick, name):
+        """Rename a brick, event or image, and every reference to it."""
+
         prev_name = brick.get_name()
         new_name = self.normalize_name(name)
+        target = None
         # Update indexes
-        if is_event(brick):
-            self._events[new_name] = brick
-            del self._events[prev_name]
-        elif is_disk_image(brick):
+        if is_disk_image(brick):
             self._disk_images[new_name] = brick
             del self._disk_images[prev_name]
+            target = "image"
+        elif is_event(brick):
+            self._events[new_name] = brick
+            del self._events[prev_name]
+            target = "event"
         brick.set_name(new_name)
+        if target is not None:
+            for obj in itertools.chain(self._bricks, self._events.values()):
+                if obj.rename_references(target, prev_name, new_name):
+                    obj.notify_changed()
         return prev_name
 
     def normalize_name(self, name):
@@ -557,7 +571,7 @@ class Console(basic.LineOnlyReceiver):
 
 
 def AutosaveTimer(factory, interval=180):
-    timer = task.LoopingCall(configfile.safe_save, factory)
+    timer = task.LoopingCall(project.manager.autosave, factory)
     timer.start(interval, now=False)
     return timer
 
@@ -622,6 +636,7 @@ class Application:
 
     def install_settings(self):
         settings.load()
+        settings.load_state()
 
     def install_sys_hooks(self):
         sys.excepthook = self.excepthook
@@ -645,17 +660,28 @@ class Application:
             )
 
     def install_home(self):
-        try:
-            os.mkdir(settings.VIRTUALBRICKS_HOME)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
+        locations.ensure_private_dir(locations.runtime_dir())
 
     def get_namespace(self):
         return {}
 
+    def migrate(self):
+        """Convert the files of older versions, once; may return a Deferred."""
+
+        from virtualbricks.migrate import engine
+
+        migration = engine.startup_migration()
+        if migration is not None:
+            migration.run()
+            migration.log(logger)
+
     def run(self, reactor):
         self.install_locale()
+        d = defer.maybeDeferred(self.migrate)
+        d.addCallback(lambda _: self._start(reactor))
+        return d
+
+    def _start(self, reactor):
         self.install_settings()
         self.logger.start(self)
         self.install_home()

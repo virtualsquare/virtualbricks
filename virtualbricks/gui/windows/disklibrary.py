@@ -25,7 +25,9 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
+from twisted.logger import Logger
 
+from virtualbricks import errors
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.gui.windows.base import (
     _,
@@ -33,6 +35,9 @@ from virtualbricks.gui.windows.base import (
     iter_tree_model,
     pango_attr_list,
 )
+
+logger = Logger()
+invalid_name = "Cannot rename the image: {error}"
 
 
 class DisksLibraryWindow(_Window):
@@ -437,9 +442,15 @@ class DisksLibraryWindow(_Window):
 
     def on_save_button_clicked(self, button):
         assert self._disk_image is not None
-        # self._disk_image.set_path(self.path_chooser.get_filename())
-        self._disk_image.path = self.path_chooser.get_filename()
-        self._disk_image.set_name(self.name_entry.get_text())
+        self._disk_image.set_path(self.path_chooser.get_filename())
+        name = self.name_entry.get_text()
+        if name != self._disk_image.get_name():
+            try:
+                # Through the factory, to rename the disks' references too.
+                self._brickfactory.rename(self._disk_image, name)
+            except errors.InvalidNameError as exc:
+                logger.error(invalid_name, error=exc)
+                return True
         description = self.description_buffer.get_property("text")
         self._disk_image.set_description(description)
         self._hide_edit_screen()

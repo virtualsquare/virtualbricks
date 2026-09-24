@@ -19,15 +19,13 @@
 Dialog to save the current project with a new name.
 """
 
-from pathlib import Path
-
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks import settings
+from virtualbricks import errors
 from virtualbricks.project import manager as project_manager
 from virtualbricks.gui.windows.base import _, _Dialog
 
@@ -213,10 +211,10 @@ class SaveProjectAsDialog(_Dialog):
             self._set_error(_("New project name is the same as previous name"))
             return
         try:
-            Path(new_project_name).relative_to(settings.DEFAULT_HOME)
-        except ValueError:
-            # TODO: explain why name is invalid
+            project_manager.get_project(new_project_name)
+        except errors.InvalidNameError:
             self._set_error(_("Invalid project name"))
+            return
         for project in project_manager:
             if new_project_name == project.name:
                 tooltip = _("A project with the same name already exists")

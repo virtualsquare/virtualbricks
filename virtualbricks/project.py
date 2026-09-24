@@ -16,6 +16,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""
+Projects: directories of the workspace with a ``project.toml``.
+
+One project is open at a time. While it's open its settings win over the app
+settings, and the sockets of its bricks are in its runtime directory.
+"""
+
 import os
 import errno
 import itertools
@@ -25,7 +32,10 @@ from twisted.internet import utils, error, defer
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import settings, configfile, errors, _configparser, tools
+from virtualbricks import errors
+from virtualbricks.config import locations, projectfile, settings, tomlfile
+from virtualbricks import tools
+from virtualbricks.config.report import Report
 
 logger = Logger()
 
@@ -33,17 +43,16 @@ create_archive = "Create archive in {path}"
 extract_archive = "Extract archive in {path}"
 open_project = "Restoring project {name}"
 create_project = "Create project {name}"
-rebase_error = "Error on rebase"
-rebase = "Rebasing {cow} to {basefile}"
-remap_image = "Mapping {original} to {new}"
-extract_project = "Extracting project"
 cannot_find_project = (
-    'Cannot find project "{name}". ' "A new project will be created."
+    'Cannot find project "{name}". A new project will be created.'
 )
-include_images = "Including the following images to the project: " "{images}."
-save_images = "Move virtual machine's images"
+cannot_open_project = (
+    'Cannot open project "{name}": {error}. A new project will be created.'
+)
+include_images = "Including the following images to the project: {images}."
+autosave_error = "Error while saving the project"
 DEFAULT_PROJECT_RE = re.compile(
-    r"^{0}(?:_\d+)?$".format(settings.DEFAULT_PROJECT)
+    r"^{0}(?:_\d+)?$".format(locations.DEFAULT_PROJECT)
 )
 
 
@@ -62,13 +71,20 @@ class Tgz:
     exe_c = exe_x = "tar"
 
     def create(
-        self, pathname, files, images=(), run=utils.getProcessOutputAndValue
+        self,
+        pathname,
+        directory,
+        files,
+        images=(),
+        run=utils.getProcessOutputAndValue,
     ):
+        """Archive the files of the project in directory, and its images."""
+
         logger.info(create_archive, path=pathname)
-        args = ["cfzh", pathname, "-C", settings.VIRTUALBRICKS_HOME] + files
+        args = ["cfzh", pathname, "-C", directory] + files
         if images:
             logger.info(include_images, images=images)
-            prjpath = filepath.FilePath(settings.VIRTUALBRICKS_HOME)
+            prjpath = filepath.FilePath(directory)
             imgs = prjpath.child(".images")
             try:
                 imgs.remove()
@@ -102,97 +118,6 @@ class BsdTgz(Tgz):
     exe_c = exe_x = "bsdtar"
 
 
-class ProjectEntry:
-
-    def __init__(self, sections, links):
-        self.sections = sections
-        self.links = links
-
-    @classmethod
-    def from_fileobj(cls, fileobj):
-        links = []
-        sections = {}
-        for item in _configparser.Parser(fileobj):
-            if isinstance(item, tuple):
-                links.append(item)
-            else:
-                sections[(item.type, item.name)] = dict(item)
-        return cls(sections, links)
-
-    def _filter(self, fltr):
-        return [(s, self.sections[s]) for s in self.sections if fltr(s)]
-
-    def has_image(self, name):
-        return ("Image", name) in self.sections
-
-    def get_images(self):
-        return self._filter(lambda k: k[0] == "Image")
-
-    def remap_image(self, name, path):
-        if self.has_image(name):
-            self.sections[("Image", name)]["path"] = path
-
-    def get_bricks(self):
-        # XXX: every time a new brick type is added or a a type is changed this
-        # method must change too. fix this
-        bricks = set(
-            [
-                "Qemu",
-                "Switch",
-                "SwitchWrapper",
-                "Tap",
-                "Capture",
-                "Wirefilter",
-                "Netemu",
-                "Wire",
-                "TunnelConnect",
-                "TunnelListen",
-                "Router",
-            ]
-        )
-        return self._filter(lambda k: k[0] in bricks)
-
-    def get_events(self):
-        return self._filter(lambda k: k[0] == "Event")
-
-    def get_virtualmachines(self):
-        return self._filter(lambda k: k[0] == "Qemu")
-
-    def get_disks(self):
-        disks = {}
-        for header, section in self.get_virtualmachines():
-            for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-                if dev in section:
-                    disks.setdefault(header[1], []).append((dev, section[dev]))
-        return disks
-
-    def device_for_image(self, name):
-        for (typ, vmname), section in self.get_virtualmachines():
-            for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-                if dev in section and section[dev] == name:
-                    yield vmname, dev
-
-    def _dump_section(self, fileobj, header, section):
-        fileobj.write("[{0[0]}:{0[1]}]\n".format(header))
-        for name in section:
-            fileobj.write("{0} = {1}\n".format(name, section[name]))
-        fileobj.write("\n")
-
-    def dump(self, fileobj):
-        for header, section in self.get_images():
-            self._dump_section(fileobj, header, section)
-        for header, section in self.get_events():
-            self._dump_section(fileobj, header, section)
-        for header, section in self.get_bricks():
-            self._dump_section(fileobj, header, section)
-        for link in self.links:
-            fileobj.write("{0}\n".format("|".join(link)))
-
-    def save(self, project):
-        with open(project._project.path, "wt") as fp:
-            self.dump(fp)
-
-
 def pass_through(function, *args, **kwds):
     def wrapper(arg):
         function(*args, **kwds)
@@ -205,6 +130,8 @@ class Project:
 
     _description = None
     _description_modified = False
+    # The settings of the project, while it's open.
+    project_settings = None
 
     def __init__(self, path, manager):
         if isinstance(path, str):
@@ -222,7 +149,11 @@ class Project:
 
     @property
     def _project(self):
-        return self._path.child(".project")
+        return self._path.child(locations.PROJECT_FILE)
+
+    @property
+    def project_file(self):
+        return self._project.path
 
     def delete(self):
         try:
@@ -232,76 +163,65 @@ class Project:
                 raise
 
     def open(self, factory, settings=settings):
+        """
+        Load the project into factory.
+
+        Raise ProjectNotExistsError if there is no project file and
+        ProjectFormatError if it can't be read.
+        """
+
         if self._manager.current == self:
             return
-        if not self.exists():
-            raise errors.ProjectNotExistsError(self.name)
+        report = Report()
+        try:
+            data = projectfile.upgrade(self.read_document(), report)
+        except FileNotFoundError:
+            raise errors.ProjectNotExistsError(self.name) from None
+        # The project file is readable, so it's safe to close the current one.
         self.close(factory, settings)
         logger.debug(open_project, name=self.name)
-
-        # save the old setting parameters
-        # Bug #1410679
-        old_proj = settings.get("current_project")
-        old_vbhome = settings.VIRTUALBRICKS_HOME
-        # save new setting parameters
-        # Bug #1410679
-        settings.set("current_project", self.name)
-        settings.VIRTUALBRICKS_HOME = self.path
-        settings.store()
-
-        try:
-            configfile.restore(factory, self._project.path)
-        except EnvironmentError as e:
-            # if an exception is raised then revert settings to the
-            # default values
-            # Bug #1410679
-            settings.set("current_project", old_proj)
-            settings.VIRTUALBRICKS_HOME = old_vbhome
-            settings.store()
-            if e.errno in (errno.ENOENT, errno.ENOTDIR):
-                raise errors.ProjectNotExistsError(self.name)
-            raise
-        # if an exception is raised, this value is not changed, i.e. it
-        # is the default
+        runtime_dir = os.path.join(locations.runtime_dir(), self.name)
+        factory.runtime_dir = locations.ensure_private_dir(runtime_dir)
+        project_settings = projectfile.restore(
+            factory, data, report, self.path
+        )
+        report.log(logger)
+        self.project_settings = project_settings
+        settings.use_project(project_settings)
+        settings.set_current_project(self.name)
         self._manager.current = self
         return self
 
     def close(self, factory, settings=settings):
         factory.reset()
         if self._manager.current:
+            self._manager.current.project_settings = None
             self._manager.current = None
-            settings.VIRTUALBRICKS_HOME = settings.DEFAULT_HOME
+            settings.use_project(None)
 
-    def create(self, overwrite=False):
+    def create(self, overwrite=False, settings=settings):
+        """Create the directory and a project file with the app settings."""
+
         try:
             self._path.makedirs()
         except OSError as e:
             if e.errno == errno.EEXIST:
                 if overwrite:
                     self.delete()
-                    return self.create()
+                    return self.create(settings=settings)
                 raise errors.ProjectExistsError(self.name)
             raise
-        self._project.touch()
+        projectfile.create(self.project_file, settings.new_project_settings())
         logger.debug(create_project, name=self.name)
         return self
 
     def exists(self):
-        try:
-            self.create().delete()
-            return False
-        except errors.ProjectExistsError:
-            return True
+        return self._project.isfile()
 
-    def save(self, factory, _avoid_lop=False):
-        try:
-            configfile.save(factory, self._project.path)
-        except IOError as e:
-            if e.errno == errno.ENOENT:
-                if not _avoid_lop:
-                    self.create()
-                    return self.save(factory, True)
-            raise
+    def save(self, factory):
+        if not self._path.isdir():
+            self._path.makedirs()
+        projectfile.save(factory, self.project_settings, self.project_file)
         if self._description_modified:
             text = self._description
             with open(self._path.child("README").path, "wt") as fp:
@@ -325,15 +245,13 @@ class Project:
         if name == self.name:
             return
         new_prj = self._manager.get_project(name)
-        new_prj.create(overwrite)
+        new_prj.create(overwrite, settings)
         new_path = filepath.FilePath(new_prj.path)
         new_path.remove()
         self._path.moveTo(new_path)
         self._path = new_path
         if self == self._manager.current:
-            settings.set("current_project", self.name)
-            settings.VIRTUALBRICKS_HOME = self.path
-            settings.store()
+            settings.set_current_project(self.name)
 
     def get_description(self):
         if self._description is None:
@@ -351,9 +269,13 @@ class Project:
     def files(self):
         return (fp for fp in self._path.walk() if fp.isfile())
 
-    def get_descriptor(self):
-        with open(self._project.path, "rt") as fp:
-            return ProjectEntry.from_fileobj(fp)
+    def read_document(self):
+        """Return the data of the project file, to edit it without opening."""
+
+        return projectfile.read(self.project_file)
+
+    def write_document(self, data):
+        tomlfile.dump(data, self.project_file)
 
     def images(self):
         path = self._path.child(".images")
@@ -385,104 +307,102 @@ class ProjectManager:
     project_factory = Project
 
     def __init__(self, path=None):
-        if path is None:
-            path = settings.get("workspace")
-        self._path = filepath.FilePath(path)
-        try:
-            self._path.makedirs()
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
+        self._path = None if path is None else filepath.FilePath(path)
+
+    @property
+    def workspace(self):
+        """The directory of the projects, from the settings unless given."""
+
+        if self._path is not None:
+            return self._path
+        return filepath.FilePath(settings.get("workspace"))
 
     @property
     def path(self):
-        return self._path.path
+        return self.workspace.path
 
     def get_project(self, name):
         try:
-            path = self._path.child(name)
-            return self.project_factory(path, self)
+            path = self.workspace.child(name)
         except filepath.InsecurePath:
-            raise errors.InvalidNameError(name)
+            raise errors.InvalidNameError(name) from None
+        return self.project_factory(path, self)
 
     def __iter__(self):
-        for path in self._path.children():
-            if path.child(".project").isfile():
+        if not self.workspace.isdir():
+            return
+        for path in self.workspace.children():
+            if path.child(locations.PROJECT_FILE).isfile():
                 yield self.project_factory(path, self)
 
     def import_prj(self, name, vbppath):
-        project = self.get_project(name)
-        try:
-            project.create()
-        except Exception as e:
-            return defer.fail(e)
-        logger.debug(extract_project)
-        deferred = self.archive.extract(vbppath, project.path)
-        return deferred.addCallback(lambda _: project)
+        """Extract an archive into a new project, migrating an old one."""
 
-    def export(self, output, files, images=()):
-        return self.archive.create(output, files, images)
+        try:
+            project = self.get_project(name)
+            project._path.makedirs()
+        except errors.InvalidNameError as e:
+            return defer.fail(e)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                return defer.fail(errors.ProjectExistsError(name))
+            return defer.fail(e)
+        deferred = self.archive.extract(vbppath, project.path)
+        return deferred.addCallback(lambda _: self._finish_import(project))
+
+    def _finish_import(self, project):
+        if not project.exists():
+            from virtualbricks.migrate import engine
+
+            engine.migrate_imported_project(project.path).log(logger)
+        if not project.exists():
+            raise errors.InvalidArchiveError(
+                f"{project.name}: the archive has no project file"
+            )
+        return project
+
+    def export(self, output, directory, files, images=()):
+        return self.archive.create(output, directory, files, images)
 
     def save_current(self, factory):
         if self.current:
             self.current.save(factory)
 
-    def restore_last(self, factory, settings=settings):
-        """Restore the last project if found or create a new one."""
+    def autosave(self, factory):
+        try:
+            self.save_current(factory)
+        except Exception:
+            logger.failure(autosave_error)
 
-        try:
-            os.makedirs(os.path.join(settings.get("workspace"), "vimages"))
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        name = settings.get("current_project")
+    def _create_and_open(self, name, factory, settings):
         project = self.get_project(name)
+        project.create(settings=settings)
+        return project.open(factory, settings)
+
+    def restore_last(self, factory, settings=settings):
+        """Open the last project, or create a new one if it can't be."""
+
+        os.makedirs(os.path.join(self.path, "vimages"), exist_ok=True)
+        name = settings.current_project()
         try:
-            return project.open(factory, settings)
+            return self.get_project(name).open(factory, settings)
         except errors.ProjectNotExistsError:
             if DEFAULT_PROJECT_RE.match(name):
-                project.create(name)
-                project.open(factory, settings)
-                return project
-            else:
-                logger.error(cannot_find_project, name=name)
-                for i in itertools.count():
-                    name = "{0}_{1}".format(settings.DEFAULT_PROJECT, i)
-                    project = self.get_project(name)
-                    try:
-                        project.create(name)
-                        project.open(factory, settings)
-                        return project
-                    except errors.ProjectExistsError:
-                        pass
-
-
-class ProjectManager2(ProjectManager):
-
-    def upgrade(self, fpath):
-        basename = fpath.basename().strip(" \t.") + "_"
-        for c in itertools.count():
+                try:
+                    return self._create_and_open(name, factory, settings)
+                except errors.ProjectExistsError:
+                    pass
+            logger.error(cannot_find_project, name=name)
+        except errors.InvalidNameError:
+            logger.error(cannot_find_project, name=name)
+        except errors.ProjectFormatError as exc:
+            logger.error(cannot_open_project, name=name, error=exc)
+        for i in itertools.count():  # pragma: no branch
+            name = "{0}_{1}".format(locations.DEFAULT_PROJECT, i)
             try:
-                prj = self.get_project(basename + str(c))
-                prj.create()
-                fpath.moveTo(prj._project)
-                return prj
+                return self._create_and_open(name, factory, settings)
             except errors.ProjectExistsError:
                 pass
 
-    def get_project(self, name):
-        try:
-            prj = ProjectManager.get_project(self, name)
-        except errors.InvalidNameError:
-            fp = filepath.FilePath(name)
-            if not fp.isfile():
-                raise
-            prj = self.upgrade(fp)
-        return prj
 
-    def open(self, name, factory, settings=settings, oldformat=True):
-        prj = self.get_project(name)
-        return prj.open(factory, settings)
-
-
-manager = ProjectManager2()
+manager = ProjectManager()

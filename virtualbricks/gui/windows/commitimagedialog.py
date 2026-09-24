@@ -40,7 +40,7 @@ not_implemented = "Not implemented"
 def disks_of(brick):
     if is_virtualmachine(brick):
         for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            yield brick.config[dev]
+            yield brick.disk(dev)
 
 
 class CommitImageDialog(_Dialog):

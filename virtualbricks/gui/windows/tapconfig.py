@@ -23,8 +23,12 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+from twisted.logger import Logger
 
 from virtualbricks.gui.windows.base import _, _PlugMixin, ConfigController
+
+logger = Logger()
+invalid_address = "Tap not configured: {error}"
 
 
 class TapConfigController(_PlugMixin, ConfigController):
@@ -189,14 +193,17 @@ class TapConfigController(_PlugMixin, ConfigController):
         elif self.dhcp_radio.get_active():
             self.original.set({"mode": "dhcp"})
         else:
-            self.original.set(
-                {
-                    "mode": "manual",
-                    "ip": self.ip_entry.get_text(),
-                    "nm": self.nm_entry.get_text(),
-                    "gw": self.gw_entry.get_text(),
-                }
-            )
+            try:
+                self.original.set(
+                    {
+                        "mode": "manual",
+                        "ip": self.ip_entry.get_text(),
+                        "nm": self.nm_entry.get_text(),
+                        "gw": self.gw_entry.get_text(),
+                    }
+                )
+            except ValueError as exc:
+                logger.error(invalid_address, error=exc)
         self.connect_plug(self.original.plugs[0], self.sock_combo)
 
     def on_manual_radio_toggled(self, radiobtn):

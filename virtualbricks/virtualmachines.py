@@ -30,7 +30,9 @@ from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
-from virtualbricks import errors, tools, settings, bricks, project
+from virtualbricks import errors, tools, bricks, project
+from virtualbricks.config import settings, schema
+from virtualbricks.config.schema import Bool, Int, ListOf, Path, Ref, Str
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
@@ -60,7 +62,7 @@ release_lock = "Releasing disk locks"
 search_usb = "Searching USB devices"
 
 
-@dataclass
+@dataclass(frozen=True)
 class UsbDevice:
 
     id: str
@@ -102,6 +104,34 @@ class UsbDevice:
 
 
 LSUSB_REGEX = re.compile(r"(?P<id>\w{4}:\w{4})" r"(?:\s(?P<description>.+))?$")
+USB_ID = re.compile(r"\w{4}:\w{4}")
+
+
+class UsbDeviceKind(schema.Kind):
+    """A USB device, stored as ``{ id, description }``."""
+
+    def check(self, value):
+        if not isinstance(value, UsbDevice):
+            raise ValueError(f"{value!r} is not a USB device")
+
+    def to_data(self, value):
+        return {"id": value.id, "description": value.description}
+
+    def from_data(self, data, report, where):
+        if not isinstance(data, dict):
+            raise ValueError(f"{data!r} is not a table")
+        dev_id = data.get("id")
+        description = data.get("description", "")
+        if not isinstance(dev_id, str) or not USB_ID.fullmatch(dev_id):
+            raise ValueError(f"{dev_id!r} is not a USB id")
+        if not isinstance(description, str):
+            raise ValueError(f"{description!r} is not a description")
+        for key in data.keys() - {"id", "description"}:
+            report.warning("unknown field, dropped", f"{where}.{key}")
+        return UsbDevice(dev_id, description)
+
+    def format(self, value):
+        return value.id
 
 
 def _parse_lsusb_output(stdout):
@@ -348,23 +378,6 @@ class Image:
         else:
             raise errors.LockedImageError(self, self.master)
 
-    def save_to(self, fileobj):
-        """
-        Save the configuration of this disk image to fileobj.
-
-        :type fileobj: io.TextIOBase
-        """
-
-        # TODO: horrible but I need a quit solution for flattening the
-        # description to one line until _configparser will be replaced by the
-        # stdlib configparser.
-        description = "<nl>".join(self.get_description().splitlines())
-        fileobj.write(
-            f"[Image:{self.name}]\n"
-            f"path={self.path}\n"
-            f"description={description}\n\n"
-        )
-
     def __format__(self, format_string):
         if format_string in ("n", ""):
             return str(self.name)
@@ -401,19 +414,30 @@ class Disk:
     def cow(self):
         return self.is_cow()
 
-    def __init__(self, vm, dev, image=None):
+    def __init__(self, vm, dev):
         """
         :param VirtualMachines vm:
         :param str dev:
-        :param Optional[Image] image:
         """
 
         self.vm = vm
         self.device = dev
-        self.image = image
+
+    @property
+    def image(self):
+        """The image named in the configuration, if it's in the library."""
+
+        name = getattr(self.vm.config, self.device)
+        if not name:
+            return None
+        return self.vm.factory.get_image_by_name(name)
+
+    def set_image(self, image):
+        name = "" if image is None else image.get_name()
+        setattr(self.vm.config, self.device, name)
 
     def is_cow(self):
-        return self.vm.config["private" + self.device]
+        return getattr(self.vm.config, "private" + self.device)
 
     def _basefolder(self):
         return project.manager.current.path
@@ -433,9 +457,6 @@ class Disk:
         else:
             # TODO: check!! Maybe return a failure?
             return defer.succeed([])
-
-    def set_image(self, image):
-        self.image = image
 
     def acquire(self):
         self.lock_image()
@@ -598,11 +619,7 @@ class Disk:
             return defer.succeed(self.image.path)
 
     def readonly(self):
-        return self.vm.config["snapshot"]
-
-    def __deepcopy__(self, memo):
-        new = self.__class__(self.vm, self.device, self.image)
-        return new
+        return self.vm.config.snapshot
 
     def __repr__(self):
         return (
@@ -709,116 +726,80 @@ VM_COMMAND_BUILDER = {
 }
 
 
-class DefaultDevice:
-
-    def __ne__(self, other):
-        if isinstance(other, Disk):
-            return other.image is not None
-        return NotImplemented
-
-    def __eq__(self, other):
-        return not self != other
+DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
 
 
-default_device = DefaultDevice()
+def _disk_fields():
+    # In the project file each disk is a table: [disks.hda] image, private.
+    fields = {}
+    for dev in DISK_DEVICES:
+        fields[dev] = schema.field(
+            Ref("image"), default="", path=("disks", dev, "image")
+        )
+        fields["private" + dev] = schema.field(
+            Bool(), default=False, path=("disks", dev, "private")
+        )
+    return fields
 
 
-class Device(bricks.Parameter):
-
-    def __init__(self, name):
-        self.name = name
-        bricks.Parameter.__init__(self, default_device)
-
-    def from_string_brick(self, in_string, brick):
-        disk = brick.config[self.name]
-        disk.set_image(brick.factory.get_image_by_name(in_string))
-        return disk
-
-    def to_string(self, disk):
-        if disk.image is not None:
-            return disk.image.name
-        return ""
-
-
-class UsbDeviceParameter(bricks.String):
-
-    def from_string(self, in_string):
-        return UsbDevice(in_string)
-
-    def to_string(self, in_object):
-        return str(in_object)
-
-
-class VirtualMachineConfig(bricks.Config):
-
-    parameters = {
-        "name": bricks.String(""),
+VirtualMachineConfig = schema.make_class(
+    "VirtualMachineConfig",
+    {
         # boot options
-        "boot": bricks.String(""),
-        "snapshot": bricks.Boolean(False),
+        "boot": schema.field(Str(), default=""),
+        "snapshot": schema.field(Bool(), default=False),
         # cdrom device
-        "deviceen": bricks.Boolean(False),
-        "device": bricks.String(""),
-        "cdromen": bricks.Boolean(False),
-        "cdrom": bricks.String(""),
+        "deviceen": schema.field(Bool(), default=False),
+        "device": schema.field(Str(), default=""),
+        "cdromen": schema.field(Bool(), default=False),
+        "cdrom": schema.field(Path(), default=""),
         # additional media
-        "use_virtio": bricks.Boolean(False),
-        "hda": Device("hda"),
-        "privatehda": bricks.Boolean(False),
-        "hdb": Device("hdb"),
-        "privatehdb": bricks.Boolean(False),
-        "hdc": Device("hdc"),
-        "privatehdc": bricks.Boolean(False),
-        "hdd": Device("hdd"),
-        "privatehdd": bricks.Boolean(False),
-        "fda": Device("fda"),
-        "privatefda": bricks.Boolean(False),
-        "fdb": Device("fdb"),
-        "privatefdb": bricks.Boolean(False),
-        "mtdblock": Device("mtdblock"),
-        "privatemtdblock": bricks.Boolean(False),
+        "use_virtio": schema.field(Bool(), default=False),
         # system and machine
-        "argv0": bricks.String("qemu-system-i386"),
-        "cpu": bricks.String(""),
-        "machine": bricks.String(""),
-        "kvm": bricks.Boolean(False),
-        "smp": bricks.SpinInt(1, 1, 64),
+        "argv0": schema.field(Str(), default="qemu-system-i386"),
+        "cpu": schema.field(Str(), default=""),
+        "machine": schema.field(Str(), default=""),
+        "kvm": schema.field(Bool(), default=False),
+        "smp": schema.field(Int(1, 64), default=1),
         # audio device soundcard
-        "soundhw": bricks.String(""),
+        "soundhw": schema.field(Str(), default=""),
         # memory device settings
-        "ram": bricks.SpinInt(64, 1, 99999),
-        "kvmsm": bricks.Boolean(False),
-        "kvmsmem": bricks.SpinInt(1, 0, 99999),
+        "ram": schema.field(Int(1, 99999), default=64),
+        "kvmsm": schema.field(Bool(), default=False),
+        "kvmsmem": schema.field(Int(0, 99999), default=1),
         # display options
-        "novga": bricks.Boolean(False),
-        "vga": bricks.Boolean(False),
-        "vnc": bricks.Boolean(False),
-        "vncN": bricks.SpinInt(1, 0, 500),
-        "sdl": bricks.Boolean(False),
-        "portrait": bricks.Boolean(False),
+        "novga": schema.field(Bool(), default=False),
+        "vga": schema.field(Bool(), default=False),
+        "vnc": schema.field(Bool(), default=False),
+        "vncN": schema.field(Int(0, 500), default=1),
+        "sdl": schema.field(Bool(), default=False),
+        "portrait": schema.field(Bool(), default=False),
         # usb settings
-        "usbmode": bricks.Boolean(False),
-        "usbdevlist": bricks.ListOf(UsbDeviceParameter("")),
+        "usbmode": schema.field(Bool(), default=False),
+        "usbdevlist": schema.field(ListOf(UsbDeviceKind()), factory=list),
         # extra settings
-        "rtc": bricks.Boolean(False),
-        "tdf": bricks.Boolean(False),
-        "keyboard": bricks.String(""),
-        "serial": bricks.Boolean(False),
+        "rtc": schema.field(Bool(), default=False),
+        "tdf": schema.field(Bool(), default=False),
+        "keyboard": schema.field(Str(), default=""),
+        "serial": schema.field(Bool(), default=False),
         # booting linux
-        "kernelenbl": bricks.Boolean(False),
-        "kernel": bricks.String(""),
-        "initrdenbl": bricks.Boolean(False),
-        "initrd": bricks.String(""),
-        "kopt": bricks.String(""),
-        "gdb": bricks.Boolean(False),
-        "gdbport": bricks.SpinInt(1234, 1, 65535),
+        "kernelenbl": schema.field(Bool(), default=False),
+        "kernel": schema.field(Path(), default=""),
+        "initrdenbl": schema.field(Bool(), default=False),
+        "initrd": schema.field(Path(), default=""),
+        "kopt": schema.field(Str(), default=""),
+        "gdb": schema.field(Bool(), default=False),
+        "gdbport": schema.field(Int(1, 65535), default=1234),
         # virtual machine icon
-        "icon": bricks.String(""),
+        "icon": schema.field(Path(), default=""),
         # others
-        "noacpi": bricks.String(""),
-        "stdout": bricks.String(""),
-        "loadvm": bricks.String(""),
-    }
+        "noacpi": schema.field(Str(), default=""),
+        "stdout": schema.field(Str(), default=""),
+        "loadvm": schema.field(Str(), default=""),
+        **_disk_fields(),
+    },
+    bases=(bricks.BrickConfig,),
+)
 
 
 def _get_nick(link):
@@ -835,14 +816,24 @@ class VirtualMachine(bricks.Brick):
     config_factory = VirtualMachineConfig
     process_protocol = bricks.Process
     default_arg0 = "qemu-system-x86_64"
+    connections = "nics"
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self._observable.add_event("image-changed")
         self.image_changed = Event(self._observable, "image-changed")
-        self.config["name"] = name
-        for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            self.config[dev] = Disk(self, dev)
+        self._disks = {dev: Disk(self, dev) for dev in DISK_DEVICES}
+
+    def set_name(self, name):
+        prefix = f"{self.name}_"
+        bricks.Brick.set_name(self, name)
+        for sock in self.socks:
+            if sock.nickname.startswith(prefix):
+                suffix = sock.nickname[len(prefix) :]
+                sock.nickname = f"{name}_{suffix}"
+                sock.path = self.runtime_path(f"{name}_{suffix}[]")
+
+    name = property(bricks.Brick.get_name, set_name)
 
     def rename(self, new_name):
         """
@@ -880,10 +871,10 @@ class VirtualMachine(bricks.Brick):
             return passthru
 
         def clear_snapshot(passthru):
-            self.config["loadvm"] = ""
+            self.config.loadvm = ""
             return passthru
 
-        self.config["loadvm"] = snapshot
+        self.config.loadvm = snapshot
         d = bricks.Brick.poweron(self)
         d.addCallback(acquire).addBoth(clear_snapshot)
         self._exited_d.addBoth(release)
@@ -905,21 +896,21 @@ class VirtualMachine(bricks.Brick):
         try:
             command = self.prog()
         except FileNotFoundError:
-            if self.config["argv0"]:
-                command = self.config["argv0"]
+            if self.config.argv0:
+                command = self.config.argv0
             else:
                 command = self.default_arg0
 
-        ram = self.config["ram"]
+        ram = self.config.ram
         txt = [_("command:") + " %s, ram: %s" % (command, ram)]
         for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
             txt.append("eth%d: %s" % (i, _get_nick(link)))
         return ", ".join(txt)
 
     def update_usbdevlist(self, dev):
-        self.logger.debug(update_usb, old=self.config["usbdevlist"], new=dev)
-        for usb_dev in set(dev) - set(self.config["usbdevlist"]):
-            self.send(b"usb_add host:%s\n" % (usb_dev.id,))
+        self.logger.debug(update_usb, old=self.config.usbdevlist, new=dev)
+        for usb_dev in set(dev) - set(self.config.usbdevlist):
+            self.send(f"usb_add host:{usb_dev.id}\n".encode())
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
 
@@ -931,8 +922,8 @@ class VirtualMachine(bricks.Brick):
         return True
 
     def prog(self):
-        if self.config["argv0"]:
-            arg0 = self.config["argv0"]
+        if self.config.argv0:
+            arg0 = self.config.argv0
         else:
             arg0 = self.default_arg0
         return abspath_qemu(arg0)
@@ -944,53 +935,43 @@ class VirtualMachine(bricks.Brick):
 
     def __args(self, results):
         res = [self.prog()]
-        if (
-            self.config["kvm"]
-            or self.config["machine"]
-            or self.config["kvmsm"]
-        ):
+        if self.config.kvm or self.config.machine or self.config.kvmsm:
             props = []
-            if self.config["machine"]:
-                props.append("type={}".format(self.config["machine"]))
-            if self.config["kvm"]:
+            if self.config.machine:
+                props.append("type={}".format(self.config.machine))
+            if self.config.kvm:
                 props.append("accel=kvm:tcg")
-            if self.config["kvmsm"]:
-                props.append(
-                    "kvm_shadow_mem={}".format(self.config["kvmsmem"])
-                )
+            if self.config.kvmsm:
+                props.append("kvm_shadow_mem={}".format(self.config.kvmsmem))
             res.extend(["-machine", ",".join(props)])
 
-        if self.config["cpu"]:
-            res.extend(["-cpu", self.config["cpu"]])
+        if self.config.cpu:
+            res.extend(["-cpu", self.config.cpu])
         res.extend(list(self.build_cmd_line()))
-        if self.config["novga"]:
+        if self.config.novga:
             res.extend(["-display", "none"])
         for disk_args in results:
             res.extend(disk_args)
-        if self.config["kernelenbl"] and self.config["kernel"]:
-            res.extend(["-kernel", self.config["kernel"]])
-        if self.config["initrdenbl"] and self.config["initrd"]:
-            res.extend(["-initrd", self.config["initrd"]])
-        if (
-            self.config["kopt"]
-            and self.config["kernelenbl"]
-            and self.config["kernel"]
-        ):
+        if self.config.kernelenbl and self.config.kernel:
+            res.extend(["-kernel", self.config.kernel])
+        if self.config.initrdenbl and self.config.initrd:
+            res.extend(["-initrd", self.config.initrd])
+        if self.config.kopt and self.config.kernelenbl and self.config.kernel:
             res.extend(
                 [
                     "-append",
-                    "'{0}'".format(re.sub('"', "", self.config["kopt"])),
+                    "'{0}'".format(re.sub('"', "", self.config.kopt)),
                 ]
             )
-        if self.config["gdb"]:
-            res.extend(["-gdb", "tcp::%d" % self.config["gdbport"]])
-        if self.config["vnc"]:
-            res.extend(["-vnc", ":%d" % self.config["vncN"]])
-        if self.config["vga"]:
+        if self.config.gdb:
+            res.extend(["-gdb", "tcp::%d" % self.config.gdbport])
+        if self.config.vnc:
+            res.extend(["-vnc", ":%d" % self.config.vncN])
+        if self.config.vga:
             res.extend(["-vga", "std"])
 
-        if self.config["usbmode"]:
-            for usb_dev in self.config["usbdevlist"]:
+        if self.config.usbmode:
+            for usb_dev in self.config.usbdevlist:
                 res.extend(["-usbdevice", f"host:{usb_dev.id}"])
 
         res.extend(["-name", self.name])
@@ -1004,7 +985,11 @@ class VirtualMachine(bricks.Brick):
                         i, link
                     )
                 )
-                if link.sock and link.sock.mode == "hostonly":
+                # a socket card has no sock of its own
+                if link.mode == "sock":
+                    res.append("-netdev")
+                    res.append("vde,id=vx{0},sock={1}".format(i, link.path))
+                elif link.sock and link.sock.mode == "hostonly":
                     res.extend(("-netdev", "user,id=vx{0}".format(i)))
                 elif link.mode == "vde":
                     res.append("-netdev")
@@ -1013,31 +998,28 @@ class VirtualMachine(bricks.Brick):
                             i, link.sock.path.rstrip("[]")
                         )
                     )
-                elif link.mode == "sock":
-                    res.append("-netdev")
-                    res.append("vde,id=vx{0},sock={1}".format(i, link.path))
                 else:
                     res.extend(["-netdev", "user"])
 
-        if self.config["cdromen"] and self.config["cdrom"]:
-            res.extend(["-cdrom", self.config["cdrom"]])
-        elif self.config["deviceen"] and self.config["device"]:
-            res.extend(["-cdrom", self.config["device"]])
-        if self.config["rtc"] or self.config["tdf"]:
+        if self.config.cdromen and self.config.cdrom:
+            res.extend(["-cdrom", self.config.cdrom])
+        elif self.config.deviceen and self.config.device:
+            res.extend(["-cdrom", self.config.device])
+        if self.config.rtc or self.config.tdf:
             rtcarg = []
-            if self.config["rtc"]:
+            if self.config.rtc:
                 rtcarg.append("base=localtime")
-            if self.config["tdf"]:
+            if self.config.tdf:
                 rtcarg.append("driftfix=slew")
             res.extend(["-rtc", ",".join(rtcarg)])
-        if len(self.config["keyboard"]) == 2:
-            res.extend(["-k", self.config["keyboard"]])
-        if self.config["serial"]:
+        if len(self.config.keyboard) == 2:
+            res.extend(["-k", self.config.keyboard])
+        if self.config.serial:
             res.extend(
                 [
                     "-serial",
                     "unix:%s/%s_serial,server,nowait"
-                    % (settings.VIRTUALBRICKS_HOME, self.name),
+                    % (self.factory.runtime_dir, self.name),
                 ]
             )
         res.extend(
@@ -1054,14 +1036,19 @@ class VirtualMachine(bricks.Brick):
         )
         return res
 
-    def add_sock(self, mac=None, model=None):
+    def add_sock(self, mac=None, model=None, name=None):
+        """
+        Add a network card with a VDE socket other bricks can plug into.
+
+        ``name`` is the socket's name within this VM, ``sock_ethN`` by default.
+        """
+
         s = self.factory.new_sock(self)
         sock = VMSock(s)
-        vlan = len(self.plugs) + len(self.socks)
-        sock.path = "{0}/{1.brick.name}_sock_eth{2}[]".format(
-            settings.VIRTUALBRICKS_HOME, sock, vlan
-        )
-        sock.nickname = "{0.brick.name}_sock_eth{1}".format(sock, vlan)
+        if name is None:
+            name = f"sock_eth{len(self.plugs) + len(self.socks)}"
+        sock.path = self.runtime_path(f"{self.name}_{name}[]")
+        sock.nickname = f"{self.name}_{name}"
         self.socks.append(sock)
         if mac:
             sock.mac = mac
@@ -1116,20 +1103,16 @@ class VirtualMachine(bricks.Brick):
             disk.release()
 
     def disks(self):
-        for hd in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
-            yield self.config[hd]
+        for dev in DISK_DEVICES:
+            yield self._disks[dev]
 
-    def set_image(self, disk, image):
-        self.config[disk].image = image
+    def disk(self, dev):
+        return self._disks[dev]
+
+    def set_image(self, dev, image):
+        self._disks[dev].set_image(image)
         if not self._restore:
             self._observable.notify("image-changed", (self, image))
-
-    def set_vm(self, disk):
-        disk.vm = self
-
-    cbset_hda = cbset_hdb = cbset_hdc = cbset_hdd = cbset_fda = cbset_fdb = (
-        cbset_mtblock
-    ) = set_vm
 
 
 def is_virtualmachine(brick):

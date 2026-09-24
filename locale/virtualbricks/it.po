@@ -17,16 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: virtualbricks/base.py
-#, fuzzy, python-format
-msgid "Parameter %s not found"
-msgstr "kvm non trovato"
-
-#: virtualbricks/base.py
-#, python-brace-format
-msgid "value out range {0} ({1}, {2})"
-msgstr ""
-
-#: virtualbricks/base.py
 #, python-format
 msgid "%(config)s config has no %(option)s option."
 msgstr ""
@@ -91,10 +81,6 @@ msgstr "spento"
 #: virtualbricks/errors.py
 #, python-format
 msgid "Normalized name %s already in use"
-msgstr ""
-
-#: virtualbricks/events.py
-msgid "Invalid command type."
 msgstr ""
 
 #: virtualbricks/events.py
@@ -609,6 +595,11 @@ msgstr "_File"
 
 #: virtualbricks/gui/windows/exportproject.py
 msgid "Include base disk images (slow)"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "Use {0} of this machine, {1}, instead of {2}"
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
@@ -1278,8 +1269,57 @@ msgid "A project with the same name already exists"
 msgstr ""
 
 #: virtualbricks/gui/windows/settings.py
+msgid "VDE binaries path"
+msgstr ""
+"Percorso\n"
+"binari VDE"
+
+#: virtualbricks/gui/windows/settings.py
+msgid "Allow female plugs on devices"
+msgstr "Permetti plugs femmina nei dispositivi"
+
+#: virtualbricks/gui/windows/settings.py
+msgid "Network topology loop detection"
+msgstr "Rileva loop della topologia di rete"
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "Qemu binaries path"
+msgstr "Percorso binari Qemu/KVM"
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "Private COW format"
+msgstr "COW Privato"
+
+#: virtualbricks/gui/windows/settings.py
 msgid "Virtualbricks Settings"
 msgstr "Impostazioni Virtualbricks"
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "Application"
+msgstr "Azioni"
+
+#: virtualbricks/gui/windows/settings.py
+msgid ""
+"These settings belong to the open project: changing them doesn't change the "
+"other projects."
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "This project"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/windows/settings.py
+msgid "A new project starts with these settings."
+msgstr ""
+
+#: virtualbricks/gui/windows/settings.py
+#, fuzzy
+msgid "New projects"
+msgstr "Nuovo progetto"
 
 #: virtualbricks/gui/windows/settings.py
 msgid "X-window terminal command"
@@ -1303,55 +1343,8 @@ msgid "Warn about missing components at startup"
 msgstr ""
 
 #: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "General"
-msgstr "<b>Generali</b>"
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Binaries path"
-msgstr ""
-"Percorso\n"
-"binari VDE"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Use python support"
-msgstr "Usa supporto python"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Allow female plugs on devices"
-msgstr "Permetti plugs femmina nei dispositivi"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Network topology loop detection"
-msgstr "Rileva loop della topologia di rete"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "VDE"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Qemu binaries path"
-msgstr "Percorso binari Qemu/KVM"
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Private COW format"
-msgstr "COW Privato"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Use KVM"
-msgstr "Usa KVM"
-
-#: virtualbricks/gui/windows/settings.py
 msgid "Enable KSM"
 msgstr "Abilita KSM"
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Qemu"
-msgstr "<b>Qemu/KVM </b>"
 
 #: virtualbricks/gui/windows/simpleentry.py
 #, fuzzy
@@ -1821,6 +1814,30 @@ msgstr "Configurato per connettere"
 msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""
 
+#, fuzzy, python-format
+#~ msgid "Parameter %s not found"
+#~ msgstr "kvm non trovato"
+
+#, fuzzy
+#~ msgid "General"
+#~ msgstr "<b>Generali</b>"
+
+#, fuzzy
+#~ msgid "Binaries path"
+#~ msgstr ""
+#~ "Percorso\n"
+#~ "binari VDE"
+
+#~ msgid "Use python support"
+#~ msgstr "Usa supporto python"
+
+#~ msgid "Use KVM"
+#~ msgstr "Usa KVM"
+
+#, fuzzy
+#~ msgid "Qemu"
+#~ msgstr "<b>Qemu/KVM </b>"
+
 #~ msgid "_Open Project"
 #~ msgstr "_Apri Progetto"
 
@@ -2142,11 +2159,6 @@ msgstr ""
 
 #~ msgid "<b>General</b>"
 #~ msgstr "<b>Generali</b>"
-
-#~ msgid "VDE binaries path"
-#~ msgstr ""
-#~ "Percorso\n"
-#~ "binari VDE"
 
 #~ msgid "Path for vde components installed on the system"
 #~ msgstr "Percorso per componenti vde installati nel sistema"
@@ -2805,9 +2817,6 @@ msgstr ""
 
 #~ msgid "All files"
 #~ msgstr "Tutti i file"
-
-#~ msgid "New project"
-#~ msgstr "Nuovo progetto"
 
 #, python-format
 #~ msgid "Configuration loaded ('%s')"

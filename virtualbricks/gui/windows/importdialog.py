@@ -32,7 +32,7 @@ from twisted.internet import defer, error, utils
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import settings
+from virtualbricks.config import projectfile, settings
 from virtualbricks.project import manager as project_manager
 from virtualbricks.gui.windows.base import _, pango_attr_list, Window
 from virtualbricks.gui.windows.userwait import ProgressBar
@@ -132,10 +132,7 @@ class _HumbleImport:
     def extract_cb(self, project, dialog):
         logger.debug(project_extracted, path=project.path)
         dialog.project = project
-        dialog.images = dict(
-            (name, section["path"])
-            for (_, name), section in project.get_descriptor().get_images()
-        )
+        dialog.images = projectfile.image_paths(project.read_document())
         return project
 
     def extract_eb(self, fail, dialog):
@@ -182,6 +179,7 @@ class _HumbleImport:
         images = iter_model(dialog.save_images_store, 0, 2)
         iimgs = (name for name, s in images if s)
         dialog.imported_images_label.set_text("\n".join(iimgs))
+        self.show_machine_paths(dialog)
         store = dialog.map_images_store
         vbox = dialog.mapped_images_box
         vbox.foreach(vbox.remove)
@@ -200,8 +198,41 @@ class _HumbleImport:
             vbox.pack_start(box, False, True, 3)
             box.show_all()
 
-    def apply(self, project, name, factory, overwrite, open, store1, store2):
-        entry = project.get_descriptor()
+    def show_machine_paths(self, dialog):
+        """Offer to replace the paths of the machine the project comes from."""
+
+        project_settings = dialog.project.read_document().get("settings", {})
+        for key, check in dialog.machine_path_checks.items():
+            theirs = project_settings.get(key)
+            ours = settings.get_app(key)
+            differs = isinstance(theirs, str) and theirs != ours
+            check.set_visible(differs)
+            if differs:
+                check.set_label(
+                    _("Use {0} of this machine, {1}, instead of {2}").format(
+                        key, ours, theirs
+                    )
+                )
+                check.set_active(not os.path.isdir(theirs))
+
+    def use_machine_paths(self, entry, keys):
+        table = entry.setdefault("settings", {})
+        for key in keys:
+            table[key] = settings.get_app(key)
+
+    def apply(
+        self,
+        project,
+        name,
+        factory,
+        overwrite,
+        open,
+        store1,
+        store2,
+        machine_paths=(),
+    ):
+        entry = project.read_document()
+        self.use_machine_paths(entry, machine_paths)
         imgs = self.get_images(project, entry, store1, store2)
         deferred = self.rebase_all(project, imgs, entry)
         deferred.addCallback(self.check_rebase)
@@ -221,7 +252,7 @@ class _HumbleImport:
         imagesfp = filepath.FilePath(project.path).child(".images")
         imgs = self.save_images(store1, imagesfp)
         self.remap_images(entry, store2, imgs)
-        entry.save(project)
+        project.write_document(entry)
         return imgs
 
     def save_images(self, model, source):
@@ -247,15 +278,15 @@ class _HumbleImport:
 
     def remap_images(self, entry, store, saved):
         for name, destination in saved.items():
-            entry.remap_image(name, destination.path)
+            projectfile.remap_image(entry, name, destination.path)
         for name, path in iter_model(store):
-            entry.remap_image(name, path.path)
+            projectfile.remap_image(entry, name, path.path)
             saved[name] = path
 
     def rebase_all(self, project, images, entry):
         lst = []
         for name, path in images.items():
-            for vmname, dev in entry.device_for_image(name):
+            for vmname, dev in projectfile.devices_for_image(entry, name):
                 cow_name = "{0}_{1}.cow".format(vmname, dev)
                 cow = filepath.FilePath(project.path).child(cow_name)
                 if cow.exists():
@@ -568,6 +599,11 @@ class ImportDialog(Window):
         # TODO: empty Glade placeholder, nothing to create.
         # TODO: empty Glade placeholder, nothing to create.
         vbox2.pack_start(self.mapped_images_box, True, True, 0)
+        self.machine_path_checks = {}
+        for key in ("qemupath", "vdepath"):
+            check = Gtk.CheckButton(visible=False, can_focus=True)
+            self.machine_path_checks[key] = check
+            vbox2.pack_start(check, False, True, 3)
         self.assistant.append_page(vbox2)
         self.assistant.set_page_type(
             vbox2,
@@ -744,6 +780,11 @@ class ImportDialog(Window):
             self.get_open(),
             self.save_images_store,
             self.map_images_store,
+            [
+                key
+                for key, check in self.machine_path_checks.items()
+                if check.get_visible() and check.get_active()
+            ],
         )
         ProgressBar(assistant).wait_for(deferred)
         return True

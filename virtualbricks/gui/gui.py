@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_gui -*-
+# -*- test-case-name: virtualbricks.tests.gui.test_gui -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -170,7 +170,7 @@ class VMPopupMenu(BrickPopupMenu):
             else:
                 return self.original.poweron("virtualbricks")
 
-        img = self.original.get("hda")
+        img = self.original.disk("hda")
         if img.is_cow():
             path = img.get_cow_path()
         elif img.image:
@@ -361,7 +361,7 @@ class VMJobMenu(JobMenu):
         return menu
 
     def suspend(self, factory):
-        img = self.original.get("hda")
+        img = self.original.disk("hda")
         if img.is_cow():
             path = img.get_cow_path()
         elif img.image:
@@ -617,7 +617,18 @@ class Application(brickfactory.Application):
         self.gui = VBGUI(factory, self.textbuffer)
         message_dialog.set_parent(self.gui.window)
 
-    def run(self, reactor):
-        ret = brickfactory.Application.run(self, reactor)
+    def migrate(self):
+        from virtualbricks.migrate import engine
+        from virtualbricks.migrate.gui import MigrationWindow
+
+        migration = engine.startup_migration()
+        if migration is None:
+            return None
+        window = MigrationWindow(migration=migration)
+        window.show()
+        return window.closed
+
+    def _start(self, reactor):
+        ret = brickfactory.Application._start(self, reactor)
         self.gui.set_title()
         return ret

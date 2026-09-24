@@ -24,7 +24,8 @@ from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from twisted.logger import Logger
 from zope.interface import implementer
-from virtualbricks import __version__, bricks, errors, settings
+from virtualbricks import __version__, bricks, errors
+from virtualbricks.config import schema, settings
 
 logger = Logger()
 conn_ok = "Connection ok"
@@ -194,9 +195,16 @@ class VBProtocol(Protocol):
                     "Unknown type %s", obj.__class__.__name__
                 )
         elif cmd[0] == "config":
-            obj.configure(cmd[1:])
+            try:
+                obj.configure(cmd[1:])
+            except KeyError as exc:
+                self.sendLine("No such parameter %s" % exc.args[0])
+            except ValueError as exc:
+                self.sendLine(str(exc))
         elif cmd[0] == "show":
-            obj.config.dump(self.sendLine)
+            for name, value in schema.values(obj.config).items():
+                kind = schema.kind_of(obj.config, name)
+                self.sendLine("%s = %s" % (name, kind.format(value)))
         elif cmd[0] == "connect" and len(cmd) == 2:
             if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
                 logger.info(conn_ok)
@@ -363,9 +371,9 @@ class ImagesProtocol(Protocol):
 class ConfigurationProtocol(Protocol):
 
     def do_get(self, name):
-        # if name:
         if settings.has_option(name):
-            self.sendLine("%s = %s" % (name, settings.get(name)))
+            kind = schema.kind_of(settings.AppSettings, name)
+            self.sendLine("%s = %s" % (name, kind.format(settings.get(name))))
         else:
             self.sendLine("No such option %s" % name)
 
@@ -374,6 +382,9 @@ class ConfigurationProtocol(Protocol):
 
     def do_set(self, name, value):
         if settings.has_option(name):
-            settings.set(name, value)
+            try:
+                settings.set(name, settings.parse(name, value))
+            except ValueError as exc:
+                self.sendLine(str(exc))
         else:
             self.sendLine("No such option %s" % name)

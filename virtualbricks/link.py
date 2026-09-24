@@ -21,7 +21,8 @@ import os
 from twisted.internet import defer
 from twisted.logger import Logger
 
-from virtualbricks import errors, settings
+from virtualbricks import errors
+from virtualbricks.config import settings
 
 if False:  # pyflakes
     _ = str
@@ -89,12 +90,6 @@ class Plug:
         self.sock.plugs.remove(self)
         self.sock = None
 
-    def save_to(self, fileobj):
-        tmp = "link|{0.brick.name}|{1}|{0.model}|{0.mac}\n"
-        fileobj.write(
-            tmp.format(self, self.sock.nickname if self.configured() else "")
-        )
-
 
 class Sock:
 
@@ -106,7 +101,7 @@ class Sock:
         self.mode = "sock"
 
     def get_free_ports(self):
-        return self.brick.config["numports"] - len(self.plugs)
+        return self.brick.config.numports - len(self.plugs)
 
     def has_valid_path(self):
         return os.access(os.path.dirname(self.path), os.W_OK)

@@ -744,17 +744,22 @@ class NetemuConfigController(_PlugMixin, ConfigController):
 
         return self.panel
 
-    def getconfig(self, cfg):
+    def getconfig(self):
+        cfg = {}
         for config_name, widget_name in self.config_to_checkbutton_mapping:
             cfg[config_name] = not getattr(self, widget_name).get_active()
         for pname, wname in self.config_to_spinint_mapping:
             cfg[pname] = getattr(self, wname).get_value_as_int()
         for pname, wname in self.config_to_spinfloat_mapping:
             cfg[pname] = getattr(self, wname).get_value()
+        return cfg
+
+    def store_state(self, state):
+        for name, value in self.getconfig().items():
+            setattr(state, name, value)
 
     def configure_brick(self, gui):
-        cfg = {}
-        self.getconfig(cfg)
+        cfg = self.getconfig()
         cfg["name"] = self.state_name_entry.get_text()
         self.original.set(cfg)
 
@@ -785,8 +790,8 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         index = self.state_combo.get_selected_value()
         if index is not None:
             self.original.config = self.tempStates[index]
-            self.getconfig(self.original.config)
-            self.original.config["name"] = self.state_name_entry.get_text()
+            self.store_state(self.original.config)
+            self.original.config.name = self.state_name_entry.get_text()
 
             self.original.currentState = index
 
@@ -812,7 +817,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
     def on_save_button_clicked(self, button):
         index = self.state_combo.get_selected_value()
         if index is not None:
-            self.getconfig(self.tempStates[index])
+            self.store_state(self.tempStates[index])
 
     # update the gui without user intervention
     # parameters:
@@ -821,24 +826,30 @@ class NetemuConfigController(_PlugMixin, ConfigController):
 
     def update(self, noCombo, index):
         for pname, wname in self.config_to_checkbutton_mapping:
-            getattr(self, wname).set_active(not self.tempStates[index][pname])
+            getattr(self, wname).set_active(
+                not getattr(self.tempStates[index], pname)
+            )
         for pname, wname in self.config_to_spinint_mapping:
-            getattr(self, wname).set_value(self.tempStates[index][pname])
+            getattr(self, wname).set_value(
+                getattr(self.tempStates[index], pname)
+            )
         for pname, wname in self.config_to_spinfloat_mapping:
-            getattr(self, wname).set_value(self.tempStates[index][pname])
+            getattr(self, wname).set_value(
+                getattr(self.tempStates[index], pname)
+            )
 
         self.state_label.set_text("Selected state: " + str(index))
-        self.state_name_entry.set_text(self.tempStates[index]["name"])
+        self.state_name_entry.set_text(self.tempStates[index].name)
 
         states = list()
         exstates = list()
         for i, state in enumerate(self.tempStates):
             states.append(
-                widgets.ListEntry(i, str(i) + " (" + state["name"] + ")")
+                widgets.ListEntry(i, str(i) + " (" + state.name + ")")
             )
             if i != index:
                 exstates.append(
-                    widgets.ListEntry(i, str(i) + " (" + state["name"] + ")")
+                    widgets.ListEntry(i, str(i) + " (" + state.name + ")")
                 )
 
         self.other_states_store.set_data_source(exstates)
@@ -887,10 +898,10 @@ class NetemuConfigController(_PlugMixin, ConfigController):
 
             # no name duplicates
             for state in self.tempStates:
-                if state["name"] == text:
+                if state.name == text:
                     return
 
-            self.tempStates[index]["name"] = text
+            self.tempStates[index].name = text
             self.update(False, index)
 
     def on_update_weight(self, button):

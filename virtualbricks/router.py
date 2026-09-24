@@ -23,13 +23,8 @@ class Router(bricks.Brick):
 
     type = "Router"
 
-    class config_factory(bricks.Config):
-
-        parameters = {"name": bricks.String("")}
-
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.config["name"] = name
         self.command_builder = {"-M": self.console, "-c": "configfile"}
 
     def get_parameters(self):

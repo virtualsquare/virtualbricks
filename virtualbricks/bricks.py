@@ -27,34 +27,12 @@ from twisted.internet import protocol, reactor, error, defer
 from twisted.logger import Logger
 from zope.interface import implementer
 
-from virtualbricks import base, errors, settings, interfaces
-from virtualbricks.base import (
-    Config as _Config,
-    Parameter,
-    String,
-    Integer,
-    SpinInt,
-    Float,
-    SpinFloat,
-    Boolean,
-    Object,
-    ListOf,
-)
+from virtualbricks import base, errors, interfaces
+from virtualbricks.config import schema, settings
+from virtualbricks.config.schema import Ref
 from virtualbricks.spawn import abspath_vde
 
-__all__ = [
-    "Brick",
-    "Config",
-    "Parameter",
-    "String",
-    "Integer",
-    "SpinInt",
-    "Float",
-    "SpinFloat",
-    "Boolean",
-    "Object",
-    "ListOf",
-]
+__all__ = ["Brick", "BrickConfig"]
 
 if False:  # pyflakes
     _ = str
@@ -243,9 +221,11 @@ class TermProtocol(protocol.ProcessProtocol):
             self.logger.info(console_done, status=status.value)
 
 
-class Config(_Config):
+@schema.define
+class BrickConfig:
 
-    parameters = {"pon_vbevent": String(""), "poff_vbevent": String("")}
+    pon_vbevent = schema.field(Ref("event"), default="")
+    poff_vbevent = schema.field(Ref("event"), default="")
 
 
 class Brick(base.Base):
@@ -257,7 +237,9 @@ class Brick(base.Base):
     _exited_d = None
     _last_status = None
     process_protocol = VDEProcessProtocol
-    config_factory = Config
+    config_factory = BrickConfig
+    # How the plugs are saved: "connect", "endpoints", "nics" or None.
+    connections = None
 
     @property
     def pid(self):
@@ -328,10 +310,24 @@ class Brick(base.Base):
         raise NotImplementedError("Bricks.get_parameters() not implemented")
 
     def configure(self, attrlist):
+        """Set the parameters typed in the console as ``name=value``."""
+
         attrs = {}
-        for name, value in (a.split("=", 2) for a in attrlist):
-            attrs[name] = self.config.parameters[name].from_string(value)
+        for name, value in (a.split("=", 1) for a in attrlist):
+            attrs[name] = schema.parse(self.config, name, value)
         self.set(attrs)
+
+    def config_table(self):
+        """Return the configuration as saved in the project file."""
+
+        return schema.dump(self.config)
+
+    def load_config_table(self, table, report, where, ignore):
+        """Read the configuration from the table of the project file."""
+
+        self.config = schema.load(
+            type(self.config), table, report, where, ignore=ignore
+        )
 
     def send_signal(self, signal):
         if self.proc:
@@ -375,24 +371,33 @@ class Brick(base.Base):
         raise NotImplementedError(_("Brick.prog() not implemented."))
 
     def build_cmd_line(self):
-        # TODO: documents the behavior of all cases (#, *, etc.)
-        res = []
+        """
+        Build the arguments from ``command_builder``.
 
-        # import pdb; pdb.set_trace()
+        It maps each switch to a config field or a callable. A switch starting
+        with "#" is skipped. True (or "*") gives the bare switch, and any other
+        non-empty value gives the switch followed by the value, without the
+        switch if it starts with "*".
+        """
+
+        res = []
         for switch, value in self.command_builder.items():
-            if not switch.startswith("#"):
-                if callable(value):
-                    value = value()
-                else:
-                    value = self.config.get(value)
-                if value == "*":
-                    res.append(switch)
-                elif value is not None and len(value) > 0:
+            if switch.startswith("#"):
+                continue
+            if callable(value):
+                value = value()
+            elif value is not None:
+                value = getattr(self.config, value, None)
+            if value is True or value == "*":
+                res.append(switch)
+            elif value is None or value is False:
+                continue
+            else:
+                value = str(value)
+                if value:
                     if not switch.startswith("*"):
                         res.append(switch)
                     res.append(value)
-        # res.sort()
-        # print(res)
         return res
 
     def _poweron(self, ignore):
@@ -416,10 +421,10 @@ class Brick(base.Base):
         return d
 
     def _start_related_events(self, on=True, off=False):
-        if on and self.config["pon_vbevent"]:
-            name = self.config["pon_vbevent"]
-        elif off and self.config["poff_vbevent"]:
-            name = self.config["poff_vbevent"]
+        if on and self.config.pon_vbevent:
+            name = self.config.pon_vbevent
+        elif off and self.config.poff_vbevent:
+            name = self.config.poff_vbevent
         else:
             return
 
@@ -433,11 +438,14 @@ class Brick(base.Base):
     # Console related operations.
     #############################
 
+    def runtime_path(self, filename):
+        return os.path.join(self.factory.runtime_dir, filename)
+
     def path(self):
-        return "%s/%s.ctl" % (settings.VIRTUALBRICKS_HOME, self.name)
+        return self.runtime_path(f"{self.name}.ctl")
 
     def console(self):
-        return "%s/%s.mgmt" % (settings.VIRTUALBRICKS_HOME, self.name)
+        return self.runtime_path(f"{self.name}.mgmt")
 
     def connect(self, endpoint, *args):
         for p in self.plugs:

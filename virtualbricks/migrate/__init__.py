@@ -1,4 +1,3 @@
-# -*- test-case-name: virtualbricks.tests.test_settings -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,9 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
+"""
+The migration of the files of Virtualbricks 2.1 and older.
 
-del sys.modules["virtualbricks.settings"]
-from virtualbricks import _settings
-
-_settings.install(_settings.Settings())
+This package is the only code that reads the old formats: the rest of
+Virtualbricks reads and writes only the current one.
+"""
