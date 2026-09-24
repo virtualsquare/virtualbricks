@@ -22,9 +22,9 @@ __metaclass__ = type
 import sys
 
 from twisted.python import usage, lockfile, reflect
-from twisted.internet import defer
+from twisted.internet import defer, task
 
-from virtualbricks import _backport, settings
+from virtualbricks import settings
 
 
 _log_file = sys.stdout
@@ -108,7 +108,7 @@ def run_app(Application, config):
         config.parseOptions()
     except usage.error as ue:
         raise SystemExit("%s: %s" % (sys.argv[0], ue))
-    _backport.react(Application(config).run, ())
+    task.react(Application(config).run, ())
 
 
 class _LockedApplication:
