@@ -109,7 +109,7 @@ def is_running_filter(model, itr, data):
         return is_running(brick)
 
 
-class TopologyMixin(object):
+class TopologyMixin:
 
     __should_draw_topology = False
     __topology = None
@@ -179,23 +179,23 @@ class TopologyMixin(object):
 
     def on_main_notebook_change_current_page(self, notebook, offset):
         self._draw_topology_if_on_page(notebook.get_current_page())
-        super(TopologyMixin, self).on_main_notebook_change_current_page(
+        super().on_main_notebook_change_current_page(
             notebook,  offset)
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
         self._draw_topology_if_on_page(page_num)
-        super(TopologyMixin, self).on_main_notebook_switch_page(
+        super().on_main_notebook_switch_page(
             notebook, _, page_num)
 
     def on_main_notebook_select_page(self, notebook, move_focus):
         self._draw_topology_if_on_page(notebook.get_current_page())
-        super(TopologyMixin, self).on_main_notebook_select_page(
+        super().on_main_notebook_select_page(
             notebook, move_focus)
 
     # VBGUI callbacks
 
     def init(self, factory):
-        super(TopologyMixin, self).init(factory)
+        super().init(factory)
         topology_scrolled = self.topology_scrolled
         hadjustment = topology_scrolled.get_hadjustment()
         hadjustment.connect("value-changed", self.on_topology_h_scrolled)
@@ -229,7 +229,7 @@ class TopologyMixin(object):
         self.__should_draw_topology = False
 
 
-class ReadmeMixin(object):
+class ReadmeMixin:
 
     __deleyed_call = None
     manager = project.manager
@@ -270,12 +270,12 @@ class ReadmeMixin(object):
         # if I switch to readme tab
         if page_num == README_TAB:
             self.__load_readme()
-        super(ReadmeMixin, self).on_main_notebook_switch_page(
+        super().on_main_notebook_switch_page(
             notebook, _, page_num)
 
     def init(self, factory):
         self.__get_buffer().connect("modified-changed", self.__on_modify)
-        super(ReadmeMixin, self).init(factory)
+        super().init(factory)
 
     def __cancel_delayed_save(self):
         if self.__deleyed_call:
@@ -291,20 +291,20 @@ class ReadmeMixin(object):
 
     def on_new(self, name):
         self.__load_readme()
-        super(ReadmeMixin, self).on_new(name)
+        super().on_new(name)
 
     def on_save(self):
         self.__save_readme()
-        super(ReadmeMixin, self).on_save()
+        super().on_save()
 
     def on_open(self, name):
         self.__load_readme()
-        super(ReadmeMixin, self).on_open(name)
+        super().on_open(name)
 
     def on_quit(self, factory):
         self.__cancel_delayed_save()
         self.__save_readme()
-        super(ReadmeMixin, self).on_quit(factory)
+        super().on_quit(factory)
 
 
 class ProgressBar:
@@ -323,7 +323,7 @@ class ProgressBar:
         return self.freezer.wait_for(something, *args)
 
 
-class _Root(object):
+class _Root:
     # This object ensure that super() calls are not forwarded to object.
 
     def init(self, factory):
@@ -1335,43 +1335,43 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     # Notebook signals
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
-        super(VBGUI, self).on_main_notebook_switch_page(notebook, _, page_num)
+        super().on_main_notebook_switch_page(notebook, _, page_num)
         return True
 
     def on_main_notebook_select_page(self, notebook, move_focus):
-        super(VBGUI, self).on_main_notebook_select_page(notebook, move_focus)
+        super().on_main_notebook_select_page(notebook, move_focus)
         return True
 
     def on_main_notebook_change_current_page(self, notebook, offset):
-        super(VBGUI, self).on_main_notebook_change_current_page(notebook,
+        super().on_main_notebook_change_current_page(notebook,
                                                                 offset)
         return True
 
     # gui (programming) interface
 
     def init(self, factory):
-        super(VBGUI, self).init(factory)
+        super().init(factory)
 
     def on_quit(self, factory):
         dispose(self)
-        super(VBGUI, self).on_quit(factory)
+        super().on_quit(factory)
 
     def on_save(self):
-        super(VBGUI, self).on_save()
+        super().on_save()
         project.manager.save_current(self.brickfactory)
 
     def on_open(self, name):
         self.on_save()
         prj = project.manager.get_project(name)
         prj.open(self.brickfactory)
-        super(VBGUI, self).on_open(name)
+        super().on_open(name)
 
     def on_new(self, name):
         self.on_save()
         prj = project.manager.get_project(name)
         prj.create()
         prj.open(self.brickfactory)
-        super(VBGUI, self).on_new(name)
+        super().on_new(name)
 
     def do_quit(self, *_):
         self.factory.quit()

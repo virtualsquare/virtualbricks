@@ -19,8 +19,6 @@
 import re
 import collections
 
-__metaclass__ = type
-
 
 class Section:
 

@@ -49,7 +49,7 @@ def make_id(log_format, module=None):
     return uuid.uuid5(uuid.NAMESPACE_URL, uri)
 
 
-class Event(object):
+class Event:
 
     def __init__(self, log_format, log_id=None, module=None):
         self.log_format = log_format

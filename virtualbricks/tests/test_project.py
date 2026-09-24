@@ -24,7 +24,7 @@ from twisted.internet import defer
 
 from virtualbricks import errors, project
 from virtualbricks._settings import Settings
-from virtualbricks.tests import get_filename, failureResultOf, stubs
+from virtualbricks.tests import get_filename, stubs
 from virtualbricks.tests.stubs import Factory
 
 
@@ -56,7 +56,7 @@ class TestProjectManager(unittest.TestCase):
         prj = manager.get_project(NAME)
         prj.create()
         d = manager.import_prj(NAME, "/example/test.vbp")
-        failureResultOf(self, d, errors.ProjectExistsError)
+        self.failureResultOf(d, errors.ProjectExistsError)
 
     def test_import(self):
         """Import a project."""
@@ -401,7 +401,7 @@ link|sender|sw1|rtl8139|00:11:22:33:44:55
 class PseudoOrderedDict(dict):
 
     def __init__(self, arg):
-        super(PseudoOrderedDict, self).__init__(arg)
+        super().__init__(arg)
         self._order = map(operator.itemgetter(0), arg)
 
     def __iter__(self):

@@ -22,14 +22,13 @@ from twisted.python import filepath
 
 from virtualbricks import project
 from virtualbricks.gui.windows import exportproject, importdialog
-from virtualbricks.tests import (unittest, GtkTestCase, failureResultOf,
-                                 successResultOf, stubs)
+from virtualbricks.tests import unittest, GtkTestCase, stubs
 
 
-class WindowStub(object):
+class WindowStub:
 
     def __init__(self, _, prjpath, disk_images):
-        super(WindowStub, self).__init__(_, prjpath, disk_images)
+        super().__init__(_, prjpath, disk_images)
 
 
 class ExportProjectDialog(WindowStub, exportproject.ExportProjectDialog):
@@ -341,7 +340,7 @@ class TestImportStep1(TestHumbleImport):
 
         extract = lambda *a: defer.fail(RuntimeError())
         d = self.humble.step_1(self.dialog, self.model, self.ipath, extract)
-        failureResultOf(self, d, RuntimeError)
+        self.failureResultOf(d, RuntimeError)
         self.flushLoggedErrors(RuntimeError)
         self.assertTrue(self.dialog.destroied)
 
@@ -359,8 +358,8 @@ class TestImportStep1(TestHumbleImport):
             self.extract_args = (name, path)
             return defer.succeed(prj)
 
-        successResultOf(self, self.humble.step_1(self.dialog, self.model,
-                                                 self.ipath, extract))
+        self.successResultOf(self.humble.step_1(self.dialog, self.model,
+                                                self.ipath, extract))
         model = Gtk.ListStore(str, object, bool)
         model.append(("debian7.img", self.ipath.child("debian7.img"), True))
         model.append(("ubuntu.img", self.ipath.child("ubuntu.img"), True))

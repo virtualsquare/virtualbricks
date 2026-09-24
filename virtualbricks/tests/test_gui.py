@@ -175,10 +175,10 @@ class Readme(ReadmeMixin, _Root):
         self.readme_text.get_buffer().set_text(text)
 
     def init(self, factory):
-        super(Readme, self).init(factory)
+        super().init(factory)
 
     def on_quit(self, factory):
-        super(Readme, self).on_quit(factory)
+        super().on_quit(factory)
 
 
 class TestReadme(unittest.TestCase):

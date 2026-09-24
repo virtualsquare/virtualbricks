@@ -352,7 +352,7 @@ def _set_text(column, cell_renderer, model, itr):
     cell_renderer.set_property("text", sock.nickname)
 
 
-class _PlugMixin(object):
+class _PlugMixin:
 
     def configure_sock_combobox(self, combo, model, brick, plug, gui):
         filtered_model = model.filter_new()

@@ -27,7 +27,6 @@ if False:  # pyflakes
     _ = str
 
 
-__metaclass__ = type
 logger = log.Logger()
 attribute_set = log.Event("Attribute {attr} set in {brick} with value "
                           "{value}.")
@@ -51,7 +50,7 @@ class Config(dict):
     def __setitem__(self, name, value):
         if name not in self.parameters:
             raise ValueError(_("Parameter %s not found") % name)
-        super(Config, self).__setitem__(name, value)
+        super().__setitem__(name, value)
 
     # NOTE: old interface, values are always strings
     def get(self, name, default=None):
@@ -115,7 +114,7 @@ class Float(Parameter):
 class SpinMixin:
 
     def __init__(self, default=0, min=0, max=100):
-        super(SpinMixin, self).__init__(default)
+        super().__init__(default)
         self.min = min
         self.max = max
 
@@ -125,13 +124,13 @@ class SpinMixin:
                 i, self.min, self.max))
 
     def from_string(self, in_string):
-        i = super(SpinMixin, self).from_string(in_string)
+        i = super().from_string(in_string)
         self.assert_in_range(i)
         return i
 
     def to_string(self, in_object):
         self.assert_in_range(in_object)
-        return super(SpinMixin, self).to_string(in_object)
+        return super().to_string(in_object)
 
 
 class SpinInt(SpinMixin, Integer):
@@ -180,7 +179,7 @@ class ListOf(Parameter):
         return str([self.element_type.to_string(obj) for obj in in_object])
 
 
-class Base(object):
+class Base:
 
     _restore = False
     # type = None  # if not set in a subclass will raise an AttributeError

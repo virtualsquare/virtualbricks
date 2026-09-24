@@ -28,7 +28,7 @@ from virtualbricks import console
 from virtualbricks.gui.windows.base import _, ConfigController, VALIDKEY
 
 
-class EventControllerMixin(object):
+class EventControllerMixin:
     """
     Edit the actions of an event. Used by the event configuration panel and by
     ``ShellCommandDialog``, their UI have the same widgets.

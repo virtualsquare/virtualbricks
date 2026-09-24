@@ -18,7 +18,7 @@
 from twisted.trial import unittest
 
 from virtualbricks.tools import is_running
-from virtualbricks.tests import stubs, successResultOf
+from virtualbricks.tests import stubs
 from virtualbricks.errors import BrickRunningError
 
 
@@ -75,7 +75,7 @@ class TestFactory(unittest.TestCase):
 
         factory = stubs.Factory()
         brick = factory.new_brick("_stub", "test_brick")
-        self.assertEqual(brick, successResultOf(self, brick.poweron()))
+        self.assertEqual(brick, self.successResultOf(brick.poweron()))
         self.assertRaises(BrickRunningError, factory.del_brick, brick)
         self.assertEqual(factory.bricks, [brick])
         self.assertTrue(is_running(brick))

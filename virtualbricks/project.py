@@ -29,7 +29,6 @@ from virtualbricks import (settings, configfile, log, errors, _configparser,
 
 
 logger = log.Logger()
-__metaclass__ = type
 
 create_archive = log.Event("Create archive in {path}")
 extract_archive = log.Event("Extract archive in {path}")

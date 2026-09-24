@@ -26,9 +26,6 @@ from zope.interface import implementer
 from virtualbricks.gui import graphics, interfaces
 
 
-__metaclass__ = type
-
-
 class HelpError(Exception):
     pass
 

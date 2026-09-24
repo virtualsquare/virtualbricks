@@ -30,7 +30,7 @@ Or in a class::
 
     from twext.python.log import Logger
 
-    class Foo(object):
+    class Foo:
         log = Logger()
 
         def oops(self, data):
@@ -96,7 +96,7 @@ class InvalidLogLevelError(Exception):
         """
         @param level: a L{LogLevel}
         """
-        super(InvalidLogLevelError, self).__init__(str(level))
+        super().__init__(str(level))
         self.level = level
 
 
@@ -209,7 +209,7 @@ def formatEvent(event):
         try:
             return formatUnformattableEvent(event, e)
         except:
-            return u"MESSAGE LOST"
+            return "MESSAGE LOST"
 
 
 def formatUnformattableEvent(event, error):
@@ -225,7 +225,7 @@ def formatUnformattableEvent(event, error):
     """
     try:
         return (
-            u"Unable to format event {event!r}: {error}"
+            "Unable to format event {event!r}: {error}"
             .format(event=event, error=error)
         )
     except BaseException as error:
@@ -241,27 +241,27 @@ def formatUnformattableEvent(event, error):
 
             for key, value in event.items():
                 try:
-                    items.append(u"{key!r} = ".format(key=key))
+                    items.append("{key!r} = ".format(key=key))
                 except:
-                    items.append(u"<UNFORMATTABLE KEY> = ")
+                    items.append("<UNFORMATTABLE KEY> = ")
                 try:
-                    items.append(u"{value!r}".format(value=value))
+                    items.append("{value!r}".format(value=value))
                 except:
-                    items.append(u"<UNFORMATTABLE VALUE>")
+                    items.append("<UNFORMATTABLE VALUE>")
 
             text = ", ".join(items)
         except:
             text = ""
 
         return (
-            u"MESSAGE LOST: Unformattable object logged: {error}\n"
-            u"Recoverable data: {text}"
+            "MESSAGE LOST: Unformattable object logged: {error}\n"
+            "Recoverable data: {text}"
             .format(text=text)
         )
 
 
 
-class Logger(object):
+class Logger:
     """
     Logging object.
     """
@@ -301,7 +301,7 @@ class Logger(object):
         When used as a descriptor, i.e.::
 
             # athing.py
-            class Something(object):
+            class Something:
                 log = Logger()
                 def hello(self):
                     self.log.info("Hello")
@@ -402,7 +402,7 @@ class Logger(object):
 
 
 
-class LegacyLogger(object):
+class LegacyLogger:
     """
     A logging object that provides some compatibility with the
     L{twisted.python.log} module.
@@ -417,7 +417,7 @@ class LegacyLogger(object):
 
     def __getattribute__(self, name):
         try:
-            return super(LegacyLogger, self).__getattribute__(name)
+            return super().__getattribute__(name)
         except AttributeError:
             return getattr(twisted.python.log, name)
 
@@ -505,7 +505,7 @@ class ILogObserver(Interface):
 
 
 @implementer(ILogObserver)
-class LogPublisher(object):
+class LogPublisher:
     """
     I{ILogObserver} that fans out events to other observers.
 
@@ -590,7 +590,7 @@ class ILogFilterPredicate(Interface):
 
 
 @implementer(ILogObserver)
-class FilteringLogObserver(object):
+class FilteringLogObserver:
     """
     L{ILogObserver} that wraps another L{ILogObserver}, but filters
     out events based on applying a series of L{ILogFilterPredicate}s.
@@ -634,7 +634,7 @@ class FilteringLogObserver(object):
 
 
 @implementer(ILogFilterPredicate)
-class LogLevelFilterPredicate(object):
+class LogLevelFilterPredicate:
     """
     L{ILogFilterPredicate} that filters out events with a log level
     lower than the log level for the event's namespace.
@@ -712,7 +712,7 @@ class LogLevelFilterPredicate(object):
 
 
 @implementer(ILogObserver)
-class LegacyLogObserver(object):
+class LegacyLogObserver:
     """
     L{ILogObserver} that wraps an L{ILegacyLogObserver}.
     """
@@ -747,7 +747,7 @@ class LegacyLogObserver(object):
             # defer the work of formatting until it's needed by a
             # legacy log observer.
             #
-            class LegacyFormatStub(object):
+            class LegacyFormatStub:
                 def __str__(oself):
                     return formatEvent(event).encode("utf-8")
 
@@ -765,7 +765,7 @@ class LegacyLogObserver(object):
 
 
 # FIXME: This could have a better name.
-class DefaultLogPublisher(object):
+class DefaultLogPublisher:
     """
     This observer sets up a set of chained observers as follows:
 
@@ -791,13 +791,13 @@ class DefaultLogPublisher(object):
         log = Logger()
 
         @implementer(ILogObserver)
-        class AMPObserver(object):
+        class AMPObserver:
             def __call__(self, event):
                 # eg.: Hold events in a ring buffer and expose them via AMP.
                 ...
 
         @implementer(ILogObserver)
-        class FileObserver(object):
+        class FileObserver:
             def __call__(self, event):
                 # eg.: Take events and write them into a file.
                 ...
@@ -860,12 +860,12 @@ Logger.publisher = DefaultLogPublisher()
 # Utilities
 #
 
-class CallMapping(object):
+class CallMapping:
     def __init__(self, submapping):
         self._submapping = submapping
 
     def __getitem__(self, key):
-        callit = key.endswith(u"()")
+        callit = key.endswith("()")
         realKey = key[:-2] if callit else key
         value = self._submapping[realKey]
         if callit:
@@ -947,7 +947,7 @@ def replaceTwistedLoggers():
 ######################################################################
 # FIXME: This may not be needed; look into removing it.
 
-class StandardIOObserver(object):
+class StandardIOObserver:
     """
     (Legacy) log observer that writes to standard I/O.
     """

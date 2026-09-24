@@ -33,7 +33,7 @@ def hook():
     return "d"
 
 
-class BrickStubMixin(object):
+class BrickStubMixin:
 
     def __init__(self):
         self.sended = []

@@ -23,7 +23,7 @@ from virtualbricks import tools
 from virtualbricks.tests import unittest
 
 
-class MockLock(object):
+class MockLock:
 
     def __init__(self):
         self.c = 0

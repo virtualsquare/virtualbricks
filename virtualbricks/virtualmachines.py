@@ -38,7 +38,6 @@ from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 if False:
     _ = str
 
-__metaclass__ = type
 logger = log.Logger()
 new_cow = log.Event(
     'Creating a new private COW from a base image. backing_file={backing_file}'

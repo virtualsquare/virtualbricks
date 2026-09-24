@@ -117,7 +117,7 @@ def normalize_brick_name(name):
     return normalized_name
 
 
-class BrickFactory(object):
+class BrickFactory:
     """This is the main class for the core engine.
 
     All the bricks are created and stored in the factory.

@@ -57,7 +57,7 @@ console_terminated = log.Event("Console terminated\n{status}\nProcess stdout:"
 invalid_ack = log.Event("ACK received but no command sent.")
 
 
-class ProcessLogger(object):
+class ProcessLogger:
 
     def __init__(self, logger):
         self.logger = logger

@@ -24,7 +24,7 @@ from twisted.internet import error, defer
 from twisted.test import proto_helpers
 
 from virtualbricks import errors, link, bricks
-from virtualbricks.tests import stubs, successResultOf
+from virtualbricks.tests import stubs
 
 
 def kill(passthru, brick):
@@ -108,7 +108,7 @@ class TestBricks(unittest.TestCase):
         status or None if the last status is not set.
         """
 
-        self.assertEqual(successResultOf(self, self.brick.poweroff()),
+        self.assertEqual(self.successResultOf(self.brick.poweroff()),
                          (self.brick, None))
 
     def test_poweroff(self):

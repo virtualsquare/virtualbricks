@@ -27,8 +27,6 @@ if False:  # pyflakes
     _ = str
 
 
-__metaclass__ = type
-
 link_loop = log.Event("Loop link detected: aborting operation. If you want "
                       "to start a looped network, disable the check loop "
                       "feature in the general settings")
