@@ -16,22 +16,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os.path
+# Package metadata lives in pyproject.toml. This file only exists to compile
+# the gettext catalogs (.po -> .mo) at install time.
+
 import glob
+import os.path
 
-from distutils.command.install_data import install_data as _install_data
 from setuptools import setup
-
-def _get_version():
-    filename = os.path.join('virtualbricks', '__init__.py')
-    var = '__version__'
-    glb = {}
-    with open(filename) as fp:
-        for line in fp:
-            if var in line:
-                exec(line, glb)
-                return glb[var ]
-    raise RuntimeError('cannot find version')
+from distutils.command.install_data import install_data as _install_data
 
 
 class install_data(_install_data):
@@ -63,59 +55,4 @@ class install_data(_install_data):
         self.execute(self.remove_temps, ())
 
 
-DATA_IMAGES = glob.glob("virtualbricks/gui/data/*.png")
-DATA_HELPS = glob.glob("virtualbricks/gui/data/help/*")
-QEMU_SPEC_FILES = glob.glob('virtualbricks/gui/data/qemu_specs_*.*')
-DATA_FILES = DATA_IMAGES + DATA_HELPS + QEMU_SPEC_FILES
-
-
-setup(
-    name="virtualbricks",
-    version=_get_version(),
-    description="Virtualbricks Virtualization Tools",
-    long_description=open('README').read(),
-    author="Virtualbricks team",
-    url='https://github.com/virtualsquare/virtualbricks',
-    license="GPLv2",
-    platforms=["linux2", "linux"],
-    packages=[
-        "virtualbricks",
-        "virtualbricks.gui",
-        "virtualbricks.gui.windows",
-        "virtualbricks.scripts",
-        "virtualbricks.tests"
-    ],
-    package_data={"virtualbricks.tests": ["data/*"]},
-    data_files=[
-        ("share/applications", ["share/virtualbricks.desktop"]),
-        ("share/pixmaps", ["share/virtualbricks.xpm"]),
-        ("share/virtualbricks", DATA_FILES),
-    ],
-    install_requires=[
-        'Pillow',
-        'pygraphviz',
-        "Twisted>=12.0.0",
-        "constantly",
-        "zope.interface>=3.5",
-        "PyGObject",
-    ],
-    extras_require={
-        'test': ['mock']
-    },
-    entry_points={
-        'console_scripts': [
-            'virtualbricks = virtualbricks.scripts.virtualbricks:run'
-        ]
-    },
-    cmdclass={
-        "install_data": install_data
-    },
-    classifiers=[
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 2 :: Only',
-        'Environment :: X11 Applications :: GTK',
-        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
-        'Operating System :: POSIX :: Linux',
-    ],
-)
+setup(cmdclass={"install_data": install_data})

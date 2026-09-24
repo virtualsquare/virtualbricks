@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "virtualbricks"
+dynamic = ["version"]
+description = "Virtualbricks Virtualization Tools"
+readme = { file = "README", content-type = "text/x-rst" }
+authors = [{ name = "Virtualbricks team" }]
+license = "GPL-2.0-or-later"
+license-files = ["COPYING", "LICENCE"]
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=9.0",
+    "pygraphviz>=1.7",
+    "Twisted>=22.1",
+    "constantly>=15.1",
+    "zope.interface>=5.4",
+    "PyGObject>=3.42",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: X11 Applications :: GTK",
+    "Operating System :: POSIX :: Linux",
+]
+
+[dependency-groups]
+test = []
+
+[project.urls]
+Homepage = "https://github.com/virtualsquare/virtualbricks"
+
+[project.scripts]
+virtualbricks = "virtualbricks.scripts.virtualbricks:run"
+
+[tool.setuptools]
+platforms = ["linux"]
+
+[tool.setuptools.dynamic]
+version = { attr = "virtualbricks.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["virtualbricks*"]
+
+[tool.setuptools.package-data]
+"virtualbricks.tests" = ["data/*"]
+
+[tool.setuptools.data-files]
+"share/applications" = ["share/virtualbricks.desktop"]
+"share/pixmaps" = ["share/virtualbricks.xpm"]
+"share/virtualbricks" = [
+    "virtualbricks/gui/data/*.png",
+    "virtualbricks/gui/data/help/*",
+    "virtualbricks/gui/data/qemu_specs_*.*",
+]
