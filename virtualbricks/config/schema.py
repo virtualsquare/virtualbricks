@@ -25,10 +25,18 @@ parses the text typed in the console. Values are checked when an instance is
 created and whenever a field is assigned.
 """
 
+from __future__ import annotations
+
 import ipaddress
 import re
+from collections.abc import Callable, Collection, Iterator
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
 import attr
+
+if TYPE_CHECKING:
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.tomlfile import Table, Value
 
 __all__ = [
     "Bool",
@@ -63,8 +71,15 @@ MAC_PATTERN = r"(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}"
 # attrs 21.2, shipped by Ubuntu 22.04, has no "attrs" namespace yet.
 define = attr.define
 
+# The values of a field.
+T = TypeVar("T")
+# The values of a number field.
+N = TypeVar("N", int, float)
+# A schema class.
+S = TypeVar("S")
 
-def _describe(value):
+
+def _describe(value: object) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, str):
@@ -74,36 +89,37 @@ def _describe(value):
     return str(value)
 
 
-class Kind:
-    """How the values of a field are checked, stored and typed."""
+class Kind(Generic[T]):
+    """How the values of a field, of type T, are checked, stored and typed."""
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         """Raise ValueError if the value can't be stored in the field."""
 
-    def to_data(self, value):
-        return value
+    def to_data(self, value: T) -> Value:
+        # the data of most kinds is the value itself
+        return cast("Value", value)
 
-    def from_data(self, data, report, where):
+    def from_data(self, data: Value, report: Report, where: str) -> T:
         self.check(data)
-        return data
+        return cast(T, data)
 
-    def parse(self, text):
+    def parse(self, text: str) -> T:
         raise ValueError("can't be set from the console")
 
-    def format(self, value):
+    def format(self, value: T) -> str:
         raise NotImplementedError("Kind.format")
 
 
-class Bool(Kind):
+class Bool(Kind[bool]):
 
     TRUE = frozenset(("true", "yes", "on", "1"))
     FALSE = frozenset(("false", "no", "off", "0"))
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         if not isinstance(value, bool):
             raise ValueError(f"{value!r} is not true or false")
 
-    def parse(self, text):
+    def parse(self, text: str) -> bool:
         lowered = text.strip().lower()
         if lowered in self.TRUE:
             return True
@@ -111,20 +127,20 @@ class Bool(Kind):
             return False
         raise ValueError(f"{text!r} is not true or false")
 
-    def format(self, value):
+    def format(self, value: bool) -> str:
         return "true" if value else "false"
 
 
-class _Number(Kind):
+class _Number(Kind[N]):
 
-    types = (int,)
+    types: ClassVar[tuple[type[int] | type[float], ...]] = (int,)
     type_name = "an integer"
 
-    def __init__(self, min=None, max=None):
-        self.min = min
-        self.max = max
+    def __init__(self, min: N | None = None, max: N | None = None) -> None:
+        self.min: N | None = min
+        self.max: N | None = max
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         if isinstance(value, bool) or not isinstance(value, self.types):
             raise ValueError(f"{value!r} is not {self.type_name}")
         if self.min is not None and self.max is not None:
@@ -135,53 +151,56 @@ class _Number(Kind):
         elif self.max is not None and value > self.max:
             raise ValueError(f"{value} is more than {self.max}")
 
-    def parse(self, text):
+    def parse(self, text: str) -> N:
         try:
             value = self.types[0](text.strip())
         except ValueError:
             raise ValueError(f"{text!r} is not {self.type_name}") from None
         self.check(value)
-        return value
+        # the first of the types is the type of the values
+        return cast(N, value)
 
-    def format(self, value):
+    def format(self, value: N) -> str:
         return str(value)
 
 
-class Int(_Number):
+class Int(_Number[int]):
     pass
 
 
-class Float(_Number):
+class Float(_Number[float]):
 
     types = (float, int)
     type_name = "a number"
 
-    def to_data(self, value):
+    def to_data(self, value: float) -> float:
         return float(value)
 
-    def from_data(self, data, report, where):
-        self.check(data)
-        return float(data)
+    def from_data(self, data: Value, report: Report, where: str) -> float:
+        # an integer is a number too, stored as a float
+        return float(super().from_data(data, report, where))
 
 
-class Str(Kind):
+class Str(Kind[str]):
     """A string, optionally matching a pattern unless it's empty."""
 
-    def __init__(self, pattern=None, what="valid"):
+    def __init__(
+        self, pattern: str | None = None, what: str = "valid"
+    ) -> None:
         self.pattern = None if pattern is None else re.compile(pattern)
         self.what = what
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         if not isinstance(value, str):
             raise ValueError(f"{value!r} is not a string")
         if value and self.pattern and not self.pattern.fullmatch(value):
             raise ValueError(f'"{value}" is not {self.what}')
 
-    def parse(self, text):
+    def parse(self, text: str) -> str:
         self.check(text)
         return text
 
-    def format(self, value):
+    def format(self, value: str) -> str:
         return f'"{value}"'
 
 
@@ -192,25 +211,25 @@ class Path(Str):
 class Ref(Str):
     """The name of an image, event or socket; empty means none."""
 
-    def __init__(self, target):
+    def __init__(self, target: str) -> None:
         super().__init__()
         self.target = target
 
 
 class Mac(Str):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(MAC_PATTERN, "a MAC address")
 
 
 class IPv4(Str):
     """An IPv4 address; empty only if the field is optional."""
 
-    def __init__(self, optional=False):
+    def __init__(self, optional: bool = False) -> None:
         super().__init__()
         self.optional = optional
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         super().check(value)
         if value == "" and self.optional:
             return
@@ -222,18 +241,18 @@ class IPv4(Str):
 
 class Choice(Str):
 
-    def __init__(self, *choices):
+    def __init__(self, *choices: str) -> None:
         super().__init__()
         self.choices = choices
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         super().check(value)
         if value not in self.choices:
             choices = ", ".join(self.choices)
             raise ValueError(f'"{value}" is not one of {choices}')
 
 
-class Record(Kind):
+class Record(Kind[S]):
     """
     A nested schema, stored as a TOML table.
 
@@ -241,35 +260,40 @@ class Record(Kind):
     when the table is read, and in the table they are unknown fields.
     """
 
-    def __init__(self, cls, exclude=()):
+    def __init__(self, cls: type[S], exclude: Collection[str] = ()) -> None:
         self.cls = cls
         self.exclude = frozenset(exclude)
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         if not isinstance(value, self.cls):
             raise ValueError(f"{value!r} is not a {self.cls.__name__}")
 
-    def to_data(self, value):
+    def to_data(self, value: S) -> Table:
         return dump(value, exclude=self.exclude)
 
-    def from_data(self, data, report, where):
+    def from_data(self, data: Value, report: Report, where: str) -> S:
         if not isinstance(data, dict):
             raise ValueError(f"{_describe(data)} is not a table")
         return load(self.cls, data, report, where, exclude=self.exclude)
 
-    def format(self, value):
+    def format(self, value: S) -> str:
         return "{…}"
 
 
-class ListOf(Kind):
+class ListOf(Kind[list[T]]):
     """A list of values of one kind, optionally of a fixed length."""
 
-    def __init__(self, item, length=None, min_length=None):
+    def __init__(
+        self,
+        item: Kind[T],
+        length: int | None = None,
+        min_length: int | None = None,
+    ) -> None:
         self.item = item
         self.length = length
         self.min_length = min_length
 
-    def _check_length(self, count):
+    def _check_length(self, count: int) -> None:
         if self.length is not None and count != self.length:
             raise ValueError(f"has {count} items instead of {self.length}")
         if self.min_length is not None and count < self.min_length:
@@ -277,20 +301,20 @@ class ListOf(Kind):
                 f"has {count} items, at least {self.min_length} needed"
             )
 
-    def check(self, value):
+    def check(self, value: object) -> None:
         if not isinstance(value, list):
             raise ValueError(f"{value!r} is not a list")
         self._check_length(len(value))
         for item in value:
             self.item.check(item)
 
-    def to_data(self, value):
+    def to_data(self, value: list[T]) -> list[Value]:
         return [self.item.to_data(item) for item in value]
 
-    def from_data(self, data, report, where):
+    def from_data(self, data: Value, report: Report, where: str) -> list[T]:
         if not isinstance(data, list):
             raise ValueError(f"{_describe(data)} is not a list")
-        items = []
+        items: list[T] = []
         for index, item in enumerate(data):
             item_where = f"{where}[{index}]"
             try:
@@ -300,21 +324,26 @@ class ListOf(Kind):
         self._check_length(len(items))
         return items
 
-    def format(self, value):
+    def format(self, value: list[T]) -> str:
         return "[" + ", ".join(self.item.format(item) for item in value) + "]"
 
 
 @attr.define(frozen=True)
 class FieldInfo:
 
-    kind = attr.field()
-    label = attr.field(default="")
-    help = attr.field(default="")
-    path = attr.field(default=None)
+    # the kind of any field, whatever the type of its values
+    kind: Kind[Any] = attr.field()
+    label: str = attr.field(default="")
+    help: str = attr.field(default="")
+    path: tuple[str, ...] | None = attr.field(default=None)
 
 
-def _validator(kind):
-    def validate(instance, attribute, value):
+def _validator(
+    kind: Kind[T],
+) -> Callable[[object, attr.Attribute[object], object], None]:
+    def validate(
+        instance: object, attribute: attr.Attribute[object], value: object
+    ) -> None:
         try:
             kind.check(value)
         except ValueError as exc:
@@ -324,13 +353,13 @@ def _validator(kind):
 
 
 def field(
-    kind,
-    default=attr.NOTHING,
-    factory=None,
-    label="",
-    help="",
-    path=None,
-):
+    kind: Kind[T],
+    default: object = attr.NOTHING,
+    factory: Callable[[], T] | None = None,
+    label: str = "",
+    help: str = "",
+    path: tuple[str, ...] | None = None,
+) -> T:
     """
     Declare a schema field.
 
@@ -338,60 +367,63 @@ def field(
     simply the field name, for example ``("disks", "hda", "image")``.
     """
 
-    return attr.field(
+    field = attr.field(
         default=default,
         factory=factory,
         validator=_validator(kind),
         metadata={_KEY: FieldInfo(kind, label, help, path)},
     )
+    # in the body of the class, a field stands for its values
+    return cast(T, field)
 
 
-def fields(cls_or_obj):
+def fields(cls_or_obj: object) -> tuple[attr.Attribute[object], ...]:
     cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
     return attr.fields(cls)
 
 
-def names(cls_or_obj):
+def names(cls_or_obj: object) -> list[str]:
     return [attribute.name for attribute in fields(cls_or_obj)]
 
 
-def info(attribute):
+def info(attribute: attr.Attribute[object]) -> FieldInfo:
     return attribute.metadata[_KEY]
 
 
-def _path(attribute):
+def _path(attribute: attr.Attribute[object]) -> tuple[str, ...]:
     return info(attribute).path or (attribute.name,)
 
 
-def kind_of(cls_or_obj, name):
+def kind_of(cls_or_obj: object, name: str) -> Kind[object]:
     for attribute in fields(cls_or_obj):
         if attribute.name == name:
             return info(attribute).kind
     raise KeyError(name)
 
 
-def values(obj):
+def values(obj: object) -> dict[str, object]:
     """Return the values of all fields, by name."""
 
     return {name: getattr(obj, name) for name in names(obj)}
 
 
-def dump(obj, exclude=()):
+def dump(obj: object, exclude: Collection[str] = ()) -> Table:
     """Return the TOML data of an instance, with every field."""
 
-    data = {}
+    data: Table = {}
     for attribute in fields(obj):
         if attribute.name in exclude:
             continue
         *parents, key = _path(attribute)
         table = data
         for parent in parents:
-            table = table.setdefault(parent, {})
+            # the tables of the parents are made here
+            table = cast("Table", table.setdefault(parent, {}))
         table[key] = info(attribute).kind.to_data(getattr(obj, attribute.name))
     return data
 
 
-def _lookup(data, path):
+def _lookup(data: Value, path: tuple[str, ...]) -> Value:
     for key in path:
         if not isinstance(data, dict) or key not in data:
             raise KeyError(key)
@@ -399,20 +431,28 @@ def _lookup(data, path):
     return data
 
 
-def _default_of(attribute):
-    if isinstance(attribute.default, attr.Factory):
-        return attribute.default.factory()
+def _default_of(attribute: attr.Attribute[object]) -> object:
+    # attrs types Factory as the function that makes the default
+    if isinstance(attribute.default, attr.Factory):  # type: ignore[arg-type]
+        return attribute.default.factory()  # type: ignore[attr-defined]
     return attribute.default
 
 
-def default(cls_or_obj, name):
+def default(cls_or_obj: object, name: str) -> object:
     for attribute in fields(cls_or_obj):
         if attribute.name == name:
             return _default_of(attribute)
     raise KeyError(name)
 
 
-def load(cls, data, report, where="", exclude=(), ignore=()):
+def load(
+    cls: type[S],
+    data: Table,
+    report: Report,
+    where: str = "",
+    exclude: Collection[str] = (),
+    ignore: Collection[str] = (),
+) -> S:
     """
     Build an instance from TOML data, reporting problems instead of failing.
 
@@ -421,8 +461,8 @@ def load(cls, data, report, where="", exclude=(), ignore=()):
     ``data``; ``ignore`` names keys of ``data`` that belong to someone else.
     """
 
-    kwargs = {}
-    consumed = set()
+    kwargs: dict[str, object] = {}
+    consumed: set[tuple[str, ...]] = set()
     for attribute in fields(cls):
         if attribute.name in exclude:
             continue
@@ -445,7 +485,14 @@ def load(cls, data, report, where="", exclude=(), ignore=()):
     return cls(**kwargs)
 
 
-def _report_unknown(data, prefix, consumed, ignore, report, where):
+def _report_unknown(
+    data: Table,
+    prefix: tuple[str, ...],
+    consumed: set[tuple[str, ...]],
+    ignore: set[str],
+    report: Report,
+    where: str,
+) -> None:
     for key, value in data.items():
         path = prefix + (key,)
         if path in consumed or (not prefix and key in ignore):
@@ -458,13 +505,13 @@ def _report_unknown(data, prefix, consumed, ignore, report, where):
             report.warning("unknown field, dropped", dotted)
 
 
-def parse(cls_or_obj, name, text):
+def parse(cls_or_obj: object, name: str, text: str) -> object:
     """Convert the text typed in the console for a field; KeyError if unknown."""
 
     return kind_of(cls_or_obj, name).parse(text)
 
 
-def references(obj):
+def references(obj: object) -> Iterator[tuple[str, str, str]]:
     """Yield ``(name, target, value)`` for each reference field that is set."""
 
     for attribute in fields(obj):
@@ -474,7 +521,7 @@ def references(obj):
             yield attribute.name, kind.target, value
 
 
-def rename_references(obj, target, old, new):
+def rename_references(obj: object, target: str, old: str, new: str) -> bool:
     """Point the references to ``old`` at ``new``; return True if any moved."""
 
     changed = False

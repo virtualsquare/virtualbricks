@@ -18,21 +18,31 @@
 
 """Messages collected while reading, converting or writing configuration."""
 
+from __future__ import annotations
+
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Final, Literal
+
 import attr
 
-INFO = "info"
-WARNING = "warning"
-ERROR = "error"
+if TYPE_CHECKING:
+    from twisted.logger import Logger
+
+Level = Literal["info", "warning", "error"]
+
+INFO: Final = "info"
+WARNING: Final = "warning"
+ERROR: Final = "error"
 
 
 @attr.define(frozen=True)
 class Message:
 
-    level = attr.field()
-    text = attr.field()
-    where = attr.field(default="")
+    level: Level = attr.field()
+    text: str = attr.field()
+    where: str = attr.field(default="")
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.where:
             return f"{self.where}: {self.text}"
         return self.text
@@ -41,40 +51,40 @@ class Message:
 class Report:
     """An ordered list of messages, each with a level and a location."""
 
-    def __init__(self):
-        self.messages = []
+    def __init__(self) -> None:
+        self.messages: list[Message] = []
 
-    def add(self, level, text, where=""):
+    def add(self, level: Level, text: str, where: str = "") -> None:
         self.messages.append(Message(level, text, where))
 
-    def info(self, text, where=""):
+    def info(self, text: str, where: str = "") -> None:
         self.add(INFO, text, where)
 
-    def warning(self, text, where=""):
+    def warning(self, text: str, where: str = "") -> None:
         self.add(WARNING, text, where)
 
-    def error(self, text, where=""):
+    def error(self, text: str, where: str = "") -> None:
         self.add(ERROR, text, where)
 
-    def extend(self, other):
+    def extend(self, other: Report) -> None:
         self.messages.extend(other.messages)
 
-    def count(self, level):
+    def count(self, level: Level) -> int:
         return sum(1 for message in self.messages if message.level == level)
 
     @property
-    def warnings(self):
+    def warnings(self) -> int:
         return self.count(WARNING)
 
     @property
-    def errors(self):
+    def errors(self) -> int:
         return self.count(ERROR)
 
     @property
-    def has_errors(self):
+    def has_errors(self) -> bool:
         return self.errors > 0
 
-    def log(self, logger):
+    def log(self, logger: Logger) -> None:
         emitters = {
             INFO: logger.info,
             WARNING: logger.warn,
@@ -83,8 +93,8 @@ class Report:
         for message in self.messages:
             emitters[message.level]("{message}", message=str(message))
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Message]:
         return iter(self.messages)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.messages)

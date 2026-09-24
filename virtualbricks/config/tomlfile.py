@@ -25,9 +25,13 @@ fixed layout: plain values first, then tables. A list of tables is written as
 Files are replaced atomically.
 """
 
+from __future__ import annotations
+
+import datetime
 import os
 import re
 import tempfile
+from typing import TypeAlias, TypeGuard
 
 try:
     import tomllib
@@ -35,25 +39,40 @@ except ImportError:  # pragma: no cover (Python 3.10)
     import tomli as tomllib
 
 import tomlkit
+from tomlkit import items
 
-__all__ = ["DecodeError", "dump", "dumps", "load", "loads"]
+__all__ = ["DecodeError", "Table", "Value", "dump", "dumps", "load", "loads"]
 
 DecodeError = tomllib.TOMLDecodeError
+
+# The data of a TOML file, as tomllib reads it.
+Value: TypeAlias = (
+    str
+    | int
+    | float
+    | bool
+    | datetime.datetime
+    | datetime.date
+    | datetime.time
+    | list["Value"]
+    | dict[str, "Value"]
+)
+Table: TypeAlias = dict[str, Value]
 
 # A table with up to this many plain values goes on one line in a list.
 INLINE_KEYS = 2
 
 
-def loads(text):
+def loads(text: str) -> Table:
     return tomllib.loads(text)
 
 
-def load(path):
+def load(path: str) -> Table:
     with open(path, "rb") as fp:
         return tomllib.load(fp)
 
 
-def _is_table_list(value):
+def _is_table_list(value: object) -> TypeGuard[list[Table]]:
     return (
         isinstance(value, list)
         and len(value) > 0
@@ -61,13 +80,13 @@ def _is_table_list(value):
     )
 
 
-def _fits_inline(table):
+def _fits_inline(table: Table) -> bool:
     return len(table) <= INLINE_KEYS and not any(
         isinstance(value, (dict, list)) for value in table.values()
     )
 
 
-def _is_block(value):
+def _is_block(value: object) -> bool:
     """Whether the value is written as a table rather than on its line."""
 
     if isinstance(value, dict):
@@ -75,7 +94,7 @@ def _is_block(value):
     return _is_table_list(value) and not all(map(_fits_inline, value))
 
 
-def _value(value):
+def _value(value: Value) -> Value | items.Array:
     if _is_table_list(value):
         array = tomlkit.array()
         for table in value:
@@ -87,7 +106,7 @@ def _value(value):
     return value
 
 
-def _fill(container, data):
+def _fill(container: tomlkit.TOMLDocument | items.Table, data: Table) -> None:
     for key, value in data.items():
         if not _is_block(value):
             container.add(key, _value(value))
@@ -97,7 +116,7 @@ def _fill(container, data):
             table = tomlkit.table(only_tables)
             _fill(table, value)
             container.add(key, table)
-        elif _is_block(value):
+        elif _is_table_list(value) and _is_block(value):
             blocks = tomlkit.aot()
             for item in value:
                 table = tomlkit.table()
@@ -109,8 +128,8 @@ def _fill(container, data):
 _HEADER = re.compile(r"^\[")
 
 
-def _space_tables(text):
-    lines = []
+def _space_tables(text: str) -> str:
+    lines: list[str] = []
     for line in text.splitlines():
         if _HEADER.match(line) and lines and lines[-1] != "":
             lines.append("")
@@ -122,13 +141,13 @@ def _space_tables(text):
     return "\n".join(lines) + "\n"
 
 
-def dumps(data):
+def dumps(data: Table) -> str:
     document = tomlkit.document()
     _fill(document, data)
     return _space_tables(tomlkit.dumps(document))
 
 
-def dump(data, path):
+def dump(data: Table, path: str) -> None:
     """Write the data to path, replacing the file only once it's complete."""
 
     directory = os.path.dirname(os.path.abspath(path))
