@@ -8,3 +8,11 @@ repos:
     hooks:
       - id: ruff-check
         args: [--fix]
+  - repo: local
+    hooks:
+      - id: l10n
+        name: update translations
+        entry: ./l10n.sh
+        language: system
+        pass_filenames: false
+        files: ^(virtualbricks/.*\.py|locale/virtualbricks/.*\.po)$
