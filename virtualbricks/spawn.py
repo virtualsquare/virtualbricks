@@ -25,10 +25,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 from twisted.logger import Logger
 
 from virtualbricks.errors import BadConfigError, CommandError
-
-if False:  # pyflakes
-    _ = str
-
+from virtualbricks.i18n import _
 
 logger = Logger()
 qemu_commit_failed = "Failed to commit image."

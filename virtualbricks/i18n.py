@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import builtins
 import gettext
 import locale
 import site
@@ -23,14 +24,16 @@ from os.path import abspath, dirname, join
 
 DOMAIN = "virtualbricks"
 SOURCE_LOCALEDIR = join(dirname(dirname(abspath(__file__))), "locale")
+# The functions that gettext.install() puts in the builtins, besides _.
+NAMES = ["gettext", "ngettext"]
 
 
 def _(message: str) -> str:
-    return gettext.dgettext(DOMAIN, message)
+    return builtins.gettext(message)
 
 
 def ngettext(singular: str, plural: str, count: int) -> str:
-    return gettext.dngettext(DOMAIN, singular, plural, count)
+    return builtins.ngettext(singular, plural, count)
 
 
 def find_localedir():
@@ -53,10 +56,19 @@ def find_localedir():
 
 
 def install():
-    """Set up translations: the ``_`` builtin and ``gettext.dgettext``."""
+    """
+    Set up translations: the locale, the domain of the C libraries such as
+    GTK, and the ``_``, ``gettext`` and ``ngettext`` builtins.
+    """
 
     locale.setlocale(locale.LC_ALL, "")
     localedir = find_localedir()
     if localedir is not None:
         gettext.bindtextdomain(DOMAIN, localedir)
-    gettext.install(DOMAIN, localedir, names=["gettext"])
+    gettext.install(DOMAIN, localedir, names=NAMES)
+
+
+# Messages are translated as soon as a module is imported, before the
+# application starts: the builtins must be there from the first import.
+# install() sets them up again, with the locale of the user.
+gettext.install(DOMAIN, find_localedir(), names=NAMES)

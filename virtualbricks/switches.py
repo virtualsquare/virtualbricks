@@ -24,10 +24,8 @@ from twisted.internet import defer
 from virtualbricks import bricks, errors
 from virtualbricks.config import schema
 from virtualbricks.config.schema import Bool, Int, Path
+from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
-
-if False:  # pyflakes
-    _ = str
 
 sock_not_exists = "Socket does not exists: {path}"
 

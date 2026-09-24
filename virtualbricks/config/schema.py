@@ -112,6 +112,9 @@ class Bool(Kind):
             return False
         raise ValueError(f"{text!r} is not true or false")
 
+    def format(self, value):
+        return _describe(value)
+
 
 class _Number(Kind):
 
@@ -310,7 +313,12 @@ def _validator(kind):
 
 
 def field(
-    kind, default=attr.NOTHING, factory=None, label="", help="", path=None
+    kind,
+    default=attr.NOTHING,
+    factory=None,
+    label="",
+    help="",
+    path=None,
 ):
     """
     Declare a schema field.

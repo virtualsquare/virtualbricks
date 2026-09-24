@@ -24,10 +24,6 @@ from twisted.logger import Logger
 from virtualbricks import errors
 from virtualbricks.config import settings
 
-if False:  # pyflakes
-    _ = str
-
-
 link_loop = (
     "Loop link detected: aborting operation. If you want "
     "to start a looped network, disable the check loop "

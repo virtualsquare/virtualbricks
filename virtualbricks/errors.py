@@ -16,8 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-if False:  # pyflakes
-    _ = str
+from virtualbricks.i18n import _
 
 
 class Error(Exception):

@@ -23,13 +23,11 @@ from twisted.logger import Logger
 from virtualbricks import bricks, link
 from virtualbricks.config import schema
 from virtualbricks.config.schema import Int, Str
+from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
 logger = Logger()
 pwdgen_exit = "Command pwdgen exited with {code}"
-
-if False:  # pyflakes
-    _ = str
 
 
 @schema.define

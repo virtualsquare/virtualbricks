@@ -21,10 +21,8 @@ import re
 from virtualbricks import bricks
 from virtualbricks.config import schema
 from virtualbricks.config.schema import Bool, Float, Int, ListOf, Record, Str
+from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
-
-if False:  # pyflakes
-    _ = str
 
 
 class Wire(bricks.Brick):

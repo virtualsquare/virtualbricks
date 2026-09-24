@@ -15,16 +15,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import builtins
 import os
 
 from twisted.internet import defer
 from twisted.python import lockfile
 from twisted.trial import unittest
 
-# The modules use the _ that i18n.install() puts in the builtins.
-if not hasattr(builtins, "_"):
-    builtins._ = str
 
 from virtualbricks.config import settings  # noqa: E402
 

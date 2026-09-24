@@ -30,12 +30,10 @@ from zope.interface import implementer
 from virtualbricks import base, errors, interfaces
 from virtualbricks.config import schema, settings
 from virtualbricks.config.schema import Ref
+from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
 __all__ = ["Brick", "BrickConfig"]
-
-if False:  # pyflakes
-    _ = str
 
 
 system_encoding = locale.getpreferredencoding(do_setlocale=True)

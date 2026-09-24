@@ -47,12 +47,10 @@ from virtualbricks import link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
 from virtualbricks.errors import NameAlreadyInUseError
 from virtualbricks.events import Event, is_event
+from virtualbricks.i18n import _
 from virtualbricks.observable import Event as Signal, Observable
 from virtualbricks.tools import is_running
 from virtualbricks.virtualmachines import is_disk_image
-
-if False:  # pyflakes
-    _ = str
 
 logger = Logger()
 reg_basic_types = "Registering basic types"

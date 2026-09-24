@@ -32,9 +32,6 @@ conn_ok = "Connection ok"
 conn_failed = "Connection failed"
 quit_loop = "Quitting command loop"
 
-if False:  # pyflakes
-    _ = str
-
 
 class _Error(Exception):
     """Please don't use."""

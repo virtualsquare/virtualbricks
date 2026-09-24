@@ -22,10 +22,8 @@ from collections import OrderedDict as odict
 from virtualbricks import bricks, link
 from virtualbricks.config import schema, settings
 from virtualbricks.config.schema import Choice, IPv4, Str
+from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
-
-if False:  # pyflakes
-    _ = str
 
 
 class PrivilegedBrick(bricks.Brick):

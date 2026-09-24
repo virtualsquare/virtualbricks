@@ -20,10 +20,7 @@ from twisted.logger import Logger
 
 from virtualbricks import observable
 from virtualbricks.config import schema
-
-if False:  # pyflakes
-    _ = str
-
+from virtualbricks.i18n import _
 
 logger = Logger()
 attribute_set = "Attribute {attr} set in {brick} with value {value}."

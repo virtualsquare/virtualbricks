@@ -58,12 +58,10 @@ from virtualbricks.gui.windows import (
     VBGUI,
 )
 from virtualbricks.gui.interfaces import IMenu, IJobMenu, IConfigController
+from virtualbricks.i18n import _
 from virtualbricks.interfaces import registerAdapter
 from virtualbricks.link import Plug, Sock
 from virtualbricks.virtualmachines import VirtualMachine
-
-if False:  # pyflakes
-    _ = str
 
 logger = Logger()
 sync_error = "Sync terminated unexpectedly"
