@@ -20,11 +20,15 @@
 
 from twisted.trial import unittest
 
-from virtualbricks import app
+from virtualbricks import app, locations
+from virtualbricks.tests import isolate
 
 
 class TestLock(unittest.TestCase):
 
+    def setUp(self):
+        isolate(self)
+
     def test_global_lock(self):
         application = app._LockedApplication({})
-        self.assertEqual(application.lock.name, app.LOCK_FILE)
+        self.assertEqual(application.lock.name, locations.LOCK_FILE)

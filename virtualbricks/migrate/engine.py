@@ -31,7 +31,8 @@ import stat
 import attr
 from twisted.python import lockfile
 
-from virtualbricks.config import locations, schema, settings, tomlfile
+from virtualbricks.config import schema, settings, tomlfile
+from virtualbricks import locations
 from virtualbricks.migrate import convert, legacy
 from virtualbricks.config.report import ERROR, INFO, WARNING, Report
 
@@ -423,9 +424,7 @@ def lock_in_place():
     At startup the application already holds it.
     """
 
-    from virtualbricks import app
-
-    lock = lockfile.FilesystemLock(app.LOCK_FILE)
+    lock = lockfile.FilesystemLock(locations.LOCK_FILE)
     try:
         if lock.lock():
             return lock

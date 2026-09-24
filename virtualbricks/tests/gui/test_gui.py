@@ -20,8 +20,7 @@
 
 import os
 
-
-from virtualbricks.config import locations
+from virtualbricks import locations
 from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,

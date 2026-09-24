@@ -28,8 +28,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.python import filepath
 
-from virtualbricks import tools
-from virtualbricks.config import locations
+from virtualbricks import tools, locations
 from virtualbricks.project import manager as project_manager
 from virtualbricks.gui.windows.base import _, destroy_on_exit, Window
 

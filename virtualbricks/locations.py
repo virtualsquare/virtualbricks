@@ -77,3 +77,6 @@ def runtime_dir():
 def ensure_private_dir(path):
     os.makedirs(path, mode=0o700, exist_ok=True)
     return path
+
+
+LOCK_FILE = "/tmp/vb.lock"

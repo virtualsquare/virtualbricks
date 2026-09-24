@@ -21,7 +21,8 @@
 import os
 
 
-from virtualbricks.config import locations, settings, tomlfile
+from virtualbricks.config import settings, tomlfile
+from virtualbricks import locations
 from virtualbricks.tests.gui import FakeGui, GuiTestCase, has_display
 
 if has_display:

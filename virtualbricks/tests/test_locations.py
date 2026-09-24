@@ -21,7 +21,7 @@ import tempfile
 
 from twisted.trial import unittest
 
-from virtualbricks.config import locations
+from virtualbricks import locations
 
 
 class TestLocations(unittest.TestCase):

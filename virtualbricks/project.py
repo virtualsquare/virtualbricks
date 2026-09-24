@@ -32,8 +32,8 @@ from twisted.internet import utils, error, defer
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import errors
-from virtualbricks.config import locations, projectfile, settings, tomlfile
+from virtualbricks import errors, locations
+from virtualbricks.config import projectfile, settings, tomlfile
 from virtualbricks import tools
 from virtualbricks.config.report import Report
 

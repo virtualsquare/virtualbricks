@@ -19,13 +19,18 @@ import os
 import tempfile
 
 from twisted.internet import defer
-from twisted.python import lockfile
 from twisted.trial import unittest
 
-from virtualbricks import app
-from virtualbricks.config import locations
+from virtualbricks import locations
 from virtualbricks.migrate import engine
-from virtualbricks.tests import FakeLogger, isolate, reset_settings
+from virtualbricks.tests import (
+    FakeLogger,
+    hold_lock,
+    isolate,
+    lock_is_free,
+    release,
+    reset_settings,
+)
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,
     write,
@@ -99,6 +104,8 @@ class GuiTestCase(unittest.TestCase):
         window = gui.MigrationWindow(**kwargs)
         # never shown: the tests don't open windows on the screen
         window.window.present = lambda: None
+        # after the destroy, which stops a running migration
+        self.addCleanup(lambda: release(window.lock))
         self.addCleanup(window.window.destroy)
         return window
 
@@ -364,26 +371,17 @@ class TestLock(GuiTestCase):
         window.in_place_radio.set_active(True)
         return window
 
-    def lock_is_free(self):
-        lock = lockfile.FilesystemLock(app.LOCK_FILE)
-        if lock.lock():
-            lock.unlock()
-            return True
-        return False
-
     @defer.inlineCallbacks
     def test_migrate_in_place(self):
         window = self.in_place_window()
         running = window.on_migrate_clicked(None)
-        self.assertFalse(self.lock_is_free())
+        self.assertFalse(lock_is_free())
         yield running
-        self.assertTrue(self.lock_is_free())
+        self.assertTrue(lock_is_free())
         self.assertIsNone(window.lock)
 
     def test_while_virtualbricks_runs(self):
-        running = lockfile.FilesystemLock(app.LOCK_FILE)
-        self.assertTrue(running.lock())
-        self.addCleanup(running.unlock)
+        hold_lock(self)
         window = self.in_place_window()
         self.assertIsNone(window.on_migrate_clicked(None))
         self.assertEqual(
@@ -395,9 +393,7 @@ class TestLock(GuiTestCase):
 
     @defer.inlineCallbacks
     def test_check_needs_no_lock(self):
-        running = lockfile.FilesystemLock(app.LOCK_FILE)
-        self.assertTrue(running.lock())
-        self.addCleanup(running.unlock)
+        hold_lock(self)
         yield self.in_place_window().on_check_clicked(None)
 
     @defer.inlineCallbacks
@@ -406,7 +402,7 @@ class TestLock(GuiTestCase):
         running = window.on_migrate_clicked(None)
         window.window.destroy()
         yield running
-        self.assertTrue(self.lock_is_free())
+        self.assertTrue(lock_is_free())
 
 
 class TestReport(GuiTestCase):

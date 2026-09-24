@@ -19,14 +19,18 @@ import io
 import os
 import sys
 
-from twisted.python import lockfile
 from twisted.trial import unittest
 
-from virtualbricks import app
-from virtualbricks.config import locations, tomlfile
+from virtualbricks import locations
+from virtualbricks.config import tomlfile
 from virtualbricks.migrate import cli
 from virtualbricks.migrate import engine
-from virtualbricks.tests import isolate, reset_settings
+from virtualbricks.tests import (
+    hold_lock,
+    isolate,
+    lock_is_free,
+    reset_settings,
+)
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,
     write,
@@ -145,21 +149,27 @@ class TestCommandLine(unittest.TestCase):
         run = engine.Migration.run
 
         def spy(migration):
-            held.append(lockfile.FilesystemLock(app.LOCK_FILE).lock())
+            held.append(not lock_is_free())
             return run(migration)
 
         self.patch(engine.Migration, "run", spy)
         self.assertEqual(self.main("--in-place")[0], 0)
         # locked while running, free again after
-        self.assertEqual(held, [False])
-        self.assertTrue(lockfile.FilesystemLock(app.LOCK_FILE).lock())
+        self.assertEqual(held, [True])
+        self.assertTrue(lock_is_free())
+
+    def test_in_place_releases_the_lock_on_errors(self):
+        def fail(migration):
+            raise RuntimeError("broken")
+
+        self.patch(engine.Migration, "run", fail)
+        self.assertRaises(RuntimeError, self.main, "--in-place")
+        self.assertTrue(lock_is_free())
 
     def test_in_place_while_virtualbricks_runs(self):
         home_workspace = os.path.join(self.root, ".virtualbricks")
         write_project(home_workspace, "mine", CONFIG1)
-        running = lockfile.FilesystemLock(app.LOCK_FILE)
-        self.assertTrue(running.lock())
-        self.addCleanup(running.unlock)
+        hold_lock(self)
         exc = self.assertRaises(SystemExit, self.main, "--in-place")
         self.assertEqual(exc.code, cli.EXIT_RUNNING)
         self.assertEqual(

@@ -29,7 +29,8 @@ import os
 
 from twisted.logger import Logger
 
-from virtualbricks.config import locations, schema, tomlfile
+from virtualbricks.config import schema, tomlfile
+from virtualbricks import locations
 from virtualbricks.errors import NoOptionError
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import Bool, Choice, Path, Str

@@ -19,6 +19,7 @@ import builtins
 import os
 
 from twisted.internet import defer
+from twisted.python import lockfile
 from twisted.trial import unittest
 
 # The modules use the _ that i18n.install() puts in the builtins.
@@ -43,11 +44,55 @@ def isolate(test):
         XDG_RUNTIME_DIR=os.path.join(root, "run"),
     )
     test.patch(os, "environ", env)
-    # never the lock of a running Virtualbricks
-    from virtualbricks import app
+    # Never the lock of a running Virtualbricks. The check runs after every
+    # other cleanup of the test, when the lock must be free again.
+    from virtualbricks import locations
 
-    test.patch(app, "LOCK_FILE", os.path.join(root, "vb.lock"))
+    lock_file = os.path.join(root, "vb.lock")
+    test.addCleanup(_check_released, test, lock_file)
+    test.patch(locations, "LOCK_FILE", lock_file)
     return root
+
+
+def _check_released(test, lock_file):
+    if os.path.lexists(lock_file):
+        os.remove(lock_file)
+        test.fail(f"the test left the lock held: {lock_file}")
+
+
+def release(lock):
+    """Unlock a lock if it is held; for cleanups."""
+
+    if lock is not None and lock.locked:
+        lock.unlock()
+
+
+def hold_lock(test):
+    """
+    Hold the lock of the application, as a running Virtualbricks does.
+
+    It is released when the test ends, even if the test fails.
+    """
+
+    from virtualbricks import locations
+
+    lock = lockfile.FilesystemLock(locations.LOCK_FILE)
+    test.addCleanup(release, lock)
+    if not lock.lock():
+        test.fail(f"the lock is already held: {locations.LOCK_FILE}")
+    return lock
+
+
+def lock_is_free():
+    """Whether the lock of the application can be taken; it is left free."""
+
+    from virtualbricks import locations
+
+    lock = lockfile.FilesystemLock(locations.LOCK_FILE)
+    if lock.lock():
+        lock.unlock()
+        return True
+    return False
 
 
 def reset_settings(test, **values):

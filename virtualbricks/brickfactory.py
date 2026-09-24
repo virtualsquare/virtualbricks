@@ -40,10 +40,9 @@ from twisted.logger import (
     globalLogPublisher,
 )
 
-from virtualbricks import errors, console, project
+from virtualbricks import errors, console, project, locations
 from virtualbricks.config import settings, schema
 from virtualbricks import i18n
-from virtualbricks.config import locations
 from virtualbricks import link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
 from virtualbricks.errors import NameAlreadyInUseError

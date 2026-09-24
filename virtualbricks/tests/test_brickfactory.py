@@ -24,8 +24,8 @@ import stat
 from twisted.internet import defer, task
 from twisted.trial import unittest
 
-from virtualbricks import brickfactory, project
-from virtualbricks.config import locations, settings, tomlfile
+from virtualbricks import brickfactory, project, locations
+from virtualbricks.config import settings, tomlfile
 from virtualbricks.tests import (
     BrickTestCase,
     FakeLogger,

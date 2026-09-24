@@ -21,11 +21,18 @@ import os
 from twisted.python import lockfile
 from twisted.trial import unittest
 
-from virtualbricks import app
-from virtualbricks.config import locations, settings, tomlfile
+from virtualbricks import locations
+from virtualbricks.config import settings, tomlfile
 from virtualbricks.migrate import engine
 from virtualbricks.config.report import Report
-from virtualbricks.tests import FakeLogger, isolate, reset_settings
+from virtualbricks.tests import (
+    FakeLogger,
+    hold_lock,
+    isolate,
+    lock_is_free,
+    release,
+    reset_settings,
+)
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,
     WAN,
@@ -599,15 +606,24 @@ class TestLock(unittest.TestCase):
     def setUp(self):
         isolate(self)
 
-    def test_lock(self):
+    def lock_in_place(self):
         lock = engine.lock_in_place()
-        self.assertEqual(lock.name, app.LOCK_FILE)
+        self.addCleanup(release, lock)
+        return lock
+
+    def test_lock(self):
+        lock = self.lock_in_place()
+        self.assertEqual(lock.name, locations.LOCK_FILE)
         self.assertTrue(lock.locked)
         # the application can't start, and a second migration can't run
-        self.assertFalse(lockfile.FilesystemLock(app.LOCK_FILE).lock())
-        self.assertIsNone(engine.lock_in_place())
+        self.assertFalse(lock_is_free())
+        self.assertIsNone(self.lock_in_place())
         lock.unlock()
-        self.assertIsNotNone(engine.lock_in_place())
+        self.assertTrue(self.lock_in_place().locked)
+
+    def test_lock_while_virtualbricks_runs(self):
+        hold_lock(self)
+        self.assertIsNone(self.lock_in_place())
 
     def test_lock_of_another_user(self):
         def lock(self):

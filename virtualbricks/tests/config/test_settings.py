@@ -19,8 +19,8 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import tools
-from virtualbricks.config import locations, settings, tomlfile
+from virtualbricks import tools, locations
+from virtualbricks.config import settings, tomlfile
 from virtualbricks.errors import NoOptionError
 from virtualbricks.config.report import Report
 from virtualbricks.tests import FakeLogger, isolate, reset_settings

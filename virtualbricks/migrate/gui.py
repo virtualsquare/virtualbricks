@@ -39,8 +39,7 @@ from gi.repository import Gtk
 from twisted.internet import defer, task
 from twisted.logger import Logger
 
-from virtualbricks import i18n
-from virtualbricks.config import locations
+from virtualbricks import i18n, locations
 from virtualbricks.migrate import engine
 from virtualbricks.config.report import ERROR, INFO, WARNING
 

@@ -19,8 +19,8 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import console
-from virtualbricks.config import locations, projectfile, schema, settings
+from virtualbricks import console, locations
+from virtualbricks.config import projectfile, schema, settings
 from virtualbricks.events import EventAction
 from virtualbricks.migrate import convert, legacy
 from virtualbricks.config.report import Report

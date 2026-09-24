@@ -21,8 +21,9 @@ from twisted.python import usage, lockfile, reflect
 from twisted.internet import defer, task
 from twisted.logger import textFileLogObserver
 
+from virtualbricks import locations
+
 # One instance at a time, for all the users of the machine.
-LOCK_FILE = "/tmp/vb.lock"
 _log_file = sys.stdout
 
 
@@ -119,7 +120,7 @@ class _LockedApplication:
 
     def __init__(self, config, lock=None):
         self.config = config
-        self.lock = lock or lockfile.FilesystemLock(LOCK_FILE)
+        self.lock = lock or lockfile.FilesystemLock(locations.LOCK_FILE)
 
     def run(self, reactor):
         assert self.factory is not None, "factory attribute is not set"
