@@ -34,6 +34,8 @@ dev = [
     { include-group = "test" },
     "black>=26.5",
     "pre-commit>=4.0",
+    # pandoc, for docs/man/build.py
+    "pypandoc-binary==1.17",
     "pyflakes>=3.0",
     "ruff>=0.16",
 ]
@@ -62,6 +64,7 @@ include = ["virtualbricks*"]
 [tool.setuptools.data-files]
 "share/applications" = ["share/virtualbricks.desktop"]
 "share/pixmaps" = ["share/virtualbricks.xpm"]
+"share/man/man5" = ["docs/man/virtualbricks-config.5"]
 "share/virtualbricks" = [
     "virtualbricks/gui/data/*.png",
     "virtualbricks/gui/data/help/*",

@@ -1,0 +1,387 @@
+<title>Virtualbricks Configuration Files</title>
+<meta name="description" content="Reference of the files of Virtualbricks: settings.toml, state.toml and project.toml, with every key, its type and its default.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --rule-soft: #e3e9e6;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --warn: #7a4800;
+    --warn-soft: #faeed6;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --code-k: #1f5a4a;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --rule-soft: #1e2724;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --warn: #edb45a;
+      --warn-soft: #2a2112;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+      --code-k: #8fd1b8;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --rule-soft: #1e2724;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --warn: #edb45a;
+    --warn-soft: #2a2112;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+    --code-k: #8fd1b8;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 96px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.06em 0.3em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  a code { color: inherit; }
+  em { font-style: italic; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  h1 { font: 600 clamp(2rem, 5vw, 3rem)/1.05 var(--font-head); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  .lede { font-size: 1.12rem; line-height: 1.55; max-width: 66ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+
+  /* the three files */
+  .files { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 18px; padding: 0; list-style: none; }
+  @media (min-width: 820px) { .files { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .file { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+  .file h2 { font: 600 1.25rem/1.2 var(--font-head); margin: 0; }
+  .file h2 a { color: var(--ink); text-decoration: none; }
+  .file h2 a:hover { color: var(--accent); }
+  .file .path { font: 13px/1.45 var(--font-mono); color: var(--muted); overflow-wrap: anywhere; margin: 0; }
+  .file .path b { color: var(--ink); font-weight: 500; }
+  .file p { margin: 0; font-size: 15px; }
+  .file dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14px; }
+  .file dt { color: var(--muted); }
+  .file dd { margin: 0; }
+  .caution { max-width: none; display: flex; gap: 10px; align-items: baseline; background: var(--warn-soft); border-radius: 6px; padding: 12px 16px; margin: 0 0 36px; font-size: 15px; }
+  .caution b { color: var(--warn); font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; flex: none; }
+  .caution span { max-width: 90ch; }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1040px) {
+    .layout { grid-template-columns: 200px minmax(0, 1fr); gap: 52px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .toc a { display: block; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  @media (max-width: 1039px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 { font: 600 1.8rem/1.15 var(--font-head); margin: 0 0 16px; text-wrap: balance; }
+  h3 { font: 600 1.25rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; scroll-margin-top: 20px; }
+  h3 code, h2 code { font-size: 0.92em; padding: 0.04em 0.3em; }
+  h4 { font: 600 1.02rem/1.3 var(--font-head); margin: 24px 0 8px; scroll-margin-top: 20px; }
+  h4.group { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
+  p, li { max-width: 72ch; }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--muted); }
+
+  dl.terms { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px 20px; margin: 4px 0 18px; }
+  @media (min-width: 640px) { dl.terms { grid-template-columns: minmax(9em, max-content) minmax(0, 1fr); } }
+  dl.terms dt { font-weight: 500; padding-top: 8px; }
+  dl.terms dd { margin: 0; padding-top: 8px; border-top: 1px solid var(--rule-soft); }
+  @media (min-width: 640px) { dl.terms dt { border-top: 1px solid var(--rule-soft); } }
+  dl.terms dd p { margin: 0 0 8px; }
+
+  /* field tables */
+  .scroll { overflow-x: auto; margin: 8px 0 20px; }
+  table.fields { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+  table.fields thead th { font: 600 12.5px/1.3 var(--font-head); letter-spacing: 0.03em; text-align: left; color: var(--muted); padding: 9px 12px; border-bottom: 1.5px solid var(--rule); background: var(--ground); }
+  table.fields td, table.fields tbody th { padding: 9px 12px; border-top: 1px solid var(--rule-soft); vertical-align: top; text-align: left; font-weight: 400; }
+  table.fields tbody tr:target { background: var(--accent-soft); }
+  table.fields tbody th { width: 11em; white-space: nowrap; }
+  code.key { background: none; padding: 0; color: var(--accent); font-weight: 500; font-size: 0.92em; }
+  code.key em { font-weight: 400; }
+  td.kind { width: 9.5em; font: 13px/1.5 var(--font-mono); color: var(--muted); white-space: nowrap; }
+  td.kind .range { color: var(--ink); }
+  td.default { width: 10em; }
+  td.default code { white-space: pre; }
+  td.meaning p { margin: 0 0 6px; max-width: none; }
+  td.meaning p:last-child { margin: 0; }
+  .none { color: var(--muted); }
+
+  /* code */
+  figure.code { margin: 14px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  pre { margin: 0; padding: 12px 14px; overflow-x: auto; font: 13px/1.58 var(--font-mono); color: var(--code-ink); tab-size: 4; }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  pre.snippet { background: var(--code-bg); border-radius: 5px; margin: 6px 0; padding: 8px 10px; font-size: 12.5px; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .k { color: var(--code-k); }
+  a.man { text-decoration: none; }
+  a.man:hover code { text-decoration: underline; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Reference · format 1</div>
+    <h1>Virtualbricks Configuration Files</h1>
+    <p class="lede">What Virtualbricks keeps on disk, key by key: your settings, what it remembers between runs, and the projects. The files are TOML, written by the app and readable by you.</p>
+    <ul class="meta">
+      <li><b>virtualbricks</b> 2.1.0</li>
+      <li>TOML <b>1.0</b></li>
+      <li>also as <b>man 5 virtualbricks-config</b></li>
+    </ul>
+  </header>
+
+  <ul class="files" aria-label="The three files">
+    <li class="file">
+      <h2><a href="#settings">settings.toml</a></h2>
+      <p class="path">~/.config/virtualbricks/<b>settings.toml</b></p>
+      <p>Your preferences, and the values that new projects start with.</p>
+      <dl>
+        <dt>Directory</dt><dd><code>$XDG_CONFIG_HOME</code></dd>
+        <dt>Rewritten</dt><dd>at the first start, when the settings window closes with OK, and when Virtualbricks quits</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#state">state.toml</a></h2>
+      <p class="path">~/.local/state/virtualbricks/<b>state.toml</b></p>
+      <p>What Virtualbricks remembers between runs: the project that was open.</p>
+      <dl>
+        <dt>Directory</dt><dd><code>$XDG_STATE_HOME</code></dd>
+        <dt>Rewritten</dt><dd>whenever a project opens</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#projects">project.toml</a></h2>
+      <p class="path">~/.virtualbricks/<i>project</i>/<b>project.toml</b></p>
+      <p>A project: its bricks, events and disk images, how they connect, and its own settings.</p>
+      <dl>
+        <dt>Directory</dt><dd>the <code>workspace</code> setting</dd>
+        <dt>Rewritten</dt><dd>every three minutes while the project is open, and when Virtualbricks quits</dd>
+      </dl>
+    </li>
+  </ul>
+  <p class="caution"><b>Edit with care</b><span>You can edit the files by hand, but not while Virtualbricks is running: it would overwrite your changes. It writes the whole file each time, so comments and hand formatting are not kept.</span></p>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+<li><a href="#common-rules">Common rules</a></li>
+<li><a href="#settings">settings.toml</a></li>
+<li><a href="#state">state.toml</a></li>
+<li><a href="#projects">project.toml</a></li>
+<li><a href="#brick-types">Brick types</a></li>
+<li><a href="#migration">Migration</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#known-problems">Known problems</a></li>
+<li><a href="#see-also">See also</a></li>
+      </ol>
+    </nav>
+    <main>
+<section id="common-rules"><h2>Common rules</h2><h3 id="common-rules-format-version">Format version</h3><p>Every file starts with a <code>format</code> key, the version of its layout, currently <code>1</code>. A file written by a newer Virtualbricks, with a higher <code>format</code>, is not read: its settings are not used and the file is never overwritten, and a project in that format doesn&#x27;t open. A missing or invalid <code>format</code> is reported, and the file is read as the current version.</p><h3 id="common-rules-every-value-is-written">Every value is written</h3><p>Virtualbricks writes every key, including the ones at their default value, so a file shows the whole configuration. When a default changes in a new version of Virtualbricks, existing files keep their value.</p><h3 id="common-rules-reading-is-lenient">Reading is lenient</h3><p>A file edited by hand doesn&#x27;t have to be complete or tidy. Each problem is reported in the messages window and in the log, with the key it&#x27;s about, and Virtualbricks carries on:</p><ul><li>A missing key takes its default value. In a project, a missing setting takes the value of the application settings.</li><li>A key with a value of the wrong type or out of range takes its default value.</li><li>An unknown key is ignored, and dropped at the next save.</li><li>A brick of an unknown type, or with an invalid name, is dropped.</li><li>A connection to a socket that doesn&#x27;t exist is left unconnected.</li></ul><p>A file that isn&#x27;t valid TOML is not read at all: Virtualbricks uses the default settings and doesn&#x27;t overwrite the file, and a project in that state doesn&#x27;t open.</p><h3 id="common-rules-writing">Writing</h3><p>Virtualbricks writes a new file next to the old one and renames it over the old one once it&#x27;s complete, so a crash never leaves a half-written file. It writes the whole file each time: comments, key order and formatting of a hand edit are not kept.</p><h3 id="common-rules-names">Names</h3><p>Images, events and bricks are tables keyed by their name. A name starts with a letter and contains only letters, digits, underscores, hyphens and dots, and no two of them can share a name, even of different kinds. A name with a dot must be quoted in TOML, as in <code>[bricks.&quot;vm.1&quot;]</code>.</p><h3 id="common-rules-types">Types</h3><p>The values have these types:</p><dl class="terms"><dt><em>boolean</em></dt><dd><p><code>true</code> or <code>false</code>.</p></dd><dt><em>integer</em>, <em>number</em></dt><dd><p>A whole number, or any number. Some have a range, given as <em>min</em>-<em>max</em>.</p></dd><dt><em>string</em>, <em>path</em></dt><dd><p>A string. A path is the path of a file or a directory; an empty string means none.</p></dd><dt><em>event</em>, <em>image</em></dt><dd><p>The name of an event or of a disk image of the project, or an empty string for none.</p></dd><dt><em>address</em></dt><dd><p>An IPv4 address, as <code>&quot;10.0.0.1&quot;</code>.</p></dd><dt><em>choice</em></dt><dd><p>One of the strings listed with the key.</p></dd></dl></section>
+<section id="settings"><h2>settings.toml</h2><p>The file <em>$XDG_CONFIG_HOME</em>/virtualbricks/settings.toml, or <em>~/.config/virtualbricks/settings.toml</em> when <code>XDG_CONFIG_HOME</code> is not set. Virtualbricks creates it with the default values at its first start, and rewrites it when the settings window is closed with OK and when Virtualbricks quits.</p><h3 id="settings-application-settings">Application settings</h3><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="settings-application-settings-workspace"><th scope="row"><code class="key">workspace</code></th><td class="kind">path</td><td class="default"><code>&quot;~/.virtualbricks&quot;</code></td><td class="meaning"><p>The directory of the projects, <em>.virtualbricks</em> in your home directory by default. Write it as an absolute path: <code>~</code> is not expanded.</p></td></tr><tr id="settings-application-settings-term"><th scope="row"><code class="key">term</code></th><td class="kind">string</td><td class="default"><code>&quot;/usr/bin/xterm&quot;</code></td><td class="meaning"><p>The terminal that opens the console of a brick.</p></td></tr><tr id="settings-application-settings-sudo"><th scope="row"><code class="key">sudo</code></th><td class="kind">string</td><td class="default"><code>&quot;/usr/bin/gksu&quot;</code></td><td class="meaning"><p>The program that runs the bricks that need privileges, such as a tap. It&#x27;s given <code>--</code> and the command line of the brick. Virtualbricks doesn&#x27;t use it when it runs as root.</p></td></tr><tr id="settings-application-settings-ksm"><th scope="row"><code class="key">ksm</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Enable Kernel Samepage Merging at start, so that virtual machines share identical memory pages.</p></td></tr><tr id="settings-application-settings-systray"><th scope="row"><code class="key">systray</code></th><td class="kind">boolean</td><td class="default"><code>true</code></td><td class="meaning"><p>Show an icon in the system tray.</p></td></tr><tr id="settings-application-settings-show-missing"><th scope="row"><code class="key">show_missing</code></th><td class="kind">boolean</td><td class="default"><code>true</code></td><td class="meaning"><p>Warn at start about the programs that Virtualbricks needs and can&#x27;t find.</p></td></tr></tbody></table></div><h3 id="settings-settings-of-new-projects">Settings of new projects</h3><p>These settings also exist in each project, in its <code>[settings]</code> table (see <a href="#projects">project.toml</a>). Here they are the values that a new project starts with; while a project is open, its own values are used instead.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="settings-settings-of-new-projects-cowfmt"><th scope="row"><code class="key">cowfmt</code></th><td class="kind">choice</td><td class="default"><code>&quot;qcow2&quot;</code></td><td class="meaning"><p>The format of the private copy-on-write disks of the virtual machines: <code>&quot;cow&quot;</code>, <code>&quot;qcow&quot;</code> or <code>&quot;qcow2&quot;</code>.</p></td></tr><tr id="settings-settings-of-new-projects-erroronloop"><th scope="row"><code class="key">erroronloop</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Log an error when starting a brick finds a loop in the network.</p></td></tr><tr id="settings-settings-of-new-projects-femaleplugs"><th scope="row"><code class="key">femaleplugs</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Allow plugs to connect to the socket cards of virtual machines, not only to switches.</p></td></tr><tr id="settings-settings-of-new-projects-qemupath"><th scope="row"><code class="key">qemupath</code></th><td class="kind">path</td><td class="default"><code>&quot;/usr/bin&quot;</code></td><td class="meaning"><p>The directory of the QEMU programs.</p></td></tr><tr id="settings-settings-of-new-projects-vdepath"><th scope="row"><code class="key">vdepath</code></th><td class="kind">path</td><td class="default"><code>&quot;/usr/bin&quot;</code></td><td class="meaning"><p>The directory of the VDE programs, such as <a class="man" href="https://manpages.debian.org/vde_switch.1"><code>vde_switch</code>(1)</a>.</p></td></tr></tbody></table></div></section>
+<section id="state"><h2>state.toml</h2><p>The file <em>$XDG_STATE_HOME</em>/virtualbricks/state.toml, or <em>~/.local/state/virtualbricks/state.toml</em> when <code>XDG_STATE_HOME</code> is not set. Virtualbricks rewrites it whenever it opens a project.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="state-state-current-project"><th scope="row"><code class="key">current_project</code></th><td class="kind">string</td><td class="default"><code>&quot;new_project&quot;</code></td><td class="meaning"><p>The project that opens at start. A missing <code>new_project</code> is created. Any other project that can&#x27;t be opened is reported, and Virtualbricks creates and opens <code>new_project_0</code>, or the next free number, instead.</p></td></tr></tbody></table></div></section>
+<section id="projects"><h2>project.toml</h2><p>A project is a directory of the workspace that contains a <code>project.toml</code>. The name of the directory is the name of the project, so renaming a project renames its directory. The directory also holds:</p><dl class="terms"><dt><em>README</em></dt><dd><p>The description of the project, in plain text.</p></dd><dt><em>vm</em>_<em>device</em>.cow</dt><dd><p>The private copy-on-write disk of a virtual machine, for example <em>router1_hda.cow</em> (see <code>disks</code> under <code>qemu</code>).</p></dd></dl><p>The file has these top-level keys:</p><dl class="terms"><dt><code>format</code> = <em>integer</em></dt><dd><p>The version of the layout, see <a href="#common-rules">Common rules</a>.</p></dd><dt><code>[settings]</code></dt><dd><p>The project&#x27;s own values of <code>cowfmt</code>, <code>erroronloop</code>, <code>femaleplugs</code>, <code>qemupath</code> and <code>vdepath</code>, described under <a href="#settings">settings.toml</a>. A new project copies them from the application settings. An imported project brings the paths of the machine it comes from; the import dialog offers to replace them with the paths of this machine.</p></dd><dt><code>[images.</code><em>name</em><code>]</code></dt><dd><p>A disk image that virtual machines can use.</p></dd><dt><code>[events.</code><em>name</em><code>]</code></dt><dd><p>An event: commands to run, after a delay.</p></dd><dt><code>[bricks.</code><em>name</em><code>]</code></dt><dd><p>A brick. Its <code>type</code> key says which kind; the other keys depend on it.</p></dd></dl><h3 id="projects-images">Images</h3><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="projects-images-path"><th scope="row"><code class="key">path</code></th><td class="kind">path</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The image file. A relative path is relative to the project directory. An image without a path is dropped; an image whose file is missing is kept, and reported. Two images can&#x27;t use the same file.</p></td></tr><tr id="projects-images-description"><th scope="row"><code class="key">description</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>A description, which can span several lines.</p></td></tr></tbody></table></div><h3 id="projects-events">Events</h3><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="projects-events-delay"><th scope="row"><code class="key">delay</code></th><td class="kind">integer</td><td class="default"><code>0</code></td><td class="meaning"><p>Seconds to wait before running the actions.</p></td></tr><tr id="projects-events-actions"><th scope="row"><code class="key">actions</code></th><td class="kind">array</td><td class="default"><code>[]</code></td><td class="meaning"><p>The commands to run, in order. Each one is an inline table with two keys: <code>kind</code>, which is <code>&quot;vb&quot;</code> for a command of the Virtualbricks console or <code>&quot;shell&quot;</code> for a command run by <a class="man" href="https://manpages.debian.org/sh.1"><code>sh</code>(1)</a>, and <code>command</code>, the command itself. For example:</p><pre class="snippet"><code><span class="k">actions</span> = [
+    {kind = &quot;vb&quot;, command = &quot;sw1 on&quot;},
+    {kind = &quot;shell&quot;, command = &quot;logger lab started&quot;},
+]</code></pre></td></tr></tbody></table></div><h3 id="projects-bricks">Bricks</h3><p>Every brick table has a <code>type</code>, which is one of <code>qemu</code>, <code>switch</code>, <code>switchwrapper</code>, <code>tap</code>, <code>capture</code>, <code>wire</code>, <code>netemu</code>, <code>tunnellisten</code>, <code>tunnelconnect</code> and <code>router</code>, and these two keys:</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="projects-bricks-pon-vbevent"><th scope="row"><code class="key">pon_vbevent</code></th><td class="kind">event</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The event that runs when the brick starts.</p></td></tr><tr id="projects-bricks-poff-vbevent"><th scope="row"><code class="key">poff_vbevent</code></th><td class="kind">event</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The event that runs when the brick stops.</p></td></tr></tbody></table></div><p>The other keys are described below for each type.</p><h3 id="projects-connections">Connections</h3><p>A connection goes from a plug of a brick to a socket of another. It&#x27;s written in the brick that owns the plug, as a string that names the socket:</p><dl class="terms"><dt><em>brick</em></dt><dd><p>The only socket of a switch or a switch wrapper, for example <code>&quot;sw1&quot;</code>.</p></dd><dt><em>vm</em>:<em>card</em></dt><dd><p>A socket card of a virtual machine, for example <code>&quot;router1:lan&quot;</code>.</p></dd></dl><p>An empty string leaves the plug unconnected. Depending on its type, a brick has one plug in <code>connect</code>, two in <code>endpoints</code>, or network cards in <code>nics</code>.</p></section>
+<section id="brick-types"><h2>Brick types</h2><h3 id="brick-types-qemu"><code>qemu</code></h3><p>A QEMU virtual machine. Most keys become an option of the QEMU command line, given in bold.</p><h4 class="group">Program and machine</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-argv0"><th scope="row"><code class="key">argv0</code></th><td class="kind">string</td><td class="default"><code>&quot;qemu-system-i386&quot;</code></td><td class="meaning"><p>The QEMU program, in the <code>qemupath</code> directory, for example <code>&quot;qemu-system-x86_64&quot;</code>. Empty means <code>qemu-system-x86_64</code>.</p></td></tr><tr id="brick-types-qemu-machine"><th scope="row"><code class="key">machine</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The machine type, as in <code>-machine type=</code>.</p></td></tr><tr id="brick-types-qemu-cpu"><th scope="row"><code class="key">cpu</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The CPU model: <code>-cpu</code>.</p></td></tr><tr id="brick-types-qemu-kvm"><th scope="row"><code class="key">kvm</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Use KVM when the host supports it: <code>-machine accel=kvm:tcg</code>.</p></td></tr><tr id="brick-types-qemu-smp"><th scope="row"><code class="key">smp</code></th><td class="kind">integer <span class="range">1–64</span></td><td class="default"><code>1</code></td><td class="meaning"><p>The number of CPUs: <code>-smp</code>.</p></td></tr></tbody></table></div><h4 class="group">Memory</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-ram"><th scope="row"><code class="key">ram</code></th><td class="kind">integer <span class="range">1–99999</span></td><td class="default"><code>64</code></td><td class="meaning"><p>The memory, in MiB: <code>-m</code>.</p></td></tr><tr id="brick-types-qemu-kvmsm"><th scope="row"><code class="key">kvmsm</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Set the size of the KVM shadow memory to <code>kvmsmem</code>.</p></td></tr><tr id="brick-types-qemu-kvmsmem"><th scope="row"><code class="key">kvmsmem</code></th><td class="kind">integer <span class="range">0–99999</span></td><td class="default"><code>1</code></td><td class="meaning"><p>The size of the KVM shadow memory: <code>-machine kvm_shadow_mem=</code>.</p></td></tr></tbody></table></div><h4 class="group">Boot</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-boot"><th scope="row"><code class="key">boot</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The boot order: <code>-boot</code>, for example <code>&quot;c&quot;</code> for the first disk or <code>&quot;d&quot;</code> for the CD-ROM. Empty means the QEMU default.</p></td></tr><tr id="brick-types-qemu-snapshot"><th scope="row"><code class="key">snapshot</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Write to temporary files instead of the disk images: <code>-snapshot</code>.</p></td></tr><tr id="brick-types-qemu-use-virtio"><th scope="row"><code class="key">use_virtio</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Attach the disks as virtio devices.</p></td></tr></tbody></table></div><h4 class="group">CD-ROM</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-cdromen"><th scope="row"><code class="key">cdromen</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Use the image <code>cdrom</code> as the CD-ROM.</p></td></tr><tr id="brick-types-qemu-cdrom"><th scope="row"><code class="key">cdrom</code></th><td class="kind">path</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>An image file for the CD-ROM: <code>-cdrom</code>.</p></td></tr><tr id="brick-types-qemu-deviceen"><th scope="row"><code class="key">deviceen</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Use the host device <code>device</code> as the CD-ROM, unless <code>cdromen</code> is set.</p></td></tr><tr id="brick-types-qemu-device"><th scope="row"><code class="key">device</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>A CD-ROM device of the host, for example <code>&quot;/dev/cdrom&quot;</code>.</p></td></tr></tbody></table></div><h4 class="group">Display</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-novga"><th scope="row"><code class="key">novga</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>No display: <code>-display none</code>.</p></td></tr><tr id="brick-types-qemu-vga"><th scope="row"><code class="key">vga</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>A standard VGA card: <code>-vga std</code>.</p></td></tr><tr id="brick-types-qemu-vnc"><th scope="row"><code class="key">vnc</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Show the display over VNC, on display <code>vncN</code>.</p></td></tr><tr id="brick-types-qemu-vncn"><th scope="row"><code class="key">vncN</code></th><td class="kind">integer <span class="range">0–500</span></td><td class="default"><code>1</code></td><td class="meaning"><p>The VNC display: <code>-vnc :</code><em>N</em>.</p></td></tr><tr id="brick-types-qemu-sdl"><th scope="row"><code class="key">sdl</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Show the display in an SDL window: <code>-sdl</code>.</p></td></tr><tr id="brick-types-qemu-portrait"><th scope="row"><code class="key">portrait</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Rotate the display: <code>-portrait</code>.</p></td></tr></tbody></table></div><h4 class="group">Sound and USB</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-soundhw"><th scope="row"><code class="key">soundhw</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The sound card: <code>-soundhw</code>.</p></td></tr><tr id="brick-types-qemu-usbmode"><th scope="row"><code class="key">usbmode</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Enable USB, <code>-usb</code>, and pass the devices of <code>usbdevlist</code> to the guest.</p></td></tr><tr id="brick-types-qemu-usbdevlist"><th scope="row"><code class="key">usbdevlist</code></th><td class="kind">array</td><td class="default"><code>[]</code></td><td class="meaning"><p>USB devices of the host, each an inline table with an <code>id</code>, the vendor and product id as <code>&quot;046d:c52b&quot;</code>, and a <code>description</code>. Each device becomes <code>-usbdevice host:</code><em>id</em>.</p></td></tr></tbody></table></div><h4 class="group">Keyboard, clock and serial port</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-keyboard"><th scope="row"><code class="key">keyboard</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The keyboard layout, a code of two letters such as <code>&quot;it&quot;</code>: <code>-k</code>.</p></td></tr><tr id="brick-types-qemu-rtc"><th scope="row"><code class="key">rtc</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Set the clock of the guest to the local time: <code>-rtc base=localtime</code>.</p></td></tr><tr id="brick-types-qemu-tdf"><th scope="row"><code class="key">tdf</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Correct the drift of the clock: <code>-rtc driftfix=slew</code>.</p></td></tr><tr id="brick-types-qemu-serial"><th scope="row"><code class="key">serial</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Connect the serial port to a socket in the runtime directory: <code>-serial unix:</code>...<code>_serial</code>.</p></td></tr></tbody></table></div><h4 class="group">Direct kernel boot</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-kernelenbl"><th scope="row"><code class="key">kernelenbl</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Boot the kernel <code>kernel</code> directly.</p></td></tr><tr id="brick-types-qemu-kernel"><th scope="row"><code class="key">kernel</code></th><td class="kind">path</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>A kernel image: <code>-kernel</code>.</p></td></tr><tr id="brick-types-qemu-initrdenbl"><th scope="row"><code class="key">initrdenbl</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Use the initial ramdisk <code>initrd</code>.</p></td></tr><tr id="brick-types-qemu-initrd"><th scope="row"><code class="key">initrd</code></th><td class="kind">path</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>An initial ramdisk: <code>-initrd</code>.</p></td></tr><tr id="brick-types-qemu-kopt"><th scope="row"><code class="key">kopt</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The kernel command line, with <code>kernelenbl</code>: <code>-append</code>.</p></td></tr></tbody></table></div><h4 class="group">Debugging and the rest</h4><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-qemu-gdb"><th scope="row"><code class="key">gdb</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Wait for a GDB connection on port <code>gdbport</code>.</p></td></tr><tr id="brick-types-qemu-gdbport"><th scope="row"><code class="key">gdbport</code></th><td class="kind">integer <span class="range">1–65535</span></td><td class="default"><code>1234</code></td><td class="meaning"><p>The port of the GDB server: <code>-gdb tcp::</code><em>port</em>.</p></td></tr><tr id="brick-types-qemu-noacpi"><th scope="row"><code class="key">noacpi</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p><code>&quot;*&quot;</code> disables ACPI: <code>-no-acpi</code>.</p></td></tr><tr id="brick-types-qemu-loadvm"><th scope="row"><code class="key">loadvm</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>A saved state to resume the machine from: <code>-loadvm</code>. Virtualbricks sets it while it resumes a machine; leave it empty.</p></td></tr><tr id="brick-types-qemu-icon"><th scope="row"><code class="key">icon</code></th><td class="kind">path</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>An image file that shows the machine in the main window.</p></td></tr><tr id="brick-types-qemu-stdout"><th scope="row"><code class="key">stdout</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>Not used.</p></td></tr></tbody></table></div><h4 id="brick-types-disks">Disks</h4><p>The disks are in the subtables <code>disks.hda</code>, <code>disks.hdb</code>, <code>disks.hdc</code>, <code>disks.hdd</code>, <code>disks.fda</code>, <code>disks.fdb</code> and <code>disks.mtdblock</code>, one for each device, all of them always written:</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-disks-disks-device-image"><th scope="row"><code class="key">disks.<code>*device</code>*.image</code></th><td class="kind">image</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The image of the device, by name.</p></td></tr><tr id="brick-types-disks-disks-device-private"><th scope="row"><code class="key">disks.<code>*device</code>*.private</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Write to a private copy-on-write file, <em>vm</em>_<em>device</em>.cow in the project directory, instead of the image, which then stays unchanged. The format of the file is the project&#x27;s <code>cowfmt</code>.</p></td></tr></tbody></table></div><h4 id="brick-types-network-cards">Network cards</h4><p><code>nics</code> is an array of tables, the network cards in the order the guest sees them. Each card has these keys:</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-network-cards-kind"><th scope="row"><code class="key">kind</code></th><td class="kind">choice</td><td class="default"><span class="none">—</span></td><td class="meaning"><p><code>&quot;plug&quot;</code> for a card plugged into a socket, <code>&quot;socket&quot;</code> for a card that other bricks plug into, or <code>&quot;hostonly&quot;</code> for a card on QEMU&#x27;s user networking.</p></td></tr><tr id="brick-types-network-cards-connect"><th scope="row"><code class="key">connect</code></th><td class="kind">string</td><td class="default"><span class="none">—</span></td><td class="meaning"><p>With <code>&quot;plug&quot;</code>, the socket the card is plugged into; see <code>Connections</code>.</p></td></tr><tr id="brick-types-network-cards-name"><th scope="row"><code class="key">name</code></th><td class="kind">string</td><td class="default"><span class="none">—</span></td><td class="meaning"><p>With <code>&quot;socket&quot;</code>, the name of the socket card, made of letters, digits, underscores, hyphens and dots. Other bricks connect to it as <em>vm</em>:<em>name</em>. When it&#x27;s missing, the card is named <code>sock_eth</code><em>N</em> after its position.</p></td></tr><tr id="brick-types-network-cards-model"><th scope="row"><code class="key">model</code></th><td class="kind">string</td><td class="default"><code>&quot;rtl8139&quot;</code></td><td class="meaning"><p>The model of the card, for example <code>&quot;e1000&quot;</code> or <code>&quot;virtio-net-pci&quot;</code>.</p></td></tr><tr id="brick-types-network-cards-mac"><th scope="row"><code class="key">mac</code></th><td class="kind">string</td><td class="default"><span class="none">—</span></td><td class="meaning"><p>The MAC address, as <code>&quot;52:54:00:12:34:56&quot;</code>. A missing or invalid address is replaced with a random one.</p></td></tr></tbody></table></div><h3 id="brick-types-switch"><code>switch</code></h3><p>A VDE switch, <a class="man" href="https://manpages.debian.org/vde_switch.1"><code>vde_switch</code>(1)</a>. Plugs connect to it by its name.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-switch-numports"><th scope="row"><code class="key">numports</code></th><td class="kind">integer <span class="range">1–128</span></td><td class="default"><code>32</code></td><td class="meaning"><p>The number of ports.</p></td></tr><tr id="brick-types-switch-hub"><th scope="row"><code class="key">hub</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Send every packet to every port, like a hub.</p></td></tr><tr id="brick-types-switch-fstp"><th scope="row"><code class="key">fstp</code></th><td class="kind">boolean</td><td class="default"><code>false</code></td><td class="meaning"><p>Enable the fast spanning tree protocol.</p></td></tr></tbody></table></div><h3 id="brick-types-switchwrapper"><code>switchwrapper</code></h3><p>A VDE switch that Virtualbricks doesn&#x27;t start, run by another program. Plugs connect to it by its name.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-switchwrapper-path"><th scope="row"><code class="key">path</code></th><td class="kind">path</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The control directory of the switch.</p></td></tr></tbody></table></div><h3 id="brick-types-tap"><code>tap</code></h3><p>A tap interface of the host, plugged into a switch through <a class="man" href="https://manpages.debian.org/vde_plug2tap.1"><code>vde_plug2tap</code>(1)</a>. It needs privileges, see <code>sudo</code>.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-tap-connect"><th scope="row"><code class="key">connect</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The socket the tap is plugged into.</p></td></tr><tr id="brick-types-tap-mode"><th scope="row"><code class="key">mode</code></th><td class="kind">choice</td><td class="default"><code>&quot;off&quot;</code></td><td class="meaning"><p>How the interface gets its address: <code>&quot;off&quot;</code> for not at all, <code>&quot;dhcp&quot;</code>, or <code>&quot;manual&quot;</code> for <code>ip</code>, <code>nm</code> and <code>gw</code>.</p></td></tr><tr id="brick-types-tap-ip"><th scope="row"><code class="key">ip</code></th><td class="kind">address</td><td class="default"><code>&quot;10.0.0.1&quot;</code></td><td class="meaning"><p>The address of the interface.</p></td></tr><tr id="brick-types-tap-nm"><th scope="row"><code class="key">nm</code></th><td class="kind">address</td><td class="default"><code>&quot;255.255.255.0&quot;</code></td><td class="meaning"><p>The netmask.</p></td></tr><tr id="brick-types-tap-gw"><th scope="row"><code class="key">gw</code></th><td class="kind">address</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The default gateway, or empty for none.</p></td></tr></tbody></table></div><h3 id="brick-types-capture"><code>capture</code></h3><p>Captures the packets of an interface of the host into a switch, through <code>vde_pcapplug</code>. It needs privileges, see <code>sudo</code>.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-capture-connect"><th scope="row"><code class="key">connect</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The socket the capture is plugged into.</p></td></tr><tr id="brick-types-capture-iface"><th scope="row"><code class="key">iface</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The interface of the host, for example <code>&quot;eth0&quot;</code>.</p></td></tr></tbody></table></div><h3 id="brick-types-wire"><code>wire</code></h3><p>Connects two sockets, through <a class="man" href="https://manpages.debian.org/dpipe.1"><code>dpipe</code>(1)</a> and <a class="man" href="https://manpages.debian.org/vde_plug.1"><code>vde_plug</code>(1)</a>.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-wire-endpoints"><th scope="row"><code class="key">endpoints</code></th><td class="kind">array</td><td class="default"><code>[&quot;&quot;, &quot;&quot;]</code></td><td class="meaning"><p>The two sockets, left and right.</p></td></tr></tbody></table></div><h3 id="brick-types-netemu"><code>netemu</code></h3><p>A wire that emulates a network link: bandwidth, delay, buffer and loss, which can change over time between the states of a Markov chain.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-netemu-endpoints"><th scope="row"><code class="key">endpoints</code></th><td class="kind">array</td><td class="default"><code>[&quot;&quot;, &quot;&quot;]</code></td><td class="meaning"><p>The two sockets, left and right. LR values apply from left to right, RL values from right to left.</p></td></tr><tr id="brick-types-netemu-transperiod"><th scope="row"><code class="key">transperiod</code></th><td class="kind">integer <span class="range">≥ 1</span></td><td class="default"><code>100</code></td><td class="meaning"><p>How often the emulator may change state, in milliseconds.</p></td></tr><tr id="brick-types-netemu-transitions"><th scope="row"><code class="key">transitions</code></th><td class="kind">array</td><td class="default"><code>[[0.0]]</code></td><td class="meaning"><p>The transition matrix: the number in row <em>i</em> and column <em>j</em> is the probability of going from state <em>i</em> to state <em>j</em> at each period. It has a row and a column for each state.</p></td></tr></tbody></table></div><p><code>states</code> is an array of tables, at least one, and the first one is the state the emulator starts in. Each state has these keys:</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-netemu-name"><th scope="row"><code class="key">name</code></th><td class="kind">string</td><td class="default"><code>&quot;default name&quot;</code></td><td class="meaning"><p>The name of the state.</p></td></tr><tr id="brick-types-netemu-bandwidth"><th scope="row"><code class="key">bandwidth</code></th><td class="kind">integer</td><td class="default"><code>125000</code></td><td class="meaning"><p>The bandwidth, in bytes per second, or 0 for no limit; from left to right when <code>bandwidthsymm</code> is false.</p></td></tr><tr id="brick-types-netemu-bandwidthr"><th scope="row"><code class="key">bandwidthr</code></th><td class="kind">integer</td><td class="default"><code>125000</code></td><td class="meaning"><p>The bandwidth from right to left.</p></td></tr><tr id="brick-types-netemu-bandwidthsymm"><th scope="row"><code class="key">bandwidthsymm</code></th><td class="kind">boolean</td><td class="default"><code>true</code></td><td class="meaning"><p>Use <code>bandwidth</code> in both directions.</p></td></tr><tr id="brick-types-netemu-delay"><th scope="row"><code class="key">delay</code></th><td class="kind">integer</td><td class="default"><code>0</code></td><td class="meaning"><p>The propagation delay, one way, in milliseconds; from left to right when <code>delaysymm</code> is false.</p></td></tr><tr id="brick-types-netemu-delayr"><th scope="row"><code class="key">delayr</code></th><td class="kind">integer</td><td class="default"><code>0</code></td><td class="meaning"><p>The delay from right to left.</p></td></tr><tr id="brick-types-netemu-delaysymm"><th scope="row"><code class="key">delaysymm</code></th><td class="kind">boolean</td><td class="default"><code>true</code></td><td class="meaning"><p>Use <code>delay</code> in both directions.</p></td></tr><tr id="brick-types-netemu-chanbufsize"><th scope="row"><code class="key">chanbufsize</code></th><td class="kind">integer</td><td class="default"><code>75000</code></td><td class="meaning"><p>The size of the channel buffer, in bytes, or 0 for no limit; from left to right when <code>chanbufsizesymm</code> is false.</p></td></tr><tr id="brick-types-netemu-chanbufsizer"><th scope="row"><code class="key">chanbufsizer</code></th><td class="kind">integer</td><td class="default"><code>75000</code></td><td class="meaning"><p>The size of the channel buffer from right to left.</p></td></tr><tr id="brick-types-netemu-chanbufsizesymm"><th scope="row"><code class="key">chanbufsizesymm</code></th><td class="kind">boolean</td><td class="default"><code>true</code></td><td class="meaning"><p>Use <code>chanbufsize</code> in both directions.</p></td></tr><tr id="brick-types-netemu-loss"><th scope="row"><code class="key">loss</code></th><td class="kind">number <span class="range">0–100</span></td><td class="default"><code>0.0</code></td><td class="meaning"><p>The percentage of packets lost; from left to right when <code>losssymm</code> is false.</p></td></tr><tr id="brick-types-netemu-lossr"><th scope="row"><code class="key">lossr</code></th><td class="kind">number <span class="range">0–100</span></td><td class="default"><code>0.0</code></td><td class="meaning"><p>The percentage of packets lost from right to left.</p></td></tr><tr id="brick-types-netemu-losssymm"><th scope="row"><code class="key">losssymm</code></th><td class="kind">boolean</td><td class="default"><code>true</code></td><td class="meaning"><p>Use <code>loss</code> in both directions.</p></td></tr></tbody></table></div><h3 id="brick-types-tunnellisten"><code>tunnellisten</code></h3><p>The server end of an encrypted tunnel between two machines, through <a class="man" href="https://manpages.debian.org/vde_cryptcab.1"><code>vde_cryptcab</code>(1)</a>.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-tunnellisten-connect"><th scope="row"><code class="key">connect</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The socket the tunnel is plugged into.</p></td></tr><tr id="brick-types-tunnellisten-port"><th scope="row"><code class="key">port</code></th><td class="kind">integer <span class="range">1–65535</span></td><td class="default"><code>7667</code></td><td class="meaning"><p>The UDP port to listen on.</p></td></tr><tr id="brick-types-tunnellisten-password"><th scope="row"><code class="key">password</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The password of the tunnel. It&#x27;s stored in clear text.</p></td></tr></tbody></table></div><h3 id="brick-types-tunnelconnect"><code>tunnelconnect</code></h3><p>The client end of an encrypted tunnel, through <a class="man" href="https://manpages.debian.org/vde_cryptcab.1"><code>vde_cryptcab</code>(1)</a>.</p><div class="scroll"><table class="fields"><thead><tr><th>Key</th><th>Type</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr id="brick-types-tunnelconnect-connect"><th scope="row"><code class="key">connect</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The socket the tunnel is plugged into.</p></td></tr><tr id="brick-types-tunnelconnect-host"><th scope="row"><code class="key">host</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The host that runs the server end.</p></td></tr><tr id="brick-types-tunnelconnect-port"><th scope="row"><code class="key">port</code></th><td class="kind">integer <span class="range">1–65535</span></td><td class="default"><code>7667</code></td><td class="meaning"><p>The UDP port of the server end.</p></td></tr><tr id="brick-types-tunnelconnect-localport"><th scope="row"><code class="key">localport</code></th><td class="kind">integer <span class="range">1–65535</span></td><td class="default"><code>10771</code></td><td class="meaning"><p>The local UDP port.</p></td></tr><tr id="brick-types-tunnelconnect-password"><th scope="row"><code class="key">password</code></th><td class="kind">string</td><td class="default"><code>&quot;&quot;</code></td><td class="meaning"><p>The password of the tunnel. It&#x27;s stored in clear text.</p></td></tr></tbody></table></div><h3 id="brick-types-router"><code>router</code></h3><p>A router. It has only the two event keys.</p></section>
+<section id="migration"><h2>Migration</h2><p>The first time Virtualbricks starts after an upgrade from 2.1 or older, it converts <em>~/.virtualbricks.conf</em> into <code>settings.toml</code> and <code>state.toml</code>, and the <em>.project</em> file of each project into a <code>project.toml</code> next to it, and shows what it converted in a window. The old files are left as they were.</p><p>The same conversion can be tried on copies, into a new folder laid out like the XDG directories:</p><figure class="code"><pre><code>python -m virtualbricks.migrate --settings ~/.virtualbricks.conf \
+    ~/vb-copy /tmp/vb-test</code></pre></figure><p><code>virtualbricks-migrate</code> opens the same conversion in a window, and <code>python -m virtualbricks.migrate --help</code> lists every option. An archive of an old project is converted when it&#x27;s imported.</p></section>
+<section id="files"><h2>Files</h2><dl class="terms"><dt><em>$XDG_CONFIG_HOME</em>/virtualbricks/settings.toml</dt><dd><p>The settings.</p></dd><dt><em>$XDG_STATE_HOME</em>/virtualbricks/state.toml</dt><dd><p>The state.</p></dd><dt><em>$XDG_STATE_HOME</em>/virtualbricks/migration-report.txt</dt><dd><p>The report of the last migration.</p></dd><dt><em>workspace</em>/<em>project</em>/project.toml</dt><dd><p>A project.</p></dd><dt><em>workspace</em>/vimages/</dt><dd><p>The images saved when a project is imported.</p></dd><dt><em>$XDG_RUNTIME_DIR</em>/virtualbricks/<em>project</em>/</dt><dd><p>The sockets and consoles of the running bricks, removed when you log out.</p></dd><dt><em>/tmp/vb.lock</em></dt><dd><p>The lock that lets only one Virtualbricks run on the machine.</p></dd></dl></section>
+<section id="environment"><h2>Environment</h2><dl class="terms"><dt><code>XDG_CONFIG_HOME</code>, <code>XDG_STATE_HOME</code></dt><dd><p>Where the settings and the state are, <em>~/.config</em> and <em>~/.local/state</em> when they are not set. Relative paths are ignored, as the XDG Base Directory specification says.</p></dd><dt><code>XDG_RUNTIME_DIR</code></dt><dd><p>Where the sockets are. When it&#x27;s not set, they are in a directory <em>virtualbricks-</em>uid of the temporary directory, readable only by you.</p></dd></dl></section>
+<section id="examples"><h2>Examples</h2><p>A <code>settings.toml</code> as Virtualbricks writes it at its first start:</p><figure class="code"><pre><code><span class="k">format</span> = 1
+<span class="k">cowfmt</span> = &quot;qcow2&quot;
+<span class="k">erroronloop</span> = false
+<span class="k">femaleplugs</span> = false
+<span class="k">qemupath</span> = &quot;/usr/bin&quot;
+<span class="k">vdepath</span> = &quot;/usr/bin&quot;
+<span class="k">workspace</span> = &quot;/home/alice/.virtualbricks&quot;
+<span class="k">term</span> = &quot;/usr/bin/xterm&quot;
+<span class="k">sudo</span> = &quot;/usr/bin/gksu&quot;
+<span class="k">ksm</span> = false
+<span class="k">systray</span> = true
+<span class="k">show_missing</span> = true</code></pre></figure><p>A <code>project.toml</code> with a virtual machine, two switches connected by a network emulator with two states, a tap and an event. The virtual machine is shortened: Virtualbricks writes all of its keys, and the six empty disks.</p><figure class="code"><pre><code><span class="k">format</span> = 1
+
+<span class="h">[settings]</span>
+<span class="k">cowfmt</span> = &quot;qcow2&quot;
+<span class="k">erroronloop</span> = false
+<span class="k">femaleplugs</span> = false
+<span class="k">qemupath</span> = &quot;/usr/bin&quot;
+<span class="k">vdepath</span> = &quot;/usr/bin&quot;
+
+<span class="h">[images.debian]</span>
+<span class="k">path</span> = &quot;/home/alice/.virtualbricks/vimages/debian-12.qcow2&quot;
+<span class="k">description</span> = &quot;Debian 12\nbase image&quot;
+
+<span class="h">[events.start_lab]</span>
+<span class="k">actions</span> = [
+    {kind = &quot;vb&quot;, command = &quot;sw1 on&quot;},
+    {kind = &quot;shell&quot;, command = &quot;logger lab started&quot;},
+]
+<span class="k">delay</span> = 5
+
+<span class="h">[bricks.sw1]</span>
+<span class="k">type</span> = &quot;switch&quot;
+<span class="k">pon_vbevent</span> = &quot;start_lab&quot;
+<span class="k">poff_vbevent</span> = &quot;&quot;
+<span class="k">numports</span> = 16
+<span class="k">hub</span> = false
+<span class="k">fstp</span> = true
+
+<span class="h">[bricks.sw2]</span>
+<span class="k">type</span> = &quot;switch&quot;
+<span class="k">pon_vbevent</span> = &quot;&quot;
+<span class="k">poff_vbevent</span> = &quot;&quot;
+<span class="k">numports</span> = 32
+<span class="k">hub</span> = false
+<span class="k">fstp</span> = false
+
+<span class="h">[bricks.router1]</span>
+<span class="k">type</span> = &quot;qemu&quot;
+<span class="k">pon_vbevent</span> = &quot;&quot;
+<span class="k">poff_vbevent</span> = &quot;&quot;
+<span class="k">argv0</span> = &quot;qemu-system-x86_64&quot;
+<span class="k">kvm</span> = true
+<span class="k">smp</span> = 2
+<span class="k">ram</span> = 1024
+<span class="c"># ... and the other keys of a qemu brick</span>
+
+<span class="h">[bricks.router1.disks.hda]</span>
+<span class="k">image</span> = &quot;debian&quot;
+<span class="k">private</span> = true
+
+<span class="c"># ... and hdb to mtdblock, with image = &quot;&quot; and private = false</span>
+
+<span class="h">[[bricks.router1.nics]]</span>
+<span class="k">kind</span> = &quot;plug&quot;
+<span class="k">connect</span> = &quot;sw1&quot;
+<span class="k">model</span> = &quot;e1000&quot;
+<span class="k">mac</span> = &quot;52:54:00:12:34:01&quot;
+
+<span class="h">[[bricks.router1.nics]]</span>
+<span class="k">kind</span> = &quot;hostonly&quot;
+<span class="k">model</span> = &quot;virtio-net-pci&quot;
+<span class="k">mac</span> = &quot;52:54:00:12:34:02&quot;
+
+<span class="h">[[bricks.router1.nics]]</span>
+<span class="k">kind</span> = &quot;socket&quot;
+<span class="k">name</span> = &quot;lan&quot;
+<span class="k">model</span> = &quot;e1000&quot;
+<span class="k">mac</span> = &quot;52:54:00:12:34:03&quot;
+
+<span class="h">[bricks.tap0]</span>
+<span class="k">type</span> = &quot;tap&quot;
+<span class="k">pon_vbevent</span> = &quot;&quot;
+<span class="k">poff_vbevent</span> = &quot;&quot;
+<span class="k">ip</span> = &quot;10.0.0.1&quot;
+<span class="k">nm</span> = &quot;255.255.255.0&quot;
+<span class="k">gw</span> = &quot;&quot;
+<span class="k">mode</span> = &quot;manual&quot;
+<span class="k">connect</span> = &quot;sw2&quot;
+
+<span class="h">[bricks.wan]</span>
+<span class="k">type</span> = &quot;netemu&quot;
+<span class="k">pon_vbevent</span> = &quot;&quot;
+<span class="k">poff_vbevent</span> = &quot;&quot;
+<span class="k">transperiod</span> = 100
+<span class="k">transitions</span> = [[0.0, 0.2], [0.5, 0.0]]
+<span class="k">endpoints</span> = [&quot;sw1&quot;, &quot;sw2&quot;]
+
+<span class="h">[[bricks.wan.states]]</span>
+<span class="k">name</span> = &quot;good&quot;
+<span class="k">bandwidth</span> = 125000
+<span class="k">bandwidthr</span> = 125000
+<span class="k">bandwidthsymm</span> = true
+<span class="k">delay</span> = 10
+<span class="k">delayr</span> = 0
+<span class="k">delaysymm</span> = true
+<span class="k">chanbufsize</span> = 75000
+<span class="k">chanbufsizer</span> = 75000
+<span class="k">chanbufsizesymm</span> = true
+<span class="k">loss</span> = 0.0
+<span class="k">lossr</span> = 0.0
+<span class="k">losssymm</span> = true
+
+<span class="h">[[bricks.wan.states]]</span>
+<span class="k">name</span> = &quot;congested&quot;
+<span class="k">bandwidth</span> = 125000
+<span class="k">bandwidthr</span> = 125000
+<span class="k">bandwidthsymm</span> = true
+<span class="k">delay</span> = 200
+<span class="k">delayr</span> = 50
+<span class="k">delaysymm</span> = false
+<span class="k">chanbufsize</span> = 75000
+<span class="k">chanbufsizer</span> = 75000
+<span class="k">chanbufsizesymm</span> = true
+<span class="k">loss</span> = 2.5
+<span class="k">lossr</span> = 0.0
+<span class="k">losssymm</span> = true</code></pre></figure></section>
+<section id="known-problems"><h2>Known problems</h2><p>The <code>mode</code>, <code>ip</code>, <code>nm</code> and <code>gw</code> of a tap are stored but not applied: the interface gets no address from Virtualbricks.</p></section>
+<section id="see-also"><h2>See also</h2><p><a class="man" href="https://manpages.debian.org/qemu.1"><code>qemu</code>(1)</a>, <a class="man" href="https://manpages.debian.org/vde_switch.1"><code>vde_switch</code>(1)</a>, <a class="man" href="https://manpages.debian.org/vde_plug2tap.1"><code>vde_plug2tap</code>(1)</a>, <a class="man" href="https://manpages.debian.org/vde_cryptcab.1"><code>vde_cryptcab</code>(1)</a>, <a class="man" href="https://manpages.debian.org/dpipe.1"><code>dpipe</code>(1)</a></p><p>TOML 1.0: <a href="https://toml.io/en/v1.0.0">https://toml.io/en/v1.0.0</a></p><p>XDG Base Directory Specification: <a href="https://specifications.freedesktop.org/basedir-spec/latest/">https://specifications.freedesktop.org/basedir-spec/latest/</a></p></section>
+      <p class="footnote">Generated from <code>docs/man/virtualbricks-config.5.md</code>, the source of the man page, so the two say the same. Defaults and types are checked against the code by <code>virtualbricks/tests/test_docs.py</code>.</p>
+    </main>
+  </div>
+</div>

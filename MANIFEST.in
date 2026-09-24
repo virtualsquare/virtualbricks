@@ -1,5 +1,6 @@
 include COPYING LICENCE
 include glade-catalog.xml
 include l10n.sh
+include docs/man/build.py docs/man/*.md docs/man/*.[1-9]
 include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
 recursive-include share *

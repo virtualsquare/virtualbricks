@@ -10,6 +10,15 @@ repos:
         args: [--fix]
   - repo: local
     hooks:
+      - id: man
+        name: update the man pages
+        entry: python docs/man/build.py
+        language: python
+        # pandoc 3.9, the same for everyone, so the pages don't change with
+        # the pandoc of each machine
+        additional_dependencies: [pypandoc-binary==1.17]
+        pass_filenames: false
+        files: ^(docs/man/.*\.md|docs/man/build\.py|virtualbricks/__init__\.py)$
       - id: l10n
         name: update translations
         entry: ./l10n.sh
