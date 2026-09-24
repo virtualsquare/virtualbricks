@@ -32,6 +32,7 @@ from twisted.conch.insults import insults
 from twisted.conch import manhole
 
 from virtualbricks import errors, settings, configfile, console, project, log
+from virtualbricks import i18n
 from virtualbricks import link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
 from virtualbricks.errors import NameAlreadyInUseError
@@ -585,11 +586,7 @@ class Application:
         return default
 
     def install_locale(self):
-        import locale
-        locale.setlocale(locale.LC_ALL, '')
-        import gettext
-
-        gettext.install('virtualbricks', names=["gettext"])
+        i18n.install()
 
     def install_settings(self):
         settings.load()
