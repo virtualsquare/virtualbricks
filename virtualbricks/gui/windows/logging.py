@@ -387,6 +387,7 @@ class ConsoleView:
         """Insert an entry at it, which then points after it."""
 
         buffer = self.buffer
+        begin = it.get_offset()
         same_day = previous is not None and day(previous) == day(entry)
         if not same_day:
             buffer.insert_with_tags_by_name(
@@ -431,12 +432,19 @@ class ConsoleView:
         for fold in folds_of(entry):
             self._insert_toggle(it, entry, fold)
         buffer.insert(it, "\n")
-        self._apply("first", start, it)
+        first_end = it.get_offset()
         if more and (entry.number, "lines") in self.expanded:
             tag = "output" if entry.is_output else "extra"
             self._insert_lines(it, more, tag)
         if entry.traceback and (entry.number, "traceback") in self.expanded:
             self._insert_lines(it, entry.traceback, "extra")
+        # Rendered again between two entries whose first lines touch, the
+        # text is inside their "first" tag and takes it: only the first line
+        # has it.
+        buffer.remove_tag(
+            self._tag("first"), buffer.get_iter_at_offset(begin), it
+        )
+        self._apply("first", start, buffer.get_iter_at_offset(first_end))
 
     def _append(self, entry):
         previous = self._rendered[-1].entry if self._rendered else None

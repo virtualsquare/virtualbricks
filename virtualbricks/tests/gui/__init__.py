@@ -17,9 +17,12 @@
 
 """Helpers for the tests of the windows; they build no window on screen."""
 
+import builtins
 import os
+import time
 
 from twisted.internet import defer
+from twisted.logger import LogLevel
 from twisted.trial import unittest
 
 from virtualbricks import project, tools
@@ -88,3 +91,57 @@ class GuiTestCase(unittest.TestCase):
         with open(path, "w"):
             pass
         return self.factory.new_disk_image(name, path)
+
+
+# Thursday 24 September 2026, 17:47:09.250, local time
+TIME = time.mktime((2026, 9, 24, 17, 47, 9, 0, 0, -1)) + 0.25
+
+
+def untranslated(test):
+    """Show the messages in English, whatever the locale of the tests."""
+
+    test.patch(builtins, "gettext", lambda message: message)
+    test.patch(
+        builtins,
+        "ngettext",
+        lambda singular, plural, count: singular if count == 1 else plural,
+    )
+
+
+def event(
+    text,
+    level=LogLevel.info,
+    namespace="virtualbricks.project",
+    time=TIME,
+    **values,
+):
+    """A log event with the given text."""
+
+    return dict(
+        log_format="{text}",
+        text=text,
+        log_level=level,
+        log_namespace=namespace,
+        log_time=time,
+        **values,
+    )
+
+
+def entry(number=1, level="info", stream=None, lines=("a message",), **values):
+    """An entry, with the values of a message of the project by default."""
+
+    from virtualbricks.gui import messages
+
+    fields = dict(
+        time=TIME,
+        source="Project",
+        source_type=None,
+        namespace="virtualbricks.project",
+        pid=None,
+        traceback=[],
+        text="a message",
+    )
+    fields.update(values)
+    return messages.Entry(
+        number=number, level=level, stream=stream, lines=list(lines), **fields
+    )
