@@ -17,42 +17,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-import traceback
-
 from zope.interface import Interface, Attribute
 from twisted.python.components import registerAdapter
-from twisted.logger import Logger
 
-__all__ = ["registerAdapter", "InterfaceLogger", "IBrick", "IPlug", "IBuilder"]
-
-logger = Logger()
-non_interface = (
-    "Requested a non-interface ({interface}) method: " "{method}\n{traceback}"
-)
-
-
-class InterfaceLogger:
-
-    def __init__(self, original, interface):
-        self.original = original
-        self.interface = interface
-
-    def __getattr__(self, name):
-        if name not in self.interface:
-            tb = lambda: "\n".join(
-                "{0}:{1} {2}".format(fn, l, fun)
-                for fn, l, fun, t in reversed(traceback.extract_stack())
-            )
-            logger.warn(
-                non_interface,
-                interface=self.interface.__name__,
-                method=name,
-                traceback=tb,
-            )
-        try:
-            return getattr(self.original, name)
-        except AttributeError:
-            raise AttributeError(name)
+__all__ = ["registerAdapter", "IBrick", "IPlug", "IBuilder"]
 
 
 class IBrick(Interface):
