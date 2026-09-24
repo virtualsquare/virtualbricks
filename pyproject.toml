@@ -27,6 +27,13 @@ classifiers = [
 
 [dependency-groups]
 test = []
+dev = [
+    { include-group = "test" },
+    "black>=26.5",
+    "pre-commit>=4.0",
+    "pyflakes>=3.0",
+    "ruff>=0.16",
+]
 
 [project.urls]
 Homepage = "https://github.com/virtualsquare/virtualbricks"
@@ -54,3 +61,18 @@ include = ["virtualbricks*"]
     "virtualbricks/gui/data/help/*",
     "virtualbricks/gui/data/qemu_specs_*.*",
 ]
+
+[tool.black]
+line-length = 79
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 79
+target-version = "py310"
+extend-exclude = ["_trial_temp"]
+
+[tool.ruff.lint]
+# ruff's defaults (E4, E7, E9, F); formatting and line length are left to black
+select = ["E4", "E7", "E9", "F"]
+# gi.require_version() has to run before the gi.repository imports
+ignore = ["E402"]
