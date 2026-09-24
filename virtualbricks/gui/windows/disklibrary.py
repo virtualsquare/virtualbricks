@@ -248,7 +248,7 @@ class DisksLibraryWindow(_Window):
             visible=True,
             can_focus=False,
             hexpand=True,
-            title=_(""),
+            title="",
         )
         grid1.attach(self.path_chooser, 1, 0, 1, 1)
         label2 = Gtk.Label(

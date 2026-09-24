@@ -158,7 +158,7 @@ class CommitImageDialog(_Dialog):
             visible=True,
             can_focus=False,
             valign=Gtk.Align.START,
-            title=_(""),
+            title="",
         )
         self.action_stack.add_titled(
             self.cow_chooser,

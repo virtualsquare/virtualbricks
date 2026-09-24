@@ -182,7 +182,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         hseparator2 = Gtk.Separator(visible=True, can_focus=False)
         self.panel.attach(hseparator2, 0, 1, 5, 1)
         hboxspace = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        labelspace = Gtk.Label(visible=True, can_focus=False, label=_(""))
+        labelspace = Gtk.Label(visible=True, can_focus=False, label="")
         hboxspace.pack_start(labelspace, False, False, 0)
         self.panel.attach(hboxspace, 0, 2, 1, 1)
         hbox_m = Gtk.Box(visible=True, can_focus=False, spacing=5)
@@ -209,7 +209,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         labelspace0 = Gtk.Label(
             visible=True,
             can_focus=False,
-            label=_(""),
+            label="",
         )
         hboxspace0.pack_start(labelspace0, False, False, 0)
         self.panel.attach(hboxspace0, 0, 4, 1, 1)
@@ -557,7 +557,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         labelspace2 = Gtk.Label(
             visible=True,
             can_focus=False,
-            label=_(""),
+            label="",
         )
         hboxspace2.pack_start(labelspace2, False, False, 0)
         self.panel.attach(hboxspace2, 0, 12, 1, 1)
@@ -573,7 +573,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.state_label = Gtk.Label(
             visible=True,
             can_focus=False,
-            label=_(""),
+            label="",
             xalign=1,
         )
         hboxspace4.pack_start(self.state_label, True, True, 0)
@@ -659,7 +659,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         labelspace7 = Gtk.Label(
             visible=True,
             can_focus=False,
-            label=_(""),
+            label="",
         )
         hboxspace7.pack_start(labelspace7, False, False, 0)
         self.panel.attach(hboxspace7, 0, 16, 1, 1)
@@ -667,7 +667,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         labelspace8 = Gtk.Label(
             visible=True,
             can_focus=False,
-            label=_(""),
+            label="",
         )
         hboxspace8.pack_start(labelspace8, False, False, 0)
         self.panel.attach(hboxspace8, 0, 18, 1, 1)

@@ -246,7 +246,7 @@ class SettingsDialog(_Dialog):
             visible=True,
             can_focus=False,
             hexpand=True,
-            title=_(""),
+            title="",
         )
         grid2.attach(self.vde_path_chooser, 1, 0, 1, 1)
         label7 = Gtk.Label(
@@ -328,7 +328,7 @@ class SettingsDialog(_Dialog):
             visible=True,
             can_focus=False,
             hexpand=True,
-            title=_(""),
+            title="",
         )
         grid3.attach(self.qemu_path_chooser, 1, 0, 1, 1)
         use_kvm_switch = Gtk.Switch(

@@ -162,7 +162,7 @@ class LoadImageDialog(_Dialog):
             visible=True,
             can_focus=False,
             create_folders=False,
-            title=_(""),
+            title="",
         )
         box1.pack_start(self.image_chooser, False, True, 0)
         box2 = Gtk.Box(visible=True, can_focus=False)
