@@ -29,8 +29,9 @@ from gi.repository import Gdk, Gtk, Pango
 import twisted
 from twisted.internet import defer, error, utils
 from twisted.python import filepath
+from twisted.logger import Logger
 
-from virtualbricks import log, settings
+from virtualbricks import settings
 from virtualbricks.project import manager as project_manager
 from virtualbricks.gui.windows.base import _, pango_attr_list, Window
 from virtualbricks.gui.windows.userwait import ProgressBar
@@ -46,17 +47,17 @@ else:
         return filepath._secureEnoughString()
 
 
-logger = log.Logger()
+logger = Logger()
 
-extract_err = log.Event("Error on import project")
-log_rebase = log.Event("Rebasing {cow} to {basefile}")
-rebase_error = log.Event("Error on rebase")
-image_not_exists = log.Event("Cannot save image to {destination}, file does "
-                             "not exists: {source}")
-invalid_step_assitant = log.Event("Assistant cannot handle step {num}")
-project_extracted = log.Event("Project has beed extracted in {path}")
-removing_temporary_project = log.Event("Remove temporary files in {path}")
-error_on_import_project = log.Event("An error occurred while import project")
+extract_err = "Error on import project"
+log_rebase = "Rebasing {cow} to {basefile}"
+rebase_error = "Error on rebase"
+image_not_exists = ("Cannot save image to {destination}, file does "
+                    "not exists: {source}")
+invalid_step_assitant = "Assistant cannot handle step {num}"
+project_extracted = "Project has beed extracted in {path}"
+removing_temporary_project = "Remove temporary files in {path}"
+error_on_import_project = "An error occurred while import project"
 
 
 def pass_through(function, *args, **kwds):
@@ -77,10 +78,11 @@ def iter_model(model, *columns):
 
 def complain_on_error(result):
     out, err, code = result
+    stderr = err.decode(errors="replace")
     if code != 0:
-        logger.warn(err)
+        logger.warn("{stderr}", stderr=stderr)
         raise error.ProcessTerminated(code)
-    logger.info(err)
+    logger.info("{stderr}", stderr=stderr)
     return result
 
 
@@ -198,7 +200,12 @@ class _HumbleImport:
         if open:
             deferred.addCallback(pass_through(project.open, factory))
         deferred.addErrback(pass_through(project.delete))
-        logger.log_failure(deferred, error_on_import_project)
+
+        def log_import_error(failure):
+            logger.failure(error_on_import_project, failure)
+            return failure
+
+        deferred.addErrback(log_import_error)
         return deferred
 
     def get_images(self, project, entry, store1, store2):

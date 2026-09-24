@@ -24,16 +24,17 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
-from virtualbricks import log
+from twisted.logger import Logger
+
 from virtualbricks.spawn import qemu_commit_image
 from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.gui.windows.base import _, _Dialog, pango_attr_list
 from virtualbricks.gui.windows.progressbardialog import ProgressBarDialog
 
 
-logger = log.Logger()
+logger = Logger()
 
-not_implemented = log.Event("Not implemented")
+not_implemented = "Not implemented"
 
 
 def disks_of(brick):

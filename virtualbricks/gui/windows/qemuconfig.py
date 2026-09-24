@@ -27,7 +27,9 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
-from virtualbricks import log, qemu, settings, tools
+from twisted.logger import Logger
+
+from virtualbricks import qemu, settings, tools
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IMenu
 from virtualbricks.spawn import getQemuOutput
@@ -48,14 +50,14 @@ from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.windows.usbdev import UsbDevDialog
 
 
-logger = log.Logger()
+logger = Logger()
 
-qemu_version_parsing_error = log.Event("Error while parsing qemu version")
-retrieve_qemu_version_error = log.Event("Error while retrieving qemu version.")
-usb_access = log.Event("Cannot access /dev/bus/usb. Check user privileges.")
-no_kvm = log.Event("No KVM support found on the system. Check your active "
-                   "configuration. KVM will stay disabled.")
-retr_usb = log.Event('Error while retrieving usb devices.')
+qemu_version_parsing_error = "Error while parsing qemu version"
+retrieve_qemu_version_error = "Error while retrieving qemu version."
+usb_access = "Cannot access /dev/bus/usb. Check user privileges."
+no_kvm = ("No KVM support found on the system. Check your active "
+          "configuration. KVM will stay disabled.")
+retr_usb = 'Error while retrieving usb devices.'
 
 
 def get_selection(treeview):
@@ -1556,6 +1558,10 @@ class QemuConfigController(ConfigController):
             container.remove(panel)
             container.pack_start(self._get_config_view(gui), True, True, 0)
 
+        def log_retrieve_error(failure):
+            logger.failure(retrieve_qemu_version_error, failure)
+            return failure
+
         def close_panel(failure):
             logger.failure(qemu_version_parsing_error, failure)
             gui.curtain_down()
@@ -1564,8 +1570,7 @@ class QemuConfigController(ConfigController):
         label = Gtk.Label("Loading configuration...")
         panel.add(label)
         d = getQemuOutput("qemu-system-x86_64", ["-version"])
-        d.addCallbacks(install_qemu_version, logger.failure_eb,
-                       errbackArgs=(retrieve_qemu_version_error, True))
+        d.addCallbacks(install_qemu_version, log_retrieve_error)
         d.addErrback(close_panel)
         panel.show_all()
         return panel
@@ -1782,7 +1787,7 @@ class QemuConfigController(ConfigController):
 
         deferred = get_usb_devices()
         deferred.addCallback(show_usb_devices_dialog)
-        deferred.addErrback(logger.failure_eb, retr_usb)
+        deferred.addErrback(lambda f: logger.failure(retr_usb, f))
         self.gui.user_wait_action(deferred)
 
     def _remove_link(self, link):

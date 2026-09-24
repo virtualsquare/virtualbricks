@@ -18,16 +18,16 @@
 
 from twisted.internet import reactor, defer
 
-from virtualbricks import base, errors, console, log
+from virtualbricks import base, errors, console
 
 
 if False:  # pyflakes
     _ = str
 
 
-process_ended = log.Event("Process ended with exit code {code}")
-event_error = log.Event("Error in event action. See the log for more "
-                        "information")
+process_ended = "Process ended with exit code {code}"
+event_error = ("Error in event action. See the log for more "
+               "information")
 
 
 class Command(base.String):

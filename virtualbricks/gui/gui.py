@@ -23,9 +23,20 @@ import sys
 
 from gi.repository import GObject, Gtk
 from twisted.internet import error, defer, protocol, reactor
+from twisted.logger import (
+    FilteringLogObserver,
+    ILogObserver,
+    LogLevel,
+    LogLevelFilterPredicate,
+    Logger,
+    PredicateResult,
+    eventAsText,
+    formatEvent,
+    globalLogPublisher,
+)
 from zope.interface import implementer
 
-from virtualbricks import tools, log, brickfactory
+from virtualbricks import tools, brickfactory
 from virtualbricks.spawn import qemu_img
 from virtualbricks.bricks import Brick
 from virtualbricks.events import Event
@@ -55,18 +66,18 @@ from virtualbricks.virtualmachines import VirtualMachine
 if False:  # pyflakes
     _ = str
 
-logger = log.Logger()
-sync_error = log.Event("Sync terminated unexpectedly")
-create_image_error = log.Event("Create image terminated unexpectedly")
-cannot_rename = log.Event("Cannot rename Brick: it is in use.")
-s_r_not_supported = log.Event("Suspend/Resume not supported on this disk.")
-snap_error = log.Event("Error on snapshot")
-resume_vm = log.Event("Resuming virtual machine {name}")
-event_in_use = log.Event("Cannot rename event: it is in use.")
-proc_signal = log.Event("Sending to process signal {signame}!")
-send_acpi = log.Event("send ACPI {acpievent}")
-proc_restart = log.Event("Restarting process!")
-savevm = log.Event("Save snapshot on virtual machine {name}")
+logger = Logger()
+sync_error = "Sync terminated unexpectedly"
+create_image_error = "Create image terminated unexpectedly"
+cannot_rename = "Cannot rename Brick: it is in use."
+s_r_not_supported = "Suspend/Resume not supported on this disk."
+snap_error = "Error on snapshot"
+resume_vm = "Resuming virtual machine {name}"
+event_in_use = "Cannot rename event: it is in use."
+proc_signal = "Sending to process signal {signame}!"
+send_acpi = "send ACPI {acpievent}"
+proc_restart = "Restarting process!"
+savevm = "Save snapshot on virtual machine {name}"
 
 
 @implementer(IMenu)
@@ -172,7 +183,12 @@ class VMPopupMenu(BrickPopupMenu):
         output = qemu_img(['snapshot', '-l', path])
         output.addCallback(grep, "virtualbricks")
         output.addCallback(loadvm)
-        logger.log_failure(output, snap_error)
+
+        def log_snapshot_error(failure):
+            logger.failure(snap_error, failure)
+            return failure
+
+        output.addErrback(log_snapshot_error)
         return output
 
     def on_resume_activate(self, menuitem, gui):
@@ -492,7 +508,7 @@ class VisualFactory(brickfactory.BrickFactory):
         self.socks = List()
 
 
-@implementer(log.ILogObserver)
+@implementer(ILogObserver)
 class TextBufferObserver:
 
     def __init__(self, textbuffer):
@@ -502,15 +518,9 @@ class TextBufferObserver:
         GObject.idle_add(self.emit, event)
 
     def emit(self, event):
-        entry = "{iso8601_time} [{log_namespace}] {msg}\n{traceback}"
-        if "log_failure" in event:
-            event["traceback"] = event["log_failure"].getTraceback()
-        else:
-            event["traceback"] = ""
-        event["iso8601_time"] = log.format_time(event["log_time"])
         self.textbuffer.insert_with_tags_by_name(
             self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark('end')),
-            entry.format(msg=log.formatEvent(event), **event),
+            eventAsText(event) + "\n",
             event["log_level"].name
         )
 
@@ -530,36 +540,37 @@ class MessageDialogObserver:
             Gtk.MessageType.ERROR,
             Gtk.ButtonsType.CLOSE
         )
-        dialog.set_property('text', log.formatEvent(event))
+        dialog.set_property('text', formatEvent(event))
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.show()
 
 
 def should_show_to_user(event):
-    if "hide_to_user" in event or event["log_level"] != log.LogLevel.error:
-        return log.PredicateResult.no
-    return log.PredicateResult.maybe
+    if "hide_to_user" in event:
+        return PredicateResult.no
+    if event["log_level"] not in (LogLevel.error, LogLevel.critical):
+        return PredicateResult.no
+    return PredicateResult.maybe
 
 
 TEXT_TAGS = [('debug', {'foreground': '#a29898'}),
              ('info', {}),
              ('warn', {'foreground': '#ff9500'}),
-             ('error', {'foreground': '#b8032e'})]
+             ('error', {'foreground': '#b8032e'}),
+             ('critical', {'foreground': '#b8032e', 'weight': 700})]
 
 
 def AppLoggerFactory(textbuffer):
 
-    observer = TextBufferObserver(textbuffer)
+    observer = FilteringLogObserver(
+        TextBufferObserver(textbuffer),
+        [LogLevelFilterPredicate(LogLevel.info)],
+    )
 
     class AppLogger(brickfactory.AppLogger):
 
-        def start(self, application):
-            logger.publisher.addObserver(observer)
-            brickfactory.AppLogger.start(self, application)
-
-        def stop(self):
-            logger.publisher.removeObserver(observer)
-            brickfactory.AppLogger.stop(self)
+        def get_observers(self):
+            return super().get_observers() + [observer]
 
     return AppLogger
 
@@ -587,9 +598,8 @@ class Application(brickfactory.Application):
         # a bug in gtk2 make impossibile to use this and is not required anyway
         # gtk.set_interactive(False)
         message_dialog = MessageDialogObserver()
-        observer = log.FilteringLogObserver(message_dialog,
-                                            (should_show_to_user,))
-        logger.publisher.addObserver(observer, False)
+        observer = FilteringLogObserver(message_dialog, [should_show_to_user])
+        globalLogPublisher.addObserver(observer)
         # disable default link_button action
         # gtk.link_button_set_uri_hook(lambda b, s: None)
         self.gui = VBGUI(factory, self.textbuffer)

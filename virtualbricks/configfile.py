@@ -22,9 +22,10 @@ import errno
 import traceback
 import contextlib
 from twisted.python import filepath
+from twisted.logger import Logger
 from zope.interface import implementer
 
-from virtualbricks import interfaces, settings, _configparser, log
+from virtualbricks import interfaces, settings, _configparser
 
 
 if False:  # pyflakes
@@ -36,25 +37,25 @@ __all__ = ["BrickBuilder", "ConfigFile", "EventBuilder", "ImageBuilder",
            "save"]
 
 
-logger = log.Logger()
-link_type_error = log.Event("Cannot find link of type {type}")
-brick_not_found = log.Event("Cannot find brick {brick}, skipping line {line}")
-sock_not_found = log.Event("Cannot find sock {sockname}, skipping line {line}")
-link_added = log.Event("Added {type} to {brick}")
-cannot_save_backup = log.Event("Cannot save to backup file {filename}.\n"
-                               "{traceback}")
-project_saved = log.Event("Saved project to {filename}.")
-cannot_restore_backup = log.Event("Cannot restore backup file {filename}.\n"
-                                  "{traceback}")
-backup_restored = log.Event("A backup file for the current project has been "
-                            "restored.\nYou can find more information "
-                            "looking in View->Messages.")
-image_found = log.Event("Found Disk image {name}")
-skip_image = log.Event("Skipping disk image, name '{name}' already in use")
-skip_image_noa = log.Event("Cannot access image file, skipping")
-config_dump = log.Event("CONFIG DUMP on {path}")
-open_project = log.Event("Open project at {path}")
-config_save_error = log.Event("Error while saving configuration file")
+logger = Logger()
+link_type_error = "Cannot find link of type {type}"
+brick_not_found = "Cannot find brick {brick}, skipping line {line}"
+sock_not_found = "Cannot find sock {sockname}, skipping line {line}"
+link_added = "Added {type} to {brick}"
+cannot_save_backup = ("Cannot save to backup file {filename}.\n"
+                      "{traceback}")
+project_saved = "Saved project to {filename}."
+cannot_restore_backup = ("Cannot restore backup file {filename}.\n"
+                         "{traceback}")
+backup_restored = ("A backup file for the current project has been "
+                   "restored.\nYou can find more information "
+                   "looking in View->Messages.")
+image_found = "Found Disk image {name}"
+skip_image = "Skipping disk image, name '{name}' already in use"
+skip_image_noa = "Cannot access image file, skipping"
+config_dump = "CONFIG DUMP on {path}"
+open_project = "Open project at {path}"
+config_save_error = "Error while saving configuration file"
 
 log_events = [link_type_error,
               brick_not_found,
@@ -376,7 +377,7 @@ def safe_save(factory, filename=None):
     try:
         save(factory, filename)
     except Exception:
-        logger.exception(config_save_error)
+        logger.failure(config_save_error)
 
 
 def restore(factory, filename=None):

@@ -22,16 +22,14 @@ import textwrap
 
 from twisted.internet import interfaces, utils
 from twisted.protocols import basic
+from twisted.logger import Logger
 from zope.interface import implementer
-from virtualbricks import __version__, bricks, errors, log, settings
+from virtualbricks import __version__, bricks, errors, settings
 
-logger = log.Logger()
-socket_error = log.Event("Error on socket")
-qemu_not_vde = log.Event("Qemu but not VDE plug")
-invalid_brick = log.Event("Not a Qemu Plug")
-conn_ok = log.Event("Connection ok")
-conn_failed = log.Event("Connection failed")
-quit_loop = log.Event("Quitting command loop")
+logger = Logger()
+conn_ok = "Connection ok"
+conn_failed = "Connection failed"
+quit_loop = "Quitting command loop"
 
 if False:  # pyflakes
     _ = str

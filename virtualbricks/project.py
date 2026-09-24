@@ -23,38 +23,37 @@ import re
 
 from twisted.internet import utils, error, defer
 from twisted.python import filepath
+from twisted.logger import Logger
 
-from virtualbricks import (settings, configfile, log, errors, _configparser,
-                           tools)
+from virtualbricks import settings, configfile, errors, _configparser, tools
 
 
-logger = log.Logger()
+logger = Logger()
 
-create_archive = log.Event("Create archive in {path}")
-extract_archive = log.Event("Extract archive in {path}")
-open_project = log.Event("Restoring project {name}")
-import_project = log.Event("Importing project from {path} as {name}")
-create_project = log.Event("Create project {name}")
-write_project = log.Event("Writing new .project file")
-rebase_error = log.Event("Error on rebase")
-rebase = log.Event("Rebasing {cow} to {basefile}")
-remap_image = log.Event("Mapping {original} to {new}")
-extract_project = log.Event("Extracting project")
-cannot_find_project = log.Event("Cannot find project \"{name}\". "
-                                "A new project will be created.")
-include_images = log.Event("Including the following images to the project: "
-                           "{images}.")
-save_images = log.Event("Move virtual machine's images")
+create_archive = "Create archive in {path}"
+extract_archive = "Extract archive in {path}"
+open_project = "Restoring project {name}"
+create_project = "Create project {name}"
+rebase_error = "Error on rebase"
+rebase = "Rebasing {cow} to {basefile}"
+remap_image = "Mapping {original} to {new}"
+extract_project = "Extracting project"
+cannot_find_project = ("Cannot find project \"{name}\". "
+                       "A new project will be created.")
+include_images = ("Including the following images to the project: "
+                  "{images}.")
+save_images = "Move virtual machine's images"
 DEFAULT_PROJECT_RE = re.compile(r"^{0}(?:_\d+)?$".format(
     settings.DEFAULT_PROJECT))
 
 
 def _complain_on_error(result):
     out, err, code = result
+    stderr = err.decode(errors="replace")
     if code != 0:
-        logger.warn(err)
+        logger.warn("{stderr}", stderr=stderr)
         raise error.ProcessTerminated(code)
-    logger.info(err)
+    logger.info("{stderr}", stderr=stderr)
     return result
 
 

@@ -27,11 +27,19 @@ import copy
 from twisted.application import app
 from twisted.internet import defer, task, stdio, error
 from twisted.protocols import basic
-from twisted.python import failure, log as legacyLog
+from twisted.python import failure
 from twisted.conch.insults import insults
 from twisted.conch import manhole
+from twisted.logger import (
+    FilteringLogObserver,
+    LogLevel,
+    LogLevelFilterPredicate,
+    Logger,
+    globalLogBeginner,
+    globalLogPublisher,
+)
 
-from virtualbricks import errors, settings, configfile, console, project, log
+from virtualbricks import errors, settings, configfile, console, project
 from virtualbricks import i18n
 from virtualbricks import link, router, switches, tunnels, tuntaps
 from virtualbricks import virtualmachines, wires
@@ -45,20 +53,19 @@ from virtualbricks.virtualmachines import is_disk_image
 if False:  # pyflakes
     _ = str
 
-logger = log.Logger()
-reg_basic_types = log.Event("Registering basic types")
-engine_bye = log.Event("Engine: Bye!")
-reg_new_type = log.Event("Registering new brick type {type}")
-type_present = log.Event("Type {type} already present, overriding it")
-create_image = log.Event("Creating new disk image at '{path}'")
-remove_socks = log.Event("Removing socks: {socks}")
-disconnect_plug = log.Event("Disconnecting plug to {sock}")
-remove_brick = log.Event("Removing brick {brick}")
-endpoint_not_found = log.Event("Endpoint {nick} not found.")
-shut_down = log.Event("Server Shut Down.")
-new_event_ok = log.Event("New event {name} OK")
-uncaught_exception = log.Event("Uncaught exception: {error()}")
-brick_stop = log.Event("Error on brick poweroff")
+logger = Logger()
+reg_basic_types = "Registering basic types"
+engine_bye = "Engine: Bye!"
+reg_new_type = "Registering new brick type {type}"
+type_present = "Type {type} already present, overriding it"
+create_image = "Creating new disk image at '{path}'"
+remove_socks = "Removing socks: {socks}"
+disconnect_plug = "Disconnecting plug to {sock}"
+remove_brick = "Removing brick {brick}"
+endpoint_not_found = "Endpoint {nick} not found."
+shut_down = "Server Shut Down."
+new_event_ok = "New event {name} OK"
+uncaught_exception = "Uncaught exception: {error()}"
 
 
 def install_brick_types(registry=None):
@@ -548,29 +555,47 @@ def AutosaveTimer(factory, interval=180):
     return l
 
 
+def log_level(verbosity):
+    """Return the minimum level logged for the given -v/-q verbosity."""
+
+    if verbosity > 0:
+        return LogLevel.debug
+    if verbosity == 0:
+        return LogLevel.info
+    if verbosity == -1:
+        return LogLevel.warn
+    return LogLevel.error
+
+
 class AppLogger(app.AppLogger):
 
-    observer = None
-
     def __init__(self, options):
-        self.observerFactory = options.get("logger")
+        self._observer_factory = options.get("logger")
+        self._level = log_level(options.get("verbosity", 0))
+        self._observers = []
+
+    def get_observers(self):
+        if self._observer_factory is None:
+            return []
+        observer = FilteringLogObserver(
+            self._observer_factory(),
+            [LogLevelFilterPredicate(self._level)],
+        )
+        return [observer]
 
     def start(self, application):
-        if self.observerFactory is not None:
-            self.observer = self.observerFactory()
-
-        if self.observer is not None:
-            logger.publisher.addObserver(self.observer, False)
-        legacyLog.defaultObserver.stop()
-        legacyLog.defaultObserver = None
-        legacyLog.addObserver(log.LegacyAdapter())
+        self._observers = self.get_observers()
+        # The standard streams are used by the interactive console.
+        globalLogBeginner.beginLoggingTo(
+            self._observers, redirectStandardIO=False
+        )
         self._initialLog()
 
     def stop(self):
         logger.info(shut_down)
-        if self.observer is not None:
-            logger.publisher.removeObserver(self.observer)
-            self.observer = None
+        for observer in self._observers:
+            globalLogPublisher.removeObserver(observer)
+        self._observers = []
 
 
 class Application:
@@ -590,24 +615,6 @@ class Application:
 
     def install_settings(self):
         settings.load()
-
-    def install_stdlog_handler(self):
-        import logging
-
-        def get_log_level(verbosity):
-            if verbosity >= 2:
-                return logging.DEBUG
-            elif verbosity == 1:
-                return logging.INFO
-            elif verbosity == -1:
-                return logging.ERROR
-            elif verbosity <= -2:
-                return logging.CRITICAL
-
-        root = logging.getLogger()
-        root.addHandler(log.StdLoggingAdapter())
-        if self.config["verbosity"]:
-            root.setLevel(get_log_level(self.config["verbosity"]))
 
     def install_sys_hooks(self):
         import threading
@@ -653,7 +660,6 @@ class Application:
     def run(self, reactor):
         self.install_locale()
         self.install_settings()
-        self.install_stdlog_handler()
         self.logger.start(self)
         self.install_home()
         quit = defer.Deferred()

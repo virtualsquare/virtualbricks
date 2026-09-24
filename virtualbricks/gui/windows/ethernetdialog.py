@@ -24,15 +24,17 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks import log, settings, tools, virtualmachines
+from twisted.logger import Logger
+
+from virtualbricks import settings, tools, virtualmachines
 from virtualbricks.gui.windows.base import _, Window
 
 
-logger = log.Logger()
+logger = Logger()
 
-invalid_mac = log.Event("MAC address {mac} is not valid, generating "
-                        "a random one")
-not_implemented = log.Event("Not implemented")
+invalid_mac = ("MAC address {mac} is not valid, generating "
+               "a random one")
+not_implemented = "Not implemented"
 
 
 class BaseEthernetDialog(Window):

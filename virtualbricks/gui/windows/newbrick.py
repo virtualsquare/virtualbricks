@@ -24,7 +24,9 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks import errors, log
+from twisted.logger import Logger
+
+from virtualbricks import errors
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.gui.windows.base import (
     _,
@@ -34,10 +36,10 @@ from virtualbricks.gui.windows.base import (
 )
 
 
-logger = log.Logger()
+logger = Logger()
 
-brick_invalid_name = log.Event("Cannot create brick: Invalid name.")
-created = log.Event("Created successfully")
+brick_invalid_name = "Cannot create brick: Invalid name."
+created = "Created successfully"
 
 
 class NewBrickDialog(_Dialog):

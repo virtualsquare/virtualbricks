@@ -24,16 +24,18 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks import log, settings, tools
+from twisted.logger import Logger
+
+from virtualbricks import settings, tools
 from virtualbricks._settings import DEFAULT_CONF
 from virtualbricks.errors import NoOptionError
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
 
 
 _MARKER = object()
-logger = log.Logger()
+logger = Logger()
 
-apply_settings = log.Event("Apply settings...")
+apply_settings = "Apply settings..."
 
 
 def settings_get_default(name, default=_MARKER):

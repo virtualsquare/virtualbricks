@@ -19,6 +19,7 @@ import sys
 
 from twisted.python import usage, lockfile, reflect
 from twisted.internet import defer, task
+from twisted.logger import textFileLogObserver
 
 from virtualbricks import settings
 
@@ -27,9 +28,7 @@ _log_file = sys.stdout
 
 
 def file_logger():
-    from virtualbricks import log
-
-    return log.FileLogObserver(_log_file)
+    return textFileLogObserver(_log_file)
 
 
 def _file_logger(filename):

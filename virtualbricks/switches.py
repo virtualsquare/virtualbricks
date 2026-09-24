@@ -21,14 +21,14 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import settings, bricks, log, errors
+from virtualbricks import settings, bricks, errors
 from virtualbricks.spawn import abspath_vde
 
 
 if False:  # pyflakes
     _ = str
 
-sock_not_exists = log.Event("Socket does not exists: {path}")
+sock_not_exists = "Socket does not exists: {path}"
 
 
 class SwitchConfig(bricks.Config):

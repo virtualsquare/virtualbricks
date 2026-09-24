@@ -18,12 +18,14 @@
 
 import os
 
-from virtualbricks import bricks, link, log
+from twisted.logger import Logger
+
+from virtualbricks import bricks, link
 from virtualbricks.spawn import abspath_vde
 
 
-logger = log.Logger()
-pwdgen_exit = log.Event("Command pwdgen exited with {code}")
+logger = Logger()
+pwdgen_exit = "Command pwdgen exited with {code}"
 
 if False:  # pyflakes
     _ = str

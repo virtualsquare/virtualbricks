@@ -24,9 +24,10 @@ import locale
 import re
 
 from twisted.internet import protocol, reactor, error, defer
+from twisted.logger import Logger
 from zope.interface import implementer
 
-from virtualbricks import base, errors, settings, log, interfaces
+from virtualbricks import base, errors, settings, interfaces
 from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
                                 SpinInt, Float, SpinFloat, Boolean, Object,
                                 ListOf)
@@ -42,19 +43,24 @@ if False:  # pyflakes
 
 system_encoding = locale.getpreferredencoding(do_setlocale=True)
 
-logger = log.Logger(__name__)
-process_started = log.Event("Process started")
-process_terminated = log.Event("Process terminated. {status}")
-process_done = log.Event("Process terminated")
-event_unavailable = log.Event("Warning. The Event {name} attached to Brick "
-                              "{brick} is not available. Skipping execution.")
-shutdown_brick = log.Event("Shutting down {name} (pid: {pid})")
-start_brick = log.Event("Starting: {args}")
-open_console = log.Event("Opening console for {name}\n%{args}\n")
-console_done = log.Event("Console terminated\n{status}")
-console_terminated = log.Event("Console terminated\n{status}\nProcess stdout:"
-                               "\n{out}\nProcess stderr:\n{err}\n")
-invalid_ack = log.Event("ACK received but no command sent.")
+logger = Logger(__name__)
+process_started = "Process started"
+process_terminated = "Process terminated. {status}"
+event_unavailable = ("Warning. The Event {name} attached to Brick "
+                     "{brick} is not available. Skipping execution.")
+shutdown_brick = "Shutting down {name} (pid: {pid})"
+start_brick = "Starting: {args}"
+open_console = "Opening console for {name}\n%{args}\n"
+console_done = "Console terminated\n{status}"
+console_terminated = ("Console terminated\n{status}\nProcess stdout:"
+                      "\n{out}\nProcess stderr:\n{err}\n")
+invalid_ack = "ACK received but no command sent."
+
+
+def _decode(data):
+    if isinstance(data, bytes):
+        return data.decode(system_encoding, errors="replace")
+    return data
 
 
 class ProcessLogger:
@@ -73,7 +79,7 @@ class ProcessLogger:
 @implementer(interfaces.IProcess)
 class Process(protocol.ProcessProtocol):
 
-    logger = ProcessLogger(log.Logger())
+    logger = ProcessLogger(Logger())
     debug = True
     debug_child = True
 
@@ -94,10 +100,10 @@ class Process(protocol.ProcessProtocol):
         self.brick.process_ended(self, status)
 
     def outReceived(self, data):
-        self.logger.info(data)
+        self.logger.info("{output}", output=_decode(data))
 
     def errReceived(self, data):
-        self.logger.error(data, hide_to_user=True)
+        self.logger.error("{output}", output=_decode(data), hide_to_user=True)
 
     # new interface
 
@@ -159,7 +165,7 @@ class VDEProcessProtocol(Process):
             self._ack_received(ack)
 
     def _ack_received(self, ack):
-        self.logger.info(ack)
+        self.logger.info("{ack}", ack=_decode(ack))
         try:
             self.queue.popleft()
         except IndexError:
@@ -171,7 +177,7 @@ class VDEProcessProtocol(Process):
 
     def _send_command(self):
         cmd = self.queue[0]
-        self.logger.info(cmd)
+        self.logger.info("{command}", command=_decode(cmd))
         if cmd.endswith(self.delimiter):
             return self.transport.write(cmd)
         else:
@@ -188,7 +194,7 @@ class VDEProcessProtocol(Process):
 
 class TermProtocol(protocol.ProcessProtocol):
 
-    logger = log.Logger()
+    logger = Logger()
 
     def __init__(self):
         self.out = []

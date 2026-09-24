@@ -28,8 +28,9 @@ import warnings
 
 from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
+from twisted.logger import Logger
 
-from virtualbricks import errors, tools, settings, bricks, log, project
+from virtualbricks import errors, tools, settings, bricks, project
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
@@ -38,26 +39,20 @@ from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
 if False:
     _ = str
 
-logger = log.Logger()
-new_cow = log.Event(
-    'Creating a new private COW from a base image. backing_file={backing_file}'
-)
-use_backing_file = log.Event(
-    'Using  backing file for private cow. backing_file={backing_file}'
-    ' image_file={imagefile}'
-)
-invalid_base = log.Event(
-    'Private cow found with a different backing image. Backup the private cow'
+logger = Logger()
+new_cow = 'Creating a new private COW from a base image. backing_file={backing_file}'
+use_backing_file = ('Using  backing file for private cow. backing_file={backing_file}'
+    ' image_file={imagefile}')
+invalid_base = ('Private cow found with a different backing image. Backup the private cow'
     ' and use a new one. private_cow={private_cow}'
     ' expected_backing_file={expected_backing_file}'
-    ' found_backing_file={found_backing_file} backup_file={backup_file}'
-)
-powerdown = log.Event("Sending powerdown to {vm}")
-update_usb = log.Event("update_usbdevlist: old {old} - new {new}")
-own_err = log.Event("plug {plug} does not belong to {brick}")
-acquire_lock = log.Event("Aquiring disk locks")
-release_lock = log.Event("Releasing disk locks")
-search_usb = log.Event('Searching USB devices')
+    ' found_backing_file={found_backing_file} backup_file={backup_file}')
+powerdown = "Sending powerdown to {vm}"
+update_usb = "update_usbdevlist: old {old} - new {new}"
+own_err = "plug {plug} does not belong to {brick}"
+acquire_lock = "Aquiring disk locks"
+release_lock = "Releasing disk locks"
+search_usb = 'Searching USB devices'
 
 
 @dataclass

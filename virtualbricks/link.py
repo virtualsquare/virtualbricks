@@ -19,17 +19,18 @@
 import os
 
 from twisted.internet import defer
+from twisted.logger import Logger
 
-from virtualbricks import errors, settings, log
+from virtualbricks import errors, settings
 
 
 if False:  # pyflakes
     _ = str
 
 
-link_loop = log.Event("Loop link detected: aborting operation. If you want "
-                      "to start a looped network, disable the check loop "
-                      "feature in the general settings")
+link_loop = ("Loop link detected: aborting operation. If you want "
+             "to start a looped network, disable the check loop "
+             "feature in the general settings")
 
 
 class Plug:
@@ -37,7 +38,7 @@ class Plug:
     sock = None
     _antiloop = False
     mode = "vde"
-    logger = log.Logger()
+    logger = Logger()
     model = ""
     mac = ""
 

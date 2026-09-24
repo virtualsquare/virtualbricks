@@ -22,8 +22,8 @@ from pathlib import Path
 
 from twisted.internet import defer
 from twisted.internet.utils import getProcessOutputAndValue
+from twisted.logger import Logger
 
-from virtualbricks import log
 from virtualbricks.errors import BadConfigError, CommandError
 
 
@@ -31,12 +31,9 @@ if False:  # pyflakes
     _ = str
 
 
-logger = log.Logger()
-# qemu_img_failed = log.Event('qemu-image failed\n{stderr}')
-qemu_commit_failed = log.Event('Failed to commit image.')
-qemu_info_failed = log.Event(
-    'Error while getting information about image file.'
-)
+logger = Logger()
+qemu_commit_failed = 'Failed to commit image.'
+qemu_info_failed = 'Error while getting information about image file.'
 
 
 def _abspath_exe(executable, path):
@@ -111,6 +108,11 @@ def abspath_qemu(executable):
     return str(_abspath_exe(Path(executable), Path(settings.get('qemupath'))))
 
 
+def _log_failure(failure, message):
+    logger.failure(message, failure)
+    return failure
+
+
 def qemu_commit_image(path):
     """
     :type path: Union[str, pathlib.Path]
@@ -118,7 +120,7 @@ def qemu_commit_image(path):
     """
 
     deferred = qemu_img(['commit', str(path)])
-    deferred.addErrback(logger.failure_eb, qemu_commit_failed, reraise=True)
+    deferred.addErrback(_log_failure, qemu_commit_failed)
     return deferred
 
 
@@ -133,7 +135,7 @@ def qemu_img_info(path):
     args = ['info', '--format=json', '--backing-chain', str(path)]
     deferred = qemu_img(args)
     deferred.addCallback(json.loads)
-    deferred.addErrback(logger.failure_eb, qemu_info_failed, reraise=True)
+    deferred.addErrback(_log_failure, qemu_info_failed)
     return deferred
 
 

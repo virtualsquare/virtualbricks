@@ -18,7 +18,7 @@
 
 import re
 
-from virtualbricks import bricks, log
+from virtualbricks import bricks
 from virtualbricks.spawn import abspath_vde
 
 if False:  # pyflakes
@@ -275,7 +275,7 @@ class Netemu(Wire):
 
     # utility function with logging like in base.py
     def _update(self, name, value, *args):
-        attribute_set = log.Event("Attribute {attr} set in {brick} with value ""{value}.")
+        attribute_set = "Attribute {attr} set in {brick} with value ""{value}."
 
         self.logger.info(attribute_set, attr=name, brick=self, value=value)
         setter = getattr(self, "cbset_" + name, None)
@@ -425,7 +425,7 @@ class Netemu(Wire):
                 
                 done = True
 
-        errorMsg = log.Event("Error parsing argument {arg}, {exception}.")            
+        errorMsg = "Error parsing argument {arg}, {exception}."            
         cfg = {}
         line = section.fileobj.readline()
         curpos = section.fileobj.tell()

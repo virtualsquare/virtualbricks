@@ -29,14 +29,14 @@ import struct
 
 from twisted.internet import defer
 from twisted.internet import utils
+from twisted.logger import Logger
 import constantly as constants
 
-from virtualbricks import log
 from virtualbricks import settings
 from virtualbricks.errors import NoOptionError
 
-logger = log.Logger()
-ksm_error = log.Event("Can not change ksm state. (failed command: {cmd})")
+logger = Logger()
+ksm_error = "Can not change ksm state. (failed command: {cmd})"
 
 
 def random_mac():

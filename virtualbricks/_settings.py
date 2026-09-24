@@ -17,7 +17,9 @@
 
 import configparser
 import os
-from virtualbricks import log
+
+from twisted.logger import Logger
+
 from virtualbricks.errors import NoOptionError
 
 
@@ -25,11 +27,11 @@ if False:  # pyflakes
     _ = str
 
 
-logger = log.Logger()
-config_loaded = log.Event("Configuration loaded ({filename})")
-config_installed = log.Event("Default configuration saved ({filename})")
-cannot_read_config = log.Event("Cannot read config file {filename}")
-cannot_save_config = log.Event("Cannot save default configuration")
+logger = Logger()
+config_loaded = "Configuration loaded ({filename})"
+config_installed = "Default configuration saved ({filename})"
+cannot_read_config = "Cannot read config file {filename}"
+cannot_save_config = "Cannot save default configuration"
 
 LOCK_FILE = "/tmp/vb.lock"
 HOME = os.path.expanduser("~")
@@ -132,7 +134,7 @@ class Settings(metaclass=SettingsMeta):
                     # exactly well it will fire.
                     set_ksm(enable=True)
         except configparser.Error:
-            logger.exception(cannot_read_config, filename=self.filename)
+            logger.failure(cannot_read_config, filename=self.filename)
 
     def install(self):
         from virtualbricks.tools import check_ksm
@@ -142,7 +144,7 @@ class Settings(metaclass=SettingsMeta):
             self.store()
             logger.info(config_installed, filename=self.filename)
         except IOError:
-            logger.exception(cannot_save_config)
+            logger.failure(cannot_save_config)
 
 
 def install(settings):

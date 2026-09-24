@@ -19,19 +19,20 @@
 import re
 
 from twisted.python import reflect
+from twisted.logger import Logger
 
-from virtualbricks import log, observable
+from virtualbricks import observable
 
 
 if False:  # pyflakes
     _ = str
 
 
-logger = log.Logger()
-attribute_set = log.Event("Attribute {attr} set in {brick} with value "
-                          "{value}.")
-param_not_found = log.Event("Parameter {param} in {brick} not found. "
-                            "(val: {value})")
+logger = Logger()
+attribute_set = ("Attribute {attr} set in {brick} with value "
+                 "{value}.")
+param_not_found = ("Parameter {param} in {brick} not found. "
+                   "(val: {value})")
 
 
 class Config(dict):
@@ -185,7 +186,7 @@ class Base:
     # type = None  # if not set in a subclass will raise an AttributeError
     _name = None
     config_factory = Config
-    logger = log.Logger()
+    logger = Logger()
 
     def get_name(self):
         return self._name

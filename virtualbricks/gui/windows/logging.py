@@ -27,19 +27,20 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from twisted.internet import utils
+from twisted.logger import Logger
 
-from virtualbricks import __version__, log
+from virtualbricks import __version__
 from virtualbricks.gui.windows.base import _, _Window
 
 
-logger = log.Logger()
+logger = Logger()
 
-bug_send = log.Event("Sending report bug")
-bug_sent = log.Event("Report bug sent succefully")
-bug_error = log.Event("{err}\nstderr:\n{stderr}")
-bug_report_fail = log.Event("Report bug failed with code "
-                            "{code}\nstderr:\n{stderr}")
-bug_err_unknown = log.Event("Error on bug reporting")
+bug_send = "Sending report bug"
+bug_sent = "Report bug sent succefully"
+bug_error = "{err}\nstderr:\n{stderr}"
+bug_report_fail = ("Report bug failed with code "
+                   "{code}\nstderr:\n{stderr}")
+bug_err_unknown = "Error on bug reporting"
 
 BUG_REPORT_ERRORS = {
     1: "Error in command line syntax.",
@@ -317,6 +318,6 @@ class LoggingWindow(_Window):
         env = dict(os.environ, MM_NOTTTY='1')
         proc_d = utils.getProcessOutputAndValue('xdg-email', params, env)
         proc_d.addCallback(xdg_email_exit_cb)
-        proc_d.addErrback(logger.failure_eb, bug_err_unknown)
+        proc_d.addErrback(lambda f: logger.failure(bug_err_unknown, f))
         # Stop the propagation of activate-link signal
         return True

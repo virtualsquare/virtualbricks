@@ -24,15 +24,16 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
-from virtualbricks import log
+from twisted.logger import Logger
+
 from virtualbricks.spawn import qemu_img
 from virtualbricks.gui.windows.base import _, _Dialog, pango_attr_list
 
 
-logger = log.Logger()
+logger = Logger()
 
-img_create_err = log.Event("Error on creating image")
-img_create = log.Event("Creating image...")
+img_create_err = "Error on creating image"
+img_create = "Creating image..."
 
 
 class QemuCreateArgs:
@@ -313,7 +314,12 @@ class CreateImageDialog(_Dialog):
             'create', '-f', args.fileformat, args.pathname, args.size
         ])
         done_deferred.addCallback(lambda stdout: (args.name, args.pathname))
-        logger.log_failure(done_deferred, img_create_err)
+
+        def log_create_error(failure):
+            logger.failure(img_create_err, failure)
+            return failure
+
+        done_deferred.addErrback(log_create_error)
         return done_deferred
 
     # Events

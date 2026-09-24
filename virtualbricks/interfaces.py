@@ -21,15 +21,15 @@ import traceback
 
 from zope.interface import Interface, Attribute
 from twisted.python.components import registerAdapter
+from twisted.logger import Logger
 
-from virtualbricks import log
 
 
 __all__ = ["registerAdapter", "InterfaceLogger", "IBrick", "IPlug", "IBuilder"]
 
-logger = log.Logger()
-non_interface = log.Event("Requested a non-interface ({interface}) method: "
-                          "{method}\n{traceback}")
+logger = Logger()
+non_interface = ("Requested a non-interface ({interface}) method: "
+                 "{method}\n{traceback}")
 
 
 class InterfaceLogger:

@@ -27,8 +27,9 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer, reactor, task
 from twisted.python import filepath
+from twisted.logger import Logger
 
-from virtualbricks import log, project, settings, tools
+from virtualbricks import project, settings, tools
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IConfigController, IJobMenu, IMenu
 from virtualbricks.tools import dispose, is_running
@@ -60,26 +61,24 @@ from virtualbricks.gui.windows.simpleentry import (
 from virtualbricks.gui.windows.userwait import Freezer
 
 
-logger = log.Logger()
+logger = Logger()
 
-drawing_topology = log.Event("drawing topology")
-top_invalid_format = log.Event("Error saving topology: Invalid image format")
-top_write_error = log.Event("Error saving topology: Could not write file")
-top_unknown = log.Event("Error saving topology: Unknown error")
-start_virtualbricks = log.Event("Starting VirtualBricks")
-components_not_found = log.Event(
-    "{text}\nThere are some components not "
+drawing_topology = "drawing topology"
+top_invalid_format = "Error saving topology: Invalid image format"
+top_write_error = "Error saving topology: Could not write file"
+top_unknown = "Error saving topology: Unknown error"
+start_virtualbricks = "Starting VirtualBricks"
+components_not_found = ("{text}\nThere are some components not "
     "found: {components} some functionalities may not be available.\nYou can "
-    "disable this alert from the general settings."
-)
-not_started = log.Event("Brick not started.")
-stop_error = log.Event("Error on stopping brick.")
-start_error = log.Event("Error on starting brick.")
-dnd_no_socks = log.Event("I don't know what to do, bricks have no socks.")
-dnd_dest_brick_not_found = log.Event("Cannot found dest brick")
-dnd_source_brick_not_found = log.Event("Cannot find source brick {name}")
-dnd_no_dest = log.Event("No destination brick")
-dnd_same_brick = log.Event("Source and destination bricks are the same.")
+    "disable this alert from the general settings.")
+not_started = "Brick not started."
+stop_error = "Error on stopping brick."
+start_error = "Error on starting brick."
+dnd_no_socks = "I don't know what to do, bricks have no socks."
+dnd_dest_brick_not_found = "Cannot found dest brick"
+dnd_source_brick_not_found = "Cannot find source brick {name}"
+dnd_no_dest = "No destination brick"
+dnd_same_brick = "Source and destination bricks are the same."
 
 BRICK_TARGET_NAME = "brick-connect-target"
 BRICK_DRAG_TARGETS = [
@@ -1603,9 +1602,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def startstop_brick(self, brick):
         if is_running(brick):
-            brick.poweroff().addErrback(logger.failure_eb, stop_error)
+            brick.poweroff().addErrback(
+                lambda f: logger.failure(stop_error, f)
+            )
         else:
-            brick.poweron().addErrback(logger.failure_eb, start_error)
+            brick.poweron().addErrback(
+                lambda f: logger.failure(start_error, f)
+            )
 
     def on_jobs_view_button_release_event(self, treeview, event):
         if event.button == 3:
@@ -1655,7 +1658,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
                         elif len(dest_brick.socks) > 0:
                             source_brick.connect(dest_brick.socks[0])
                         else:
-                            log.info(dnd_no_socks)
+                            logger.info(dnd_no_socks)
                     else:
                         logger.debug(dnd_same_brick)
                 else:

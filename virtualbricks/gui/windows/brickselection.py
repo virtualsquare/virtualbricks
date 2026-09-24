@@ -26,14 +26,16 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks import console, log
+from twisted.logger import Logger
+
+from virtualbricks import console
 from virtualbricks.gui import widgets
 from virtualbricks.gui.windows.base import _, destroy_on_exit, Window
 
 
-logger = log.Logger()
+logger = Logger()
 
-event_created = log.Event("Event created successfully")
+event_created = "Event created successfully"
 
 
 class BrickSelectionDialog(Window):

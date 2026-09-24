@@ -24,14 +24,16 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks import errors, log
+from twisted.logger import Logger
+
+from virtualbricks import errors
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
 
 
-logger = log.Logger()
+logger = Logger()
 
-invalid_name = log.Event("Invalid name {name}")
+invalid_name = "Invalid name {name}"
 
 
 class RenameDialog(_Dialog):
