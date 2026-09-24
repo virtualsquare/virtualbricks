@@ -32,6 +32,7 @@ import gettext
 from typing import Callable
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf, Gtk, Pango
@@ -44,7 +45,7 @@ from virtualbricks.gui.interfaces import (
     IControl,
     IPrerequisite,
     IState,
-    IStateManager
+    IStateManager,
 )
 from virtualbricks.tools import dispose
 
@@ -87,6 +88,7 @@ def destroy_on_exit(func: Callable) -> Callable:
             return func(self, dialog, *args)
         finally:
             dialog.destroy()
+
     return on_response
 
 
@@ -123,8 +125,9 @@ class _Window:
 
 class _Dialog(_Window):
 
-    def show(self, parent):
-        self.get_root_widget().set_transient_for(parent)
+    def show(self, parent=None):
+        if parent is not None:
+            self.get_root_widget().set_transient_for(parent)
         super().show()
 
 
@@ -204,7 +207,7 @@ class ConfigController:
             Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),
             False,
             False,
-            3
+            3,
         )
         box.show_all()
         box.pack_start(self.get_config_view(gui), True, True, 0)
@@ -321,8 +324,9 @@ class StateManager:
         self.add_state(state)
         return state
 
-    def _add_checkbutton(self, checkbutton, prerequisite, tooltip=None,
-                         *widgets):
+    def _add_checkbutton(
+        self, checkbutton, prerequisite, tooltip=None, *widgets
+    ):
         state = self._build_state(tooltip, *widgets)
         state.add_prerequisite(prerequisite)
         checkbutton.connect("toggled", lambda cb: state.check())
@@ -330,21 +334,27 @@ class StateManager:
         return state
 
     def add_checkbutton_active(self, checkbutton, tooltip=None, *widgets):
-        return self._add_checkbutton(checkbutton, checkbutton.get_active,
-                                     tooltip, *widgets)
+        return self._add_checkbutton(
+            checkbutton, checkbutton.get_active, tooltip, *widgets
+        )
 
     def add_checkbutton_not_active(self, checkbutton, tooltip=None, *widgets):
-        return self._add_checkbutton(checkbutton,
-                                     lambda: not checkbutton.get_active(),
-                                     tooltip, *widgets)
+        return self._add_checkbutton(
+            checkbutton,
+            lambda: not checkbutton.get_active(),
+            tooltip,
+            *widgets,
+        )
 
 
 # Plug configuration, used by the panels of the bricks with plugs.
 
+
 def _sock_should_visible(model, iter, data):
     sock = model.get_value(iter, 0)
-    return sock and (sock.brick.get_type().startswith('Switch') or
-                     settings.femaleplugs)
+    return sock and (
+        sock.brick.get_type().startswith("Switch") or settings.femaleplugs
+    )
 
 
 def _set_text(column, cell_renderer, model, itr):

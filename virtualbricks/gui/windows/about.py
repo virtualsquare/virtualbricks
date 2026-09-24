@@ -9,6 +9,9 @@ import gettext
 from typing import List
 
 import gi
+
+from virtualbricks.gui.windows.base import _Dialog
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gdk, GdkPixbuf, Gtk
@@ -97,7 +100,7 @@ warszawianka
 LOGO_RESOURCE = "virtualbricks.png"
 
 
-class AboutDialog:
+class AboutDialog(_Dialog):
 
     AboutDialog: Gtk.AboutDialog
 
@@ -146,6 +149,7 @@ class AboutDialog:
             self.get_root_widget().set_transient_for(parent)
         self.get_root_widget().show()
 
-    def on_AboutDialog_response(self, dialog: Gtk.AboutDialog,
-                                response_id: int, data=None) -> None:
+    def on_AboutDialog_response(
+        self, dialog: Gtk.AboutDialog, response_id: int, data=None
+    ) -> None:
         dialog.destroy()
