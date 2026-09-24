@@ -20,10 +20,9 @@ import os
 from twisted.trial import unittest
 
 from virtualbricks import console, locations
-from virtualbricks.config import projectfile, schema, settings
+from virtualbricks.config import Report, projectfile, schema, settings
 from virtualbricks.events import EventAction
 from virtualbricks.migrate import convert, legacy
-from virtualbricks.config.report import Report
 from virtualbricks.tests import isolate, reset_settings
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,

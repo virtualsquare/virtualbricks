@@ -19,9 +19,7 @@ import copy
 
 from twisted.trial import unittest
 
-from virtualbricks.config import schema
-from virtualbricks.config.report import Report
-from virtualbricks.config.schema import (
+from virtualbricks.config import (
     Bool,
     Choice,
     Float,
@@ -33,7 +31,9 @@ from virtualbricks.config.schema import (
     Path,
     Record,
     Ref,
+    Report,
     Str,
+    schema,
 )
 
 

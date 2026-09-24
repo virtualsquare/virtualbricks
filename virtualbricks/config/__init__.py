@@ -25,3 +25,43 @@ The configuration: its files, their locations and the schemas of their data.
 - ``settings``: the settings of the application and of the open project.
 - ``projectfile``: the project file, ``project.toml``.
 """
+
+# The names that the rest of Virtualbricks takes from the configuration. The
+# modules themselves are imported as virtualbricks.config.schema and so on.
+from virtualbricks.config.report import ERROR, INFO, WARNING, Message, Report
+from virtualbricks.config.schema import (
+    Bool,
+    Choice,
+    Float,
+    Int,
+    IPv4,
+    Kind,
+    ListOf,
+    Mac,
+    Path,
+    Record,
+    Ref,
+    Str,
+)
+from virtualbricks.config.projectfile import ProjectFormatError
+
+__all__ = [
+    "ERROR",
+    "INFO",
+    "WARNING",
+    "Bool",
+    "Choice",
+    "Float",
+    "Int",
+    "IPv4",
+    "Kind",
+    "ListOf",
+    "Mac",
+    "Message",
+    "Path",
+    "ProjectFormatError",
+    "Record",
+    "Ref",
+    "Report",
+    "Str",
+]

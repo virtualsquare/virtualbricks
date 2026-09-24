@@ -22,9 +22,8 @@ from twisted.python import lockfile
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.config import settings, tomlfile
+from virtualbricks.config import Report, settings, tomlfile
 from virtualbricks.migrate import engine
-from virtualbricks.config.report import Report
 from virtualbricks.tests import (
     FakeLogger,
     hold_lock,

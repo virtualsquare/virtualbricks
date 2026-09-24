@@ -21,8 +21,7 @@
 from collections import OrderedDict as odict
 
 from virtualbricks import bricks, link
-from virtualbricks.config import schema
-from virtualbricks.config.schema import Str
+from virtualbricks.config import Str, schema
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 

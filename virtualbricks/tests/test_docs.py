@@ -37,8 +37,7 @@ import tomlkit
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.config import projectfile, schema, settings
-from virtualbricks.config.schema import (
+from virtualbricks.config import (
     Bool,
     Choice,
     Float,
@@ -47,6 +46,9 @@ from virtualbricks.config.schema import (
     ListOf,
     Path,
     Ref,
+    projectfile,
+    schema,
+    settings,
 )
 from virtualbricks.events import EventConfig
 from virtualbricks.tests import isolate, make_factory, reset_settings

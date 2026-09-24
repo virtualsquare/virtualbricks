@@ -17,7 +17,7 @@
 
 from twisted.trial import unittest
 
-from virtualbricks.config.report import ERROR, INFO, WARNING, Message, Report
+from virtualbricks.config import ERROR, INFO, WARNING, Message, Report
 from virtualbricks.tests import FakeLogger
 
 

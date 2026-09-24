@@ -31,9 +31,8 @@ from collections import defaultdict
 from twisted.internet import defer
 
 from virtualbricks import errors, locations
-from virtualbricks.config import projectfile, schema, settings
+from virtualbricks.config import Mac, projectfile, schema, settings
 from virtualbricks.migrate import legacy
-from virtualbricks.config.schema import Mac
 from virtualbricks.tools import random_mac
 
 SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python"))

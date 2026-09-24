@@ -31,8 +31,16 @@ from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
 from virtualbricks import errors, tools, bricks, project
-from virtualbricks.config import settings, schema
-from virtualbricks.config.schema import Bool, Int, ListOf, Path, Ref, Str
+from virtualbricks.config import (
+    Bool,
+    Int,
+    ListOf,
+    Path,
+    Ref,
+    Str,
+    schema,
+    settings,
+)
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync

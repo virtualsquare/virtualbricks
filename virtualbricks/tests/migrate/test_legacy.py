@@ -20,7 +20,7 @@ import textwrap
 from twisted.trial import unittest
 
 from virtualbricks.migrate import legacy
-from virtualbricks.config.report import Report
+from virtualbricks.config import Report
 from virtualbricks.tests.migrate.fixtures import CONFIG1
 
 NETEMU = """\

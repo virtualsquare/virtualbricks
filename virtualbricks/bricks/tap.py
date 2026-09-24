@@ -21,8 +21,7 @@
 import os
 
 from virtualbricks import bricks, link
-from virtualbricks.config import schema, settings
-from virtualbricks.config.schema import Choice, IPv4
+from virtualbricks.config import Choice, IPv4, schema, settings
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 

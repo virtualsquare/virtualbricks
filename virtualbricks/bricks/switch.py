@@ -21,8 +21,7 @@
 from collections import OrderedDict
 
 from virtualbricks import bricks
-from virtualbricks.config import schema
-from virtualbricks.config.schema import Bool, Int
+from virtualbricks.config import Bool, Int, schema
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 

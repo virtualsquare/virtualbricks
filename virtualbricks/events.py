@@ -19,8 +19,7 @@
 from twisted.internet import reactor, defer
 
 from virtualbricks import base, console, errors
-from virtualbricks.config import schema
-from virtualbricks.config.schema import Int
+from virtualbricks.config import Int, schema
 
 if False:  # pyflakes
     _ = str

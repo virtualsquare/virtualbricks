@@ -41,7 +41,7 @@ from twisted.logger import Logger
 from virtualbricks import i18n, locations
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.migrate import engine
-from virtualbricks.config.report import ERROR, INFO, WARNING
+from virtualbricks.config import ERROR, INFO, WARNING
 
 logger = Logger()
 NAME, BRICKS, STATUS = range(3)

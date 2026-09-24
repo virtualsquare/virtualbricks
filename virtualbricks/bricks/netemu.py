@@ -22,8 +22,7 @@ import re
 
 from virtualbricks import bricks
 from virtualbricks.bricks.wire import Wire
-from virtualbricks.config import schema
-from virtualbricks.config.schema import Bool, Float, Int, ListOf, Record, Str
+from virtualbricks.config import Bool, Float, Int, ListOf, Record, Str, schema
 
 
 @schema.define

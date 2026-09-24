@@ -23,8 +23,7 @@ import os
 
 from virtualbricks import errors
 from virtualbricks.bricks import BrickConfig
-from virtualbricks.config import schema
-from virtualbricks.config.report import Report
+from virtualbricks.config import Report, schema
 from virtualbricks.tests import (
     BrickTestCase,
 )

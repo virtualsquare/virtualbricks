@@ -21,10 +21,14 @@ import os
 from twisted.trial import unittest
 
 from virtualbricks import console
-from virtualbricks.config import projectfile, schema, settings
-from virtualbricks.config import tomlfile
-from virtualbricks.config.projectfile import ProjectFormatError
-from virtualbricks.config.report import Report
+from virtualbricks.config import (
+    ProjectFormatError,
+    Report,
+    projectfile,
+    schema,
+    settings,
+    tomlfile,
+)
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import UsbDevice
 

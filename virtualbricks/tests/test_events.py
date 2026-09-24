@@ -19,7 +19,7 @@
 """The events and their actions."""
 
 from virtualbricks import console
-from virtualbricks.config.report import Report
+from virtualbricks.config import Report
 from virtualbricks.events import EventAction, EventConfig
 from virtualbricks.tests import (
     BrickTestCase,

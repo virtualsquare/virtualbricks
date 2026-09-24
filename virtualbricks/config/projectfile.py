@@ -31,10 +31,9 @@ virtual machine vm2.
 import os
 import re
 
-from virtualbricks import errors
+from virtualbricks import errors, tools
 from virtualbricks.config import schema, settings, tomlfile
 from virtualbricks.config.schema import Choice, Mac, Path, Str
-from virtualbricks.tools import random_mac
 
 FORMAT = 1
 TOP_KEYS = frozenset(("format", "settings", "images", "events", "bricks"))
@@ -237,7 +236,7 @@ def _read_nic(table, index, report, where):
             raise ValueError("no MAC address")
         nic["mac"] = mac
     except ValueError as exc:
-        nic["mac"] = random_mac()
+        nic["mac"] = tools.random_mac()
         report.warning(f"mac: {exc}, using {nic['mac']}", where)
     if kind == "plug":
         nic["connect"] = _read_target(

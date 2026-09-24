@@ -23,8 +23,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import bricks, project
-from virtualbricks.config import settings
-from virtualbricks.config.report import Report
+from virtualbricks.config import Report, settings
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,

@@ -31,10 +31,17 @@ import stat
 import attr
 from twisted.python import lockfile
 
-from virtualbricks.config import schema, settings, tomlfile
+from virtualbricks.config import (
+    ERROR,
+    INFO,
+    WARNING,
+    Report,
+    schema,
+    settings,
+    tomlfile,
+)
 from virtualbricks import locations
 from virtualbricks.migrate import convert, legacy
-from virtualbricks.config.report import ERROR, INFO, WARNING, Report
 
 WAITING = "waiting"
 MIGRATING = "migrating"

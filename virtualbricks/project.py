@@ -33,10 +33,14 @@ from twisted.python import filepath
 from twisted.logger import Logger
 
 from virtualbricks import errors, locations
-from virtualbricks.config import projectfile, settings, tomlfile
-from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config import (
+    ProjectFormatError,
+    Report,
+    projectfile,
+    settings,
+    tomlfile,
+)
 from virtualbricks import tools
-from virtualbricks.config.report import Report
 
 logger = Logger()
 

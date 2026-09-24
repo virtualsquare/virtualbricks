@@ -22,8 +22,7 @@ import os
 from twisted.logger import Logger
 
 from virtualbricks import bricks, link
-from virtualbricks.config import schema
-from virtualbricks.config.schema import Int, Str
+from virtualbricks.config import Int, Str, schema
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 

@@ -22,9 +22,12 @@ from twisted.internet import defer
 from twisted.trial import unittest
 
 from virtualbricks import errors, project, locations
-from virtualbricks.config import projectfile, settings
-from virtualbricks.config import tomlfile
-from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config import (
+    ProjectFormatError,
+    projectfile,
+    settings,
+    tomlfile,
+)
 from virtualbricks.tests import FakeLogger, isolate, make_factory
 from virtualbricks.tests import reset_settings
 

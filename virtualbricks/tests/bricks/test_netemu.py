@@ -18,8 +18,7 @@
 
 """The network emulator."""
 
-from virtualbricks.config import schema
-from virtualbricks.config.report import Report
+from virtualbricks.config import Report, schema
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,
