@@ -20,6 +20,7 @@ Window shown while the user waits for a long operation.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -96,7 +97,7 @@ class Freezer:
             if callable(deferred):
                 deferred = defer.maybeDeferred(deferred, *args)
             else:
-                raise RuntimeError('Invalid argument')
+                raise RuntimeError("Invalid argument")
         pulse = self.start()
         deferred.addBoth(self.stop, pulse)
         return deferred

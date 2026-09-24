@@ -22,6 +22,7 @@ Dialog to export a project to a file.
 import os
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -47,25 +48,27 @@ SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
 
 
 def ConfirmOverwriteDialog(fp, parent):
-    question = _("A file named \"{0}\" already exists.  Do you want to "
-                 "replace it?").format(fp.basename())
+    question = _(
+        'A file named "{0}" already exists.  Do you want to ' "replace it?"
+    ).format(fp.basename())
     dialog = Gtk.MessageDialog(
         parent,
         Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
         Gtk.MessageType.QUESTION,
-        message_format=question
+        message_format=question,
     )
-    dialog.format_secondary_text(_("The file already exists in \"{0}\". "
-                                   "Replacing it will overwrite its "
-                                   "contents.").format(fp.dirname()))
+    dialog.format_secondary_text(
+        _(
+            'The file already exists in "{0}". '
+            "Replacing it will overwrite its "
+            "contents."
+        ).format(fp.dirname())
+    )
     dialog.add_button("gtk-cancel", Gtk.ResponseType.CANCEL)
     button = Gtk.Button.new_with_mnemonic(_("_Replace"))
     button.set_can_default(True)
     button.set_image(
-        Gtk.Image.new_from_icon_name(
-            "gtk-save-as",
-            Gtk.IconSize.BUTTON
-        )
+        Gtk.Image.new_from_icon_name("gtk-save-as", Gtk.IconSize.BUTTON)
     )
     button.show()
     dialog.add_action_widget(button, Gtk.ResponseType.ACCEPT)
@@ -81,10 +84,10 @@ def normalize_project_filename(filename):
     :rtype: str
     """
 
-    if filename[-4:] == '.vbp':
+    if filename[-4:] == ".vbp":
         return filename
     else:
-        return f'{filename}.vbp'
+        return f"{filename}.vbp"
 
 
 class ExportProjectDialog(Window):
@@ -105,11 +108,16 @@ class ExportProjectDialog(Window):
             (image.name, filepath.FilePath(image.path))
             for image in iter_disk_images
         ]
-        self.required_files = set([prjpath.child(".project"),
-                                   prjpath.child("README")])
-        self.internal_files = set([prjpath.child("vde.dot"),
-                                   prjpath.child("vde_topology.plain"),
-                                   prjpath.child(".images")])
+        self.required_files = set(
+            [prjpath.child(".project"), prjpath.child("README")]
+        )
+        self.internal_files = set(
+            [
+                prjpath.child("vde.dot"),
+                prjpath.child("vde_topology.plain"),
+                prjpath.child(".images"),
+            ]
+        )
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``exportproject.ui``."""
@@ -303,8 +311,11 @@ class ExportProjectDialog(Window):
     def append_files(self, dirpath, filenames, model, parent):
         for filename in sorted(filenames):
             child = dirpath.child(filename)
-            if (child not in self.required_files | self.internal_files and
-                    child.isfile() and not child.islink()):
+            if (
+                child not in self.required_files | self.internal_files
+                and child.isfile()
+                and not child.islink()
+            ):
                 row = (True, True, "gtk-file", filename, child)
                 model.append(parent, row)
 
@@ -327,7 +338,8 @@ class ExportProjectDialog(Window):
         size_cr = self.size_cell
         size_c.set_cell_data_func(size_cr, self._set_size)
         self.selected_cell.connect(
-            "toggled", self.on_selected_cell_toggled, model)
+            "toggled", self.on_selected_cell_toggled, model
+        )
         self.files_view.expand_row(Gtk.TreePath(0), False)
         Window.show(self, parent_w)
 
@@ -338,8 +350,9 @@ class ExportProjectDialog(Window):
         else:
             size = self._calc_size(model, itr)
             if model.get_path(itr) == Gtk.TreePath((0,)):
-                size += sum(fp.getsize() for fp in self.required_files if
-                            fp.exists())
+                size += sum(
+                    fp.getsize() for fp in self.required_files if fp.exists()
+                )
                 if self.include_images:
                     size += sum(fp.getsize() for n, fp in self.image_files)
             cellrenderer.set_property("text", tools.fmtsize(size))
@@ -400,8 +413,9 @@ class ExportProjectDialog(Window):
             buttons=(
                 "gtk-cancel",
                 Gtk.ResponseType.CANCEL,
-                "gtk-save", Gtk.ResponseType.OK
-            )
+                "gtk-save",
+                Gtk.ResponseType.OK,
+            ),
         )
         vbp = Gtk.FileFilter()
         vbp.add_pattern("*.vbp")
@@ -418,8 +432,7 @@ class ExportProjectDialog(Window):
         self.include_images = checkbutton.get_active()
         model = self.files_store
         model.row_changed(
-            Gtk.TreePath((0,)),
-            model.get_iter(Gtk.TreePath((0,)))
+            Gtk.TreePath((0,)), model.get_iter(Gtk.TreePath((0,)))
         )
 
     def export(self, model, ancestor, filename, export=project_manager.export):
@@ -450,8 +463,9 @@ class ExportProjectDialog(Window):
             fp = filepath.FilePath(normalize_project_filename(filename))
             if fp.exists():
                 cdialog = ConfirmOverwriteDialog(fp, dialog)
-                cdialog.connect("response", self.on_confirm_response, dialog,
-                                fp.path)
+                cdialog.connect(
+                    "response", self.on_confirm_response, dialog, fp.path
+                )
                 cdialog.show()
             else:
                 dialog.destroy()

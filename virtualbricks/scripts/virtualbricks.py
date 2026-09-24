@@ -18,11 +18,13 @@
 
 def make_application(config):
     from virtualbricks.gui import gui
+
     return gui.Application(config)
 
 
 def run():
     import gi
+
     gi.require_version("Gtk", "3.0")
     gi.require_version("Gdk", "3.0")
     from twisted.internet import gtk3reactor

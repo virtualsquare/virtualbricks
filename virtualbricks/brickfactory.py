@@ -49,7 +49,6 @@ from virtualbricks.observable import Event as Signal, Observable
 from virtualbricks.tools import is_running
 from virtualbricks.virtualmachines import is_disk_image
 
-
 if False:  # pyflakes
     _ = str
 
@@ -73,27 +72,29 @@ def install_brick_types(registry=None):
         registry = {}
 
     logger.debug(reg_basic_types)
-    registry.update({
-        "switch": switches.Switch,
-        "tap": tuntaps.Tap,
-        "capture": tuntaps.Capture,
-        "vm": virtualmachines.VirtualMachine,
-        "qemu": virtualmachines.VirtualMachine,
-        "wirefilter": wires.Netemu,
-        "netemu": wires.Netemu,
-        "wire": wires.Wire,
-        "tunnelc": tunnels.TunnelConnect,
-        "tunnel client": tunnels.TunnelConnect,
-        "tunnelclient": tunnels.TunnelConnect,
-        "tunnelconnect": tunnels.TunnelConnect,
-        "tunnell": tunnels.TunnelListen,
-        "tunnel server": tunnels.TunnelListen,
-        "tunnelserver": tunnels.TunnelListen,
-        "tunnellisten": tunnels.TunnelListen,
-        "event": Event,
-        "switchwrapper": switches.SwitchWrapper,
-        "router": router.Router,
-    })
+    registry.update(
+        {
+            "switch": switches.Switch,
+            "tap": tuntaps.Tap,
+            "capture": tuntaps.Capture,
+            "vm": virtualmachines.VirtualMachine,
+            "qemu": virtualmachines.VirtualMachine,
+            "wirefilter": wires.Netemu,
+            "netemu": wires.Netemu,
+            "wire": wires.Wire,
+            "tunnelc": tunnels.TunnelConnect,
+            "tunnel client": tunnels.TunnelConnect,
+            "tunnelclient": tunnels.TunnelConnect,
+            "tunnelconnect": tunnels.TunnelConnect,
+            "tunnell": tunnels.TunnelListen,
+            "tunnel server": tunnels.TunnelListen,
+            "tunnelserver": tunnels.TunnelListen,
+            "tunnellisten": tunnels.TunnelListen,
+            "event": Event,
+            "switchwrapper": switches.SwitchWrapper,
+            "router": router.Router,
+        }
+    )
     return registry
 
 
@@ -110,16 +111,18 @@ def normalize_brick_name(name):
     """
 
     if not isinstance(name, str):
-        raise errors.InvalidNameError(_('Name must be a string'))
-    if name == '':
-        raise errors.InvalidNameError(_('Name is empty'))
-    normalized_name = re.sub(r'\s+', '_', name.strip())
-    if not re.search(r'\A[a-zA-Z]', normalized_name):
-        msg = _('Name must start with a letter')
+        raise errors.InvalidNameError(_("Name must be a string"))
+    if name == "":
+        raise errors.InvalidNameError(_("Name is empty"))
+    normalized_name = re.sub(r"\s+", "_", name.strip())
+    if not re.search(r"\A[a-zA-Z]", normalized_name):
+        msg = _("Name must start with a letter")
         raise errors.InvalidNameError(msg.format(brick_name=name))
-    if not re.search(r'\A[a-zA-Z0-9_\.-]+\Z', normalized_name):
-        msg = _('Name must contains only letters, numbers, underscores, '
-                'hyphens and points').format(brick_name=name)
+    if not re.search(r"\A[a-zA-Z0-9_\.-]+\Z", normalized_name):
+        msg = _(
+            "Name must contains only letters, numbers, underscores, "
+            "hyphens and points"
+        ).format(brick_name=name)
         raise errors.InvalidNameError(msg)
     return normalized_name
 
@@ -142,18 +145,18 @@ class BrickFactory:
         self.socks = []
         self._disk_images = {}
         self.__factories = install_brick_types()
-        self.__observable = observable = Observable('quit')
-        self.changed = Signal(observable, 'brick-changed')
-        self.quit_signal = Signal(observable, 'quit')
-        self.brick_added = Signal(observable, 'brick-added')
-        self.brick_removed = Signal(observable, 'brick-removed')
-        self.brick_changed = Signal(observable, 'brick-changed')
-        self.event_added = Signal(observable, 'event-added')
-        self.event_removed = Signal(observable, 'event-removed')
-        self.event_changed = Signal(observable, 'event-changed')
-        self.image_added = Signal(observable, 'image-added')
-        self.image_removed = Signal(observable, 'image-removed')
-        self.image_changed = Signal(observable, 'image-changed')
+        self.__observable = observable = Observable("quit")
+        self.changed = Signal(observable, "brick-changed")
+        self.quit_signal = Signal(observable, "quit")
+        self.brick_added = Signal(observable, "brick-added")
+        self.brick_removed = Signal(observable, "brick-removed")
+        self.brick_changed = Signal(observable, "brick-changed")
+        self.event_added = Signal(observable, "event-added")
+        self.event_removed = Signal(observable, "event-removed")
+        self.event_changed = Signal(observable, "event-changed")
+        self.image_added = Signal(observable, "image-added")
+        self.image_removed = Signal(observable, "image-removed")
+        self.image_changed = Signal(observable, "image-changed")
 
     def quit(self):
         if any(is_running(brick) for brick in self._bricks):
@@ -205,7 +208,7 @@ class BrickFactory:
 
     # Disk Images
 
-    def new_disk_image(self, name, path, description=''):
+    def new_disk_image(self, name, path, description=""):
         """Add one disk image to the library."""
 
         logger.info(create_image, path=path)
@@ -257,7 +260,7 @@ class BrickFactory:
 
     # Bricks
 
-    def new_brick(self, type, name, host='', remote=False):
+    def new_brick(self, type, name, host="", remote=False):
         """Return a new brick.
 
         @param type: The type of new brick.
@@ -273,7 +276,7 @@ class BrickFactory:
         try:
             BrickClass = self.__factories[type.lower()]
         except KeyError:
-            raise errors.InvalidTypeError(_('Invalid brick type %s') % type)
+            raise errors.InvalidTypeError(_("Invalid brick type %s") % type)
         name = normalize_brick_name(name)
         if self.get_brick_by_name(name) is not None:
             raise NameAlreadyInUseError(name)
@@ -302,8 +305,9 @@ class BrickFactory:
         logger.info(remove_brick, brick=brick.name)
         socks = set(brick.socks)
         if socks:
-            logger.info(remove_socks,
-                        socks=", ".join(s.nickname for s in socks))
+            logger.info(
+                remove_socks, socks=", ".join(s.nickname for s in socks)
+            )
             for _brick in self._bricks:
                 for plug in _brick.plugs:
                     if plug.configured() and plug.sock in socks:
@@ -386,7 +390,7 @@ class BrickFactory:
         c = 1
         orig_name = name
         while self.is_in_use(name):
-            name = f'{orig_name}.{c}'
+            name = f"{orig_name}.{c}"
         return name
 
     def is_in_use(self, name):
@@ -476,8 +480,9 @@ class Manhole(manhole.Manhole):
         manhole.Manhole.connectionMade(self)
 
     def connectionLost(self, reason):
-        termios.tcsetattr(sys.__stdin__.fileno(), termios.TCSANOW,
-                          self.oldSettings)
+        termios.tcsetattr(
+            sys.__stdin__.fileno(), termios.TCSANOW, self.oldSettings
+        )
         manhole.Manhole.connectionLost(self, reason)
 
 
@@ -497,6 +502,7 @@ class Console(basic.LineOnlyReceiver):
             """Open a python interpreter. Use ^D (^Z on windows) to exit."""
             protocol = insults.ServerProtocol(Manhole, self.namespace)
             self._switchTo(protocol)
+
         protocol.do_python = do_python
 
     def _switchTo(self, new_proto):
@@ -636,7 +642,9 @@ class Application:
                     raise
                 except:
                     sys.excepthook(*sys.exc_info())
+
             self.run = run_with_except_hook
+
         threading.Thread.__init__ = init
 
     def excepthook(self, exc_type, exc_value, traceback):
@@ -644,8 +652,11 @@ class Application:
             sys.__excepthook__(exc_type, exc_value, traceback)
         else:
             fail = failure.Failure(exc_value, exc_type, traceback)
-            logger.error(uncaught_exception, log_failure=fail,
-                         error=lambda: fail.getErrorMessage())
+            logger.error(
+                uncaught_exception,
+                log_failure=fail,
+                error=lambda: fail.getErrorMessage(),
+            )
 
     def install_home(self):
         try:
@@ -668,13 +679,15 @@ class Application:
         if self.config["verbosity"] >= 2 and not self.config["daemon"]:
             import signal
             import pdb
+
             signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", settings.store)
         project.manager.restore_last(factory)
-        reactor.addSystemEventTrigger("before", "shutdown",
-                                      project.manager.save_current, factory)
+        reactor.addSystemEventTrigger(
+            "before", "shutdown", project.manager.save_current, factory
+        )
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)
         if not self.config["noterm"] and not self.config["daemon"]:

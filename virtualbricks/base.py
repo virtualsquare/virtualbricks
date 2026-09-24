@@ -23,16 +23,13 @@ from twisted.logger import Logger
 
 from virtualbricks import observable
 
-
 if False:  # pyflakes
     _ = str
 
 
 logger = Logger()
-attribute_set = ("Attribute {attr} set in {brick} with value "
-                 "{value}.")
-param_not_found = ("Parameter {param} in {brick} not found. "
-                   "(val: {value})")
+attribute_set = "Attribute {attr} set in {brick} with value " "{value}."
+param_not_found = "Parameter {param} in {brick} not found. " "(val: {value})"
 
 
 class Config(dict):
@@ -121,8 +118,11 @@ class SpinMixin:
 
     def assert_in_range(self, i):
         if not self.min <= i <= self.max:
-            raise ValueError(_("value out range {0} ({1}, {2})").format(
-                i, self.min, self.max))
+            raise ValueError(
+                _("value out range {0} ({1}, {2})").format(
+                    i, self.min, self.max
+                )
+            )
 
     def from_string(self, in_string):
         i = super().from_string(in_string)
@@ -153,6 +153,7 @@ class Boolean(Parameter):
 
 class Object(Parameter):
     """A special parameter that is never translated to or from a string."""
+
     # XXX: pratically the same of a string
 
     def from_string(self, in_string):
@@ -227,9 +228,9 @@ class Base:
             return self.config[name]
         except KeyError:
             raise KeyError(
-                _("%(config)s config has no %(option)s option.") % {
-                    'config': self.name,
-                    'option': name})
+                _("%(config)s config has no %(option)s option.")
+                % {"config": self.name, "option": name}
+            )
 
     def _getvalue(self, name, value):
         try:
@@ -274,4 +275,4 @@ class Base:
             return self.name
         elif format_string == "p":
             return self.get_parameters()
-        raise ValueError("Invalid format string %r" % (format_string, ))
+        raise ValueError("Invalid format string %r" % (format_string,))

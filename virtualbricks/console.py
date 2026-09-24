@@ -168,7 +168,7 @@ class VBProtocol(Protocol):
         #     self._is_first = True
         #     intro = self.intro.format(version=virtualbricks.version.short())
         #     self.transport.write(intro)
-        intro = self.intro % (__version__.encode('ascii'),)
+        intro = self.intro % (__version__.encode("ascii"),)
         self.transport.write(intro)
         self.transport.write(self.prompt)
 
@@ -190,8 +190,9 @@ class VBProtocol(Protocol):
             elif isinstance(obj, bricks.Brick):
                 self.factory.del_brick(obj)
             else:
-                raise errors.UnmanagedTypeError("Unknown type %s",
-                                                obj.__class__.__name__)
+                raise errors.UnmanagedTypeError(
+                    "Unknown type %s", obj.__class__.__name__
+                )
         elif cmd[0] == "config":
             obj.configure(cmd[1:])
         elif cmd[0] == "show":
@@ -286,9 +287,15 @@ class VBProtocol(Protocol):
         # XXX: if brick is not a switch this raise an exception
         for s in self.factory.socks:
             if s.brick is not None:
-                self.sendLine("%s - port on %s %s - %d available" % (
-                    s.nickname, s.brick.get_type(), s.brick.name,
-                    s.get_free_ports()))
+                self.sendLine(
+                    "%s - port on %s %s - %d available"
+                    % (
+                        s.nickname,
+                        s.brick.get_type(),
+                        s.brick.name,
+                        s.get_free_ports(),
+                    )
+                )
             else:
                 self.sendLine("%s, not configured." % s.nickname)
 
@@ -308,7 +315,7 @@ class VBProtocol(Protocol):
                     else:
                         s = "\tuserlink connected with a %s (%s) card"
                         self.sendLine(s % (pl.model, pl.mac))
-                elif (pl.sock is not None):
+                elif pl.sock is not None:
                     self.sendLine("\tlink: %s " % pl.sock.nickname)
 
     # easter eggs
@@ -357,12 +364,13 @@ class ConfigurationProtocol(Protocol):
 
     def do_get(self, name):
         # if name:
-            if settings.has_option(name):
-                self.sendLine("%s = %s" % (name, settings.get(name)))
-            else:
-                self.sendLine("No such option %s" % name)
-        # elif len(args) == 0:
-        #     pass  # TODO: show all settings
+        if settings.has_option(name):
+            self.sendLine("%s = %s" % (name, settings.get(name)))
+        else:
+            self.sendLine("No such option %s" % name)
+
+    # elif len(args) == 0:
+    #     pass  # TODO: show all settings
 
     def do_set(self, name, value):
         if settings.has_option(name):

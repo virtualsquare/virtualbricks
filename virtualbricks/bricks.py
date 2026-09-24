@@ -28,14 +28,33 @@ from twisted.logger import Logger
 from zope.interface import implementer
 
 from virtualbricks import base, errors, settings, interfaces
-from virtualbricks.base import (Config as _Config, Parameter, String, Integer,
-                                SpinInt, Float, SpinFloat, Boolean, Object,
-                                ListOf)
+from virtualbricks.base import (
+    Config as _Config,
+    Parameter,
+    String,
+    Integer,
+    SpinInt,
+    Float,
+    SpinFloat,
+    Boolean,
+    Object,
+    ListOf,
+)
 from virtualbricks.spawn import abspath_vde
 
-
-__all__ = ["Brick", "Config", "Parameter", "String", "Integer", "SpinInt",
-           "Float", "SpinFloat", "Boolean", "Object", "ListOf"]
+__all__ = [
+    "Brick",
+    "Config",
+    "Parameter",
+    "String",
+    "Integer",
+    "SpinInt",
+    "Float",
+    "SpinFloat",
+    "Boolean",
+    "Object",
+    "ListOf",
+]
 
 if False:  # pyflakes
     _ = str
@@ -46,14 +65,18 @@ system_encoding = locale.getpreferredencoding(do_setlocale=True)
 logger = Logger(__name__)
 process_started = "Process started"
 process_terminated = "Process terminated. {status}"
-event_unavailable = ("Warning. The Event {name} attached to Brick "
-                     "{brick} is not available. Skipping execution.")
+event_unavailable = (
+    "Warning. The Event {name} attached to Brick "
+    "{brick} is not available. Skipping execution."
+)
 shutdown_brick = "Shutting down {name} (pid: {pid})"
 start_brick = "Starting: {args}"
 open_console = "Opening console for {name}\n%{args}\n"
 console_done = "Console terminated\n{status}"
-console_terminated = ("Console terminated\n{status}\nProcess stdout:"
-                      "\n{out}\nProcess stderr:\n{err}\n")
+console_terminated = (
+    "Console terminated\n{status}\nProcess stdout:"
+    "\n{out}\nProcess stderr:\n{err}\n"
+)
 invalid_ack = "ACK received but no command sent."
 
 
@@ -152,7 +175,6 @@ class VDEProcessProtocol(Process):
         Process.__init__(self, brick)
         self.queue = collections.deque()
 
-
     def _data_received(self, data):
         """
         Translates bytes into lines, and calls _ack_received.
@@ -215,7 +237,7 @@ class TermProtocol(protocol.ProcessProtocol):
                 console_terminated,
                 status=status.value,
                 out=_decode(b"".join(self.out)),
-                err=_decode(b"".join(self.err))
+                err=_decode(b"".join(self.err)),
             )
         else:
             self.logger.info(console_done, status=status.value)
@@ -223,10 +245,7 @@ class TermProtocol(protocol.ProcessProtocol):
 
 class Config(_Config):
 
-    parameters = {
-        "pon_vbevent": String(""),
-        "poff_vbevent": String("")
-    }
+    parameters = {"pon_vbevent": String(""), "poff_vbevent": String("")}
 
 
 class Brick(base.Base):
@@ -259,11 +278,17 @@ class Brick(base.Base):
             return defer.succeed(self)
 
         if not self.configured():
-            return defer.fail(errors.BadConfigError(
-                _("Cannot start '%s': not configured") % self.name))
+            return defer.fail(
+                errors.BadConfigError(
+                    _("Cannot start '%s': not configured") % self.name
+                )
+            )
         if not self._properly_connected():
-            return defer.fail(errors.NotConnectedError(
-                _("Cannot start '%s': not connected") % self.name))
+            return defer.fail(
+                errors.NotConnectedError(
+                    _("Cannot start '%s': not connected") % self.name
+                )
+            )
 
         self._started_d = started = defer.Deferred()
         self._exited_d = defer.Deferred()
@@ -364,8 +389,8 @@ class Brick(base.Base):
                     if not switch.startswith("*"):
                         res.append(switch)
                     res.append(value)
-        #res.sort()
-        #print(res)
+        # res.sort()
+        # print(res)
         return res
 
     def _poweron(self, ignore):

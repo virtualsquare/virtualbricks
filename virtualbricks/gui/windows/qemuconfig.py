@@ -23,6 +23,7 @@ import os
 import string
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
@@ -49,15 +50,16 @@ from virtualbricks.gui.windows.ethernetdialog import AddEthernetDialog
 from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.windows.usbdev import UsbDevDialog
 
-
 logger = Logger()
 
 qemu_version_parsing_error = "Error while parsing qemu version"
 retrieve_qemu_version_error = "Error while retrieving qemu version."
 usb_access = "Cannot access /dev/bus/usb. Check user privileges."
-no_kvm = ("No KVM support found on the system. Check your active "
-          "configuration. KVM will stay disabled.")
-retr_usb = 'Error while retrieving usb devices.'
+no_kvm = (
+    "No KVM support found on the system. Check your active "
+    "configuration. KVM will stay disabled."
+)
+retr_usb = "Error while retrieving usb devices."
 
 
 def get_selection(treeview):
@@ -173,20 +175,20 @@ class QemuConfigController(ConfigController):
         ("serial", "serial_check"),
         ("kernelenbl", "kernel_check"),
         ("initrdenbl", "initrd_check"),
-        ("gdb", "gdb_check")
+        ("gdb", "gdb_check"),
     )
     config_to_filechooser_mapping = (
         ("cdrom", "cdrom_chooser"),
         ("kernel", "kernel_chooser"),
         ("initrd", "initrd_chooser"),
-        ("icon", "icon_chooser")
+        ("icon", "icon_chooser"),
     )
     config_to_spinint_mapping = (
         ("smp", "smp_spin"),
         ("ram", "ram_spin"),
         ("kvmsmem", "kvmsmem_spin"),
         ("vncN", "vnc_display_spin"),
-        ("gdbport", "gdb_port_spin")
+        ("gdbport", "gdb_port_spin"),
     )
 
     state_manager = None
@@ -316,7 +318,9 @@ class QemuConfigController(ConfigController):
             active=0,
         )
         # Custom widget from glade-catalog.xml
-        self.boot_cell = widgets.CellRendererFormattable(display_member="label")
+        self.boot_cell = widgets.CellRendererFormattable(
+            display_member="label"
+        )
         self.boot_combo.pack_start(self.boot_cell, False)
         hbox1.pack_start(self.boot_combo, True, True, 0)
         vbox2.pack_start(hbox1, False, True, 0)
@@ -412,10 +416,14 @@ class QemuConfigController(ConfigController):
             active=0,
         )
         # Custom widget from glade-catalog.xml
-        self.mount_cell = widgets.CellRendererFormattable(display_member="label")
+        self.mount_cell = widgets.CellRendererFormattable(
+            display_member="label"
+        )
         self.mount_combo.pack_start(self.mount_cell, False)
         table2.attach(self.mount_combo, 1, 1, 1, 1)
-        self.cdrom_chooser = Gtk.FileChooserButton(visible=True, can_focus=False)
+        self.cdrom_chooser = Gtk.FileChooserButton(
+            visible=True, can_focus=False
+        )
         table2.attach(self.cdrom_chooser, 1, 2, 1, 1)
         frame2.add(table2)
         label3 = Gtk.Label(
@@ -795,7 +803,9 @@ class QemuConfigController(ConfigController):
             model=self.argv0_store,
         )
         # Custom widget from glade-catalog.xml
-        self.argv0_cell = widgets.CellRendererFormattable(display_member="label")
+        self.argv0_cell = widgets.CellRendererFormattable(
+            display_member="label"
+        )
         self.argv0_combo.pack_start(self.argv0_cell, False)
         vbox5.pack_start(self.argv0_combo, True, True, 0)
         label14 = Gtk.Label(
@@ -831,7 +841,9 @@ class QemuConfigController(ConfigController):
             model=self.machine_store,
         )
         # Custom widget from glade-catalog.xml
-        self.machine_cell = widgets.CellRendererFormattable(display_member="label")
+        self.machine_cell = widgets.CellRendererFormattable(
+            display_member="label"
+        )
         self.machine_combo.pack_start(self.machine_cell, False)
         vbox5.pack_start(self.machine_combo, False, False, 0)
         hbox14 = Gtk.Box(visible=True, can_focus=False)
@@ -909,7 +921,9 @@ class QemuConfigController(ConfigController):
             active=0,
         )
         # Custom widget from glade-catalog.xml
-        self.sound_cell = widgets.CellRendererFormattable(display_member="label")
+        self.sound_cell = widgets.CellRendererFormattable(
+            display_member="label"
+        )
         self.sound_combo.pack_start(self.sound_cell, False)
         vbox12.pack_start(self.sound_combo, False, False, 0)
         frame9.add(vbox12)
@@ -1531,7 +1545,7 @@ class QemuConfigController(ConfigController):
         vmplugs = self.plugs_store
         vmplugs.clear()
         for plug in self.original.plugs:
-            vmplugs.append((plug, ))
+            vmplugs.append((plug,))
 
         if self.gui.config.femaleplugs:
             for sock in self.original.socks:
@@ -1583,40 +1597,36 @@ class QemuConfigController(ConfigController):
         self.state_manager.add_checkbutton_active(
             self.device_radio,
             _("Mount cdrom option not active"),
-            self.mount_combo
+            self.mount_combo,
         )
         self.state_manager.add_checkbutton_active(
             self.cdrom_image_radio,
             _("File image option not active"),
-            self.cdrom_chooser
+            self.cdrom_chooser,
         )
         self.state_manager.add_checkbutton_not_active(
             self.novga_check,
             _("Graphical output disabled"),
             self.vnc_check,
             self.vnc_display_spin,
-            self.vnc_display_label
+            self.vnc_display_label,
         )
         self.state_manager.add_checkbutton_not_active(
-            self.vnc_check,
-            _("VNC enabled"),
-            self.novga_check
+            self.vnc_check, _("VNC enabled"), self.novga_check
         )
         self.state_manager.add_checkbutton_active(
             self.kernel_check,
             _("Custom kernel selction option disabled"),
-            self.kernel_chooser
+            self.kernel_chooser,
         )
         self.state_manager.add_checkbutton_active(
-            self.initrd_check,
-            _("Initrd option disabled"),
-            self.initrd_chooser
+            self.initrd_check, _("Initrd option disabled"), self.initrd_chooser
         )
         self.state_manager.add_checkbutton_active(
             self.gdb_check,
             _("Kernel debugging disabled"),
             self.gdb_port_spin,
-            self.gdb_port_label
+            self.gdb_port_label,
         )
 
         # usb options
@@ -1652,52 +1662,81 @@ class QemuConfigController(ConfigController):
 
         # argv0/cpu/machine comboboxes
         exes = qemu.get_executables()
-        self.argv0_store.set_data_source(map(widgets.ListEntry.from_tuple, exes))
+        self.argv0_store.set_data_source(
+            map(widgets.ListEntry.from_tuple, exes)
+        )
         self.argv0_combo.set_selected_value(self.original.config["argv0"])
-        self.argv0_combo.set_cell_data_func(self.argv0_cell, self.argv0_cell.set_text)
-        self.cpu_combo.set_cell_data_func(self.cpu_cell, self.cpu_cell.set_text)
-        self.machine_combo.set_cell_data_func(self.machine_cell, self.machine_cell.set_text)
+        self.argv0_combo.set_cell_data_func(
+            self.argv0_cell, self.argv0_cell.set_text
+        )
+        self.cpu_combo.set_cell_data_func(
+            self.cpu_cell, self.cpu_cell.set_text
+        )
+        self.machine_combo.set_cell_data_func(
+            self.machine_cell, self.machine_cell.set_text
+        )
 
         # boot/sound/mount comboboxes
         boots = map(widgets.ListEntry.from_tuple, BOOT_DEVICE)
         self.boot_store.set_data_source(boots)
         self.boot_combo.set_selected_value(self.original.config["boot"])
-        self.boot_combo.set_cell_data_func(self.boot_cell, self.boot_cell.set_text)
+        self.boot_combo.set_cell_data_func(
+            self.boot_cell, self.boot_cell.set_text
+        )
         sounds = map(widgets.ListEntry.from_tuple, SOUND_DEVICE)
         self.sound_store.set_data_source(sounds)
         self.sound_combo.set_selected_value(self.original.config["soundhw"])
-        self.sound_combo.set_cell_data_func(self.sound_cell, self.sound_cell.set_text)
+        self.sound_combo.set_cell_data_func(
+            self.sound_cell, self.sound_cell.set_text
+        )
         devices = map(widgets.ListEntry.from_tuple, MOUNT_DEVICE)
         self.device_store.set_data_source(devices)
         self.mount_combo.set_selected_value(self.original.config["device"])
-        self.mount_combo.set_cell_data_func(self.mount_cell, self.mount_cell.set_text)
+        self.mount_combo.set_cell_data_func(
+            self.mount_cell, self.mount_cell.set_text
+        )
 
         # harddisks
         self.__images_list = ImagesBindingList(gui.factory)
         formatter = ImageFormatter()
         self.images_store.set_data_source(self.__images_list)
         self.hda_combo.set_selected_value(self.original.config["hda"].image)
-        self.hda_combo.set_cell_data_func(self.hda_cell, self.hda_cell.set_text)
+        self.hda_combo.set_cell_data_func(
+            self.hda_cell, self.hda_cell.set_text
+        )
         self.hda_cell.set_property("formatter", formatter)
         self.hdb_combo.set_selected_value(self.original.config["hdb"].image)
-        self.hdb_combo.set_cell_data_func(self.hdb_cell, self.hdb_cell.set_text)
+        self.hdb_combo.set_cell_data_func(
+            self.hdb_cell, self.hdb_cell.set_text
+        )
         self.hdb_cell.set_property("formatter", formatter)
         self.hdc_combo.set_selected_value(self.original.config["hdc"].image)
-        self.hdc_combo.set_cell_data_func(self.hdc_cell, self.hdc_cell.set_text)
+        self.hdc_combo.set_cell_data_func(
+            self.hdc_cell, self.hdc_cell.set_text
+        )
         self.hdc_cell.set_property("formatter", formatter)
         self.hdd_combo.set_selected_value(self.original.config["hdd"].image)
-        self.hdd_combo.set_cell_data_func(self.hdd_cell, self.hdd_cell.set_text)
+        self.hdd_combo.set_cell_data_func(
+            self.hdd_cell, self.hdd_cell.set_text
+        )
         self.hdd_cell.set_property("formatter", formatter)
         self.fda_combo.set_selected_value(self.original.config["fda"].image)
-        self.fda_combo.set_cell_data_func(self.fda_cell, self.fda_cell.set_text)
+        self.fda_combo.set_cell_data_func(
+            self.fda_cell, self.fda_cell.set_text
+        )
         self.fda_cell.set_property("formatter", formatter)
         self.fdb_combo.set_selected_value(self.original.config["fdb"].image)
-        self.fdb_combo.set_cell_data_func(self.fdb_cell, self.fdb_cell.set_text)
+        self.fdb_combo.set_cell_data_func(
+            self.fdb_cell, self.fdb_cell.set_text
+        )
         self.fdb_cell.set_property("formatter", formatter)
         self.mtdblock_combo.set_selected_value(
-            self.original.config["mtdblock"].image)
+            self.original.config["mtdblock"].image
+        )
         self.mtdblock_cell.set_property("formatter", formatter)
-        self.mtdblock_combo.set_cell_data_func(self.mtdblock_cell, self.mtdblock_cell.set_text)
+        self.mtdblock_combo.set_cell_data_func(
+            self.mtdblock_cell, self.mtdblock_cell.set_text
+        )
 
         cfg = self.original.config
         for pname, wname in self.config_to_widget_mapping:
@@ -1732,8 +1771,9 @@ class QemuConfigController(ConfigController):
         self.original.set_image("hdd", self.hdd_combo.get_selected_value())
         self.original.set_image("fda", self.fda_combo.get_selected_value())
         self.original.set_image("fdb", self.fdb_combo.get_selected_value())
-        self.original.set_image("mtdblock",
-                                self.mtdblock_combo.get_selected_value())
+        self.original.set_image(
+            "mtdblock", self.mtdblock_combo.get_selected_value()
+        )
 
         for config_name, widget_name in self.config_to_widget_mapping:
             cfg[config_name] = getattr(self, widget_name).get_active()
@@ -1768,15 +1808,17 @@ class QemuConfigController(ConfigController):
 
     def on_newempty_button_clicked(self, button):
         CreateImageDialog(self.gui, self.gui.brickfactory).show(
-            self.gui.window)
+            self.gui.window
+        )
 
     def on_argv0_combo_changed(self, combobox):
         arch = self.argv0_combo.get_selected_value()
         if arch:
             cpus = map(widgets.ListEntry.from_tuple, qemu.get_cpus(arch))
             self.cpu_store.set_data_source(cpus)
-            machines = map(widgets.ListEntry.from_tuple,
-                           qemu.get_machines(arch))
+            machines = map(
+                widgets.ListEntry.from_tuple, qemu.get_machines(arch)
+            )
             self.machine_store.set_data_source(machines)
 
     def on_bind_button_clicked(self, button):
@@ -1824,13 +1866,14 @@ class QemuConfigController(ConfigController):
 
     def on_addplug_button_clicked(self, button):
         model = self.plugs_store
-        AddEthernetDialog(self.gui.brickfactory, self.original,
-                                  model).show(self.gui.window)
+        AddEthernetDialog(self.gui.brickfactory, self.original, model).show(
+            self.gui.window
+        )
 
     def on_setdefaulticon_button_clicked(self, button):
-        self.icon_image.set_from_pixbuf(
-            graphics.pixbuf_for_brick_type("qemu"))
+        self.icon_image.set_from_pixbuf(graphics.pixbuf_for_brick_type("qemu"))
 
     def on_icon_chooser_file_set(self, filechooser):
         raise NotImplementedError(
-            "QemuConfigController.on_icon_filechooser_file_set")
+            "QemuConfigController.on_icon_filechooser_file_set"
+        )

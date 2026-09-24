@@ -19,7 +19,6 @@ import os
 import errno
 import re
 
-import gi
 from gi.repository import Gtk
 from zope.interface import implementer
 

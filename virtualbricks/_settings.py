@@ -22,7 +22,6 @@ from twisted.logger import Logger
 
 from virtualbricks.errors import NoOptionError
 
-
 if False:  # pyflakes
     _ = str
 
@@ -79,8 +78,15 @@ class SettingsMeta(type):
 
 class Settings(metaclass=SettingsMeta):
 
-    __boolean_values__ = ('kvm', 'ksm', 'python', 'femaleplugs',
-                          'erroronloop', 'systray', 'show_missing')
+    __boolean_values__ = (
+        "kvm",
+        "ksm",
+        "python",
+        "femaleplugs",
+        "erroronloop",
+        "systray",
+        "show_missing",
+    )
     DEFAULT_SECTION = "Main"
     DEFAULT_PROJECT = DEFAULT_PROJECT
     VIRTUALBRICKS_HOME = VIRTUALBRICKS_HOME
@@ -106,8 +112,8 @@ class Settings(metaclass=SettingsMeta):
                 return self.config.getboolean(self.DEFAULT_SECTION, attr)
             except configparser.NoOptionError:
                 raise NoOptionError(attr)
-        if attr == 'sudo' and os.getuid() == 0:
-            return ''
+        if attr == "sudo" and os.getuid() == 0:
+            return ""
         try:
             return self.config.get(self.DEFAULT_SECTION, str(attr))
         except configparser.NoOptionError:
@@ -129,7 +135,7 @@ class Settings(metaclass=SettingsMeta):
                 self.install()
             else:
                 logger.info(config_loaded, filename=self.filename)
-                if self.get('ksm'):
+                if self.get("ksm"):
                     # TODO: the deferred is not checked and we don't know
                     # exactly well it will fire.
                     set_ksm(enable=True)
@@ -150,6 +156,7 @@ class Settings(metaclass=SettingsMeta):
 def install(settings):
     import sys
     import virtualbricks
+
     if "virtualbricks.settings" in sys.modules:
         raise RuntimeError("Settings already parsed.")
     virtualbricks.settings = settings

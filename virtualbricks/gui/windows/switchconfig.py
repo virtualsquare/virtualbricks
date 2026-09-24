@@ -20,6 +20,7 @@ Configuration panel of the Switch brick.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -89,13 +90,16 @@ class SwitchConfigController(ConfigController):
         return self.panel
 
     def get_config_view(self, gui):
-        self.fstp_check.set_active(
-            self.original.get("fstp"))
-        self.hub_check.set_active(
-            self.original.get("hub"))
-        minports = len([1 for b in iter(gui.brickfactory.bricks)
-                        for p in b.plugs if b.socks
-                        and p.sock.nickname == b.socks[0].nickname])
+        self.fstp_check.set_active(self.original.get("fstp"))
+        self.hub_check.set_active(self.original.get("hub"))
+        minports = len(
+            [
+                1
+                for b in iter(gui.brickfactory.bricks)
+                for p in b.plugs
+                if b.socks and p.sock.nickname == b.socks[0].nickname
+            ]
+        )
         spinner = self.ports_spin
         spinner.set_range(max(minports, 1), 128)
         spinner.set_value(self.original.get("numports"))
@@ -105,6 +109,6 @@ class SwitchConfigController(ConfigController):
         cfg = {
             "fstp": self.fstp_check.get_active(),
             "hub": self.hub_check.get_active(),
-            "numports": self.ports_spin.get_value_as_int()
+            "numports": self.ports_spin.get_value_as_int(),
         }
         self.original.set(cfg)

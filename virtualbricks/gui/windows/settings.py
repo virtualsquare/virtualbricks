@@ -20,6 +20,7 @@ Preferences dialog.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -30,7 +31,6 @@ from virtualbricks import settings, tools
 from virtualbricks._settings import DEFAULT_CONF
 from virtualbricks.errors import NoOptionError
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
-
 
 _MARKER = object()
 logger = Logger()
@@ -436,47 +436,56 @@ class SettingsDialog(_Dialog):
 
     def load_settings(self):
         # General tab
-        self.term_entry.set_text(settings_get_default('term'))
-        self.sudo_entry.set_text(settings_get_default('sudo'))
-        self.systray_switch.set_active(settings_get_default('systray'))
-        self.warn_missing_switch.set_active(settings_get_default('show_missing'))
+        self.term_entry.set_text(settings_get_default("term"))
+        self.sudo_entry.set_text(settings_get_default("sudo"))
+        self.systray_switch.set_active(settings_get_default("systray"))
+        self.warn_missing_switch.set_active(
+            settings_get_default("show_missing")
+        )
         # VDE tab
         self.vde_path_chooser.set_current_folder(
-            settings_get_default('vdepath'))
-        self.use_python_switch.set_active(settings_get_default('python'))
-        self.female_plugs_switch.set_active(settings_get_default('femaleplugs'))
+            settings_get_default("vdepath")
+        )
+        self.use_python_switch.set_active(settings_get_default("python"))
+        self.female_plugs_switch.set_active(
+            settings_get_default("femaleplugs")
+        )
         self.loop_detection_switch.set_active(
-            settings_get_default('erroronloop'))
+            settings_get_default("erroronloop")
+        )
         # Qemu tab
         self.qemu_path_chooser.set_current_folder(
-            settings_get_default('qemupath'))
-        combobox_set_active_value(self.cow_format_combo,
-                                  settings_get_default('cowfmt'), 0)
-        self.enable_ksm_switch.set_active(settings_get_default('ksm'))
+            settings_get_default("qemupath")
+        )
+        combobox_set_active_value(
+            self.cow_format_combo, settings_get_default("cowfmt"), 0
+        )
+        self.enable_ksm_switch.set_active(settings_get_default("ksm"))
 
     def store_settings(self):
         logger.debug(apply_settings)
         # General tab
-        settings.set('term', self.term_entry.get_text())
-        settings.set('sudo', self.sudo_entry.get_text())
-        settings.set('systray', self.systray_switch.get_active())
-        settings.set('show_missing', self.warn_missing_switch.get_active())
+        settings.set("term", self.term_entry.get_text())
+        settings.set("sudo", self.sudo_entry.get_text())
+        settings.set("systray", self.systray_switch.get_active())
+        settings.set("show_missing", self.warn_missing_switch.get_active())
         # VDE tab
         vdepath = self.vde_path_chooser.get_current_folder()
         if vdepath is not None:
-            settings.set('vdepath', vdepath)
-        settings.set('python', self.use_python_switch.get_active())
-        settings.set('femaleplugs', self.female_plugs_switch.get_active())
-        settings.set('erroronloop', self.loop_detection_switch.get_active())
+            settings.set("vdepath", vdepath)
+        settings.set("python", self.use_python_switch.get_active())
+        settings.set("femaleplugs", self.female_plugs_switch.get_active())
+        settings.set("erroronloop", self.loop_detection_switch.get_active())
         # Qemu tab
         qemupath = self.qemu_path_chooser.get_current_folder()
         if qemupath is not None:
-            settings.set('qemupath', qemupath)
-        cowfmt = combobox_get_active_value(self.cow_format_combo, 0,
-                                           DEFAULT_CONF['cowfmt'])
-        settings.set('cowfmt', cowfmt)
+            settings.set("qemupath", qemupath)
+        cowfmt = combobox_get_active_value(
+            self.cow_format_combo, 0, DEFAULT_CONF["cowfmt"]
+        )
+        settings.set("cowfmt", cowfmt)
         ksm_active = self.enable_ksm_switch.get_active()
-        settings.set('ksm', ksm_active)
+        settings.set("ksm", ksm_active)
         tools.set_ksm(ksm_active)
         if self.systray_switch.get_active():
             self.virtualbricks_gui.start_systray()

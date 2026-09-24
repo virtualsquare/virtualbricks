@@ -26,14 +26,13 @@ from twisted.logger import Logger
 
 from virtualbricks.errors import BadConfigError, CommandError
 
-
 if False:  # pyflakes
     _ = str
 
 
 logger = Logger()
-qemu_commit_failed = 'Failed to commit image.'
-qemu_info_failed = 'Error while getting information about image file.'
+qemu_commit_failed = "Failed to commit image."
+qemu_info_failed = "Error while getting information about image file."
 
 
 def _abspath_exe(executable, path):
@@ -48,7 +47,7 @@ def _abspath_exe(executable, path):
         abspath = path.joinpath(executable)
         if os.access(abspath, os.X_OK):
             return abspath
-    for path in map(Path, os.environ.get('PATH', '.').split(':')):
+    for path in map(Path, os.environ.get("PATH", ".").split(":")):
         exe = path.joinpath(executable)
         if os.access(exe, os.X_OK):
             return exe
@@ -66,7 +65,7 @@ def encode_proc_output(output):
 
     assert isinstance(output, bytes)
     encoding = locale.getpreferredencoding()
-    return str(output, encoding, 'strict')
+    return str(output, encoding, "strict")
 
 
 def _encode_or_complain(codes):
@@ -91,7 +90,7 @@ def getQemuOutput(executable, args=()):
 
     exe = abspath_qemu(executable)
     if exe is None:
-        return defer.fail(BadConfigError(_('{exe} not found').format(exe=exe)))
+        return defer.fail(BadConfigError(_("{exe} not found").format(exe=exe)))
     deferred = getProcessOutputAndValue(exe, args, env=os.environ)
     return deferred.addCallback(_encode_or_complain)
 
@@ -99,13 +98,13 @@ def getQemuOutput(executable, args=()):
 def abspath_vde(executable):
     from virtualbricks import settings
 
-    return str(_abspath_exe(Path(executable), Path(settings.get('vdepath'))))
+    return str(_abspath_exe(Path(executable), Path(settings.get("vdepath"))))
 
 
 def abspath_qemu(executable):
     from virtualbricks import settings
 
-    return str(_abspath_exe(Path(executable), Path(settings.get('qemupath'))))
+    return str(_abspath_exe(Path(executable), Path(settings.get("qemupath"))))
 
 
 def _log_failure(failure, message):
@@ -119,7 +118,7 @@ def qemu_commit_image(path):
     :rtype: twisted.internet.defer.Deferred[None]
     """
 
-    deferred = qemu_img(['commit', str(path)])
+    deferred = qemu_img(["commit", str(path)])
     deferred.addErrback(_log_failure, qemu_commit_failed)
     return deferred
 
@@ -132,7 +131,7 @@ def qemu_img_info(path):
     :rtype: twisted.internet.defer.Deferred[List[Dict[str, Any]]]
     """
 
-    args = ['info', '--format=json', '--backing-chain', str(path)]
+    args = ["info", "--format=json", "--backing-chain", str(path)]
     deferred = qemu_img(args)
     deferred.addCallback(json.loads)
     deferred.addErrback(_log_failure, qemu_info_failed)
@@ -147,4 +146,4 @@ def qemu_img(args):
     :rtype: twisted.internet.defer.Deferred[str]
     """
 
-    return getQemuOutput('qemu-img', args)
+    return getQemuOutput("qemu-img", args)

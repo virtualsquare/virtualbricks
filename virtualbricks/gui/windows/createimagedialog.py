@@ -20,6 +20,7 @@ Dialog to create a new empty disk image.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
@@ -28,7 +29,6 @@ from twisted.logger import Logger
 
 from virtualbricks.spawn import qemu_img
 from virtualbricks.gui.windows.base import _, _Dialog, pango_attr_list
-
 
 logger = Logger()
 
@@ -251,7 +251,9 @@ class CreateImageDialog(_Dialog):
             "response",
             self.on_dialog_response,
         )
-        self.image_name_entry.connect("changed", self.on_image_name_entry_changed)
+        self.image_name_entry.connect(
+            "changed", self.on_image_name_entry_changed
+        )
         self.format_combo.connect("changed", self.on_format_combo_changed)
         self.size_spin.connect(
             "value-changed",
@@ -287,7 +289,7 @@ class CreateImageDialog(_Dialog):
                 fileformat = "raw"
             return fileformat
         else:
-            raise ValueError('invalid fileformat')
+            raise ValueError("invalid fileformat")
 
     def _get_size(self):
         size = self.size_spin.get_value_as_int()
@@ -298,8 +300,8 @@ class CreateImageDialog(_Dialog):
         if itr is not None:
             unit = model[itr][0][0]
         else:
-            raise ValueError('invalid size')
-        return f'{size}{unit}'
+            raise ValueError("invalid size")
+        return f"{size}{unit}"
 
     def _toggle_dialog_response(self):
         enable = True
@@ -310,9 +312,9 @@ class CreateImageDialog(_Dialog):
         self.create_button.set_sensitive(enable)
 
     def create_image(self, args):
-        done_deferred = qemu_img([
-            'create', '-f', args.fileformat, args.pathname, args.size
-        ])
+        done_deferred = qemu_img(
+            ["create", "-f", args.fileformat, args.pathname, args.size]
+        )
         done_deferred.addCallback(lambda stdout: (args.name, args.pathname))
 
         def log_create_error(failure):

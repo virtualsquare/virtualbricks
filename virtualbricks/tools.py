@@ -42,8 +42,11 @@ ksm_error = "Can not change ksm state. (failed command: {cmd})"
 def random_mac():
     random.seed()
     return "00:aa:{0:02x}:{1:02x}:{2:02x}:{3:02x}".format(
-        random.getrandbits(8), random.getrandbits(8), random.getrandbits(8),
-        random.getrandbits(8))
+        random.getrandbits(8),
+        random.getrandbits(8),
+        random.getrandbits(8),
+        random.getrandbits(8),
+    )
 
 
 MAC_RE = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
@@ -58,12 +61,14 @@ def synchronize(func, lock):
     def wrapper(*args, **kwds):
         with lock:
             return func(*args, **kwds)
+
     return wrapper
 
 
 def synchronize_with(lock):
     def wrap(func):
         return synchronize(func, lock)
+
     return wrap
 
 
@@ -78,7 +83,7 @@ def stack_trace():
 
 def _check_missing(default_paths, files):
     if not default_paths:
-        default_paths = os.environ.get('PATH', '.').split(':')
+        default_paths = os.environ.get("PATH", ".").split(":")
     elif isinstance(default_paths, str):
         default_paths = [default_paths]
     for filename in files:
@@ -89,29 +94,53 @@ def _check_missing(default_paths, files):
             yield filename
 
 
-vde_bins = ["vde_switch", "vde_plug", "vde_cryptcab", "dpipe", "vdeterm",
-    "vde_plug2tap", "wirefilter", "vde_router"]
+vde_bins = [
+    "vde_switch",
+    "vde_plug",
+    "vde_cryptcab",
+    "dpipe",
+    "vdeterm",
+    "vde_plug2tap",
+    "wirefilter",
+    "vde_router",
+]
 
-qemu_bins = ["qemu", "qemu-system-arm", "qemu-system-cris",
-    "qemu-system-i386", "qemu-system-m68k", "qemu-system-microblaze",
-    "qemu-system-mips", "qemu-system-mips64", "qemu-system-mips64el",
-    "qemu-system-mipsel", "qemu-system-ppc", "qemu-system-ppc64",
-    "qemu-system-ppcemb", "qemu-system-sh4", "qemu-system-sh4eb",
-    "qemu-system-sparc", "qemu-system-sparc64", "qemu-system-x86_64",
-    "qemu-img"]
+qemu_bins = [
+    "qemu",
+    "qemu-system-arm",
+    "qemu-system-cris",
+    "qemu-system-i386",
+    "qemu-system-m68k",
+    "qemu-system-microblaze",
+    "qemu-system-mips",
+    "qemu-system-mips64",
+    "qemu-system-mips64el",
+    "qemu-system-mipsel",
+    "qemu-system-ppc",
+    "qemu-system-ppc64",
+    "qemu-system-ppcemb",
+    "qemu-system-sh4",
+    "qemu-system-sh4eb",
+    "qemu-system-sparc",
+    "qemu-system-sparc64",
+    "qemu-system-x86_64",
+    "qemu-img",
+]
 
 
 def check_missing_vde(path=None):
     if path is None:
         from virtualbricks import settings
-        path = settings.get('vdepath')
+
+        path = settings.get("vdepath")
     return list(_check_missing(path, vde_bins))
 
 
 def check_missing_qemu(path=None):
     if path is None:
         from virtualbricks import settings
-        path = settings.get('qemupath')
+
+        path = settings.get("qemupath")
     missing = list(_check_missing(path, qemu_bins))
     return missing, sorted(set(qemu_bins) - set(missing))
 
@@ -120,7 +149,7 @@ def check_kvm(path=None):
     return os.access("/dev/kvm", os.R_OK & os.W_OK)
 
 
-KSM_PATH = '/sys/kernel/mm/ksm/run'
+KSM_PATH = "/sys/kernel/mm/ksm/run"
 
 
 def check_ksm():
@@ -160,14 +189,14 @@ def set_ksm(enable):
     ksm_enabled = check_ksm()
     if enable ^ ksm_enabled:
         enable = 1 if enable else 0
-        cmd = f'echo {enable} > {KSM_PATH}'
+        cmd = f"echo {enable} > {KSM_PATH}"
         try:
-            sudo = settings.get('sudo')
-            args = ['--', 'su', '-c', cmd]
+            sudo = settings.get("sudo")
+            args = ["--", "su", "-c", cmd]
             d = utils.getProcessValue(sudo, args, env=os.environ)
         except NoOptionError:
-            shell_exe = os.environ.get('SHELL', '/bin/sh')
-            d = utils.getProcessValue(shell_exe, ['-c', cmd], env=os.environ)
+            shell_exe = os.environ.get("SHELL", "/bin/sh")
+            d = utils.getProcessValue(shell_exe, ["-c", cmd], env=os.environ)
         return d.addCallback(_check_set_ksm_cb, cmd)
     else:
         return defer.succeed(ksm_enabled)
@@ -187,26 +216,26 @@ class Tempfile:
                 raise
 
 
-GENERIC_HEADER = '>II'
+GENERIC_HEADER = ">II"
 GENERIC_HEADER_LEN = struct.calcsize(GENERIC_HEADER)
-COW_MAGIC = 0x4f4f4f4d  # OOOM
+COW_MAGIC = 0x4F4F4F4D  # OOOM
 COW_BACKING_FILENAME_SIZE = 1024
-QCOW_MAGIC = 0x514649fb  # \xfbIFQ, QFI\xfb
-QCOW_HEADER = '>QI'
-COWD_MAGIC = 0x44574f43  # COWD
-VMDK_MAGIC = 0x564d444b  # KDMV
+QCOW_MAGIC = 0x514649FB  # \xfbIFQ, QFI\xfb
+QCOW_HEADER = ">QI"
+COWD_MAGIC = 0x44574F43  # COWD
+VMDK_MAGIC = 0x564D444B  # KDMV
 QED_MAGIC = 0x00444551  # \0DEQ
-VDI_HEADER = '<64sI'
+VDI_HEADER = "<64sI"
 VDI_HEADER_LEN = struct.calcsize(VDI_HEADER)
-VDI_SIGNATURE = 0xbeda107f
-VPC_HEADER = '<8c'
-VPC_CREATOR = 'conectix'
+VDI_SIGNATURE = 0xBEDA107F
+VPC_HEADER = "<8c"
+VPC_CREATOR = "conectix"
 VPC_HEADER_LEN = struct.calcsize(VPC_HEADER)
-CLOOP_MAGIC = '''#!/bin/sh
+CLOOP_MAGIC = """#!/bin/sh
 #V2.0 Format
 modprobe cloop file=$0 && mount -r -t iso9660 /dev/cloop $1
-'''
-CLOOP_HEADER = '{0}c'.format(len(CLOOP_MAGIC))
+"""
+CLOOP_HEADER = "{0}c".format(len(CLOOP_MAGIC))
 CLOOP_HEADER_LEN = struct.calcsize(CLOOP_HEADER)
 MAX_HEADER_LENGTH = max(
     GENERIC_HEADER_LEN, VDI_HEADER_LEN, VPC_HEADER_LEN, CLOOP_HEADER_LEN
@@ -229,11 +258,11 @@ def get_backing_file(imagefile):
     :raises FileNotFound: it the file does not exists.
     """
 
-    with open(imagefile, 'rb') as fp:
+    with open(imagefile, "rb") as fp:
         header = fp.read(8)
         magic, version = struct.unpack(GENERIC_HEADER, header)
         if magic == COW_MAGIC:
-            backing_b = fp.read(COW_BACKING_FILENAME_SIZE).rstrip(b'\x00')
+            backing_b = fp.read(COW_BACKING_FILENAME_SIZE).rstrip(b"\x00")
         elif magic == QCOW_MAGIC and version in (1, 2, 3):
             offset, size = struct.unpack(QCOW_HEADER, fp.read(12))
             if size == 0:
@@ -308,7 +337,7 @@ def copyTo(self, destination, followLinks=True):
             destChild = destination.child(child.basename())
             copyTo(child, destChild, followLinks)
     elif self.isfile():
-        writefile = destination.open('w')
+        writefile = destination.open("w")
         try:
             readfile = self.open()
             try:
@@ -350,7 +379,7 @@ _type_map = {
     QCOW_MAGIC: {
         1: ImageFormat.QCOW,
         2: ImageFormat.QCOW2,
-        3: ImageFormat.QCOW3
+        3: ImageFormat.QCOW3,
     },
     COWD_MAGIC: {1: ImageFormat.VMDK},
     VMDK_MAGIC: {1: ImageFormat.VMDK},
@@ -383,7 +412,7 @@ def image_type(data):
 
 
 def image_type_from_file(filename):
-    with open(filename, 'rb') as fp:
+    with open(filename, "rb") as fp:
         return image_type(fp.read(MAX_HEADER_LENGTH))
 
 
@@ -406,9 +435,9 @@ def sync():
     def complain_on_error(command_info):
         stdout, stderr, exit_status = command_info
         if exit_status != 0:
-            raise RuntimeError(f'sync failed\n{stderr}')
+            raise RuntimeError(f"sync failed\n{stderr}")
 
-    deferred = utils.getProcessOutputAndValue('sync', env=os.environ)
+    deferred = utils.getProcessOutputAndValue("sync", env=os.environ)
     deferred.addCallback(complain_on_error)
     return deferred
 
@@ -430,5 +459,6 @@ def discard_first_arg(func, *args, **kwds):
     def wrapper(first_arg, *fargs, **fkwds):
         newkwds = {**kwds, **fkwds}
         return func(*args, *fargs, **newkwds)
+
     update_wrapper(wrapper, func)
     return wrapper

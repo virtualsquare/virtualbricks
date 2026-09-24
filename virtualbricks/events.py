@@ -20,14 +20,12 @@ from twisted.internet import reactor, defer
 
 from virtualbricks import base, errors, console
 
-
 if False:  # pyflakes
     _ = str
 
 
 process_ended = "Process ended with exit code {code}"
-event_error = ("Error in event action. See the log for more "
-               "information")
+event_error = "Error in event action. See the log for more " "information"
 
 
 class Command(base.String):
@@ -52,8 +50,10 @@ class Command(base.String):
 
 class EventConfig(base.Config):
 
-    parameters = {"actions": base.ListOf(Command("")),
-                  "delay": base.Integer(0)}
+    parameters = {
+        "actions": base.ListOf(Command("")),
+        "delay": base.Integer(0),
+    }
 
     def __init__(self):
         base.Config.__init__(self)
@@ -67,7 +67,7 @@ class Event(base.Base):
     config_factory = EventConfig
 
     def __isrunning__(self):
-      return self.scheduled is not None
+        return self.scheduled is not None
 
     def get_state(self):
         """Return state of the event"""
@@ -90,9 +90,9 @@ class Event(base.Base):
             # Add actions cutting the tail if it's too long
             for s in self.config["actions"]:
                 if isinstance(s, console.ShellCommand):
-                    tempstr += " \"*%s\"," % s
+                    tempstr += ' "*%s",' % s
                 else:
-                    tempstr += " \"%s\"," % s
+                    tempstr += ' "%s",' % s
             # Remove the last character
             tempstr = tempstr[0:-1]
         return tempstr
@@ -114,8 +114,9 @@ class Event(base.Base):
             raise errors.BadConfigError("Event %s not configured" % self.name)
 
         deferred = defer.Deferred()
-        self.scheduled = reactor.callLater(self.config["delay"],
-                                           self.do_actions, deferred)
+        self.scheduled = reactor.callLater(
+            self.config["delay"], self.do_actions, deferred
+        )
         self.notify_changed()
         return deferred
 
@@ -144,12 +145,14 @@ class Event(base.Base):
             return self
 
         self.scheduled = None
-        procs = [defer.maybeDeferred(action.perform, self.factory)
-                 for action in self.config["actions"]]
+        procs = [
+            defer.maybeDeferred(action.perform, self.factory)
+            for action in self.config["actions"]
+        ]
         dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
         dl.chainDeferred(deferred)
         self.notify_changed()
 
 
 def is_event(brick):
-    return brick.get_type() == 'Event'
+    return brick.get_type() == "Event"

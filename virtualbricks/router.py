@@ -36,9 +36,10 @@ class Router(bricks.Brick):
         return "Work in progress..."
 
     def prog(self):
-        return abspath_vde('vde_router')
+        return abspath_vde("vde_router")
 
     def configured(self):
         return True
 
-	#TODO: Implement configuration interface
+
+# TODO: Implement configuration interface

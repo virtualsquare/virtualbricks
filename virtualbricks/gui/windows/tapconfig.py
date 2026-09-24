@@ -20,6 +20,7 @@ Configuration panel of the Tap brick.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -167,7 +168,7 @@ class TapConfigController(_PlugMixin, ConfigController):
             gui.brickfactory.socks.filter_new(),
             self.original,
             self.original.plugs[0],
-            gui
+            gui,
         )
 
         self.ip_entry.set_text(self.original.get("ip"))
@@ -181,8 +182,7 @@ class TapConfigController(_PlugMixin, ConfigController):
         else:
             self.manual_radio.set_active(True)
 
-        self.ipconfig_grid.set_sensitive(
-            self.original.get("mode") == "manual")
+        self.ipconfig_grid.set_sensitive(self.original.get("mode") == "manual")
 
         return self.panel
 
@@ -192,10 +192,14 @@ class TapConfigController(_PlugMixin, ConfigController):
         elif self.dhcp_radio.get_active():
             self.original.set({"mode": "dhcp"})
         else:
-            self.original.set({"mode": "manual",
-                               "ip": self.ip_entry.get_text(),
-                               "nm": self.nm_entry.get_text(),
-                               "gw": self.gw_entry.get_text()})
+            self.original.set(
+                {
+                    "mode": "manual",
+                    "ip": self.ip_entry.get_text(),
+                    "nm": self.nm_entry.get_text(),
+                    "gw": self.gw_entry.get_text(),
+                }
+            )
         self.connect_plug(self.original.plugs[0], self.sock_combo)
 
     def on_manual_radio_toggled(self, radiobtn):

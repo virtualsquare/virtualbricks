@@ -20,6 +20,7 @@ Configuration panel of an event.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -35,8 +36,7 @@ class EventControllerMixin:
     """
 
     def setup_controller(self, event):
-        self.actions_view.get_selection().set_mode(
-            Gtk.SelectionMode.MULTIPLE)
+        self.actions_view.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
         self.shell_cell.set_activatable(True)
         self.action_cell.set_property("editable", True)
         model = self.actions_store
@@ -58,8 +58,9 @@ class EventControllerMixin:
 
     def on_shell_cell_toggled(self, cell_renderer, path):
         model = self.actions_store
-        model.set_value(model.get_iter(path), 1,
-                        not cell_renderer.get_active())
+        model.set_value(
+            model.get_iter(path), 1, not cell_renderer.get_active()
+        )
 
     def configure_event(self, event, attrs):
         model = self.actions_store

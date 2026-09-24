@@ -24,6 +24,7 @@ and was replaced by ``commitimagedialog.ui``. Only the UI is converted.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -198,10 +199,10 @@ class CommitDialog(_Dialog):
         return self.dialog
 
     def on_dialog_response(
-            self,
-            dialog: Gtk.Dialog,
-            response_id: int,
-            data=None,
+        self,
+        dialog: Gtk.Dialog,
+        response_id: int,
+        data=None,
     ) -> None:
         """
         Handler of the "response" signal of GtkDialog.
@@ -213,9 +214,9 @@ class CommitDialog(_Dialog):
         pass
 
     def on_file_radiobutton_toggled(
-            self,
-            radio_button: Gtk.RadioButton,
-            data=None,
+        self,
+        radio_button: Gtk.RadioButton,
+        data=None,
     ) -> None:
         """
         Handler of the "toggled" signal of GtkRadioButton.
@@ -227,9 +228,9 @@ class CommitDialog(_Dialog):
         pass
 
     def on_cowpath_filechooser_file_set(
-            self,
-            file_chooser_button: Gtk.FileChooserButton,
-            data=None,
+        self,
+        file_chooser_button: Gtk.FileChooserButton,
+        data=None,
     ) -> None:
         """
         Handler of the "file-set" signal of GtkFileChooserButton.
@@ -241,9 +242,9 @@ class CommitDialog(_Dialog):
         pass
 
     def on_disk_combo_changed(
-            self,
-            combo_box: Gtk.ComboBox,
-            data=None,
+        self,
+        combo_box: Gtk.ComboBox,
+        data=None,
     ) -> None:
         """
         Handler of the "changed" signal of GtkComboBox.
@@ -255,9 +256,9 @@ class CommitDialog(_Dialog):
         pass
 
     def on_cow_checkbutton_toggled(
-            self,
-            check_button: Gtk.CheckButton,
-            data=None,
+        self,
+        check_button: Gtk.CheckButton,
+        data=None,
     ) -> None:
         """
         Handler of the "toggled" signal of GtkCheckButton.

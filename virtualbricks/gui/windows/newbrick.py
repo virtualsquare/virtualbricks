@@ -20,6 +20,7 @@ Dialog to create a new brick.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -34,7 +35,6 @@ from virtualbricks.gui.windows.base import (
     destroy_on_exit,
     load_pixbuf,
 )
-
 
 logger = Logger()
 
@@ -56,7 +56,7 @@ class NewBrickDialog(_Dialog):
 
         self._factory = factory
         self.build_ui()
-        self._type = 'switch'
+        self._type = "switch"
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``newbrick.ui``."""
@@ -389,7 +389,9 @@ class NewBrickDialog(_Dialog):
             "toggled",
             self.on_radiobutton_toggled,
         )
-        self.brick_name_entry.connect("changed", self.on_brick_name_entry_changed)
+        self.brick_name_entry.connect(
+            "changed", self.on_brick_name_entry_changed
+        )
 
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
@@ -401,7 +403,7 @@ class NewBrickDialog(_Dialog):
         """
 
         style_context = self.brick_name_entry.get_style_context()
-        style_context.add_class('error')
+        style_context.add_class("error")
         self.brick_name_entry.set_tooltip_markup(tooltip)
         self.ok_button.set_sensitive(False)
 
@@ -411,7 +413,7 @@ class NewBrickDialog(_Dialog):
         """
 
         style_context = self.brick_name_entry.get_style_context()
-        style_context.remove_class('error')
+        style_context.remove_class("error")
         self.brick_name_entry.set_tooltip_text(None)
         self.ok_button.set_sensitive(True)
 
@@ -444,7 +446,7 @@ class NewBrickDialog(_Dialog):
         except NameAlreadyInUseError:
             tooltip = (
                 f'Name <span weight="bold">{brick_name}</span>'
-                ' is already in use'
+                " is already in use"
             )
             self._set_error(tooltip)
         except InvalidNameError as exc:

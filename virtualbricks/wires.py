@@ -42,28 +42,33 @@ class Wire(bricks.Brick):
                 p0 = self.plugs[0].sock.brick.name
             if self.plugs[1].sock:
                 p1 = self.plugs[1].sock.brick.name
-            if p0 != _('disconnected') and p1 != _('disconnected'):
+            if p0 != _("disconnected") and p1 != _("disconnected"):
                 return _("Configured to connect {0} to {1}").format(p0, p1)
         elif len(self.plugs) == 1:
             if self.plugs[0].sock:
                 p0 = self.plugs[0].sock.brick.name
             return _("Configured to connect {0} to {1}").format(p0, p1)
-        return _("Not yet configured. Left plug is {0} and right plug is {1}"
-                ).format(p0, p1)
+        return _(
+            "Not yet configured. Left plug is {0} and right plug is {1}"
+        ).format(p0, p1)
 
     def configured(self):
         return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))
 
     def prog(self):
-        return abspath_vde('dpipe'),
+        return (abspath_vde("dpipe"),)
 
     def args(self):
-        return [self.prog(),
-                abspath_vde('vde_plug'),
-                # XXX: this is awful
-                self.plugs[0].sock.path.rstrip('[]'), "=",
-                abspath_vde('vde_plug'),
-                self.plugs[1].sock.path.rstrip('[]')]
+        return [
+            self.prog(),
+            abspath_vde("vde_plug"),
+            # XXX: this is awful
+            self.plugs[0].sock.path.rstrip("[]"),
+            "=",
+            abspath_vde("vde_plug"),
+            self.plugs[1].sock.path.rstrip("[]"),
+        ]
+
 
 # these parameters no longer represent the only configuration Netemu has, but rather the highlighted configuration such that other functions can still be used
 class NetemuConfig(bricks.Config):
@@ -73,24 +78,22 @@ class NetemuConfig(bricks.Config):
         "bandwidth": bricks.Integer(125000),
         "bandwidthr": bricks.Integer(125000),
         "bandwidthsymm": bricks.Boolean(True),
-
         "delay": bricks.Integer(0),
         "delayr": bricks.Integer(0),
         "delaysymm": bricks.Boolean(True),
-
         "chanbufsize": bricks.Integer(75000),
         "chanbufsizer": bricks.Integer(75000),
         "chanbufsizesymm": bricks.Boolean(True),
-
         "loss": bricks.SpinFloat(0, 0, 100),
         "lossr": bricks.SpinFloat(0, 0, 100),
         "losssymm": bricks.Boolean(True),
     }
 
-# Each channel emulator has its instance of this manager class
-class MarkovConfig():
 
-    # calling __init__ with the current active config (Netemu.config) will link it to state nr. 0 
+# Each channel emulator has its instance of this manager class
+class MarkovConfig:
+
+    # calling __init__ with the current active config (Netemu.config) will link it to state nr. 0
     def __init__(self, config):
         self.states = list()
         self.weights = list()
@@ -101,7 +104,7 @@ class MarkovConfig():
     # append a new state with default config at the end of the state list
     # all weights to and from the new state are 0 by default
     def add(self, index):
-        new = NetemuConfig() # create a new config instance for each state
+        new = NetemuConfig()  # create a new config instance for each state
         length = len(self.states)
         self.weights.insert(index, list())
 
@@ -129,7 +132,7 @@ class MarkovConfig():
         if not defaultOccupied:
             self.states.insert(index, new)
             return
-        
+
         unavailable.sort()
 
         for i, num in enumerate(unavailable):
@@ -137,7 +140,7 @@ class MarkovConfig():
                 new["name"] += " " + str(i)
                 self.states.insert(index, new)
                 return
-            
+
         new["name"] += " " + str(len(unavailable))
         self.states.insert(index, new)
 
@@ -145,13 +148,14 @@ class MarkovConfig():
     def remove(self, index):
         if len(self.states) == 1:
             return
-        
-        del(self.weights[index])
+
+        del self.weights[index]
 
         for weight in self.weights:
-            del(weight[index])
+            del weight[index]
 
-        del(self.states[index])
+        del self.states[index]
+
 
 class WFProcessProtocol(bricks.VDEProcessProtocol):
 
@@ -166,10 +170,14 @@ class Netemu(Wire):
 
     def __init__(self, factory, name):
         Wire.__init__(self, factory, name)
-        self.markov_manager = None # don't know what the default config is yet....
-        self.currentState = 0      # used for GUI updating and communicating to Netemu
-        self.startupState = 0      # the state the emulator will start into
-        self.transPeriod = 100     # default value for Netemu
+        self.markov_manager = (
+            None  # don't know what the default config is yet....
+        )
+        self.currentState = (
+            0  # used for GUI updating and communicating to Netemu
+        )
+        self.startupState = 0  # the state the emulator will start into
+        self.transPeriod = 100  # default value for Netemu
         self.command_builder = {
             "--nofifo": lambda: "*",
             "-M": self.console,
@@ -183,8 +191,13 @@ class Netemu(Wire):
         return d
 
     def args(self):
-        res = [self.prog(), "-v", self.plugs[0].sock.path.rstrip('[]') + ":" +
-               self.plugs[1].sock.path.rstrip('[]')]
+        res = [
+            self.prog(),
+            "-v",
+            self.plugs[0].sock.path.rstrip("[]")
+            + ":"
+            + self.plugs[1].sock.path.rstrip("[]"),
+        ]
 
         # Bandwidth
         if self.config["bandwidthsymm"]:
@@ -216,7 +229,7 @@ class Netemu(Wire):
 
         res.extend(bricks.Brick.build_cmd_line(self))
         return res
-    
+
     def init_markov(self):
         self.markov_manager = MarkovConfig(self.config)
 
@@ -230,7 +243,7 @@ class Netemu(Wire):
         self._set(attrs, "losssymm", "loss", "lossr")
         Wire.set(self, attrs)
 
-        # this is called while reading the save file which always reads at least 1 state 
+        # this is called while reading the save file which always reads at least 1 state
         if self.markov_manager is None:
             self.init_markov()
 
@@ -241,23 +254,23 @@ class Netemu(Wire):
             if right_to_left in attrs:
                 self.config[right_to_left] = attrs.pop(right_to_left)
 
-    # the set functions in base.py and wires.py are not suitable anymore for communicating with the emulator  
+    # the set functions in base.py and wires.py are not suitable anymore for communicating with the emulator
     def update(self):
         if self.proc is None:
             return
-        
+
         # state attributes
-        
+
         self._update("numnodes", len(self.markov_manager.states))
 
         currentState = self.currentState
-        
+
         for i, state in enumerate(self.markov_manager.states):
             self.currentState = i
             self.config = self.markov_manager.states[self.currentState]
             for name, value in state.items():
                 self._update(name, value)
-        
+
         self.currentState = currentState
         self.config = self.markov_manager.states[self.currentState]
 
@@ -275,7 +288,9 @@ class Netemu(Wire):
 
     # utility function with logging like in base.py
     def _update(self, name, value, *args):
-        attribute_set = "Attribute {attr} set in {brick} with value ""{value}."
+        attribute_set = (
+            "Attribute {attr} set in {brick} with value " "{value}."
+        )
 
         self.logger.info(attribute_set, attr=name, brick=self, value=value)
         setter = getattr(self, "cbset_" + name, None)
@@ -294,7 +309,9 @@ class Netemu(Wire):
         self.send(b"markov-time %d\n" % (value))
 
     def cbset_name(self, value):
-        self.send(b"markov-name %d,%b\n" % (self.currentState, value.encode('UTF-8')))
+        self.send(
+            b"markov-name %d,%b\n" % (self.currentState, value.encode("UTF-8"))
+        )
 
     def cbset_chanbufsize(self, value):
         if self.config["chanbufsizesymm"]:
@@ -362,9 +379,16 @@ class Netemu(Wire):
         double_opt_tmp = "{0}[{1}]"
 
         l = []
-        for name, param in sorted(self.markov_manager.states[0].parameters.items()):
-            if name != "name" and self.markov_manager.states[0][name] != param.default:
-                value = param.to_string_brick(self.markov_manager.states[0][name], self)
+        for name, param in sorted(
+            self.markov_manager.states[0].parameters.items()
+        ):
+            if (
+                name != "name"
+                and self.markov_manager.states[0][name] != param.default
+            ):
+                value = param.to_string_brick(
+                    self.markov_manager.states[0][name], self
+                )
                 l.append(opt_tmp.format(name, value))
         tmp = "[{0}:{1}]\n#Syntax used by the old versions (only one state); added for backwards compatibility only\n\n{2}"
         if l:
@@ -373,25 +397,40 @@ class Netemu(Wire):
 
         if len(self.markov_manager.states) == 1:
             return
-        
-        fileobj.write("- #Syntax used by newer versions\n" + opt_tmp.format("states", len(self.markov_manager.states)) + "\n")
+
+        fileobj.write(
+            "- #Syntax used by newer versions\n"
+            + opt_tmp.format("states", len(self.markov_manager.states))
+            + "\n"
+        )
 
         for i, state in enumerate(self.markov_manager.states):
             l = []
             for name, param in sorted(state.parameters.items()):
                 if state[name] != param.default:
                     value = param.to_string_brick(state[name], self)
-                    l.append(opt_tmp.format(new_opt_tmp.format(i, name), value))
-            
+                    l.append(
+                        opt_tmp.format(new_opt_tmp.format(i, name), value)
+                    )
+
             for j, weight in enumerate(self.markov_manager.weights[i]):
                 if j != i and weight != 0:
-                    l.append(opt_tmp.format(new_opt_tmp.format(i, double_opt_tmp.format("probability", j)), weight))
+                    l.append(
+                        opt_tmp.format(
+                            new_opt_tmp.format(
+                                i, double_opt_tmp.format("probability", j)
+                            ),
+                            weight,
+                        )
+                    )
 
             l.append("")
             fileobj.write("\n".join(l))
-        
+
         if self.transPeriod != 100:
-            fileobj.write(opt_tmp.format("transperiod", self.transPeriod) + "\n")
+            fileobj.write(
+                opt_tmp.format("transperiod", self.transPeriod) + "\n"
+            )
         fileobj.write("\n")
 
     def load_from(self, section):
@@ -406,7 +445,7 @@ class Netemu(Wire):
             if line.startswith("#") or section.EMPTY.match(line):
                 curpos = section.fileobj.tell()
                 line = section.fileobj.readline()
-                continue # ...
+                continue  # ...
             match = section.CONFIG_LINE.match(line)
             if match:
                 name, value = match.groups()
@@ -422,21 +461,23 @@ class Netemu(Wire):
                 if not line.startswith("-"):
                     section.fileobj.seek(curpos)
                     return
-                
+
                 done = True
 
-        errorMsg = "Error parsing argument {arg}, {exception}."            
+        errorMsg = "Error parsing argument {arg}, {exception}."
         cfg = {}
         line = section.fileobj.readline()
         curpos = section.fileobj.tell()
         STATE_LINE = re.compile(r"^state([0-9]+)\.(\w+)\s*=\s*(.*)$")
-        DOUBLE_STATE_LINE = re.compile(r"^state([0-9]+)\.(\w+)\[([0-9]+)\]\s*=\s*(.*)$")
+        DOUBLE_STATE_LINE = re.compile(
+            r"^state([0-9]+)\.(\w+)\[([0-9]+)\]\s*=\s*(.*)$"
+        )
 
         while line:
             if line.startswith("#") or section.EMPTY.match(line):
                 curpos = section.fileobj.tell()
                 line = section.fileobj.readline()
-                continue # ...
+                continue  # ...
 
             match = DOUBLE_STATE_LINE.match(line)
             if match:
@@ -446,10 +487,21 @@ class Netemu(Wire):
                         # value is None when the parameter is not set
                         value = ""
                     try:
-                        if name == "probability" and max(int(state), int(stateTo)) < len(self.markov_manager.states) and int(state) != int(stateTo):
-                            self.markov_manager.weights[int(state)][int(stateTo)] = float(value)    
+                        if (
+                            name == "probability"
+                            and max(int(state), int(stateTo))
+                            < len(self.markov_manager.states)
+                            and int(state) != int(stateTo)
+                        ):
+                            self.markov_manager.weights[int(state)][
+                                int(stateTo)
+                            ] = float(value)
                     except ValueError:
-                        self.logger.error(errorMsg, arg="state" + state + "." + name, exception="Value Error")
+                        self.logger.error(
+                            errorMsg,
+                            arg="state" + state + "." + name,
+                            exception="Value Error",
+                        )
                 curpos = section.fileobj.tell()
                 line = section.fileobj.readline()
 
@@ -462,10 +514,18 @@ class Netemu(Wire):
                             # value is None when the parameter is not set
                             value = ""
                         try:
-                            if int(state) < len(self.markov_manager.states) and self.config.parameters.get(name):
-                                self.markov_manager.states[int(state)][name] = self._getvalue(name, value)
+                            if int(state) < len(
+                                self.markov_manager.states
+                            ) and self.config.parameters.get(name):
+                                self.markov_manager.states[int(state)][
+                                    name
+                                ] = self._getvalue(name, value)
                         except ValueError:
-                            self.logger.error(errorMsg, arg="state" + state + "." + name, exception="Value Error")
+                            self.logger.error(
+                                errorMsg,
+                                arg="state" + state + "." + name,
+                                exception="Value Error",
+                            )
                     curpos = section.fileobj.tell()
                     line = section.fileobj.readline()
 
@@ -478,16 +538,25 @@ class Netemu(Wire):
                             value = ""
                         try:
                             if name.startswith("states") and value.isnumeric():
-                                for i in range(len(self.markov_manager.states), int(value)):
+                                for i in range(
+                                    len(self.markov_manager.states), int(value)
+                                ):
                                     self.markov_manager.add(i)
-                                
-                            elif name.startswith("transperiod") and value.isnumeric():
+
+                            elif (
+                                name.startswith("transperiod")
+                                and value.isnumeric()
+                            ):
                                 self.transPeriod = int(value)
                         except ValueError:
-                            self.logger.error(errorMsg, arg="state" + state + "." + name, exception="Value Error")
-                        
+                            self.logger.error(
+                                errorMsg,
+                                arg="state" + state + "." + name,
+                                exception="Value Error",
+                            )
+
                         curpos = section.fileobj.tell()
                         line = section.fileobj.readline()
-                    else:   
+                    else:
                         section.fileobj.seek(curpos)
                         return

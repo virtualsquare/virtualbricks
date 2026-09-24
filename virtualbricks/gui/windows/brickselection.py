@@ -22,6 +22,7 @@ Dialog to choose the bricks started or stopped by an event.
 import string
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -31,7 +32,6 @@ from twisted.logger import Logger
 from virtualbricks import console
 from virtualbricks.gui import widgets
 from virtualbricks.gui.windows.base import _, destroy_on_exit, Window
-
 
 logger = Logger()
 
@@ -71,7 +71,9 @@ class BrickSelectionDialog(Window):
         self.added_filter = Gtk.TreeModelFilter(child_model=self.bricks_store)
 
         # available_filter (Gtk.TreeModelFilter)
-        self.available_filter = Gtk.TreeModelFilter(child_model=self.bricks_store)
+        self.available_filter = Gtk.TreeModelFilter(
+            child_model=self.bricks_store
+        )
 
         # dialog (Gtk.Dialog)
         self.dialog = Gtk.Dialog(
@@ -259,10 +261,12 @@ class BrickSelectionDialog(Window):
     @destroy_on_exit
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
-            self._event.set({
-                'actions': [
-                    console.VbShellCommand(f'{brick.name} {self._action}')
-                    for brick in self._added
-                ]
-            })
+            self._event.set(
+                {
+                    "actions": [
+                        console.VbShellCommand(f"{brick.name} {self._action}")
+                        for brick in self._added
+                    ]
+                }
+            )
             logger.info(event_created)

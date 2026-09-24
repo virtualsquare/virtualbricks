@@ -22,6 +22,7 @@ Configuration panel of the Netemu brick.
 from copy import deepcopy
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -202,7 +203,9 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             active=0,
         )
         # Custom widget from glade-catalog.xml
-        self.state_cell = widgets.CellRendererFormattable(display_member="label")
+        self.state_cell = widgets.CellRendererFormattable(
+            display_member="label"
+        )
         self.state_combo.pack_start(self.state_cell, False)
         self.panel.attach(self.state_combo, 1, 3, 1, 1)
         hboxspace0 = Gtk.Box(visible=True, can_focus=False)
@@ -615,7 +618,9 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             active=0,
         )
         # Custom widget from glade-catalog.xml
-        self.weight_cell = widgets.CellRendererFormattable(display_member="label")
+        self.weight_cell = widgets.CellRendererFormattable(
+            display_member="label"
+        )
         self.weight_combo.pack_start(self.weight_cell, False)
         self.panel.attach(self.weight_combo, 2, 15, 1, 1)
         self.weight_spin = Gtk.SpinButton(
@@ -745,7 +750,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
                 gui.brickfactory.socks.filter_new(),
                 self.original,
                 self.original.plugs[i],
-                gui
+                gui,
             )
 
         return self.panel
@@ -798,7 +803,9 @@ class NetemuConfigController(_PlugMixin, ConfigController):
 
             otherIndex = self.weight_combo.get_selected_value()
             if otherIndex is not None:
-                self.original.markov_manager.weights[index][otherIndex] = float(self.weight_spin.get_value_as_int())
+                self.original.markov_manager.weights[index][otherIndex] = (
+                    float(self.weight_spin.get_value_as_int())
+                )
         else:
             self.original.config = self.tempStates[0]
             self.original.currentState = 0
@@ -837,15 +844,21 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         states = list()
         exstates = list()
         for i, state in enumerate(self.tempStates):
-            states.append(widgets.ListEntry(i, str(i) + " (" + state["name"] + ")"))
+            states.append(
+                widgets.ListEntry(i, str(i) + " (" + state["name"] + ")")
+            )
             if i != index:
-                exstates.append(widgets.ListEntry(i, str(i) + " (" + state["name"] + ")"))
+                exstates.append(
+                    widgets.ListEntry(i, str(i) + " (" + state["name"] + ")")
+                )
 
         self.other_states_store.set_data_source(exstates)
 
         if len(exstates):
             self.weight_combo.set_selected_value(exstates[0].value)
-            self.weight_combo.set_cell_data_func(self.weight_cell, self.weight_cell.set_text)
+            self.weight_combo.set_cell_data_func(
+                self.weight_cell, self.weight_cell.set_text
+            )
             self.weight_spin.set_editable(True)
             self.update_weight_button.set_sensitive(True)
             self.time_spin.set_editable(True)
@@ -860,7 +873,9 @@ class NetemuConfigController(_PlugMixin, ConfigController):
 
         self.states_store.set_data_source(states)
         self.state_combo.set_selected_value(index)
-        self.state_combo.set_cell_data_func(self.state_cell, self.state_cell.set_text)
+        self.state_combo.set_cell_data_func(
+            self.state_cell, self.state_cell.set_text
+        )
 
     def on_add_state(self, button):
         index = self.state_combo.get_selected_value()
@@ -894,7 +909,9 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         if index is not None:
             otherIndex = self.weight_combo.get_selected_value()
             if otherIndex is not None:
-                self.tempWeights[index][otherIndex] = float(self.weight_spin.get_value_as_int())
+                self.tempWeights[index][otherIndex] = float(
+                    self.weight_spin.get_value_as_int()
+                )
 
     def on_state_combo_changed(self, combobox):
         index = self.state_combo.get_selected_value()

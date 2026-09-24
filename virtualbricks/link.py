@@ -23,14 +23,15 @@ from twisted.logger import Logger
 
 from virtualbricks import errors, settings
 
-
 if False:  # pyflakes
     _ = str
 
 
-link_loop = ("Loop link detected: aborting operation. If you want "
-             "to start a looped network, disable the check loop "
-             "feature in the general settings")
+link_loop = (
+    "Loop link detected: aborting operation. If you want "
+    "to start a looped network, disable the check loop "
+    "feature in the general settings"
+)
 
 
 class Plug:
@@ -81,15 +82,18 @@ class Plug:
 
     def disconnect(self):
         assert self.sock is not None, "Plug not connected"
-        assert self in self.sock.plugs, \
-                "sock %r has not reference to %r" % (self.sock, self)
+        assert self in self.sock.plugs, "sock %r has not reference to %r" % (
+            self.sock,
+            self,
+        )
         self.sock.plugs.remove(self)
         self.sock = None
 
     def save_to(self, fileobj):
         tmp = "link|{0.brick.name}|{1}|{0.model}|{0.mac}\n"
-        fileobj.write(tmp.format(self,
-            self.sock.nickname if self.configured() else ""))
+        fileobj.write(
+            tmp.format(self, self.sock.nickname if self.configured() else "")
+        )
 
 
 class Sock:

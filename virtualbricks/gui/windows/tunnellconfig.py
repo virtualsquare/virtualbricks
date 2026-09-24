@@ -20,6 +20,7 @@ Configuration panel of the TunnelListen brick.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -105,7 +106,7 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
             gui.brickfactory.socks.filter_new(),
             self.original,
             self.original.plugs[0],
-            gui
+            gui,
         )
         port = self.port_spin
         port.set_value(self.original.get("port"))

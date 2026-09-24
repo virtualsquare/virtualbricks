@@ -24,6 +24,7 @@ import tempfile
 import textwrap
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from twisted.internet import utils
@@ -32,14 +33,12 @@ from twisted.logger import Logger
 from virtualbricks import __version__
 from virtualbricks.gui.windows.base import _, _Window
 
-
 logger = Logger()
 
 bug_send = "Sending report bug"
 bug_sent = "Report bug sent succefully"
 bug_error = "{err}\nstderr:\n{stderr}"
-bug_report_fail = ("Report bug failed with code "
-                   "{code}\nstderr:\n{stderr}")
+bug_report_fail = "Report bug failed with code " "{code}\nstderr:\n{stderr}"
 bug_err_unknown = "Error on bug reporting"
 
 BUG_REPORT_ERRORS = {
@@ -47,7 +46,7 @@ BUG_REPORT_ERRORS = {
     2: "One of the files passed on the command line did not exist.",
     3: "A required tool could not be found.",
     4: "The action failed.",
-    5: "No permission to read one of the files passed on the command line."
+    5: "No permission to read one of the files passed on the command line.",
 }
 
 
@@ -176,11 +175,11 @@ class LoggingWindow(_Window):
         """
 
         textview.scroll_to_mark(
-            mark=textbuffer.get_mark('end'),
+            mark=textbuffer.get_mark("end"),
             within_margin=0.0,
             use_align=True,
             xalign=0,  # left
-            yalign=1  # bottom
+            yalign=1,  # bottom
         )
 
     def on_scrolledwindow_scroll_event(self, window, event):
@@ -196,10 +195,9 @@ class LoggingWindow(_Window):
         adjustment = window.get_vadjustment()
         self._scroll_to_bottom = (
             adjustment.get_value()  # current offset from top
-            >=
-            adjustment.get_upper() -  # The maximum value for the adjustment
-            adjustment.get_page_size() -  # The visible size
-            self.scroll_tolerance
+            >= adjustment.get_upper()  # The maximum value for the adjustment
+            - adjustment.get_page_size()  # The visible size
+            - self.scroll_tolerance
         )
         return False
 
@@ -243,7 +241,7 @@ class LoggingWindow(_Window):
         :type adjustment: Gtk.Button
         """
 
-        self._textbuffer.set_text('')
+        self._textbuffer.set_text("")
         return True
 
     def on_save_button_clicked(self, button):
@@ -254,24 +252,26 @@ class LoggingWindow(_Window):
         """
 
         chooser = Gtk.FileChooserDialog(
-            title=_('Save as...'),
+            title=_("Save as..."),
             parent=self.window,
             action=Gtk.FileChooserAction.SAVE,
             buttons=(
-                'gtk-cancel', Gtk.ResponseType.CANCEL,
-                'gtk-save', Gtk.ResponseType.OK
-            )
+                "gtk-cancel",
+                Gtk.ResponseType.CANCEL,
+                "gtk-save",
+                Gtk.ResponseType.OK,
+            ),
         )
         chooser.set_do_overwrite_confirmation(True)
-        chooser.connect('response', self.on_saveDialog_response)
+        chooser.connect("response", self.on_saveDialog_response)
         chooser.show()
         return True
 
     def on_saveDialog_response(self, dialog, response_id):
         try:
             if response_id == Gtk.ResponseType.OK:
-                text = self._textbuffer.get_property('text')
-                with open(dialog.get_filename(), 'w') as fp:
+                text = self._textbuffer.get_property("text")
+                with open(dialog.get_filename(), "w") as fp:
                     fp.write(text)
         finally:
             dialog.destroy()
@@ -291,32 +291,43 @@ class LoggingWindow(_Window):
             if code == 0:
                 logger.info(bug_sent)
             elif code in BUG_REPORT_ERRORS:
-                logger.error(bug_error, err=BUG_REPORT_ERRORS[code],
-                             stderr=stderr, hide_to_user=True)
+                logger.error(
+                    bug_error,
+                    err=BUG_REPORT_ERRORS[code],
+                    stderr=stderr,
+                    hide_to_user=True,
+                )
             else:
-                logger.error(bug_report_fail, code=code, stderr=stderr,
-                             hide_to_user=True)
+                logger.error(
+                    bug_report_fail,
+                    code=code,
+                    stderr=stderr,
+                    hide_to_user=True,
+                )
 
-        body = textwrap.dedent(
-            f'''
+        body = textwrap.dedent(f"""
 
             Please keep the following lines as they are.
             The attachment contains the logs of Virtualbricks.
 
             Virtualbricks version: {__version__}
-            '''
-        )
-        messages = self._textbuffer.get_property('text')
+            """)
+        messages = self._textbuffer.get_property("text")
         # Do not remove the file once xdg-email exits.
-        fd, filename = tempfile.mkstemp(prefix='virtualbricks_log_', text=True)
-        with os.fdopen(fd, mode='wt', encoding='utf8') as fp:
+        fd, filename = tempfile.mkstemp(prefix="virtualbricks_log_", text=True)
+        with os.fdopen(fd, mode="wt", encoding="utf8") as fp:
             fp.write(messages)
         params = [
-            '--utf8', '--subject', '[Virtualbricks] ', '--body', body,
-            '--attach', filename
+            "--utf8",
+            "--subject",
+            "[Virtualbricks] ",
+            "--body",
+            body,
+            "--attach",
+            filename,
         ]
-        env = dict(os.environ, MM_NOTTTY='1')
-        proc_d = utils.getProcessOutputAndValue('xdg-email', params, env)
+        env = dict(os.environ, MM_NOTTTY="1")
+        proc_d = utils.getProcessOutputAndValue("xdg-email", params, env)
         proc_d.addCallback(xdg_email_exit_cb)
         proc_d.addErrback(lambda f: logger.failure(bug_err_unknown, f))
         # Stop the propagation of activate-link signal

@@ -20,6 +20,7 @@ Dialog to attach events to the start and the stop of a brick.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk

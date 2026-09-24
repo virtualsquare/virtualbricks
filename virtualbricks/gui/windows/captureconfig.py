@@ -20,6 +20,7 @@ Configuration panel of the Capture brick.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -83,7 +84,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
             gui.brickfactory.socks.filter_new(),
             self.original,
             self.original.plugs[0],
-            gui
+            gui,
         )
         combo2 = self.interface_combo
         model = combo2.get_model()
@@ -93,7 +94,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
             for line in fd:
                 name = line.strip().split(":")[0]
                 if name != "lo":
-                    itr = model.append((name, ))
+                    itr = model.append((name,))
                     if self.original.get("iface") == name:
                         combo2.set_active_iter(itr)
 

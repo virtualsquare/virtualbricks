@@ -17,7 +17,6 @@
 
 from virtualbricks import _qemu
 
-
 _version = None
 
 
@@ -41,7 +40,7 @@ def get_executables(version=None):
         version = _get_version()
     if version is None:
         raise TypeError("Invalid qemu version")
-    return _qemu.load_spec(version)['binaries']
+    return _qemu.load_spec(version)["binaries"]
 
 
 def get_cpus(architecture, version=None):
@@ -49,7 +48,7 @@ def get_cpus(architecture, version=None):
         version = _get_version()
     if version is None:
         raise TypeError("Invalid qemu version")
-    cpus = _qemu.load_spec(version)['cpus']
+    cpus = _qemu.load_spec(version)["cpus"]
     return cpus[architecture]
 
 
@@ -58,5 +57,5 @@ def get_machines(architecture, version=None):
         version = _get_version()
     if version is None:
         raise TypeError("Invalid qemu version")
-    machines = _qemu.load_spec(version)['machines']
+    machines = _qemu.load_spec(version)["machines"]
     return machines[architecture]

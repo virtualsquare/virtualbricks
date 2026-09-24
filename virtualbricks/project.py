@@ -27,7 +27,6 @@ from twisted.logger import Logger
 
 from virtualbricks import settings, configfile, errors, _configparser, tools
 
-
 logger = Logger()
 
 create_archive = "Create archive in {path}"
@@ -38,13 +37,14 @@ rebase_error = "Error on rebase"
 rebase = "Rebasing {cow} to {basefile}"
 remap_image = "Mapping {original} to {new}"
 extract_project = "Extracting project"
-cannot_find_project = ("Cannot find project \"{name}\". "
-                       "A new project will be created.")
-include_images = ("Including the following images to the project: "
-                  "{images}.")
+cannot_find_project = (
+    'Cannot find project "{name}". ' "A new project will be created."
+)
+include_images = "Including the following images to the project: " "{images}."
 save_images = "Move virtual machine's images"
-DEFAULT_PROJECT_RE = re.compile(r"^{0}(?:_\d+)?$".format(
-    settings.DEFAULT_PROJECT))
+DEFAULT_PROJECT_RE = re.compile(
+    r"^{0}(?:_\d+)?$".format(settings.DEFAULT_PROJECT)
+)
 
 
 def _complain_on_error(result):
@@ -61,8 +61,9 @@ class Tgz:
 
     exe_c = exe_x = "tar"
 
-    def create(self, pathname, files, images=(),
-               run=utils.getProcessOutputAndValue):
+    def create(
+        self, pathname, files, images=(), run=utils.getProcessOutputAndValue
+    ):
         logger.info(create_archive, path=pathname)
         args = ["cfzh", pathname, "-C", settings.VIRTUALBRICKS_HOME] + files
         if images:
@@ -87,8 +88,9 @@ class Tgz:
             d.addBoth(pass_through(imgs.remove))
         return d
 
-    def extract(self, pathname, destination,
-                run=utils.getProcessOutputAndValue):
+    def extract(
+        self, pathname, destination, run=utils.getProcessOutputAndValue
+    ):
         logger.info(extract_archive, path=destination)
         args = ["Sxfz", pathname, "-C", destination]
         d = run(self.exe_x, args, os.environ)
@@ -133,9 +135,21 @@ class ProjectEntry:
     def get_bricks(self):
         # XXX: every time a new brick type is added or a a type is changed this
         # method must change too. fix this
-        bricks = set(["Qemu", "Switch", "SwitchWrapper", "Tap", "Capture",
-                      "Wirefilter", "Netemu", "Wire", "TunnelConnect",
-                      "TunnelListen", "Router"])
+        bricks = set(
+            [
+                "Qemu",
+                "Switch",
+                "SwitchWrapper",
+                "Tap",
+                "Capture",
+                "Wirefilter",
+                "Netemu",
+                "Wire",
+                "TunnelConnect",
+                "TunnelListen",
+                "Router",
+            ]
+        )
         return self._filter(lambda k: k[0] in bricks)
 
     def get_events(self):
@@ -175,7 +189,7 @@ class ProjectEntry:
             fileobj.write("{0}\n".format("|".join(link)))
 
     def save(self, project):
-        with open(project._project.path, 'wt') as fp:
+        with open(project._project.path, "wt") as fp:
             self.dump(fp)
 
 
@@ -183,6 +197,7 @@ def pass_through(function, *args, **kwds):
     def wrapper(arg):
         function(*args, **kwds)
         return arg
+
     return wrapper
 
 
@@ -289,7 +304,7 @@ class Project:
             raise
         if self._description_modified:
             text = self._description
-            with open(self._path.child('README').path, 'wt') as fp:
+            with open(self._path.child("README").path, "wt") as fp:
                 fp.write(text)
             self._description_modified = False
 
@@ -323,10 +338,10 @@ class Project:
     def get_description(self):
         if self._description is None:
             try:
-                with open(self._path.child('README').path) as fp:
+                with open(self._path.child("README").path) as fp:
                     self._description = fp.read()
             except FileNotFoundError:
-                self._description = ''
+                self._description = ""
         return self._description
 
     def set_description(self, text):
@@ -337,7 +352,7 @@ class Project:
         return (fp for fp in self._path.walk() if fp.isfile())
 
     def get_descriptor(self):
-        with open(self._project.path, 'rt') as fp:
+        with open(self._project.path, "rt") as fp:
             return ProjectEntry.from_fileobj(fp)
 
     def images(self):

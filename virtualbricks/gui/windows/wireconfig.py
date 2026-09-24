@@ -20,6 +20,7 @@ Configuration panel of the Wire brick.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -70,7 +71,7 @@ class WireConfigController(_PlugMixin, ConfigController):
                 gui.brickfactory.socks.filter_new(),
                 self.original,
                 self.original.plugs[i],
-                gui
+                gui,
             )
 
         return self.panel

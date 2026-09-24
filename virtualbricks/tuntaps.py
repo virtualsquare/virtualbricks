@@ -30,6 +30,8 @@ class PrivilegedBrick(bricks.Brick):
 
     def needsudo(self):
         return os.geteuid() != 0
+
+
 class CaptureConfig(bricks.Config):
 
     parameters = {"iface": bricks.String("")}
@@ -43,8 +45,9 @@ class Capture(PrivilegedBrick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(link.Plug(self))
-        self.command_builder = odict((("-s", self.sock_path),
-                                      ("*iface", "iface")))
+        self.command_builder = odict(
+            (("-s", self.sock_path), ("*iface", "iface"))
+        )
 
     def sock_path(self):
         if self.plugs[0].sock:
@@ -56,13 +59,13 @@ class Capture(PrivilegedBrick):
             return _("No interface selected")
         if self.plugs[0].sock:
             return _("Interface %(interface)s plugged to %(socket)s ") % {
-                'interface': self.config["iface"],
-                'socket': self.plugs[0].sock.brick.name
+                "interface": self.config["iface"],
+                "socket": self.plugs[0].sock.brick.name,
             }
         return _("Interface %s disconnected") % self.config["iface"]
 
     def prog(self):
-        return abspath_vde('vde_pcapplug')
+        return abspath_vde("vde_pcapplug")
 
     def open_console(self):
         pass
@@ -73,10 +76,12 @@ class Capture(PrivilegedBrick):
 
 class TapConfig(bricks.Config):
 
-    parameters = {"ip": bricks.String("10.0.0.1"),
-                  "nm": bricks.String("255.255.255.0"),
-                  "gw": bricks.String(""),
-                  "mode": bricks.String("off")}
+    parameters = {
+        "ip": bricks.String("10.0.0.1"),
+        "nm": bricks.String("255.255.255.0"),
+        "gw": bricks.String(""),
+        "mode": bricks.String("off"),
+    }
 
 
 class Tap(PrivilegedBrick):
@@ -101,7 +106,7 @@ class Tap(PrivilegedBrick):
         return _("disconnected")
 
     def prog(self):
-        return abspath_vde('vde_plug2tap')
+        return abspath_vde("vde_plug2tap")
 
     def open_console(self):
         pass
@@ -112,29 +117,50 @@ class Tap(PrivilegedBrick):
     def post_poweron(self):
         # XXX: fixme
         self.start_related_events(on=True)
-        if self.config["mode"] == 'dhcp':
+        if self.config["mode"] == "dhcp":
             if self.needsudo():
-                os.system(settings.get('sudo') + ' "dhclient ' + self.name
-                          + '"')
+                os.system(
+                    settings.get("sudo") + ' "dhclient ' + self.name + '"'
+                )
             else:
-                os.system('dhclient ' + self.name)
-        elif self.config["mode"] == 'manual':
+                os.system("dhclient " + self.name)
+        elif self.config["mode"] == "manual":
             if self.needsudo():
-                    # XXX Ugly, can't we ioctls?
-                    os.system(settings.get('sudo') + ' "/sbin/ifconfig ' +
-                              self.name + ' ' + self.config["ip"] + ' netmask ' +
-                              self.config["nm"] + '"')
-                    if (len(self.config["gw"]) > 0):
-                        os.system(settings.get('sudo') +
-                                  ' "/sbin/route add default gw ' +
-                                  self.config["gw"] + ' dev ' + self.name +
-                                  '"')
+                # XXX Ugly, can't we ioctls?
+                os.system(
+                    settings.get("sudo")
+                    + ' "/sbin/ifconfig '
+                    + self.name
+                    + " "
+                    + self.config["ip"]
+                    + " netmask "
+                    + self.config["nm"]
+                    + '"'
+                )
+                if len(self.config["gw"]) > 0:
+                    os.system(
+                        settings.get("sudo")
+                        + ' "/sbin/route add default gw '
+                        + self.config["gw"]
+                        + " dev "
+                        + self.name
+                        + '"'
+                    )
             else:
-                    os.system('/sbin/ifconfig ' + self.name + ' ' +
-                              self.config["ip"] + ' netmask ' +
-                              self.config["nm"])
-                    if (len(self.config["gw"]) > 0):
-                        os.system('/sbin/route add default gw ' +
-                                  self.config["gw"] + ' dev ' + self.name)
+                os.system(
+                    "/sbin/ifconfig "
+                    + self.name
+                    + " "
+                    + self.config["ip"]
+                    + " netmask "
+                    + self.config["nm"]
+                )
+                if len(self.config["gw"]) > 0:
+                    os.system(
+                        "/sbin/route add default gw "
+                        + self.config["gw"]
+                        + " dev "
+                        + self.name
+                    )
         else:
             return

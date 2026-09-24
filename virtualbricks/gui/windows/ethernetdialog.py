@@ -20,6 +20,7 @@ Dialogs to add or edit a network interface of a virtual machine.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -29,11 +30,9 @@ from twisted.logger import Logger
 from virtualbricks import settings, tools, virtualmachines
 from virtualbricks.gui.windows.base import _, Window
 
-
 logger = Logger()
 
-invalid_mac = ("MAC address {mac} is not valid, generating "
-               "a random one")
+invalid_mac = "MAC address {mac} is not valid, generating " "a random one"
 not_implemented = "Not implemented"
 
 
@@ -215,8 +214,9 @@ class BaseEthernetDialog(Window):
 
     def setup(self):
         socks = self.sock_store
-        socks.append(("Host-only ad hoc network",
-                      virtualmachines.hostonly_sock))
+        socks.append(
+            ("Host-only ad hoc network", virtualmachines.hostonly_sock)
+        )
         if settings.femaleplugs:
             socks.append(("Vde socket", "_sock"))
             for sock in self.factory.socks:
@@ -262,7 +262,7 @@ class AddEthernetDialog(BaseEthernetDialog):
             link = self.brick.add_sock(mac, model)
         else:
             link = self.brick.add_plug(sock, mac, model)
-        self.model.append((link, ))
+        self.model.append((link,))
 
 
 class EditEthernetDialog(BaseEthernetDialog):
@@ -276,8 +276,7 @@ class EditEthernetDialog(BaseEthernetDialog):
 
     def show(self, parent=None):
         self.setup()
-        self.title_label.set_label(
-            "<b>Edit ethernet interface</b>")
+        self.title_label.set_label("<b>Edit ethernet interface</b>")
         self.ok_button.set_property("label", "gtk-ok")
         self.mac_entry.set_text(self.plug.mac)
         model = self.nic_model_store

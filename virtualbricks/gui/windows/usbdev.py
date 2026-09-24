@@ -20,6 +20,7 @@ Dialog to choose the USB devices of a virtual machine.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -35,13 +36,13 @@ class UsbDevDialog(_Dialog):
     @staticmethod
     def set_cell_id(tree_column, cell, tree_model, tree_itr, data):
         usb_dev = tree_model.get_value(tree_itr, 1)
-        cell.set_property('text', usb_dev.id)
+        cell.set_property("text", usb_dev.id)
         return True
 
     @staticmethod
     def set_cell_description(tree_column, cell, tree_model, tree_itr, data):
         usb_dev = tree_model.get_value(tree_itr, 1)
-        cell.set_property('text', usb_dev.description)
+        cell.set_property("text", usb_dev.description)
         return True
 
     def __init__(self, usb_devices, selected_devices):
@@ -59,10 +60,10 @@ class UsbDevDialog(_Dialog):
             tree_model.append((selected, device))
         self.devices_view.set_model(tree_model)
         self.selected_cell.set_radio(False)
-        self.id_column.set_cell_data_func(
-            self.id_cell, self.set_cell_id)
+        self.id_column.set_cell_data_func(self.id_cell, self.set_cell_id)
         self.description_column.set_cell_data_func(
-            self.description_cell, self.set_cell_description)
+            self.description_cell, self.set_cell_description
+        )
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``usbdev.ui``."""

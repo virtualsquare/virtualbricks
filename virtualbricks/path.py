@@ -25,8 +25,8 @@ import virtualbricks
 def _resource_paths(package, resource):
     # Search the resource in the system, in well known locations.
     filename = basename(resource)
-    for prefix in sys.prefix, '/usr', '/usr/local':
-        syswide = joinpath(prefix, 'share', 'virtualbricks', filename)
+    for prefix in sys.prefix, "/usr", "/usr/local":
+        syswide = joinpath(prefix, "share", "virtualbricks", filename)
         yield syswide
     # Then search it in the package itself.
     loader = pkgutil.get_loader(package)
@@ -34,14 +34,14 @@ def _resource_paths(package, resource):
     if mod is None or not hasattr(mod, "__file__"):
         return
     pkgdir = dirname(mod.__file__)
-    yield joinpath(pkgdir, 'data/' + resource)
+    yield joinpath(pkgdir, "data/" + resource)
     # Last chance. Sometime, if the package is installed via the setup.py
     # script, the data files are installed in very strange
     # locations. For example, this was a real case, the data files were in
     # /usr/local/lib/python2.7/dist-packages/... (continue)
     #       .../virtualbricks-1.0.12-py2.7.egg/share/virtualbricks
     for vpath in virtualbricks.__path__:
-        yield joinpath(dirname(vpath), 'share', 'virtualbricks', filename)
+        yield joinpath(dirname(vpath), "share", "virtualbricks", filename)
     # I did my best, I give up.
 
 
@@ -61,14 +61,14 @@ def _get_data(package, resource, mode):
                 raise
     # We will never know, maybe pkgutil will have more luck than us
     data = pkgutil.get_data(package, resource)
-    if data and 't' in mode:
-        return data.decode('strict')
+    if data and "t" in mode:
+        return data.decode("strict")
     return data
 
 
 def read_data(package, resource):
-    return _get_data(package, resource, mode='rb')
+    return _get_data(package, resource, mode="rb")
 
 
 def read_text(package, resource):
-    return _get_data(package, resource, mode='r')
+    return _get_data(package, resource, mode="r")

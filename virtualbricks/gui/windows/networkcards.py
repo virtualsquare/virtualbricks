@@ -23,6 +23,7 @@ No class uses ``networkcards.ui``: the network cards are in
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -111,10 +112,10 @@ class NetworkCards(_Window):
         return self.window
 
     def on_network_cards_view_button_release_event(
-            self,
-            tree_view: Gtk.TreeView,
-            event: Gdk.Event,
-            data=None,
+        self,
+        tree_view: Gtk.TreeView,
+        event: Gdk.Event,
+        data=None,
     ) -> bool:
         """
         Handler of the "button-release-event" signal of GtkTreeView.
@@ -126,10 +127,10 @@ class NetworkCards(_Window):
         return False
 
     def on_network_cards_view_key_press_event(
-            self,
-            tree_view: Gtk.TreeView,
-            event: Gdk.Event,
-            data=None,
+        self,
+        tree_view: Gtk.TreeView,
+        event: Gdk.Event,
+        data=None,
     ) -> bool:
         """
         Handler of the "key-press-event" signal of GtkTreeView.

@@ -20,6 +20,7 @@ Dialog to commit the changes of a COW image to its base image.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
@@ -31,7 +32,6 @@ from virtualbricks.virtualmachines import is_virtualmachine
 from virtualbricks.gui.windows.base import _, _Dialog, pango_attr_list
 from virtualbricks.gui.windows.progressbardialog import ProgressBarDialog
 
-
 logger = Logger()
 
 not_implemented = "Not implemented"
@@ -39,7 +39,7 @@ not_implemented = "Not implemented"
 
 def disks_of(brick):
     if is_virtualmachine(brick):
-        for dev in 'hda', 'hdb', 'hdc', 'hdd', 'fda', 'fdb', 'mtdblock':
+        for dev in "hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock":
             yield brick.config[dev]
 
 
@@ -52,7 +52,7 @@ class CommitImageDialog(_Dialog):
     @staticmethod
     def set_cell_title(tree_column, cell, tree_model, tree_itr):
         disk = tree_model.get_value(tree_itr, 0)
-        cell.set_property('text', f'{disk.device} on {disk.vm.get_name()}')
+        cell.set_property("text", f"{disk.device} on {disk.vm.get_name()}")
         return True
 
     def __init__(self, brickfactory):
@@ -63,7 +63,8 @@ class CommitImageDialog(_Dialog):
                 tree_model.append([disk])
         self.disks_combo.set_model(tree_model)
         self.disks_combo.set_cell_data_func(
-            self.disk_cell, self.set_cell_title)
+            self.disk_cell, self.set_cell_title
+        )
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``commitimagedialog.ui``."""
@@ -229,7 +230,7 @@ class CommitImageDialog(_Dialog):
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.APPLY:
             action_name = self.action_stack.get_visible_child_name()
-            action = getattr(self, f'do_{action_name}')
+            action = getattr(self, f"do_{action_name}")
             action()
         elif response_id == Gtk.ResponseType.CLOSE:
             dialog.destroy()

@@ -23,7 +23,6 @@ from twisted.logger import Logger
 from virtualbricks import bricks, link
 from virtualbricks.spawn import abspath_vde
 
-
 logger = Logger()
 pwdgen_exit = "Command pwdgen exited with {code}"
 
@@ -33,17 +32,17 @@ if False:  # pyflakes
 
 class TunnelListenConfig(bricks.Config):
 
-    parameters = {"password": bricks.String(""),
-                  "port": bricks.SpinInt(7667, 1, 65535)}
+    parameters = {
+        "password": bricks.String(""),
+        "port": bricks.SpinInt(7667, 1, 65535),
+    }
 
 
 class TunnelListen(bricks.Brick):
 
     type = "TunnelListen"
     config_factory = TunnelListenConfig
-    command_builder = {"-s": None,
-                       "#password": "password",
-                       "-p": "port"}
+    command_builder = {"-s": None, "#password": "password", "-p": "port"}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
@@ -52,18 +51,24 @@ class TunnelListen(bricks.Brick):
 
     def sock_path(self):
         if self.configured():
-            return self.plugs[0].sock.path.rstrip('[]')
+            return self.plugs[0].sock.path.rstrip("[]")
         return ""
 
     def get_parameters(self):
         if self.plugs[0].sock:
-            return _("plugged to") + " " + self.plugs[0].sock.brick.name + \
-                    " " + _("listening to udp:") + " " + \
-                    self.config.get("port")
+            return (
+                _("plugged to")
+                + " "
+                + self.plugs[0].sock.brick.name
+                + " "
+                + _("listening to udp:")
+                + " "
+                + self.config.get("port")
+            )
         return _("disconnected")
 
     def prog(self):
-        return abspath_vde('vde_cryptcab')
+        return abspath_vde("vde_cryptcab")
 
     def configured(self):
         return bool(self.plugs[0].sock)
@@ -71,7 +76,9 @@ class TunnelListen(bricks.Brick):
     def args(self):
         # TODO: port to utils.getProcessOutput
         pwdgen = "echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (
-            self.config["password"], self.name)
+            self.config["password"],
+            self.name,
+        )
         exitstatus = os.system(pwdgen)
         logger.info(pwdgen_exit, code=exitstatus)
         res = []
@@ -82,26 +89,30 @@ class TunnelListen(bricks.Brick):
             res.append(arg)
         return res
 
-    #def post_poweroff(self):
+    # def post_poweroff(self):
     #    os.unlink("/tmp/tunnel_%s.key" % self.name)
     #    pass
 
 
 class TunnelConnectConfig(TunnelListenConfig):
 
-    parameters = {"host": bricks.String(""),
-                  "localport": bricks.SpinInt(10771, 1, 65535)}
+    parameters = {
+        "host": bricks.String(""),
+        "localport": bricks.SpinInt(10771, 1, 65535),
+    }
 
 
 class TunnelConnect(TunnelListen):
 
     type = "TunnelConnect"
     config_factory = TunnelConnectConfig
-    command_builder = {"-s": None,
-                       "#password": "password",
-                       "-p": "localport",
-                       "-c": None,
-                       "#port": "port"}
+    command_builder = {
+        "-s": None,
+        "#password": "password",
+        "-p": "localport",
+        "-c": None,
+        "#port": "port",
+    }
 
     def __init__(self, factory, name):
         TunnelListen.__init__(self, factory, name)
@@ -114,8 +125,13 @@ class TunnelConnect(TunnelListen):
 
     def get_parameters(self):
         if self.plugs[0].sock:
-            return _("plugged to") + " " + self.plugs[0].sock.brick.name +\
-                _(", connecting to udp://") + self.config["host"]
+            return (
+                _("plugged to")
+                + " "
+                + self.plugs[0].sock.brick.name
+                + _(", connecting to udp://")
+                + self.config["host"]
+            )
 
         return _("disconnected")
 

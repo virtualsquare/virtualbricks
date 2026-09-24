@@ -23,13 +23,12 @@ from zope.interface import Interface, Attribute
 from twisted.python.components import registerAdapter
 from twisted.logger import Logger
 
-
-
 __all__ = ["registerAdapter", "InterfaceLogger", "IBrick", "IPlug", "IBuilder"]
 
 logger = Logger()
-non_interface = ("Requested a non-interface ({interface}) method: "
-                 "{method}\n{traceback}")
+non_interface = (
+    "Requested a non-interface ({interface}) method: " "{method}\n{traceback}"
+)
 
 
 class InterfaceLogger:
@@ -40,11 +39,16 @@ class InterfaceLogger:
 
     def __getattr__(self, name):
         if name not in self.interface:
-            tb = lambda: "\n".join("{0}:{1} {2}".format(fn, l, fun) for
-                                   fn, l, fun, t in
-                                   reversed(traceback.extract_stack()))
-            logger.warn(non_interface, interface=self.interface.__name__,
-                        method=name, traceback=tb)
+            tb = lambda: "\n".join(
+                "{0}:{1} {2}".format(fn, l, fun)
+                for fn, l, fun, t in reversed(traceback.extract_stack())
+            )
+            logger.warn(
+                non_interface,
+                interface=self.interface.__name__,
+                method=name,
+                traceback=tb,
+            )
         try:
             return getattr(self.original, name)
         except AttributeError:
@@ -125,8 +129,10 @@ class IBuilder(Interface):
 class IProcess(Interface):
     """A class representing a process."""
 
-    pid = Attribute("The exit value of the process. C{None} if process is not "
-                    "termiated, C{int} otherwise.")
+    pid = Attribute(
+        "The exit value of the process. C{None} if process is not "
+        "termiated, C{int} otherwise."
+    )
 
     def signal_process(signo):
         """

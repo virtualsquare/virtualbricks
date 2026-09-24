@@ -27,14 +27,22 @@ from zope.interface import implementer
 
 from virtualbricks import interfaces, settings, _configparser
 
-
 if False:  # pyflakes
     _ = str
 
 
-__all__ = ["BrickBuilder", "ConfigFile", "EventBuilder", "ImageBuilder",
-           "LinkBuilder", "SockBuilder", "log_events", "restore", "safe_save",
-           "save"]
+__all__ = [
+    "BrickBuilder",
+    "ConfigFile",
+    "EventBuilder",
+    "ImageBuilder",
+    "LinkBuilder",
+    "SockBuilder",
+    "log_events",
+    "restore",
+    "safe_save",
+    "save",
+]
 
 
 logger = Logger()
@@ -42,14 +50,16 @@ link_type_error = "Cannot find link of type {type}"
 brick_not_found = "Cannot find brick {brick}, skipping line {line}"
 sock_not_found = "Cannot find sock {sockname}, skipping line {line}"
 link_added = "Added {type} to {brick}"
-cannot_save_backup = ("Cannot save to backup file {filename}.\n"
-                      "{traceback}")
+cannot_save_backup = "Cannot save to backup file {filename}.\n" "{traceback}"
 project_saved = "Saved project to {filename}."
-cannot_restore_backup = ("Cannot restore backup file {filename}.\n"
-                         "{traceback}")
-backup_restored = ("A backup file for the current project has been "
-                   "restored.\nYou can find more information "
-                   "looking in View->Messages.")
+cannot_restore_backup = (
+    "Cannot restore backup file {filename}.\n" "{traceback}"
+)
+backup_restored = (
+    "A backup file for the current project has been "
+    "restored.\nYou can find more information "
+    "looking in View->Messages."
+)
 image_found = "Found Disk image {name}"
 skip_image = "Skipping disk image, name '{name}' already in use"
 skip_image_noa = "Cannot access image file, skipping"
@@ -57,20 +67,22 @@ config_dump = "CONFIG DUMP on {path}"
 open_project = "Open project at {path}"
 config_save_error = "Error while saving configuration file"
 
-log_events = [link_type_error,
-              brick_not_found,
-              sock_not_found,
-              link_added,
-              cannot_save_backup,
-              project_saved,
-              cannot_restore_backup,
-              backup_restored,
-              image_found,
-              skip_image,
-              skip_image_noa,
-              config_dump,
-              open_project,
-              config_save_error]
+log_events = [
+    link_type_error,
+    brick_not_found,
+    sock_not_found,
+    link_added,
+    cannot_save_backup,
+    project_saved,
+    cannot_restore_backup,
+    backup_restored,
+    image_found,
+    skip_image,
+    skip_image_noa,
+    config_dump,
+    open_project,
+    config_save_error,
+]
 
 
 @contextlib.contextmanager
@@ -95,8 +107,11 @@ def restore_backup(filename, fbackup):
         if e.errno == errno.ENOENT:
             pass
         else:
-            logger.error(cannot_save_backup, filename=filename_back,
-                         traceback=traceback.format_exc())
+            logger.error(
+                cannot_save_backup,
+                filename=filename_back,
+                traceback=traceback.format_exc(),
+            )
     else:
         logger.info(project_saved, filename=filename_back)
     try:
@@ -108,8 +123,11 @@ def restore_backup(filename, fbackup):
         if e.errno == errno.ENOENT:
             pass
         else:
-            logger.warn(cannot_restore_backup, filename=fbackup,
-                        traceback=traceback.format_exc())
+            logger.warn(
+                cannot_restore_backup,
+                filename=fbackup,
+                traceback=traceback.format_exc(),
+            )
     else:
         logger.warn(backup_restored, hide_to_user=True)
     if created:
@@ -148,8 +166,9 @@ class LinkBuilder:
                 brick.connect(sock, link.mac, link.model)
                 logger.info(link_added, type=link.type, brick=link.owner)
             else:
-                logger.warn(sock_not_found, sockname=link.sockname,
-                            line="|".join(link))
+                logger.warn(
+                    sock_not_found, sockname=link.sockname, line="|".join(link)
+                )
         else:
             logger.warn(brick_not_found, brick=link.owner, line="|".join(link))
 
@@ -161,8 +180,9 @@ def link_builder_factory(context):
         return LinkBuilder()
 
 
-interfaces.registerAdapter(link_builder_factory, _configparser.Link,
-                           interfaces.IBuilder)
+interfaces.registerAdapter(
+    link_builder_factory, _configparser.Link, interfaces.IBuilder
+)
 
 
 @implementer(interfaces.IBuilder)
@@ -175,8 +195,8 @@ class ImageBuilder:
         logger.debug(image_found, name=self.name)
         section = dict(section)
         # TODO: if path not in section log error
-        path = section.get('path', '')
-        description = '\n'.join(section.get('description', '').split('<nl>'))
+        path = section.get("path", "")
+        description = "\n".join(section.get("description", "").split("<nl>"))
         if factory.is_in_use(self.name):
             logger.info(skip_image, name=self.name)
         elif not os.access(path, os.R_OK):
@@ -254,9 +274,18 @@ class CompatibleBuilder:
 class CompatibleVMBuilder(CompatibleBuilder):
 
     type = "Qemu"
-    incompatibles = frozenset(["basehda", "basehdb", "basehdc", "basehdd",
-                               "basefda", "basefdb", "basemtdblock",
-                               "usbdevlist"])
+    incompatibles = frozenset(
+        [
+            "basehda",
+            "basehdb",
+            "basehdc",
+            "basehdd",
+            "basefda",
+            "basefdb",
+            "basemtdblock",
+            "usbdevlist",
+        ]
+    )
 
     def __init__(self, name):
         self.name = name
@@ -292,8 +321,11 @@ def compatible_brick_builder_factory(context):
     return brick_builder_factory(context)
 
 
-interfaces.registerAdapter(compatible_brick_builder_factory,
-                           _configparser.Section, interfaces.IBuilder)
+interfaces.registerAdapter(
+    compatible_brick_builder_factory,
+    _configparser.Section,
+    interfaces.IBuilder,
+)
 
 
 class ConfigFile:
@@ -351,7 +383,7 @@ class ConfigFile:
                 fp = str_or_obj
             restore_backup(fp, fp.sibling(fp.basename() + "~"))
             logger.info(open_project, path=fp.path)
-            with open(fp.path,"rt") as fd:
+            with open(fp.path, "rt") as fd:
                 self.restore_from(factory, fd)
         else:
             self.restore_from(factory, str_or_obj)

@@ -30,12 +30,16 @@ from gi.repository import GdkPixbuf
 from virtualbricks.path import get_resource_filename
 from virtualbricks.tools import is_running
 
-
 __all__ = [
-    "get_image", "pixbuf_for_brick", "pixbuf_for_brick_at_size",
-    "pixbuf_for_brick_type", "pixbuf_for_running_brick",
-    "pixbuf_for_running_brick_at_size", "Node", "Topology",
-    "get_data_filename"
+    "get_image",
+    "pixbuf_for_brick",
+    "pixbuf_for_brick_at_size",
+    "pixbuf_for_brick_type",
+    "pixbuf_for_running_brick",
+    "pixbuf_for_running_brick_at_size",
+    "Node",
+    "Topology",
+    "get_data_filename",
 ]
 
 
@@ -89,9 +93,7 @@ def pixbuf_for_running_brick(brick):
 
 def pixbuf_for_running_brick_at_size(brick, witdh, height):
     return GdkPixbuf.Pixbuf.new_from_file_at_size(
-        brick_icon(brick),
-        witdh,
-        height
+        brick_icon(brick), witdh, height
     )
 
 
@@ -105,38 +107,41 @@ class Node:
         self.parent = topology
 
     def here(self, x, y):
-        return (abs(x + self.parent.x_adj - self.x) < self.thresh and
-                abs(y + self.parent.y_adj - self.y) < self.thresh)
+        return (
+            abs(x + self.parent.x_adj - self.x) < self.thresh
+            and abs(y + self.parent.y_adj - self.y) < self.thresh
+        )
 
 
 class Topology:
 
-    def __init__(self, widget, bricks, scale=1.00, orientation="LR",
-                 tempdir="/tmp"):
+    def __init__(
+        self, widget, bricks, scale=1.00, orientation="LR", tempdir="/tmp"
+    ):
         self.topowidget = widget
         self.tempdir = tempdir
         self.topo = pgv.AGraph()
-        self.topo.graph_attr['rankdir'] = orientation
-        self.topo.graph_attr['ranksep'] = '2.0'
+        self.topo.graph_attr["rankdir"] = orientation
+        self.topo.graph_attr["ranksep"] = "2.0"
         self.nodes = []
         self.x_adj = 0.0
         self.y_adj = 0.0
 
         # Add nodes
         sg = self.topo.add_subgraph([], name="switches_rank")
-        sg.graph_attr['rank'] = 'same'
+        sg.graph_attr["rank"] = "same"
         for brick in bricks:
             self.topo.add_node(brick.name)
             n = self.topo.get_node(brick.name)
-            n.attr['shape'] = 'none'
-            n.attr['fontsize'] = '9'
-            n.attr['image'] = brick_icon(brick)
+            n.attr["shape"] = "none"
+            n.attr["fontsize"] = "9"
+            n.attr["image"] = brick_icon(brick)
 
         for b in bricks:
             loop = 0
             for e in b.plugs:
                 if e.sock is not None:
-                    if b.get_type() == 'Tap':
+                    if b.get_type() == "Tap":
                         self.topo.add_edge(b.name, e.sock.brick.name)
                         e = self.topo.get_edge(b.name, e.sock.brick.name)
                     elif len(b.plugs) == 2:
@@ -153,29 +158,29 @@ class Topology:
                         self.topo.add_edge(b.name, e.sock.brick.name)
                         e = self.topo.get_edge(b.name, e.sock.brick.name)
                     loop += 1
-                    e.attr['dir'] = 'none'
-                    e.attr['color'] = 'black'
-                    e.attr['name'] = "      "
-                    e.attr['decorate'] = 'true'
+                    e.attr["dir"] = "none"
+                    e.attr["color"] = "black"
+                    e.attr["name"] = "      "
+                    e.attr["decorate"] = "true"
 
         # draw and save
         self.topo.write(self.get_topo_filename())
-        self.topo.layout('dot')
+        self.topo.layout("dot")
         self.topo.draw(self.get_image_filename())
         self.topo.draw(self.get_plain_filename())
 
         img = Image.open(self.get_image_filename())
         x_siz, y_siz = img.size
         for line in open(self.get_plain_filename()).readlines():
-            arg = re.split(r'\s+', line.rstrip('\n'))
-            if arg[0] == 'graph':
+            arg = re.split(r"\s+", line.rstrip("\n"))
+            if arg[0] == "graph":
                 if float(arg[2]) != 0 and float(arg[3]) != 0:
                     x_fact = scale * (x_siz / float(arg[2]))
                     y_fact = scale * (y_siz / float(arg[3]))
                 else:
                     x_fact = 1
                     y_fact = 1
-            elif arg[0] == 'node':
+            elif arg[0] == "node":
                 if float(arg[2]) != 0 and float(arg[3] != 0):
                     x = scale * (x_fact * float(arg[2]))
                     y = scale * (y_siz - y_fact * float(arg[3]))

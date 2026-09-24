@@ -20,6 +20,7 @@ Dialogs that act on a project chosen from a list.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -170,7 +171,7 @@ class _ProjectListDialog(_Dialog):
         return self.dialog
 
     def do_action(self, name):
-        raise NotImplementedError('_ProjectListDialog.do_action')
+        raise NotImplementedError("_ProjectListDialog.do_action")
 
     def _do_action_if_selected(self, tree_selection):
         model, tree_iter = tree_selection.get_selected()
@@ -206,7 +207,7 @@ class OpenProjectDialog(_ProjectListDialog):
 
     @property
     def title(self):
-        return _('Virtualbricks - Open project')
+        return _("Virtualbricks - Open project")
 
     def do_action(self, name):
         self._gui.on_open(name)
@@ -221,7 +222,7 @@ class DeleteProjectDialog(_ProjectListDialog):
 
     @property
     def title(self):
-        return _('Virtualbricks - Delete project')
+        return _("Virtualbricks - Delete project")
 
     def do_action(self, name):
         tree_model = self.projects_store

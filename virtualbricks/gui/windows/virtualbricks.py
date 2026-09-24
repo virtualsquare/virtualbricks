@@ -22,6 +22,7 @@ The main window of Virtualbricks.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -60,7 +61,6 @@ from virtualbricks.gui.windows.simpleentry import (
 )
 from virtualbricks.gui.windows.userwait import Freezer
 
-
 logger = Logger()
 
 drawing_topology = "drawing topology"
@@ -68,9 +68,11 @@ top_invalid_format = "Error saving topology: Invalid image format"
 top_write_error = "Error saving topology: Could not write file"
 top_unknown = "Error saving topology: Unknown error"
 start_virtualbricks = "Starting VirtualBricks"
-components_not_found = ("{text}\nThere are some components not "
+components_not_found = (
+    "{text}\nThere are some components not "
     "found: {components} some functionalities may not be available.\nYou can "
-    "disable this alert from the general settings.")
+    "disable this alert from the general settings."
+)
 not_started = "Brick not started."
 stop_error = "Error on stopping brick."
 start_error = "Error on starting brick."
@@ -85,7 +87,7 @@ BRICK_DRAG_TARGETS = [
     (
         BRICK_TARGET_NAME,
         Gtk.TargetFlags.SAME_WIDGET | Gtk.TargetFlags.SAME_APP,
-        0
+        0,
     )
 ]
 
@@ -156,8 +158,8 @@ class TopologyMixin:
                 "_Cancel",
                 Gtk.ResponseType.CANCEL,
                 "_Save",
-                Gtk.ResponseType.OK
-            )
+                Gtk.ResponseType.OK,
+            ),
         )
         chooser.set_do_overwrite_confirmation(True)
         chooser.connect("response", on_response)
@@ -170,7 +172,10 @@ class TopologyMixin:
         if brick:
             if event.button == 3:
                 IMenu(brick, None).popup(event.button, event.time, self)
-            elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
+            elif (
+                event.button == 1
+                and event.type == Gdk.EventType._2BUTTON_PRESS
+            ):
                 self.startstop_brick(brick)
             return True
 
@@ -178,18 +183,15 @@ class TopologyMixin:
 
     def on_main_notebook_change_current_page(self, notebook, offset):
         self._draw_topology_if_on_page(notebook.get_current_page())
-        super().on_main_notebook_change_current_page(
-            notebook,  offset)
+        super().on_main_notebook_change_current_page(notebook, offset)
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
         self._draw_topology_if_on_page(page_num)
-        super().on_main_notebook_switch_page(
-            notebook, _, page_num)
+        super().on_main_notebook_switch_page(notebook, _, page_num)
 
     def on_main_notebook_select_page(self, notebook, move_focus):
         self._draw_topology_if_on_page(notebook.get_current_page())
-        super().on_main_notebook_select_page(
-            notebook, move_focus)
+        super().on_main_notebook_select_page(notebook, move_focus)
 
     # VBGUI callbacks
 
@@ -223,8 +225,11 @@ class TopologyMixin:
             orientation = "LR"
         self.__topology = graphics.Topology(
             self.topology_image,
-            self.brickfactory.bricks, 1.00, orientation,
-            settings.VIRTUALBRICKS_HOME)
+            self.brickfactory.bricks,
+            1.00,
+            orientation,
+            settings.VIRTUALBRICKS_HOME,
+        )
         self.__should_draw_topology = False
 
 
@@ -269,8 +274,7 @@ class ReadmeMixin:
         # if I switch to readme tab
         if page_num == README_TAB:
             self.__load_readme()
-        super().on_main_notebook_switch_page(
-            notebook, _, page_num)
+        super().on_main_notebook_switch_page(notebook, _, page_num)
 
     def init(self, factory):
         self.__get_buffer().connect("modified-changed", self.__on_modify)
@@ -313,9 +317,7 @@ class ProgressBar:
 
     def __init__(self, gui):
         self.freezer = Freezer(
-            gui.set_insensitive,
-            gui.set_sensitive,
-            gui.window
+            gui.set_insensitive, gui.set_sensitive, gui.window
         )
 
     def wait_for(self, something, *args):
@@ -412,12 +414,20 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             self.start_systray()
         task.LoopingCall(self.running_filter.refilter).start(2)
         self.__state_manager = StateManager()
-        state_add_selection(self.__state_manager, self.bricks_view,
-                            self.__brick_selected, _("No brick selected"),
-                            self.configure_brick_button)
-        state_add_selection(self.__state_manager, self.events_view,
-                            self.__event_selected, _("No event selected"),
-                            self.configure_event_button)
+        state_add_selection(
+            self.__state_manager,
+            self.bricks_view,
+            self.__brick_selected,
+            _("No brick selected"),
+            self.configure_brick_button,
+        )
+        state_add_selection(
+            self.__state_manager,
+            self.events_view,
+            self.__event_selected,
+            _("No event selected"),
+            self.configure_event_button,
+        )
         self.init(factory)
 
         # Check GUI prerequisites
@@ -439,7 +449,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.bricks_store = widgets.List()
 
         # running_filter (Gtk.TreeModelFilter)
-        self.running_filter = Gtk.TreeModelFilter(child_model=self.bricks_store)
+        self.running_filter = Gtk.TreeModelFilter(
+            child_model=self.bricks_store
+        )
 
         # events_store (widgets.List)
         # Custom widget from glade-catalog.xml
@@ -1158,7 +1170,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         new_brick_button.connect("clicked", self.on_new_brick_button_clicked)
         start_all_button.connect("clicked", self.on_start_all_button_clicked)
         stop_all_button.connect("clicked", self.on_stop_all_button_clicked)
-        self.configure_brick_button.connect("clicked", self.on_configure_brick_button_clicked)
+        self.configure_brick_button.connect(
+            "clicked", self.on_configure_brick_button_clicked
+        )
         self.bricks_view.connect(
             "button-release-event",
             self.on_bricks_view_button_release_event,
@@ -1236,11 +1250,10 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.bricks_view.enable_model_drag_source(
             Gdk.ModifierType.BUTTON1_MASK,
             BRICK_DRAG_TARGETS,
-            Gdk.DragAction.LINK
+            Gdk.DragAction.LINK,
         )
         self.bricks_view.enable_model_drag_dest(
-            BRICK_DRAG_TARGETS,
-            Gdk.DragAction.LINK
+            BRICK_DRAG_TARGETS, Gdk.DragAction.LINK
         )
 
         # events tab
@@ -1274,7 +1287,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             logger.error(
                 components_not_found,
                 text="\n".join(missing_text),
-                components=" ".join(missing_components)
+                components=" ".join(missing_components),
             )
 
     def __dispose__(self):
@@ -1312,8 +1325,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         configframe.add(IConfigController(brick).get_view(self))
         configframe.show()
         self.main_notebook.hide()
-        self.set_title("Virtualbricks (Configuring Brick %s)" %
-                       brick.get_name())
+        self.set_title(
+            "Virtualbricks (Configuring Brick %s)" % brick.get_name()
+        )
 
     def set_title(self, title=None):
         if title is None:
@@ -1342,8 +1356,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         return True
 
     def on_main_notebook_change_current_page(self, notebook, offset):
-        super().on_main_notebook_change_current_page(notebook,
-                                                                offset)
+        super().on_main_notebook_change_current_page(notebook, offset)
         return True
 
     # gui (programming) interface
@@ -1469,7 +1482,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         dialog = ExportProjectDialog(
             ProgressBar(self),
             filepath.FilePath(project.manager.current.path),
-            self.brickfactory.iter_disk_images()
+            self.brickfactory.iter_disk_images(),
         )
         dialog.show(self.window)
         return True
@@ -1564,7 +1577,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             Gtk.DialogFlags.MODAL,
             Gtk.MessageType.INFO,
             Gtk.ButtonsType.YES_NO,
-            message
+            message,
         )
         response = dialog.run()
         dialog.destroy()
@@ -1634,14 +1647,16 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     # Bricks tab signals
 
-    def on_bricks_view_drag_data_get(self, treeview, context, selection,
-                                         info, time):
+    def on_bricks_view_drag_data_get(
+        self, treeview, context, selection, info, time
+    ):
         brick = treeview.get_selected_value()
         selection.set(selection.target, 8, brick.get_name())
         return True
 
-    def on_bricks_view_drag_data_received(self, treeview, context, x, y,
-                                              selection, info, time):
+    def on_bricks_view_drag_data_received(
+        self, treeview, context, x, y, selection, info, time
+    ):
         drop_info = treeview.get_dest_row_at_pos(x, y)
         if drop_info:
             path, position = drop_info

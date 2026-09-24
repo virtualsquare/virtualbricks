@@ -62,7 +62,6 @@ from virtualbricks.interfaces import registerAdapter
 from virtualbricks.link import Plug, Sock
 from virtualbricks.virtualmachines import VirtualMachine
 
-
 if False:  # pyflakes
     _ = str
 
@@ -178,9 +177,12 @@ class VMPopupMenu(BrickPopupMenu):
             path = img.image.path
         else:
             logger.error(s_r_not_supported)
-            return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
-                                             "this disk.")))
-        output = qemu_img(['snapshot', '-l', path])
+            return defer.fail(
+                RuntimeError(
+                    _("Suspend/Resume not supported on " "this disk.")
+                )
+            )
+        output = qemu_img(["snapshot", "-l", path])
         output.addCallback(grep, "virtualbricks")
         output.addCallback(loadvm)
 
@@ -243,8 +245,9 @@ class LinkMenu:
         menu.popup(None, None, None, None, button, time)
 
     def on_edit_activate(self, menuitem, controller, gui):
-        EditEthernetDialog(gui.brickfactory, self.original.brick,
-                           self.original).show(gui.window)
+        EditEthernetDialog(
+            gui.brickfactory, self.original.brick, self.original
+        ).show(gui.window)
 
     def on_remove_activate(self, menuitem, controller):
         controller.ask_remove_link(self.original)
@@ -365,16 +368,22 @@ class VMJobMenu(JobMenu):
             path = img.image.path
         else:
             logger.error(s_r_not_supported)
-            return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
-                                             "this disk.")))
+            return defer.fail(
+                RuntimeError(
+                    _("Suspend/Resume not supported on " "this disk.")
+                )
+            )
         image_type = tools.image_type_from_file(path)
         if image_type in (tools.ImageFormat.QCOW2, tools.ImageFormat.QCOW3):
-            self.original.send(b'savevm virtualbricks\n')
+            self.original.send(b"savevm virtualbricks\n")
             return self.original.poweroff()
         else:
             logger.error(s_r_not_supported)
-            return defer.fail(RuntimeError(_("Suspend/Resume not supported on "
-                                             "this disk.")))
+            return defer.fail(
+                RuntimeError(
+                    _("Suspend/Resume not supported on " "this disk.")
+                )
+            )
 
     def on_suspend_activate(self, menuitem, gui):
         logger.debug(savevm, name=self.original.get_name())
@@ -449,10 +458,7 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
             self.done.errback(None)
         else:
             reactor.spawnProcess(
-                SyncProtocol(self.done),
-                "sync",
-                ["sync"],
-                os.environ
+                SyncProtocol(self.done), "sync", ["sync"], os.environ
             )
 
 
@@ -461,6 +467,7 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
 def _clear_menu():
     global _menu
     _menu = Gtk.Menu()
+
 
 _menu = Gtk.Menu()
 
@@ -477,7 +484,7 @@ class List(Gtk.ListStore):
             i = self.iter_next(i)
 
     def append(self, element):
-        Gtk.ListStore.append(self, (element, ))
+        Gtk.ListStore.append(self, (element,))
 
     def remove(self, element):
         itr = self.get_iter_first()
@@ -486,19 +493,22 @@ class List(Gtk.ListStore):
             if el is element:
                 return Gtk.ListStore.remove(self, itr)
             itr = self.iter_next(itr)
-        raise ValueError("%r not in list" % (element, ))
+        raise ValueError("%r not in list" % (element,))
 
     def __delitem__(self, key):
         if isinstance(key, int):
             Gtk.ListStore.__delitem__(self, key)
         elif isinstance(key, slice):
-            if (key.start in (None, 0) and key.stop in (None, sys.maxsize) and
-                    key.step in (1, -1, None)):
+            if (
+                key.start in (None, 0)
+                and key.stop in (None, sys.maxsize)
+                and key.step in (1, -1, None)
+            ):
                 self.clear()
             else:
-                raise TypeError("Invalid slice %r" % (key, ))
+                raise TypeError("Invalid slice %r" % (key,))
         else:
-            raise TypeError("Invalid key %r" % (key, ))
+            raise TypeError("Invalid key %r" % (key,))
 
 
 class VisualFactory(brickfactory.BrickFactory):
@@ -519,9 +529,9 @@ class TextBufferObserver:
 
     def emit(self, event):
         self.textbuffer.insert_with_tags_by_name(
-            self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark('end')),
+            self.textbuffer.get_iter_at_mark(self.textbuffer.get_mark("end")),
             eventAsText(event) + "\n",
-            event["log_level"].name
+            event["log_level"].name,
         )
 
 
@@ -538,9 +548,9 @@ class MessageDialogObserver:
             self.__parent,
             Gtk.DialogFlags.MODAL,
             Gtk.MessageType.ERROR,
-            Gtk.ButtonsType.CLOSE
+            Gtk.ButtonsType.CLOSE,
         )
-        dialog.set_property('text', formatEvent(event))
+        dialog.set_property("text", formatEvent(event))
         dialog.connect("response", lambda d, r: d.destroy())
         dialog.show()
 
@@ -553,11 +563,13 @@ def should_show_to_user(event):
     return PredicateResult.maybe
 
 
-TEXT_TAGS = [('debug', {'foreground': '#a29898'}),
-             ('info', {}),
-             ('warn', {'foreground': '#ff9500'}),
-             ('error', {'foreground': '#b8032e'}),
-             ('critical', {'foreground': '#b8032e', 'weight': 700})]
+TEXT_TAGS = [
+    ("debug", {"foreground": "#a29898"}),
+    ("info", {}),
+    ("warn", {"foreground": "#ff9500"}),
+    ("error", {"foreground": "#b8032e"}),
+    ("critical", {"foreground": "#b8032e", "weight": 700}),
+]
 
 
 def AppLoggerFactory(textbuffer):
@@ -582,9 +594,9 @@ class Application(brickfactory.Application):
     def __init__(self, config):
         self.textbuffer = textbuffer = Gtk.TextBuffer()
         textbuffer.create_mark(
-            mark_name='end',
+            mark_name="end",
             where=textbuffer.get_end_iter(),
-            left_gravity=False
+            left_gravity=False,
         )
         for name, attrs in TEXT_TAGS:
             self.textbuffer.create_tag(name, **attrs)
@@ -609,4 +621,3 @@ class Application(brickfactory.Application):
         ret = brickfactory.Application.run(self, reactor)
         self.gui.set_title()
         return ret
-

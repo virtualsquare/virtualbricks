@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import sys
+
 del sys.modules["virtualbricks.settings"]
 from virtualbricks import _settings
+
 _settings.install(_settings.Settings())

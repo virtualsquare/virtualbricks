@@ -19,16 +19,15 @@ from zope.interface import Interface, Attribute
 
 from virtualbricks.interfaces import registerAdapter
 
-
 __all__ = [
-    'registerAdapter',
-    'IMenu',
-    'IJobMenu',
-    'IConfigController',
-    'IState',
-    'IControl',
-    'IStateManager',
-    'IWidgetBuilder',
+    "registerAdapter",
+    "IMenu",
+    "IJobMenu",
+    "IConfigController",
+    "IState",
+    "IControl",
+    "IStateManager",
+    "IWidgetBuilder",
 ]
 
 

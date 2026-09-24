@@ -24,7 +24,6 @@ from twisted.internet import defer
 from virtualbricks import settings, bricks, errors
 from virtualbricks.spawn import abspath_vde
 
-
 if False:  # pyflakes
     _ = str
 
@@ -33,9 +32,11 @@ sock_not_exists = "Socket does not exists: {path}"
 
 class SwitchConfig(bricks.Config):
 
-    parameters = {"numports": bricks.SpinInt(32, 1, 128),
-                  "hub": bricks.Boolean(False),
-                  "fstp": bricks.Boolean(False)}
+    parameters = {
+        "numports": bricks.SpinInt(32, 1, 128),
+        "hub": bricks.Boolean(False),
+        "fstp": bricks.Boolean(False),
+    }
 
 
 class Switch(bricks.Brick):
@@ -54,7 +55,8 @@ class Switch(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.command_builder = OrderedDict([
+        self.command_builder = OrderedDict(
+            [
                 ("-x", "hub"),
                 ("-n", "numports"),
                 ("-F", "fstp"),
@@ -65,8 +67,9 @@ class Switch(bricks.Brick):
                 ("--mgmtmode", "mgmtmode"),
                 ("--mgmtgroup", "mgmtgroup"),
                 ("-s", self.path),
-                ("-M", self.console)
-        ])
+                ("-M", self.console),
+            ]
+        )
         sock = factory.new_sock(self, self.name + "_port")
         sock.path = self.path()
         self.socks.append(sock)
@@ -81,7 +84,7 @@ class Switch(bricks.Brick):
         return _("Ports: ") + "%d%s%s" % (self.config["numports"], fstp, hub)
 
     def prog(self):
-        return abspath_vde('vde_switch')
+        return abspath_vde("vde_switch")
 
     def configured(self):
         return self.socks[0].has_valid_path()

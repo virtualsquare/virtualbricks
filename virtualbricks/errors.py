@@ -70,8 +70,9 @@ class LockedImageError(Error):
         self.master = master
 
     def __repr__(self):
-        return "Image {0} already locked by {1}".format(self.image,
-                                                        self.master)
+        return "Image {0} already locked by {1}".format(
+            self.image, self.master
+        )
 
 
 class ImageAlreadyInUseError(Error):
@@ -79,6 +80,7 @@ class ImageAlreadyInUseError(Error):
 
 
 # Project specific errors
+
 
 class ProjectExistsError(InvalidNameError):
     pass
@@ -97,7 +99,7 @@ class BrickRunningError(Error):
 
 
 class NoOptionError(Error):
-    '''The config file has no such option.'''
+    """The config file has no such option."""
 
 
 class WidgetNotFound(Error):

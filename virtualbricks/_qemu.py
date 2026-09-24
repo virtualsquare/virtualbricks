@@ -19,20 +19,19 @@ import json
 import re
 from virtualbricks.path import read_data
 
-
-IN_MEMORY = ':memory:'
+IN_MEMORY = ":memory:"
 SUPPORTED_QEMU_VERSIONS = (
-    '2.0.0',
-    '1.1.2',
-    '1.0',
+    "2.0.0",
+    "1.1.2",
+    "1.0",
 )
 IN_MEMORY_SPECS = {}
-ENOSPECS = 'Cannot find specs for Qemu version {version}'
+ENOSPECS = "Cannot find specs for Qemu version {version}"
 
 
 PARSERS = (
     (IN_MEMORY, lambda value: value),
-    ('json', json.loads),
+    ("json", json.loads),
     # ('yaml', yaml.safe_load),
 )
 
@@ -46,9 +45,9 @@ def load_data(version, ext):
         if version not in IN_MEMORY_SPECS:
             raise SpecsNotFound(ENOSPECS.format(version=version))
         return IN_MEMORY_SPECS[version]
-    name = version.replace('.', '_')
-    filename = 'qemu_specs_{0}.{1}'.format(name, ext)
-    data = read_data('virtualbricks.gui', filename)
+    name = version.replace(".", "_")
+    filename = "qemu_specs_{0}.{1}".format(name, ext)
+    data = read_data("virtualbricks.gui", filename)
     if data is not None:
         return data
     raise SpecsNotFound(ENOSPECS.format(version=version))
@@ -63,7 +62,7 @@ def load_spec(version):
             return specs
         except SpecsNotFound:
             continue
-    errmsg = 'Cannot find specs for Qemu version {0}'.format(version)
+    errmsg = "Cannot find specs for Qemu version {0}".format(version)
     raise SpecsNotFound(errmsg)
 
 
@@ -72,7 +71,7 @@ def last_supported_version(version):
         if version >= supported_version:
             # TODO: log info about the used version
             return supported_version
-    raise ValueError('Unsupported Qemu version, too old' + repr(version))
+    raise ValueError("Unsupported Qemu version, too old" + repr(version))
 
 
 def get_specs(version):
@@ -80,9 +79,9 @@ def get_specs(version):
 
 
 QEMU_VERSION_RE = re.compile(
-    r'^(QEMU emulator|qemu-[\w_-]+)'
-    r' version '
-    r'(?P<version>\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)'
+    r"^(QEMU emulator|qemu-[\w_-]+)"
+    r" version "
+    r"(?P<version>\d{1,2}\.\d{1,2}(?:\.\d{1,2})?)"
 )
 
 
@@ -90,4 +89,4 @@ def parse_qemu_version(command_output, pattern=QEMU_VERSION_RE):
     match = pattern.match(command_output)
     if match is None:
         raise ValueError("invalid version string " + repr(command_output))
-    return match.group('version')
+    return match.group("version")

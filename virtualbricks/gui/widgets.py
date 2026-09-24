@@ -16,7 +16,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from zope.interface import implementer
-import gi
 from gi.repository import Gtk
 from gi.repository import GObject
 
@@ -24,7 +23,6 @@ from gi.repository import GObject
 from virtualbricks import observable
 from virtualbricks.tools import dispose
 from virtualbricks.gui import interfaces, graphics
-
 
 if False:
     _ = str  # make pyflakes happy
@@ -50,28 +48,28 @@ class CellRendererFormattable(Gtk.CellRendererText):
             _("Enable formatting"),
             _("Whether enable formatting"),
             False,
-            GObject.PARAM_READWRITE
+            GObject.PARAM_READWRITE,
         ),
         "format-string": (
             GObject.TYPE_STRING,
             _("Format string"),
             _("The format string understand by the builtin format()"),
             "",
-            GObject.PARAM_READWRITE
+            GObject.PARAM_READWRITE,
         ),
         "formatter": (
             GObject.TYPE_PYOBJECT,
             _("Custom formatter"),
             _("An instance of string.Formatter() class"),
-            GObject.PARAM_READWRITE
+            GObject.PARAM_READWRITE,
         ),
         "display-member": (
             GObject.TYPE_STRING,
             _("Display member"),
             _("The member used to display the text"),
             "",
-            GObject.PARAM_READWRITE
-        )
+            GObject.PARAM_READWRITE,
+        ),
     }
 
     _formatting_enabled = False
@@ -89,7 +87,7 @@ class CellRendererFormattable(Gtk.CellRendererText):
         elif pspec.name == "display-member":
             return self._display_member
         else:
-            raise TypeError("Unknown property %r" % (pspec.name, ))
+            raise TypeError("Unknown property %r" % (pspec.name,))
 
     def do_set_property(self, pspec, value):
         if pspec.name == "formatting-enabled":
@@ -101,7 +99,7 @@ class CellRendererFormattable(Gtk.CellRendererText):
         elif pspec.name == "display-member":
             self._display_member = value
         else:
-            raise TypeError("Unknown property %r" % (pspec.name, ))
+            raise TypeError("Unknown property %r" % (pspec.name,))
 
     @staticmethod
     def set_cell_data(cell_layout, cell, model, itr, data=None):
@@ -144,7 +142,7 @@ class List(Gtk.ListStore):
             _("Value member"),
             "",
             "",
-            GObject.PARAM_READWRITE
+            GObject.PARAM_READWRITE,
         ),
     }
     _value_member = ""
@@ -157,19 +155,19 @@ class List(Gtk.ListStore):
         if pspec.name == "value-member":
             return self._value_member
         else:
-            raise TypeError("Unknown property %r" % (pspec.name, ))
+            raise TypeError("Unknown property %r" % (pspec.name,))
 
     def do_set_property(self, pspec, value):
         if pspec.name == "value-member":
             self._value_member = value
         else:
-            raise TypeError("Unknown property %r" % (pspec.name, ))
+            raise TypeError("Unknown property %r" % (pspec.name,))
 
     def set_data_source(self, lst):
         dispose(self)
         self.clear()
         for item in lst:
-            self.append((item, ))
+            self.append((item,))
         if interfaces.IBindingList.providedBy(lst):
             self._ibinding_list = lst
             lst.added.connect(self.on_add)
@@ -177,7 +175,7 @@ class List(Gtk.ListStore):
             lst.changed.connect(self.on_changed)
 
     def on_add(self, value):
-        self.append((value, ))
+        self.append((value,))
 
     def on_remove(self, value):
         mbr = self._value_member
@@ -253,8 +251,11 @@ class TreeView(Gtk.TreeView):
 
     def get_selected_value(self):
         mode = self.get_selection().get_mode()
-        if mode in (Gtk.SelectionMode.NONE, Gtk.SelectionMode.SINGLE,
-                    Gtk.SelectionMode.BROWSE):
+        if mode in (
+            Gtk.SelectionMode.NONE,
+            Gtk.SelectionMode.SINGLE,
+            Gtk.SelectionMode.BROWSE,
+        ):
             values = self.get_selected_values()
             if values:
                 return values[0]
@@ -267,7 +268,7 @@ class TreeView(Gtk.TreeView):
         elif self.get_selection().get_mode() == Gtk.SelectionMode.NONE:
             raise ValueError("Cannot select any node")
         else:
-            self.set_selected_values((value, ))
+            self.set_selected_values((value,))
 
     def get_selected_values(self):
         selection = self.get_selection()
@@ -283,9 +284,9 @@ class TreeView(Gtk.TreeView):
                 if not mbr:
                     raise TypeError
             except TypeError:
-                return (model.get_value(itr, 0), )
+                return (model.get_value(itr, 0),)
             else:
-                return (getattr(model.get_value(itr, 0), mbr), )
+                return (getattr(model.get_value(itr, 0), mbr),)
         else:
             model, paths = selection.get_selected_rows()
             try:
@@ -293,11 +294,14 @@ class TreeView(Gtk.TreeView):
                 if not mbr:
                     raise TypeError
             except TypeError:
-                return tuple(model.get_value(model.get_iter(path), 0)
-                             for path in paths)
+                return tuple(
+                    model.get_value(model.get_iter(path), 0) for path in paths
+                )
             else:
-                return tuple(getattr(model.get_value(model.get_iter(path), 0),
-                                     mbr) for path in paths)
+                return tuple(
+                    getattr(model.get_value(model.get_iter(path), 0), mbr)
+                    for path in paths
+                )
 
     def set_selected_values(self, iterable):
         selection = self.get_selection()

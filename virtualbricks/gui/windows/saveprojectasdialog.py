@@ -22,6 +22,7 @@ Dialog to save the current project with a new name.
 from pathlib import Path
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
@@ -189,7 +190,7 @@ class SaveProjectAsDialog(_Dialog):
         """
 
         style_context = self.project_name_entry.get_style_context()
-        style_context.add_class('error')
+        style_context.add_class("error")
         self.project_name_entry.set_tooltip_markup(tooltip)
         self.ok_button.set_sensitive(False)
 
@@ -199,7 +200,7 @@ class SaveProjectAsDialog(_Dialog):
         """
 
         style_context = self.project_name_entry.get_style_context()
-        style_context.remove_class('error')
+        style_context.remove_class("error")
         self.project_name_entry.set_tooltip_text(None)
         self.ok_button.set_sensitive(True)
 
@@ -210,16 +211,16 @@ class SaveProjectAsDialog(_Dialog):
             self.ok_button.set_sensitive(False)
             return
         elif new_project_name == project_manager.current.name:
-            self._set_error(_('New project name is the same as previous name'))
+            self._set_error(_("New project name is the same as previous name"))
             return
         try:
             Path(new_project_name).relative_to(settings.DEFAULT_HOME)
         except ValueError:
             # TODO: explain why name is invalid
-            self._set_error(_('Invalid project name'))
+            self._set_error(_("Invalid project name"))
         for project in project_manager:
             if new_project_name == project.name:
-                tooltip = _('A project with the same name already exists')
+                tooltip = _("A project with the same name already exists")
                 self._set_error(tooltip)
                 break
         else:
@@ -229,7 +230,6 @@ class SaveProjectAsDialog(_Dialog):
         if response_id == Gtk.ResponseType.OK:
             # TODO: show progress bar
             project_manager.current.save_as(
-                self.project_name_entry.get_text(),
-                self._brickfactory
+                self.project_name_entry.get_text(), self._brickfactory
             )
         dialog.destroy()

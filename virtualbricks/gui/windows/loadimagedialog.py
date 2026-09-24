@@ -23,6 +23,7 @@ from contextlib import contextmanager
 from os.path import basename, splitext
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import GObject, Gdk, Gtk, Pango
@@ -44,6 +45,7 @@ def block_signal_handler(g_object, handler_id):
             yield
         finally:
             GObject.signal_handler_unblock(g_object, handler_id)
+
     return inner
 
 
@@ -61,16 +63,14 @@ class LoadImageDialog(_Dialog):
         self._block_image_name_entry_changed = block_signal_handler(
             self.image_name_entry,
             self.image_name_entry.connect(
-                'changed',
-                self.on_image_name_entry_changed
-            )
+                "changed", self.on_image_name_entry_changed
+            ),
         )
         self._block_description_textbuffer_changed = block_signal_handler(
             self.description_buffer,
             self.description_buffer.connect(
-                'changed',
-                self.on_description_buffer_changed
-            )
+                "changed", self.on_description_buffer_changed
+            ),
         )
         self._image_path_error = None
         self._name_error = None
@@ -221,10 +221,10 @@ class LoadImageDialog(_Dialog):
 
     def _load_desc(self, pathname):
         try:
-            with open(pathname + '.vbdescr') as fd:
+            with open(pathname + ".vbdescr") as fd:
                 return fd.read()
         except FileNotFoundError:
-            return ''
+            return ""
 
     def _set_error(self):
         """
@@ -234,28 +234,28 @@ class LoadImageDialog(_Dialog):
         file_chooser_button = self.image_chooser
         image_name_entry = self.image_name_entry
         if self._image_path_error is not None:
-            file_chooser_button.get_style_context().add_class('error')
+            file_chooser_button.get_style_context().add_class("error")
             file_chooser_button.set_tooltip_markup(self._image_path_error)
         else:
-            file_chooser_button.get_style_context().remove_class('error')
+            file_chooser_button.get_style_context().remove_class("error")
             file_chooser_button.set_tooltip_text(None)
         if self._name_error:
-            image_name_entry.get_style_context().add_class('error')
+            image_name_entry.get_style_context().add_class("error")
             image_name_entry.set_tooltip_markup(self._name_error)
         else:
-            image_name_entry.get_style_context().remove_class('error')
+            image_name_entry.get_style_context().remove_class("error")
             image_name_entry.set_tooltip_markup(None)
         if self._image_path_error is not None or self._name_error is not None:
             self.ok_button.set_sensitive(False)
         else:
             self.ok_button.set_sensitive(
                 file_chooser_button.get_filename() is not None
-                and image_name_entry.get_text() != ''
+                and image_name_entry.get_text() != ""
             )
 
     def _check_name(self):
         image_name = self.image_name_entry.get_text()
-        if image_name == '':
+        if image_name == "":
             self._name_error = None
         else:
             try:
@@ -264,7 +264,7 @@ class LoadImageDialog(_Dialog):
             except NameAlreadyInUseError:
                 self._name_error = (
                     f'Name <span weight="bold">{image_name}</span>'
-                    ' is already in use'
+                    " is already in use"
                 )
             except InvalidNameError as exc:
                 self._name_error = str(exc)
@@ -280,7 +280,7 @@ class LoadImageDialog(_Dialog):
             self._image_path_error = None
             return True
         if self._brickfactory.get_image_by_path(filepath) is not None:
-            self._image_path_error = 'Image is already in use'
+            self._image_path_error = "Image is already in use"
         else:
             self._image_path_error = None
         if not self._name_set:
@@ -300,7 +300,7 @@ class LoadImageDialog(_Dialog):
         :rtype: bool
         """
 
-        self._name_set = entry.get_text() != ''
+        self._name_set = entry.get_text() != ""
         self._check_name()
         self._set_error()
         return True
@@ -311,14 +311,14 @@ class LoadImageDialog(_Dialog):
         :rtype: bool
         """
 
-        self._description_set = textbuffer.get_property('text') != ''
+        self._description_set = textbuffer.get_property("text") != ""
         return True
 
     @destroy_on_exit
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
             name = self.image_name_entry.get_text()
-            description = self.description_buffer.get_property('text')
+            description = self.description_buffer.get_property("text")
             filepath = self.image_chooser.get_filename()
             self._brickfactory.new_disk_image(name, filepath, description)
         return True

@@ -23,6 +23,7 @@ import errno
 import os
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
@@ -36,13 +37,14 @@ from virtualbricks.project import manager as project_manager
 from virtualbricks.gui.windows.base import _, pango_attr_list, Window
 from virtualbricks.gui.windows.userwait import ProgressBar
 
-
-if twisted.__version__ >= '15.0.2':
+if twisted.__version__ >= "15.0.2":
     # This is an ugly hack but virtualbricks is not really ready for
     # Python3
     def mktempfn():
         return filepath._secureEnoughString(project_manager.path)
+
 else:
+
     def mktempfn():
         return filepath._secureEnoughString()
 
@@ -52,8 +54,9 @@ logger = Logger()
 extract_err = "Error on import project"
 log_rebase = "Rebasing {cow} to {basefile}"
 rebase_error = "Error on rebase"
-image_not_exists = ("Cannot save image to {destination}, file does "
-                    "not exists: {source}")
+image_not_exists = (
+    "Cannot save image to {destination}, file does " "not exists: {source}"
+)
 invalid_step_assitant = "Assistant cannot handle step {num}"
 project_extracted = "Project has beed extracted in {path}"
 removing_temporary_project = "Remove temporary files in {path}"
@@ -64,6 +67,7 @@ def pass_through(function, *args, **kwds):
     def wrapper(arg):
         function(*args, **kwds)
         return arg
+
     return wrapper
 
 
@@ -88,19 +92,23 @@ def complain_on_error(result):
 
 def _set_path(column, cell_renderer, model, iter, colid):
     path = model.get_value(iter, colid)
-    cell_renderer.set_property("text",  path.path if path else "")
+    cell_renderer.set_property("text", path.path if path else "")
 
 
 def _set_path_remap(column, cell_renderer, model, iter, colid):
     path = model.get_value(iter, colid)
     if path:
-        cell_renderer.set_properties(font_desc=None, foreground=None,
-                                     text=path.path)
+        cell_renderer.set_properties(
+            font_desc=None, foreground=None, text=path.path
+        )
     else:
         font = Pango.FontDescription()
         font.set_style(Pango.Style.ITALIC)
-        cell_renderer.set_properties(font_desc=font, foreground="gray",
-                                     text="(Click here to select an image)")
+        cell_renderer.set_properties(
+            font_desc=font,
+            foreground="gray",
+            text="(Click here to select an image)",
+        )
 
 
 def all_paths_set(model):
@@ -125,8 +133,8 @@ class _HumbleImport:
         logger.debug(project_extracted, path=project.path)
         dialog.project = project
         dialog.images = dict(
-            (name, section["path"]) for (_, name), section
-            in project.get_descriptor().get_images()
+            (name, section["path"])
+            for (_, name), section in project.get_descriptor().get_images()
         )
         return project
 
@@ -153,8 +161,9 @@ class _HumbleImport:
     def step_2(self, dialog, store1, store2):
         """Step 2: map images."""
 
-        imgs = dict((name, path) for name, path, save in
-                    iter_model(store1) if save)
+        imgs = dict(
+            (name, path) for name, path, save in iter_model(store1) if save
+        )
         store2.clear()
         for name in dialog.images:
             store2.append((name, imgs.get(name)))
@@ -224,8 +233,11 @@ class _HumbleImport:
                     fp.moveTo(destination)
                 except OSError as e:
                     if e.errno == errno.ENOENT:
-                        logger.error(image_not_exists, source=fp.path,
-                                     destination=destination.path)
+                        logger.error(
+                            image_not_exists,
+                            source=fp.path,
+                            destination=destination.path,
+                        )
                         continue
                     else:
                         raise
@@ -568,12 +580,16 @@ class ImportDialog(Window):
         # can_focus=False.
 
         # Signals
-        self.map_images_store.connect("row-changed", self.on_map_images_store_row_changed)
+        self.map_images_store.connect(
+            "row-changed", self.on_map_images_store_row_changed
+        )
         self.assistant.connect("apply", self.on_assistant_apply)
         self.assistant.connect("cancel", self.on_assistant_cancel)
         self.assistant.connect("close", self.on_assistant_close)
         self.assistant.connect("prepare", self.on_assistant_prepare)
-        self.project_name_entry.connect("changed", self.on_project_name_entry_changed)
+        self.project_name_entry.connect(
+            "changed", self.on_project_name_entry_changed
+        )
         self.archive_chooser.connect(
             "file-set",
             self.on_archive_chooser_file_set,
@@ -598,11 +614,19 @@ class ImportDialog(Window):
         cell2 = self.map_path_cell
         col2.set_cell_data_func(cell2, _set_path_remap, 1)
         view1 = self.save_images_view
-        view1.connect("button_press_event", self.on_button_press_event, col1,
-                      self.get_save_filechooserdialog)
+        view1.connect(
+            "button_press_event",
+            self.on_button_press_event,
+            col1,
+            self.get_save_filechooserdialog,
+        )
         view2 = self.map_images_view
-        view2.connect("button_press_event", self.on_button_press_event, col2,
-                      self.get_map_filechooserdialog)
+        view2.connect(
+            "button_press_event",
+            self.on_button_press_event,
+            col2,
+            self.get_map_filechooserdialog,
+        )
         Window.show(self, parent)
 
     def destroy(self):
@@ -613,7 +637,8 @@ class ImportDialog(Window):
     def set_page_complete(self, page=None, complete=True):
         if page is None:
             page = self.assistant.get_nth_page(
-                self.assistant.get_current_page())
+                self.assistant.get_current_page()
+            )
         self.assistant.set_page_complete(page, complete)
 
     ####
@@ -642,8 +667,8 @@ class ImportDialog(Window):
                 "gtk-cancel",
                 Gtk.ResponseType.CANCEL,
                 stock_id,
-                Gtk.ResponseType.OK
-            )
+                Gtk.ResponseType.OK,
+            ),
         )
         chooser.set_modal(True)
         chooser.set_select_multiple(False)
@@ -652,8 +677,9 @@ class ImportDialog(Window):
         chooser.set_position(Gtk.WindowPosition.CENTER)
         chooser.set_do_overwrite_confirmation(True)
         chooser.set_type_hint(Gdk.WindowTypeHint.DIALOG)
-        chooser.connect("response", self.on_filechooserdialog_response, model,
-                        path)
+        chooser.connect(
+            "response", self.on_filechooserdialog_response, model, path
+        )
         return chooser
 
     def get_save_filechooserdialog(self, model, path):
@@ -662,7 +688,7 @@ class ImportDialog(Window):
             path,
             _("Save image as..."),
             Gtk.FileChooserAction.SAVE,
-            "gtk-save"
+            "gtk-save",
         )
 
     def get_map_filechooserdialog(self, model, path):
@@ -671,7 +697,7 @@ class ImportDialog(Window):
             path,
             _("Map image as..."),
             Gtk.FileChooserAction.OPEN,
-            "gtk-open"
+            "gtk-open",
         )
 
     # callbacks
@@ -688,13 +714,14 @@ class ImportDialog(Window):
             deferred = self.humble.step_1(
                 self,
                 self.save_images_store,
-                filepath.FilePath(ws).child("vimages")
+                filepath.FilePath(ws).child("vimages"),
             )
             if deferred:
                 ProgressBar(self.assistant).wait_for(deferred)
         elif page_num == 2:
-            self.humble.step_2(self, self.save_images_store,
-                               self.map_images_store)
+            self.humble.step_2(
+                self, self.save_images_store, self.map_images_store
+            )
         elif page_num == 3:
             self.humble.step_3(self)
         else:
@@ -709,11 +736,15 @@ class ImportDialog(Window):
         return True
 
     def on_assistant_apply(self, assistant):
-        deferred = self.humble.apply(self.project, self.get_project_name(),
-                                     self.factory, self.get_overwrite(),
-                                     self.get_open(),
-                                     self.save_images_store,
-                                     self.map_images_store)
+        deferred = self.humble.apply(
+            self.project,
+            self.get_project_name(),
+            self.factory,
+            self.get_overwrite(),
+            self.get_open(),
+            self.save_images_store,
+            self.map_images_store,
+        )
         ProgressBar(assistant).wait_for(deferred)
         return True
 
@@ -729,14 +760,17 @@ class ImportDialog(Window):
         return True
 
     def on_project_name_entry_changed(self, entry):
-        self.set_import_sensitive(self.get_archive_path(), entry.get_text(),
-                                  self.overwrite_check)
+        self.set_import_sensitive(
+            self.get_archive_path(), entry.get_text(), self.overwrite_check
+        )
         return True
 
     def on_overwrite_check_toggled(self, checkbutton):
-        self.set_import_sensitive(self.get_archive_path(),
-                                  self.project_name_entry.get_text(),
-                                  checkbutton)
+        self.set_import_sensitive(
+            self.get_archive_path(),
+            self.project_name_entry.get_text(),
+            checkbutton,
+        )
         return True
 
     def set_import_sensitive(self, filename, name, overwrite_btn):
@@ -785,7 +819,10 @@ class ImportDialog(Window):
         if response_id == Gtk.ResponseType.OK:
             filename = dialog.get_filename()
             if filename is not None:
-                model.set_value(model.get_iter(path), self.PATH,
-                                filepath.FilePath(filename))
+                model.set_value(
+                    model.get_iter(path),
+                    self.PATH,
+                    filepath.FilePath(filename),
+                )
         dialog.destroy()
         return True

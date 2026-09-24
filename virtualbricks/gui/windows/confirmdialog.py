@@ -20,6 +20,7 @@ Yes/No confirmation dialogs.
 """
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
@@ -149,10 +150,10 @@ class _ConfirmDialog(_Dialog):
         return self.dialog
 
     def on_dialog_response(
-            self,
-            dialog: Gtk.Dialog,
-            response_id: int,
-            data=None,
+        self,
+        dialog: Gtk.Dialog,
+        response_id: int,
+        data=None,
     ) -> None:
         """
         Handler of the "response" signal of GtkDialog.
@@ -206,7 +207,7 @@ class DeleteBrickConfirmDialog(_ConfirmDialog):
         self._brickfactory = brickfactory
         self._brick = brick
         self.build_ui()
-        qst_fmt = _('Do you really want to delete {brick} ({type})?')
+        qst_fmt = _("Do you really want to delete {brick} ({type})?")
         question = qst_fmt.format(brick=brick.name, type=brick.get_type())
         self.set_primary_text(question)
 
@@ -225,12 +226,12 @@ class DeleteEventConfirmDialog(_ConfirmDialog):
         self._brickfactory = brickfactory
         self._event = event
         self.build_ui()
-        qst_fmt = _('Do you really want to delete {event} ({type})?')
+        qst_fmt = _("Do you really want to delete {event} ({type})?")
         question = qst_fmt.format(event=event.name, type=event.get_type())
         self.set_primary_text(question)
         if event.scheduled is not None:
             self.set_secondary_text(
-                _('The event is in use, it will be stopped before.')
+                _("The event is in use, it will be stopped before.")
             )
 
     def on_dialog_response(self, dialog, response_id):
@@ -245,10 +246,10 @@ class DeleteLinkConfirmDialog(_ConfirmDialog):
     """
 
     def __init__(self, qemu_config_controller, link):
-        self._qemu_config_controller =  qemu_config_controller
+        self._qemu_config_controller = qemu_config_controller
         self._link = link
         self.build_ui()
-        question = _('Do you really want to delete the network interface?')
+        question = _("Do you really want to delete the network interface?")
         self.set_primary_text(question)
 
     def on_dialog_response(self, dialog, response_id):
@@ -266,7 +267,7 @@ class DeleteProjectConfirmDialog(_ConfirmDialog):
         self._name = name
         self._tree_model = tree_model
         self.build_ui()
-        question_fmt = _('Do you really want to delete the project {name}?')
+        question_fmt = _("Do you really want to delete the project {name}?")
         self.set_primary_text(question_fmt.format(name=name))
 
     def on_dialog_response(self, dialog, response_id):

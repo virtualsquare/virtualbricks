@@ -22,6 +22,7 @@ Window with the library of the disk images.
 import os
 
 import gi
+
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 
@@ -43,13 +44,13 @@ class DisksLibraryWindow(_Window):
     @staticmethod
     def set_cell_name(tree_column, cell, tree_model, tree_itr, data):
         disk_image = tree_model.get_value(tree_itr, 0)
-        cell.set_property('text', disk_image.get_name())
+        cell.set_property("text", disk_image.get_name())
         return True
 
     @staticmethod
     def set_cell_path(tree_column, cell, tree_model, itr, data):
         disk_image = tree_model.get_value(itr, 0)
-        cell.set_property('text', str(disk_image.path))
+        cell.set_property("text", str(disk_image.path))
         return True
 
     @staticmethod
@@ -65,8 +66,8 @@ class DisksLibraryWindow(_Window):
     @staticmethod
     def set_cell_master_brick(tree_column, cell, tree_model, itr, data):
         disk_image = tree_model.get_value(itr, 0)
-        text = '' if disk_image.master is None else repr(disk_image.master)
-        cell.set_property('text', text)
+        text = "" if disk_image.master is None else repr(disk_image.master)
+        cell.set_property("text", text)
         return True
 
     @staticmethod
@@ -83,7 +84,7 @@ class DisksLibraryWindow(_Window):
     @staticmethod
     def set_cell_size(tree_column, cell, tree_model, itr, data):
         disk_image = tree_model.get_value(itr, 0)
-        cell.set_property('text', disk_image.get_size())
+        cell.set_property("text", disk_image.get_size())
         return True
 
     def __init__(self, brickfactory):
@@ -98,28 +99,31 @@ class DisksLibraryWindow(_Window):
         tree_selection = tree_view.get_selection()
         tree_selection.set_mode(Gtk.SelectionMode.SINGLE)
         self._on_selection_changed_handler = tree_selection.connect(
-            'changed', self.on_selection_changed)
+            "changed", self.on_selection_changed
+        )
         self._tree_model = tree_model = Gtk.ListStore(object)
         for disk_image in brickfactory.iter_disk_images():
             tree_model.append([disk_image])
         tree_view.set_model(tree_model)
-        self.name_column.set_cell_data_func(
-            self.name_cell, self.set_cell_name)
-        self.path_column.set_cell_data_func(
-            self.path_cell, self.set_cell_path)
+        self.name_column.set_cell_data_func(self.name_cell, self.set_cell_name)
+        self.path_column.set_cell_data_func(self.path_cell, self.set_cell_path)
         self.used_by_column.set_cell_data_func(
-            self.used_by_cell, self.set_cell_used_by, brickfactory)
+            self.used_by_cell, self.set_cell_used_by, brickfactory
+        )
         self.master_brick_column.set_cell_data_func(
-            self.master_brick_cell, self.set_cell_master_brick)
+            self.master_brick_cell, self.set_cell_master_brick
+        )
         self.cows_column.set_cell_data_func(
-            self.cows_cell, self.set_cell_cows, brickfactory)
-        self.size_column.set_cell_data_func(
-            self.size_cell, self.set_cell_size)
+            self.cows_cell, self.set_cell_cows, brickfactory
+        )
+        self.size_column.set_cell_data_func(self.size_cell, self.set_cell_size)
         brickfactory.image_added.connect(self.on_disk_image_added, tree_model)
         brickfactory.image_changed.connect(
-            self.on_disk_image_changed, tree_model)
+            self.on_disk_image_changed, tree_model
+        )
         brickfactory.image_removed.connect(
-            self.on_disk_image_removed, tree_model)
+            self.on_disk_image_removed, tree_model
+        )
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``disklibrary.ui``."""
@@ -416,7 +420,7 @@ class DisksLibraryWindow(_Window):
 
     def on_path_chooser_file_set(self, file_choser_button):
         filename = file_choser_button.get_filename()
-        if filename is not None and self.name_entry.get_text() == '':
+        if filename is not None and self.name_entry.get_text() == "":
             self.name_entry.set_text(os.path.basename(filename))
         return True
 
@@ -436,7 +440,7 @@ class DisksLibraryWindow(_Window):
         # self._disk_image.set_path(self.path_chooser.get_filename())
         self._disk_image.path = self.path_chooser.get_filename()
         self._disk_image.set_name(self.name_entry.get_text())
-        description = self.description_buffer.get_property('text')
+        description = self.description_buffer.get_property("text")
         self._disk_image.set_description(description)
         self._hide_edit_screen()
         return True
@@ -455,9 +459,12 @@ class DisksLibraryWindow(_Window):
 
     def on_destroy(self, window=None):
         self._brickfactory.image_added.disconnect(
-            self.on_disk_image_added, self._tree_model)
+            self.on_disk_image_added, self._tree_model
+        )
         self._brickfactory.image_changed.disconnect(
-            self.on_disk_image_changed, self._tree_model)
+            self.on_disk_image_changed, self._tree_model
+        )
         self._brickfactory.image_removed.disconnect(
-            self.on_disk_image_removed, self._tree_model)
+            self.on_disk_image_removed, self._tree_model
+        )
         return True

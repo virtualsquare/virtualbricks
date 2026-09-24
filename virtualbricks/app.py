@@ -23,7 +23,6 @@ from twisted.logger import textFileLogObserver
 
 from virtualbricks import settings
 
-
 _log_file = sys.stdout
 
 
@@ -34,6 +33,7 @@ def file_logger():
 def _file_logger(filename):
     if filename != "-":
         from twisted.python import logfile
+
         global _log_file
         _log_file = logfile.LogFile.fromFullPath(filename)
     return "virtualbricks.app.file_logger"
@@ -48,14 +48,18 @@ class Options(usage.Options):
 
     optFlags = [
         ["noterm", None, "Do not show the terminal."],
-        ["daemon", None, ""]
+        ["daemon", None, ""],
     ]
     optParameters = [
         ["logfile", "l", None, "Write log messages to file."],
-        ["logger", None, None,
-         "A fully-qualified name to a log observer factory to use for the "
-         "initial log observer. Takes precedence over --logfile and --syslog "
-         "(when available)."],
+        [
+            "logger",
+            None,
+            None,
+            "A fully-qualified name to a log observer factory to use for the "
+            "initial log observer. Takes precedence over --logfile and --syslog "
+            "(when available).",
+        ],
     ]
 
     def __init__(self):
@@ -82,6 +86,7 @@ class Options(usage.Options):
     def opt_version(self):
         """Print version and exit."""
         from virtualbricks import __version__
+
         print("Virtualbricks", __version__)
         sys.exit(0)
 
@@ -90,8 +95,10 @@ class Options(usage.Options):
             try:
                 self["logger"] = reflect.namedAny(self["logger"])
             except Exception as err:
-                raise usage.UsageError("Logger '%s' could not be imported: %s"
-                                       % (self['logger'], err))
+                raise usage.UsageError(
+                    "Logger '%s' could not be imported: %s"
+                    % (self["logger"], err)
+                )
 
     opt_v = opt_verbose
     opt_q = opt_quiet
@@ -115,18 +122,20 @@ class _LockedApplication:
         self.lock = lock or lockfile.FilesystemLock(settings.LOCK_FILE)
 
     def run(self, reactor):
-        assert self.factory is not None, \
-                "factory attribute is not set"
+        assert self.factory is not None, "factory attribute is not set"
         if self.lock.lock():
-            reactor.addSystemEventTrigger("after", "shutdown",
-                                          self.lock.unlock)
+            reactor.addSystemEventTrigger(
+                "after", "shutdown", self.lock.unlock
+            )
             app = self.factory(self.config)
             return app.run(reactor)
         else:
-            msg = ("Another Virtualbricks instance is running and you cannot "
-                   "run more than one instance of it. If this is an "
-                   "error, please delete %s to start Virtualbricks" %
-                   self.lock.name)
+            msg = (
+                "Another Virtualbricks instance is running and you cannot "
+                "run more than one instance of it. If this is an "
+                "error, please delete %s to start Virtualbricks"
+                % self.lock.name
+            )
             return defer.fail(SystemExit(msg))
 
 
