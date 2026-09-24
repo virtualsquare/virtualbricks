@@ -61,7 +61,6 @@ class SwitchConfigController(ConfigController):
         self.ports_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment1,

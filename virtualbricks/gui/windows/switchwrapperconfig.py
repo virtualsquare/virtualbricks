@@ -48,7 +48,6 @@ class SwitchWrapperConfigController(ConfigController):
         self.path_entry = Gtk.Entry(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )

@@ -157,7 +157,6 @@ class SaveProjectAsDialog(_Dialog):
         self.project_name_entry = Gtk.Entry(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             activates_default=True,
             primary_icon_activatable=False,
             secondary_icon_activatable=False,

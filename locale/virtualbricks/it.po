@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 12:44+0200\n"
+"POT-Creation-Date: 2026-09-24 18:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -256,7 +256,7 @@ msgstr "Assegna niente"
 msgid "_OK"
 msgstr ""
 
-#: virtualbricks/gui/windows/base.py
+#: virtualbricks/gui/windows/base.py virtualbricks/migrate/gui.py
 #, fuzzy
 msgid "_Cancel"
 msgstr "Annulla"
@@ -332,7 +332,7 @@ msgid "label"
 msgstr ""
 
 #: virtualbricks/gui/windows/commitimagedialog.py
-#: virtualbricks/gui/windows/virtualbricks.py
+#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 #, fuzzy
 msgid "Close"
 msgstr "Chiudi VB"
@@ -1552,7 +1552,7 @@ msgstr "_Configura"
 msgid "Icon"
 msgstr "Icona"
 
-#: virtualbricks/gui/windows/virtualbricks.py
+#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 msgid "Status"
 msgstr "Stato"
 
@@ -1630,6 +1630,136 @@ msgstr "Lista Mattoni di Virtualbricks"
 #, fuzzy
 msgid "Virtualbricks hidden"
 msgstr "Virtualbricks"
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "⚠ {0} warning"
+msgid_plural "⚠ {0} warnings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/migrate/gui.py
+msgid "✓ Migrated"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "· Waiting"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "↻ Migrating"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "✗ Failed"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "– Skipped"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Choose…"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "_Select"
+msgstr "Seleziona un'Icona"
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Virtualbricks migration"
+msgstr "Impostazioni Virtualbricks"
+
+#: virtualbricks/migrate/gui.py
+msgid "Old workspace"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Old settings"
+msgstr "Impostazion manuali"
+
+#: virtualbricks/migrate/gui.py
+msgid "In place"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Write to"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Project"
+msgstr "Nome Evento:"
+
+#: virtualbricks/migrate/gui.py
+msgid "Bricks"
+msgstr "Mattoni"
+
+#: virtualbricks/migrate/gui.py
+msgid "Save report…"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Check"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Migrate"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} is not a folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} is not a file"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} must be a new or empty folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "There is nothing to migrate."
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "Migrating {0} · {1} of {2}"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} of {1}"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "No messages."
+msgstr "messaggio"
+
+#: virtualbricks/migrate/gui.py
+msgid "Virtualbricks is running: close it to migrate your files in place."
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Save report"
+msgstr "Salvare il progetto corrente?"
+
+#: virtualbricks/migrate/gui.py
+msgid "_Save"
+msgstr ""
 
 #: virtualbricks/spawn.py
 #, fuzzy, python-brace-format
@@ -1740,9 +1870,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Si può usare il drag and drop per connettere i mattoni e il doppio click "
 #~ "per avviarli/fermarli."
-
-#~ msgid "Bricks"
-#~ msgstr "Mattoni"
 
 #~ msgid ""
 #~ "You can use drag and drop to add an event to events collation and double "
@@ -2118,9 +2245,6 @@ msgstr ""
 #~ msgid "Path:"
 #~ msgstr "Percorso:"
 
-#~ msgid "Select A Icon"
-#~ msgstr "Seleziona un'Icona"
-
 #~ msgid "Icon for this Machine"
 #~ msgstr "Icona per questa Macchina"
 
@@ -2181,9 +2305,6 @@ msgstr ""
 
 #~ msgid "Create"
 #~ msgstr "Crea"
-
-#~ msgid "message"
-#~ msgstr "messaggio"
 
 #~ msgid "add this image to bookmarks"
 #~ msgstr "aggiungi l'immagine ai segnalibri"
@@ -2675,9 +2796,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Eventi di Virtualbricks da agganciare all'evento di avvio/arresto del "
 #~ "Mattone"
-
-#~ msgid "Save current project?"
-#~ msgstr "Salvare il progetto corrente?"
 
 #~ msgid "Open a project"
 #~ msgstr "Apertura progetto"

@@ -94,7 +94,6 @@ class TunnelClientConfigController(TunnelListenConfigController):
         self.local_port_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment2,
@@ -111,7 +110,6 @@ class TunnelClientConfigController(TunnelListenConfigController):
             visible=True,
             can_focus=True,
             visibility=False,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )
@@ -120,7 +118,6 @@ class TunnelClientConfigController(TunnelListenConfigController):
         self.host_entry = Gtk.Entry(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )
@@ -135,7 +132,6 @@ class TunnelClientConfigController(TunnelListenConfigController):
         self.port_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment1,

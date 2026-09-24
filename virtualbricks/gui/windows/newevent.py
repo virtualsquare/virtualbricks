@@ -234,7 +234,6 @@ class NewEventDialog(Window):
         self.name_entry = Gtk.Entry(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )
@@ -249,7 +248,6 @@ class NewEventDialog(Window):
         self.delay_entry = Gtk.Entry(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             text=_("10"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,

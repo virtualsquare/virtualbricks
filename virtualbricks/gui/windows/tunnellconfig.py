@@ -73,7 +73,6 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
         self.port_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment1,
@@ -90,7 +89,6 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
             visible=True,
             can_focus=True,
             visibility=False,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )

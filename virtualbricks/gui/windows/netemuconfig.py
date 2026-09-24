@@ -338,7 +338,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.chanbufsize_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment1,
@@ -355,7 +354,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             visible=True,
             sensitive=False,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment2,
@@ -371,7 +369,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.delay_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment3,
@@ -382,7 +379,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             visible=True,
             sensitive=False,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment4,
@@ -392,7 +388,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.loss_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment5,
@@ -404,7 +399,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             visible=True,
             sensitive=False,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment6,
@@ -415,7 +409,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.bandwidth_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment7,
@@ -426,7 +419,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             visible=True,
             sensitive=False,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment8,
@@ -626,7 +618,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.weight_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=self.probability_adjustment,
@@ -655,7 +646,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.state_name_entry = Gtk.Entry(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )
@@ -686,7 +676,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.time_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=time_adjustment,

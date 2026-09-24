@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 12:44+0200\n"
+"POT-Creation-Date: 2026-09-24 18:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #: virtualbricks/base.py
 #, python-format
@@ -246,7 +247,7 @@ msgstr ""
 msgid "_OK"
 msgstr ""
 
-#: virtualbricks/gui/windows/base.py
+#: virtualbricks/gui/windows/base.py virtualbricks/migrate/gui.py
 msgid "_Cancel"
 msgstr ""
 
@@ -316,7 +317,7 @@ msgid "label"
 msgstr ""
 
 #: virtualbricks/gui/windows/commitimagedialog.py
-#: virtualbricks/gui/windows/virtualbricks.py
+#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 msgid "Close"
 msgstr ""
 
@@ -1427,7 +1428,7 @@ msgstr ""
 msgid "Icon"
 msgstr ""
 
-#: virtualbricks/gui/windows/virtualbricks.py
+#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 msgid "Status"
 msgstr ""
 
@@ -1498,6 +1499,130 @@ msgstr ""
 
 #: virtualbricks/gui/windows/virtualbricks.py
 msgid "Virtualbricks hidden"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "⚠ {0} warning"
+msgid_plural "⚠ {0} warnings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/migrate/gui.py
+msgid "✓ Migrated"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "· Waiting"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "↻ Migrating"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "✗ Failed"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "– Skipped"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Choose…"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "_Select"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Virtualbricks migration"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Old workspace"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Old settings"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "In place"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Write to"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Project"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Bricks"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Save report…"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Check"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Migrate"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} is not a folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} is not a file"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} must be a new or empty folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "There is nothing to migrate."
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "Migrating {0} · {1} of {2}"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} of {1}"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "No messages."
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Virtualbricks is running: close it to migrate your files in place."
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Save report"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "_Save"
 msgstr ""
 
 #: virtualbricks/spawn.py

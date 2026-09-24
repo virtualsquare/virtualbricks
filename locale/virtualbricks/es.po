@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 12:44+0200\n"
+"POT-Creation-Date: 2026-09-24 18:12+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -250,7 +250,7 @@ msgstr ""
 msgid "_OK"
 msgstr ""
 
-#: virtualbricks/gui/windows/base.py
+#: virtualbricks/gui/windows/base.py virtualbricks/migrate/gui.py
 msgid "_Cancel"
 msgstr ""
 
@@ -321,7 +321,7 @@ msgid "label"
 msgstr ""
 
 #: virtualbricks/gui/windows/commitimagedialog.py
-#: virtualbricks/gui/windows/virtualbricks.py
+#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 msgid "Close"
 msgstr ""
 
@@ -1485,7 +1485,7 @@ msgstr ""
 msgid "Icon"
 msgstr ""
 
-#: virtualbricks/gui/windows/virtualbricks.py
+#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 msgid "Status"
 msgstr ""
 
@@ -1564,6 +1564,134 @@ msgstr "Virtualbricks"
 msgid "Virtualbricks hidden"
 msgstr "Virtualbricks"
 
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "⚠ {0} warning"
+msgid_plural "⚠ {0} warnings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/migrate/gui.py
+msgid "✓ Migrated"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "· Waiting"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "↻ Migrating"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "✗ Failed"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "– Skipped"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Choose…"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "_Select"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Virtualbricks migration"
+msgstr "Virtualbricks"
+
+#: virtualbricks/migrate/gui.py
+msgid "Old workspace"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Old settings"
+msgstr "Mostrar preferencias"
+
+#: virtualbricks/migrate/gui.py
+msgid "In place"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Write to"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/migrate/gui.py
+msgid "Bricks"
+msgstr "Bricks (Bloques)"
+
+#: virtualbricks/migrate/gui.py
+msgid "Save report…"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Check"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Migrate"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} is not a folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} is not a file"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} must be a new or empty folder"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "There is nothing to migrate."
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "Migrating {0} · {1} of {2}"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, python-brace-format
+msgid "{0} of {1}"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "No messages."
+msgstr "_Mensajes"
+
+#: virtualbricks/migrate/gui.py
+msgid "Virtualbricks is running: close it to migrate your files in place."
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "Save report"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
+msgid "_Save"
+msgstr ""
+
 #: virtualbricks/spawn.py
 #, python-brace-format
 msgid "{exe} not found"
@@ -1623,9 +1751,6 @@ msgstr ""
 msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""
 
-#~ msgid "_Open Project"
-#~ msgstr "_Abrir proyecto"
-
 #~ msgid "_Recent Projects..."
 #~ msgstr "Proyectos _Recientes"
 
@@ -1669,9 +1794,6 @@ msgstr ""
 #~ "Puedes usar \"drag & drop\" para conectar bricks, y doble click para "
 #~ "arrancar o pararlos"
 
-#~ msgid "Bricks"
-#~ msgstr "Bricks (Bloques)"
-
 #~ msgid ""
 #~ "You can use drag and drop to add an event to events collation and double "
 #~ "click to start/stop them."
@@ -1704,9 +1826,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Mostar/Ocultar panel de configuración para la imagen de arranque "
 #~ "seleccionada"
-
-#~ msgid "Show settings"
-#~ msgstr "Mostrar preferencias"
 
 #~ msgid "use one of the image files in the default folder as cdrom device"
 #~ msgstr ""

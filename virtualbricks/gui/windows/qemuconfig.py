@@ -868,7 +868,6 @@ class QemuConfigController(ConfigController):
             visible=True,
             can_focus=True,
             max_length=2,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment1,
@@ -957,7 +956,6 @@ class QemuConfigController(ConfigController):
         self.ram_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment3,
@@ -981,7 +979,6 @@ class QemuConfigController(ConfigController):
         self.kvmsmem_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment4,
@@ -1066,7 +1063,6 @@ class QemuConfigController(ConfigController):
         self.vnc_display_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment2,
@@ -1185,7 +1181,6 @@ class QemuConfigController(ConfigController):
             visible=True,
             can_focus=True,
             max_length=5,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )
@@ -1398,7 +1393,6 @@ class QemuConfigController(ConfigController):
         self.kernel_options_entry = Gtk.Entry(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
         )
@@ -1414,7 +1408,6 @@ class QemuConfigController(ConfigController):
         self.gdb_port_spin = Gtk.SpinButton(
             visible=True,
             can_focus=True,
-            invisible_char=ord("●"),
             primary_icon_activatable=False,
             secondary_icon_activatable=False,
             adjustment=adjustment5,
