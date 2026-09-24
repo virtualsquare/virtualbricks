@@ -20,9 +20,10 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import console, errors
+from virtualbricks import console
 from virtualbricks.config import projectfile, schema, settings
 from virtualbricks.config import tomlfile
+from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.report import Report
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.virtualmachines import UsbDevice
@@ -235,7 +236,7 @@ class TestUpgrade(ProjectFileTestCase):
 
     def test_newer(self):
         self.assertRaises(
-            errors.ProjectFormatError,
+            ProjectFormatError,
             projectfile.upgrade,
             {"format": 2},
             self.report,
@@ -495,7 +496,7 @@ class TestRead(ProjectFileTestCase):
         path = self.mktemp()
         with open(path, "w") as fp:
             fp.write("[bricks\n")
-        self.assertRaises(errors.ProjectFormatError, projectfile.read, path)
+        self.assertRaises(ProjectFormatError, projectfile.read, path)
 
     def test_missing(self):
         self.assertRaises(FileNotFoundError, projectfile.read, self.mktemp())

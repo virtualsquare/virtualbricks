@@ -24,6 +24,7 @@ from twisted.trial import unittest
 from virtualbricks import errors, project, locations
 from virtualbricks.config import projectfile, settings
 from virtualbricks.config import tomlfile
+from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.tests import FakeLogger, isolate, make_factory
 from virtualbricks.tests import reset_settings
 
@@ -97,11 +98,11 @@ class TestProject(ProjectTestCase):
         bad = self.new_project("bad")
         with open(bad.project_file, "w") as fp:
             fp.write("[bricks\n")
-        self.assertRaises(errors.ProjectFormatError, bad.open, self.factory)
+        self.assertRaises(ProjectFormatError, bad.open, self.factory)
         self.assertIs(self.manager.current, good)
         self.assertEqual(len(self.factory.bricks), 1)
         tomlfile.dump({"format": 9}, bad.project_file)
-        self.assertRaises(errors.ProjectFormatError, bad.open, self.factory)
+        self.assertRaises(ProjectFormatError, bad.open, self.factory)
 
     def test_open_logs_the_report(self):
         prj = self.new_project()

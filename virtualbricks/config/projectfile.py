@@ -58,6 +58,10 @@ DEFAULT_MODEL = "rtl8139"
 UPGRADES = {}
 
 
+class ProjectFormatError(Exception):
+    """The project file can't be read: it's not TOML or a newer format."""
+
+
 @schema.define
 class ImageTable:
 
@@ -165,7 +169,7 @@ def upgrade(data, report):
         )
         return data
     if version > FORMAT:
-        raise errors.ProjectFormatError(
+        raise ProjectFormatError(
             f"written by a newer Virtualbricks (format {version})"
         )
     while version < FORMAT:
@@ -426,7 +430,7 @@ def read(path):
     try:
         return tomlfile.load(path)
     except tomlfile.DecodeError as exc:
-        raise errors.ProjectFormatError(f"{path}: {exc}") from None
+        raise ProjectFormatError(f"{path}: {exc}") from None
 
 
 def load(factory, path, report):

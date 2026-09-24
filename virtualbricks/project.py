@@ -34,6 +34,7 @@ from twisted.logger import Logger
 
 from virtualbricks import errors, locations
 from virtualbricks.config import projectfile, settings, tomlfile
+from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks import tools
 from virtualbricks.config.report import Report
 
@@ -395,7 +396,7 @@ class ProjectManager:
             logger.error(cannot_find_project, name=name)
         except errors.InvalidNameError:
             logger.error(cannot_find_project, name=name)
-        except errors.ProjectFormatError as exc:
+        except ProjectFormatError as exc:
             logger.error(cannot_open_project, name=name, error=exc)
         for i in itertools.count():  # pragma: no branch
             name = "{0}_{1}".format(locations.DEFAULT_PROJECT, i)

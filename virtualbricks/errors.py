@@ -93,10 +93,6 @@ class InvalidArchiveError(Error):
     """The archive format is not recognized."""
 
 
-class ProjectFormatError(Error):
-    """The project file can't be read: it's not TOML or a newer format."""
-
-
 class BrickRunningError(Error):
     """There is one or more brick that is running."""
 
