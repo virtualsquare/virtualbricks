@@ -63,15 +63,36 @@ class Machine:
 
 
 class TestDescribe(unittest.TestCase):
+    """How values are described in the messages about the data."""
 
     def test_values(self):
-        kind = Kind()
-        self.assertEqual(kind.format(True), "true")
-        self.assertEqual(kind.format(False), "false")
-        self.assertEqual(kind.format("a"), '"a"')
-        self.assertEqual(kind.format([]), "an empty list")
-        self.assertEqual(kind.format([1]), "the default list")
-        self.assertEqual(kind.format(3), "3")
+        describe = schema._describe
+        self.assertEqual(describe(True), "true")
+        self.assertEqual(describe(False), "false")
+        self.assertEqual(describe("a"), '"a"')
+        self.assertEqual(describe([]), "an empty list")
+        self.assertEqual(describe([1]), "the default list")
+        self.assertEqual(describe(3), "3")
+
+
+class TestFormat(unittest.TestCase):
+    """Each kind formats its values, as the defaults in the messages."""
+
+    def test_base(self):
+        self.assertRaises(NotImplementedError, Kind().format, 1)
+
+    def test_kinds(self):
+        self.assertEqual(Bool().format(True), "true")
+        self.assertEqual(Bool().format(False), "false")
+        self.assertEqual(Int().format(3), "3")
+        self.assertEqual(Float().format(0.5), "0.5")
+        self.assertEqual(Str().format("a"), '"a"')
+        # the kinds of strings format as strings
+        self.assertEqual(Path().format("/a"), '"/a"')
+        self.assertEqual(Choice("x", "y").format("x"), '"x"')
+        self.assertEqual(Ref("event").format(""), '""')
+        self.assertEqual(ListOf(Int()).format([1, 2]), "[1, 2]")
+        self.assertEqual(Record(Disk).format(Disk()), "{…}")
 
 
 class TestKind(unittest.TestCase):

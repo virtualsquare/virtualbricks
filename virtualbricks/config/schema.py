@@ -92,7 +92,7 @@ class Kind:
         raise ValueError("can't be set from the console")
 
     def format(self, value):
-        return _describe(value)
+        raise NotImplementedError("Kind.format")
 
 
 class Bool(Kind):
@@ -113,7 +113,7 @@ class Bool(Kind):
         raise ValueError(f"{text!r} is not true or false")
 
     def format(self, value):
-        return _describe(value)
+        return "true" if value else "false"
 
 
 class _Number(Kind):
@@ -143,6 +143,9 @@ class _Number(Kind):
             raise ValueError(f"{text!r} is not {self.type_name}") from None
         self.check(value)
         return value
+
+    def format(self, value):
+        return str(value)
 
 
 class Int(_Number):
@@ -178,6 +181,9 @@ class Str(Kind):
     def parse(self, text):
         self.check(text)
         return text
+
+    def format(self, value):
+        return f'"{value}"'
 
 
 class Path(Str):
