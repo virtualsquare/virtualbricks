@@ -27,9 +27,9 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import tools
 from virtualbricks.config import get_setting
 from virtualbricks.bricks import virtualmachine
+from virtualbricks.nic import is_valid_mac, random_mac
 from virtualbricks.gui.windows.base import _, Window
 
 logger = Logger()
@@ -211,7 +211,7 @@ class BaseEthernetDialog(Window):
         return self.dialog
 
     def is_valid(self, mac):
-        return tools.mac_is_valid(mac)
+        return is_valid_mac(mac)
 
     def setup(self):
         socks = self.sock_store
@@ -228,7 +228,7 @@ class BaseEthernetDialog(Window):
                     socks.append((sock.nickname, sock))
 
     def on_randomize_button_clicked(self, button):
-        self.mac_entry.set_text(tools.random_mac())
+        self.mac_entry.set_text(random_mac())
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
@@ -239,7 +239,7 @@ class BaseEthernetDialog(Window):
             mac = self.mac_entry.get_text()
             if not self.is_valid(mac):
                 logger.error(invalid_mac, mac=mac)
-                mac = tools.random_mac()
+                mac = random_mac()
             self.do(sock, mac, model)
         dialog.destroy()
 

@@ -44,6 +44,7 @@ from virtualbricks.config import (
     get_setting,
     projects,
 )
+from virtualbricks.nic import random_mac
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
@@ -197,7 +198,7 @@ class VMPlug(Wrapper):
     def __init__(self, plug):
         Wrapper.__init__(self, plug)
         self.model = "rtl8139"
-        self.mac = tools.random_mac()
+        self.mac = random_mac()
 
 
 class VMSock(Wrapper):
@@ -205,7 +206,7 @@ class VMSock(Wrapper):
     def __init__(self, sock):
         Wrapper.__init__(self, sock)
         self.model = "rtl8139"
-        self.mac = tools.random_mac()
+        self.mac = random_mac()
 
     def connect(self, endpoint):
         return

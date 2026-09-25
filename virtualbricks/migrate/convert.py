@@ -51,7 +51,7 @@ from virtualbricks.config import (
     project_document,
 )
 from virtualbricks.migrate import legacy
-from virtualbricks.tools import random_mac
+from virtualbricks.nic import random_mac
 
 if TYPE_CHECKING:
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu

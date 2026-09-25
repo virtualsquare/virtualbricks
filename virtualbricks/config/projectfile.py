@@ -35,7 +35,7 @@ import re
 from collections.abc import Callable, Iterator
 from typing import TYPE_CHECKING, TypeAlias, TypedDict, cast
 
-from virtualbricks import errors, tools
+from virtualbricks import errors
 from virtualbricks.config.schema import (
     Choice,
     Mac,
@@ -57,6 +57,7 @@ from virtualbricks.config.tomlfile import (
     dump_toml,
     load_toml,
 )
+from virtualbricks.nic import random_mac
 
 if TYPE_CHECKING:
     from virtualbricks.brickfactory import BrickFactory
@@ -301,7 +302,7 @@ def _read_nic(
             raise ValueError("no MAC address")
         nic["mac"] = cast(str, mac)
     except ValueError as exc:
-        nic["mac"] = tools.random_mac()
+        nic["mac"] = random_mac()
         report.warning(f"mac: {exc}, using {nic['mac']}", where)
     if kind == "plug":
         nic["connect"] = _read_target(

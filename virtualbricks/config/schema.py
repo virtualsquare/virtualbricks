@@ -34,6 +34,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
 import attr
 
+from virtualbricks.nic import MAC_PATTERN
+
 if TYPE_CHECKING:
     from virtualbricks.config.report import Report
     from virtualbricks.config.tomlfile import Table, Value
@@ -66,7 +68,6 @@ __all__ = [
 ]
 
 _KEY = "virtualbricks.config.schema"
-MAC_PATTERN = r"(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}"
 
 # attrs 21.2, shipped by Ubuntu 22.04, has no "attrs" namespace yet.
 define = attr.define

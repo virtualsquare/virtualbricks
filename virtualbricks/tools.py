@@ -21,8 +21,6 @@ import os
 import sys
 import errno
 from pathlib import Path
-import random
-import re
 from functools import update_wrapper, wraps
 import tempfile
 import struct
@@ -37,23 +35,6 @@ from virtualbricks.errors import NoOptionError
 
 logger = Logger()
 ksm_error = "Can not change ksm state. (failed command: {cmd})"
-
-
-def random_mac():
-    random.seed()
-    return "00:aa:{0:02x}:{1:02x}:{2:02x}:{3:02x}".format(
-        random.getrandbits(8),
-        random.getrandbits(8),
-        random.getrandbits(8),
-        random.getrandbits(8),
-    )
-
-
-MAC_RE = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
-
-
-def mac_is_valid(mac):
-    return bool(MAC_RE.match(mac))
 
 
 def synchronize(func, lock):
