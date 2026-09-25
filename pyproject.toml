@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "virtualbricks"
 dynamic = ["version"]
 description = "Virtualbricks Virtualization Tools"
-readme = { file = "README", content-type = "text/x-rst" }
+readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Virtualbricks team" }]
 license = "GPL-2.0-or-later"
 license-files = ["COPYING", "LICENCE"]
@@ -38,6 +38,10 @@ dev = [
     "pypandoc-binary==1.17",
     "pyflakes>=3.0",
     "ruff>=0.16",
+    # The types of the libraries: Twisted, Pillow, attrs, tomlkit and tomli
+    # ship theirs. There are none for pygraphviz, zope.interface and
+    # constantly.
+    "PyGObject-stubs>=2.17",
 ]
 
 [project.urls]
@@ -57,9 +61,6 @@ version = { attr = "virtualbricks.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["virtualbricks*"]
-
-[tool.setuptools.package-data]
-"virtualbricks.tests" = ["data/*"]
 
 [tool.setuptools.data-files]
 "share/applications" = ["share/virtualbricks.desktop"]
