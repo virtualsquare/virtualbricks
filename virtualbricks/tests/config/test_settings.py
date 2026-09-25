@@ -49,7 +49,6 @@ from virtualbricks.config.settings import (
     store_state,
     use_project,
 )
-from virtualbricks.errors import NoOptionError
 from virtualbricks.tests import FakeLogger, isolate, reset_settings
 
 
@@ -100,13 +99,6 @@ class TestValues(SettingsTestCase):
         self.assertTrue(has_option("cowfmt"))
         self.assertFalse(has_option("python"))
 
-    def test_unknown(self):
-        self.assertRaises(NoOptionError, get_setting, "python")
-        self.assertRaises(NoOptionError, set_setting, "python", True)
-        self.assertRaises(NoOptionError, get_app_setting, "python")
-        self.assertRaises(NoOptionError, set_app_setting, "python", True)
-        self.assertRaises(NoOptionError, parse_setting, "python", "1")
-
     def test_set_validates(self):
         self.assertRaises(ValueError, set_setting, "cowfmt", "qed")
         set_setting("cowfmt", "qcow")
@@ -120,6 +112,16 @@ class TestValues(SettingsTestCase):
     def test_parse(self):
         self.assertIs(parse_setting("femaleplugs", "yes"), True)
         self.assertRaises(ValueError, parse_setting, "cowfmt", "qed")
+
+    def test_unknown_name_is_an_error(self):
+        self.assertRaises(AttributeError, get_setting, "python")
+        self.assertRaises(AttributeError, get_app_setting, "python")
+        self.assertRaises(KeyError, parse_setting, "python", "1")
+
+    def test_setting_an_unknown_name_adds_nothing(self):
+        self.assertRaises(AttributeError, set_setting, "python", True)
+        self.assertRaises(AttributeError, set_app_setting, "python", True)
+        self.assertRaises(AttributeError, get_setting, "python")
 
 
 class TestProjectSettings(SettingsTestCase):
@@ -146,6 +148,13 @@ class TestProjectSettings(SettingsTestCase):
         self.assertEqual(project.qemupath, "/srv/qemu")
         use_project(None)
         self.assertEqual(get_setting("qemupath"), "/usr/local/bin")
+
+    def test_unknown_name_with_a_project_open(self):
+        project = ProjectSettings()
+        use_project(project)
+        self.assertRaises(AttributeError, get_setting, "python")
+        self.assertRaises(AttributeError, set_setting, "python", True)
+        self.assertEqual(project, ProjectSettings())
 
     def test_project_keys(self):
         self.assertEqual(

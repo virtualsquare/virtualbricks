@@ -33,7 +33,6 @@ from typing import TYPE_CHECKING, TypeAlias, cast
 from twisted.logger import Logger
 
 from virtualbricks import locations
-from virtualbricks.errors import NoOptionError
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import (
     Bool,
@@ -130,8 +129,6 @@ _read_only = False
 
 
 def _target(name: str) -> AppSettings | ProjectSettings:
-    if name not in field_names(AppSettings):
-        raise NoOptionError(name)
     if _project is not None and name in PROJECT_KEYS:
         return _project
     return _app
@@ -156,19 +153,16 @@ def set_setting(name: str, value: SettingValue) -> None:
 def get_app_setting(name: str) -> SettingValue:
     """Return the application value, even when a project overrides it."""
 
-    _target(name)
     return getattr(_app, name)
 
 
 def set_app_setting(name: str, value: SettingValue) -> None:
-    _target(name)
     setattr(_app, name, value)
 
 
 def parse_setting(name: str, text: str) -> SettingValue:
     """Convert the text typed in the console for a setting."""
 
-    _target(name)
     return cast(SettingValue, parse_value(AppSettings, name, text))
 
 
