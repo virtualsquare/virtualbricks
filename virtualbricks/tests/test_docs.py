@@ -39,26 +39,23 @@ from twisted.trial import unittest
 from virtualbricks import locations
 from virtualbricks.config import (
     DEFAULT_MODEL,
-    NIC_KEYS,
     PROJECT_KEYS,
     AppSettings,
-    AppState,
     Bool,
     Choice,
     Float,
-    ImageTable,
     Int,
     IPv4,
     ListOf,
     Path,
     ProjectSettings,
     Ref,
-    brick_table,
     dump_record,
-    field_info,
     field_names,
-    fields,
 )
+from virtualbricks.config.projectfile import NIC_KEYS, ImageTable, brick_table
+from virtualbricks.config.settings import AppState
+from virtualbricks.config.schema import info as field_info, fields
 from virtualbricks.bricks.event import EventConfig
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import DISK_DEVICES

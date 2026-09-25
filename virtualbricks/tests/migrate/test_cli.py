@@ -23,14 +23,9 @@ from twisted.trial import unittest
 
 from virtualbricks import locations
 from virtualbricks.config import load_toml
-from virtualbricks.migrate import (
-    EXIT_RUNNING,
-    REPORT_FILE,
-    RUNNING,
-    Migration,
-    cli,
-    main,
-)
+from virtualbricks.migrate import cli
+from virtualbricks.migrate.cli import EXIT_RUNNING, RUNNING, main
+from virtualbricks.migrate.engine import REPORT_FILE, Migration
 from virtualbricks.tests import (
     hold_lock,
     isolate,

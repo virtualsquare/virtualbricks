@@ -26,11 +26,12 @@ from virtualbricks.config import (
     SETTINGS_FORMAT,
     AppSettings,
     Report,
-    dumps,
     load_toml,
     set_app_setting,
 )
-from virtualbricks.migrate import (
+from virtualbricks.config.tomlfile import dumps
+from virtualbricks.migrate import engine, startup_migration
+from virtualbricks.migrate.engine import (
     FAILED,
     MIGRATED,
     MIGRATING,
@@ -43,13 +44,11 @@ from virtualbricks.migrate import (
     Migration,
     counts,
     discover,
-    engine,
     in_place_migration,
     lock_in_place,
     migrate_imported_project,
     migration_for,
     project_source,
-    startup_migration,
 )
 from virtualbricks.tests import (
     FakeLogger,

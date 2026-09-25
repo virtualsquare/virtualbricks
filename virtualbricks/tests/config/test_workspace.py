@@ -25,21 +25,23 @@ from twisted.trial import unittest
 
 from virtualbricks import errors, locations
 from virtualbricks.config import (
-    DiskUsage,
-    ImageSummary,
-    OpenProject,
     ProjectFormatError,
-    Workspace,
     current_project,
     dump_toml,
     get_app_setting,
     load_toml,
     project_settings,
     set_app_setting,
-    set_current_project,
     set_setting,
     workspace,
 )
+from virtualbricks.config.workspace import (
+    DiskUsage,
+    ImageSummary,
+    OpenProject,
+    Workspace,
+)
+from virtualbricks.config.settings import set_current_project
 from virtualbricks.tests import FakeLogger, isolate, make_factory
 from virtualbricks.tests import reset_settings
 

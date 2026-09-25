@@ -25,7 +25,6 @@ from virtualbricks.config import (
     AppSettings,
     ProjectSettings,
     Report,
-    check_format,
     current_project,
     dump_record,
     dump_toml,
@@ -40,12 +39,15 @@ from virtualbricks.config import (
     parse_setting,
     project_settings,
     set_app_setting,
-    set_current_project,
     set_setting,
     settings,
     store_settings,
-    store_state,
     tomlfile,
+)
+from virtualbricks.config.settings import (
+    check_format,
+    set_current_project,
+    store_state,
     use_project,
 )
 from virtualbricks.errors import NoOptionError

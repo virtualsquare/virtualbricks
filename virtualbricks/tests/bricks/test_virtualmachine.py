@@ -23,7 +23,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import bricks
-from virtualbricks.config import OpenProject
+from virtualbricks.config.workspace import OpenProject
 from virtualbricks.config import Report, set_setting
 from virtualbricks.tests import (
     use_workspace,

@@ -37,17 +37,15 @@ from virtualbricks.config import (
     dump_record,
     field,
     field_default,
-    field_info,
     field_names,
     field_values,
-    fields,
     kind_of,
     load_record,
     parse_value,
-    references,
     rename_references,
     schema,
 )
+from virtualbricks.config.schema import info as field_info, fields, references
 
 
 @define

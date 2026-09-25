@@ -33,14 +33,14 @@ from virtualbricks.config import (
     dump_record,
 )
 from virtualbricks.bricks.eventaction import EventAction
-from virtualbricks.migrate import (
+from virtualbricks.migrate import convert
+from virtualbricks.migrate.convert import (
     MigrationError,
-    convert,
     convert_project,
     convert_settings,
     convert_value,
-    parse_project,
 )
+from virtualbricks.migrate.legacy import parse_project
 from virtualbricks.tests import isolate, reset_settings
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,

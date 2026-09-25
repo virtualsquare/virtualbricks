@@ -25,26 +25,27 @@ from virtualbricks.config import (
     ProjectFormatError,
     ProjectSettings,
     Report,
-    create_project,
-    devices_for_image,
     dump_record,
     dump_toml,
-    dumps,
-    image_paths,
-    load_project,
     load_toml,
-    loads,
     project_document,
     projectfile,
-    read_project,
-    remap_image,
-    resolve_socket,
-    restore_project,
-    save_project,
     set_app_setting,
-    socket_target,
-    upgrade_project,
 )
+from virtualbricks.config.projectfile import (
+    create as create_project,
+    devices_for_image,
+    image_paths,
+    load as load_project,
+    read as read_project,
+    remap_image,
+    resolve as resolve_socket,
+    restore as restore_project,
+    save as save_project,
+    socket_target,
+    upgrade as upgrade_project,
+)
+from virtualbricks.config.tomlfile import dumps, loads
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import UsbDevice
 

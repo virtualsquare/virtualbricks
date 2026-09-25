@@ -23,7 +23,8 @@ from twisted.trial import unittest
 
 # The tests of the configuration are virtualbricks.tests.config: here that
 # name is theirs, so the settings are taken by name and from their module.
-from virtualbricks.config import AppSettings, AppState, settings  # noqa: E402
+from virtualbricks.config import AppSettings, settings
+from virtualbricks.config.settings import AppState
 
 DATA = os.path.join(os.path.dirname(__file__), "data")
 

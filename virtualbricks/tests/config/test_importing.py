@@ -28,19 +28,21 @@ from twisted.trial import unittest
 
 from virtualbricks import locations
 from virtualbricks.config import (
-    ArchiveContents,
-    ArchiveError,
-    ArchiveMember,
-    ImportResult,
-    Workspace,
     archive,
-    dumps,
     importing,
     load_toml,
     plan_import,
     set_app_setting,
     update_plan,
 )
+from virtualbricks.config.archive import (
+    ArchiveContents,
+    ArchiveError,
+    Member as ArchiveMember,
+)
+from virtualbricks.config.importing import ImportResult
+from virtualbricks.config.workspace import Workspace
+from virtualbricks.config.tomlfile import dumps
 from virtualbricks.config.archive import Tool
 from virtualbricks.config.importing import ImageUse, MachinePath
 from virtualbricks.tests import isolate, reset_settings

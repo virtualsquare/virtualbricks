@@ -22,7 +22,7 @@ from twisted.internet import defer
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.migrate import (
+from virtualbricks.migrate.engine import (
     FAILED,
     MIGRATED,
     MIGRATING,

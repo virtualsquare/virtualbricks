@@ -24,7 +24,8 @@ import time
 from twisted.internet import defer
 
 from virtualbricks import errors, locations
-from virtualbricks.config import DiskUsage, dump_toml, load_toml
+from virtualbricks.config import dump_toml, load_toml
+from virtualbricks.config.workspace import DiskUsage
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 

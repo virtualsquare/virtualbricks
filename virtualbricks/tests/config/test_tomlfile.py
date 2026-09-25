@@ -20,14 +20,8 @@ import textwrap
 
 from twisted.trial import unittest
 
-from virtualbricks.config import (
-    DecodeError,
-    dump_toml,
-    dumps,
-    load_toml,
-    loads,
-    tomlfile,
-)
+from virtualbricks.config import DecodeError, dump_toml, load_toml, tomlfile
+from virtualbricks.config.tomlfile import dumps, loads
 
 DOCUMENT = {
     "format": 1,

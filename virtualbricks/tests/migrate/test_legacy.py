@@ -19,7 +19,7 @@ import textwrap
 
 from twisted.trial import unittest
 
-from virtualbricks.migrate import (
+from virtualbricks.migrate.legacy import (
     Link,
     looks_like_project,
     parse_bool,

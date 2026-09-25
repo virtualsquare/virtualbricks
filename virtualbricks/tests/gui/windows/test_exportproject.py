@@ -22,7 +22,8 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import locations
-from virtualbricks.config import ArchiveCancelled, ArchiveError
+from virtualbricks.config import ArchiveCancelled
+from virtualbricks.config.archive import ArchiveError
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 

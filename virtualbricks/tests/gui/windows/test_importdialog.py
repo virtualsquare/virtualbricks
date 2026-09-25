@@ -23,15 +23,13 @@ from twisted.internet import defer
 
 from virtualbricks import locations
 
-from virtualbricks.config import (
-    ArchiveCancelled,
+from virtualbricks.config import ArchiveCancelled, Report, set_app_setting
+from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,
-    ArchiveMember,
-    ImportResult,
-    Report,
-    set_app_setting,
+    Member as ArchiveMember,
 )
+from virtualbricks.config.importing import ImportResult
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 

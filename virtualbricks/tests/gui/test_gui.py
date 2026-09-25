@@ -21,7 +21,8 @@
 import os
 
 from virtualbricks import locations
-from virtualbricks.config import set_current_project, workspace
+from virtualbricks.config import workspace
+from virtualbricks.config.settings import set_current_project
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.tests.migrate.fixtures import (

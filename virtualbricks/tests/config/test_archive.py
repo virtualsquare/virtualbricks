@@ -30,7 +30,8 @@ from twisted.internet import error
 from twisted.python import failure
 from twisted.trial import unittest
 
-from virtualbricks.config import archive, dumps
+from virtualbricks.config import archive
+from virtualbricks.config.tomlfile import dumps
 from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,
