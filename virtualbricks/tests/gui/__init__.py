@@ -60,6 +60,41 @@ class FakeGui:
         self.systray.append("stop")
 
 
+class ProjectsGui(FakeGui):
+    """The main window, as the windows of the projects see it."""
+
+    window = None
+
+    def __init__(self, factory, workspace):
+        super().__init__(factory)
+        self.workspace = workspace
+        self.calls = []
+
+    def on_open(self, name):
+        self.calls.append(("open", name))
+        self.workspace.save(self.brickfactory)
+        return self.workspace.open(name, self.brickfactory)
+
+    def on_new(self, name, description=""):
+        self.calls.append(("new", name, description))
+        self.workspace.create(name, description)
+        self.workspace.open(name, self.brickfactory)
+
+    def on_save(self):
+        self.calls.append(("save",))
+        self.workspace.save(self.brickfactory)
+
+    def set_title(self):
+        self.calls.append(("title",))
+
+    def import_project(self, on_destroy=None):
+        self.calls.append(("import",))
+        self.import_closed = on_destroy
+
+    def export_project(self, summary, parent=None):
+        self.calls.append(("export", summary.name))
+
+
 class GuiTestCase(unittest.TestCase):
     """A window test with its own settings, factory and workspace."""
 

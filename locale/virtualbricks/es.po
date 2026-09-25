@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 15:14+0200\n"
+"POT-Creation-Date: 2026-09-25 15:26+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -283,7 +283,7 @@ msgstr "_Preferencias"
 msgid "Console"
 msgstr ""
 
-#: virtualbricks/gui/messages.py
+#: virtualbricks/gui/messages.py virtualbricks/gui/windows/projects.py
 msgid "Events"
 msgstr "Eventos"
 
@@ -297,7 +297,8 @@ msgstr "<b> Icono de Maquina Virtual </b>"
 msgid "Connections"
 msgstr "Conectar con:"
 
-#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+#: virtualbricks/gui/messages.py virtualbricks/gui/windows/projects.py
+#: virtualbricks/migrate/gui.py
 msgid "Bricks"
 msgstr "Bricks (Bloques)"
 
@@ -400,7 +401,7 @@ msgstr "<b> Ajustes de dispositivo de Audio </b>"
 #: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/usbdev.py
+#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
 #: virtualbricks/gui/windows/virtualbricks.py
 msgid "Name"
 msgstr ""
@@ -540,11 +541,6 @@ msgstr ""
 msgid "Do you really want to delete the network interface?"
 msgstr ""
 
-#: virtualbricks/gui/windows/confirmdialog.py
-#, python-brace-format
-msgid "Do you really want to delete the project {name}?"
-msgstr ""
-
 #: virtualbricks/gui/windows/createimagedialog.py
 msgid "Auto"
 msgstr ""
@@ -643,6 +639,7 @@ msgstr "Creación de imagen"
 
 #: virtualbricks/gui/windows/disklibrary.py
 #: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/projectname.py
 msgid "Description"
 msgstr ""
 
@@ -846,6 +843,8 @@ msgstr "Importar bricks"
 #: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/loadimagedialog.py
 #: virtualbricks/gui/windows/newbrick.py
+#: virtualbricks/gui/windows/projectname.py
+#: virtualbricks/gui/windows/projects.py
 #: virtualbricks/gui/windows/renamedialog.py
 #: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
 msgid "Cancel"
@@ -875,6 +874,7 @@ msgid "Reading the archive…"
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/projects.py
 #, fuzzy
 msgid "Images"
 msgstr "Creación de imagen"
@@ -1093,7 +1093,8 @@ msgstr ""
 msgid "Save the messages"
 msgstr "_Mensajes"
 
-#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
+#: virtualbricks/gui/windows/logging.py
+#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 msgid "_Save"
 msgstr ""
 
@@ -1238,25 +1239,238 @@ msgstr ""
 msgid "Please wait..."
 msgstr ""
 
-#: virtualbricks/gui/windows/projectlistdialog.py
+#: virtualbricks/gui/windows/projectname.py
+#: virtualbricks/gui/windows/projects.py
 #, fuzzy
-msgid "Select project"
+msgid "New Project"
 msgstr "Guardar proyecto como"
 
-#: virtualbricks/gui/windows/projectlistdialog.py
-#: virtualbricks/gui/windows/saveprojectasdialog.py
-msgid "column"
+#: virtualbricks/gui/windows/projectname.py
+msgid "Create"
 msgstr ""
 
-#: virtualbricks/gui/windows/projectlistdialog.py
+#: virtualbricks/gui/windows/projectname.py
 #, fuzzy
-msgid "Virtualbricks - Open project"
-msgstr "Virtualbricks"
+msgid "Rename Project"
+msgstr "_Abrir proyecto"
 
-#: virtualbricks/gui/windows/projectlistdialog.py
+#: virtualbricks/gui/windows/projectname.py
+msgid "Rename"
+msgstr ""
+
+#: virtualbricks/gui/windows/projectname.py
 #, fuzzy
-msgid "Virtualbricks - Delete project"
-msgstr "Virtualbricks"
+msgid "Duplicate Project"
+msgstr "Proyectos _Recientes"
+
+#: virtualbricks/gui/windows/projectname.py
+msgid "Duplicate"
+msgstr ""
+
+#: virtualbricks/gui/windows/projectname.py
+#, fuzzy
+msgid "New name"
+msgstr "Guardar proyecto como"
+
+#: virtualbricks/gui/windows/projectname.py
+msgid "Name of the copy"
+msgstr ""
+
+#: virtualbricks/gui/windows/projectname.py
+msgid ""
+"Optional; it becomes the README of the project. The project starts with your "
+"settings for new projects."
+msgstr ""
+
+#: virtualbricks/gui/windows/projectname.py
+msgid "Open the copy"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "Today at {time}"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Yesterday"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy, python-brace-format
+msgid "{n} brick"
+msgid_plural "{n} bricks"
+msgstr[0] "Importar bricks"
+msgstr[1] "Importar bricks"
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Can't be read"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "{n} image missing"
+msgid_plural "{n} images missing"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Open"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Projects"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/windows/projects.py
+msgid "New…"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Import…"
+msgstr "Importar bricks"
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "No projects yet"
+msgstr "Guardar proyecto como"
+
+#: virtualbricks/gui/windows/projects.py
+msgid "A project is a lab: its bricks, events and images."
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Import a Project…"
+msgstr "Importar bricks"
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Find a project"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Select a project"
+msgstr "Guardar proyecto como"
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Private disks"
+msgstr "Private COW"
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Other files"
+msgstr "Otros"
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Last used"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Duplicate…"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Export…"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "More"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Rename…"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Show in Files"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Remove…"
+msgstr "Quitar"
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "The project file can't be read: {problem}"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "None"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "{name}: {path}, not on this computer"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "This project is open"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Unknown"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "Cannot open {name}: {error}"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy, python-brace-format
+msgid "Remove {name}?"
+msgstr "Quitar"
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "{name} is open"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "Open another project first, then remove {name}."
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Delete Permanently"
+msgstr "Proyectos _Recientes"
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Move to Trash"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "Its folder, with {size} of private disks, goes"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+#, python-brace-format
+msgid "Its folder, {size}, goes"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "Its folder goes"
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid " to the trash, where you can restore it."
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid " for good: the drive of the workspace has no trash."
+msgstr ""
+
+#: virtualbricks/gui/windows/projects.py
+msgid "The images it uses stay in your image library."
+msgstr ""
 
 #: virtualbricks/gui/windows/qemuconfig.py
 msgid "boot as device"
@@ -1589,19 +1803,6 @@ msgstr "Virtualbricks"
 msgid "Chose a new name"
 msgstr "_Crear nueva imagen"
 
-#: virtualbricks/gui/windows/saveprojectasdialog.py
-msgid "Existing projects:"
-msgstr ""
-
-#: virtualbricks/gui/windows/saveprojectasdialog.py
-#, fuzzy
-msgid "New project name:"
-msgstr "Guardar proyecto como"
-
-#: virtualbricks/gui/windows/saveprojectasdialog.py
-msgid "New project name is the same as previous name"
-msgstr ""
-
 #: virtualbricks/gui/windows/settings.py
 #, fuzzy
 msgid "VDE binaries path"
@@ -1671,15 +1872,6 @@ msgstr ""
 #: virtualbricks/gui/windows/settings.py
 msgid "Enable KSM"
 msgstr ""
-
-#: virtualbricks/gui/windows/simpleentry.py
-msgid "Project name"
-msgstr ""
-
-#: virtualbricks/gui/windows/simpleentry.py
-#, fuzzy
-msgid "New project name"
-msgstr "Guardar proyecto como"
 
 #: virtualbricks/gui/windows/switchconfig.py
 #, fuzzy
@@ -1788,23 +1980,38 @@ msgstr "_Fichero"
 
 #: virtualbricks/gui/windows/virtualbricks.py
 #, fuzzy
-msgid "_Rename project"
-msgstr "_Abrir proyecto"
+msgid "_New Project…"
+msgstr "Guardar proyecto como"
 
 #: virtualbricks/gui/windows/virtualbricks.py
 #, fuzzy
-msgid "_Import project"
+msgid "_Open Project…"
+msgstr "_Abrir proyecto"
+
+#: virtualbricks/gui/windows/virtualbricks.py
+msgid "Open _Recent"
+msgstr ""
+
+#: virtualbricks/gui/windows/virtualbricks.py
+msgid "_Duplicate…"
+msgstr ""
+
+#: virtualbricks/gui/windows/virtualbricks.py
+msgid "Re_name…"
+msgstr ""
+
+#: virtualbricks/gui/windows/virtualbricks.py
+#, fuzzy
+msgid "_Import…"
 msgstr "Importar bricks"
 
 #: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "E_xport project"
-msgstr "_Abrir proyecto"
+msgid "E_xport…"
+msgstr ""
 
 #: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_Delete project"
-msgstr "Proyectos _Recientes"
+msgid "_Quit"
+msgstr ""
 
 #: virtualbricks/gui/windows/virtualbricks.py
 msgid "_Settings"
@@ -2060,6 +2267,26 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Virtualbricks - Open project"
+#~ msgstr "Virtualbricks"
+
+#, fuzzy
+#~ msgid "Virtualbricks - Delete project"
+#~ msgstr "Virtualbricks"
+
+#, fuzzy
+#~ msgid "New project name:"
+#~ msgstr "Guardar proyecto como"
+
+#, fuzzy
+#~ msgid "_Import project"
+#~ msgstr "Importar bricks"
+
+#, fuzzy
+#~ msgid "E_xport project"
+#~ msgstr "_Abrir proyecto"
 
 #, fuzzy
 #~ msgid "Virtualbricks - Import project"

@@ -38,13 +38,11 @@ from .loadimagedialog import LoadImageDialog
 from .logging import LoggingWindow
 from .netemuconfig import NetemuConfigController
 from .newbrick import NewBrickDialog
-from .projectlistdialog import (
-    DeleteProjectDialog,
-    OpenProjectDialog,
-)
+from .importdialog import ImportDialog
+from .projectname import ProjectNameDialog
+from .projects import ProjectsWindow, RemoveDialog
 from .qemuconfig import QemuConfigController
 from .renamedialog import RenameDialog
-from .saveprojectasdialog import SaveProjectAsDialog
 from .settings import SettingsDialog
 from .switchconfig import SwitchConfigController
 from .switchwrapperconfig import SwitchWrapperConfigController
@@ -63,19 +61,20 @@ __all__ = [
     "DeleteBrickConfirmDialog",
     "DeleteEventConfirmDialog",
     "DeleteLinkConfirmDialog",
-    "DeleteProjectDialog",
     "DisksLibraryWindow",
     "EditEthernetDialog",
     "EventConfigController",
+    "ImportDialog",
     "LoadImageDialog",
     "LoggingWindow",
     "NetemuConfigController",
     "NewBrickDialog",
-    "OpenProjectDialog",
     "ProgressBar",
+    "ProjectNameDialog",
+    "ProjectsWindow",
     "QemuConfigController",
+    "RemoveDialog",
     "RenameDialog",
-    "SaveProjectAsDialog",
     "SettingsDialog",
     "SwitchConfigController",
     "SwitchWrapperConfigController",

@@ -25,11 +25,9 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
-from virtualbricks.config import projects
 from virtualbricks.gui.windows.base import (
     _,
     _Dialog,
-    iter_tree_model,
     pango_attr_list,
 )
 
@@ -256,26 +254,3 @@ class DeleteLinkConfirmDialog(_ConfirmDialog):
         if response_id == Gtk.ResponseType.YES:
             self._qemu_config_controller._remove_link(self._link)
         dialog.destroy()
-
-
-class DeleteProjectConfirmDialog(_ConfirmDialog):
-    """
-    Ask to delete a project.
-    """
-
-    def __init__(self, name, tree_model):
-        self._name = name
-        self._tree_model = tree_model
-        self.build_ui()
-        question_fmt = _("Do you really want to delete the project {name}?")
-        self.set_primary_text(question_fmt.format(name=name))
-
-    def on_dialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.YES:
-            projects.delete(self._name)
-            for project_name, tree_iter in iter_tree_model(self._tree_model):
-                if project_name == self._name:
-                    self._tree_model.remove(tree_iter)
-                    break
-        dialog.destroy()
-        return True

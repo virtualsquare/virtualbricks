@@ -30,7 +30,7 @@ from twisted.internet import defer, reactor, task
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import config, tools
+from virtualbricks import config, errors, tools
 from virtualbricks.config import get_setting, projects, set_setting
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IConfigController, IJobMenu, IMenu
@@ -51,19 +51,15 @@ from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.windows.logging import LoggingWindow
 from virtualbricks.gui.windows.newbrick import NewBrickDialog
 from virtualbricks.gui.windows.newevent import NewEventDialog
-from virtualbricks.gui.windows.projectlistdialog import (
-    DeleteProjectDialog,
-    OpenProjectDialog,
-)
-from virtualbricks.gui.windows.saveprojectasdialog import SaveProjectAsDialog
+from virtualbricks.gui.windows import projectname
+from virtualbricks.gui.windows.projects import ProjectsWindow
 from virtualbricks.gui.windows.settings import SettingsDialog
-from virtualbricks.gui.windows.simpleentry import (
-    NewProjectDialog,
-    RenameProjectDialog,
-)
 from virtualbricks.gui.windows.userwait import Freezer
 
 logger = Logger()
+cannot_open_project = 'Cannot open the project "{name}": {error}'
+# The projects in Open Recent.
+RECENT = 8
 
 drawing_topology = "drawing topology"
 top_invalid_format = "Error saving topology: Invalid image format"
@@ -486,84 +482,33 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             use_underline=True,
         )
         menu1 = Gtk.Menu(visible=True, can_focus=False)
-        file_new_item = Gtk.ImageMenuItem(
-            label="gtk-new",
-            visible=True,
-            can_focus=False,
-            use_underline=True,
-            use_stock=True,
-        )
-        menu1.append(file_new_item)
-        separatormenuitem1 = Gtk.SeparatorMenuItem(
-            visible=True,
-            can_focus=False,
-        )
-        menu1.append(separatormenuitem1)
-        file_open_item = Gtk.ImageMenuItem(
-            label="gtk-open",
-            visible=True,
-            can_focus=False,
-            use_underline=True,
-            use_stock=True,
-        )
-        menu1.append(file_open_item)
-        file_rename_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_Rename project"),
-            use_underline=True,
-        )
-        menu1.append(file_rename_item)
-        file_save_item = Gtk.ImageMenuItem(
-            label="gtk-save",
-            visible=True,
-            can_focus=False,
-            use_underline=True,
-            use_stock=True,
-        )
-        menu1.append(file_save_item)
-        file_save_as_item = Gtk.ImageMenuItem(
-            label="gtk-save-as",
-            visible=True,
-            can_focus=False,
-            use_underline=True,
-            use_stock=True,
-        )
-        menu1.append(file_save_as_item)
-        file_import_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_Import project"),
-            use_underline=True,
-        )
-        menu1.append(file_import_item)
-        file_export_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("E_xport project"),
-            use_underline=True,
-        )
-        menu1.append(file_export_item)
-        file_delete_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_Delete project"),
-            use_underline=True,
-        )
-        menu1.append(file_delete_item)
-        separatormenuitem3 = Gtk.SeparatorMenuItem(
-            visible=True,
-            can_focus=False,
-        )
-        menu1.append(separatormenuitem3)
-        file_quit_item = Gtk.ImageMenuItem(
-            label="gtk-quit",
-            visible=True,
-            can_focus=False,
-            use_underline=True,
-            use_stock=True,
-        )
-        menu1.append(file_quit_item)
+
+        def item(label):
+            menu_item = Gtk.MenuItem(
+                visible=True, label=label, use_underline=True
+            )
+            menu1.append(menu_item)
+            return menu_item
+
+        def separator():
+            menu1.append(Gtk.SeparatorMenuItem(visible=True))
+
+        file_new_item = item(_("_New Project…"))
+        file_open_item = item(_("_Open Project…"))
+        file_recent_item = item(_("Open _Recent"))
+        self.recent_menu = Gtk.Menu(visible=True)
+        file_recent_item.set_submenu(self.recent_menu)
+        self.file_recent_item = file_recent_item
+        separator()
+        file_save_item = item(_("_Save"))
+        file_duplicate_item = item(_("_Duplicate…"))
+        file_rename_item = item(_("Re_name…"))
+        separator()
+        file_import_item = item(_("_Import…"))
+        file_export_item = item(_("E_xport…"))
+        separator()
+        file_quit_item = item(_("_Quit"))
+        menu_file.connect("activate", self.on_file_menu_activate)
         menu_file.set_submenu(menu1)
         menubar1.append(menu_file)
         menu_settings = Gtk.MenuItem(
@@ -1073,6 +1018,13 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         # accelerators.
         accel_group = Gtk.AccelGroup()
         self.window.add_accel_group(accel_group)
+        file_new_item.add_accelerator(
+            "activate",
+            accel_group,
+            Gdk.KEY_n,
+            Gdk.ModifierType.CONTROL_MASK,
+            Gtk.AccelFlags.VISIBLE,
+        )
         file_open_item.add_accelerator(
             "activate",
             accel_group,
@@ -1119,9 +1071,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             self.on_file_rename_item_activate,
         )
         file_save_item.connect("activate", self.on_file_save_item_activate)
-        file_save_as_item.connect(
+        file_duplicate_item.connect(
             "activate",
-            self.on_file_save_as_item_activate,
+            self.on_file_duplicate_item_activate,
         )
         file_import_item.connect(
             "activate",
@@ -1130,10 +1082,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         file_export_item.connect(
             "activate",
             self.on_file_export_item_activate,
-        )
-        file_delete_item.connect(
-            "activate",
-            self.on_file_delete_item_activate,
         )
         file_quit_item.connect("activate", self.do_quit)
         settings_preferences_item.connect(
@@ -1377,14 +1325,17 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_open(self, name):
         self.on_save()
-        projects.open(name, self.brickfactory)
+        report = projects.open(name, self.brickfactory)
         super().on_open(name)
+        self.set_title()
+        return report
 
-    def on_new(self, name):
+    def on_new(self, name, description=""):
         self.on_save()
-        projects.create(name)
+        projects.create(name, description)
         projects.open(name, self.brickfactory)
         super().on_new(name)
+        self.set_title()
 
     def do_quit(self, *_):
         self.factory.quit()
@@ -1448,49 +1399,100 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     # menu items signals
 
     def on_file_new_item_activate(self, menuitem):
-        dialog = NewProjectDialog(self)
-        dialog.on_destroy = self.set_title
-        dialog.show(self.window)
+        self.project_name_dialog(projectname.NEW)
         return True
 
     def on_file_open_item_activate(self, menuitem):
-        OpenProjectDialog(self).show(self.window)
+        self.show_projects()
+        return True
+
+    def on_file_menu_activate(self, menuitem):
+        """Fill Open Recent with the projects used last."""
+
+        for child in self.recent_menu.get_children():
+            self.recent_menu.remove(child)
+        current = projects.current.name if projects.current else None
+        recent = [
+            summary
+            for summary in projects.summaries()
+            if summary.name != current and summary.problem is None
+        ][:RECENT]
+        for summary in recent:
+            recent_item = Gtk.MenuItem(visible=True, label=summary.name)
+            recent_item.connect(
+                "activate", self.on_recent_item_activate, summary.name
+            )
+            self.recent_menu.append(recent_item)
+        self.file_recent_item.set_sensitive(bool(recent))
+
+    def on_recent_item_activate(self, menuitem, name):
+        try:
+            self.on_open(name)
+        except (OSError, errors.Error) as exc:
+            logger.error(cannot_open_project, name=name, error=exc)
         return True
 
     def on_file_rename_item_activate(self, menuitem):
-        dialog = RenameProjectDialog(self)
-        dialog.on_destroy = self.set_title
-        dialog.show(self.window)
+        self.project_name_dialog(projectname.RENAME, projects.current.name)
         return True
 
     def on_file_save_item_activate(self, menuitem):
         self.on_save()
         return True
 
-    def on_file_save_as_item_activate(self, menuitem):
-        self.on_save()
-        SaveProjectAsDialog(self.brickfactory).show(self.window)
+    def on_file_duplicate_item_activate(self, menuitem):
+        self.project_name_dialog(projectname.DUPLICATE, projects.current.name)
         return True
 
     def on_file_import_item_activate(self, menuitem):
-        d = ImportDialog(self.brickfactory)
-        d.on_destroy = self.set_title
-        d.show(self.window)
+        self.import_project()
         return True
 
     def on_file_export_item_activate(self, menuitem):
-        self.on_save()
-        dialog = ExportProjectDialog(
-            ProgressBar(self),
-            filepath.FilePath(projects.current.path),
-            self.brickfactory.iter_disk_images(),
-        )
-        dialog.show(self.window)
+        self.export_project(None)
         return True
 
-    def on_file_delete_item_activate(self, menuitem):
-        DeleteProjectDialog(self).show(self.window)
-        return True
+    # The projects, for the Projects window and the name dialog
+
+    def show_projects(self, problem=None):
+        window = ProjectsWindow(self)
+        if problem is not None:
+            window.show_problem(problem)
+        window.show(self.window)
+        return window
+
+    def project_name_dialog(self, kind, original=None):
+        dialog = projectname.ProjectNameDialog(self, kind, original)
+        dialog.show(self.window)
+        return dialog
+
+    def import_project(self, on_destroy=None):
+        dialog = ImportDialog(self.brickfactory)
+
+        def destroyed():
+            self.set_title()
+            if on_destroy is not None:
+                on_destroy()
+
+        dialog.on_destroy = destroyed
+        dialog.show(self.window)
+
+    def export_project(self, summary, parent=None):
+        """Export a project, the open one if summary is None."""
+
+        if summary is None or (
+            projects.current and summary.name == projects.current.name
+        ):
+            self.on_save()
+            path = projects.current.path
+            images = list(self.brickfactory.iter_disk_images())
+        else:
+            path = summary.path
+            images = [image for image in summary.images if image.found]
+        dialog = ExportProjectDialog(
+            ProgressBar(self), filepath.FilePath(path), images
+        )
+        dialog.show(parent or self.window)
 
     def on_settings_preferences_item_activate(self, menuitem):
         SettingsDialog(self).show(self.window)
