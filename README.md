@@ -232,6 +232,8 @@ To add a language, see the top of `l10n.sh`.
   opens them, `archive.py` and `importing.py` read, write and import their
   archives in a process of their own. The rest of the code takes what it needs
   from the package by name, as in `from virtualbricks.config import projects`.
+  It imports no GTK or GLib, so that it works in a console or a script: what
+  needs the desktop, as the trash, is given to it by the GUI.
 - `virtualbricks/migrate/`: the only code that reads the files of Virtualbricks
   2.1 and older.
 - `virtualbricks/gui/`: the application window and the messages log;

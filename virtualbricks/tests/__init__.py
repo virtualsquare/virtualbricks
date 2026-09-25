@@ -58,6 +58,25 @@ def _check_released(test, lock_file):
         test.fail(f"the test left the lock held: {lock_file}")
 
 
+class FakeTrash:
+    """A desktop trash that only remembers what was moved to it."""
+
+    def __init__(self, can_trash=True, error=None):
+        self.allowed = can_trash
+        self.error = error
+        self.trashed = []
+        self.asked = []
+
+    def can_trash(self, path):
+        self.asked.append(path)
+        return self.allowed
+
+    def trash(self, path):
+        if self.error is not None:
+            raise self.error
+        self.trashed.append(path)
+
+
 def use_workspace(test, path=None):
     """
     Point the workspace at path, the workspace setting if None; nothing open.
@@ -69,6 +88,7 @@ def use_workspace(test, path=None):
 
     test.patch(projects, "_path", path)
     test.patch(projects, "current", None)
+    test.patch(projects, "trasher", None)
     test.patch(projects, "_summaries", {})
     return projects
 

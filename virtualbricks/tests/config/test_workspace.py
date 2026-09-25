@@ -19,6 +19,8 @@
 
 import os
 import shutil
+import subprocess
+import sys
 import time
 
 from twisted.trial import unittest
@@ -42,7 +44,7 @@ from virtualbricks.config.workspace import (
     Workspace,
 )
 from virtualbricks.config.settings import set_current_project
-from virtualbricks.tests import FakeLogger, isolate, make_factory
+from virtualbricks.tests import FakeLogger, FakeTrash, isolate, make_factory
 from virtualbricks.tests import reset_settings
 
 # 28 bytes, as /run/user/1000/virtualbricks: a project name of 40 bytes
@@ -319,42 +321,52 @@ class TestRemove(WorkspaceTestCase):
 
     def setUp(self):
         super().setUp()
-        self.trashed = []
-        self.patch(self.projects, "trash_file", self.trashed.append)
+        self.trash = FakeTrash()
+        self.patch(self.projects, "trasher", self.trash)
         self.projects.create("lab")
         self.projects.create("open")
         self.projects.open("open", self.factory)
 
     def test_trash(self):
-        self.projects.trash("lab")
-        self.assertEqual(self.trashed, [os.path.join(self.path, "lab")])
+        self.assertTrue(self.projects.trash("lab"))
+        self.assertEqual(self.trash.trashed, [os.path.join(self.path, "lab")])
+        self.assertTrue(os.path.isdir(os.path.join(self.path, "lab")))
 
-    def test_no_trash(self):
-        def trash_file(path):
-            raise errors.TrashNotSupportedError(path)
-
-        self.patch(self.projects, "trash_file", trash_file)
+    def test_the_desktop_has_no_trash_for_it(self):
+        self.trash.error = errors.TrashNotSupportedError("/lab")
         self.assertRaises(
             errors.TrashNotSupportedError, self.projects.trash, "lab"
         )
+        # not deleted instead
         self.assertEqual(self.projects.names(), ["lab", "open"])
 
     def test_can_trash(self):
-        asked = []
-
-        def can_trash_file(path):
-            asked.append(path)
-            return False
-
-        self.patch(self.projects, "can_trash_file", can_trash_file)
+        self.assertTrue(self.projects.can_trash("lab"))
+        self.trash.allowed = False
         self.assertFalse(self.projects.can_trash("lab"))
-        self.assertEqual(asked, [os.path.join(self.path, "lab")])
+        self.assertEqual(
+            self.trash.asked, [os.path.join(self.path, "lab")] * 2
+        )
+
+    def test_without_a_desktop_the_project_is_deleted(self):
+        # a console or a script: no trasher
+        self.patch(self.projects, "trasher", None)
+        self.file("lab", "vm_hda.cow")
+        self.assertFalse(self.projects.can_trash("lab"))
+        self.assertFalse(self.projects.trash("lab"))
+        self.assertEqual(self.projects.names(), ["open"])
+        self.assertFalse(os.path.exists(os.path.join(self.path, "lab")))
+        self.assertEqual(self.trash.trashed, [])
+
+    def test_the_workspace_has_no_desktop_by_default(self):
+        self.assertIsNone(Workspace(self.path).trasher)
 
     def test_delete(self):
         self.file("lab", "vm_hda.cow")
         self.projects.delete("lab")
         self.assertEqual(self.projects.names(), ["open"])
         self.assertFalse(os.path.exists(os.path.join(self.path, "lab")))
+        self.assertEqual(self.trash.trashed, [])
 
     def test_a_folder_without_a_project_file(self):
         os.makedirs(os.path.join(self.path, "broken"))
@@ -362,57 +374,49 @@ class TestRemove(WorkspaceTestCase):
         self.assertFalse(os.path.exists(os.path.join(self.path, "broken")))
 
     def test_not_the_open_project(self):
-        for remove in (self.projects.trash, self.projects.delete):
-            self.assertRaises(errors.ProjectOpenError, remove, "open")
-        self.assertEqual(self.trashed, [])
+        for trasher in (self.trash, None):
+            self.patch(self.projects, "trasher", trasher)
+            for remove in (self.projects.trash, self.projects.delete):
+                self.assertRaises(errors.ProjectOpenError, remove, "open")
+        self.assertEqual(self.trash.trashed, [])
         self.assertEqual(self.projects.names(), ["lab", "open"])
 
     def test_missing(self):
-        for remove in (self.projects.trash, self.projects.delete):
-            for name in ("gone", "..", "", "a/b"):
-                self.assertRaises(errors.ProjectNotExistsError, remove, name)
-        self.assertEqual(self.trashed, [])
+        for trasher in (self.trash, None):
+            self.patch(self.projects, "trasher", trasher)
+            for remove in (self.projects.trash, self.projects.delete):
+                for name in ("gone", "..", "", "a/b"):
+                    self.assertRaises(
+                        errors.ProjectNotExistsError, remove, name
+                    )
+        self.assertEqual(self.trash.trashed, [])
 
     def test_the_summary_is_forgotten(self):
         self.projects.summaries()
-        self.projects.delete("lab")
+        self.projects.trash("lab")
         self.assertNotIn("lab", self.projects._summaries)
+        self.projects.summaries()
+        self.patch(self.projects, "trasher", None)
+        self.projects.create("other")
+        self.projects.summaries()
+        self.projects.trash("other")
+        self.assertNotIn("other", self.projects._summaries)
 
 
-class TestTrashFile(unittest.TestCase):
+class TestWithoutTheDesktop(unittest.TestCase):
 
-    def fake_file(self, error):
-        from gi.repository import Gio, GLib
-
-        class File:
-            def trash(self, cancellable):
-                raise GLib.Error.new_literal(
-                    Gio.io_error_quark(), "cannot", error
-                )
-
-        self.patch(Gio.File, "new_for_path", staticmethod(lambda p: File()))
-
-    def test_not_supported(self):
-        from gi.repository import Gio
-
-        self.fake_file(Gio.IOErrorEnum.NOT_SUPPORTED)
-        self.assertRaises(
-            errors.TrashNotSupportedError, workspace.trash_file, "/lab"
+    def test_the_workspace_imports_no_graphics_library(self):
+        # in a process of its own: the tests of the windows load GTK
+        code = (
+            "import sys; import virtualbricks.config.workspace; "
+            "print([m for m in sys.modules if m == 'gi'"
+            " or m.startswith(('gi.', 'gtk', 'gobject'))])"
         )
-
-    def test_other_errors(self):
-        from gi.repository import Gio
-
-        self.fake_file(Gio.IOErrorEnum.PERMISSION_DENIED)
-        self.assertRaises(OSError, workspace.trash_file, "/lab")
-
-    def test_can_trash(self):
-        self.assertFalse(workspace.can_trash_file(self.mktemp()))
-        path = os.path.abspath(self.mktemp())
-        os.makedirs(path)
-        # it depends on the file system; asking changes nothing
-        self.assertIsInstance(workspace.can_trash_file(path), bool)
-        self.assertTrue(os.path.isdir(path))
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "[]")
 
 
 class TestSummaries(WorkspaceTestCase):

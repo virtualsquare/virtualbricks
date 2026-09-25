@@ -34,6 +34,7 @@ from virtualbricks.tests.migrate.fixtures import (
 if has_display:
 
     from virtualbricks.gui import gui
+    from virtualbricks.gui.trash import DesktopTrash
     from virtualbricks.migrate import gui as migrate_gui
 
 
@@ -135,3 +136,40 @@ class TestStartupProject(GuiTestCase):
         set_current_project("../x")
         self.app.open_last_project(self.factory)
         self.assertEqual(len(self.problems), 1)
+
+
+class TestStartupTrash(GuiTestCase):
+    """The GUI gives the workspace the trash of the desktop."""
+
+    def test_run_gives_the_workspace_a_trash(self):
+        class Observer:
+            parent = None
+
+            def set_parent(self, window):
+                self.parent = window
+
+            def __call__(self, event):
+                pass
+
+        class Publisher:
+            def __init__(self):
+                self.observers = []
+
+            def addObserver(self, observer):
+                self.observers.append(observer)
+
+        class VBGUI:
+            window = "window"
+
+            def __init__(self, factory, messages):
+                pass
+
+        self.patch(gui, "MessageDialogObserver", Observer)
+        self.patch(gui, "globalLogPublisher", Publisher())
+        self.patch(gui, "VBGUI", VBGUI)
+        app = gui.Application.__new__(gui.Application)
+        app.messages = None
+        self.assertIsNone(self.manager.trasher)
+        app._run(self.factory)
+        self.assertIsInstance(self.manager.trasher, DesktopTrash)
+        self.assertIsInstance(app.gui, VBGUI)

@@ -58,6 +58,7 @@ from virtualbricks.gui.windows import (
 )
 from virtualbricks.gui.interfaces import IMenu, IJobMenu, IConfigController
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
+from virtualbricks.gui.trash import DesktopTrash
 from virtualbricks.i18n import _
 from virtualbricks.interfaces import registerAdapter
 from virtualbricks.bricks.plug import Plug
@@ -584,6 +585,9 @@ class Application(brickfactory.Application):
         # gtk.link_button_set_uri_hook(lambda b, s: None)
         self.gui = VBGUI(factory, self.messages)
         message_dialog.set_parent(self.gui.window)
+        # The workspace has no desktop of its own: removing a project moves
+        # it to the trash only in the GUI.
+        projects.trasher = DesktopTrash()
 
     def migrate(self):
         from virtualbricks.migrate import startup_migration

@@ -468,7 +468,7 @@
         <h3>Remove</h3>
         <p>Remove… asks what to do, and says how much goes with the project: its private disks and other files, never the images of the library (<span class="ref done">P3</span>).</p>
         <ul>
-          <li><strong>Move to Trash</strong>, the default button: the folder goes to the desktop's trash through <code>Gio.File.trash()</code>, and the file manager can restore it.</li>
+          <li><strong>Move to Trash</strong>, the default button: the folder goes to the desktop's trash through <code>Gio.File.trash()</code>, and the file manager can restore it. That code is in <code>gui/trash.py</code>: <code>workspace.py</code> imports no graphics library, so that the workspace works in a console or a script, and without a desktop trash it deletes what it is asked to trash.</li>
           <li><strong>Delete Permanently</strong>, in the destructive colour: the folder is removed at once.</li>
         </ul>
         <p>Where the workspace has no trash, as on some network or removable drives, only Delete Permanently is offered, and the dialog says why. The open project can't be removed: open another one first.</p>
@@ -677,6 +677,7 @@
           <li>Rename has no F2 shortcut in the main window, where F2 isn't free; it has one in the Projects window.</li>
           <li>The Projects window exports any readable project, not only the open one, with the images the project uses that are on this computer.</li>
           <li>Dropping an archive on the window is left for later, as planned.</li>
+          <li>The workspace has no trash of its own. The GUI gives it <code>projects.trasher</code>, the trash of the desktop, when it starts; without one, <code>Workspace.trash()</code> deletes the project for good and says so with its return value.</li>
           <li>After trying it: the menu item is <em>Projects…</em>, not <em>Open Project…</em>, which didn't say that the window manages the projects; and a click in the list only selects a project, while a double click or Enter opens it.</li>
         </ul>
         <p><strong>What building step 4 changed:</strong></p>

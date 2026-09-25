@@ -26,7 +26,7 @@ from twisted.internet import defer
 from virtualbricks import errors, locations
 from virtualbricks.config import dump_toml, load_toml
 from virtualbricks.config.workspace import DiskUsage
-from virtualbricks.tests import FakeLogger
+from virtualbricks.tests import FakeLogger, FakeTrash
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 
 if has_display:
@@ -48,9 +48,8 @@ class ProjectsTestCase(GuiTestCase):
         self.patch(projectname, "logger", FakeLogger())
         self.patch(locations, "ensure_private_dir", lambda path: path)
         self.usage = {}
-        self.trashed = []
-        self.patch(self.manager, "trash_file", self.trashed.append)
-        self.patch(self.manager, "can_trash_file", lambda path: True)
+        self.trash = FakeTrash()
+        self.patch(self.manager, "trasher", self.trash)
         self.dialogs = []
         test = self
 
@@ -461,7 +460,9 @@ class TestRemove(ProjectsTestCase):
         removed = []
         dialog.on_done = removed.append
         dialog.dialog.response(dialog.TRASH)
-        self.assertEqual(self.trashed, [self.manager.project_path("lab")])
+        self.assertEqual(
+            self.trash.trashed, [self.manager.project_path("lab")]
+        )
         self.assertEqual(removed, ["lab"])
 
     def test_delete(self):
@@ -471,7 +472,7 @@ class TestRemove(ProjectsTestCase):
         self.assertEqual(self.manager.names(), ["open"])
 
     def test_no_trash(self):
-        self.patch(self.manager, "can_trash_file", lambda path: False)
+        self.trash.allowed = False
         dialog = self.dialog("lab", DiskUsage(0, 0))
         self.assertIsNone(dialog.trash_button)
         self.assertIn("no trash", self.secondary(dialog))

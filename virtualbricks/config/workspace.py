@@ -38,8 +38,8 @@ import os
 import re
 import shutil
 import time
-from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Protocol
 
 from twisted.logger import Logger
 
@@ -216,40 +216,27 @@ def copy_tree(src: str, dst: str) -> None:
     shutil.copytree(src, dst, symlinks=True, copy_function=copy_sparse)
 
 
-def trash_file(path: str) -> None:
-    """Move path to the desktop's trash; TrashNotSupportedError if none."""
+class Trasher(Protocol):
+    """
+    The trash of a desktop.
 
-    from gi.repository import Gio, GLib
+    Only the GUI has one: this module doesn't import the libraries of the
+    desktop, so that the workspace works in a console or a script.
+    """
 
-    try:
-        Gio.File.new_for_path(path).trash(None)
-    except GLib.Error as exc:
-        if exc.matches(Gio.io_error_quark(), Gio.IOErrorEnum.NOT_SUPPORTED):
-            raise errors.TrashNotSupportedError(path) from None
-        raise OSError(exc.message) from None
+    def can_trash(self, path: str) -> bool:
+        """Whether path can be moved to the trash."""
 
-
-def can_trash_file(path: str) -> bool:
-    from gi.repository import Gio, GLib
-
-    try:
-        info = Gio.File.new_for_path(path).query_info(
-            Gio.FILE_ATTRIBUTE_ACCESS_CAN_TRASH,
-            Gio.FileQueryInfoFlags.NONE,
-            None,
-        )
-    except GLib.Error:
-        return False
-    return info.get_attribute_boolean(Gio.FILE_ATTRIBUTE_ACCESS_CAN_TRASH)
+    def trash(self, path: str) -> None:
+        """Move path to the trash; TrashNotSupportedError if it can't."""
 
 
 class Workspace:
     """The projects in the workspace folder, and the one that is open."""
 
     current: OpenProject | None = None
-    # Replaced by the tests, to not touch the desktop's trash.
-    trash_file: Callable[[str], None] = staticmethod(trash_file)
-    can_trash_file: Callable[[str], bool] = staticmethod(can_trash_file)
+    # Set by the GUI. Without it, a project that is removed is deleted.
+    trasher: Trasher | None = None
 
     def __init__(self, path: str | None = None) -> None:
         self._path = path
@@ -492,14 +479,30 @@ class Workspace:
             raise errors.ProjectOpenError(name)
 
     def can_trash(self, name: str) -> bool:
-        return self.can_trash_file(self.project_path(name))
+        """Whether trash() moves the project to the trash of a desktop."""
 
-    def trash(self, name: str) -> None:
-        """Move a project that isn't open to the desktop's trash."""
+        trasher = self.trasher
+        return trasher is not None and trasher.can_trash(
+            self.project_path(name)
+        )
 
+    def trash(self, name: str) -> bool:
+        """
+        Move a project that isn't open to the trash of the desktop.
+
+        Without a desktop, as in a console or a script, there's no trash: the
+        project is deleted for good. Return whether it went to the trash.
+        Raise TrashNotSupportedError if the desktop can't trash it, as on a
+        drive without a trash; can_trash() says so beforehand.
+        """
+
+        if self.trasher is None:
+            self.delete(name)
+            return False
         self._check_removable(name)
-        self.trash_file(self.project_path(name))
+        self.trasher.trash(self.project_path(name))
         self._summaries.pop(name, None)
+        return True
 
     def delete(self, name: str) -> None:
         """Delete a project that isn't open, for good."""
