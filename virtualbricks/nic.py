@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.test_nic -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 

@@ -23,6 +23,7 @@ import shutil
 import stat
 import subprocess
 import tarfile
+import time
 
 from twisted.trial import unittest
 
@@ -448,6 +449,17 @@ class TestRunImport(ImportingTestCase):
             },
         )
 
+    def test_a_private_disk_not_in_the_archive(self):
+        data = project({"deb": "/other/deb.qcow2"}, {"vm": vm(("hda", "deb"))})
+        path = self.archive(data, {".images/deb": b"image of deb"})
+        result = self.run_import(self.plan(path))
+        self.assertEqual(list(result.report), [])
+        self.assertEqual(
+            os.listdir(self.workspace.project_path(result.name)),
+            ["project.toml"],
+        )
+        self.assertFalse(os.path.exists(self.qemu_log))
+
     def test_copy_what_the_archive_doesnt_have(self):
         plan = self.plan(self.lab(images=[]))
         plan.images[0].choice = "copy"
@@ -630,11 +642,13 @@ class TestPackedDisks(ImportingTestCase):
         )
         return output, result
 
-    def run_import(self, output, qemu_img=QEMU_IMG, choice=None):
+    def run_import(self, output, qemu_img=QEMU_IMG, choice=None, path=None):
         contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
         plan = plan_import(contents, self.workspace)
         if choice is not None:
             plan.images[0].choice = choice
+        if path is not None:
+            plan.images[0].path = path
         staging = os.path.join(self.workspace.path, ".importing-lab-x")
         os.makedirs(staging)
         job = plan.job(self.workspace, staging, qemu_img or "")
@@ -708,6 +722,21 @@ class TestPackedDisks(ImportingTestCase):
         result, contents = self.run_import(output, choice="skip")
         where = [m.where for m in result.report]
         self.assertIn("vm_hda.cow", where)
+
+    def test_an_image_of_this_computer_is_used_as_it_is(self):
+        project, disk, image = self.lab()
+        output, result = self.export(project, image)
+        before = os.stat(image)
+        result, contents = self.run_import(output, choice="use", path=image)
+        self.assertEqual(list(result.report), [])
+        after = os.stat(image)
+        self.assertEqual(after.st_mtime_ns, before.st_mtime_ns)
+        self.assertEqual(os.listdir(self.library), [])
+        # the private disk is unpacked, above the image
+        folder = self.workspace.project_path(result.name)
+        self.qemu(
+            QEMU_IMG, "compare", disk, os.path.join(folder, "vm_hda.cow")
+        )
 
     def test_without_qemu_img_on_export(self):
         project, disk, image = self.lab()
@@ -788,6 +817,32 @@ printf '    (50.00/100%%)\\r    (100.00/100%%)\\r'
             ArchiveError, archive.QemuImg(self.path("none")).info, "/a"
         )
 
+    def test_cancelling_stops_qemu_img(self):
+        pid_file = self.path("qemu-img.pid")
+        qemu = self.fake(f"""#!/bin/sh
+echo $$ > "{pid_file}"
+printf '    (10.00/100%%)\\r'
+exec sleep 60
+""")
+
+        def cancel(percent):
+            raise archive.ArchiveCancelled()
+
+        start = time.monotonic()
+        self.assertRaises(
+            archive.ArchiveCancelled,
+            qemu.convert,
+            "/a",
+            "/b",
+            True,
+            on_percent=cancel,
+        )
+        # killed, not waited for
+        self.assertLess(time.monotonic() - start, 30)
+        with open(pid_file) as fp:
+            pid = int(fp.read())
+        self.assertRaises(ProcessLookupError, os.kill, pid, 0)
+
     def test_backing_of(self):
         self.assertIsNone(archive.backing_of({}))
         self.assertEqual(
@@ -815,21 +870,46 @@ printf '    (50.00/100%%)\\r    (100.00/100%%)\\r'
         self.patch(spawn, "abspath_qemu", lambda name: "/usr/bin/" + name)
         self.assertEqual(archive.find_qemu_img(), "/usr/bin/qemu-img")
 
-    def test_a_failed_unpack_leaves_the_disk_packed(self):
+    def unpack_with(self, qemu_img):
+        """Unpack a copied image; return the report and the library."""
+
+        staging = self.path("s")
+        library = self.path("lib")
+        os.makedirs(staging)
         running = importing._Import(
-            {"staging": self.path("s"), "qemu_img": "/bin/false"},
+            {"staging": staging, "qemu_img": qemu_img},
             lambda obj: None,
             Tool("tarfile"),
         )
-        os.makedirs(self.path("s"))
-        image = self.file(self.path("lib", "deb"), b"packed")
+        image = self.file(os.path.join(library, "deb"), b"packed")
         running.packed = {
             ".images/deb": ArchiveMember(".images/deb", 6, "image", True, 9)
         }
         running.copied = {"deb": image}
         running.unpack()
-        [message] = list(running.report)
+        return list(running.report), library
+
+    def test_a_failed_unpack_leaves_the_disk_packed(self):
+        report, library = self.unpack_with("/bin/false")
+        [message] = report
         self.assertIn("left compressed", message.text)
-        with open(image, "rb") as fp:
+        self.assertEqual(os.listdir(library), ["deb"])
+        with open(os.path.join(library, "deb"), "rb") as fp:
             self.assertEqual(fp.read(), b"packed")
-        self.assertEqual(os.listdir(self.path("lib")), ["deb"])
+
+    def test_a_failed_unpack_removes_its_partial_copy(self):
+        # qemu-img writes part of the copy, then fails
+        qemu = self.fake("""#!/bin/sh
+for last; do :; done
+echo partial > "$last"
+echo "No space left" >&2
+exit 1
+""")
+        report, library = self.unpack_with(qemu.path)
+        [message] = report
+        self.assertEqual(
+            message.text, "left compressed: qemu-img: No space left"
+        )
+        self.assertEqual(os.listdir(library), ["deb"])
+        with open(os.path.join(library, "deb"), "rb") as fp:
+            self.assertEqual(fp.read(), b"packed")

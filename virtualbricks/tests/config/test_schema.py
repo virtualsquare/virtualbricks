@@ -195,6 +195,8 @@ class TestStrings(unittest.TestCase):
         Mac().check("")
         with self.assertRaisesRegex(ValueError, "not a MAC address"):
             Mac().check("00:gg:79:71:be:61")
+        with self.assertRaisesRegex(ValueError, "not a MAC address"):
+            Mac().check("00:aa:79:71:be:61\n")
 
     def test_ipv4(self):
         IPv4().check("10.0.0.1")

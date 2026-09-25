@@ -104,6 +104,23 @@ class ArchiveTestCase(unittest.TestCase):
     def path(self, *segments):
         return os.path.join(self.root, *segments)
 
+    def script(self, name, body):
+        """A shell script, as a fake tool, in the folder bin."""
+
+        path = self.path("bin", name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as fp:
+            fp.write("#!/bin/sh\n" + body)
+        os.chmod(path, 0o755)
+        return path
+
+    def assertStopped(self, pid_file):
+        """The process whose pid is in pid_file is gone."""
+
+        with open(pid_file) as fp:
+            pid = int(fp.read())
+        self.assertRaises(ProcessLookupError, os.kill, pid, 0)
+
     def tool(self, name):
         if name == "tarfile":
             return Tool("tarfile")
@@ -496,6 +513,44 @@ class TestExtract(ArchiveTestCase):
             self.emitted,
         )
 
+    def big_file(self):
+        # more than a pipe holds
+        path = self.path("big.vbp")
+        with open(path, "wb") as fp:
+            fp.write(bytes(4 * MiB))
+        return path
+
+    def test_a_tool_that_stops_reading(self):
+        tar = self.script("tar", 'echo "not an archive" >&2\nexit 2\n')
+        destination = self.path("out")
+        os.makedirs(destination)
+        with self.assertRaises(ArchiveError) as cm:
+            archive.extract(
+                self.big_file(), destination, Tool("gnutar", tar), self.emitted
+            )
+        self.assertEqual(str(cm.exception), "tar: not an archive")
+
+    def test_cancelling_stops_the_tool(self):
+        pid_file = self.path("bin", "tar.pid")
+        tar = self.script(
+            "tar", f'echo $$ > "{pid_file}"\nexec cat > /dev/null\n'
+        )
+        destination = self.path("out")
+        os.makedirs(destination)
+
+        def cancel(obj):
+            raise archive.ArchiveCancelled()
+
+        self.assertRaises(
+            archive.ArchiveCancelled,
+            archive.extract,
+            self.big_file(),
+            destination,
+            Tool("gnutar", tar),
+            cancel,
+        )
+        self.assertStopped(pid_file)
+
     def test_tarfile_refuses_what_it_would_misread(self):
         path = self.lab()
         self.patch(archive, "is_misread_sparse", lambda info: True)
@@ -621,7 +676,9 @@ class TestArchiveJob(ArchiveTestCase):
         )
         job.protocol.outReceived(b'{"progress": {"step": "read", "done": 1,')
         job.protocol.outReceived(b' "total": 2}}\n{"head": {"x": 1}}\n\n')
-        job.protocol.outReceived(b'not json\n[1]\n{"result": 42}\n')
+        job.protocol.outReceived(
+            b'not json\n[1]\n{"other": 1}\n{"result": 42}\n'
+        )
         self.assertEqual(progress, [("read", 1, 2)])
         self.assertEqual(heads, [{"x": 1}])
         self.assertNoResult(job.done)
@@ -774,7 +831,7 @@ class TestWrite(ArchiveTestCase):
         ]
         return project, files, [("deb", image)]
 
-    def export(self, tool, output=None):
+    def export(self, tool, output=None, qemu_img="", emit=None):
         project, files, images = self.lab()
         output = output or self.path("out.vbp")
         job = {
@@ -783,8 +840,9 @@ class TestWrite(ArchiveTestCase):
             "output": output,
             "files": files,
             "images": [list(image) for image in images],
+            "qemu_img": qemu_img,
         }
-        return archive.run_job(job, self.emitted, tool), output
+        return archive.run_job(job, emit or self.emitted, tool), output
 
     def test_the_order_of_a_new_archive(self):
         project, files, images = self.lab()
@@ -859,6 +917,64 @@ class TestWrite(ArchiveTestCase):
         with self.assertRaises(ArchiveError):
             self.export(Tool("bsdtar", "/bin/false"))
         self.assertEqual(sorted(os.listdir(self.root)), ["deb.qcow2", "lab"])
+
+    def test_cancelling_stops_the_tool(self):
+        pid_file = self.path("bin", "tar.pid")
+        tar = self.script(
+            "tar", f'echo $$ > "{pid_file}"\nexec cat /dev/zero\n'
+        )
+
+        def cancel(obj):
+            if "progress" in obj:
+                raise archive.ArchiveCancelled()
+
+        with self.assertRaises(archive.ArchiveCancelled):
+            self.export(Tool("bsdtar", tar), emit=cancel)
+        self.assertStopped(pid_file)
+        self.assertEqual(
+            sorted(os.listdir(self.root)), ["bin", "deb.qcow2", "lab"]
+        )
+
+    def test_disks_that_qemu_img_cannot_read_go_as_they_are(self):
+        qemu_img = self.script(
+            "qemu-img", 'echo "Could not open" >&2\nexit 1\n'
+        )
+        result, output = self.export(Tool("tarfile"), qemu_img=qemu_img)
+        report = archive.report_from_list(result["report"])
+        self.assertEqual(
+            sorted(m.where for m in report),
+            [".images/deb", "vm_hda.cow", "vm_hdb.cow"],
+        )
+        self.assertEqual(
+            {m.text for m in report},
+            {"stored as it is: qemu-img: Could not open"},
+        )
+        contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
+        self.assertFalse(any(m.packed for m in contents.members))
+
+    def test_a_failed_packing_leaves_no_partial_copy(self):
+        # qemu-img writes part of the copy, then fails
+        qemu_img = self.script(
+            "qemu-img",
+            """case "$1" in
+    info) echo '{"format": "qcow2"}' ;;
+    convert)
+        for last; do :; done
+        echo partial > "$last"
+        echo "No space left" >&2
+        exit 1 ;;
+esac
+""",
+        )
+        result, output = self.export(Tool("tarfile"), qemu_img=qemu_img)
+        report = archive.report_from_list(result["report"])
+        self.assertEqual(
+            {m.text for m in report},
+            {"stored as it is: qemu-img: No space left"},
+        )
+        with tarfile.open(output) as tar:
+            self.assertEqual(tar.extractfile(".images/deb").read(5), b"image")
+            self.assertEqual(tar.extractfile("vm_hda.cow").read(5), b"data\0")
 
     def test_uncompressed(self):
         project, files, images = self.lab()

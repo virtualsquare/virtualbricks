@@ -201,6 +201,19 @@ class TestCreate(WorkspaceTestCase):
         with open(os.path.join(self.path, "lab", "README")) as fp:
             self.assertEqual(fp.read(), "OSPF between three routers")
 
+    def test_a_folder_that_appears_meanwhile(self):
+        folder = os.path.join(self.path, "lab")
+
+        def validate(name, renaming=None, bricks=None):
+            # after the check, before the folder is made
+            os.makedirs(folder)
+
+        self.patch(self.projects, "_validate", validate)
+        self.assertRaises(
+            errors.ProjectExistsError, self.projects.create, "lab"
+        )
+        self.assertEqual(os.listdir(folder), [])
+
     def test_bad_names(self):
         self.projects.create("lab")
         self.assertRaises(
