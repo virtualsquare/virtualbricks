@@ -28,6 +28,12 @@ STATE_FILE = "state.toml"
 PROJECT_FILE = "project.toml"
 LEGACY_SETTINGS_FILE = ".virtualbricks.conf"
 LEGACY_PROJECT_FILE = ".project"
+# The longest path a Unix socket can have, without the final NUL.
+SOCKET_PATH_MAX = 107
+# The longest a brick's name adds to the runtime directory: a plug's socket
+# inside a switch's directory, "<brick>.ctl/.<pid>-<n>", as libvdeplug names
+# them, with the largest pid Linux gives.
+BRICK_SOCKET_SUFFIX = len(".ctl/.4194304-00000")
 
 
 def home():
@@ -72,6 +78,13 @@ def runtime_dir():
     if os.path.isabs(value):
         return os.path.join(value, APP)
     return os.path.join(tempfile.gettempdir(), f"{APP}-{os.getuid()}")
+
+
+def brick_name_room(runtime_dir):
+    """The bytes a brick's name can have in the sockets under runtime_dir."""
+
+    used = len(os.fsencode(runtime_dir)) + len("/") + BRICK_SOCKET_SUFFIX
+    return SOCKET_PATH_MAX - used
 
 
 def ensure_private_dir(path):

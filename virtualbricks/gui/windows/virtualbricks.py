@@ -30,8 +30,8 @@ from twisted.internet import defer, reactor, task
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import config, project, tools
-from virtualbricks.config import get_setting, set_setting
+from virtualbricks import config, tools
+from virtualbricks.config import get_setting, projects, set_setting
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IConfigController, IJobMenu, IMenu
 from virtualbricks.tools import dispose, is_running
@@ -238,7 +238,7 @@ class TopologyMixin:
 class ReadmeMixin:
 
     __deleyed_call = None
-    manager = project.manager
+    manager = projects
 
     def __get_buffer(self):
         return self.readme_text.get_buffer()
@@ -1334,8 +1334,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def set_title(self, title=None):
         if title is None:
-            if project.manager.current:
-                name = project.manager.current.name
+            if projects.current:
+                name = projects.current.name
                 title = _("Virtualbricks (project: {0})").format(name)
                 self.window.set_title(title)
         else:
@@ -1373,19 +1373,17 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_save(self):
         super().on_save()
-        project.manager.save_current(self.brickfactory)
+        projects.save(self.brickfactory)
 
     def on_open(self, name):
         self.on_save()
-        prj = project.manager.get_project(name)
-        prj.open(self.brickfactory)
+        projects.open(name, self.brickfactory)
         super().on_open(name)
 
     def on_new(self, name):
         self.on_save()
-        prj = project.manager.get_project(name)
-        prj.create()
-        prj.open(self.brickfactory)
+        projects.create(name)
+        projects.open(name, self.brickfactory)
         super().on_new(name)
 
     def do_quit(self, *_):
@@ -1484,7 +1482,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.on_save()
         dialog = ExportProjectDialog(
             ProgressBar(self),
-            filepath.FilePath(project.manager.current.path),
+            filepath.FilePath(projects.current.path),
             self.brickfactory.iter_disk_images(),
         )
         dialog.show(self.window)

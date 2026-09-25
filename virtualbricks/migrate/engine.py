@@ -527,21 +527,37 @@ def migration_for(
     return Migration(workspace, target, legacy_settings, app, **options)
 
 
-def migrate_imported_project(directory: str) -> Report:
-    """Write the project file of an imported archive of an old version."""
+def convert_imported_project(directory: str, report: Report) -> Table | None:
+    """
+    Return the data of the old project file in directory, converted.
 
-    report = Report()
+    Return None, with an error in report, if it can't be converted.
+    """
+
     source = project_source(directory)
     if source is None:
         report.error("no project file found", directory)
-        return report
+        return None
     filename = os.path.basename(source)
     try:
         project = legacy.read_project(source, filename, report)
         data, _ = convert.convert_project(
             project, new_project_settings(), report, directory
         )
-        dump_toml(data, os.path.join(directory, locations.PROJECT_FILE))
     except (OSError, UnicodeDecodeError, convert.MigrationError) as exc:
         report.error(_describe_error(exc), directory)
+        return None
+    return data
+
+
+def migrate_imported_project(directory: str) -> Report:
+    """Write the project file of an imported archive of an old version."""
+
+    report = Report()
+    data = convert_imported_project(directory, report)
+    if data is not None:
+        try:
+            dump_toml(data, os.path.join(directory, locations.PROJECT_FILE))
+        except OSError as exc:
+            report.error(_describe_error(exc), directory)
     return report

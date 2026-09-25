@@ -24,7 +24,8 @@ import stat
 from twisted.internet import defer, task
 from twisted.trial import unittest
 
-from virtualbricks import brickfactory, locations, project
+from virtualbricks import brickfactory, errors, locations
+from virtualbricks.config import projects, workspace
 from virtualbricks.config import (
     current_project,
     get_setting,
@@ -32,6 +33,7 @@ from virtualbricks.config import (
     store_settings,
 )
 from virtualbricks.tests import (
+    use_workspace,
     BrickTestCase,
     FakeLogger,
     isolate,
@@ -79,6 +81,17 @@ class TestFactory(BrickTestCase):
         self.assertEqual(switch.config.poff_vbevent, "start")
         self.assertEqual(changed, [switch])
 
+    def test_check_socket_room(self):
+        self.factory.runtime_dir = "/run/user/1000/virtualbricks/" + "x" * 40
+        self.factory.check_socket_room("b" * 18)
+        with self.assertRaises(errors.InvalidNameError) as cm:
+            self.factory.check_socket_room("b" * 19)
+        self.assertEqual(
+            str(cm.exception),
+            "The name is 19 bytes long, and the sockets of this project"
+            " leave room for 18",
+        )
+
     def test_rename_brick(self):
         switch = self.factory.new_brick("switch", "sw")
         self.assertEqual(self.factory.rename(switch, "sw2"), "sw")
@@ -86,7 +99,7 @@ class TestFactory(BrickTestCase):
 
     def test_autosave_timer(self):
         calls = []
-        self.patch(project.manager, "autosave", calls.append)
+        self.patch(projects, "autosave", calls.append)
         clock = task.Clock()
 
         class LoopingCall(task.LoopingCall):
@@ -141,9 +154,8 @@ class AppTestCase(unittest.TestCase):
         reset_settings(self)
         self.logger = FakeLogger()
         self.patch(brickfactory, "logger", self.logger)
-        self.patch(project, "logger", FakeLogger())
-        self.manager = project.ProjectManager()
-        self.patch(project, "manager", self.manager)
+        self.patch(workspace, "logger", FakeLogger())
+        self.manager = use_workspace(self)
         self.patch(brickfactory, "AutosaveTimer", lambda factory: None)
         self.app = Application(CONFIG)
         self.app.install_locale = lambda: None
@@ -226,12 +238,12 @@ class TestRun(AppTestCase):
         # the migrated settings and project are the ones in use
         self.assertEqual(get_setting("workspace"), workspace)
         self.assertEqual(self.manager.current.name, "lab")
-        self.assertIsNotNone(self.manager.current.project_settings)
+        self.assertIsNotNone(self.manager.current.settings)
         self.assertEqual(self.app.logger.events, ["start"])
         callables = [trigger[2] for trigger in reactor.triggers]
         self.assertEqual(
             callables,
-            [store_settings, self.manager.save_current, self.app.logger.stop],
+            [store_settings, self.manager.save, self.app.logger.stop],
         )
         self.assertTrue(os.path.isdir(locations.runtime_dir()))
 

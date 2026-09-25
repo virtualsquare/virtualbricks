@@ -441,7 +441,8 @@ class NewBrickDialog(_Dialog):
             self.ok_button.set_sensitive(False)
             return
         try:
-            self._factory.normalize_name(brick_name)
+            name = self._factory.normalize_name(brick_name)
+            self._factory.check_socket_room(name)
             self._reset_error()
         except NameAlreadyInUseError:
             tooltip = (

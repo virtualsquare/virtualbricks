@@ -40,11 +40,12 @@ from twisted.logger import (
     globalLogPublisher,
 )
 
-from virtualbricks import console, errors, locations, project
+from virtualbricks import console, errors, locations
 from virtualbricks.config import (
     field_values,
     load_settings,
     load_state,
+    projects,
     store_settings,
 )
 from virtualbricks import i18n
@@ -462,6 +463,23 @@ class BrickFactory:
             raise errors.NameAlreadyInUseError(normalized_name)
         return normalized_name
 
+    def check_socket_room(self, name):
+        """
+        Raise InvalidNameError if a brick's name is too long for its sockets.
+
+        The sockets are in the runtime directory of the open project, and a
+        Unix socket path has at most 107 bytes.
+        """
+
+        room = locations.brick_name_room(self.runtime_dir)
+        size = len(os.fsencode(name))
+        if size > room:
+            msg = _(
+                "The name is {size} bytes long, and the sockets of this"
+                " project leave room for {room}"
+            )
+            raise errors.InvalidNameError(msg.format(size=size, room=room))
+
     def new_plug(self, brick):
         return Plug(brick)
 
@@ -576,7 +594,7 @@ class Console(basic.LineOnlyReceiver):
 
 
 def AutosaveTimer(factory, interval=180):
-    timer = task.LoopingCall(project.manager.autosave, factory)
+    timer = task.LoopingCall(projects.autosave, factory)
     timer.start(interval, now=False)
     return timer
 
@@ -701,9 +719,9 @@ class Application:
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", store_settings)
-        project.manager.restore_last(factory)
+        projects.restore_last(factory)
         reactor.addSystemEventTrigger(
-            "before", "shutdown", project.manager.save_current, factory
+            "before", "shutdown", projects.save, factory
         )
         reactor.addSystemEventTrigger("before", "shutdown", self.logger.stop)
         AutosaveTimer(factory)

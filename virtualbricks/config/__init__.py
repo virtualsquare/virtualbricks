@@ -23,6 +23,10 @@ The configuration: its files and the schemas of their data.
 - ``report``: the problems found while reading a file.
 - ``settings``: the settings of the application and of the open project.
 - ``projectfile``: the project file, ``project.toml``.
+- ``workspace``: the projects of the workspace, and the one that is open.
+- ``archive``: archives of projects, read and written in a process of their
+  own.
+- ``importing``: importing a project from an archive.
 
 The rest of Virtualbricks takes what it needs from this package, by name,
 not from its modules: ``from virtualbricks.config import field``. The names
@@ -121,6 +125,31 @@ from virtualbricks.config.projectfile import (
     socket_target,
     upgrade as upgrade_project,
 )
+from virtualbricks.config.workspace import (
+    DiskUsage,
+    ImageSummary,
+    OpenProject,
+    ProjectSummary,
+    Workspace,
+    projects,
+)
+from virtualbricks.config.archive import (
+    ArchiveContents,
+    ArchiveError,
+    ArchiveJob,
+    Cancelled as ArchiveCancelled,
+    Member as ArchiveMember,
+    inspect_archive,
+)
+from virtualbricks.config.importing import (
+    ImageUse,
+    ImportPlan,
+    ImportResult,
+    MachinePath,
+    import_project,
+    plan_import,
+    update_plan,
+)
 
 __all__ = [
     "ERROR",
@@ -203,4 +232,23 @@ __all__ = [
     "save_project",
     "socket_target",
     "upgrade_project",
+    "DiskUsage",
+    "ImageSummary",
+    "OpenProject",
+    "ProjectSummary",
+    "Workspace",
+    "projects",
+    "ArchiveContents",
+    "ArchiveError",
+    "ArchiveJob",
+    "ArchiveCancelled",
+    "ArchiveMember",
+    "inspect_archive",
+    "ImageUse",
+    "ImportPlan",
+    "ImportResult",
+    "MachinePath",
+    "import_project",
+    "plan_import",
+    "update_plan",
 ]

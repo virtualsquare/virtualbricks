@@ -57,6 +57,21 @@ def _check_released(test, lock_file):
         test.fail(f"the test left the lock held: {lock_file}")
 
 
+def use_workspace(test, path=None):
+    """
+    Point the workspace at path, the workspace setting if None; nothing open.
+
+    Return the workspace, ``projects``, which the modules share.
+    """
+
+    from virtualbricks.config import projects
+
+    test.patch(projects, "_path", path)
+    test.patch(projects, "current", None)
+    test.patch(projects, "_summaries", {})
+    return projects
+
+
 def release(lock):
     """Unlock a lock if it is held; for cleanups."""
 

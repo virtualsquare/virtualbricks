@@ -31,7 +31,8 @@ if has_display:
 class TestExport(GuiTestCase):
 
     def test_files(self):
-        prj = self.manager.get_project("lab").create()
+        self.manager.create("lab")
+        prj = self.manager.summary("lab")
         for name in ("README", "notes.txt", locations.LEGACY_PROJECT_FILE):
             with open(os.path.join(prj.path, name), "w"):
                 pass

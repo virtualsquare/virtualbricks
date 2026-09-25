@@ -28,6 +28,7 @@ from gi.repository import Gdk, Gtk
 from twisted.logger import Logger
 
 from virtualbricks import errors
+from virtualbricks.bricks.event import is_event
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
 
@@ -189,7 +190,9 @@ class RenameDialog(_Dialog):
             self.ok_button.set_sensitive(False)
             return
         try:
-            self._factory.normalize_name(brick_name)
+            name = self._factory.normalize_name(brick_name)
+            if not is_event(self._brick):
+                self._factory.check_socket_room(name)
             self._reset_error()
         except NameAlreadyInUseError:
             tooltip = (

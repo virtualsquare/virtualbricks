@@ -25,7 +25,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
-from virtualbricks.project import manager as project_manager
+from virtualbricks.config import projects
 from virtualbricks.gui.windows.base import (
     _,
     _Dialog,
@@ -272,7 +272,7 @@ class DeleteProjectConfirmDialog(_ConfirmDialog):
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.YES:
-            project_manager.get_project(self._name).delete()
+            projects.delete(self._name)
             for project_name, tree_iter in iter_tree_model(self._tree_model):
                 if project_name == self._name:
                     self._tree_model.remove(tree_iter)

@@ -51,8 +51,9 @@ class TestSettingsDialog(GuiTestCase):
         return dialog
 
     def open_project(self):
-        prj = self.manager.get_project("lab").create()
-        prj.open(self.factory)
+        self.manager.create("lab")
+        self.manager.open("lab", self.factory)
+        prj = self.manager.current
         set_setting("qemupath", self.project_bin)
         set_setting("femaleplugs", True)
         set_setting("cowfmt", "cow")
@@ -106,7 +107,7 @@ class TestSettingsDialog(GuiTestCase):
     def test_ok_stores_every_tab(self):
         prj = self.open_project()
         saved = []
-        self.patch(self.manager, "save_current", saved.append)
+        self.patch(self.manager, "save", saved.append)
         dialog = self.dialog()
         dialog.term_entry.set_text("/usr/bin/foot")
         dialog.systray_switch.set_active(False)
@@ -121,13 +122,13 @@ class TestSettingsDialog(GuiTestCase):
         self.assertEqual(get_app_setting("term"), "/usr/bin/foot")
         self.assertIs(get_app_setting("systray"), False)
         # the project tab changed the project only
-        self.assertIs(prj.project_settings.erroronloop, True)
+        self.assertIs(prj.settings.erroronloop, True)
         self.assertIs(get_app_setting("erroronloop"), False)
-        self.assertEqual(prj.project_settings.qemupath, self.project_bin)
+        self.assertEqual(prj.settings.qemupath, self.project_bin)
         # the new projects tab changed the application settings only
         self.assertEqual(get_app_setting("vdepath"), self.project_bin)
         self.assertEqual(get_app_setting("cowfmt"), "qcow")
-        self.assertEqual(prj.project_settings.cowfmt, "cow")
+        self.assertEqual(prj.settings.cowfmt, "cow")
         self.assertEqual(saved, [self.factory])
         self.assertEqual(dialog.virtualbricks_gui.systray, ["stop"])
         self.assertEqual(self.ksm, [False])

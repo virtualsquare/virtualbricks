@@ -89,6 +89,14 @@ class ProjectNotExistsError(InvalidNameError):
     pass
 
 
+class ProjectOpenError(Error):
+    """The project is open, and the action needs it closed."""
+
+
+class TrashNotSupportedError(Error):
+    """The file system of the path has no trash."""
+
+
 class InvalidArchiveError(Error):
     """The archive format is not recognized."""
 

@@ -81,6 +81,12 @@ class TestLocations(unittest.TestCase):
             locations.runtime_dir().endswith(f"virtualbricks-{os.getuid()}")
         )
 
+    def test_brick_name_room(self):
+        # 107 bytes: the runtime directory, "/", the name, ".ctl/.<pid>-<n>"
+        runtime_dir = "/run/user/1000/virtualbricks/lab"
+        self.assertEqual(locations.brick_name_room(runtime_dir), 55)
+        self.assertEqual(locations.brick_name_room("/" + "è" * 50), -14)
+
     def test_ensure_private_dir(self):
         path = os.path.join(self.mktemp(), "a", "b")
         self.assertEqual(locations.ensure_private_dir(path), path)

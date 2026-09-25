@@ -25,8 +25,13 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks.project import manager as project_manager
+from twisted.logger import Logger
+
+from virtualbricks.config import projects
 from virtualbricks.gui.windows.base import _, destroy_on_exit, Window
+
+logger = Logger()
+invalid_project_name = 'Cannot use "{name}" as the name of a project: {error}'
 
 
 class SimpleEntryDialog(Window):
@@ -146,6 +151,10 @@ class NewProjectDialog(SimpleEntryDialog):
         return _("Project name")
 
     def do_action(self, name):
+        error = projects.check_name(name)
+        if error is not None:
+            logger.error(invalid_project_name, name=name, error=error)
+            return
         self.gui.on_new(name)
 
 
@@ -159,4 +168,11 @@ class RenameProjectDialog(SimpleEntryDialog):
         return _("New project name")
 
     def do_action(self, name):
-        project_manager.current.rename(name)
+        current = projects.current.name
+        bricks = [b.get_name() for b in self.gui.brickfactory.bricks]
+        error = projects.check_name(name, renaming=current, bricks=bricks)
+        if error is not None:
+            logger.error(invalid_project_name, name=name, error=error)
+            return
+        projects.rename(current, name, bricks=bricks)
+        self.gui.set_title()

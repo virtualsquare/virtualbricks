@@ -29,9 +29,9 @@ class TestSaveProjectAs(GuiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.patch(saveprojectasdialog, "project_manager", self.manager)
-        self.manager.get_project("lab").create().open(self.factory)
-        self.manager.get_project("other").create()
+        self.manager.create("lab")
+        self.manager.open("lab", self.factory)
+        self.manager.create("other")
         self.dialog = saveprojectasdialog.SaveProjectAsDialog(self.factory)
         self.addCleanup(self.dialog.get_root_widget().destroy)
 
@@ -49,11 +49,13 @@ class TestSaveProjectAs(GuiTestCase):
         )
         # a name is a directory of the workspace
         self.assertEqual(
-            self.check("../copy"), (False, "Invalid project name")
+            self.check("../copy"), (False, 'The name cannot contain "/"')
         )
-        self.assertEqual(self.check("a/b"), (False, "Invalid project name"))
+        self.assertEqual(
+            self.check(".copy"), (False, "The name cannot start with a dot")
+        )
         self.assertEqual(
             self.check("other"),
-            (False, "A project with the same name already exists"),
+            (False, "A project with this name already exists"),
         )
         self.assertEqual(self.check(""), (False, None))

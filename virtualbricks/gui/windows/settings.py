@@ -27,12 +27,13 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import project, tools
+from virtualbricks import tools
 from virtualbricks.config import (
     COW_FORMATS,
     get_app_setting,
     get_setting,
     project_settings,
+    projects,
     set_app_setting,
     set_setting,
     store_settings,
@@ -385,7 +386,7 @@ class SettingsDialog(_Dialog):
         self.new_project_widgets.store(set_app_setting)
         if project_settings() is not None:
             self.project_widgets.store(set_setting)
-            project.manager.save_current(self.virtualbricks_gui.brickfactory)
+            projects.save(self.virtualbricks_gui.brickfactory)
         ksm_active = self.enable_ksm_switch.get_active()
         set_app_setting("ksm", ksm_active)
         tools.set_ksm(ksm_active)

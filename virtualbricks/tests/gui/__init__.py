@@ -26,10 +26,12 @@ from twisted.logger import LogLevel
 from twisted.trial import unittest
 
 from virtualbricks import project, tools
+from virtualbricks.config import workspace
 from virtualbricks.tests import (
     FakeLogger,
     isolate,
     make_factory,
+    use_workspace,
     reset_settings,
 )
 
@@ -75,11 +77,11 @@ class GuiTestCase(unittest.TestCase):
 
         self.patch(tools, "set_ksm", set_ksm)
         self.factory = make_factory(self)
-        self.manager = project.ProjectManager(
-            os.path.join(self.root, "workspace")
+        self.manager = use_workspace(
+            self, os.path.join(self.root, "workspace")
         )
-        self.patch(project, "manager", self.manager)
         self.patch(project, "logger", FakeLogger())
+        self.patch(workspace, "logger", FakeLogger())
 
     def folder(self, name):
         path = os.path.join(self.root, name)

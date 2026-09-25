@@ -25,7 +25,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks.project import manager as project_manager
+from virtualbricks.config import projects
 from virtualbricks.gui.windows.base import _, _Dialog
 from virtualbricks.gui.windows.confirmdialog import DeleteProjectConfirmDialog
 
@@ -43,9 +43,10 @@ class _ProjectListDialog(_Dialog):
         self.build_ui()
         tree_selection = self.projects_view.get_selection()
         tree_model, tree_iter = tree_selection.get_selected()
-        for project in project_manager:
-            if project != project_manager.current:
-                tree_model.append([project.name])
+        current = projects.current and projects.current.name
+        for name in projects.names():
+            if name != current:
+                tree_model.append([name])
         if self.title is not None:
             self.get_root_widget().set_title(self.title)
         tree_selection.unselect_all()

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 07:06+0200\n"
+"POT-Creation-Date: 2026-09-25 15:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -49,6 +49,13 @@ msgstr ""
 #: virtualbricks/brickfactory.py
 #, python-format
 msgid "Invalid brick type %s"
+msgstr ""
+
+#: virtualbricks/brickfactory.py
+#, python-brace-format
+msgid ""
+"The name is {size} bytes long, and the sockets of this project leave room "
+"for {room}"
 msgstr ""
 
 #: virtualbricks/bricks/capture.py
@@ -148,6 +155,40 @@ msgstr "Configurato per connettere"
 msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""
 
+#: virtualbricks/config/importing.py
+#, python-brace-format
+msgid "{name}: {path} doesn't exist"
+msgstr ""
+
+#: virtualbricks/config/workspace.py
+#, fuzzy
+msgid "The name is empty"
+msgstr "Il nome \""
+
+#: virtualbricks/config/workspace.py
+msgid "The name cannot contain \"/\""
+msgstr ""
+
+#: virtualbricks/config/workspace.py
+msgid "The name cannot start with a dot"
+msgstr ""
+
+#: virtualbricks/config/workspace.py
+#, python-brace-format
+msgid "The name is {size} bytes long, at most {max}"
+msgstr ""
+
+#: virtualbricks/config/workspace.py
+msgid "A project with this name already exists"
+msgstr ""
+
+#: virtualbricks/config/workspace.py
+#, python-brace-format
+msgid ""
+"The name leaves {room} bytes to the names of the bricks, and the longest has "
+"{longest}"
+msgstr ""
+
 #: virtualbricks/errors.py
 #, python-format
 msgid "Normalized name %s already in use"
@@ -234,15 +275,15 @@ msgstr ""
 msgid "Migration"
 msgstr "Controlla la configurazione"
 
-#: virtualbricks/gui/messages.py
-#, fuzzy
-msgid "Settings"
-msgstr "_Impostazioni"
-
 #: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
 #, fuzzy
 msgid "Project"
 msgstr "Nome Evento:"
+
+#: virtualbricks/gui/messages.py
+#, fuzzy
+msgid "Settings"
+msgstr "_Impostazioni"
 
 #: virtualbricks/gui/messages.py
 msgid "Console"
@@ -370,6 +411,7 @@ msgstr "<b>Selezione Evento di arresto</b>"
 #: virtualbricks/gui/windows/createimagedialog.py
 #: virtualbricks/gui/windows/disklibrary.py
 #: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/loadimagedialog.py
 #: virtualbricks/gui/windows/usbdev.py
 #: virtualbricks/gui/windows/virtualbricks.py
@@ -472,6 +514,7 @@ msgid "label"
 msgstr ""
 
 #: virtualbricks/gui/windows/commitimagedialog.py
+#: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 #, fuzzy
 msgid "Close"
@@ -742,7 +785,6 @@ msgid "Choose the files to include in the project"
 msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
 msgid "File:"
 msgstr "_File"
@@ -752,120 +794,181 @@ msgid "Include base disk images (slow)"
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
+msgid "Reading the archive"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Extracting the archive"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
 #, python-brace-format
-msgid "Use {0} of this machine, {1}, instead of {2}"
+msgid "{count} {type}"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy, python-brace-format
+msgid "{n} event"
+msgid_plural "{n} events"
+msgstr[0] "Eventi"
+msgstr[1] "Eventi"
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "No bricks"
+msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "no disk"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy, python-brace-format
+msgid "Used by {disks}"
+msgstr "RAM usata:"
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Copy"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Use a file…"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Leave unset"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Looking in the archive…"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Not in the archive"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "{size} in the archive"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "Looking in the archive… if it's there, copied to {path}"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "Copied to {path}"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy, python-brace-format
+msgid "Uses {path}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Unset: its disks get an image later, in their settings"
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
-msgid "Virtualbricks - Import project"
-msgstr "Virtualbricks: azione in corso"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Project name:"
-msgstr "Nome Evento:"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Open after import"
+msgid "Import Project"
 msgstr "Apertura progetto"
 
 #: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Overwrite existing project"
-msgstr "Avvia un progetto _vuoto"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "A project with such name already exists."
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Import project"
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Save"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#, fuzzy
-msgid "Image name"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Image path"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Save images"
-msgstr "Salva come..."
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Remap images"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "testproject"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Project path:"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "/home/bob/.virtualbricks/testproject"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Open:"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "False"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "existing project overwritten:"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Images imported:"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid ""
-"debian 7\n"
-"ubuntu 12.04"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Images mapped:"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Save image as..."
-msgstr "Salva come..."
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Map image as..."
-msgstr "Salva come..."
-
 #: virtualbricks/gui/windows/loadimagedialog.py
 #: virtualbricks/gui/windows/newbrick.py
 #: virtualbricks/gui/windows/renamedialog.py
 #: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
 msgid "Cancel"
 msgstr "Annulla"
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Import"
+msgstr "porta:"
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Choose an archive of a Virtualbricks project."
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Virtualbricks archives"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Choose an archive"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Reading the archive…"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Images"
+msgstr "immagini disco"
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "The project uses no image."
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "This computer's paths"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Open the project after the import"
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid ""
+"You can close this window: the Messages window says when the import is done."
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "To check"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Stop"
+msgstr "_Avvia/Ferma"
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "Cannot read {path}: {error}"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "Use this computer's {key}, {ours}, instead of {theirs}"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "The file of {name}"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy, python-brace-format
+msgid "Importing {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "Imported as \"{name}\"."
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+#, python-brace-format
+msgid "cannot be opened: {error}"
+msgstr ""
 
 #: virtualbricks/gui/windows/loadimagedialog.py
 #: virtualbricks/gui/windows/newbrick.py
@@ -878,6 +981,11 @@ msgstr ""
 #, fuzzy
 msgid "Load disk image"
 msgstr "immagini disco"
+
+#: virtualbricks/gui/windows/loadimagedialog.py
+#, fuzzy
+msgid "Image name"
+msgstr "Formato immagine"
 
 #: virtualbricks/gui/windows/logging.py
 msgid "%A %d %B %Y"
@@ -1545,15 +1653,6 @@ msgstr "Nuovo progetto"
 msgid "New project name is the same as previous name"
 msgstr ""
 
-#: virtualbricks/gui/windows/saveprojectasdialog.py
-#, fuzzy
-msgid "Invalid project name"
-msgstr "Nome invalido!"
-
-#: virtualbricks/gui/windows/saveprojectasdialog.py
-msgid "A project with the same name already exists"
-msgstr ""
-
 #: virtualbricks/gui/windows/settings.py
 msgid "VDE binaries path"
 msgstr ""
@@ -2033,6 +2132,50 @@ msgid "{exe} not found"
 msgstr "kvm non trovato"
 
 #, fuzzy
+#~ msgid "Virtualbricks - Import project"
+#~ msgstr "Virtualbricks: azione in corso"
+
+#, fuzzy
+#~ msgid "Project name:"
+#~ msgstr "Nome Evento:"
+
+#, fuzzy
+#~ msgid "Overwrite existing project"
+#~ msgstr "Avvia un progetto _vuoto"
+
+#, fuzzy
+#~ msgid "Image path"
+#~ msgstr "Formato immagine"
+
+#, fuzzy
+#~ msgid "Save images"
+#~ msgstr "Salva come..."
+
+#, fuzzy
+#~ msgid "testproject"
+#~ msgstr "Nuovo progetto"
+
+#, fuzzy
+#~ msgid "Images imported:"
+#~ msgstr "Formato immagine"
+
+#, fuzzy
+#~ msgid "Images mapped:"
+#~ msgstr "Formato immagine"
+
+#, fuzzy
+#~ msgid "Save image as..."
+#~ msgstr "Salva come..."
+
+#, fuzzy
+#~ msgid "Map image as..."
+#~ msgstr "Salva come..."
+
+#, fuzzy
+#~ msgid "Invalid project name"
+#~ msgstr "Nome invalido!"
+
+#, fuzzy
 #~ msgid "Virtualbricks logging"
 #~ msgstr "Impostazioni Virtualbricks"
 
@@ -2071,9 +2214,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "Restart with _empty project"
 #~ msgstr "Avvia un progetto _vuoto"
-
-#~ msgid "_Import bricks"
-#~ msgstr "_Importa Mattoni"
 
 #~ msgid "_Save project as..."
 #~ msgstr "_Salva progetto come..."
@@ -2358,9 +2498,6 @@ msgstr "kvm non trovato"
 #~ msgid "<b>Tunnel server Configuration</b>"
 #~ msgstr "<b>Configurazione Tunnel server</b>"
 
-#~ msgid "port:"
-#~ msgstr "porta:"
-
 #~ msgid "<b>Tunnel client Configuration</b>"
 #~ msgstr "<b>Configurazione Tunnel client</b>"
 
@@ -2423,9 +2560,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "Directory that contains hard disk images"
 #~ msgstr "Direttorio che contiene le immagini degli hard disk"
-
-#~ msgid "Disk Images"
-#~ msgstr "immagini disco"
 
 #~ msgid "Allow the use of kernel-based virtual machine (recommended)"
 #~ msgstr "Permetti l'uso di kernel-based virtual machine (raccomandato)"
@@ -2873,9 +3007,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "Cannot create brick: Invalid name."
 #~ msgstr "Impossibile creare mattone: nome non valido."
-
-#~ msgid "The name \""
-#~ msgstr "Il nome \""
 
 #~ msgid "\" has forbidden format."
 #~ msgstr "\" ha un formato proibito."

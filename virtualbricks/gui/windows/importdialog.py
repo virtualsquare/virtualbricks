@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.windows.test_importdialog -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,860 +17,713 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Assistant to import a project from a file.
+Import a project from an archive, on one page.
+
+Choosing a file reads the archive in the archive process. The page shows
+the project, a name, and a choice for each image the project uses, each with
+a default: copy it from the archive, use a file of this computer, or leave it
+unset. The import runs in the archive process too; the window follows its
+progress, and can be closed meanwhile.
 """
 
-import errno
+import collections
 import os
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk, Pango
-import twisted
-from twisted.internet import defer, error, utils
-from twisted.python import filepath
+from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 
 from virtualbricks.config import (
-    devices_for_image,
-    get_app_setting,
-    get_setting,
-    image_paths,
-    remap_image,
+    ArchiveCancelled,
+    import_project,
+    inspect_archive,
+    plan_import,
+    projects,
+    update_plan,
 )
-from virtualbricks.project import manager as project_manager
-from virtualbricks.gui.windows.base import _, pango_attr_list, Window
-from virtualbricks.gui.windows.userwait import ProgressBar
-
-if twisted.__version__ >= "15.0.2":
-    # This is an ugly hack but virtualbricks is not really ready for
-    # Python3
-    def mktempfn():
-        return filepath._secureEnoughString(project_manager.path)
-
-else:
-
-    def mktempfn():
-        return filepath._secureEnoughString()
-
+from virtualbricks.config.importing import COPY, SKIP, USE
+from virtualbricks.gui.windows.base import _, Window, pango_attr_list
+from virtualbricks.i18n import ngettext
 
 logger = Logger()
+imported = 'Project imported as "{name}"'
+import_failed = "Cannot import {path}: {error}"
+open_failed = 'Cannot open the imported project "{name}": {error}'
 
-extract_err = "Error on import project"
-log_rebase = "Rebasing {cow} to {basefile}"
-rebase_error = "Error on rebase"
-image_not_exists = (
-    "Cannot save image to {destination}, file does " "not exists: {source}"
-)
-invalid_step_assitant = "Assistant cannot handle step {num}"
-project_extracted = "Project has beed extracted in {path}"
-removing_temporary_project = "Remove temporary files in {path}"
-error_on_import_project = "An error occurred while import project"
-
-
-def pass_through(function, *args, **kwds):
-    def wrapper(arg):
-        function(*args, **kwds)
-        return arg
-
-    return wrapper
+MARGIN = 18
+STEPS = {
+    "read": _("Reading the archive"),
+    "extract": _("Extracting the archive"),
+}
+PATTERNS = ("*.vbp", "*.tar.gz", "*.tgz", "*.tar")
 
 
-def iter_model(model, *columns):
-    itr = model.get_iter_first()
-    if not columns:
-        columns = range(model.get_n_columns())
-    while itr:
-        yield model.get(itr, *columns)
-        itr = model.iter_next(itr)
+def first_paragraph(text):
+    return text.strip().split("\n\n", 1)[0].strip()
 
 
-def complain_on_error(result):
-    out, err, code = result
-    stderr = err.decode(errors="replace")
-    if code != 0:
-        logger.warn("{stderr}", stderr=stderr)
-        raise error.ProcessTerminated(code)
-    logger.info("{stderr}", stderr=stderr)
-    return result
+def facts(data):
+    """ "3 bricks · 1 event" for the project file data."""
 
-
-def _set_path(column, cell_renderer, model, iter, colid):
-    path = model.get_value(iter, colid)
-    cell_renderer.set_property("text", path.path if path else "")
-
-
-def _set_path_remap(column, cell_renderer, model, iter, colid):
-    path = model.get_value(iter, colid)
-    if path:
-        cell_renderer.set_properties(
-            font_desc=None, foreground=None, text=path.path
+    bricks = data.get("bricks", {})
+    events = data.get("events", {})
+    counts = collections.Counter(
+        str(table.get("type", "?"))
+        for table in (bricks.values() if isinstance(bricks, dict) else [])
+        if isinstance(table, dict)
+    )
+    parts = [
+        _("{count} {type}").format(count=count, type=kind)
+        for kind, count in sorted(counts.items())
+    ]
+    n_events = len(events) if isinstance(events, dict) else 0
+    if n_events:
+        parts.append(
+            ngettext("{n} event", "{n} events", n_events).format(n=n_events)
         )
-    else:
-        font = Pango.FontDescription()
-        font.set_style(Pango.Style.ITALIC)
-        cell_renderer.set_properties(
-            font_desc=font,
-            foreground="gray",
-            text="(Click here to select an image)",
+    return " · ".join(parts) if parts else _("No bricks")
+
+
+def human_size(size):
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1000 or unit == "GB":
+            return (
+                f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+            )
+        size /= 1000
+    return f"{size:.1f} TB"  # pragma: no cover
+
+
+def find_qemu_img():
+    from virtualbricks.spawn import abspath_qemu
+
+    try:
+        return abspath_qemu("qemu-img")
+    except FileNotFoundError:
+        return ""
+
+
+def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):
+    label = Gtk.Label(
+        visible=True, label=text, xalign=xalign, wrap=wrap, **props
+    )
+    if dim:
+        label.get_style_context().add_class("dim-label")
+    if bold:
+        label.set_attributes(pango_attr_list(Pango.attr_weight_new(700)))
+    return label
+
+
+class ImageRow:
+    """The choice for one image: copy it, use a file, leave it unset."""
+
+    def __init__(self, dialog, image):
+        self.dialog = dialog
+        self.image = image
+        self.row = Gtk.ListBoxRow(visible=True, activatable=False)
+        grid = Gtk.Grid(
+            visible=True,
+            column_spacing=12,
+            row_spacing=4,
+            margin=10,
         )
-
-
-def all_paths_set(model):
-    return all(path for (path,) in iter_model(model, 1))
-
-
-class _HumbleImport:
-
-    def step_1(self, dialog, model, path, extract=project_manager.import_prj):
-        archive_path = dialog.get_archive_path()
-        if archive_path != dialog.archive_path:
-            if dialog.project:
-                dialog.project.delete()
-            dialog.archive_path = archive_path
-            d = extract(mktempfn(), archive_path)
-            d.addCallback(self.extract_cb, dialog)
-            d.addCallback(self.fill_model_cb, dialog, model, path)
-            d.addErrback(self.extract_eb, dialog)
-            return d
-
-    def extract_cb(self, project, dialog):
-        logger.debug(project_extracted, path=project.path)
-        dialog.project = project
-        dialog.images = image_paths(project.read_document())
-        return project
-
-    def extract_eb(self, fail, dialog):
-        logger.failure(extract_err, fail)
-        dialog.destroy()
-        return fail
-
-    def fill_model_cb(self, project, dialog, model, vipath):
-        model.clear()
-        for name in project.images():
-            if name in dialog.images:
-                fp = vipath.child(os.path.basename(dialog.images[name]))
-            else:
-                fp = vipath.child(name)
-            fp2 = filepath.FilePath(fp.path)
-            c = 1
-            while fp2.exists():
-                fp2 = fp.siblingExtension(".{0}".format(c))
-                c += 1
-            model.append((name, fp2, True))
-        return project
-
-    def step_2(self, dialog, store1, store2):
-        """Step 2: map images."""
-
-        imgs = dict(
-            (name, path) for name, path, save in iter_model(store1) if save
+        self.name_label = _label(image.name, bold=True, hexpand=True)
+        grid.attach(self.name_label, 0, 0, 1, 1)
+        used_by = ", ".join(image.used_by) or _("no disk")
+        self.used_label = _label(
+            _("Used by {disks}").format(disks=used_by), dim=True
         )
-        store2.clear()
-        for name in dialog.images:
-            store2.append((name, imgs.get(name)))
-        if len(store2) == 0 or all_paths_set(store2):
-            dialog.set_page_complete()
+        grid.attach(self.used_label, 0, 1, 1, 1)
+        box = Gtk.Box(visible=True)
+        box.get_style_context().add_class("linked")
+        self.copy_button = Gtk.RadioButton(
+            visible=True, label=_("Copy"), draw_indicator=False
+        )
+        self.use_button = Gtk.RadioButton(
+            visible=True,
+            label=_("Use a file…"),
+            draw_indicator=False,
+            group=self.copy_button,
+        )
+        self.skip_button = Gtk.RadioButton(
+            visible=True,
+            label=_("Leave unset"),
+            draw_indicator=False,
+            group=self.copy_button,
+        )
+        for button in (self.copy_button, self.use_button, self.skip_button):
+            box.pack_start(button, False, False, 0)
+        grid.attach(box, 1, 0, 1, 2)
+        self.path_label = _label(
+            dim=True, ellipsize=Pango.EllipsizeMode.MIDDLE
+        )
+        grid.attach(self.path_label, 0, 2, 2, 1)
+        self.row.add(grid)
+        self.buttons = {
+            COPY: self.copy_button,
+            USE: self.use_button,
+            SKIP: self.skip_button,
+        }
+        self._updating = False
+        self.update()
+        for choice, button in self.buttons.items():
+            button.connect("toggled", self.on_toggled, choice)
 
-    def step_3(self, dialog):
-        dialog.project_name_label.set_text(dialog.get_project_name())
-        path_label = dialog.project_path_label
-        fp = filepath.FilePath(dialog.project.path)
-        path = fp.sibling(dialog.get_project_name()).path
-        path_label.set_text(path)
-        path_label.set_tooltip_text(path)
-        dialog.open_label.set_text(str(dialog.get_open()))
-        dialog.overwrite_label.set_text(str(dialog.get_overwrite()))
-        images = iter_model(dialog.save_images_store, 0, 2)
-        iimgs = (name for name, s in images if s)
-        dialog.imported_images_label.set_text("\n".join(iimgs))
-        self.show_machine_paths(dialog)
-        store = dialog.map_images_store
-        vbox = dialog.mapped_images_box
-        vbox.foreach(vbox.remove)
-        for i, (name, dest) in enumerate(iter_model(store)):
-            nlabel = Gtk.Label(name + ":")
-            nlabel.props.halign = Gtk.Align.FILL
-            nlabel.props.valign = Gtk.Align.CENTER
-            dlabel = Gtk.Label(dest.path)
-            dlabel.set_tooltip_text(dest.path)
-            dlabel.props.halign = Gtk.Align.FILL
-            dlabel.props.valign = Gtk.Align.CENTER
-            dlabel.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
-            box.pack_start(nlabel, False, True, 0)
-            box.pack_start(dlabel, True, True, 0)
-            vbox.pack_start(box, False, True, 3)
-            box.show_all()
-
-    def show_machine_paths(self, dialog):
-        """Offer to replace the paths of the machine the project comes from."""
-
-        project_settings = dialog.project.read_document().get("settings", {})
-        for key, check in dialog.machine_path_checks.items():
-            theirs = project_settings.get(key)
-            ours = get_app_setting(key)
-            differs = isinstance(theirs, str) and theirs != ours
-            check.set_visible(differs)
-            if differs:
-                check.set_label(
-                    _("Use {0} of this machine, {1}, instead of {2}").format(
-                        key, ours, theirs
-                    )
+    def update(self):
+        image = self.image
+        self._updating = True
+        try:
+            self.buttons[image.choice].set_active(True)
+        finally:
+            self._updating = False
+        in_archive = image.in_archive is not None or not image.known
+        self.copy_button.set_sensitive(in_archive)
+        if not image.known:
+            self.copy_button.set_tooltip_text(_("Looking in the archive…"))
+        elif image.in_archive is None:
+            self.copy_button.set_tooltip_text(_("Not in the archive"))
+        else:
+            self.copy_button.set_tooltip_text(
+                _("{size} in the archive").format(
+                    size=human_size(image.in_archive)
                 )
-                check.set_active(not os.path.isdir(theirs))
+            )
+        self.path_label.set_text(self.describe())
+        self.path_label.set_tooltip_text(image.path or None)
 
-    def use_machine_paths(self, entry, keys):
-        table = entry.setdefault("settings", {})
-        for key in keys:
-            table[key] = get_app_setting(key)
+    def describe(self):
+        image = self.image
+        if image.choice == COPY and not image.known:
+            return _(
+                "Looking in the archive… if it's there, copied to {path}"
+            ).format(path=image.path)
+        if image.choice == COPY:
+            return _("Copied to {path}").format(path=image.path)
+        if image.choice == USE:
+            return _("Uses {path}").format(path=image.path)
+        return _("Unset: its disks get an image later, in their settings")
 
-    def apply(
-        self,
-        project,
-        name,
-        factory,
-        overwrite,
-        open,
-        store1,
-        store2,
-        machine_paths=(),
-    ):
-        entry = project.read_document()
-        self.use_machine_paths(entry, machine_paths)
-        imgs = self.get_images(project, entry, store1, store2)
-        deferred = self.rebase_all(project, imgs, entry)
-        deferred.addCallback(self.check_rebase)
-        deferred.addCallback(lambda a: project.rename(name, overwrite))
-        if open:
-            deferred.addCallback(pass_through(project.open, factory))
-        deferred.addErrback(pass_through(project.delete))
-
-        def log_import_error(failure):
-            logger.failure(error_on_import_project, failure)
-            return failure
-
-        deferred.addErrback(log_import_error)
-        return deferred
-
-    def get_images(self, project, entry, store1, store2):
-        imagesfp = filepath.FilePath(project.path).child(".images")
-        imgs = self.save_images(store1, imagesfp)
-        self.remap_images(entry, store2, imgs)
-        project.write_document(entry)
-        return imgs
-
-    def save_images(self, model, source):
-        saved = {}
-        for name, destination, save in iter_model(model):
-            if save:
-                fp = source.child(name)
-                try:
-                    fp.moveTo(destination)
-                except OSError as e:
-                    if e.errno == errno.ENOENT:
-                        logger.error(
-                            image_not_exists,
-                            source=fp.path,
-                            destination=destination.path,
-                        )
-                        continue
-                    else:
-                        raise
-                else:
-                    saved[name] = destination
-        return saved
-
-    def remap_images(self, entry, store, saved):
-        for name, destination in saved.items():
-            remap_image(entry, name, destination.path)
-        for name, path in iter_model(store):
-            remap_image(entry, name, path.path)
-            saved[name] = path
-
-    def rebase_all(self, project, images, entry):
-        lst = []
-        for name, path in images.items():
-            for vmname, dev in devices_for_image(entry, name):
-                cow_name = "{0}_{1}.cow".format(vmname, dev)
-                cow = filepath.FilePath(project.path).child(cow_name)
-                if cow.exists():
-                    logger.debug(log_rebase, cow=cow.path, basefile=path.path)
-                    lst.append(self.rebase(path.path, cow.path))
-        return defer.DeferredList(lst)
-
-    def rebase(self, backing_file, cow, run=utils.getProcessOutputAndValue):
-        args = ["rebase", "-u", "-b", backing_file, "-F", "qcow2", cow]
-        d = run("qemu-img", args, os.environ)
-        return d.addCallback(complain_on_error)
-
-    def check_rebase(self, result):
-        for success, status in result:
-            if not success:
-                logger.error(rebase_error, log_failure=status)
+    def on_toggled(self, button, choice):
+        if self._updating or not button.get_active():
+            return
+        if choice == USE:
+            path = self.dialog.choose_image(self.image)
+            if not path:
+                self.update()
+                return
+            self.image.path = path
+        elif choice == COPY:
+            self.image.path = (
+                self.image.path
+                if self.image.choice == COPY
+                else (self.dialog.copy_destination(self.image))
+            )
+        self.image.choice = choice
+        self.update()
+        self.dialog.check()
 
 
 class ImportDialog(Window):
-    """
-    Assistant to import a project: choose the archive and the project name,
-    save the images of the archive, map the images used by the project and
-    confirm.
-    """
+    """Import a project from an archive (board I1)."""
 
-    NAME, PATH, SELECTED = range(3)
-    archive_path = None
-    project = None
-    images = None
-    humble = _HumbleImport()
-
-    def __init__(self, factory):
-        Window.__init__(self)
+    def __init__(
+        self,
+        factory,
+        workspace=None,
+        inspect=inspect_archive,
+        run=import_project,
+    ):
         self.factory = factory
+        self.workspace = projects if workspace is None else workspace
+        self._inspect = inspect
+        self._run = run
+        self.archive_path = None
+        self.plan = None
+        self.rows = []
+        self.inspect_job = None
+        self.import_job = None
+        self.result = None
+        self.scanning = False
+        self.destroyed = False
+        super().__init__()
 
-    def build_ui(self) -> None:
-        """Create the widgets, formerly in ``importdialog.ui``."""
+    # The widgets
 
-        # TODO: the Glade file has an unused image1 (Gtk.Image, stock
-        # "gtk-add"), nothing refers to it.
+    def build_ui(self):
+        self.window = Gtk.Window(
+            title=_("Import Project"),
+            default_width=680,
+            default_height=600,
+            window_position=Gtk.WindowPosition.CENTER_ON_PARENT,
+            destroy_with_parent=True,
+        )
+        header = Gtk.HeaderBar(visible=True, title=_("Import Project"))
+        self.cancel_button = Gtk.Button(visible=True, label=_("Cancel"))
+        header.pack_start(self.cancel_button)
+        self.import_button = Gtk.Button(
+            visible=True, label=_("Import"), sensitive=False
+        )
+        self.import_button.get_style_context().add_class("suggested-action")
+        header.pack_end(self.import_button)
+        self.close_button = Gtk.Button(visible=False, label=_("Close"))
+        header.pack_end(self.close_button)
+        self.window.set_titlebar(header)
 
-        # save_images_store (Gtk.ListStore)
-        self.save_images_store = Gtk.ListStore(str, object, bool)
+        self.stack = Gtk.Stack(visible=True)
+        self.stack.add_named(self._build_choose(), "choose")
+        self.stack.add_named(self._build_reading(), "reading")
+        self.stack.add_named(self._build_form(), "form")
+        self.stack.add_named(self._build_running(), "running")
+        self.stack.add_named(self._build_done(), "done")
+        self.stack.add_named(self._build_failed(), "failed")
+        self.window.add(self.stack)
 
-        # map_images_store (Gtk.ListStore)
-        self.map_images_store = Gtk.ListStore(str, object)
+        self.window.connect("destroy", self.on_destroyed)
+        self.cancel_button.connect("clicked", self.on_cancel_clicked)
+        self.import_button.connect("clicked", self.on_import_clicked)
+        self.close_button.connect("clicked", self.on_close_clicked)
+        self.file_button.connect("file-set", self.on_file_set)
+        self.name_entry.connect("changed", self.on_name_changed)
+        self.open_check.connect("toggled", self.on_open_toggled)
 
-        # assistant (Gtk.Assistant)
-        self.assistant = Gtk.Assistant(
-            width_request=450,
-            height_request=400,
-            can_focus=False,
-            border_width=12,
-            title=_("Virtualbricks - Import project"),
-            resizable=False,
-            modal=True,
-            window_position=Gtk.WindowPosition.CENTER,
-        )
-        # TODO: empty Glade placeholder, nothing to create.
-        self.intro_grid = Gtk.Grid(
+    def _page(self):
+        return Gtk.Box(
             visible=True,
-            can_focus=False,
-            margin_left=5,
-            resize_mode=Gtk.ResizeMode.IMMEDIATE,
-            row_spacing=3,
-            column_spacing=6,
-        )
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Project name:"),
-        )
-        self.intro_grid.attach(label1, 0, 1, 1, 1)
-        label3 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("File:"),
-            justify=Gtk.Justification.RIGHT,
-            xalign=0,
-        )
-        self.intro_grid.attach(label3, 0, 0, 1, 1)
-        self.project_name_entry = Gtk.Entry(
-            visible=True,
-            can_focus=True,
-            secondary_icon_activatable=False,
-        )
-        self.intro_grid.attach(self.project_name_entry, 1, 1, 1, 1)
-        self.archive_chooser = Gtk.FileChooserButton(
-            visible=True,
-            can_focus=False,
-        )
-        self.intro_grid.attach(self.archive_chooser, 1, 0, 1, 1)
-        self.open_check = Gtk.CheckButton(
-            label=_("Open after import"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0,
-            draw_indicator=True,
-        )
-        self.intro_grid.attach(self.open_check, 0, 2, 2, 1)
-        self.overwrite_check = Gtk.CheckButton(
-            label=_("Overwrite existing project"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0,
-            draw_indicator=True,
-        )
-        self.intro_grid.attach(self.overwrite_check, 0, 3, 2, 1)
-        self.warn_label = Gtk.Label(
-            can_focus=False,
-            label=_("A project with such name already exists."),
-            attributes=pango_attr_list(Pango.attr_foreground_new(65535, 0, 0)),
-        )
-        self.intro_grid.attach(self.warn_label, 0, 4, 2, 1)
-        self.assistant.append_page(self.intro_grid)
-        self.assistant.set_page_type(
-            self.intro_grid,
-            Gtk.AssistantPageType.INTRO,
-        )
-        self.assistant.set_page_title(self.intro_grid, _("Import project"))
-        self.assistant.set_page_has_padding(self.intro_grid, False)
-        save_images_page = Gtk.ScrolledWindow(
-            visible=True,
-            can_focus=True,
-            margin_left=5,
-        )
-        self.save_images_view = Gtk.TreeView(
-            visible=True,
-            can_focus=True,
-            model=self.save_images_store,
-            headers_clickable=False,
-            search_column=0,
-            enable_grid_lines=Gtk.TreeViewGridLines.BOTH,
-        )
-        treeviewcolumn1 = Gtk.TreeViewColumn.new()
-        treeviewcolumn1.set_properties(title=_("Save"))
-        save_image_cell = Gtk.CellRendererToggle()
-        treeviewcolumn1.pack_start(save_image_cell, False)
-        treeviewcolumn1.add_attribute(
-            save_image_cell,
-            "active",
-            2,
-        )
-        self.save_images_view.append_column(treeviewcolumn1)
-        treeviewcolumn2 = Gtk.TreeViewColumn.new()
-        treeviewcolumn2.set_properties(title=_("Image name"))
-        cellrenderertext1 = Gtk.CellRendererText()
-        treeviewcolumn2.pack_start(cellrenderertext1, False)
-        treeviewcolumn2.add_attribute(cellrenderertext1, "text", 0)
-        self.save_images_view.append_column(treeviewcolumn2)
-        self.save_path_column = Gtk.TreeViewColumn.new()
-        self.save_path_column.set_properties(title=_("Image path"))
-        self.save_path_cell = Gtk.CellRendererText()
-        self.save_path_column.pack_start(self.save_path_cell, False)
-        self.save_images_view.append_column(self.save_path_column)
-        save_images_page.add(self.save_images_view)
-        self.assistant.append_page(save_images_page)
-        self.assistant.set_page_title(
-            save_images_page,
-            _("Save images"),
-        )
-        self.assistant.set_page_complete(save_images_page, True)
-        self.assistant.set_page_has_padding(save_images_page, False)
-        # TODO: empty Glade placeholder, nothing to create.
-        map_images_page = Gtk.ScrolledWindow(
-            visible=True,
-            can_focus=True,
-            margin_left=5,
-        )
-        self.map_images_view = Gtk.TreeView(
-            visible=True,
-            can_focus=True,
-            model=self.map_images_store,
-            headers_clickable=False,
-            search_column=0,
-            enable_grid_lines=Gtk.TreeViewGridLines.BOTH,
-        )
-        treeviewcolumn4 = Gtk.TreeViewColumn.new()
-        treeviewcolumn4.set_properties(title=_("Image name"))
-        cellrenderertext3 = Gtk.CellRendererText()
-        treeviewcolumn4.pack_start(cellrenderertext3, False)
-        treeviewcolumn4.add_attribute(cellrenderertext3, "text", 0)
-        self.map_images_view.append_column(treeviewcolumn4)
-        self.map_path_column = Gtk.TreeViewColumn.new()
-        self.map_path_column.set_properties(title=_("Image path"))
-        self.map_path_cell = Gtk.CellRendererText()
-        self.map_path_column.pack_start(self.map_path_cell, False)
-        self.map_images_view.append_column(self.map_path_column)
-        map_images_page.add(self.map_images_view)
-        self.assistant.append_page(map_images_page)
-        self.assistant.set_page_title(
-            map_images_page,
-            _("Remap images"),
-        )
-        self.assistant.set_page_has_padding(map_images_page, False)
-        vbox2 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            margin_left=5,
             orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            margin=MARGIN,
         )
-        hbox3 = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        label4 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Project name:"),
-            xalign=0,
-        )
-        hbox3.pack_start(label4, False, True, 0)
-        self.project_name_label = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("testproject"),
-            xalign=0,
-            attributes=pango_attr_list(
-                Pango.attr_weight_new(Pango.Weight.BOLD),
+
+    def _build_choose(self):
+        box = self._page()
+        box.set_valign(Gtk.Align.CENTER)
+        box.pack_start(
+            _label(
+                _("Choose an archive of a Virtualbricks project."),
+                xalign=0.5,
             ),
+            False,
+            False,
+            0,
         )
-        hbox3.pack_start(self.project_name_label, False, True, 0)
-        vbox2.pack_start(hbox3, False, True, 0)
-        hbox4 = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        label6 = Gtk.Label(
+        file_filter = Gtk.FileFilter()
+        file_filter.set_name(_("Virtualbricks archives"))
+        for pattern in PATTERNS:
+            file_filter.add_pattern(pattern)
+        self.file_button = Gtk.FileChooserButton(
             visible=True,
-            can_focus=False,
-            label=_("Project path:"),
-            xalign=0,
+            title=_("Choose an archive"),
+            action=Gtk.FileChooserAction.OPEN,
+            halign=Gtk.Align.CENTER,
+            width_chars=30,
         )
-        hbox4.pack_start(label6, False, True, 0)
-        self.project_path_label = Gtk.Label(
+        self.file_button.add_filter(file_filter)
+        box.pack_start(self.file_button, False, False, 0)
+        return box
+
+    def _build_reading(self):
+        box = self._page()
+        box.set_valign(Gtk.Align.CENTER)
+        self.reading_label = _label(_("Reading the archive…"), xalign=0.5)
+        box.pack_start(self.reading_label, False, False, 0)
+        self.reading_bar = Gtk.ProgressBar(visible=True, show_text=True)
+        box.pack_start(self.reading_bar, False, False, 0)
+        return box
+
+    def _build_form(self):
+        scrolled = Gtk.ScrolledWindow(
+            visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
+        )
+        box = self._page()
+        self.archive_label = _label(
+            dim=True, ellipsize=Pango.EllipsizeMode.MIDDLE
+        )
+        box.pack_start(self.archive_label, False, False, 0)
+
+        box.pack_start(_label(_("Name"), bold=True), False, False, 0)
+        self.name_entry = Gtk.Entry(visible=True, activates_default=True)
+        box.pack_start(self.name_entry, False, False, 0)
+        self.name_message = _label(dim=True, wrap=True)
+        box.pack_start(self.name_message, False, False, 0)
+
+        self.description_label = _label(wrap=True, selectable=True)
+        box.pack_start(self.description_label, False, False, 0)
+        self.facts_label = _label(dim=True)
+        box.pack_start(self.facts_label, False, False, 0)
+
+        self.images_heading = _label(_("Images"), bold=True)
+        box.pack_start(self.images_heading, False, False, 0)
+        self.scan_box = Gtk.Box(visible=False, spacing=12)
+        self.scan_label = _label(_("Looking in the archive…"), dim=True)
+        self.scan_bar = Gtk.ProgressBar(visible=True, hexpand=True)
+        self.scan_bar.set_valign(Gtk.Align.CENTER)
+        self.scan_box.pack_start(self.scan_label, False, False, 0)
+        self.scan_box.pack_start(self.scan_bar, True, True, 0)
+        box.pack_start(self.scan_box, False, False, 0)
+        frame = Gtk.Frame(visible=True)
+        self.images_list = Gtk.ListBox(
+            visible=True, selection_mode=Gtk.SelectionMode.NONE
+        )
+        frame.add(self.images_list)
+        self.images_frame = frame
+        box.pack_start(frame, False, False, 0)
+        self.no_images_label = _label(
+            _("The project uses no image."), dim=True
+        )
+        box.pack_start(self.no_images_label, False, False, 0)
+
+        self.paths_heading = _label(_("This computer's paths"), bold=True)
+        box.pack_start(self.paths_heading, False, False, 0)
+        self.paths_box = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=6
+        )
+        box.pack_start(self.paths_box, False, False, 0)
+        self.machine_checks = {}
+
+        self.open_check = Gtk.CheckButton(
             visible=True,
-            can_focus=False,
-            label=_("/home/bob/.virtualbricks/testproject"),
-            wrap=True,
-            wrap_mode=Pango.WrapMode.CHAR,
-            ellipsize=Pango.EllipsizeMode.MIDDLE,
-            xalign=0,
-            attributes=pango_attr_list(
-                Pango.attr_weight_new(Pango.Weight.BOLD),
+            label=_("Open the project after the import"),
+            active=True,
+        )
+        box.pack_start(self.open_check, False, False, 0)
+        self.problems_label = _label(wrap=True)
+        self.problems_label.get_style_context().add_class("error")
+        box.pack_start(self.problems_label, False, False, 0)
+        scrolled.add(box)
+        return scrolled
+
+    def _build_running(self):
+        box = self._page()
+        box.set_valign(Gtk.Align.CENTER)
+        self.step_label = _label(xalign=0.5)
+        box.pack_start(self.step_label, False, False, 0)
+        self.run_bar = Gtk.ProgressBar(visible=True, show_text=True)
+        box.pack_start(self.run_bar, False, False, 0)
+        box.pack_start(
+            _label(
+                _(
+                    "You can close this window: the Messages window says"
+                    " when the import is done."
+                ),
+                dim=True,
+                wrap=True,
+                xalign=0.5,
             ),
+            False,
+            False,
+            0,
         )
-        hbox4.pack_start(self.project_path_label, True, True, 0)
-        vbox2.pack_start(hbox4, False, True, 0)
-        hbox1 = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        label5 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Open:"),
-            xalign=0,
-        )
-        hbox1.pack_start(label5, False, True, 0)
-        self.open_label = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("False"),
-            xalign=0,
-            attributes=pango_attr_list(
-                Pango.attr_weight_new(Pango.Weight.BOLD),
-            ),
-        )
-        hbox1.pack_start(self.open_label, True, True, 0)
-        vbox2.pack_start(hbox1, False, True, 0)
-        hbox2 = Gtk.Box(visible=True, can_focus=False)
-        label14 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("existing project overwritten:"),
-            xalign=0,
-        )
-        hbox2.pack_start(label14, False, True, 0)
-        self.overwrite_label = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("False"),
-            xalign=0,
-            attributes=pango_attr_list(
-                Pango.attr_weight_new(Pango.Weight.BOLD),
-            ),
-        )
-        hbox2.pack_start(self.overwrite_label, True, True, 0)
-        vbox2.pack_start(hbox2, False, True, 0)
-        label8 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Images imported:"),
-            xalign=0,
-            yalign=0,
-        )
-        vbox2.pack_start(label8, False, True, 3)
-        self.imported_images_label = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("debian 7\nubuntu 12.04"),
-            xalign=0,
-            attributes=pango_attr_list(
-                Pango.attr_weight_new(Pango.Weight.BOLD),
-            ),
-        )
-        vbox2.pack_start(self.imported_images_label, False, True, 3)
-        label10 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Images mapped:"),
-            xalign=0,
-        )
-        vbox2.pack_start(label10, False, True, 3)
-        self.mapped_images_box = Gtk.Box(visible=True, can_focus=False)
-        # TODO: empty Glade placeholder, nothing to create.
-        # TODO: empty Glade placeholder, nothing to create.
-        # TODO: empty Glade placeholder, nothing to create.
-        vbox2.pack_start(self.mapped_images_box, True, True, 0)
-        self.machine_path_checks = {}
-        for key in ("qemupath", "vdepath"):
-            check = Gtk.CheckButton(visible=False, can_focus=True)
-            self.machine_path_checks[key] = check
-            vbox2.pack_start(check, False, True, 3)
-        self.assistant.append_page(vbox2)
-        self.assistant.set_page_type(
-            vbox2,
-            Gtk.AssistantPageType.CONFIRM,
-        )
-        self.assistant.set_page_complete(vbox2, True)
-        self.assistant.set_page_has_padding(vbox2, False)
-        # TODO: the internal child 'action_area' of self.assistant has no
-        # public accessor in GTK 3. Glade sets only default values:
-        # can_focus=False.
+        return box
 
-        # Signals
-        self.map_images_store.connect(
-            "row-changed", self.on_map_images_store_row_changed
+    def _build_done(self):
+        box = self._page()
+        self.done_label = _label(wrap=True, bold=True)
+        box.pack_start(self.done_label, False, False, 0)
+        self.warnings_heading = _label(_("To check"), bold=True)
+        box.pack_start(self.warnings_heading, False, False, 0)
+        frame = Gtk.Frame(visible=True)
+        self.warnings_list = Gtk.ListBox(
+            visible=True, selection_mode=Gtk.SelectionMode.NONE
         )
-        self.assistant.connect("apply", self.on_assistant_apply)
-        self.assistant.connect("cancel", self.on_assistant_cancel)
-        self.assistant.connect("close", self.on_assistant_close)
-        self.assistant.connect("prepare", self.on_assistant_prepare)
-        self.project_name_entry.connect(
-            "changed", self.on_project_name_entry_changed
+        frame.add(self.warnings_list)
+        self.warnings_frame = frame
+        box.pack_start(frame, False, False, 0)
+        return box
+
+    def _build_failed(self):
+        box = self._page()
+        box.set_valign(Gtk.Align.CENTER)
+        self.error_label = _label(wrap=True, selectable=True, xalign=0.5)
+        box.pack_start(self.error_label, False, False, 0)
+        return box
+
+    def get_root_widget(self):
+        return self.window
+
+    def page(self):
+        return self.stack.get_visible_child_name()
+
+    def show_page(self, name):
+        self.stack.set_visible_child_name(name)
+        running = name == "running"
+        finished = name in ("done", "failed")
+        self.import_button.set_visible(name in ("choose", "reading", "form"))
+        self.close_button.set_visible(finished)
+        self.cancel_button.set_visible(not finished)
+        self.cancel_button.set_label(_("Stop") if running else _("Cancel"))
+
+    # Reading the archive
+
+    def choose(self, path):
+        """Read the archive at path."""
+
+        if self.inspect_job is not None:
+            self.inspect_job.cancel()
+        self.archive_path = path
+        self.plan = None
+        self.reading_bar.set_fraction(0.0)
+        self.reading_bar.set_text("")
+        self.show_page("reading")
+        job = self.inspect_job = self._inspect(
+            path, on_head=self.on_head, on_progress=self.on_read_progress
         )
-        self.archive_chooser.connect(
-            "file-set",
-            self.on_archive_chooser_file_set,
-        )
-        self.overwrite_check.connect(
-            "toggled",
-            self.on_overwrite_check_toggled,
-        )
-        save_image_cell.connect(
-            "toggled",
-            self.on_save_image_cell_toggled,
+        job.done.addCallbacks(
+            self.on_contents,
+            self.on_inspect_failed,
+            callbackArgs=(job,),
+            errbackArgs=(job,),
         )
 
-    def get_root_widget(self) -> Gtk.Assistant:
-        return self.assistant
+    def on_read_progress(self, step, done, total):
+        fraction = done / total if total else 0.0
+        self.reading_bar.set_fraction(fraction)
+        self.reading_bar.set_text(f"{human_size(done)} / {human_size(total)}")
+        self.scan_bar.set_fraction(fraction)
 
-    def show(self, parent=None):
-        col1 = self.save_path_column
-        cell1 = self.save_path_cell
-        col1.set_cell_data_func(cell1, _set_path, 1)
-        col2 = self.map_path_column
-        cell2 = self.map_path_cell
-        col2.set_cell_data_func(cell2, _set_path_remap, 1)
-        view1 = self.save_images_view
-        view1.connect(
-            "button_press_event",
-            self.on_button_press_event,
-            col1,
-            self.get_save_filechooserdialog,
-        )
-        view2 = self.map_images_view
-        view2.connect(
-            "button_press_event",
-            self.on_button_press_event,
-            col2,
-            self.get_map_filechooserdialog,
-        )
-        Window.show(self, parent)
+    def on_head(self, contents):
+        if self.destroyed or self.plan is not None:
+            return
+        self.scanning = True
+        self.show_form(plan_import(contents, self.workspace))
 
-    def destroy(self):
-        self.assistant.destroy()
+    def on_contents(self, contents, job):
+        if job is not self.inspect_job or self.destroyed:
+            return
+        self.inspect_job = None
+        self.scanning = False
+        if self.plan is None:
+            self.show_form(plan_import(contents, self.workspace))
+        else:
+            update_plan(self.plan, contents)
+            self.refresh()
 
-    # assistant method helpers
-
-    def set_page_complete(self, page=None, complete=True):
-        if page is None:
-            page = self.assistant.get_nth_page(
-                self.assistant.get_current_page()
+    def on_inspect_failed(self, failure, job):
+        if job is not self.inspect_job or self.destroyed:
+            return None
+        self.inspect_job = None
+        self.scanning = False
+        if failure.check(ArchiveCancelled):
+            return None
+        self.fail(
+            _("Cannot read {path}: {error}").format(
+                path=self.archive_path, error=failure.getErrorMessage()
             )
-        self.assistant.set_page_complete(page, complete)
-
-    ####
-
-    def get_project_name(self):
-        return self.project_name_entry.get_text()
-
-    def set_project_name(self, name):
-        self.project_name_entry.set_text(name)
-
-    def get_archive_path(self):
-        return self.archive_chooser.get_filename()
-
-    def get_open(self):
-        return self.open_check.get_active()
-
-    def get_overwrite(self):
-        return self.overwrite_check.get_active()
-
-    def get_filechooserdialog(self, model, path, title, action, stock_id):
-        chooser = Gtk.FileChooserDialog(
-            title,
-            self.get_root_widget(),
-            action,
-            (
-                "gtk-cancel",
-                Gtk.ResponseType.CANCEL,
-                stock_id,
-                Gtk.ResponseType.OK,
-            ),
         )
-        chooser.set_modal(True)
-        chooser.set_select_multiple(False)
-        chooser.set_transient_for(self.get_root_widget())
-        chooser.set_destroy_with_parent(True)
-        chooser.set_position(Gtk.WindowPosition.CENTER)
-        chooser.set_do_overwrite_confirmation(True)
-        chooser.set_type_hint(Gdk.WindowTypeHint.DIALOG)
-        chooser.connect(
-            "response", self.on_filechooserdialog_response, model, path
-        )
-        return chooser
+        return None
 
-    def get_save_filechooserdialog(self, model, path):
-        return self.get_filechooserdialog(
-            model,
-            path,
-            _("Save image as..."),
-            Gtk.FileChooserAction.SAVE,
-            "gtk-save",
-        )
+    # The form
 
-    def get_map_filechooserdialog(self, model, path):
-        return self.get_filechooserdialog(
-            model,
-            path,
-            _("Map image as..."),
+    def show_form(self, plan):
+        self.plan = plan
+        self.archive_label.set_text(plan.contents.path)
+        self.name_entry.set_text(plan.name)
+        description = first_paragraph(plan.contents.description)
+        self.description_label.set_text(description)
+        self.description_label.set_visible(bool(description))
+        self.facts_label.set_text(facts(plan.contents.data))
+        for child in self.images_list.get_children():
+            self.images_list.remove(child)
+        self.rows = [ImageRow(self, image) for image in plan.images]
+        for row in self.rows:
+            self.images_list.add(row.row)
+        self.images_frame.set_visible(bool(self.rows))
+        self.no_images_label.set_visible(not self.rows)
+        for child in self.paths_box.get_children():
+            self.paths_box.remove(child)
+        self.machine_checks = {}
+        for path in plan.machine_paths:
+            check = Gtk.CheckButton(
+                visible=True,
+                active=path.use_ours,
+                label=_(
+                    "Use this computer's {key}, {ours}, instead of {theirs}"
+                ).format(key=path.key, ours=path.ours, theirs=path.theirs),
+            )
+            check.connect("toggled", self.on_machine_path_toggled, path)
+            self.machine_checks[path.key] = check
+            self.paths_box.add(check)
+        self.paths_heading.set_visible(bool(plan.machine_paths))
+        self.open_check.set_active(plan.open)
+        self.show_page("form")
+        self.refresh()
+
+    def refresh(self):
+        self.scan_box.set_visible(self.scanning)
+        for row in self.rows:
+            row.update()
+        self.check()
+
+    def check(self):
+        """Show what stops the import; Import waits for none."""
+
+        if self.plan is None:
+            return
+        problems = self.plan.problems(self.workspace)
+        name_problem = self.workspace.check_name(self.plan.name)
+        self.name_message.set_text(name_problem or "")
+        self.name_message.set_visible(bool(name_problem))
+        others = [p for p in problems if p != name_problem]
+        self.problems_label.set_text("\n".join(others))
+        self.problems_label.set_visible(bool(others))
+        self.import_button.set_sensitive(not problems)
+
+    def on_name_changed(self, entry):
+        if self.plan is not None:
+            self.plan.name = entry.get_text()
+            self.check()
+
+    def on_open_toggled(self, check):
+        if self.plan is not None:
+            self.plan.open = check.get_active()
+
+    def on_machine_path_toggled(self, check, path):
+        path.use_ours = check.get_active()
+
+    def copy_destination(self, image):
+        from virtualbricks.config.importing import free_file
+
+        name = os.path.basename(image.original) or image.name
+        return free_file(os.path.join(self.plan.library, name))
+
+    def choose_image(self, image):
+        """Ask for the file of an image; None if cancelled."""
+
+        chooser = Gtk.FileChooserNative.new(
+            _("The file of {name}").format(name=image.name),
+            self.window,
             Gtk.FileChooserAction.OPEN,
-            "gtk-open",
+            None,
+            None,
         )
+        folder = os.path.dirname(image.path or image.original)
+        if folder and os.path.isdir(folder):
+            chooser.set_current_folder(folder)
+        try:
+            if chooser.run() == Gtk.ResponseType.ACCEPT:
+                return chooser.get_filename()
+            return None
+        finally:
+            chooser.destroy()
 
-    # callbacks
+    # Running the import
 
-    def on_map_images_store_row_changed(self, model, path, iter):
-        self.set_page_complete(complete=all_paths_set(model))
+    def start_import(self):
+        if self.inspect_job is not None:
+            # The import reads the whole archive anyway.
+            job, self.inspect_job = self.inspect_job, None
+            job.cancel()
+            self.scanning = False
+        plan = self.plan
+        self.step_label.set_text(_("Importing {name}").format(name=plan.name))
+        self.run_bar.set_fraction(0.0)
+        self.run_bar.set_text("")
+        self.show_page("running")
+        job = self.import_job = self._run(
+            plan,
+            self.workspace,
+            self.on_import_progress,
+            qemu_img=find_qemu_img(),
+        )
+        job.done.addCallbacks(self.on_imported, self.on_import_failed)
 
-    def on_assistant_prepare(self, assistant, page):
-        page_num = assistant.get_current_page()
-        if page_num == 0:
-            pass
-        elif page_num == 1:
-            ws = get_setting("workspace")
-            deferred = self.humble.step_1(
-                self,
-                self.save_images_store,
-                filepath.FilePath(ws).child("vimages"),
+    def on_import_progress(self, step, done, total):
+        if self.destroyed:
+            return
+        self.step_label.set_text(STEPS.get(step, step))
+        self.run_bar.set_fraction(done / total if total else 0.0)
+        self.run_bar.set_text(f"{human_size(done)} / {human_size(total)}")
+
+    def on_imported(self, result):
+        self.import_job = None
+        self.result = result
+        logger.info(imported, name=result.name)
+        result.report.log(logger)
+        if self.plan.open:
+            self.open_project(result)
+        if self.destroyed:
+            return
+        self.done_label.set_text(
+            _('Imported as "{name}".').format(name=result.name)
+        )
+        for child in self.warnings_list.get_children():
+            self.warnings_list.remove(child)
+        for message in result.report:
+            row = Gtk.ListBoxRow(visible=True, activatable=False)
+            box = Gtk.Box(
+                visible=True,
+                orientation=Gtk.Orientation.VERTICAL,
+                margin=8,
+                spacing=2,
             )
-            if deferred:
-                ProgressBar(self.assistant).wait_for(deferred)
-        elif page_num == 2:
-            self.humble.step_2(
-                self, self.save_images_store, self.map_images_store
-            )
-        elif page_num == 3:
-            self.humble.step_3(self)
-        else:
-            logger.error(invalid_step_assitant, num=page_num)
-        return True
-
-    def on_assistant_cancel(self, assistant):
-        if self.project:
-            logger.info(removing_temporary_project, path=self.project.path)
-            self.project.delete()
-        assistant.destroy()
-        return True
-
-    def on_assistant_apply(self, assistant):
-        deferred = self.humble.apply(
-            self.project,
-            self.get_project_name(),
-            self.factory,
-            self.get_overwrite(),
-            self.get_open(),
-            self.save_images_store,
-            self.map_images_store,
-            [
-                key
-                for key, check in self.machine_path_checks.items()
-                if check.get_visible() and check.get_active()
-            ],
-        )
-        ProgressBar(assistant).wait_for(deferred)
-        return True
-
-    def on_assistant_close(self, assistant):
-        assistant.destroy()
-        return True
-
-    def on_archive_chooser_file_set(self, filechooser):
-        filename = filechooser.get_filename()
-        name = os.path.splitext(os.path.basename(filename))[0]
-        if not self.get_project_name():
-            self.set_project_name(name)
-        return True
-
-    def on_project_name_entry_changed(self, entry):
-        self.set_import_sensitive(
-            self.get_archive_path(), entry.get_text(), self.overwrite_check
-        )
-        return True
-
-    def on_overwrite_check_toggled(self, checkbutton):
-        self.set_import_sensitive(
-            self.get_archive_path(),
-            self.project_name_entry.get_text(),
-            checkbutton,
-        )
-        return True
-
-    def set_import_sensitive(self, filename, name, overwrite_btn):
-        page = self.intro_grid
-        label = self.warn_label
-        if name in list(prj.name for prj in project_manager):
-            overwrite_btn.set_visible(True)
-            overwrite = overwrite_btn.get_active()
-            label.set_visible(not overwrite)
-            self.set_page_complete(page, overwrite)
-        else:
-            overwrite_btn.set_active(False)
-            overwrite_btn.set_visible(False)
-            label.set_visible(False)
-            if filename and name:
-                self.set_page_complete(page, True)
-            else:
-                self.set_page_complete(page, False)
-
-    def on_save_image_cell_toggled(self, renderer, path):
-        model = self.save_images_store
-        active = renderer.get_active()
-        model.set(model.get_iter(path), self.SELECTED, not active)
-        return True
-
-    def on_button_press_event(self, treeview, event, column, dialog_factory):
-        if event.button == 1:
-            x = int(event.x)
-            y = int(event.y)
-            pthinfo = treeview.get_path_at_pos(x, y)
-            if pthinfo is not None and pthinfo[1] is column:
-                path, col = pthinfo[:2]
-                treeview.grab_focus()
-                treeview.set_cursor(path, col, 0)
-                model = treeview.get_model()
-                chooser = dialog_factory(model, path)
-                itr = model.get_iter(path)
-                filename = model.get_value(itr, self.PATH)
-                if filename is not None:
-                    if not chooser.set_filename(filename.path):
-                        chooser.set_current_name(filename.basename())
-                chooser.show()
-                return True
-
-    def on_filechooserdialog_response(self, dialog, response_id, model, path):
-        if response_id == Gtk.ResponseType.OK:
-            filename = dialog.get_filename()
-            if filename is not None:
-                model.set_value(
-                    model.get_iter(path),
-                    self.PATH,
-                    filepath.FilePath(filename),
+            box.pack_start(_label(message.text, wrap=True), False, False, 0)
+            if message.where:
+                box.pack_start(
+                    _label(message.where, dim=True), False, False, 0
                 )
-        dialog.destroy()
-        return True
+            row.add(box)
+            self.warnings_list.add(row)
+        has_messages = len(result.report) > 0
+        self.warnings_heading.set_visible(has_messages)
+        self.warnings_frame.set_visible(has_messages)
+        self.show_page("done")
+
+    def open_project(self, result):
+        try:
+            self.workspace.save(self.factory)
+            report = self.workspace.open(result.name, self.factory)
+        except Exception as exc:
+            logger.error(open_failed, name=result.name, error=exc)
+            result.report.error(
+                _("cannot be opened: {error}").format(error=exc), result.name
+            )
+        else:
+            result.report.extend(report)
+
+    def on_import_failed(self, failure):
+        self.import_job = None
+        if failure.check(ArchiveCancelled):
+            if not self.destroyed:
+                self.show_page("form")
+                self.check()
+            return None
+        logger.error(
+            import_failed,
+            path=self.archive_path,
+            error=failure.getErrorMessage(),
+        )
+        if not self.destroyed:
+            self.fail(failure.getErrorMessage())
+        return None
+
+    def fail(self, message):
+        self.error_label.set_text(message)
+        self.show_page("failed")
+
+    # Signals
+
+    def on_file_set(self, button):
+        path = button.get_filename()
+        if path:
+            self.choose(path)
+
+    def on_import_clicked(self, button):
+        if self.plan is not None and not self.plan.problems(self.workspace):
+            self.start_import()
+
+    def on_cancel_clicked(self, button):
+        if self.import_job is not None:
+            self.import_job.cancel()
+            return
+        self.window.destroy()
+
+    def on_close_clicked(self, button):
+        self.window.destroy()
+
+    def on_destroyed(self, window):
+        self.destroyed = True
+        if self.inspect_job is not None:
+            self.inspect_job.cancel()
+            self.inspect_job = None
+        # A running import goes on, and logs when it's done.

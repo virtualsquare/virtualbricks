@@ -30,7 +30,7 @@ from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
-from virtualbricks import bricks, errors, project, tools
+from virtualbricks import bricks, errors, tools
 from virtualbricks.config import (
     Bool,
     Int,
@@ -42,6 +42,7 @@ from virtualbricks.config import (
     define,
     field,
     get_setting,
+    projects,
 )
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
@@ -450,7 +451,7 @@ class Disk:
         return getattr(self.vm.config, "private" + self.device)
 
     def _basefolder(self):
-        return project.manager.current.path
+        return projects.current.path
 
     def args(self):
 
@@ -893,7 +894,7 @@ class VirtualMachine(bricks.Brick):
         # TODO: logs
         # TODO: rewind in case of error
         prev_name = super().rename(new_name)
-        project_path = pathlib.Path(project.manager.current.path)
+        project_path = pathlib.Path(projects.current.path)
         disk_regex = re.compile(
             f"{prev_name}_"  # vm name
             "(?P<disk>[a-z0-9]+)"  # disk

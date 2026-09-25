@@ -22,9 +22,11 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import bricks, project
+from virtualbricks import bricks
+from virtualbricks.config import OpenProject
 from virtualbricks.config import Report, set_setting
 from virtualbricks.tests import (
+    use_workspace,
     BrickTestCase,
     CommandTestCase,
     adjacent,
@@ -77,10 +79,9 @@ class TestVirtualMachine(BrickTestCase):
         self.assertEqual(
             named.path, os.path.join(self.factory.runtime_dir, "vm_sock_x[]")
         )
-        manager = project.ProjectManager(self.mktemp())
-        self.patch(project, "manager", manager)
-        manager.current = project.Project(self.mktemp(), manager)
-        os.makedirs(manager.current.path)
+        projects = use_workspace(self, self.mktemp())
+        projects.current = OpenProject(self.mktemp(), None)
+        os.makedirs(projects.current.path)
         vm.rename("vm2")
         self.assertEqual(default.nickname, "vm2_sock_eth1")
         self.assertEqual(

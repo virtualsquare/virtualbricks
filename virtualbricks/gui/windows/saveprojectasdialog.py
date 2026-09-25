@@ -25,8 +25,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
-from virtualbricks import errors
-from virtualbricks.project import manager as project_manager
+from virtualbricks.config import projects
 from virtualbricks.gui.windows.base import _, _Dialog
 
 
@@ -40,8 +39,8 @@ class SaveProjectAsDialog(_Dialog):
         self._brickfactory = brickfactory
         self.build_ui()
         model = self.projects_store
-        for project in project_manager:
-            model.append([project.name])
+        for name in projects.names():
+            model.append([name])
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``saveprojectasdialog.ui``."""
@@ -207,26 +206,22 @@ class SaveProjectAsDialog(_Dialog):
             self._reset_error()
             self.ok_button.set_sensitive(False)
             return
-        elif new_project_name == project_manager.current.name:
+        elif new_project_name == projects.current.name:
             self._set_error(_("New project name is the same as previous name"))
             return
-        try:
-            project_manager.get_project(new_project_name)
-        except errors.InvalidNameError:
-            self._set_error(_("Invalid project name"))
-            return
-        for project in project_manager:
-            if new_project_name == project.name:
-                tooltip = _("A project with the same name already exists")
-                self._set_error(tooltip)
-                break
-        else:
+        message = projects.check_name(
+            new_project_name, renaming=projects.current.name, bricks=()
+        )
+        if message is None:
             self._reset_error()
+        else:
+            self._set_error(message)
 
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
             # TODO: show progress bar
-            project_manager.current.save_as(
-                self.project_name_entry.get_text(), self._brickfactory
+            projects.save(self._brickfactory)
+            projects.duplicate(
+                projects.current.name, self.project_name_entry.get_text()
             )
         dialog.destroy()
