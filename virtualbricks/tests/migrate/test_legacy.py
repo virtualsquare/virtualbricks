@@ -151,6 +151,18 @@ class TestParseProject(unittest.TestCase):
         )
         self.assertEqual(report.warnings, 3)
 
+    def test_long_lines_are_cut_after_40_characters(self):
+        text = f"[Switch:sw]\n{'y' * 40}\n{'z' * 41}\n"
+        report = Report()
+        parse_project(text, "f", report)
+        self.assertEqual(
+            [str(m) for m in report],
+            [
+                f'f:2: "{"y" * 40}" is not understood, ignored',
+                f'f:3: "{"z" * 40}…" is not understood, ignored',
+            ],
+        )
+
     def test_read_project(self):
         path = write(self, CONFIG1)
         project = read_project(path, ".project", Report())
