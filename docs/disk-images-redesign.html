@@ -1,0 +1,586 @@
+<title>Virtualbricks Disk Images Redesign</title>
+<meta name="description" content="A proposal for the disk images of Virtualbricks: an Images tab with what each image is and who uses it, an image picker in every machine, and safe dialogs to add, remove, relink, save and merge disks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --decide: #7a4800;
+    --decide-soft: #faeed6;
+    --risk: #982b22;
+    --risk-soft: #f9e6e3;
+    --ok: #2b6b3d;
+    --ok-soft: #e1f0e4;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --decide: #edb45a;
+      --decide-soft: #2a2112;
+      --risk: #ef9a90;
+      --risk-soft: #351b18;
+      --ok: #85d29c;
+      --ok-soft: #15301f;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --decide: #edb45a;
+    --decide-soft: #2a2112;
+    --risk: #ef9a90;
+    --risk-soft: #351b18;
+    --ok: #85d29c;
+    --ok-soft: #15301f;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.62 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 36px 96px;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.08em 0.32em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 600; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 36px; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font: 600 clamp(2rem, 5vw, 3.1rem)/1.04 var(--font-head);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 1.14rem; line-height: 1.55; max-width: 64ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+  .status {
+    display: inline-block;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  .revision { font-size: 14.5px; color: var(--muted); max-width: 70ch; margin: 0; }
+  .revision strong { color: var(--ink); }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 1px; }
+  @media (max-width: 1019px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font: 600 1.75rem/1.15 var(--font-head);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    text-wrap: balance;
+  }
+  h2 .num { font: 500 0.8rem/1 var(--font-mono); color: var(--accent); letter-spacing: 0.04em; flex: none; }
+  h3 { font: 600 1.18rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; }
+  p, li, dd { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  /* at a glance */
+  .glance { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0 0 18px; }
+  .glance > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .glance > div:last-child { border-bottom: 1px solid var(--rule); }
+  @media (min-width: 640px) { .glance > div { grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; } }
+  .glance dt { font: 600 1.02rem/1.5 var(--font-head); color: var(--accent); }
+  .glance dd { margin: 0; }
+
+  /* callouts */
+  .callout { border-radius: 6px; padding: 14px 16px; margin: 18px 0; display: grid; gap: 6px; }
+  .callout p { margin: 0; max-width: none; }
+  .callout .label { font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .risk { background: var(--risk-soft); }
+  .risk .label { color: var(--risk); }
+  .ref {
+    font: 500 0.78em/1 var(--font-mono);
+    color: var(--decide);
+    background: var(--decide-soft);
+    padding: 0.18em 0.4em;
+    border-radius: 3px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .ref.done { color: var(--ok); background: var(--ok-soft); }
+
+  /* code */
+  figure.code { margin: 16px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  figure.code figcaption { font: 500 12px/1 var(--font-mono); color: var(--code-c); padding: 11px 14px 0; }
+  pre {
+    margin: 0;
+    padding: 10px 14px 14px;
+    overflow-x: auto;
+    font: 13.2px/1.58 var(--font-mono);
+    color: var(--code-ink);
+    tab-size: 4;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .w { color: var(--decide); }
+  .e { color: var(--risk); }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; }
+  @media (min-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .compare figure.code { margin-block: 8px 12px; }
+
+  /* tables */
+  .scroll { overflow-x: auto; margin: 14px 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+  th {
+    font: 600 13px/1.3 var(--font-head);
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--muted);
+    padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule);
+    vertical-align: bottom;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  table.wide { min-width: 720px; }
+  .yes { color: var(--accent); font-weight: 500; }
+  .no { color: var(--risk); }
+
+  /* window mockup */
+  .mock {
+    margin: 18px 0 10px;
+    max-width: 760px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -18px rgba(10, 30, 25, 0.45);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .mock-bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 9px 12px;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--rule);
+  }
+  .mock-bar .title { grid-column: 2; font: 600 14px/1.2 var(--font-head); }
+  .mock-bar .x { grid-column: 3; justify-self: end; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 500 14px/1 var(--font-body); color: var(--muted); background: var(--surface); }
+  .mock-body { padding: 16px; display: grid; gap: 14px; }
+  .mock-form { display: grid; gap: 8px; }
+  .mock-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-items: center; }
+  @media (min-width: 560px) { .mock-row { grid-template-columns: 8.5em minmax(0, 1fr); gap: 10px; } }
+  .mock-row > span:first-child { color: var(--muted); }
+  .mock-field {
+    display: block;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font: 13px/1.5 var(--font-mono);
+    background: var(--ground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .mock-choice { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+  .mock-choice .mock-field { flex: 1 1 12em; }
+  .mock table { font-size: 13.5px; }
+  .mock td, .mock th { padding-block: 6px; }
+  .mock tr.sel td { background: var(--accent-soft); }
+  .mock tr.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 8px; }
+  .chip {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font: 500 12px/1 var(--font-mono);
+    padding: 4px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); }
+  .chip.warn { color: var(--decide); background: var(--decide-soft); }
+  .chip.fail { color: var(--risk); background: var(--risk-soft); }
+  .chip.run { color: var(--accent); background: var(--accent-soft); }
+  .chip.wait { color: var(--muted); background: var(--code-bg); }
+  .mock-progress { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .mock-progress .track { height: 8px; border-radius: 4px; background: var(--code-bg); overflow: hidden; }
+  .mock-progress .fill { height: 100%; width: 72%; background: var(--accent); }
+  .mock-log { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; display: grid; gap: 7px; background: var(--ground); }
+  .mock-log .head { font: 600 13px/1.2 var(--font-head); }
+  .mock-log div.msg { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); gap: 8px; font-size: 13px; }
+  .mock-log .loc { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .mock-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .btn {
+    display: inline-block;
+    font: 500 13.5px/1 var(--font-body);
+    padding: 8px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .mock-note { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Design · proposal, nothing implemented</div>
+    <h1>Virtualbricks Disk Images Redesign</h1>
+    <p class="lede">One place for the disk images of a project, which says what each image is, who uses it and what a change would touch; a disk picker in every machine; and the operations that can lose work made safe or made explicit.</p>
+    <ul class="meta">
+      <li>branch <b>mg/abandon-glade</b> at 1e1dc60</li>
+      <li>revision 1 · 25 September 2026</li>
+      <li><span class="status">12 decisions open</span></li>
+    </ul>
+    <p class="revision"><strong>Mock-ups:</strong> <a href="https://claude.ai/artifact/LAvnLRhXT7qCCV6a6tuenJ">the canvas</a> has today's windows redrawn from the code, two places for the library, two ways to choose an image for a disk, and the dialogs that go with them. Board A is clickable. The board names below refer to it.</p>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+        <li><a href="#glance"><span>1</span>At a glance</a></li>
+        <li><a href="#problems"><span>2</span>What gets in the way today</a></li>
+        <li><a href="#where"><span>3</span>Where the library lives</a></li>
+        <li><a href="#scope"><span>4</span>This project and all projects</a></li>
+        <li><a href="#disks"><span>5</span>Choosing an image for a disk</a></li>
+        <li><a href="#dialogs"><span>6</span>The dialogs</a></li>
+        <li><a href="#kept"><span>7</span>What each action becomes</a></li>
+        <li><a href="#code"><span>8</span>The code</a></li>
+        <li><a href="#plan"><span>9</span>Implementation plan</a></li>
+        <li><a href="#decisions"><span>10</span>Decisions</a></li>
+        <li><a href="#later"><span>11</span>Later</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="glance">
+        <h2><span class="num">§1</span>At a glance</h2>
+        <dl class="glance">
+          <div><dt>Recommended</dt><dd>An <strong>Images tab</strong> in the main window (board B), beside Bricks and Events, with the list, the details of the selected image and <em>This project / All projects</em>. In each machine, <strong>the disks it has</strong>, each with an image picker and a mode (board D1).</dd></div>
+          <div><dt>Library</dt><dd>Each image says its format, the size of the disk, the space it takes, whether its file is there, and which disks use it and how: a private copy, the image itself, running or not. <em>All projects</em> adds the other projects that use the same file, and the files of the image folder that no project uses.</dd></div>
+          <div><dt>Adding</dt><dd>One Add, from the library and from the picker: an existing file, read with <code>qemu-img info</code> and copied to the image folder by default, or a new empty disk, qcow2 or raw, created in the image folder and added at once.</dd></div>
+          <div><dt>Safer</dt><dd>Remove says which disks lose their image. Finding a missing file points the private copies at it, where today changing the path of an image makes the next start set every private copy aside and begin from an empty one. Merging a private copy into its image lists everything else the image changes for, and offers to save a new image instead.</dd></div>
+          <div><dt>Code</dt><dd>What the library knows goes in <code>virtualbricks/config/images.py</code>, without GTK. The long operations, saving a disk as a new image and merging, run in the process that imports and exports archives, with their progress. Five dialog modules go.</dd></div>
+          <div><dt>Unchanged</dt><dd>The images of a project stay in its <code>project.toml</code>, and a disk still names its image. The image folder is still <code>&lt;workspace&gt;/vimages</code>, and a private copy is still <code>&lt;vm&gt;_&lt;device&gt;.cow</code> in the project.</dd></div>
+        </dl>
+      </section>
+
+      <section id="problems">
+        <h2><span class="num">§2</span>What gets in the way today</h2>
+        <p>From the code on this branch; the canvas redraws these windows in its first row.</p>
+        <h3>The library</h3>
+        <ol>
+          <li><strong>Four places manage images:</strong> the Images library window, the three other items of the Disk images menu (Create new image, New image from file, Commit cow image), and three buttons in the Drives tab of every machine.</li>
+          <li><strong>The library can't add an image,</strong> only edit one (<code>disklibrary.py</code>). Its edit screen replaces the list in the same window.</li>
+          <li><strong>Remove removes at once,</strong> without asking, even an image that disks use; they keep its name, and the next opening of the project reports them.</li>
+          <li><strong>“Used by” and “COWs” count the same thing,</strong> the private copies (<code>set_cell_used_by</code> and <code>set_cell_cows</code>); a machine that uses the image itself isn't counted anywhere. “Master brick” shows the <code>repr()</code> of a disk.</li>
+          <li><strong>Size is the length of the file,</strong> in KiB, MiB or GiB (<code>Image.get_size</code>): neither the size of the disk the machine sees nor the space the file takes. A missing file shows <code>0B</code> and nothing else.</li>
+          <li><strong>Nothing crosses projects:</strong> the library shows the images of the open project, and nothing says which other projects use the same file, or which files of <code>vimages</code> no project uses any more, as the copies an import leaves.</li>
+        </ol>
+        <h3>Adding and creating</h3>
+        <ol start="7">
+          <li><strong>Create new image makes the file and stops:</strong> <code>create_image</code> returns its name and path, and nothing adds it to the library, so you add it again with New image from file.</li>
+          <li><strong>Its formats are those of old Qemus:</strong> raw, qcow, qcow2, cow, vmdk and cloop, “Auto” meaning raw. The folder chooser doesn't start in the image folder.</li>
+          <li><strong>New image from file</strong> reads a <code>&lt;file&gt;.vbdescr</code> for the description, and says nothing about the file: format, size, backing file.</li>
+        </ol>
+        <h3>Using images</h3>
+        <ol start="10">
+          <li><strong>Changing the path of an image loses the private copies:</strong> the next start finds each private copy on the old path (<code>Disk._ensure_private_image_cow</code>), renames it <code>&lt;vm&gt;_&lt;device&gt;.cow.bak-&lt;date&gt;</code> and makes an empty one, so the machine starts without its changes, with a warning in the log.</li>
+          <li><strong>Commit merges into an image that others may use</strong> without a word: the changes reach every private copy made on it, here and in other projects, which may stop working. Commit asks for a file; “Commit virtual machine changes” logs “not implemented”.</li>
+          <li><strong>The Drives tab</strong> has seven rows, <code>hda</code> to <code>mtdblock</code>, each a combo of names and a Private COW check. Nothing says what an image is or whether its file is there; Snapshot mode is a check with no word on what it does.</li>
+        </ol>
+        <h3>Implementation</h3>
+        <ol start="13">
+          <li><strong><code>commitdialog.py</code> is dead code:</strong> no window uses it.</li>
+          <li><strong>The image lock</strong> (<code>Image.master</code>) is right, a disk that writes the image itself takes it while the machine runs, but only its <code>repr()</code> ever shows.</li>
+        </ol>
+      </section>
+
+      <section id="where">
+        <h2><span class="num">§3</span>Where the library lives</h2>
+        <p>The canvas's second row. Both show the same list and details, so the content is one widget that either can hold.</p>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th></th><th>A · Disk Images window</th><th>B · Images tab of the main window</th></tr></thead>
+            <tbody>
+              <tr><td class="nowrap"><strong>What it is</strong></td><td>A window, as the Projects window: a searchable list and the details of the selected image, Add in the header bar</td><td>A tab beside Bricks and Events, with the same list, a details pane and a toolbar</td></tr>
+              <tr><td class="nowrap"><strong>Reached from</strong></td><td>A menu item and the Manage Images item of the picker</td><td>Always on screen, one click away; the picker's Manage Images switches to it</td></tr>
+              <tr><td class="nowrap"><strong>Good at</strong></td><td>Room for the details; can stay open beside a machine's configuration</td><td>Images are part of the project, as bricks and events are, and look it; nothing to find in a menu</td></tr>
+              <tr><td class="nowrap"><strong>Costs</strong></td><td>One more window to find, as the Projects window was</td><td>Hidden while a brick's configuration covers the tabs; the picker covers that case</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Recommended: B</strong> (<span class="ref">L1</span>). The tab needs no menu item and no window to keep in step with the open project, and after the Projects window was hard to find behind a menu, the library shouldn't be. With B the Disk images menu goes; with A it keeps one item, Disk Images….</p>
+        <h3>The list and the details (boards A and B)</h3>
+        <ul>
+          <li><strong>A row</strong> shows the name, one line of facts, “qcow2 · 4.0 GB disk · 612 MB on disk”, and one line of use, “r1, r2 and r3, private copies”. An image whose file is missing shows so, in the warning colour; one that a running machine writes shows <em>In use</em>.</li>
+          <li><strong>The details</strong> add the path, the description, the backing file, the snapshots (suspend and resume use one), when the file changed, each disk that uses the image with its mode and the size of its private copy, and, in <em>This project</em>, the other projects that use the same file.</li>
+          <li><strong>The actions:</strong> Rename…, Edit Description…, Show in Files and Remove…; for a missing file, Find the File…. Add… in the header bar or the toolbar.</li>
+          <li><strong>The facts come from <code>qemu-img info</code></strong>, read in the background for each file and kept while its size and time don't change, so the list fills in as it's read.</li>
+        </ul>
+      </section>
+
+      <section id="scope">
+        <h2><span class="num">§4</span>This project and all projects</h2>
+        <p>Today the images belong to a project: its <code>project.toml</code> has them, by name and path, and its disks name them. The files are shared: an import copies them to <code>&lt;workspace&gt;/vimages</code>, and several projects can use one file under different names.</p>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th></th><th>S1 · The project only</th><th>S2 · One library for the workspace</th><th>S3 · The project, and a view of all</th></tr></thead>
+            <tbody>
+              <tr><td class="nowrap"><strong>Model</strong></td><td>As today</td><td>A new <code>library.toml</code> in the workspace; projects name its images</td><td>As today</td></tr>
+              <tr><td class="nowrap"><strong>Shows</strong></td><td>The images of the open project</td><td>Every image, once</td><td><em>This project</em> by default; <em>All projects</em>: each file once, the projects and disks that use it, and the files of <code>vimages</code> no project uses</td></tr>
+              <tr><td class="nowrap"><strong>Costs</strong></td><td>Nothing, and nothing gained</td><td>A new file format, a migration, and the export and import to change</td><td>Reading every project file, which the Projects window already caches</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Recommended: S3</strong> (<span class="ref">L2</span>). It answers the two questions S1 leaves open, who else uses this file and which files nobody uses, without a new format. In <em>All projects</em> a file no project uses can be added to this project or moved to the trash; a file other projects use can only be shown.</p>
+      </section>
+
+      <section id="disks">
+        <h2><span class="num">§5</span>Choosing an image for a disk</h2>
+        <p>The canvas's third row.</p>
+        <ul>
+          <li><strong>D1, the disks of the machine</strong> (board D1): only the disks the machine has, each with its device, an image picker, a mode and a menu; Add Disk offers the free devices, <code>hda</code> to <code>mtdblock</code>. Under each disk a line says what the mode does: “r1’s changes are kept in r1_hda.cow, 18 MB, in the project; frr-debian stays as it is.”</li>
+          <li><strong>D2, today's grid</strong> (board D2): the seven rows stay, with the same picker and mode, and the three buttons become Add an Existing Image…, New Empty Disk… and Manage Images…. The smaller change.</li>
+        </ul>
+        <p><strong>Recommended: D1</strong> (<span class="ref">L3</span>). A machine has one or two disks; seven rows hide them among empty ones.</p>
+        <h3>In both</h3>
+        <ul>
+          <li><strong>The picker</strong> lists the library with the facts of each image, the machines that use it and a warning for a missing file, then Add an Existing Image…, New Empty Disk… and Manage Images…. What it adds is chosen for the disk.</li>
+          <li><strong>The mode</strong> replaces the Private COW check: <em>Private copy</em>, the default, or <em>The image itself</em>, which the machine writes and locks while it runs, the lock that exists today.</li>
+          <li><strong>Snapshot mode</strong> stays a setting of the machine, said as what it does: “Forget every change when r1 stops”.</li>
+          <li><strong>The disk menu:</strong> Save as a New Image…, Merge into &lt;image&gt;…, Start Over from &lt;image&gt;… (the private copy goes to the trash and an empty one is made at the next start), Show in Files and Remove Disk.</li>
+          <li><strong>The CD-ROM</strong> stays a file or a drive of the computer, not an image of the library: an ISO file is used as it is, never copied or written (<span class="ref">L10</span>).</li>
+        </ul>
+      </section>
+
+      <section id="dialogs">
+        <h2><span class="num">§6</span>The dialogs</h2>
+        <p>The canvas's last row; they go with either place and either Drives tab.</p>
+        <h3>Add an Existing Image</h3>
+        <ul>
+          <li>The file is read with <code>qemu-img info</code> as soon as it's chosen: format, size of the disk, space taken, backing file. A file that isn't a disk image says so, and Add waits.</li>
+          <li>The name starts from the file name, checked as you type against the names of the library.</li>
+          <li>A file outside the workspace is copied to the image folder by default, with its size said; <em>Use it where it is</em> keeps the path (<span class="ref">L4</span>). A copy keeps the holes, and a file with a backing file is used where it is.</li>
+          <li>The description starts from a <code>.vbdescr</code> beside the file, if there's one (<span class="ref">L12</span>).</li>
+        </ul>
+        <h3>New Empty Disk</h3>
+        <ul>
+          <li>Name, size in MB or GB, and format: qcow2, the default, or raw (<span class="ref">L8</span>). The file goes in the image folder, under the name, and Change… picks another place.</li>
+          <li>The image is added to the library when <code>qemu-img create</code> ends, and from the picker it's chosen for the disk.</li>
+        </ul>
+        <h3>Remove</h3>
+        <ul>
+          <li>It lists the disks that use the image: they keep no image and can't start until another is chosen; their private copies stay.</li>
+          <li>The file stays, except that, when it's in the image folder and no other project uses it, the dialog offers to move it to the trash with its size (<span class="ref">L5</span>). Without a trash, as the projects, it deletes for good and says so.</li>
+        </ul>
+        <h3>Find the File</h3>
+        <ul>
+          <li>For an image whose file is missing. When the image folder has a file of the same name and size it's offered first; else Choose a File….</li>
+          <li><strong>The private copies are pointed at the new file</strong> with <code>qemu-img rebase -u</code>, the step the import already does, before the path changes, so no machine loses its changes. The same holds whenever the path of an image changes.</li>
+        </ul>
+        <h3>Save as a New Image, and Merge</h3>
+        <ul>
+          <li><strong>Save as a New Image</strong> writes the image with the disk's changes, standalone, with <code>qemu-img convert</code>, to the image folder, and adds it; <em>Use it for r1’s hda</em>, on by default, gives the disk the new image and an empty private copy. The machine is stopped first.</li>
+          <li><strong>Merge</strong> writes the disk's changes into the image with <code>qemu-img commit</code>. The dialog lists everything else that uses the image, here and in other projects, says their private copies may stop working, and offers Save as a New Image Instead. Every machine that uses the image is stopped first. Kept behind that warning (<span class="ref">L6</span>).</li>
+          <li>Both run in the archive process, with their progress, and can be stopped; a stopped Save leaves no file (<span class="ref">L7</span>).</li>
+        </ul>
+        <h3>Rename and Edit Description</h3>
+        <p>Rename changes the name in the project, as today through the factory, so the disks follow; the file keeps its name (<span class="ref">L11</span>). The description is edited in place.</p>
+      </section>
+
+      <section id="kept">
+        <h2><span class="num">§7</span>What each action becomes</h2>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>Today</th><th>After</th></tr></thead>
+            <tbody>
+              <tr><td>Disk images › Images library</td><td>The Images tab (B), or Disk Images… (A)</td></tr>
+              <tr><td>Disk images › New image from file; Drives › New image from file</td><td>Add… › Existing Image…, in the library and in the picker</td></tr>
+              <tr><td>Disk images › Create new image; Drives › New (empty) disk image</td><td>Add… › New Empty Disk…, added to the library</td></tr>
+              <tr><td>Disk images › Commit cow image</td><td>The disk menu › Merge into &lt;image&gt;…, beside Save as a New Image…</td></tr>
+              <tr><td>Drives › Configure disk images</td><td>The picker › Manage Images…</td></tr>
+              <tr><td>Library › Edit: path, name, description</td><td>Rename…, Edit Description…, Find the File… for a missing file</td></tr>
+              <tr><td>Library › Remove, at once</td><td>Remove…, with the disks it touches</td></tr>
+              <tr><td>Drives › seven combos and Private COW</td><td>The disks of the machine, a picker and a mode each (D1)</td></tr>
+              <tr><td>Drives › Snapshot mode</td><td>“Forget every change when the machine stops”</td></tr>
+              <tr><td>Suspend and Resume of a machine</td><td>Unchanged; the snapshot they use shows in the details</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="code">
+        <h2><span class="num">§8</span>The code</h2>
+        <p>What the library knows, without GTK, as the rule of <code>config</code> wants, beside the workspace:</p>
+        <figure class="code">
+          <figcaption>virtualbricks/config/images.py</figcaption>
+<pre><code><span class="h">class</span> ImageInfo:                    <span class="c"># format, virtual_size, actual_size,</span>
+                                    <span class="c"># backing_file, snapshots, from qemu-img info</span>
+<span class="h">class</span> DiskUse:                      <span class="c"># vm, device, mode ("private" | "image"),</span>
+                                    <span class="c"># private copy and its size, running</span>
+<span class="h">class</span> SharedFile:                   <span class="c"># path, the projects and disks that use it,</span>
+                                    <span class="c"># in the image folder, unused</span>
+
+<span class="h">def</span> read_info(path, qemu_img) -&gt; Deferred[ImageInfo]: ...   <span class="c"># cached by size and time</span>
+<span class="h">def</span> uses(factory, image) -&gt; list[DiskUse]: ...
+<span class="h">def</span> shared_files(workspace) -&gt; list[SharedFile]: ...       <span class="c"># All projects</span>
+<span class="h">def</span> image_folder(workspace) -&gt; str: ...                     <span class="c"># &lt;workspace&gt;/vimages</span></code></pre>
+        </figure>
+        <ul>
+          <li><strong>The factory</strong> keeps the library: <code>new_disk_image</code>, <code>rename</code> and <code>remove_disk_image</code>, which returns the disks it leaves without an image. A new <code>relink(image, path)</code> rebases the private copies before it changes the path. <code>Image.get_size</code> and the <code>"m"</code> and <code>"s"</code> formats go.</li>
+          <li><strong>A disk</strong> gets a <code>mode</code> for the picker, over the <code>private&lt;dev&gt;</code> field that the project file keeps; the file format doesn't change.</li>
+          <li><strong>The workspace's summaries</strong> count, for each image, the disks that use it, so <em>All projects</em> reads what the Projects window has already read.</li>
+          <li><strong>The archive process</strong> gains two jobs, <code>save-image</code> (<code>qemu-img convert</code>) and <code>merge-image</code> (<code>qemu-img commit</code>), on the <code>QemuImg</code> it already has, with the progress of <code>-p</code>, cancelling and the removal of what a stopped job wrote. <code>qemu-img info</code> and <code>create</code> are quick and run from the application.</li>
+        </ul>
+        <h3>The windows</h3>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>File in <code>gui/windows/</code></th><th>What</th></tr></thead>
+            <tbody>
+              <tr><td class="nowrap"><code>images.py</code> <em>new</em></td><td>The list and the details, a widget that the tab (B) or a window (A) holds</td></tr>
+              <tr><td class="nowrap"><code>imagepicker.py</code> <em>new</em></td><td>The picker of a disk: a popover with search, the library and the Add items</td></tr>
+              <tr><td class="nowrap"><code>addimage.py</code> <em>new</em></td><td>Add an Existing Image and New Empty Disk</td></tr>
+              <tr><td class="nowrap"><code>imagedialogs.py</code> <em>new</em></td><td>Remove, Find the File, Save as a New Image, Merge and Start Over</td></tr>
+              <tr><td class="nowrap"><code>qemuconfig.py</code></td><td>The Drives tab (D1)</td></tr>
+              <tr><td class="nowrap"><code>virtualbricks.py</code></td><td>The Images tab (B), and the Disk images menu gone</td></tr>
+              <tr><td class="nowrap"><code>disklibrary.py</code>, <code>loadimagedialog.py</code>, <code>createimagedialog.py</code>, <code>commitimagedialog.py</code>, <code>commitdialog.py</code> <em>removed</em></td><td>Replaced by the four above</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="plan">
+        <h2><span class="num">§9</span>Implementation plan</h2>
+        <p>Each step leaves the application working and can be committed on its own; the tests go with each step, as for the projects.</p>
+        <ol>
+          <li><strong>The model, and the fixes that need no new window.</strong> <code>config/images.py</code>; <code>relink</code> with the rebase, used by the edit screen of today's library; Create new image adds what it creates; Remove asks; the columns count the disks right, and the sizes come from <code>qemu-img info</code>.</li>
+          <li><strong>The library,</strong> in the tab or the window as <span class="ref">L1</span> decides, with Add, Rename, Edit Description, Remove and Find the File. <code>disklibrary.py</code>, <code>loadimagedialog.py</code> and <code>createimagedialog.py</code> go, and the Disk images menu with them.</li>
+          <li><strong>The Drives tab,</strong> with the picker, the mode and Add Disk.</li>
+          <li><strong>The disk menu:</strong> Save as a New Image and Merge in the archive process, and Start Over. <code>commitimagedialog.py</code> and <code>commitdialog.py</code> go.</li>
+          <li><strong><em>All projects</em>,</strong> with the counts in the workspace's summaries, and the files of the image folder that no project uses.</li>
+        </ol>
+      </section>
+
+      <section id="decisions">
+        <h2><span class="num">§10</span>Decisions</h2>
+        <div class="scroll">
+          <table class="wide">
+            <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+            <tbody>
+              <tr><td class="nowrap"><span class="ref">L1</span></td><td>Where the library lives</td><td>A, a window · B, a tab of the main window</td><td>B</td></tr>
+              <tr><td class="nowrap"><span class="ref">L2</span></td><td>What the library covers</td><td>S1, the project · S2, one workspace library · S3, the project and a view of all</td><td>S3: no new format</td></tr>
+              <tr><td class="nowrap"><span class="ref">L3</span></td><td>The Drives tab</td><td>D1, the disks the machine has · D2, today's seven rows</td><td>D1</td></tr>
+              <tr><td class="nowrap"><span class="ref">L4</span></td><td>Adding a file from outside the workspace</td><td>Copy it to the image folder · use it where it is · ask, copying by default</td><td>Ask, copying by default</td></tr>
+              <tr><td class="nowrap"><span class="ref">L5</span></td><td>Removing an image, and its file</td><td>The file always stays · trash it when it's in the image folder and no other project uses it</td><td>Offer the trash in that case only</td></tr>
+              <tr><td class="nowrap"><span class="ref">L6</span></td><td>Merging a private copy into its image</td><td>Keep it, behind the list of what it touches · drop it, keep Save as a New Image</td><td>Keep it, behind the list</td></tr>
+              <tr><td class="nowrap"><span class="ref">L7</span></td><td>Where Save and Merge run</td><td>The archive process · <code>qemu-img</code> spawned by the application</td><td>The archive process: progress, stop and clean-up are there</td></tr>
+              <tr><td class="nowrap"><span class="ref">L8</span></td><td>Formats of a new disk</td><td>qcow2 and raw · every format of <code>qemu-img</code></td><td>qcow2 and raw; others can still be added from a file</td></tr>
+              <tr><td class="nowrap"><span class="ref">L9</span></td><td>Units of the sizes</td><td>MB and GB (1000), as the Projects window · MiB and GiB (1024), as today</td><td>MB and GB</td></tr>
+              <tr><td class="nowrap"><span class="ref">L10</span></td><td>The CD-ROM</td><td>A file or a drive, as today · an image of the library</td><td>As today</td></tr>
+              <tr><td class="nowrap"><span class="ref">L11</span></td><td>Rename</td><td>The name in the project · the file too</td><td>The name; the file keeps its own</td></tr>
+              <tr><td class="nowrap"><span class="ref">L12</span></td><td>The <code>.vbdescr</code> beside a file</td><td>Read it when adding, as today · ignore it</td><td>Read it</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="later">
+        <h2><span class="num">§11</span>Later</h2>
+        <ul>
+          <li><strong>One library for the workspace</strong> (S2), if the images should be defined once and shared by name.</li>
+          <li><strong>Compacting an image</strong>, with <code>qemu-img convert</code>, to give back the space of deleted data.</li>
+          <li><strong>The snapshots of an image</strong>, listed and deleted from the details, beyond the one that suspend and resume use.</li>
+          <li><strong>Matching images by checksum</strong> rather than name and size, for Find the File and the import.</li>
+          <li><strong>Dropping a file</strong> on the library or on a disk to add it.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
