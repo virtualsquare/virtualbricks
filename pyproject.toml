@@ -66,6 +66,7 @@ include = ["virtualbricks*"]
 "share/applications" = ["share/virtualbricks.desktop"]
 "share/pixmaps" = ["share/virtualbricks.xpm"]
 "share/man/man5" = ["docs/man/virtualbricks-config.5"]
+"share/man/man7" = ["docs/man/virtualbricks-archive.7"]
 "share/virtualbricks" = [
     "virtualbricks/gui/data/*.png",
     "virtualbricks/gui/data/help/*",

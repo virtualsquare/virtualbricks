@@ -1,0 +1,952 @@
+<title>Virtualbricks Archive Protocol</title>
+<meta name="description" content="Reference of the .vbp project archives of Virtualbricks and of the process that inspects, exports and imports them: the jobs, the messages, the progress and the clean-up.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #16211e;
+    --muted: #56655f;
+    --rule: #d2dbd7;
+    --rule-soft: #e3e9e6;
+    --accent: #1b6880;
+    --accent-soft: #ddebf0;
+    --warn: #7a4800;
+    --warn-soft: #faeed6;
+    --code-bg: #e8eeec;
+    --code-ink: #1c2926;
+    --code-c: #66766f;
+    --code-h: #1b6880;
+    --code-k: #1f5a4a;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0e1312;
+      --surface: #141b19;
+      --ink: #e0e7e4;
+      --muted: #98a6a0;
+      --rule: #29342f;
+      --rule-soft: #1e2724;
+      --accent: #6dc3da;
+      --accent-soft: #14303a;
+      --warn: #edb45a;
+      --warn-soft: #2a2112;
+      --code-bg: #172120;
+      --code-ink: #d5dedb;
+      --code-c: #82918b;
+      --code-h: #6dc3da;
+      --code-k: #8fd1b8;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e1312;
+    --surface: #141b19;
+    --ink: #e0e7e4;
+    --muted: #98a6a0;
+    --rule: #29342f;
+    --rule-soft: #1e2724;
+    --accent: #6dc3da;
+    --accent-soft: #14303a;
+    --warn: #edb45a;
+    --warn-soft: #2a2112;
+    --code-bg: #172120;
+    --code-ink: #d5dedb;
+    --code-c: #82918b;
+    --code-h: #6dc3da;
+    --code-k: #8fd1b8;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.6 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 96px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 0.06em 0.3em;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  a code { color: inherit; }
+  em { font-style: italic; }
+
+  /* header */
+  .masthead { display: grid; gap: 14px; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  h1 { font: 600 clamp(2rem, 5vw, 3rem)/1.05 var(--font-head); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  .lede { font-size: 1.12rem; line-height: 1.55; max-width: 66ch; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 13px/1.4 var(--font-mono); color: var(--muted); margin: 0; padding: 0; list-style: none; }
+  .meta b { font-weight: 500; color: var(--ink); }
+
+  /* the three files */
+  .files { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 18px; padding: 0; list-style: none; }
+  @media (min-width: 820px) { .files { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .file { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+  .file h2 { font: 600 1.25rem/1.2 var(--font-head); margin: 0; }
+  .file h2 a { color: var(--ink); text-decoration: none; }
+  .file h2 a:hover { color: var(--accent); }
+  .file .path { font: 13px/1.45 var(--font-mono); color: var(--muted); overflow-wrap: anywhere; margin: 0; }
+  .file .path b { color: var(--ink); font-weight: 500; }
+  .file p { margin: 0; font-size: 15px; }
+  .file dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14px; }
+  .file dt { color: var(--muted); }
+  .file dd { margin: 0; }
+  .caution { max-width: none; display: flex; gap: 10px; align-items: baseline; background: var(--warn-soft); border-radius: 6px; padding: 12px 16px; margin: 0 0 36px; font-size: 15px; }
+  .caution b { color: var(--warn); font: 500 11.5px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; flex: none; }
+  .caution span { max-width: 90ch; }
+
+  /* layout */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1040px) {
+    .layout { grid-template-columns: 200px minmax(0, 1fr); gap: 52px; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+  }
+  .toc { font-size: 14px; }
+  .toc-label { font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .toc a { display: block; padding: 4px 0; color: var(--ink); text-decoration: none; line-height: 1.35; }
+  .toc a:hover { color: var(--accent); }
+  @media (max-width: 1039px) {
+    .toc { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; }
+    .toc ol { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); column-gap: 20px; }
+  }
+
+  /* prose */
+  main { min-width: 0; }
+  section { padding-bottom: 20px; margin-bottom: 36px; border-bottom: 1px solid var(--rule); scroll-margin-top: 20px; }
+  section:last-of-type { border-bottom: 0; }
+  h2 { font: 600 1.8rem/1.15 var(--font-head); margin: 0 0 16px; text-wrap: balance; }
+  h3 { font: 600 1.25rem/1.25 var(--font-head); margin: 30px 0 10px; text-wrap: balance; scroll-margin-top: 20px; }
+  h3 code, h2 code { font-size: 0.92em; padding: 0.04em 0.3em; }
+  h4 { font: 600 1.02rem/1.3 var(--font-head); margin: 24px 0 8px; scroll-margin-top: 20px; }
+  h4.group { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 6px; }
+  p, li { max-width: 72ch; }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--muted); }
+
+  dl.terms { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px 20px; margin: 4px 0 18px; }
+  @media (min-width: 640px) { dl.terms { grid-template-columns: minmax(9em, max-content) minmax(0, 1fr); } }
+  dl.terms dt { font-weight: 500; padding-top: 8px; }
+  dl.terms dd { margin: 0; padding-top: 8px; border-top: 1px solid var(--rule-soft); }
+  @media (min-width: 640px) { dl.terms dt { border-top: 1px solid var(--rule-soft); } }
+  dl.terms dd p { margin: 0 0 8px; }
+
+  /* field tables */
+  .scroll { overflow-x: auto; margin: 8px 0 20px; }
+  table.fields { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+  table.fields thead th { font: 600 12.5px/1.3 var(--font-head); letter-spacing: 0.03em; text-align: left; color: var(--muted); padding: 9px 12px; border-bottom: 1.5px solid var(--rule); background: var(--ground); }
+  table.fields td, table.fields tbody th { padding: 9px 12px; border-top: 1px solid var(--rule-soft); vertical-align: top; text-align: left; font-weight: 400; }
+  table.fields tbody tr:target { background: var(--accent-soft); }
+  table.fields tbody th { width: 11em; white-space: nowrap; }
+  code.key { background: none; padding: 0; color: var(--accent); font-weight: 500; font-size: 0.92em; }
+  code.key em { font-weight: 400; }
+  td.kind { width: 9.5em; font: 13px/1.5 var(--font-mono); color: var(--muted); white-space: nowrap; }
+  td.kind .range { color: var(--ink); }
+  td.default { width: 10em; }
+  td.default code { white-space: pre; }
+  td.meaning p { margin: 0 0 6px; max-width: none; }
+  td.meaning p:last-child { margin: 0; }
+  .none { color: var(--muted); }
+
+  /* code */
+  figure.code { margin: 14px 0 20px; background: var(--code-bg); border-radius: 6px; min-width: 0; }
+  pre { margin: 0; padding: 12px 14px; overflow-x: auto; font: 13px/1.58 var(--font-mono); color: var(--code-ink); tab-size: 4; }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; overflow-wrap: normal; }
+  pre.snippet { background: var(--code-bg); border-radius: 5px; margin: 6px 0; padding: 8px 10px; font-size: 12.5px; }
+  .c { color: var(--code-c); }
+  .h { color: var(--code-h); font-weight: 500; }
+  .k { color: var(--code-k); }
+  a.man { text-decoration: none; }
+  a.man:hover code { text-decoration: underline; }
+
+  .footnote { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+  /* archive-protocol.html: diagrams, message tables, transcripts */
+  :root { --line: #71827b; --rule-strong: #a9b7b1; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --line: #83938d; --rule-strong: #43514b; }
+  }
+  :root[data-theme="dark"] { --line: #83938d; --rule-strong: #43514b; }
+
+  .file .job { font: 13px/1.45 var(--font-mono); color: var(--muted); margin: 0; }
+  .file .job b { color: var(--accent); font-weight: 500; }
+
+  figure.diagram { margin: 18px 0 30px; min-width: 0; }
+  figure.diagram .canvas { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 14px; overflow-x: auto; }
+  figure.diagram svg { display: block; width: 100%; min-width: 660px; height: auto; }
+  figure.diagram figcaption { font-size: 14px; line-height: 1.5; color: var(--muted); margin-top: 10px; max-width: 80ch; }
+  figure.hero { margin: 0 0 18px; }
+
+  .dg { color: var(--ink); }
+  .dg text { fill: currentColor; font-family: var(--font-body); font-size: 13px; }
+  .dg .mono { font-family: var(--font-mono); font-size: 12px; }
+  .dg .small { font-size: 11.5px; }
+  .dg .title { font-family: var(--font-head); font-weight: 600; font-size: 15px; }
+  .dg .strong { font-weight: 600; }
+  .dg .muted { fill: var(--muted); }
+  .dg .t-accent { fill: var(--accent); }
+  .dg .t-warn { fill: var(--warn); }
+  .dg .box { fill: var(--ground); stroke: var(--rule-strong); stroke-width: 1.2; }
+  .dg .box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+  .dg .box-ghost { fill: none; stroke: var(--rule-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .dg .ln { fill: none; stroke: var(--line); stroke-width: 1.5; }
+  .dg .ln-accent { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+  .dg .ln-warn { fill: none; stroke: var(--warn); stroke-width: 1.5; }
+  .dg .dash { stroke-dasharray: 5 4; }
+  .dg .life { fill: none; stroke: var(--rule-strong); stroke-width: 1.2; stroke-dasharray: 3 4; }
+  .dg .tip { fill: var(--line); }
+  .dg .tip-accent { fill: var(--accent); }
+  .dg .tip-warn { fill: var(--warn); }
+  .dg .badge { fill: var(--accent); }
+  .dg .badge-text { fill: var(--surface); font: 600 11px var(--font-mono); }
+
+  table.fields.keys { min-width: 600px; }
+  table.fields.keys tbody th { width: 9em; }
+  table.fields td.value { width: 13em; font: 13px/1.5 var(--font-mono); white-space: normal; }
+  table.fields td.num, table.fields th.num { width: 5.5em; font-variant-numeric: tabular-nums; }
+  table.fields td p { margin: 0 0 6px; max-width: none; }
+  table.fields td p:last-child { margin: 0; }
+  table.fields.outcomes { min-width: 820px; }
+  table.fields.tools { min-width: 820px; }
+  table.fields.tools td { font-size: 13.5px; }
+  table.fields.tools td code { white-space: normal; }
+
+  ol.steps { margin: 0 0 18px; padding-left: 1.6em; }
+  ol.steps li { padding-left: 0.2em; }
+  ol.steps li::marker { color: var(--accent); font: 500 13px var(--font-mono); }
+
+  .grammar { font: 14px/1.5 var(--font-mono); background: var(--accent-soft); color: var(--ink); border-radius: 6px; padding: 10px 14px; margin: 10px 0 16px; overflow-x: auto; }
+  pre .prompt { color: var(--code-c); user-select: none; }
+  pre .cmd { color: var(--code-ink); font-weight: 500; }
+  pre .out { color: var(--code-c); }
+  table.fields.keys td.kind { white-space: normal; width: 10em; }
+  table.fields.outcomes tbody th, table.fields.tools tbody th { white-space: normal; width: 10em; }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Reference &middot; contents.toml format 1</div>
+    <h1>Virtualbricks Archive Protocol</h1>
+    <p class="lede">How Virtualbricks reads and writes project archives, the <code>.vbp</code> files: what an archive holds and in which order, and the process that inspects, exports and imports it while the application follows along, one JSON line at a time.</p>
+    <ul class="meta">
+      <li><b>virtualbricks</b> 2.1.0</li>
+      <li>job on stdin: <b>TOML</b></li>
+      <li>messages on stdout: <b>JSON lines</b></li>
+      <li>also as <b>man 7 virtualbricks-archive</b></li>
+    </ul>
+  </header>
+
+  <figure class="diagram hero">
+    <div class="canvas">
+      <svg class="dg" viewBox="0 0 760 312" role="img" aria-label="The application writes the job to the archive process's stdin, reads its messages from stdout and its errors from stderr, can send SIGTERM to cancel, and gets its exit status. The process runs bsdtar, GNU tar or tarfile, and qemu-img.">
+        <defs>
+          <marker id="a-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+          <marker id="a-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+          <marker id="a-tip-warn" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-warn"/></marker>
+        </defs>
+        <!-- the application -->
+        <rect x="16" y="16" width="200" height="280" rx="8" class="box"/>
+        <text x="34" y="44" class="title">application</text>
+        <text x="34" y="63" class="small muted">Virtualbricks: GTK and Twisted</text>
+        <rect x="34" y="84" width="164" height="38" rx="6" class="box-accent"/>
+        <text x="116" y="108" text-anchor="middle" class="mono">ArchiveJob</text>
+        <text x="34" y="156" class="mono">done</text>
+        <text x="34" y="173" class="small muted">a Deferred, fired at the end</text>
+        <text x="34" y="200" class="mono">cancel()</text>
+        <text x="34" y="217" class="small muted">sends SIGTERM</text>
+        <text x="34" y="244" class="mono">leftovers</text>
+        <text x="34" y="261" class="small muted">removed if no result came</text>
+        <!-- the process -->
+        <rect x="436" y="16" width="180" height="280" rx="8" class="box"/>
+        <text x="454" y="44" class="title">archive process</text>
+        <text x="454" y="63" class="mono small muted">python -c &#8230;main()</text>
+        <rect x="454" y="84" width="144" height="38" rx="6" class="box-accent"/>
+        <text x="526" y="108" text-anchor="middle" class="mono">run_job(job)</text>
+        <text x="454" y="156" class="small">reads the job to EOF</text>
+        <text x="454" y="180" class="small">runs one job, then exits</text>
+        <text x="454" y="204" class="small">nice 10</text>
+        <!-- the channels -->
+        <line x1="224" y1="80" x2="428" y2="80" class="ln" marker-end="url(#a-tip)"/>
+        <text x="326" y="71" text-anchor="middle" class="mono strong">stdin</text>
+        <text x="326" y="97" text-anchor="middle" class="small muted">the job, TOML, then EOF</text>
+        <line x1="428" y1="128" x2="224" y2="128" class="ln-accent" marker-end="url(#a-tip-acc)"/>
+        <text x="326" y="119" text-anchor="middle" class="mono strong t-accent">stdout</text>
+        <text x="326" y="145" text-anchor="middle" class="small muted">messages, one JSON object a line</text>
+        <line x1="428" y1="176" x2="224" y2="176" class="ln" marker-end="url(#a-tip)"/>
+        <text x="326" y="167" text-anchor="middle" class="mono strong">stderr</text>
+        <text x="326" y="193" text-anchor="middle" class="small muted">kept for the error message</text>
+        <line x1="224" y1="224" x2="428" y2="224" class="ln-warn" marker-end="url(#a-tip-warn)"/>
+        <text x="326" y="215" text-anchor="middle" class="mono strong t-warn">SIGTERM</text>
+        <text x="326" y="241" text-anchor="middle" class="small muted">cancels the job</text>
+        <line x1="428" y1="272" x2="224" y2="272" class="ln dash" marker-end="url(#a-tip)"/>
+        <text x="326" y="263" text-anchor="middle" class="mono strong">exit status</text>
+        <text x="326" y="289" text-anchor="middle" class="small muted">0, 1, 2 or 3</text>
+        <!-- the tools -->
+        <line x1="616" y1="103" x2="652" y2="103" class="ln" marker-end="url(#a-tip)"/>
+        <text x="634" y="95" text-anchor="middle" class="small muted">runs</text>
+        <rect x="656" y="70" width="88" height="66" rx="6" class="box"/>
+        <text x="700" y="93" text-anchor="middle" class="mono">bsdtar</text>
+        <text x="700" y="111" text-anchor="middle" class="small muted">or GNU tar</text>
+        <text x="700" y="127" text-anchor="middle" class="small muted">or tarfile</text>
+        <line x1="616" y1="190" x2="652" y2="190" class="ln" marker-end="url(#a-tip)"/>
+        <text x="634" y="182" text-anchor="middle" class="small muted">runs</text>
+        <rect x="656" y="170" width="88" height="40" rx="6" class="box"/>
+        <text x="700" y="195" text-anchor="middle" class="mono">qemu-img</text>
+      </svg>
+    </div>
+    <figcaption>One process for each job. The application writes the job and closes stdin; from then on it only listens, and the only thing it can still send is SIGTERM. <code>tarfile</code> is Python's, inside the process: the last resort when neither <code>bsdtar</code> nor GNU <code>tar</code> is installed.</figcaption>
+  </figure>
+
+  <ul class="files" aria-label="The three jobs">
+    <li class="file">
+      <h2><a href="#inspect">inspect</a></h2>
+      <p class="job">job = <b>"inspect"</b></p>
+      <p>Read what an archive holds: its project file, its README and the list of its members.</p>
+      <dl>
+        <dt>Steps</dt><dd><code>read</code></dd>
+        <dt>Sends</dt><dd><code>progress</code>, <code>head</code> for an older archive</dd>
+        <dt>Result</dt><dd>the contents of the archive</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#export">export</a></h2>
+      <p class="job">job = <b>"export"</b></p>
+      <p>Write a project, its private disks and its images to a <code>.vbp</code>, packing the qcow2 disks with qemu-img.</p>
+      <dl>
+        <dt>Steps</dt><dd><code>pack</code>, <code>write</code></dd>
+        <dt>Sends</dt><dd><code>progress</code>, <code>created</code></dd>
+        <dt>Result</dt><dd>the archive and its size</dd>
+      </dl>
+    </li>
+    <li class="file">
+      <h2><a href="#import">import</a></h2>
+      <p class="job">job = <b>"import"</b></p>
+      <p>Make a project of an archive: extract it, place the images, point the disks at them, rename it into place.</p>
+      <dl>
+        <dt>Steps</dt><dd><code>extract</code>, <code>unpack</code></dd>
+        <dt>Sends</dt><dd><code>progress</code>, <code>created</code></dd>
+        <dt>Result</dt><dd>the name of the new project</dd>
+      </dl>
+    </li>
+  </ul>
+  <p class="caution"><b>Internal</b><span>The process always comes from the same installation as the application, so the protocol has no version: it changes with the code, and this page with it. The format of the archives does have one, the <code>format</code> of <code>contents.toml</code>.</span></p>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-label">Contents</p>
+      <ol>
+<li><a href="#archive">The archive</a></li>
+<li><a href="#process">The process</a></li>
+<li><a href="#inspect">inspect</a></li>
+<li><a href="#export">export</a></li>
+<li><a href="#import">import</a></li>
+<li><a href="#progress">Progress</a></li>
+<li><a href="#tools">Archive tools</a></li>
+<li><a href="#application">The application&#39;s side</a></li>
+<li><a href="#files">Files</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#known-problems">Known problems</a></li>
+<li><a href="#see-also">See also</a></li>
+      </ol>
+    </nav>
+    <main>
+
+<section id="archive">
+<h2>The archive</h2>
+
+<h3 id="archive-format">Format</h3>
+<p>An archive is a tar file in the POSIX.1-2001 format, <em>pax</em>, with the extension <code>.vbp</code>. When <code>qemu-img</code> is found, the archive is not compressed as a whole: its disks are compressed one by one inside it (see <a href="#archive-packed">Packed disks</a>). Without <code>qemu-img</code>, the whole archive is compressed with gzip.</p>
+<p>Virtualbricks reads archives that are not compressed or compressed with gzip, bzip2 or xz, whatever their extension, so an archive made by hand with <code>tar</code> can be imported too. The Import window offers the files <em>*.vbp</em>, <em>*.tar.gz</em>, <em>*.tgz</em> and <em>*.tar</em>.</p>
+
+<h3 id="archive-members">Members</h3>
+<p>Every member is a regular file, named by its path relative to the project&#39;s folder. A reader drops a leading <code>./</code> and a trailing <code>/</code> from the names. The name gives the <em>kind</em> of the member, which the process uses in its messages (see <a href="#inspect">inspect</a>):</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Name</th><th>Kind</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">contents.toml</code></th><td class="kind">contents</td><td class="meaning"><p>The list of the members; see <a href="#archive-contents">contents.toml</a> below.</p></td></tr>
+<tr><th scope="row"><code class="key">project.toml</code></th><td class="kind">project</td><td class="meaning"><p>The project file, described in <a class="man" href="config-files.html#projects"><code>virtualbricks-config</code>(5)</a>.</p></td></tr>
+<tr><th scope="row"><code class="key">.project</code>, <code class="key">.project~</code></th><td class="kind">legacy project</td><td class="meaning"><p>The project file of Virtualbricks 2.1 and older. It is converted as the migration does.</p></td></tr>
+<tr><th scope="row"><code class="key">README</code></th><td class="kind">readme</td><td class="meaning"><p>The description of the project, plain text in UTF-8.</p></td></tr>
+<tr><th scope="row"><code class="key"><em>vm</em>_<em>device</em>.cow</code></th><td class="kind">disk</td><td class="meaning"><p>The private disk of the device <em>device</em>, as <code>hda</code> or <code>vdb</code>, of the virtual machine <em>vm</em>. Only at the top of the archive; <em>device</em> has only lowercase letters and digits.</p></td></tr>
+<tr><th scope="row"><code class="key">.images/<em>image</em></code></th><td class="kind">image</td><td class="meaning"><p>The disk image called <em>image</em> in the project file. The member is named after the image, not after its file: an image <code>debian</code> whose file is <em>/srv/vm/debian-12.qcow2</em> is stored as <em>.images/debian</em>.</p></td></tr>
+<tr><th scope="row"><span class="none">any other name</span></th><td class="kind">other</td><td class="meaning"><p>A file of the project&#39;s folder that you chose to export. The import puts it back where it was.</p></td></tr>
+</tbody></table></div>
+
+<h3 id="archive-order">Order</h3>
+<p>A new archive starts with <code>contents.toml</code>, then the project file and the README: together, the <em>head</em> of the archive. The other files, the private disks and the images follow, in this order, each group from the smallest file to the largest. An inspection reads the head and stops there, without reading the gigabytes that follow it.</p>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 152" role="img" aria-label="The members of a new archive in file order: contents.toml, project.toml and README form the head, which an inspection reads; then the other files, the private disks and the images, each group from smallest to largest, which only an import reads.">
+      <text x="16" y="22" class="mono small muted">offset 0</text>
+      <text x="744" y="22" text-anchor="end" class="mono small muted">end of the archive</text>
+      <rect x="16" y="32" width="104" height="50" class="box-accent"/>
+      <text x="68" y="61" text-anchor="middle" class="mono small">contents.toml</text>
+      <rect x="120" y="32" width="100" height="50" class="box-accent"/>
+      <text x="170" y="61" text-anchor="middle" class="mono small">project.toml</text>
+      <rect x="220" y="32" width="76" height="50" class="box-accent"/>
+      <text x="258" y="61" text-anchor="middle" class="mono small">README</text>
+      <rect x="296" y="32" width="36" height="50" class="box"/>
+      <rect x="332" y="32" width="60" height="50" class="box"/>
+      <rect x="392" y="32" width="34" height="50" class="box"/>
+      <rect x="426" y="32" width="52" height="50" class="box"/>
+      <rect x="478" y="32" width="78" height="50" class="box"/>
+      <rect x="556" y="32" width="76" height="50" class="box"/>
+      <rect x="632" y="32" width="112" height="50" class="box"/>
+      <text x="344" y="100" text-anchor="middle" class="small muted">other files</text>
+      <text x="474" y="100" text-anchor="middle" class="small muted">private disks</text>
+      <text x="650" y="100" text-anchor="middle" class="small muted">images</text>
+      <path d="M16,110 V118 H292 V110" class="ln-accent"/>
+      <text x="154" y="140" text-anchor="middle" class="small t-accent">head: inspect reads it, then stops</text>
+      <path d="M300,110 V118 H744 V110" class="ln"/>
+      <text x="522" y="140" text-anchor="middle" class="small muted">only import reads the rest, each group from smallest to largest</text>
+    </svg>
+  </div>
+  <figcaption>A new archive in file order, not to scale: the head is a few kilobytes, the disks and images can be gigabytes. <code>contents.toml</code> comes first, so an inspection knows every member after reading a few blocks.</figcaption>
+</figure>
+
+<h3 id="archive-contents">contents.toml</h3>
+<p>The list of the other members, in the order of the archive. It is TOML 1.0, as the <a href="config-files.html">configuration files</a>:</p>
+<figure class="code"><pre><code><span class="k">format</span> = 1
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "project.toml"
+<span class="k">size</span> = 255
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "README"
+<span class="k">size</span> = 16
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = "vm1_hda.cow"
+<span class="k">size</span> = 197120
+<span class="k">packed</span> = true
+<span class="k">real_size</span> = 196616
+
+<span class="h">[[members]]</span>
+<span class="k">name</span> = ".images/debian"
+<span class="k">size</span> = 197120
+<span class="k">packed</span> = true
+<span class="k">real_size</span> = 196616</code></pre></figure>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">format</code></th><td class="kind">integer</td><td class="meaning"><p>The version of the layout, <code>1</code>. An archive with a higher <code>format</code> is not read: &quot;contents.toml: written by a newer Virtualbricks (format 2)&quot;.</p></td></tr>
+<tr><th scope="row"><code class="key">members</code></th><td class="kind">array of tables</td><td class="meaning"><p>One table for each member but <code>contents.toml</code> itself.</p></td></tr>
+<tr><th scope="row"><code class="key">name</code></th><td class="kind">string</td><td class="meaning"><p>The name of the member.</p></td></tr>
+<tr><th scope="row"><code class="key">size</code></th><td class="kind">integer</td><td class="meaning"><p>Its size in the archive, in bytes.</p></td></tr>
+<tr><th scope="row"><code class="key">packed</code></th><td class="kind">boolean</td><td class="meaning"><p>Present, and <code>true</code>, only when <code>qemu-img</code> compressed the member.</p></td></tr>
+<tr><th scope="row"><code class="key">real_size</code></th><td class="kind">integer</td><td class="meaning"><p>Only with <code>packed</code>: its size before it was compressed, the size it has on the computer it comes from.</p></td></tr>
+</tbody></table></div>
+<p>The kind of a member comes from its name and is not written. An item of <code>members</code> that isn&#39;t a table is skipped, a size that isn&#39;t an integer is read as 0, and other keys are ignored.</p>
+
+<h3 id="archive-packed">Packed disks</h3>
+<p>When <code>qemu-img</code> is found, the export compresses each private disk and each image in the qcow2 format:</p>
+<figure class="code"><pre><code>qemu-img convert -p -O qcow2 -m 8 -W \
+    -c -o compression_type=zstd \
+    [-B backing -F backing-format] disk packed-disk</code></pre></figure>
+<p>with zlib, without <code>-o compression_type=zstd</code>, when QEMU is older than 5.1. A private disk keeps its backing file, the image, as it is. A packed disk is a valid qcow2 file, that QEMU runs as it is. The member is marked <code>packed</code> in <code>contents.toml</code>, with its <code>real_size</code>. A disk or an image in another format, as raw, is stored as it is; so is a disk that <code>qemu-img</code> can&#39;t read, as when its image is gone, and the export reports it as a warning.</p>
+<p>The import converts the packed members back to normal qcow2 files, the private disks on top of their new image. When <code>qemu-img</code> isn&#39;t found, or the image of a private disk is left unset, the disk stays compressed and the import reports it: the disk works as it is.</p>
+<p>The <code>real_size</code> also lets the import recognize an image that this computer already has: a file of the image library with the same name and size is used instead of a copy.</p>
+
+<h3 id="archive-holes">Holes</h3>
+<p>Disks are sparse files: a disk of 20 GB can take 2 GB of space. The archive keeps their holes, as GNU sparse 1.0 members, written by <code>bsdtar</code>, by GNU <code>tar</code> with <code>--sparse</code>, or by Virtualbricks itself when neither is installed. A member larger than 8 GiB written by Virtualbricks has its size in base-256 in its tar header, not in a pax record, which Python&#39;s <code>tarfile</code> would read wrong (see <a href="#known-problems">Known problems</a>).</p>
+<p>When the archive is extracted, <code>bsdtar</code> turns the runs of zeros into holes itself, with <code>-S</code>. After GNU <code>tar</code> or <code>tarfile</code>, the import does it for the private disks and the copied images: blocks of 64 KiB of zeros become holes if they add up to 1 MiB at least.</p>
+
+<h3 id="archive-older">Older archives</h3>
+<p>The archives of older versions of Virtualbricks have no <code>contents.toml</code>; most are compressed with gzip, and some hold the project file of Virtualbricks 2.1, <code>.project</code>. They are read as the new ones, but an inspection has to read an archive without <code>contents.toml</code> to its end to know what it holds. It sends what it knows, the <em>head</em>, as soon as it has read the project file, and the full list of members at the end.</p>
+</section>
+
+<section id="process">
+<h2>The process</h2>
+
+<h3 id="process-starting">Starting</h3>
+<p>The application starts the process with its own Python interpreter and its own environment:</p>
+<figure class="code"><pre><code>python -c "import sys; \
+    from virtualbricks.config.archive import main; \
+    sys.exit(main())"</code></pre></figure>
+<p>and not <code>python -m virtualbricks.config.archive</code>: the package <code>virtualbricks.config</code> imports that module, and Python would warn that it runs a second copy of it. The process lowers its priority to <code>nice</code> 10, and handles SIGTERM.</p>
+
+<h3 id="process-job">The job</h3>
+<p>The process reads its standard input to the end, then parses it as a TOML table. The key <code>job</code> says which job it is, <code>inspect</code>, <code>export</code> or <code>import</code>; the other keys depend on the job, and are described with each job below.</p>
+<figure class="code"><pre><code><span class="k">job</span> = "inspect"
+<span class="k">archive</span> = "/home/user/lab.vbp"</code></pre></figure>
+<p>An unknown job is an error, as the other errors of the job. A missing key, or one of the wrong type, is a bug of the caller: the process reports it with its traceback.</p>
+
+<h3 id="process-messages">Messages</h3>
+<p>The process writes to its standard output one JSON object a line, and flushes each one. Every object has one key, which says what it is:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody>
+<tr id="message-progress"><th scope="row"><code class="key">progress</code></th><td class="value">{"step": <em>step</em>, "done": <em>bytes</em>, "total": <em>bytes</em>}</td><td class="meaning"><p>How far a step of the job has gone; see <a href="#progress">Progress</a>.</p></td></tr>
+<tr id="message-created"><th scope="row"><code class="key">created</code></th><td class="value"><em>path</em></td><td class="meaning"><p>The process created a file or a folder outside the job&#39;s folder, which it removes if the job doesn&#39;t end well; see <a href="#process-cleaning-up">Cleaning up</a>.</p></td></tr>
+<tr id="message-head"><th scope="row"><code class="key">head</code></th><td class="value"><em>contents</em></td><td class="meaning"><p>What an inspection knows of an older archive before reaching its end; see <a href="#inspect">inspect</a>.</p></td></tr>
+<tr id="message-result"><th scope="row"><code class="key">result</code></th><td class="value"><em>result</em></td><td class="meaning"><p>The job is done. It depends on the job.</p></td></tr>
+<tr id="message-error"><th scope="row"><code class="key">error</code></th><td class="value"><em>message</em></td><td class="meaning"><p>The job failed.</p></td></tr>
+</tbody></table></div>
+<p>The messages come in this order:</p>
+<p class="grammar">messages = *( progress / created / head ) [ result / error ]</p>
+<p><code>result</code> or <code>error</code> is the last message; there is none when the job is cancelled or the process dies. A reader ignores anything else: an empty line, a line that isn&#39;t JSON, a value that isn&#39;t an object, an object with none of these keys.</p>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 330" role="img" aria-label="An import over time: the application writes the job on stdin; the process answers on stdout with progress of extract, the path of a copied image, progress of unpack, and the result as its last line; then it exits with status 0.">
+      <defs>
+        <marker id="s-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+        <marker id="s-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      </defs>
+      <rect x="40" y="12" width="150" height="34" rx="6" class="box"/>
+      <text x="115" y="34" text-anchor="middle" class="strong">application</text>
+      <rect x="470" y="12" width="170" height="34" rx="6" class="box"/>
+      <text x="555" y="34" text-anchor="middle" class="strong">archive process</text>
+      <line x1="115" y1="46" x2="115" y2="318" class="life"/>
+      <line x1="555" y1="46" x2="555" y2="318" class="life"/>
+      <rect x="549" y="66" width="12" height="236" rx="2" class="box-accent"/>
+      <text x="96" y="80" text-anchor="end" class="mono small muted">stdin</text>
+      <path d="M104,116 H98 V254 H104" class="ln"/>
+      <text x="90" y="189" text-anchor="end" class="mono small muted">stdout</text>
+      <text x="96" y="302" text-anchor="end" class="mono small muted">exit</text>
+      <line x1="121" y1="76" x2="545" y2="76" class="ln" marker-end="url(#s-tip)"/>
+      <text x="333" y="67" text-anchor="middle" class="mono">job = "import" &#8230; then EOF</text>
+      <line x1="549" y1="122" x2="121" y2="122" class="ln" marker-end="url(#s-tip)"/>
+      <text x="333" y="113" text-anchor="middle" class="mono">{"progress": {"step": "extract", &#8230;}}</text>
+      <line x1="549" y1="164" x2="121" y2="164" class="ln" marker-end="url(#s-tip)"/>
+      <text x="333" y="155" text-anchor="middle" class="mono">{"created": "&#8230;/vimages/debian-12.qcow2"}</text>
+      <line x1="549" y1="206" x2="121" y2="206" class="ln" marker-end="url(#s-tip)"/>
+      <text x="333" y="197" text-anchor="middle" class="mono">{"progress": {"step": "unpack", &#8230;}}</text>
+      <line x1="549" y1="248" x2="121" y2="248" class="ln-accent" marker-end="url(#s-tip-acc)"/>
+      <text x="333" y="239" text-anchor="middle" class="mono t-accent">{"result": {"name": "lab", "report": []}}</text>
+      <line x1="549" y1="298" x2="121" y2="298" class="ln dash" marker-end="url(#s-tip)"/>
+      <text x="333" y="289" text-anchor="middle">exit status 0</text>
+      <text x="575" y="80" class="small muted">reads the job to EOF</text>
+      <text x="575" y="126" class="small muted">1 &#183; extract the archive</text>
+      <text x="575" y="168" class="small muted">4 &#183; copy an image</text>
+      <text x="575" y="210" class="small muted">7 &#183; unpack the disks</text>
+      <text x="575" y="252" class="small muted">9 &#183; rename, done</text>
+      <text x="575" y="302" class="small muted">the process exits</text>
+    </svg>
+  </div>
+  <figcaption>An import, as the application sees it. Each progress line stands for many, up to ten a second; the numbers on the right are the <a href="#import-steps">steps of the import</a>. The result is the last line on stdout, and the exit status follows when the process ends.</figcaption>
+</figure>
+
+<h3 id="process-ending">Ending</h3>
+<p>The process exits when its job ends. The messages tell the outcome, not the exit status: a job is done when <code>result</code> came.</p>
+<div class="scroll"><table class="fields outcomes"><thead><tr><th>The job</th><th>Last message</th><th class="num">Exit</th><th>What it wrote</th><th>In the application</th></tr></thead><tbody>
+<tr><th scope="row">is done</th><td><p><code>result</code></p></td><td class="num">0</td><td><p>in place</p></td><td><p><code>done</code> fires with the result</p></td></tr>
+<tr><th scope="row">fails</th><td><p><code>error</code>, a message for the user, as &quot;the archive has no project file&quot; or the error of <code>bsdtar</code> or <code>qemu-img</code></p></td><td class="num">2</td><td><p>removed by the process</p></td><td><p><code>done</code> fails with <code>ArchiveError</code></p></td></tr>
+<tr><th scope="row">hits a bug</th><td><p><code>error</code>, the Python traceback</p></td><td class="num">3</td><td><p>removed by the process</p></td><td><p><code>done</code> fails with <code>ArchiveError</code></p></td></tr>
+<tr><th scope="row">is cancelled by SIGTERM</th><td><p><span class="none">none</span></p></td><td class="num">1</td><td><p>removed by the process</p></td><td><p><code>done</code> fails with <code>ArchiveCancelled</code></p></td></tr>
+<tr><th scope="row">dies, killed by another signal</th><td><p><span class="none">none</span></p></td><td class="num"><span class="none">signal</span></td><td><p>removed by the application: the job&#39;s folder and the paths sent with <code>created</code></p></td><td><p><code>done</code> fails with <code>ArchiveError</code>: the standard error, or &quot;the process stopped&quot;</p></td></tr>
+</tbody></table></div>
+
+<h3 id="process-cancelling">Cancelling</h3>
+<p>SIGTERM stops the job wherever it is. The process stops its <code>tar</code> or <code>qemu-img</code>, removes the files it wrote, and exits with 1:</p>
+<ul>
+<li>An export removes its unfinished archive and its folder. An archive that was already there under the same name is left as it was.</li>
+<li>An import removes its folder in the workspace and the images it copied to the image library.</li>
+<li>An inspection writes nothing.</li>
+</ul>
+
+<h3 id="process-cleaning-up">Cleaning up</h3>
+<p>A job writes its files where they end up, under a temporary name, and renames them at the end, so that a job that doesn&#39;t end leaves nothing behind. When the job fails or is cancelled, the process removes them. When the process dies before it can, the application removes them: the job&#39;s folder, when it made it, and every path that the process sent with <code>created</code>.</p>
+<dl class="terms">
+<dt>.<em>name</em>.vbp.<em>XXXXXXXX</em>.part, .virtualbricks-export-<em>XXXXXXXX</em>/</dt><dd><p>The unfinished archive and its folder, next to the archive, which the export makes and sends with <code>created</code>.</p></dd>
+<dt><em>workspace</em>/.importing-<em>name</em>-<em>XXXXXXXX</em>/</dt><dd><p>The folder of an import, which the application makes before it starts the process.</p></dd>
+<dt><em>workspace</em>/vimages/<em>file</em></dt><dd><p>An image that the import copied to the library, and sent with <code>created</code>.</p></dd>
+</dl>
+<p>The application removes them only when the process ended without a <code>result</code>.</p>
+</section>
+
+<section id="inspect">
+<h2><code>inspect</code></h2>
+<p>Read what an archive holds: its project file, its README and the list of its members.</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">archive</code></th><td class="kind">path</td><td class="meaning"><p>The archive to read.</p></td></tr>
+</tbody></table></div>
+<p>The result is an object:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">path</code></th><td class="kind">string</td><td class="meaning"><p>The archive.</p></td></tr>
+<tr><th scope="row"><code class="key">data</code></th><td class="kind">object</td><td class="meaning"><p>The project file, in the current format: converted from <code>.project</code>, or upgraded from an older <code>project.toml</code>.</p></td></tr>
+<tr><th scope="row"><code class="key">description</code></th><td class="kind">string</td><td class="meaning"><p>The README, or &quot;&quot; when there is none. Bytes that aren&#39;t UTF-8 are replaced.</p></td></tr>
+<tr><th scope="row"><code class="key">members</code></th><td class="kind">array</td><td class="meaning"><p>[<em>name</em>, <em>size</em>, <em>kind</em>, <em>packed</em>, <em>real_size</em>] for each member, in the order of the archive: from <code>contents.toml</code> when the archive has one, otherwise from the tar headers, with <em>packed</em> false and <em>real_size</em> 0.</p></td></tr>
+<tr><th scope="row"><code class="key">complete</code></th><td class="kind">boolean</td><td class="meaning"><p>Whether <code>members</code> lists every member of the archive.</p></td></tr>
+<tr><th scope="row"><code class="key">report</code></th><td class="kind">array</td><td class="meaning"><p>[<em>level</em>, <em>text</em>, <em>where</em>] for each problem found in the project file; <em>level</em> is <code>info</code>, <code>warning</code> or <code>error</code>, <em>where</em> the key it&#39;s about, or &quot;&quot;.</p></td></tr>
+<tr><th scope="row"><code class="key">converted</code></th><td class="kind">boolean</td><td class="meaning"><p>Whether <code>data</code> was converted from <code>.project</code>.</p></td></tr>
+</tbody></table></div>
+<p>An inspection sends the progress of the step <code>read</code>. A new archive is read up to the end of its head: the result comes with <code>complete</code> true, and the progress stops early. An archive without <code>contents.toml</code> is read to its end; as soon as its project file is read, the inspection sends a <code>head</code> message, an object as the result with <code>complete</code> false and the members read so far. The Import window shows its form from the head, and completes it with the result.</p>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 262" role="img" aria-label="A new archive is read only up to the end of its head, and the result comes there, complete. An older archive is read to its end: the head message comes as soon as the project file is read, incomplete, and the complete result at the end.">
+      <defs>
+        <marker id="i-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      </defs>
+      <text x="16" y="20" class="strong">new archive, with contents.toml</text>
+      <rect x="16" y="32" width="108" height="36" class="box-accent"/>
+      <text x="70" y="55" text-anchor="middle" class="mono small">contents.toml</text>
+      <rect x="124" y="32" width="104" height="36" class="box-accent"/>
+      <text x="176" y="55" text-anchor="middle" class="mono small">project.toml</text>
+      <rect x="228" y="32" width="64" height="36" class="box-accent"/>
+      <text x="260" y="55" text-anchor="middle" class="mono small">README</text>
+      <rect x="292" y="32" width="452" height="36" class="box-ghost"/>
+      <text x="518" y="55" text-anchor="middle" class="small muted">private disks, images: never read</text>
+      <line x1="16" y1="84" x2="290" y2="84" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+      <text x="16" y="100" class="small t-accent">read</text>
+      <line x1="292" y1="84" x2="292" y2="96" class="ln-accent"/>
+      <rect x="208" y="96" width="168" height="24" rx="12" class="box-accent"/>
+      <text x="292" y="112" text-anchor="middle" class="mono small">result, complete</text>
+
+      <text x="16" y="152" class="strong">older archive, without contents.toml</text>
+      <rect x="16" y="164" width="92" height="36" class="box"/>
+      <text x="62" y="187" text-anchor="middle" class="small muted">&#8230;</text>
+      <rect x="108" y="164" width="104" height="36" class="box-accent"/>
+      <text x="160" y="187" text-anchor="middle" class="mono small">project.toml</text>
+      <rect x="212" y="164" width="532" height="36" class="box"/>
+      <text x="478" y="187" text-anchor="middle" class="small muted">README, private disks, images, in any order</text>
+      <line x1="16" y1="216" x2="742" y2="216" class="ln-accent" marker-end="url(#i-tip-acc)"/>
+      <text x="16" y="232" class="small t-accent">read</text>
+      <line x1="212" y1="216" x2="212" y2="228" class="ln-accent"/>
+      <rect x="120" y="228" width="184" height="24" rx="12" class="box-accent"/>
+      <text x="212" y="244" text-anchor="middle" class="mono small">head, not complete</text>
+      <line x1="744" y1="216" x2="744" y2="228" class="ln-accent"/>
+      <rect x="576" y="228" width="168" height="24" rx="12" class="box-accent"/>
+      <text x="660" y="244" text-anchor="middle" class="mono small">result, complete</text>
+    </svg>
+  </div>
+  <figcaption>Where each message is sent, along the read of the archive. The head of an older archive comes as soon as the project file is read, wherever it is; the result comes only at the end.</figcaption>
+</figure>
+<p>The inspection fails when the archive has no project file, when the project file can&#39;t be read or converted, or when <code>contents.toml</code> comes from a newer Virtualbricks.</p>
+</section>
+
+<section id="export">
+<h2><code>export</code></h2>
+<p>Write an archive of a project:</p>
+<figure class="code"><pre><code><span class="k">job</span> = "export"
+<span class="k">project</span> = "/home/user/.virtualbricks/lab"
+<span class="k">output</span> = "/home/user/lab.vbp"
+<span class="k">files</span> = ["project.toml", "README", "vm1_hda.cow"]
+<span class="k">images</span> = [["debian", "/srv/vm/debian-12.qcow2"]]
+<span class="k">compression</span> = "none"
+<span class="k">qemu_img</span> = "/usr/bin/qemu-img"</code></pre></figure>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">project</code></th><td class="kind">path</td><td class="meaning"><p>The folder of the project.</p></td></tr>
+<tr><th scope="row"><code class="key">output</code></th><td class="kind">path</td><td class="meaning"><p>The archive to write. A file with that name is replaced when the export ends.</p></td></tr>
+<tr><th scope="row"><code class="key">files</code></th><td class="kind">array of strings</td><td class="meaning"><p>The files of the project to store, relative to its folder. The Export window always stores <code>project.toml</code> and <code>README</code>, and lets you choose the private disks, the other files and the images; it never stores the drawings of the topology, <em>vde.dot</em> and <em>vde_topology.plain</em>, nor the <em>.images</em> folder and the <em>.project</em> files that older versions left.</p></td></tr>
+<tr><th scope="row"><code class="key">images</code></th><td class="kind">array of [<em>name</em>, <em>path</em>]</td><td class="meaning"><p>The images to store, as <em>.images/name</em>.</p></td></tr>
+<tr><th scope="row"><code class="key">compression</code></th><td class="kind">"gzip" | "none"</td><td class="meaning"><p>Whether to compress the archive with gzip, <code>"gzip"</code> by default. The application asks for <code>"none"</code> when it gives <code>qemu_img</code>.</p></td></tr>
+<tr><th scope="row"><code class="key">qemu_img</code></th><td class="kind">path</td><td class="meaning"><p>The <code>qemu-img</code> that packs the disks, or &quot;&quot;, the default, not to pack them.</p></td></tr>
+</tbody></table></div>
+<p id="export-steps">The export takes these steps:</p>
+<ol class="steps">
+<li>It creates the unfinished archive, .<em>name</em>.vbp.<em>XXXXXXXX</em>.part, and a folder, .virtualbricks-export-<em>XXXXXXXX</em>, both next to the archive because the packed disks can be large, and sends them with <code>created</code>.</li>
+<li>It puts in the folder each member under its name in the archive: a qcow2 disk or image packed by <code>qemu-img</code>, in the step <code>pack</code>, and any other file as a symbolic link to it.</li>
+<li>It writes <code>contents.toml</code> in the folder.</li>
+<li>It writes the folder into the unfinished archive with the archive tool, following the links, through gzip if asked, in the step <code>write</code>.</li>
+<li>It renames the unfinished archive to <code>output</code>, and removes the folder.</li>
+</ol>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 230" role="img" aria-label="The export links the project file and the README into a staging folder, packs the private disk and the image into it with qemu-img, writes contents.toml there, writes the folder as tar into a .part file next to the archive, and renames it to lab.vbp at the end.">
+      <defs>
+        <marker id="e-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+        <marker id="e-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      </defs>
+      <text x="16" y="72" class="small muted">the project, and its image</text>
+      <rect x="16" y="83" width="184" height="26" rx="5" class="box"/>
+      <text x="26" y="100" class="mono small">lab/project.toml</text>
+      <rect x="16" y="113" width="184" height="26" rx="5" class="box"/>
+      <text x="26" y="130" class="mono small">lab/README</text>
+      <rect x="16" y="143" width="184" height="26" rx="5" class="box"/>
+      <text x="26" y="160" class="mono small">lab/vm1_hda.cow</text>
+      <rect x="16" y="173" width="184" height="26" rx="5" class="box"/>
+      <text x="26" y="190" class="mono small">/srv/vm/debian-12.qcow2</text>
+
+      <line x1="200" y1="96" x2="268" y2="96" class="ln" marker-end="url(#e-tip)"/>
+      <text x="234" y="90" text-anchor="middle" class="small muted">link</text>
+      <line x1="200" y1="126" x2="268" y2="126" class="ln" marker-end="url(#e-tip)"/>
+      <text x="234" y="120" text-anchor="middle" class="small muted">link</text>
+      <line x1="200" y1="156" x2="268" y2="156" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+      <text x="234" y="150" text-anchor="middle" class="mono small t-accent">pack</text>
+      <line x1="200" y1="186" x2="268" y2="186" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+      <text x="234" y="180" text-anchor="middle" class="mono small t-accent">pack</text>
+
+      <rect x="272" y="16" width="210" height="196" rx="8" class="box"/>
+      <text x="286" y="40" class="mono small strong">.virtualbricks-export-*/</text>
+      <text x="292" y="70" class="mono small t-accent">contents.toml</text>
+      <text x="468" y="70" text-anchor="end" class="small muted">written here</text>
+      <text x="292" y="100" class="mono small">project.toml</text>
+      <text x="292" y="130" class="mono small">README</text>
+      <text x="292" y="160" class="mono small">vm1_hda.cow</text>
+      <text x="292" y="190" class="mono small">.images/debian</text>
+
+      <line x1="482" y1="91" x2="552" y2="91" class="ln-accent" marker-end="url(#e-tip-acc)"/>
+      <text x="517" y="84" text-anchor="middle" class="mono small t-accent">write</text>
+      <rect x="556" y="76" width="188" height="30" rx="5" class="box"/>
+      <text x="650" y="96" text-anchor="middle" class="mono small">.lab.vbp.XXXXXXXX.part</text>
+      <line x1="650" y1="106" x2="650" y2="172" class="ln" marker-end="url(#e-tip)"/>
+      <text x="640" y="143" text-anchor="end" class="small muted">rename, at the end</text>
+      <rect x="556" y="176" width="188" height="30" rx="5" class="box-accent"/>
+      <text x="650" y="196" text-anchor="middle" class="mono small">lab.vbp</text>
+    </svg>
+  </div>
+  <figcaption>An export with <code>qemu-img</code>. The arrows in color are the steps of the progress, <code>pack</code> and <code>write</code>. The tar tool reads the folder in the order of the archive, following the links, so the project&#39;s files are never copied; without <code>qemu-img</code> the disks are linked too, and the tar goes through gzip.</figcaption>
+</figure>
+<p>The result is an object:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">output</code></th><td class="kind">string</td><td class="meaning"><p>The archive.</p></td></tr>
+<tr><th scope="row"><code class="key">size</code></th><td class="kind">integer</td><td class="meaning"><p>Its size, in bytes.</p></td></tr>
+<tr><th scope="row"><code class="key">report</code></th><td class="kind">array</td><td class="meaning"><p>[<em>level</em>, <em>text</em>, <em>where</em>] for each problem, as a disk stored as it is.</p></td></tr>
+</tbody></table></div>
+</section>
+
+<section id="import">
+<h2><code>import</code></h2>
+<p>Make a project of an archive. The application reads the archive with <a href="#inspect">inspect</a> first, and asks the user what to do with each image; this job does the rest:</p>
+<figure class="code"><pre><code><span class="k">job</span> = "import"
+<span class="k">archive</span> = "/home/user/lab.vbp"
+<span class="k">staging</span> = "/home/user/.virtualbricks/.importing-lab-k2x9q1ab"
+<span class="k">destination</span> = "/home/user/.virtualbricks/lab"
+<span class="k">qemu_img</span> = "/usr/bin/qemu-img"
+
+<span class="h">[[images]]</span>
+<span class="k">name</span> = "debian"
+<span class="k">choice</span> = "copy"
+<span class="k">path</span> = "/home/user/.virtualbricks/vimages/debian-12.qcow2"
+<span class="k">fallback</span> = ""
+
+<span class="h">[settings]</span>
+<span class="k">qemupath</span> = "/usr/bin"</code></pre></figure>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">archive</code></th><td class="kind">path</td><td class="meaning"><p>The archive to import.</p></td></tr>
+<tr><th scope="row"><code class="key">staging</code></th><td class="kind">path</td><td class="meaning"><p>An empty folder of the workspace, .importing-<em>name</em>-<em>XXXXXXXX</em>, that the application creates and the list of projects ignores. The archive is extracted there.</p></td></tr>
+<tr><th scope="row"><code class="key">destination</code></th><td class="kind">path</td><td class="meaning"><p>The folder of the new project, <em>workspace</em>/<em>name</em>. If a folder with that name appeared meanwhile, the import takes the next free name, <em>name</em>-2, <em>name</em>-3&#8230; and says so in its report. An import never replaces a project.</p></td></tr>
+<tr><th scope="row"><code class="key">images</code></th><td class="kind">array of tables</td><td class="meaning"><p>What to do with each image of the project file, with the keys below.</p></td></tr>
+<tr><th scope="row"><code class="key">name</code></th><td class="kind">string</td><td class="meaning"><p>The name of the image in the project file.</p></td></tr>
+<tr><th scope="row"><code class="key">choice</code></th><td class="kind">"copy" | "use" | "skip" | "auto"</td><td class="meaning"><p><code>copy</code> moves the image from the archive to <code>path</code>, or to the next free name, <em>debian-12.1.qcow2</em>, <em>debian-12.2.qcow2</em>&#8230; <code>use</code> uses the file <code>path</code> of this computer. <code>skip</code> leaves the image unset: its disks get one in their settings later.</p><p><code>auto</code> copies the image if the archive has it, otherwise uses <code>fallback</code>, otherwise skips it; the application sends it for the images of an older archive that the inspection hadn&#39;t seen yet when the import started.</p></td></tr>
+<tr><th scope="row"><code class="key">path</code></th><td class="kind">path</td><td class="meaning"><p>Where the copy goes, or the file used.</p></td></tr>
+<tr><th scope="row"><code class="key">fallback</code></th><td class="kind">path</td><td class="meaning"><p>For <code>auto</code>: the file to use if the archive doesn&#39;t have the image, or &quot;&quot;.</p></td></tr>
+<tr><th scope="row"><code class="key">settings</code></th><td class="kind">table</td><td class="meaning"><p>The settings of the project to replace with this computer&#39;s: <code>qemupath</code> and <code>vdepath</code>, the folders of QEMU and VDE.</p></td></tr>
+<tr><th scope="row"><code class="key">qemu_img</code></th><td class="kind">path</td><td class="meaning"><p>The <code>qemu-img</code> that unpacks and rebases the disks, or &quot;&quot;.</p></td></tr>
+</tbody></table></div>
+<p>The application gives every image a default:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>The image</th><th>Default</th><th>When</th></tr></thead><tbody>
+<tr><th scope="row" rowspan="2">is in the archive</th><td class="kind">use</td><td class="meaning"><p>The image library, <em>workspace</em>/vimages, has a file with the same file name and size: that file.</p></td></tr>
+<tr><td class="kind">copy</td><td class="meaning"><p>Otherwise: into the library, under the next free name.</p></td></tr>
+<tr><th scope="row" rowspan="2">isn&#39;t in the archive</th><td class="kind">use</td><td class="meaning"><p>This computer has its file at the same path, or the library has a file with its name.</p></td></tr>
+<tr><td class="kind">skip</td><td class="meaning"><p>Otherwise.</p></td></tr>
+<tr><th scope="row">isn&#39;t known yet</th><td class="kind">auto</td><td class="meaning"><p>The import started before the inspection of an older archive reached the end; the fallback is found as above.</p></td></tr>
+</tbody></table></div>
+<p>A setting is replaced, unless you say otherwise, when its folder doesn&#39;t exist on this computer.</p>
+<p id="import-steps">The import takes these steps:</p>
+<figure class="diagram">
+  <div class="canvas">
+    <svg class="dg" viewBox="0 0 760 256" role="img" aria-label="The import extracts the archive into a hidden folder of the workspace, moves the copied image to workspace/vimages, points the private disk at it as its backing file, and renames the folder to workspace/lab. The numbers are the steps of the import.">
+      <defs>
+        <marker id="m-tip" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip"/></marker>
+        <marker id="m-tip-acc" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="tip-accent"/></marker>
+      </defs>
+      <rect x="16" y="16" width="316" height="226" rx="8" class="box"/>
+      <text x="30" y="40" class="mono small strong">workspace/.importing-lab-k2x9q1ab/</text>
+      <circle cx="312" cy="36" r="9" class="badge"/><text x="312" y="40" text-anchor="middle" class="badge-text">1</text>
+      <text x="36" y="76" class="mono small muted">contents.toml <tspan class="small">(removed)</tspan></text>
+      <circle cx="312" cy="72" r="9" class="badge"/><text x="312" y="76" text-anchor="middle" class="badge-text">2</text>
+      <text x="36" y="108" class="mono small">project.toml</text>
+      <circle cx="290" cy="104" r="9" class="badge"/><text x="290" y="108" text-anchor="middle" class="badge-text">3</text>
+      <circle cx="312" cy="104" r="9" class="badge"/><text x="312" y="108" text-anchor="middle" class="badge-text">5</text>
+      <text x="36" y="140" class="mono small">README</text>
+      <text x="36" y="172" class="mono small">vm1_hda.cow</text>
+      <circle cx="268" cy="168" r="9" class="badge"/><text x="268" y="172" text-anchor="middle" class="badge-text">6</text>
+      <circle cx="290" cy="168" r="9" class="badge"/><text x="290" y="172" text-anchor="middle" class="badge-text">7</text>
+      <circle cx="312" cy="168" r="9" class="badge"/><text x="312" y="172" text-anchor="middle" class="badge-text">8</text>
+      <text x="36" y="204" class="mono small">.images/debian</text>
+      <circle cx="312" cy="200" r="9" class="badge"/><text x="312" y="204" text-anchor="middle" class="badge-text">4</text>
+
+      <line x1="332" y1="86" x2="456" y2="86" class="ln-accent" marker-end="url(#m-tip-acc)"/>
+      <text x="394" y="78" text-anchor="middle" class="small t-accent">9 &#183; rename</text>
+      <line x1="332" y1="200" x2="456" y2="224" class="ln" marker-end="url(#m-tip)"/>
+      <text x="394" y="200" text-anchor="middle" class="small muted">4 &#183; move</text>
+
+      <rect x="460" y="16" width="284" height="130" rx="8" class="box"/>
+      <text x="474" y="40" class="mono small strong">workspace/lab/</text>
+      <text x="480" y="76" class="mono small">project.toml</text>
+      <text x="480" y="104" class="mono small">README</text>
+      <text x="480" y="132" class="mono small">vm1_hda.cow</text>
+      <rect x="460" y="184" width="284" height="58" rx="8" class="box"/>
+      <text x="474" y="206" class="mono small strong">workspace/vimages/</text>
+      <text x="480" y="230" class="mono small">debian-12.qcow2</text>
+      <path d="M564,128 H712 V226 H592" class="ln-accent dash" marker-end="url(#m-tip-acc)"/>
+      <text x="704" y="170" text-anchor="end" class="small t-accent">6 &#183; backing file, rebase -u</text>
+    </svg>
+  </div>
+  <figcaption>The files of an import, before and after. The numbers are the steps below: the private disk is rebased onto the image&#39;s new path before the folder is renamed, so the dashed arrow ends up pointing from <em>lab/vm1_hda.cow</em> to <em>vimages/debian-12.qcow2</em>.</figcaption>
+</figure>
+<ol class="steps">
+<li>Extract the archive into <code>staging</code>, in the step <code>extract</code>.</li>
+<li>Read which members are packed from <code>contents.toml</code>, and remove it: it isn&#39;t a file of the project.</li>
+<li>Read the project file and upgrade it, or convert <code>.project</code>.</li>
+<li>Move each copied image to the library, sending it with <code>created</code>; then remove the <em>.images</em> folder with the images that aren&#39;t copied.</li>
+<li>Rewrite <code>project.toml</code> with the path of each image, &quot;&quot; for an image left unset, and with <code>settings</code>.</li>
+<li>Point each private disk at its image, in the format of the image: <code>qemu-img rebase -u -b</code> <em>image</em> <code>-F</code> <em>format</em> <em>disk</em>.</li>
+<li>Unpack the packed disks and images, in the step <code>unpack</code>.</li>
+<li>After GNU <code>tar</code> or <code>tarfile</code>, turn the runs of zeros of the private disks and of the copied images into holes.</li>
+<li>Rename <code>staging</code> to the project&#39;s folder, with the permissions of a normal folder.</li>
+</ol>
+<p>The result is an object:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Key</th><th>Type</th><th>Meaning</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">name</code></th><td class="kind">string</td><td class="meaning"><p>The name of the new project: the name of <code>destination</code>, or the next free one.</p></td></tr>
+<tr><th scope="row"><code class="key">report</code></th><td class="kind">array</td><td class="meaning"><p>[<em>level</em>, <em>text</em>, <em>where</em>] for each problem: an image left unset, a disk left compressed or not rebased, what the conversion of <code>.project</code> found.</p></td></tr>
+</tbody></table></div>
+</section>
+
+<section id="progress">
+<h2>Progress</h2>
+<p>Each step counts bytes, <em>done</em> of <em>total</em>:</p>
+<div class="scroll"><table class="fields keys"><thead><tr><th>Step</th><th>Job</th><th>done</th><th>total</th></tr></thead><tbody>
+<tr><th scope="row"><code class="key">read</code></th><td class="kind">inspect</td><td><p>The bytes of the archive read</p></td><td><p>The size of the archive</p></td></tr>
+<tr><th scope="row"><code class="key">pack</code></th><td class="kind">export</td><td><p>The bytes of the disks and images packed</p></td><td><p>Their data, without holes</p></td></tr>
+<tr><th scope="row"><code class="key">write</code></th><td class="kind">export</td><td><p>The bytes of the tar written, before gzip</p></td><td><p>The data of the members, without holes</p></td></tr>
+<tr><th scope="row"><code class="key">extract</code></th><td class="kind">import</td><td><p>The bytes of the archive given to the archive tool</p></td><td><p>The size of the archive</p></td></tr>
+<tr><th scope="row"><code class="key">unpack</code></th><td class="kind">import</td><td><p>The bytes of the packed disks and images unpacked</p></td><td><p>Their size</p></td></tr>
+</tbody></table></div>
+<p>A step sends its progress at most ten times a second, and when it ends; a step with nothing to do sends nothing. The steps <code>pack</code> and <code>unpack</code> follow the percentage that <code>qemu-img</code> prints. The <em>done</em> of a step can stay below its <em>total</em>, as when an inspection stops at the head of an archive, or go past it, as in <code>write</code>, which counts the tar headers too: a progress bar shows the smaller of the two.</p>
+</section>
+
+<section id="tools">
+<h2>Archive tools</h2>
+<p>The process runs the first archive tool it finds: <code>bsdtar</code>; otherwise <code>tar</code>, if the first line of <code>tar --version</code> says it&#39;s GNU tar, as the <code>tar</code> of BusyBox doesn&#39;t keep holes; otherwise Python&#39;s <code>tarfile</code>.</p>
+<div class="scroll"><table class="fields tools"><thead><tr><th></th><th>bsdtar</th><th>GNU tar</th><th>tarfile</th></tr></thead><tbody>
+<tr><th scope="row">Reading the head</th><td colspan="3"><p>Always with <code>tarfile</code>, reading the archive as a stream. If <code>tarfile</code> finds a member that it would read wrong (see <a href="#known-problems">Known problems</a>), the process lists the archive with the tool instead, and extracts the files of the head with <code>-x -O -f</code> <em>archive</em> <em>member</em>.</p></td></tr>
+<tr><th scope="row">Listing, instead</th><td><code>bsdtar -t -v -f</code> <em>archive</em></td><td><code>tar -t -v --quoting-style=literal -f</code> <em>archive</em></td><td><p>&quot;install bsdtar or GNU tar to read this archive&quot;</p></td></tr>
+<tr><th scope="row">Writing</th><td><code>bsdtar -c -L --format pax -f - -C</code> <em>folder</em> <code>--</code> <em>members</em></td><td><code>tar -c --sparse --dereference --format=posix -f - -C</code> <em>folder</em> <code>--</code> <em>members</em></td><td><p>with the sparse members written by Virtualbricks</p></td></tr>
+<tr><th scope="row">Extracting, from a pipe</th><td><code>bsdtar -x -S -f - -C</code> <em>folder</em></td><td><code>tar -x</code> <code>--gzip</code>, <code>--bzip2</code>, <code>--xz</code> or <code>--zstd</code> <code>-f - -C</code> <em>folder</em></td><td><p>skipping members with an absolute name or <em>..</em> in their name, links and devices</p></td></tr>
+<tr><th scope="row">Holes, after extracting</th><td><p>made by <code>-S</code></p></td><td colspan="2"><p>made by the import, from the runs of zeros</p></td></tr>
+</tbody></table></div>
+<p>The process compresses the output of every tool with gzip itself, so the archive is the same whatever the tool. It feeds the archive to the tool through a pipe, so that the progress of <code>extract</code> is the same with every tool, and passes GNU tar the compression, which it doesn&#39;t recognize on a pipe.</p>
+</section>
+
+<section id="application">
+<h2>The application&#39;s side</h2>
+<p>The module <em>virtualbricks/config/archive.py</em> has both sides of the protocol. In the application, an <code>ArchiveJob</code> runs a job:</p>
+<ul>
+<li><code>start(reactor)</code> starts the process with <code>reactor.spawnProcess</code>, writes the job as TOML and closes the standard input.</li>
+<li>A <code>progress</code> message calls <code>on_progress(step, done, total)</code>, a <code>head</code> calls <code>on_head(table)</code>, and a <code>created</code> adds its path to the leftovers.</li>
+<li>When the process ends, the Deferred <code>done</code> fires with the result, if one came, whatever the exit status. Otherwise the leftovers are removed, and <code>done</code> fails with <code>Cancelled</code> after <code>cancel()</code>, or else with <code>ArchiveError</code>, whose message is the <code>error</code> message, or the standard error of the process, or &quot;the process stopped&quot;.</li>
+<li><code>cancel()</code> sends SIGTERM to the process.</li>
+</ul>
+<p>Three functions, exported by <code>virtualbricks.config</code>, make the jobs, and <code>done</code> fires with what they make of the result:</p>
+<dl class="terms">
+<dt><code>inspect_archive(path, on_head, on_progress)</code></dt><dd><p>Fires with an <code>ArchiveContents</code>; <code>on_head</code> gets one too.</p></dd>
+<dt><code>export_project(project, output, files, images, on_progress, qemu_img)</code></dt><dd><p>Fires with the result object. Asks for <code>"none"</code> compression when <code>qemu_img</code> is given.</p></dd>
+<dt><code>import_project(plan, workspace, on_progress, qemu_img)</code></dt><dd><p>Creates the <code>staging</code> folder, a leftover from the start, and fires with an <code>ImportResult</code>, its name and its report. <code>plan_import</code> makes the <em>plan</em>, with the default of every choice, from an <code>ArchiveContents</code>; <code>update_plan</code> settles it with the result of the inspection when the head came first.</p></dd>
+</dl>
+<p><code>Cancelled</code> is exported as <code>ArchiveCancelled</code>. The Import window runs an inspection as soon as an archive is chosen, and cancels it when another is chosen or when the import starts, which reads the whole archive anyway. Closing the Import window cancels its inspection, but closing either window lets an import or an export go on to its end, and the application logs its result.</p>
+<figure class="code"><pre><code><span class="k">from</span> virtualbricks.config <span class="k">import</span> inspect_archive
+
+<span class="k">def</span> show(contents):
+    print(contents.description)
+    <span class="k">for</span> member <span class="k">in</span> contents.members:
+        print(member.kind, member.name, member.size)
+
+job = inspect_archive(
+    "/home/user/lab.vbp",
+    on_progress=<span class="k">lambda</span> step, done, total: print(step, done),
+)
+job.done.addCallback(show)</code></pre></figure>
+</section>
+
+<section id="files">
+<h2>Files</h2>
+<dl class="terms">
+<dt><em>name</em>.vbp</dt><dd><p>An archive.</p></dd>
+<dt>.<em>name</em>.vbp.<em>XXXXXXXX</em>.part</dt><dd><p>An archive being written, next to it.</p></dd>
+<dt>.virtualbricks-export-<em>XXXXXXXX</em>/</dt><dd><p>The members of an archive being written, next to it.</p></dd>
+<dt><em>workspace</em>/.importing-<em>name</em>-<em>XXXXXXXX</em>/</dt><dd><p>A project being imported.</p></dd>
+<dt><em>workspace</em>/vimages/</dt><dd><p>The image library, where the import copies the images.</p></dd>
+<dt><em>workspace</em>/<em>name</em>/</dt><dd><p>An imported project.</p></dd>
+</dl>
+</section>
+
+<section id="examples">
+<h2>Examples</h2>
+<p>Run the process by hand with a small script:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">cat &gt; archive-process.py &lt;&lt;'EOF'</span>
+import sys
+from virtualbricks.config.archive import main
+sys.exit(main())
+EOF</code></pre></figure>
+<p>Inspect an archive:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">printf 'job = "inspect"\narchive = "/home/user/lab.vbp"\n' |</span>
+<span class="prompt">&gt; </span><span class="cmd">    python archive-process.py</span>
+<span class="out">{"progress": {"step": "read", "done": 512, "total": 409600}}</span>
+<span class="out">{"result": {"path": "/home/user/lab.vbp", "data": ...}}</span></code></pre></figure>
+<p>The result, laid out:</p>
+<figure class="code"><pre><code>{
+  <span class="k">"path"</span>: "/home/user/lab.vbp",
+  <span class="k">"data"</span>: {
+    <span class="k">"format"</span>: 1,
+    <span class="k">"images"</span>: {
+      <span class="k">"debian"</span>: {<span class="k">"path"</span>: "/srv/vm/debian-12.qcow2", ...}
+    },
+    <span class="k">"bricks"</span>: {<span class="k">"vm1"</span>: {<span class="k">"type"</span>: "qemu", ...}}
+  },
+  <span class="k">"description"</span>: "A two-host lab.\n",
+  <span class="k">"members"</span>: [
+    ["project.toml", 255, "project", false, 0],
+    ["README", 16, "readme", false, 0],
+    ["vm1_hda.cow", 197120, "disk", true, 196616],
+    [".images/debian", 197120, "image", true, 196616]
+  ],
+  <span class="k">"complete"</span>: true,
+  <span class="k">"report"</span>: [],
+  <span class="k">"converted"</span>: false
+}</code></pre></figure>
+<p>Export a project, with the job of <a href="#export">export</a> in <em>export.toml</em>:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">python archive-process.py &lt; export.toml</span>
+<span class="out">{"created": "/home/user/.lab.vbp.hsp68v_7.part"}</span>
+<span class="out">{"created": "/home/user/.virtualbricks-export-chcr2_tb"}</span>
+<span class="out">{"progress": {"step": "pack", "done": 0, "total": 393232}}</span>
+<span class="out">{"progress": {"step": "pack", "done": 393232, "total": 393232}}</span>
+<span class="out">{"progress": {"step": "write", "done": 409600, "total": 394772}}</span>
+<span class="out">{"progress": {"step": "write", "done": 394772, "total": 394772}}</span>
+<span class="out">{"result": {"output": "/home/user/lab.vbp", "size": 409600, ...}}</span>
+<span class="prompt">$ </span><span class="cmd">echo $?</span>
+<span class="out">0</span></code></pre></figure>
+<p>Stop a long export: the process removes the unfinished archive and its folder.</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">python archive-process.py &lt; export.toml &gt; messages &amp;</span>
+<span class="prompt">$ </span><span class="cmd">sleep 2; kill $!; wait $!; echo $?</span>
+<span class="out">1</span>
+<span class="prompt">$ </span><span class="cmd">tail -n 1 messages</span>
+<span class="out">{"progress": {"step": "write", "done": 48234496, ...}}</span></code></pre></figure>
+<p>A job that fails:</p>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">printf 'job = "inspect"\narchive = "notes.txt"\n' |</span>
+<span class="prompt">&gt; </span><span class="cmd">    python archive-process.py</span>
+<span class="out">{"progress": {"step": "read", "done": 512, "total": 5383}}</span>
+<span class="out">{"error": "notes.txt: invalid header"}</span>
+<span class="prompt">$ </span><span class="cmd">echo $?</span>
+<span class="out">2</span></code></pre></figure>
+</section>
+
+<section id="known-problems">
+<h2>Known problems</h2>
+<p>An inspection that has to read the archive with the tool sends no progress, and no head.</p>
+<p>Python&#39;s <code>tarfile</code>, from 3.10 to 3.13, misreads a GNU sparse 1.0 member whose size is in a pax record, as <code>bsdtar</code> and GNU <code>tar</code> write the members larger than 8 GiB, and loses the member after it. The process then reads the archive with the tool; without <code>bsdtar</code> or GNU <code>tar</code>, it can&#39;t read it, and says &quot;install bsdtar or GNU tar to read this archive&quot;.</p>
+</section>
+
+<section id="see-also">
+<h2>See also</h2>
+<p><a class="man" href="config-files.html"><code>virtualbricks-config</code>(5)</a>, <a class="man" href="https://manpages.debian.org/bsdtar.1"><code>bsdtar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/tar.1"><code>tar</code>(1)</a>, <a class="man" href="https://manpages.debian.org/tar.5"><code>tar</code>(5)</a>, <a class="man" href="https://manpages.debian.org/qemu-img.1"><code>qemu-img</code>(1)</a></p>
+<p>GNU tar, sparse formats: <a href="https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html">https://www.gnu.org/software/tar/manual/html_node/Sparse-Formats.html</a></p>
+<p>TOML 1.0: <a href="https://toml.io/en/v1.0.0">https://toml.io/en/v1.0.0</a></p>
+</section>
+      <p class="footnote">Written from <code>docs/man/virtualbricks-archive.7.md</code>, the source of the man page, so the two say the same. The examples are the output of the process on a small project.</p>
+    </main>
+  </div>
+</div>
