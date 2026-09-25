@@ -229,6 +229,12 @@ def copy_tree(src: str, dst: str) -> None:
     shutil.copytree(src, dst, symlinks=True, copy_function=copy_sparse)
 
 
+def _no_such_project(name: str) -> errors.InvalidNameError:
+    return errors.InvalidNameError(
+        _('There is no project "{name}"').format(name=name)
+    )
+
+
 class Trasher(Protocol):
     """
     The trash of a desktop.
@@ -339,14 +345,8 @@ class Workspace:
 
     def _validate(self, name: str, renaming: str | None = None, bricks=None):
         message = self.check_name(name, renaming, bricks)
-        if message is None:
-            return
-        taken = self._is_name(name) and os.path.lexists(
-            self.project_path(name)
-        )
-        if taken and name != renaming:
-            raise errors.ProjectExistsError(name)
-        raise errors.InvalidNameError(message)
+        if message is not None:
+            raise errors.InvalidNameError(message)
 
     def free_name(self, name: str) -> str:
         """Return name, or name-2, name-3... the first that isn't taken."""
@@ -446,7 +446,9 @@ class Workspace:
         try:
             os.makedirs(path)
         except FileExistsError:
-            raise errors.ProjectExistsError(name) from None
+            raise errors.InvalidNameError(
+                _("A project with this name already exists")
+            ) from None
         create_project_file(self._project_file(name), new_project_settings())
         if description:
             write_description(path, description)
@@ -463,7 +465,7 @@ class Workspace:
         if name == new:
             return
         if not self.exists(name):
-            raise errors.ProjectNotExistsError(name)
+            raise _no_such_project(name)
         self._validate(new, renaming=name, bricks=bricks)
         os.rename(self.project_path(name), self.project_path(new))
         self._summaries.pop(name, None)
@@ -475,7 +477,7 @@ class Workspace:
         """Copy a project with its private disks; the copy is used now."""
 
         if not self.exists(name):
-            raise errors.ProjectNotExistsError(name)
+            raise _no_such_project(name)
         self._validate(new, bricks=self._brick_names(name))
         copy_tree(self.project_path(name), self.project_path(new))
         now = time.time()
@@ -485,7 +487,7 @@ class Workspace:
         if not self._is_name(name) or not os.path.isdir(
             self.project_path(name)
         ):
-            raise errors.ProjectNotExistsError(name)
+            raise _no_such_project(name)
         if self.current is not None and self.current.name == name:
             raise errors.ProjectOpenError(name)
 
@@ -529,8 +531,8 @@ class Workspace:
         Load a project into factory and return the report of reading it.
 
         The project that is open is saved first, so its changes aren't lost
-        when the factory is reset. Raise ProjectNotExistsError if there is
-        no project file and ProjectFormatError if it can't be read; the open
+        when the factory is reset. Raise InvalidNameError if there is no
+        project file and ProjectFormatError if it can't be read; the open
         project stays open, and so it does if it can't be saved.
         """
 
@@ -538,13 +540,13 @@ class Workspace:
         if self.current is not None and self.current.name == name:
             return report
         if not self._is_name(name):
-            raise errors.InvalidNameError(name)
+            raise _no_such_project(name)
         try:
             data = upgrade_project(
                 read_project_file(self._project_file(name)), report
             )
         except FileNotFoundError:
-            raise errors.ProjectNotExistsError(name) from None
+            raise _no_such_project(name) from None
         # The project file is readable, so it's safe to close the open one,
         # once it's saved: nothing else keeps what the factory holds.
         self.save(factory)
@@ -608,8 +610,6 @@ class Workspace:
         name = current_project()
         try:
             return self.open_last(factory)
-        except errors.ProjectNotExistsError:
-            logger.error(cannot_find_project, name=name)
         except errors.InvalidNameError:
             logger.error(cannot_find_project, name=name)
         except ProjectFormatError as exc:

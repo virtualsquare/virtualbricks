@@ -209,19 +209,15 @@ class TestCreate(WorkspaceTestCase):
             os.makedirs(folder)
 
         self.patch(self.projects, "_validate", validate)
-        self.assertRaises(
-            errors.ProjectExistsError, self.projects.create, "lab"
-        )
+        self.assertRaises(errors.InvalidNameError, self.projects.create, "lab")
         self.assertEqual(os.listdir(folder), [])
 
     def test_bad_names(self):
         self.projects.create("lab")
-        self.assertRaises(
-            errors.ProjectExistsError, self.projects.create, "lab"
-        )
+        self.assertRaises(errors.InvalidNameError, self.projects.create, "lab")
         os.makedirs(os.path.join(self.path, "folder"))
         self.assertRaises(
-            errors.ProjectExistsError, self.projects.create, "folder"
+            errors.InvalidNameError, self.projects.create, "folder"
         )
         self.assertRaises(
             errors.InvalidNameError, self.projects.create, "../lab"
@@ -266,8 +262,9 @@ class TestRename(WorkspaceTestCase):
         self.projects.create("lab")
         self.projects.create("other")
         rename = self.projects.rename
-        self.assertRaises(errors.ProjectNotExistsError, rename, "gone", "x")
-        self.assertRaises(errors.ProjectExistsError, rename, "lab", "other")
+        error = self.assertRaises(errors.InvalidNameError, rename, "gone", "x")
+        self.assertEqual(str(error), 'There is no project "gone"')
+        self.assertRaises(errors.InvalidNameError, rename, "lab", "other")
         self.assertRaises(errors.InvalidNameError, rename, "lab", ".lab")
         self.assertEqual(self.projects.names(), ["lab", "other"])
 
@@ -325,8 +322,8 @@ class TestDuplicate(WorkspaceTestCase):
     def test_errors(self):
         self.projects.create("lab")
         duplicate = self.projects.duplicate
-        self.assertRaises(errors.ProjectNotExistsError, duplicate, "gone", "x")
-        self.assertRaises(errors.ProjectExistsError, duplicate, "lab", "lab")
+        self.assertRaises(errors.InvalidNameError, duplicate, "gone", "x")
+        self.assertRaises(errors.InvalidNameError, duplicate, "lab", "lab")
         self.assertRaises(errors.InvalidNameError, duplicate, "lab", "a/b")
 
 
@@ -399,9 +396,7 @@ class TestRemove(WorkspaceTestCase):
             self.patch(self.projects, "trasher", trasher)
             for remove in (self.projects.trash, self.projects.delete):
                 for name in ("gone", "..", "", "a/b"):
-                    self.assertRaises(
-                        errors.ProjectNotExistsError, remove, name
-                    )
+                    self.assertRaises(errors.InvalidNameError, remove, name)
         self.assertEqual(self.trash.trashed, [])
 
     def test_the_summary_is_forgotten(self):
@@ -584,7 +579,7 @@ class TestOpen(WorkspaceTestCase):
 
     def test_missing(self):
         self.assertRaises(
-            errors.ProjectNotExistsError, self.projects.open, "lab", None
+            errors.InvalidNameError, self.projects.open, "lab", None
         )
         for name in ("../lab", "", ".."):
             self.assertRaises(
@@ -771,14 +766,14 @@ class TestStartUp(WorkspaceTestCase):
     def test_open_last_raises(self):
         set_current_project("gone")
         self.assertRaises(
-            errors.ProjectNotExistsError,
+            errors.InvalidNameError,
             self.projects.open_last,
             self.factory,
         )
         self.file("new_project", "notes")
         set_current_project("new_project")
         self.assertRaises(
-            errors.ProjectNotExistsError,
+            errors.InvalidNameError,
             self.projects.open_last,
             self.factory,
         )

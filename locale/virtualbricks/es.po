@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 17:41+0200\n"
+"POT-Creation-Date: 2026-09-25 23:57+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -161,6 +161,11 @@ msgid "{name}: {path} doesn't exist"
 msgstr ""
 
 #: virtualbricks/config/workspace.py
+#, fuzzy, python-brace-format
+msgid "There is no project \"{name}\""
+msgstr "Guardar proyecto como"
+
+#: virtualbricks/config/workspace.py
 msgid "The name is empty"
 msgstr ""
 
@@ -259,14 +264,14 @@ msgstr ""
 
 #: virtualbricks/gui/gui.py
 #, python-brace-format
-msgid ""
-"The project \"{name}\" that was open last doesn't exist any more. Open "
-"another one, or create one."
+msgid "The project \"{name}\" that was open last can't be opened: {error}"
 msgstr ""
 
 #: virtualbricks/gui/gui.py
 #, python-brace-format
-msgid "The project \"{name}\" that was open last can't be opened: {error}"
+msgid ""
+"The project \"{name}\" that was open last doesn't exist any more. Open "
+"another one, or create one."
 msgstr ""
 
 #: virtualbricks/gui/messages.py
@@ -2343,10 +2348,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Virtualbricks - Delete project"
 #~ msgstr "Virtualbricks"
-
-#, fuzzy
-#~ msgid "New project name:"
-#~ msgstr "Guardar proyecto como"
 
 #, fuzzy
 #~ msgid "_Import project"

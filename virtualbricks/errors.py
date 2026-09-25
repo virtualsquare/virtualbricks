@@ -81,14 +81,6 @@ class ImageAlreadyInUseError(Error):
 # Project specific errors
 
 
-class ProjectExistsError(InvalidNameError):
-    pass
-
-
-class ProjectNotExistsError(InvalidNameError):
-    pass
-
-
 class ProjectOpenError(Error):
     """The project is open, and the action needs it closed."""
 

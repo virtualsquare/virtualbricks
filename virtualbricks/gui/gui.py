@@ -611,16 +611,17 @@ class Application(brickfactory.Application):
         name = current_project()
         try:
             projects.open_last(factory)
-        except errors.ProjectNotExistsError:
-            message = _(
-                'The project "{name}" that was open last doesn\'t exist any'
-                " more. Open another one, or create one."
-            ).format(name=name)
         except (errors.InvalidNameError, ProjectFormatError) as exc:
-            message = _(
-                'The project "{name}" that was open last can\'t be opened:'
-                " {error}"
-            ).format(name=name, error=exc)
+            if projects.exists(name):
+                message = _(
+                    'The project "{name}" that was open last can\'t be'
+                    " opened: {error}"
+                ).format(name=name, error=exc)
+            else:
+                message = _(
+                    'The project "{name}" that was open last doesn\'t exist'
+                    " any more. Open another one, or create one."
+                ).format(name=name)
         else:
             return
         logger.warn(cannot_open_last, message=message)
