@@ -51,18 +51,18 @@ __all__ = [
     "Record",
     "Ref",
     "Str",
-    "default",
     "define",
-    "dump",
+    "dump_record",
     "field",
+    "field_default",
+    "field_names",
+    "field_values",
     "fields",
     "kind_of",
-    "load",
-    "names",
-    "parse",
+    "load_record",
+    "parse_value",
     "references",
     "rename_references",
-    "values",
 ]
 
 _KEY = "virtualbricks.config.schema"
@@ -269,12 +269,12 @@ class Record(Kind[S]):
             raise ValueError(f"{value!r} is not a {self.cls.__name__}")
 
     def to_data(self, value: S) -> Table:
-        return dump(value, exclude=self.exclude)
+        return dump_record(value, exclude=self.exclude)
 
     def from_data(self, data: Value, report: Report, where: str) -> S:
         if not isinstance(data, dict):
             raise ValueError(f"{_describe(data)} is not a table")
-        return load(self.cls, data, report, where, exclude=self.exclude)
+        return load_record(self.cls, data, report, where, exclude=self.exclude)
 
     def format(self, value: S) -> str:
         return "{…}"
@@ -382,32 +382,32 @@ def fields(cls_or_obj: object) -> tuple[attr.Attribute[object], ...]:
     return attr.fields(cls)
 
 
-def names(cls_or_obj: object) -> list[str]:
+def field_names(cls_or_obj: object) -> list[str]:
     return [attribute.name for attribute in fields(cls_or_obj)]
 
 
-def info(attribute: attr.Attribute[object]) -> FieldInfo:
+def field_info(attribute: attr.Attribute[object]) -> FieldInfo:
     return attribute.metadata[_KEY]
 
 
 def _path(attribute: attr.Attribute[object]) -> tuple[str, ...]:
-    return info(attribute).path or (attribute.name,)
+    return field_info(attribute).path or (attribute.name,)
 
 
 def kind_of(cls_or_obj: object, name: str) -> Kind[object]:
     for attribute in fields(cls_or_obj):
         if attribute.name == name:
-            return info(attribute).kind
+            return field_info(attribute).kind
     raise KeyError(name)
 
 
-def values(obj: object) -> dict[str, object]:
+def field_values(obj: object) -> dict[str, object]:
     """Return the values of all fields, by name."""
 
-    return {name: getattr(obj, name) for name in names(obj)}
+    return {name: getattr(obj, name) for name in field_names(obj)}
 
 
-def dump(obj: object, exclude: Collection[str] = ()) -> Table:
+def dump_record(obj: object, exclude: Collection[str] = ()) -> Table:
     """Return the TOML data of an instance, with every field."""
 
     data: Table = {}
@@ -419,7 +419,9 @@ def dump(obj: object, exclude: Collection[str] = ()) -> Table:
         for parent in parents:
             # the tables of the parents are made here
             table = cast("Table", table.setdefault(parent, {}))
-        table[key] = info(attribute).kind.to_data(getattr(obj, attribute.name))
+        table[key] = field_info(attribute).kind.to_data(
+            getattr(obj, attribute.name)
+        )
     return data
 
 
@@ -438,14 +440,14 @@ def _default_of(attribute: attr.Attribute[object]) -> object:
     return attribute.default
 
 
-def default(cls_or_obj: object, name: str) -> object:
+def field_default(cls_or_obj: object, name: str) -> object:
     for attribute in fields(cls_or_obj):
         if attribute.name == name:
             return _default_of(attribute)
     raise KeyError(name)
 
 
-def load(
+def load_record(
     cls: type[S],
     data: Table,
     report: Report,
@@ -469,7 +471,7 @@ def load(
         path = _path(attribute)
         consumed.add(path)
         dotted = ".".join(filter(None, (where,) + path))
-        kind = info(attribute).kind
+        kind = field_info(attribute).kind
         try:
             raw = _lookup(data, path)
         except KeyError:
@@ -505,7 +507,7 @@ def _report_unknown(
             report.warning("unknown field, dropped", dotted)
 
 
-def parse(cls_or_obj: object, name: str, text: str) -> object:
+def parse_value(cls_or_obj: object, name: str, text: str) -> object:
     """Convert the text typed in the console for a field; KeyError if unknown."""
 
     return kind_of(cls_or_obj, name).parse(text)
@@ -515,7 +517,7 @@ def references(obj: object) -> Iterator[tuple[str, str, str]]:
     """Yield ``(name, target, value)`` for each reference field that is set."""
 
     for attribute in fields(obj):
-        kind = info(attribute).kind
+        kind = field_info(attribute).kind
         value = getattr(obj, attribute.name)
         if isinstance(kind, Ref) and value:
             yield attribute.name, kind.target, value

@@ -36,8 +36,27 @@ from collections.abc import Callable, Iterator
 from typing import TYPE_CHECKING, TypeAlias, TypedDict, cast
 
 from virtualbricks import errors, tools
-from virtualbricks.config import schema, settings, tomlfile
-from virtualbricks.config.schema import Choice, Mac, Path, Str
+from virtualbricks.config.schema import (
+    Choice,
+    Mac,
+    Path,
+    Str,
+    define,
+    dump_record,
+    field,
+    kind_of,
+    load_record,
+    references,
+)
+from virtualbricks.config.settings import (
+    ProjectSettings,
+    new_project_settings,
+)
+from virtualbricks.config.tomlfile import (
+    DecodeError,
+    dump_toml,
+    load_toml,
+)
 
 if TYPE_CHECKING:
     from virtualbricks.brickfactory import BrickFactory
@@ -48,7 +67,6 @@ if TYPE_CHECKING:
         VMSock,
     )
     from virtualbricks.config.report import Report
-    from virtualbricks.config.settings import ProjectSettings
     from virtualbricks.config.tomlfile import Table, Value
     from virtualbricks.bricks.plug import Plug
     from virtualbricks.bricks.sock import Sock
@@ -79,11 +97,11 @@ class ProjectFormatError(Exception):
     """The project file can't be read: it's not TOML or a newer format."""
 
 
-@schema.define
+@define
 class ImageTable:
 
-    path: str = schema.field(Path(), default="")
-    description: str = schema.field(Str(), default="")
+    path: str = field(Path(), default="")
+    description: str = field(Str(), default="")
 
 
 class Nic(TypedDict, total=False):
@@ -150,12 +168,12 @@ def brick_table(brick: Brick) -> Table:
     return table
 
 
-def document(
+def project_document(
     factory: BrickFactory, project_settings: ProjectSettings
 ) -> Table:
     """Return the data of the project file for the bricks of factory."""
 
-    data: Table = {"format": FORMAT, "settings": schema.dump(project_settings)}
+    data: Table = {"format": FORMAT, "settings": dump_record(project_settings)}
     images: Table = {
         image.get_name(): {
             "path": image.get_path(),
@@ -166,7 +184,7 @@ def document(
     if images:
         data["images"] = images
     events: Table = {
-        event.get_name(): schema.dump(event.config)
+        event.get_name(): dump_record(event.config)
         for event in factory.iter_events()
     }
     if events:
@@ -179,24 +197,24 @@ def document(
     return data
 
 
-def save(
+def save_project(
     factory: BrickFactory, project_settings: ProjectSettings, path: str
 ) -> None:
-    tomlfile.dump(document(factory, project_settings), path)
+    dump_toml(project_document(factory, project_settings), path)
 
 
-def create(path: str, project_settings: ProjectSettings) -> None:
+def create_project_file(path: str, project_settings: ProjectSettings) -> None:
     """Write the project file of a new, empty project."""
 
-    tomlfile.dump(
-        {"format": FORMAT, "settings": schema.dump(project_settings)}, path
+    dump_toml(
+        {"format": FORMAT, "settings": dump_record(project_settings)}, path
     )
 
 
 # Reading
 
 
-def upgrade(data: Table, report: Report) -> Table:
+def upgrade_project(data: Table, report: Report) -> Table:
     """Bring the data to the current format; ProjectFormatError if newer."""
 
     version = data.get("format")
@@ -379,7 +397,7 @@ def _read_images(
 ) -> None:
     for name, table in _tables(data, "images", report):
         where = f"images.{name}"
-        image = schema.load(ImageTable, table, report, where)
+        image = load_record(ImageTable, table, report, where)
         path = image.path
         if not path:
             report.warning("has no path, image dropped", where)
@@ -408,7 +426,7 @@ def _read_events(factory: BrickFactory, data: Table, report: Report) -> None:
         except errors.InvalidNameError as exc:
             report.warning(f"{exc}, event dropped", where)
             continue
-        event.config = schema.load(EventConfig, table, report, where)
+        event.config = load_record(EventConfig, table, report, where)
 
 
 def _read_bricks(factory: BrickFactory, data: Table, report: Report) -> None:
@@ -442,14 +460,14 @@ def _check_references(factory: BrickFactory, report: Report) -> None:
     objects = [("bricks", brick) for brick in factory.bricks]
     objects += [("events", event) for event in factory.iter_events()]
     for kind, obj in objects:
-        for name, target, value in schema.references(obj.config):
+        for name, target, value in references(obj.config):
             if lookups[target](value) is None:
                 where = f"{kind}.{obj.get_name()}.{name}"
                 report.warning(f'no {target} named "{value}"', where)
 
 
 def _read_settings(data: Table, report: Report) -> ProjectSettings:
-    app_values = schema.dump(settings.new_project_settings())
+    app_values = dump_record(new_project_settings())
     table = data.get("settings")
     if not isinstance(table, dict):
         problem = "missing" if table is None else "is not a table"
@@ -457,18 +475,16 @@ def _read_settings(data: Table, report: Report) -> ProjectSettings:
         table = {}
     elif table:
         for key in app_values.keys() - table.keys():
-            value = schema.kind_of(settings.ProjectSettings, key).format(
-                app_values[key]
-            )
+            value = kind_of(ProjectSettings, key).format(app_values[key])
             report.warning(
                 f"missing, using the app setting {value}", f"settings.{key}"
             )
-    return schema.load(
-        settings.ProjectSettings, {**app_values, **table}, report, "settings"
+    return load_record(
+        ProjectSettings, {**app_values, **table}, report, "settings"
     )
 
 
-def restore(
+def restore_project(
     factory: BrickFactory, data: Table, report: Report, directory: str
 ) -> ProjectSettings:
     """
@@ -488,20 +504,22 @@ def restore(
     return project_settings
 
 
-def read(path: str) -> Table:
+def read_project_file(path: str) -> Table:
     """Return the data of a project file; ProjectFormatError if not TOML."""
 
     try:
-        return tomlfile.load(path)
-    except tomlfile.DecodeError as exc:
+        return load_toml(path)
+    except DecodeError as exc:
         raise ProjectFormatError(f"{path}: {exc}") from None
 
 
-def load(factory: BrickFactory, path: str, report: Report) -> ProjectSettings:
+def load_project(
+    factory: BrickFactory, path: str, report: Report
+) -> ProjectSettings:
     """Read a project file into factory; return the project's settings."""
 
-    data = upgrade(read(path), report)
-    return restore(factory, data, report, os.path.dirname(path))
+    data = upgrade_project(read_project_file(path), report)
+    return restore_project(factory, data, report, os.path.dirname(path))
 
 
 # Editing, used when a project is imported

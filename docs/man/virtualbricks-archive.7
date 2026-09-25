@@ -748,7 +748,7 @@ path to the leftovers.
 When the process ends, the Deferred \f[B]done\f[R] fires with the
 result, if one came, whatever the exit status.
 Otherwise the leftovers are removed, and \f[B]done\f[R] fails with
-\f[B]Cancelled\f[R] after \f[B]cancel\f[R](), or else with
+\f[B]ArchiveCancelled\f[R] after \f[B]cancel\f[R](), or else with
 \f[B]ArchiveError\f[R], whose message is the \f[B]error\f[R] message, or
 the standard error of the process, or \(dqthe process stopped\(dq.
 .IP \(bu 2
@@ -772,7 +772,6 @@ fires with an \f[B]ImportResult\f[R], its name and its report.
 every choice, from an \f[B]ArchiveContents\f[R]; \f[B]update_plan\f[R]
 settles it with the result of the inspection when the head came first.
 .PP
-\f[B]Cancelled\f[R] is exported as \f[B]ArchiveCancelled\f[R].
 The Import window runs an inspection as soon as an archive is chosen,
 and cancels it when another is chosen or when the import starts, which
 reads the whole archive anyway.

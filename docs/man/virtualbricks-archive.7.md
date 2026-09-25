@@ -704,7 +704,7 @@ In the application, an **ArchiveJob** runs a job:
   leftovers.
 - When the process ends, the Deferred **done** fires with the result, if one
   came, whatever the exit status. Otherwise the leftovers are removed, and
-  **done** fails with **Cancelled** after **cancel**(), or else with
+  **done** fails with **ArchiveCancelled** after **cancel**(), or else with
   **ArchiveError**, whose message is the **error** message, or the standard
   error of the process, or \"the process stopped\".
 - **cancel**() sends SIGTERM to the process.
@@ -726,12 +726,11 @@ Three functions, exported by **virtualbricks.config**, make the jobs, and
     **update_plan** settles it with the result of the inspection when the
     head came first.
 
-**Cancelled** is exported as **ArchiveCancelled**. The Import window runs an
-inspection as soon as an archive is chosen, and cancels it when another is
-chosen or when the import starts, which reads the whole archive anyway.
-Closing the Import window cancels its inspection, but closing either window
-lets an import or an export go on to its end, and the application logs its
-result.
+The Import window runs an inspection as soon as an archive is chosen, and
+cancels it when another is chosen or when the import starts, which reads the
+whole archive anyway. Closing the Import window cancels its inspection, but
+closing either window lets an import or an export go on to its end, and the
+application logs its result.
 
 ```
 from virtualbricks.config import inspect_archive

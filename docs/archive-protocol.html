@@ -838,7 +838,7 @@
 <ul>
 <li><code>start(reactor)</code> starts the process with <code>reactor.spawnProcess</code>, writes the job as TOML and closes the standard input.</li>
 <li>A <code>progress</code> message calls <code>on_progress(step, done, total)</code>, a <code>head</code> calls <code>on_head(table)</code>, and a <code>created</code> adds its path to the leftovers.</li>
-<li>When the process ends, the Deferred <code>done</code> fires with the result, if one came, whatever the exit status. Otherwise the leftovers are removed, and <code>done</code> fails with <code>Cancelled</code> after <code>cancel()</code>, or else with <code>ArchiveError</code>, whose message is the <code>error</code> message, or the standard error of the process, or &quot;the process stopped&quot;.</li>
+<li>When the process ends, the Deferred <code>done</code> fires with the result, if one came, whatever the exit status. Otherwise the leftovers are removed, and <code>done</code> fails with <code>ArchiveCancelled</code> after <code>cancel()</code>, or else with <code>ArchiveError</code>, whose message is the <code>error</code> message, or the standard error of the process, or &quot;the process stopped&quot;.</li>
 <li><code>cancel()</code> sends SIGTERM to the process.</li>
 </ul>
 <p>Three functions, exported by <code>virtualbricks.config</code>, make the jobs, and <code>done</code> fires with what they make of the result:</p>
@@ -847,7 +847,7 @@
 <dt><code>export_project(project, output, files, images, on_progress, qemu_img)</code></dt><dd><p>Fires with the result object. Asks for <code>"none"</code> compression when <code>qemu_img</code> is given.</p></dd>
 <dt><code>import_project(plan, workspace, on_progress, qemu_img)</code></dt><dd><p>Creates the <code>staging</code> folder, a leftover from the start, and fires with an <code>ImportResult</code>, its name and its report. <code>plan_import</code> makes the <em>plan</em>, with the default of every choice, from an <code>ArchiveContents</code>; <code>update_plan</code> settles it with the result of the inspection when the head came first.</p></dd>
 </dl>
-<p><code>Cancelled</code> is exported as <code>ArchiveCancelled</code>. The Import window runs an inspection as soon as an archive is chosen, and cancels it when another is chosen or when the import starts, which reads the whole archive anyway. Closing the Import window cancels its inspection, but closing either window lets an import or an export go on to its end, and the application logs its result.</p>
+<p>The Import window runs an inspection as soon as an archive is chosen, and cancels it when another is chosen or when the import starts, which reads the whole archive anyway. Closing the Import window cancels its inspection, but closing either window lets an import or an export go on to its end, and the application logs its result.</p>
 <figure class="code"><pre><code><span class="k">from</span> virtualbricks.config <span class="k">import</span> inspect_archive
 
 <span class="k">def</span> show(contents):

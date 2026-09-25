@@ -42,7 +42,6 @@ from virtualbricks.config import (
     set_setting,
     settings,
     store_settings,
-    tomlfile,
 )
 from virtualbricks.config.settings import (
     check_format,
@@ -173,7 +172,7 @@ class TestLoadStore(SettingsTestCase):
         )
 
     def test_first_start_that_cant_save(self):
-        self.patch(settings, "store", lambda path=None: False)
+        self.patch(settings, "store_settings", lambda path=None: False)
         load_settings()
         self.assertEqual(self.logger.events, [])
 
@@ -237,7 +236,7 @@ class TestLoadStore(SettingsTestCase):
         def fail(data, path):
             raise OSError("disk full")
 
-        self.patch(tomlfile, "dump", fail)
+        self.patch(settings, "dump_toml", fail)
         self.assertFalse(store_settings(self.mktemp()))
         self.assertEqual(self.logger.levels(), ["failure"])
 
@@ -284,6 +283,6 @@ class TestState(SettingsTestCase):
         def fail(data, path):
             raise OSError("disk full")
 
-        self.patch(tomlfile, "dump", fail)
+        self.patch(settings, "dump_toml", fail)
         store_state(self.mktemp())
         self.assertEqual(self.logger.levels(), ["failure"])

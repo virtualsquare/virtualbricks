@@ -21,7 +21,7 @@ import textwrap
 from twisted.trial import unittest
 
 from virtualbricks.config import DecodeError, dump_toml, load_toml, tomlfile
-from virtualbricks.config.tomlfile import dumps, loads
+from virtualbricks.config.tomlfile import dumps_toml, loads_toml
 
 DOCUMENT = {
     "format": 1,
@@ -94,17 +94,17 @@ type = "switch"
 class TestDumps(unittest.TestCase):
 
     def test_layout(self):
-        self.assertEqual(dumps(DOCUMENT), EXPECTED)
+        self.assertEqual(dumps_toml(DOCUMENT), EXPECTED)
 
     def test_round_trip(self):
-        self.assertEqual(loads(dumps(DOCUMENT)), DOCUMENT)
+        self.assertEqual(loads_toml(dumps_toml(DOCUMENT)), DOCUMENT)
 
     def test_table_with_values_and_tables(self):
-        text = dumps({"a": {"x": 1, "b": {"y": 2}}})
+        text = dumps_toml({"a": {"x": 1, "b": {"y": 2}}})
         self.assertEqual(text, "[a]\nx = 1\n\n[a.b]\ny = 2\n")
 
     def test_empty_table(self):
-        self.assertEqual(dumps({"a": {}}), "[a]\n")
+        self.assertEqual(dumps_toml({"a": {}}), "[a]\n")
 
     def test_space_tables(self):
         self.assertEqual(
@@ -155,4 +155,4 @@ class TestFiles(unittest.TestCase):
             [b]
             c = "d"
             """)
-        self.assertEqual(loads(text), {"a": 1, "b": {"c": "d"}})
+        self.assertEqual(loads_toml(text), {"a": 1, "b": {"c": "d"}})

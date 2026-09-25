@@ -44,9 +44,22 @@ from typing import TYPE_CHECKING, Protocol
 from twisted.logger import Logger
 
 from virtualbricks import errors, locations
-from virtualbricks.config import projectfile, settings
-from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config.projectfile import (
+    ProjectFormatError,
+    create_project_file,
+    read_project_file,
+    restore_project,
+    save_project,
+    upgrade_project,
+)
 from virtualbricks.config.report import Report
+from virtualbricks.config.settings import (
+    current_project,
+    get_setting,
+    new_project_settings,
+    set_current_project,
+    use_project,
+)
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:
@@ -139,7 +152,7 @@ class OpenProject:
 
     def save(self, factory: BrickFactory) -> None:
         os.makedirs(self.path, exist_ok=True)
-        projectfile.save(factory, self.settings, self.project_file)
+        save_project(factory, self.settings, self.project_file)
         if self._description_modified:
             write_description(self.path, self.get_description())
             self._description_modified = False
@@ -249,7 +262,7 @@ class Workspace:
 
         if self._path is not None:
             return self._path
-        return str(settings.get("workspace"))
+        return str(get_setting("workspace"))
 
     def project_path(self, name: str) -> str:
         return os.path.join(self.path, name)
@@ -320,7 +333,7 @@ class Workspace:
         """The names of the bricks in the project file of name, if any."""
 
         try:
-            return brick_names(projectfile.read(self._project_file(name)))
+            return brick_names(read_project_file(self._project_file(name)))
         except (OSError, ProjectFormatError):
             return []
 
@@ -367,7 +380,7 @@ class Workspace:
         folder = os.path.dirname(path)
         description = read_description(folder)
         try:
-            data = projectfile.upgrade(projectfile.read(path), Report())
+            data = upgrade_project(read_project_file(path), Report())
         except ProjectFormatError as exc:
             return ProjectSummary(
                 name, folder, description, modified, {}, 0, (), str(exc)
@@ -434,9 +447,7 @@ class Workspace:
             os.makedirs(path)
         except FileExistsError:
             raise errors.ProjectExistsError(name) from None
-        projectfile.create(
-            self._project_file(name), settings.new_project_settings()
-        )
+        create_project_file(self._project_file(name), new_project_settings())
         if description:
             write_description(path, description)
         logger.debug(creating_project, name=name)
@@ -458,7 +469,7 @@ class Workspace:
         self._summaries.pop(name, None)
         if self.current is not None and self.current.name == name:
             self.current.path = self.project_path(new)
-            settings.set_current_project(new)
+            set_current_project(new)
 
     def duplicate(self, name: str, new: str) -> None:
         """Copy a project with its private disks; the copy is used now."""
@@ -529,8 +540,8 @@ class Workspace:
         if not self._is_name(name):
             raise errors.InvalidNameError(name)
         try:
-            data = projectfile.upgrade(
-                projectfile.read(self._project_file(name)), report
+            data = upgrade_project(
+                read_project_file(self._project_file(name)), report
             )
         except FileNotFoundError:
             raise errors.ProjectNotExistsError(name) from None
@@ -542,7 +553,7 @@ class Workspace:
         path = self.project_path(name)
         runtime_dir = project_runtime_dir(name)
         factory.runtime_dir = locations.ensure_private_dir(runtime_dir)
-        project_settings = projectfile.restore(factory, data, report, path)
+        project_settings = restore_project(factory, data, report, path)
         room = locations.brick_name_room(runtime_dir)
         for brick in factory.bricks:
             if len(os.fsencode(brick.get_name())) > room:
@@ -553,15 +564,15 @@ class Workspace:
                 )
         report.log(logger)
         self.current = OpenProject(path, project_settings)
-        settings.use_project(project_settings)
-        settings.set_current_project(name)
+        use_project(project_settings)
+        set_current_project(name)
         return report
 
     def close(self, factory: BrickFactory) -> None:
         factory.reset()
         if self.current is not None:
             self.current = None
-            settings.use_project(None)
+            use_project(None)
 
     def save(self, factory: BrickFactory) -> None:
         """Save the open project, if there is one."""
@@ -584,7 +595,7 @@ class Workspace:
         """
 
         os.makedirs(os.path.join(self.path, "vimages"), exist_ok=True)
-        name = settings.current_project()
+        name = current_project()
         if DEFAULT_PROJECT_RE.match(name) and not os.path.lexists(
             self.project_path(name)
         ):
@@ -594,7 +605,7 @@ class Workspace:
     def restore_last(self, factory: BrickFactory) -> Report:
         """Open the last project, or a new new_project_N if it can't be."""
 
-        name = settings.current_project()
+        name = current_project()
         try:
             return self.open_last(factory)
         except errors.ProjectNotExistsError:

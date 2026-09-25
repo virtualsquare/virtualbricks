@@ -31,7 +31,7 @@ from twisted.python import failure
 from twisted.trial import unittest
 
 from virtualbricks.config import archive
-from virtualbricks.config.tomlfile import dumps
+from virtualbricks.config.tomlfile import dumps_toml
 from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,
@@ -42,7 +42,7 @@ from virtualbricks.config.archive import (
 from virtualbricks.config.report import Report
 
 MiB = 1 << 20
-PROJECT = dumps(
+PROJECT = dumps_toml(
     {
         "format": 1,
         "settings": {},
@@ -526,7 +526,7 @@ class TestExtract(ArchiveTestCase):
 class TestProcess(ArchiveTestCase):
 
     def main(self, job):
-        stdin = io.StringIO(dumps(job))
+        stdin = io.StringIO(dumps_toml(job))
         stdout = io.StringIO()
         self.patch(signal, "signal", lambda *args: None)
         self.patch(os, "nice", lambda n: 0)
@@ -570,7 +570,7 @@ class TestProcess(ArchiveTestCase):
         def nice(n):
             raise OSError("not permitted")
 
-        stdin = io.StringIO(dumps({"job": "dance"}))
+        stdin = io.StringIO(dumps_toml({"job": "dance"}))
         self.patch(signal, "signal", lambda *args: None)
         self.patch(os, "nice", nice)
         self.assertEqual(archive.main(stdin, io.StringIO()), 2)
@@ -680,7 +680,7 @@ class TestArchiveJob(ArchiveTestCase):
         job.cancel()
         self.assertEqual(self.transport.signals, ["TERM"])
         self.end(job, 1)
-        self.failureResultOf(job.done, archive.Cancelled)
+        self.failureResultOf(job.done, archive.ArchiveCancelled)
         # after the end there's nothing to stop
         job.cancel()
         self.assertEqual(self.transport.signals, ["TERM"])

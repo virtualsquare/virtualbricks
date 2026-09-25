@@ -607,7 +607,7 @@ class TestOpen(WorkspaceTestCase):
         def fail(*args):
             raise OSError("disk full")
 
-        self.patch(workspace.projectfile, "save", fail)
+        self.patch(workspace, "save_project", fail)
         self.assertRaises(OSError, self.projects.open, "other", self.factory)
         self.assertEqual(self.projects.current.name, "lab")
         self.assertEqual([b.get_name() for b in self.factory.bricks], ["sw"])
@@ -716,7 +716,7 @@ class TestOpen(WorkspaceTestCase):
         def fail(*args):
             raise OSError("disk full")
 
-        self.patch(workspace.projectfile, "save", fail)
+        self.patch(workspace, "save_project", fail)
         self.projects.autosave(self.factory)
         self.assertEqual(self.logger.levels(), ["failure"])
 

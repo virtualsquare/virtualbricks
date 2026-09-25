@@ -42,7 +42,7 @@ from virtualbricks.config.archive import (
 )
 from virtualbricks.config.importing import ImportResult
 from virtualbricks.config.workspace import Workspace
-from virtualbricks.config.tomlfile import dumps
+from virtualbricks.config.tomlfile import dumps_toml
 from virtualbricks.config.archive import Tool
 from virtualbricks.config.importing import ImageUse, MachinePath
 from virtualbricks.tests import isolate, reset_settings
@@ -299,7 +299,7 @@ class TestPlan(ImportingTestCase):
         )
         self.assertEqual(job["settings"], {"qemupath": "/usr/bin"})
         # it goes through TOML
-        dumps(job)
+        dumps_toml(job)
 
 
 class TestRunImport(ImportingTestCase):
@@ -320,7 +320,7 @@ class TestRunImport(ImportingTestCase):
     def archive(self, data, files=None, legacy=False):
         members = {".project": LEGACY} if legacy else {}
         if data is not None:
-            members["project.toml"] = dumps(data).encode()
+            members["project.toml"] = dumps_toml(data).encode()
         members.update(files or {})
         return make_archive(self.path("lab.vbp"), members)
 
@@ -517,7 +517,7 @@ class TestRunImport(ImportingTestCase):
         disk = sparse_file(self.path("vm_hda.cow"), 8 * MiB)
         path = self.path("lab.vbp")
         with tarfile.open(path, "w:gz") as tar:
-            add(tar, "project.toml", dumps(project()).encode())
+            add(tar, "project.toml", dumps_toml(project()).encode())
             tar.add(disk, "vm_hda.cow")
             add(tar, "notes", bytes(2 * MiB))
         result = self.run_import(self.plan(path))
@@ -611,7 +611,7 @@ class TestPackedDisks(ImportingTestCase):
             sparse_file(disk, 4 * MiB)
         data = project({"deb": image}, {"vm": vm(("hda", "deb"))})
         with open(os.path.join(folder, "project.toml"), "w") as fp:
-            fp.write(dumps(data))
+            fp.write(dumps_toml(data))
         return folder, disk, image
 
     def export(self, project, image, qemu_img=QEMU_IMG, tool=None):

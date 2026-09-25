@@ -46,14 +46,37 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from virtualbricks import locations
-from virtualbricks.config import archive, projectfile, settings, tomlfile
 from virtualbricks.config.archive import (
+    BSDTAR,
+    CONTENTS,
+    DISK,
+    IMAGE,
+    IMAGES,
     ArchiveContents,
+    ArchiveError,
     ArchiveJob,
     Member,
+    Progress,
+    QemuImg,
     Tool,
+    extract,
+    member_kind,
+    read_contents,
+    report_from_list,
+    report_to_list,
+    sparsify,
+)
+from virtualbricks.config.projectfile import (
+    ProjectFormatError,
+    devices_for_image,
+    image_paths,
+    read_project_file,
+    remap_image,
+    upgrade_project,
 )
 from virtualbricks.config.report import Report
+from virtualbricks.config.settings import get_app_setting
+from virtualbricks.config.tomlfile import dump_toml
 from virtualbricks.i18n import _
 
 if TYPE_CHECKING:
@@ -247,10 +270,10 @@ def plan_import(contents: ArchiveContents, workspace: Workspace) -> ImportPlan:
     library = os.path.join(workspace.path, LIBRARY)
     in_archive = contents.images
     images = []
-    for image_name, path in projectfile.image_paths(data).items():
+    for image_name, path in image_paths(data).items():
         used_by = [
             f"{vm}.{device}"
-            for vm, device in projectfile.devices_for_image(data, image_name)
+            for vm, device in devices_for_image(data, image_name)
         ]
         image = ImageUse(image_name, used_by, str(path), None)
         plan_image(
@@ -267,7 +290,7 @@ def machine_paths(data: Table) -> list[MachinePath]:
     paths = []
     for key in MACHINE_PATHS:
         theirs = project_settings.get(key)
-        ours = str(settings.get_app(key))
+        ours = str(get_app_setting(key))
         if isinstance(theirs, str) and theirs != ours:
             paths.append(
                 MachinePath(key, theirs, ours, not os.path.isdir(theirs))
@@ -317,7 +340,7 @@ class ImportResult:
 
     @classmethod
     def from_table(cls, table: dict[str, Any]) -> ImportResult:
-        return cls(table["name"], archive.report_from_list(table["report"]))
+        return cls(table["name"], report_from_list(table["report"]))
 
 
 # The process's side
@@ -331,13 +354,13 @@ class _Import:
         self.emit = emit
         self.tool = tool
         self.staging = str(job["staging"])
-        self.images = os.path.join(self.staging, archive.IMAGES)
+        self.images = os.path.join(self.staging, IMAGES)
         self.qemu_img = str(job.get("qemu_img", ""))
-        self.qemu = archive.QemuImg(self.qemu_img) if self.qemu_img else None
+        self.qemu = QemuImg(self.qemu_img) if self.qemu_img else None
         self.report = Report()
         self.created: list[str] = []
         # The members that qemu-img compressed, from contents.toml.
-        self.packed: dict[str, archive.Member] = {}
+        self.packed: dict[str, Member] = {}
         # image name -> where its copy went
         self.copied: dict[str, str] = {}
         # private disk -> (its image, the image's format)
@@ -345,9 +368,7 @@ class _Import:
 
     def run(self) -> dict[str, Any]:
         os.makedirs(self.staging, exist_ok=True)
-        archive.extract(
-            str(self.job["archive"]), self.staging, self.tool, self.emit
-        )
+        extract(str(self.job["archive"]), self.staging, self.tool, self.emit)
         self.read_contents()
         project_file = os.path.join(self.staging, locations.PROJECT_FILE)
         if os.path.isfile(project_file):
@@ -356,25 +377,25 @@ class _Import:
             data = self.convert_project()
         paths = self.place_images()
         for name, path in paths.items():
-            projectfile.remap_image(data, name, path)
+            remap_image(data, name, path)
         table = data.setdefault("settings", {})
         if isinstance(table, dict):
             table.update(self.job.get("settings", {}))
-        tomlfile.dump(data, project_file)
+        dump_toml(data, project_file)
         self.rebase(data, paths)
         self.unpack()
-        if self.tool.name != archive.BSDTAR:
+        if self.tool.name != BSDTAR:
             self.sparsify()
         return {"name": self.move_into_place(), "report": self.messages()}
 
     def read_contents(self) -> None:
         """Which members are packed; contents.toml isn't the project's."""
 
-        path = os.path.join(self.staging, archive.CONTENTS)
+        path = os.path.join(self.staging, CONTENTS)
         if not os.path.isfile(path):
             return
         with open(path, "rb") as fp:
-            members = archive.read_contents(fp.read())
+            members = read_contents(fp.read())
         os.remove(path)
         self.packed = {m.name: m for m in members if m.packed}
 
@@ -383,11 +404,11 @@ class _Import:
 
         todo = []
         for name, member in self.packed.items():
-            if member.kind == archive.IMAGE:
+            if member.kind == IMAGE:
                 path = self.copied.get(member.image)
                 if path is not None:
                     todo.append((name, path, None))
-            elif member.kind == archive.DISK:
+            elif member.kind == DISK:
                 path = os.path.join(self.staging, name)
                 if path in self.rebased:
                     todo.append((name, path, self.rebased[path]))
@@ -405,7 +426,7 @@ class _Import:
                 )
             return
         total = sum(os.path.getsize(path) for _, path, _ in todo)
-        progress = archive.Progress(self.emit, "unpack", total)
+        progress = Progress(self.emit, "unpack", total)
         for name, path, backing in todo:
             size = os.path.getsize(path)
             start = progress.done
@@ -417,7 +438,7 @@ class _Import:
             unpacked = path + ".unpacking"
             try:
                 self.qemu.convert(path, unpacked, False, backing, on_percent)
-            except archive.ArchiveError as exc:
+            except ArchiveError as exc:
                 if os.path.lexists(unpacked):
                     os.remove(unpacked)
                 self.report.warning(f"left compressed: {exc}", name)
@@ -428,21 +449,21 @@ class _Import:
             progress.send()
 
     def messages(self) -> list[list[str]]:
-        return archive.report_to_list(self.report)
+        return report_to_list(self.report)
 
     def read_project(self, path: str) -> Table:
         try:
-            data = projectfile.read(path)
-            return projectfile.upgrade(data, self.report)
-        except projectfile.ProjectFormatError as exc:
-            raise archive.ArchiveError(str(exc)) from None
+            data = read_project_file(path)
+            return upgrade_project(data, self.report)
+        except ProjectFormatError as exc:
+            raise ArchiveError(str(exc)) from None
 
     def convert_project(self) -> Table:
         from virtualbricks.migrate import convert_imported_project
 
         data = convert_imported_project(self.staging, self.report)
         if data is None:
-            raise archive.ArchiveError(
+            raise ArchiveError(
                 "the archive has no project file that can be read"
             )
         return data
@@ -491,7 +512,7 @@ class _Import:
         """Point each private disk at its image, in the image's format."""
 
         for name, path in paths.items():
-            for vm, device in projectfile.devices_for_image(data, name):
+            for vm, device in devices_for_image(data, name):
                 cow = os.path.join(self.staging, f"{vm}_{device}.cow")
                 if not os.path.isfile(cow):
                     continue
@@ -512,7 +533,7 @@ class _Import:
                     continue
                 try:
                     self.rebase_disk(cow, path)
-                except archive.ArchiveError as exc:
+                except ArchiveError as exc:
                     self.report.warning(str(exc), where)
 
     def rebase_disk(self, cow: str, image: str) -> None:
@@ -523,10 +544,10 @@ class _Import:
     def sparsify(self) -> None:
         for entry in os.listdir(self.staging):
             path = os.path.join(self.staging, entry)
-            if archive.member_kind(entry) == archive.DISK:
-                archive.sparsify(path)
+            if member_kind(entry) == DISK:
+                sparsify(path)
         for path in self.created:
-            archive.sparsify(path)
+            sparsify(path)
 
     def move_into_place(self) -> str:
         destination = str(self.job["destination"])

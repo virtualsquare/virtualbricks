@@ -33,19 +33,19 @@ from virtualbricks.config import (
     set_app_setting,
 )
 from virtualbricks.config.projectfile import (
-    create as create_project,
+    create_project_file,
     devices_for_image,
     image_paths,
-    load as load_project,
-    read as read_project,
+    load_project,
+    read_project_file,
     remap_image,
     resolve as resolve_socket,
-    restore as restore_project,
-    save as save_project,
+    restore_project,
+    save_project,
     socket_target,
-    upgrade as upgrade_project,
+    upgrade_project,
 )
-from virtualbricks.config.tomlfile import dumps, loads
+from virtualbricks.config.tomlfile import dumps_toml, loads_toml
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import UsbDevice
 
@@ -194,7 +194,7 @@ class TestDocument(ProjectFileTestCase):
 
     def test_save_and_create(self):
         path = self.mktemp()
-        create_project(path, ProjectSettings())
+        create_project_file(path, ProjectSettings())
         self.assertEqual(load_toml(path)["format"], 1)
         save_project(build_lab(self.factory), ProjectSettings(), path)
         self.assertIn("bricks", load_toml(path))
@@ -206,8 +206,8 @@ class TestRoundTrip(ProjectFileTestCase):
         data = project_document(
             build_lab(self.factory), ProjectSettings(vdepath="/opt")
         )
-        text = dumps(data)
-        factory, project_settings = self.restore(loads(text))
+        text = dumps_toml(data)
+        factory, project_settings = self.restore(loads_toml(text))
         self.assertEqual(
             self.messages(),
             ["images.deb: /images/deb.qcow2 not found, kept in the library"],
@@ -516,10 +516,10 @@ class TestRead(ProjectFileTestCase):
         path = self.mktemp()
         with open(path, "w") as fp:
             fp.write("[bricks\n")
-        self.assertRaises(ProjectFormatError, read_project, path)
+        self.assertRaises(ProjectFormatError, read_project_file, path)
 
     def test_missing(self):
-        self.assertRaises(FileNotFoundError, read_project, self.mktemp())
+        self.assertRaises(FileNotFoundError, read_project_file, self.mktemp())
 
 
 class TestEditing(unittest.TestCase):

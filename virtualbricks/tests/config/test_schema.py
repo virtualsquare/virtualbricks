@@ -45,7 +45,7 @@ from virtualbricks.config import (
     rename_references,
     schema,
 )
-from virtualbricks.config.schema import info as field_info, fields, references
+from virtualbricks.config.schema import field_info, fields, references
 
 
 @define

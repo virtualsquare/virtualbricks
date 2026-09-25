@@ -29,7 +29,7 @@ from virtualbricks.config import (
     load_toml,
     set_app_setting,
 )
-from virtualbricks.config.tomlfile import dumps
+from virtualbricks.config.tomlfile import dumps_toml
 from virtualbricks.migrate import engine, startup_migration
 from virtualbricks.migrate.engine import (
     FAILED,
@@ -531,7 +531,7 @@ class TestEntryPoints(EngineTestCase):
         # an old project copied into a migrated workspace
         write(
             locations.settings_file(),
-            dumps({"format": 1, "workspace": self.workspace}),
+            dumps_toml({"format": 1, "workspace": self.workspace}),
         )
         write_settings(self.legacy_settings, "/elsewhere", "lab")
         write_project(self.workspace, "lab")
@@ -567,7 +567,7 @@ class TestEntryPoints(EngineTestCase):
     def test_migration_for(self):
         write(
             locations.settings_file(),
-            dumps({"format": 1, "cowfmt": "cow"}),
+            dumps_toml({"format": 1, "cowfmt": "cow"}),
         )
         migration = migration_for(self.workspace)
         self.assertIsInstance(migration.target, InPlace)

@@ -55,7 +55,7 @@ from virtualbricks.config import (
 )
 from virtualbricks.config.projectfile import NIC_KEYS, ImageTable, brick_table
 from virtualbricks.config.settings import AppState
-from virtualbricks.config.schema import info as field_info, fields
+from virtualbricks.config.schema import field_info, fields
 from virtualbricks.bricks.event import EventConfig
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import DISK_DEVICES

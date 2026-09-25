@@ -66,9 +66,16 @@ from typing import IO, TYPE_CHECKING, Any
 from twisted.internet import defer, protocol
 
 from virtualbricks import locations
-from virtualbricks.config import projectfile, tomlfile
-from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config.projectfile import (
+    ProjectFormatError,
+    upgrade_project,
+)
 from virtualbricks.config.report import Message, Report
+from virtualbricks.config.tomlfile import (
+    DecodeError,
+    dumps_toml,
+    loads_toml,
+)
 
 if TYPE_CHECKING:
     from virtualbricks.config.tomlfile import Table
@@ -99,7 +106,7 @@ class ArchiveError(Exception):
     """The archive can't be read or written."""
 
 
-class Cancelled(Exception):
+class ArchiveCancelled(Exception):
     """The application asked the job to stop."""
 
 
@@ -360,8 +367,8 @@ class _Head:
 
 def read_contents(data: bytes) -> list[Member]:
     try:
-        table = tomlfile.loads(data.decode("utf-8"))
-    except (UnicodeDecodeError, tomlfile.DecodeError) as exc:
+        table = loads_toml(data.decode("utf-8"))
+    except (UnicodeDecodeError, DecodeError) as exc:
         raise ArchiveError(f"{CONTENTS}: {exc}") from None
     if table.get("format") != FORMAT:
         raise ArchiveError(
@@ -396,7 +403,7 @@ def write_contents(members: Iterable[Member]) -> str:
             item["packed"] = True
             item["real_size"] = m.real_size
         items.append(item)
-    return tomlfile.dumps({"format": FORMAT, "members": items})
+    return dumps_toml({"format": FORMAT, "members": items})
 
 
 def contents_from_head(
@@ -408,11 +415,11 @@ def contents_from_head(
     converted = False
     if PROJECT in head.files:
         try:
-            data = tomlfile.loads(head.files[PROJECT].decode("utf-8"))
-        except (UnicodeDecodeError, tomlfile.DecodeError) as exc:
+            data = loads_toml(head.files[PROJECT].decode("utf-8"))
+        except (UnicodeDecodeError, DecodeError) as exc:
             raise ArchiveError(f"{locations.PROJECT_FILE}: {exc}") from None
         try:
-            data = projectfile.upgrade(data, report)
+            data = upgrade_project(data, report)
         except ProjectFormatError as exc:
             raise ArchiveError(f"{locations.PROJECT_FILE}: {exc}") from None
     elif LEGACY_PROJECT in head.files:
@@ -1116,7 +1123,7 @@ def _write_with_tool(tool: Tool, staging: str, names: list[str], out) -> None:
 
 
 def _on_sigterm(signum, frame):
-    raise Cancelled()
+    raise ArchiveCancelled()
 
 
 def run_job(job: Table, emit, tool: Tool | None = None) -> Any:
@@ -1131,9 +1138,9 @@ def run_job(job: Table, emit, tool: Tool | None = None) -> Any:
         return write_archive(job, emit, tool)
     if kind == "import":
         # Imported here: importing uses the reading above.
-        from virtualbricks.config import importing
+        from virtualbricks.config.importing import run_import
 
-        return importing.run_import(job, emit, tool)
+        return run_import(job, emit, tool)
     raise ArchiveError(f"unknown job {kind!r}")
 
 
@@ -1148,9 +1155,9 @@ def main(stdin: IO[str] = sys.stdin, stdout: IO[str] = sys.stdout) -> int:
     except OSError:
         pass
     try:
-        job = tomlfile.loads(stdin.read())
+        job = loads_toml(stdin.read())
         emit({"result": run_job(job, emit)})
-    except Cancelled:
+    except ArchiveCancelled:
         return 1
     except ArchiveError as exc:
         emit({"error": str(exc)})
@@ -1217,7 +1224,7 @@ class ArchiveJob:
     # From the protocol
 
     def connected(self, transport) -> None:
-        transport.write(tomlfile.dumps(self.job).encode("utf-8"))
+        transport.write(dumps_toml(self.job).encode("utf-8"))
         transport.closeStdin()
 
     def message(self, obj: dict[str, Any]) -> None:
@@ -1246,7 +1253,7 @@ class ArchiveJob:
             elif os.path.lexists(path):
                 os.remove(path)
         if self.cancelled:
-            self.done.errback(Cancelled())
+            self.done.errback(ArchiveCancelled())
         else:
             error = self._error or stderr.strip() or "the process stopped"
             self.done.errback(ArchiveError(error))

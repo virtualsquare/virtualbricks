@@ -41,7 +41,15 @@ except ImportError:  # pragma: no cover (Python 3.10)
 import tomlkit
 from tomlkit import items
 
-__all__ = ["DecodeError", "Table", "Value", "dump", "dumps", "load", "loads"]
+__all__ = [
+    "DecodeError",
+    "Table",
+    "Value",
+    "dump_toml",
+    "dumps_toml",
+    "load_toml",
+    "loads_toml",
+]
 
 DecodeError = tomllib.TOMLDecodeError
 
@@ -63,11 +71,11 @@ Table: TypeAlias = dict[str, Value]
 INLINE_KEYS = 2
 
 
-def loads(text: str) -> Table:
+def loads_toml(text: str) -> Table:
     return tomllib.loads(text)
 
 
-def load(path: str) -> Table:
+def load_toml(path: str) -> Table:
     with open(path, "rb") as fp:
         return tomllib.load(fp)
 
@@ -141,13 +149,13 @@ def _space_tables(text: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def dumps(data: Table) -> str:
+def dumps_toml(data: Table) -> str:
     document = tomlkit.document()
     _fill(document, data)
     return _space_tables(tomlkit.dumps(document))
 
 
-def dump(data: Table, path: str) -> None:
+def dump_toml(data: Table, path: str) -> None:
     """Write the data to path, replacing the file only once it's complete."""
 
     directory = os.path.dirname(os.path.abspath(path))
@@ -156,7 +164,7 @@ def dump(data: Table, path: str) -> None:
     )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fp:
-            fp.write(dumps(data))
+            fp.write(dumps_toml(data))
             fp.flush()
             os.fsync(fp.fileno())
         os.replace(tmp, path)

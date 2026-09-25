@@ -32,11 +32,27 @@ from typing import TYPE_CHECKING, TypeAlias, cast
 
 from twisted.logger import Logger
 
-from virtualbricks.config import schema, tomlfile
 from virtualbricks import locations
 from virtualbricks.errors import NoOptionError
 from virtualbricks.config.report import Report
-from virtualbricks.config.schema import Bool, Choice, Path, Str
+from virtualbricks.config.schema import (
+    Bool,
+    Choice,
+    Path,
+    Str,
+    define,
+    dump_record,
+    field,
+    load_record,
+    field_names,
+    parse_value,
+    field_values,
+)
+from virtualbricks.config.tomlfile import (
+    DecodeError,
+    dump_toml,
+    load_toml,
+)
 
 if TYPE_CHECKING:
     from virtualbricks.config.tomlfile import Table
@@ -74,38 +90,36 @@ def check_format(data: Table, report: Report, where: str) -> bool:
     return True
 
 
-@schema.define
+@define
 class ProjectSettings:
     """The settings that each project has its own copy of."""
 
-    cowfmt: str = schema.field(Choice(*COW_FORMATS), default="qcow2")
-    erroronloop: bool = schema.field(Bool(), default=False)
-    femaleplugs: bool = schema.field(Bool(), default=False)
-    qemupath: str = schema.field(Path(), default="/usr/bin")
-    vdepath: str = schema.field(Path(), default="/usr/bin")
+    cowfmt: str = field(Choice(*COW_FORMATS), default="qcow2")
+    erroronloop: bool = field(Bool(), default=False)
+    femaleplugs: bool = field(Bool(), default=False)
+    qemupath: str = field(Path(), default="/usr/bin")
+    vdepath: str = field(Path(), default="/usr/bin")
 
 
-@schema.define
+@define
 class AppSettings(ProjectSettings):
     """All settings; the per-project ones are the start of a new project."""
 
-    workspace: str = schema.field(Path(), factory=locations.default_workspace)
-    term: str = schema.field(Str(), default="/usr/bin/xterm")
-    sudo: str = schema.field(Str(), default="/usr/bin/gksu")
-    ksm: bool = schema.field(Bool(), default=False)
-    systray: bool = schema.field(Bool(), default=True)
-    show_missing: bool = schema.field(Bool(), default=True)
+    workspace: str = field(Path(), factory=locations.default_workspace)
+    term: str = field(Str(), default="/usr/bin/xterm")
+    sudo: str = field(Str(), default="/usr/bin/gksu")
+    ksm: bool = field(Bool(), default=False)
+    systray: bool = field(Bool(), default=True)
+    show_missing: bool = field(Bool(), default=True)
 
 
-@schema.define
+@define
 class AppState:
 
-    current_project: str = schema.field(
-        Str(), default=locations.DEFAULT_PROJECT
-    )
+    current_project: str = field(Str(), default=locations.DEFAULT_PROJECT)
 
 
-PROJECT_KEYS = frozenset(schema.names(ProjectSettings))
+PROJECT_KEYS = frozenset(field_names(ProjectSettings))
 
 _app = AppSettings()
 _project: ProjectSettings | None = None
@@ -116,7 +130,7 @@ _read_only = False
 
 
 def _target(name: str) -> AppSettings | ProjectSettings:
-    if name not in schema.names(AppSettings):
+    if name not in field_names(AppSettings):
         raise NoOptionError(name)
     if _project is not None and name in PROJECT_KEYS:
         return _project
@@ -124,10 +138,10 @@ def _target(name: str) -> AppSettings | ProjectSettings:
 
 
 def has_option(name: str) -> bool:
-    return name in schema.names(AppSettings)
+    return name in field_names(AppSettings)
 
 
-def get(name: str) -> SettingValue:
+def get_setting(name: str) -> SettingValue:
     """Return the value in effect, from the open project if it has one."""
 
     if name == "sudo" and os.getuid() == 0:
@@ -135,33 +149,33 @@ def get(name: str) -> SettingValue:
     return getattr(_target(name), name)
 
 
-def set(name: str, value: SettingValue) -> None:
+def set_setting(name: str, value: SettingValue) -> None:
     setattr(_target(name), name, value)
 
 
-def get_app(name: str) -> SettingValue:
+def get_app_setting(name: str) -> SettingValue:
     """Return the application value, even when a project overrides it."""
 
     _target(name)
     return getattr(_app, name)
 
 
-def set_app(name: str, value: SettingValue) -> None:
+def set_app_setting(name: str, value: SettingValue) -> None:
     _target(name)
     setattr(_app, name, value)
 
 
-def parse(name: str, text: str) -> SettingValue:
+def parse_setting(name: str, text: str) -> SettingValue:
     """Convert the text typed in the console for a setting."""
 
     _target(name)
-    return cast(SettingValue, schema.parse(AppSettings, name, text))
+    return cast(SettingValue, parse_value(AppSettings, name, text))
 
 
 def new_project_settings() -> ProjectSettings:
     """Return the settings a new project starts with."""
 
-    values = schema.values(_app)
+    values = field_values(_app)
     return ProjectSettings(**{name: values[name] for name in PROJECT_KEYS})
 
 
@@ -176,7 +190,7 @@ def project_settings() -> ProjectSettings | None:
     return _project
 
 
-def load(path: str | None = None) -> Report:
+def load_settings(path: str | None = None) -> Report:
     """Read the settings, or save the defaults if there is no file yet."""
 
     global _app, _settings_path, _read_only
@@ -185,12 +199,12 @@ def load(path: str | None = None) -> Report:
     _read_only = False
     report = Report()
     try:
-        data = tomlfile.load(path)
+        data = load_toml(path)
     except FileNotFoundError:
         _app = AppSettings()
         install()
         return report
-    except (OSError, tomlfile.DecodeError) as exc:
+    except (OSError, DecodeError) as exc:
         logger.error(cannot_read, filename=path, error=exc)
         _app = AppSettings()
         _read_only = True
@@ -199,7 +213,7 @@ def load(path: str | None = None) -> Report:
         _read_only = True
         _app = AppSettings()
     else:
-        _app = schema.load(AppSettings, data, report, ignore={"format"})
+        _app = load_record(AppSettings, data, report, ignore={"format"})
         logger.info(settings_loaded, filename=path)
     report.log(logger)
     if _app.ksm:
@@ -213,16 +227,16 @@ def install() -> None:
     from virtualbricks.tools import check_ksm
 
     _app.ksm = check_ksm()
-    if store():
+    if store_settings():
         logger.info(settings_installed, filename=_settings_path)
 
 
 def _write(data: Table, path: str) -> None:
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    tomlfile.dump(data, path)
+    dump_toml(data, path)
 
 
-def store(path: str | None = None) -> bool:
+def store_settings(path: str | None = None) -> bool:
     """Write every setting; return False if the file wasn't written."""
 
     path = path or _settings_path or locations.settings_file()
@@ -230,7 +244,7 @@ def store(path: str | None = None) -> bool:
         logger.warn(not_overwritten, filename=path)
         return False
     try:
-        _write({"format": FORMAT, **schema.dump(_app)}, path)
+        _write({"format": FORMAT, **dump_record(_app)}, path)
     except OSError:
         logger.failure(cannot_save, filename=path)
         return False
@@ -243,16 +257,16 @@ def load_state(path: str | None = None) -> Report:
     _state_path = path
     report = Report()
     try:
-        data = tomlfile.load(path)
+        data = load_toml(path)
     except FileNotFoundError:
         _state = AppState()
         return report
-    except (OSError, tomlfile.DecodeError) as exc:
+    except (OSError, DecodeError) as exc:
         logger.error(cannot_read, filename=path, error=exc)
         _state = AppState()
         return report
     check_format(data, report, path)
-    _state = schema.load(AppState, data, report, ignore={"format"})
+    _state = load_record(AppState, data, report, ignore={"format"})
     report.log(logger)
     return report
 
@@ -260,7 +274,7 @@ def load_state(path: str | None = None) -> Report:
 def store_state(path: str | None = None) -> None:
     path = path or _state_path or locations.state_file()
     try:
-        _write({"format": FORMAT, **schema.dump(_state)}, path)
+        _write({"format": FORMAT, **dump_record(_state)}, path)
     except OSError:
         logger.failure(cannot_save, filename=path)
 
