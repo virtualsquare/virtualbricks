@@ -24,7 +24,7 @@ from twisted.trial import unittest
 from virtualbricks import locations
 from virtualbricks.config import load_toml
 from virtualbricks.migrate import cli
-from virtualbricks.migrate.cli import EXIT_RUNNING, RUNNING, main
+from virtualbricks.migrate.cli import RUNNING, main
 from virtualbricks.migrate.engine import REPORT_FILE, Migration
 from virtualbricks.tests import (
     hold_lock,
@@ -170,7 +170,8 @@ class TestCommandLine(unittest.TestCase):
         write_project(home_workspace, "mine", CONFIG1)
         hold_lock(self)
         exc = self.assertRaises(SystemExit, self.main, "--in-place")
-        self.assertEqual(exc.code, EXIT_RUNNING)
+        # as the help and the manual say
+        self.assertEqual(exc.code, 3)
         self.assertEqual(
             self.stderr.getvalue(),
             f"python -m virtualbricks.migrate: {RUNNING}\n",

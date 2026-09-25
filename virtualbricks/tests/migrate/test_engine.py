@@ -42,11 +42,11 @@ from virtualbricks.migrate.engine import (
     InPlace,
     Item,
     Migration,
+    convert_imported_project,
     counts,
     discover,
     in_place_migration,
     lock_in_place,
-    migrate_imported_project,
     migration_for,
     project_source,
 )
@@ -172,6 +172,12 @@ class TestDiscover(EngineTestCase):
         write(os.path.join(self.workspace, "lab.vbl"), CONFIG1)
         names = [item.name for item in discover(self.workspace)]
         self.assertEqual(names, ["lab", "lab_2"])
+
+    def test_files_with_the_same_name(self):
+        for filename in ("lab", "lab.old", "lab.vbl"):
+            write(os.path.join(self.workspace, filename), CONFIG1)
+        names = [item.name for item in discover(self.workspace)]
+        self.assertEqual(names, ["lab", "lab_1", "lab_2"])
 
     def test_file_migrated_in_place_keeps_its_name(self):
         write(os.path.join(self.workspace, "lab.vbl"), CONFIG1)
@@ -314,6 +320,18 @@ class TestMigrateToFolder(EngineTestCase):
         migration = self.folder_migration().run()
         single = migration.target.project_dir("single")
         self.assertEqual(os.listdir(single), ["project.toml"])
+
+    def test_single_file_project_takes_nothing_else(self):
+        # its folder is the workspace: none of it is the project's
+        write(os.path.join(self.workspace, "single.vbl"), CONFIG1)
+        write(os.path.join(self.workspace, "README"), "The workspace\n")
+        for copy_files in (False, True):
+            output = os.path.join(self.root, f"new-{copy_files}")
+            migration = Migration(
+                self.workspace, Folder(output), copy_files=copy_files
+            ).run()
+            single = migration.target.project_dir("single")
+            self.assertEqual(os.listdir(single), ["project.toml"])
 
 
 class TestFailures(EngineTestCase):
@@ -478,6 +496,16 @@ class TestReporting(EngineTestCase):
             sorted(set(logger.levels())), ["error", "info", "warn"]
         )
 
+    def test_log_levels(self):
+        migration = self.folder_migration()
+        report = migration.items[0].report
+        report.error("e")
+        report.warning("w")
+        report.info("i")
+        logger = FakeLogger()
+        migration.log(logger)
+        self.assertEqual(logger.levels()[:3], ["error", "warn", "info"])
+
     def test_log_does_not_repeat_the_name(self):
         migration = self.folder_migration()
         migration.items[0].report.warning("x", "a_long_project_name/.project")
@@ -582,40 +610,41 @@ class TestEntryPoints(EngineTestCase):
 
 
 class TestImportedProject(EngineTestCase):
+    """The old project file of an archive, converted in memory."""
 
-    def test_migrate(self):
+    def convert(self, text=None):
         directory = os.path.join(self.root, "imported")
-        write_project(self.root, "imported", CONFIG1)
-        report = migrate_imported_project(directory)
+        if text is None:
+            os.makedirs(directory)
+        else:
+            write_project(self.root, "imported", text)
+        report = Report()
+        data = convert_imported_project(directory, report)
+        # it writes nothing: the import writes the project file
+        self.assertNotIn(locations.PROJECT_FILE, os.listdir(directory))
+        return data, report, directory
+
+    def test_convert(self):
+        data, report, _ = self.convert(CONFIG1)
         self.assertEqual(report.errors, 0)
-        data = load_toml(os.path.join(directory, locations.PROJECT_FILE))
         self.assertIn("sender", data["bricks"])
 
     def test_uses_the_settings_of_new_projects(self):
         set_app_setting("cowfmt", "cow")
-        directory = os.path.join(self.root, "imported")
-        write_project(self.root, "imported", CONFIG1)
-        migrate_imported_project(directory)
-        data = load_toml(os.path.join(directory, locations.PROJECT_FILE))
+        data, _, _ = self.convert(CONFIG1)
         self.assertEqual(data["settings"]["cowfmt"], "cow")
 
     def test_no_project_file(self):
-        directory = os.path.join(self.root, "imported")
-        os.makedirs(directory)
-        report = migrate_imported_project(directory)
+        data, report, directory = self.convert()
+        self.assertIsNone(data)
         self.assertEqual(
             [str(m) for m in report], [f"{directory}: no project file found"]
         )
 
     def test_invalid(self):
-        directory = os.path.join(self.root, "imported")
-        write_project(self.root, "imported", "[Switch:a]\n[Switch:a]\n")
-        report = migrate_imported_project(directory)
+        data, report, directory = self.convert("[Switch:a]\n[Switch:a]\n")
+        self.assertIsNone(data)
         self.assertEqual(report.errors, 1)
-        self.assertIsInstance(report, Report)
-        self.assertFalse(
-            os.path.exists(os.path.join(directory, locations.PROJECT_FILE))
-        )
 
 
 class TestLock(unittest.TestCase):

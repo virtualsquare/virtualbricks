@@ -70,22 +70,28 @@ class FakeFileChooser:
         self.initial = None
         self.current_name = None
         self.destroyed = False
+        self.responses = []
+        self.overwrite_confirmation = False
         self.instances.append(self)
 
     def add_buttons(self, *buttons):
-        pass
+        # label, response, label, response...
+        self.responses.extend(buttons[1::2])
 
     def set_filename(self, filename):
         self.initial = filename
 
     def set_do_overwrite_confirmation(self, confirm):
-        pass
+        self.overwrite_confirmation = confirm
 
     def set_current_name(self, name):
         self.current_name = name
 
     def run(self):
-        return self.response
+        # the answer is one of the buttons of the dialog, or it's closed
+        if self.response in self.responses:
+            return self.response
+        return Gtk.ResponseType.DELETE_EVENT
 
     def get_filename(self):
         return self.filename
@@ -244,6 +250,16 @@ class TestForm(GuiTestCase):
         self.assertIsNone(window.on_check_clicked(None))
         self.assertEqual(self.messages(window), " is not a folder")
 
+    def test_the_list_and_the_messages(self):
+        window = self.form_window()
+        self.assertEqual(
+            [column.get_title() for column in window.view.get_columns()],
+            ["Project", "Bricks", "Status"],
+        )
+        for widget in (window.view, window.messages, window.progress):
+            self.assertIs(widget.get_toplevel(), window.window)
+            self.assertTrue(widget.get_visible())
+
     def test_choose_a_path(self):
         window = self.form_window()
         button = window.workspace_entry.get_parent().get_children()[1]
@@ -278,6 +294,35 @@ class TestRun(GuiTestCase):
         )
         self.assertEqual(window.progress.get_text(), "0 of 2")
         self.assertEqual(self.messages(window), "lab\nNo messages.\n")
+
+    @defer.inlineCallbacks
+    def test_the_buttons(self):
+        window = self.form_window()
+        window.check_button.clicked()
+        migration = yield window.running
+        self.assertTrue(migration.dry_run)
+        window.migrate_button.clicked()
+        migration = yield window.running
+        self.assertFalse(migration.dry_run)
+        window.close_button.clicked()
+        self.assertIs(self.successResultOf(window.closed), migration)
+
+    @defer.inlineCallbacks
+    def test_checking_twice(self):
+        window = self.form_window()
+        yield window.on_check_clicked(None)
+        yield window.on_check_clicked(None)
+        self.assertEqual([row[0] for row in self.rows(window)], ["lab", "wan"])
+
+    @defer.inlineCallbacks
+    def test_no_report_while_running(self):
+        window = self.form_window()
+        yield window.on_check_clicked(None)
+        self.assertTrue(window.save_button.get_sensitive())
+        running = window.on_migrate_clicked(None)
+        self.assertFalse(window.save_button.get_sensitive())
+        yield running
+        self.assertTrue(window.save_button.get_sensitive())
 
     def test_fill_nothing(self):
         window = self.form_window()
@@ -408,6 +453,34 @@ class TestLock(GuiTestCase):
         yield self.in_place_window().on_check_clicked(None)
 
     @defer.inlineCallbacks
+    def test_migrate_to_a_folder_needs_no_lock(self):
+        hold_lock(self)
+        migration = yield self.form_window().on_migrate_clicked(None)
+        self.assertEqual(migration.exit_code, 0)
+        # the lock of the Virtualbricks that runs is left alone
+        self.assertFalse(lock_is_free())
+
+    @defer.inlineCallbacks
+    def test_an_unexpected_error(self):
+        def fail(migration, item):
+            raise RuntimeError("boom")
+
+        self.patch(Migration, "_migrate_project", fail)
+        window = self.in_place_window()
+        yield window.on_migrate_clicked(None)
+        self.assertTrue(lock_is_free())
+        self.assertIsNone(window.running)
+        self.assertTrue(window.form.get_sensitive())
+        self.assertTrue(window.migrate_button.get_sensitive())
+        self.assertEqual(
+            self.messages(window), "The migration stopped on an error: boom"
+        )
+        self.assertEqual(self.logger.levels(), ["failure"])
+        # closing it doesn't stop a task that is over
+        window.window.destroy()
+        self.assertIs(self.successResultOf(window.closed), window.migration)
+
+    @defer.inlineCallbacks
     def test_closed_while_migrating(self):
         window = self.in_place_window()
         running = window.on_migrate_clicked(None)
@@ -428,6 +501,7 @@ class TestReport(GuiTestCase):
         window.save_button.clicked()
         dialog = self.chooser.instances[-1]
         self.assertEqual(dialog.current_name, REPORT_FILE)
+        self.assertTrue(dialog.overwrite_confirmation)
         self.assertTrue(dialog.destroyed)
         with open(path) as fp:
             self.assertEqual(fp.read(), migration.text())

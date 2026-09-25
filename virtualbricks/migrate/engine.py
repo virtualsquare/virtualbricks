@@ -548,16 +548,3 @@ def convert_imported_project(directory: str, report: Report) -> Table | None:
         report.error(_describe_error(exc), directory)
         return None
     return data
-
-
-def migrate_imported_project(directory: str) -> Report:
-    """Write the project file of an imported archive of an old version."""
-
-    report = Report()
-    data = convert_imported_project(directory, report)
-    if data is not None:
-        try:
-            dump_toml(data, os.path.join(directory, locations.PROJECT_FILE))
-        except OSError as exc:
-            report.error(_describe_error(exc), directory)
-    return report

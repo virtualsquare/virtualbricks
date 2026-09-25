@@ -545,6 +545,23 @@ class TestNetemu(ConvertTestCase):
             ],
         )
 
+    def test_one_state_without_a_count(self):
+        # the old versions wrote one state as the keys of the brick
+        data, _, report = self.convert("[Netemu:wan]\ndelay=10\n")
+        self.assertEqual(len(report), 0)
+        wan = data["bricks"]["wan"]
+        self.assertEqual(len(wan["states"]), 1)
+        self.assertEqual(wan["states"][0]["delay"], 10)
+        self.assertEqual(wan["transitions"], [[0.0]])
+
+    def test_one_is_a_positive_integer(self):
+        text = "[Netemu:wan]\nstates=1\ntransperiod=1\n"
+        data, _, report = self.convert(text)
+        self.assertEqual(len(report), 0)
+        wan = data["bricks"]["wan"]
+        self.assertEqual(len(wan["states"]), 1)
+        self.assertEqual(wan["transperiod"], 1)
+
     def test_events_of_every_state(self):
         text = "[Event:on]\n[Netemu:wan]\npon_vbevent=on\nstates=3\n"
         data, _, report = self.convert(text)
@@ -612,6 +629,12 @@ class TestConnections(ConvertTestCase):
                 "machine, dropped",
             ],
         )
+
+    def test_the_model_of_a_plug(self):
+        text = "[Qemu:vm]\nlink|vm||e1000|00:11:22:33:44:55\n"
+        data, _, report = self.convert(text)
+        self.assertEqual(len(report), 0)
+        self.assertEqual(data["bricks"]["vm"]["nics"][0]["model"], "e1000")
 
     def test_macs(self):
         text = "[Qemu:vm]\nsock|vm|a||\nsock|vm|b||00:11\n"

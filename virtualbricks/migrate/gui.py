@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from typing_extensions import Unpack
 
 logger = Logger()
+migration_failed = "The migration stopped on an error"
 NAME, BRICKS, STATUS = range(3)
 LEVEL_COLORS = {INFO: "#56655f", WARNING: "#7a4800", ERROR: "#982b22"}
 
@@ -339,9 +340,22 @@ class MigrationWindow:
         return migration
 
     def _stopped(self, failure: Failure) -> None:
-        failure.trap(task.TaskStopped)
+        """The window was closed while migrating, or the migration failed."""
+
         self._unlock()
         self.running = None
+        if failure.check(task.TaskStopped):
+            return
+        logger.failure(migration_failed, failure=failure)
+        self.show_text(
+            _("The migration stopped on an error: {error}").format(
+                error=failure.getErrorMessage()
+            )
+        )
+        if not self.fixed:
+            self.form.set_sensitive(True)
+            self.check_button.set_sensitive(True)
+            self.migrate_button.set_sensitive(True)
 
     def show_progress(self, current: engine.Item | None = None) -> None:
         # the window is filled before its progress is shown
