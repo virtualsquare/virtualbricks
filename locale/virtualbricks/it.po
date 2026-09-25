@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 23:57+0200\n"
+"POT-Creation-Date: 2026-09-26 00:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1983,12 +1983,6 @@ msgstr ""
 "terminale X-window"
 
 #: virtualbricks/gui/windows/settings.py
-msgid "X-window sudo command"
-msgstr ""
-"Comando per\n"
-"X-window sudo"
-
-#: virtualbricks/gui/windows/settings.py
 #, fuzzy
 msgid "Enable systray"
 msgstr "Abilita SysTray"
@@ -2408,6 +2402,11 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "X-window sudo command"
+#~ msgstr ""
+#~ "Comando per\n"
+#~ "X-window sudo"
 
 #, fuzzy
 #~ msgid "File:"

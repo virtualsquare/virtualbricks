@@ -130,11 +130,6 @@ quits.
 **term** = *string*, default `"/usr/bin/xterm"`
 :   The terminal that opens the console of a brick.
 
-**sudo** = *string*, default `"/usr/bin/gksu"`
-:   The program that runs the bricks that need privileges, such as a tap.
-    It's given **--** and the command line of the brick. Virtualbricks
-    doesn't use it when it runs as root.
-
 **ksm** = *boolean*, default `false`
 :   Enable Kernel Samepage Merging at start, so that virtual machines share
     identical memory pages.
@@ -467,7 +462,7 @@ connect to it by its name.
 ## tap
 
 A tap interface of the host, plugged into a switch through
-**vde_plug2tap**(1). It needs privileges, see **sudo**.
+**vde_plug2tap**(1). It needs root, see **PRIVILEGES**.
 
 **connect** = *string*, default `""`
 :   The socket the tap is plugged into.
@@ -488,7 +483,7 @@ A tap interface of the host, plugged into a switch through
 ## capture
 
 Captures the packets of an interface of the host into a switch, through
-**vde_pcapplug**. It needs privileges, see **sudo**.
+**vde_pcapplug**. It needs root, see **PRIVILEGES**.
 
 **connect** = *string*, default `""`
 :   The socket the capture is plugged into.
@@ -603,6 +598,41 @@ The client end of an encrypted tunnel, through **vde_cryptcab**(1).
 
 A router. It has only the two event keys.
 
+# PRIVILEGES
+
+A **tap** and a **capture** open interfaces of the host, and the **ksm**
+setting writes to */sys*: they need root. When Virtualbricks doesn't run as
+root, it runs them with **sudo**(8), in one of two ways:
+
+**sudo -A**
+:   When an askpass helper is configured: the program of **SUDO_ASKPASS**,
+    or of a **Path askpass** line of */etc/sudo.conf*, as **ssh-askpass**(1).
+    sudo runs it to ask for your password in a window, so it needs a
+    display.
+
+**sudo -n**
+:   Otherwise. sudo never asks for a password: when it would have to, it
+    fails at once, and the brick doesn't start. This is the way on a machine
+    without a display, with a rule of **sudoers**(5) that lets you run the
+    programs of the bricks, from the folder of the **vdepath** setting,
+    without a password:
+
+    ```
+    alice ALL=(root) NOPASSWD: /usr/bin/vde_plug2tap, \
+        /usr/bin/vde_pcapplug
+    ```
+
+The **ksm** setting runs */bin/sh* as root to write its value, and a rule
+that lets a shell run as root gives root to anyone who can use it. Turn KSM
+on at boot instead, with a **tmpfiles.d**(5) line, and leave **ksm** false:
+
+```
+w /sys/kernel/mm/ksm/run - - - - 1
+```
+
+The settings of older versions have a **sudo** key, the program that did
+this: it's reported, ignored, and dropped at the next save.
+
 # MIGRATION
 
 The first time Virtualbricks starts after an upgrade from 2.1 or older, it
@@ -646,6 +676,10 @@ an old project is converted when it's imported.
 */tmp/vb.lock*
 :   The lock that lets only one Virtualbricks run on the machine.
 
+*/etc/sudo.conf*
+:   Its **Path askpass** line makes Virtualbricks run sudo with **-A**, as
+    **SUDO_ASKPASS** does; see **PRIVILEGES**.
+
 # ENVIRONMENT
 
 **XDG_CONFIG_HOME**, **XDG_STATE_HOME**
@@ -656,6 +690,10 @@ an old project is converted when it's imported.
 **XDG_RUNTIME_DIR**
 :   Where the sockets are. When it's not set, they are in a directory
     *virtualbricks-*uid of the temporary directory, readable only by you.
+
+**SUDO_ASKPASS**
+:   The askpass helper of **sudo**(8): when it's set, Virtualbricks runs
+    sudo with **-A**; see **PRIVILEGES**.
 
 # EXAMPLES
 
@@ -670,7 +708,6 @@ qemupath = "/usr/bin"
 vdepath = "/usr/bin"
 workspace = "/home/alice/.virtualbricks"
 term = "/usr/bin/xterm"
-sudo = "/usr/bin/gksu"
 ksm = false
 systray = true
 show_missing = true
@@ -807,7 +844,8 @@ the interface gets no address from Virtualbricks.
 # SEE ALSO
 
 **virtualbricks-archive**(7), **qemu**(1), **vde_switch**(1),
-**vde_plug2tap**(1), **vde_cryptcab**(1), **dpipe**(1)
+**vde_plug2tap**(1), **vde_cryptcab**(1), **dpipe**(1), **sudo**(8),
+**sudoers**(5), **sudo.conf**(5), **tmpfiles.d**(5)
 
 TOML 1.0: <https://toml.io/en/v1.0.0>
 

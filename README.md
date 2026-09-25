@@ -35,21 +35,23 @@ To use Virtualbricks, and not only to install it, you need these programs too.
 On Debian:
 
 ```sh
-sudo apt install qemu-system-x86 qemu-utils vde2 xterm pkexec
+sudo apt install qemu-system-x86 qemu-utils vde2 xterm sudo
 ```
 
 - `qemu-system-*` for each architecture of your VMs, and `qemu-img`;
 - VDE 2: `vde_switch`, `vde_plug`, `wirefilter`, `vde_plug2tap`, `dpipe`,
   `vdeterm`, `vde_router` and `vde_cryptcab`;
-- a terminal, `xterm` by default, and a program that asks for the password of
-  root in a window, `pkexec` or `gksu` (see [Configuration](#configuration)).
+- a terminal, `xterm` by default, and `sudo`, which runs the bricks that need
+  root, a tap and a capture (see [Configuration](#configuration)).
 
 These are optional:
 
 - `bsdtar` (`libarchive-tools`) or GNU `tar`, to export and import projects;
   without them Virtualbricks uses Python's `tarfile`;
 - `gvfs`, so that removing a project can move it to the trash of your desktop;
-  without a trash the window offers to delete it for good.
+  without a trash the window offers to delete it for good;
+- an askpass helper for `sudo`, as `ssh-askpass`, to type the password of root
+  in a window (see [Configuration](#configuration)).
 
 ## Installing
 
@@ -101,10 +103,13 @@ Virtualbricks keeps its files in TOML, and writes them itself:
 
 The first time, choose in *Settings › Preferences* where Virtualbricks finds
 the programs: `qemupath` and `vdepath`, the folders of the Qemu and VDE
-binaries. The same window sets `term`, the terminal of the consoles, and
-`sudo`, the program that asks for the password of root: the default is `gksu`,
-which is deprecated, so set it to `pkexec` if you have that instead. When
-Virtualbricks runs as root it doesn't use it.
+binaries. The same window sets `term`, the terminal of the consoles.
+
+A tap and a capture need root. Unless Virtualbricks runs as root, it runs them
+with `sudo -A` when an askpass helper is configured, in `SUDO_ASKPASS` or
+`/etc/sudo.conf`, and with `sudo -n` otherwise, which never asks for a password:
+without a display, a `NOPASSWD` rule of sudoers lets them run. The PRIVILEGES
+section of `man 5 virtualbricks-config` has the details.
 
 The `~/.virtualbricks.conf` file and the `.project` files of Virtualbricks 2.1
 and older are converted once, when the new version starts. The conversion is

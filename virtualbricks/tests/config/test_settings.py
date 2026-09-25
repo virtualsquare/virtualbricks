@@ -104,11 +104,6 @@ class TestValues(SettingsTestCase):
         set_setting("cowfmt", "qcow")
         self.assertEqual(get_setting("cowfmt"), "qcow")
 
-    def test_sudo_as_root(self):
-        self.patch(os, "getuid", lambda: 0)
-        self.assertEqual(get_setting("sudo"), "")
-        self.assertEqual(get_app_setting("sudo"), "/usr/bin/gksu")
-
     def test_parse(self):
         self.assertIs(parse_setting("femaleplugs", "yes"), True)
         self.assertRaises(ValueError, parse_setting, "cowfmt", "qed")

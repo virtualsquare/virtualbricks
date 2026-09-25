@@ -48,6 +48,7 @@ from virtualbricks.config import (
 )
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
+from virtualbricks.sudo import sudo_command
 
 __all__ = ["Brick", "BrickConfig", "PrivilegedBrick"]
 
@@ -429,8 +430,8 @@ class Brick(base.Base):
             self.logger.info(start_brick, args=" ".join(args))
             # usePTY?
             if self.needsudo():
-                prog = get_setting("sudo")
-                args = [get_setting("sudo"), "--"] + args
+                args = sudo_command() + args
+                prog = args[0]
             self.proc = self.process_protocol(self)
             reactor.spawnProcess(self.proc, prog, args, os.environ)
 

@@ -18,11 +18,9 @@
 
 """A tap: vde_plug2tap, a tap interface of the host plugged to a switch."""
 
-import os
-
 from virtualbricks import bricks
 from virtualbricks.bricks.plug import Plug
-from virtualbricks.config import Choice, IPv4, define, field, get_setting
+from virtualbricks.config import Choice, IPv4, define, field
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
@@ -66,54 +64,3 @@ class Tap(bricks.PrivilegedBrick):
 
     def configured(self):
         return bool(self.plugs[0].sock)
-
-    def post_poweron(self):
-        # XXX: fixme
-        self.start_related_events(on=True)
-        if self.config.mode == "dhcp":
-            if self.needsudo():
-                os.system(
-                    get_setting("sudo") + ' "dhclient ' + self.name + '"'
-                )
-            else:
-                os.system("dhclient " + self.name)
-        elif self.config.mode == "manual":
-            if self.needsudo():
-                # XXX Ugly, can't we ioctls?
-                os.system(
-                    get_setting("sudo")
-                    + ' "/sbin/ifconfig '
-                    + self.name
-                    + " "
-                    + self.config.ip
-                    + " netmask "
-                    + self.config.nm
-                    + '"'
-                )
-                if len(self.config.gw) > 0:
-                    os.system(
-                        get_setting("sudo")
-                        + ' "/sbin/route add default gw '
-                        + self.config.gw
-                        + " dev "
-                        + self.name
-                        + '"'
-                    )
-            else:
-                os.system(
-                    "/sbin/ifconfig "
-                    + self.name
-                    + " "
-                    + self.config.ip
-                    + " netmask "
-                    + self.config.nm
-                )
-                if len(self.config.gw) > 0:
-                    os.system(
-                        "/sbin/route add default gw "
-                        + self.config.gw
-                        + " dev "
-                        + self.name
-                    )
-        else:
-            return

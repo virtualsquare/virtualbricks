@@ -288,13 +288,11 @@ class SettingsDialog(_Dialog):
     def _build_application_page(self):
         grid = _grid()
         self.term_entry = Gtk.Entry(visible=True, can_focus=True, hexpand=True)
-        self.sudo_entry = Gtk.Entry(visible=True, can_focus=True, hexpand=True)
         self.systray_switch = _switch()
         self.warn_missing_switch = _switch()
         self.enable_ksm_switch = _switch()
         rows = (
             (_("X-window terminal command"), self.term_entry),
-            (_("X-window sudo command"), self.sudo_entry),
             (_("Enable systray"), self.systray_switch),
             (
                 _("Warn about missing components at startup"),
@@ -366,7 +364,6 @@ class SettingsDialog(_Dialog):
 
     def load_settings(self):
         self.term_entry.set_text(get_app_setting("term"))
-        self.sudo_entry.set_text(get_app_setting("sudo"))
         self.systray_switch.set_active(get_app_setting("systray"))
         self.warn_missing_switch.set_active(get_app_setting("show_missing"))
         self.enable_ksm_switch.set_active(get_app_setting("ksm"))
@@ -380,7 +377,6 @@ class SettingsDialog(_Dialog):
     def store_settings(self):
         logger.debug(apply_settings)
         set_app_setting("term", self.term_entry.get_text())
-        set_app_setting("sudo", self.sudo_entry.get_text())
         set_app_setting("systray", self.systray_switch.get_active())
         set_app_setting("show_missing", self.warn_missing_switch.get_active())
         self.new_project_widgets.store(set_app_setting)

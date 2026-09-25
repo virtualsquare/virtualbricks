@@ -63,7 +63,7 @@ if TYPE_CHECKING:
     )
     from virtualbricks.bricks.sock import Sock
 
-SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python"))
+SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python", "sudo"))
 BRICK_TYPES = {
     "Capture": "capture",
     "Netemu": "netemu",
@@ -145,7 +145,6 @@ def _check_programs(
 ) -> None:
     checks: tuple[tuple[str, Callable[[str], bool]], ...] = (
         ("term", os.path.isfile),
-        ("sudo", os.path.isfile),
         ("qemupath", os.path.isdir),
         ("vdepath", os.path.isdir),
     )

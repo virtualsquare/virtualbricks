@@ -106,7 +106,6 @@ class AppSettings(ProjectSettings):
 
     workspace: str = field(Path(), factory=locations.default_workspace)
     term: str = field(Str(), default="/usr/bin/xterm")
-    sudo: str = field(Str(), default="/usr/bin/gksu")
     ksm: bool = field(Bool(), default=False)
     systray: bool = field(Bool(), default=True)
     show_missing: bool = field(Bool(), default=True)
@@ -141,8 +140,6 @@ def has_option(name: str) -> bool:
 def get_setting(name: str) -> SettingValue:
     """Return the value in effect, from the open project if it has one."""
 
-    if name == "sudo" and os.getuid() == 0:
-        return ""
     return getattr(_target(name), name)
 
 

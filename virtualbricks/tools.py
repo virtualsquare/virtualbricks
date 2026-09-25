@@ -31,6 +31,7 @@ from twisted.logger import Logger
 import constantly as constants
 
 from virtualbricks.config import get_setting
+from virtualbricks.sudo import sudo_command
 
 logger = Logger()
 ksm_error = "Can not change ksm state. (failed command: {cmd})"
@@ -168,14 +169,10 @@ def set_ksm(enable):
     if enable ^ ksm_enabled:
         enable = 1 if enable else 0
         cmd = f"echo {enable} > {KSM_PATH}"
-        # "" when Virtualbricks runs as root
-        sudo = get_setting("sudo")
-        if sudo:
-            args = ["--", "su", "-c", cmd]
-            d = utils.getProcessValue(sudo, args, env=os.environ)
-        else:
-            shell_exe = os.environ.get("SHELL", "/bin/sh")
-            d = utils.getProcessValue(shell_exe, ["-c", cmd], env=os.environ)
+        args = ["/bin/sh", "-c", cmd]
+        if os.geteuid() != 0:
+            args = sudo_command() + args
+        d = utils.getProcessValue(args[0], args[1:], env=os.environ)
         return d.addCallback(_check_set_ksm_cb, cmd)
     else:
         return defer.succeed(ksm_enabled)

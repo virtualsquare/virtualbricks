@@ -71,7 +71,6 @@ class TestConvertSettings(unittest.TestCase):
 
         values = {
             "term": self.program,
-            "sudo": self.program,
             "qemupath": self.bin,
             "vdepath": self.bin,
         }
@@ -104,16 +103,18 @@ class TestConvertSettings(unittest.TestCase):
         self.assertEqual(app.cowfmt, "qcow2")
 
     def test_dropped_and_unknown(self):
-        options = {key: "x" for key in ("alt-term", "cdroms", "kvm", "python")}
+        dropped = ("alt-term", "cdroms", "kvm", "python", "sudo")
+        options = {key: "x" for key in dropped}
         options["color"] = "red"
         _, _, report = self.convert(**options)
         self.assertEqual(
             messages(report),
             [
-                "vb.conf:5: alt-term: not used any more, dropped",
-                "vb.conf:6: cdroms: not used any more, dropped",
-                "vb.conf:7: kvm: not used any more, dropped",
-                "vb.conf:8: python: not used any more, dropped",
+                "vb.conf:4: alt-term: not used any more, dropped",
+                "vb.conf:5: cdroms: not used any more, dropped",
+                "vb.conf:6: kvm: not used any more, dropped",
+                "vb.conf:7: python: not used any more, dropped",
+                "vb.conf:8: sudo: not used any more, dropped",
                 "vb.conf:9: color: unknown setting, dropped",
             ],
         )
@@ -124,9 +125,9 @@ class TestConvertSettings(unittest.TestCase):
         self.assertEqual(
             messages(report),
             [
-                'vb.conf:5: cowfmt: "qed" is not one of cow, qcow, qcow2, '
+                'vb.conf:4: cowfmt: "qed" is not one of cow, qcow, qcow2, '
                 'using the default "qcow2"',
-                'vb.conf:6: ksm: "maybe" is not true or false, using the '
+                'vb.conf:5: ksm: "maybe" is not true or false, using the '
                 "default false",
             ],
         )
@@ -135,19 +136,19 @@ class TestConvertSettings(unittest.TestCase):
     def test_programs_not_on_this_machine(self):
         missing = os.path.join(self.root, "missing")
         _, _, report = self.convert(
-            term=missing, sudo="", qemupath=missing, vdepath="bin"
+            term=missing, qemupath=missing, vdepath="bin"
         )
         self.assertEqual(
             messages(report),
             [
                 f"vb.conf:1: term: {missing} doesn't exist on this machine, kept",
-                f"vb.conf:3: qemupath: {missing} doesn't exist on this machine, "
+                f"vb.conf:2: qemupath: {missing} doesn't exist on this machine, "
                 "kept",
             ],
         )
 
     def test_a_default_is_checked_too(self):
-        lines = {"sudo": (self.program, 1)}
+        lines = {"qemupath": (self.bin, 1)}
         report = Report()
         app, _ = convert_settings(lines, "vb.conf", report)
         app.term = os.path.join(self.root, "missing")
