@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.windows.test_exportproject -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,7 +17,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Dialog to export a project to a file.
+Export a project to an archive.
+
+Three choices, with their sizes: the project, always; its private disks, on;
+the images of its library, off. The other files of the folder are behind an
+expander, all included. The archive is written in the archive process, to a
+temporary file renamed at the end, so a stopped export leaves nothing.
 """
 
 import os
@@ -24,453 +30,431 @@ import os
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk
-from twisted.python import filepath
+from gi.repository import Gtk, Pango
+from twisted.logger import Logger
 
-from virtualbricks import tools, locations
-from virtualbricks.project import manager as project_manager
-from virtualbricks.gui.windows.base import _, destroy_on_exit, Window
+from virtualbricks import locations
+from virtualbricks.config import ArchiveCancelled, export_project
+from virtualbricks.config.archive import DISK, find_qemu_img, member_kind
+from virtualbricks.gui.windows.base import _, pango_attr_list
+from virtualbricks.i18n import ngettext
 
+logger = Logger()
+exported = 'Project "{name}" exported to {path}'
+export_failed = 'Cannot export the project "{name}": {error}'
 
-def gather_selected(model, parent, workspace, lst):
-    itr = model.iter_children(parent)
-    while itr:
-        fp = model[itr][FILEPATH]
-        if model[itr][SELECTED] and fp.isfile():
-            lst.append(os.path.join(*fp.segmentsFrom(workspace)))
-        else:
-            gather_selected(model, itr, workspace, lst)
-        itr = model.iter_next(itr)
-
-
-SELECTED, ACTIVABLE, TYPE, NAME, FILEPATH = range(5)
-
-
-def ConfirmOverwriteDialog(fp, parent):
-    question = _(
-        'A file named "{0}" already exists.  Do you want to ' "replace it?"
-    ).format(fp.basename())
-    dialog = Gtk.MessageDialog(
-        parent,
-        Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-        Gtk.MessageType.QUESTION,
-        message_format=question,
+MARGIN = 18
+# Files of the folder that aren't the project's: the topology drawn, and
+# what older versions left.
+INTERNAL = frozenset(
+    (
+        "vde.dot",
+        "vde_topology.plain",
+        ".images",
+        locations.LEGACY_PROJECT_FILE,
+        locations.LEGACY_PROJECT_FILE + "~",
     )
-    dialog.format_secondary_text(
-        _(
-            'The file already exists in "{0}". '
-            "Replacing it will overwrite its "
-            "contents."
-        ).format(fp.dirname())
+)
+REQUIRED = (locations.PROJECT_FILE, "README")
+STEPS = {
+    "pack": _("Compressing the disks…"),
+    "write": _("Writing the archive…"),
+}
+
+
+def human_size(size):
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1000 or unit == "GB":
+            if unit == "B":
+                return f"{size:.0f} {unit}"
+            return f"{size:.1f} {unit}"
+        size /= 1000
+    return f"{size:.1f} TB"  # pragma: no cover
+
+
+def usage(path):
+    """The bytes a file takes on disk, without its holes."""
+
+    try:
+        return os.lstat(path).st_blocks * 512
+    except OSError:
+        return 0
+
+
+def archive_filename(filename):
+    """The file name, with the .vbp extension."""
+
+    return filename if filename.endswith(".vbp") else f"{filename}.vbp"
+
+
+def project_files(path):
+    """(required, private disks, other files) of the folder, relative."""
+
+    required, disks, others = [], [], []
+    for folder, dirs, files in os.walk(path):
+        relative = os.path.relpath(folder, path)
+        if relative == ".":
+            dirs[:] = [d for d in dirs if d not in INTERNAL]
+            relative = ""
+        for filename in sorted(files):
+            name = os.path.join(relative, filename)
+            if name in INTERNAL:
+                continue
+            if name in REQUIRED:
+                required.append(name)
+            elif member_kind(name) == DISK:
+                disks.append(name)
+            else:
+                others.append(name)
+        dirs.sort()
+    return required, disks, others
+
+
+def ngettext_n(singular, plural, items):
+    count = len(items)
+    return ngettext(singular, plural, count).format(n=count)
+
+
+def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):
+    label = Gtk.Label(
+        visible=True, label=text, xalign=xalign, wrap=wrap, **props
     )
-    dialog.add_button("gtk-cancel", Gtk.ResponseType.CANCEL)
-    button = Gtk.Button.new_with_mnemonic(_("_Replace"))
-    button.set_can_default(True)
-    button.set_image(
-        Gtk.Image.new_from_icon_name("gtk-save-as", Gtk.IconSize.BUTTON)
-    )
-    button.show()
-    dialog.add_action_widget(button, Gtk.ResponseType.ACCEPT)
-    dialog.set_default_response(Gtk.ResponseType.ACCEPT)
-    return dialog
+    if dim:
+        label.get_style_context().add_class("dim-label")
+    if bold:
+        label.set_attributes(pango_attr_list(Pango.attr_weight_new(700)))
+    return label
 
 
-def normalize_project_filename(filename):
-    """
-    Assure that the project filename uses the "vbp" extension.
+class ExportProjectDialog:
+    """Export a project: images is a list of (name, path)."""
 
-    :type filename: str
-    :rtype: str
-    """
+    on_destroy = None
 
-    if filename[-4:] == ".vbp":
-        return filename
-    else:
-        return f"{filename}.vbp"
-
-
-class ExportProjectDialog(Window):
-    """
-    Export the current project to a ``.vbp`` file. The tree lists the files of
-    the project to include; the disk images can be included too.
-    """
-
-    include_images = False
-
-    def __init__(self, progressbar, prjpath, iter_disk_images):
-        Window.__init__(self)
-        self.progressbar = progressbar
-        if isinstance(prjpath, str):
-            prjpath = filepath.FilePath(prjpath)
-        self.prjpath = prjpath
-        self.image_files = [
-            (image.name, filepath.FilePath(image.path))
-            for image in iter_disk_images
-        ]
-        self.required_files = set(
-            [prjpath.child(locations.PROJECT_FILE), prjpath.child("README")]
-        )
-        self.internal_files = set(
-            [
-                prjpath.child("vde.dot"),
-                prjpath.child("vde_topology.plain"),
-                prjpath.child(".images"),
-                # the files of an older version, left by the migration
-                prjpath.child(locations.LEGACY_PROJECT_FILE),
-                prjpath.child(locations.LEGACY_PROJECT_FILE + "~"),
-            ]
+    def __init__(self, path, images=(), run=export_project):
+        self.path = path
+        self.name = os.path.basename(path)
+        self.images = [(n, p) for n, p in images if os.path.isfile(p)]
+        self._run = run
+        self.required, self.disks, self.others = project_files(path)
+        self.job = None
+        self.destroyed = False
+        self.build_ui()
+        self.filename_entry.set_text(
+            os.path.join(os.path.expanduser("~"), f"{self.name}.vbp")
         )
 
-    def build_ui(self) -> None:
-        """Create the widgets, formerly in ``exportproject.ui``."""
+    # The widgets
 
-        # image1 (Gtk.Image)
-        image1 = Gtk.Image(visible=True, can_focus=False, stock="gtk-ok")
-
-        # files_store (Gtk.TreeStore)
-        self.files_store = Gtk.TreeStore(bool, bool, str, str, object)
-
-        # dialog (Gtk.Dialog)
-        self.dialog = Gtk.Dialog(
-            width_request=400,
-            height_request=300,
-            can_focus=False,
-            border_width=2,
-            title=_("Export project"),
-            type_hint=Gdk.WindowTypeHint.DIALOG,
+    def build_ui(self):
+        self.window = Gtk.Window(
+            title=_("Export Project"),
+            default_width=520,
+            window_position=Gtk.WindowPosition.CENTER_ON_PARENT,
+            destroy_with_parent=True,
         )
-        dialog_vbox1 = self.dialog.get_content_area()
-        dialog_vbox1.set_properties(
+        header = Gtk.HeaderBar(
+            visible=True, title=_("Export Project"), subtitle=self.name
+        )
+        self.cancel_button = Gtk.Button(visible=True, label=_("Cancel"))
+        header.pack_start(self.cancel_button)
+        self.export_button = Gtk.Button(visible=True, label=_("Export"))
+        self.export_button.get_style_context().add_class("suggested-action")
+        header.pack_end(self.export_button)
+        self.close_button = Gtk.Button(visible=False, label=_("Close"))
+        header.pack_end(self.close_button)
+        self.window.set_titlebar(header)
+
+        self.stack = Gtk.Stack(visible=True)
+        self.stack.add_named(self._build_form(), "form")
+        self.stack.add_named(self._build_running(), "running")
+        self.stack.add_named(self._build_done(), "done")
+        self.window.add(self.stack)
+
+        self.window.connect("destroy", self.on_destroyed)
+        self.cancel_button.connect("clicked", self.on_cancel_clicked)
+        self.export_button.connect("clicked", self.on_export_clicked)
+        self.close_button.connect("clicked", lambda b: self.window.destroy())
+        self.choose_button.connect("clicked", self.on_choose_clicked)
+        self.filename_entry.connect("changed", self.on_changed)
+
+    def _page(self):
+        return Gtk.Box(
             visible=True,
-            can_focus=False,
-            spacing=2,
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=8,
+            margin=MARGIN,
         )
-        dialog_action_area1 = self.dialog.get_action_area()
-        dialog_action_area1.set_properties(
-            visible=True,
-            can_focus=False,
-            layout_style=Gtk.ButtonBoxStyle.END,
+
+    def _check(self, label, size, active=True, sensitive=True):
+        check = Gtk.CheckButton(
+            visible=True, active=active, sensitive=sensitive
         )
-        cancel_button = Gtk.Button(
-            label="gtk-cancel",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
+        box = Gtk.Box(visible=True, spacing=12)
+        box.pack_start(_label(label), True, True, 0)
+        box.pack_end(_label(human_size(size), dim=True), False, False, 0)
+        check.add(box)
+        check.connect("toggled", self.on_changed)
+        return check
+
+    def size_of(self, names):
+        return sum(usage(os.path.join(self.path, name)) for name in names)
+
+    def _build_form(self):
+        box = self._page()
+        box.pack_start(_label(_("Save as"), bold=True), False, False, 0)
+        row = Gtk.Box(visible=True, spacing=6)
+        self.filename_entry = Gtk.Entry(visible=True, hexpand=True)
+        row.pack_start(self.filename_entry, True, True, 0)
+        self.choose_button = Gtk.Button(visible=True, label=_("Choose…"))
+        row.pack_start(self.choose_button, False, False, 0)
+        box.pack_start(row, False, False, 0)
+
+        box.pack_start(
+            _label(_("Include"), bold=True, margin_top=6), False, False, 0
         )
-        self.dialog.add_action_widget(
-            cancel_button,
-            Gtk.ResponseType.CANCEL,
-        )
-        # add_action_widget() packs the button at the end and aligns it to
-        # the baseline, restore the Glade packing and alignment.
-        cancel_button.set_valign(Gtk.Align.FILL)
-        dialog_action_area1.child_set(
-            cancel_button,
-            pack_type=Gtk.PackType.START,
-            expand=False,
-            fill=False,
-        )
-        self.export_button = Gtk.Button(
-            label=_("Export"),
-            visible=True,
+        self.project_check = self._check(
+            _("The project: its file and its README"),
+            self.size_of(self.required),
             sensitive=False,
-            can_focus=True,
-            receives_default=True,
-            image=image1,
         )
-        self.dialog.add_action_widget(
-            self.export_button,
-            Gtk.ResponseType.OK,
+        box.pack_start(self.project_check, False, False, 0)
+        self.disks_check = self._check(
+            ngettext_n("{n} private disk", "{n} private disks", self.disks),
+            self.size_of(self.disks),
         )
-        self.export_button.set_valign(Gtk.Align.FILL)
-        dialog_action_area1.child_set(
-            self.export_button,
-            pack_type=Gtk.PackType.START,
-            expand=False,
-            fill=False,
+        self.disks_check.set_visible(bool(self.disks))
+        box.pack_start(self.disks_check, False, False, 0)
+        image_names = ", ".join(name for name, _path in self.images)
+        self.images_check = self._check(
+            _("The images: {names}").format(names=image_names),
+            sum(usage(path) for _name, path in self.images),
+            active=False,
         )
-        dialog_vbox1.child_set(
-            dialog_action_area1,
-            expand=False,
-            fill=True,
-            pack_type=Gtk.PackType.END,
+        self.images_check.set_visible(bool(self.images))
+        box.pack_start(self.images_check, False, False, 0)
+
+        self.others_expander = Gtk.Expander(
+            visible=bool(self.others),
+            label=ngettext_n("{n} other file", "{n} other files", self.others),
         )
-        label3 = Gtk.Label(
+        others_box = Gtk.Box(
             visible=True,
-            can_focus=False,
-            label=_("Choose the files to include in the project"),
+            orientation=Gtk.Orientation.VERTICAL,
+            margin_start=12,
         )
-        dialog_vbox1.pack_start(label3, False, True, 3)
-        dialog_vbox1.reorder_child(label3, 0)
-        scrolledwindow1 = Gtk.ScrolledWindow(visible=True, can_focus=True)
-        self.files_view = Gtk.TreeView(
-            visible=True,
-            can_focus=True,
-            model=self.files_store,
-            headers_visible=False,
-        )
-        treeviewcolumn1 = Gtk.TreeViewColumn.new()
-        treeviewcolumn1.set_properties(title=_("Name"))
-        self.selected_cell = Gtk.CellRendererToggle()
-        treeviewcolumn1.pack_start(self.selected_cell, False)
-        treeviewcolumn1.add_attribute(
-            self.selected_cell,
-            "activatable",
-            1,
-        )
-        treeviewcolumn1.add_attribute(
-            self.selected_cell,
-            "active",
-            0,
-        )
-        self.icon_cell = Gtk.CellRendererPixbuf()
-        treeviewcolumn1.pack_start(self.icon_cell, False)
-        treeviewcolumn1.add_attribute(
-            self.icon_cell,
-            "stock-id",
-            2,
-        )
-        filename_cellrenderer = Gtk.CellRendererText()
-        treeviewcolumn1.pack_start(filename_cellrenderer, False)
-        treeviewcolumn1.add_attribute(
-            filename_cellrenderer,
-            "text",
-            3,
-        )
-        self.files_view.append_column(treeviewcolumn1)
-        self.size_column = Gtk.TreeViewColumn.new()
-        self.size_column.set_properties(title=_("Size"))
-        self.size_cell = Gtk.CellRendererText()
-        self.size_column.pack_start(self.size_cell, False)
-        self.files_view.append_column(self.size_column)
-        scrolledwindow1.add(self.files_view)
-        dialog_vbox1.pack_start(scrolledwindow1, True, True, 0)
-        dialog_vbox1.reorder_child(scrolledwindow1, 1)
-        hbox1 = Gtk.Box(visible=True, can_focus=False, spacing=6)
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("File:"),
-        )
-        hbox1.pack_start(label1, False, True, 0)
-        self.filename_entry = Gtk.Entry(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-        )
-        hbox1.pack_start(self.filename_entry, True, True, 0)
-        open_button = Gtk.Button(
-            label="gtk-open",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-        )
-        hbox1.pack_start(open_button, False, True, 0)
-        dialog_vbox1.pack_start(hbox1, False, True, 0)
-        include_images_check = Gtk.CheckButton(
-            label=_("Include base disk images (slow)"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        dialog_vbox1.pack_start(
-            include_images_check,
-            False,
-            True,
-            0,
+        self.other_checks = {}
+        for name in self.others:
+            check = self._check(name, self.size_of([name]))
+            self.other_checks[name] = check
+            others_box.pack_start(check, False, False, 0)
+        self.others_expander.add(others_box)
+        box.pack_start(self.others_expander, False, False, 0)
+        self.total_label = _label(dim=True, margin_top=6)
+        box.pack_start(self.total_label, False, False, 0)
+        self.form_error = _label(wrap=True)
+        self.form_error.get_style_context().add_class("error")
+        self.form_error.set_visible(False)
+        box.pack_start(self.form_error, False, False, 0)
+        return box
+
+    def _build_running(self):
+        box = self._page()
+        box.set_valign(Gtk.Align.CENTER)
+        self.step_label = _label(_("Compressing the disks…"), xalign=0.5)
+        box.pack_start(self.step_label, False, False, 0)
+        self.progress_bar = Gtk.ProgressBar(visible=True, show_text=True)
+        box.pack_start(self.progress_bar, False, False, 0)
+        return box
+
+    def _build_done(self):
+        box = self._page()
+        box.set_valign(Gtk.Align.CENTER)
+        self.done_label = _label(wrap=True, selectable=True, xalign=0.5)
+        box.pack_start(self.done_label, False, False, 0)
+        return box
+
+    def get_root_widget(self):
+        return self.window
+
+    def show(self, parent=None):
+        if parent is not None:
+            self.window.set_transient_for(parent)
+        if self.on_destroy is not None:
+            self.window.connect("destroy", lambda w: self.on_destroy())
+        self.window.show()
+        self.on_changed()
+
+    def show_page(self, name):
+        self.stack.set_visible_child_name(name)
+        self.export_button.set_visible(name == "form")
+        self.close_button.set_visible(name == "done")
+        self.cancel_button.set_visible(name != "done")
+        self.cancel_button.set_label(
+            _("Stop") if name == "running" else _("Cancel")
         )
 
-        # Signals
-        self.dialog.connect(
-            "response",
-            self.on_dialog_response,
+    # The choices
+
+    def files(self):
+        """The files of the folder to include, relative to it."""
+
+        files = list(self.required)
+        if self.disks_check.get_active():
+            files += self.disks
+        files += [n for n, c in self.other_checks.items() if c.get_active()]
+        return files
+
+    def chosen_images(self):
+        return self.images if self.images_check.get_active() else []
+
+    def output(self):
+        text = self.filename_entry.get_text().strip()
+        return archive_filename(os.path.expanduser(text)) if text else ""
+
+    def on_changed(self, *args):
+        size = self.size_of(self.files()) + sum(
+            usage(path) for _name, path in self.chosen_images()
         )
-        self.filename_entry.connect("changed", self.on_filename_entry_changed)
-        open_button.connect("clicked", self.on_open_button_clicked)
-        include_images_check.connect(
-            "toggled",
-            self.on_include_images_check_toggled,
+        self.total_label.set_text(
+            _("{size} before compression").format(size=human_size(size))
         )
+        output = self.output()
+        problem = None
+        if output and os.path.isdir(output):
+            problem = _("{path} is a folder").format(path=output)
+        elif output and not os.path.isdir(os.path.dirname(output) or "."):
+            problem = _("The folder of {path} doesn't exist").format(
+                path=output
+            )
+        self.form_error.set_text(problem or "")
+        self.form_error.set_visible(bool(problem))
+        self.export_button.set_sensitive(bool(output) and problem is None)
 
-    def get_root_widget(self) -> Gtk.Dialog:
-        return self.dialog
+    def on_choose_clicked(self, button):
+        path = self.choose_file()
+        if path:
+            self.filename_entry.set_text(archive_filename(path))
 
-    def append_dirs(self, dirpath, dirnames, model, parent, nodes):
-        for dirname in sorted(dirnames):
-            child = dirpath.child(dirname)
-            if child in self.required_files | self.internal_files:
-                dirnames.remove(dirname)
-            else:
-                row = (True, True, "gtk-directory", dirname, child)
-                nodes[child.path] = model.append(parent, row)
+    def choose_file(self):
+        """Ask where to save; None if cancelled."""
 
-    def append_files(self, dirpath, filenames, model, parent):
-        for filename in sorted(filenames):
-            child = dirpath.child(filename)
-            if (
-                child not in self.required_files | self.internal_files
-                and child.isfile()
-                and not child.islink()
-            ):
-                row = (True, True, "gtk-file", filename, child)
-                model.append(parent, row)
-
-    def build_path_tree(self, model, prjpath):
-        row = (True, True, "gtk-directory", prjpath.basename(), prjpath)
-        root = model.append(None, row)
-        nodes = {prjpath.path: root}
-        for dirpath, dirnames, filenames in os.walk(prjpath.path):
-            parent = nodes[dirpath]
-            dp = filepath.FilePath(dirpath)
-            self.append_dirs(dp, dirnames, model, parent, nodes)
-            self.append_files(dp, filenames, model, parent)
-
-    def show(self, parent_w=None):
-        model = self.files_store
-        self.build_path_tree(model, self.prjpath)
-        pixbuf_cr = self.icon_cell
-        pixbuf_cr.set_property("stock-size", Gtk.IconSize.MENU)
-        size_c = self.size_column
-        size_cr = self.size_cell
-        size_c.set_cell_data_func(size_cr, self._set_size)
-        self.selected_cell.connect(
-            "toggled", self.on_selected_cell_toggled, model
+        chooser = Gtk.FileChooserNative.new(
+            _("Export Project"),
+            self.window,
+            Gtk.FileChooserAction.SAVE,
+            None,
+            None,
         )
-        self.files_view.expand_row(Gtk.TreePath(0), False)
-        Window.show(self, parent_w)
+        chooser.set_do_overwrite_confirmation(True)
+        current = self.output()
+        if current:
+            chooser.set_current_folder(os.path.dirname(current))
+            chooser.set_current_name(os.path.basename(current))
+        vbp = Gtk.FileFilter()
+        vbp.set_name(_("Virtualbricks archives"))
+        vbp.add_pattern("*.vbp")
+        chooser.add_filter(vbp)
+        try:
+            if chooser.run() == Gtk.ResponseType.ACCEPT:
+                return chooser.get_filename()
+            return None
+        finally:
+            chooser.destroy()
 
-    def _set_size(self, column, cellrenderer, model, itr, data=None):
-        fp = model.get_value(itr, FILEPATH)
-        if fp.isfile():
-            cellrenderer.set_property("text", tools.fmtsize(fp.getsize()))
-        else:
-            size = self._calc_size(model, itr)
-            if model.get_path(itr) == Gtk.TreePath((0,)):
-                size += sum(
-                    fp.getsize() for fp in self.required_files if fp.exists()
-                )
-                if self.include_images:
-                    size += sum(fp.getsize() for n, fp in self.image_files)
-            cellrenderer.set_property("text", tools.fmtsize(size))
-
-    def _calc_size(self, model, parent):
-        size = 0
-        fp = model[parent][FILEPATH]
-        if fp.isdir():
-            itr = model.iter_children(parent)
-            while itr:
-                size += self._calc_size(model, itr)
-                itr = model.iter_next(itr)
-        elif model[parent][SELECTED]:
-            size += fp.getsize()
-        return size
-
-    def on_selected_cell_toggled(self, cellrenderer, path, model):
-        itr = model.get_iter(path)
-        model[itr][SELECTED] = not model[itr][SELECTED]
-        self._select_children(model, itr, model[itr][SELECTED])
-        parent = model.iter_parent(itr)
-        while parent:
-            child = model.iter_children(parent)
-            while child:
-                if not model[child][SELECTED]:
-                    model[parent][SELECTED] = False
-                    break
-                child = model.iter_next(child)
-            else:
-                model[parent][SELECTED] = True
-            parent = model.iter_parent(parent)
-
-    def _select_children(self, model, parent, selected):
-        itr = model.iter_children(parent)
-        while itr:
-            self._select_children(model, itr, selected)
-            model[itr][SELECTED] = selected
-            itr = model.iter_next(itr)
-
-    @destroy_on_exit
-    def on_filechooser_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.OK:
-            filename = dialog.get_filename()
-            if filename is None:
-                self.export_button.set_sensitive(False)
-            elif os.path.exists(filename) and not os.path.isfile(filename):
-                dialog.unselect_all()
-                self.export_button.set_sensitive(False)
-            else:
-                filename = normalize_project_filename(filename)
-                self.filename_entry.set_text(filename)
-                self.export_button.set_sensitive(True)
-
-    def on_open_button_clicked(self, button):
-        chooser = Gtk.FileChooserDialog(
-            title=_("Export project"),
-            action=Gtk.FileChooserAction.SAVE,
-            buttons=(
-                "gtk-cancel",
-                Gtk.ResponseType.CANCEL,
-                "gtk-save",
-                Gtk.ResponseType.OK,
+    def confirm_overwrite(self, path):
+        dialog = Gtk.MessageDialog(
+            transient_for=self.window,
+            modal=True,
+            message_type=Gtk.MessageType.QUESTION,
+            text=_('"{name}" already exists. Replace it?').format(
+                name=os.path.basename(path)
             ),
         )
-        vbp = Gtk.FileFilter()
-        vbp.add_pattern("*.vbp")
-        chooser.set_filter(vbp)
-        chooser.connect("response", self.on_filechooser_response)
-        chooser.set_transient_for(self.get_root_widget())
-        chooser.set_current_name(self.filename_entry.get_text())
-        chooser.show()
+        dialog.format_secondary_text(
+            _(
+                "The archive in {folder} is replaced when the export ends."
+            ).format(folder=os.path.dirname(path))
+        )
+        dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+        replace = dialog.add_button(_("Replace"), Gtk.ResponseType.ACCEPT)
+        replace.get_style_context().add_class("destructive-action")
+        try:
+            return dialog.run() == Gtk.ResponseType.ACCEPT
+        finally:
+            dialog.destroy()
 
-    def on_filename_entry_changed(self, entry):
-        self.export_button.set_sensitive(bool(entry.get_text()))
+    # Running the export
 
-    def on_include_images_check_toggled(self, checkbutton):
-        self.include_images = checkbutton.get_active()
-        model = self.files_store
-        model.row_changed(
-            Gtk.TreePath((0,)), model.get_iter(Gtk.TreePath((0,)))
+    def on_export_clicked(self, button):
+        output = self.output()
+        if not output:
+            return
+        if os.path.exists(output) and not self.confirm_overwrite(output):
+            return
+        self.start(output)
+
+    def start(self, output):
+        self.progress_bar.set_fraction(0.0)
+        self.progress_bar.set_text("")
+        self.show_page("running")
+        self.job = self._run(
+            self.path,
+            output,
+            self.files(),
+            self.chosen_images(),
+            on_progress=self.on_progress,
+            qemu_img=find_qemu_img(),
+        )
+        self.job.done.addCallbacks(
+            self.on_exported, self.on_failed, errbackArgs=(output,)
         )
 
-    def export(self, model, ancestor, filename, export=project_manager.export):
-        files = []
-        gather_selected(model, model.get_iter_first(), ancestor, files)
-        for fp in self.required_files:
-            if fp.exists():
-                files.append(os.path.join(*fp.segmentsFrom(ancestor)))
-        images = []
-        if self.include_images:
-            images = [(name, fp.path) for name, fp in self.image_files]
-        return export(filename, ancestor.path, files, images)
+    def on_progress(self, step, done, total):
+        if self.destroyed:
+            return
+        self.step_label.set_text(STEPS.get(step, step))
+        self.progress_bar.set_fraction(min(done / total, 1.0) if total else 0)
+        self.progress_bar.set_text(
+            f"{human_size(min(done, total))} / {human_size(total)}"
+        )
 
-    @destroy_on_exit
-    def on_confirm_response(self, dialog, response_id, parent, filename):
-        if response_id == Gtk.ResponseType.ACCEPT:
-            parent.destroy()
-            self.do_export(filename)
+    def on_exported(self, result):
+        self.job = None
+        logger.info(exported, name=self.name, path=result["output"])
+        if self.destroyed:
+            return
+        self.done_label.set_text(
+            _("Exported to {path}, {size}.").format(
+                path=result["output"], size=human_size(result["size"])
+            )
+        )
+        self.show_page("done")
 
-    def do_export(self, filename):
-        model = self.files_store
-        ancestor = self.prjpath
-        self.progressbar.wait_for(self.export(model, ancestor, filename))
-
-    def on_dialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.OK:
-            filename = self.filename_entry.get_text()
-            fp = filepath.FilePath(normalize_project_filename(filename))
-            if fp.exists():
-                cdialog = ConfirmOverwriteDialog(fp, dialog)
-                cdialog.connect(
-                    "response", self.on_confirm_response, dialog, fp.path
+    def on_failed(self, failure, output):
+        self.job = None
+        if failure.check(ArchiveCancelled):
+            if not self.destroyed:
+                self.show_page("form")
+            return None
+        logger.error(
+            export_failed, name=self.name, error=failure.getErrorMessage()
+        )
+        if not self.destroyed:
+            self.done_label.set_text(
+                _("Cannot export to {path}: {error}").format(
+                    path=output, error=failure.getErrorMessage()
                 )
-                cdialog.show()
-            else:
-                dialog.destroy()
-                self.do_export(fp.path)
+            )
+            self.show_page("done")
+        return None
+
+    def on_cancel_clicked(self, button):
+        if self.job is not None:
+            self.job.cancel()
         else:
-            dialog.destroy()
+            self.window.destroy()
+
+    def on_destroyed(self, window):
+        # A running export goes on, and logs when it's done.
+        self.destroyed = True

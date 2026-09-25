@@ -34,7 +34,8 @@ from twisted.logger import (
 )
 from zope.interface import implementer
 
-from virtualbricks import tools, brickfactory
+from virtualbricks import brickfactory, errors, tools
+from virtualbricks.config import ProjectFormatError, current_project, projects
 from virtualbricks.spawn import qemu_img
 from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event
@@ -64,6 +65,7 @@ from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import VirtualMachine
 
 logger = Logger()
+cannot_open_last = "{message}"
 sync_error = "Sync terminated unexpectedly"
 create_image_error = "Create image terminated unexpectedly"
 cannot_rename = "Cannot rename Brick: it is in use."
@@ -593,6 +595,32 @@ class Application(brickfactory.Application):
         window = MigrationWindow(migration=migration)
         window.show()
         return window.closed
+
+    def open_last_project(self, factory):
+        """
+        Open the project open last, or say why in the Projects window.
+
+        The Projects window takes the place of a new new_project_N; closed
+        without opening a project, it leaves one as the console does.
+        """
+
+        name = current_project()
+        try:
+            projects.open_last(factory)
+        except errors.ProjectNotExistsError:
+            message = _(
+                'The project "{name}" that was open last doesn\'t exist any'
+                " more. Open another one, or create one."
+            ).format(name=name)
+        except (errors.InvalidNameError, ProjectFormatError) as exc:
+            message = _(
+                'The project "{name}" that was open last can\'t be opened:'
+                " {error}"
+            ).format(name=name, error=exc)
+        else:
+            return
+        logger.warn(cannot_open_last, message=message)
+        self.gui.show_start_up_problem(message)
 
     def _start(self, reactor):
         ret = brickfactory.Application._start(self, reactor)

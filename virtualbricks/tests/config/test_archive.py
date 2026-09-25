@@ -745,3 +745,201 @@ class TestTheRealProcess(ArchiveTestCase):
             capture_output=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+
+
+class TestWrite(ArchiveTestCase):
+
+    def lab(self):
+        project = self.path("lab")
+        os.makedirs(os.path.join(project, "sub"), exist_ok=True)
+        for name, data in (
+            ("project.toml", PROJECT),
+            ("README", b"A lab"),
+            ("notes.txt", b"x" * 300),
+            ("sub/small", b"y"),
+        ):
+            with open(os.path.join(project, name), "wb") as fp:
+                fp.write(data)
+        sparse_file(os.path.join(project, "vm_hda.cow"), 32 * MiB)
+        sparse_file(os.path.join(project, "vm_hdb.cow"), 8 * MiB)
+        image = sparse_file(self.path("deb.qcow2"), 64 * MiB, b"image")
+        files = [
+            "vm_hda.cow",
+            "notes.txt",
+            "project.toml",
+            "sub/small",
+            "vm_hdb.cow",
+            "README",
+        ]
+        return project, files, [("deb", image)]
+
+    def export(self, tool, output=None):
+        project, files, images = self.lab()
+        output = output or self.path("out.vbp")
+        job = {
+            "job": "export",
+            "project": project,
+            "output": output,
+            "files": files,
+            "images": [list(image) for image in images],
+        }
+        return archive.run_job(job, self.emitted, tool), output
+
+    def test_the_order_of_a_new_archive(self):
+        project, files, images = self.lab()
+        names = [
+            n for n, _, _ in archive.order_members(project, files, images)
+        ]
+        self.assertEqual(
+            names,
+            [
+                "project.toml",
+                "README",
+                "sub/small",
+                "notes.txt",
+                "vm_hdb.cow",
+                "vm_hda.cow",
+                ".images/deb",
+            ],
+        )
+
+    def check(self, output):
+        # contents.toml first, then the small files
+        with tarfile.open(output) as tar:
+            names = [archive.normalize(info.name) for info in tar.getmembers()]
+        self.assertEqual(names[0], "contents.toml")
+        self.assertEqual(names[-1], ".images/deb")
+        contents = archive.inspect(output, Tool("tarfile"), Emitted())
+        self.assertEqual(
+            [m.name for m in contents.members][:2], ["project.toml", "README"]
+        )
+        self.assertEqual(contents.description, "A lab")
+        # every reader gets the holes back
+        for reader in ("bsdtar", "tarfile"):
+            destination = self.path(
+                f"back-{reader}-{os.path.basename(output)}"
+            )
+            os.makedirs(destination)
+            archive.extract(output, destination, self.tool(reader), Emitted())
+            disk = os.path.join(destination, "vm_hda.cow")
+            self.assertEqual(os.path.getsize(disk), 32 * MiB)
+            self.assertLess(os.stat(disk).st_blocks * 512, MiB)
+            with open(os.path.join(destination, ".images", "deb"), "rb") as fp:
+                self.assertEqual(fp.read(5), b"image")
+            with open(os.path.join(destination, "sub", "small"), "rb") as fp:
+                self.assertEqual(fp.read(), b"y")
+
+    def test_write_with_every_tool(self):
+        for name in ("bsdtar", "gnutar", "tarfile"):
+            output = self.path(f"out-{name}.vbp")
+            result, output = self.export(self.tool(name), output)
+            self.assertEqual(result["output"], output)
+            self.assertEqual(result["size"], os.path.getsize(output))
+            self.check(output)
+            shutil.rmtree(self.path("lab"))
+
+    def test_progress_and_what_was_created(self):
+        result, output = self.export(Tool("tarfile"))
+        progress = self.emitted.of("progress")[-1]
+        self.assertEqual(progress["step"], "write")
+        self.assertEqual(progress["done"], progress["total"])
+        # the data, without the holes
+        self.assertLess(progress["total"], MiB)
+        part, staging = self.emitted.of("created")
+        self.assertTrue(part.endswith(".part"))
+        # next to the archive, as the packed disks can be large
+        for path in (part, staging):
+            self.assertFalse(os.path.exists(path))
+            self.assertEqual(os.path.dirname(path), self.root)
+
+    def test_a_failure_leaves_nothing(self):
+        with self.assertRaises(ArchiveError):
+            self.export(Tool("bsdtar", self.path("no-such-tool")))
+        with self.assertRaises(ArchiveError):
+            self.export(Tool("bsdtar", "/bin/false"))
+        self.assertEqual(sorted(os.listdir(self.root)), ["deb.qcow2", "lab"])
+
+    def test_uncompressed(self):
+        project, files, images = self.lab()
+        job = {
+            "job": "export",
+            "project": project,
+            "output": self.path("plain.vbp"),
+            "files": files,
+            "compression": "none",
+        }
+        archive.run_job(job, self.emitted, Tool("tarfile"))
+        self.assertEqual(archive.compression_flags(self.path("plain.vbp")), [])
+
+    def test_stored_size(self):
+        path = sparse_file(self.path("sparse"), 16 * MiB, b"x" * 10)
+        self.assertLess(archive.stored_size(path), MiB)
+        with open(self.path("full"), "wb") as fp:
+            fp.write(b"x" * 100)
+        self.assertEqual(archive.stored_size(self.path("full")), 100)
+
+    def test_large_sizes_in_the_header(self):
+        info = archive._SparseInfo("GNUSparseFile.0/big")
+        info.size = 12 << 30
+        info.pax_headers = {"GNU.sparse.major": "1"}
+        buf = info.tobuf(tarfile.PAX_FORMAT)
+        header = buf[-tarfile.BLOCKSIZE :]
+        # base-256, not a PAX record
+        self.assertEqual(header[124] & 0x80, 0x80)
+        self.assertNotIn(b" size=", buf)
+        self.assertEqual(tarfile.nti(header[124:136]), 12 << 30)
+        small = archive._SparseInfo("small")
+        small.size = 10
+        self.assertEqual(
+            small.tobuf(tarfile.PAX_FORMAT),
+            tarfile.TarInfo.tobuf(small, tarfile.PAX_FORMAT),
+        )
+
+    def test_sparse_data(self):
+        path = sparse_file(self.path("f"), 4 * MiB, b"abc")
+        fd = os.open(path, os.O_RDONLY)
+        self.addCleanup(os.close, fd)
+        data = archive._SparseData(fd, [(0, 3), (4 * MiB, 0)])
+        self.assertTrue(data.head.startswith(b"2\n0\n3\n4194304\n0\n"))
+        self.assertEqual(len(data.head) % tarfile.BLOCKSIZE, 0)
+        self.assertEqual(data.read(), data.head + b"abc")
+        shrunk = archive._SparseData(fd, [(8 * MiB, 10)])
+        shrunk.read(len(shrunk.head))
+        self.assertRaises(OSError, shrunk.read)
+
+    def test_export_project(self):
+        spawned = []
+
+        class Reactor:
+            def spawnProcess(self, protocol, executable, args, env):
+                spawned.append(protocol)
+
+        job = archive.export_project(
+            "/labs/lab",
+            "/out.vbp",
+            ["project.toml"],
+            [("deb", "/d")],
+            reactor=Reactor(),
+        )
+        self.assertEqual(spawned, [job.protocol])
+        self.assertEqual(job.job["job"], "export")
+        self.assertEqual(job.job["images"], [["deb", "/d"]])
+        self.assertEqual(job.job["compression"], "gzip")
+
+
+class TestExportInTheRealProcess(ArchiveTestCase):
+    """One export through a real process."""
+
+    lab = TestWrite.lab
+    check = TestWrite.check
+
+    def test_the_process(self):
+        project, files, images = self.lab()
+        output = self.path("real.vbp")
+        job = archive.export_project(project, output, files, images)
+
+        def check(result):
+            self.assertEqual(result["output"], output)
+            self.check(output)
+
+        return job.done.addCallback(check)

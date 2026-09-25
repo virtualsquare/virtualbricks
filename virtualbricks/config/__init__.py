@@ -139,6 +139,7 @@ from virtualbricks.config.archive import (
     ArchiveJob,
     Cancelled as ArchiveCancelled,
     Member as ArchiveMember,
+    export_project,
     inspect_archive,
 )
 from virtualbricks.config.importing import (
@@ -243,6 +244,7 @@ __all__ = [
     "ArchiveJob",
     "ArchiveCancelled",
     "ArchiveMember",
+    "export_project",
     "inspect_archive",
     "ImageUse",
     "ImportPlan",

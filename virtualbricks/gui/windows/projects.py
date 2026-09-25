@@ -167,6 +167,9 @@ class ProjectsWindow:
     it, as its menus do, and it runs the import and the export.
     """
 
+    # Called when the window is closed.
+    on_closed = None
+
     def __init__(self, gui, workspace=None, disk_usage=None):
         self.gui = gui
         self.workspace = projects if workspace is None else workspace
@@ -281,7 +284,9 @@ class ProjectsWindow:
         scrolled = Gtk.ScrolledWindow(
             visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
         )
-        self.list = Gtk.ListBox(visible=True)
+        # A click selects and shows the details; a double click or Enter
+        # opens.
+        self.list = Gtk.ListBox(visible=True, activate_on_single_click=False)
         self.list.set_filter_func(self._filter)
         scrolled.add(self.list)
         left.pack_start(scrolled, True, True, 0)
@@ -608,6 +613,8 @@ class ProjectsWindow:
 
     def on_destroy(self, window):
         self.destroyed = True
+        if self.on_closed is not None:
+            self.on_closed()
 
 
 class RemoveDialog:

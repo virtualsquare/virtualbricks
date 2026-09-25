@@ -291,6 +291,14 @@ class TestActions(ProjectsTestCase):
         self.assertEqual(self.manager.current.name, "lab")
         self.assertTrue(window.destroyed)
 
+    def test_a_click_only_selects(self):
+        window = self.window()
+        self.assertFalse(window.list.get_activate_on_single_click())
+        window.list.select_row(window.rows[1].row)
+        self.assertEqual(window.selected.name, "other")
+        self.assertIsNone(self.manager.current)
+        self.assertFalse(window.destroyed)
+
     def test_open_by_activating_a_row(self):
         window = self.window()
         window.on_row_activated(window.list, window.rows[1].row)
@@ -407,6 +415,13 @@ class TestActions(ProjectsTestCase):
         window.window.show()
         window.search_entry.grab_focus()
         self.assertFalse(window.on_key_press(window.window, event))
+
+    def test_closed(self):
+        window = self.window()
+        closed = []
+        window.on_closed = lambda: closed.append(True)
+        window.window.destroy()
+        self.assertEqual(closed, [True])
 
     def test_show_problem(self):
         window = self.window()

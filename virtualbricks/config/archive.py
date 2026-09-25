@@ -46,6 +46,8 @@ know what it holds.
 from __future__ import annotations
 
 import dataclasses
+import errno
+import gzip
 import json
 import os
 import posixpath
@@ -176,8 +178,18 @@ def member_kind(name: str) -> str:
 @dataclasses.dataclass(frozen=True)
 class Member:
     name: str
+    # Its size in the archive.
     size: int
     kind: str
+    # Whether it's a qcow2 disk that qemu-img compressed, and its size before.
+    packed: bool = False
+    real_size: int = 0
+
+    @property
+    def original_size(self) -> int:
+        """Its size on the computer it comes from."""
+
+        return self.real_size if self.packed else self.size
 
     @property
     def image(self) -> str:
@@ -214,7 +226,10 @@ class ArchiveContents:
             "path": self.path,
             "data": self.data,
             "description": self.description,
-            "members": [[m.name, m.size, m.kind] for m in self.members],
+            "members": [
+                [m.name, m.size, m.kind, m.packed, m.real_size]
+                for m in self.members
+            ],
             "complete": self.complete,
             "report": report_to_list(self.report),
             "converted": self.converted,
@@ -353,27 +368,35 @@ def read_contents(data: bytes) -> list[Member]:
             f"{CONTENTS}: written by a newer Virtualbricks"
             f" (format {table.get('format')!r})"
         )
+
+    def number(value) -> int:
+        return value if isinstance(value, int) else 0
+
     members = []
     for item in table.get("members", []):
         if isinstance(item, dict):
             name = str(item.get("name", ""))
-            size = item.get("size", 0)
             members.append(
                 Member(
                     name,
-                    size if isinstance(size, int) else 0,
+                    number(item.get("size", 0)),
                     member_kind(name),
+                    item.get("packed") is True,
+                    number(item.get("real_size", 0)),
                 )
             )
     return members
 
 
 def write_contents(members: Iterable[Member]) -> str:
-    table: Table = {
-        "format": FORMAT,
-        "members": [{"name": m.name, "size": m.size} for m in members],
-    }
-    return tomlfile.dumps(table)
+    items = []
+    for m in members:
+        item: Table = {"name": m.name, "size": m.size}
+        if m.packed:
+            item["packed"] = True
+            item["real_size"] = m.real_size
+        items.append(item)
+    return tomlfile.dumps({"format": FORMAT, "members": items})
 
 
 def contents_from_head(
@@ -668,6 +691,427 @@ def sparsify(path: str, block: int = 64 * 1024, least: int = CHUNK) -> bool:
     return True
 
 
+# qemu-img
+
+PERCENT = re.compile(rb"\(\s*([0-9.]+)/100%\)")
+
+
+class QemuImg:
+    """qemu-img, run by the process: info, convert with progress, rebase."""
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    def _run(self, args: list[str], on_percent=None) -> str:
+        try:
+            process = subprocess.Popen(
+                [self.path, *args],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except OSError as exc:
+            raise ArchiveError(f"qemu-img: {exc}") from None
+        try:
+            output = b""
+            while chunk := process.stdout.read1(4096):
+                output += chunk
+                if on_percent is not None:
+                    found = PERCENT.findall(chunk)
+                    if found:
+                        on_percent(float(found[-1]))
+            stderr = process.stderr.read()
+            code = process.wait()
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+        if code != 0:
+            text = stderr.decode("utf-8", "replace").strip()
+            raise ArchiveError(f"qemu-img: {text}")
+        return output.decode("utf-8", "replace")
+
+    def info(self, path: str) -> dict[str, Any]:
+        return json.loads(self._run(["info", "--output=json", path]))
+
+    def convert(
+        self,
+        source: str,
+        target: str,
+        compress: bool,
+        backing: tuple[str, str] | None = None,
+        on_percent=None,
+    ) -> None:
+        """Copy a qcow2 disk, compressed or not, above backing if given."""
+
+        args = ["convert", "-p", "-O", "qcow2", "-m", "8", "-W"]
+        if backing is not None:
+            args += ["-B", backing[0], "-F", backing[1]]
+        if compress:
+            try:
+                self._run(
+                    [
+                        *args,
+                        "-c",
+                        "-o",
+                        "compression_type=zstd",
+                        source,
+                        target,
+                    ],
+                    on_percent,
+                )
+                return
+            except ArchiveError as exc:
+                # zstd needs QEMU 5.1; zlib works with every version.
+                if "compression_type" not in str(exc):
+                    raise
+            args.append("-c")
+        self._run([*args, source, target], on_percent)
+
+    def rebase(self, disk: str, backing: str, backing_format: str) -> None:
+        self._run(["rebase", "-u", "-b", backing, "-F", backing_format, disk])
+
+
+def backing_of(info: dict[str, Any]) -> tuple[str, str] | None:
+    """The backing file of a disk, as (path, format), from qemu-img info."""
+
+    path = info.get("full-backing-filename") or info.get("backing-filename")
+    if not path:
+        return None
+    return str(path), str(info.get("backing-filename-format", "qcow2"))
+
+
+# Writing
+
+
+def data_regions(fd: int, size: int) -> list[tuple[int, int]]:
+    """The (offset, length) of the data of a file, without its holes."""
+
+    regions = []
+    position = 0
+    while position < size:
+        try:
+            start = os.lseek(fd, position, os.SEEK_DATA)
+        except OSError as exc:
+            # ENXIO: only a hole is left.
+            if exc.errno == errno.ENXIO:
+                break
+            raise
+        end = os.lseek(fd, start, os.SEEK_HOLE)
+        regions.append((start, end - start))
+        position = end
+    return regions
+
+
+def stored_size(path: str) -> int:
+    """The bytes of a file an archive stores: its data, not its holes."""
+
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        size = os.fstat(fd).st_size
+        return sum(length for _, length in data_regions(fd, size))
+    finally:
+        os.close(fd)
+
+
+class _SparseData:
+    """The data of a GNU sparse 1.0 member: its map, then its data."""
+
+    def __init__(self, fd: int, regions: list[tuple[int, int]]) -> None:
+        lines = [str(len(regions))]
+        for offset, length in regions:
+            lines += [str(offset), str(length)]
+        head = ("\n".join(lines) + "\n").encode("ascii")
+        self.head = head + b"\0" * (-len(head) % tarfile.BLOCKSIZE)
+        self._chunks = self._read(fd, regions)
+        self._buffer = bytearray()
+
+    def _read(self, fd, regions):
+        yield self.head
+        for offset, length in regions:
+            while length:
+                chunk = os.pread(fd, min(length, CHUNK), offset)
+                if not chunk:
+                    raise OSError(errno.EIO, "the file got shorter")
+                yield chunk
+                offset += len(chunk)
+                length -= len(chunk)
+
+    def read(self, size: int = -1) -> bytes:
+        while size < 0 or len(self._buffer) < size:
+            try:
+                self._buffer += next(self._chunks)
+            except StopIteration:
+                break
+        if size < 0:
+            size = len(self._buffer)
+        data = bytes(self._buffer[:size])
+        del self._buffer[:size]
+        return data
+
+
+class _SparseInfo(tarfile.TarInfo):
+    """
+    A member whose size, if too big for octal, is in its header, base-256.
+
+    tarfile reads a GNU sparse member wrong when its size is in a PAX
+    record, as tarfile itself would write it above 8 GiB.
+    """
+
+    def create_pax_header(self, info, encoding):
+        size = info["size"]
+        if size <= OCTAL_SIZE_MAX:
+            return super().create_pax_header(info, encoding)
+        buf = super().create_pax_header(dict(info, size=0), encoding)
+        header = bytearray(buf[-tarfile.BLOCKSIZE :])
+        header[124:136] = tarfile.itn(size, 12, tarfile.GNU_FORMAT)
+        header[148:156] = b" " * 8
+        header[148:155] = b"%06o\0" % sum(header)
+        return buf[: -tarfile.BLOCKSIZE] + bytes(header)
+
+
+def add_sparse(tar: tarfile.TarFile, path: str, arcname: str) -> None:
+    """Add a file to tar, as a GNU sparse 1.0 member if it has holes."""
+
+    info = tar.gettarinfo(path, arcname)
+    info.uname = info.gname = ""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        size = info.size
+        regions = data_regions(fd, size)
+        stored = sum(length for _, length in regions)
+        if stored == size:
+            with os.fdopen(os.dup(fd), "rb") as fp:
+                fp.seek(0)
+                tar.addfile(info, fp)
+            return
+        # an empty region at the end gives the size of a file ending in a hole
+        if not regions or sum(regions[-1]) < size:
+            regions.append((size, 0))
+        data = _SparseData(fd, regions)
+        sparse = _SparseInfo(
+            posixpath.join(
+                posixpath.dirname(arcname),
+                "GNUSparseFile.0",
+                posixpath.basename(arcname),
+            )
+        )
+        sparse.mode, sparse.mtime = info.mode, info.mtime
+        sparse.uid, sparse.gid = info.uid, info.gid
+        sparse.pax_headers = {
+            "GNU.sparse.major": "1",
+            "GNU.sparse.minor": "0",
+            "GNU.sparse.name": arcname,
+            "GNU.sparse.realsize": str(size),
+        }
+        sparse.size = len(data.head) + stored
+        tar.addfile(sparse, data)
+    finally:
+        os.close(fd)
+
+
+def order_members(project: str, files: Iterable[str], images) -> list:
+    """
+    (arcname, path, kind) of each member, in the order of a new archive.
+
+    contents.toml's members first: the project file and the README, then
+    the other files, the private disks and the images, each the smallest
+    first.
+    """
+
+    entries = []
+    for name in files:
+        path = os.path.join(project, name)
+        entries.append((name, path, member_kind(name)))
+    for image, path in images:
+        entries.append((f"{IMAGES}/{image}", str(path), IMAGE))
+    rank = {PROJECT: 0, README_KIND: 1, OTHER: 2, DISK: 3, IMAGE: 4}
+
+    def key(entry):
+        name, path, kind = entry
+        return (rank.get(kind, 2), os.path.getsize(path), name)
+
+    return sorted(entries, key=key)
+
+
+class _Output:
+    """The compressed archive, fed with the tar stream; counts its bytes."""
+
+    def __init__(self, path: str, progress: Progress, compress: bool):
+        self.fp = open(path, "wb")
+        self.progress = progress
+        self.gzip = (
+            gzip.GzipFile(fileobj=self.fp, mode="wb", mtime=0)
+            if compress
+            else None
+        )
+
+    def write(self, data: bytes) -> int:
+        (self.gzip or self.fp).write(data)
+        self.progress.advance(len(data))
+        return len(data)
+
+    def close(self) -> None:
+        if self.gzip is not None:
+            self.gzip.close()
+        self.fp.close()
+
+
+def write_archive(job: Table, emit, tool: Tool) -> dict[str, Any]:
+    """Write a project to an archive, in a temporary file renamed at the end."""
+
+    project = str(job["project"])
+    output = str(job["output"])
+    folder = os.path.dirname(output) or "."
+    compress = job.get("compression", "gzip") == "gzip"
+    qemu_img = QemuImg(str(job["qemu_img"])) if job.get("qemu_img") else None
+    report = Report()
+    entries = order_members(
+        project, job.get("files", []), job.get("images", [])
+    )
+    fd, part = tempfile.mkstemp(
+        prefix=f".{os.path.basename(output)}.", suffix=".part", dir=folder
+    )
+    os.close(fd)
+    emit({"created": part})
+    # Next to the archive: the packed disks can be large.
+    staging = tempfile.mkdtemp(prefix=".virtualbricks-export-", dir=folder)
+    emit({"created": staging})
+    try:
+        members = _stage(entries, staging, qemu_img, emit, report)
+        with open(os.path.join(staging, CONTENTS), "w") as fp:
+            fp.write(write_contents(members))
+        names = [CONTENTS] + [m.name for m in members]
+        total = sum(stored_size(os.path.join(staging, name)) for name in names)
+        progress = Progress(emit, "write", total)
+        out = _Output(part, progress, compress)
+        try:
+            if tool.name == TARFILE:
+                _write_with_tarfile(staging, names, out)
+            else:
+                _write_with_tool(tool, staging, names, out)
+        finally:
+            out.close()
+        progress.done = progress.total
+        progress.send()
+        os.replace(part, output)
+    except BaseException:
+        if os.path.lexists(part):
+            os.remove(part)
+        raise
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    return {
+        "output": output,
+        "size": os.path.getsize(output),
+        "report": report_to_list(report),
+    }
+
+
+def _stage(entries, staging: str, qemu_img, emit, report: Report):
+    """
+    Put the members in staging under their names in the archive.
+
+    The qcow2 disks are packed there by qemu-img, each keeping its backing
+    file; the other files are links to themselves.
+    """
+
+    packing = []
+    members = []
+    for name, path, kind in entries:
+        target = os.path.join(staging, name)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        info = None
+        if qemu_img is not None and kind in (DISK, IMAGE):
+            try:
+                info = qemu_img.info(path)
+            except ArchiveError as exc:
+                report.warning(f"stored as it is: {exc}", name)
+        if info is not None and info.get("format") == "qcow2":
+            packing.append((name, path, kind, target, info))
+        else:
+            os.symlink(os.path.abspath(path), target)
+        members.append((name, path, kind))
+    total = sum(stored_size(path) for _, path, _, _, _ in packing)
+    progress = Progress(emit, "pack", total)
+    packed = {}
+    for name, path, kind, target, info in packing:
+        size = stored_size(path)
+        start = progress.done
+
+        def on_percent(percent, start=start, size=size):
+            progress.done = start
+            progress.advance(int(size * percent / 100))
+
+        try:
+            qemu_img.convert(path, target, True, backing_of(info), on_percent)
+        except ArchiveError as exc:
+            # as when its image is gone: qemu-img can't read the disk
+            report.warning(f"stored as it is: {exc}", name)
+            if os.path.lexists(target):
+                os.remove(target)
+            os.symlink(os.path.abspath(path), target)
+        else:
+            packed[name] = os.path.getsize(path)
+        progress.done = start + size
+    if packing:
+        progress.send()
+    return [
+        Member(
+            name,
+            os.path.getsize(os.path.join(staging, name)),
+            kind,
+            name in packed,
+            packed.get(name, 0),
+        )
+        for name, path, kind in members
+    ]
+
+
+def _write_with_tarfile(staging: str, names: list[str], out: _Output) -> None:
+    with tarfile.open(
+        fileobj=out, mode="w|", format=tarfile.PAX_FORMAT
+    ) as tar:
+        for name in names:
+            add_sparse(
+                tar, os.path.realpath(os.path.join(staging, name)), name
+            )
+
+
+def _write_with_tool(tool: Tool, staging: str, names: list[str], out) -> None:
+    if tool.name == BSDTAR:
+        args = [tool.path, "-c", "-L", "--format", "pax", "-f", "-"]
+    else:
+        args = [
+            tool.path,
+            "-c",
+            "--sparse",
+            "--dereference",
+            "--format=posix",
+            "-f",
+            "-",
+        ]
+    args += ["-C", staging, "--", *names]
+    with tempfile.TemporaryFile() as stderr:
+        try:
+            process = subprocess.Popen(
+                args, stdout=subprocess.PIPE, stderr=stderr
+            )
+        except OSError as exc:
+            raise ArchiveError(f"{args[0]}: {exc}") from None
+        try:
+            while chunk := process.stdout.read(CHUNK):
+                out.write(chunk)
+            code = process.wait()
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+        if code != 0:
+            stderr.seek(0)
+            text = stderr.read().decode("utf-8", "replace").strip()
+            raise ArchiveError(f"{os.path.basename(args[0])}: {text}")
+
+
 # The process
 
 
@@ -683,6 +1127,8 @@ def run_job(job: Table, emit, tool: Tool | None = None) -> Any:
     kind = job.get("job")
     if kind == "inspect":
         return inspect(str(job["archive"]), tool, emit).to_table()
+    if kind == "export":
+        return write_archive(job, emit, tool)
     if kind == "import":
         # Imported here: importing uses the reading above.
         from virtualbricks.config import importing
@@ -862,6 +1308,50 @@ def inspect_archive(
     ).start(reactor)
     job.done.addCallback(ArchiveContents.from_table)
     return job
+
+
+def find_qemu_img() -> str:
+    """The qemu-img of the settings or of PATH; "" if there's none."""
+
+    from virtualbricks.spawn import abspath_qemu
+
+    try:
+        return abspath_qemu("qemu-img")
+    except FileNotFoundError:
+        return ""
+
+
+def export_project(
+    project: str,
+    output: str,
+    files: Iterable[str],
+    images: Iterable[tuple[str, str]] = (),
+    on_progress: Callable[[str, int, int], None] | None = None,
+    qemu_img: str = "",
+    reactor=None,
+) -> ArchiveJob:
+    """
+    Write an archive of the project in the process.
+
+    files are relative to the project's folder; images are (name, path).
+    done fires with {"output": ..., "size": ...}.
+    """
+
+    job = ArchiveJob(
+        {
+            "job": "export",
+            "project": project,
+            "output": output,
+            "files": list(files),
+            "images": [[name, path] for name, path in images],
+            # The qcow2 disks are compressed by qemu-img, so the archive
+            # isn't; without qemu-img the archive is gzipped instead.
+            "compression": "none" if qemu_img else "gzip",
+            "qemu_img": qemu_img,
+        },
+        on_progress,
+    )
+    return job.start(reactor)
 
 
 if __name__ == "__main__":  # pragma: no cover

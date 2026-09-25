@@ -107,7 +107,9 @@ class TestSource(unittest.TestCase):
             ("virtualbricks.gui.gui.Application", "Virtualbricks"),
             ("virtualbricks.migrate.engine", "Migration"),
             ("virtualbricks.config.settings", "Settings"),
-            ("virtualbricks.project", "Project"),
+            ("virtualbricks.config.workspace", "Project"),
+            ("virtualbricks.config.archive", "Project"),
+            ("virtualbricks.config.importing", "Project"),
             ("virtualbricks.console", "Console"),
             ("virtualbricks.bricks.event", "Events"),
             ("virtualbricks.bricks.virtualmachine", "Virtual machines"),
@@ -184,7 +186,7 @@ class TestEntryFromEvent(unittest.TestCase):
         self.assertIsNone(new.stream)
         self.assertEqual(new.source, "Project")
         self.assertIsNone(new.source_type)
-        self.assertEqual(new.namespace, "virtualbricks.project")
+        self.assertEqual(new.namespace, "virtualbricks.config.workspace")
         self.assertEqual(new.pid, 41851)
         self.assertEqual(new.lines, ["Restoring project lab"])
         self.assertEqual(new.traceback, [])

@@ -25,7 +25,7 @@ from twisted.internet import defer
 from twisted.logger import LogLevel
 from twisted.trial import unittest
 
-from virtualbricks import project, tools
+from virtualbricks import tools
 from virtualbricks.config import workspace
 from virtualbricks.tests import (
     FakeLogger,
@@ -115,7 +115,6 @@ class GuiTestCase(unittest.TestCase):
         self.manager = use_workspace(
             self, os.path.join(self.root, "workspace")
         )
-        self.patch(project, "logger", FakeLogger())
         self.patch(workspace, "logger", FakeLogger())
 
     def folder(self, name):
@@ -148,7 +147,7 @@ def untranslated(test):
 def event(
     text,
     level=LogLevel.info,
-    namespace="virtualbricks.project",
+    namespace="virtualbricks.config.workspace",
     time=TIME,
     **values,
 ):
@@ -173,7 +172,7 @@ def entry(number=1, level="info", stream=None, lines=("a message",), **values):
         time=TIME,
         source="Project",
         source_type=None,
-        namespace="virtualbricks.project",
+        namespace="virtualbricks.config.workspace",
         pid=None,
         traceback=[],
         text="a message",

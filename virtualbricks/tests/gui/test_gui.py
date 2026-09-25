@@ -16,11 +16,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-"""The application window: the startup migration."""
+"""The application window: the startup migration and the last project."""
 
 import os
 
 from virtualbricks import locations
+from virtualbricks.config import set_current_project, workspace
+from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,
@@ -77,3 +79,58 @@ class TestStartupMigration(GuiTestCase):
         )
         self.assertEqual(self.app._start("reactor"), "quit")
         self.assertEqual(titles, ["set"])
+
+
+class TestStartupProject(GuiTestCase):
+    """The GUI opens the last project, or says why in the Projects window."""
+
+    def setUp(self):
+        super().setUp()
+        self.problems = []
+        test = self
+
+        class VBGUI:
+            def show_start_up_problem(self, message):
+                test.problems.append(message)
+
+        self.app = gui.Application.__new__(gui.Application)
+        self.app.gui = VBGUI()
+        self.logger = FakeLogger()
+        self.patch(gui, "logger", self.logger)
+        self.patch(workspace, "logger", FakeLogger())
+
+    def test_the_last_project(self):
+        self.manager.create("lab")
+        set_current_project("lab")
+        self.app.open_last_project(self.factory)
+        self.assertEqual(self.manager.current.name, "lab")
+        self.assertEqual(self.problems, [])
+
+    def test_the_first_run(self):
+        self.app.open_last_project(self.factory)
+        self.assertEqual(self.manager.current.name, "new_project")
+        self.assertEqual(self.problems, [])
+
+    def test_a_project_that_is_gone(self):
+        set_current_project("gone")
+        self.app.open_last_project(self.factory)
+        self.assertIsNone(self.manager.current)
+        [message] = self.problems
+        self.assertIn('"gone" that was open last doesn\'t exist', message)
+        self.assertEqual(self.logger.levels(), ["warn"])
+        # no new_project_N
+        self.assertEqual(self.manager.names(), [])
+
+    def test_a_project_that_cannot_be_read(self):
+        os.makedirs(self.manager.project_path("lab"))
+        with open(self.manager._project_file("lab"), "w") as fp:
+            fp.write("[bricks\n")
+        set_current_project("lab")
+        self.app.open_last_project(self.factory)
+        [message] = self.problems
+        self.assertIn('"lab" that was open last can\'t be opened', message)
+
+    def test_a_bad_name(self):
+        set_current_project("../x")
+        self.app.open_last_project(self.factory)
+        self.assertEqual(len(self.problems), 1)

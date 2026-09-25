@@ -309,16 +309,16 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Design · steps 1 and 2 committed, step 3 implemented</div>
+    <div class="eyebrow">Design · steps 1 to 3 committed, step 4 implemented</div>
     <h1>Virtualbricks Projects Redesign</h1>
     <p class="lede">One window to find, open and look after your labs, an import that never stops on an image you don't have, and the code behind both moved into <code>virtualbricks.config</code>, where the windows only draw.</p>
     <ul class="meta">
       <li>branch <b>mg/abandon-glade</b> at 63aeafc</li>
-      <li>revision 7 · 25 September 2026</li>
-      <li><span class="status">2 decisions open</span></li>
+      <li>revision 9 · 25 September 2026</li>
+      <li><span class="status">every decision made</span></li>
     </ul>
     <p class="revision"><strong>Mock-ups:</strong> <a href="https://claude.ai/artifact/GcjaWRZ9uEfbAGc1eWu13t">the canvas</a> has today's windows redrawn from the code, three directions for managing projects, two ways to import, and the dialogs and states that go with them. Four of its boards are clickable. The board names below refer to it.</p>
-    <p class="revision"><strong>What changed:</strong> revision 2 applies your two decisions. The work on archives and disk images runs in a process of its own (<a href="#process">§7</a>), and <code>bsdtar</code> stays, as an option (<span class="ref done">P4</span>). It adds measurements of the ways to archive images with holes, a bug in Python&#39;s <code>tarfile</code> with large sparse files and how to avoid it, and a new option: packing disk images with <code>qemu-img</code> (<a href="#archives">§7</a>, <span class="ref">P11</span>). Revision 3 settles the archive tool: <code>bsdtar</code> when it’s installed, otherwise GNU tar, otherwise Python’s <code>tarfile</code>, to write and to read (<span class="ref done">P4</span>, <span class="ref done">P12</span>, <a href="#tools">§7</a>). Revision 4 applies five more decisions: the Projects window reached from the File menu, import on one page, removing a project asks whether to trash it or delete it, “last used” from the file’s time, and the names (<span class="ref done">P1</span>, <span class="ref done">P2</span>, <span class="ref done">P3</span>, <span class="ref done">P7</span>, <span class="ref done">P8</span>). New archives store the small files first, with a list of their contents at the start, so reading one no longer depends on its size (<a href="#reading">§4</a>, <span class="ref">P10</span>). The name limit is measured against the real socket paths, with a way to lift it (<a href="#details">§5</a>, <span class="ref">P9</span>). Revision 5 settles four more: project names of at most 40 bytes, the Projects window at start-up, an import that never replaces a project, and <code>contents.toml</code> at the start of new archives, not hidden (<span class="ref done">P5</span>, <span class="ref done">P6</span>, <span class="ref done">P9</span>, <span class="ref done">P10</span>). It also explains packed disks more plainly (<a href="#archives">§7</a>, <span class="ref">P11</span>, <span class="ref">P13</span>). Revision 6 records what steps 1 and 2 changed while being built, revision 7 what step 3 changed (<a href="#plan">§9</a>).</p>
+    <p class="revision"><strong>What changed:</strong> revision 2 applies your two decisions. The work on archives and disk images runs in a process of its own (<a href="#process">§7</a>), and <code>bsdtar</code> stays, as an option (<span class="ref done">P4</span>). It adds measurements of the ways to archive images with holes, a bug in Python&#39;s <code>tarfile</code> with large sparse files and how to avoid it, and a new option: packing disk images with <code>qemu-img</code> (<a href="#archives">§7</a>, <span class="ref">P11</span>). Revision 3 settles the archive tool: <code>bsdtar</code> when it’s installed, otherwise GNU tar, otherwise Python’s <code>tarfile</code>, to write and to read (<span class="ref done">P4</span>, <span class="ref done">P12</span>, <a href="#tools">§7</a>). Revision 4 applies five more decisions: the Projects window reached from the File menu, import on one page, removing a project asks whether to trash it or delete it, “last used” from the file’s time, and the names (<span class="ref done">P1</span>, <span class="ref done">P2</span>, <span class="ref done">P3</span>, <span class="ref done">P7</span>, <span class="ref done">P8</span>). New archives store the small files first, with a list of their contents at the start, so reading one no longer depends on its size (<a href="#reading">§4</a>, <span class="ref">P10</span>). The name limit is measured against the real socket paths, with a way to lift it (<a href="#details">§5</a>, <span class="ref">P9</span>). Revision 5 settles four more: project names of at most 40 bytes, the Projects window at start-up, an import that never replaces a project, and <code>contents.toml</code> at the start of new archives, not hidden (<span class="ref done">P5</span>, <span class="ref done">P6</span>, <span class="ref done">P9</span>, <span class="ref done">P10</span>). It also explains packed disks more plainly (<a href="#archives">§7</a>, <span class="ref">P11</span>, <span class="ref">P13</span>). Revision 6 records what steps 1 and 2 changed while being built, revision 7 what step 3 changed, revision 8 what step 4 changed. Revision 9 applies the last two decisions: new archives compress each qcow2 disk with <code>qemu-img</code>, and the import unpacks them (<span class="ref done">P11</span>, <span class="ref done">P13</span>).</p>
   </header>
 
   <div class="layout">
@@ -395,7 +395,7 @@
             </tbody>
           </table>
         </div>
-        <p><strong>Decided: A, entered from C's menu</strong> (<span class="ref done">P1</span>). <em>Open Project…</em> (Ctrl+O) opens the Projects window, <em>Open Recent</em> switches without it, and the other items open the same small dialogs the window uses. B can come later, when the main window gets a header bar.</p>
+        <p><strong>Decided: A, entered from C's menu</strong> (<span class="ref done">P1</span>). <em>Projects…</em> (Ctrl+O), first in the File menu, opens the Projects window, <em>Open Recent</em> switches without it, and the other items open the same small dialogs the window uses. B can come later, when the main window gets a header bar.</p>
         <h3>The Projects window (board A)</h3>
         <ul>
           <li><strong>The list</strong> shows each project's name, the first line of its README and a line of facts, for example “6 bricks · 612 MB · yesterday”. It sorts by last use. The open project carries an Open badge; a missing image or an unreadable file shows in the facts line, in the warning colour.</li>
@@ -492,7 +492,7 @@
             <thead><tr><th>Today</th><th>After</th></tr></thead>
             <tbody>
               <tr><td>File › New (a name)</td><td>New Project… (Ctrl+N), in the menu and in the Projects window: name, description, checked as you type</td></tr>
-              <tr><td>File › Open (a list of names, without the open one)</td><td>Open Project… (Ctrl+O) opens the Projects window; Open Recent switches directly</td></tr>
+              <tr><td>File › Open (a list of names, without the open one)</td><td>Projects… (Ctrl+O) opens the Projects window; Open Recent switches directly</td></tr>
               <tr><td>File › Rename project</td><td>Rename… (F2), with the check</td></tr>
               <tr><td>File › Save, autosave every 3 minutes</td><td>Unchanged</td></tr>
               <tr><td>File › Save As (a copy, you stay in the old one)</td><td>Duplicate…, with <em>Open the copy</em> on</td></tr>
@@ -673,10 +673,20 @@
         </ul>
         <p><strong>What building step 3 changed:</strong></p>
         <ul>
-          <li>The File menu has no Remove item: the open project can't be removed, so Remove is only in the Projects window, with the Delete key. The menu is New Project… (Ctrl+N), Open Project… (Ctrl+O), Open Recent with the eight projects used last, Save (Ctrl+S), Duplicate…, Rename…, Import…, Export… and Quit.</li>
+          <li>The File menu has no Remove item: the open project can't be removed, so Remove is only in the Projects window, with the Delete key. The menu is Projects… (Ctrl+O), which opens the Projects window, New Project… (Ctrl+N), Open Recent with the eight projects used last, Save (Ctrl+S), Duplicate…, Rename…, Import…, Export… and Quit.</li>
           <li>Rename has no F2 shortcut in the main window, where F2 isn't free; it has one in the Projects window.</li>
           <li>The Projects window exports any readable project, not only the open one, with the images the project uses that are on this computer.</li>
           <li>Dropping an archive on the window is left for later, as planned.</li>
+          <li>After trying it: the menu item is <em>Projects…</em>, not <em>Open Project…</em>, which didn't say that the window manages the projects; and a click in the list only selects a project, while a double click or Enter opens it.</li>
+        </ul>
+        <p><strong>What building step 4 changed:</strong></p>
+        <ul>
+          <li>A new archive starts with <code>contents.toml</code>, the project file and the README, and ends with the private disks and the images, the largest last. Each qcow2 disk is packed by <code>qemu-img convert -c</code>, zstd with zlib as the fallback, in a staging folder next to the archive; a private disk keeps its image as its backing file, so it holds its own data only. <code>contents.toml</code> marks the packed members, with their size before packing, which the import uses to recognize an image your library already has.</li>
+          <li>What isn't qcow2 goes in as it is, with its holes recorded, and so does a disk <code>qemu-img</code> can't read, as when its image is gone; the result says which. Without <code>qemu-img</code>, the archive is gzipped as a whole, by the process, so the progress counts the data written.</li>
+          <li>The import unpacks the images where they land and each private disk after pointing it at its image, with <code>qemu-img convert -B</code>, so the disk holds its own data only. A disk whose image is unset stays packed, and works as it is; so does everything, without <code>qemu-img</code>. <code>contents.toml</code> isn't left in the project.</li>
+          <li>The tools read the members through a staging folder of links, outside the project, under the names they have in the archive; <code>tarfile</code> writes GNU sparse 1.0 members, with sizes above 8 GiB in base-256.</li>
+          <li>At start-up, closing the Projects window without opening a project opens a new <code>new_project_N</code>, as the console does, so the main window is never without a project.</li>
+          <li><code>project.py</code> is gone.</li>
         </ul>
         <p>Tests go with each step when you ask for them: each archive tool, and archives written by one and read by the others; names and free names, listing with hidden and unreadable folders, rename and duplicate of the open project, trash and delete, trash without a trash folder, reading old and new archives, archives read only up to their head, the Import button pressed during a scan, refused archive members, sparse images, import choices and their defaults, cancelling an import, and start-up recovery.</p>
       </section>
@@ -698,9 +708,9 @@
               <tr><td class="nowrap"><span class="ref done">P8</span></td><td>The exported workspace, and the old archives</td><td colspan="2"><strong>Decided:</strong> a <code>projects</code> instance; the archive process imports the migration lazily</td></tr>
               <tr><td class="nowrap"><span class="ref done">P9</span></td><td>Longest project name</td><td colspan="2"><strong>Decided:</strong> 40 bytes, with the name kept in the socket paths; brick names are checked against what's left</td></tr>
               <tr><td class="nowrap"><span class="ref done">P10</span></td><td>A list of contents at the start of new archives</td><td colspan="2"><strong>Decided:</strong> <code>contents.toml</code>, first, not hidden (<a href="#reading">§4</a>)</td></tr>
-              <tr><td class="nowrap"><span class="ref">P11</span></td><td>Where new archives compress the disks</td><td>Inside each disk: packed qcow2 by <code>qemu-img</code>, the tar not gzipped · around the whole archive: disks as they are, the tar gzipped (level 1 or 6)</td><td>Inside each disk: about 20 times faster, about the same size, and each disk is still a working qcow2 (<a href="#archives">§7</a>)</td></tr>
+              <tr><td class="nowrap"><span class="ref done">P11</span></td><td>Where new archives compress the disks</td><td colspan="2"><strong>Decided:</strong> inside each qcow2 disk, with <code>qemu-img</code>; the tar isn't gzipped. Without <code>qemu-img</code>, the archive is gzipped as a whole instead.</td></tr>
               <tr><td class="nowrap"><span class="ref done">P12</span></td><td>Writer of new archives</td><td colspan="2"><strong>Decided:</strong> the same order as P4</td></tr>
-              <tr><td class="nowrap"><span class="ref">P13</span></td><td>Packed disks at import</td><td>Unpack into normal qcow2 · keep them packed</td><td>Unpack: it takes seconds, and the disks behave as before export. Only matters if <span class="ref">P11</span> packs.</td></tr>
+              <tr><td class="nowrap"><span class="ref done">P13</span></td><td>Packed disks at import</td><td colspan="2"><strong>Decided:</strong> unpacked into normal qcow2 files</td></tr>
             </tbody>
           </table>
         </div>

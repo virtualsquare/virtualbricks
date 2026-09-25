@@ -105,7 +105,6 @@ def part_name(namespace):
         ("virtualbricks.config.archive", _("Project")),
         ("virtualbricks.config.importing", _("Project")),
         ("virtualbricks.config", _("Settings")),
-        ("virtualbricks.project", _("Project")),
         ("virtualbricks.console", _("Console")),
         ("virtualbricks.bricks.event", _("Events")),
         ("virtualbricks.bricks.virtualmachine", _("Virtual machines")),

@@ -27,7 +27,6 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.internet import defer, reactor, task
-from twisted.python import filepath
 from twisted.logger import Logger
 
 from virtualbricks import config, errors, tools
@@ -493,8 +492,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         def separator():
             menu1.append(Gtk.SeparatorMenuItem(visible=True))
 
+        file_open_item = item(_("_Projects…"))
+        file_open_item.set_tooltip_text(
+            _("See, open, rename, duplicate, export and remove your projects")
+        )
         file_new_item = item(_("_New Project…"))
-        file_open_item = item(_("_Open Project…"))
         file_recent_item = item(_("Open _Recent"))
         self.recent_menu = Gtk.Menu(visible=True)
         file_recent_item.set_submenu(self.recent_menu)
@@ -1461,6 +1463,19 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         window.show(self.window)
         return window
 
+    def show_start_up_problem(self, message):
+        """The last project can't be opened: choose one in Projects."""
+
+        window = self.show_projects(problem=message)
+
+        def closed():
+            if projects.current is None:
+                projects.restore_last(self.brickfactory)
+                self.set_title()
+
+        window.on_closed = closed
+        return window
+
     def project_name_dialog(self, kind, original=None):
         dialog = projectname.ProjectNameDialog(self, kind, original)
         dialog.show(self.window)
@@ -1485,13 +1500,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         ):
             self.on_save()
             path = projects.current.path
-            images = list(self.brickfactory.iter_disk_images())
+            images = [
+                (image.name, image.path)
+                for image in self.brickfactory.iter_disk_images()
+            ]
         else:
             path = summary.path
-            images = [image for image in summary.images if image.found]
-        dialog = ExportProjectDialog(
-            ProgressBar(self), filepath.FilePath(path), images
-        )
+            images = [(image.name, image.path) for image in summary.images]
+        dialog = ExportProjectDialog(path, images)
         dialog.show(parent or self.window)
 
     def on_settings_preferences_item_activate(self, menuitem):

@@ -39,17 +39,20 @@ An import never replaces a project.
 from __future__ import annotations
 
 import dataclasses
-import json
 import os
 import shutil
-import subprocess
 import tempfile
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from virtualbricks import locations
 from virtualbricks.config import archive, projectfile, settings, tomlfile
-from virtualbricks.config.archive import ArchiveContents, ArchiveJob, Tool
+from virtualbricks.config.archive import (
+    ArchiveContents,
+    ArchiveJob,
+    Member,
+    Tool,
+)
 from virtualbricks.config.report import Report
 from virtualbricks.i18n import _
 
@@ -201,15 +204,16 @@ def _local_default(original: str, library: str, image: str) -> tuple[str, str]:
 
 
 def plan_image(
-    image: ImageUse, library: str, complete: bool, archive_size: int | None
+    image: ImageUse, library: str, complete: bool, member: Member | None
 ) -> None:
-    """Give image its default choice."""
+    """Give image its default choice; member is its copy in the archive."""
 
+    archive_size = member.size if member is not None else None
     image.in_archive = archive_size
-    image.known = complete or archive_size is not None
+    image.known = complete or member is not None
     choice, path = _local_default(image.original, library, image.name)
     image.fallback = path if choice == USE else ""
-    if archive_size is None:
+    if member is None:
         if image.known:
             image.choice, image.path = choice, path
         else:
@@ -218,7 +222,8 @@ def plan_image(
             image.path = free_file(_library_file(library, image))
         return
     ours = os.path.join(library, _file_name(image))
-    if os.path.isfile(ours) and os.path.getsize(ours) == archive_size:
+    # a packed image is compared by its size before packing
+    if os.path.isfile(ours) and os.path.getsize(ours) == member.original_size:
         image.choice, image.path = USE, ours
     else:
         image.choice, image.path = COPY, free_file(ours)
@@ -248,12 +253,8 @@ def plan_import(contents: ArchiveContents, workspace: Workspace) -> ImportPlan:
             for vm, device in projectfile.devices_for_image(data, image_name)
         ]
         image = ImageUse(image_name, used_by, str(path), None)
-        member = in_archive.get(image_name)
         plan_image(
-            image,
-            library,
-            contents.complete,
-            member.size if member else None,
+            image, library, contents.complete, in_archive.get(image_name)
         )
         images.append(image)
     return ImportPlan(contents, name, images, machine_paths(data), library)
@@ -281,11 +282,10 @@ def update_plan(plan: ImportPlan, contents: ArchiveContents) -> None:
     in_archive = contents.images
     for image in plan.images:
         member = in_archive.get(image.name)
-        size = member.size if member else None
         if image.known:
-            image.in_archive = size
+            image.in_archive = member.size if member else None
         else:
-            plan_image(image, plan.library, True, size)
+            plan_image(image, plan.library, True, member)
 
 
 def import_project(
@@ -333,14 +333,22 @@ class _Import:
         self.staging = str(job["staging"])
         self.images = os.path.join(self.staging, archive.IMAGES)
         self.qemu_img = str(job.get("qemu_img", ""))
+        self.qemu = archive.QemuImg(self.qemu_img) if self.qemu_img else None
         self.report = Report()
         self.created: list[str] = []
+        # The members that qemu-img compressed, from contents.toml.
+        self.packed: dict[str, archive.Member] = {}
+        # image name -> where its copy went
+        self.copied: dict[str, str] = {}
+        # private disk -> (its image, the image's format)
+        self.rebased: dict[str, tuple[str, str]] = {}
 
     def run(self) -> dict[str, Any]:
         os.makedirs(self.staging, exist_ok=True)
         archive.extract(
             str(self.job["archive"]), self.staging, self.tool, self.emit
         )
+        self.read_contents()
         project_file = os.path.join(self.staging, locations.PROJECT_FILE)
         if os.path.isfile(project_file):
             data = self.read_project(project_file)
@@ -354,9 +362,70 @@ class _Import:
             table.update(self.job.get("settings", {}))
         tomlfile.dump(data, project_file)
         self.rebase(data, paths)
+        self.unpack()
         if self.tool.name != archive.BSDTAR:
             self.sparsify()
         return {"name": self.move_into_place(), "report": self.messages()}
+
+    def read_contents(self) -> None:
+        """Which members are packed; contents.toml isn't the project's."""
+
+        path = os.path.join(self.staging, archive.CONTENTS)
+        if not os.path.isfile(path):
+            return
+        with open(path, "rb") as fp:
+            members = archive.read_contents(fp.read())
+        os.remove(path)
+        self.packed = {m.name: m for m in members if m.packed}
+
+    def unpack(self) -> None:
+        """Turn the packed disks back into normal ones."""
+
+        todo = []
+        for name, member in self.packed.items():
+            if member.kind == archive.IMAGE:
+                path = self.copied.get(member.image)
+                if path is not None:
+                    todo.append((name, path, None))
+            elif member.kind == archive.DISK:
+                path = os.path.join(self.staging, name)
+                if path in self.rebased:
+                    todo.append((name, path, self.rebased[path]))
+                elif os.path.isfile(path):
+                    self.report.warning(
+                        "left compressed, as its image is unset or can't be"
+                        " read; it works as it is",
+                        name,
+                    )
+        if todo and self.qemu is None:
+            for name, _path, _backing in todo:
+                self.report.warning(
+                    "qemu-img not found: left compressed, it works as it is",
+                    name,
+                )
+            return
+        total = sum(os.path.getsize(path) for _, path, _ in todo)
+        progress = archive.Progress(self.emit, "unpack", total)
+        for name, path, backing in todo:
+            size = os.path.getsize(path)
+            start = progress.done
+
+            def on_percent(percent, start=start, size=size):
+                progress.done = start
+                progress.advance(int(size * percent / 100))
+
+            unpacked = path + ".unpacking"
+            try:
+                self.qemu.convert(path, unpacked, False, backing, on_percent)
+            except archive.ArchiveError as exc:
+                if os.path.lexists(unpacked):
+                    os.remove(unpacked)
+                self.report.warning(f"left compressed: {exc}", name)
+            else:
+                os.replace(unpacked, path)
+            progress.done = start + size
+        if todo:
+            progress.send()
 
     def messages(self) -> list[list[str]]:
         return archive.report_to_list(self.report)
@@ -406,6 +475,7 @@ class _Import:
                 self.created.append(destination)
                 shutil.move(source, destination)
                 paths[name] = destination
+                self.copied[name] = destination
             elif choice == USE:
                 paths[name] = str(image["path"])
             else:
@@ -433,7 +503,7 @@ class _Import:
                         where,
                     )
                     continue
-                if not self.qemu_img:
+                if self.qemu is None:
                     self.report.warning(
                         "qemu-img not found, the private disk isn't pointed"
                         f" at {path}",
@@ -445,21 +515,10 @@ class _Import:
                 except archive.ArchiveError as exc:
                     self.report.warning(str(exc), where)
 
-    def _qemu_img(self, args: list[str]) -> str:
-        try:
-            result = subprocess.run(
-                [self.qemu_img, *args], capture_output=True, text=True
-            )
-        except OSError as exc:
-            raise archive.ArchiveError(f"qemu-img: {exc}") from None
-        if result.returncode != 0:
-            raise archive.ArchiveError(f"qemu-img: {result.stderr.strip()}")
-        return result.stdout
-
     def rebase_disk(self, cow: str, image: str) -> None:
-        info = json.loads(self._qemu_img(["info", "--output=json", image]))
-        image_format = info.get("format", "qcow2")
-        self._qemu_img(["rebase", "-u", "-b", image, "-F", image_format, cow])
+        image_format = str(self.qemu.info(image).get("format", "qcow2"))
+        self.qemu.rebase(cow, image, image_format)
+        self.rebased[cow] = (image, image_format)
 
     def sparsify(self) -> None:
         for entry in os.listdir(self.staging):

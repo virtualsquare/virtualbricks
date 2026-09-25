@@ -719,7 +719,7 @@ class Application:
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
         reactor.addSystemEventTrigger("before", "shutdown", store_settings)
-        projects.restore_last(factory)
+        self.open_last_project(factory)
         reactor.addSystemEventTrigger(
             "before", "shutdown", projects.save, factory
         )
@@ -737,3 +737,8 @@ class Application:
 
     def _run(self, factory):
         pass
+
+    def open_last_project(self, factory):
+        """Open the project open last, or a new new_project_N."""
+
+        projects.restore_last(factory)

@@ -207,7 +207,7 @@ class TestHelpers(DisplayTestCase):
 
     def test_source_tooltip_of_a_part(self):
         self.assertEqual(
-            logging.source_tooltip(entry()), "virtualbricks.project"
+            logging.source_tooltip(entry()), "virtualbricks.config.workspace"
         )
 
     def test_source_tooltip_of_a_brick(self):
@@ -735,7 +735,7 @@ class TestConsoleView(ConsoleTestCase):
         self.show(view)
         self.assertEqual(
             self.tooltip(view, self.find(view, "source")),
-            (True, "sw1 · switch · virtualbricks.project"),
+            (True, "sw1 · switch · virtualbricks.config.workspace"),
         )
         self.assertEqual(
             self.tooltip(view, self.find(view, "symbol")), (True, "Warning")

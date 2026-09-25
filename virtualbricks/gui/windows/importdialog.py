@@ -43,6 +43,7 @@ from virtualbricks.config import (
     projects,
     update_plan,
 )
+from virtualbricks.config.archive import find_qemu_img
 from virtualbricks.config.importing import COPY, SKIP, USE
 from virtualbricks.gui.windows.base import _, Window, pango_attr_list
 from virtualbricks.i18n import ngettext
@@ -56,6 +57,7 @@ MARGIN = 18
 STEPS = {
     "read": _("Reading the archive"),
     "extract": _("Extracting the archive"),
+    "unpack": _("Uncompressing the disks"),
 }
 PATTERNS = ("*.vbp", "*.tar.gz", "*.tgz", "*.tar")
 
@@ -94,15 +96,6 @@ def human_size(size):
             )
         size /= 1000
     return f"{size:.1f} TB"  # pragma: no cover
-
-
-def find_qemu_img():
-    from virtualbricks.spawn import abspath_qemu
-
-    try:
-        return abspath_qemu("qemu-img")
-    except FileNotFoundError:
-        return ""
 
 
 def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):

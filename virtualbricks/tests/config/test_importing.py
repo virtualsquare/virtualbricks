@@ -17,8 +17,11 @@
 
 """Importing a project: the plan, its defaults, and the import itself."""
 
+import json
 import os
+import shutil
 import stat
+import subprocess
 import tarfile
 
 from twisted.trial import unittest
@@ -559,3 +562,272 @@ class TestImportProject(ImportingTestCase):
     def test_image_use_defaults(self):
         image = ImageUse("deb", [], "/o/deb", None)
         self.assertEqual((image.choice, image.known), ("skip", True))
+
+
+QEMU_IMG = shutil.which("qemu-img")
+QEMU_IO = shutil.which("qemu-io")
+
+
+class TestPackedDisks(ImportingTestCase):
+    """Export with packed disks, and import them unpacked, with qemu-img."""
+
+    def setUp(self):
+        super().setUp()
+        if QEMU_IMG is None or QEMU_IO is None:  # pragma: no cover
+            raise unittest.SkipTest("qemu-img isn't installed")
+        self.emitted = []
+
+    def qemu(self, *args):
+        subprocess.run(args, check=True, capture_output=True)
+
+    def lab(self, disk_format="qcow2"):
+        """A project with a private disk above an image, both with data."""
+
+        folder = self.path("lab")
+        os.makedirs(folder)
+        image = self.path("images", "deb.qcow2")
+        os.makedirs(os.path.dirname(image))
+        self.qemu(QEMU_IMG, "create", "-q", "-f", "qcow2", image, "256M")
+        self.qemu(QEMU_IO, "-c", "write -P 0x11 0 8M", image)
+        disk = os.path.join(folder, "vm_hda.cow")
+        if disk_format == "qcow2":
+            self.qemu(
+                QEMU_IMG,
+                "create",
+                "-q",
+                "-f",
+                "qcow2",
+                "-b",
+                image,
+                "-F",
+                "qcow2",
+                disk,
+                "256M",
+            )
+            self.qemu(QEMU_IO, "-c", "write -P 0x22 64M 2M", disk)
+        else:
+            sparse_file(disk, 4 * MiB)
+        data = project({"deb": image}, {"vm": vm(("hda", "deb"))})
+        with open(os.path.join(folder, "project.toml"), "w") as fp:
+            fp.write(dumps(data))
+        return folder, disk, image
+
+    def export(self, project, image, qemu_img=QEMU_IMG, tool=None):
+        output = self.path("lab.vbp")
+        job = {
+            "job": "export",
+            "project": project,
+            "output": output,
+            "files": ["project.toml", "vm_hda.cow"],
+            "images": [["deb", image]],
+            "compression": "none",
+            "qemu_img": qemu_img or "",
+        }
+        result = archive.run_job(
+            job, self.emitted.append, tool or Tool("tarfile")
+        )
+        return output, result
+
+    def run_import(self, output, qemu_img=QEMU_IMG, choice=None):
+        contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
+        plan = plan_import(contents, self.workspace)
+        if choice is not None:
+            plan.images[0].choice = choice
+        staging = os.path.join(self.workspace.path, ".importing-lab-x")
+        os.makedirs(staging)
+        job = plan.job(self.workspace, staging, qemu_img or "")
+        return (
+            ImportResult.from_table(
+                archive.run_job(job, self.emitted.append, Tool("tarfile"))
+            ),
+            contents,
+        )
+
+    def test_export_packs_the_qcow2_disks(self):
+        project, disk, image = self.lab()
+        output, result = self.export(project, image)
+        self.assertEqual(result["report"], [])
+        # the archive isn't compressed: its disks are
+        self.assertEqual(archive.compression_flags(output), [])
+        contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
+        members = {m.name: m for m in contents.members}
+        cow, deb = members["vm_hda.cow"], members[".images/deb"]
+        self.assertTrue(cow.packed and deb.packed)
+        self.assertFalse(members["project.toml"].packed)
+        self.assertEqual(deb.real_size, os.path.getsize(image))
+        self.assertEqual(deb.original_size, os.path.getsize(image))
+        self.assertLess(deb.size, os.path.getsize(image) // 4)
+        # the private disk has its own data only, not its image's
+        self.assertLess(cow.size, MiB)
+        steps = [
+            p["step"]
+            for p in (e["progress"] for e in self.emitted if "progress" in e)
+        ]
+        self.assertIn("pack", steps)
+
+    def test_import_unpacks_them(self):
+        project, disk, image = self.lab()
+        output, result = self.export(project, image)
+        result, contents = self.run_import(output)
+        self.assertEqual(list(result.report), [])
+        folder = self.workspace.project_path(result.name)
+        copy = os.path.join(self.library, "deb.qcow2")
+        imported = os.path.join(folder, "vm_hda.cow")
+        info = json.loads(
+            subprocess.run(
+                [QEMU_IMG, "info", "--output=json", imported],
+                capture_output=True,
+                check=True,
+            ).stdout
+        )
+        self.assertEqual(info["backing-filename"], copy)
+        # the same content as before the export, and not compressed
+        self.qemu(QEMU_IMG, "compare", disk, imported)
+        self.qemu(QEMU_IMG, "compare", image, copy)
+        self.assertGreater(os.path.getsize(copy), contents.images["deb"].size)
+        self.assertNotIn("contents.toml", os.listdir(folder))
+        steps = [
+            e["progress"]["step"] for e in self.emitted if "progress" in e
+        ]
+        self.assertIn("unpack", steps)
+
+    def test_without_qemu_img_on_import(self):
+        project, disk, image = self.lab()
+        output, result = self.export(project, image)
+        result, contents = self.run_import(output, qemu_img=None)
+        texts = [m.text for m in result.report]
+        self.assertIn(
+            "qemu-img not found: left compressed, it works as it is", texts
+        )
+
+    def test_an_unset_image_leaves_the_disk_packed(self):
+        project, disk, image = self.lab()
+        output, result = self.export(project, image)
+        result, contents = self.run_import(output, choice="skip")
+        where = [m.where for m in result.report]
+        self.assertIn("vm_hda.cow", where)
+
+    def test_without_qemu_img_on_export(self):
+        project, disk, image = self.lab()
+        output, result = self.export(project, image, qemu_img=None)
+        contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
+        self.assertFalse(any(m.packed for m in contents.members))
+
+    def test_what_isnt_qcow2_goes_as_it_is(self):
+        project, disk, image = self.lab(disk_format="raw")
+        output, result = self.export(project, image)
+        contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
+        members = {m.name: m for m in contents.members}
+        self.assertFalse(members["vm_hda.cow"].packed)
+        self.assertTrue(members[".images/deb"].packed)
+
+    def test_a_disk_whose_image_is_gone(self):
+        project, disk, image = self.lab()
+        os.rename(image, image + ".moved")
+        output, result = self.export(project, image + ".moved")
+        [message] = archive.report_from_list(result["report"])
+        self.assertEqual(message.where, "vm_hda.cow")
+        self.assertIn("stored as it is", message.text)
+
+    def test_the_library_has_the_image(self):
+        project, disk, image = self.lab()
+        output, result = self.export(project, image)
+        shutil.copy(image, os.path.join(self.library, "deb.qcow2"))
+        contents = archive.inspect(output, Tool("tarfile"), lambda obj: None)
+        plan = plan_import(contents, self.workspace)
+        # compared by the size before packing
+        self.assertEqual(plan.images[0].choice, "use")
+
+    def test_with_the_tools(self):
+        project, disk, image = self.lab()
+        for name in ("bsdtar", "gnutar"):
+            if TOOLS[name] is None:  # pragma: no cover
+                continue
+            output, result = self.export(
+                project, image, tool=Tool(name, TOOLS[name])
+            )
+            contents = archive.inspect(
+                output, Tool("tarfile"), lambda obj: None
+            )
+            self.assertTrue(contents.images["deb"].packed)
+
+
+class TestQemuImg(ImportingTestCase):
+
+    def fake(self, script):
+        path = self.file(self.path("bin", "qemu-img"), script.encode())
+        os.chmod(path, 0o755)
+        return archive.QemuImg(path)
+
+    def test_zlib_when_zstd_is_unknown(self):
+        log = self.path("log")
+        qemu = self.fake(f"""#!/bin/sh
+echo "$@" >> {log}
+case "$*" in
+  *compression_type*) echo "Invalid parameter 'compression_type'" >&2; exit 1 ;;
+esac
+printf '    (50.00/100%%)\\r    (100.00/100%%)\\r'
+""")
+        percents = []
+        qemu.convert("/a", "/b", True, on_percent=percents.append)
+        with open(log) as fp:
+            calls = fp.read().splitlines()
+        self.assertEqual(len(calls), 2)
+        self.assertIn("-c", calls[1].split())
+        self.assertNotIn("compression_type=zstd", calls[1])
+        self.assertEqual(percents[-1], 100.0)
+
+    def test_other_errors(self):
+        qemu = self.fake("#!/bin/sh\necho 'No space left' >&2\nexit 1\n")
+        with self.assertRaises(ArchiveError) as cm:
+            qemu.convert("/a", "/b", True)
+        self.assertIn("No space left", str(cm.exception))
+        self.assertRaises(
+            ArchiveError, archive.QemuImg(self.path("none")).info, "/a"
+        )
+
+    def test_backing_of(self):
+        self.assertIsNone(archive.backing_of({}))
+        self.assertEqual(
+            archive.backing_of(
+                {
+                    "backing-filename": "deb.qcow2",
+                    "full-backing-filename": "/i/deb.qcow2",
+                    "backing-filename-format": "raw",
+                }
+            ),
+            ("/i/deb.qcow2", "raw"),
+        )
+        self.assertEqual(
+            archive.backing_of({"backing-filename": "/d"}), ("/d", "qcow2")
+        )
+
+    def test_find_qemu_img(self):
+        from virtualbricks import spawn
+
+        def missing(name):
+            raise FileNotFoundError(name)
+
+        self.patch(spawn, "abspath_qemu", missing)
+        self.assertEqual(archive.find_qemu_img(), "")
+        self.patch(spawn, "abspath_qemu", lambda name: "/usr/bin/" + name)
+        self.assertEqual(archive.find_qemu_img(), "/usr/bin/qemu-img")
+
+    def test_a_failed_unpack_leaves_the_disk_packed(self):
+        running = importing._Import(
+            {"staging": self.path("s"), "qemu_img": "/bin/false"},
+            lambda obj: None,
+            Tool("tarfile"),
+        )
+        os.makedirs(self.path("s"))
+        image = self.file(self.path("lib", "deb"), b"packed")
+        running.packed = {
+            ".images/deb": ArchiveMember(".images/deb", 6, "image", True, 9)
+        }
+        running.copied = {"deb": image}
+        running.unpack()
+        [message] = list(running.report)
+        self.assertIn("left compressed", message.text)
+        with open(image, "rb") as fp:
+            self.assertEqual(fp.read(), b"packed")
+        self.assertEqual(os.listdir(self.path("lib")), ["deb"])

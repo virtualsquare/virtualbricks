@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-25 15:26+0200\n"
+"POT-Creation-Date: 2026-09-25 17:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -262,6 +262,18 @@ msgstr "Ca_ncella"
 msgid "Terminate"
 msgstr ""
 
+#: virtualbricks/gui/gui.py
+#, python-brace-format
+msgid ""
+"The project \"{name}\" that was open last doesn't exist any more. Open "
+"another one, or create one."
+msgstr ""
+
+#: virtualbricks/gui/gui.py
+#, python-brace-format
+msgid "The project \"{name}\" that was open last can't be opened: {error}"
+msgstr ""
+
 #: virtualbricks/gui/messages.py
 msgid "Main window"
 msgstr ""
@@ -411,7 +423,6 @@ msgstr "<b>Selezione Evento di arresto</b>"
 #: virtualbricks/gui/windows/attachevent.py
 #: virtualbricks/gui/windows/createimagedialog.py
 #: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/loadimagedialog.py
 #: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
@@ -515,6 +526,7 @@ msgid "label"
 msgstr ""
 
 #: virtualbricks/gui/windows/commitimagedialog.py
+#: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
 #, fuzzy
@@ -615,7 +627,6 @@ msgstr ""
 
 #: virtualbricks/gui/windows/createimagedialog.py
 #: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/exportproject.py
 msgid "Size"
 msgstr "Dimensione"
 
@@ -753,24 +764,28 @@ msgid "Delay (seconds):"
 msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid "A file named \"{0}\" already exists.  Do you want to replace it?"
+msgid "Compressing the disks…"
 msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid ""
-"The file already exists in \"{0}\". Replacing it will overwrite its contents."
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-msgid "_Replace"
+msgid "Writing the archive…"
 msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
 #, fuzzy
-msgid "Export project"
+msgid "Export Project"
 msgstr "Apertura progetto"
+
+#: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/newbrick.py
+#: virtualbricks/gui/windows/projectname.py
+#: virtualbricks/gui/windows/projects.py
+#: virtualbricks/gui/windows/renamedialog.py
+#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
+msgid "Cancel"
+msgstr "Annulla"
 
 #: virtualbricks/gui/windows/exportproject.py
 #, fuzzy
@@ -778,16 +793,76 @@ msgid "Export"
 msgstr "porta:"
 
 #: virtualbricks/gui/windows/exportproject.py
-msgid "Choose the files to include in the project"
+#, fuzzy
+msgid "Save as"
+msgstr "Salva come..."
+
+#: virtualbricks/gui/windows/exportproject.py virtualbricks/migrate/gui.py
+msgid "Choose…"
 msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
-#, fuzzy
-msgid "File:"
-msgstr "_File"
+msgid "Include"
+msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
-msgid "Include base disk images (slow)"
+msgid "The project: its file and its README"
+msgstr ""
+
+#: virtualbricks/gui/windows/exportproject.py
+#, fuzzy, python-brace-format
+msgid "The images: {names}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Stop"
+msgstr "_Avvia/Ferma"
+
+#: virtualbricks/gui/windows/exportproject.py
+#, python-brace-format
+msgid "{size} before compression"
+msgstr ""
+
+#: virtualbricks/gui/windows/exportproject.py
+#, python-brace-format
+msgid "{path} is a folder"
+msgstr ""
+
+#: virtualbricks/gui/windows/exportproject.py
+#, python-brace-format
+msgid "The folder of {path} doesn't exist"
+msgstr ""
+
+#: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Virtualbricks archives"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/windows/exportproject.py
+#, fuzzy, python-brace-format
+msgid "\"{name}\" already exists. Replace it?"
+msgstr "\" esiste già."
+
+#: virtualbricks/gui/windows/exportproject.py
+#, python-brace-format
+msgid "The archive in {folder} is replaced when the export ends."
+msgstr ""
+
+#: virtualbricks/gui/windows/exportproject.py
+msgid "Replace"
+msgstr ""
+
+#: virtualbricks/gui/windows/exportproject.py
+#, python-brace-format
+msgid "Exported to {path}, {size}."
+msgstr ""
+
+#: virtualbricks/gui/windows/exportproject.py
+#, python-brace-format
+msgid "Cannot export to {path}: {error}"
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
@@ -796,6 +871,10 @@ msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
 msgid "Extracting the archive"
+msgstr ""
+
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Uncompressing the disks"
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
@@ -874,16 +953,6 @@ msgid "Import Project"
 msgstr "Apertura progetto"
 
 #: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/newbrick.py
-#: virtualbricks/gui/windows/projectname.py
-#: virtualbricks/gui/windows/projects.py
-#: virtualbricks/gui/windows/renamedialog.py
-#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
-msgid "Cancel"
-msgstr "Annulla"
-
-#: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
 msgid "Import"
 msgstr "porta:"
@@ -891,11 +960,6 @@ msgstr "porta:"
 #: virtualbricks/gui/windows/importdialog.py
 msgid "Choose an archive of a Virtualbricks project."
 msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Virtualbricks archives"
-msgstr "Virtualbricks"
 
 #: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
@@ -934,11 +998,6 @@ msgstr ""
 #: virtualbricks/gui/windows/importdialog.py
 msgid "To check"
 msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Stop"
-msgstr "_Avvia/Ferma"
 
 #: virtualbricks/gui/windows/importdialog.py
 #, python-brace-format
@@ -2049,13 +2108,17 @@ msgstr "_File"
 
 #: virtualbricks/gui/windows/virtualbricks.py
 #, fuzzy
-msgid "_New Project…"
+msgid "_Projects…"
 msgstr "Nuovo progetto"
 
 #: virtualbricks/gui/windows/virtualbricks.py
+msgid "See, open, rename, duplicate, export and remove your projects"
+msgstr ""
+
+#: virtualbricks/gui/windows/virtualbricks.py
 #, fuzzy
-msgid "_Open Project…"
-msgstr "_Apri Progetto"
+msgid "_New Project…"
+msgstr "Nuovo progetto"
 
 #: virtualbricks/gui/windows/virtualbricks.py
 #, fuzzy
@@ -2251,10 +2314,6 @@ msgid "– Skipped"
 msgstr ""
 
 #: virtualbricks/migrate/gui.py
-msgid "Choose…"
-msgstr ""
-
-#: virtualbricks/migrate/gui.py
 #, fuzzy
 msgid "_Select"
 msgstr "Seleziona un'Icona"
@@ -2345,6 +2404,14 @@ msgstr "Salvare il progetto corrente?"
 msgid "{exe} not found"
 msgstr "kvm non trovato"
 
+#, fuzzy
+#~ msgid "File:"
+#~ msgstr "_File"
+
+#, fuzzy
+#~ msgid "_Open Project…"
+#~ msgstr "_Apri Progetto"
+
 #, fuzzy, python-brace-format
 #~ msgid "Do you really want to delete the project {name}?"
 #~ msgstr "Si vuole veramente cancellare "
@@ -2424,9 +2491,6 @@ msgstr "kvm non trovato"
 #, fuzzy
 #~ msgid "Virtualbricks logging"
 #~ msgstr "Impostazioni Virtualbricks"
-
-#~ msgid "Save as..."
-#~ msgstr "Salva come..."
 
 #, fuzzy, python-format
 #~ msgid "Parameter %s not found"
@@ -3247,9 +3311,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "An event named \""
 #~ msgstr "Un evento di nome \""
-
-#~ msgid "\" already exist."
-#~ msgstr "\" esiste già."
 
 #~ msgid "Bricks to add to the event to be started"
 #~ msgstr "Mattoni da aggiungere all'evento per essere avviati"
