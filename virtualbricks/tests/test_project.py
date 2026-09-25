@@ -21,8 +21,19 @@ import os
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from virtualbricks import config, errors, locations, project
-from virtualbricks.config import ProjectFormatError
+from virtualbricks import errors, locations, project
+from virtualbricks.config import (
+    ProjectFormatError,
+    current_project,
+    dump_toml,
+    dumps,
+    get_app_setting,
+    load_toml,
+    project_settings,
+    set_app_setting,
+    set_current_project,
+    set_setting,
+)
 from virtualbricks.tests import FakeLogger, isolate, make_factory
 from virtualbricks.tests import reset_settings
 
@@ -45,10 +56,10 @@ class ProjectTestCase(unittest.TestCase):
 class TestProject(ProjectTestCase):
 
     def test_create(self):
-        config.set_app("cowfmt", "qcow")
+        set_app_setting("cowfmt", "qcow")
         prj = self.new_project()
         self.assertTrue(prj.exists())
-        data = config.load_toml(prj.project_file)
+        data = load_toml(prj.project_file)
         self.assertEqual(data["format"], 1)
         self.assertEqual(data["settings"]["cowfmt"], "qcow")
         self.assertRaises(errors.ProjectExistsError, prj.create)
@@ -75,8 +86,8 @@ class TestProject(ProjectTestCase):
         self.assertIs(prj.open(self.factory), prj)
         self.assertIs(self.manager.current, prj)
         self.assertEqual(self.factory.bricks, [])
-        self.assertIs(config.project_settings(), prj.project_settings)
-        self.assertEqual(config.current_project(), "lab")
+        self.assertIs(project_settings(), prj.project_settings)
+        self.assertEqual(current_project(), "lab")
         self.assertEqual(
             self.factory.runtime_dir,
             os.path.join(locations.runtime_dir(), "lab"),
@@ -99,14 +110,14 @@ class TestProject(ProjectTestCase):
         self.assertRaises(ProjectFormatError, bad.open, self.factory)
         self.assertIs(self.manager.current, good)
         self.assertEqual(len(self.factory.bricks), 1)
-        config.dump_toml({"format": 9}, bad.project_file)
+        dump_toml({"format": 9}, bad.project_file)
         self.assertRaises(ProjectFormatError, bad.open, self.factory)
 
     def test_open_logs_the_report(self):
         prj = self.new_project()
-        data = config.load_toml(prj.project_file)
+        data = load_toml(prj.project_file)
         data["color"] = "red"
-        config.dump_toml(data, prj.project_file)
+        dump_toml(data, prj.project_file)
         prj.open(self.factory)
         self.assertIn("color: unknown field, dropped", self.logger.formatted())
 
@@ -116,7 +127,7 @@ class TestProject(ProjectTestCase):
         prj.close(self.factory)
         self.assertIsNone(self.manager.current)
         self.assertIsNone(prj.project_settings)
-        self.assertIsNone(config.project_settings())
+        self.assertIsNone(project_settings())
         # closing when nothing is open
         prj.close(self.factory)
 
@@ -124,13 +135,13 @@ class TestProject(ProjectTestCase):
         prj = self.new_project()
         prj.open(self.factory)
         self.factory.new_brick("switch", "sw")
-        config.set("femaleplugs", True)
+        set_setting("femaleplugs", True)
         prj.set_description("A lab")
         prj.save(self.factory)
-        data = config.load_toml(prj.project_file)
+        data = load_toml(prj.project_file)
         self.assertIn("sw", data["bricks"])
         self.assertTrue(data["settings"]["femaleplugs"])
-        self.assertFalse(config.get_app("femaleplugs"))
+        self.assertFalse(get_app_setting("femaleplugs"))
         with open(os.path.join(prj.path, "README")) as fp:
             self.assertEqual(fp.read(), "A lab")
         self.assertEqual(prj.get_description(), "A lab")
@@ -165,10 +176,10 @@ class TestProject(ProjectTestCase):
         prj.rename("lab2")
         self.assertEqual(prj.name, "lab2")
         self.assertTrue(prj.exists())
-        self.assertEqual(config.current_project(), "lab2")
+        self.assertEqual(current_project(), "lab2")
         other = self.new_project("other")
         other.rename("other2")
-        self.assertEqual(config.current_project(), "lab2")
+        self.assertEqual(current_project(), "lab2")
 
     def test_documents(self):
         prj = self.new_project()
@@ -218,7 +229,7 @@ class TestManager(ProjectTestCase):
     def test_workspace(self):
         self.assertEqual(self.manager.path, self.workspace)
         manager = project.ProjectManager()
-        config.set("workspace", "/srv/labs")
+        set_setting("workspace", "/srv/labs")
         self.assertEqual(manager.path, "/srv/labs")
 
     def test_get_project(self):
@@ -240,7 +251,7 @@ class TestManager(ProjectTestCase):
         prj.open(self.factory)
         self.factory.new_brick("switch", "sw")
         self.manager.autosave(self.factory)
-        self.assertIn("sw", config.load_toml(prj.project_file)["bricks"])
+        self.assertIn("sw", load_toml(prj.project_file)["bricks"])
 
     def test_autosave_error_is_logged(self):
         prj = self.new_project()
@@ -249,7 +260,7 @@ class TestManager(ProjectTestCase):
         def fail(*args):
             raise OSError("disk full")
 
-        self.patch(config, "save", fail)
+        self.patch(project, "save_project", fail)
         self.manager.autosave(self.factory)
         self.assertEqual(self.logger.levels(), ["failure"])
 
@@ -258,7 +269,7 @@ class TestRestoreLast(ProjectTestCase):
 
     def test_open_the_current_project(self):
         self.new_project("lab")
-        config.set_current_project("lab")
+        set_current_project("lab")
         prj = self.manager.restore_last(self.factory)
         self.assertEqual(prj.name, "lab")
         self.assertTrue(os.path.isdir(os.path.join(self.workspace, "vimages")))
@@ -275,14 +286,14 @@ class TestRestoreLast(ProjectTestCase):
         self.assertEqual(self.logger.levels().count("error"), 1)
 
     def test_missing_project(self):
-        config.set_current_project("gone")
+        set_current_project("gone")
         self.new_project("new_project_0")
         prj = self.manager.restore_last(self.factory)
         self.assertEqual(prj.name, "new_project_1")
         self.assertEqual(self.logger.levels().count("error"), 1)
 
     def test_invalid_name(self):
-        config.set_current_project("../x")
+        set_current_project("../x")
         prj = self.manager.restore_last(self.factory)
         self.assertEqual(prj.name, "new_project_0")
 
@@ -290,7 +301,7 @@ class TestRestoreLast(ProjectTestCase):
         prj = self.new_project("lab")
         with open(prj.project_file, "w") as fp:
             fp.write("[bricks\n")
-        config.set_current_project("lab")
+        set_current_project("lab")
         self.assertEqual(
             self.manager.restore_last(self.factory).name, "new_project_0"
         )
@@ -319,7 +330,7 @@ class FakeArchive:
 class TestImport(ProjectTestCase):
 
     def test_new_format(self):
-        data = config.dumps({"format": 1, "settings": {}})
+        data = dumps({"format": 1, "settings": {}})
         self.manager.archive = FakeArchive({"project.toml": data})
         prj = self.successResultOf(self.manager.import_prj("lab", "x.vbp"))
         self.assertTrue(prj.exists())

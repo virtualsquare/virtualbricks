@@ -19,10 +19,28 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import config, console, locations, migrate
-from virtualbricks.config import Report
-from virtualbricks.events import EventAction
-from virtualbricks.migrate import convert
+from virtualbricks import console, locations
+from virtualbricks.config import (
+    DEFAULT_MODEL,
+    SETTINGS_FORMAT,
+    Bool,
+    Float,
+    Int,
+    Mac,
+    ProjectSettings,
+    Report,
+    Str,
+    dump_record,
+)
+from virtualbricks.bricks.eventaction import EventAction
+from virtualbricks.migrate import (
+    MigrationError,
+    convert,
+    convert_project,
+    convert_settings,
+    convert_value,
+    parse_project,
+)
 from virtualbricks.tests import isolate, reset_settings
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,
@@ -63,7 +81,7 @@ class TestConvertSettings(unittest.TestCase):
             for lineno, (key, value) in enumerate(values.items(), 1)
         }
         report = Report()
-        app, current = migrate.convert_settings(lines, "vb.conf", report)
+        app, current = convert_settings(lines, "vb.conf", report)
         return app, current, report
 
     def test_values(self):
@@ -131,7 +149,7 @@ class TestConvertSettings(unittest.TestCase):
     def test_a_default_is_checked_too(self):
         lines = {"sudo": (self.program, 1)}
         report = Report()
-        app, _ = migrate.convert_settings(lines, "vb.conf", report)
+        app, _ = convert_settings(lines, "vb.conf", report)
         app.term = os.path.join(self.root, "missing")
         report = Report()
         convert._check_programs(app, lines, "vb.conf", report)
@@ -143,26 +161,20 @@ class TestConvertSettings(unittest.TestCase):
 class TestConvertValue(unittest.TestCase):
 
     def test_bool(self):
-        self.assertIs(migrate.convert_value(config.Bool(), "*"), True)
-        self.assertIs(migrate.convert_value(config.Bool(), ""), False)
+        self.assertIs(convert_value(Bool(), "*"), True)
+        self.assertIs(convert_value(Bool(), ""), False)
 
     def test_numbers(self):
-        self.assertEqual(migrate.convert_value(config.Int(), " 3 "), 3)
-        self.assertEqual(migrate.convert_value(config.Float(), "0.5"), 0.5)
-        self.assertIsInstance(
-            migrate.convert_value(config.Float(), "2"), float
-        )
-        error = self.assertRaises(
-            ValueError, migrate.convert_value, config.Int(), "x"
-        )
+        self.assertEqual(convert_value(Int(), " 3 "), 3)
+        self.assertEqual(convert_value(Float(), "0.5"), 0.5)
+        self.assertIsInstance(convert_value(Float(), "2"), float)
+        error = self.assertRaises(ValueError, convert_value, Int(), "x")
         self.assertEqual(str(error), '"x" is not an integer')
-        error = self.assertRaises(
-            ValueError, migrate.convert_value, config.Float(), ""
-        )
+        error = self.assertRaises(ValueError, convert_value, Float(), "")
         self.assertEqual(str(error), '"" is not a number')
 
     def test_text(self):
-        self.assertEqual(migrate.convert_value(config.Str(), " a "), " a ")
+        self.assertEqual(convert_value(Str(), " a "), " a ")
 
     def test_event_actions(self):
         kind = EventAction()
@@ -191,7 +203,7 @@ class TestConvertValue(unittest.TestCase):
         self.assertEqual(str(error), '"hub" is not a USB id')
 
     def test_other_items(self):
-        self.assertEqual(convert._convert_item(config.Str(), "a"), "a")
+        self.assertEqual(convert._convert_item(Str(), "a"), "a")
 
 
 class ConvertTestCase(unittest.TestCase):
@@ -204,9 +216,9 @@ class ConvertTestCase(unittest.TestCase):
 
     def convert(self, text):
         report = Report()
-        project = migrate.parse_project(text, ".project", report)
-        data, count = migrate.convert_project(
-            project, config.ProjectSettings(), report, self.directory
+        project = parse_project(text, ".project", report)
+        data, count = convert_project(
+            project, ProjectSettings(), report, self.directory
         )
         return data, count, report
 
@@ -222,10 +234,8 @@ class TestFixtures(ConvertTestCase):
     def test_config1(self):
         data, count, report = self.convert(CONFIG1)
         self.assertEqual(count, 3)
-        self.assertEqual(data["format"], config.SETTINGS_FORMAT)
-        self.assertEqual(
-            data["settings"], config.dump_record(config.ProjectSettings())
-        )
+        self.assertEqual(data["format"], SETTINGS_FORMAT)
+        self.assertEqual(data["settings"], dump_record(ProjectSettings()))
         self.assertEqual(
             data["images"],
             {
@@ -378,9 +388,7 @@ class TestSections(ConvertTestCase):
             "[Image:a]\npath=/a\n[DiskImage:a]\npath=/b\n",
             "[Event:e]\n[Event:e]\n",
         ):
-            error = self.assertRaises(
-                migrate.MigrationError, self.convert, text
-            )
+            error = self.assertRaises(MigrationError, self.convert, text)
             self.assertIn("defined twice (first at line 1)", str(error))
 
     def test_same_name_of_different_kinds(self):
@@ -544,11 +552,11 @@ class TestNetemu(ConvertTestCase):
         self.assertEqual(wan["pon_vbevent"], "on")
         self.assertEqual(len(wan["states"]), 3)
         factory = convert._Converter(
-            migrate.parse_project(text, "f", Report()),
+            parse_project(text, "f", Report()),
             Report(),
             self.directory,
         )
-        factory.convert(config.ProjectSettings())
+        factory.convert(ProjectSettings())
         brick = factory.factory.get_brick_by_name("wan")
         self.assertEqual(
             [state.pon_vbevent for state in brick.markov_manager.states],
@@ -581,7 +589,7 @@ class TestConnections(ConvertTestCase):
                 {
                     "kind": "socket",
                     "name": "lan",
-                    "model": config.DEFAULT_MODEL,
+                    "model": DEFAULT_MODEL,
                     "mac": "00:11:22:33:44:56",
                 },
                 {
@@ -609,7 +617,7 @@ class TestConnections(ConvertTestCase):
         data, _, report = self.convert(text)
         macs = [nic["mac"] for nic in data["bricks"]["vm"]["nics"]]
         for mac in macs:
-            config.Mac().check(mac)
+            Mac().check(mac)
         self.assertEqual(
             messages(report),
             [
@@ -635,7 +643,7 @@ class TestConnections(ConvertTestCase):
                 {
                     "kind": "plug",
                     "connect": "",
-                    "model": config.DEFAULT_MODEL,
+                    "model": DEFAULT_MODEL,
                     "mac": "00:11:22:33:44:55",
                 }
             ],

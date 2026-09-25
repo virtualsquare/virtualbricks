@@ -37,7 +37,7 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf, Gtk, Pango
 from zope.interface import implementer
 
-from virtualbricks import config
+from virtualbricks.config import get_setting
 from virtualbricks.gui import graphics
 from virtualbricks.gui.interfaces import (
     IConfigController,
@@ -342,7 +342,8 @@ class StateManager:
 def _sock_should_visible(model, iter, data):
     sock = model.get_value(iter, 0)
     return sock and (
-        sock.brick.get_type().startswith("Switch") or config.get("femaleplugs")
+        sock.brick.get_type().startswith("Switch")
+        or get_setting("femaleplugs")
     )
 
 

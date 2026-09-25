@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 23:21+0200\n"
+"POT-Creation-Date: 2026-09-25 07:06+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -67,6 +67,27 @@ msgstr ""
 msgid "Interface %s disconnected"
 msgstr ""
 
+#: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
+msgid "running"
+msgstr ""
+
+#: virtualbricks/bricks/event.py
+msgid "unconfigured"
+msgstr ""
+
+#: virtualbricks/bricks/event.py virtualbricks/bricks/__init__.py
+msgid "off"
+msgstr ""
+
+#: virtualbricks/bricks/event.py
+#, python-format
+msgid "Delay: %d"
+msgstr ""
+
+#: virtualbricks/bricks/event.py
+msgid "Actions:"
+msgstr ""
+
 #: virtualbricks/bricks/__init__.py
 #, python-format
 msgid "Cannot start '%s': not configured"
@@ -81,18 +102,10 @@ msgstr ""
 msgid "Brick.prog() not implemented."
 msgstr ""
 
-#: virtualbricks/bricks/__init__.py virtualbricks/events.py
-msgid "running"
-msgstr ""
-
 #: virtualbricks/bricks/__init__.py virtualbricks/bricks/tap.py
 #: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
 #: virtualbricks/bricks/wire.py
 msgid "disconnected"
-msgstr ""
-
-#: virtualbricks/bricks/__init__.py virtualbricks/events.py
-msgid "off"
 msgstr ""
 
 #: virtualbricks/bricks/switch.py
@@ -138,19 +151,6 @@ msgstr ""
 #: virtualbricks/errors.py
 #, python-format
 msgid "Normalized name %s already in use"
-msgstr ""
-
-#: virtualbricks/events.py
-msgid "unconfigured"
-msgstr ""
-
-#: virtualbricks/events.py
-#, python-format
-msgid "Delay: %d"
-msgstr ""
-
-#: virtualbricks/events.py
-msgid "Actions:"
 msgstr ""
 
 #: virtualbricks/gui/gui.py
@@ -252,14 +252,14 @@ msgstr "Eventos"
 msgid "Virtual machines"
 msgstr "<b> Icono de Maquina Virtual </b>"
 
-#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
-msgid "Bricks"
-msgstr "Bricks (Bloques)"
-
 #: virtualbricks/gui/messages.py
 #, fuzzy
 msgid "Connections"
 msgstr "Conectar con:"
+
+#: virtualbricks/gui/messages.py virtualbricks/migrate/gui.py
+msgid "Bricks"
+msgstr "Bricks (Bloques)"
 
 #: virtualbricks/gui/messages.py
 msgid "capture"

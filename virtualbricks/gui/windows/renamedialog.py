@@ -46,7 +46,7 @@ class RenameDialog(_Dialog):
         """
         :type brickfactory: virtualbricks.brickfactory.BrickFactory
         :type brick: Union[virtualbricks.bricks.Brick,
-            virtualbricks.events.Event]
+            virtualbricks.bricks.event.Event]
         :rtype: None
         """
 

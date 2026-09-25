@@ -21,7 +21,13 @@
 import os
 
 
-from virtualbricks import config, locations
+from virtualbricks import locations
+from virtualbricks.config import (
+    get_app_setting,
+    load_toml,
+    set_app_setting,
+    set_setting,
+)
 from virtualbricks.tests.gui import FakeGui, GuiTestCase, has_display
 
 if has_display:
@@ -36,8 +42,8 @@ class TestSettingsDialog(GuiTestCase):
         super().setUp()
         self.app_bin = self.folder("app-bin")
         self.project_bin = self.folder("project-bin")
-        config.set_app("qemupath", self.app_bin)
-        config.set_app("vdepath", self.app_bin)
+        set_app_setting("qemupath", self.app_bin)
+        set_app_setting("vdepath", self.app_bin)
 
     def dialog(self):
         dialog = settings_window.SettingsDialog(FakeGui(self.factory))
@@ -47,9 +53,9 @@ class TestSettingsDialog(GuiTestCase):
     def open_project(self):
         prj = self.manager.get_project("lab").create()
         prj.open(self.factory)
-        config.set("qemupath", self.project_bin)
-        config.set("femaleplugs", True)
-        config.set("cowfmt", "cow")
+        set_setting("qemupath", self.project_bin)
+        set_setting("femaleplugs", True)
+        set_setting("cowfmt", "cow")
         return prj
 
     def test_tabs(self):
@@ -70,7 +76,7 @@ class TestSettingsDialog(GuiTestCase):
         self.assertEqual(
             widgets.qemupath_chooser.get_current_folder(), self.app_bin
         )
-        self.assertEqual(dialog.term_entry.get_text(), config.get_app("term"))
+        self.assertEqual(dialog.term_entry.get_text(), get_app_setting("term"))
         self.assertEqual(
             settings_window.combobox_get_active_value(
                 dialog.new_project_widgets.cowfmt_combo, 0
@@ -112,21 +118,21 @@ class TestSettingsDialog(GuiTestCase):
             dialog.new_project_widgets.cowfmt_combo, "qcow", 0
         )
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.OK)
-        self.assertEqual(config.get_app("term"), "/usr/bin/foot")
-        self.assertIs(config.get_app("systray"), False)
+        self.assertEqual(get_app_setting("term"), "/usr/bin/foot")
+        self.assertIs(get_app_setting("systray"), False)
         # the project tab changed the project only
         self.assertIs(prj.project_settings.erroronloop, True)
-        self.assertIs(config.get_app("erroronloop"), False)
+        self.assertIs(get_app_setting("erroronloop"), False)
         self.assertEqual(prj.project_settings.qemupath, self.project_bin)
         # the new projects tab changed the application settings only
-        self.assertEqual(config.get_app("vdepath"), self.project_bin)
-        self.assertEqual(config.get_app("cowfmt"), "qcow")
+        self.assertEqual(get_app_setting("vdepath"), self.project_bin)
+        self.assertEqual(get_app_setting("cowfmt"), "qcow")
         self.assertEqual(prj.project_settings.cowfmt, "cow")
         self.assertEqual(saved, [self.factory])
         self.assertEqual(dialog.virtualbricks_gui.systray, ["stop"])
         self.assertEqual(self.ksm, [False])
         self.assertEqual(
-            config.load_toml(locations.settings_file())["term"],
+            load_toml(locations.settings_file())["term"],
             "/usr/bin/foot",
         )
 
@@ -134,14 +140,14 @@ class TestSettingsDialog(GuiTestCase):
         dialog = self.dialog()
         dialog.project_widgets.femaleplugs_switch.set_active(True)
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.OK)
-        self.assertIs(config.get_app("femaleplugs"), False)
+        self.assertIs(get_app_setting("femaleplugs"), False)
         self.assertEqual(dialog.virtualbricks_gui.systray, ["start"])
 
     def test_cancel(self):
         dialog = self.dialog()
         dialog.term_entry.set_text("/usr/bin/foot")
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.CANCEL)
-        self.assertEqual(config.get_app("term"), "/usr/bin/xterm")
+        self.assertEqual(get_app_setting("term"), "/usr/bin/xterm")
         self.assertFalse(os.path.exists(locations.settings_file()))
 
     def test_unset_widgets_keep_the_values(self):

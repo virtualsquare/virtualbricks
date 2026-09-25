@@ -109,11 +109,12 @@ class TestSource(unittest.TestCase):
             ("virtualbricks.config.settings", "Settings"),
             ("virtualbricks.project", "Project"),
             ("virtualbricks.console", "Console"),
-            ("virtualbricks.events", "Events"),
+            ("virtualbricks.bricks.event", "Events"),
             ("virtualbricks.bricks.virtualmachine", "Virtual machines"),
             ("virtualbricks.bricks.switch.Switch", "Bricks"),
             ("virtualbricks.bricks", "Bricks"),
-            ("virtualbricks.link", "Connections"),
+            ("virtualbricks.bricks.plug", "Connections"),
+            ("virtualbricks.bricks.sock", "Connections"),
             ("virtualbricks.brickfactory", "Virtualbricks"),
             ("virtualbricks", "Virtualbricks"),
         ):
@@ -162,7 +163,9 @@ class TestSource(unittest.TestCase):
             ("Project", None),
         )
         self.assertEqual(
-            messages.describe_source({"log_namespace": "virtualbricks.link"}),
+            messages.describe_source(
+                {"log_namespace": "virtualbricks.bricks.plug"}
+            ),
             ("Connections", None),
         )
 

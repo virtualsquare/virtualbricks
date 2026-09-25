@@ -24,7 +24,13 @@ import stat
 from twisted.internet import defer, task
 from twisted.trial import unittest
 
-from virtualbricks import brickfactory, config, locations, project
+from virtualbricks import brickfactory, locations, project
+from virtualbricks.config import (
+    current_project,
+    get_setting,
+    load_toml,
+    store_settings,
+)
 from virtualbricks.tests import (
     BrickTestCase,
     FakeLogger,
@@ -150,11 +156,11 @@ class TestInstall(AppTestCase):
         self.app.install_settings()
         # the old settings are not read: that's the migration's job
         self.assertEqual(
-            config.get("workspace"),
+            get_setting("workspace"),
             os.path.join(self.root, ".virtualbricks"),
         )
         self.assertTrue(os.path.isfile(locations.settings_file()))
-        self.assertEqual(config.current_project(), locations.DEFAULT_PROJECT)
+        self.assertEqual(current_project(), locations.DEFAULT_PROJECT)
 
     def test_install_home(self):
         self.app.install_home()
@@ -180,7 +186,7 @@ class TestMigrate(AppTestCase):
             )
         )
         self.assertEqual(
-            config.load_toml(locations.state_file())["current_project"], "lab"
+            load_toml(locations.state_file())["current_project"], "lab"
         )
         self.assertEqual(
             self.logger.formatted()[-1], "Migration: 1 of 1 projects migrated."
@@ -218,14 +224,14 @@ class TestRun(AppTestCase):
         # it fires when the application quits
         self.assertNoResult(d)
         # the migrated settings and project are the ones in use
-        self.assertEqual(config.get("workspace"), workspace)
+        self.assertEqual(get_setting("workspace"), workspace)
         self.assertEqual(self.manager.current.name, "lab")
         self.assertIsNotNone(self.manager.current.project_settings)
         self.assertEqual(self.app.logger.events, ["start"])
         callables = [trigger[2] for trigger in reactor.triggers]
         self.assertEqual(
             callables,
-            [config.store, self.manager.save_current, self.app.logger.stop],
+            [store_settings, self.manager.save_current, self.app.logger.stop],
         )
         self.assertTrue(os.path.isdir(locations.runtime_dir()))
 

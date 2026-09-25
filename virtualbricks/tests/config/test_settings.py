@@ -19,8 +19,35 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import config, locations, tools
-from virtualbricks.config import Report, settings, tomlfile
+from virtualbricks import locations, tools
+from virtualbricks.config import (
+    PROJECT_KEYS,
+    AppSettings,
+    ProjectSettings,
+    Report,
+    check_format,
+    current_project,
+    dump_record,
+    dump_toml,
+    field_names,
+    get_app_setting,
+    get_setting,
+    has_option,
+    load_settings,
+    load_state,
+    load_toml,
+    new_project_settings,
+    parse_setting,
+    project_settings,
+    set_app_setting,
+    set_current_project,
+    set_setting,
+    settings,
+    store_settings,
+    store_state,
+    tomlfile,
+    use_project,
+)
 from virtualbricks.errors import NoOptionError
 from virtualbricks.tests import FakeLogger, isolate, reset_settings
 
@@ -41,12 +68,12 @@ class TestCheckFormat(unittest.TestCase):
 
     def test_current(self):
         report = Report()
-        self.assertTrue(config.check_format({"format": 1}, report, "f"))
+        self.assertTrue(check_format({"format": 1}, report, "f"))
         self.assertEqual(len(report), 0)
 
     def test_newer(self):
         report = Report()
-        self.assertFalse(config.check_format({"format": 2}, report, "f"))
+        self.assertFalse(check_format({"format": 2}, report, "f"))
         self.assertEqual(
             [str(m) for m in report],
             ["f: written by a newer Virtualbricks (format 2)"],
@@ -57,71 +84,71 @@ class TestCheckFormat(unittest.TestCase):
         for value in (None, "1", True, 0):
             report = Report()
             data = {} if value is None else {"format": value}
-            self.assertTrue(config.check_format(data, report, "f"))
+            self.assertTrue(check_format(data, report, "f"))
             self.assertEqual(report.warnings, 1)
 
 
 class TestValues(SettingsTestCase):
 
     def test_defaults(self):
-        self.assertEqual(config.get("term"), "/usr/bin/xterm")
+        self.assertEqual(get_setting("term"), "/usr/bin/xterm")
         self.assertEqual(
-            config.get("workspace"),
+            get_setting("workspace"),
             os.path.join(self.root, ".virtualbricks"),
         )
-        self.assertTrue(config.has_option("cowfmt"))
-        self.assertFalse(config.has_option("python"))
+        self.assertTrue(has_option("cowfmt"))
+        self.assertFalse(has_option("python"))
 
     def test_unknown(self):
-        self.assertRaises(NoOptionError, config.get, "python")
-        self.assertRaises(NoOptionError, config.set, "python", True)
-        self.assertRaises(NoOptionError, config.get_app, "python")
-        self.assertRaises(NoOptionError, config.set_app, "python", True)
-        self.assertRaises(NoOptionError, config.parse_setting, "python", "1")
+        self.assertRaises(NoOptionError, get_setting, "python")
+        self.assertRaises(NoOptionError, set_setting, "python", True)
+        self.assertRaises(NoOptionError, get_app_setting, "python")
+        self.assertRaises(NoOptionError, set_app_setting, "python", True)
+        self.assertRaises(NoOptionError, parse_setting, "python", "1")
 
     def test_set_validates(self):
-        self.assertRaises(ValueError, config.set, "cowfmt", "qed")
-        config.set("cowfmt", "qcow")
-        self.assertEqual(config.get("cowfmt"), "qcow")
+        self.assertRaises(ValueError, set_setting, "cowfmt", "qed")
+        set_setting("cowfmt", "qcow")
+        self.assertEqual(get_setting("cowfmt"), "qcow")
 
     def test_sudo_as_root(self):
         self.patch(os, "getuid", lambda: 0)
-        self.assertEqual(config.get("sudo"), "")
-        self.assertEqual(config.get_app("sudo"), "/usr/bin/gksu")
+        self.assertEqual(get_setting("sudo"), "")
+        self.assertEqual(get_app_setting("sudo"), "/usr/bin/gksu")
 
     def test_parse(self):
-        self.assertIs(config.parse_setting("femaleplugs", "yes"), True)
-        self.assertRaises(ValueError, config.parse_setting, "cowfmt", "qed")
+        self.assertIs(parse_setting("femaleplugs", "yes"), True)
+        self.assertRaises(ValueError, parse_setting, "cowfmt", "qed")
 
 
 class TestProjectSettings(SettingsTestCase):
 
     def test_new_project_starts_from_the_app_settings(self):
-        config.set("vdepath", "/opt/vde")
-        project = config.new_project_settings()
+        set_setting("vdepath", "/opt/vde")
+        project = new_project_settings()
         self.assertEqual(project.vdepath, "/opt/vde")
-        self.assertIsInstance(project, config.ProjectSettings)
+        self.assertIsInstance(project, ProjectSettings)
 
     def test_open_project_wins(self):
-        project = config.ProjectSettings(qemupath="/opt/qemu")
-        config.use_project(project)
-        self.assertIs(config.project_settings(), project)
-        self.assertEqual(config.get("qemupath"), "/opt/qemu")
-        self.assertEqual(config.get_app("qemupath"), "/usr/bin")
-        config.set("qemupath", "/srv/qemu")
+        project = ProjectSettings(qemupath="/opt/qemu")
+        use_project(project)
+        self.assertIs(project_settings(), project)
+        self.assertEqual(get_setting("qemupath"), "/opt/qemu")
+        self.assertEqual(get_app_setting("qemupath"), "/usr/bin")
+        set_setting("qemupath", "/srv/qemu")
         self.assertEqual(project.qemupath, "/srv/qemu")
-        self.assertEqual(config.get_app("qemupath"), "/usr/bin")
+        self.assertEqual(get_app_setting("qemupath"), "/usr/bin")
         # app-only settings are not per project
-        config.set("term", "/usr/bin/foot")
-        self.assertEqual(config.get_app("term"), "/usr/bin/foot")
-        config.set_app("qemupath", "/usr/local/bin")
+        set_setting("term", "/usr/bin/foot")
+        self.assertEqual(get_app_setting("term"), "/usr/bin/foot")
+        set_app_setting("qemupath", "/usr/local/bin")
         self.assertEqual(project.qemupath, "/srv/qemu")
-        config.use_project(None)
-        self.assertEqual(config.get("qemupath"), "/usr/local/bin")
+        use_project(None)
+        self.assertEqual(get_setting("qemupath"), "/usr/local/bin")
 
     def test_project_keys(self):
         self.assertEqual(
-            config.PROJECT_KEYS,
+            PROJECT_KEYS,
             {"cowfmt", "erroronloop", "femaleplugs", "qemupath", "vdepath"},
         )
 
@@ -132,12 +159,12 @@ class TestLoadStore(SettingsTestCase):
         return locations.settings_file()
 
     def test_first_start_saves_the_defaults(self):
-        report = config.load_settings()
+        report = load_settings()
         self.assertEqual(len(report), 0)
-        data = config.load_toml(self.path())
+        data = load_toml(self.path())
         self.assertEqual(data["format"], 1)
         self.assertIs(data["ksm"], True)
-        self.assertEqual(len(data), 1 + len(config.names(config.AppSettings)))
+        self.assertEqual(len(data), 1 + len(field_names(AppSettings)))
         self.assertEqual(
             self.logger.formatted(),
             [f"Default settings saved to {self.path()}"],
@@ -145,16 +172,16 @@ class TestLoadStore(SettingsTestCase):
 
     def test_first_start_that_cant_save(self):
         self.patch(settings, "store", lambda path=None: False)
-        config.load_settings()
+        load_settings()
         self.assertEqual(self.logger.events, [])
 
     def test_load(self):
         os.makedirs(os.path.dirname(self.path()))
-        config.dump_toml(
+        dump_toml(
             {"format": 1, "term": "/usr/bin/foot", "color": 1}, self.path()
         )
-        report = config.load_settings()
-        self.assertEqual(config.get("term"), "/usr/bin/foot")
+        report = load_settings()
+        self.assertEqual(get_setting("term"), "/usr/bin/foot")
         messages = [str(m) for m in report]
         self.assertIn("color: unknown field, dropped", messages)
         self.assertIn('cowfmt: missing, using the default "qcow2"', messages)
@@ -164,91 +191,91 @@ class TestLoadStore(SettingsTestCase):
         os.makedirs(os.path.dirname(self.path()))
         data = {
             "format": 1,
-            **config.dump_record(config.AppSettings(ksm=True)),
+            **dump_record(AppSettings(ksm=True)),
         }
-        config.dump_toml(data, self.path())
-        config.load_settings()
+        dump_toml(data, self.path())
+        load_settings()
         self.assertEqual(self.ksm, [True])
 
     def test_explicit_path(self):
         path = self.mktemp()
-        config.load_settings(path)
+        load_settings(path)
         self.assertTrue(os.path.isfile(path))
-        config.set("term", "x")
-        self.assertTrue(config.store())
-        self.assertEqual(config.load_toml(path)["term"], "x")
+        set_setting("term", "x")
+        self.assertTrue(store_settings())
+        self.assertEqual(load_toml(path)["term"], "x")
 
     def test_unreadable(self):
         os.makedirs(self.path())  # a directory can't be read as a file
-        config.load_settings()
+        load_settings()
         self.assertEqual(self.logger.levels()[0], "error")
-        self.assertFalse(config.store())
+        self.assertFalse(store_settings())
         self.assertEqual(self.logger.levels()[-1], "warn")
         other = self.mktemp()
-        self.assertTrue(config.store(other))
+        self.assertTrue(store_settings(other))
 
     def test_invalid_toml(self):
         os.makedirs(os.path.dirname(self.path()))
         with open(self.path(), "w") as fp:
             fp.write("term = \n")
-        config.load_settings()
+        load_settings()
         self.assertEqual(self.logger.levels(), ["error"])
-        self.assertFalse(config.store())
+        self.assertFalse(store_settings())
 
     def test_newer_format_is_not_overwritten(self):
         os.makedirs(os.path.dirname(self.path()))
-        config.dump_toml({"format": 2, "term": "/x"}, self.path())
-        report = config.load_settings()
+        dump_toml({"format": 2, "term": "/x"}, self.path())
+        report = load_settings()
         self.assertTrue(report.has_errors)
-        self.assertEqual(config.get("term"), "/usr/bin/xterm")
-        self.assertFalse(config.store())
-        self.assertEqual(config.load_toml(self.path())["format"], 2)
+        self.assertEqual(get_setting("term"), "/usr/bin/xterm")
+        self.assertFalse(store_settings())
+        self.assertEqual(load_toml(self.path())["format"], 2)
 
     def test_store_error(self):
         def fail(data, path):
             raise OSError("disk full")
 
         self.patch(tomlfile, "dump", fail)
-        self.assertFalse(config.store(self.mktemp()))
+        self.assertFalse(store_settings(self.mktemp()))
         self.assertEqual(self.logger.levels(), ["failure"])
 
 
 class TestState(SettingsTestCase):
 
     def test_default(self):
-        self.assertEqual(len(config.load_state()), 0)
-        self.assertEqual(config.current_project(), "new_project")
+        self.assertEqual(len(load_state()), 0)
+        self.assertEqual(current_project(), "new_project")
 
     def test_set_current_project_stores_it(self):
-        config.load_state()
-        config.set_current_project("lab")
+        load_state()
+        set_current_project("lab")
         self.assertEqual(
-            config.load_toml(locations.state_file()),
+            load_toml(locations.state_file()),
             {"format": 1, "current_project": "lab"},
         )
-        config.load_state()
-        self.assertEqual(config.current_project(), "lab")
+        load_state()
+        self.assertEqual(current_project(), "lab")
 
     def test_explicit_path(self):
         path = self.mktemp()
-        config.set_current_project("x")  # to the default path
-        config.store_state(path)
-        self.assertEqual(config.load_toml(path)["current_project"], "x")
-        config.load_state(path)
-        self.assertEqual(config.current_project(), "x")
+        set_current_project("x")  # to the default path
+        store_state(path)
+        self.assertEqual(load_toml(path)["current_project"], "x")
+        load_state(path)
+        self.assertEqual(current_project(), "x")
 
     def test_unreadable(self):
         os.makedirs(locations.state_file())
-        config.load_state()
+        load_state()
         self.assertEqual(self.logger.levels(), ["error"])
-        self.assertEqual(config.current_project(), "new_project")
+        self.assertEqual(current_project(), "new_project")
 
     def test_warnings_are_logged(self):
         os.makedirs(os.path.dirname(locations.state_file()))
-        config.dump_toml({"current_project": "lab"}, locations.state_file())
-        report = config.load_state()
+        dump_toml({"current_project": "lab"}, locations.state_file())
+        report = load_state()
         self.assertEqual(report.warnings, 1)
-        self.assertEqual(config.current_project(), "lab")
+        self.assertEqual(current_project(), "lab")
         self.assertEqual(self.logger.levels(), ["warn"])
 
     def test_store_error(self):
@@ -256,5 +283,5 @@ class TestState(SettingsTestCase):
             raise OSError("disk full")
 
         self.patch(tomlfile, "dump", fail)
-        config.store_state(self.mktemp())
+        store_state(self.mktemp())
         self.assertEqual(self.logger.levels(), ["failure"])

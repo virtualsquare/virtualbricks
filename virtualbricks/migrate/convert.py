@@ -34,21 +34,34 @@ from typing import TYPE_CHECKING
 
 from twisted.internet import defer
 
-from virtualbricks import config, errors, locations
-from virtualbricks.config import Mac
+from virtualbricks import errors, locations
+from virtualbricks.config import (
+    DEFAULT_MODEL,
+    SOCKET_NAME,
+    AppSettings,
+    Bool,
+    Float,
+    Int,
+    Kind,
+    ListOf,
+    Mac,
+    field_default,
+    field_names,
+    kind_of,
+    project_document,
+)
 from virtualbricks.migrate import legacy
 from virtualbricks.tools import random_mac
 
 if TYPE_CHECKING:
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
     from virtualbricks.config import (
-        AppSettings,
         ProjectSettings,
         Report,
         SettingValue,
         Table,
     )
-    from virtualbricks.link import Sock
+    from virtualbricks.bricks.sock import Sock
 
 SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python"))
 BRICK_TYPES = {
@@ -95,9 +108,9 @@ def convert_settings(
     Return the new settings and the name of the current project.
     """
 
-    app = config.AppSettings()
+    app = AppSettings()
     current_project = locations.DEFAULT_PROJECT
-    names = config.names(config.AppSettings)
+    names = field_names(AppSettings)
     for key, (text, lineno) in options.items():
         where = legacy.where(filename, lineno)
         if key == "current_project":
@@ -110,16 +123,16 @@ def convert_settings(
         if key not in names:
             report.warning(f"{key}: unknown setting, dropped", where)
             continue
-        kind = config.kind_of(config.AppSettings, key)
+        kind = kind_of(AppSettings, key)
         value: SettingValue
         try:
-            if isinstance(kind, config.Bool):
+            if isinstance(kind, Bool):
                 value = legacy.parse_settings_bool(text)
             else:
                 value = text
             kind.check(value)
         except ValueError as exc:
-            default = kind.format(config.default(config.AppSettings, key))
+            default = kind.format(field_default(AppSettings, key))
             report.warning(f"{key}: {exc}, using the default {default}", where)
         else:
             setattr(app, key, value)
@@ -149,12 +162,12 @@ def _check_programs(
 # Values
 
 
-def convert_value(kind: config.Kind[object], text: str) -> object:
+def convert_value(kind: Kind[object], text: str) -> object:
     """Convert a value as the old versions wrote it; ValueError if invalid."""
 
-    if isinstance(kind, config.Bool):
+    if isinstance(kind, Bool):
         return legacy.parse_bool(text)
-    if isinstance(kind, (config.Int, config.Float)):
+    if isinstance(kind, (Int, Float)):
         number = kind.types[0]
         try:
             return number(text.strip())
@@ -163,9 +176,9 @@ def convert_value(kind: config.Kind[object], text: str) -> object:
     return text
 
 
-def _convert_item(kind: config.Kind[object], text: str) -> object:
+def _convert_item(kind: Kind[object], text: str) -> object:
     from virtualbricks import console
-    from virtualbricks.events import EventAction
+    from virtualbricks.bricks.eventaction import EventAction
     from virtualbricks.bricks.virtualmachine import (
         USB_ID,
         UsbDevice,
@@ -205,11 +218,11 @@ def _apply(
             report.info(f"{label} {item.key}: {dropped[key]}, dropped", where)
             continue
         try:
-            kind = config.kind_of(instance, key)
+            kind = kind_of(instance, key)
         except KeyError:
             report.warning(f"{label} {item.key}: unknown, dropped", where)
             continue
-        if isinstance(kind, config.ListOf):
+        if isinstance(kind, ListOf):
             _apply_list(instance, key, kind, item, label, where, report)
             continue
         try:
@@ -228,7 +241,7 @@ def _apply(
 def _apply_list(
     instance: object,
     key: str,
-    kind: config.ListOf[object],
+    kind: ListOf[object],
     item: legacy.Item,
     label: str,
     where: str,
@@ -311,7 +324,7 @@ class _Converter:
         self.sockets()
         self.plugs()
         self.follow_image_aliases()
-        return config.document(self.factory, project_settings)
+        return project_document(self.factory, project_settings)
 
     def image(self, section: legacy.Section) -> None:
         where = self.where(section.lineno)
@@ -499,13 +512,13 @@ class _Converter:
             name = link.socket
             if name.startswith(prefix):
                 name = name[len(prefix) :]
-            valid = config.SOCKET_NAME.fullmatch(name) is not None
+            valid = SOCKET_NAME.fullmatch(name) is not None
             if not valid:
                 self.report.warning(
                     f'"{link.socket}" is not a socket name, using a default',
                     where,
                 )
-            model = link.model or config.DEFAULT_MODEL
+            model = link.model or DEFAULT_MODEL
             # None gives the card its default name
             vm.add_sock(self.mac(link), model, name if valid else None)
 
@@ -531,7 +544,7 @@ class _Converter:
                         f'no socket "{link.socket}", left unconnected', where
                     )
             if brick.connections == "nics":
-                model = link.model or config.DEFAULT_MODEL
+                model = link.model or DEFAULT_MODEL
                 brick.add_plug(sock, self.mac(link), model)
                 continue
             index = used[link.owner]

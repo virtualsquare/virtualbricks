@@ -50,7 +50,8 @@ if TYPE_CHECKING:
     from virtualbricks.config.report import Report
     from virtualbricks.config.settings import ProjectSettings
     from virtualbricks.config.tomlfile import Table, Value
-    from virtualbricks.link import Plug, Sock
+    from virtualbricks.bricks.plug import Plug
+    from virtualbricks.bricks.sock import Sock
 
 FORMAT = 1
 TOP_KEYS = frozenset(("format", "settings", "images", "events", "bricks"))
@@ -398,7 +399,7 @@ def _read_images(
 
 
 def _read_events(factory: BrickFactory, data: Table, report: Report) -> None:
-    from virtualbricks.events import EventConfig
+    from virtualbricks.bricks.event import EventConfig
 
     for name, table in _tables(data, "events", report):
         where = f"events.{name}"

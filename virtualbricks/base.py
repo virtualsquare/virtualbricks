@@ -18,7 +18,8 @@
 
 from twisted.logger import Logger
 
-from virtualbricks import config, observable
+from virtualbricks import observable
+from virtualbricks.config import field_names, rename_references
 from virtualbricks.i18n import _
 
 logger = Logger()
@@ -56,7 +57,7 @@ class Base:
         return False
 
     def _check_option(self, name):
-        if name not in config.names(self.config):
+        if name not in field_names(self.config):
             raise KeyError(
                 _("%(config)s config has no %(option)s option.")
                 % {"config": self.name, "option": name}
@@ -83,7 +84,7 @@ class Base:
     def rename_references(self, target, old, new):
         """Point the references to the image or event ``old`` at ``new``."""
 
-        return config.rename_references(self.config, target, old, new)
+        return rename_references(self.config, target, old, new)
 
     def set_restore(self, restore):
         self._restore = restore

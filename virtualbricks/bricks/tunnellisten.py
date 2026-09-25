@@ -21,8 +21,9 @@ import os
 
 from twisted.logger import Logger
 
-from virtualbricks import bricks, config, link
-from virtualbricks.config import Int, Str
+from virtualbricks import bricks
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.config import Int, Str, define, field
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
@@ -30,11 +31,11 @@ logger = Logger()
 pwdgen_exit = "Command pwdgen exited with {code}"
 
 
-@config.define
+@define
 class TunnelListenConfig(bricks.BrickConfig):
 
-    password = config.field(Str(), default="")
-    port = config.field(Int(1, 65535), default=7667)
+    password = field(Str(), default="")
+    port = field(Int(1, 65535), default=7667)
 
 
 class TunnelListen(bricks.Brick):
@@ -47,7 +48,7 @@ class TunnelListen(bricks.Brick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.command_builder["-s"] = self.sock_path
-        self.plugs.append(link.Plug(self))
+        self.plugs.append(Plug(self))
 
     def sock_path(self):
         if self.configured():

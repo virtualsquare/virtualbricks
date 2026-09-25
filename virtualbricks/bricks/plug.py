@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_link -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_plug -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,12 +16,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
+"""A plug: the end of a link that goes into a socket."""
 
 from twisted.internet import defer
 from twisted.logger import Logger
 
-from virtualbricks import config, errors
+from virtualbricks import errors
+from virtualbricks.config import get_setting
 
 link_loop = (
     "Loop link detected: aborting operation. If you want "
@@ -47,7 +48,7 @@ class Plug:
 
     def connected(self):
         if self._antiloop:
-            if config.get("erroronloop"):
+            if get_setting("erroronloop"):
                 self.logger.error(link_loop)
             self._antiloop = False
             return defer.fail(errors.LinkLoopError())
@@ -84,19 +85,3 @@ class Plug:
         )
         self.sock.plugs.remove(self)
         self.sock = None
-
-
-class Sock:
-
-    def __init__(self, brick, name=""):
-        self.brick = brick
-        self.path = name
-        self.nickname = name
-        self.plugs = []
-        self.mode = "sock"
-
-    def get_free_ports(self):
-        return self.brick.config.numports - len(self.plugs)
-
-    def has_valid_path(self):
-        return os.access(os.path.dirname(self.path), os.W_OK)

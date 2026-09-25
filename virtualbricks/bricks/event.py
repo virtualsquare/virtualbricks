@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.test_events -*-
+# -*- test-case-name: virtualbricks.tests.bricks.test_event -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,61 +16,26 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from twisted.internet import reactor, defer
+"""An event: actions that run after a delay."""
 
-from virtualbricks import base, config, console, errors
-from virtualbricks.config import Int
+from twisted.internet import defer, reactor
+
+from virtualbricks import base, console, errors
+from virtualbricks.bricks.eventaction import EventAction
+from virtualbricks.config import Int, ListOf, define, field
 
 if False:  # pyflakes
     _ = str
-
 
 process_ended = "Process ended with exit code {code}"
 event_error = "Error in event action. See the log for more " "information"
 
 
-class EventAction(config.Kind):
-    """A console command ("vb") or a shell command ("shell")."""
-
-    kinds = {"vb": console.VbShellCommand, "shell": console.ShellCommand}
-
-    def check(self, value):
-        if not isinstance(value, tuple(self.kinds.values())):
-            raise ValueError(f"{value!r} is not an event action")
-
-    def to_data(self, value):
-        for kind, cls in self.kinds.items():
-            if isinstance(value, cls):
-                return {"kind": kind, "command": str(value)}
-
-    def from_data(self, data, report, where):
-        if not isinstance(data, dict):
-            raise ValueError(f"{data!r} is not a table")
-        kind = data.get("kind")
-        command = data.get("command")
-        if kind not in self.kinds:
-            raise ValueError(f"{kind!r} is not vb or shell")
-        if not isinstance(command, str):
-            raise ValueError(f"{command!r} is not a command")
-        for key in data.keys() - {"kind", "command"}:
-            report.warning("unknown field, dropped", f"{where}.{key}")
-        return self.kinds[kind](command)
-
-    def format(self, value):
-        return _describe_action(value)
-
-
-def _describe_action(action):
-    if isinstance(action, console.ShellCommand):
-        return f'shell "{action}"'
-    return f'vb "{action}"'
-
-
-@config.define
+@define
 class EventConfig:
 
-    actions = config.field(config.ListOf(EventAction()), factory=list)
-    delay = config.field(Int(), default=0)
+    actions = field(ListOf(EventAction()), factory=list)
+    delay = field(Int(), default=0)
 
 
 class Event(base.Base):

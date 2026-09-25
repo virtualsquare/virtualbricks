@@ -20,19 +20,20 @@
 
 import os
 
-from virtualbricks import bricks, config, link
-from virtualbricks.config import Choice, IPv4
+from virtualbricks import bricks
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.config import Choice, IPv4, define, field, get_setting
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
 
-@config.define
+@define
 class TapConfig(bricks.BrickConfig):
 
-    ip = config.field(IPv4(), default="10.0.0.1")
-    nm = config.field(IPv4(), default="255.255.255.0")
-    gw = config.field(IPv4(optional=True), default="")
-    mode = config.field(Choice("off", "dhcp", "manual"), default="off")
+    ip = field(IPv4(), default="10.0.0.1")
+    nm = field(IPv4(), default="255.255.255.0")
+    gw = field(IPv4(optional=True), default="")
+    mode = field(Choice("off", "dhcp", "manual"), default="off")
 
 
 class Tap(bricks.PrivilegedBrick):
@@ -43,7 +44,7 @@ class Tap(bricks.PrivilegedBrick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(link.Plug(self))
+        self.plugs.append(Plug(self))
         self.command_builder["-s"] = self.sock_path
         self.command_builder["*tap"] = self.get_name
 
@@ -71,14 +72,16 @@ class Tap(bricks.PrivilegedBrick):
         self.start_related_events(on=True)
         if self.config.mode == "dhcp":
             if self.needsudo():
-                os.system(config.get("sudo") + ' "dhclient ' + self.name + '"')
+                os.system(
+                    get_setting("sudo") + ' "dhclient ' + self.name + '"'
+                )
             else:
                 os.system("dhclient " + self.name)
         elif self.config.mode == "manual":
             if self.needsudo():
                 # XXX Ugly, can't we ioctls?
                 os.system(
-                    config.get("sudo")
+                    get_setting("sudo")
                     + ' "/sbin/ifconfig '
                     + self.name
                     + " "
@@ -89,7 +92,7 @@ class Tap(bricks.PrivilegedBrick):
                 )
                 if len(self.config.gw) > 0:
                     os.system(
-                        config.get("sudo")
+                        get_setting("sudo")
                         + ' "/sbin/route add default gw '
                         + self.config.gw
                         + " dev "

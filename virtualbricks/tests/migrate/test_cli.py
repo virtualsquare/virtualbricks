@@ -21,8 +21,16 @@ import sys
 
 from twisted.trial import unittest
 
-from virtualbricks import config, locations, migrate
-from virtualbricks.migrate import cli
+from virtualbricks import locations
+from virtualbricks.config import load_toml
+from virtualbricks.migrate import (
+    EXIT_RUNNING,
+    REPORT_FILE,
+    RUNNING,
+    Migration,
+    cli,
+    main,
+)
 from virtualbricks.tests import (
     hold_lock,
     isolate,
@@ -50,20 +58,18 @@ class TestCommandLine(unittest.TestCase):
 
     def main(self, *argv):
         stdout = io.StringIO()
-        code = migrate.main(list(argv), stdout)
+        code = main(list(argv), stdout)
         return code, stdout.getvalue()
 
     def error(self, *argv):
-        exc = self.assertRaises(
-            SystemExit, migrate.main, list(argv), io.StringIO()
-        )
+        exc = self.assertRaises(SystemExit, main, list(argv), io.StringIO())
         self.assertEqual(exc.code, 2)
         return self.stderr.getvalue().splitlines()[-1]
 
     def test_migrate_to_a_folder(self):
         code, out = self.main(self.workspace, self.output)
         self.assertEqual(code, 0)
-        report_file = os.path.join(self.output, migrate.REPORT_FILE)
+        report_file = os.path.join(self.output, REPORT_FILE)
         self.assertEqual(
             out.splitlines(),
             [
@@ -80,7 +86,7 @@ class TestCommandLine(unittest.TestCase):
         path = os.path.join(
             self.output, "workspace", "lab", locations.PROJECT_FILE
         )
-        self.assertIn("sender", config.load_toml(path)["bricks"])
+        self.assertIn("sender", load_toml(path)["bricks"])
 
     def test_empty_output_folder(self):
         os.makedirs(self.output)
@@ -100,7 +106,7 @@ class TestCommandLine(unittest.TestCase):
             self.output, "config", "virtualbricks", "settings.toml"
         )
         self.assertEqual(
-            config.load_toml(settings_file)["workspace"],
+            load_toml(settings_file)["workspace"],
             os.path.join(self.output, "workspace"),
         )
 
@@ -136,7 +142,7 @@ class TestCommandLine(unittest.TestCase):
             )
         )
         report_file = os.path.join(
-            self.root, ".local", "state", "virtualbricks", migrate.REPORT_FILE
+            self.root, ".local", "state", "virtualbricks", REPORT_FILE
         )
         self.assertTrue(out.endswith(f"Report: {report_file}\n"))
 
@@ -144,13 +150,13 @@ class TestCommandLine(unittest.TestCase):
         home_workspace = os.path.join(self.root, ".virtualbricks")
         write_project(home_workspace, "mine", CONFIG1)
         held = []
-        run = migrate.Migration.run
+        run = Migration.run
 
         def spy(migration):
             held.append(not lock_is_free())
             return run(migration)
 
-        self.patch(migrate.Migration, "run", spy)
+        self.patch(Migration, "run", spy)
         self.assertEqual(self.main("--in-place")[0], 0)
         # locked while running, free again after
         self.assertEqual(held, [True])
@@ -160,7 +166,7 @@ class TestCommandLine(unittest.TestCase):
         def fail(migration):
             raise RuntimeError("broken")
 
-        self.patch(migrate.Migration, "run", fail)
+        self.patch(Migration, "run", fail)
         self.assertRaises(RuntimeError, self.main, "--in-place")
         self.assertTrue(lock_is_free())
 
@@ -169,10 +175,10 @@ class TestCommandLine(unittest.TestCase):
         write_project(home_workspace, "mine", CONFIG1)
         hold_lock(self)
         exc = self.assertRaises(SystemExit, self.main, "--in-place")
-        self.assertEqual(exc.code, migrate.EXIT_RUNNING)
+        self.assertEqual(exc.code, EXIT_RUNNING)
         self.assertEqual(
             self.stderr.getvalue(),
-            f"python -m virtualbricks.migrate: {migrate.RUNNING}\n",
+            f"python -m virtualbricks.migrate: {RUNNING}\n",
         )
         self.assertFalse(
             os.path.exists(
@@ -196,7 +202,7 @@ class TestCommandLine(unittest.TestCase):
             )
         )
         self.assertEqual(
-            config.load_toml(locations.settings_file())["workspace"],
+            load_toml(locations.settings_file())["workspace"],
             self.workspace,
         )
 
@@ -241,7 +247,7 @@ class TestCommandLine(unittest.TestCase):
     def test_help(self):
         stdout = io.StringIO()
         self.patch(sys, "stdout", stdout)
-        exc = self.assertRaises(SystemExit, migrate.main, ["--help"])
+        exc = self.assertRaises(SystemExit, main, ["--help"])
         self.assertEqual(exc.code, 0)
         text = stdout.getvalue()
         self.assertIn("python -m virtualbricks.migrate", text)
@@ -250,7 +256,7 @@ class TestCommandLine(unittest.TestCase):
     def test_default_stdout(self):
         stdout = io.StringIO()
         self.patch(sys, "stdout", stdout)
-        self.assertEqual(migrate.main([self.workspace, self.output]), 0)
+        self.assertEqual(main([self.workspace, self.output]), 0)
         self.assertIn("1 of 1 projects migrated.", stdout.getvalue())
 
 
@@ -267,7 +273,7 @@ class TestWindow(unittest.TestCase):
         return 0
 
     def test_empty_window(self):
-        self.assertEqual(migrate.main(["--gui"]), 0)
+        self.assertEqual(main(["--gui"]), 0)
         self.assertEqual(
             self.opened,
             [
@@ -281,7 +287,7 @@ class TestWindow(unittest.TestCase):
         )
 
     def test_filled_window(self):
-        migrate.main(["--gui", "--settings", "/vb.conf", "/old", "/new"])
+        main(["--gui", "--settings", "/vb.conf", "/old", "/new"])
         self.assertEqual(
             self.opened[0],
             {
@@ -291,7 +297,7 @@ class TestWindow(unittest.TestCase):
                 "in_place": False,
             },
         )
-        migrate.main(["--gui", "--in-place", "/old"])
+        main(["--gui", "--in-place", "/old"])
         self.assertEqual(
             self.opened[1],
             {
@@ -303,7 +309,7 @@ class TestWindow(unittest.TestCase):
         )
 
     def test_folders_are_checked_by_the_window(self):
-        migrate.main(["--gui", "/does/not/exist"])
+        main(["--gui", "/does/not/exist"])
         self.assertEqual(self.opened[0]["workspace"], "/does/not/exist")
 
     def test_options_of_the_command_line_only(self):
@@ -316,7 +322,7 @@ class TestWindow(unittest.TestCase):
         ]
         for argv, message in cases:
             exc = self.assertRaises(
-                SystemExit, migrate.main, ["--gui"] + argv, io.StringIO()
+                SystemExit, main, ["--gui"] + argv, io.StringIO()
             )
             self.assertEqual(exc.code, 2)
             last = self.stderr.getvalue().splitlines()[-1]

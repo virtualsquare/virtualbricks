@@ -261,7 +261,7 @@
         <ol class="steps">
           <li>If <code>log_source</code> is a <code>base.Base</code>, a brick or an event, that's the source, with its type in lower case.</li>
           <li>Else, if it has a <code>brick</code> attribute, as the process of a brick, a plug or a socket do, that brick is the source.</li>
-          <li>Else the namespace names a part, by the longest match: <code>…gui.windows.virtualbricks</code> Main window, <code>…migrate</code> Migration, <code>…config</code> Settings, <code>…project</code> Project, <code>…console</code> Console, <code>…events</code> Events, <code>…virtualmachines</code> Virtual machines, <code>…bricks</code> Bricks, <code>…link</code> Connections, other <code>…gui</code> Windows, the rest of <code>virtualbricks</code> Virtualbricks. A namespace outside Virtualbricks shows its first word, such as Twisted.</li>
+          <li>Else the namespace names a part, by the longest match: <code>…gui.windows.virtualbricks</code> Main window, <code>…migrate</code> Migration, <code>…config</code> Settings, <code>…project</code> Project, <code>…console</code> Console, <code>…bricks.event</code> Events, <code>…bricks.virtualmachine</code> Virtual machines, <code>…bricks.plug</code> and <code>…bricks.sock</code> Connections, <code>…bricks</code> Bricks, other <code>…gui</code> Windows, the rest of <code>virtualbricks</code> Virtualbricks. A namespace outside Virtualbricks shows its first word, such as Twisted.</li>
         </ol>
       </section>
 

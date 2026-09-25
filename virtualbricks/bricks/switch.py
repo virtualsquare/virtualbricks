@@ -20,18 +20,18 @@
 
 from collections import OrderedDict
 
-from virtualbricks import bricks, config
-from virtualbricks.config import Bool, Int
+from virtualbricks import bricks
+from virtualbricks.config import Bool, Int, define, field
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
 
-@config.define
+@define
 class SwitchConfig(bricks.BrickConfig):
 
-    numports = config.field(Int(1, 128), default=32)
-    hub = config.field(Bool(), default=False)
-    fstp = config.field(Bool(), default=False)
+    numports = field(Int(1, 128), default=32)
+    hub = field(Bool(), default=False)
+    fstp = field(Bool(), default=False)
 
 
 class Switch(bricks.Brick):

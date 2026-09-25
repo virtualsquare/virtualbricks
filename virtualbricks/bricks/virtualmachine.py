@@ -30,8 +30,19 @@ from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
-from virtualbricks import bricks, config, errors, project, tools
-from virtualbricks.config import Bool, Int, ListOf, Path, Ref, Str
+from virtualbricks import bricks, errors, project, tools
+from virtualbricks.config import (
+    Bool,
+    Int,
+    Kind,
+    ListOf,
+    Path,
+    Ref,
+    Str,
+    define,
+    field,
+    get_setting,
+)
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
@@ -106,7 +117,7 @@ LSUSB_REGEX = re.compile(r"(?P<id>\w{4}:\w{4})" r"(?:\s(?P<description>.+))?$")
 USB_ID = re.compile(r"\w{4}:\w{4}")
 
 
-class UsbDeviceKind(config.Kind):
+class UsbDeviceKind(Kind):
     """A USB device, stored as ``{ id, description }``."""
 
     def check(self, value):
@@ -508,11 +519,11 @@ class Disk:
         args = [
             "create",
             "-f",
-            config.get("cowfmt"),
+            get_setting("cowfmt"),
             "-b",
             self.image.path,
             "-F",
-            config.get("cowfmt"),
+            get_setting("cowfmt"),
             filename,
         ]
         deferred = qemu_img(args)
@@ -742,7 +753,7 @@ def _image(dev):
     brick, which the project files of format 1 don't have.
     """
 
-    return config.field(Ref("image"), default="", path=("disks", dev, "image"))
+    return field(Ref("image"), default="", path=("disks", dev, "image"))
 
 
 def _private(dev):
@@ -759,10 +770,10 @@ def _private(dev):
     top-level ``privatehda = ...`` key instead, a different file format.
     """
 
-    return config.field(Bool(), default=False, path=("disks", dev, "private"))
+    return field(Bool(), default=False, path=("disks", dev, "private"))
 
 
-@config.define
+@define
 class VirtualMachineConfig(bricks.BrickConfig):
     """
     The configuration of a virtual machine.
@@ -771,56 +782,56 @@ class VirtualMachineConfig(bricks.BrickConfig):
     """
 
     # boot options
-    boot = config.field(Str(), default="")
-    snapshot = config.field(Bool(), default=False)
+    boot = field(Str(), default="")
+    snapshot = field(Bool(), default=False)
     # cdrom device
-    deviceen = config.field(Bool(), default=False)
-    device = config.field(Str(), default="")
-    cdromen = config.field(Bool(), default=False)
-    cdrom = config.field(Path(), default="")
+    deviceen = field(Bool(), default=False)
+    device = field(Str(), default="")
+    cdromen = field(Bool(), default=False)
+    cdrom = field(Path(), default="")
     # additional media
-    use_virtio = config.field(Bool(), default=False)
+    use_virtio = field(Bool(), default=False)
     # system and machine
-    argv0 = config.field(Str(), default="qemu-system-i386")
-    cpu = config.field(Str(), default="")
-    machine = config.field(Str(), default="")
-    kvm = config.field(Bool(), default=False)
-    smp = config.field(Int(1, 64), default=1)
+    argv0 = field(Str(), default="qemu-system-i386")
+    cpu = field(Str(), default="")
+    machine = field(Str(), default="")
+    kvm = field(Bool(), default=False)
+    smp = field(Int(1, 64), default=1)
     # audio device soundcard
-    soundhw = config.field(Str(), default="")
+    soundhw = field(Str(), default="")
     # memory device settings
-    ram = config.field(Int(1, 99999), default=64)
-    kvmsm = config.field(Bool(), default=False)
-    kvmsmem = config.field(Int(0, 99999), default=1)
+    ram = field(Int(1, 99999), default=64)
+    kvmsm = field(Bool(), default=False)
+    kvmsmem = field(Int(0, 99999), default=1)
     # display options
-    novga = config.field(Bool(), default=False)
-    vga = config.field(Bool(), default=False)
-    vnc = config.field(Bool(), default=False)
-    vncN = config.field(Int(0, 500), default=1)
-    sdl = config.field(Bool(), default=False)
-    portrait = config.field(Bool(), default=False)
+    novga = field(Bool(), default=False)
+    vga = field(Bool(), default=False)
+    vnc = field(Bool(), default=False)
+    vncN = field(Int(0, 500), default=1)
+    sdl = field(Bool(), default=False)
+    portrait = field(Bool(), default=False)
     # usb settings
-    usbmode = config.field(Bool(), default=False)
-    usbdevlist = config.field(ListOf(UsbDeviceKind()), factory=list)
+    usbmode = field(Bool(), default=False)
+    usbdevlist = field(ListOf(UsbDeviceKind()), factory=list)
     # extra settings
-    rtc = config.field(Bool(), default=False)
-    tdf = config.field(Bool(), default=False)
-    keyboard = config.field(Str(), default="")
-    serial = config.field(Bool(), default=False)
+    rtc = field(Bool(), default=False)
+    tdf = field(Bool(), default=False)
+    keyboard = field(Str(), default="")
+    serial = field(Bool(), default=False)
     # booting linux
-    kernelenbl = config.field(Bool(), default=False)
-    kernel = config.field(Path(), default="")
-    initrdenbl = config.field(Bool(), default=False)
-    initrd = config.field(Path(), default="")
-    kopt = config.field(Str(), default="")
-    gdb = config.field(Bool(), default=False)
-    gdbport = config.field(Int(1, 65535), default=1234)
+    kernelenbl = field(Bool(), default=False)
+    kernel = field(Path(), default="")
+    initrdenbl = field(Bool(), default=False)
+    initrd = field(Path(), default="")
+    kopt = field(Str(), default="")
+    gdb = field(Bool(), default=False)
+    gdbport = field(Int(1, 65535), default=1234)
     # virtual machine icon
-    icon = config.field(Path(), default="")
+    icon = field(Path(), default="")
     # others
-    noacpi = config.field(Str(), default="")
-    stdout = config.field(Str(), default="")
-    loadvm = config.field(Str(), default="")
+    noacpi = field(Str(), default="")
+    stdout = field(Str(), default="")
+    loadvm = field(Str(), default="")
     # the disks, one per device of DISK_DEVICES, in the same order
     hda = _image("hda")
     privatehda = _private("hda")

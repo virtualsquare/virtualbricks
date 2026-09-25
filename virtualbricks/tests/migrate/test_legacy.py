@@ -19,7 +19,17 @@ import textwrap
 
 from twisted.trial import unittest
 
-from virtualbricks import migrate
+from virtualbricks.migrate import (
+    Link,
+    looks_like_project,
+    parse_bool,
+    parse_list,
+    parse_project,
+    parse_settings_bool,
+    read_project,
+    read_settings,
+    where,
+)
 from virtualbricks.config import Report
 from virtualbricks.tests.migrate.fixtures import CONFIG1
 
@@ -59,7 +69,7 @@ class TestParseProject(unittest.TestCase):
 
     def test_config1(self):
         report = Report()
-        project = migrate.parse_project(CONFIG1, ".project", report)
+        project = parse_project(CONFIG1, ".project", report)
         self.assertEqual(len(report), 0)
         self.assertEqual(project.filename, ".project")
         self.assertEqual(
@@ -86,7 +96,7 @@ class TestParseProject(unittest.TestCase):
         self.assertEqual(
             project.links,
             [
-                migrate.Link(
+                Link(
                     "link",
                     "sender",
                     "sw1_port",
@@ -99,7 +109,7 @@ class TestParseProject(unittest.TestCase):
 
     def test_netemu_states(self):
         report = Report()
-        project = migrate.parse_project(NETEMU, "f", report)
+        project = parse_project(NETEMU, "f", report)
         self.assertEqual(len(report), 0)
         self.assertEqual(
             [i.key for i in project.sections[0].items],
@@ -108,7 +118,7 @@ class TestParseProject(unittest.TestCase):
 
     def test_empty_values_and_spaces(self):
         text = "[Qemu:vm 1]\nhda =  \nkopt = a = b\n"
-        project = migrate.parse_project(text, "f", Report())
+        project = parse_project(text, "f", Report())
         section = project.sections[0]
         self.assertEqual(section.name, "vm 1")
         self.assertEqual(
@@ -118,7 +128,7 @@ class TestParseProject(unittest.TestCase):
 
     def test_sock_line(self):
         text = "[Qemu:vm]\nsock|vm|vm_sock_eth0|e1000|00:11:22:33:44:55\n"
-        project = migrate.parse_project(text, "f", Report())
+        project = parse_project(text, "f", Report())
         link = project.links[0]
         self.assertEqual(
             (link.kind, link.owner, link.socket, link.model, link.mac),
@@ -129,7 +139,7 @@ class TestParseProject(unittest.TestCase):
         long_line = "x" * 50
         text = f"key=before any section\n- nothing\n[Switch:sw]\n{long_line}\n"
         report = Report()
-        project = migrate.parse_project(text, "f", report)
+        project = parse_project(text, "f", report)
         self.assertEqual([s.name for s in project.sections], ["sw"])
         self.assertEqual(
             [str(m) for m in report],
@@ -143,27 +153,27 @@ class TestParseProject(unittest.TestCase):
 
     def test_read_project(self):
         path = write(self, CONFIG1)
-        project = migrate.read_project(path, ".project", Report())
+        project = read_project(path, ".project", Report())
         self.assertEqual(len(project.sections), 4)
 
     def test_read_project_not_text(self):
         path = write(self, b"\xff\xfe[", "wb")
         self.assertRaises(
-            UnicodeDecodeError, migrate.read_project, path, "f", Report()
+            UnicodeDecodeError, read_project, path, "f", Report()
         )
 
     def test_where(self):
-        self.assertEqual(migrate.where("a/.project", 3), "a/.project:3")
+        self.assertEqual(where("a/.project", 3), "a/.project:3")
 
 
 class TestLooksLikeProject(unittest.TestCase):
 
     def test_project(self):
-        self.assertTrue(migrate.looks_like_project(write(self, CONFIG1)))
+        self.assertTrue(looks_like_project(write(self, CONFIG1)))
 
     def test_comment_first(self):
         path = write(self, "# a comment\n\n[Switch:sw]\n")
-        self.assertTrue(migrate.looks_like_project(path))
+        self.assertTrue(looks_like_project(path))
 
     def test_other_files(self):
         texts = (
@@ -174,24 +184,18 @@ class TestLooksLikeProject(unittest.TestCase):
             "hello\n[Switch:sw]\n",
         )
         for text in texts:
-            self.assertFalse(
-                migrate.looks_like_project(write(self, text)), text
-            )
+            self.assertFalse(looks_like_project(write(self, text)), text)
 
     def test_binary_and_missing(self):
-        self.assertFalse(
-            migrate.looks_like_project(write(self, b"\xff\xfe", "wb"))
-        )
-        self.assertFalse(migrate.looks_like_project(self.mktemp()))
+        self.assertFalse(looks_like_project(write(self, b"\xff\xfe", "wb")))
+        self.assertFalse(looks_like_project(self.mktemp()))
 
 
 class TestReadSettings(unittest.TestCase):
 
     def test_values_and_lines(self):
         report = Report()
-        options = migrate.read_settings(
-            write(self, SETTINGS), "vb.conf", report
-        )
+        options = read_settings(write(self, SETTINGS), "vb.conf", report)
         self.assertEqual(len(report), 0)
         self.assertEqual(
             options,
@@ -207,7 +211,7 @@ class TestReadSettings(unittest.TestCase):
     def test_invalid(self):
         report = Report()
         path = write(self, "term = x\n")
-        self.assertEqual(migrate.read_settings(path, "vb.conf", report), {})
+        self.assertEqual(read_settings(path, "vb.conf", report), {})
         self.assertEqual(report.errors, 1)
         self.assertTrue(
             str(list(report)[0]).startswith("vb.conf: can't be read:")
@@ -216,14 +220,14 @@ class TestReadSettings(unittest.TestCase):
     def test_no_main_section(self):
         report = Report()
         path = write(self, "[Other]\nterm = x\n")
-        self.assertEqual(migrate.read_settings(path, "vb.conf", report), {})
+        self.assertEqual(read_settings(path, "vb.conf", report), {})
         self.assertEqual(
             [str(m) for m in report], ["vb.conf: has no [Main] section"]
         )
 
     def test_missing(self):
         self.assertRaises(
-            OSError, migrate.read_settings, self.mktemp(), "vb.conf", Report()
+            OSError, read_settings, self.mktemp(), "vb.conf", Report()
         )
 
 
@@ -231,33 +235,31 @@ class TestValues(unittest.TestCase):
 
     def test_parse_bool(self):
         for text in ("*", "True", " yes ", "true"):
-            self.assertIs(migrate.parse_bool(text), True, text)
+            self.assertIs(parse_bool(text), True, text)
         for text in ("", "False", "no", "0", "anything"):
-            self.assertIs(migrate.parse_bool(text), False, text)
+            self.assertIs(parse_bool(text), False, text)
 
     def test_parse_settings_bool(self):
         for text, value in (("True", True), (" on", True), ("0", False)):
-            self.assertIs(migrate.parse_settings_bool(text), value)
-        error = self.assertRaises(
-            ValueError, migrate.parse_settings_bool, "maybe"
-        )
+            self.assertIs(parse_settings_bool(text), value)
+        error = self.assertRaises(ValueError, parse_settings_bool, "maybe")
         self.assertEqual(str(error), '"maybe" is not true or false')
 
     def test_parse_list(self):
-        self.assertEqual(migrate.parse_list(""), [])
-        self.assertEqual(migrate.parse_list("  "), [])
-        self.assertEqual(migrate.parse_list("['a', \"b c\"]"), ["a", "b c"])
-        self.assertEqual(migrate.parse_list("('a',)"), ["a"])
+        self.assertEqual(parse_list(""), [])
+        self.assertEqual(parse_list("  "), [])
+        self.assertEqual(parse_list("['a', \"b c\"]"), ["a", "b c"])
+        self.assertEqual(parse_list("('a',)"), ["a"])
 
     def test_parse_list_does_not_run_code(self):
         text = "__import__('os').system('false')"
-        error = self.assertRaises(ValueError, migrate.parse_list, text)
+        error = self.assertRaises(ValueError, parse_list, text)
         self.assertEqual(str(error), f"{text!r} is not a list")
-        self.assertRaises(ValueError, migrate.parse_list, "['a'")
+        self.assertRaises(ValueError, parse_list, "['a'")
 
     def test_parse_list_of_strings_only(self):
         for text in ("[1]", "'a'", "{'a': 1}"):
-            error = self.assertRaises(ValueError, migrate.parse_list, text)
+            error = self.assertRaises(ValueError, parse_list, text)
             self.assertEqual(str(error), f"{text!r} is not a list of strings")
 
 
@@ -275,7 +277,7 @@ class TestFixtures(unittest.TestCase):
             path=/var/run/switch/sck
             """)
         report = Report()
-        project = migrate.parse_project(text, "f", report)
+        project = parse_project(text, "f", report)
         self.assertEqual(len(report), 0)
         self.assertEqual(
             [s.type for s in project.sections],

@@ -32,7 +32,7 @@ from twisted.internet import utils
 from twisted.logger import Logger
 import constantly as constants
 
-from virtualbricks import config
+from virtualbricks.config import get_setting
 from virtualbricks.errors import NoOptionError
 
 logger = Logger()
@@ -131,14 +131,14 @@ qemu_bins = [
 def check_missing_vde(path=None):
     if path is None:
 
-        path = config.get("vdepath")
+        path = get_setting("vdepath")
     return list(_check_missing(path, vde_bins))
 
 
 def check_missing_qemu(path=None):
     if path is None:
 
-        path = config.get("qemupath")
+        path = get_setting("qemupath")
     missing = list(_check_missing(path, qemu_bins))
     return missing, sorted(set(qemu_bins) - set(missing))
 
@@ -189,7 +189,7 @@ def set_ksm(enable):
         enable = 1 if enable else 0
         cmd = f"echo {enable} > {KSM_PATH}"
         try:
-            sudo = config.get("sudo")
+            sudo = get_setting("sudo")
             args = ["--", "su", "-c", cmd]
             d = utils.getProcessValue(sudo, args, env=os.environ)
         except NoOptionError:

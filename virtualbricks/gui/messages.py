@@ -104,10 +104,11 @@ def part_name(namespace):
         ("virtualbricks.config", _("Settings")),
         ("virtualbricks.project", _("Project")),
         ("virtualbricks.console", _("Console")),
-        ("virtualbricks.events", _("Events")),
+        ("virtualbricks.bricks.event", _("Events")),
         ("virtualbricks.bricks.virtualmachine", _("Virtual machines")),
+        ("virtualbricks.bricks.plug", _("Connections")),
+        ("virtualbricks.bricks.sock", _("Connections")),
         ("virtualbricks.bricks", _("Bricks")),
-        ("virtualbricks.link", _("Connections")),
         ("virtualbricks", "Virtualbricks"),
     )
     for prefix, name in parts:

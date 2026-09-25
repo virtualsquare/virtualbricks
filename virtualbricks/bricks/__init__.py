@@ -19,9 +19,11 @@
 """
 The bricks: the base class of every brick and the processes they run.
 
-Each brick has its own module: capture, netemu (network emulator), router,
-switch, switchwrapper, tap, tunnelconnect (tunnel client), tunnellisten
-(tunnel server), virtualmachine and wire.
+Each brick has its own module: capture, event, netemu (network emulator),
+router, switch, switchwrapper, tap, tunnelconnect (tunnel client),
+tunnellisten (tunnel server), virtualmachine and wire. The other classes
+that go with them have theirs too: eventaction, an action of an event, and
+plug and sock, the two ends of a link between bricks.
 """
 
 import os
@@ -34,8 +36,16 @@ from twisted.internet import protocol, reactor, error, defer
 from twisted.logger import Logger
 from zope.interface import implementer
 
-from virtualbricks import base, config, errors, interfaces
-from virtualbricks.config import Ref
+from virtualbricks import base, errors, interfaces
+from virtualbricks.config import (
+    Ref,
+    define,
+    dump_record,
+    field,
+    get_setting,
+    load_record,
+    parse_value,
+)
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
@@ -233,11 +243,11 @@ class TermProtocol(protocol.ProcessProtocol):
             self.logger.info(console_done, status=status.value)
 
 
-@config.define
+@define
 class BrickConfig:
 
-    pon_vbevent = config.field(Ref("event"), default="")
-    poff_vbevent = config.field(Ref("event"), default="")
+    pon_vbevent = field(Ref("event"), default="")
+    poff_vbevent = field(Ref("event"), default="")
 
 
 class Brick(base.Base):
@@ -326,18 +336,18 @@ class Brick(base.Base):
 
         attrs = {}
         for name, value in (a.split("=", 1) for a in attrlist):
-            attrs[name] = config.parse_value(self.config, name, value)
+            attrs[name] = parse_value(self.config, name, value)
         self.set(attrs)
 
     def config_table(self):
         """Return the configuration as saved in the project file."""
 
-        return config.dump_record(self.config)
+        return dump_record(self.config)
 
     def load_config_table(self, table, report, where, ignore):
         """Read the configuration from the table of the project file."""
 
-        self.config = config.load_record(
+        self.config = load_record(
             type(self.config), table, report, where, ignore=ignore
         )
 
@@ -419,8 +429,8 @@ class Brick(base.Base):
             self.logger.info(start_brick, args=" ".join(args))
             # usePTY?
             if self.needsudo():
-                prog = config.get("sudo")
-                args = [config.get("sudo"), "--"] + args
+                prog = get_setting("sudo")
+                args = [get_setting("sudo"), "--"] + args
             self.proc = self.process_protocol(self)
             reactor.spawnProcess(self.proc, prog, args, os.environ)
 
@@ -477,7 +487,7 @@ class Brick(base.Base):
     ############################
 
     def open_console(self):
-        term = config.get("term")
+        term = get_setting("term")
         args = [term, "-e", abspath_vde(self.term_command), self.console()]
         self.logger.info(open_console, name=self.name, args=" ".join(args))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)

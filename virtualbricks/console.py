@@ -24,7 +24,16 @@ from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from twisted.logger import Logger
 from zope.interface import implementer
-from virtualbricks import __version__, bricks, config, errors
+from virtualbricks import __version__, bricks, errors
+from virtualbricks.config import (
+    AppSettings,
+    field_values,
+    get_setting,
+    has_option,
+    kind_of,
+    parse_setting,
+    set_setting,
+)
 
 logger = Logger()
 conn_ok = "Connection ok"
@@ -198,8 +207,8 @@ class VBProtocol(Protocol):
             except ValueError as exc:
                 self.sendLine(str(exc))
         elif cmd[0] == "show":
-            for name, value in config.values(obj.config).items():
-                kind = config.kind_of(obj.config, name)
+            for name, value in field_values(obj.config).items():
+                kind = kind_of(obj.config, name)
                 self.sendLine("%s = %s" % (name, kind.format(value)))
         elif cmd[0] == "connect" and len(cmd) == 2:
             if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
@@ -367,9 +376,9 @@ class ImagesProtocol(Protocol):
 class ConfigurationProtocol(Protocol):
 
     def do_get(self, name):
-        if config.has_option(name):
-            kind = config.kind_of(config.AppSettings, name)
-            self.sendLine("%s = %s" % (name, kind.format(config.get(name))))
+        if has_option(name):
+            kind = kind_of(AppSettings, name)
+            self.sendLine("%s = %s" % (name, kind.format(get_setting(name))))
         else:
             self.sendLine("No such option %s" % name)
 
@@ -377,9 +386,9 @@ class ConfigurationProtocol(Protocol):
     #     pass  # TODO: show all settings
 
     def do_set(self, name, value):
-        if config.has_option(name):
+        if has_option(name):
             try:
-                config.set(name, config.parse_setting(name, value))
+                set_setting(name, parse_setting(name, value))
             except ValueError as exc:
                 self.sendLine(str(exc))
         else:

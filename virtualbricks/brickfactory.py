@@ -40,14 +40,21 @@ from twisted.logger import (
     globalLogPublisher,
 )
 
-from virtualbricks import config, console, errors, locations, project
+from virtualbricks import console, errors, locations, project
+from virtualbricks.config import (
+    field_values,
+    load_settings,
+    load_state,
+    store_settings,
+)
 from virtualbricks import i18n
-from virtualbricks import link
 from virtualbricks.bricks import capture, netemu, router, switch
 from virtualbricks.bricks import switchwrapper, tap, tunnelconnect
 from virtualbricks.bricks import tunnellisten, virtualmachine, wire
 from virtualbricks.errors import NameAlreadyInUseError
-from virtualbricks.events import Event, is_event
+from virtualbricks.bricks.event import Event, is_event
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.i18n import _
 from virtualbricks.observable import Event as Signal, Observable
 from virtualbricks.tools import is_running
@@ -293,7 +300,7 @@ class BrickFactory:
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
-        new_brick.set(copy.deepcopy(config.values(brick.config)))
+        new_brick.set(copy.deepcopy(field_values(brick.config)))
 
         for p in brick.plugs:
             if p.sock is not None:
@@ -381,7 +388,7 @@ class BrickFactory:
         Return an event given its name.
 
         :type name: str
-        :rtype: Optional[virtualbricks.events.Event]
+        :rtype: Optional[virtualbricks.bricks.event.Event]
         """
 
         return self._events.get(name)
@@ -456,10 +463,10 @@ class BrickFactory:
         return normalized_name
 
     def new_plug(self, brick):
-        return link.Plug(brick)
+        return Plug(brick)
 
     def new_sock(self, brick, name=""):
-        sock = link.Sock(brick, name)
+        sock = Sock(brick, name)
         self.socks.append(sock)
         return sock
 
@@ -633,8 +640,8 @@ class Application:
         i18n.install()
 
     def install_settings(self):
-        config.load_settings()
-        config.load_state()
+        load_settings()
+        load_state()
 
     def install_sys_hooks(self):
         sys.excepthook = self.excepthook
@@ -666,9 +673,9 @@ class Application:
     def migrate(self):
         """Convert the files of older versions, once; may return a Deferred."""
 
-        from virtualbricks import migrate
+        from virtualbricks.migrate import startup_migration
 
-        migration = migrate.startup_migration()
+        migration = startup_migration()
         if migration is not None:
             migration.run()
             migration.log(logger)
@@ -693,7 +700,7 @@ class Application:
             signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
-        reactor.addSystemEventTrigger("before", "shutdown", config.store)
+        reactor.addSystemEventTrigger("before", "shutdown", store_settings)
         project.manager.restore_last(factory)
         reactor.addSystemEventTrigger(
             "before", "shutdown", project.manager.save_current, factory

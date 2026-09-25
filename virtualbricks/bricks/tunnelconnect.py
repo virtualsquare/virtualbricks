@@ -18,16 +18,15 @@
 """A tunnel client: vde_cryptcab, connecting to a tunnel server."""
 
 from virtualbricks.bricks.tunnellisten import TunnelListen, TunnelListenConfig
-from virtualbricks import config
-from virtualbricks.config import Int, Str
+from virtualbricks.config import Int, Str, define, field
 from virtualbricks.i18n import _
 
 
-@config.define
+@define
 class TunnelConnectConfig(TunnelListenConfig):
 
-    host = config.field(Str(), default="")
-    localport = config.field(Int(1, 65535), default=10771)
+    host = field(Str(), default="")
+    localport = field(Int(1, 65535), default=10771)
 
 
 class TunnelConnect(TunnelListen):

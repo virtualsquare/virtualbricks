@@ -37,7 +37,7 @@ from zope.interface import implementer
 from virtualbricks import tools, brickfactory
 from virtualbricks.spawn import qemu_img
 from virtualbricks.bricks import Brick
-from virtualbricks.events import Event
+from virtualbricks.bricks.event import Event
 from virtualbricks.gui.windows import (
     AttachEventDialog,
     EditEthernetDialog,
@@ -59,7 +59,8 @@ from virtualbricks.gui.interfaces import IMenu, IJobMenu, IConfigController
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.i18n import _
 from virtualbricks.interfaces import registerAdapter
-from virtualbricks.link import Plug, Sock
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.bricks.sock import Sock
 from virtualbricks.bricks.virtualmachine import VirtualMachine
 
 logger = Logger()
@@ -583,10 +584,10 @@ class Application(brickfactory.Application):
         message_dialog.set_parent(self.gui.window)
 
     def migrate(self):
-        from virtualbricks import migrate
+        from virtualbricks.migrate import startup_migration
         from virtualbricks.migrate.gui import MigrationWindow
 
-        migration = migrate.startup_migration()
+        migration = startup_migration()
         if migration is None:
             return None
         window = MigrationWindow(migration=migration)

@@ -20,7 +20,7 @@
 
 from twisted.python import filepath
 
-from virtualbricks import config
+from virtualbricks.config import load_toml, set_app_setting
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
@@ -34,8 +34,8 @@ class TestImportMachinePaths(GuiTestCase):
     def setUp(self):
         super().setUp()
         self.ours = self.folder("bin")
-        config.set_app("qemupath", self.ours)
-        config.set_app("vdepath", self.ours)
+        set_app_setting("qemupath", self.ours)
+        set_app_setting("vdepath", self.ours)
         self.dialog = importdialog.ImportDialog(self.factory)
         self.addCleanup(self.dialog.get_root_widget().destroy)
         self.humble = importdialog._HumbleImport()
@@ -130,7 +130,7 @@ class TestImportMachinePaths(GuiTestCase):
         self.patch(importdialog, "ProgressBar", ProgressBar)
         self.dialog.on_assistant_apply(self.dialog.get_root_widget())
         self.successResultOf(waited[0])
-        data = config.load_toml(self.manager.get_project("lab").project_file)
+        data = load_toml(self.manager.get_project("lab").project_file)
         self.assertEqual(data["settings"]["qemupath"], self.ours)
         self.assertEqual(data["settings"]["vdepath"], "/opt/elsewhere/vde")
 

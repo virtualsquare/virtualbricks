@@ -20,16 +20,17 @@
 
 from collections import OrderedDict as odict
 
-from virtualbricks import bricks, config, link
-from virtualbricks.config import Str
+from virtualbricks import bricks
+from virtualbricks.bricks.plug import Plug
+from virtualbricks.config import Str, define, field
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
 
-@config.define
+@define
 class CaptureConfig(bricks.BrickConfig):
 
-    iface = config.field(Str(), default="")
+    iface = field(Str(), default="")
 
 
 class Capture(bricks.PrivilegedBrick):
@@ -40,7 +41,7 @@ class Capture(bricks.PrivilegedBrick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.plugs.append(link.Plug(self))
+        self.plugs.append(Plug(self))
         self.command_builder = odict(
             (("-s", self.sock_path), ("*iface", "iface"))
         )

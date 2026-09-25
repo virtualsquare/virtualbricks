@@ -35,20 +35,30 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 import attr
 from twisted.python import lockfile
 
-from virtualbricks.config import ERROR, INFO, WARNING, Report
-from virtualbricks import config, locations
+from virtualbricks.config import (
+    ERROR,
+    INFO,
+    PROJECT_KEYS,
+    SETTINGS_FORMAT,
+    WARNING,
+    AppSettings,
+    DecodeError,
+    ProjectSettings,
+    Report,
+    dump_record,
+    dump_toml,
+    field_values,
+    load_record,
+    load_toml,
+    new_project_settings,
+)
+from virtualbricks import locations
 from virtualbricks.migrate import convert, legacy
 
 if TYPE_CHECKING:
     from twisted.logger import Logger
 
-    from virtualbricks.config import (
-        AppSettings,
-        Level,
-        Message,
-        ProjectSettings,
-        Table,
-    )
+    from virtualbricks.config import Level, Message, Table
 
 Status = Literal["waiting", "migrating", "migrated", "failed", "skipped"]
 
@@ -182,12 +192,10 @@ def _is_migrated_file(workspace: str, name: str, path: str) -> bool:
 
 def _read_app_settings(path: str) -> AppSettings:
     try:
-        data = config.load_toml(path)
-    except (OSError, config.DecodeError):
-        return config.AppSettings()
-    return config.load_record(
-        config.AppSettings, data, Report(), ignore={"format"}
-    )
+        data = load_toml(path)
+    except (OSError, DecodeError):
+        return AppSettings()
+    return load_record(AppSettings, data, Report(), ignore={"format"})
 
 
 def _legacy_app_settings(path: str) -> AppSettings:
@@ -195,20 +203,18 @@ def _legacy_app_settings(path: str) -> AppSettings:
     try:
         options = legacy.read_settings(path, os.path.basename(path), report)
     except (OSError, UnicodeDecodeError):
-        return config.AppSettings()
+        return AppSettings()
     return convert.convert_settings(options, os.path.basename(path), report)[0]
 
 
 def _project_settings(app: AppSettings) -> ProjectSettings:
-    values = config.values(app)
-    return config.ProjectSettings(
-        **{name: values[name] for name in config.PROJECT_KEYS}
-    )
+    values = field_values(app)
+    return ProjectSettings(**{name: values[name] for name in PROJECT_KEYS})
 
 
 def _write(data: Table, path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    config.dump_toml(data, path)
+    dump_toml(data, path)
 
 
 def _copy_tree(source: str, destination: str, skip: Collection[str]) -> None:
@@ -250,7 +256,7 @@ class Migration:
         self.dry_run = dry_run
         self.copy_files = copy_files
         self.verbose = verbose
-        self.app_settings = app_settings or config.AppSettings()
+        self.app_settings = app_settings or AppSettings()
         # the current project of the old settings, once migrated
         self.current_project: str | None = None
         self.items: list[Item] = []
@@ -333,8 +339,8 @@ class Migration:
         self.current_project = current
         if not self.dry_run:
             data: Table = {
-                "format": config.SETTINGS_FORMAT,
-                **config.dump_record(app),
+                "format": SETTINGS_FORMAT,
+                **dump_record(app),
             }
             _write(data, self.target.settings_file)
 
@@ -367,7 +373,7 @@ class Migration:
         if self.dry_run:
             return
         if self.current_project is not None:
-            state: Table = {"format": config.SETTINGS_FORMAT}
+            state: Table = {"format": SETTINGS_FORMAT}
             state["current_project"] = self.current_project
             _write(state, self.target.state_file)
         path = self.target.report_file
@@ -516,7 +522,7 @@ def migration_for(
     elif output is None:
         app = _read_app_settings(locations.settings_file())
     else:
-        app = config.AppSettings()
+        app = AppSettings()
     target = InPlace(workspace) if output is None else Folder(output)
     return Migration(workspace, target, legacy_settings, app, **options)
 
@@ -533,9 +539,9 @@ def migrate_imported_project(directory: str) -> Report:
     try:
         project = legacy.read_project(source, filename, report)
         data, _ = convert.convert_project(
-            project, config.new_project_settings(), report, directory
+            project, new_project_settings(), report, directory
         )
-        config.dump_toml(data, os.path.join(directory, locations.PROJECT_FILE))
+        dump_toml(data, os.path.join(directory, locations.PROJECT_FILE))
     except (OSError, UnicodeDecodeError, convert.MigrationError) as exc:
         report.error(_describe_error(exc), directory)
     return report
