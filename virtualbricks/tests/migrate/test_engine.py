@@ -26,9 +26,10 @@ from virtualbricks.config import (
     SETTINGS_FORMAT,
     AppSettings,
     Report,
+    ProjectSettings,
     load_toml,
-    set_app_setting,
 )
+from virtualbricks.config.settings import use_project
 from virtualbricks.config.tomlfile import dumps_toml
 from virtualbricks.migrate import engine, startup_migration
 from virtualbricks.migrate.engine import (
@@ -215,7 +216,8 @@ class TestMigrateToFolder(EngineTestCase):
         data = load_toml(target.settings_file)
         self.assertEqual(data["format"], SETTINGS_FORMAT)
         self.assertEqual(data["workspace"], target.workspace)
-        self.assertEqual(data["cowfmt"], "qcow")
+        # the settings of the projects are in the projects
+        self.assertNotIn("cowfmt", data)
         self.assertEqual(
             load_toml(target.state_file),
             {"format": SETTINGS_FORMAT, "current_project": "wan"},
@@ -573,10 +575,11 @@ class TestEntryPoints(EngineTestCase):
         self.assertEqual([item.name for item in migration.items], ["lab"])
         with open(self.legacy_settings, "wb") as fp:
             fp.write(b"\xff\xfe")
+        app, project = engine._legacy_settings(self.legacy_settings)
         self.assertEqual(
-            engine._legacy_app_settings(self.legacy_settings).workspace,
-            os.path.join(self.root, ".virtualbricks"),
+            app.workspace, os.path.join(self.root, ".virtualbricks")
         )
+        self.assertEqual(project, ProjectSettings())
 
     def test_in_place_migration(self):
         migration = in_place_migration(dry_run=True)
@@ -595,17 +598,20 @@ class TestEntryPoints(EngineTestCase):
     def test_migration_for(self):
         write(
             locations.settings_file(),
-            dumps_toml({"format": 1, "cowfmt": "cow"}),
+            dumps_toml({"format": 1, "term": "/usr/bin/foot"}),
         )
         migration = migration_for(self.workspace)
         self.assertIsInstance(migration.target, InPlace)
-        self.assertEqual(migration.app_settings.cowfmt, "cow")
+        self.assertEqual(migration.app_settings.term, "/usr/bin/foot")
+        self.assertEqual(migration.project_settings, ProjectSettings())
         migration = migration_for(self.workspace, output=self.output)
         self.assertIsInstance(migration.target, Folder)
-        self.assertEqual(migration.app_settings.cowfmt, "qcow2")
+        self.assertEqual(migration.app_settings.term, "/usr/bin/xterm")
+        self.assertEqual(migration.project_settings, ProjectSettings())
         old = write_settings(os.path.join(self.root, "vb.conf"), "/srv/vb")
         migration = migration_for(self.workspace, old, self.output)
-        self.assertEqual(migration.app_settings.cowfmt, "qcow")
+        # the settings of the projects come from the old settings
+        self.assertEqual(migration.project_settings.cowfmt, "qcow")
         self.assertEqual(migration.items[0].kind, "settings")
 
 
@@ -630,7 +636,8 @@ class TestImportedProject(EngineTestCase):
         self.assertIn("sender", data["bricks"])
 
     def test_uses_the_settings_of_new_projects(self):
-        set_app_setting("cowfmt", "cow")
+        # those of the open project
+        use_project(ProjectSettings(cowfmt="cow"))
         data, _, _ = self.convert(CONFIG1)
         self.assertEqual(data["settings"]["cowfmt"], "cow")
 

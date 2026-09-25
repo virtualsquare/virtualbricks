@@ -80,11 +80,11 @@ class TestConvertSettings(unittest.TestCase):
             for lineno, (key, value) in enumerate(values.items(), 1)
         }
         report = Report()
-        app, current = convert_settings(lines, "vb.conf", report)
-        return app, current, report
+        app, project, current = convert_settings(lines, "vb.conf", report)
+        return app, project, current, report
 
     def test_values(self):
-        app, current, report = self.convert(
+        app, project, current, report = self.convert(
             femaleplugs="True",
             cowfmt="qcow",
             workspace="/srv/vb",
@@ -92,21 +92,23 @@ class TestConvertSettings(unittest.TestCase):
         )
         self.assertEqual(len(report), 0)
         self.assertEqual(current, "lab")
-        self.assertIs(app.femaleplugs, True)
-        self.assertEqual(app.cowfmt, "qcow")
+        # the settings of the application, and of the migrated projects
         self.assertEqual(app.workspace, "/srv/vb")
         self.assertEqual(app.term, self.program)
+        self.assertIs(project.femaleplugs, True)
+        self.assertEqual(project.cowfmt, "qcow")
+        self.assertEqual(project.qemupath, self.bin)
 
     def test_defaults(self):
-        app, current, report = self.convert(current_project="")
+        _, project, current, report = self.convert(current_project="")
         self.assertEqual(current, locations.DEFAULT_PROJECT)
-        self.assertEqual(app.cowfmt, "qcow2")
+        self.assertEqual(project.cowfmt, "qcow2")
 
     def test_dropped_and_unknown(self):
         dropped = ("alt-term", "cdroms", "kvm", "python", "sudo")
         options = {key: "x" for key in dropped}
         options["color"] = "red"
-        _, _, report = self.convert(**options)
+        _, _, _, report = self.convert(**options)
         self.assertEqual(
             messages(report),
             [
@@ -121,7 +123,7 @@ class TestConvertSettings(unittest.TestCase):
         self.assertEqual(report.warnings, 1)
 
     def test_invalid_values(self):
-        app, _, report = self.convert(cowfmt="qed", ksm="maybe")
+        app, project, _, report = self.convert(cowfmt="qed", ksm="maybe")
         self.assertEqual(
             messages(report),
             [
@@ -131,11 +133,12 @@ class TestConvertSettings(unittest.TestCase):
                 "default false",
             ],
         )
-        self.assertEqual(app.cowfmt, "qcow2")
+        self.assertEqual(project.cowfmt, "qcow2")
+        self.assertIs(app.ksm, False)
 
     def test_programs_not_on_this_machine(self):
         missing = os.path.join(self.root, "missing")
-        _, _, report = self.convert(
+        _, _, _, report = self.convert(
             term=missing, qemupath=missing, vdepath="bin"
         )
         self.assertEqual(
@@ -150,10 +153,10 @@ class TestConvertSettings(unittest.TestCase):
     def test_a_default_is_checked_too(self):
         lines = {"qemupath": (self.bin, 1)}
         report = Report()
-        app, _ = convert_settings(lines, "vb.conf", report)
+        app, project, _ = convert_settings(lines, "vb.conf", report)
         app.term = os.path.join(self.root, "missing")
         report = Report()
-        convert._check_programs(app, lines, "vb.conf", report)
+        convert._check_programs(app, project, lines, "vb.conf", report)
         self.assertEqual(
             [m.where for m in report if "term:" in m.text], ["vb.conf"]
         )

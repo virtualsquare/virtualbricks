@@ -23,7 +23,8 @@ from twisted.internet import defer
 
 from virtualbricks import locations
 
-from virtualbricks.config import ArchiveCancelled, Report, set_app_setting
+from virtualbricks.config import ArchiveCancelled, ProjectSettings, Report
+from virtualbricks.config.settings import use_project
 from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,
@@ -79,8 +80,8 @@ class ImportTestCase(GuiTestCase):
         self.patch(locations, "runtime_dir", lambda: "/run/vb-tests")
         self.patch(locations, "ensure_private_dir", lambda path: path)
         self.ours = self.folder("bin")
-        set_app_setting("qemupath", self.ours)
-        set_app_setting("vdepath", self.ours)
+        # this computer's: those of the open project
+        use_project(ProjectSettings(qemupath=self.ours, vdepath=self.ours))
         self.inspected = []
         self.imports = []
         self.dialog = importdialog.ImportDialog(

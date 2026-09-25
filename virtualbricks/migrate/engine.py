@@ -38,7 +38,6 @@ from twisted.python import lockfile
 from virtualbricks.config import (
     ERROR,
     INFO,
-    PROJECT_KEYS,
     SETTINGS_FORMAT,
     WARNING,
     AppSettings,
@@ -47,7 +46,6 @@ from virtualbricks.config import (
     Report,
     dump_record,
     dump_toml,
-    field_values,
     load_record,
     load_toml,
     new_project_settings,
@@ -198,18 +196,18 @@ def _read_app_settings(path: str) -> AppSettings:
     return load_record(AppSettings, data, Report(), ignore={"format"})
 
 
-def _legacy_app_settings(path: str) -> AppSettings:
+def _legacy_settings(path: str) -> tuple[AppSettings, ProjectSettings]:
+    """The settings of the application and of the projects, of an old file."""
+
     report = Report()
     try:
         options = legacy.read_settings(path, os.path.basename(path), report)
     except (OSError, UnicodeDecodeError):
-        return AppSettings()
-    return convert.convert_settings(options, os.path.basename(path), report)[0]
-
-
-def _project_settings(app: AppSettings) -> ProjectSettings:
-    values = field_values(app)
-    return ProjectSettings(**{name: values[name] for name in PROJECT_KEYS})
+        return AppSettings(), ProjectSettings()
+    app, project, _ = convert.convert_settings(
+        options, os.path.basename(path), report
+    )
+    return app, project
 
 
 def _write(data: Table, path: str) -> None:
@@ -238,7 +236,7 @@ class Migration:
 
     ``target`` is an :class:`InPlace` or a :class:`Folder`. The per-project
     settings of the migrated projects come from the old settings, if they are
-    migrated too, or from ``app_settings``.
+    migrated too, or from ``project_settings``.
     """
 
     def __init__(
@@ -247,6 +245,7 @@ class Migration:
         target: Target,
         legacy_settings: str | None = None,
         app_settings: AppSettings | None = None,
+        project_settings: ProjectSettings | None = None,
         dry_run: bool = False,
         copy_files: bool = False,
         verbose: bool = False,
@@ -257,6 +256,7 @@ class Migration:
         self.copy_files = copy_files
         self.verbose = verbose
         self.app_settings = app_settings or AppSettings()
+        self.project_settings = project_settings or ProjectSettings()
         # the current project of the old settings, once migrated
         self.current_project: str | None = None
         self.items: list[Item] = []
@@ -331,11 +331,14 @@ class Migration:
         options = legacy.read_settings(item.source, filename, item.report)
         if item.report.has_errors:
             return
-        app, current = convert.convert_settings(options, filename, item.report)
+        app, project, current = convert.convert_settings(
+            options, filename, item.report
+        )
         if self.target.folder is not None:
             app.workspace = self.target.workspace
             item.report.info(f"workspace set to {app.workspace}")
         self.app_settings = app
+        self.project_settings = project
         self.current_project = current
         if not self.dry_run:
             data: Table = {
@@ -351,7 +354,7 @@ class Migration:
         project = legacy.read_project(item.source, filename, item.report)
         data, bricks = convert.convert_project(
             project,
-            _project_settings(self.app_settings),
+            self.project_settings,
             item.report,
             os.path.dirname(item.source),
         )
@@ -478,12 +481,12 @@ def startup_migration() -> Migration | None:
     legacy_settings = locations.legacy_settings_file()
     new_settings = locations.settings_file()
     if os.path.isfile(legacy_settings) and not os.path.exists(new_settings):
-        app = _legacy_app_settings(legacy_settings)
+        app, project = _legacy_settings(legacy_settings)
     else:
         legacy_settings = None
-        app = _read_app_settings(new_settings)
+        app, project = _read_app_settings(new_settings), ProjectSettings()
     migration = Migration(
-        app.workspace, InPlace(app.workspace), legacy_settings, app
+        app.workspace, InPlace(app.workspace), legacy_settings, app, project
     )
     return migration if migration.pending() else None
 
@@ -497,11 +500,14 @@ def in_place_migration(
         path = locations.legacy_settings_file()
         legacy_settings = path if os.path.isfile(path) else None
     if legacy_settings is not None:
-        app = _legacy_app_settings(legacy_settings)
+        app, project = _legacy_settings(legacy_settings)
     else:
         app = _read_app_settings(locations.settings_file())
+        project = ProjectSettings()
     target = InPlace(app.workspace)
-    return Migration(app.workspace, target, legacy_settings, app, **options)
+    return Migration(
+        app.workspace, target, legacy_settings, app, project, **options
+    )
 
 
 def migration_for(
@@ -513,18 +519,21 @@ def migration_for(
     """
     Return the migration of a workspace: in place, or to the output folder.
 
-    In place, the per-project settings come from the old settings if given,
-    else from the new settings of the user.
+    The settings of the migrated projects come from the old settings if
+    given, else they are the defaults.
     """
 
+    project = ProjectSettings()
     if legacy_settings is not None:
-        app = _legacy_app_settings(legacy_settings)
+        app, project = _legacy_settings(legacy_settings)
     elif output is None:
         app = _read_app_settings(locations.settings_file())
     else:
         app = AppSettings()
     target = InPlace(workspace) if output is None else Folder(output)
-    return Migration(workspace, target, legacy_settings, app, **options)
+    return Migration(
+        workspace, target, legacy_settings, app, project, **options
+    )
 
 
 def convert_imported_project(directory: str, report: Report) -> Table | None:

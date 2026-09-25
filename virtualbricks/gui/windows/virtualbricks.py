@@ -428,9 +428,6 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         )
         self.init(factory)
 
-        # Check GUI prerequisites
-        self.__complain_on_missing_prerequisites()
-
         # attach the quit callback at the end, so it is not called if an
         # exception is raised before because of a syntax error of another kind
         # of error
@@ -1218,7 +1215,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.jobs_view.set_cells_data_func()
         self.running_filter.set_visible_func(is_running_filter)
 
-    def __complain_on_missing_prerequisites(self):
+    def check_prerequisites(self):
+        """Say which programs are missing, in the folders of the project."""
+
         qmissing, _ = tools.check_missing_qemu()
         vmissing = tools.check_missing_vde()
         missing = vmissing + qmissing

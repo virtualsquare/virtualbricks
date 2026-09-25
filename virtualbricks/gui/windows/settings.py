@@ -30,11 +30,9 @@ from twisted.logger import Logger
 from virtualbricks import tools
 from virtualbricks.config import (
     COW_FORMATS,
-    get_app_setting,
     get_setting,
     project_settings,
     projects,
-    set_app_setting,
     set_setting,
     store_settings,
 )
@@ -73,7 +71,7 @@ def _folder_chooser():
 
 
 class ProjectSettingsWidgets:
-    """The per-project settings, of the open project or of new projects."""
+    """The settings of the open project."""
 
     def __init__(self, note):
         self.grid = grid = _grid()
@@ -169,10 +167,7 @@ def combobox_set_active_value(combobox, value, column):
 
 
 class SettingsDialog(_Dialog):
-    """
-    The preferences: of the application, of the open project and the ones
-    new projects start with.
-    """
+    """The preferences: of the application, and of the open project."""
 
     def __init__(self, virtualbricks_gui):
         """
@@ -255,19 +250,13 @@ class SettingsDialog(_Dialog):
         self.project_widgets = ProjectSettingsWidgets(
             _(
                 "These settings belong to the open project: changing them "
-                "doesn't change the other projects."
+                "doesn't change the other projects. A new project starts "
+                "with a copy of them."
             )
         )
         notebook.append_page(
             self.project_widgets.grid,
             Gtk.Label(visible=True, label=_("This project")),
-        )
-        self.new_project_widgets = ProjectSettingsWidgets(
-            _("A new project starts with these settings.")
-        )
-        notebook.append_page(
-            self.new_project_widgets.grid,
-            Gtk.Label(visible=True, label=_("New projects")),
         )
         content_area.pack_start(notebook, True, True, 0)
 
@@ -363,28 +352,24 @@ class SettingsDialog(_Dialog):
         self._setting_ksm_deferred = deferred
 
     def load_settings(self):
-        self.term_entry.set_text(get_app_setting("term"))
-        self.systray_switch.set_active(get_app_setting("systray"))
-        self.warn_missing_switch.set_active(get_app_setting("show_missing"))
-        self.enable_ksm_switch.set_active(get_app_setting("ksm"))
-        self.new_project_widgets.load(get_app_setting)
-        if project_settings() is None:
-            self.project_widgets.load(get_app_setting)
-            self.project_widgets.grid.set_sensitive(False)
-        else:
-            self.project_widgets.load(get_setting)
+        self.term_entry.set_text(get_setting("term"))
+        self.systray_switch.set_active(get_setting("systray"))
+        self.warn_missing_switch.set_active(get_setting("show_missing"))
+        self.enable_ksm_switch.set_active(get_setting("ksm"))
+        # with no project open, the defaults
+        self.project_widgets.load(get_setting)
+        self.project_widgets.grid.set_sensitive(project_settings() is not None)
 
     def store_settings(self):
         logger.debug(apply_settings)
-        set_app_setting("term", self.term_entry.get_text())
-        set_app_setting("systray", self.systray_switch.get_active())
-        set_app_setting("show_missing", self.warn_missing_switch.get_active())
-        self.new_project_widgets.store(set_app_setting)
+        set_setting("term", self.term_entry.get_text())
+        set_setting("systray", self.systray_switch.get_active())
+        set_setting("show_missing", self.warn_missing_switch.get_active())
         if project_settings() is not None:
             self.project_widgets.store(set_setting)
             projects.save(self.virtualbricks_gui.brickfactory)
         ksm_active = self.enable_ksm_switch.get_active()
-        set_app_setting("ksm", ksm_active)
+        set_setting("ksm", ksm_active)
         tools.set_ksm(ksm_active)
         store_settings()
         if self.systray_switch.get_active():

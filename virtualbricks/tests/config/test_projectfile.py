@@ -30,7 +30,6 @@ from virtualbricks.config import (
     load_toml,
     project_document,
     projectfile,
-    set_app_setting,
 )
 from virtualbricks.config.projectfile import (
     create_project_file,
@@ -46,6 +45,7 @@ from virtualbricks.config.projectfile import (
     upgrade_project,
 )
 from virtualbricks.config.tomlfile import dumps_toml, loads_toml
+from virtualbricks.config.settings import use_project
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import UsbDevice
 
@@ -286,30 +286,30 @@ class TestLenientReading(ProjectFileTestCase):
         self.restore({"format": 1, "settings": {}, "colors": 1})
         self.assertIn("colors: unknown field, dropped", self.messages())
 
-    def test_settings_from_the_app(self):
-        set_app_setting("qemupath", "/opt/qemu")
+    def test_missing_settings(self):
+        # not those of the project that is open
+        use_project(ProjectSettings(qemupath="/opt/qemu"))
         _, project_settings = self.restore({"format": 1})
-        self.assertEqual(project_settings.qemupath, "/opt/qemu")
+        self.assertEqual(project_settings, ProjectSettings())
         self.assertEqual(
-            self.messages(), ["settings: missing, using the app settings"]
+            self.messages(), ["settings: missing, using the defaults"]
         )
 
     def test_settings_not_a_table(self):
         self.restore({"format": 1, "settings": 1})
         self.assertEqual(
             self.messages(),
-            ["settings: is not a table, using the app settings"],
+            ["settings: is not a table, using the defaults"],
         )
 
     def test_partial_settings(self):
-        set_app_setting("cowfmt", "qcow")
         _, project_settings = self.restore(
             {"format": 1, "settings": {"femaleplugs": True, "color": 1}}
         )
         self.assertTrue(project_settings.femaleplugs)
-        self.assertEqual(project_settings.cowfmt, "qcow")
+        self.assertEqual(project_settings.cowfmt, "qcow2")
         self.assertIn(
-            'settings.cowfmt: missing, using the app setting "qcow"',
+            'settings.cowfmt: missing, using the default "qcow2"',
             self.messages(),
         )
         self.assertIn(

@@ -37,6 +37,7 @@ from twisted.internet import defer
 from virtualbricks import errors, locations
 from virtualbricks.config import (
     DEFAULT_MODEL,
+    PROJECT_KEYS,
     SOCKET_NAME,
     AppSettings,
     Bool,
@@ -45,6 +46,7 @@ from virtualbricks.config import (
     Kind,
     ListOf,
     Mac,
+    ProjectSettings,
     field_default,
     field_names,
     kind_of,
@@ -55,12 +57,7 @@ from virtualbricks.nic import random_mac
 
 if TYPE_CHECKING:
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
-    from virtualbricks.config import (
-        ProjectSettings,
-        Report,
-        SettingValue,
-        Table,
-    )
+    from virtualbricks.config import Report, SettingValue, Table
     from virtualbricks.bricks.sock import Sock
 
 SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python", "sudo"))
@@ -101,16 +98,18 @@ class MigrationError(Exception):
 
 def convert_settings(
     options: legacy.Options, filename: str, report: Report
-) -> tuple[AppSettings, str]:
+) -> tuple[AppSettings, ProjectSettings, str]:
     """
     Convert the options read by :func:`legacy.read_settings`.
 
-    Return the new settings and the name of the current project.
+    Return the settings of the application, the settings of the projects,
+    which the migrated projects take, and the name of the current project.
     """
 
     app = AppSettings()
+    project = ProjectSettings()
     current_project = locations.DEFAULT_PROJECT
-    names = field_names(AppSettings)
+    app_names = field_names(AppSettings)
     for key, (text, lineno) in options.items():
         where = legacy.where(filename, lineno)
         if key == "current_project":
@@ -120,10 +119,15 @@ def convert_settings(
         if key in SETTINGS_DROPPED:
             report.info(f"{key}: not used any more, dropped", where)
             continue
-        if key not in names:
+        target: AppSettings | ProjectSettings
+        if key in PROJECT_KEYS:
+            target = project
+        elif key in app_names:
+            target = app
+        else:
             report.warning(f"{key}: unknown setting, dropped", where)
             continue
-        kind = kind_of(AppSettings, key)
+        kind = kind_of(target, key)
         value: SettingValue
         try:
             if isinstance(kind, Bool):
@@ -132,24 +136,28 @@ def convert_settings(
                 value = text
             kind.check(value)
         except ValueError as exc:
-            default = kind.format(field_default(AppSettings, key))
+            default = kind.format(field_default(target, key))
             report.warning(f"{key}: {exc}, using the default {default}", where)
         else:
-            setattr(app, key, value)
-    _check_programs(app, options, filename, report)
-    return app, current_project
+            setattr(target, key, value)
+    _check_programs(app, project, options, filename, report)
+    return app, project, current_project
 
 
 def _check_programs(
-    app: AppSettings, options: legacy.Options, filename: str, report: Report
+    app: AppSettings,
+    project: ProjectSettings,
+    options: legacy.Options,
+    filename: str,
+    report: Report,
 ) -> None:
-    checks: tuple[tuple[str, Callable[[str], bool]], ...] = (
-        ("term", os.path.isfile),
-        ("qemupath", os.path.isdir),
-        ("vdepath", os.path.isdir),
+    checks: tuple[tuple[object, str, Callable[[str], bool]], ...] = (
+        (app, "term", os.path.isfile),
+        (project, "qemupath", os.path.isdir),
+        (project, "vdepath", os.path.isdir),
     )
-    for key, exists in checks:
-        path = getattr(app, key)
+    for settings, key, exists in checks:
+        path = getattr(settings, key)
         if path and os.path.isabs(path) and not exists(path):
             lineno = options.get(key, ("", 0))[1]
             report.warning(

@@ -93,17 +93,20 @@ delete it.
 
 Virtualbricks keeps its files in TOML, and writes them itself:
 
-- `~/.config/virtualbricks/settings.toml`: your preferences. It is in
-  `$XDG_CONFIG_HOME` if that is set.
+- `~/.config/virtualbricks/settings.toml`: your preferences, which aren't
+  about a project, as the terminal. It is in `$XDG_CONFIG_HOME` if that is set.
 - `~/.local/state/virtualbricks/state.toml`: what it remembers between runs,
   as the project that was open. It is in `$XDG_STATE_HOME` if that is set.
 - `~/.virtualbricks/`: the workspace, a folder for each project, with its
   `project.toml`, its README and its private disks. The `workspace` setting
   changes it.
 
-The first time, choose in *Settings › Preferences* where Virtualbricks finds
-the programs: `qemupath` and `vdepath`, the folders of the Qemu and VDE
-binaries. The same window sets `term`, the terminal of the consoles.
+Each project has its own settings, in its `project.toml`: the first time,
+choose in *Settings › Preferences*, on the page of the project, where
+Virtualbricks finds the programs: `qemupath` and `vdepath`, the folders of the
+Qemu and VDE binaries. A new project starts with a copy of the settings of the
+project that is open. The page of the application sets `term`, the terminal of
+the consoles.
 
 A tap and a capture need root. Unless Virtualbricks runs as root, it runs them
 with `sudo -A` when an askpass helper is configured, in `SUDO_ASKPASS` or

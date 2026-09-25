@@ -33,7 +33,6 @@ from virtualbricks.config import (
     importing,
     load_toml,
     plan_import,
-    set_app_setting,
     update_plan,
 )
 from virtualbricks.config.archive import (
@@ -42,6 +41,7 @@ from virtualbricks.config.archive import (
     Member as ArchiveMember,
 )
 from virtualbricks.config.importing import ImportResult
+from virtualbricks.config.settings import ProjectSettings, use_project
 from virtualbricks.config.workspace import Workspace
 from virtualbricks.config.tomlfile import dumps_toml
 from virtualbricks.config.archive import Tool
@@ -236,8 +236,8 @@ class TestPlan(ImportingTestCase):
         os.makedirs(ours)
         theirs_here = self.path("their-bin")
         os.makedirs(theirs_here)
-        set_app_setting("qemupath", ours)
-        set_app_setting("vdepath", ours)
+        # this computer's: those of the open project
+        use_project(ProjectSettings(qemupath=ours, vdepath=ours))
         data = project(
             settings={"qemupath": "/opt/qemu", "vdepath": theirs_here}
         )
@@ -363,7 +363,6 @@ class TestRunImport(ImportingTestCase):
 
     def test_import(self):
         plan = self.plan(self.lab())
-        set_app_setting("qemupath", "/usr/bin")
         plan.machine_paths[0].use_ours = True
         result = self.run_import(plan)
         self.assertEqual(result.name, "lab")

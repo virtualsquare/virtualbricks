@@ -22,15 +22,15 @@ Virtualbricks keeps its configuration in three kinds of file, all written in
 TOML 1.0:
 
 **settings.toml**
-:   Your preferences: the programs to run, the workspace, and the values that
-    new projects start with.
+:   Your preferences, which aren't about a project: the workspace, the
+    terminal, KSM and the tray icon.
 
 **state.toml**
 :   What Virtualbricks remembers between runs: the project that was open.
 
 **project.toml**
 :   One in each project: its bricks, events and disk images, how they are
-    connected, and the project's own copy of some settings.
+    connected, and its settings, such as the folders of QEMU and VDE.
 
 Virtualbricks writes these files itself. They can also be edited by hand, but
 never while Virtualbricks is running: it rewrites **settings.toml** when it
@@ -63,8 +63,7 @@ A file edited by hand doesn't have to be complete or tidy. Each problem is
 reported in the messages window and in the log, with the key it's about, and
 Virtualbricks carries on:
 
-- A missing key takes its default value. In a project, a missing setting
-  takes the value of the application settings.
+- A missing key takes its default value.
 - A key with a value of the wrong type or out of range takes its default
   value.
 - An unknown key is ignored, and dropped at the next save.
@@ -121,8 +120,6 @@ Virtualbricks creates it with the default values at its first start, and
 rewrites it when the settings window is closed with OK and when Virtualbricks
 quits.
 
-## Application settings
-
 **workspace** = *path*, default `"~/.virtualbricks"`
 :   The directory of the projects, *.virtualbricks* in your home directory
     by default. Write it as an absolute path: **~** is not expanded.
@@ -140,28 +137,9 @@ quits.
 **show_missing** = *boolean*, default `true`
 :   Warn at start about the programs that Virtualbricks needs and can't find.
 
-## Settings of new projects
-
-These settings also exist in each project, in its **[settings]** table (see
-**PROJECTS**). Here they are the values that a new project starts with; while
-a project is open, its own values are used instead.
-
-**cowfmt** = *choice*, default `"qcow2"`
-:   The format of the private copy-on-write disks of the virtual machines:
-    **"cow"**, **"qcow"** or **"qcow2"**.
-
-**erroronloop** = *boolean*, default `false`
-:   Log an error when starting a brick finds a loop in the network.
-
-**femaleplugs** = *boolean*, default `false`
-:   Allow plugs to connect to the socket cards of virtual machines, not only
-    to switches.
-
-**qemupath** = *path*, default `"/usr/bin"`
-:   The directory of the QEMU programs.
-
-**vdepath** = *path*, default `"/usr/bin"`
-:   The directory of the VDE programs, such as **vde_switch**(1).
+The **settings.toml** of an older version also has the settings of the
+projects, described under **Project settings**: they're reported, ignored,
+and dropped at the next save. Each project has its own.
 
 # STATE
 
@@ -193,11 +171,7 @@ The file has these top-level keys:
 :   The version of the layout, see **COMMON RULES**.
 
 **[settings]**
-:   The project's own values of **cowfmt**, **erroronloop**, **femaleplugs**,
-    **qemupath** and **vdepath**, described under **SETTINGS**. A new project
-    copies them from the application settings. An imported project brings
-    the paths of the machine it comes from; the import dialog offers to
-    replace them with the paths of this machine.
+:   The settings of the project, see **Project settings**.
 
 **[images.***name***]**
 :   A disk image that virtual machines can use.
@@ -207,6 +181,32 @@ The file has these top-level keys:
 
 **[bricks.***name***]**
 :   A brick. Its **type** key says which kind; the other keys depend on it.
+
+## Project settings
+
+The **[settings]** table. While the project is open, these are the settings
+in effect, and the settings window changes them for this project only. A new
+project starts with a copy of the settings of the project that is open, or
+with the defaults when none is. An imported project brings the paths of the
+machine it comes from; the import dialog offers to replace them with those of
+the open project.
+
+**cowfmt** = *choice*, default `"qcow2"`
+:   The format of the private copy-on-write disks of the virtual machines:
+    **"cow"**, **"qcow"** or **"qcow2"**.
+
+**erroronloop** = *boolean*, default `false`
+:   Log an error when starting a brick finds a loop in the network.
+
+**femaleplugs** = *boolean*, default `false`
+:   Allow plugs to connect to the socket cards of virtual machines, not only
+    to switches.
+
+**qemupath** = *path*, default `"/usr/bin"`
+:   The directory of the QEMU programs.
+
+**vdepath** = *path*, default `"/usr/bin"`
+:   The directory of the VDE programs, such as **vde_switch**(1).
 
 ## Images
 
@@ -638,8 +638,9 @@ this: it's reported, ignored, and dropped at the next save.
 The first time Virtualbricks starts after an upgrade from 2.1 or older, it
 converts *~/.virtualbricks.conf* into **settings.toml** and **state.toml**,
 and the *.project* file of each project into a **project.toml** next to it,
-and shows what it converted in a window. The old files are left as they
-were.
+and shows what it converted in a window. The settings of
+*~/.virtualbricks.conf* that are now a project's, as **qemupath**, go into
+each converted project. The old files are left as they were.
 
 The same conversion can be tried on copies, into a new folder laid out like
 the XDG directories:
@@ -701,11 +702,6 @@ A **settings.toml** as Virtualbricks writes it at its first start:
 
 ```
 format = 1
-cowfmt = "qcow2"
-erroronloop = false
-femaleplugs = false
-qemupath = "/usr/bin"
-vdepath = "/usr/bin"
 workspace = "/home/alice/.virtualbricks"
 term = "/usr/bin/xterm"
 ksm = false

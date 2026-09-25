@@ -68,19 +68,26 @@ class TestStartupMigration(GuiTestCase):
             [locations.LEGACY_SETTINGS_FILE, "lab"],
         )
 
-    def test_start_sets_the_title(self):
-        titles = []
+    def test_start_sets_the_title_and_checks_the_programs(self):
+        calls = []
 
         class VBGUI:
             def set_title(self):
-                titles.append("set")
+                calls.append("title")
+
+            def check_prerequisites(self):
+                calls.append("check")
+
+        def start(app, reactor):
+            # it opens the last project
+            calls.append("open")
+            return "quit"
 
         self.app.gui = VBGUI()
-        self.patch(
-            gui.brickfactory.Application, "_start", lambda app, reactor: "quit"
-        )
+        self.patch(gui.brickfactory.Application, "_start", start)
         self.assertEqual(self.app._start("reactor"), "quit")
-        self.assertEqual(titles, ["set"])
+        # the programs are looked for in the folders of the open project
+        self.assertEqual(calls, ["open", "title", "check"])
 
 
 class TestStartupProject(GuiTestCase):

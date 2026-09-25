@@ -630,4 +630,6 @@ class Application(brickfactory.Application):
     def _start(self, reactor):
         ret = brickfactory.Application._start(self, reactor)
         self.gui.set_title()
+        # the folders of QEMU and VDE are those of the project, open by now
+        self.gui.check_prerequisites()
         return ret

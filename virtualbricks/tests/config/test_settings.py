@@ -29,7 +29,6 @@ from virtualbricks.config import (
     dump_record,
     dump_toml,
     field_names,
-    get_app_setting,
     get_setting,
     has_option,
     load_settings,
@@ -38,8 +37,8 @@ from virtualbricks.config import (
     new_project_settings,
     parse_setting,
     project_settings,
-    set_app_setting,
     set_setting,
+    setting_kind,
     settings,
     store_settings,
 )
@@ -96,53 +95,77 @@ class TestValues(SettingsTestCase):
             get_setting("workspace"),
             os.path.join(self.root, ".virtualbricks"),
         )
+        # a setting of a project, while none is open
+        self.assertEqual(get_setting("qemupath"), "/usr/bin")
+
+    def test_has_option(self):
+        self.assertTrue(has_option("term"))
         self.assertTrue(has_option("cowfmt"))
         self.assertFalse(has_option("python"))
 
     def test_set_validates(self):
+        self.assertRaises(ValueError, set_setting, "systray", "maybe")
+        set_setting("systray", False)
+        self.assertIs(get_setting("systray"), False)
+        use_project(ProjectSettings())
         self.assertRaises(ValueError, set_setting, "cowfmt", "qed")
         set_setting("cowfmt", "qcow")
         self.assertEqual(get_setting("cowfmt"), "qcow")
 
     def test_parse(self):
         self.assertIs(parse_setting("femaleplugs", "yes"), True)
+        self.assertIs(parse_setting("systray", "no"), False)
         self.assertRaises(ValueError, parse_setting, "cowfmt", "qed")
+
+    def test_setting_kind(self):
+        self.assertEqual(setting_kind("cowfmt").format("qcow"), '"qcow"')
+        self.assertEqual(setting_kind("systray").format(True), "true")
+        self.assertRaises(KeyError, setting_kind, "python")
 
     def test_unknown_name_is_an_error(self):
         self.assertRaises(AttributeError, get_setting, "python")
-        self.assertRaises(AttributeError, get_app_setting, "python")
         self.assertRaises(KeyError, parse_setting, "python", "1")
 
     def test_setting_an_unknown_name_adds_nothing(self):
         self.assertRaises(AttributeError, set_setting, "python", True)
-        self.assertRaises(AttributeError, set_app_setting, "python", True)
         self.assertRaises(AttributeError, get_setting, "python")
 
 
 class TestProjectSettings(SettingsTestCase):
 
-    def test_new_project_starts_from_the_app_settings(self):
-        set_setting("vdepath", "/opt/vde")
-        project = new_project_settings()
-        self.assertEqual(project.vdepath, "/opt/vde")
-        self.assertIsInstance(project, ProjectSettings)
+    def test_no_project_is_open(self):
+        self.assertIsNone(project_settings())
+        self.assertEqual(get_setting("cowfmt"), "qcow2")
+        error = self.assertRaises(ValueError, set_setting, "cowfmt", "qcow")
+        self.assertEqual(
+            str(error), "cowfmt is a setting of a project, and none is open"
+        )
+        self.assertEqual(get_setting("cowfmt"), "qcow2")
 
-    def test_open_project_wins(self):
+    def test_the_open_project(self):
         project = ProjectSettings(qemupath="/opt/qemu")
         use_project(project)
         self.assertIs(project_settings(), project)
         self.assertEqual(get_setting("qemupath"), "/opt/qemu")
-        self.assertEqual(get_app_setting("qemupath"), "/usr/bin")
         set_setting("qemupath", "/srv/qemu")
         self.assertEqual(project.qemupath, "/srv/qemu")
-        self.assertEqual(get_app_setting("qemupath"), "/usr/bin")
-        # app-only settings are not per project
+        # the settings of the application aren't the project's
         set_setting("term", "/usr/bin/foot")
-        self.assertEqual(get_app_setting("term"), "/usr/bin/foot")
-        set_app_setting("qemupath", "/usr/local/bin")
-        self.assertEqual(project.qemupath, "/srv/qemu")
+        self.assertEqual(get_setting("term"), "/usr/bin/foot")
         use_project(None)
-        self.assertEqual(get_setting("qemupath"), "/usr/local/bin")
+        self.assertEqual(get_setting("qemupath"), "/usr/bin")
+        self.assertEqual(get_setting("term"), "/usr/bin/foot")
+
+    def test_a_new_project_copies_the_open_one(self):
+        project = ProjectSettings(vdepath="/opt/vde", cowfmt="qcow")
+        use_project(project)
+        new = new_project_settings()
+        self.assertEqual(new, project)
+        new.cowfmt = "cow"
+        self.assertEqual(project.cowfmt, "qcow")
+
+    def test_a_new_project_without_an_open_one(self):
+        self.assertEqual(new_project_settings(), ProjectSettings())
 
     def test_unknown_name_with_a_project_open(self):
         project = ProjectSettings()
@@ -156,6 +179,8 @@ class TestProjectSettings(SettingsTestCase):
             PROJECT_KEYS,
             {"cowfmt", "erroronloop", "femaleplugs", "qemupath", "vdepath"},
         )
+        # none of them is a setting of the application
+        self.assertFalse(PROJECT_KEYS & set(field_names(AppSettings)))
 
 
 class TestLoadStore(SettingsTestCase):
@@ -182,14 +207,23 @@ class TestLoadStore(SettingsTestCase):
 
     def test_load(self):
         os.makedirs(os.path.dirname(self.path()))
+        # an older settings.toml also has the settings of new projects
         dump_toml(
-            {"format": 1, "term": "/usr/bin/foot", "color": 1}, self.path()
+            {
+                "format": 1,
+                "term": "/usr/bin/foot",
+                "color": 1,
+                "cowfmt": "cow",
+            },
+            self.path(),
         )
         report = load_settings()
         self.assertEqual(get_setting("term"), "/usr/bin/foot")
         messages = [str(m) for m in report]
         self.assertIn("color: unknown field, dropped", messages)
-        self.assertIn('cowfmt: missing, using the default "qcow2"', messages)
+        self.assertIn("cowfmt: unknown field, dropped", messages)
+        self.assertIn("systray: missing, using the default true", messages)
+        self.assertEqual(get_setting("cowfmt"), "qcow2")
         self.assertEqual(self.ksm, [])
 
     def test_load_enables_ksm(self):

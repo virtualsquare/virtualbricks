@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 00:29+0200\n"
+"POT-Creation-Date: 2026-09-26 01:04+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1901,22 +1901,13 @@ msgstr ""
 #: virtualbricks/gui/windows/settings.py
 msgid ""
 "These settings belong to the open project: changing them doesn't change the "
-"other projects."
+"other projects. A new project starts with a copy of them."
 msgstr ""
 
 #: virtualbricks/gui/windows/settings.py
 #, fuzzy
 msgid "This project"
 msgstr "_Abrir proyecto"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "A new project starts with these settings."
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "New projects"
-msgstr "Guardar proyecto como"
 
 #: virtualbricks/gui/windows/settings.py
 msgid "X-window terminal command"
@@ -2333,6 +2324,10 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#, fuzzy
+#~ msgid "New projects"
+#~ msgstr "Guardar proyecto como"
 
 #, fuzzy
 #~ msgid "File:"

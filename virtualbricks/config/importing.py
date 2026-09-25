@@ -75,7 +75,7 @@ from virtualbricks.config.projectfile import (
     upgrade_project,
 )
 from virtualbricks.config.report import Report
-from virtualbricks.config.settings import get_app_setting
+from virtualbricks.config.settings import get_setting
 from virtualbricks.config.tomlfile import dump_toml
 from virtualbricks.i18n import _
 
@@ -290,7 +290,7 @@ def machine_paths(data: Table) -> list[MachinePath]:
     paths = []
     for key in MACHINE_PATHS:
         theirs = project_settings.get(key)
-        ours = str(get_app_setting(key))
+        ours = str(get_setting(key))
         if isinstance(theirs, str) and theirs != ours:
             paths.append(
                 MachinePath(key, theirs, ours, not os.path.isdir(theirs))

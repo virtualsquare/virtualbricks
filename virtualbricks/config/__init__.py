@@ -85,7 +85,6 @@ from virtualbricks.config.settings import (
     SettingValue,
     current_project,
     get_setting,
-    get_app_setting,
     has_option,
     load_settings,
     load_state,
@@ -93,7 +92,7 @@ from virtualbricks.config.settings import (
     parse_setting,
     project_settings,
     set_setting,
-    set_app_setting,
+    setting_kind,
     store_settings,
 )
 from virtualbricks.config.projectfile import (
@@ -155,7 +154,6 @@ __all__ = [
     "SettingValue",
     "current_project",
     "get_setting",
-    "get_app_setting",
     "has_option",
     "load_settings",
     "load_state",
@@ -163,7 +161,7 @@ __all__ = [
     "parse_setting",
     "project_settings",
     "set_setting",
-    "set_app_setting",
+    "setting_kind",
     "store_settings",
     "DEFAULT_MODEL",
     "SOCKET_NAME",

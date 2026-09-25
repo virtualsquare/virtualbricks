@@ -20,10 +20,10 @@
 The workspace: the folder of the projects, and the project that is open.
 
 A project is a folder of the workspace with a ``project.toml``. One project is
-open at a time. While it's open its settings win over the app settings, and
-the sockets of its bricks are in its runtime directory,
-``<runtime dir>/<project>``. A project's name is at most 40 bytes, so that
-its bricks' names have room in their socket paths.
+open at a time. While it's open its settings are in effect, a new project
+starts with a copy of them, and the sockets of its bricks are in its runtime
+directory, ``<runtime dir>/<project>``. A project's name is at most 40 bytes,
+so that its bricks' names have room in their socket paths.
 
 Hidden folders are never projects: they are for imports in progress.
 """
@@ -439,7 +439,7 @@ class Workspace:
     # Changing the projects
 
     def create(self, name: str, description: str = "") -> None:
-        """Create a project with the settings new projects start with."""
+        """Create a project with a copy of the settings of the open one."""
 
         self._validate(name)
         path = self.project_path(name)

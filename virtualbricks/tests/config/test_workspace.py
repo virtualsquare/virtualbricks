@@ -30,10 +30,8 @@ from virtualbricks.config import (
     ProjectFormatError,
     current_project,
     dump_toml,
-    get_app_setting,
     load_toml,
     project_settings,
-    set_app_setting,
     set_setting,
     workspace,
 )
@@ -187,14 +185,21 @@ class TestNames(WorkspaceTestCase):
 class TestCreate(WorkspaceTestCase):
 
     def test_create(self):
-        set_app_setting("cowfmt", "qcow")
         self.projects.create("lab")
         data = load_toml(self.project_file("lab"))
         self.assertEqual(data["format"], 1)
-        self.assertEqual(data["settings"]["cowfmt"], "qcow")
+        self.assertEqual(data["settings"]["cowfmt"], "qcow2")
         self.assertFalse(
             os.path.exists(os.path.join(self.path, "lab", "README"))
         )
+
+    def test_a_new_project_copies_the_open_one(self):
+        self.projects.create("lab")
+        self.projects.open("lab", self.factory)
+        set_setting("cowfmt", "qcow")
+        self.projects.create("lab2")
+        data = load_toml(self.project_file("lab2"))
+        self.assertEqual(data["settings"]["cowfmt"], "qcow")
 
     def test_description(self):
         self.projects.create("lab", "OSPF between three routers")
@@ -695,7 +700,6 @@ class TestOpen(WorkspaceTestCase):
         data = load_toml(self.project_file("lab"))
         self.assertIn("sw", data["bricks"])
         self.assertTrue(data["settings"]["femaleplugs"])
-        self.assertFalse(get_app_setting("femaleplugs"))
         with open(os.path.join(self.path, "lab", "README")) as fp:
             self.assertEqual(fp.read(), "A lab")
 

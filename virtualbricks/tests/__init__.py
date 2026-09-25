@@ -207,6 +207,8 @@ class BrickTestCase(unittest.TestCase):
     def setUp(self):
         isolate(self)
         reset_settings(self)
+        # the bricks are those of an open project, with its settings
+        settings.use_project(settings.ProjectSettings())
         self.factory = make_factory(self)
 
 

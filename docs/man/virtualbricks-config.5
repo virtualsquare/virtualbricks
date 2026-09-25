@@ -19,15 +19,15 @@ Virtualbricks keeps its configuration in three kinds of file, all
 written in TOML 1.0:
 .TP
 \f[B]settings.toml\f[R]
-Your preferences: the programs to run, the workspace, and the values
-that new projects start with.
+Your preferences, which aren\(aqt about a project: the workspace, the
+terminal, KSM and the tray icon.
 .TP
 \f[B]state.toml\f[R]
 What Virtualbricks remembers between runs: the project that was open.
 .TP
 \f[B]project.toml\f[R]
 One in each project: its bricks, events and disk images, how they are
-connected, and the project\(aqs own copy of some settings.
+connected, and its settings, such as the folders of QEMU and VDE.
 .PP
 Virtualbricks writes these files itself.
 They can also be edited by hand, but never while Virtualbricks is
@@ -60,8 +60,6 @@ Each problem is reported in the messages window and in the log, with the
 key it\(aqs about, and Virtualbricks carries on:
 .IP \(bu 2
 A missing key takes its default value.
-In a project, a missing setting takes the value of the application
-settings.
 .IP \(bu 2
 A key with a value of the wrong type or out of range takes its default
 value.
@@ -118,7 +116,6 @@ The file \f[I]$XDG_CONFIG_HOME\f[R]/virtualbricks/settings.toml, or
 Virtualbricks creates it with the default values at its first start, and
 rewrites it when the settings window is closed with OK and when
 Virtualbricks quits.
-.SS Application settings
 .TP
 \f[B]workspace\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(ti/.virtualbricks\(dq\f[R]
 The directory of the projects, \f[I].virtualbricks\f[R] in your home
@@ -138,29 +135,11 @@ Show an icon in the system tray.
 \f[B]show_missing\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Warn at start about the programs that Virtualbricks needs and can\(aqt
 find.
-.SS Settings of new projects
-These settings also exist in each project, in its \f[B][settings]\f[R]
-table (see \f[B]PROJECTS\f[R]).
-Here they are the values that a new project starts with; while a project
-is open, its own values are used instead.
-.TP
-\f[B]cowfmt\f[R] = \f[I]choice\f[R], default \f[CR]\(dqqcow2\(dq\f[R]
-The format of the private copy\-on\-write disks of the virtual machines:
-\f[B]\(dqcow\(dq\f[R], \f[B]\(dqqcow\(dq\f[R] or
-\f[B]\(dqqcow2\(dq\f[R].
-.TP
-\f[B]erroronloop\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Log an error when starting a brick finds a loop in the network.
-.TP
-\f[B]femaleplugs\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Allow plugs to connect to the socket cards of virtual machines, not only
-to switches.
-.TP
-\f[B]qemupath\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
-The directory of the QEMU programs.
-.TP
-\f[B]vdepath\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
-The directory of the VDE programs, such as \f[B]vde_switch\f[R](1).
+.PP
+The \f[B]settings.toml\f[R] of an older version also has the settings of
+the projects, described under \f[B]Project settings\f[R]: they\(aqre
+reported, ignored, and dropped at the next save.
+Each project has its own.
 .SH STATE
 The file \f[I]$XDG_STATE_HOME\f[R]/virtualbricks/state.toml, or
 \f[I]\(ti/.local/state/virtualbricks/state.toml\f[R] when
@@ -193,12 +172,7 @@ The file has these top\-level keys:
 The version of the layout, see \f[B]COMMON RULES\f[R].
 .TP
 \f[B][settings]\f[R]
-The project\(aqs own values of \f[B]cowfmt\f[R], \f[B]erroronloop\f[R],
-\f[B]femaleplugs\f[R], \f[B]qemupath\f[R] and \f[B]vdepath\f[R],
-described under \f[B]SETTINGS\f[R].
-A new project copies them from the application settings.
-An imported project brings the paths of the machine it comes from; the
-import dialog offers to replace them with the paths of this machine.
+The settings of the project, see \f[B]Project settings\f[R].
 .TP
 \f[B][images.\f[R]\f[I]name\f[R]\f[B]]\f[R]
 A disk image that virtual machines can use.
@@ -209,6 +183,32 @@ An event: commands to run, after a delay.
 \f[B][bricks.\f[R]\f[I]name\f[R]\f[B]]\f[R]
 A brick.
 Its \f[B]type\f[R] key says which kind; the other keys depend on it.
+.SS Project settings
+The \f[B][settings]\f[R] table.
+While the project is open, these are the settings in effect, and the
+settings window changes them for this project only.
+A new project starts with a copy of the settings of the project that is
+open, or with the defaults when none is.
+An imported project brings the paths of the machine it comes from; the
+import dialog offers to replace them with those of the open project.
+.TP
+\f[B]cowfmt\f[R] = \f[I]choice\f[R], default \f[CR]\(dqqcow2\(dq\f[R]
+The format of the private copy\-on\-write disks of the virtual machines:
+\f[B]\(dqcow\(dq\f[R], \f[B]\(dqqcow\(dq\f[R] or
+\f[B]\(dqqcow2\(dq\f[R].
+.TP
+\f[B]erroronloop\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+Log an error when starting a brick finds a loop in the network.
+.TP
+\f[B]femaleplugs\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+Allow plugs to connect to the socket cards of virtual machines, not only
+to switches.
+.TP
+\f[B]qemupath\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
+The directory of the QEMU programs.
+.TP
+\f[B]vdepath\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
+The directory of the VDE programs, such as \f[B]vde_switch\f[R](1).
 .SS Images
 .TP
 \f[B]path\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
@@ -648,6 +648,8 @@ it converts \f[I]\(ti/.virtualbricks.conf\f[R] into
 \f[B]settings.toml\f[R] and \f[B]state.toml\f[R], and the
 \f[I].project\f[R] file of each project into a \f[B]project.toml\f[R]
 next to it, and shows what it converted in a window.
+The settings of \f[I]\(ti/.virtualbricks.conf\f[R] that are now a
+project\(aqs, as \f[B]qemupath\f[R], go into each converted project.
 The old files are left as they were.
 .PP
 The same conversion can be tried on copies, into a new folder laid out
@@ -711,11 +713,6 @@ A \f[B]settings.toml\f[R] as Virtualbricks writes it at its first start:
 .IP
 .EX
 format = 1
-cowfmt = \(dqqcow2\(dq
-erroronloop = false
-femaleplugs = false
-qemupath = \(dq/usr/bin\(dq
-vdepath = \(dq/usr/bin\(dq
 workspace = \(dq/home/alice/.virtualbricks\(dq
 term = \(dq/usr/bin/xterm\(dq
 ksm = false

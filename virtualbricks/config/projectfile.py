@@ -48,10 +48,7 @@ from virtualbricks.config.schema import (
     load_record,
     references,
 )
-from virtualbricks.config.settings import (
-    ProjectSettings,
-    new_project_settings,
-)
+from virtualbricks.config.settings import ProjectSettings
 from virtualbricks.config.tomlfile import (
     DecodeError,
     dump_toml,
@@ -468,20 +465,20 @@ def _check_references(factory: BrickFactory, report: Report) -> None:
 
 
 def _read_settings(data: Table, report: Report) -> ProjectSettings:
-    app_values = dump_record(new_project_settings())
+    defaults = dump_record(ProjectSettings())
     table = data.get("settings")
     if not isinstance(table, dict):
         problem = "missing" if table is None else "is not a table"
-        report.warning(f"{problem}, using the app settings", "settings")
+        report.warning(f"{problem}, using the defaults", "settings")
         table = {}
     elif table:
-        for key in app_values.keys() - table.keys():
-            value = kind_of(ProjectSettings, key).format(app_values[key])
+        for key in defaults.keys() - table.keys():
+            value = kind_of(ProjectSettings, key).format(defaults[key])
             report.warning(
-                f"missing, using the app setting {value}", f"settings.{key}"
+                f"missing, using the default {value}", f"settings.{key}"
             )
     return load_record(
-        ProjectSettings, {**app_values, **table}, report, "settings"
+        ProjectSettings, {**defaults, **table}, report, "settings"
     )
 
 

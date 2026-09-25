@@ -17,11 +17,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The application settings, the settings of the open project and the state.
+The settings of the application and of the open project, and the state.
 
-The settings are in ``settings.toml``. Some of them are per project: each
-project starts with a copy of them, and while a project is open its copy
-wins. The state, in ``state.toml``, is what the application remembers, such
+The settings of the application, in ``settings.toml``, are the preferences
+that aren't about a project: the workspace, the terminal, KSM, the tray icon.
+The settings of a project are in its project file: a new project copies those
+of the open project, and while no project is open they have their default
+values. The state, in ``state.toml``, is what the application remembers, such
 as the current project.
 """
 
@@ -44,8 +46,9 @@ from virtualbricks.config.schema import (
     field,
     load_record,
     field_names,
-    parse_value,
     field_values,
+    kind_of,
+    parse_value,
 )
 from virtualbricks.config.tomlfile import (
     DecodeError,
@@ -54,6 +57,7 @@ from virtualbricks.config.tomlfile import (
 )
 
 if TYPE_CHECKING:
+    from virtualbricks.config.schema import Kind
     from virtualbricks.config.tomlfile import Table
 
 # The settings are strings and booleans.
@@ -101,8 +105,8 @@ class ProjectSettings:
 
 
 @define
-class AppSettings(ProjectSettings):
-    """All settings; the per-project ones are the start of a new project."""
+class AppSettings:
+    """The settings of the application, which aren't about a project."""
 
     workspace: str = field(Path(), factory=locations.default_workspace)
     term: str = field(Str(), default="/usr/bin/xterm")
@@ -127,47 +131,56 @@ _state_path: str | None = None
 _read_only = False
 
 
-def _target(name: str) -> AppSettings | ProjectSettings:
-    if _project is not None and name in PROJECT_KEYS:
-        return _project
-    return _app
+def _owner(name: str) -> type[AppSettings] | type[ProjectSettings]:
+    return ProjectSettings if name in PROJECT_KEYS else AppSettings
 
 
 def has_option(name: str) -> bool:
-    return name in field_names(AppSettings)
+    return name in PROJECT_KEYS or name in field_names(AppSettings)
+
+
+def setting_kind(name: str) -> Kind[object]:
+    """The kind of a setting, which formats and parses its values."""
+
+    return kind_of(_owner(name), name)
 
 
 def get_setting(name: str) -> SettingValue:
-    """Return the value in effect, from the open project if it has one."""
+    """
+    Return the value of a setting.
 
-    return getattr(_target(name), name)
+    A setting of a project is the open project's, or its default while no
+    project is open.
+    """
+
+    if name not in PROJECT_KEYS:
+        return getattr(_app, name)
+    return getattr(_project or ProjectSettings(), name)
 
 
 def set_setting(name: str, value: SettingValue) -> None:
-    setattr(_target(name), name, value)
+    """Change a setting; ValueError for one of a project, if none is open."""
 
-
-def get_app_setting(name: str) -> SettingValue:
-    """Return the application value, even when a project overrides it."""
-
-    return getattr(_app, name)
-
-
-def set_app_setting(name: str, value: SettingValue) -> None:
-    setattr(_app, name, value)
+    if name not in PROJECT_KEYS:
+        setattr(_app, name, value)
+    elif _project is None:
+        raise ValueError(f"{name} is a setting of a project, and none is open")
+    else:
+        setattr(_project, name, value)
 
 
 def parse_setting(name: str, text: str) -> SettingValue:
     """Convert the text typed in the console for a setting."""
 
-    return cast(SettingValue, parse_value(AppSettings, name, text))
+    return cast(SettingValue, parse_value(_owner(name), name, text))
 
 
 def new_project_settings() -> ProjectSettings:
-    """Return the settings a new project starts with."""
+    """The settings a new project starts with: a copy of the open one's."""
 
-    values = field_values(_app)
-    return ProjectSettings(**{name: values[name] for name in PROJECT_KEYS})
+    if _project is None:
+        return ProjectSettings()
+    return ProjectSettings(**field_values(_project))
 
 
 def use_project(project_settings: ProjectSettings | None) -> None:

@@ -22,12 +22,7 @@ import os
 
 
 from virtualbricks import locations
-from virtualbricks.config import (
-    get_app_setting,
-    load_toml,
-    set_app_setting,
-    set_setting,
-)
+from virtualbricks.config import get_setting, load_toml, set_setting
 from virtualbricks.tests.gui import FakeGui, GuiTestCase, has_display
 
 if has_display:
@@ -40,10 +35,7 @@ class TestSettingsDialog(GuiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.app_bin = self.folder("app-bin")
         self.project_bin = self.folder("project-bin")
-        set_app_setting("qemupath", self.app_bin)
-        set_app_setting("vdepath", self.app_bin)
 
     def dialog(self):
         dialog = settings_window.SettingsDialog(FakeGui(self.factory))
@@ -66,24 +58,21 @@ class TestSettingsDialog(GuiTestCase):
             notebook.get_tab_label_text(notebook.get_nth_page(i))
             for i in range(notebook.get_n_pages())
         ]
-        self.assertEqual(
-            labels, ["Application", "This project", "New projects"]
-        )
+        self.assertEqual(labels, ["Application", "This project"])
 
     def test_no_open_project(self):
         dialog = self.dialog()
         widgets = dialog.project_widgets
+        # the defaults, which can't be changed
         self.assertFalse(widgets.grid.get_sensitive())
         self.assertEqual(
-            widgets.qemupath_chooser.get_current_folder(), self.app_bin
+            widgets.qemupath_chooser.get_current_folder(), "/usr/bin"
         )
-        self.assertEqual(dialog.term_entry.get_text(), get_app_setting("term"))
         self.assertEqual(
-            settings_window.combobox_get_active_value(
-                dialog.new_project_widgets.cowfmt_combo, 0
-            ),
+            settings_window.combobox_get_active_value(widgets.cowfmt_combo, 0),
             "qcow2",
         )
+        self.assertEqual(dialog.term_entry.get_text(), get_setting("term"))
 
     def test_open_project(self):
         self.open_project()
@@ -98,13 +87,8 @@ class TestSettingsDialog(GuiTestCase):
             settings_window.combobox_get_active_value(widgets.cowfmt_combo, 0),
             "cow",
         )
-        new = dialog.new_project_widgets
-        self.assertEqual(
-            new.qemupath_chooser.get_current_folder(), self.app_bin
-        )
-        self.assertFalse(new.femaleplugs_switch.get_active())
 
-    def test_ok_stores_every_tab(self):
+    def test_ok_stores_both_tabs(self):
         prj = self.open_project()
         saved = []
         self.patch(self.manager, "save", saved.append)
@@ -112,43 +96,31 @@ class TestSettingsDialog(GuiTestCase):
         dialog.term_entry.set_text("/usr/bin/foot")
         dialog.systray_switch.set_active(False)
         dialog.project_widgets.erroronloop_switch.set_active(True)
-        dialog.new_project_widgets.vdepath_chooser.set_current_folder(
-            self.project_bin
-        )
-        settings_window.combobox_set_active_value(
-            dialog.new_project_widgets.cowfmt_combo, "qcow", 0
-        )
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.OK)
-        self.assertEqual(get_app_setting("term"), "/usr/bin/foot")
-        self.assertIs(get_app_setting("systray"), False)
-        # the project tab changed the project only
+        self.assertEqual(get_setting("term"), "/usr/bin/foot")
+        self.assertIs(get_setting("systray"), False)
         self.assertIs(prj.settings.erroronloop, True)
-        self.assertIs(get_app_setting("erroronloop"), False)
         self.assertEqual(prj.settings.qemupath, self.project_bin)
-        # the new projects tab changed the application settings only
-        self.assertEqual(get_app_setting("vdepath"), self.project_bin)
-        self.assertEqual(get_app_setting("cowfmt"), "qcow")
-        self.assertEqual(prj.settings.cowfmt, "cow")
         self.assertEqual(saved, [self.factory])
         self.assertEqual(dialog.virtualbricks_gui.systray, ["stop"])
         self.assertEqual(self.ksm, [False])
-        self.assertEqual(
-            load_toml(locations.settings_file())["term"],
-            "/usr/bin/foot",
-        )
+        data = load_toml(locations.settings_file())
+        self.assertEqual(data["term"], "/usr/bin/foot")
+        # the settings of the project are in the project only
+        self.assertNotIn("erroronloop", data)
 
     def test_ok_without_a_project(self):
         dialog = self.dialog()
         dialog.project_widgets.femaleplugs_switch.set_active(True)
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.OK)
-        self.assertIs(get_app_setting("femaleplugs"), False)
+        self.assertIs(get_setting("femaleplugs"), False)
         self.assertEqual(dialog.virtualbricks_gui.systray, ["start"])
 
     def test_cancel(self):
         dialog = self.dialog()
         dialog.term_entry.set_text("/usr/bin/foot")
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.CANCEL)
-        self.assertEqual(get_app_setting("term"), "/usr/bin/xterm")
+        self.assertEqual(get_setting("term"), "/usr/bin/xterm")
         self.assertFalse(os.path.exists(locations.settings_file()))
 
     def test_unset_widgets_keep_the_values(self):

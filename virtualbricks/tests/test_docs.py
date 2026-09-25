@@ -39,7 +39,6 @@ from twisted.trial import unittest
 from virtualbricks import locations
 from virtualbricks.config import (
     DEFAULT_MODEL,
-    PROJECT_KEYS,
     AppSettings,
     Bool,
     Choice,
@@ -191,12 +190,13 @@ class TestSettings(DocsTestCase):
         values["workspace"] = values["workspace"].replace(
             locations.home(), "~", 1
         )
-        app_only = {k: v for k, v in values.items() if k not in PROJECT_KEYS}
-        project = {k: v for k, v in values.items() if k in PROJECT_KEYS}
-        self.check_defaults("Application settings", app_only, "settings")
-        self.check_defaults("Settings of new projects", project, "settings")
-        self.check_kinds("Application settings", AppSettings, app_only)
-        self.check_kinds("Settings of new projects", ProjectSettings)
+        self.check_defaults("SETTINGS", values, "settings")
+        self.check_kinds("SETTINGS", AppSettings)
+
+    def test_project_settings(self):
+        values = dump_record(ProjectSettings())
+        self.check_defaults("Project settings", values, "settings")
+        self.check_kinds("Project settings", ProjectSettings)
 
     def test_state(self):
         self.check_defaults("STATE", dump_record(AppState()), "state")
