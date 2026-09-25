@@ -20,15 +20,8 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import console
-from virtualbricks.config import (
-    ProjectFormatError,
-    Report,
-    projectfile,
-    schema,
-    settings,
-    tomlfile,
-)
+from virtualbricks import config, console
+from virtualbricks.config import ProjectFormatError, Report, projectfile
 from virtualbricks.tests import isolate, make_factory, reset_settings
 from virtualbricks.bricks.virtualmachine import UsbDevice
 
@@ -94,7 +87,7 @@ class ProjectFileTestCase(unittest.TestCase):
 
     def restore(self, data, directory="/"):
         factory = make_factory(self)
-        project_settings = projectfile.restore(
+        project_settings = config.restore(
             factory, data, self.report, directory
         )
         return factory, project_settings
@@ -103,15 +96,18 @@ class ProjectFileTestCase(unittest.TestCase):
 class TestDocument(ProjectFileTestCase):
 
     def test_empty_project(self):
-        data = projectfile.document(self.factory, settings.ProjectSettings())
+        data = config.document(self.factory, config.ProjectSettings())
         self.assertEqual(
             data,
-            {"format": 1, "settings": schema.dump(settings.ProjectSettings())},
+            {
+                "format": 1,
+                "settings": config.dump_record(config.ProjectSettings()),
+            },
         )
 
     def test_lab(self):
-        data = projectfile.document(
-            build_lab(self.factory), settings.ProjectSettings(femaleplugs=True)
+        data = config.document(
+            build_lab(self.factory), config.ProjectSettings(femaleplugs=True)
         )
         self.assertEqual(data["settings"]["femaleplugs"], True)
         self.assertEqual(
@@ -170,32 +166,30 @@ class TestDocument(ProjectFileTestCase):
     def test_socket_target(self):
         vm = self.factory.new_brick("qemu", "vm_1")
         sock = vm.add_sock()
-        self.assertEqual(projectfile.socket_target(sock), "vm_1:sock_eth0")
+        self.assertEqual(config.socket_target(sock), "vm_1:sock_eth0")
 
     def test_save_and_create(self):
         path = self.mktemp()
-        projectfile.create(path, settings.ProjectSettings())
-        self.assertEqual(tomlfile.load(path)["format"], 1)
-        projectfile.save(
-            build_lab(self.factory), settings.ProjectSettings(), path
-        )
-        self.assertIn("bricks", tomlfile.load(path))
+        config.create(path, config.ProjectSettings())
+        self.assertEqual(config.load_toml(path)["format"], 1)
+        config.save(build_lab(self.factory), config.ProjectSettings(), path)
+        self.assertIn("bricks", config.load_toml(path))
 
 
 class TestRoundTrip(ProjectFileTestCase):
 
     def test_lab(self):
-        data = projectfile.document(
-            build_lab(self.factory), settings.ProjectSettings(vdepath="/opt")
+        data = config.document(
+            build_lab(self.factory), config.ProjectSettings(vdepath="/opt")
         )
-        text = tomlfile.dumps(data)
-        factory, project_settings = self.restore(tomlfile.loads(text))
+        text = config.dumps(data)
+        factory, project_settings = self.restore(config.loads(text))
         self.assertEqual(
             self.messages(),
             ["images.deb: /images/deb.qcow2 not found, kept in the library"],
         )
         self.assertEqual(project_settings.vdepath, "/opt")
-        self.assertEqual(projectfile.document(factory, project_settings), data)
+        self.assertEqual(config.document(factory, project_settings), data)
         vm = factory.get_brick_by_name("vm")
         self.assertIs(vm.disk("hda").image, factory.get_image_by_name("deb"))
         self.assertEqual(len(vm.plugs), 3)
@@ -211,12 +205,12 @@ class TestRoundTrip(ProjectFileTestCase):
         with open(os.path.join(directory, "deb.qcow2"), "w"):
             pass
         build_lab(self.factory, "deb.qcow2")
-        data = projectfile.document(self.factory, settings.ProjectSettings())
+        data = config.document(self.factory, config.ProjectSettings())
         data["images"]["deb"]["path"] = "deb.qcow2"
         path = os.path.join(directory, "project.toml")
-        tomlfile.dump(data, path)
+        config.dump_toml(data, path)
         factory = make_factory(self)
-        projectfile.load(factory, path, self.report)
+        config.load_project(factory, path, self.report)
         self.assertEqual(self.messages(), [])
         image = factory.get_image_by_name("deb")
         self.assertEqual(
@@ -228,20 +222,20 @@ class TestUpgrade(ProjectFileTestCase):
 
     def test_current(self):
         data = {"format": 1}
-        self.assertIs(projectfile.upgrade(data, self.report), data)
+        self.assertIs(config.upgrade(data, self.report), data)
         self.assertEqual(self.messages(), [])
 
     def test_unknown(self):
         for value in (None, "1", True, 0):
             report = Report()
             data = {} if value is None else {"format": value}
-            projectfile.upgrade(data, report)
+            config.upgrade(data, report)
             self.assertEqual(report.warnings, 1)
 
     def test_newer(self):
         self.assertRaises(
             ProjectFormatError,
-            projectfile.upgrade,
+            config.upgrade,
             {"format": 2},
             self.report,
         )
@@ -254,7 +248,7 @@ class TestUpgrade(ProjectFileTestCase):
         }
         self.patch(projectfile, "UPGRADES", steps)
         self.assertEqual(
-            projectfile.upgrade({"format": 1}, self.report),
+            config.upgrade({"format": 1}, self.report),
             {"format": 1, "one": True, "two": True},
         )
 
@@ -262,8 +256,8 @@ class TestUpgrade(ProjectFileTestCase):
 class TestLenientReading(ProjectFileTestCase):
 
     def lab(self):
-        return projectfile.document(
-            build_lab(self.factory), settings.ProjectSettings()
+        return config.document(
+            build_lab(self.factory), config.ProjectSettings()
         )
 
     def test_unknown_top_level_keys(self):
@@ -271,7 +265,7 @@ class TestLenientReading(ProjectFileTestCase):
         self.assertIn("colors: unknown field, dropped", self.messages())
 
     def test_settings_from_the_app(self):
-        settings.set_app("qemupath", "/opt/qemu")
+        config.set_app("qemupath", "/opt/qemu")
         _, project_settings = self.restore({"format": 1})
         self.assertEqual(project_settings.qemupath, "/opt/qemu")
         self.assertEqual(
@@ -286,7 +280,7 @@ class TestLenientReading(ProjectFileTestCase):
         )
 
     def test_partial_settings(self):
-        settings.set_app("cowfmt", "qcow")
+        config.set_app("cowfmt", "qcow")
         _, project_settings = self.restore(
             {"format": 1, "settings": {"femaleplugs": True, "color": 1}}
         )
@@ -415,10 +409,10 @@ class TestLenientReading(ProjectFileTestCase):
         other.add_sock(name="eth3")
         # "vm_sock_eth3" is the nickname of both; the owner decides.
         self.assertIs(
-            projectfile.resolve(self.factory, "vm:sock_eth3").brick,
+            config.resolve(self.factory, "vm:sock_eth3").brick,
             self.factory.get_brick_by_name("vm"),
         )
-        self.assertIsNone(projectfile.resolve(self.factory, "sw1:sock_eth3"))
+        self.assertIsNone(config.resolve(self.factory, "sw1:sock_eth3"))
 
     def test_nics(self):
         data = self.lab()
@@ -500,10 +494,10 @@ class TestRead(ProjectFileTestCase):
         path = self.mktemp()
         with open(path, "w") as fp:
             fp.write("[bricks\n")
-        self.assertRaises(ProjectFormatError, projectfile.read, path)
+        self.assertRaises(ProjectFormatError, config.read, path)
 
     def test_missing(self):
-        self.assertRaises(FileNotFoundError, projectfile.read, self.mktemp())
+        self.assertRaises(FileNotFoundError, config.read, self.mktemp())
 
 
 class TestEditing(unittest.TestCase):
@@ -523,21 +517,21 @@ class TestEditing(unittest.TestCase):
 
     def test_image_paths(self):
         self.assertEqual(
-            projectfile.image_paths(self.DATA), {"deb": "/a", "nopath": ""}
+            config.image_paths(self.DATA), {"deb": "/a", "nopath": ""}
         )
-        self.assertEqual(projectfile.image_paths({}), {})
+        self.assertEqual(config.image_paths({}), {})
 
     def test_remap_image(self):
         data = copy.deepcopy(self.DATA)
-        projectfile.remap_image(data, "deb", "/b")
-        projectfile.remap_image(data, "missing", "/c")
-        projectfile.remap_image(data, "bad", "/c")
+        config.remap_image(data, "deb", "/b")
+        config.remap_image(data, "missing", "/c")
+        config.remap_image(data, "bad", "/c")
         self.assertEqual(data["images"]["deb"]["path"], "/b")
         self.assertEqual(data["images"]["bad"], 1)
 
     def test_devices_for_image(self):
         self.assertEqual(
-            list(projectfile.devices_for_image(self.DATA, "deb")),
+            list(config.devices_for_image(self.DATA, "deb")),
             [("vm", "hda")],
         )
-        self.assertEqual(list(projectfile.devices_for_image({}, "deb")), [])
+        self.assertEqual(list(config.devices_for_image({}, "deb")), [])

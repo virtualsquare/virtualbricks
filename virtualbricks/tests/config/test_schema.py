@@ -19,6 +19,7 @@ import copy
 
 from twisted.trial import unittest
 
+from virtualbricks import config
 from virtualbricks.config import (
     Bool,
     Choice,
@@ -37,29 +38,29 @@ from virtualbricks.config import (
 )
 
 
-@schema.define
+@config.define
 class Disk:
 
-    image = schema.field(Ref("image"), default="")
-    private = schema.field(Bool(), default=False)
+    image = config.field(Ref("image"), default="")
+    private = config.field(Bool(), default=False)
 
 
-@schema.define
+@config.define
 class Machine:
 
-    name = schema.field(Str(), default="vm", label="Name", help="The name")
-    ram = schema.field(Int(1, 1024), default=64)
-    loss = schema.field(Float(0, 100), default=0.0)
-    kvm = schema.field(Bool(), default=False)
-    tags = schema.field(ListOf(Str()), factory=list)
-    event = schema.field(Ref("event"), default="")
-    hda = schema.field(
+    name = config.field(Str(), default="vm", label="Name", help="The name")
+    ram = config.field(Int(1, 1024), default=64)
+    loss = config.field(Float(0, 100), default=0.0)
+    kvm = config.field(Bool(), default=False)
+    tags = config.field(ListOf(Str()), factory=list)
+    event = config.field(Ref("event"), default="")
+    hda = config.field(
         Ref("image"), default="", path=("disks", "hda", "image")
     )
-    privatehda = schema.field(
+    privatehda = config.field(
         Bool(), default=False, path=("disks", "hda", "private")
     )
-    boot = schema.field(Record(Disk), factory=Disk)
+    boot = config.field(Record(Disk), factory=Disk)
 
 
 class TestDescribe(unittest.TestCase):
@@ -279,7 +280,7 @@ class TestFields(unittest.TestCase):
 
     def test_introspection(self):
         self.assertEqual(
-            schema.names(Machine),
+            config.names(Machine),
             [
                 "name",
                 "ram",
@@ -292,19 +293,19 @@ class TestFields(unittest.TestCase):
                 "boot",
             ],
         )
-        self.assertEqual(schema.names(Machine()), schema.names(Machine))
-        self.assertIsInstance(schema.kind_of(Machine, "ram"), Int)
-        self.assertRaises(KeyError, schema.kind_of, Machine, "nope")
-        attribute = schema.fields(Machine)[0]
-        self.assertEqual(schema.info(attribute).label, "Name")
-        self.assertEqual(schema.info(attribute).help, "The name")
-        self.assertEqual(schema.default(Machine, "ram"), 64)
-        self.assertEqual(schema.default(Machine, "tags"), [])
-        self.assertRaises(KeyError, schema.default, Machine, "nope")
+        self.assertEqual(config.names(Machine()), config.names(Machine))
+        self.assertIsInstance(config.kind_of(Machine, "ram"), Int)
+        self.assertRaises(KeyError, config.kind_of, Machine, "nope")
+        attribute = config.fields(Machine)[0]
+        self.assertEqual(config.info(attribute).label, "Name")
+        self.assertEqual(config.info(attribute).help, "The name")
+        self.assertEqual(config.default(Machine, "ram"), 64)
+        self.assertEqual(config.default(Machine, "tags"), [])
+        self.assertRaises(KeyError, config.default, Machine, "nope")
 
     def test_values(self):
         machine = Machine(ram=100)
-        values = schema.values(machine)
+        values = config.values(machine)
         self.assertEqual(values["ram"], 100)
         self.assertEqual(len(values), 9)
 
@@ -318,7 +319,7 @@ class TestFields(unittest.TestCase):
 class TestDump(unittest.TestCase):
 
     def test_every_field_with_paths(self):
-        data = schema.dump(Machine(hda="deb", privatehda=True))
+        data = config.dump_record(Machine(hda="deb", privatehda=True))
         self.assertEqual(
             data,
             {
@@ -334,7 +335,7 @@ class TestDump(unittest.TestCase):
         )
 
     def test_exclude(self):
-        data = schema.dump(Disk(), exclude=("private",))
+        data = config.dump_record(Disk(), exclude=("private",))
         self.assertEqual(data, {"image": ""})
 
 
@@ -348,17 +349,19 @@ class TestLoad(unittest.TestCase):
 
     def test_round_trip(self):
         machine = Machine(ram=10, tags=["a"], hda="deb", boot=Disk("x", True))
-        loaded = schema.load(Machine, schema.dump(machine), self.report)
+        loaded = config.load_record(
+            Machine, config.dump_record(machine), self.report
+        )
         self.assertEqual(loaded, machine)
         self.assertEqual(self.messages(), [])
 
     def test_missing_and_invalid(self):
-        data = schema.dump(Machine())
+        data = config.dump_record(Machine())
         del data["name"]
         data["ram"] = 5000
         data["kvm"] = "yes"
         data["disks"]["hda"]["image"] = 3
-        loaded = schema.load(Machine, data, self.report, "bricks.vm")
+        loaded = config.load_record(Machine, data, self.report, "bricks.vm")
         self.assertEqual(loaded, Machine())
         self.assertEqual(
             self.messages(),
@@ -373,17 +376,17 @@ class TestLoad(unittest.TestCase):
         )
 
     def test_missing_list_default(self):
-        data = schema.dump(Machine())
+        data = config.dump_record(Machine())
         del data["tags"]
-        schema.load(Machine, data, self.report)
+        config.load_record(Machine, data, self.report)
         self.assertEqual(
             self.messages(), ["tags: missing, using the default []"]
         )
 
     def test_missing_intermediate_table(self):
-        data = schema.dump(Machine())
+        data = config.dump_record(Machine())
         data["disks"] = "none"
-        loaded = schema.load(Machine, data, self.report, "vm")
+        loaded = config.load_record(Machine, data, self.report, "vm")
         self.assertEqual(loaded.hda, "")
         self.assertIn("vm.disks: unknown field, dropped", self.messages())
         self.assertIn(
@@ -392,13 +395,13 @@ class TestLoad(unittest.TestCase):
         )
 
     def test_unknown_fields(self):
-        data = schema.dump(Machine())
+        data = config.dump_record(Machine())
         data["color"] = "red"
         data["disks"]["hda"]["size"] = 3
         data["disks"]["hdb"] = {"image": "x"}
         data["boot"]["extra"] = 1
         data["other"] = {"a": 1}
-        schema.load(Machine, data, self.report, "vm", ignore={"other"})
+        config.load_record(Machine, data, self.report, "vm", ignore={"other"})
         # A record reports its own unknown fields while it's loaded.
         self.assertEqual(
             self.messages(),
@@ -411,13 +414,13 @@ class TestLoad(unittest.TestCase):
         )
 
     def test_ignore_is_only_for_top_level_keys(self):
-        data = schema.dump(Disk())
+        data = config.dump_record(Disk())
         data["x"] = {"private": 1}
-        schema.load(Disk, data, self.report, ignore={"private"})
+        config.load_record(Disk, data, self.report, ignore={"private"})
         self.assertEqual(self.messages(), ["x: unknown field, dropped"])
 
     def test_exclude(self):
-        loaded = schema.load(
+        loaded = config.load_record(
             Disk, {"image": "a"}, self.report, exclude={"private"}
         )
         self.assertEqual(loaded, Disk("a"))
@@ -427,10 +430,10 @@ class TestLoad(unittest.TestCase):
 class TestParse(unittest.TestCase):
 
     def test_parse(self):
-        self.assertEqual(schema.parse(Machine, "ram", "32"), 32)
-        self.assertIs(schema.parse(Machine(), "kvm", "yes"), True)
-        self.assertRaises(KeyError, schema.parse, Machine, "nope", "1")
-        self.assertRaises(ValueError, schema.parse, Machine, "tags", "a")
+        self.assertEqual(config.parse_value(Machine, "ram", "32"), 32)
+        self.assertIs(config.parse_value(Machine(), "kvm", "yes"), True)
+        self.assertRaises(KeyError, config.parse_value, Machine, "nope", "1")
+        self.assertRaises(ValueError, config.parse_value, Machine, "tags", "a")
 
 
 class TestReferences(unittest.TestCase):
@@ -438,21 +441,21 @@ class TestReferences(unittest.TestCase):
     def test_references(self):
         machine = Machine(event="boot", hda="deb")
         self.assertEqual(
-            list(schema.references(machine)),
+            list(config.references(machine)),
             [("event", "event", "boot"), ("hda", "image", "deb")],
         )
-        self.assertEqual(list(schema.references(Machine())), [])
+        self.assertEqual(list(config.references(Machine())), [])
 
     def test_rename(self):
         machine = Machine(event="boot", hda="deb")
         self.assertTrue(
-            schema.rename_references(machine, "image", "deb", "ubuntu")
+            config.rename_references(machine, "image", "deb", "ubuntu")
         )
         self.assertEqual(machine.hda, "ubuntu")
         self.assertEqual(machine.event, "boot")
         self.assertFalse(
-            schema.rename_references(machine, "image", "deb", "x")
+            config.rename_references(machine, "image", "deb", "x")
         )
         self.assertFalse(
-            schema.rename_references(machine, "event", "deb", "x")
+            config.rename_references(machine, "event", "deb", "x")
         )

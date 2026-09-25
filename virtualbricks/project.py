@@ -32,14 +32,8 @@ from twisted.internet import utils, error, defer
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import errors, locations
-from virtualbricks.config import (
-    ProjectFormatError,
-    Report,
-    projectfile,
-    settings,
-    tomlfile,
-)
+from virtualbricks import config, errors, locations
+from virtualbricks.config import ProjectFormatError, Report
 from virtualbricks import tools
 
 logger = Logger()
@@ -167,7 +161,7 @@ class Project:
             if e.errno != errno.ENOENT:
                 raise
 
-    def open(self, factory, settings=settings):
+    def open(self, factory, settings=config):
         """
         Load the project into factory.
 
@@ -179,7 +173,7 @@ class Project:
             return
         report = Report()
         try:
-            data = projectfile.upgrade(self.read_document(), report)
+            data = config.upgrade(self.read_document(), report)
         except FileNotFoundError:
             raise errors.ProjectNotExistsError(self.name) from None
         # The project file is readable, so it's safe to close the current one.
@@ -187,9 +181,7 @@ class Project:
         logger.debug(open_project, name=self.name)
         runtime_dir = os.path.join(locations.runtime_dir(), self.name)
         factory.runtime_dir = locations.ensure_private_dir(runtime_dir)
-        project_settings = projectfile.restore(
-            factory, data, report, self.path
-        )
+        project_settings = config.restore(factory, data, report, self.path)
         report.log(logger)
         self.project_settings = project_settings
         settings.use_project(project_settings)
@@ -197,14 +189,14 @@ class Project:
         self._manager.current = self
         return self
 
-    def close(self, factory, settings=settings):
+    def close(self, factory, settings=config):
         factory.reset()
         if self._manager.current:
             self._manager.current.project_settings = None
             self._manager.current = None
             settings.use_project(None)
 
-    def create(self, overwrite=False, settings=settings):
+    def create(self, overwrite=False, settings=config):
         """Create the directory and a project file with the app settings."""
 
         try:
@@ -216,7 +208,7 @@ class Project:
                     return self.create(settings=settings)
                 raise errors.ProjectExistsError(self.name)
             raise
-        projectfile.create(self.project_file, settings.new_project_settings())
+        config.create(self.project_file, settings.new_project_settings())
         logger.debug(create_project, name=self.name)
         return self
 
@@ -226,7 +218,7 @@ class Project:
     def save(self, factory):
         if not self._path.isdir():
             self._path.makedirs()
-        projectfile.save(factory, self.project_settings, self.project_file)
+        config.save(factory, self.project_settings, self.project_file)
         if self._description_modified:
             text = self._description
             with open(self._path.child("README").path, "wt") as fp:
@@ -246,7 +238,7 @@ class Project:
 
     copy = save_as
 
-    def rename(self, name, overwrite=False, settings=settings):
+    def rename(self, name, overwrite=False, settings=config):
         if name == self.name:
             return
         new_prj = self._manager.get_project(name)
@@ -277,10 +269,10 @@ class Project:
     def read_document(self):
         """Return the data of the project file, to edit it without opening."""
 
-        return projectfile.read(self.project_file)
+        return config.read(self.project_file)
 
     def write_document(self, data):
-        tomlfile.dump(data, self.project_file)
+        config.dump_toml(data, self.project_file)
 
     def images(self):
         path = self._path.child(".images")
@@ -320,7 +312,7 @@ class ProjectManager:
 
         if self._path is not None:
             return self._path
-        return filepath.FilePath(settings.get("workspace"))
+        return filepath.FilePath(config.get("workspace"))
 
     @property
     def path(self):
@@ -357,9 +349,9 @@ class ProjectManager:
 
     def _finish_import(self, project):
         if not project.exists():
-            from virtualbricks.migrate import engine
+            from virtualbricks import migrate
 
-            engine.migrate_imported_project(project.path).log(logger)
+            migrate.migrate_imported_project(project.path).log(logger)
         if not project.exists():
             raise errors.InvalidArchiveError(
                 f"{project.name}: the archive has no project file"
@@ -384,7 +376,7 @@ class ProjectManager:
         project.create(settings=settings)
         return project.open(factory, settings)
 
-    def restore_last(self, factory, settings=settings):
+    def restore_last(self, factory, settings=config):
         """Open the last project, or create a new one if it can't be."""
 
         os.makedirs(os.path.join(self.path, "vimages"), exist_ok=True)

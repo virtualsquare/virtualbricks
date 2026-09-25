@@ -21,8 +21,7 @@
 import os
 
 
-from virtualbricks.config import settings, tomlfile
-from virtualbricks import locations
+from virtualbricks import config, locations
 from virtualbricks.tests.gui import FakeGui, GuiTestCase, has_display
 
 if has_display:
@@ -37,8 +36,8 @@ class TestSettingsDialog(GuiTestCase):
         super().setUp()
         self.app_bin = self.folder("app-bin")
         self.project_bin = self.folder("project-bin")
-        settings.set_app("qemupath", self.app_bin)
-        settings.set_app("vdepath", self.app_bin)
+        config.set_app("qemupath", self.app_bin)
+        config.set_app("vdepath", self.app_bin)
 
     def dialog(self):
         dialog = settings_window.SettingsDialog(FakeGui(self.factory))
@@ -48,9 +47,9 @@ class TestSettingsDialog(GuiTestCase):
     def open_project(self):
         prj = self.manager.get_project("lab").create()
         prj.open(self.factory)
-        settings.set("qemupath", self.project_bin)
-        settings.set("femaleplugs", True)
-        settings.set("cowfmt", "cow")
+        config.set("qemupath", self.project_bin)
+        config.set("femaleplugs", True)
+        config.set("cowfmt", "cow")
         return prj
 
     def test_tabs(self):
@@ -71,9 +70,7 @@ class TestSettingsDialog(GuiTestCase):
         self.assertEqual(
             widgets.qemupath_chooser.get_current_folder(), self.app_bin
         )
-        self.assertEqual(
-            dialog.term_entry.get_text(), settings.get_app("term")
-        )
+        self.assertEqual(dialog.term_entry.get_text(), config.get_app("term"))
         self.assertEqual(
             settings_window.combobox_get_active_value(
                 dialog.new_project_widgets.cowfmt_combo, 0
@@ -115,35 +112,36 @@ class TestSettingsDialog(GuiTestCase):
             dialog.new_project_widgets.cowfmt_combo, "qcow", 0
         )
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.OK)
-        self.assertEqual(settings.get_app("term"), "/usr/bin/foot")
-        self.assertIs(settings.get_app("systray"), False)
+        self.assertEqual(config.get_app("term"), "/usr/bin/foot")
+        self.assertIs(config.get_app("systray"), False)
         # the project tab changed the project only
         self.assertIs(prj.project_settings.erroronloop, True)
-        self.assertIs(settings.get_app("erroronloop"), False)
+        self.assertIs(config.get_app("erroronloop"), False)
         self.assertEqual(prj.project_settings.qemupath, self.project_bin)
         # the new projects tab changed the application settings only
-        self.assertEqual(settings.get_app("vdepath"), self.project_bin)
-        self.assertEqual(settings.get_app("cowfmt"), "qcow")
+        self.assertEqual(config.get_app("vdepath"), self.project_bin)
+        self.assertEqual(config.get_app("cowfmt"), "qcow")
         self.assertEqual(prj.project_settings.cowfmt, "cow")
         self.assertEqual(saved, [self.factory])
         self.assertEqual(dialog.virtualbricks_gui.systray, ["stop"])
         self.assertEqual(self.ksm, [False])
         self.assertEqual(
-            tomlfile.load(locations.settings_file())["term"], "/usr/bin/foot"
+            config.load_toml(locations.settings_file())["term"],
+            "/usr/bin/foot",
         )
 
     def test_ok_without_a_project(self):
         dialog = self.dialog()
         dialog.project_widgets.femaleplugs_switch.set_active(True)
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.OK)
-        self.assertIs(settings.get_app("femaleplugs"), False)
+        self.assertIs(config.get_app("femaleplugs"), False)
         self.assertEqual(dialog.virtualbricks_gui.systray, ["start"])
 
     def test_cancel(self):
         dialog = self.dialog()
         dialog.term_entry.set_text("/usr/bin/foot")
         dialog.on_dialog_response(dialog.dialog, Gtk.ResponseType.CANCEL)
-        self.assertEqual(settings.get_app("term"), "/usr/bin/xterm")
+        self.assertEqual(config.get_app("term"), "/usr/bin/xterm")
         self.assertFalse(os.path.exists(locations.settings_file()))
 
     def test_unset_widgets_keep_the_values(self):

@@ -22,8 +22,8 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import bricks, project
-from virtualbricks.config import Report, settings
+from virtualbricks import bricks, config, project
+from virtualbricks.config import Report
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,
@@ -232,7 +232,7 @@ class TestCommandLine(CommandTestCase):
             vm.get_parameters(), f"command: {prog}, ram: 64, eth0: sw_port"
         )
         # the program isn't on this machine
-        settings.set("qemupath", os.path.join(self.bin, "missing"))
+        config.set("qemupath", os.path.join(self.bin, "missing"))
         self.patch(os, "environ", dict(os.environ, PATH=self.bin + "/missing"))
         self.assertTrue(
             vm.get_parameters().startswith("command: qemu-system-i386,")

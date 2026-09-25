@@ -24,16 +24,31 @@ written by the same code that saves projects. A value the old file left out
 keeps today's default, so a migrated project behaves as it did.
 """
 
+from __future__ import annotations
+
 import os
 import re
 from collections import defaultdict
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING
 
 from twisted.internet import defer
 
-from virtualbricks import errors, locations
-from virtualbricks.config import Mac, projectfile, schema, settings
+from virtualbricks import config, errors, locations
+from virtualbricks.config import Mac
 from virtualbricks.migrate import legacy
 from virtualbricks.tools import random_mac
+
+if TYPE_CHECKING:
+    from virtualbricks.bricks.netemu import MarkovConfig, Netemu
+    from virtualbricks.config import (
+        AppSettings,
+        ProjectSettings,
+        Report,
+        SettingValue,
+        Table,
+    )
+    from virtualbricks.link import Sock
 
 SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python"))
 BRICK_TYPES = {
@@ -71,16 +86,18 @@ class MigrationError(Exception):
 # Settings
 
 
-def convert_settings(options, filename, report):
+def convert_settings(
+    options: legacy.Options, filename: str, report: Report
+) -> tuple[AppSettings, str]:
     """
     Convert the options read by :func:`legacy.read_settings`.
 
     Return the new settings and the name of the current project.
     """
 
-    app = settings.AppSettings()
+    app = config.AppSettings()
     current_project = locations.DEFAULT_PROJECT
-    names = schema.names(settings.AppSettings)
+    names = config.names(config.AppSettings)
     for key, (text, lineno) in options.items():
         where = legacy.where(filename, lineno)
         if key == "current_project":
@@ -93,15 +110,16 @@ def convert_settings(options, filename, report):
         if key not in names:
             report.warning(f"{key}: unknown setting, dropped", where)
             continue
-        kind = schema.kind_of(settings.AppSettings, key)
+        kind = config.kind_of(config.AppSettings, key)
+        value: SettingValue
         try:
-            if isinstance(kind, schema.Bool):
+            if isinstance(kind, config.Bool):
                 value = legacy.parse_settings_bool(text)
             else:
                 value = text
             kind.check(value)
         except ValueError as exc:
-            default = kind.format(schema.default(settings.AppSettings, key))
+            default = kind.format(config.default(config.AppSettings, key))
             report.warning(f"{key}: {exc}, using the default {default}", where)
         else:
             setattr(app, key, value)
@@ -109,8 +127,10 @@ def convert_settings(options, filename, report):
     return app, current_project
 
 
-def _check_programs(app, options, filename, report):
-    checks = (
+def _check_programs(
+    app: AppSettings, options: legacy.Options, filename: str, report: Report
+) -> None:
+    checks: tuple[tuple[str, Callable[[str], bool]], ...] = (
         ("term", os.path.isfile),
         ("sudo", os.path.isfile),
         ("qemupath", os.path.isdir),
@@ -129,12 +149,12 @@ def _check_programs(app, options, filename, report):
 # Values
 
 
-def convert_value(kind, text):
+def convert_value(kind: config.Kind[object], text: str) -> object:
     """Convert a value as the old versions wrote it; ValueError if invalid."""
 
-    if isinstance(kind, schema.Bool):
+    if isinstance(kind, config.Bool):
         return legacy.parse_bool(text)
-    if isinstance(kind, (schema.Int, schema.Float)):
+    if isinstance(kind, (config.Int, config.Float)):
         number = kind.types[0]
         try:
             return number(text.strip())
@@ -143,7 +163,7 @@ def convert_value(kind, text):
     return text
 
 
-def _convert_item(kind, text):
+def _convert_item(kind: config.Kind[object], text: str) -> object:
     from virtualbricks import console
     from virtualbricks.events import EventAction
     from virtualbricks.bricks.virtualmachine import (
@@ -166,8 +186,15 @@ def _convert_item(kind, text):
     return text
 
 
-def _apply(config, items, brick_type, label, filename, report):
-    """Set the values of the items on a config; report what's dropped."""
+def _apply(
+    instance: object,
+    items: Iterable[legacy.Item],
+    brick_type: str,
+    label: str,
+    filename: str,
+    report: Report,
+) -> None:
+    """Set the values of the items on an instance; report what's dropped."""
 
     renamed = RENAMED_KEYS.get(brick_type, {})
     dropped = DROPPED_KEYS.get(brick_type, {})
@@ -178,43 +205,51 @@ def _apply(config, items, brick_type, label, filename, report):
             report.info(f"{label} {item.key}: {dropped[key]}, dropped", where)
             continue
         try:
-            kind = schema.kind_of(config, key)
+            kind = config.kind_of(instance, key)
         except KeyError:
             report.warning(f"{label} {item.key}: unknown, dropped", where)
             continue
-        if isinstance(kind, schema.ListOf):
-            _apply_list(config, key, kind, item, label, where, report)
+        if isinstance(kind, config.ListOf):
+            _apply_list(instance, key, kind, item, label, where, report)
             continue
         try:
             value = convert_value(kind, item.value)
             kind.check(value)
         except ValueError as exc:
-            default = kind.format(getattr(config, key))
+            default = kind.format(getattr(instance, key))
             report.warning(
                 f"{label} {item.key}: {exc}, using the default {default}",
                 where,
             )
         else:
-            setattr(config, key, value)
+            setattr(instance, key, value)
 
 
-def _apply_list(config, key, kind, item, label, where, report):
+def _apply_list(
+    instance: object,
+    key: str,
+    kind: config.ListOf[object],
+    item: legacy.Item,
+    label: str,
+    where: str,
+    report: Report,
+) -> None:
     # A bad item is dropped, the others are kept.
     try:
         texts = legacy.parse_list(item.value)
     except ValueError as exc:
-        default = kind.format(getattr(config, key))
+        default = kind.format(getattr(instance, key))
         report.warning(
             f"{label} {item.key}: {exc}, using the default {default}", where
         )
         return
-    values = []
+    values: list[object] = []
     for text in texts:
         try:
             values.append(_convert_item(kind.item, text))
         except ValueError as exc:
             report.warning(f"{label} {item.key}: {exc}, dropped", where)
-    setattr(config, key, values)
+    setattr(instance, key, values)
 
 
 # Projects
@@ -222,7 +257,12 @@ def _apply_list(config, key, kind, item, label, where, report):
 
 class _Converter:
 
-    def __init__(self, legacy_project, report, directory):
+    def __init__(
+        self,
+        legacy_project: legacy.LegacyProject,
+        report: Report,
+        directory: str,
+    ) -> None:
         from virtualbricks.brickfactory import BrickFactory
 
         self.project = legacy_project
@@ -230,13 +270,15 @@ class _Converter:
         self.report = report
         self.directory = directory
         self.factory = BrickFactory(defer.Deferred())
-        self.image_aliases = {}
-        self.seen = defaultdict(dict)
+        # the images that are the same file as another, and that other
+        self.image_aliases: dict[str, str] = {}
+        # the line of each name, by kind
+        self.seen: defaultdict[str, dict[str, int]] = defaultdict(dict)
 
-    def where(self, lineno):
+    def where(self, lineno: int) -> str:
         return legacy.where(self.filename, lineno)
 
-    def check_unique(self, kind, section):
+    def check_unique(self, kind: str, section: legacy.Section) -> None:
         first = self.seen[kind].get(section.name)
         if first is not None:
             raise MigrationError(
@@ -245,7 +287,7 @@ class _Converter:
             )
         self.seen[kind][section.name] = section.lineno
 
-    def convert(self, project_settings):
+    def convert(self, project_settings: ProjectSettings) -> Table:
         for section in self.project.sections:
             if section.type == "Project":
                 self.report.info(
@@ -269,11 +311,11 @@ class _Converter:
         self.sockets()
         self.plugs()
         self.follow_image_aliases()
-        return projectfile.document(self.factory, project_settings)
+        return config.document(self.factory, project_settings)
 
-    def image(self, section):
+    def image(self, section: legacy.Section) -> None:
         where = self.where(section.lineno)
-        values = {}
+        values: dict[str, str] = {}
         for item in section.items:
             if item.key in ("path", "description"):
                 values[item.key] = item.value
@@ -311,7 +353,7 @@ class _Converter:
         except errors.InvalidNameError as exc:
             self.report.warning(f"{section.label()} {exc}, dropped", where)
 
-    def event(self, section):
+    def event(self, section: legacy.Section) -> None:
         try:
             event = self.factory.new_event(section.name)
         except errors.InvalidNameError as exc:
@@ -328,7 +370,7 @@ class _Converter:
             self.report,
         )
 
-    def brick(self, section):
+    def brick(self, section: legacy.Section) -> None:
         brick_type = BRICK_TYPES[section.type]
         where = self.where(section.lineno)
         try:
@@ -350,9 +392,11 @@ class _Converter:
                 self.report,
             )
 
-    def netemu(self, brick, section):
+    def netemu(self, brick: Netemu, section: legacy.Section) -> None:
         label = section.label()
-        flat, states, count = [], [], 1
+        flat: list[legacy.Item] = []
+        states: list[legacy.Item] = []
+        count = 1
         for item in section.items:
             if item.key in ("states", "transperiod"):
                 try:
@@ -384,7 +428,9 @@ class _Converter:
             state.pon_vbevent = markov.states[0].pon_vbevent
             state.poff_vbevent = markov.states[0].poff_vbevent
 
-    def state_item(self, markov, item, count, label):
+    def state_item(
+        self, markov: MarkovConfig, item: legacy.Item, count: int, label: str
+    ) -> None:
         where = self.where(item.lineno)
         match = PROBABILITY_KEY.match(item.key)
         if match:
@@ -404,6 +450,8 @@ class _Converter:
                 )
             return
         match = STATE_KEY.match(item.key)
+        # netemu() kept only the keys of a state or of a probability
+        assert match is not None
         index = int(match["state"])
         if index >= count:
             self.report.warning(
@@ -420,7 +468,7 @@ class _Converter:
             self.report,
         )
 
-    def mac(self, link):
+    def mac(self, link: legacy.Link) -> str:
         try:
             Mac().check(link.mac)
             if link.mac:
@@ -434,7 +482,7 @@ class _Converter:
         )
         return mac
 
-    def sockets(self):
+    def sockets(self) -> None:
         for link in self.project.links:
             if link.kind != "sock":
                 continue
@@ -451,17 +499,19 @@ class _Converter:
             name = link.socket
             if name.startswith(prefix):
                 name = name[len(prefix) :]
-            if not projectfile.SOCKET_NAME.fullmatch(name):
+            valid = config.SOCKET_NAME.fullmatch(name) is not None
+            if not valid:
                 self.report.warning(
                     f'"{link.socket}" is not a socket name, using a default',
                     where,
                 )
-                name = None
-            model = link.model or projectfile.DEFAULT_MODEL
-            vm.add_sock(self.mac(link), model, name)
+            model = link.model or config.DEFAULT_MODEL
+            # None gives the card its default name
+            vm.add_sock(self.mac(link), model, name if valid else None)
 
-    def plugs(self):
-        used = defaultdict(int)
+    def plugs(self) -> None:
+        # the plugs used by each brick, in order
+        used: defaultdict[str, int] = defaultdict(int)
         for link in self.project.links:
             if link.kind != "link":
                 continue
@@ -473,7 +523,7 @@ class _Converter:
                     where,
                 )
                 continue
-            sock = None
+            sock: Sock | None = None
             if link.socket:
                 sock = self.factory.get_sock_by_name(link.socket)
                 if sock is None:
@@ -481,7 +531,7 @@ class _Converter:
                         f'no socket "{link.socket}", left unconnected', where
                     )
             if brick.connections == "nics":
-                model = link.model or projectfile.DEFAULT_MODEL
+                model = link.model or config.DEFAULT_MODEL
                 brick.add_plug(sock, self.mac(link), model)
                 continue
             index = used[link.owner]
@@ -493,7 +543,7 @@ class _Converter:
             elif sock is not None:
                 brick.plugs[index].connect(sock)
 
-    def follow_image_aliases(self):
+    def follow_image_aliases(self) -> None:
         for brick in self.factory.bricks:
             if brick.connections != "nics":
                 continue
@@ -503,7 +553,12 @@ class _Converter:
                     setattr(brick.config, dev, self.image_aliases[name])
 
 
-def convert_project(legacy_project, project_settings, report, directory):
+def convert_project(
+    legacy_project: legacy.LegacyProject,
+    project_settings: ProjectSettings,
+    report: Report,
+    directory: str,
+) -> tuple[Table, int]:
     """
     Return the data of the new project file and the number of bricks.
 

@@ -30,8 +30,7 @@ from gi.repository import Gdk, Gtk, Pango
 
 from twisted.logger import Logger
 
-from virtualbricks import qemu, tools
-from virtualbricks.config import settings
+from virtualbricks import config, qemu, tools
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IMenu
 from virtualbricks.spawn import getQemuOutput
@@ -93,7 +92,7 @@ def _set_connection(column, cell_renderer, model, iter, data=None):
         conn = "Host"
     elif link.sock:
         conn = link.sock.brick.name
-    elif link.mode == "sock" and settings.get("femaleplugs"):
+    elif link.mode == "sock" and config.get("femaleplugs"):
         conn = "Vde socket (female plug)"
     else:
         conn = "None"
@@ -1541,7 +1540,7 @@ class QemuConfigController(ConfigController):
         for plug in self.original.plugs:
             vmplugs.append((plug,))
 
-        if settings.get("femaleplugs"):
+        if config.get("femaleplugs"):
             for sock in self.original.socks:
                 vmplugs.append((sock,))
 

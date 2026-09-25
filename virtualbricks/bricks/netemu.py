@@ -20,12 +20,12 @@
 
 import re
 
-from virtualbricks import bricks
+from virtualbricks import bricks, config
 from virtualbricks.bricks.wire import Wire
-from virtualbricks.config import Bool, Float, Int, ListOf, Record, Str, schema
+from virtualbricks.config import Bool, Float, Int, ListOf, Record, Str
 
 
-@schema.define
+@config.define
 class NetemuConfig(bricks.BrickConfig):
     """
     The configuration of a Netemu: its events and a state of its Markov chain.
@@ -35,35 +35,35 @@ class NetemuConfig(bricks.BrickConfig):
     events are keys of the brick and the states are tables without them.
     """
 
-    name = schema.field(Str(), default="default name")
-    bandwidth = schema.field(Int(), default=125000)
-    bandwidthr = schema.field(Int(), default=125000)
-    bandwidthsymm = schema.field(Bool(), default=True)
-    delay = schema.field(Int(), default=0)
-    delayr = schema.field(Int(), default=0)
-    delaysymm = schema.field(Bool(), default=True)
-    chanbufsize = schema.field(Int(), default=75000)
-    chanbufsizer = schema.field(Int(), default=75000)
-    chanbufsizesymm = schema.field(Bool(), default=True)
-    loss = schema.field(Float(0, 100), default=0.0)
-    lossr = schema.field(Float(0, 100), default=0.0)
-    losssymm = schema.field(Bool(), default=True)
+    name = config.field(Str(), default="default name")
+    bandwidth = config.field(Int(), default=125000)
+    bandwidthr = config.field(Int(), default=125000)
+    bandwidthsymm = config.field(Bool(), default=True)
+    delay = config.field(Int(), default=0)
+    delayr = config.field(Int(), default=0)
+    delaysymm = config.field(Bool(), default=True)
+    chanbufsize = config.field(Int(), default=75000)
+    chanbufsizer = config.field(Int(), default=75000)
+    chanbufsizesymm = config.field(Bool(), default=True)
+    loss = config.field(Float(0, 100), default=0.0)
+    lossr = config.field(Float(0, 100), default=0.0)
+    losssymm = config.field(Bool(), default=True)
 
 
-BRICK_KEYS = frozenset(schema.names(bricks.BrickConfig))
+BRICK_KEYS = frozenset(config.names(bricks.BrickConfig))
 # The keys of a state in the project file.
-STATE_KEYS = frozenset(schema.names(NetemuConfig)) - BRICK_KEYS
+STATE_KEYS = frozenset(config.names(NetemuConfig)) - BRICK_KEYS
 
 
-@schema.define
+@config.define
 class NetemuTable(bricks.BrickConfig):
     """The table of a Netemu in the project file."""
 
-    transperiod = schema.field(Int(1), default=100)
-    transitions = schema.field(
+    transperiod = config.field(Int(1), default=100)
+    transitions = config.field(
         ListOf(ListOf(Float(0))), factory=lambda: [[0.0]]
     )
-    states = schema.field(
+    states = config.field(
         ListOf(Record(NetemuConfig, exclude=BRICK_KEYS), min_length=1),
         factory=lambda: [NetemuConfig()],
     )
@@ -93,7 +93,7 @@ class MarkovConfig:
 
         unavailable = []
         defaultOccupied = False
-        defaultName = schema.default(NetemuConfig, "name")
+        defaultName = config.default(NetemuConfig, "name")
 
         for i, state in enumerate(self.states):
             self.weights[i].insert(index, 0.0)
@@ -239,25 +239,27 @@ class Netemu(Wire):
     def rename_references(self, target, old, new):
         changed = False
         for state in self.markov_manager.states:
-            if schema.rename_references(state, target, old, new):
+            if config.rename_references(state, target, old, new):
                 changed = True
         return changed
 
     def config_table(self):
-        table = schema.dump(self.config, exclude=STATE_KEYS)
+        table = config.dump_record(self.config, exclude=STATE_KEYS)
         table["transperiod"] = self.transPeriod
         table["transitions"] = [
             [float(weight) for weight in row]
             for row in self.markov_manager.weights
         ]
         table["states"] = [
-            schema.dump(state, exclude=BRICK_KEYS)
+            config.dump_record(state, exclude=BRICK_KEYS)
             for state in self.markov_manager.states
         ]
         return table
 
     def load_config_table(self, table, report, where, ignore):
-        data = schema.load(NetemuTable, table, report, where, ignore=ignore)
+        data = config.load_record(
+            NetemuTable, table, report, where, ignore=ignore
+        )
         states = data.states
         # the states are read without the events, which are the brick's
         for state in states:
@@ -292,7 +294,7 @@ class Netemu(Wire):
         for i, state in enumerate(self.markov_manager.states):
             self.currentState = i
             self.config = self.markov_manager.states[self.currentState]
-            for name, value in schema.values(state).items():
+            for name, value in config.values(state).items():
                 self._update(name, value)
 
         self.currentState = currentState

@@ -20,7 +20,7 @@
 
 import os
 
-from virtualbricks.config import settings
+from virtualbricks import config
 from virtualbricks.tests import (
     CommandTestCase,
 )
@@ -46,7 +46,7 @@ class TestTap(CommandTestCase):
         self.assertEqual(tap.prog(), os.path.join(self.bin, "vde_plug2tap"))
 
     def test_tap_address(self):
-        settings.set("sudo", "/usr/bin/sudo")
+        config.set("sudo", "/usr/bin/sudo")
         for needsudo, prefix in ((False, ""), (True, "/usr/bin/sudo ")):
             tap, commands = self.tap(
                 mode="manual", ip="10.1.0.2", nm="255.255.0.0", gw="10.1.0.1"
@@ -75,6 +75,4 @@ class TestTap(CommandTestCase):
         self.assertEqual(commands[-1], "dhclient tap0")
         self.patch(tap, "needsudo", lambda: True)
         tap.post_poweron()
-        self.assertEqual(
-            commands[-1], f'{settings.get("sudo")} "dhclient tap0"'
-        )
+        self.assertEqual(commands[-1], f'{config.get("sudo")} "dhclient tap0"')

@@ -30,8 +30,7 @@ from twisted.internet import defer, reactor, task
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks import project, tools
-from virtualbricks.config import settings
+from virtualbricks import config, project, tools
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IConfigController, IJobMenu, IMenu
 from virtualbricks.tools import dispose, is_running
@@ -404,7 +403,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
     def __init__(self, factory, messages=None):
         self.factory = self.brickfactory = factory
         self.build_ui()
-        self.config = settings
+        self.config = config
         # the messages of this run, see virtualbricks.gui.messages
         self.messages = MessageLog() if messages is None else messages
 
@@ -413,7 +412,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         factory.connect("brick-changed", self.on_brick_changed)
         factory.connect("brick-added", self.on_brick_changed)
         factory.connect("brick-removed", self.on_brick_changed)
-        if settings.get("systray"):
+        if config.get("systray"):
             self.start_systray()
         task.LoopingCall(self.running_filter.refilter).start(2)
         self.__state_manager = StateManager()
@@ -1274,11 +1273,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         missing = vmissing + qmissing
 
         if not tools.check_ksm():
-            settings.set("ksm", False)
+            config.set("ksm", False)
             missing.append("ksm")
         missing_text = []
         missing_components = []
-        if len(missing) > 0 and settings.get("show_missing"):
+        if len(missing) > 0 and config.get("show_missing"):
             for m in missing:
                 if m == "ksm":
                     missing_text.append(
@@ -1396,7 +1395,7 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_window_delete_event(self, window, event):
         # don't delete; hide instead
-        if settings.get("systray"):
+        if config.get("systray"):
             window.hide()
             self.status_icon.set_tooltip("Virtualbricks Hidden")
             return True

@@ -23,11 +23,20 @@ With ``--gui``, or as ``virtualbricks-migrate``, it opens the migration window
 instead, filled with the folders and the settings file given.
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import sys
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, NoReturn, TextIO
 
 from virtualbricks.migrate import engine
+
+if TYPE_CHECKING:
+    from typing_extensions import Unpack
+
+    from virtualbricks.migrate.gui import WindowOptions
 
 DESCRIPTION = """\
 Convert the settings and projects of Virtualbricks 2.1 and older to the new
@@ -50,7 +59,9 @@ NOT_IN_THE_WINDOW = (
 )
 
 
-def parser(prog="python -m virtualbricks.migrate"):
+def parser(
+    prog: str = "python -m virtualbricks.migrate",
+) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=prog,
         description=DESCRIPTION,
@@ -97,7 +108,9 @@ def parser(prog="python -m virtualbricks.migrate"):
     return parser
 
 
-def make_migration(args, error):
+def make_migration(
+    args: argparse.Namespace, error: Callable[[str], NoReturn]
+) -> engine.Migration:
     options = {"dry_run": args.dry_run, "verbose": args.verbose}
     if args.in_place:
         if args.folders:
@@ -125,7 +138,9 @@ def make_migration(args, error):
     )
 
 
-def window_options(args, error):
+def window_options(
+    args: argparse.Namespace, error: Callable[[str], NoReturn]
+) -> WindowOptions:
     """Return what fills the window; the window checks it before running."""
 
     for name, option in NOT_IN_THE_WINDOW:
@@ -144,14 +159,20 @@ def window_options(args, error):
     }
 
 
-def open_window(**options):  # pragma: no cover (it installs the GTK reactor)
+def open_window(
+    **options: Unpack[WindowOptions],
+) -> int:  # pragma: no cover (it installs the GTK reactor)
     from virtualbricks.migrate import gui
 
     gui.main(**options)
     return 0
 
 
-def main(argv=None, stdout=None, prog="python -m virtualbricks.migrate"):
+def main(
+    argv: Sequence[str] | None = None,
+    stdout: TextIO | None = None,
+    prog: str = "python -m virtualbricks.migrate",
+) -> int:
     stdout = stdout or sys.stdout
     arguments = parser(prog)
     args = arguments.parse_args(argv)
@@ -174,7 +195,7 @@ def main(argv=None, stdout=None, prog="python -m virtualbricks.migrate"):
     return migration.exit_code
 
 
-def gui_main(argv=None):
+def gui_main(argv: Sequence[str] | None = None) -> int:
     """The ``virtualbricks-migrate`` command: the window, filled with argv."""
 
     if argv is None:

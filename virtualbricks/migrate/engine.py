@@ -24,30 +24,39 @@ directories of the user, or into a new folder laid out like them, to try it
 out. The old files are only read.
 """
 
+from __future__ import annotations
+
 import os
 import shutil
 import stat
+from collections.abc import Collection, Iterator
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 import attr
 from twisted.python import lockfile
 
-from virtualbricks.config import (
-    ERROR,
-    INFO,
-    WARNING,
-    Report,
-    schema,
-    settings,
-    tomlfile,
-)
-from virtualbricks import locations
+from virtualbricks.config import ERROR, INFO, WARNING, Report
+from virtualbricks import config, locations
 from virtualbricks.migrate import convert, legacy
 
-WAITING = "waiting"
-MIGRATING = "migrating"
-MIGRATED = "migrated"
-FAILED = "failed"
-SKIPPED = "skipped"
+if TYPE_CHECKING:
+    from twisted.logger import Logger
+
+    from virtualbricks.config import (
+        AppSettings,
+        Level,
+        Message,
+        ProjectSettings,
+        Table,
+    )
+
+Status = Literal["waiting", "migrating", "migrated", "failed", "skipped"]
+
+WAITING: Final = "waiting"
+MIGRATING: Final = "migrating"
+MIGRATED: Final = "migrated"
+FAILED: Final = "failed"
+SKIPPED: Final = "skipped"
 REPORT_FILE = "migration-report.txt"
 BACKUP_SUFFIX = "~"
 
@@ -56,46 +65,48 @@ BACKUP_SUFFIX = "~"
 class Item:
     """The settings or a project, with the state of its migration."""
 
-    name = attr.field()
-    kind = attr.field()  # "settings", "project" or "file"
-    source = attr.field()
-    status = attr.field(default=WAITING)
-    bricks = attr.field(default=None)
-    report = attr.field(factory=Report)
+    name: str = attr.field()
+    # a project is a directory, or a single file in the workspace
+    kind: Literal["settings", "project", "file"] = attr.field()
+    source: str = attr.field()
+    status: Status = attr.field(default=WAITING)
+    # how many bricks the project has, once converted
+    bricks: int | None = attr.field(default=None)
+    report: Report = attr.field(factory=Report)
 
     @property
-    def is_project(self):
+    def is_project(self) -> bool:
         return self.kind != "settings"
 
 
 class InPlace:
     """Write next to the old files and in the XDG directories of the user."""
 
-    folder = None
+    folder: None = None
 
-    def __init__(self, workspace):
+    def __init__(self, workspace: str) -> None:
         self.workspace = workspace
 
     @property
-    def settings_file(self):
+    def settings_file(self) -> str:
         return locations.settings_file()
 
     @property
-    def state_file(self):
+    def state_file(self) -> str:
         return locations.state_file()
 
     @property
-    def report_file(self):
+    def report_file(self) -> str:
         return os.path.join(locations.state_dir(), REPORT_FILE)
 
-    def project_dir(self, name):
+    def project_dir(self, name: str) -> str:
         return os.path.join(self.workspace, name)
 
 
 class Folder:
     """Write into a new folder, laid out like the XDG directories."""
 
-    def __init__(self, folder):
+    def __init__(self, folder: str) -> None:
         self.folder = folder
         self.workspace = os.path.join(folder, "workspace")
         self.settings_file = os.path.join(
@@ -106,11 +117,15 @@ class Folder:
         )
         self.report_file = os.path.join(folder, REPORT_FILE)
 
-    def project_dir(self, name):
+    def project_dir(self, name: str) -> str:
         return os.path.join(self.workspace, name)
 
 
-def project_source(directory):
+# Where a migration writes.
+Target: TypeAlias = InPlace | Folder
+
+
+def project_source(directory: str) -> str | None:
     """Return the old project file of a directory, or None."""
 
     path = os.path.join(directory, locations.LEGACY_PROJECT_FILE)
@@ -122,11 +137,11 @@ def project_source(directory):
     return None
 
 
-def discover(workspace):
+def discover(workspace: str) -> list[Item]:
     """Return an item for each old project of the workspace, by name."""
 
-    items = []
-    names = set()
+    items: list[Item] = []
+    names: set[str] = set()
     if not os.path.isdir(workspace):
         return items
     for entry in sorted(os.listdir(workspace)):
@@ -157,7 +172,7 @@ def discover(workspace):
     return items
 
 
-def _is_migrated_file(workspace, name, path):
+def _is_migrated_file(workspace: str, name: str, path: str) -> bool:
     # A single-file project migrated in place becomes a directory of the same
     # name without an old project file; running again must skip it.
     directory = os.path.join(workspace, name)
@@ -165,36 +180,38 @@ def _is_migrated_file(workspace, name, path):
     return migrated and project_source(directory) is None
 
 
-def _read_app_settings(path):
+def _read_app_settings(path: str) -> AppSettings:
     try:
-        data = tomlfile.load(path)
-    except (OSError, tomlfile.DecodeError):
-        return settings.AppSettings()
-    return schema.load(settings.AppSettings, data, Report(), ignore={"format"})
+        data = config.load_toml(path)
+    except (OSError, config.DecodeError):
+        return config.AppSettings()
+    return config.load_record(
+        config.AppSettings, data, Report(), ignore={"format"}
+    )
 
 
-def _legacy_app_settings(path):
+def _legacy_app_settings(path: str) -> AppSettings:
     report = Report()
     try:
         options = legacy.read_settings(path, os.path.basename(path), report)
     except (OSError, UnicodeDecodeError):
-        return settings.AppSettings()
+        return config.AppSettings()
     return convert.convert_settings(options, os.path.basename(path), report)[0]
 
 
-def _project_settings(app):
-    values = schema.values(app)
-    return settings.ProjectSettings(
-        **{name: values[name] for name in settings.PROJECT_KEYS}
+def _project_settings(app: AppSettings) -> ProjectSettings:
+    values = config.values(app)
+    return config.ProjectSettings(
+        **{name: values[name] for name in config.PROJECT_KEYS}
     )
 
 
-def _write(data, path):
+def _write(data: Table, path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    tomlfile.dump(data, path)
+    config.dump_toml(data, path)
 
 
-def _copy_tree(source, destination, skip):
+def _copy_tree(source: str, destination: str, skip: Collection[str]) -> None:
     """Copy the regular files of a directory; sockets and the like stay."""
 
     for root, dirs, files in os.walk(source):
@@ -220,29 +237,30 @@ class Migration:
 
     def __init__(
         self,
-        workspace,
-        target,
-        legacy_settings=None,
-        app_settings=None,
-        dry_run=False,
-        copy_files=False,
-        verbose=False,
-    ):
+        workspace: str,
+        target: Target,
+        legacy_settings: str | None = None,
+        app_settings: AppSettings | None = None,
+        dry_run: bool = False,
+        copy_files: bool = False,
+        verbose: bool = False,
+    ) -> None:
         self.workspace = workspace
         self.target = target
         self.dry_run = dry_run
         self.copy_files = copy_files
         self.verbose = verbose
-        self.app_settings = app_settings or settings.AppSettings()
-        self.current_project = None
-        self.items = []
+        self.app_settings = app_settings or config.AppSettings()
+        # the current project of the old settings, once migrated
+        self.current_project: str | None = None
+        self.items: list[Item] = []
         if legacy_settings is not None:
             name = os.path.basename(legacy_settings)
             self.items.append(Item(name, "settings", legacy_settings))
         self.items.extend(discover(workspace))
         self._skip_migrated()
 
-    def _skip_migrated(self):
+    def _skip_migrated(self) -> None:
         for item in self.items:
             if item.kind == "settings":
                 done = os.path.exists(self.target.settings_file)
@@ -258,21 +276,21 @@ class Migration:
                 item.report.info(f"{reason}, skipped")
 
     @property
-    def projects(self):
+    def projects(self) -> list[Item]:
         return [item for item in self.items if item.is_project]
 
-    def pending(self):
+    def pending(self) -> list[Item]:
         return [item for item in self.items if item.status == WAITING]
 
-    def count(self, status, projects_only=True):
+    def count(self, status: Status, projects_only: bool = True) -> int:
         items = self.projects if projects_only else self.items
         return sum(1 for item in items if item.status == status)
 
     @property
-    def exit_code(self):
+    def exit_code(self) -> int:
         return 1 if self.count(FAILED, projects_only=False) else 0
 
-    def steps(self):
+    def steps(self) -> Iterator[Item]:
         """Migrate the items one by one, yielding each before and after."""
 
         for item in self.items:
@@ -297,12 +315,12 @@ class Migration:
             yield item
         self._finish()
 
-    def run(self):
+    def run(self) -> Migration:
         for _ in self.steps():
             pass
         return self
 
-    def _migrate_settings(self, item):
+    def _migrate_settings(self, item: Item) -> None:
         filename = os.path.basename(item.source)
         options = legacy.read_settings(item.source, filename, item.report)
         if item.report.has_errors:
@@ -314,10 +332,13 @@ class Migration:
         self.app_settings = app
         self.current_project = current
         if not self.dry_run:
-            data = {"format": settings.FORMAT, **schema.dump(app)}
+            data: Table = {
+                "format": config.SETTINGS_FORMAT,
+                **config.dump_record(app),
+            }
             _write(data, self.target.settings_file)
 
-    def _migrate_project(self, item):
+    def _migrate_project(self, item: Item) -> None:
         filename = os.path.basename(item.source)
         if filename.endswith(BACKUP_SUFFIX):
             item.report.info(f"{filename}, left by an interrupted save, used")
@@ -342,11 +363,11 @@ class Migration:
         elif os.path.isfile(os.path.join(source, "README")):
             shutil.copy2(os.path.join(source, "README"), directory)
 
-    def _finish(self):
+    def _finish(self) -> None:
         if self.dry_run:
             return
         if self.current_project is not None:
-            state = {"format": settings.FORMAT}
+            state: Table = {"format": config.SETTINGS_FORMAT}
             state["current_project"] = self.current_project
             _write(state, self.target.state_file)
         path = self.target.report_file
@@ -356,11 +377,11 @@ class Migration:
 
     # Reporting
 
-    def messages(self, item):
+    def messages(self, item: Item) -> list[Message]:
         levels = (INFO, WARNING, ERROR) if self.verbose else (WARNING, ERROR)
         return [m for m in item.report if m.level in levels]
 
-    def summary(self):
+    def summary(self) -> str:
         projects = self.projects
         migrated = self.count(MIGRATED)
         failed = self.count(FAILED)
@@ -369,8 +390,8 @@ class Migration:
             text += f", {failed} failed"
         return text + "."
 
-    def text(self):
-        lines = []
+    def text(self) -> str:
+        lines: list[str] = []
         width = max([len(item.name) for item in self.items] + [8]) + 2
         for item in self.items:
             lines.append(
@@ -388,7 +409,7 @@ class Migration:
         lines.append(self.summary())
         return "\n".join(lines).rstrip() + "\n"
 
-    def log(self, logger):
+    def log(self, logger: Logger) -> None:
         for item in self.items:
             for message in item.report:
                 text = str(message)
@@ -403,16 +424,20 @@ class Migration:
         logger.info("Migration: {summary}", summary=self.summary())
 
 
-def counts(item):
-    parts = []
-    for level, noun in ((ERROR, "error"), (WARNING, "warning")):
+def counts(item: Item) -> str:
+    parts: list[str] = []
+    levels: tuple[tuple[Level, str], ...] = (
+        (ERROR, "error"),
+        (WARNING, "warning"),
+    )
+    for level, noun in levels:
         number = item.report.count(level)
         if number:
             parts.append(f"{number} {noun}" + ("s" if number > 1 else ""))
     return ", ".join(parts)
 
 
-def _describe_error(exc):
+def _describe_error(exc: Exception) -> str:
     if isinstance(exc, UnicodeDecodeError):
         return f"not a text file ({exc.reason}); project not migrated"
     if isinstance(exc, OSError):
@@ -423,7 +448,7 @@ def _describe_error(exc):
     return f"{exc}; project not migrated"
 
 
-def lock_in_place():
+def lock_in_place() -> lockfile.FilesystemLock | None:
     """
     Hold the lock of the application while the files of the user change.
 
@@ -441,7 +466,7 @@ def lock_in_place():
     return None
 
 
-def startup_migration():
+def startup_migration() -> Migration | None:
     """Return the migration the app must run before starting, or None."""
 
     legacy_settings = locations.legacy_settings_file()
@@ -457,7 +482,9 @@ def startup_migration():
     return migration if migration.pending() else None
 
 
-def in_place_migration(legacy_settings=None, **options):
+def in_place_migration(
+    legacy_settings: str | None = None, **options: bool
+) -> Migration:
     """Return the migration of the files of the user, in place."""
 
     if legacy_settings is None:
@@ -471,7 +498,12 @@ def in_place_migration(legacy_settings=None, **options):
     return Migration(app.workspace, target, legacy_settings, app, **options)
 
 
-def migration_for(workspace, legacy_settings=None, output=None, **options):
+def migration_for(
+    workspace: str,
+    legacy_settings: str | None = None,
+    output: str | None = None,
+    **options: bool,
+) -> Migration:
     """
     Return the migration of a workspace: in place, or to the output folder.
 
@@ -484,12 +516,12 @@ def migration_for(workspace, legacy_settings=None, output=None, **options):
     elif output is None:
         app = _read_app_settings(locations.settings_file())
     else:
-        app = settings.AppSettings()
+        app = config.AppSettings()
     target = InPlace(workspace) if output is None else Folder(output)
     return Migration(workspace, target, legacy_settings, app, **options)
 
 
-def migrate_imported_project(directory):
+def migrate_imported_project(directory: str) -> Report:
     """Write the project file of an imported archive of an old version."""
 
     report = Report()
@@ -501,9 +533,9 @@ def migrate_imported_project(directory):
     try:
         project = legacy.read_project(source, filename, report)
         data, _ = convert.convert_project(
-            project, settings.new_project_settings(), report, directory
+            project, config.new_project_settings(), report, directory
         )
-        tomlfile.dump(data, os.path.join(directory, locations.PROJECT_FILE))
+        config.dump_toml(data, os.path.join(directory, locations.PROJECT_FILE))
     except (OSError, UnicodeDecodeError, convert.MigrationError) as exc:
         report.error(_describe_error(exc), directory)
     return report

@@ -25,11 +25,17 @@ followed by the connections: ``link|brick|socket|model|mac`` for a plug and
 settings are an INI file with a ``[Main]`` section.
 """
 
+from __future__ import annotations
+
 import ast
 import configparser
 import re
+from typing import TYPE_CHECKING, TypeAlias
 
 import attr
+
+if TYPE_CHECKING:
+    from virtualbricks.config import Report
 
 SECTION = re.compile(r"^\[(?P<type>[a-zA-Z0-9_]+):(?P<name>.+)\]$")
 ASSIGNMENT = re.compile(r"^(?P<key>[\w.\[\]]+)\s*=\s*(?P<value>.*)$")
@@ -58,57 +64,61 @@ PROJECT_TYPES = frozenset(
 )
 SETTINGS_SECTION = "Main"
 
+# The options of an old settings file: {key: (value, line)}.
+Options: TypeAlias = dict[str, tuple[str, int]]
+
 
 @attr.define
 class Item:
 
-    key = attr.field()
-    value = attr.field()
-    lineno = attr.field()
+    key: str = attr.field()
+    value: str = attr.field()
+    lineno: int = attr.field()
 
 
 @attr.define
 class Section:
 
-    type = attr.field()
-    name = attr.field()
-    lineno = attr.field()
-    items = attr.field(factory=list)
+    type: str = attr.field()
+    name: str = attr.field()
+    lineno: int = attr.field()
+    items: list[Item] = attr.field(factory=list)
 
-    def label(self):
+    def label(self) -> str:
         return f"[{self.type}:{self.name}]"
 
 
 @attr.define
 class Link:
 
-    kind = attr.field()
-    owner = attr.field()
-    socket = attr.field()
-    model = attr.field()
-    mac = attr.field()
-    lineno = attr.field()
+    # "link" for a plug, "sock" for a socket card of a virtual machine
+    kind: str = attr.field()
+    owner: str = attr.field()
+    socket: str = attr.field()
+    model: str = attr.field()
+    mac: str = attr.field()
+    lineno: int = attr.field()
 
 
 @attr.define
 class LegacyProject:
 
-    filename = attr.field()
-    sections = attr.field(factory=list)
-    links = attr.field(factory=list)
+    filename: str = attr.field()
+    sections: list[Section] = attr.field(factory=list)
+    links: list[Link] = attr.field(factory=list)
 
 
-def where(filename, lineno):
+def where(filename: str, lineno: int) -> str:
     """Where a message is about: the file, and the line if there's one."""
 
     return f"{filename}:{lineno}" if lineno else filename
 
 
-def parse_project(text, filename, report):
+def parse_project(text: str, filename: str, report: Report) -> LegacyProject:
     """Parse the text of an old project file; report what's ignored."""
 
     project = LegacyProject(filename)
-    section = None
+    section: Section | None = None
     for lineno, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith("#"):
@@ -136,14 +146,14 @@ def parse_project(text, filename, report):
     return project
 
 
-def read_project(path, filename, report):
+def read_project(path: str, filename: str, report: Report) -> LegacyProject:
     """Read an old project file; UnicodeDecodeError or OSError if it can't."""
 
     with open(path, encoding="utf-8") as fp:
         return parse_project(fp.read(), filename, report)
 
 
-def looks_like_project(path):
+def looks_like_project(path: str) -> bool:
     """Whether a file starts like an old project file."""
 
     try:
@@ -156,15 +166,15 @@ def looks_like_project(path):
         if not line or line.startswith("#"):
             continue
         match = SECTION.match(line)
-        return bool(match) and match["type"] in PROJECT_TYPES
+        return match is not None and match["type"] in PROJECT_TYPES
     return False
 
 
 OPTION = re.compile(r"^\s*(?P<key>[^=:\s]+)\s*[=:]")
 
 
-def _option_lines(text):
-    lines = {}
+def _option_lines(text: str) -> dict[str, int]:
+    lines: dict[str, int] = {}
     section = None
     for lineno, line in enumerate(text.splitlines(), 1):
         match = re.match(r"^\s*\[(?P<name>[^]]+)\]", line)
@@ -178,7 +188,7 @@ def _option_lines(text):
     return lines
 
 
-def read_settings(path, filename, report):
+def read_settings(path: str, filename: str, report: Report) -> Options:
     """
     Return the options of an old settings file: ``{key: (value, lineno)}``.
 
@@ -206,18 +216,18 @@ def read_settings(path, filename, report):
 # The values, as the old versions wrote them.
 
 
-def parse_bool(text):
+def parse_bool(text: str) -> bool:
     return text.strip().lower() in ("true", "*", "yes")
 
 
-def parse_settings_bool(text):
+def parse_settings_bool(text: str) -> bool:
     value = text.strip().lower()
     if value in configparser.RawConfigParser.BOOLEAN_STATES:
         return configparser.RawConfigParser.BOOLEAN_STATES[value]
     raise ValueError(f'"{text}" is not true or false')
 
 
-def parse_list(text):
+def parse_list(text: str) -> list[str]:
     """Parse a list of strings written with repr(), without running it."""
 
     if not text.strip():

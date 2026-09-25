@@ -583,10 +583,10 @@ class Application(brickfactory.Application):
         message_dialog.set_parent(self.gui.window)
 
     def migrate(self):
-        from virtualbricks.migrate import engine
+        from virtualbricks import migrate
         from virtualbricks.migrate.gui import MigrationWindow
 
-        migration = engine.startup_migration()
+        migration = migrate.startup_migration()
         if migration is None:
             return None
         window = MigrationWindow(migration=migration)

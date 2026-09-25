@@ -27,8 +27,7 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import project, tools
-from virtualbricks.config import settings
+from virtualbricks import config, project, tools
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
 
 logger = Logger()
@@ -80,7 +79,7 @@ class ProjectSettingsWidgets:
         self.erroronloop_switch = _switch()
         self.qemupath_chooser = _folder_chooser()
         formats = Gtk.ListStore(str)
-        for cow_format in settings.COW_FORMATS:
+        for cow_format in config.COW_FORMATS:
             formats.append([cow_format])
         self.cowfmt_combo = Gtk.ComboBox(
             visible=True, can_focus=False, hexpand=True, model=formats
@@ -356,32 +355,32 @@ class SettingsDialog(_Dialog):
         self._setting_ksm_deferred = deferred
 
     def load_settings(self):
-        self.term_entry.set_text(settings.get_app("term"))
-        self.sudo_entry.set_text(settings.get_app("sudo"))
-        self.systray_switch.set_active(settings.get_app("systray"))
-        self.warn_missing_switch.set_active(settings.get_app("show_missing"))
-        self.enable_ksm_switch.set_active(settings.get_app("ksm"))
-        self.new_project_widgets.load(settings.get_app)
-        if settings.project_settings() is None:
-            self.project_widgets.load(settings.get_app)
+        self.term_entry.set_text(config.get_app("term"))
+        self.sudo_entry.set_text(config.get_app("sudo"))
+        self.systray_switch.set_active(config.get_app("systray"))
+        self.warn_missing_switch.set_active(config.get_app("show_missing"))
+        self.enable_ksm_switch.set_active(config.get_app("ksm"))
+        self.new_project_widgets.load(config.get_app)
+        if config.project_settings() is None:
+            self.project_widgets.load(config.get_app)
             self.project_widgets.grid.set_sensitive(False)
         else:
-            self.project_widgets.load(settings.get)
+            self.project_widgets.load(config.get)
 
     def store_settings(self):
         logger.debug(apply_settings)
-        settings.set_app("term", self.term_entry.get_text())
-        settings.set_app("sudo", self.sudo_entry.get_text())
-        settings.set_app("systray", self.systray_switch.get_active())
-        settings.set_app("show_missing", self.warn_missing_switch.get_active())
-        self.new_project_widgets.store(settings.set_app)
-        if settings.project_settings() is not None:
-            self.project_widgets.store(settings.set)
+        config.set_app("term", self.term_entry.get_text())
+        config.set_app("sudo", self.sudo_entry.get_text())
+        config.set_app("systray", self.systray_switch.get_active())
+        config.set_app("show_missing", self.warn_missing_switch.get_active())
+        self.new_project_widgets.store(config.set_app)
+        if config.project_settings() is not None:
+            self.project_widgets.store(config.set)
             project.manager.save_current(self.virtualbricks_gui.brickfactory)
         ksm_active = self.enable_ksm_switch.get_active()
-        settings.set_app("ksm", ksm_active)
+        config.set_app("ksm", ksm_active)
         tools.set_ksm(ksm_active)
-        settings.store()
+        config.store()
         if self.systray_switch.get_active():
             self.virtualbricks_gui.start_systray()
         else:

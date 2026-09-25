@@ -20,16 +20,16 @@
 
 from collections import OrderedDict as odict
 
-from virtualbricks import bricks, link
-from virtualbricks.config import Str, schema
+from virtualbricks import bricks, config, link
+from virtualbricks.config import Str
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
 
-@schema.define
+@config.define
 class CaptureConfig(bricks.BrickConfig):
 
-    iface = schema.field(Str(), default="")
+    iface = config.field(Str(), default="")
 
 
 class Capture(bricks.PrivilegedBrick):

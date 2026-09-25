@@ -19,5 +19,87 @@
 The migration of the files of Virtualbricks 2.1 and older.
 
 This package is the only code that reads the old formats: the rest of
-Virtualbricks reads and writes only the current one.
+Virtualbricks reads and writes only the current one, and takes what it needs
+from here. The migration window is in ``virtualbricks.migrate.gui``: it
+imports GTK, so it isn't imported with the package.
 """
+
+from virtualbricks.migrate.legacy import (
+    Link,
+    looks_like_project,
+    parse_bool,
+    parse_list,
+    parse_project,
+    parse_settings_bool,
+    read_project,
+    read_settings,
+    where,
+)
+from virtualbricks.migrate.convert import (
+    MigrationError,
+    convert_project,
+    convert_settings,
+    convert_value,
+)
+from virtualbricks.migrate.engine import (
+    FAILED,
+    MIGRATED,
+    MIGRATING,
+    REPORT_FILE,
+    SKIPPED,
+    WAITING,
+    Folder,
+    InPlace,
+    Item,
+    Migration,
+    counts,
+    discover,
+    in_place_migration,
+    lock_in_place,
+    migrate_imported_project,
+    migration_for,
+    project_source,
+    startup_migration,
+)
+from virtualbricks.migrate.cli import (
+    EXIT_RUNNING,
+    RUNNING,
+    main,
+)
+
+__all__ = [
+    "Link",
+    "looks_like_project",
+    "parse_bool",
+    "parse_list",
+    "parse_project",
+    "parse_settings_bool",
+    "read_project",
+    "read_settings",
+    "where",
+    "MigrationError",
+    "convert_project",
+    "convert_settings",
+    "convert_value",
+    "FAILED",
+    "MIGRATED",
+    "MIGRATING",
+    "REPORT_FILE",
+    "SKIPPED",
+    "WAITING",
+    "Folder",
+    "InPlace",
+    "Item",
+    "Migration",
+    "counts",
+    "discover",
+    "in_place_migration",
+    "lock_in_place",
+    "migrate_imported_project",
+    "migration_for",
+    "project_source",
+    "startup_migration",
+    "EXIT_RUNNING",
+    "RUNNING",
+    "main",
+]

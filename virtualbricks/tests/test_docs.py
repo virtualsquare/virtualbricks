@@ -36,7 +36,7 @@ import sys
 import tomlkit
 from twisted.trial import unittest
 
-from virtualbricks import locations
+from virtualbricks import config, locations
 from virtualbricks.config import (
     Bool,
     Choice,
@@ -46,9 +46,6 @@ from virtualbricks.config import (
     ListOf,
     Path,
     Ref,
-    projectfile,
-    schema,
-    settings,
 )
 from virtualbricks.events import EventConfig
 from virtualbricks.tests import isolate, make_factory, reset_settings
@@ -167,10 +164,10 @@ class DocsTestCase(unittest.TestCase):
 
     def check_kinds(self, heading, cls, names=None):
         entries = self.entries(heading)
-        for attribute in schema.fields(cls):
+        for attribute in config.fields(cls):
             if names is not None and attribute.name not in names:
                 continue
-            kind = schema.info(attribute).kind
+            kind = config.info(attribute).kind
             name = attribute.name
             got_kind, got_range, _ = entries[name]
             self.assertEqual(got_kind, kind_name(kind), f"{heading}: {name}")
@@ -180,38 +177,36 @@ class DocsTestCase(unittest.TestCase):
 class TestSettings(DocsTestCase):
 
     def test_application_settings(self):
-        values = schema.dump(settings.AppSettings())
+        values = config.dump_record(config.AppSettings())
         # the default depends on the home directory
         values["workspace"] = values["workspace"].replace(
             locations.home(), "~", 1
         )
         app_only = {
-            k: v for k, v in values.items() if k not in settings.PROJECT_KEYS
+            k: v for k, v in values.items() if k not in config.PROJECT_KEYS
         }
-        project = {
-            k: v for k, v in values.items() if k in settings.PROJECT_KEYS
-        }
+        project = {k: v for k, v in values.items() if k in config.PROJECT_KEYS}
         self.check_defaults("Application settings", app_only, "settings")
         self.check_defaults("Settings of new projects", project, "settings")
-        self.check_kinds(
-            "Application settings", settings.AppSettings, app_only
-        )
-        self.check_kinds("Settings of new projects", settings.ProjectSettings)
+        self.check_kinds("Application settings", config.AppSettings, app_only)
+        self.check_kinds("Settings of new projects", config.ProjectSettings)
 
     def test_state(self):
-        self.check_defaults("STATE", schema.dump(settings.AppState()), "state")
-        self.check_kinds("STATE", settings.AppState)
+        self.check_defaults(
+            "STATE", config.dump_record(config.AppState()), "state"
+        )
+        self.check_kinds("STATE", config.AppState)
 
 
 class TestProjects(DocsTestCase):
 
     def test_images(self):
-        table = schema.dump(projectfile.ImageTable())
+        table = config.dump_record(config.ImageTable())
         self.check_defaults("Images", table, "images")
-        self.check_kinds("Images", projectfile.ImageTable)
+        self.check_kinds("Images", config.ImageTable)
 
     def test_events(self):
-        table = schema.dump(EventConfig())
+        table = config.dump_record(EventConfig())
         self.check_defaults("Events", table, "events")
         self.check_kinds("Events", EventConfig)
 
@@ -223,7 +218,7 @@ class TestProjects(DocsTestCase):
         self.assertEqual(sorted(types[1:]), sorted(BRICK_TYPES))
         for brick_type in BRICK_TYPES:
             brick = factory.new_brick(brick_type, f"a{brick_type}")
-            table = projectfile.brick_table(brick)
+            table = config.brick_table(brick)
             self.assertEqual(table["type"], brick_type)
             common = {k: table[k] for k in COMMON_KEYS - {"type"}}
             self.check_defaults("Bricks", common, "bricks")
@@ -234,9 +229,11 @@ class TestProjects(DocsTestCase):
             }
             if "states" in table:
                 # the keys of a state are documented with the brick
-                own.update(schema.dump(NetemuConfig(), exclude=BRICK_KEYS))
+                own.update(
+                    config.dump_record(NetemuConfig(), exclude=BRICK_KEYS)
+                )
             self.check_defaults(brick_type, own, brick_type)
-            config_names = set(schema.names(brick.config))
+            config_names = set(config.names(brick.config))
             self.check_kinds(
                 brick_type, type(brick.config), config_names & set(own)
             )
@@ -250,7 +247,7 @@ class TestProjects(DocsTestCase):
 
     def test_disks(self):
         vm = make_factory(self).new_brick("qemu", "vm")
-        disks = projectfile.brick_table(vm)["disks"]
+        disks = config.brick_table(vm)["disks"]
         self.assertEqual(sorted(disks), sorted(DISK_DEVICES))
         entries = self.entries("Disks")
         for key, value in disks["hda"].items():
@@ -266,13 +263,13 @@ class TestProjects(DocsTestCase):
 
     def test_network_cards(self):
         entries = self.entries("Network cards")
-        keys = set().union(*projectfile.NIC_KEYS.values())
+        keys = set().union(*config.NIC_KEYS.values())
         self.assertEqual(sorted(entries), sorted(keys))
-        self.assertEqual(entries["model"][2], toml(projectfile.DEFAULT_MODEL))
+        self.assertEqual(entries["model"][2], toml(config.DEFAULT_MODEL))
 
     def test_netemu_states(self):
         entries = self.entries("netemu")
-        state = schema.dump(NetemuConfig(), exclude=BRICK_KEYS)
+        state = config.dump_record(NetemuConfig(), exclude=BRICK_KEYS)
         for name, value in state.items():
             self.assertEqual(entries[name][2], toml(value), name)
         self.check_kinds("netemu", NetemuConfig, STATE_KEYS)

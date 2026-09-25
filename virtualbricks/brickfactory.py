@@ -40,8 +40,7 @@ from twisted.logger import (
     globalLogPublisher,
 )
 
-from virtualbricks import errors, console, project, locations
-from virtualbricks.config import settings, schema
+from virtualbricks import config, console, errors, locations, project
 from virtualbricks import i18n
 from virtualbricks import link
 from virtualbricks.bricks import capture, netemu, router, switch
@@ -294,7 +293,7 @@ class BrickFactory:
     def dup_brick(self, brick):
         name = self.next_name("copy_of_" + brick.name)
         new_brick = self.new_brick(brick.get_type(), name)
-        new_brick.set(copy.deepcopy(schema.values(brick.config)))
+        new_brick.set(copy.deepcopy(config.values(brick.config)))
 
         for p in brick.plugs:
             if p.sock is not None:
@@ -634,8 +633,8 @@ class Application:
         i18n.install()
 
     def install_settings(self):
-        settings.load()
-        settings.load_state()
+        config.load_settings()
+        config.load_state()
 
     def install_sys_hooks(self):
         sys.excepthook = self.excepthook
@@ -667,9 +666,9 @@ class Application:
     def migrate(self):
         """Convert the files of older versions, once; may return a Deferred."""
 
-        from virtualbricks.migrate import engine
+        from virtualbricks import migrate
 
-        migration = engine.startup_migration()
+        migration = migrate.startup_migration()
         if migration is not None:
             migration.run()
             migration.log(logger)
@@ -694,7 +693,7 @@ class Application:
             signal.signal(signal.SIGUSR2, lambda *args: pdb.set_trace())
             signal.signal(signal.SIGINT, lambda *args: pdb.set_trace())
             app.fixPdb()
-        reactor.addSystemEventTrigger("before", "shutdown", settings.store)
+        reactor.addSystemEventTrigger("before", "shutdown", config.store)
         project.manager.restore_last(factory)
         reactor.addSystemEventTrigger(
             "before", "shutdown", project.manager.save_current, factory

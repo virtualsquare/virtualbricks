@@ -21,8 +21,8 @@ import os
 from twisted.python import lockfile
 from twisted.trial import unittest
 
-from virtualbricks import locations
-from virtualbricks.config import Report, settings, tomlfile
+from virtualbricks import config, locations, migrate
+from virtualbricks.config import Report
 from virtualbricks.migrate import engine
 from virtualbricks.tests import (
     FakeLogger,
@@ -50,9 +50,9 @@ class EngineTestCase(unittest.TestCase):
         self.output = os.path.join(self.root, "new")
 
     def folder_migration(self, legacy_settings=None, **options):
-        return engine.Migration(
+        return migrate.Migration(
             self.workspace,
-            engine.Folder(self.output),
+            migrate.Folder(self.output),
             legacy_settings,
             **options,
         )
@@ -64,7 +64,7 @@ class EngineTestCase(unittest.TestCase):
 class TestTargets(EngineTestCase):
 
     def test_in_place(self):
-        target = engine.InPlace(self.workspace)
+        target = migrate.InPlace(self.workspace)
         self.assertIsNone(target.folder)
         self.assertEqual(target.settings_file, locations.settings_file())
         self.assertEqual(target.state_file, locations.state_file())
@@ -75,7 +75,7 @@ class TestTargets(EngineTestCase):
                 ".local",
                 "state",
                 "virtualbricks",
-                engine.REPORT_FILE,
+                migrate.REPORT_FILE,
             ),
         )
         self.assertEqual(
@@ -83,7 +83,7 @@ class TestTargets(EngineTestCase):
         )
 
     def test_folder(self):
-        target = engine.Folder(self.output)
+        target = migrate.Folder(self.output)
         self.assertEqual(
             target.workspace, os.path.join(self.output, "workspace")
         )
@@ -98,7 +98,7 @@ class TestTargets(EngineTestCase):
             os.path.join(self.output, "state", "virtualbricks", "state.toml"),
         )
         self.assertEqual(
-            target.report_file, os.path.join(self.output, engine.REPORT_FILE)
+            target.report_file, os.path.join(self.output, migrate.REPORT_FILE)
         )
         self.assertEqual(
             target.project_dir("lab"),
@@ -109,16 +109,16 @@ class TestTargets(EngineTestCase):
 class TestDiscover(EngineTestCase):
 
     def test_missing_workspace(self):
-        self.assertEqual(engine.discover(self.workspace), [])
+        self.assertEqual(migrate.discover(self.workspace), [])
 
     def test_project_source(self):
         directory = os.path.join(self.workspace, "lab")
         os.makedirs(directory)
-        self.assertIsNone(engine.project_source(directory))
+        self.assertIsNone(migrate.project_source(directory))
         path = write_project(self.workspace, "lab")
-        self.assertEqual(engine.project_source(directory), path)
+        self.assertEqual(migrate.project_source(directory), path)
         backup = write_project(self.workspace, "lab", filename=".project~")
-        self.assertEqual(engine.project_source(directory), backup)
+        self.assertEqual(migrate.project_source(directory), backup)
 
     def test_projects(self):
         write_project(self.workspace, "lab")
@@ -127,12 +127,12 @@ class TestDiscover(EngineTestCase):
         write(os.path.join(self.workspace, "notes.txt"), "hello\n")
         write(os.path.join(self.workspace, ".old.vbl"), CONFIG1)
         write(os.path.join(self.workspace, "single.vbl"), CONFIG1)
-        items = engine.discover(self.workspace)
+        items = migrate.discover(self.workspace)
         self.assertEqual(
             [(item.name, item.kind, item.status) for item in items],
             [
-                ("lab", "project", engine.WAITING),
-                ("single", "file", engine.WAITING),
+                ("lab", "project", migrate.WAITING),
+                ("single", "file", migrate.WAITING),
             ],
         )
         self.assertEqual(
@@ -144,13 +144,13 @@ class TestDiscover(EngineTestCase):
         write_project(self.workspace, "lab")
         os.makedirs(os.path.join(self.workspace, "lab_1"))
         write(os.path.join(self.workspace, "lab.vbl"), CONFIG1)
-        names = [item.name for item in engine.discover(self.workspace)]
+        names = [item.name for item in migrate.discover(self.workspace)]
         self.assertEqual(names, ["lab", "lab_2"])
 
     def test_file_migrated_in_place_keeps_its_name(self):
         write(os.path.join(self.workspace, "lab.vbl"), CONFIG1)
         write(os.path.join(self.workspace, "lab", locations.PROJECT_FILE), "")
-        names = [item.name for item in engine.discover(self.workspace)]
+        names = [item.name for item in migrate.discover(self.workspace)]
         self.assertEqual(names, ["lab"])
 
 
@@ -173,22 +173,22 @@ class TestMigrateToFolder(EngineTestCase):
         self.assertEqual(
             self.statuses(migration),
             [
-                ("vb.conf", engine.MIGRATED),
-                ("lab1", engine.MIGRATED),
-                ("wan", engine.MIGRATED),
+                ("vb.conf", migrate.MIGRATED),
+                ("lab1", migrate.MIGRATED),
+                ("wan", migrate.MIGRATED),
             ],
         )
         self.assertEqual(migration.exit_code, 0)
         target = migration.target
-        data = tomlfile.load(target.settings_file)
-        self.assertEqual(data["format"], settings.FORMAT)
+        data = config.load_toml(target.settings_file)
+        self.assertEqual(data["format"], config.SETTINGS_FORMAT)
         self.assertEqual(data["workspace"], target.workspace)
         self.assertEqual(data["cowfmt"], "qcow")
         self.assertEqual(
-            tomlfile.load(target.state_file),
-            {"format": settings.FORMAT, "current_project": "wan"},
+            config.load_toml(target.state_file),
+            {"format": config.SETTINGS_FORMAT, "current_project": "wan"},
         )
-        project = tomlfile.load(
+        project = config.load_toml(
             os.path.join(target.workspace, "lab1", "project.toml")
         )
         self.assertIn("sender", project["bricks"])
@@ -232,7 +232,7 @@ class TestMigrateToFolder(EngineTestCase):
         migration = self.folder_migration(
             self.legacy_settings, dry_run=True
         ).run()
-        self.assertEqual(migration.count(engine.MIGRATED), 2)
+        self.assertEqual(migration.count(migrate.MIGRATED), 2)
         self.assertEqual(
             [item.bricks for item in migration.items], [None, 3, 3]
         )
@@ -242,7 +242,7 @@ class TestMigrateToFolder(EngineTestCase):
         migration = self.folder_migration().run()
         self.assertFalse(os.path.exists(migration.target.state_file))
         self.assertFalse(os.path.exists(migration.target.settings_file))
-        project = tomlfile.load(
+        project = config.load_toml(
             os.path.join(migration.target.project_dir("lab1"), "project.toml")
         )
         self.assertEqual(project["settings"]["cowfmt"], "qcow2")
@@ -253,9 +253,9 @@ class TestMigrateToFolder(EngineTestCase):
         self.assertEqual(
             self.statuses(migration),
             [
-                ("vb.conf", engine.SKIPPED),
-                ("lab1", engine.SKIPPED),
-                ("wan", engine.SKIPPED),
+                ("vb.conf", migrate.SKIPPED),
+                ("lab1", migrate.SKIPPED),
+                ("wan", migrate.SKIPPED),
             ],
         )
         self.assertEqual(migration.pending(), [])
@@ -276,10 +276,10 @@ class TestMigrateToFolder(EngineTestCase):
         self.assertEqual(
             seen,
             [
-                ("lab1", engine.MIGRATING),
-                ("lab1", engine.MIGRATED),
-                ("wan", engine.MIGRATING),
-                ("wan", engine.MIGRATED),
+                ("lab1", migrate.MIGRATING),
+                ("lab1", migrate.MIGRATED),
+                ("wan", migrate.MIGRATING),
+                ("wan", migrate.MIGRATED),
             ],
         )
 
@@ -298,7 +298,7 @@ class TestFailures(EngineTestCase):
             fp.write(b"\xff\xfe[")
         migration = self.folder_migration().run()
         item = migration.items[0]
-        self.assertEqual(item.status, engine.FAILED)
+        self.assertEqual(item.status, migrate.FAILED)
         self.assertEqual(
             [m.text for m in item.report],
             ["not a text file (invalid start byte); project not migrated"],
@@ -324,7 +324,7 @@ class TestFailures(EngineTestCase):
         migration = self.folder_migration().run()
         self.assertEqual(
             self.statuses(migration),
-            [("lab", engine.FAILED), ("wan", engine.MIGRATED)],
+            [("lab", migrate.FAILED), ("wan", migrate.MIGRATED)],
         )
         self.assertEqual(
             [m.text for m in migration.items[0].report],
@@ -341,7 +341,7 @@ class TestFailures(EngineTestCase):
         path = write(os.path.join(self.root, "vb.conf"), "term = x\n")
         migration = self.folder_migration(path).run()
         self.assertEqual(
-            self.statuses(migration), [("vb.conf", engine.FAILED)]
+            self.statuses(migration), [("vb.conf", migrate.FAILED)]
         )
         self.assertFalse(os.path.exists(migration.target.settings_file))
         self.assertEqual(migration.exit_code, 1)
@@ -350,7 +350,7 @@ class TestFailures(EngineTestCase):
         write_project(self.workspace, "lab", "[Switch:half")
         write_project(self.workspace, "lab", CONFIG1, filename=".project~")
         item = self.folder_migration().run().items[0]
-        self.assertEqual(item.status, engine.MIGRATED)
+        self.assertEqual(item.status, migrate.MIGRATED)
         self.assertIn(
             ".project~, left by an interrupted save, used",
             [m.text for m in item.report],
@@ -372,8 +372,8 @@ class TestInPlace(EngineTestCase):
     def test_migrate(self):
         write_project(self.workspace, "lab")
         write(os.path.join(self.workspace, "single.vbl"), CONFIG1)
-        migration = engine.Migration(
-            self.workspace, engine.InPlace(self.workspace)
+        migration = migrate.Migration(
+            self.workspace, migrate.InPlace(self.workspace)
         )
         migration.run()
         self.assertTrue(
@@ -385,8 +385,8 @@ class TestInPlace(EngineTestCase):
             )
         )
         self.assertTrue(os.path.isfile(migration.target.report_file))
-        again = engine.Migration(
-            self.workspace, engine.InPlace(self.workspace)
+        again = migrate.Migration(
+            self.workspace, migrate.InPlace(self.workspace)
         )
         self.assertEqual(again.pending(), [])
 
@@ -428,12 +428,12 @@ class TestReporting(EngineTestCase):
         )
 
     def test_counts(self):
-        item = engine.Item("x", "project", "/x")
-        self.assertEqual(engine.counts(item), "")
+        item = migrate.Item("x", "project", "/x")
+        self.assertEqual(migrate.counts(item), "")
         item.report.error("a")
         item.report.warning("b")
         item.report.warning("c")
-        self.assertEqual(engine.counts(item), "1 error, 2 warnings")
+        self.assertEqual(migrate.counts(item), "1 error, 2 warnings")
 
     def test_log(self):
         migration = self.folder_migration(verbose=True).run()
@@ -468,8 +468,8 @@ class TestReporting(EngineTestCase):
         )
 
     def test_nothing_to_migrate(self):
-        migration = engine.Migration(
-            self.root + "/none", engine.Folder(self.output)
+        migration = migrate.Migration(
+            self.root + "/none", migrate.Folder(self.output)
         )
         self.assertEqual(
             migration.run().text(), "\n0 of 0 projects migrated.\n"
@@ -483,47 +483,47 @@ class TestEntryPoints(EngineTestCase):
         self.legacy_settings = locations.legacy_settings_file()
 
     def test_fresh_install(self):
-        self.assertIsNone(engine.startup_migration())
+        self.assertIsNone(migrate.startup_migration())
 
     def test_startup_with_old_settings(self):
         write_settings(self.legacy_settings, self.workspace, "lab")
         write_project(self.workspace, "lab")
-        migration = engine.startup_migration()
+        migration = migrate.startup_migration()
         self.assertEqual(
             [item.name for item in migration.pending()],
             [locations.LEGACY_SETTINGS_FILE, "lab"],
         )
-        self.assertIsInstance(migration.target, engine.InPlace)
+        self.assertIsInstance(migration.target, migrate.InPlace)
         self.assertEqual(migration.workspace, self.workspace)
         migration.run()
         self.assertEqual(
-            settings.AppSettings().workspace,
+            config.AppSettings().workspace,
             os.path.join(self.root, ".virtualbricks"),
         )
         self.assertEqual(
-            tomlfile.load(locations.settings_file())["workspace"],
+            config.load_toml(locations.settings_file())["workspace"],
             self.workspace,
         )
         self.assertEqual(
-            tomlfile.load(locations.state_file())["current_project"], "lab"
+            config.load_toml(locations.state_file())["current_project"], "lab"
         )
-        self.assertIsNone(engine.startup_migration())
+        self.assertIsNone(migrate.startup_migration())
 
     def test_startup_with_new_settings(self):
         # an old project copied into a migrated workspace
         write(
             locations.settings_file(),
-            tomlfile.dumps({"format": 1, "workspace": self.workspace}),
+            config.dumps({"format": 1, "workspace": self.workspace}),
         )
         write_settings(self.legacy_settings, "/elsewhere", "lab")
         write_project(self.workspace, "lab")
-        migration = engine.startup_migration()
+        migration = migrate.startup_migration()
         self.assertEqual([item.name for item in migration.items], ["lab"])
 
     def test_unreadable_settings_use_the_defaults(self):
         write(locations.settings_file(), "workspace = \n")
         write_project(os.path.join(self.root, ".virtualbricks"), "lab")
-        migration = engine.startup_migration()
+        migration = migrate.startup_migration()
         self.assertEqual([item.name for item in migration.items], ["lab"])
         with open(self.legacy_settings, "wb") as fp:
             fp.write(b"\xff\xfe")
@@ -533,32 +533,32 @@ class TestEntryPoints(EngineTestCase):
         )
 
     def test_in_place_migration(self):
-        migration = engine.in_place_migration(dry_run=True)
+        migration = migrate.in_place_migration(dry_run=True)
         self.assertEqual(migration.items, [])
         self.assertTrue(migration.dry_run)
         write_settings(self.legacy_settings, self.workspace)
-        migration = engine.in_place_migration()
+        migration = migrate.in_place_migration()
         self.assertEqual(migration.workspace, self.workspace)
         self.assertEqual(migration.items[0].source, self.legacy_settings)
         other = write_settings(
             os.path.join(self.root, "other.conf"), "/srv/vb"
         )
-        migration = engine.in_place_migration(other)
+        migration = migrate.in_place_migration(other)
         self.assertEqual(migration.workspace, "/srv/vb")
 
     def test_migration_for(self):
         write(
             locations.settings_file(),
-            tomlfile.dumps({"format": 1, "cowfmt": "cow"}),
+            config.dumps({"format": 1, "cowfmt": "cow"}),
         )
-        migration = engine.migration_for(self.workspace)
-        self.assertIsInstance(migration.target, engine.InPlace)
+        migration = migrate.migration_for(self.workspace)
+        self.assertIsInstance(migration.target, migrate.InPlace)
         self.assertEqual(migration.app_settings.cowfmt, "cow")
-        migration = engine.migration_for(self.workspace, output=self.output)
-        self.assertIsInstance(migration.target, engine.Folder)
+        migration = migrate.migration_for(self.workspace, output=self.output)
+        self.assertIsInstance(migration.target, migrate.Folder)
         self.assertEqual(migration.app_settings.cowfmt, "qcow2")
         old = write_settings(os.path.join(self.root, "vb.conf"), "/srv/vb")
-        migration = engine.migration_for(self.workspace, old, self.output)
+        migration = migrate.migration_for(self.workspace, old, self.output)
         self.assertEqual(migration.app_settings.cowfmt, "qcow")
         self.assertEqual(migration.items[0].kind, "settings")
 
@@ -568,23 +568,27 @@ class TestImportedProject(EngineTestCase):
     def test_migrate(self):
         directory = os.path.join(self.root, "imported")
         write_project(self.root, "imported", CONFIG1)
-        report = engine.migrate_imported_project(directory)
+        report = migrate.migrate_imported_project(directory)
         self.assertEqual(report.errors, 0)
-        data = tomlfile.load(os.path.join(directory, locations.PROJECT_FILE))
+        data = config.load_toml(
+            os.path.join(directory, locations.PROJECT_FILE)
+        )
         self.assertIn("sender", data["bricks"])
 
     def test_uses_the_settings_of_new_projects(self):
-        settings.set_app("cowfmt", "cow")
+        config.set_app("cowfmt", "cow")
         directory = os.path.join(self.root, "imported")
         write_project(self.root, "imported", CONFIG1)
-        engine.migrate_imported_project(directory)
-        data = tomlfile.load(os.path.join(directory, locations.PROJECT_FILE))
+        migrate.migrate_imported_project(directory)
+        data = config.load_toml(
+            os.path.join(directory, locations.PROJECT_FILE)
+        )
         self.assertEqual(data["settings"]["cowfmt"], "cow")
 
     def test_no_project_file(self):
         directory = os.path.join(self.root, "imported")
         os.makedirs(directory)
-        report = engine.migrate_imported_project(directory)
+        report = migrate.migrate_imported_project(directory)
         self.assertEqual(
             [str(m) for m in report], [f"{directory}: no project file found"]
         )
@@ -592,7 +596,7 @@ class TestImportedProject(EngineTestCase):
     def test_invalid(self):
         directory = os.path.join(self.root, "imported")
         write_project(self.root, "imported", "[Switch:a]\n[Switch:a]\n")
-        report = engine.migrate_imported_project(directory)
+        report = migrate.migrate_imported_project(directory)
         self.assertEqual(report.errors, 1)
         self.assertIsInstance(report, Report)
         self.assertFalse(
@@ -606,7 +610,7 @@ class TestLock(unittest.TestCase):
         isolate(self)
 
     def lock_in_place(self):
-        lock = engine.lock_in_place()
+        lock = migrate.lock_in_place()
         self.addCleanup(release, lock)
         return lock
 
@@ -629,4 +633,4 @@ class TestLock(unittest.TestCase):
             raise PermissionError("Operation not permitted")
 
         self.patch(lockfile.FilesystemLock, "lock", lock)
-        self.assertIsNone(engine.lock_in_place())
+        self.assertIsNone(migrate.lock_in_place())

@@ -21,8 +21,7 @@ import os
 from twisted.internet import defer
 from twisted.logger import Logger
 
-from virtualbricks import errors
-from virtualbricks.config import settings
+from virtualbricks import config, errors
 
 link_loop = (
     "Loop link detected: aborting operation. If you want "
@@ -48,7 +47,7 @@ class Plug:
 
     def connected(self):
         if self._antiloop:
-            if settings.get("erroronloop"):
+            if config.get("erroronloop"):
                 self.logger.error(link_loop)
             self._antiloop = False
             return defer.fail(errors.LinkLoopError())

@@ -21,17 +21,17 @@ import os
 
 from twisted.internet import defer
 
-from virtualbricks import bricks, errors
-from virtualbricks.config import Path, schema
+from virtualbricks import bricks, config, errors
+from virtualbricks.config import Path
 from virtualbricks.i18n import _
 
 sock_not_exists = "Socket does not exists: {path}"
 
 
-@schema.define
+@config.define
 class SwitchWrapperConfig(bricks.BrickConfig):
 
-    path = schema.field(Path(), default="")
+    path = config.field(Path(), default="")
 
 
 class SwitchWrapper(bricks.Brick):

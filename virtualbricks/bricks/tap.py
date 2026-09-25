@@ -20,19 +20,19 @@
 
 import os
 
-from virtualbricks import bricks, link
-from virtualbricks.config import Choice, IPv4, schema, settings
+from virtualbricks import bricks, config, link
+from virtualbricks.config import Choice, IPv4
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
 
-@schema.define
+@config.define
 class TapConfig(bricks.BrickConfig):
 
-    ip = schema.field(IPv4(), default="10.0.0.1")
-    nm = schema.field(IPv4(), default="255.255.255.0")
-    gw = schema.field(IPv4(optional=True), default="")
-    mode = schema.field(Choice("off", "dhcp", "manual"), default="off")
+    ip = config.field(IPv4(), default="10.0.0.1")
+    nm = config.field(IPv4(), default="255.255.255.0")
+    gw = config.field(IPv4(optional=True), default="")
+    mode = config.field(Choice("off", "dhcp", "manual"), default="off")
 
 
 class Tap(bricks.PrivilegedBrick):
@@ -71,16 +71,14 @@ class Tap(bricks.PrivilegedBrick):
         self.start_related_events(on=True)
         if self.config.mode == "dhcp":
             if self.needsudo():
-                os.system(
-                    settings.get("sudo") + ' "dhclient ' + self.name + '"'
-                )
+                os.system(config.get("sudo") + ' "dhclient ' + self.name + '"')
             else:
                 os.system("dhclient " + self.name)
         elif self.config.mode == "manual":
             if self.needsudo():
                 # XXX Ugly, can't we ioctls?
                 os.system(
-                    settings.get("sudo")
+                    config.get("sudo")
                     + ' "/sbin/ifconfig '
                     + self.name
                     + " "
@@ -91,7 +89,7 @@ class Tap(bricks.PrivilegedBrick):
                 )
                 if len(self.config.gw) > 0:
                     os.system(
-                        settings.get("sudo")
+                        config.get("sudo")
                         + ' "/sbin/route add default gw '
                         + self.config.gw
                         + " dev "

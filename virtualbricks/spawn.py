@@ -93,15 +93,15 @@ def getQemuOutput(executable, args=()):
 
 
 def abspath_vde(executable):
-    from virtualbricks.config import settings
+    from virtualbricks import config
 
-    return str(_abspath_exe(Path(executable), Path(settings.get("vdepath"))))
+    return str(_abspath_exe(Path(executable), Path(config.get("vdepath"))))
 
 
 def abspath_qemu(executable):
-    from virtualbricks.config import settings
+    from virtualbricks import config
 
-    return str(_abspath_exe(Path(executable), Path(settings.get("qemupath"))))
+    return str(_abspath_exe(Path(executable), Path(config.get("qemupath"))))
 
 
 def _log_failure(failure, message):

@@ -34,8 +34,8 @@ from twisted.internet import protocol, reactor, error, defer
 from twisted.logger import Logger
 from zope.interface import implementer
 
-from virtualbricks import base, errors, interfaces
-from virtualbricks.config import Ref, schema, settings
+from virtualbricks import base, config, errors, interfaces
+from virtualbricks.config import Ref
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 
@@ -233,11 +233,11 @@ class TermProtocol(protocol.ProcessProtocol):
             self.logger.info(console_done, status=status.value)
 
 
-@schema.define
+@config.define
 class BrickConfig:
 
-    pon_vbevent = schema.field(Ref("event"), default="")
-    poff_vbevent = schema.field(Ref("event"), default="")
+    pon_vbevent = config.field(Ref("event"), default="")
+    poff_vbevent = config.field(Ref("event"), default="")
 
 
 class Brick(base.Base):
@@ -326,18 +326,18 @@ class Brick(base.Base):
 
         attrs = {}
         for name, value in (a.split("=", 1) for a in attrlist):
-            attrs[name] = schema.parse(self.config, name, value)
+            attrs[name] = config.parse_value(self.config, name, value)
         self.set(attrs)
 
     def config_table(self):
         """Return the configuration as saved in the project file."""
 
-        return schema.dump(self.config)
+        return config.dump_record(self.config)
 
     def load_config_table(self, table, report, where, ignore):
         """Read the configuration from the table of the project file."""
 
-        self.config = schema.load(
+        self.config = config.load_record(
             type(self.config), table, report, where, ignore=ignore
         )
 
@@ -419,8 +419,8 @@ class Brick(base.Base):
             self.logger.info(start_brick, args=" ".join(args))
             # usePTY?
             if self.needsudo():
-                prog = settings.get("sudo")
-                args = [settings.get("sudo"), "--"] + args
+                prog = config.get("sudo")
+                args = [config.get("sudo"), "--"] + args
             self.proc = self.process_protocol(self)
             reactor.spawnProcess(self.proc, prog, args, os.environ)
 
@@ -477,7 +477,7 @@ class Brick(base.Base):
     ############################
 
     def open_console(self):
-        term = settings.get("term")
+        term = config.get("term")
         args = [term, "-e", abspath_vde(self.term_command), self.console()]
         self.logger.info(open_console, name=self.name, args=" ".join(args))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)

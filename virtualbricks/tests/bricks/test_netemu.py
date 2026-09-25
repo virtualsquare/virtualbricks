@@ -18,7 +18,8 @@
 
 """The network emulator."""
 
-from virtualbricks.config import Report, schema
+from virtualbricks import config
+from virtualbricks.config import Report
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,
@@ -93,11 +94,11 @@ class TestNetemu(BrickTestCase):
     def test_state_schema(self):
         # a state is the config without the events of the brick
         self.assertEqual(
-            STATE_KEYS | BRICK_KEYS, frozenset(schema.names(NetemuConfig))
+            STATE_KEYS | BRICK_KEYS, frozenset(config.names(NetemuConfig))
         )
         self.assertEqual(STATE_KEYS & BRICK_KEYS, frozenset())
         self.assertEqual(len(STATE_KEYS), 13)
-        [state] = schema.dump(NetemuTable())["states"]
+        [state] = config.dump_record(NetemuTable())["states"]
         self.assertEqual(frozenset(state), STATE_KEYS)
 
     def test_update_sends_every_state(self):

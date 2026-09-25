@@ -26,9 +26,13 @@ messages of the selected row. Check runs the migration without writing
 anything, Migrate writes.
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import tempfile
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, TypedDict
 
 import gi
 
@@ -43,12 +47,27 @@ from virtualbricks.i18n import _, ngettext
 from virtualbricks.migrate import engine
 from virtualbricks.config import ERROR, INFO, WARNING
 
+if TYPE_CHECKING:
+    from twisted.internet.interfaces import IReactorCore
+    from twisted.python.failure import Failure
+    from twisted.python.lockfile import FilesystemLock
+    from typing_extensions import Unpack
+
 logger = Logger()
 NAME, BRICKS, STATUS = range(3)
 LEVEL_COLORS = {INFO: "#56655f", WARNING: "#7a4800", ERROR: "#982b22"}
 
 
-def status_text(item):
+class WindowOptions(TypedDict, total=False):
+    """What fills the window of the command, see :func:`default_window`."""
+
+    workspace: str | None
+    settings_file: str | None
+    output: str | None
+    in_place: bool
+
+
+def status_text(item: engine.Item) -> str:
     if item.status == engine.MIGRATED:
         warnings = item.report.warnings
         if warnings:
@@ -63,24 +82,28 @@ def status_text(item):
     }[item.status]
 
 
-def default_output():
+def default_output() -> str:
     return os.path.join(tempfile.gettempdir(), "virtualbricks-migration")
 
 
-def _form_row(grid, row, label, widget):
+def _form_row(
+    grid: Gtk.Grid, row: int, label: str, widget: Gtk.Widget
+) -> None:
     caption = Gtk.Label(label=label, xalign=0.0)
     grid.attach(caption, 0, row, 1, 1)
     grid.attach(widget, 1, row, 1, 1)
 
 
-def _path_entry(text, action, title, parent):
+def _path_entry(
+    text: str, action: Gtk.FileChooserAction, title: str, parent: Gtk.Window
+) -> tuple[Gtk.Box, Gtk.Entry, Gtk.Button]:
     """An entry with a button to pick the path it holds."""
 
     box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
     entry = Gtk.Entry(text=text, hexpand=True)
     button = Gtk.Button(label=_("Choose…"))
 
-    def choose(_button):
+    def choose(_button: Gtk.Button) -> None:
         dialog = Gtk.FileChooserDialog(
             title=title, transient_for=parent, action=action
         )
@@ -93,7 +116,9 @@ def _path_entry(text, action, title, parent):
         if entry.get_text():
             dialog.set_filename(entry.get_text())
         if dialog.run() == Gtk.ResponseType.OK:
-            entry.set_text(dialog.get_filename())
+            filename = dialog.get_filename()
+            if filename is not None:
+                entry.set_text(filename)
         dialog.destroy()
 
     button.connect("clicked", choose)
@@ -111,21 +136,23 @@ class MigrationWindow:
     migrates the files of the user at startup.
     """
 
-    migration = None
+    migration: engine.Migration | None = None
     # Held while the files of the user are migrated from the form.
-    lock = None
+    lock: FilesystemLock | None = None
 
     def __init__(
         self,
-        workspace="",
-        settings_file="",
-        migration=None,
-        output=None,
-        in_place=False,
-    ):
+        workspace: str = "",
+        settings_file: str = "",
+        migration: engine.Migration | None = None,
+        output: str | None = None,
+        in_place: bool = False,
+    ) -> None:
         self.fixed = migration is not None
-        self.closed = defer.Deferred()
-        self.running = None
+        # fires with the migration shown, if any, when the window closes
+        self.closed: defer.Deferred[engine.Migration | None] = defer.Deferred()
+        # fires with the steps of the migration running, when they are done
+        self.running: defer.Deferred[Iterator[None]] | None = None
         self.build_ui(workspace, settings_file)
         if output is not None:
             self.output_entry.set_text(output)
@@ -137,7 +164,7 @@ class MigrationWindow:
             self.check_button.hide()
             self.migrate_button.hide()
 
-    def build_ui(self, workspace, settings_file):
+    def build_ui(self, workspace: str, settings_file: str) -> None:
         self.window = Gtk.Window(title=_("Virtualbricks migration"))
         self.window.set_default_size(720, 560)
         self.window.connect("destroy", self.on_destroy)
@@ -225,14 +252,16 @@ class MigrationWindow:
         outer.pack_start(buttons, False, False, 0)
         outer.show_all()
 
-    def show(self):
+    def show(self) -> None:
         self.window.present()
         if self.fixed and self.running is None:
+            # a fixed window is filled with its migration
+            assert self.migration is not None
             self.run(self.migration)
 
     # Building the migration from the form
 
-    def make_migration(self, dry_run):
+    def make_migration(self, dry_run: bool) -> engine.Migration:
         """Return the migration chosen in the form; ValueError if invalid."""
 
         workspace = self.workspace_entry.get_text()
@@ -254,24 +283,26 @@ class MigrationWindow:
             workspace, settings_file, output, dry_run=dry_run
         )
 
-    def fill(self, migration):
+    def fill(self, migration: engine.Migration) -> None:
         self.migration = migration
         self.store.clear()
         for item in migration.items:
             self.store.append(self.row(item))
         self.show_progress()
         if len(self.store):
-            self.view.get_selection().select_path(Gtk.TreePath(0))
+            self.view.get_selection().select_path(Gtk.TreePath.new_first())
         else:
             self.show_text(_("There is nothing to migrate."))
 
-    def row(self, item):
+    def row(self, item: engine.Item) -> list[str]:
         bricks = "—" if item.bricks is None else str(item.bricks)
         return [item.name, bricks, status_text(item)]
 
     # Running
 
-    def run(self, migration):
+    def run(
+        self, migration: engine.Migration
+    ) -> defer.Deferred[Iterator[None]]:
         self.fill(migration)
         for button in (self.check_button, self.migrate_button):
             button.set_sensitive(False)
@@ -284,15 +315,17 @@ class MigrationWindow:
         )
         return self.running
 
-    def _steps(self, migration):
+    def _steps(self, migration: engine.Migration) -> Iterator[None]:
         for item in migration.steps():
             index = migration.items.index(item)
-            self.store[index] = self.row(item)
+            self.store[index] = self.row(item)  # type: ignore[index]
             self.show_progress(item)
             self.on_selection_changed(self.view.get_selection())
             yield None
 
-    def _finished(self, _, migration):
+    def _finished(
+        self, _: Iterator[None], migration: engine.Migration
+    ) -> engine.Migration:
         self._unlock()
         self.show_progress()
         self.save_button.set_sensitive(True)
@@ -305,12 +338,14 @@ class MigrationWindow:
         self.running = None
         return migration
 
-    def _stopped(self, failure):
+    def _stopped(self, failure: Failure) -> None:
         failure.trap(task.TaskStopped)
         self._unlock()
         self.running = None
 
-    def show_progress(self, current=None):
+    def show_progress(self, current: engine.Item | None = None) -> None:
+        # the window is filled before its progress is shown
+        assert self.migration is not None
         items = self.migration.items
         total = sum(1 for item in items if item.status != engine.SKIPPED)
         done = sum(
@@ -331,11 +366,11 @@ class MigrationWindow:
 
     # Messages
 
-    def show_text(self, text):
+    def show_text(self, text: str) -> None:
         buffer = self.messages.get_buffer()
         buffer.set_text(text)
 
-    def show_messages(self, item):
+    def show_messages(self, item: engine.Item) -> None:
         buffer = self.messages.get_buffer()
         buffer.set_text("")
         end = buffer.get_end_iter()
@@ -352,16 +387,18 @@ class MigrationWindow:
 
     # Signals
 
-    def on_selection_changed(self, selection):
+    def on_selection_changed(self, selection: Gtk.TreeSelection) -> None:
         model, itr = selection.get_selected()
         if itr is not None:
+            # there are rows once the window is filled
+            assert self.migration is not None
             index = model.get_path(itr).get_indices()[0]
             self.show_messages(self.migration.items[index])
 
-    def on_folder_toggled(self, radio, box):
+    def on_folder_toggled(self, radio: Gtk.RadioButton, box: Gtk.Box) -> None:
         box.set_sensitive(radio.get_active())
 
-    def _start(self, dry_run):
+    def _start(self, dry_run: bool) -> defer.Deferred[Iterator[None]] | None:
         try:
             migration = self.make_migration(dry_run)
         except ValueError as exc:
@@ -379,18 +416,22 @@ class MigrationWindow:
                 return None
         return self.run(migration)
 
-    def _unlock(self):
+    def _unlock(self) -> None:
         if self.lock is not None:
             self.lock.unlock()
             self.lock = None
 
-    def on_check_clicked(self, button):
+    def on_check_clicked(
+        self, button: Gtk.Button
+    ) -> defer.Deferred[Iterator[None]] | None:
         return self._start(dry_run=True)
 
-    def on_migrate_clicked(self, button):
+    def on_migrate_clicked(
+        self, button: Gtk.Button
+    ) -> defer.Deferred[Iterator[None]] | None:
         return self._start(dry_run=False)
 
-    def on_save_clicked(self, button):
+    def on_save_clicked(self, button: Gtk.Button) -> None:
         dialog = Gtk.FileChooserDialog(
             title=_("Save report"),
             transient_for=self.window,
@@ -405,17 +446,21 @@ class MigrationWindow:
         dialog.set_do_overwrite_confirmation(True)
         dialog.set_current_name(engine.REPORT_FILE)
         if dialog.run() == Gtk.ResponseType.OK:
-            self.save_report(dialog.get_filename())
+            filename = dialog.get_filename()
+            if filename is not None:
+                self.save_report(filename)
         dialog.destroy()
 
-    def save_report(self, path):
+    def save_report(self, path: str) -> None:
+        # the report can be saved once a migration has run
+        assert self.migration is not None
         with open(path, "w", encoding="utf-8") as fp:
             fp.write(self.migration.text())
 
-    def on_close_clicked(self, button):
+    def on_close_clicked(self, button: Gtk.Button) -> None:
         self.window.destroy()
 
-    def on_destroy(self, window):
+    def on_destroy(self, window: Gtk.Window) -> None:
         if self.running is not None:
             self.task.stop()
         if not self.closed.called:
@@ -423,8 +468,11 @@ class MigrationWindow:
 
 
 def default_window(
-    workspace=None, settings_file=None, output=None, in_place=False
-):
+    workspace: str | None = None,
+    settings_file: str | None = None,
+    output: str | None = None,
+    in_place: bool = False,
+) -> MigrationWindow:
     """
     The window of the command, filled with what is given or else with the old
     files of the user.
@@ -444,14 +492,16 @@ def default_window(
     )
 
 
-def run(reactor, **options):
+def run(reactor: IReactorCore, **options: Unpack[WindowOptions]) -> None:
     window = default_window(**options)
     window.closed.addBoth(lambda _: reactor.stop())
     window.show()
     reactor.run()
 
 
-def main(**options):  # pragma: no cover (it installs the GTK reactor)
+def main(
+    **options: Unpack[WindowOptions],
+) -> None:  # pragma: no cover (it installs the GTK reactor)
     """Open the window; the options are the ones of :func:`default_window`."""
 
     from twisted.internet import gtk3reactor

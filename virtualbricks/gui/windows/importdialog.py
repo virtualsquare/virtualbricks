@@ -32,7 +32,7 @@ from twisted.internet import defer, error, utils
 from twisted.python import filepath
 from twisted.logger import Logger
 
-from virtualbricks.config import projectfile, settings
+from virtualbricks import config
 from virtualbricks.project import manager as project_manager
 from virtualbricks.gui.windows.base import _, pango_attr_list, Window
 from virtualbricks.gui.windows.userwait import ProgressBar
@@ -132,7 +132,7 @@ class _HumbleImport:
     def extract_cb(self, project, dialog):
         logger.debug(project_extracted, path=project.path)
         dialog.project = project
-        dialog.images = projectfile.image_paths(project.read_document())
+        dialog.images = config.image_paths(project.read_document())
         return project
 
     def extract_eb(self, fail, dialog):
@@ -204,7 +204,7 @@ class _HumbleImport:
         project_settings = dialog.project.read_document().get("settings", {})
         for key, check in dialog.machine_path_checks.items():
             theirs = project_settings.get(key)
-            ours = settings.get_app(key)
+            ours = config.get_app(key)
             differs = isinstance(theirs, str) and theirs != ours
             check.set_visible(differs)
             if differs:
@@ -218,7 +218,7 @@ class _HumbleImport:
     def use_machine_paths(self, entry, keys):
         table = entry.setdefault("settings", {})
         for key in keys:
-            table[key] = settings.get_app(key)
+            table[key] = config.get_app(key)
 
     def apply(
         self,
@@ -278,15 +278,15 @@ class _HumbleImport:
 
     def remap_images(self, entry, store, saved):
         for name, destination in saved.items():
-            projectfile.remap_image(entry, name, destination.path)
+            config.remap_image(entry, name, destination.path)
         for name, path in iter_model(store):
-            projectfile.remap_image(entry, name, path.path)
+            config.remap_image(entry, name, path.path)
             saved[name] = path
 
     def rebase_all(self, project, images, entry):
         lst = []
         for name, path in images.items():
-            for vmname, dev in projectfile.devices_for_image(entry, name):
+            for vmname, dev in config.devices_for_image(entry, name):
                 cow_name = "{0}_{1}.cow".format(vmname, dev)
                 cow = filepath.FilePath(project.path).child(cow_name)
                 if cow.exists():
@@ -746,7 +746,7 @@ class ImportDialog(Window):
         if page_num == 0:
             pass
         elif page_num == 1:
-            ws = settings.get("workspace")
+            ws = config.get("workspace")
             deferred = self.humble.step_1(
                 self,
                 self.save_images_store,

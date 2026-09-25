@@ -18,8 +18,8 @@
 
 from twisted.internet import reactor, defer
 
-from virtualbricks import base, console, errors
-from virtualbricks.config import Int, schema
+from virtualbricks import base, config, console, errors
+from virtualbricks.config import Int
 
 if False:  # pyflakes
     _ = str
@@ -29,7 +29,7 @@ process_ended = "Process ended with exit code {code}"
 event_error = "Error in event action. See the log for more " "information"
 
 
-class EventAction(schema.Kind):
+class EventAction(config.Kind):
     """A console command ("vb") or a shell command ("shell")."""
 
     kinds = {"vb": console.VbShellCommand, "shell": console.ShellCommand}
@@ -66,11 +66,11 @@ def _describe_action(action):
     return f'vb "{action}"'
 
 
-@schema.define
+@config.define
 class EventConfig:
 
-    actions = schema.field(schema.ListOf(EventAction()), factory=list)
-    delay = schema.field(Int(), default=0)
+    actions = config.field(config.ListOf(EventAction()), factory=list)
+    delay = config.field(Int(), default=0)
 
 
 class Event(base.Base):

@@ -21,9 +21,9 @@
 import os
 
 
-from virtualbricks import errors
+from virtualbricks import config, errors
 from virtualbricks.bricks import BrickConfig
-from virtualbricks.config import Report, schema
+from virtualbricks.config import Report
 from virtualbricks.tests import (
     BrickTestCase,
 )
@@ -173,7 +173,7 @@ class TestSchemas(BrickTestCase):
 
     def test_router_has_no_name_field(self):
         router = self.factory.new_brick("router", "r")
-        self.assertNotIn("name", schema.names(router.config))
+        self.assertNotIn("name", config.names(router.config))
         self.assertEqual(router.build_cmd_line()[0], "-M")
 
 

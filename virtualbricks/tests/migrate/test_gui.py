@@ -21,8 +21,7 @@ import tempfile
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from virtualbricks import locations
-from virtualbricks.migrate import engine
+from virtualbricks import locations, migrate
 from virtualbricks.tests import (
     FakeLogger,
     hold_lock,
@@ -129,30 +128,30 @@ class TestStatusText(unittest.TestCase):
         skip = "GTK can't open a display"
 
     def test_statuses(self):
-        item = engine.Item("lab", "project", "/lab")
+        item = migrate.Item("lab", "project", "/lab")
         texts = {}
         for status in (
-            engine.WAITING,
-            engine.MIGRATING,
-            engine.MIGRATED,
-            engine.FAILED,
-            engine.SKIPPED,
+            migrate.WAITING,
+            migrate.MIGRATING,
+            migrate.MIGRATED,
+            migrate.FAILED,
+            migrate.SKIPPED,
         ):
             item.status = status
             texts[status] = gui.status_text(item)
         self.assertEqual(
             texts,
             {
-                engine.WAITING: "· Waiting",
-                engine.MIGRATING: "↻ Migrating",
-                engine.MIGRATED: "✓ Migrated",
-                engine.FAILED: "✗ Failed",
-                engine.SKIPPED: "– Skipped",
+                migrate.WAITING: "· Waiting",
+                migrate.MIGRATING: "↻ Migrating",
+                migrate.MIGRATED: "✓ Migrated",
+                migrate.FAILED: "✗ Failed",
+                migrate.SKIPPED: "– Skipped",
             },
         )
 
     def test_warnings(self):
-        item = engine.Item("lab", "project", "/lab", status=engine.MIGRATED)
+        item = migrate.Item("lab", "project", "/lab", status=migrate.MIGRATED)
         item.report.warning("a")
         self.assertEqual(gui.status_text(item), "⚠ 1 warning")
         item.report.warning("b")
@@ -191,7 +190,7 @@ class TestForm(GuiTestCase):
     def test_make_migration(self):
         window = self.form_window()
         migration = window.make_migration(dry_run=True)
-        self.assertIsInstance(migration.target, engine.Folder)
+        self.assertIsInstance(migration.target, migrate.Folder)
         self.assertEqual(migration.target.folder, self.output)
         self.assertTrue(migration.dry_run)
         self.assertEqual(
@@ -199,7 +198,7 @@ class TestForm(GuiTestCase):
         )
         window.in_place_radio.set_active(True)
         migration = window.make_migration(dry_run=False)
-        self.assertIsInstance(migration.target, engine.InPlace)
+        self.assertIsInstance(migration.target, migrate.InPlace)
         self.assertEqual(migration.workspace, self.workspace)
 
     def test_make_migration_with_settings(self):
@@ -270,7 +269,9 @@ class TestRun(GuiTestCase):
 
     def test_fill_nothing(self):
         window = self.form_window()
-        window.fill(engine.Migration(self.output, engine.Folder(self.output)))
+        window.fill(
+            migrate.Migration(self.output, migrate.Folder(self.output))
+        )
         self.assertEqual(self.messages(window), "There is nothing to migrate.")
         self.assertEqual(window.progress.get_fraction(), 1.0)
 
@@ -359,7 +360,7 @@ class TestRun(GuiTestCase):
     def test_skipped_items_are_not_counted(self):
         window = self.form_window()
         migration = window.make_migration(dry_run=True)
-        migration.items[0].status = engine.SKIPPED
+        migration.items[0].status = migrate.SKIPPED
         window.fill(migration)
         self.assertEqual(window.progress.get_text(), "0 of 1")
 
@@ -416,7 +417,7 @@ class TestReport(GuiTestCase):
         self.chooser.filename = path
         window.save_button.clicked()
         dialog = self.chooser.instances[-1]
-        self.assertEqual(dialog.current_name, engine.REPORT_FILE)
+        self.assertEqual(dialog.current_name, migrate.REPORT_FILE)
         self.assertTrue(dialog.destroyed)
         with open(path) as fp:
             self.assertEqual(fp.read(), migration.text())
@@ -433,7 +434,9 @@ class TestReport(GuiTestCase):
 class TestFixedMigration(GuiTestCase):
 
     def migration(self):
-        return engine.Migration(self.workspace, engine.InPlace(self.workspace))
+        return migrate.Migration(
+            self.workspace, migrate.InPlace(self.workspace)
+        )
 
     @defer.inlineCallbacks
     def test_runs_when_shown(self):
@@ -472,7 +475,7 @@ class TestFixedMigration(GuiTestCase):
         self.assertTrue(window.closed.called)
         self.assertEqual(self.logger.events, [])
         # the migration stopped before the second project
-        self.assertEqual(window.migration.items[1].status, engine.WAITING)
+        self.assertEqual(window.migration.items[1].status, migrate.WAITING)
         window.on_destroy(window.window)  # a second destroy does nothing
 
 
@@ -510,7 +513,7 @@ class TestCommand(GuiTestCase):
         self.assertTrue(window.in_place_radio.get_active())
         self.assertEqual(window.output_entry.get_text(), gui.default_output())
         migration = window.make_migration(dry_run=True)
-        self.assertIsInstance(migration.target, engine.InPlace)
+        self.assertIsInstance(migration.target, migrate.InPlace)
         self.assertEqual(migration.workspace, self.workspace)
 
     def test_run(self):

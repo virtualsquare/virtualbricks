@@ -20,6 +20,7 @@ import textwrap
 
 from twisted.trial import unittest
 
+from virtualbricks import config
 from virtualbricks.config import tomlfile
 
 DOCUMENT = {
@@ -93,17 +94,17 @@ type = "switch"
 class TestDumps(unittest.TestCase):
 
     def test_layout(self):
-        self.assertEqual(tomlfile.dumps(DOCUMENT), EXPECTED)
+        self.assertEqual(config.dumps(DOCUMENT), EXPECTED)
 
     def test_round_trip(self):
-        self.assertEqual(tomlfile.loads(tomlfile.dumps(DOCUMENT)), DOCUMENT)
+        self.assertEqual(config.loads(config.dumps(DOCUMENT)), DOCUMENT)
 
     def test_table_with_values_and_tables(self):
-        text = tomlfile.dumps({"a": {"x": 1, "b": {"y": 2}}})
+        text = config.dumps({"a": {"x": 1, "b": {"y": 2}}})
         self.assertEqual(text, "[a]\nx = 1\n\n[a.b]\ny = 2\n")
 
     def test_empty_table(self):
-        self.assertEqual(tomlfile.dumps({"a": {}}), "[a]\n")
+        self.assertEqual(config.dumps({"a": {}}), "[a]\n")
 
     def test_space_tables(self):
         self.assertEqual(
@@ -121,8 +122,8 @@ class TestFiles(unittest.TestCase):
 
     def test_dump_and_load(self):
         path = self.mktemp()
-        tomlfile.dump(DOCUMENT, path)
-        self.assertEqual(tomlfile.load(path), DOCUMENT)
+        config.dump_toml(DOCUMENT, path)
+        self.assertEqual(config.load_toml(path), DOCUMENT)
         self.assertEqual(
             os.listdir(os.path.dirname(os.path.abspath(path))),
             [os.path.basename(path)],
@@ -132,21 +133,21 @@ class TestFiles(unittest.TestCase):
         directory = self.mktemp()
         os.makedirs(directory)
         path = os.path.join(directory, "x.toml")
-        tomlfile.dump({"a": 1}, path)
+        config.dump_toml({"a": 1}, path)
 
         def fail(src, dst):
             raise OSError("disk full")
 
         self.patch(os, "replace", fail)
-        self.assertRaises(OSError, tomlfile.dump, {"a": 2}, path)
-        self.assertEqual(tomlfile.load(path), {"a": 1})
+        self.assertRaises(OSError, config.dump_toml, {"a": 2}, path)
+        self.assertEqual(config.load_toml(path), {"a": 1})
         self.assertEqual(os.listdir(directory), ["x.toml"])
 
     def test_load_invalid(self):
         path = self.mktemp()
         with open(path, "w") as fp:
             fp.write("a = \n")
-        self.assertRaises(tomlfile.DecodeError, tomlfile.load, path)
+        self.assertRaises(config.DecodeError, config.load_toml, path)
 
     def test_loads(self):
         text = textwrap.dedent("""\
@@ -154,4 +155,4 @@ class TestFiles(unittest.TestCase):
             [b]
             c = "d"
             """)
-        self.assertEqual(tomlfile.loads(text), {"a": 1, "b": {"c": "d"}})
+        self.assertEqual(config.loads(text), {"a": 1, "b": {"c": "d"}})

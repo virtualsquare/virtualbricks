@@ -21,8 +21,9 @@ from twisted.internet import defer
 from twisted.python import lockfile
 from twisted.trial import unittest
 
-
-from virtualbricks.config import settings  # noqa: E402
+# The tests of the configuration are virtualbricks.tests.config: here that
+# name is theirs, so the settings are taken by name and from their module.
+from virtualbricks.config import AppSettings, AppState, settings  # noqa: E402
 
 DATA = os.path.join(os.path.dirname(__file__), "data")
 
@@ -94,9 +95,9 @@ def lock_is_free():
 def reset_settings(test, **values):
     """Give the test its own settings, restored when it ends."""
 
-    test.patch(settings, "_app", settings.AppSettings(**values))
+    test.patch(settings, "_app", AppSettings(**values))
     test.patch(settings, "_project", None)
-    test.patch(settings, "_state", settings.AppState())
+    test.patch(settings, "_state", AppState())
     test.patch(settings, "_settings_path", None)
     test.patch(settings, "_state_path", None)
     test.patch(settings, "_read_only", False)

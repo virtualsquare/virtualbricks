@@ -24,8 +24,7 @@ from twisted.internet import interfaces, utils
 from twisted.protocols import basic
 from twisted.logger import Logger
 from zope.interface import implementer
-from virtualbricks import __version__, bricks, errors
-from virtualbricks.config import schema, settings
+from virtualbricks import __version__, bricks, config, errors
 
 logger = Logger()
 conn_ok = "Connection ok"
@@ -199,8 +198,8 @@ class VBProtocol(Protocol):
             except ValueError as exc:
                 self.sendLine(str(exc))
         elif cmd[0] == "show":
-            for name, value in schema.values(obj.config).items():
-                kind = schema.kind_of(obj.config, name)
+            for name, value in config.values(obj.config).items():
+                kind = config.kind_of(obj.config, name)
                 self.sendLine("%s = %s" % (name, kind.format(value)))
         elif cmd[0] == "connect" and len(cmd) == 2:
             if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
@@ -368,9 +367,9 @@ class ImagesProtocol(Protocol):
 class ConfigurationProtocol(Protocol):
 
     def do_get(self, name):
-        if settings.has_option(name):
-            kind = schema.kind_of(settings.AppSettings, name)
-            self.sendLine("%s = %s" % (name, kind.format(settings.get(name))))
+        if config.has_option(name):
+            kind = config.kind_of(config.AppSettings, name)
+            self.sendLine("%s = %s" % (name, kind.format(config.get(name))))
         else:
             self.sendLine("No such option %s" % name)
 
@@ -378,9 +377,9 @@ class ConfigurationProtocol(Protocol):
     #     pass  # TODO: show all settings
 
     def do_set(self, name, value):
-        if settings.has_option(name):
+        if config.has_option(name):
             try:
-                settings.set(name, settings.parse(name, value))
+                config.set(name, config.parse_setting(name, value))
             except ValueError as exc:
                 self.sendLine(str(exc))
         else:
