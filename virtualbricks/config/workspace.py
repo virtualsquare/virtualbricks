@@ -514,8 +514,10 @@ class Workspace:
         """
         Load a project into factory and return the report of reading it.
 
-        Raise ProjectNotExistsError if there is no project file and
-        ProjectFormatError if it can't be read; the open project stays open.
+        The project that is open is saved first, so its changes aren't lost
+        when the factory is reset. Raise ProjectNotExistsError if there is
+        no project file and ProjectFormatError if it can't be read; the open
+        project stays open, and so it does if it can't be saved.
         """
 
         report = Report()
@@ -529,7 +531,9 @@ class Workspace:
             )
         except FileNotFoundError:
             raise errors.ProjectNotExistsError(name) from None
-        # The project file is readable, so it's safe to close the open one.
+        # The project file is readable, so it's safe to close the open one,
+        # once it's saved: nothing else keeps what the factory holds.
+        self.save(factory)
         self.close(factory)
         logger.debug(open_project, name=name)
         path = self.project_path(name)

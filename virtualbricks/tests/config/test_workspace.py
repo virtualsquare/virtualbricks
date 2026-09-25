@@ -572,6 +572,52 @@ class TestOpen(WorkspaceTestCase):
                 errors.InvalidNameError, self.projects.open, name, None
             )
 
+    def test_the_open_project_is_saved_first(self):
+        self.projects.create("lab")
+        self.projects.create("other")
+        self.projects.open("lab", self.factory)
+        self.factory.new_brick("switch", "sw")
+        set_setting("femaleplugs", True)
+        self.projects.current.set_description("A lab")
+        self.projects.open("other", self.factory)
+        # what the factory held is in the file, not lost with the reset
+        data = load_toml(self.project_file("lab"))
+        self.assertIn("sw", data["bricks"])
+        self.assertTrue(data["settings"]["femaleplugs"])
+        with open(os.path.join(self.path, "lab", "README")) as fp:
+            self.assertEqual(fp.read(), "A lab")
+        self.assertEqual(self.projects.current.name, "other")
+        self.assertEqual(self.factory.bricks, [])
+        # and it comes back
+        self.projects.open("lab", self.factory)
+        self.assertEqual([b.get_name() for b in self.factory.bricks], ["sw"])
+
+    def test_the_open_project_stays_if_it_cannot_be_saved(self):
+        self.projects.create("lab")
+        self.projects.create("other")
+        self.projects.open("lab", self.factory)
+        self.factory.new_brick("switch", "sw")
+
+        def fail(*args):
+            raise OSError("disk full")
+
+        self.patch(workspace.projectfile, "save", fail)
+        self.assertRaises(OSError, self.projects.open, "other", self.factory)
+        self.assertEqual(self.projects.current.name, "lab")
+        self.assertEqual([b.get_name() for b in self.factory.bricks], ["sw"])
+        self.assertEqual(current_project(), "lab")
+
+    def test_a_project_that_cannot_be_read_is_not_a_reason_to_save(self):
+        self.projects.create("lab")
+        self.projects.open("lab", self.factory)
+        self.factory.new_brick("switch", "sw")
+        self.file("bad", locations.PROJECT_FILE, text="[bricks\n")
+        self.assertRaises(
+            ProjectFormatError, self.projects.open, "bad", self.factory
+        )
+        self.assertNotIn("bricks", load_toml(self.project_file("lab")))
+        self.assertEqual(len(self.factory.bricks), 1)
+
     def test_a_bad_file_keeps_the_open_project(self):
         self.projects.create("good")
         self.projects.open("good", self.factory)
