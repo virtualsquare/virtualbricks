@@ -45,6 +45,7 @@ class Switch(bricks.Brick):
         for so in self.socks:
             so.nickname = name + "_port"
             so.path = self.path()
+        self.notify_changed()
 
     name = property(bricks.Brick.get_name, set_name)
 

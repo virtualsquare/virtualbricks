@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 23:09+0200\n"
+"POT-Creation-Date: 2026-09-27 00:03+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -422,15 +422,72 @@ msgstr ""
 msgid "no network card"
 msgstr "Añadir tarjeta de red"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#, fuzzy
-msgid "Connect To"
-msgstr "Conectar con:"
-
+#: virtualbricks/gui/mainwindow/bricklist.py
 #: virtualbricks/gui/mainwindow/brickmenu.py
 #, python-brace-format
 msgid "Process {pid}"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "Connect {name} first"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "Configure {name} first"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "process {pid}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy, python-brace-format
+msgid "Stop {name}"
+msgstr "Quitar"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "Start {name}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy, python-brace-format
+msgid "Menu of {name}"
+msgstr "Quitar"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "No running brick matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "No brick matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy
+msgid "No brick is running"
+msgstr "Importar bricks"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "No bricks"
+msgstr "Importar bricks"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "Connect {brick} to {other}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Connect To"
+msgstr "Conectar con:"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
 #: virtualbricks/gui/windows/exportproject.py
@@ -1367,11 +1424,6 @@ msgid "{n} event"
 msgid_plural "{n} events"
 msgstr[0] "Eventos"
 msgstr[1] "Eventos"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "No bricks"
-msgstr "Importar bricks"
 
 #: virtualbricks/gui/windows/importdialog.py
 msgid "no disk"

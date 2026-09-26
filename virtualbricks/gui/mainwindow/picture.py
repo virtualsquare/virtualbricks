@@ -85,9 +85,13 @@ WHITE = (1.0, 1.0, 1.0)
 
 
 class Icons:
-    """The icons of the bricks, grey for the stopped ones, each read once."""
+    """
+    The icons of the bricks, grey for the stopped ones, each read once, at
+    their size or at size pixels.
+    """
 
-    def __init__(self) -> None:
+    def __init__(self, size: int | None = None) -> None:
+        self.size = size
         self._icons: dict[tuple[str, bool], GdkPixbuf.Pixbuf | None] = {}
 
     def get(self, brick, running: bool) -> GdkPixbuf.Pixbuf | None:
@@ -95,7 +99,12 @@ class Icons:
         key = (filename, running)
         if key not in self._icons:
             try:
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
+                if self.size is None:
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
+                else:
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
+                        filename, self.size, self.size
+                    )
             except GLib.Error:
                 pixbuf = None
             if pixbuf is not None and not running:

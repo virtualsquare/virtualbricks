@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 23:09+0200\n"
+"POT-Creation-Date: 2026-09-27 00:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -436,15 +436,72 @@ msgstr ""
 msgid "no network card"
 msgstr "Aggiungi una scheda di rete"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#, fuzzy
-msgid "Connect To"
-msgstr "Connetti a"
-
+#: virtualbricks/gui/mainwindow/bricklist.py
 #: virtualbricks/gui/mainwindow/brickmenu.py
 #, python-brace-format
 msgid "Process {pid}"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy, python-brace-format
+msgid "Connect {name} first"
+msgstr "Scegliere prima un nome di file!"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy, python-brace-format
+msgid "Configure {name} first"
+msgstr "Scegliere prima un nome di file!"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "process {pid}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy, python-brace-format
+msgid "Stop {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy, python-brace-format
+msgid "Start {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy, python-brace-format
+msgid "Menu of {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "No running brick matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "No brick matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, fuzzy
+msgid "No brick is running"
+msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "No bricks"
+msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/mainwindow/bricklist.py
+#, python-brace-format
+msgid "Connect {brick} to {other}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Connect To"
+msgstr "Connetti a"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
 #: virtualbricks/gui/windows/exportproject.py
@@ -1426,11 +1483,6 @@ msgid "{n} event"
 msgid_plural "{n} events"
 msgstr[0] "Eventi"
 msgstr[1] "Eventi"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "No bricks"
-msgstr "_Importa Mattoni"
 
 #: virtualbricks/gui/windows/importdialog.py
 msgid "no disk"
@@ -3619,9 +3671,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "Disk used by the VM is locked by another machine"
 #~ msgstr "Il disco usato dalla VM è bloccato da un'altra macchina"
-
-#~ msgid "Choose a filename first!"
-#~ msgstr "Scegliere prima un nome di file!"
 
 #~ msgid "No KVM binary found"
 #~ msgstr "Binari KVM non trovati"
