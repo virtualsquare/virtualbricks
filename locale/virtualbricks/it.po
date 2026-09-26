@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 14:30+0200\n"
+"POT-Creation-Date: 2026-09-26 14:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -331,7 +331,24 @@ msgstr ""
 msgid "Syntax"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/gui/mainwindow/topology.py
+#, fuzzy
+msgid "_Topology"
+msgstr "Topologia"
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Export as Image"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Expand Horizontally"
+msgstr "Espandi Orizzontalmente"
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Expand Vertically"
+msgstr "Espandi Verticalmente"
+
+#: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
 msgid "Select an image file"
 msgstr "Selezionare il file immagine"
@@ -511,23 +528,6 @@ msgstr ""
 #, fuzzy
 msgid "R_unning"
 msgstr "In esecuzione"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Export as Image"
-msgstr "Esporta come Immagine"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Expand Horizontally"
-msgstr "Espandi Orizzontalmente"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Expand Vertically"
-msgstr "Espandi Verticalmente"
-
-#: virtualbricks/gui/mainwindow/window.py
-#, fuzzy
-msgid "_Topology"
-msgstr "Topologia"
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Toggle window"

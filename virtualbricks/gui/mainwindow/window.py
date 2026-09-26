@@ -31,7 +31,7 @@ from twisted.logger import Logger
 
 from virtualbricks import config, errors, tools
 from virtualbricks.config import get_setting, projects, set_setting
-from virtualbricks.gui import graphics, widgets
+from virtualbricks.gui import widgets
 from virtualbricks.gui.interfaces import IConfigController, IJobMenu, IMenu
 from virtualbricks.tools import dispose, is_running
 from virtualbricks.gui.windows.base import _, load_pixbuf, StateManager
@@ -49,6 +49,7 @@ from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
 from virtualbricks.gui.mainwindow.tab import switch, tabs
+from virtualbricks.gui.mainwindow.topology import TopologyTab
 from virtualbricks.gui.windows.logging import LoggingWindow
 from virtualbricks.gui.windows.newbrick import NewBrickDialog
 from virtualbricks.gui.windows.newevent import NewEventDialog
@@ -62,10 +63,6 @@ cannot_open_project = 'Cannot open the project "{name}": {error}'
 # The projects in Open Recent.
 RECENT = 8
 
-drawing_topology = "drawing topology"
-top_invalid_format = "Error saving topology: Invalid image format"
-top_write_error = "Error saving topology: Could not write file"
-top_unknown = "Error saving topology: Unknown error"
 start_virtualbricks = "Starting VirtualBricks"
 components_not_found = (
     "{text}\nThere are some components not "
@@ -100,136 +97,10 @@ def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
     return state
 
 
-BRICKS_TAB, EVENTS_TAB, RUNNING_TAB, TOPOLOGY_TAB, README_TAB = range(5)
-
-
 def is_running_filter(model, itr, data):
     brick = model.get_value(itr, 0)
     if brick:
         return is_running(brick)
-
-
-class TopologyMixin:
-
-    __should_draw_topology = False
-    __topology = None
-
-    # public interface
-
-    def draw_topology(self, export=""):
-        if self.main_notebook.get_current_page() == TOPOLOGY_TAB:
-            self._draw_topology()
-        else:
-            self.__should_draw_topology = True
-
-    # callbacks
-
-    def on_topology_h_scrolled(self, adjustment):
-        self.__topology.x_adj = adjustment.get_value()
-
-    def on_topology_v_scrolled(self, adjustment):
-        self.__topology.y_adj = adjustment.get_value()
-
-    def on_topology_orientation_toggled(self, togglebutton):
-        self._draw_topology()
-
-    def on_topology_export_button_clicked(self, button):
-        def on_response(dialog, response_id):
-            assert self.__topology, "Topology not created"
-            try:
-                if response_id == Gtk.ResponseType.OK:
-                    try:
-                        self._draw_topology_if_needed()
-                        self.__topology.export(dialog.get_filename())
-                    except KeyError:
-                        logger.failure(top_invalid_format)
-                    except IOError:
-                        logger.failure(top_write_error)
-                    except Exception:
-                        logger.failure(top_unknown)
-            finally:
-                dialog.destroy()
-
-        chooser = Gtk.FileChooserDialog(
-            title=_("Select an image file"),
-            action=Gtk.FileChooserAction.SAVE,
-            buttons=(
-                "_Cancel",
-                Gtk.ResponseType.CANCEL,
-                "_Save",
-                Gtk.ResponseType.OK,
-            ),
-        )
-        chooser.set_do_overwrite_confirmation(True)
-        chooser.connect("response", on_response)
-        chooser.show()
-
-    def on_topology_action(self, widget, event):
-        self._draw_topology_if_needed()
-        assert self.__topology, "Topology not created"
-        brick = self._get_brick_in(*event.get_coords())
-        if brick:
-            if event.button == 3:
-                IMenu(brick, None).popup(event.button, event.time, self)
-            elif (
-                event.button == 1
-                and event.type == Gdk.EventType._2BUTTON_PRESS
-            ):
-                self.startstop_brick(brick)
-            return True
-
-    # Notebook callbacks
-
-    def on_main_notebook_change_current_page(self, notebook, offset):
-        self._draw_topology_if_on_page(notebook.get_current_page())
-        super().on_main_notebook_change_current_page(notebook, offset)
-
-    def on_main_notebook_switch_page(self, notebook, _, page_num):
-        self._draw_topology_if_on_page(page_num)
-        super().on_main_notebook_switch_page(notebook, _, page_num)
-
-    def on_main_notebook_select_page(self, notebook, move_focus):
-        self._draw_topology_if_on_page(notebook.get_current_page())
-        super().on_main_notebook_select_page(notebook, move_focus)
-
-    # VBGUI callbacks
-
-    def init(self, factory):
-        super().init(factory)
-        topology_scrolled = self.topology_scrolled
-        hadjustment = topology_scrolled.get_hadjustment()
-        hadjustment.connect("value-changed", self.on_topology_h_scrolled)
-        vadjustment = topology_scrolled.get_vadjustment()
-        vadjustment.connect("value-changed", self.on_topology_v_scrolled)
-
-    def _get_brick_in(self, x, y):
-        assert self.__topology, "Topology not created"
-        for n in self.__topology.nodes:
-            if n.here(x, y):
-                return self.brickfactory.get_brick_by_name(n.name)
-
-    def _draw_topology_if_on_page(self, page):
-        if page == TOPOLOGY_TAB and self.__should_draw_topology:
-            self._draw_topology()
-
-    def _draw_topology_if_needed(self):
-        if self.__should_draw_topology:
-            self._draw_topology()
-
-    def _draw_topology(self):
-        logger.debug(drawing_topology)
-        if self.topology_vertical_radio.get_active():
-            orientation = "TB"
-        else:
-            orientation = "LR"
-        self.__topology = graphics.Topology(
-            self.topology_image,
-            self.brickfactory.bricks,
-            1.00,
-            orientation,
-            self.brickfactory.runtime_dir,
-        )
-        self.__should_draw_topology = False
 
 
 class ProgressBar:
@@ -255,12 +126,6 @@ class _Root:
     # Notebook signals
 
     def on_main_notebook_switch_page(self, notebook, _, page_num):
-        pass
-
-    def on_main_notebook_select_page(self, notebook, move_focus):
-        pass
-
-    def on_main_notebook_change_current_page(self, notebook, offset):
         pass
 
     # VBGUI signals
@@ -312,7 +177,7 @@ class EventsBindingList(widgets.AbstractBindingList):
         return self._factory.iter_events()
 
 
-class VBGUI(TopologyMixin, _Root):
+class VBGUI(_Root):
     """
     The main GUI object for virtualbricks, containing all the configuration for
     the widgets and the connections to the main engine.
@@ -330,9 +195,6 @@ class VBGUI(TopologyMixin, _Root):
 
         logger.info(start_virtualbricks)
         self.__initialize_components()
-        factory.connect("brick-changed", self.on_brick_changed)
-        factory.connect("brick-added", self.on_brick_changed)
-        factory.connect("brick-removed", self.on_brick_changed)
         if get_setting("systray"):
             self.start_systray()
         task.LoopingCall(self.running_filter.refilter).start(2)
@@ -814,85 +676,8 @@ class VBGUI(TopologyMixin, _Root):
             scrolledwindow1,
             running_components_label,
         )
-        vbox17 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
-        )
-        hbox47 = Gtk.Box(visible=True, can_focus=False)
-        export_topology_button = Gtk.Button(
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-        )
-        hbox48 = Gtk.Box(visible=True, can_focus=False)
-        image13 = Gtk.Image(
-            visible=True,
-            can_focus=False,
-            stock="gtk-save-as",
-        )
-        hbox48.pack_start(image13, True, True, 0)
-        label18 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Export as Image"),
-        )
-        hbox48.pack_start(label18, True, True, 0)
-        export_topology_button.add(hbox48)
-        hbox47.pack_start(export_topology_button, False, True, 0)
-        topology_lr = Gtk.RadioButton(
-            label=_("Expand Horizontally"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            active=True,
-            draw_indicator=True,
-        )
-        hbox47.pack_start(topology_lr, False, True, 0)
-        self.topology_vertical_radio = Gtk.RadioButton(
-            label=_("Expand Vertically"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-            group=topology_lr,
-        )
-        hbox47.pack_start(self.topology_vertical_radio, False, True, 0)
-        vbox17.pack_start(hbox47, False, True, 0)
-        self.topology_scrolled = Gtk.ScrolledWindow(
-            visible=True,
-            can_focus=True,
-            shadow_type=Gtk.ShadowType.IN,
-        )
-        viewport1 = Gtk.Viewport(
-            visible=True,
-            can_focus=False,
-            resize_mode=Gtk.ResizeMode.QUEUE,
-        )
-        self.topology_image = Gtk.Image(
-            visible=True,
-            can_focus=False,
-            xalign=0,
-            yalign=0,
-            stock="gtk-missing-image",
-        )
-        viewport1.add(self.topology_image)
-        self.topology_scrolled.add(viewport1)
-        vbox17.pack_start(self.topology_scrolled, True, True, 0)
-        label20 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("_Topology"),
-            use_underline=True,
-        )
-        self.main_notebook.append_page(vbox17, label20)
-        for tab in (ReadmeTab(),):
-            label = Gtk.Label(
-                visible=True, label=tab.title, use_underline=True
-            )
-            self.main_notebook.append_page(tab, label)
+        self.append_tab(TopologyTab(self, self.factory))
+        self.append_tab(ReadmeTab())
         vbox1.pack_start(self.main_notebook, True, True, 0)
         self.config_frame = Gtk.Frame(
             can_focus=False,
@@ -1027,14 +812,6 @@ class VBGUI(TopologyMixin, _Root):
         )
         help_about_item.connect("activate", self.on_help_about_item_activate)
         self.main_notebook.connect(
-            "change-current-page",
-            self.on_main_notebook_change_current_page,
-        )
-        self.main_notebook.connect(
-            "select-page",
-            self.on_main_notebook_select_page,
-        )
-        self.main_notebook.connect(
             "switch-page",
             self.on_main_notebook_switch_page,
         )
@@ -1093,15 +870,6 @@ class VBGUI(TopologyMixin, _Root):
             "button-release-event",
             self.on_jobs_view_button_release_event,
         )
-        export_topology_button.connect(
-            "clicked",
-            self.on_topology_export_button_clicked,
-        )
-        topology_lr.connect(
-            "toggled",
-            self.on_topology_orientation_toggled,
-        )
-        viewport1.connect("button-press-event", self.on_topology_action)
         systray_toggle_item.connect(
             "activate",
             self.on_systray_toggle_item_activate,
@@ -1109,6 +877,10 @@ class VBGUI(TopologyMixin, _Root):
         systray_close_item.connect("activate", self.do_quit)
         self.status_icon.connect("activate", self.on_status_icon_activate)
         self.status_icon.connect("popup-menu", self.on_status_icon_popup_menu)
+
+    def append_tab(self, tab) -> None:
+        label = Gtk.Label(visible=True, label=tab.title, use_underline=True)
+        self.main_notebook.append_page(tab, label)
 
     def get_root_widget(self) -> Gtk.Window:
         return self.window
@@ -1164,9 +936,6 @@ class VBGUI(TopologyMixin, _Root):
             )
 
     def __dispose__(self):
-        self.factory.disconnect("brick-changed", self.on_brick_changed)
-        self.factory.disconnect("brick-added", self.on_brick_changed)
-        self.factory.disconnect("brick-removed", self.on_brick_changed)
         if self.__bricks_binding_list is not None:
             dispose(self.__bricks_binding_list)
             self.__bricks_binding_list = None
@@ -1180,9 +949,6 @@ class VBGUI(TopologyMixin, _Root):
     """ ********************************************************     """
     """ Signal handlers                                           """
     """ ********************************************************     """
-
-    def on_brick_changed(self, brick):
-        self.draw_topology()
 
     def curtain_down(self):
         self.main_notebook.show()
@@ -1223,14 +989,6 @@ class VBGUI(TopologyMixin, _Root):
     def on_main_notebook_switch_page(self, notebook, page, page_num):
         switch(notebook, page)
         super().on_main_notebook_switch_page(notebook, page, page_num)
-        return True
-
-    def on_main_notebook_select_page(self, notebook, move_focus):
-        super().on_main_notebook_select_page(notebook, move_focus)
-        return True
-
-    def on_main_notebook_change_current_page(self, notebook, offset):
-        super().on_main_notebook_change_current_page(notebook, offset)
         return True
 
     # gui (programming) interface
