@@ -26,13 +26,13 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
-from twisted.internet import defer, task
+from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import config, errors, tools
 from virtualbricks.config import get_setting, projects, set_setting
 from virtualbricks.gui import widgets
-from virtualbricks.gui.interfaces import IConfigController, IJobMenu, IMenu
+from virtualbricks.gui.interfaces import IConfigController, IMenu
 from virtualbricks.tools import dispose, is_running
 from virtualbricks.gui.windows.base import _, load_pixbuf, StateManager
 from virtualbricks.gui.windows.about import AboutDialog
@@ -48,6 +48,7 @@ from virtualbricks.gui.windows.importdialog import ImportDialog
 from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
+from virtualbricks.gui.mainwindow.running import RunningTab
 from virtualbricks.gui.mainwindow.tab import switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
 from virtualbricks.gui.windows.logging import LoggingWindow
@@ -95,12 +96,6 @@ def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
     selection.connect("changed", lambda s: state.check())
     state.check()
     return state
-
-
-def is_running_filter(model, itr, data):
-    brick = model.get_value(itr, 0)
-    if brick:
-        return is_running(brick)
 
 
 class ProgressBar:
@@ -197,7 +192,6 @@ class VBGUI(_Root):
         self.__initialize_components()
         if get_setting("systray"):
             self.start_systray()
-        task.LoopingCall(self.running_filter.refilter).start(2)
         self.__state_manager = StateManager()
         state_add_selection(
             self.__state_manager,
@@ -229,11 +223,6 @@ class VBGUI(_Root):
         # bricks_store (widgets.List)
         # Custom widget from glade-catalog.xml
         self.bricks_store = widgets.List()
-
-        # running_filter (Gtk.TreeModelFilter)
-        self.running_filter = Gtk.TreeModelFilter(
-            child_model=self.bricks_store
-        )
 
         # events_store (widgets.List)
         # Custom widget from glade-catalog.xml
@@ -620,62 +609,7 @@ class VBGUI(_Root):
             use_underline=True,
         )
         self.main_notebook.append_page(vbox16, event_label)
-        scrolledwindow1 = Gtk.ScrolledWindow(
-            visible=True,
-            can_focus=True,
-            shadow_type=Gtk.ShadowType.IN,
-        )
-        # Custom widget from glade-catalog.xml
-        self.jobs_view = widgets.TreeView(
-            visible=True,
-            can_focus=True,
-            model=self.running_filter,
-        )
-        tvc_job_icon = Gtk.TreeViewColumn.new()
-        tvc_job_icon.set_properties(title=_("Icon"))
-        # Custom widget from glade-catalog.xml
-        crp3 = widgets.CellRendererBrickIcon()
-        tvc_job_icon.pack_start(crp3, False)
-        self.jobs_view.append_column(tvc_job_icon)
-        tvc_job_pid = Gtk.TreeViewColumn.new()
-        tvc_job_pid.set_properties(title=_("Pid"))
-        # Custom widget from glade-catalog.xml
-        crt8 = widgets.CellRendererFormattable(
-            format_string="d",
-            formatting_enabled=True,
-        )
-        tvc_job_pid.pack_start(crt8, False)
-        self.jobs_view.append_column(tvc_job_pid)
-        tvc_job_type = Gtk.TreeViewColumn.new()
-        tvc_job_type.set_properties(title=_("Type"))
-        # Custom widget from glade-catalog.xml
-        crt9 = widgets.CellRendererFormattable(
-            format_string="t",
-            formatting_enabled=True,
-        )
-        tvc_job_type.pack_start(crt9, False)
-        self.jobs_view.append_column(tvc_job_type)
-        tvc_job_name = Gtk.TreeViewColumn.new()
-        tvc_job_name.set_properties(title=_("Name"))
-        # Custom widget from glade-catalog.xml
-        crt10 = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        tvc_job_name.pack_start(crt10, False)
-        self.jobs_view.append_column(tvc_job_name)
-        scrolledwindow1.add(self.jobs_view)
-        running_components_label = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("R_unning"),
-            use_underline=True,
-            yalign=0.47999998927116394,
-        )
-        self.main_notebook.append_page(
-            scrolledwindow1,
-            running_components_label,
-        )
+        self.append_tab(RunningTab(self, self.bricks_store))
         self.append_tab(TopologyTab(self, self.factory))
         self.append_tab(ReadmeTab())
         vbox1.pack_start(self.main_notebook, True, True, 0)
@@ -866,10 +800,6 @@ class VBGUI(_Root):
             "row-activated",
             self.on_events_view_row_activated,
         )
-        self.jobs_view.connect(
-            "button-release-event",
-            self.on_jobs_view_button_release_event,
-        )
         systray_toggle_item.connect(
             "activate",
             self.on_systray_toggle_item_activate,
@@ -903,10 +833,6 @@ class VBGUI(_Root):
         self.events_view.set_cells_data_func()
         self.__events_binding_list = EventsBindingList(self.factory)
         self.events_store.set_data_source(self.__events_binding_list)
-
-        # jobs tab
-        self.jobs_view.set_cells_data_func()
-        self.running_filter.set_visible_func(is_running_filter)
 
     def check_prerequisites(self):
         """Say which programs are missing, in the folders of the project."""
@@ -1330,19 +1256,6 @@ class VBGUI(_Root):
             brick.poweron().addErrback(
                 lambda f: logger.failure(start_error, f)
             )
-
-    def on_jobs_view_button_release_event(self, treeview, event):
-        if event.button == 3:
-            pthinfo = treeview.get_path_at_pos(int(event.x), int(event.y))
-            if pthinfo is not None:
-                path, col, cellx, celly = pthinfo
-                treeview.grab_focus()
-                treeview.set_cursor(path, col, 0)
-                model = treeview.get_model()
-                brick = model.get_value(model.get_iter(path), 0)
-                menu = IJobMenu(brick)
-                menu.popup(event.button, event.time, self)
-                return True
 
     def user_wait_action(self, action, *args):
         ProgressBar(self).wait_for(action, *args)
