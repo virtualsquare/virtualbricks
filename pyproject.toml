@@ -17,6 +17,7 @@ dependencies = [
     "Twisted>=22.1",
     "attrs>=20.1",
     "constantly>=15.1",
+    "markdown-it-py>=1.1",
     "zope.interface>=5.4",
     "PyGObject>=3.42",
     "tomli>=1.2; python_version < '3.11'",
