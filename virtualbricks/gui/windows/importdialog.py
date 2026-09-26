@@ -45,8 +45,10 @@ from virtualbricks.config import (
 )
 from virtualbricks.config.archive import find_qemu_img
 from virtualbricks.config.importing import COPY, SKIP, USE
+from virtualbricks.gui.markdownview import MarkdownLabel
 from virtualbricks.gui.windows.base import _, Window, pango_attr_list
 from virtualbricks.i18n import ngettext
+from virtualbricks.markdown import first_paragraph
 
 logger = Logger()
 imported = 'Project imported as "{name}"'
@@ -60,10 +62,8 @@ STEPS = {
     "unpack": _("Uncompressing the disks"),
 }
 PATTERNS = ("*.vbp", "*.tar.gz", "*.tgz", "*.tar")
-
-
-def first_paragraph(text):
-    return text.strip().split("\n\n", 1)[0].strip()
+# The first paragraph of the README takes at most these lines, then "…".
+DESCRIPTION_LINES = 4
 
 
 def facts(data):
@@ -341,7 +341,9 @@ class ImportDialog(Window):
         self.name_message = _label(dim=True, wrap=True)
         box.pack_start(self.name_message, False, False, 0)
 
-        self.description_label = _label(wrap=True, selectable=True)
+        self.description_label = MarkdownLabel(
+            visible=True, lines=DESCRIPTION_LINES
+        )
         box.pack_start(self.description_label, False, False, 0)
         self.facts_label = _label(dim=True)
         box.pack_start(self.facts_label, False, False, 0)
@@ -513,7 +515,7 @@ class ImportDialog(Window):
         self.archive_label.set_text(plan.contents.path)
         self.name_entry.set_text(plan.name)
         description = first_paragraph(plan.contents.description)
-        self.description_label.set_text(description)
+        self.description_label.set_markdown(description)
         self.description_label.set_visible(bool(description))
         self.facts_label.set_text(facts(plan.contents.data))
         for child in self.images_list.get_children():

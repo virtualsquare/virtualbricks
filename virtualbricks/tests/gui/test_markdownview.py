@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""A README rendered: its lines, its Pango markup, and the view."""
+"""A README rendered: its lines, its Pango markup, the label and the view."""
 
 from twisted.trial import unittest
 
@@ -29,6 +29,8 @@ if has_display:
     from virtualbricks.gui import markdownview
     from virtualbricks.gui.markdownview import (
         INDENT,
+        LINE_SEPARATOR,
+        MarkdownLabel,
         MarkdownView,
         layout,
         open_link,
@@ -214,6 +216,129 @@ class TestPangoMarkup(GtkTestCase):
         self.assertIn("ring, area 0, one", text)
         self.assertIn("Notes: https://bird.network.cz", text)
         self.assertNotIn("<", text)
+
+    def test_without_links(self):
+        self.assertEqual(
+            pango_markup("[**BIRD**](https://a.org) and https://b.org", False),
+            "<b>BIRD</b> and https://b.org",
+        )
+
+
+class TestMarkdownLabel(GtkTestCase):
+
+    # longer than a line of 300 pixels, however wide the font
+    LONG = "word " * 60
+
+    def setUp(self):
+        # without a window, that would give it a width of its own
+        self.label = MarkdownLabel(lines=4, visible=True)
+        self.addCleanup(self.label.destroy)
+
+    def allocate(self, width):
+        # GTK asks the size first
+        self.label.get_preferred_width()
+        self.label.get_preferred_height_for_width(width)
+        allocation = Gdk.Rectangle()
+        allocation.width = width
+        allocation.height = 200
+        self.label.size_allocate(allocation)
+
+    def fit(self, text, width=400):
+        self.label.set_markdown(text)
+        self.allocate(width)
+        self.label.fit()
+        return self.shown()
+
+    def shown(self):
+        return self.label.get_label().split(LINE_SEPARATOR)
+
+    def test_the_lines_that_fit(self):
+        self.assertEqual(self.fit("One\nTwo"), ["One", "Two"])
+        self.assertEqual(
+            self.fit("One\nTwo\nThree\nFour"), ["One", "Two", "Three", "Four"]
+        )
+        self.assertEqual(self.fit(""), [""])
+
+    def test_more_lines_than_room(self):
+        self.assertEqual(
+            self.fit("One\nTwo\nThree\nFour\nFive\nSix"),
+            ["One", "Two", "Three", "Four …"],
+        )
+
+    def test_a_long_line_is_the_last(self):
+        text = f"One\n{self.LONG}\nThree"
+        self.assertEqual(self.fit(text, 300), ["One", self.LONG.strip()])
+        # Pango trims it, and the label asks for the room of four lines
+        self.allocate(300)
+        label_layout = self.label.get_layout()
+        self.assertEqual(label_layout.get_line_count(), 4)
+        self.assertTrue(label_layout.is_ellipsized())
+        _, height = self.label.get_preferred_height_for_width(300)
+        self.label.set_markdown("One")
+        _, one = self.label.get_preferred_height_for_width(300)
+        self.assertEqual(height, 4 * one)
+        # the first line takes more than the room: Pango's "…" is enough
+        self.assertEqual(
+            self.fit(f"{self.LONG}\nTwo", 300), [self.LONG.strip()]
+        )
+
+    def test_all_of_it_before_the_width_is_known(self):
+        # as high as the lines that fit
+        self.label.set_markdown("One\nTwo\nThree\nFour\nFive")
+        self.assertEqual(self.shown(), ["One", "Two", "Three", "Four", "Five"])
+
+    def test_another_width(self):
+        text = f"One\n{self.LONG}\nThree"
+        self.fit(text, 300)
+        self.allocate(20000)
+        self.label.fit()
+        self.assertEqual(self.shown(), ["One", self.LONG.strip(), "Three"])
+
+    def test_another_font(self):
+        text = "One\nTwo\nThree\nFour\nFive"
+        self.assertEqual(len(self.fit(text, 300)), 4)
+        style = Gtk.CssProvider()
+        style.load_from_data(b"label { font-size: 200px; }")
+        self.label.get_style_context().add_provider(
+            style, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        # as GTK does, for a label in a window
+        self.label.emit("style-updated")
+        self.allocate(300)
+        self.label.fit()
+        self.assertLess(len(self.shown()), 4)
+
+    def test_the_fit_waits_for_the_room(self):
+        self.label.set_markdown("One\nTwo\nThree\nFour\nFive")
+        self.allocate(400)
+        # not while GTK gives it its size
+        self.assertEqual(len(self.shown()), 5)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(self.shown(), ["One", "Two", "Three", "Four …"])
+
+    def test_no_fit_after_the_end(self):
+        self.label.set_markdown("One\nTwo\nThree\nFour\nFive")
+        self.allocate(400)
+        self.label.destroy()
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(len(self.shown()), 5)
+
+    def test_links(self):
+        opened = []
+        self.patch(
+            Gtk,
+            "show_uri_on_window",
+            lambda window, uri, time: opened.append(uri),
+        )
+        # measured without links, which Pango alone doesn't know
+        self.assertEqual(
+            self.fit("[One](https://a.org)\nTwo\nThree\nFour\nFive"),
+            ['<a href="https://a.org">One</a>', "Two", "Three", "Four …"],
+        )
+        self.assertTrue(self.label.emit("activate-link", "https://a.org"))
+        self.assertEqual(opened, ["https://a.org"])
 
 
 class ViewTestCase(GtkTestCase):

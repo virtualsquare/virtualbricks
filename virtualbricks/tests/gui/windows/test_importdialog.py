@@ -115,7 +115,7 @@ class ImportTestCase(GuiTestCase):
         return ArchiveContents(
             self.archive,
             data(**images),
-            "OSPF between routers\n\nDetails.",
+            "# OSPF lab\n\nOSPF between **routers**\n\nDetails.",
             members,
             complete,
         )
@@ -166,9 +166,15 @@ class TestReading(ImportTestCase):
         dialog = self.dialog
         self.assertEqual(dialog.page(), "form")
         self.assertEqual(dialog.name_entry.get_text(), "ospf-lab")
+        # the first paragraph, rendered
         self.assertEqual(
             dialog.description_label.get_text(), "OSPF between routers"
         )
+        self.assertEqual(
+            dialog.description_label.get_label(),
+            "OSPF between <b>routers</b>",
+        )
+        self.assertEqual(dialog.description_label.get_lines(), 4)
         self.assertEqual(
             dialog.facts_label.get_text(), "1 qemu · 2 switch · 1 event"
         )

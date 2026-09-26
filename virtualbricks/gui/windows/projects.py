@@ -38,9 +38,11 @@ from twisted.logger import Logger
 
 from virtualbricks import errors
 from virtualbricks.config import projects
+from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.windows import projectname
 from virtualbricks.gui.windows.base import _, pango_attr_list
 from virtualbricks.i18n import ngettext
+from virtualbricks.markdown import first_line
 
 logger = Logger()
 project_trashed = 'Project "{name}" moved to the trash'
@@ -49,6 +51,8 @@ cannot_remove = 'Cannot remove the project "{name}": {error}'
 cannot_open = 'Cannot open the project "{name}": {error}'
 
 MARGIN = 12
+# The README in the details is drawn on the pane, as the labels around it.
+README_CSS = b"textview, textview text { background-color: transparent; }"
 
 
 def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):
@@ -85,13 +89,6 @@ def when(timestamp, now=None):
     if moment.year == now.year:
         return f"{moment.day} {moment.strftime('%b')}"
     return f"{moment.day} {moment.strftime('%b %Y')}"
-
-
-def first_line(text):
-    for line in text.splitlines():
-        if line.strip():
-            return line.strip()
-    return ""
 
 
 def count_bricks(summary):
@@ -135,12 +132,11 @@ class ProjectRow:
         self.open_badge.set_visible(is_open)
         top.pack_end(self.open_badge, False, False, 0)
         box.pack_start(top, False, False, 0)
+        line = first_line(summary.description)
         self.description_label = _label(
-            first_line(summary.description),
-            dim=True,
-            ellipsize=Pango.EllipsizeMode.END,
+            line, dim=True, ellipsize=Pango.EllipsizeMode.END
         )
-        self.description_label.set_visible(bool(summary.description.strip()))
+        self.description_label.set_visible(bool(line))
         box.pack_start(self.description_label, False, False, 0)
         self.facts_label = _label(facts(summary, now), dim=True)
         broken = summary.problem is not None or any(
@@ -321,8 +317,13 @@ class ProjectsWindow:
         self.problem_label = _label(wrap=True, selectable=True)
         self.problem_label.get_style_context().add_class("warning")
         box.pack_start(self.problem_label, False, False, 0)
-        self.readme_label = _label(wrap=True, selectable=True)
-        box.pack_start(self.readme_label, False, False, 0)
+        self.readme_view = MarkdownView(visible=True)
+        style = Gtk.CssProvider()
+        style.load_from_data(README_CSS)
+        self.readme_view.get_style_context().add_provider(
+            style, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        box.pack_start(self.readme_view, False, False, 0)
 
         self.facts_grid = Gtk.Grid(
             visible=True, column_spacing=18, row_spacing=6, margin_top=6
@@ -456,8 +457,9 @@ class ProjectsWindow:
             else ""
         )
         self.problem_label.set_visible(not readable)
-        self.readme_label.set_text(summary.description.strip())
-        self.readme_label.set_visible(bool(summary.description.strip()))
+        readme = summary.description.strip()
+        self.readme_view.set_markdown(readme)
+        self.readme_view.set_visible(bool(readme))
         values = self.fact_values
         values["bricks"].set_text(
             ", ".join(

@@ -122,7 +122,7 @@ class TestList(ProjectsTestCase):
         self.lab(
             "lab",
             days=1,
-            description="\nOSPF lab\n\nDetails",
+            description="\n# OSPF lab\n\nDetails",
             bricks={"vm": {"type": "qemu"}, "sw": {"type": "switch"}},
             images={"deb": image, "gone": "/nowhere"},
         )
@@ -191,7 +191,7 @@ class TestDetails(ProjectsTestCase):
     def test_details(self):
         self.lab(
             "lab",
-            description="OSPF lab",
+            description="**OSPF** lab",
             bricks={"vm": {"type": "qemu"}},
             images={"gone": "/nowhere"},
         )
@@ -202,7 +202,10 @@ class TestDetails(ProjectsTestCase):
         self.assertEqual(
             window.path_label.get_text(), self.manager.project_path("lab")
         )
-        self.assertEqual(window.readme_label.get_text(), "OSPF lab")
+        readme = window.readme_view.get_buffer()
+        self.assertEqual(
+            readme.get_text(*readme.get_bounds(), False), "OSPF lab"
+        )
         values = {k: v.get_text() for k, v in window.fact_values.items()}
         self.assertEqual(values["bricks"], "1 qemu")
         self.assertEqual(values["events"], "0")
@@ -226,7 +229,14 @@ class TestDetails(ProjectsTestCase):
         self.assertEqual(values["images"], f"deb: {image}")
         # the size is on its way
         self.assertEqual(values["disks"], "…")
-        self.assertFalse(window.readme_label.get_visible())
+        self.assertFalse(window.readme_view.get_visible())
+
+    def test_the_readme_is_drawn_on_the_pane(self):
+        window = self.window()
+        background = window.readme_view.get_style_context().get_property(
+            "background-color", Gtk.StateFlags.NORMAL
+        )
+        self.assertEqual(background.alpha, 0)
 
     def test_the_open_project(self):
         self.lab("lab")
@@ -539,7 +549,3 @@ class TestHelpers(GuiTestCase):
     def test_sizes(self):
         self.assertEqual(projects.human_size(12), "12 B")
         self.assertEqual(projects.human_size(612 * MB), "612.0 MB")
-
-    def test_first_line(self):
-        self.assertEqual(projects.first_line("\n  \n a \nb"), "a")
-        self.assertEqual(projects.first_line(""), "")

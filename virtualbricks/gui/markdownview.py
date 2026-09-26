@@ -22,8 +22,9 @@ A README in Markdown, rendered in a GtkTextView or in the markup of a label.
 :func:`layout` turns the tokens of :mod:`virtualbricks.markdown` into lines,
 each a list of runs of text with the names of their styles; it needs no
 widget. :class:`MarkdownView` draws the lines with the tags of a read-only
-GtkTextView, and :func:`pango_markup` writes them for a GtkLabel. A new line
-of the README starts a new line in both.
+GtkTextView, and :func:`pango_markup` writes them for a GtkLabel, as
+:class:`MarkdownLabel` does in a few lines. A new line of the README starts
+a new line in all of them.
 
 Only ``http``, ``https`` and ``mailto`` links open, with :func:`open_link`.
 """
@@ -73,6 +74,8 @@ HEADINGS = {"h1": "h1", "h2": "h2"}
 # A rule in the colour of the text: a separator of the theme is too faint on
 # the background of a text view.
 RULE_CSS = b"separator { background-color: alpha(@theme_fg_color, 0.35); }"
+# A line break that doesn't end the paragraph, for Pango.
+LINE_SEPARATOR = "\u2028"
 
 
 @dataclasses.dataclass
@@ -259,7 +262,7 @@ def open_link(widget: Gtk.Widget, uri: str) -> bool:
     return True
 
 
-def _markup_run(run: Run) -> str:
+def _markup_run(run: Run, links: bool) -> str:
     text = GLib.markup_escape_text(run.text)
     for style, element in (
         ("code", "tt"),
@@ -269,21 +272,25 @@ def _markup_run(run: Run) -> str:
     ):
         if style in run.styles:
             text = f"<{element}>{text}</{element}>"
-    if run.href is not None:
+    if run.href is not None and links:
         href = GLib.markup_escape_text(run.href)
         text = f'<a href="{href}">{text}</a>'
     return text
 
 
-def pango_markup(text: str) -> str:
-    """The markup of a README for a label; links are <a href>."""
+def pango_markup(text: str, links: bool = True) -> str:
+    """
+    The markup of a README for a label; links are <a href>.
+
+    Pango alone doesn't know <a>: with links False, a link is only its text.
+    """
 
     parts: list[str] = []
     for line in layout(parse(text)):
         if line.rule:
             body = "―" * 6
         else:
-            body = "".join(_markup_run(run) for run in line.runs)
+            body = "".join(_markup_run(run, links) for run in line.runs)
         if "pre" in line.styles:
             body = f"<tt>{body}</tt>"
         if any(style in line.styles for style in ("h1", "h2", "h3")):
@@ -297,6 +304,94 @@ def pango_markup(text: str) -> str:
         if "space" in line.styles:
             parts.append("")
     return "\n".join(parts).strip("\n")
+
+
+class MarkdownLabel(Gtk.Label):
+    """
+    A README in Markdown, rendered in a label of at most `lines` lines; the
+    last ends with "…" if the README goes on.
+
+    A label limits the lines of each Pango paragraph, and a new line starts
+    one: the lines of the README are joined by a line separator, a line break
+    inside the paragraph. Pango then trims the last line of the label, but it
+    also joins to it the lines of the README after it, without their breaks.
+    So the label keeps only the lines of the README that fit its width.
+
+    It chooses them in an idle call once it has its width: GTK forgets a
+    resize asked while it gives a widget its size. After a new width, the
+    lines that fit show a frame later.
+    """
+
+    def __init__(self, lines: int, **properties) -> None:
+        super().__init__(
+            wrap=True,
+            wrap_mode=Pango.WrapMode.WORD_CHAR,
+            ellipsize=Pango.EllipsizeMode.END,
+            lines=lines,
+            xalign=0.0,
+            **properties,
+        )
+        # the markup of each line, and the same without links for Pango
+        self._lines: list[str] = []
+        self._measured: list[str] = []
+        # the width, in Pango units, the lines were fitted to
+        self._width: int | None = None
+        self._fitting: int | None = None
+        self.connect("activate-link", open_link)
+        self.connect("size-allocate", self.on_size_allocate)
+        self.connect("style-updated", self.on_style_updated)
+        self.connect("destroy", self.on_destroy)
+
+    def set_markdown(self, text: str) -> None:
+        self._lines = pango_markup(text).split("\n")
+        self._measured = pango_markup(text, links=False).split("\n")
+        self._width = None
+        # trimmed by Pango, the whole README is as high as the lines that
+        # fit: the label asks for its height before it knows its width
+        self.set_markup(LINE_SEPARATOR.join(self._lines))
+
+    def fit(self) -> None:
+        """Keep the lines that fit the width; Pango trims the last one."""
+
+        layout = self.get_layout().copy()
+        if layout.get_width() == self._width:
+            return
+        self._width = layout.get_width()
+        layout.set_ellipsize(Pango.EllipsizeMode.NONE)
+        limit = self.get_lines()
+        shown: list[str] = []
+        used = 0
+        for line, measured in zip(self._lines, self._measured):
+            if used == limit:
+                # the lines fill the label, and the README goes on
+                shown[-1] += " …"
+                break
+            shown.append(line)
+            layout.set_markup(measured)
+            used += layout.get_line_count()
+            if used > limit:
+                break
+        markup = LINE_SEPARATOR.join(shown)
+        if markup != self.get_label():
+            self.set_markup(markup)
+
+    def _fit_later(self) -> bool:
+        self._fitting = None
+        self.fit()
+        return GLib.SOURCE_REMOVE
+
+    def on_size_allocate(self, label, allocation) -> None:
+        if self._fitting is None:
+            self._fitting = GLib.idle_add(self._fit_later)
+
+    def on_style_updated(self, label) -> None:
+        # another font: the lines take another room
+        self._width = None
+
+    def on_destroy(self, label) -> None:
+        if self._fitting is not None:
+            GLib.source_remove(self._fitting)
+            self._fitting = None
 
 
 class MarkdownView(Gtk.TextView):
