@@ -319,6 +319,16 @@ class TopologyView(Gtk.ScrolledWindow):
                 return node
         return None
 
+    def measure(self, name: str) -> int:
+        """The width of a name at 100%, in the font of the view."""
+
+        context = self.area.get_style_context()
+        text = self.area.create_pango_layout(name)
+        text.set_font_description(
+            context.get_property("font", context.get_state())
+        )
+        return text.get_pixel_size()[0]
+
     def brick_at(self, x: float, y: float):
         node = self.node_at(x, y)
         return None if node is None else node.brick

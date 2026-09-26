@@ -23,7 +23,10 @@ Graphviz lays them out; the Topology tab draws them.
 The places are in points, from the top left corner of the lab, y going
 down; at 100% a point is a pixel. Each brick has a box: its icon, ICON
 points wide and high, and below it its name, NAME points high. A long name
-widens the box. A link is a curve of cubic Bézier segments, its points as
+widens the box: the caller measures the names, in the font it draws them
+with. Graphviz gets no text: a Graphviz with its own Pango, as the
+pygraphviz wheels have, would lay it out with a second Pango in a process
+where GTK loaded the system's. A link is a curve of cubic Bézier segments, its points as
 Graphviz gives them: the start, then three points for each segment.
 
 The links go from the bricks' plugs to the sockets they are connected to,
@@ -36,14 +39,15 @@ between the same two bricks are drawn as one.
 from __future__ import annotations
 
 import dataclasses
+import math
 
 import pygraphviz
 
 # The icon and the line of the name, at 100%.
 ICON = 64
 NAME = 20
-# The size of the names for Graphviz, which widens a box for a long one.
-NAME_FONT = 14
+# Without a measure, the width of a character of a name.
+CHAR_WIDTH = 8
 # The gap between the columns of a left to right layout, the rows of a top
 # to bottom one, and between the bricks of a column or a row, in inches.
 RANK_GAP = 1.0
@@ -126,8 +130,17 @@ def _inches(value: str) -> float:
     return round(float(value) * POINTS_PER_INCH, 2)
 
 
-def layout(bricks, direction: str = "LR") -> Layout:
-    """Lay the bricks out, left to right ("LR") or top to bottom ("TB")."""
+def estimate(name: str) -> float:
+    """The width of a name, roughly, when nothing measures it."""
+
+    return len(name) * CHAR_WIDTH
+
+
+def layout(bricks, direction: str = "LR", measure=estimate) -> Layout:
+    """
+    Lay the bricks out, left to right ("LR") or top to bottom ("TB").
+    measure(name) is the width of a name at 100%, in points.
+    """
 
     if direction not in DIRECTIONS:
         raise ValueError(f"Unknown direction {direction!r}")
@@ -140,13 +153,14 @@ def layout(bricks, direction: str = "LR") -> Layout:
         rankdir=direction, ranksep=RANK_GAP, nodesep=BRICK_GAP
     )
     for brick in bricks:
+        width = max(ICON, math.ceil(measure(brick.name)))
         graph.add_node(
             brick.name,
-            label=brick.name,
+            label="",
             shape="box",
-            width=ICON / POINTS_PER_INCH,
+            fixedsize="true",
+            width=width / POINTS_PER_INCH,
             height=(ICON + NAME) / POINTS_PER_INCH,
-            fontsize=NAME_FONT,
         )
     for tail, head in links(bricks):
         graph.add_edge(tail.name, head.name)

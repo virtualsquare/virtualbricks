@@ -106,9 +106,11 @@ class TopologyTestCase(GuiTestCase):
         self.patch(topology, "logger", self.logger)
         self.laid_out = []
 
-        def layout(bricks, direction="LR"):
+        def layout(bricks, direction, measure):
+            # the names measured by the view
+            self.assertEqual(measure, self.view.measure)
             self.laid_out.append(([b.name for b in bricks], direction))
-            return layouts.layout(bricks, direction)
+            return layouts.layout(bricks, direction, measure)
 
         self.patch(topology, "layout", layout)
         self.sw1 = self.factory.new_brick("switch", "sw1")

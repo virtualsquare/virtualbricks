@@ -185,7 +185,9 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     def _draw(self) -> None:
         logger.debug(drawing_topology)
-        self.view.set_layout(layout(self.factory.bricks, self.direction))
+        self.view.set_layout(
+            layout(self.factory.bricks, self.direction, self.view.measure)
+        )
         self._should_draw = False
         self._update()
 

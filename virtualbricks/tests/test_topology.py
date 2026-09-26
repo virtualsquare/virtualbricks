@@ -20,7 +20,14 @@
 from twisted.trial import unittest
 
 from virtualbricks.tests import make_factory
-from virtualbricks.topology import ICON, NAME, Layout, layout, links
+from virtualbricks.topology import (
+    CHAR_WIDTH,
+    ICON,
+    NAME,
+    Layout,
+    layout,
+    links,
+)
 
 
 class TopologyTestCase(unittest.TestCase):
@@ -144,8 +151,18 @@ class TestLayout(TopologyTestCase):
     def test_a_long_name(self):
         sw = self.switch("a-switch-with-a-long-name")
         [node] = layout([sw]).nodes
-        self.assertGreater(node.width, ICON)
+        self.assertEqual(node.width, len(sw.name) * CHAR_WIDTH)
         self.assertEqual(node.height, ICON + NAME)
+
+    def test_the_names_measured(self):
+        sw = self.switch("sw")
+        vm = self.brick("qemu", "a-long-name", sw.socks[0])
+        widths = {"sw": 10, "a-long-name": 150.2}
+        result = layout([sw, vm], measure=widths.get)
+        nodes = self.nodes(result)
+        # never narrower than the icon; whole points
+        self.assertEqual(nodes["sw"].width, ICON)
+        self.assertEqual(nodes["a-long-name"].width, 151)
 
     def test_an_unknown_direction(self):
         self.assertRaises(ValueError, layout, [], "RL")

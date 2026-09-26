@@ -345,6 +345,25 @@ class TestWhereThingsAre(ViewTestCase):
         ):
             self.assertIsNot(self.view.brick_at(*outside), self.vm, outside)
 
+    def test_the_width_of_a_name(self):
+        context = self.view.area.get_style_context()
+        font = context.get_property("font", context.get_state())
+        text = self.view.area.create_pango_layout("a-long-name")
+        text.set_font_description(font)
+        self.assertEqual(
+            self.view.measure("a-long-name"), text.get_pixel_size()[0]
+        )
+        self.assertGreater(
+            self.view.measure("a-long-name"), self.view.measure("a")
+        )
+        # in the view's font
+        style = Gtk.CssProvider()
+        style.load_from_data(b".view { font-size: 40px; }")
+        context.add_provider(style, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.assertGreater(
+            self.view.measure("a-long-name"), text.get_pixel_size()[0] * 2
+        )
+
     def test_at_another_zoom(self):
         self.show(1000, 1000)
         self.view.set_zoom(0.5)

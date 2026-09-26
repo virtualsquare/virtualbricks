@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 20:13+0200\n"
+"POT-Creation-Date: 2026-09-26 21:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -351,6 +351,18 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
 msgid "No event selected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/picture.py
+msgid "PNG image"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/picture.py
+msgid "SVG image"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/picture.py
+msgid "PDF document"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/readme.py
