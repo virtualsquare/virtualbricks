@@ -304,7 +304,7 @@ class TestDragAndDrop(BricksTestCase):
         self.assertIsNone(tap2.plugs[0].sock)
         self.assertEqual(
             self.logger.formatted(),
-            ["I don't know what to do, bricks have no socks."],
+            ["Nothing to connect: neither brick can plug into the other."],
         )
 
     def test_nothing_happens(self):

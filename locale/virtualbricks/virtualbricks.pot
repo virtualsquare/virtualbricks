@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 21:29+0200\n"
+"POT-Creation-Date: 2026-09-26 22:54+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -272,6 +272,153 @@ msgstr ""
 msgid ""
 "The project \"{name}\" that was open last doesn't exist any more. Open "
 "another one, or create one."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Switch"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Switch wrapper"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/windows/newbrick.py
+msgid "Tap"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Wire"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Netemu"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Capture interface"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Tunnel server"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Tunnel client"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Router"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Virtual machine"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Running"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Stopped"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Not connected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Not configured"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "nothing"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "on {brick}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{n} port"
+msgid_plural "{n} ports"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "hub"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no socket"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no address"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{delay} ms"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-format, python-brace-format
+msgid "{loss}% loss"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no interface"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{interface} on {brick}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "UDP port {port}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "to {host}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no host"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} as a socket"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} not connected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} host only"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} on {brick}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{size} MiB"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no network card"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks.py
@@ -1495,10 +1642,6 @@ msgstr ""
 #: virtualbricks/gui/windows/networkcards.py
 #: virtualbricks/gui/windows/qemuconfig.py
 msgid "MAC address"
-msgstr ""
-
-#: virtualbricks/gui/windows/newbrick.py
-msgid "Tap"
 msgstr ""
 
 #: virtualbricks/gui/windows/newbrick.py

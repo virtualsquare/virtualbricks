@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 21:29+0200\n"
+"POT-Creation-Date: 2026-09-26 22:54+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -278,6 +278,167 @@ msgid ""
 "The project \"{name}\" that was open last doesn't exist any more. Open "
 "another one, or create one."
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Switch"
+msgstr "Switch"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Switch wrapper"
+msgstr "Switch"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/windows/newbrick.py
+msgid "Tap"
+msgstr "Tap"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Wire"
+msgstr "Wire"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Netemu"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Capture interface"
+msgstr "Nome dell'interfaccia di rete:"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Tunnel server"
+msgstr "Tunnel Server"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Tunnel client"
+msgstr "Tunnel Client"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Router"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Virtual machine"
+msgstr "Macchina Virtuale"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Running"
+msgstr "In esecuzione"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Stopped"
+msgstr "_Avvia/Ferma"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Not connected"
+msgstr "disconnesso"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Not configured"
+msgstr "Non ancora configurato."
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "nothing"
+msgstr "Assegna niente"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy, python-brace-format
+msgid "on {brick}"
+msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy, python-brace-format
+msgid "{n} port"
+msgid_plural "{n} ports"
+msgstr[0] "porta"
+msgstr[1] "porta"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "hub"
+msgstr "hdb"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no socket"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "no address"
+msgstr "Indirizzo MAC: "
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{delay} ms"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-format, python-brace-format
+msgid "{loss}% loss"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "no interface"
+msgstr "Nome dell'interfaccia di rete:"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{interface} on {brick}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "UDP port {port}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "to {host}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no host"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} as a socket"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} not connected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} host only"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy, python-brace-format
+msgid "eth{n} on {brick}"
+msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{size} MiB"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "no network card"
+msgstr "Aggiungi una scheda di rete"
 
 #: virtualbricks/gui/mainwindow/bricks.py
 #: virtualbricks/gui/mainwindow/events.py
@@ -1592,10 +1753,6 @@ msgid "MAC address"
 msgstr "Indirizzo MAC: "
 
 #: virtualbricks/gui/windows/newbrick.py
-msgid "Tap"
-msgstr "Tap"
-
-#: virtualbricks/gui/windows/newbrick.py
 #: virtualbricks/gui/windows/renamedialog.py
 #, fuzzy
 msgid "Brick name"
@@ -2676,9 +2833,6 @@ msgstr "kvm non trovato"
 #~ "Clicca per selezionare un elemento da usare o configurare, tasto destro "
 #~ "per altro."
 
-#~ msgid "Running"
-#~ msgstr "In esecuzione"
-
 #~ msgid "Remote Sessions"
 #~ msgstr "Sessione Remota"
 
@@ -2709,9 +2863,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "hdc"
 #~ msgstr "hdc"
-
-#~ msgid "hdb"
-#~ msgstr "hdb"
 
 #~ msgid "hda"
 #~ msgstr "hda"
@@ -3230,9 +3381,6 @@ msgstr "kvm non trovato"
 #~ msgid "UDP"
 #~ msgstr "UDP"
 
-#~ msgid "port "
-#~ msgstr "porta"
-
 #~ msgid "to guest IP "
 #~ msgstr "to guest IP "
 
@@ -3256,9 +3404,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "Ok"
 #~ msgstr "Ok"
-
-#~ msgid "Wire"
-#~ msgstr "Wire"
 
 #~ msgid "Wirefilter"
 #~ msgstr "Wirefilter"
@@ -3377,9 +3522,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "Configured to connect"
 #~ msgstr "Configurato per connettere"
-
-#~ msgid "Not yet configured."
-#~ msgstr "Non ancora configurato."
 
 #~ msgid "Left plug is"
 #~ msgstr "Il plug sinistro è"

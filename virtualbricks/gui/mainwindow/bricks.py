@@ -36,6 +36,7 @@ from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui import widgets  # noqa: E402
+from virtualbricks.gui.mainwindow import brickinfo  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     Tab,
     popup_menu,
@@ -48,7 +49,7 @@ from virtualbricks.tools import dispose  # noqa: E402
 
 logger = Logger()
 not_started = "Brick not started."
-dnd_no_socks = "I don't know what to do, bricks have no socks."
+dnd_no_socks = "Nothing to connect: neither brick can plug into the other."
 dnd_dest_brick_not_found = "Cannot found dest brick"
 dnd_source_brick_not_found = "Cannot find source brick {name}"
 dnd_no_dest = "No destination brick"
@@ -195,18 +196,6 @@ class BricksTab(Tab, Gtk.Box):
             started
         )
 
-    def connect_bricks(self, source, destination) -> None:
-        """Plug a brick into a socket of the other, as a drop does."""
-
-        if destination is source:
-            logger.debug(dnd_same_brick)
-        elif source.socks:
-            destination.connect(source.socks[0])
-        elif destination.socks:
-            source.connect(destination.socks[0])
-        else:
-            logger.info(dnd_no_socks)
-
     # What the main window tells
 
     def on_quit(self) -> None:
@@ -264,7 +253,9 @@ class BricksTab(Tab, Gtk.Box):
                 destination = model.get_value(model.get_iter(path), 0)
                 if destination is None:
                     logger.debug(dnd_dest_brick_not_found)
-                else:
-                    self.connect_bricks(source, destination)
+                elif destination is source:
+                    logger.debug(dnd_same_brick)
+                elif not brickinfo.connect(source, destination):
+                    logger.info(dnd_no_socks)
         context.finish(True, False, time)
         return True

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 21:29+0200\n"
+"POT-Creation-Date: 2026-09-26 22:54+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -273,6 +273,158 @@ msgid ""
 "The project \"{name}\" that was open last doesn't exist any more. Open "
 "another one, or create one."
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Switch"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Switch wrapper"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/windows/newbrick.py
+msgid "Tap"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Wire"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Netemu"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Capture interface"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Tunnel server"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Tunnel client"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Router"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "Virtual machine"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Running"
+msgstr "En ejecución"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Stopped"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Not connected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "Not configured"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "nothing"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy, python-brace-format
+msgid "on {brick}"
+msgstr "Importar bricks"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{n} port"
+msgid_plural "{n} ports"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "hub"
+msgstr "hdb"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no socket"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "no address"
+msgstr "Direccion MAC:"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{delay} ms"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-format, python-brace-format
+msgid "{loss}% loss"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+msgid "no interface"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{interface} on {brick}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "UDP port {port}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "to {host}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "no host"
+msgstr "Añadir host"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} as a socket"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} not connected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "eth{n} host only"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy, python-brace-format
+msgid "eth{n} on {brick}"
+msgstr "Importar bricks"
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, python-brace-format
+msgid "{size} MiB"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickinfo.py
+#, fuzzy
+msgid "no network card"
+msgstr "Añadir tarjeta de red"
 
 #: virtualbricks/gui/mainwindow/bricks.py
 #: virtualbricks/gui/mainwindow/events.py
@@ -1545,10 +1697,6 @@ msgid "MAC address"
 msgstr "Direccion MAC:"
 
 #: virtualbricks/gui/windows/newbrick.py
-msgid "Tap"
-msgstr ""
-
-#: virtualbricks/gui/windows/newbrick.py
 #: virtualbricks/gui/windows/renamedialog.py
 #, fuzzy
 msgid "Brick name"
@@ -2522,12 +2670,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Click para seleccionar o editar la configuración, click derecho para más"
 
-#~ msgid "Running"
-#~ msgstr "En ejecución"
-
-#~ msgid "Add host:"
-#~ msgstr "Añadir host"
-
 #~ msgid "Remote Sessions"
 #~ msgstr "Sesiones Remotas"
 
@@ -2558,9 +2700,6 @@ msgstr ""
 
 #~ msgid "hdc"
 #~ msgstr "hdc"
-
-#~ msgid "hdb"
-#~ msgstr "hdb"
 
 #~ msgid "hda"
 #~ msgstr "hda"
