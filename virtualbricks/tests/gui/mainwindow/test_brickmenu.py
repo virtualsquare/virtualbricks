@@ -599,3 +599,22 @@ class TestPopup(BrickMenuTestCase):
         self.addCleanup(with_keys.destroy)
         configure = with_keys.get_children()[1]
         self.assertEqual(configure.get_property("accel"), "Return")
+
+    def test_under_a_widget(self):
+        # for the Menu key: no event
+        shown = []
+        self.patch(
+            Gtk.Menu,
+            "popup_at_widget",
+            lambda menu, widget, anchor, gravity, event: shown.append(
+                (widget, anchor, gravity, event)
+            ),
+        )
+        widget = Gtk.Button()
+        self.addCleanup(widget.destroy)
+        result = popup(widget, None, self.gui, self.brick("switch", "sw"))
+        self.addCleanup(result.destroy)
+        self.assertEqual(
+            shown,
+            [(widget, Gdk.Gravity.SOUTH_EAST, Gdk.Gravity.NORTH_EAST, None)],
+        )

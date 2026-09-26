@@ -53,7 +53,6 @@ from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.mainwindow.bricks import BricksTab
 from virtualbricks.gui.mainwindow.events import EventsTab
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
-from virtualbricks.gui.mainwindow.running import RunningTab
 from virtualbricks.gui.mainwindow.tab import switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
 from virtualbricks.gui.windows.logging import LoggingWindow
@@ -270,10 +269,8 @@ class VBGUI:
         menubar1.append(menu_help)
         vbox1.pack_start(menubar1, False, False, 0)
         self.main_notebook = Gtk.Notebook(visible=True, can_focus=True)
-        bricks = BricksTab(self, self.factory)
-        self.append_tab(bricks)
+        self.append_tab(BricksTab(self, self.factory))
         self.append_tab(EventsTab(self, self.factory))
-        self.append_tab(RunningTab(self, bricks.store))
         self.append_tab(TopologyTab(self, self.factory))
         self.append_tab(ReadmeTab())
         vbox1.pack_start(self.main_notebook, True, True, 0)

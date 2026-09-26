@@ -35,7 +35,8 @@ import signal
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gio, GLib, Gtk  # noqa: E402
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.internet import defer, error, reactor  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
@@ -291,8 +292,9 @@ class BrickActions(Gio.SimpleActionGroup):
 
 def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:
     """
-    Open the menu of brick at the pointer, for a click on widget. Keep the
-    menu that it returns while it shows.
+    Open the menu of brick: at the pointer, for a click on widget, or under
+    widget when event is None, as for the Menu key. Keep the menu that it
+    returns while it shows.
     """
 
     result = Gtk.Menu.new_from_model(
@@ -300,7 +302,12 @@ def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:
     )
     result.insert_action_group(GROUP, BrickActions(gui, brick))
     result.attach_to_widget(widget, None)
-    result.popup_at_pointer(event)
+    if event is None:
+        result.popup_at_widget(
+            widget, Gdk.Gravity.SOUTH_EAST, Gdk.Gravity.NORTH_EAST, None
+        )
+    else:
+        result.popup_at_pointer(event)
     return result
 
 

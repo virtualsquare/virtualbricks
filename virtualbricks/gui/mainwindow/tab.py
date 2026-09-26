@@ -107,11 +107,10 @@ def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
     return state
 
 
-def popup_menu(view, event, gui, open_menu=None) -> bool | None:
+def popup_menu(view, event, gui) -> bool | None:
     """
     For the button-release-event of a list: the right button opens the menu
-    of the row under it, with open_menu(value, event) if given. True if it's
-    the right button, on a row or not.
+    of the row under it. True if it's the right button, on a row or not.
     """
 
     if event.button != 3:
@@ -123,8 +122,5 @@ def popup_menu(view, event, gui, open_menu=None) -> bool | None:
         view.set_cursor(path, column, False)
         model = view.get_model()
         value = model.get_value(model.get_iter(path), 0)
-        if open_menu is None:
-            IMenu(value).popup(event.button, event.time, gui)
-        else:
-            open_menu(value, event)
+        IMenu(value).popup(event.button, event.time, gui)
     return True

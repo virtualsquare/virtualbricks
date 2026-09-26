@@ -22,7 +22,7 @@ import os
 import sys
 
 from gi.repository import Gtk
-from twisted.internet import error, defer, protocol, reactor
+from twisted.internet import error, protocol, reactor
 from twisted.logger import (
     FilteringLogObserver,
     LogLevel,
@@ -34,7 +34,7 @@ from twisted.logger import (
 )
 from zope.interface import implementer
 
-from virtualbricks import brickfactory, errors, tools
+from virtualbricks import brickfactory, errors
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
@@ -54,26 +54,20 @@ from virtualbricks.gui.windows import (
     QemuConfigController,
     EventConfigController,
 )
-from virtualbricks.gui.mainwindow import ProgressBar, VBGUI
-from virtualbricks.gui.interfaces import IMenu, IJobMenu, IConfigController
+from virtualbricks.gui.mainwindow import VBGUI
+from virtualbricks.gui.interfaces import IMenu, IConfigController
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash
 from virtualbricks.i18n import _
 from virtualbricks.interfaces import registerAdapter
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.bricks.sock import Sock
-from virtualbricks.bricks.virtualmachine import VirtualMachine
 
 logger = Logger()
 cannot_open_last = "{message}"
 sync_error = "Sync terminated unexpectedly"
 create_image_error = "Create image terminated unexpectedly"
-s_r_not_supported = "Suspend/Resume not supported on this disk."
 event_in_use = "Cannot rename event: it is in use."
-proc_signal = "Sending to process signal {signame}!"
-send_acpi = "send ACPI {acpievent}"
-proc_restart = "Restarting process!"
-savevm = "Save snapshot on virtual machine {name}"
 
 
 @implementer(IMenu)
@@ -167,155 +161,6 @@ class LinkMenu:
 
 registerAdapter(LinkMenu, Plug, IMenu)
 registerAdapter(LinkMenu, Sock, IMenu)
-
-
-@implementer(IMenu)
-class JobMenu:
-
-    def __init__(self, original):
-        self.original = original
-
-    def build(self, gui):
-        _clear_menu()
-        menu = _menu
-        open = Gtk.MenuItem(_("Open control monitor"))
-        open.connect("activate", self.on_open_activate)
-        menu.append(open)
-        menu.append(Gtk.SeparatorMenuItem())
-        stop = Gtk.MenuItem.new_with_mnemonic(_("_Stop"))
-        stop.connect("activate", self.on_stop_activate)
-        menu.append(stop)
-        cont = Gtk.MenuItem.new_with_mnemonic(_("_Play"))
-        cont.set_label(_("Continue"))
-        cont.connect("activate", self.on_cont_activate)
-        menu.append(cont)
-        menu.append(Gtk.SeparatorMenuItem())
-        reset = Gtk.MenuItem.new_with_mnemonic(_("_Redo"))
-        reset.set_label(_("Restart"))
-        reset.connect("activate", self.on_reset_activate)
-        menu.append(reset)
-        kill = Gtk.MenuItem.new_with_mnemonic(_("_Stop"))
-        kill.set_label(_("Kill"))
-        kill.connect("activate", self.on_kill_activate, gui)
-        menu.append(kill)
-        return menu
-
-    def popup(self, button, time, gui):
-        menu = self.build(gui)
-        menu.show_all()
-        menu.popup(None, None, None, None, button, time)
-
-    @staticmethod
-    def _cancel_call(passthru, call):
-        if call.active():
-            call.cancel()
-        return passthru
-
-    @staticmethod
-    def _refilter(passthru, filter_model):
-        filter_model.refilter()
-        return passthru
-
-    def on_open_activate(self, menuitem):
-        self.original.open_console()
-
-    def on_stop_activate(self, menuitem):
-        logger.debug(proc_signal, signame="SIGSTOP")
-        try:
-            self.original.send_signal(19)
-        except error.ProcessExitedAlready:
-            pass
-
-    def on_cont_activate(self, menuitem):
-        logger.debug(proc_signal, signame="SIGCONT")
-        try:
-            self.original.send_signal(18)
-        except error.ProcessExitedAlready:
-            pass
-
-    def on_reset_activate(self, menuitem):
-        logger.debug(proc_restart)
-        d = self.original.poweroff()
-        # give it 2 seconds before an hard reset
-        call = reactor.callLater(2, self.original.poweroff, kill=True)
-        d.addBoth(self._cancel_call, call)
-        d.addCallback(lambda _: self.original.poweron())
-
-    def on_kill_activate(self, menuitem, gui):
-        logger.debug(proc_signal, signame="SIGKILL")
-        try:
-            self.original.poweroff(kill=True)
-        except error.ProcessExitedAlready:
-            pass
-
-
-registerAdapter(JobMenu, Brick, IJobMenu)
-
-
-class VMJobMenu(JobMenu):
-
-    def build(self, gui):
-        menu = JobMenu.build(self, gui)
-        suspend = Gtk.MenuItem(_("Suspend virtual machine"))
-        suspend.connect("activate", self.on_suspend_activate, gui)
-        menu.insert(suspend, 5)
-        powerdown = Gtk.MenuItem(_("Send ACPI powerdown"))
-        powerdown.connect("activate", self.on_powerdown_activate)
-        menu.insert(powerdown, 6)
-        reset = Gtk.MenuItem(_("Send ACPI hard reset"))
-        reset.connect("activate", self.on_reset_activate)
-        menu.insert(reset, 7)
-        menu.insert(Gtk.SeparatorMenuItem(), 8)
-        term = Gtk.MenuItem.new_with_mnemonic(_("_Delete"))
-        term.set_label(_("Terminate"))
-        term.connect("activate", self.on_term_activate, gui)
-        menu.insert(term, 10)
-        return menu
-
-    def suspend(self, factory):
-        img = self.original.disk("hda")
-        if img.is_cow():
-            path = img.get_cow_path()
-        elif img.image:
-            path = img.image.path
-        else:
-            logger.error(s_r_not_supported)
-            return defer.fail(
-                RuntimeError(
-                    _("Suspend/Resume not supported on " "this disk.")
-                )
-            )
-        image_type = tools.image_type_from_file(path)
-        if image_type in (tools.ImageFormat.QCOW2, tools.ImageFormat.QCOW3):
-            self.original.send(b"savevm virtualbricks\n")
-            return self.original.poweroff()
-        else:
-            logger.error(s_r_not_supported)
-            return defer.fail(
-                RuntimeError(
-                    _("Suspend/Resume not supported on " "this disk.")
-                )
-            )
-
-    def on_suspend_activate(self, menuitem, gui):
-        logger.debug(savevm, name=self.original.get_name())
-        # TODO: this blocks forever if the machine does not stop.
-        ProgressBar(gui).wait_for(self.suspend(gui.brickfactory))
-
-    def on_powerdown_activate(self, menuitem):
-        logger.info(send_acpi, acpievent="powerdown")
-        self.original.send(b"system_powerdown\n")
-
-    def on_reset_activate(self, menuitem):
-        logger.info(send_acpi, acpievent="reset")
-        self.original.send(b"system_reset\n")
-
-    def on_term_activate(self, menuitem, gui):
-        logger.debug(proc_signal, signame="SIGTERM")
-        self.original.poweroff(term=True)
-
-
-registerAdapter(VMJobMenu, VirtualMachine, IJobMenu)
 
 
 registerAdapter(EventConfigController, Event, IConfigController)

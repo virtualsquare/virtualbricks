@@ -22,7 +22,6 @@ from virtualbricks.interfaces import registerAdapter
 __all__ = [
     "registerAdapter",
     "IMenu",
-    "IJobMenu",
     "IConfigController",
     "IState",
     "IControl",
@@ -35,10 +34,6 @@ class IMenu(Interface):
 
     def popup(button, time):
         """Pop up a menu for a specific brick."""
-
-
-class IJobMenu(IMenu):
-    pass
 
 
 class IConfigController(Interface):

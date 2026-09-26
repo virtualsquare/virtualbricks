@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 00:03+0200\n"
+"POT-Creation-Date: 2026-09-27 00:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -208,62 +208,6 @@ msgid "Remove"
 msgstr "Rimuovi"
 
 #: virtualbricks/gui/gui.py
-#, fuzzy
-msgid "Open control monitor"
-msgstr "Apri console di controllo"
-
-#: virtualbricks/gui/gui.py
-#, fuzzy
-msgid "_Stop"
-msgstr "_Avvia/Ferma"
-
-#: virtualbricks/gui/gui.py
-msgid "_Play"
-msgstr ""
-
-#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
-msgid "Continue"
-msgstr ""
-
-#: virtualbricks/gui/gui.py
-msgid "_Redo"
-msgstr ""
-
-#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
-msgid "Restart"
-msgstr ""
-
-#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
-msgid "Kill"
-msgstr ""
-
-#: virtualbricks/gui/gui.py
-#, fuzzy
-msgid "Suspend virtual machine"
-msgstr "Macchina Virtuale"
-
-#: virtualbricks/gui/gui.py
-#, fuzzy
-msgid "Send ACPI powerdown"
-msgstr "Invia poweroff ACPI"
-
-#: virtualbricks/gui/gui.py
-msgid "Send ACPI hard reset"
-msgstr "Invia hard reset ACPI"
-
-#: virtualbricks/gui/gui.py
-msgid "_Delete"
-msgstr "Ca_ncella"
-
-#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
-msgid "Terminate"
-msgstr ""
-
-#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
-msgid "Suspend/Resume not supported on this disk."
-msgstr "Sospensione/Ripristino non supportato su questo disco."
-
-#: virtualbricks/gui/gui.py
 #, python-brace-format
 msgid "The project \"{name}\" that was open last can't be opened: {error}"
 msgstr ""
@@ -323,6 +267,7 @@ msgid "Virtual machine"
 msgstr "Macchina Virtuale"
 
 #: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks.py
 msgid "Running"
 msgstr "In esecuzione"
 
@@ -557,6 +502,10 @@ msgid "Pause"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Continue"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
 #, fuzzy
 msgid "Suspend"
 msgstr "Sospendi Qemu"
@@ -566,42 +515,31 @@ msgid "Reset"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Restart"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Terminate"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Kill"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Suspend/Resume not supported on this disk."
+msgstr "Sospensione/Ripristino non supportato su questo disco."
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Cannot find suspend point."
 msgstr "Impossibile trovare punto di sospensione."
 
 #: virtualbricks/gui/mainwindow/bricks.py
-#: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/mainwindow/running.py
-msgid "Icon"
-msgstr "Icona"
-
-#: virtualbricks/gui/mainwindow/bricks.py
-#: virtualbricks/gui/mainwindow/events.py virtualbricks/migrate/gui.py
-msgid "Status"
-msgstr "Stato"
-
-#: virtualbricks/gui/mainwindow/bricks.py
-#: virtualbricks/gui/mainwindow/running.py
-msgid "Type"
-msgstr "Tipo"
-
-#: virtualbricks/gui/mainwindow/bricks.py
-#: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/mainwindow/running.py
-#: virtualbricks/gui/windows/attachevent.py
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
-msgid "Name"
-msgstr "Nome"
-
-#: virtualbricks/gui/mainwindow/bricks.py
-#: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/windows/attachevent.py
-msgid "Parameters"
-msgstr "Parametri"
+#, python-brace-format
+msgid "{running} of {total} running"
+msgid_plural "{running} of {total} running"
+msgstr[0] ""
+msgstr[1] ""
 
 #: virtualbricks/gui/mainwindow/bricks.py
 #, fuzzy
@@ -613,22 +551,57 @@ msgid "New Brick"
 msgstr "Nuovo Mattone"
 
 #: virtualbricks/gui/mainwindow/bricks.py
-msgid "Start All Bricks"
+#, fuzzy
+msgid "Search bricks"
+msgstr "Nuovo Mattone"
+
+#: virtualbricks/gui/mainwindow/bricks.py
+msgid "All"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks.py
+#, fuzzy
+msgid "Start All"
 msgstr "Avvia Tutti i Mattoni"
 
 #: virtualbricks/gui/mainwindow/bricks.py
-msgid "Stop All Bricks"
+#, fuzzy
+msgid "Stop All"
 msgstr "Ferma Tutti i Mattoni"
 
 #: virtualbricks/gui/mainwindow/bricks.py
-#: virtualbricks/gui/mainwindow/events.py
 #, fuzzy
-msgid "Configure"
-msgstr "_Configura"
+msgid "No Bricks Yet"
+msgstr "_Importa Mattoni"
 
 #: virtualbricks/gui/mainwindow/bricks.py
-msgid "No brick selected"
+msgid ""
+"A brick is a switch, a virtual machine, a wire or a tap. Add the first one "
+"to start the lab."
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+msgid "Icon"
+msgstr "Icona"
+
+#: virtualbricks/gui/mainwindow/events.py virtualbricks/migrate/gui.py
+msgid "Status"
+msgstr "Stato"
+
+#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/windows/attachevent.py
+#: virtualbricks/gui/windows/createimagedialog.py
+#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
+msgid "Name"
+msgstr "Nome"
+
+#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/windows/attachevent.py
+msgid "Parameters"
+msgstr "Parametri"
 
 #: virtualbricks/gui/mainwindow/events.py
 #, fuzzy
@@ -646,6 +619,11 @@ msgstr "Avvia Tutti gli Eventi"
 #: virtualbricks/gui/mainwindow/events.py
 msgid "Stop All Events"
 msgstr "Ferma Tutti gli Eventi"
+
+#: virtualbricks/gui/mainwindow/events.py
+#, fuzzy
+msgid "Configure"
+msgstr "_Configura"
 
 #: virtualbricks/gui/mainwindow/events.py
 msgid "No event selected"
@@ -716,15 +694,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/readme.py
 msgid "Syntax"
 msgstr ""
-
-#: virtualbricks/gui/mainwindow/running.py
-msgid "Pid"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/running.py
-#, fuzzy
-msgid "R_unning"
-msgstr "In esecuzione"
 
 #: virtualbricks/gui/mainwindow/topology.py
 msgid "Left to Right"
@@ -2759,6 +2728,35 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#, fuzzy
+#~ msgid "Open control monitor"
+#~ msgstr "Apri console di controllo"
+
+#, fuzzy
+#~ msgid "_Stop"
+#~ msgstr "_Avvia/Ferma"
+
+#, fuzzy
+#~ msgid "Suspend virtual machine"
+#~ msgstr "Macchina Virtuale"
+
+#, fuzzy
+#~ msgid "Send ACPI powerdown"
+#~ msgstr "Invia poweroff ACPI"
+
+#~ msgid "Send ACPI hard reset"
+#~ msgstr "Invia hard reset ACPI"
+
+#~ msgid "_Delete"
+#~ msgstr "Ca_ncella"
+
+#~ msgid "Type"
+#~ msgstr "Tipo"
+
+#, fuzzy
+#~ msgid "R_unning"
+#~ msgstr "In esecuzione"
 
 #, fuzzy
 #~ msgid "Select an image file"

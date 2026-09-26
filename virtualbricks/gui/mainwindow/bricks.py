@@ -19,10 +19,16 @@
 """
 The Bricks tab of the main window: the bricks of the project.
 
-A toolbar creates a brick, starts or stops them all, and configures the
-selected one. In the list, the right button opens the menu of a brick,
-Delete removes it and a double click starts or stops it; a brick dropped
-on another connects the two. The Running tab shows the same store.
+A row above the list holds New Brick, the search, a switch between all the
+bricks and the running ones, how many run, and Start All and Stop All. The
+list, of :mod:`virtualbricks.gui.mainwindow.bricklist`, has a row per brick
+with its own buttons; a project without bricks shows a page that says what a
+brick is instead.
+
+In the list, the right button, the Menu key and Shift+F10 open the menu of
+the selected brick, Delete removes it and F2 renames it; Ctrl+F goes to the
+search, and so does typing in the list; Escape clears the search. A double
+click starts or stops a brick.
 """
 
 from __future__ import annotations
@@ -31,73 +37,74 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk  # noqa: E402
+from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.gui import widgets  # noqa: E402
+from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.gui.mainwindow import brickinfo, brickmenu  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
-    Tab,
-    popup_menu,
-    state_add_selection,
-)
-from virtualbricks.gui.windows.base import StateManager  # noqa: E402
+from virtualbricks.gui.mainwindow.brickinfo import State  # noqa: E402
+from virtualbricks.gui.mainwindow.bricklist import BrickList  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import Tab  # noqa: E402
+from virtualbricks.gui.windows.base import pango_attr_list  # noqa: E402
 from virtualbricks.gui.windows.newbrick import NewBrickDialog  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.tools import dispose  # noqa: E402
+from virtualbricks.i18n import _, ngettext  # noqa: E402
+from virtualbricks.tools import is_running  # noqa: E402
 
 logger = Logger()
 not_started = "Brick not started."
-dnd_no_socks = "Nothing to connect: neither brick can plug into the other."
-dnd_dest_brick_not_found = "Cannot found dest brick"
-dnd_source_brick_not_found = "Cannot find source brick {name}"
-dnd_no_dest = "No destination brick"
-dnd_same_brick = "Source and destination bricks are the same."
+not_stopped = "Brick not stopped."
 
-# A brick dragged on another in the same list, to connect them.
-BRICK_TARGET_NAME = "brick-connect-target"
-BRICK_DRAG_TARGETS = [
-    (
-        BRICK_TARGET_NAME,
-        Gtk.TargetFlags.SAME_WIDGET | Gtk.TargetFlags.SAME_APP,
-        0,
+# The factory's signals after which the row above the list, and the page
+# shown, say again what they say.
+SIGNALS = ("brick-added", "brick-removed", "brick-changed")
+# Between the controls, and around them, in pixels.
+GAP = 8
+EMPTY_ICON_SIZE = 64
+EMPTY_ICON_OPACITY = 0.35
+
+
+def _icon_button(label, icon):
+    return Gtk.Button(
+        visible=True,
+        label=label,
+        image=Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON),
+        always_show_image=True,
     )
-]
-# The columns: title, and what the cell shows (see
-# widgets.CellRendererFormattable), None for the icon.
-COLUMNS = (
-    (_("Icon"), None),
-    (_("Status"), "s"),
-    (_("Type"), "t"),
-    (_("Name"), "n"),
-    (_("Parameters"), "p"),
-)
-DELETE_KEYS = frozenset(("Delete", "BackSpace"))
 
 
-class BricksBindingList(widgets.AbstractBindingList):
-    """The bricks of the factory, for a widgets.List."""
+def empty_icon():
+    """A switch, grey: the picture of a project without bricks."""
 
-    def __init__(self, factory):
-        widgets.AbstractBindingList.__init__(self, factory)
-        factory.connect("brick-added", self._on_added)
-        factory.connect("brick-removed", self._on_removed)
-        factory.connect("brick-changed", self._on_changed)
-
-    def __dispose__(self):
-        self._factory.disconnect("brick-added", self._on_added)
-        self._factory.disconnect("brick-removed", self._on_removed)
-        self._factory.disconnect("brick-changed", self._on_changed)
-
-    def __iter__(self):
-        return iter(self._factory.bricks)
+    filename = graphics.get_data_filename("switch.png")
+    try:
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
+            filename, EMPTY_ICON_SIZE, EMPTY_ICON_SIZE
+        )
+    except GLib.Error:
+        return None
+    grey = pixbuf.copy()
+    pixbuf.saturate_and_pixelate(grey, 0.0, False)
+    return grey
 
 
-def _tool_button(label, stock_id):
-    return Gtk.ToolButton(
-        visible=True, label=label, use_underline=True, stock_id=stock_id
-    )
+def types(event) -> bool:
+    """Whether a key typed in the list goes to the search: a character."""
+
+    modifiers = Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.MOD1_MASK
+    if event.state & modifiers:
+        return False
+    return chr(Gdk.keyval_to_unicode(event.keyval)).isprintable()
+
+
+def count(bricks) -> str:
+    """How many bricks run, of how many."""
+
+    total = len(bricks)
+    running = sum(1 for brick in bricks if is_running(brick))
+    return ngettext(
+        "{running} of {total} running", "{running} of {total} running", total
+    ).format(running=running, total=total)
 
 
 class BricksTab(Tab, Gtk.Box):
@@ -109,99 +116,194 @@ class BricksTab(Tab, Gtk.Box):
         super().__init__(visible=True, orientation=Gtk.Orientation.VERTICAL)
         self.gui = gui
         self.factory = factory
+        self._menu: Gtk.Menu | None = None
 
-        toolbar = Gtk.Toolbar(
-            visible=True, toolbar_style=Gtk.ToolbarStyle.BOTH
+        header = Gtk.Box(visible=True, spacing=GAP, margin=GAP)
+        self.new_button = _icon_button(_("New Brick"), "list-add-symbolic")
+        self.search = Gtk.SearchEntry(
+            visible=True, placeholder_text=_("Search bricks"), width_chars=24
         )
-        self.new_button = _tool_button(_("New Brick"), "gtk-new")
-        self.start_button = _tool_button(_("Start All Bricks"), "gtk-yes")
-        self.stop_button = _tool_button(_("Stop All Bricks"), "gtk-no")
-        # made insensitive by the state below, which shows why
-        self.configure_button = _tool_button(_("Configure"), "gtk-edit")
-        for item in (
-            self.new_button,
-            None,
-            self.start_button,
-            self.stop_button,
-            None,
-            self.configure_button,
-        ):
-            if item is None:
-                item = Gtk.SeparatorToolItem(visible=True)
-                item.set_homogeneous(False)
-            toolbar.insert(item, -1)
-        self.pack_start(toolbar, False, False, 0)
+        self.all_button = Gtk.RadioButton(
+            visible=True, label=_("All"), draw_indicator=False
+        )
+        self.running_button = Gtk.RadioButton(
+            visible=True,
+            label=_("Running"),
+            draw_indicator=False,
+            group=self.all_button,
+        )
+        filters = Gtk.Box(visible=True)
+        filters.get_style_context().add_class("linked")
+        filters.pack_start(self.all_button, False, False, 0)
+        filters.pack_start(self.running_button, False, False, 0)
+        self.count = Gtk.Label(visible=True)
+        self.count.get_style_context().add_class("dim-label")
+        self.start_button = _icon_button(
+            _("Start All"), "media-playback-start-symbolic"
+        )
+        self.stop_button = _icon_button(
+            _("Stop All"), "media-playback-stop-symbolic"
+        )
+        all_bricks = Gtk.Box(visible=True)
+        all_bricks.get_style_context().add_class("linked")
+        all_bricks.pack_start(self.start_button, False, False, 0)
+        all_bricks.pack_start(self.stop_button, False, False, 0)
+        for widget in (self.new_button, self.search, filters):
+            header.pack_start(widget, False, False, 0)
+        header.pack_end(all_bricks, False, False, 0)
+        header.pack_end(self.count, False, False, 0)
+        self.pack_start(header, False, False, 0)
+        self.pack_start(
+            Gtk.Separator(
+                visible=True, orientation=Gtk.Orientation.HORIZONTAL
+            ),
+            False,
+            False,
+            0,
+        )
 
-        # the Running tab shows it too
-        self.store = widgets.List()
-        self._bricks = BricksBindingList(factory)
-        self.store.set_data_source(self._bricks)
+        self.list = BrickList(gui, factory)
         scrolled = Gtk.ScrolledWindow(
-            visible=True, shadow_type=Gtk.ShadowType.IN
+            visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
         )
-        self.view = widgets.TreeView(
-            visible=True, model=self.store, headers_clickable=False
-        )
-        for title, format_string in COLUMNS:
-            column = Gtk.TreeViewColumn.new()
-            column.set_properties(title=title)
-            if format_string is None:
-                cell = widgets.CellRendererBrickIcon()
-            else:
-                cell = widgets.CellRendererFormattable(
-                    format_string=format_string, formatting_enabled=True
-                )
-            column.pack_start(cell, False)
-            self.view.append_column(column)
-        self.view.set_cells_data_func()
-        self.view.enable_model_drag_source(
-            Gdk.ModifierType.BUTTON1_MASK,
-            BRICK_DRAG_TARGETS,
-            Gdk.DragAction.LINK,
-        )
-        self.view.enable_model_drag_dest(
-            BRICK_DRAG_TARGETS, Gdk.DragAction.LINK
-        )
-        scrolled.add(self.view)
-        self.pack_start(scrolled, True, True, 0)
+        scrolled.add(self.list)
+        self.empty = self._empty_page()
+        self.pages = Gtk.Stack(visible=True)
+        self.pages.add_named(scrolled, "list")
+        self.pages.add_named(self.empty, "empty")
+        self.pack_start(self.pages, True, True, 0)
 
-        self._states = StateManager()
-        state_add_selection(
-            self._states,
-            self.view,
-            lambda: self.view.get_selected_value() is not None,
-            _("No brick selected"),
-            self.configure_button,
-        )
         self.new_button.connect("clicked", self.on_new_clicked)
+        self.empty_new_button.connect("clicked", self.on_new_clicked)
         self.start_button.connect("clicked", self.on_start_clicked)
         self.stop_button.connect("clicked", self.on_stop_clicked)
-        self.configure_button.connect("clicked", self.on_configure_clicked)
-        self.view.connect("button-release-event", self.on_button_release)
-        self.view.connect("key-release-event", self.on_key_release)
-        self.view.connect("row-activated", self.on_row_activated)
-        self.view.connect("drag-data-get", self.on_drag_data_get)
-        self.view.connect("drag-data-received", self.on_drag_data_received)
+        self.search.connect("search-changed", self.on_search_changed)
+        self.search.connect("stop-search", self.on_stop_search)
+        self.running_button.connect("toggled", self.on_running_toggled)
+        self.list.connect("button-press-event", self.on_button_press)
+        self.list.connect("key-press-event", self.on_list_key_press)
+        self.list.connect("row-activated", self.on_row_activated)
+        self.connect("key-press-event", self.on_key_press)
+        for signal in SIGNALS:
+            factory.connect(signal, self.on_brick_changed)
+        self.update()
+
+    def _empty_page(self) -> Gtk.Box:
+        page = Gtk.Box(
+            visible=True,
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=GAP,
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.CENTER,
+            margin=3 * GAP,
+        )
+        image = Gtk.Image(visible=True, pixel_size=EMPTY_ICON_SIZE)
+        icon = empty_icon()
+        if icon is not None:
+            image.set_from_pixbuf(icon)
+        image.set_opacity(EMPTY_ICON_OPACITY)
+        title = Gtk.Label(
+            visible=True,
+            label=_("No Bricks Yet"),
+            attributes=pango_attr_list(
+                Pango.attr_weight_new(Pango.Weight.BOLD),
+                Pango.attr_scale_new(1.3),
+            ),
+        )
+        words = Gtk.Label(
+            visible=True,
+            label=_(
+                "A brick is a switch, a virtual machine, a wire or a tap. "
+                "Add the first one to start the lab."
+            ),
+            wrap=True,
+            max_width_chars=40,
+            justify=Gtk.Justification.CENTER,
+        )
+        words.get_style_context().add_class("dim-label")
+        self.empty_new_button = Gtk.Button(
+            visible=True, label=_("New Brick"), halign=Gtk.Align.CENTER
+        )
+        self.empty_new_button.get_style_context().add_class("suggested-action")
+        for widget in (image, title, words, self.empty_new_button):
+            page.pack_start(widget, False, False, 0)
+        return page
+
+    def update(self) -> None:
+        """The row above the list, and the page, for the bricks there are."""
+
+        bricks = self.factory.bricks
+        states = [brickinfo.state(brick) for brick in bricks]
+        self.pages.set_visible_child_name("list" if bricks else "empty")
+        self.count.set_text(count(bricks) if bricks else "")
+        for widget in (self.search, self.all_button, self.running_button):
+            widget.set_sensitive(bool(bricks))
+        self.start_button.set_sensitive(State.STOPPED in states)
+        self.stop_button.set_sensitive(State.RUNNING in states)
 
     def start_all(self) -> defer.Deferred:
-        """Start every brick; the failures are logged."""
+        """Start the bricks that can start; the failures are logged."""
 
-        def started(results):
+        deferreds = [
+            brick.poweron()
+            for brick in self.factory.bricks
+            if brickinfo.state(brick) is State.STOPPED
+        ]
+        return self._log_failures(deferreds, not_started)
+
+    def stop_all(self) -> defer.Deferred:
+        """Stop the running bricks; the failures are logged."""
+
+        deferreds = [
+            defer.maybeDeferred(brick.poweroff)
+            for brick in self.factory.bricks
+            if is_running(brick)
+        ]
+        return self._log_failures(deferreds, not_stopped)
+
+    @staticmethod
+    def _log_failures(deferreds, message) -> defer.Deferred:
+        def done(results):
             for success, value in results:
                 if not success:
-                    logger.failure(not_started, value)
+                    logger.failure(message, value)
 
-        deferreds = [brick.poweron() for brick in self.factory.bricks]
         return defer.DeferredList(deferreds, consumeErrors=True).addCallback(
-            started
+            done
         )
+
+    def open_menu(self, event=None) -> None:
+        """
+        Open the menu of the selected brick: at the pointer for a click, under
+        its button for the Menu key.
+        """
+
+        brick = self.list.selected_brick()
+        if brick is None:
+            return
+        if event is None:
+            widget = self.list.row_of(brick).menu_button
+        else:
+            widget = self.list
+        # kept while it shows
+        self._menu = brickmenu.popup(widget, event, self.gui, brick, True)
 
     # What the main window tells
 
+    def on_open(self) -> None:
+        # an entry emptied tells the list at once
+        self.search.set_text("")
+        self.all_button.set_active(True)
+
     def on_quit(self) -> None:
-        dispose(self._bricks)
+        self.list.close()
+        for signal in SIGNALS:
+            self.factory.disconnect(signal, self.on_brick_changed)
 
     # Signals
+
+    def on_brick_changed(self, brick) -> None:
+        self.update()
 
     def on_new_clicked(self, button) -> None:
         NewBrickDialog(self.factory).show(self.gui.window)
@@ -210,56 +312,63 @@ class BricksTab(Tab, Gtk.Box):
         self.start_all()
 
     def on_stop_clicked(self, button) -> None:
-        for brick in self.factory.bricks:
-            brick.poweroff()
+        self.stop_all()
 
-    def on_configure_clicked(self, button) -> None:
-        brick = self.view.get_selected_value()
-        if brick is not None:
-            self.gui.curtain_up(brick)
+    def on_search_changed(self, entry) -> None:
+        self.list.set_search(entry.get_text())
 
-    def on_button_release(self, view, event) -> bool | None:
-        return popup_menu(view, event, self.gui, self.open_menu)
+    def on_stop_search(self, entry) -> None:
+        entry.set_text("")
+        # back to the list, on the selected brick or the first
+        row = self.list.get_selected_row() or self.list.get_row_at_index(0)
+        if row is not None:
+            row.grab_focus()
 
-    def open_menu(self, brick, event) -> None:
-        # kept while it shows
-        self._menu = brickmenu.popup(self.view, event, self.gui, brick)
+    def on_running_toggled(self, button) -> None:
+        self.list.set_only_running(button.get_active())
 
-    def on_key_release(self, view, key) -> None:
-        if Gdk.keyval_name(key.keyval) in DELETE_KEYS:
-            brick = view.get_selected_value()
-            if brick is not None:
-                self.gui.ask_remove_brick(brick)
+    def on_row_activated(self, listbox, row) -> None:
+        self.gui.startstop_brick(row.brick)
 
-    def on_row_activated(self, view, path, column) -> None:
-        model = view.get_model()
-        self.gui.startstop_brick(model.get_value(model.get_iter(path), 0))
-
-    def on_drag_data_get(self, view, context, selection, info, time) -> bool:
-        brick = view.get_selected_value()
-        selection.set(selection.get_target(), 8, brick.get_name().encode())
+    def on_button_press(self, listbox, event) -> bool:
+        if not event.triggers_context_menu():
+            return False
+        row = listbox.get_row_at_y(int(event.y))
+        if row is None:
+            return False
+        listbox.select_row(row)
+        row.grab_focus()
+        self.open_menu(event)
         return True
 
-    def on_drag_data_received(
-        self, view, context, x, y, selection, info, time
-    ) -> bool:
-        found = view.get_dest_row_at_pos(x, y)
-        if found is None:
-            logger.debug(dnd_no_dest)
-        else:
-            path, _position = found
-            name = selection.get_data().decode()
-            source = self.factory.get_brick_by_name(name)
-            if source is None:
-                logger.debug(dnd_source_brick_not_found, name=name)
-            else:
-                model = view.get_model()
-                destination = model.get_value(model.get_iter(path), 0)
-                if destination is None:
-                    logger.debug(dnd_dest_brick_not_found)
-                elif destination is source:
-                    logger.debug(dnd_same_brick)
-                elif not brickinfo.connect(source, destination):
-                    logger.info(dnd_no_socks)
-        context.finish(True, False, time)
-        return True
+    def on_list_key_press(self, listbox, event) -> bool:
+        keyval = event.keyval
+        shift = event.state & Gdk.ModifierType.SHIFT_MASK
+        brick = listbox.selected_brick()
+        if keyval == Gdk.KEY_Menu or (keyval == Gdk.KEY_F10 and shift):
+            self.open_menu()
+            return True
+        if brick is not None and keyval in (Gdk.KEY_Delete, Gdk.KEY_KP_Delete):
+            self.gui.ask_remove_brick(brick)
+            return True
+        if brick is not None and keyval == Gdk.KEY_F2:
+            actions = listbox.row_of(brick).actions
+            if actions.get_action_enabled("rename"):
+                actions.activate_action("rename", None)
+            return True
+        if keyval == Gdk.KEY_Escape and self.search.get_text():
+            self.on_stop_search(self.search)
+            return True
+        # typing searches
+        if types(event) and self.search.get_sensitive():
+            if self.search.handle_event(event):
+                self.search.grab_focus_without_selecting()
+                return True
+        return False
+
+    def on_key_press(self, tab, event) -> bool:
+        control = event.state & Gdk.ModifierType.CONTROL_MASK
+        if control and event.keyval in (Gdk.KEY_f, Gdk.KEY_F):
+            self.search.grab_focus()
+            return True
+        return False
