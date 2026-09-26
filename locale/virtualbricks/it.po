@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 15:33+0200\n"
+"POT-Creation-Date: 2026-09-26 20:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -423,21 +423,51 @@ msgid "R_unning"
 msgstr "In esecuzione"
 
 #: virtualbricks/gui/mainwindow/topology.py
+msgid "Left to Right"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Top to Bottom"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+#, fuzzy
+msgid "Export as Image…"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Layout"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
 msgid "_Topology"
 msgstr "Topologia"
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Export as Image"
-msgstr "Esporta come Immagine"
+msgid "No bricks yet. New Brick, in the Bricks tab, adds one."
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Expand Horizontally"
-msgstr "Espandi Orizzontalmente"
+msgid "Zoom Out"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Expand Vertically"
-msgstr "Espandi Verticalmente"
+msgid "Zoom to 100%"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Zoom In"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Fit All"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+#: virtualbricks/gui/windows/projects.py
+msgid "More"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
@@ -1748,10 +1778,6 @@ msgid "Export…"
 msgstr "porta:"
 
 #: virtualbricks/gui/windows/projects.py
-msgid "More"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
 #, fuzzy
 msgid "Rename…"
 msgstr "_Rinomina"
@@ -2454,6 +2480,12 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "Expand Horizontally"
+#~ msgstr "Espandi Orizzontalmente"
+
+#~ msgid "Expand Vertically"
+#~ msgstr "Espandi Verticalmente"
 
 #, fuzzy
 #~ msgid "New projects"

@@ -17,12 +17,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The Topology tab of the main window: the bricks and their connections.
+The Topology tab of the main window: the picture of the lab.
 
-Graphviz draws the picture when the tab shows, again after a brick changes,
-and it can be saved as an image. A click on a brick in the picture works as
-in the list of the bricks: the right button opens its menu, a double click
-starts or stops it.
+The picture takes the whole tab. A bar floats over its top right corner:
+zoom out, the zoom level, which goes back to 100%, zoom in and fit all, then
+a menu with the direction of the layout and the export. The tab lays the
+lab out when it shows, and again when a brick changes while it shows; a
+project without bricks shows a hint instead.
+
+A click on a brick works as in the list of the bricks: the right button
+opens its menu, a double click starts or stops it.
 """
 
 from __future__ import annotations
@@ -31,13 +35,20 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk  # noqa: E402
+from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.gui.interfaces import IMenu  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import Tab  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
+from virtualbricks.gui.mainwindow.topologyview import (  # noqa: E402
+    EPSILON,
+    LEVELS,
+    MARGIN,
+    TopologyView,
+)
 from virtualbricks.i18n import _  # noqa: E402
+from virtualbricks.topology import layout  # noqa: E402
 
 logger = Logger()
 drawing_topology = "drawing topology"
@@ -45,72 +56,127 @@ top_invalid_format = "Error saving topology: Invalid image format"
 top_write_error = "Error saving topology: Could not write file"
 top_unknown = "Error saving topology: Unknown error"
 
-# The signals of the factory after which the picture is drawn again.
+# The signals of the factory after which the lab is laid out again.
 BRICK_SIGNALS = ("brick-changed", "brick-added", "brick-removed")
+# Between the bar and the corner, and between the bar's groups, in pixels.
+GAP = 6
+ACTIONS = "topology"
 
 
-class TopologyTab(Tab, Gtk.Box):
+def menu() -> Gio.Menu:
+    """The menu at the end of the bar: the layout, and the export."""
+
+    directions = Gio.Menu()
+    directions.append(_("Left to Right"), f"{ACTIONS}.direction::LR")
+    directions.append(_("Top to Bottom"), f"{ACTIONS}.direction::TB")
+    export = Gio.Menu()
+    export.append(_("Export as Image…"), f"{ACTIONS}.export")
+    result = Gio.Menu()
+    result.append_section(_("Layout"), directions)
+    result.append_section(None, export)
+    return result
+
+
+def level(zoom: float) -> str:
+    return f"{round(zoom * 100)}%"
+
+
+class TopologyTab(Tab, Gtk.Overlay):
     """The picture of the bricks of the project and how they connect."""
 
     title = _("_Topology")
 
     def __init__(self, gui, factory) -> None:
-        super().__init__(visible=True, orientation=Gtk.Orientation.VERTICAL)
+        super().__init__(visible=True)
         self.gui = gui
         self.factory = factory
-        # the picture drawn last, a graphics.Topology
-        self.topology = None
+        self.direction = "LR"
         self._shown = False
         self._should_draw = True
+        self._measuring: int | None = None
 
-        buttons = Gtk.Box(visible=True)
-        self.export_button = Gtk.Button(visible=True)
-        export = Gtk.Box(visible=True)
-        export.pack_start(
-            Gtk.Image(visible=True, stock="gtk-save-as"), True, True, 0
+        self.view = TopologyView()
+        self.add(self.view)
+        self.hint = Gtk.Label(
+            label=_("No bricks yet. New Brick, in the Bricks tab, adds one."),
+            wrap=True,
+            xalign=0.0,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.START,
+            margin=MARGIN,
         )
-        export.pack_start(
-            Gtk.Label(visible=True, label=_("Export as Image")), True, True, 0
-        )
-        self.export_button.add(export)
-        buttons.pack_start(self.export_button, False, True, 0)
-        self.horizontal_radio = Gtk.RadioButton(
-            label=_("Expand Horizontally"), visible=True, active=True
-        )
-        buttons.pack_start(self.horizontal_radio, False, True, 0)
-        self.vertical_radio = Gtk.RadioButton(
-            label=_("Expand Vertically"),
+        self.hint.get_style_context().add_class("dim-label")
+        self.add_overlay(self.hint)
+        self.set_overlay_pass_through(self.hint, True)
+
+        self.bar = Gtk.Box(
             visible=True,
-            group=self.horizontal_radio,
+            spacing=GAP,
+            halign=Gtk.Align.END,
+            valign=Gtk.Align.START,
+            margin=GAP,
         )
-        buttons.pack_start(self.vertical_radio, False, True, 0)
-        self.pack_start(buttons, False, True, 0)
-        self.scrolled = Gtk.ScrolledWindow(
-            visible=True, shadow_type=Gtk.ShadowType.IN
+        self.bar.get_style_context().add_class("osd")
+        zoom = Gtk.Box(visible=True)
+        zoom.get_style_context().add_class("linked")
+        self.out_button = icon_button(
+            Gtk.Button(visible=True), "zoom-out-symbolic", _("Zoom Out")
         )
-        self.viewport = Gtk.Viewport(visible=True)
-        self.image = Gtk.Image(
-            visible=True, xalign=0, yalign=0, stock="gtk-missing-image"
+        self.level_button = Gtk.Button(visible=True, label=level(1.0))
+        # as wide at 100% as at 10%
+        self.level_button.get_child().set_width_chars(5)
+        self.level_button.set_tooltip_text(_("Zoom to 100%"))
+        self.level_button.get_accessible().set_name(_("Zoom to 100%"))
+        self.in_button = icon_button(
+            Gtk.Button(visible=True), "zoom-in-symbolic", _("Zoom In")
         )
-        self.viewport.add(self.image)
-        self.scrolled.add(self.viewport)
-        self.pack_start(self.scrolled, True, True, 0)
+        self.fit_button = icon_button(
+            Gtk.ToggleButton(visible=True),
+            "zoom-fit-best-symbolic",
+            _("Fit All"),
+        )
+        for button in (
+            self.out_button,
+            self.level_button,
+            self.in_button,
+            self.fit_button,
+        ):
+            zoom.pack_start(button, False, False, 0)
+        self.bar.pack_start(zoom, False, False, 0)
+        self.menu_button = icon_button(
+            Gtk.MenuButton(visible=True), "view-more-symbolic", _("More")
+        )
+        self.menu_button.set_menu_model(menu())
+        self.bar.pack_start(self.menu_button, False, False, 0)
+        self.add_overlay(self.bar)
 
-        self.export_button.connect("clicked", self.on_export_clicked)
-        # the other radio button goes off
-        self.horizontal_radio.connect("toggled", self.on_orientation_toggled)
-        self.viewport.connect("button-press-event", self.on_button_press)
-        self.scrolled.get_hadjustment().connect(
-            "value-changed", self.on_h_scrolled
+        actions = Gio.SimpleActionGroup()
+        self.direction_action = Gio.SimpleAction.new_stateful(
+            "direction",
+            GLib.VariantType.new("s"),
+            GLib.Variant.new_string(self.direction),
         )
-        self.scrolled.get_vadjustment().connect(
-            "value-changed", self.on_v_scrolled
-        )
+        self.direction_action.connect("change-state", self.on_direction)
+        actions.add_action(self.direction_action)
+        self.export_action = Gio.SimpleAction.new("export", None)
+        self.export_action.connect("activate", self.on_export)
+        actions.add_action(self.export_action)
+        self.insert_action_group(ACTIONS, actions)
+
+        self.out_button.connect("clicked", lambda b: self.view.zoom_out())
+        self.in_button.connect("clicked", lambda b: self.view.zoom_in())
+        self.level_button.connect("clicked", lambda b: self.view.zoom_to_100())
+        self._fit_clicked = self.fit_button.connect("clicked", self.on_fit)
+        self.view.connect("zoom-changed", self.on_zoom_changed)
+        self.view.area.connect("button-press-event", self.on_button_press)
+        self.bar.connect("size-allocate", self.on_bar_allocated)
+        self.connect("destroy", self.on_destroy)
         for signal in BRICK_SIGNALS:
             factory.connect(signal, self.on_brick_changed)
+        self._update()
 
     def draw(self) -> None:
-        """Draw the picture now if the tab shows, else when it shows."""
+        """Lay the lab out now if the tab shows, else when it shows."""
 
         if self._shown:
             self._draw()
@@ -119,35 +185,37 @@ class TopologyTab(Tab, Gtk.Box):
 
     def _draw(self) -> None:
         logger.debug(drawing_topology)
-        orientation = "TB" if self.vertical_radio.get_active() else "LR"
-        self.topology = graphics.Topology(
-            self.image,
-            self.factory.bricks,
-            1.00,
-            orientation,
-            self.factory.runtime_dir,
-        )
+        self.view.set_layout(layout(self.factory.bricks, self.direction))
         self._should_draw = False
+        self._update()
 
-    def _draw_if_needed(self) -> None:
-        if self._should_draw:
-            self._draw()
+    def _update(self) -> None:
+        """The bar and the hint, for the zoom and the lab."""
 
-    def brick_at(self, x, y):
-        """The brick drawn at x, y of the picture, or None."""
-
-        self._draw_if_needed()
-        for node in self.topology.nodes:
-            if node.here(x, y):
-                return self.factory.get_brick_by_name(node.name)
-        return None
+        empty = not self.view.layout.nodes
+        zoom = self.view.zoom
+        self.level_button.set_label(level(zoom))
+        with self.fit_button.handler_block(self._fit_clicked):
+            self.fit_button.set_active(self.view.fitting and not empty)
+        self.out_button.set_sensitive(not empty and zoom > LEVELS[0] + EPSILON)
+        self.in_button.set_sensitive(not empty and zoom < LEVELS[-1] - EPSILON)
+        self.level_button.set_sensitive(not empty)
+        self.fit_button.set_sensitive(not empty)
+        self.hint.set_visible(empty)
+        self.export_action.set_enabled(not empty)
 
     def export(self, filename) -> None:
-        """Save the picture in an image file, of the type of its name."""
+        """Save the picture in an image file."""
 
         try:
-            self._draw_if_needed()
-            self.topology.export(filename)
+            picture = graphics.Topology(
+                Gtk.Image(),
+                self.factory.bricks,
+                1.0,
+                self.direction,
+                self.factory.runtime_dir,
+            )
+            picture.export(filename)
         except KeyError:
             logger.failure(top_invalid_format)
         except IOError:
@@ -159,7 +227,8 @@ class TopologyTab(Tab, Gtk.Box):
 
     def on_shown(self) -> None:
         self._shown = True
-        self._draw_if_needed()
+        if self._should_draw:
+            self._draw()
 
     def on_left(self) -> None:
         self._shown = False
@@ -173,10 +242,19 @@ class TopologyTab(Tab, Gtk.Box):
     def on_brick_changed(self, brick) -> None:
         self.draw()
 
-    def on_orientation_toggled(self, button) -> None:
-        self._draw()
+    def on_zoom_changed(self, view) -> None:
+        self._update()
 
-    def on_export_clicked(self, button) -> None:
+    def on_fit(self, button) -> None:
+        # a click fits, even on the button that is on; the zoom says after
+        self.view.fit()
+
+    def on_direction(self, action, value) -> None:
+        action.set_state(value)
+        self.direction = value.get_string()
+        self.draw()
+
+    def on_export(self, action, parameter) -> None:
         chooser = Gtk.FileChooserDialog(
             title=_("Select an image file"),
             action=Gtk.FileChooserAction.SAVE,
@@ -198,20 +276,27 @@ class TopologyTab(Tab, Gtk.Box):
         finally:
             dialog.destroy()
 
-    def on_button_press(self, viewport, event) -> bool | None:
-        brick = self.brick_at(*event.get_coords())
+    def on_button_press(self, area, event) -> bool:
+        brick = self.view.brick_at(event.x, event.y)
         if brick is None:
-            return None
+            return False
         if event.button == 3:
             IMenu(brick, None).popup(event.button, event.time, self.gui)
         elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
             self.gui.startstop_brick(brick)
         return True
 
-    def on_h_scrolled(self, adjustment) -> None:
-        if self.topology is not None:
-            self.topology.x_adj = adjustment.get_value()
+    def on_bar_allocated(self, bar, allocation) -> None:
+        # the room of the bar in the view; not now, GTK would lose the resize
+        if self._measuring is None:
+            self._measuring = GLib.idle_add(self._measure)
 
-    def on_v_scrolled(self, adjustment) -> None:
-        if self.topology is not None:
-            self.topology.y_adj = adjustment.get_value()
+    def _measure(self) -> bool:
+        self._measuring = None
+        self.view.set_top(self.bar.get_allocated_height() + 2 * GAP)
+        return GLib.SOURCE_REMOVE
+
+    def on_destroy(self, tab) -> None:
+        if self._measuring is not None:
+            GLib.source_remove(self._measuring)
+            self._measuring = None

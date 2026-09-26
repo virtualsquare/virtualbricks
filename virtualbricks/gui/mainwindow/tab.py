@@ -23,12 +23,19 @@ A tab is the widget of its page, and a :class:`Tab` too: the window puts it
 in its notebook under its title, and tells it when a project opens, is
 saved, or Virtualbricks quits, and when it shows or another tab does.
 
-The lists of the Bricks and the Events tabs share the last helpers.
+The tabs share the helpers after it: a button with an icon, and for the
+lists of the Bricks and the Events tabs, their menu and the sensitivity of
+their toolbars.
 """
 
 from __future__ import annotations
 
-from virtualbricks.gui.interfaces import IMenu
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk  # noqa: E402
+
+from virtualbricks.gui.interfaces import IMenu  # noqa: E402
 
 
 class Tab:
@@ -75,6 +82,15 @@ def switch(notebook, page) -> None:
         current.on_left()
     if isinstance(page, Tab):
         page.on_shown()
+
+
+def icon_button(button, icon, name):
+    """An icon, with a name for the tooltip and the screen readers."""
+
+    button.set_image(Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON))
+    button.set_tooltip_text(name)
+    button.get_accessible().set_name(name)
+    return button
 
 
 # The lists of the bricks and the events

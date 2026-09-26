@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 15:33+0200\n"
+"POT-Creation-Date: 2026-09-26 20:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -414,19 +414,48 @@ msgid "R_unning"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
+msgid "Left to Right"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Top to Bottom"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Export as Image…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Layout"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
 msgid "_Topology"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Export as Image"
+msgid "No bricks yet. New Brick, in the Bricks tab, adds one."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Expand Horizontally"
+msgid "Zoom Out"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Expand Vertically"
+msgid "Zoom to 100%"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Zoom In"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Fit All"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+#: virtualbricks/gui/windows/projects.py
+msgid "More"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
@@ -1630,10 +1659,6 @@ msgstr ""
 
 #: virtualbricks/gui/windows/projects.py
 msgid "Export…"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "More"
 msgstr ""
 
 #: virtualbricks/gui/windows/projects.py

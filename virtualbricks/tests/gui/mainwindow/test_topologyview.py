@@ -253,6 +253,42 @@ class TestTheZoom(ViewTestCase):
         self.assertAlmostEqual(x - h, anchor[0], delta=1)
         self.assertAlmostEqual(y - v, anchor[1], delta=1)
 
+    def test_room_at_the_top(self):
+        # a wide room: the lab's height sets the fit
+        self.show(1000, 120)
+        before = self.view.zoom
+        self.view.set_top(50)
+        # fitted in what is left
+        self.assertAlmostEqual(self.view.zoom, fit_zoom(self.lab, 1000, 70))
+        self.assertLess(self.view.zoom, before)
+        allocate(self.view, 1000, 120)
+        ox, oy = self.view.origin()
+        self.assertGreaterEqual(oy, 50 + MARGIN)
+        # the same again changes nothing
+        changes = len(self.changes)
+        self.view.set_top(50)
+        self.assertEqual(len(self.changes), changes)
+
+    def test_room_at_the_top_when_zoomed(self):
+        self.show(200, 100)
+        self.view.set_zoom(2.0)
+        self.view.set_top(40)
+        self.assertEqual(self.view.zoom, 2.0)
+        width, height = self.view.area.get_size_request()
+        self.assertEqual(height, round(self.lab.height * 2 + 2 * MARGIN + 40))
+        # around a point, as without it
+        allocate(self.view, 200, 100)
+        vm = self.node("vm")
+        x, y = self.in_area(vm)
+        h, v = self.scroll()
+        anchor = (x - h, y - v)
+        self.view.set_zoom(3.0, anchor)
+        allocate(self.view, 200, 100)
+        x, y = self.in_area(vm)
+        h, v = self.scroll()
+        self.assertAlmostEqual(x - h, anchor[0], delta=1)
+        self.assertAlmostEqual(y - v, anchor[1], delta=1)
+
     def test_around_the_centre(self):
         self.show(300, 200)
         self.view.zoom_to_100()

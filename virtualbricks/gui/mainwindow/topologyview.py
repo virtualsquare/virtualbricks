@@ -26,6 +26,9 @@ picture fits again when the view changes size or gets another layout. The
 buttons and the keys zoom around the centre of the view; Ctrl and the wheel,
 and a pinch, around the pointer. Dragging the background moves the picture.
 
+Room can be kept free at the top, for what floats over the view: the lab
+starts below it, and fitting leaves it out.
+
 The colours come from the theme: the view's background, and the text colour
 for the names and, fainter, for the links. A stopped brick is grey and
 faded; the brick under the pointer sits on a disc of the selection colour,
@@ -145,6 +148,8 @@ class TopologyView(Gtk.ScrolledWindow):
     def __init__(self) -> None:
         super().__init__(visible=True)
         self.layout = Layout()
+        # the room at the top that the lab leaves free, in pixels
+        self.top = 0
         self.zoom = 1.0
         # fit all is on
         self.fitting = True
@@ -203,11 +208,23 @@ class TopologyView(Gtk.ScrolledWindow):
         else:
             self._resize()
 
+    def set_top(self, top: int) -> None:
+        """Keep top pixels free at the top."""
+
+        if top == self.top:
+            return
+        self.top = top
+        if self.fitting:
+            self.fit()
+        else:
+            self._resize()
+
     def fit(self) -> None:
         """Show the whole lab, and again after a change, until a zoom."""
 
         self.fitting = True
-        self._zoom(fit_zoom(self.layout, *self.room()), None)
+        width, height = self.room()
+        self._zoom(fit_zoom(self.layout, width, height - self.top), None)
 
     def set_zoom(self, zoom: float, anchor=None) -> None:
         """
@@ -245,10 +262,15 @@ class TopologyView(Gtk.ScrolledWindow):
         )
         self.zoom = zoom
         area_width = max(self.layout.width * zoom + 2 * MARGIN, width)
-        area_height = max(self.layout.height * zoom + 2 * MARGIN, height)
+        area_height = max(
+            self.layout.height * zoom + 2 * MARGIN + self.top, height
+        )
         self._scroll_to = (
             x * zoom + origin(self.layout.width, zoom, area_width) - ax,
-            y * zoom + origin(self.layout.height, zoom, area_height) - ay,
+            y * zoom
+            + self.top
+            + origin(self.layout.height, zoom, area_height - self.top)
+            - ay,
         )
         self._resize()
         self.emit("zoom-changed")
@@ -257,7 +279,9 @@ class TopologyView(Gtk.ScrolledWindow):
         if self.layout.nodes:
             self.area.set_size_request(
                 math.ceil(self.layout.width * self.zoom + 2 * MARGIN),
-                math.ceil(self.layout.height * self.zoom + 2 * MARGIN),
+                math.ceil(
+                    self.layout.height * self.zoom + 2 * MARGIN + self.top
+                ),
             )
         else:
             self.area.set_size_request(-1, -1)
@@ -270,13 +294,11 @@ class TopologyView(Gtk.ScrolledWindow):
     def origin(self) -> tuple[float, float]:
         """Where the lab starts in the area."""
 
+        width = self.area.get_allocated_width()
+        height = self.area.get_allocated_height() - self.top
         return (
-            origin(
-                self.layout.width, self.zoom, self.area.get_allocated_width()
-            ),
-            origin(
-                self.layout.height, self.zoom, self.area.get_allocated_height()
-            ),
+            origin(self.layout.width, self.zoom, width),
+            self.top + origin(self.layout.height, self.zoom, height),
         )
 
     def to_layout(self, x: float, y: float) -> tuple[float, float]:

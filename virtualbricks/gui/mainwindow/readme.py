@@ -40,7 +40,7 @@ from gi.repository import GLib, Gtk  # noqa: E402
 from twisted.internet import reactor  # noqa: E402
 
 from virtualbricks.config import projects  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import Tab  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.markdownview import MarkdownView  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
@@ -60,15 +60,6 @@ SYNTAX = (
     ("[text](https://…)", _("a link; a bare URL is one too")),
     ("---", _("a line across")),
 )
-
-
-def _icon_button(button, icon, name):
-    """An icon, with a name for the tooltip and the screen readers."""
-
-    button.set_image(Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON))
-    button.set_tooltip_text(name)
-    button.get_accessible().set_name(name)
-    return button
 
 
 def _syntax_popover(button):
@@ -154,12 +145,12 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.buttons.get_style_context().add_class("osd")
         self.switch = Gtk.Box(visible=True)
         self.switch.get_style_context().add_class("linked")
-        self.edit_button = _icon_button(
+        self.edit_button = icon_button(
             Gtk.RadioButton(visible=True, draw_indicator=False),
             "document-edit-symbolic",
             _("Edit"),
         )
-        self.preview_button = _icon_button(
+        self.preview_button = icon_button(
             Gtk.RadioButton(
                 visible=True, draw_indicator=False, group=self.edit_button
             ),
@@ -169,7 +160,7 @@ class ReadmeTab(Tab, Gtk.Overlay):
         self.switch.pack_start(self.edit_button, False, False, 0)
         self.switch.pack_start(self.preview_button, False, False, 0)
         self.buttons.pack_start(self.switch, False, False, 0)
-        self.syntax_button = _icon_button(
+        self.syntax_button = icon_button(
             Gtk.MenuButton(), "dialog-question-symbolic", _("Syntax")
         )
         self.syntax_button.set_popover(_syntax_popover(self.syntax_button))

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 15:33+0200\n"
+"POT-Creation-Date: 2026-09-26 20:13+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -417,21 +417,51 @@ msgid "R_unning"
 msgstr "En ejecución"
 
 #: virtualbricks/gui/mainwindow/topology.py
+msgid "Left to Right"
+msgstr "De izquierda a derecha"
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Top to Bottom"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+#, fuzzy
+msgid "Export as Image…"
+msgstr "Exportar como imagen"
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Layout"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
 msgid "_Topology"
 msgstr "Topología"
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Export as Image"
-msgstr "Exportar como imagen"
+msgid "No bricks yet. New Brick, in the Bricks tab, adds one."
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Expand Horizontally"
-msgstr "Expandir horizontalmente"
+msgid "Zoom Out"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Expand Vertically"
-msgstr "Expandir verticalmente"
+msgid "Zoom to 100%"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Zoom In"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "Fit All"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/topology.py
+#: virtualbricks/gui/windows/projects.py
+msgid "More"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
@@ -1694,10 +1724,6 @@ msgid "Export…"
 msgstr ""
 
 #: virtualbricks/gui/windows/projects.py
-msgid "More"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
 msgid "Rename…"
 msgstr ""
 
@@ -2381,6 +2407,12 @@ msgstr ""
 msgid "{exe} not found"
 msgstr ""
 
+#~ msgid "Expand Horizontally"
+#~ msgstr "Expandir horizontalmente"
+
+#~ msgid "Expand Vertically"
+#~ msgstr "Expandir verticalmente"
+
 #, fuzzy
 #~ msgid "New projects"
 #~ msgstr "Guardar proyecto como"
@@ -2657,9 +2689,6 @@ msgstr ""
 
 #~ msgid "Distrib."
 #~ msgstr "Distrib."
-
-#~ msgid "Left to Right"
-#~ msgstr "De izquierda a derecha"
 
 #~ msgid "Both Directions"
 #~ msgstr "Ambas direcciones"

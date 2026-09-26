@@ -15,49 +15,42 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The Topology tab: when it draws, the clicks on the bricks, the export."""
+"""
+The Topology tab: when it lays the lab out, its bar and menu, the clicks
+on the bricks, and the export.
+"""
 
+from virtualbricks import topology as layouts
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
-    from gi.repository import Gdk, Gtk
+    from gi.repository import Gdk, GLib, Gtk
 
     from virtualbricks.gui import graphics
     from virtualbricks.gui.mainwindow import topology
-    from virtualbricks.gui.mainwindow.topology import TopologyTab
+    from virtualbricks.gui.mainwindow.topology import (
+        GAP,
+        TopologyTab,
+        level,
+        menu,
+    )
+    from virtualbricks.gui.mainwindow.topologyview import LEVELS, fit_zoom
 
 
-class FakeNode:
-    def __init__(self, name, x, y):
-        self.name = name
-        self.x = x
-        self.y = y
+def allocate(widget, width, height):
+    # GTK asks the size first
+    widget.get_preferred_width()
+    widget.get_preferred_height()
+    allocation = Gdk.Rectangle()
+    allocation.width = width
+    allocation.height = height
+    widget.size_allocate(allocation)
 
-    def here(self, x, y):
-        return (x, y) == (self.x, self.y)
 
-
-class FakeTopology:
-    """The picture that Graphviz would draw: a brick every 10 pixels."""
-
-    error = None
-
-    def __init__(self, drawn, image, bricks, scale, orientation, runtime):
-        drawn.append(self)
-        self.image = image
-        self.orientation = orientation
-        self.runtime = runtime
-        self.nodes = [
-            FakeNode(brick.get_name(), 10 * i, 5)
-            for i, brick in enumerate(bricks)
-        ]
-        self.exported = []
-
-    def export(self, filename):
-        if self.error is not None:
-            raise self.error
-        self.exported.append(filename)
+def run_idle_calls():
+    while Gtk.events_pending():
+        Gtk.main_iteration()
 
 
 class FakeGui:
@@ -77,20 +70,20 @@ class FakeMenu:
         self.shown.append((self.brick, button, gui))
 
 
-class FakeEvent:
-    def __init__(self, x, y, button=1, double=False):
-        self.x = x
-        self.y = y
-        self.button = button
-        self.type = (
-            Gdk.EventType._2BUTTON_PRESS
-            if double
-            else Gdk.EventType.BUTTON_PRESS
-        )
-        self.time = 0
+class FakePicture:
+    """What graphics.Topology draws for the export, until cairo does."""
 
-    def get_coords(self):
-        return self.x, self.y
+    error = None
+
+    def __init__(self, exports, image, bricks, scale, direction, runtime):
+        self.exports = exports
+        self.direction = direction
+        self.runtime = runtime
+
+    def export(self, filename):
+        if self.error is not None:
+            raise self.error
+        self.exports.append((filename, self.direction, self.runtime))
 
 
 class FakeDialog:
@@ -109,72 +102,273 @@ class TopologyTestCase(GuiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.drawn = []
-        self.patch(
-            graphics,
-            "Topology",
-            lambda *args: FakeTopology(self.drawn, *args),
-        )
         self.logger = FakeLogger()
         self.patch(topology, "logger", self.logger)
+        self.laid_out = []
+
+        def layout(bricks, direction="LR"):
+            self.laid_out.append(([b.name for b in bricks], direction))
+            return layouts.layout(bricks, direction)
+
+        self.patch(topology, "layout", layout)
+        self.sw1 = self.factory.new_brick("switch", "sw1")
+        self.vm = self.factory.new_brick("qemu", "vm")
+        self.vm.connect(self.sw1.socks[0])
         self.gui = FakeGui()
         self.tab = TopologyTab(self.gui, self.factory)
         self.addCleanup(self.tab.destroy)
+        self.view = self.tab.view
 
-    def orientations(self):
-        return [picture.orientation for picture in self.drawn]
+    def show(self, width=600, height=400):
+        self.tab.on_shown()
+        allocate(self.tab, width, height)
+        run_idle_calls()
+        allocate(self.tab, width, height)
+
+    def in_area(self, brick):
+        node = next(n for n in self.view.layout.nodes if n.brick is brick)
+        ox, oy = self.view.origin()
+        zoom = self.view.zoom
+        return ox + node.x * zoom, oy + node.y * zoom
 
 
-class TestDrawing(TopologyTestCase):
+class TestLayingOut(TopologyTestCase):
 
     def test_when_it_shows(self):
-        self.factory.new_brick("switch", "sw")
-        self.assertEqual(self.drawn, [])
+        self.factory.new_brick("switch", "sw0")
+        self.assertEqual(self.laid_out, [])
+        self.factory.del_brick(self.factory.get_brick_by_name("sw0"))
         self.tab.on_shown()
-        [picture] = self.drawn
-        self.assertIs(picture.image, self.tab.image)
-        self.assertEqual(picture.runtime, self.factory.runtime_dir)
+        self.assertEqual(self.laid_out, [(["sw1", "vm"], "LR")])
+        self.assertEqual(
+            [node.brick for node in self.view.layout.nodes],
+            [self.sw1, self.vm],
+        )
         # nothing changed
         self.tab.on_left()
         self.tab.on_shown()
-        self.assertEqual(len(self.drawn), 1)
+        self.assertEqual(len(self.laid_out), 1)
 
     def test_after_a_brick_changes(self):
         self.tab.on_shown()
-        self.factory.new_brick("switch", "sw")
-        self.assertEqual(len(self.drawn), 2)
-        self.assertEqual([n.name for n in self.drawn[-1].nodes], ["sw"])
+        self.factory.new_brick("switch", "sw2")
+        self.assertEqual(self.laid_out[-1], (["sw1", "vm", "sw2"], "LR"))
         # hidden: when it shows again
         self.tab.on_left()
-        self.factory.new_brick("switch", "sw2")
-        self.assertEqual(len(self.drawn), 2)
+        self.factory.new_brick("switch", "sw3")
+        self.assertEqual(len(self.laid_out), 2)
         self.tab.on_shown()
-        self.assertEqual(len(self.drawn), 3)
-
-    def test_the_orientation(self):
-        self.tab.on_shown()
-        self.tab.vertical_radio.set_active(True)
-        self.tab.horizontal_radio.set_active(True)
-        self.assertEqual(self.orientations(), ["LR", "TB", "LR"])
+        self.assertEqual(len(self.laid_out), 3)
 
     def test_not_after_quit(self):
         self.tab.on_shown()
         self.tab.on_quit()
-        self.factory.new_brick("switch", "sw")
-        self.assertEqual(len(self.drawn), 1)
+        self.factory.new_brick("switch", "sw2")
+        self.assertEqual(len(self.laid_out), 1)
 
-    def test_the_scroll(self):
-        adjustment = self.tab.scrolled.get_hadjustment()
-        adjustment.configure(0, 0, 100, 1, 10, 10)
-        # nothing drawn yet
-        adjustment.set_value(20)
+    def test_the_direction(self):
         self.tab.on_shown()
-        adjustment.set_value(30)
-        self.assertEqual(self.drawn[0].x_adj, 30)
-        adjustment = self.tab.scrolled.get_vadjustment()
-        adjustment.configure(0, 0, 100, 1, 10, 10)
-        adjustment.set_value(40)
-        self.assertEqual(self.drawn[0].y_adj, 40)
+        self.tab.direction_action.change_state(GLib.Variant.new_string("TB"))
+        self.assertEqual(self.laid_out[-1], (["sw1", "vm"], "TB"))
+        self.assertEqual(
+            self.tab.direction_action.get_state().get_string(), "TB"
+        )
+        # hidden, it waits
+        self.tab.on_left()
+        self.tab.direction_action.change_state(GLib.Variant.new_string("LR"))
+        self.assertEqual(len(self.laid_out), 2)
+        self.tab.on_shown()
+        self.assertEqual(self.laid_out[-1], (["sw1", "vm"], "LR"))
+
+
+class TestTheBar(TopologyTestCase):
+
+    def test_the_level(self):
+        self.show()
+        self.view.set_zoom(1.25)
+        self.assertEqual(self.tab.level_button.get_label(), "125%")
+        self.assertFalse(self.tab.fit_button.get_active())
+        self.assertEqual(level(0.333), "33%")
+
+    def test_the_buttons(self):
+        self.show()
+        self.view.set_zoom(1.0)
+        self.tab.in_button.clicked()
+        self.assertEqual(self.view.zoom, 1.25)
+        self.tab.out_button.clicked()
+        self.tab.out_button.clicked()
+        self.assertEqual(self.view.zoom, 0.8)
+        self.tab.level_button.clicked()
+        self.assertEqual((self.view.zoom, self.view.fitting), (1.0, False))
+        self.tab.fit_button.clicked()
+        self.assertTrue(self.view.fitting)
+        self.assertTrue(self.tab.fit_button.get_active())
+
+    def test_fit_stays_on(self):
+        self.show()
+        self.assertTrue(self.tab.fit_button.get_active())
+        # a click on the button that is on fits again
+        self.tab.fit_button.clicked()
+        self.assertTrue(self.view.fitting)
+        self.assertTrue(self.tab.fit_button.get_active())
+
+    def test_the_limits(self):
+        self.show()
+        self.view.set_zoom(LEVELS[-1])
+        self.assertFalse(self.tab.in_button.get_sensitive())
+        self.assertTrue(self.tab.out_button.get_sensitive())
+        self.view.set_zoom(LEVELS[0])
+        self.assertFalse(self.tab.out_button.get_sensitive())
+        self.assertTrue(self.tab.in_button.get_sensitive())
+        # next to the limits
+        self.view.set_zoom(LEVELS[1])
+        self.assertTrue(self.tab.out_button.get_sensitive())
+        self.view.set_zoom(LEVELS[-2])
+        self.assertTrue(self.tab.in_button.get_sensitive())
+
+    def test_a_project_without_bricks(self):
+        for brick in list(self.factory.bricks):
+            self.factory.del_brick(brick)
+        self.show()
+        tab = self.tab
+        self.assertTrue(tab.hint.get_visible())
+        for button in (
+            tab.out_button,
+            tab.level_button,
+            tab.in_button,
+            tab.fit_button,
+        ):
+            self.assertFalse(button.get_sensitive())
+        self.assertFalse(tab.fit_button.get_active())
+        self.assertFalse(tab.export_action.get_enabled())
+        # the menu still sets the layout
+        self.assertTrue(tab.menu_button.get_sensitive())
+        self.factory.new_brick("switch", "sw")
+        self.assertFalse(tab.hint.get_visible())
+        self.assertTrue(tab.export_action.get_enabled())
+        self.assertTrue(tab.fit_button.get_sensitive())
+
+    def test_the_lab_empties_while_zoomed(self):
+        self.show()
+        self.view.set_zoom(2.0)
+        for brick in list(self.factory.bricks):
+            self.factory.del_brick(brick)
+        self.assertTrue(self.tab.hint.get_visible())
+        self.assertFalse(self.tab.export_action.get_enabled())
+        self.assertFalse(self.tab.in_button.get_sensitive())
+
+    def test_the_buttons_say_what_they_do(self):
+        tab = self.tab
+        for button, icon, name in (
+            (tab.out_button, "zoom-out-symbolic", "Zoom Out"),
+            (tab.in_button, "zoom-in-symbolic", "Zoom In"),
+            (tab.fit_button, "zoom-fit-best-symbolic", "Fit All"),
+            (tab.menu_button, "view-more-symbolic", "More"),
+        ):
+            self.assertEqual(button.get_image().get_icon_name()[0], icon)
+            self.assertEqual(button.get_tooltip_text(), name)
+            self.assertEqual(button.get_accessible().get_name(), name)
+        self.assertEqual(tab.level_button.get_tooltip_text(), "Zoom to 100%")
+        self.assertEqual(
+            tab.level_button.get_accessible().get_name(), "Zoom to 100%"
+        )
+
+    def test_in_the_corner(self):
+        window = Gtk.OffscreenWindow()
+        self.addCleanup(window.destroy)
+        # first: a popover in an offscreen window makes GTK complain when
+        # the window goes
+        self.addCleanup(self.tab.menu_button.get_popover().destroy)
+        window.set_size_request(600, 400)
+        window.add(self.tab)
+        window.show()
+        tab = self.tab
+        for widget in (
+            tab.out_button,
+            tab.level_button,
+            tab.in_button,
+            tab.fit_button,
+            tab.menu_button,
+            tab.view,
+        ):
+            self.assertTrue(widget.get_mapped(), widget)
+        # an overlay gives each of its children a window: where in the tab
+        x, y = tab.bar.translate_coordinates(tab, 0, 0)
+        self.assertEqual(y, GAP)
+        width = tab.bar.get_allocated_width()
+        self.assertEqual(x + width + GAP, tab.get_allocated_width())
+
+    def test_room_for_the_bar(self):
+        self.show()
+        # measured once the bar has its room
+        self.assertEqual(
+            self.view.top, self.tab.bar.get_allocated_height() + 2 * GAP
+        )
+        self.assertGreater(self.view.top, 2 * GAP)
+        self.assertAlmostEqual(
+            self.view.zoom,
+            fit_zoom(self.view.layout, 600, 400 - self.view.top),
+        )
+
+    def test_not_measured_after_the_end(self):
+        self.tab.on_shown()
+        allocate(self.tab, 600, 400)
+        self.tab.destroy()
+        run_idle_calls()
+        self.assertEqual(self.view.top, 0)
+
+
+class TestTheMenu(TopologyTestCase):
+
+    def items(self, model):
+        result = []
+        for i in range(model.get_n_items()):
+            label = model.get_item_attribute_value(i, "label", None)
+            action = model.get_item_attribute_value(i, "action", None)
+            target = model.get_item_attribute_value(i, "target", None)
+            section = model.get_item_link(i, "section")
+            result.append(
+                (
+                    label and label.get_string(),
+                    action and action.get_string(),
+                    target and target.get_string(),
+                    section and self.items(section),
+                )
+            )
+        return result
+
+    def test_the_menu(self):
+        self.assertEqual(
+            self.items(menu()),
+            [
+                (
+                    "Layout",
+                    None,
+                    None,
+                    [
+                        ("Left to Right", "topology.direction", "LR", None),
+                        ("Top to Bottom", "topology.direction", "TB", None),
+                    ],
+                ),
+                (
+                    None,
+                    None,
+                    None,
+                    [("Export as Image…", "topology.export", None, None)],
+                ),
+            ],
+        )
+
+    def test_the_button_opens_it(self):
+        self.assertIsNotNone(self.tab.menu_button.get_menu_model())
+        self.assertIsInstance(self.tab.menu_button.get_popover(), Gtk.Popover)
+
+    def test_the_actions_of_the_tab(self):
+        group = self.tab.get_action_group("topology")
+        self.assertEqual(sorted(group.list_actions()), ["direction", "export"])
+        self.assertEqual(
+            group.get_action_state("direction").get_string(), "LR"
+        )
 
 
 class TestClicks(TopologyTestCase):
@@ -185,62 +379,67 @@ class TestClicks(TopologyTestCase):
         self.patch(
             topology, "IMenu", lambda brick, _: FakeMenu(self.menus, brick)
         )
-        self.factory.new_brick("switch", "sw1")
-        self.sw2 = self.factory.new_brick("switch", "sw2")
-        self.tab.on_shown()
+        self.show(1000, 800)
 
-    def press(self, event):
-        return self.tab.on_button_press(self.tab.viewport, event)
+    def press(self, brick, button=1, double=False):
+        x, y = self.in_area(brick)
+        kind = (
+            Gdk.EventType._2BUTTON_PRESS
+            if double
+            else Gdk.EventType.BUTTON_PRESS
+        )
+        event = Gdk.Event.new(kind)
+        event.button.button = button
+        event.button.x = x
+        event.button.y = y
+        return self.view.area.emit("button-press-event", event)
+
+    def test_the_menu_of_a_brick(self):
+        self.assertTrue(self.press(self.vm, button=3))
+        self.assertEqual(self.menus, [(self.vm, 3, self.gui)])
 
     def test_a_double_click_starts_or_stops(self):
-        self.assertTrue(self.press(FakeEvent(10, 5, double=True)))
-        self.assertEqual(self.gui.started, [self.sw2])
+        self.assertTrue(self.press(self.vm, double=True))
+        self.assertEqual(self.gui.started, [self.vm])
         # one click does nothing
-        self.assertTrue(self.press(FakeEvent(10, 5)))
-        self.assertEqual(self.gui.started, [self.sw2])
-
-    def test_the_menu(self):
-        self.assertTrue(self.press(FakeEvent(10, 5, button=3)))
-        self.assertEqual(self.menus, [(self.sw2, 3, self.gui)])
+        self.assertTrue(self.press(self.vm))
+        self.assertEqual(self.gui.started, [self.vm])
 
     def test_not_on_a_brick(self):
-        self.assertIsNone(self.press(FakeEvent(15, 5, button=3)))
-        self.assertIsNone(self.press(FakeEvent(15, 5, double=True)))
-        self.assertEqual(self.menus, [])
-        self.assertEqual(self.gui.started, [])
-
-    def test_a_real_click(self):
         event = Gdk.Event.new(Gdk.EventType.BUTTON_PRESS)
         event.button.button = 3
-        event.button.x = 10
-        event.button.y = 5
-        self.assertTrue(self.tab.viewport.emit("button-press-event", event))
-        self.assertEqual(self.menus, [(self.sw2, 3, self.gui)])
-
-    def test_drawn_first(self):
-        tab = TopologyTab(self.gui, self.factory)
-        self.addCleanup(tab.destroy)
-        self.assertTrue(tab.on_button_press(tab.viewport, FakeEvent(0, 5)))
+        event.button.x = event.button.y = 1
+        self.assertFalse(self.tab.on_button_press(self.view.area, event))
+        self.assertEqual(self.menus, [])
 
 
 class TestExport(TopologyTestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.exports = []
+        self.patch(
+            graphics,
+            "Topology",
+            lambda *args: FakePicture(self.exports, *args),
+        )
+
     def test_export(self):
-        # drawn first
+        self.tab.direction = "TB"
         self.tab.export("lab.png")
-        [picture] = self.drawn
-        self.assertEqual(picture.exported, ["lab.png"])
+        self.assertEqual(
+            self.exports, [("lab.png", "TB", self.factory.runtime_dir)]
+        )
         self.assertEqual(self.logger.formatted(), [])
 
     def test_failures(self):
-        self.tab.on_shown()
         for error, message in (
             (KeyError("png"), "Invalid image format"),
             (IOError("full"), "Could not write file"),
             (ValueError("?"), "Unknown error"),
         ):
-            FakeTopology.error = error
-            self.addCleanup(setattr, FakeTopology, "error", None)
+            FakePicture.error = error
+            self.addCleanup(setattr, FakePicture, "error", None)
             self.tab.export("lab.png")
             self.assertEqual(
                 self.logger.formatted()[-1],
@@ -251,14 +450,23 @@ class TestExport(TopologyTestCase):
         dialog = FakeDialog("lab.png")
         self.tab.on_export_response(dialog, Gtk.ResponseType.OK)
         self.assertTrue(dialog.destroyed)
-        self.assertEqual(self.drawn[0].exported, ["lab.png"])
+        self.assertEqual(len(self.exports), 1)
         dialog = FakeDialog("other.png")
         self.tab.on_export_response(dialog, Gtk.ResponseType.CANCEL)
         self.assertTrue(dialog.destroyed)
-        self.assertEqual(self.drawn[0].exported, ["lab.png"])
+        self.assertEqual(len(self.exports), 1)
 
-    def test_the_button(self):
-        self.tab.export_button.clicked()
+    def test_the_menu_item(self):
+        # disabled until there is a lab to export
+        self.tab.export_action.activate(None)
+        self.assertFalse(
+            any(
+                isinstance(window, Gtk.FileChooserDialog)
+                for window in Gtk.Window.list_toplevels()
+            )
+        )
+        self.tab.on_shown()
+        self.tab.export_action.activate(None)
         [chooser] = [
             window
             for window in Gtk.Window.list_toplevels()
@@ -277,26 +485,13 @@ class TestTheTab(TopologyTestCase):
     def test_title(self):
         self.assertEqual(self.tab.title, "_Topology")
 
-    def test_its_parts_show(self):
-        window = Gtk.OffscreenWindow()
-        self.addCleanup(window.destroy)
-        window.add(self.tab)
-        window.show()
-        tab = self.tab
-        for widget in (
-            tab.export_button,
-            tab.export_button.get_child().get_children()[0],
-            tab.export_button.get_child().get_children()[1],
-            tab.horizontal_radio,
-            tab.vertical_radio,
-            tab.image,
-        ):
-            self.assertTrue(widget.get_mapped(), widget)
+    def test_the_hint(self):
         self.assertEqual(
-            [
-                c.get_label()
-                for c in tab.export_button.get_child().get_children()[1:]
-            ],
-            ["Export as Image"],
+            self.tab.hint.get_text(),
+            "No bricks yet. New Brick, in the Bricks tab, adds one.",
         )
-        self.assertTrue(tab.horizontal_radio.get_active())
+        self.assertTrue(
+            self.tab.hint.get_style_context().has_class("dim-label")
+        )
+        # the clicks go to the picture
+        self.assertTrue(self.tab.get_overlay_pass_through(self.tab.hint))
