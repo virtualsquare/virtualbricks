@@ -18,7 +18,11 @@
 """
 The main window of Virtualbricks.
 
-``VBGUI`` builds its UI in ``build_ui()``.
+``VBGUI`` builds its UI in ``build_ui()``: the menus, the status icon, and
+a notebook with the tabs of the other modules of this package, which it
+tells when a project opens, is saved, or Virtualbricks quits (see
+:mod:`virtualbricks.gui.mainwindow.tab`). It keeps what the menus of the
+bricks and the events call: configure, start or stop, remove.
 """
 
 import gi
@@ -86,33 +90,7 @@ class ProgressBar:
         return self.freezer.wait_for(something, *args)
 
 
-class _Root:
-    # This object ensure that super() calls are not forwarded to object.
-
-    def init(self, factory):
-        pass
-
-    # Notebook signals
-
-    def on_main_notebook_switch_page(self, notebook, _, page_num):
-        pass
-
-    # VBGUI signals
-
-    def on_quit(self, factory):
-        pass
-
-    def on_save(self):
-        pass
-
-    def on_open(self, name):
-        pass
-
-    def on_new(self, name):
-        pass
-
-
-class VBGUI(_Root):
+class VBGUI:
     """
     The main GUI object for virtualbricks, containing all the configuration for
     the widgets and the connections to the main engine.
@@ -128,7 +106,6 @@ class VBGUI(_Root):
         logger.info(start_virtualbricks)
         if get_setting("systray"):
             self.start_systray()
-        self.init(factory)
 
         # attach the quit callback at the end, so it is not called if an
         # exception is raised before because of a syntax error of another kind
@@ -523,23 +500,17 @@ class VBGUI(_Root):
 
     def on_main_notebook_switch_page(self, notebook, page, page_num):
         switch(notebook, page)
-        super().on_main_notebook_switch_page(notebook, page, page_num)
         return True
 
     # gui (programming) interface
 
-    def init(self, factory):
-        super().init(factory)
-
     def on_quit(self, factory):
         for tab in tabs(self.main_notebook):
             tab.on_quit()
-        super().on_quit(factory)
 
     def on_save(self):
         for tab in tabs(self.main_notebook):
             tab.on_save()
-        super().on_save()
         projects.save(self.brickfactory)
 
     def on_open(self, name):
@@ -547,7 +518,6 @@ class VBGUI(_Root):
         report = projects.open(name, self.brickfactory)
         for tab in tabs(self.main_notebook):
             tab.on_open()
-        super().on_open(name)
         self.set_title()
         return report
 
@@ -557,7 +527,6 @@ class VBGUI(_Root):
         projects.open(name, self.brickfactory)
         for tab in tabs(self.main_notebook):
             tab.on_open()
-        super().on_new(name)
         self.set_title()
 
     def do_quit(self, *_):
