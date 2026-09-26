@@ -87,7 +87,9 @@ in its messages (see **inspect**):
     converted as the migration does.
 
 **README**
-:   *readme*: the description of the project, plain text in UTF-8.
+:   *readme*: the description of the project, plain text in UTF-8 that
+    Virtualbricks reads as Markdown (see **README** in
+    **virtualbricks-config**(5)). The archive keeps it as it is.
 
 *vm*\_*device*.cow
 :   *disk*: the private disk of the device *device*, as **hda** or **vdb**, of

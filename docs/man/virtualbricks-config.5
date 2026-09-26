@@ -160,7 +160,8 @@ project renames its directory.
 The directory also holds:
 .TP
 \f[I]README\f[R]
-The description of the project, in plain text.
+The description of the project: plain text, read as Markdown, see
+\f[B]README\f[R] below.
 .TP
 \f[I]vm\f[R]_\f[I]device\f[R].cow
 The private copy\-on\-write disk of a virtual machine, for example
@@ -271,6 +272,58 @@ A socket card of a virtual machine, for example
 An empty string leaves the plug unconnected.
 Depending on its type, a brick has one plug in \f[B]connect\f[R], two in
 \f[B]endpoints\f[R], or network cards in \f[B]nics\f[R].
+.SS README
+The \f[I]README\f[R] of a project is plain text in UTF\-8, which
+Virtualbricks reads as Markdown.
+The Readme tab shows it rendered, and its pencil button edits the text;
+the details of the Projects window show it rendered too.
+The list of projects shows its first line, and the import window its
+first paragraph that isn\(aqt a heading.
+The syntax is a subset of CommonMark, the part that most editors and
+forges share:
+.TP
+\f[B]# Title\f[R], \f[B]## Title\f[R]
+A heading, with up to six \f[B]#\f[R].
+A line underlined with \f[B]===\f[R] or \f[B]\-\-\-\f[R] is a heading
+too.
+.TP
+\f[I]a new line\f[R]
+A line break, so a README written as plain text keeps its lines.
+An empty line starts a new paragraph.
+.TP
+\f[B]*italic*\f[R], \f[B]**bold**\f[R], \f[B]\(ti\(tistruck\(ti\(ti\f[R]
+Emphasis.
+.TP
+\f[B]\(gacode\(ga\f[R]
+Code.
+A line of three backquotes, \f[B]\(ga\(ga\(ga\f[R], above and below some
+lines makes a block of code.
+.TP
+\f[B]\- item\f[R], \f[B]1. item\f[R]
+An item of a list.
+An item indented under another is in a list inside it.
+.TP
+\f[B]> text\f[R]
+A quote.
+.TP
+\f[B][text](https://...)\f[R], \f[B]<https://...>\f[R]
+A link.
+A URL written as it is, starting with \f[B]http://\f[R] or
+\f[B]https://\f[R], is a link too.
+Only \f[B]http\f[R], \f[B]https\f[R] and \f[B]mailto\f[R] links open, in
+the browser or the mail client.
+.TP
+\f[B]![text](path)\f[R]
+A picture, which shows as its text.
+.TP
+\f[B]\-\-\-\f[R]
+A rule, between empty lines.
+.TP
+\f[B]\(rs\f[R]
+A backslash before a mark keeps the mark: \f[B]\(rs*\f[R] is a star.
+.PP
+Anything else shows as it\(aqs written: a table, HTML, a line indented
+by four spaces.
 .SH BRICK TYPES
 .SS qemu
 A QEMU virtual machine.

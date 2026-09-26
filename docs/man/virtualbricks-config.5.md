@@ -159,7 +159,8 @@ The name of the directory is the name of the project, so renaming a project
 renames its directory. The directory also holds:
 
 *README*
-:   The description of the project, in plain text.
+:   The description of the project: plain text, read as Markdown, see
+    **README** below.
 
 *vm*_*device*.cow
 :   The private copy-on-write disk of a virtual machine, for example
@@ -264,6 +265,54 @@ written in the brick that owns the plug, as a string that names the socket:
 An empty string leaves the plug unconnected. Depending on its type, a brick
 has one plug in **connect**, two in **endpoints**, or network cards in
 **nics**.
+
+## README
+
+The *README* of a project is plain text in UTF-8, which Virtualbricks
+reads as Markdown. The Readme tab shows it rendered, and its pencil button
+edits the text; the details of the Projects window show it rendered too.
+The list of projects shows its first line, and the import window its first
+paragraph that isn't a heading. The syntax is a subset of CommonMark, the
+part that most editors and forges share:
+
+**\# Title**, **\#\# Title**
+:   A heading, with up to six **\#**. A line underlined with **===** or
+    **\-\-\-** is a heading too.
+
+*a new line*
+:   A line break, so a README written as plain text keeps its lines. An
+    empty line starts a new paragraph.
+
+**\*italic\***, **\*\*bold\*\***, **\~\~struck\~\~**
+:   Emphasis.
+
+**\`code\`**
+:   Code. A line of three backquotes, **\`\`\`**, above and below some
+    lines makes a block of code.
+
+**\- item**, **1. item**
+:   An item of a list. An item indented under another is in a list inside
+    it.
+
+**\> text**
+:   A quote.
+
+**\[text\](https://\...)**, **\<https://\...\>**
+:   A link. A URL written as it is, starting with **http://** or
+    **https://**, is a link too. Only **http**, **https** and **mailto**
+    links open, in the browser or the mail client.
+
+**!\[text\](path)**
+:   A picture, which shows as its text.
+
+**\-\-\-**
+:   A rule, between empty lines.
+
+**\\**
+:   A backslash before a mark keeps the mark: **\\\*** is a star.
+
+Anything else shows as it's written: a table, HTML, a line indented by four
+spaces.
 
 # BRICK TYPES
 
