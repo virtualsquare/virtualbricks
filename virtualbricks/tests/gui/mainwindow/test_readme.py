@@ -15,8 +15,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The Readme tab: the preview, the editor, and the buttons over them."""
+"""
+The Readme tab: the preview, the editor, the buttons over them, and the
+README it loads and saves.
+"""
 
+from twisted.internet import task
 from twisted.trial import unittest
 
 from virtualbricks.tests.gui import has_display
@@ -24,7 +28,12 @@ from virtualbricks.tests.gui import has_display
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow.readme import GAP, SYNTAX, ReadmeTab
+    from virtualbricks.gui.mainwindow.readme import (
+        GAP,
+        SAVE_AFTER,
+        SYNTAX,
+        ReadmeTab,
+    )
 
 README = "# OSPF lab\n\nThree **routers**."
 RENDERED = "OSPF lab\nThree routers."
@@ -42,7 +51,8 @@ class TestReadmeTab(unittest.TestCase):
     def tab_in_window(self, css=None):
         window = Gtk.OffscreenWindow()
         self.addCleanup(window.destroy)
-        tab = ReadmeTab()
+        # the saves of the edits never come
+        tab = ReadmeTab(clock=task.Clock())
         # first: a popover in an offscreen window, unlike a real one, makes
         # GTK complain when the window goes
         self.addCleanup(tab.syntax_button.get_popover().destroy)
@@ -169,3 +179,82 @@ class TestReadmeTab(unittest.TestCase):
             self.assertIn(meaning, texts)
         self.assertIn("Markdown", texts)
         self.assertIn("Anything else shows as you typed it.", texts)
+
+
+class FakeProject:
+    def __init__(self, description):
+        self.description = description
+        self.saved = []
+
+    def get_description(self):
+        return self.description
+
+    def set_description(self, text):
+        self.description = text
+        self.saved.append(text)
+
+
+class FakeWorkspace:
+    def __init__(self, current):
+        self.current = current
+
+
+class TestLoadAndSave(unittest.TestCase):
+
+    if not has_display:  # pragma: no cover
+        skip = "GTK can't open a display"
+
+    def setUp(self):
+        self.project = FakeProject(README)
+        self.clock = task.Clock()
+        self.tab = ReadmeTab(FakeWorkspace(self.project), self.clock)
+        self.addCleanup(self.tab.destroy)
+        self.buffer = self.tab.editor.get_buffer()
+
+    def text(self):
+        return self.buffer.get_property("text")
+
+    def edit(self, text=" More."):
+        self.buffer.insert(self.buffer.get_end_iter(), text)
+
+    def test_a_project_opens(self):
+        self.tab.edit_button.set_active(True)
+        self.tab.on_open()
+        self.assertEqual(self.text(), README)
+        # on the preview; loading isn't an edit
+        self.assertTrue(self.tab.showing_preview())
+        self.assertFalse(self.buffer.get_modified())
+        self.assertEqual(self.clock.getDelayedCalls(), [])
+
+    def test_loaded_when_it_shows(self):
+        self.tab.on_open()
+        self.project.description = "Another"
+        self.tab.on_shown()
+        self.assertEqual(self.text(), "Another")
+
+    def test_an_edit_is_saved_after_a_while(self):
+        self.tab.on_open()
+        self.edit()
+        self.edit()
+        # one save for both
+        self.assertEqual(len(self.clock.getDelayedCalls()), 1)
+        self.clock.advance(SAVE_AFTER - 1)
+        self.assertEqual(self.project.saved, [])
+        self.clock.advance(1)
+        self.assertEqual(self.project.saved, [README + " More. More."])
+        self.assertFalse(self.buffer.get_modified())
+
+    def test_saved_at_once(self):
+        for hook in ("on_left", "on_save", "on_quit"):
+            self.project.saved.clear()
+            self.edit()
+            getattr(self.tab, hook)()
+            self.assertEqual(self.project.saved, [self.text()], hook)
+            # not twice
+            self.assertEqual(self.clock.getDelayedCalls(), [], hook)
+
+    def test_nothing_to_save(self):
+        self.tab.on_open()
+        self.tab.on_save()
+        self.tab.on_left()
+        self.assertEqual(self.project.saved, [])

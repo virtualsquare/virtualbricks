@@ -25,6 +25,10 @@ the text of the editor. While the editor shows, a third icon opens the
 syntax. The views keep a margin as wide as the buttons, so no text goes
 under them; it's measured again when the buttons get their room, as a new
 theme can change them.
+
+The editor holds the README of the open project: the tab loads it when a
+project opens and when it shows, and saves it when another tab shows, when
+the project is saved, and 30 seconds after an edit.
 """
 
 from __future__ import annotations
@@ -33,7 +37,10 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk  # noqa: E402
+from twisted.internet import reactor  # noqa: E402
 
+from virtualbricks.config import projects  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import Tab  # noqa: E402
 from virtualbricks.gui.markdownview import MarkdownView  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
@@ -41,6 +48,8 @@ from virtualbricks.i18n import _  # noqa: E402
 # pixels.
 MARGIN = 12
 GAP = 6
+# The seconds from an edit to its save.
+SAVE_AFTER = 30
 # The syntax, as the popover shows it: what to write, and what it does.
 SYNTAX = (
     ("# Heading", _("a heading; ## for a smaller one")),
@@ -94,16 +103,17 @@ def _scrolled(view):
     return scrolled
 
 
-class ReadmeTab(Gtk.Overlay):
-    """
-    The README rendered, or its text in the editor.
+class ReadmeTab(Tab, Gtk.Overlay):
+    """The README of the open project rendered, or its text in the editor."""
 
-    The editor is the README: the tab saves nothing, whoever holds it loads
-    and saves the text of the editor.
-    """
+    title = _("Readme")
 
-    def __init__(self) -> None:
+    def __init__(self, workspace=None, clock=None) -> None:
         super().__init__(visible=True)
+        self.workspace = projects if workspace is None else workspace
+        self.clock = reactor if clock is None else clock
+        # the save of an edit, on its way
+        self._saving = None
         margins = {
             "left_margin": MARGIN,
             "top_margin": MARGIN,
@@ -172,11 +182,34 @@ class ReadmeTab(Gtk.Overlay):
         # the eye goes on or off at each switch
         self.preview_button.connect("toggled", self.on_toggled)
         self.editor.get_buffer().connect("changed", self.on_changed)
+        self.editor.get_buffer().connect(
+            "modified-changed", self.on_modified_changed
+        )
         self.buttons.connect("size-allocate", self.on_size_allocate)
         self.connect("destroy", self.on_destroy)
 
     def show_preview(self) -> None:
         self.preview_button.set_active(True)
+
+    def load(self) -> None:
+        """The README of the open project, in the editor: not an edit."""
+
+        textbuffer = self.editor.get_buffer()
+        textbuffer.set_text(self.workspace.current.get_description())
+        textbuffer.set_modified(False)
+
+    def save(self) -> None:
+        """Save the edits of the README, if there are any."""
+
+        textbuffer = self.editor.get_buffer()
+        if textbuffer.get_modified():
+            text = textbuffer.get_property("text")
+            self.workspace.current.set_description(text)
+            textbuffer.set_modified(False)
+
+    def _save_later(self) -> None:
+        self._saving = None
+        self.save()
 
     def showing_preview(self) -> bool:
         return self.preview_button.get_active()
@@ -212,6 +245,24 @@ class ReadmeTab(Gtk.Overlay):
         self._set_margin()
         return GLib.SOURCE_REMOVE
 
+    # What the main window tells
+
+    def on_open(self) -> None:
+        self.load()
+        self.show_preview()
+
+    def on_save(self) -> None:
+        self.save()
+
+    def on_quit(self) -> None:
+        self.save()
+
+    def on_shown(self) -> None:
+        self.load()
+
+    def on_left(self) -> None:
+        self.save()
+
     # Signals
 
     def on_toggled(self, button) -> None:
@@ -221,6 +272,17 @@ class ReadmeTab(Gtk.Overlay):
         # loaded while the preview shows
         if self.showing_preview():
             self._render()
+
+    def on_modified_changed(self, textbuffer) -> None:
+        # saved a while after the first edit, unless it's saved before
+        if textbuffer.get_modified():
+            if self._saving is None:
+                self._saving = self.clock.callLater(
+                    SAVE_AFTER, self._save_later
+                )
+        elif self._saving is not None:
+            self._saving.cancel()
+            self._saving = None
 
     def on_size_allocate(self, box, allocation) -> None:
         # the buttons in another theme; not now, GTK would lose the resize

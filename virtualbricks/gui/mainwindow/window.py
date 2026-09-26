@@ -26,7 +26,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
-from twisted.internet import defer, reactor, task
+from twisted.internet import defer, task
 from twisted.logger import Logger
 
 from virtualbricks import config, errors, tools
@@ -48,6 +48,7 @@ from virtualbricks.gui.windows.importdialog import ImportDialog
 from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
+from virtualbricks.gui.mainwindow.tab import switch, tabs
 from virtualbricks.gui.windows.logging import LoggingWindow
 from virtualbricks.gui.windows.newbrick import NewBrickDialog
 from virtualbricks.gui.windows.newevent import NewEventDialog
@@ -231,85 +232,6 @@ class TopologyMixin:
         self.__should_draw_topology = False
 
 
-class ReadmeMixin:
-
-    __deleyed_call = None
-    manager = projects
-
-    def __get_buffer(self):
-        return self.readme_text.get_buffer()
-
-    def __get_modified(self):
-        return self.__get_buffer().get_modified()
-
-    def __set_modified(self, modified):
-        return self.__get_buffer().set_modified(modified)
-
-    def __get_text(self):
-        return self.__get_buffer().get_property("text")
-
-    def __set_text(self, text):
-        self.__get_buffer().set_text(text)
-
-    def __save_readme(self):
-        if self.__get_modified():
-            self.manager.current.set_description(self.__get_text())
-            self.__set_modified(False)
-
-    def __load_readme(self):
-        buf = self.__get_buffer()
-        buf.handler_block_by_func(self.__on_modify)
-        try:
-            self.__set_text(self.manager.current.get_description())
-            self.__set_modified(False)
-        finally:
-            buf.handler_unblock_by_func(self.__on_modify)
-
-    def on_main_notebook_switch_page(self, notebook, _, page_num):
-        # if I leave the readme tab
-        if notebook.get_current_page() == README_TAB:
-            self.__save_readme()
-        # if I switch to readme tab
-        if page_num == README_TAB:
-            self.__load_readme()
-        super().on_main_notebook_switch_page(notebook, _, page_num)
-
-    def init(self, factory):
-        self.__get_buffer().connect("modified-changed", self.__on_modify)
-        super().init(factory)
-
-    def __cancel_delayed_save(self):
-        if self.__deleyed_call:
-            if self.__deleyed_call.active():
-                self.__deleyed_call.cancel()
-            self.__deleyed_call = None
-
-    def __on_modify(self, textbuffer):
-        if not self.__get_modified() and self.__deleyed_call:
-            self.__cancel_delayed_save()
-        if self.__get_modified() and not self.__deleyed_call:
-            self.__deleyed_call = reactor.callLater(30, self.__save_readme)
-
-    def on_new(self, name):
-        self.__load_readme()
-        self.readme_tab.show_preview()
-        super().on_new(name)
-
-    def on_save(self):
-        self.__save_readme()
-        super().on_save()
-
-    def on_open(self, name):
-        self.__load_readme()
-        self.readme_tab.show_preview()
-        super().on_open(name)
-
-    def on_quit(self, factory):
-        self.__cancel_delayed_save()
-        self.__save_readme()
-        super().on_quit(factory)
-
-
 class ProgressBar:
     """
     Wait for an operation, freezing the main window.
@@ -390,7 +312,7 @@ class EventsBindingList(widgets.AbstractBindingList):
         return self._factory.iter_events()
 
 
-class VBGUI(TopologyMixin, ReadmeMixin, _Root):
+class VBGUI(TopologyMixin, _Root):
     """
     The main GUI object for virtualbricks, containing all the configuration for
     the widgets and the connections to the main engine.
@@ -966,14 +888,11 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             use_underline=True,
         )
         self.main_notebook.append_page(vbox17, label20)
-        self.readme_tab = ReadmeTab()
-        self.readme_text = self.readme_tab.editor
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Readme"),
-        )
-        self.main_notebook.append_page(self.readme_tab, label1)
+        for tab in (ReadmeTab(),):
+            label = Gtk.Label(
+                visible=True, label=tab.title, use_underline=True
+            )
+            self.main_notebook.append_page(tab, label)
         vbox1.pack_start(self.main_notebook, True, True, 0)
         self.config_frame = Gtk.Frame(
             can_focus=False,
@@ -1301,8 +1220,9 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     # Notebook signals
 
-    def on_main_notebook_switch_page(self, notebook, _, page_num):
-        super().on_main_notebook_switch_page(notebook, _, page_num)
+    def on_main_notebook_switch_page(self, notebook, page, page_num):
+        switch(notebook, page)
+        super().on_main_notebook_switch_page(notebook, page, page_num)
         return True
 
     def on_main_notebook_select_page(self, notebook, move_focus):
@@ -1320,15 +1240,21 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
 
     def on_quit(self, factory):
         dispose(self)
+        for tab in tabs(self.main_notebook):
+            tab.on_quit()
         super().on_quit(factory)
 
     def on_save(self):
+        for tab in tabs(self.main_notebook):
+            tab.on_save()
         super().on_save()
         projects.save(self.brickfactory)
 
     def on_open(self, name):
         self.on_save()
         report = projects.open(name, self.brickfactory)
+        for tab in tabs(self.main_notebook):
+            tab.on_open()
         super().on_open(name)
         self.set_title()
         return report
@@ -1337,6 +1263,8 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
         self.on_save()
         projects.create(name, description)
         projects.open(name, self.brickfactory)
+        for tab in tabs(self.main_notebook):
+            tab.on_open()
         super().on_new(name)
         self.set_title()
 

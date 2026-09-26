@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 14:23+0200\n"
+"POT-Creation-Date: 2026-09-26 14:30+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -311,6 +311,10 @@ msgid "Anything else shows as you typed it."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/readme.py
+msgid "Readme"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
 msgid "No README yet. The pencil, at the top right, writes one."
 msgstr ""
 
@@ -513,10 +517,6 @@ msgstr "Expandir verticalmente"
 #, fuzzy
 msgid "_Topology"
 msgstr "Topología"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Readme"
-msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Toggle window"
