@@ -158,7 +158,8 @@ class FakeLogger:
         self.events = []
 
     def _emit(self, level):
-        def emit(format, **kwargs):
+        # failure takes the failure too, as Logger.failure(format, failure)
+        def emit(format, failure=None, **kwargs):
             self.events.append((level, format, kwargs))
 
         return emit
