@@ -29,48 +29,32 @@ and a pinch, around the pointer. Dragging the background moves the picture.
 Room can be kept free at the top, for what floats over the view: the lab
 starts below it, and fitting leaves it out.
 
-The colours come from the theme: the view's background, and the text colour
-for the names and, fainter, for the links. A stopped brick is grey and
-faded; the brick under the pointer sits on a disc of the selection colour,
-with its name, type and state in a tooltip.
+The picture is drawn by :mod:`virtualbricks.gui.mainwindow.picture` in the
+colours of the theme, on the view's background; the brick under the pointer
+sits on a disc of the selection colour, with its name, type and state in a
+tooltip.
 """
 
 from __future__ import annotations
 
 import math
 
-import cairo
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-gi.require_version("PangoCairo", "1.0")
-from gi.repository import (  # noqa: E402
-    Gdk,
-    GdkPixbuf,
-    GLib,
-    GObject,
-    Gtk,
-    Pango,
-    PangoCairo,
-)
+from gi.repository import Gdk, GLib, GObject, Gtk  # noqa: E402
 
-from virtualbricks.gui import graphics  # noqa: E402
-from virtualbricks.tools import is_running  # noqa: E402
-from virtualbricks.topology import ICON, Layout  # noqa: E402
+from virtualbricks.gui.mainwindow.picture import (  # noqa: E402
+    MARGIN,
+    Icons,
+    Palette,
+    draw,
+)
+from virtualbricks.topology import Layout  # noqa: E402
 
 # The zooms of zoom in and zoom out, the first and the last also the limits.
 LEVELS = (0.1, 0.25, 0.33, 0.5, 0.67, 0.8, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0)
-# Around the lab, in pixels.
-MARGIN = 20
-# The links in the text colour, and the stopped bricks, this opaque.
-LINK_ALPHA = 0.6
-STOPPED_ALPHA = 0.5
-HOVER_ALPHA = 0.18
-# The width of the links, in pixels, and the gap between the icon and the
-# disc of the brick under the pointer, in points.
-LINE_WIDTH = 1.6
-DISC_GAP = 6
 # The step of the arrows, in pixels.
 ARROW_STEP = 40
 # Two zooms this close are the same level.
@@ -121,18 +105,6 @@ def origin(size: float, zoom: float, room: float) -> float:
     return max(MARGIN, (room - size * zoom) / 2)
 
 
-def scaled_font(font: Pango.FontDescription, zoom: float):
-    """The font of the view, for the names at a zoom."""
-
-    font = font.copy()
-    size = max(1, round(font.get_size() * zoom))
-    if font.get_size_is_absolute():
-        font.set_absolute_size(size)
-    else:
-        font.set_size(size)
-    return font
-
-
 def tooltip_text(brick) -> str:
     return f"{brick.get_name()} · {brick.get_type()} · {brick.get_state()}"
 
@@ -155,8 +127,7 @@ class TopologyView(Gtk.ScrolledWindow):
         self.fitting = True
         # the node under the pointer
         self.hover = None
-        # the icons, by file and by whether the brick runs
-        self._icons: dict[tuple[str, bool], GdkPixbuf.Pixbuf | None] = {}
+        self.icons = Icons()
         # the scroll, once the area has the size of the new zoom
         self._scroll_to: tuple[float, float] | None = None
         self._fitting_later: int | None = None
@@ -335,21 +306,6 @@ class TopologyView(Gtk.ScrolledWindow):
 
     # Drawing
 
-    def _icon(self, brick, running: bool) -> GdkPixbuf.Pixbuf | None:
-        filename = graphics.brick_icon(brick)
-        key = (filename, running)
-        if key not in self._icons:
-            try:
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
-            except GLib.Error:
-                pixbuf = None
-            if pixbuf is not None and not running:
-                grey = pixbuf.copy()
-                pixbuf.saturate_and_pixelate(grey, 0.0, False)
-                pixbuf = grey
-            self._icons[key] = pixbuf
-        return self._icons[key]
-
     def on_draw(self, area, cr) -> bool:
         context = area.get_style_context()
         width, height = area.get_allocated_width(), area.get_allocated_height()
@@ -360,59 +316,21 @@ class TopologyView(Gtk.ScrolledWindow):
         found, selection = context.lookup_color("theme_selected_bg_color")
         if not found:
             selection = ink
-        zoom = self.zoom
-        ox, oy = self.origin()
-
-        cr.save()
-        cr.translate(ox, oy)
-        cr.scale(zoom, zoom)
-        cr.set_source_rgba(ink.red, ink.green, ink.blue, LINK_ALPHA)
-        cr.set_line_width(min(max(1.0, LINE_WIDTH * zoom), 3.0) / zoom)
-        for link in self.layout.links:
-            (x, y), rest = link.points[0], link.points[1:]
-            cr.move_to(x, y)
-            for i in range(0, len(rest) - 2, 3):
-                cr.curve_to(*rest[i], *rest[i + 1], *rest[i + 2])
-            cr.stroke()
-        for node in self.layout.nodes:
-            running = is_running(node.brick)
-            top = node.y - node.height / 2
-            if node is self.hover:
-                cr.set_source_rgba(
-                    selection.red, selection.green, selection.blue, HOVER_ALPHA
-                )
-                cr.arc(
-                    node.x, top + ICON / 2, ICON / 2 + DISC_GAP, 0, 2 * math.pi
-                )
-                cr.fill()
-            icon = self._icon(node.brick, running)
-            if icon is not None:
-                cr.save()
-                cr.translate(node.x - ICON / 2, top)
-                cr.scale(ICON / icon.get_width(), ICON / icon.get_height())
-                Gdk.cairo_set_source_pixbuf(cr, icon, 0, 0)
-                cr.get_source().set_filter(cairo.FILTER_GOOD)
-                cr.paint_with_alpha(1.0 if running else STOPPED_ALPHA)
-                cr.restore()
-        cr.restore()
-
-        # the names at the size of the zoom, laid out by Pango at that size
-        font = scaled_font(
-            context.get_property("font", context.get_state()), zoom
+        palette = Palette(
+            (ink.red, ink.green, ink.blue),
+            (selection.red, selection.green, selection.blue),
         )
-        for node in self.layout.nodes:
-            alpha = 1.0 if is_running(node.brick) else STOPPED_ALPHA
-            text = area.create_pango_layout(node.brick.get_name())
-            text.set_font_description(font)
-            text.set_width(round(node.width * zoom * Pango.SCALE))
-            text.set_alignment(Pango.Alignment.CENTER)
-            text.set_ellipsize(Pango.EllipsizeMode.END)
-            top = node.y - node.height / 2 + ICON
-            cr.move_to(
-                ox + (node.x - node.width / 2) * zoom, oy + top * zoom + 2
-            )
-            cr.set_source_rgba(ink.red, ink.green, ink.blue, alpha)
-            PangoCairo.show_layout(cr, text)
+        draw(
+            cr,
+            self.layout,
+            self.zoom,
+            self.origin(),
+            palette,
+            context.get_property("font", context.get_state()),
+            area.create_pango_layout,
+            self.icons,
+            self.hover,
+        )
         return False
 
     # Signals

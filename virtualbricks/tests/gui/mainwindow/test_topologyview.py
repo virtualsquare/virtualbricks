@@ -24,16 +24,15 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 from virtualbricks.topology import ICON, Layout, layout
 
 if has_display:
-    from gi.repository import Gdk, Gtk, Pango
+    from gi.repository import Gdk, Gtk
 
-    from virtualbricks.gui.mainwindow import topologyview
+    from virtualbricks.gui.mainwindow import picture
     from virtualbricks.gui.mainwindow.topologyview import (
         LEVELS,
         MARGIN,
         TopologyView,
         fit_zoom,
         origin,
-        scaled_font,
         tooltip_text,
         zoom_in,
         zoom_out,
@@ -105,17 +104,6 @@ class TestZoomLevels(unittest.TestCase):
         self.assertEqual(origin(100, 2.0, 400), 100)
         self.assertEqual(origin(100, 2.0, 220), MARGIN)
         self.assertEqual(origin(100, 1.0, 50), MARGIN)
-
-    def test_the_font_of_the_names(self):
-        font = Pango.FontDescription.from_string("Sans 10")
-        self.assertEqual(scaled_font(font, 2.0).get_size(), 20 * Pango.SCALE)
-        self.assertEqual(font.get_size(), 10 * Pango.SCALE)
-        font.set_absolute_size(12 * Pango.SCALE)
-        big = scaled_font(font, 0.5)
-        self.assertTrue(big.get_size_is_absolute())
-        self.assertEqual(big.get_size(), 6 * Pango.SCALE)
-        # never nothing
-        self.assertEqual(scaled_font(font, 0.0).get_size(), 1)
 
 
 class ViewTestCase(GuiTestCase):
@@ -535,10 +523,7 @@ class TestDrawing(ViewTestCase):
             key=sum,
         )
         expected = [
-            round(
-                255 * c * topologyview.LINK_ALPHA
-                + b * (1 - topologyview.LINK_ALPHA)
-            )
+            round(255 * c * picture.LINK_ALPHA + b * (1 - picture.LINK_ALPHA))
             for c, b in zip((ink.red, ink.green, ink.blue), background)
         ]
         # drawn, and no darker than the text colour made fainter: across
@@ -554,14 +539,6 @@ class TestDrawing(ViewTestCase):
             {self.pixel(surface, x, 100) for x in range(0, 200, 10)},
             {self.pixel(surface, 2, 2)},
         )
-
-    def test_the_icons_once(self):
-        icon = self.view._icon(self.sw1, True)
-        self.assertIs(self.view._icon(self.sw2, True), icon)
-        self.assertIsNot(self.view._icon(self.sw1, False), icon)
-        # a virtual machine's own icon, not there
-        self.vm.config.icon = "/nowhere.png"
-        self.assertIsNone(self.view._icon(self.vm, True))
 
 
 class TestInput(ViewTestCase):

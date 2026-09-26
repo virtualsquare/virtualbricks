@@ -485,8 +485,8 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
-msgid "Select an image file"
-msgstr "Selezionare il file immagine"
+msgid "Export as Image"
+msgstr "Esporta come Immagine"
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Virtualbricks"
@@ -2494,6 +2494,10 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#, fuzzy
+#~ msgid "Select an image file"
+#~ msgstr "Selezionare il file immagine"
 
 #~ msgid "Expand Horizontally"
 #~ msgstr "Espandi Orizzontalmente"

@@ -471,7 +471,7 @@ msgid "More"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-msgid "Select an image file"
+msgid "Export as Image"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py

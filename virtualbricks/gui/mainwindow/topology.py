@@ -31,6 +31,8 @@ opens its menu, a double click starts or stops it.
 
 from __future__ import annotations
 
+import os
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -38,8 +40,9 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.gui import graphics  # noqa: E402
+from virtualbricks.config import projects  # noqa: E402
 from virtualbricks.gui.interfaces import IMenu  # noqa: E402
+from virtualbricks.gui.mainwindow import picture  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.mainwindow.topologyview import (  # noqa: E402
     EPSILON,
@@ -79,6 +82,14 @@ def menu() -> Gio.Menu:
 
 def level(zoom: float) -> str:
     return f"{round(zoom * 100)}%"
+
+
+def with_extension(filename: str, extension: str | None) -> str:
+    """A file name with the extension of a format, if it hasn't one."""
+
+    if os.path.splitext(filename)[1].lower() in picture.FORMATS:
+        return filename
+    return filename + (extension or ".png")
 
 
 class TopologyTab(Tab, Gtk.Overlay):
@@ -207,18 +218,13 @@ class TopologyTab(Tab, Gtk.Overlay):
         self.export_action.set_enabled(not empty)
 
     def export(self, filename) -> None:
-        """Save the picture in an image file."""
+        """Save the picture of the lab in a file: PNG, SVG or PDF."""
 
+        context = self.view.area.get_style_context()
+        font = context.get_property("font", context.get_state())
         try:
-            picture = graphics.Topology(
-                Gtk.Image(),
-                self.factory.bricks,
-                1.0,
-                self.direction,
-                self.factory.runtime_dir,
-            )
-            picture.export(filename)
-        except KeyError:
+            picture.export(self.view.layout, filename, font)
+        except ValueError:
             logger.failure(top_invalid_format)
         except IOError:
             logger.failure(top_write_error)
@@ -258,7 +264,7 @@ class TopologyTab(Tab, Gtk.Overlay):
 
     def on_export(self, action, parameter) -> None:
         chooser = Gtk.FileChooserDialog(
-            title=_("Select an image file"),
+            title=_("Export as Image"),
             action=Gtk.FileChooserAction.SAVE,
             buttons=(
                 "_Cancel",
@@ -267,14 +273,38 @@ class TopologyTab(Tab, Gtk.Overlay):
                 Gtk.ResponseType.OK,
             ),
         )
+        toplevel = self.get_toplevel()
+        if isinstance(toplevel, Gtk.Window):
+            chooser.set_transient_for(toplevel)
         chooser.set_do_overwrite_confirmation(True)
-        chooser.connect("response", self.on_export_response)
+        # the extension of each filter
+        formats = {}
+        for extension, name in picture.FORMATS.items():
+            kind = Gtk.FileFilter()
+            kind.set_name(name)
+            kind.add_pattern(f"*{extension}")
+            kind.add_pattern(f"*{extension.upper()}")
+            chooser.add_filter(kind)
+            formats[kind] = extension
+        current = projects.current
+        name = current.name if current is not None else "topology"
+        chooser.set_current_name(f"{name}.png")
+        chooser.connect("notify::filter", self.on_export_format, formats)
+        chooser.connect("response", self.on_export_response, formats)
         chooser.show()
 
-    def on_export_response(self, dialog, response_id) -> None:
+    def on_export_format(self, chooser, pspec, formats) -> None:
+        # the name follows the format
+        extension = formats.get(chooser.get_filter())
+        base, old = os.path.splitext(chooser.get_current_name())
+        if extension is not None and old.lower() in picture.FORMATS:
+            chooser.set_current_name(base + extension)
+
+    def on_export_response(self, dialog, response_id, formats) -> None:
         try:
             if response_id == Gtk.ResponseType.OK:
-                self.export(dialog.get_filename())
+                extension = formats.get(dialog.get_filter())
+                self.export(with_extension(dialog.get_filename(), extension))
         finally:
             dialog.destroy()
 

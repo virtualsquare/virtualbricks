@@ -21,19 +21,20 @@ on the bricks, and the export.
 """
 
 from virtualbricks import topology as layouts
+from virtualbricks.config import projects
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
     from gi.repository import Gdk, GLib, Gtk
 
-    from virtualbricks.gui import graphics
-    from virtualbricks.gui.mainwindow import topology
+    from virtualbricks.gui.mainwindow import picture, topology
     from virtualbricks.gui.mainwindow.topology import (
         GAP,
         TopologyTab,
         level,
         menu,
+        with_extension,
     )
     from virtualbricks.gui.mainwindow.topologyview import LEVELS, fit_zoom
 
@@ -70,32 +71,25 @@ class FakeMenu:
         self.shown.append((self.brick, button, gui))
 
 
-class FakePicture:
-    """What graphics.Topology draws for the export, until cairo does."""
-
-    error = None
-
-    def __init__(self, exports, image, bricks, scale, direction, runtime):
-        self.exports = exports
-        self.direction = direction
-        self.runtime = runtime
-
-    def export(self, filename):
-        if self.error is not None:
-            raise self.error
-        self.exports.append((filename, self.direction, self.runtime))
-
-
 class FakeDialog:
-    def __init__(self, filename):
+    def __init__(self, filename, kind=None):
         self.filename = filename
+        self.kind = kind
         self.destroyed = False
 
     def get_filename(self):
         return self.filename
 
+    def get_filter(self):
+        return self.kind
+
     def destroy(self):
         self.destroyed = True
+
+
+class FakeProject:
+    def __init__(self, name):
+        self.name = name
 
 
 class TopologyTestCase(GuiTestCase):
@@ -420,54 +414,66 @@ class TestExport(TopologyTestCase):
     def setUp(self):
         super().setUp()
         self.exports = []
-        self.patch(
-            graphics,
-            "Topology",
-            lambda *args: FakePicture(self.exports, *args),
-        )
+        self.error = None
+
+        def export(lab, filename, font):
+            if self.error is not None:
+                raise self.error
+            self.exports.append((lab, filename, font.to_string()))
+
+        self.patch(picture, "export", export)
+        self.tab.on_shown()
+
+    def font(self):
+        context = self.view.area.get_style_context()
+        return context.get_property("font", context.get_state()).to_string()
 
     def test_export(self):
-        self.tab.direction = "TB"
-        self.tab.export("lab.png")
+        self.tab.export("lab.svg")
         self.assertEqual(
-            self.exports, [("lab.png", "TB", self.factory.runtime_dir)]
+            self.exports, [(self.view.layout, "lab.svg", self.font())]
         )
         self.assertEqual(self.logger.formatted(), [])
 
     def test_failures(self):
         for error, message in (
-            (KeyError("png"), "Invalid image format"),
-            (IOError("full"), "Could not write file"),
-            (ValueError("?"), "Unknown error"),
+            (ValueError("jpg"), "Invalid image format"),
+            (OSError("full"), "Could not write file"),
+            (RuntimeError("?"), "Unknown error"),
         ):
-            FakePicture.error = error
-            self.addCleanup(setattr, FakePicture, "error", None)
+            self.error = error
             self.tab.export("lab.png")
             self.assertEqual(
                 self.logger.formatted()[-1],
                 f"Error saving topology: {message}",
             )
 
+    def test_the_extension(self):
+        self.assertEqual(with_extension("lab.svg", ".pdf"), "lab.svg")
+        self.assertEqual(with_extension("lab.PDF", ".png"), "lab.PDF")
+        self.assertEqual(with_extension("lab", ".pdf"), "lab.pdf")
+        self.assertEqual(with_extension("lab.v2", None), "lab.v2.png")
+
     def test_the_dialog(self):
         dialog = FakeDialog("lab.png")
-        self.tab.on_export_response(dialog, Gtk.ResponseType.OK)
+        self.tab.on_export_response(dialog, Gtk.ResponseType.OK, {})
         self.assertTrue(dialog.destroyed)
-        self.assertEqual(len(self.exports), 1)
-        dialog = FakeDialog("other.png")
-        self.tab.on_export_response(dialog, Gtk.ResponseType.CANCEL)
-        self.assertTrue(dialog.destroyed)
-        self.assertEqual(len(self.exports), 1)
-
-    def test_the_menu_item(self):
-        # disabled until there is a lab to export
-        self.tab.export_action.activate(None)
-        self.assertFalse(
-            any(
-                isinstance(window, Gtk.FileChooserDialog)
-                for window in Gtk.Window.list_toplevels()
-            )
+        # the extension of the filter, when the name has none
+        kind = object()
+        dialog = FakeDialog("lab", kind)
+        self.tab.on_export_response(
+            dialog, Gtk.ResponseType.OK, {kind: ".pdf"}
         )
-        self.tab.on_shown()
+        self.assertEqual(
+            [filename for _, filename, _ in self.exports],
+            ["lab.png", "lab.pdf"],
+        )
+        dialog = FakeDialog("other.png")
+        self.tab.on_export_response(dialog, Gtk.ResponseType.CANCEL, {})
+        self.assertTrue(dialog.destroyed)
+        self.assertEqual(len(self.exports), 2)
+
+    def chooser(self):
         self.tab.export_action.activate(None)
         [chooser] = [
             window
@@ -475,11 +481,80 @@ class TestExport(TopologyTestCase):
             if isinstance(window, Gtk.FileChooserDialog)
         ]
         self.addCleanup(chooser.destroy)
+        return chooser
+
+    def test_the_menu_item(self):
+        chooser = self.chooser()
         self.assertTrue(chooser.get_visible())
+        self.assertEqual(chooser.get_title(), "Export as Image")
         self.assertEqual(chooser.get_action(), Gtk.FileChooserAction.SAVE)
         self.assertTrue(chooser.get_do_overwrite_confirmation())
         chooser.response(Gtk.ResponseType.CANCEL)
         self.assertNotIn(chooser, Gtk.Window.list_toplevels())
+
+    def test_disabled_without_a_lab(self):
+        self.tab.on_left()
+        for brick in list(self.factory.bricks):
+            self.factory.del_brick(brick)
+        self.tab.on_shown()
+        self.tab.export_action.activate(None)
+        self.assertFalse(
+            any(
+                isinstance(window, Gtk.FileChooserDialog)
+                for window in Gtk.Window.list_toplevels()
+            )
+        )
+
+    def test_the_formats(self):
+        chooser = self.chooser()
+        self.assertEqual(
+            [kind.get_name() for kind in chooser.list_filters()],
+            ["PNG image", "SVG image", "PDF document"],
+        )
+
+    def test_what_each_format_shows(self):
+        chooser = self.chooser()
+
+        def shows(kind, name):
+            info = Gtk.FileFilterInfo()
+            info.contains = Gtk.FileFilterFlags.DISPLAY_NAME
+            info.display_name = name
+            return kind.filter(info)
+
+        png, svg, pdf = chooser.list_filters()
+        for kind, extension in ((png, "png"), (svg, "svg"), (pdf, "pdf")):
+            self.assertTrue(shows(kind, f"lab.{extension}"))
+            self.assertTrue(shows(kind, f"LAB.{extension.upper()}"))
+        self.assertFalse(shows(png, "lab.svg"))
+        self.assertFalse(shows(svg, "lab.pdf"))
+
+    def test_the_name(self):
+        self.patch(projects, "current", None)
+        chooser = self.chooser()
+        self.assertEqual(chooser.get_current_name(), "topology.png")
+        chooser.destroy()
+        self.patch(projects, "current", FakeProject("ospf-lab"))
+        chooser = self.chooser()
+        self.assertEqual(chooser.get_current_name(), "ospf-lab.png")
+
+    def test_the_name_follows_the_format(self):
+        self.patch(projects, "current", None)
+        chooser = self.chooser()
+        svg, pdf = chooser.list_filters()[1:]
+        chooser.set_filter(svg)
+        self.assertEqual(chooser.get_current_name(), "topology.svg")
+        # not a name of the user's
+        chooser.set_current_name("notes.txt")
+        chooser.set_filter(pdf)
+        self.assertEqual(chooser.get_current_name(), "notes.txt")
+
+    def test_over_its_window(self):
+        window = Gtk.Window()
+        self.addCleanup(window.destroy)
+        self.addCleanup(self.tab.menu_button.get_popover().destroy)
+        window.add(self.tab)
+        chooser = self.chooser()
+        self.assertIs(chooser.get_transient_for(), window)
 
 
 class TestTheTab(TopologyTestCase):

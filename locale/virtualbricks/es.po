@@ -477,8 +477,8 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
-msgid "Select an image file"
-msgstr "Seleccionar imágenes para volúmenes QEMU"
+msgid "Export as Image"
+msgstr "Exportar como imagen"
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Virtualbricks"
@@ -2418,6 +2418,10 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Select an image file"
+#~ msgstr "Seleccionar imágenes para volúmenes QEMU"
 
 #~ msgid "Expand Horizontally"
 #~ msgstr "Expandir horizontalmente"
