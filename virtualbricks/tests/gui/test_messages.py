@@ -101,7 +101,7 @@ class TestSource(unittest.TestCase):
 
     def test_part_name(self):
         for namespace, name in (
-            ("virtualbricks.gui.windows.virtualbricks", "Main window"),
+            ("virtualbricks.gui.mainwindow.window", "Main window"),
             ("virtualbricks.gui.windows.logging", "Windows"),
             ("virtualbricks.gui.gui", "Virtualbricks"),
             ("virtualbricks.gui.gui.Application", "Virtualbricks"),

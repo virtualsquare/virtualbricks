@@ -47,7 +47,7 @@ from virtualbricks.gui.windows.exportproject import ExportProjectDialog
 from virtualbricks.gui.windows.importdialog import ImportDialog
 from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.messages import MessageLog
-from virtualbricks.gui.readmetab import ReadmeTab
+from virtualbricks.gui.mainwindow.readme import ReadmeTab
 from virtualbricks.gui.windows.logging import LoggingWindow
 from virtualbricks.gui.windows.newbrick import NewBrickDialog
 from virtualbricks.gui.windows.newevent import NewEventDialog

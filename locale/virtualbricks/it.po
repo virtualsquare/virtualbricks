@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 14:09+0200\n"
+"POT-Creation-Date: 2026-09-26 14:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -207,7 +207,7 @@ msgstr "Impossibile trovare punto di sospensione."
 msgid "Suspend/Resume not supported on this disk."
 msgstr "Sospensione/Ripristino non supportato su questo disco."
 
-#: virtualbricks/gui/gui.py virtualbricks/gui/readmetab.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/readme.py
 msgid "Edit"
 msgstr "Modifica"
 
@@ -278,6 +278,283 @@ msgid ""
 "The project \"{name}\" that was open last doesn't exist any more. Open "
 "another one, or create one."
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "a heading; ## for a smaller one"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "emphasis; ~~struck~~"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "code; ``` above and below a block"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "a list; 1. for a numbered one"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "a quote"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "a link; a bare URL is one too"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "a line across"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "Markdown"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "Anything else shows as you typed it."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "No README yet. The pencil, at the top right, writes one."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "Preview"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "Syntax"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Select an image file"
+msgstr "Selezionare il file immagine"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "No brick selected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "No event selected"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Virtualbricks"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_File"
+msgstr "_File"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Projects…"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "See, open, rename, duplicate, export and remove your projects"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_New Project…"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Open _Recent"
+msgstr "_Apri Progetto"
+
+#: virtualbricks/gui/mainwindow/window.py virtualbricks/gui/windows/logging.py
+#: virtualbricks/migrate/gui.py
+msgid "_Save"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Duplicate…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Re_name…"
+msgstr "_Rinomina"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Import…"
+msgstr "porta:"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "E_xport…"
+msgstr "porta:"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Quit"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Settings"
+msgstr "_Impostazioni"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_View"
+msgstr "_Vista"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Messages"
+msgstr "_Messaggi"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Disk images"
+msgstr "immagini disco"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Create new image"
+msgstr "_Crea nuova immagine"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_New image from file"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Co_mmit cow image"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Images library"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Help"
+msgstr "_Aiuto"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "New Brick"
+msgstr "Nuovo Mattone"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Start All Bricks"
+msgstr "Avvia Tutti i Mattoni"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Stop All Bricks"
+msgstr "Ferma Tutti i Mattoni"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Configure"
+msgstr "_Configura"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Icon"
+msgstr "Icona"
+
+#: virtualbricks/gui/mainwindow/window.py virtualbricks/migrate/gui.py
+msgid "Status"
+msgstr "Stato"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Type"
+msgstr "Tipo"
+
+#: virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/gui/windows/attachevent.py
+#: virtualbricks/gui/windows/createimagedialog.py
+#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
+msgid "Name"
+msgstr "Nome"
+
+#: virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/gui/windows/attachevent.py
+msgid "Parameters"
+msgstr "Parametri"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Bricks"
+msgstr "Mattoni"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "New Event"
+msgstr "Nuovo Evento"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Start All Events"
+msgstr "Avvia Tutti gli Eventi"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Stop All Events"
+msgstr "Ferma Tutti gli Eventi"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Events"
+msgstr "Eventi"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Pid"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "R_unning"
+msgstr "In esecuzione"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Export as Image"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Expand Horizontally"
+msgstr "Espandi Orizzontalmente"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Expand Vertically"
+msgstr "Espandi Verticalmente"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Topology"
+msgstr "Topologia"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Readme"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Toggle window"
+msgstr "Attiva finestra"
+
+#: virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/gui/windows/commitimagedialog.py
+#: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Close"
+msgstr "Chiudi VB"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Virtualbricks visible"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy, python-brace-format
+msgid "Virtualbricks (project: {0})"
+msgstr "Lista Mattoni di Virtualbricks"
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "Virtualbricks hidden"
+msgstr "Virtualbricks"
 
 #: virtualbricks/gui/messages.py
 msgid "Main window"
@@ -377,54 +654,6 @@ msgstr "Tunnel Server"
 msgid "wire"
 msgstr ""
 
-#: virtualbricks/gui/readmetab.py
-msgid "a heading; ## for a smaller one"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "emphasis; ~~struck~~"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "code; ``` above and below a block"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "a list; 1. for a numbered one"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "a quote"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "a link; a bare URL is one too"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "a line across"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "Markdown"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "Anything else shows as you typed it."
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "No README yet. The pencil, at the top right, writes one."
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "Preview"
-msgstr ""
-
-#: virtualbricks/gui/readmetab.py
-msgid "Syntax"
-msgstr ""
-
 #: virtualbricks/gui/widgets.py
 #, fuzzy
 msgid "Enable formatting"
@@ -472,21 +701,6 @@ msgstr "<b>Selezione Evento di avvio</b>"
 #, fuzzy
 msgid "<b>Stop event selection</b>"
 msgstr "<b>Selezione Evento di arresto</b>"
-
-#: virtualbricks/gui/windows/attachevent.py
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Name"
-msgstr "Nome"
-
-#: virtualbricks/gui/windows/attachevent.py
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Parameters"
-msgstr "Parametri"
 
 #: virtualbricks/gui/windows/attachevent.py
 #, fuzzy
@@ -577,14 +791,6 @@ msgstr ""
 #: virtualbricks/gui/windows/commitimagedialog.py
 msgid "label"
 msgstr ""
-
-#: virtualbricks/gui/windows/commitimagedialog.py
-#: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "Close"
-msgstr "Chiudi VB"
 
 #: virtualbricks/gui/windows/commitimagedialog.py
 #, fuzzy
@@ -1240,11 +1446,6 @@ msgstr ""
 #, fuzzy
 msgid "Save the messages"
 msgstr "Salva come..."
-
-#: virtualbricks/gui/windows/logging.py
-#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
-msgid "_Save"
-msgstr ""
 
 #: virtualbricks/gui/windows/netemuconfig.py
 #: virtualbricks/gui/windows/wireconfig.py
@@ -2122,207 +2323,6 @@ msgstr "PID"
 #: virtualbricks/gui/windows/userwait.py
 msgid "Please wait"
 msgstr "Prego attendere"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "Select an image file"
-msgstr "Selezionare il file immagine"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "No brick selected"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "No event selected"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Virtualbricks"
-msgstr "Virtualbricks"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_File"
-msgstr "_File"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_Projects…"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "See, open, rename, duplicate, export and remove your projects"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_New Project…"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "Open _Recent"
-msgstr "_Apri Progetto"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_Duplicate…"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "Re_name…"
-msgstr "_Rinomina"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_Import…"
-msgstr "porta:"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "E_xport…"
-msgstr "porta:"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_Quit"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_Settings"
-msgstr "_Impostazioni"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_View"
-msgstr "_Vista"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_Messages"
-msgstr "_Messaggi"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_Disk images"
-msgstr "immagini disco"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_Create new image"
-msgstr "_Crea nuova immagine"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_New image from file"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Co_mmit cow image"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "Images library"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "_Help"
-msgstr "_Aiuto"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "New Brick"
-msgstr "Nuovo Mattone"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Start All Bricks"
-msgstr "Avvia Tutti i Mattoni"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Stop All Bricks"
-msgstr "Ferma Tutti i Mattoni"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "Configure"
-msgstr "_Configura"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Icon"
-msgstr "Icona"
-
-#: virtualbricks/gui/windows/virtualbricks.py virtualbricks/migrate/gui.py
-msgid "Status"
-msgstr "Stato"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Type"
-msgstr "Tipo"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_Bricks"
-msgstr "Mattoni"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "New Event"
-msgstr "Nuovo Evento"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Start All Events"
-msgstr "Avvia Tutti gli Eventi"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Stop All Events"
-msgstr "Ferma Tutti gli Eventi"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_Events"
-msgstr "Eventi"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Pid"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "R_unning"
-msgstr "In esecuzione"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Export as Image"
-msgstr "Esporta come Immagine"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Expand Horizontally"
-msgstr "Espandi Orizzontalmente"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Expand Vertically"
-msgstr "Espandi Verticalmente"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "_Topology"
-msgstr "Topologia"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Readme"
-msgstr ""
-
-#: virtualbricks/gui/windows/virtualbricks.py
-msgid "Toggle window"
-msgstr "Attiva finestra"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "Virtualbricks visible"
-msgstr "Virtualbricks"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy, python-brace-format
-msgid "Virtualbricks (project: {0})"
-msgstr "Lista Mattoni di Virtualbricks"
-
-#: virtualbricks/gui/windows/virtualbricks.py
-#, fuzzy
-msgid "Virtualbricks hidden"
-msgstr "Virtualbricks"
 
 #: virtualbricks/migrate/gui.py
 #, python-brace-format

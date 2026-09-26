@@ -35,7 +35,6 @@ from .switchwrapperconfig import SwitchWrapperConfigController
 from .tapconfig import TapConfigController
 from .tunnelcconfig import TunnelClientConfigController
 from .tunnellconfig import TunnelListenConfigController
-from .virtualbricks import ProgressBar, VBGUI
 from .wireconfig import WireConfigController
 
 __all__ = [
@@ -44,7 +43,6 @@ __all__ = [
     "EditEthernetDialog",
     "EventConfigController",
     "NetemuConfigController",
-    "ProgressBar",
     "QemuConfigController",
     "RenameDialog",
     "SwitchConfigController",
@@ -52,6 +50,5 @@ __all__ = [
     "TapConfigController",
     "TunnelClientConfigController",
     "TunnelListenConfigController",
-    "VBGUI",
     "WireConfigController",
 ]

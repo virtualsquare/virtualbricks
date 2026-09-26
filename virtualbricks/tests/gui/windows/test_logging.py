@@ -349,7 +349,7 @@ class TestConsoleLines(ConsoleTestCase):
         self.assertEqual(tags, {"source", "part", "first"})
 
     def test_long_source(self):
-        self.add("x", namespace="virtualbricks.gui.windows.virtualbricks")
+        self.add("x", namespace="virtualbricks.gui.mainwindow.window")
         self.add(
             "y",
             log_source=make_factory(self).new_brick(

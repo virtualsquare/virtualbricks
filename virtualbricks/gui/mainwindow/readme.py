@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.test_readmetab -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_readme -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 

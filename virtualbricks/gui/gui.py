@@ -42,7 +42,6 @@ from virtualbricks.bricks.event import Event
 from virtualbricks.gui.windows import (
     AttachEventDialog,
     EditEthernetDialog,
-    ProgressBar,
     RenameDialog,
     SwitchConfigController,
     SwitchWrapperConfigController,
@@ -54,8 +53,8 @@ from virtualbricks.gui.windows import (
     TunnelListenConfigController,
     QemuConfigController,
     EventConfigController,
-    VBGUI,
 )
+from virtualbricks.gui.mainwindow import ProgressBar, VBGUI
 from virtualbricks.gui.interfaces import IMenu, IJobMenu, IConfigController
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash

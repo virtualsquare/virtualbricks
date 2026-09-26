@@ -24,7 +24,7 @@ from virtualbricks.tests.gui import has_display
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.readmetab import GAP, SYNTAX, ReadmeTab
+    from virtualbricks.gui.mainwindow.readme import GAP, SYNTAX, ReadmeTab
 
 README = "# OSPF lab\n\nThree **routers**."
 RENDERED = "OSPF lab\nThree routers."

@@ -97,7 +97,7 @@ def part_name(namespace):
     """The part of Virtualbricks that a logger namespace belongs to."""
 
     parts = (
-        ("virtualbricks.gui.windows.virtualbricks", _("Main window")),
+        ("virtualbricks.gui.mainwindow", _("Main window")),
         ("virtualbricks.gui.gui", "Virtualbricks"),
         ("virtualbricks.gui", _("Windows")),
         ("virtualbricks.migrate", _("Migration")),
