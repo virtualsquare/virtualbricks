@@ -54,7 +54,6 @@ class ExportTestCase(GuiTestCase):
             ("notes.txt", 100),
             ("sub/more.txt", 10),
             ("vm_hda.cow", 5000),
-            ("vde.dot", 1),
             (locations.LEGACY_PROJECT_FILE, 1),
             (".images/old", 1),
         ):

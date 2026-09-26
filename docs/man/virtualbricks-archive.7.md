@@ -465,9 +465,9 @@ qemu_img = "/usr/bin/qemu-img"
 **files** = *array of strings*
 :   The files of the project to store, relative to its folder. The Export
     window always stores **project.toml** and **README**, and lets you choose
-    the private disks, the other files and the images; it never stores the
-    drawings of the topology, *vde.dot* and *vde_topology.plain*, nor the
-    *.images* folder and the *.project* files that older versions left.
+    the private disks, the other files and the images; it never stores what
+    older versions left in the folder: the *.images* folder and the
+    *.project* files.
 
 **images** = *array* of \[*name*, *path*\]
 :   The images to store, as *.images/name*.

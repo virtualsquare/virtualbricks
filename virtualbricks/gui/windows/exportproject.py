@@ -44,12 +44,10 @@ exported = 'Project "{name}" exported to {path}'
 export_failed = 'Cannot export the project "{name}": {error}'
 
 MARGIN = 18
-# Files of the folder that aren't the project's: the topology drawn, and
-# what older versions left.
+# Files of the folder that aren't the project's, left by older versions:
+# the images and the project file of before.
 INTERNAL = frozenset(
     (
-        "vde.dot",
-        "vde_topology.plain",
         ".images",
         locations.LEGACY_PROJECT_FILE,
         locations.LEGACY_PROJECT_FILE + "~",

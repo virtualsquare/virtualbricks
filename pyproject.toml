@@ -12,7 +12,6 @@ license = "GPL-2.0-or-later"
 license-files = ["COPYING", "LICENCE"]
 requires-python = ">=3.10"
 dependencies = [
-    "Pillow>=9.0",
     "pygraphviz>=1.7",
     "Twisted>=22.1",
     "attrs>=20.1",
@@ -39,8 +38,8 @@ dev = [
     "pypandoc-binary==1.17",
     "pyflakes>=3.0",
     "ruff>=0.16",
-    # The types of the libraries: Twisted, Pillow, attrs, tomlkit and tomli
-    # ship theirs. There are none for pygraphviz, zope.interface and
+    # The types of the libraries: Twisted, attrs, tomlkit and tomli ship
+    # theirs. There are none for pygraphviz, zope.interface and
     # constantly.
     "PyGObject-stubs>=2.17",
 ]
