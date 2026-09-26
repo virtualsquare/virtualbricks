@@ -457,11 +457,23 @@ def load_record(
     ignore: Collection[str] = (),
 ) -> S:
     """
-    Build an instance from TOML data, reporting problems instead of failing.
+    Build an instance of a schema from TOML data, reporting the problems
+    instead of failing.
 
-    A missing or invalid value takes the default, and an unknown key is
-    reported and dropped. ``exclude`` names fields that aren't expected in
-    ``data``; ``ignore`` names keys of ``data`` that belong to someone else.
+    ``cls`` is a schema: a class made with :func:`define` whose fields are
+    all declared with :func:`field`, each with a default or a factory. Each
+    field's value is read at its path in ``data``, the field's name unless
+    :func:`field` gives another, and converted by its kind.
+
+    A missing or invalid value is reported to ``report`` and the field keeps
+    its default. A key of ``data`` that no field reads is reported and
+    dropped. ``where`` is the dotted path of ``data`` in its file, the prefix
+    of the keys in the report, as in ``bricks.sw1``.
+
+    ``exclude`` names the fields that ``data`` doesn't hold: they keep their
+    default, and a key of theirs in ``data`` is unknown. ``ignore`` names the
+    keys at the top of ``data`` that someone else reads, as ``format``: they
+    aren't reported.
     """
 
     kwargs: dict[str, object] = {}
