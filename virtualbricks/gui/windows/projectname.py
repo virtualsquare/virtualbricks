@@ -132,7 +132,8 @@ class ProjectNameDialog:
                 _label(
                     _(
                         "Optional; it becomes the README of the project. The"
-                        " project starts with your settings for new projects."
+                        " project starts with a copy of the settings of the"
+                        " open project."
                     ),
                     dim=True,
                     wrap=True,

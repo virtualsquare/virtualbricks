@@ -47,6 +47,7 @@ from virtualbricks.gui.windows.exportproject import ExportProjectDialog
 from virtualbricks.gui.windows.importdialog import ImportDialog
 from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.messages import MessageLog
+from virtualbricks.gui.readmetab import ReadmeTab
 from virtualbricks.gui.windows.logging import LoggingWindow
 from virtualbricks.gui.windows.newbrick import NewBrickDialog
 from virtualbricks.gui.windows.newevent import NewEventDialog
@@ -291,6 +292,7 @@ class ReadmeMixin:
 
     def on_new(self, name):
         self.__load_readme()
+        self.readme_tab.show_preview()
         super().on_new(name)
 
     def on_save(self):
@@ -299,6 +301,7 @@ class ReadmeMixin:
 
     def on_open(self, name):
         self.__load_readme()
+        self.readme_tab.show_preview()
         super().on_open(name)
 
     def on_quit(self, factory):
@@ -963,15 +966,14 @@ class VBGUI(TopologyMixin, ReadmeMixin, _Root):
             use_underline=True,
         )
         self.main_notebook.append_page(vbox17, label20)
-        scrolledwindow2 = Gtk.ScrolledWindow(visible=True, can_focus=True)
-        self.readme_text = Gtk.TextView(visible=True, can_focus=True)
-        scrolledwindow2.add(self.readme_text)
+        self.readme_tab = ReadmeTab()
+        self.readme_text = self.readme_tab.editor
         label1 = Gtk.Label(
             visible=True,
             can_focus=False,
             label=_("Readme"),
         )
-        self.main_notebook.append_page(scrolledwindow2, label1)
+        self.main_notebook.append_page(self.readme_tab, label1)
         vbox1.pack_start(self.main_notebook, True, True, 0)
         self.config_frame = Gtk.Frame(
             can_focus=False,

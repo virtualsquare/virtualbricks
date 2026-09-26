@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 01:04+0200\n"
+"POT-Creation-Date: 2026-09-26 14:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -207,7 +207,7 @@ msgstr "Impossibile trovare punto di sospensione."
 msgid "Suspend/Resume not supported on this disk."
 msgstr "Sospensione/Ripristino non supportato su questo disco."
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/readmetab.py
 msgid "Edit"
 msgstr "Modifica"
 
@@ -375,6 +375,54 @@ msgstr "Tunnel Server"
 
 #: virtualbricks/gui/messages.py
 msgid "wire"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "a heading; ## for a smaller one"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "emphasis; ~~struck~~"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "code; ``` above and below a block"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "a list; 1. for a numbered one"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "a quote"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "a link; a bare URL is one too"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "a line across"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "Markdown"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "Anything else shows as you typed it."
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "No README yet. The pencil, at the top right, writes one."
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "Preview"
+msgstr ""
+
+#: virtualbricks/gui/readmetab.py
+msgid "Syntax"
 msgstr ""
 
 #: virtualbricks/gui/widgets.py
@@ -1390,8 +1438,8 @@ msgstr ""
 
 #: virtualbricks/gui/windows/projectname.py
 msgid ""
-"Optional; it becomes the README of the project. The project starts with your "
-"settings for new projects."
+"Optional; it becomes the README of the project. The project starts with a "
+"copy of the settings of the open project."
 msgstr ""
 
 #: virtualbricks/gui/windows/projectname.py
