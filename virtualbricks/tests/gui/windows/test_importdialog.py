@@ -23,7 +23,9 @@ from twisted.internet import defer
 
 from virtualbricks import locations
 
-from virtualbricks.config import ArchiveCancelled, ProjectSettings, Report
+from virtualbricks.config.archive import ArchiveCancelled
+from virtualbricks.config.settings import ProjectSettings
+from virtualbricks.config.report import Report
 from virtualbricks.config.settings import use_project
 from virtualbricks.config.archive import (
     ArchiveContents,

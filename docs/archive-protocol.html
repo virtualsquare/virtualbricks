@@ -276,7 +276,7 @@
         <!-- the process -->
         <rect x="436" y="16" width="180" height="280" rx="8" class="box"/>
         <text x="454" y="44" class="title">archive process</text>
-        <text x="454" y="63" class="mono small muted">python -c &#8230;main()</text>
+        <text x="454" y="63" class="mono small muted">python -m &#8230;archive</text>
         <rect x="454" y="84" width="144" height="38" rx="6" class="box-accent"/>
         <text x="526" y="108" text-anchor="middle" class="mono">run_job(job)</text>
         <text x="454" y="156" class="small">reads the job to EOF</text>
@@ -474,10 +474,8 @@
 
 <h3 id="process-starting">Starting</h3>
 <p>The application starts the process with its own Python interpreter and its own environment:</p>
-<figure class="code"><pre><code>python -c "import sys; \
-    from virtualbricks.config.archive import main; \
-    sys.exit(main())"</code></pre></figure>
-<p>and not <code>python -m virtualbricks.config.archive</code>: the package <code>virtualbricks.config</code> imports that module, and Python would warn that it runs a second copy of it. The process lowers its priority to <code>nice</code> 10, and handles SIGTERM.</p>
+<figure class="code"><pre><code>python -m virtualbricks.config.archive</code></pre></figure>
+<p>The process lowers its priority to <code>nice</code> 10, and handles SIGTERM.</p>
 
 <h3 id="process-job">The job</h3>
 <p>The process reads its standard input to the end, then parses it as a TOML table. The key <code>job</code> says which job it is, <code>inspect</code>, <code>export</code> or <code>import</code>; the other keys depend on the job, and are described with each job below.</p>
@@ -841,14 +839,14 @@
 <li>When the process ends, the Deferred <code>done</code> fires with the result, if one came, whatever the exit status. Otherwise the leftovers are removed, and <code>done</code> fails with <code>ArchiveCancelled</code> after <code>cancel()</code>, or else with <code>ArchiveError</code>, whose message is the <code>error</code> message, or the standard error of the process, or &quot;the process stopped&quot;.</li>
 <li><code>cancel()</code> sends SIGTERM to the process.</li>
 </ul>
-<p>Three functions, exported by <code>virtualbricks.config</code>, make the jobs, and <code>done</code> fires with what they make of the result:</p>
+<p>Three functions make the jobs, the first two in <code>virtualbricks.config.archive</code> and the last in <code>virtualbricks.config.importing</code>, and <code>done</code> fires with what they make of the result:</p>
 <dl class="terms">
 <dt><code>inspect_archive(path, on_head, on_progress)</code></dt><dd><p>Fires with an <code>ArchiveContents</code>; <code>on_head</code> gets one too.</p></dd>
 <dt><code>export_project(project, output, files, images, on_progress, qemu_img)</code></dt><dd><p>Fires with the result object. Asks for <code>"none"</code> compression when <code>qemu_img</code> is given.</p></dd>
 <dt><code>import_project(plan, workspace, on_progress, qemu_img)</code></dt><dd><p>Creates the <code>staging</code> folder, a leftover from the start, and fires with an <code>ImportResult</code>, its name and its report. <code>plan_import</code> makes the <em>plan</em>, with the default of every choice, from an <code>ArchiveContents</code>; <code>update_plan</code> settles it with the result of the inspection when the head came first.</p></dd>
 </dl>
 <p>The Import window runs an inspection as soon as an archive is chosen, and cancels it when another is chosen or when the import starts, which reads the whole archive anyway. Closing the Import window cancels its inspection, but closing either window lets an import or an export go on to its end, and the application logs its result.</p>
-<figure class="code"><pre><code><span class="k">from</span> virtualbricks.config <span class="k">import</span> inspect_archive
+<figure class="code"><pre><code><span class="k">from</span> virtualbricks.config.archive <span class="k">import</span> inspect_archive
 
 <span class="k">def</span> show(contents):
     print(contents.description)
@@ -876,15 +874,9 @@ job.done.addCallback(show)</code></pre></figure>
 
 <section id="examples">
 <h2>Examples</h2>
-<p>Run the process by hand with a small script:</p>
-<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">cat &gt; archive-process.py &lt;&lt;'EOF'</span>
-import sys
-from virtualbricks.config.archive import main
-sys.exit(main())
-EOF</code></pre></figure>
-<p>Inspect an archive:</p>
+<p>Run the process by hand. Inspect an archive:</p>
 <figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">printf 'job = "inspect"\narchive = "/home/user/lab.vbp"\n' |</span>
-<span class="prompt">&gt; </span><span class="cmd">    python archive-process.py</span>
+<span class="prompt">&gt; </span><span class="cmd">    python -m virtualbricks.config.archive</span>
 <span class="out">{"progress": {"step": "read", "done": 512, "total": 409600}}</span>
 <span class="out">{"result": {"path": "/home/user/lab.vbp", "data": ...}}</span></code></pre></figure>
 <p>The result, laid out:</p>
@@ -909,7 +901,7 @@ EOF</code></pre></figure>
   <span class="k">"converted"</span>: false
 }</code></pre></figure>
 <p>Export a project, with the job of <a href="#export">export</a> in <em>export.toml</em>:</p>
-<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">python archive-process.py &lt; export.toml</span>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">python -m virtualbricks.config.archive &lt; export.toml</span>
 <span class="out">{"created": "/home/user/.lab.vbp.hsp68v_7.part"}</span>
 <span class="out">{"created": "/home/user/.virtualbricks-export-chcr2_tb"}</span>
 <span class="out">{"progress": {"step": "pack", "done": 0, "total": 393232}}</span>
@@ -920,14 +912,15 @@ EOF</code></pre></figure>
 <span class="prompt">$ </span><span class="cmd">echo $?</span>
 <span class="out">0</span></code></pre></figure>
 <p>Stop a long export: the process removes the unfinished archive and its folder.</p>
-<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">python archive-process.py &lt; export.toml &gt; messages &amp;</span>
+<figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">python -m virtualbricks.config.archive \</span>
+<span class="prompt">&gt; </span><span class="cmd">    &lt; export.toml &gt; messages &amp;</span>
 <span class="prompt">$ </span><span class="cmd">sleep 2; kill $!; wait $!; echo $?</span>
 <span class="out">1</span>
 <span class="prompt">$ </span><span class="cmd">tail -n 1 messages</span>
 <span class="out">{"progress": {"step": "write", "done": 48234496, ...}}</span></code></pre></figure>
 <p>A job that fails:</p>
 <figure class="code"><pre><code><span class="prompt">$ </span><span class="cmd">printf 'job = "inspect"\narchive = "notes.txt"\n' |</span>
-<span class="prompt">&gt; </span><span class="cmd">    python archive-process.py</span>
+<span class="prompt">&gt; </span><span class="cmd">    python -m virtualbricks.config.archive</span>
 <span class="out">{"progress": {"step": "read", "done": 512, "total": 5383}}</span>
 <span class="out">{"error": "notes.txt: invalid header"}</span>
 <span class="prompt">$ </span><span class="cmd">echo $?</span>

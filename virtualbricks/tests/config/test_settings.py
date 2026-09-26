@@ -20,28 +20,26 @@ import os
 from twisted.trial import unittest
 
 from virtualbricks import locations, tools
-from virtualbricks.config import (
+from virtualbricks.config.settings import (
     PROJECT_KEYS,
     AppSettings,
     ProjectSettings,
-    Report,
     current_project,
-    dump_record,
-    dump_toml,
-    field_names,
     get_setting,
     has_option,
     load_settings,
     load_state,
-    load_toml,
     new_project_settings,
     parse_setting,
     project_settings,
     set_setting,
     setting_kind,
-    settings,
     store_settings,
 )
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import dump_record, field_names
+from virtualbricks.config.tomlfile import dump_toml, load_toml
+from virtualbricks.config import settings
 from virtualbricks.config.settings import (
     check_format,
     set_current_project,

@@ -19,7 +19,7 @@
 """An action of an event: a console command or a shell command."""
 
 from virtualbricks import console
-from virtualbricks.config import Kind
+from virtualbricks.config.schema import Kind
 
 
 class EventAction(Kind):

@@ -23,7 +23,7 @@ from twisted.logger import Logger
 
 from virtualbricks import bricks
 from virtualbricks.bricks.plug import Plug
-from virtualbricks.config import Int, Str, define, field
+from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 

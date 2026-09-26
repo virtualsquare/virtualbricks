@@ -19,7 +19,7 @@
 from twisted.logger import Logger
 
 from virtualbricks import observable
-from virtualbricks.config import field_names, rename_references
+from virtualbricks.config.schema import field_names, rename_references
 from virtualbricks.i18n import _
 
 logger = Logger()

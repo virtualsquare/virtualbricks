@@ -20,18 +20,13 @@ import os
 from twisted.trial import unittest
 
 from virtualbricks import console, locations
-from virtualbricks.config import (
-    DEFAULT_MODEL,
-    SETTINGS_FORMAT,
-    Bool,
-    Float,
-    Int,
-    Mac,
+from virtualbricks.config.projectfile import DEFAULT_MODEL
+from virtualbricks.config.settings import (
+    FORMAT as SETTINGS_FORMAT,
     ProjectSettings,
-    Report,
-    Str,
-    dump_record,
 )
+from virtualbricks.config.schema import Bool, Float, Int, Mac, Str, dump_record
+from virtualbricks.config.report import Report
 from virtualbricks.bricks.eventaction import EventAction
 from virtualbricks.migrate import convert
 from virtualbricks.migrate.convert import (

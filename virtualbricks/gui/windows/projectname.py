@@ -31,7 +31,7 @@ from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.config import projects
+from virtualbricks.config.workspace import projects
 from virtualbricks.gui.windows.base import _, pango_attr_list
 
 logger = Logger()

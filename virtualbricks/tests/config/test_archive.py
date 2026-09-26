@@ -762,7 +762,7 @@ class TestArchiveJob(ArchiveTestCase):
         self.assertIs(job.start(Reactor()), job)
         [(protocol, executable, args)] = spawned
         self.assertIs(protocol, job.protocol)
-        self.assertEqual(args[1:], ["-c", archive.PROCESS])
+        self.assertEqual(args[1:], ["-m", "virtualbricks.config.archive"])
 
 
 class TestTheRealProcess(ArchiveTestCase):

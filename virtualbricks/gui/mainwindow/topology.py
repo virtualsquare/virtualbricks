@@ -40,7 +40,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.config import projects  # noqa: E402
+from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui.interfaces import IMenu  # noqa: E402
 from virtualbricks.gui.mainwindow import picture  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402

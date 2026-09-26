@@ -27,7 +27,7 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks.config import get_setting
+from virtualbricks.config.settings import get_setting
 from virtualbricks.bricks import virtualmachine
 from virtualbricks.nic import is_valid_mac, random_mac
 from virtualbricks.gui.windows.base import _, Window

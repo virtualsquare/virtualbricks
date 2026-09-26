@@ -18,7 +18,7 @@
 """A tunnel client: vde_cryptcab, connecting to a tunnel server."""
 
 from virtualbricks.bricks.tunnellisten import TunnelListen, TunnelListenConfig
-from virtualbricks.config import Int, Str, define, field
+from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import _
 
 

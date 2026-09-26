@@ -22,7 +22,7 @@ from collections import OrderedDict as odict
 
 from virtualbricks import bricks
 from virtualbricks.bricks.plug import Plug
-from virtualbricks.config import Str, define, field
+from virtualbricks.config.schema import Str, define, field
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 

@@ -30,7 +30,7 @@ from twisted.internet import utils
 from twisted.logger import Logger
 import constantly as constants
 
-from virtualbricks.config import get_setting
+from virtualbricks.config.settings import get_setting
 from virtualbricks.sudo import sudo_command
 
 logger = Logger()

@@ -35,14 +35,13 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 
-from virtualbricks.config import (
-    ArchiveCancelled,
+from virtualbricks.config.archive import ArchiveCancelled, inspect_archive
+from virtualbricks.config.importing import (
     import_project,
-    inspect_archive,
     plan_import,
-    projects,
     update_plan,
 )
+from virtualbricks.config.workspace import projects
 from virtualbricks.config.archive import find_qemu_img
 from virtualbricks.config.importing import COPY, SKIP, USE
 from virtualbricks.gui.markdownview import MarkdownLabel

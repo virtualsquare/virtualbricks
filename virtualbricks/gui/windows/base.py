@@ -37,7 +37,7 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf, Gtk, Pango
 from zope.interface import implementer
 
-from virtualbricks.config import get_setting
+from virtualbricks.config.settings import get_setting
 from virtualbricks.gui import graphics
 from virtualbricks.gui.interfaces import (
     IConfigController,

@@ -31,7 +31,7 @@ from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
 from virtualbricks import bricks, errors, tools
-from virtualbricks.config import (
+from virtualbricks.config.schema import (
     Bool,
     Int,
     Kind,
@@ -41,9 +41,9 @@ from virtualbricks.config import (
     Str,
     define,
     field,
-    get_setting,
-    projects,
 )
+from virtualbricks.config.settings import get_setting
+from virtualbricks.config.workspace import projects
 from virtualbricks.nic import random_mac
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable

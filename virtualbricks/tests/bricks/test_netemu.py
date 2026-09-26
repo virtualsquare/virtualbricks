@@ -18,7 +18,8 @@
 
 """The network emulator."""
 
-from virtualbricks.config import Report, dump_record, field_names
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import dump_record, field_names
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,

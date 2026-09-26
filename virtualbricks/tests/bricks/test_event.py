@@ -20,7 +20,7 @@
 from twisted.internet import task
 
 from virtualbricks import console, errors
-from virtualbricks.config import ListOf, field_names, kind_of
+from virtualbricks.config.schema import ListOf, field_names, kind_of
 from virtualbricks.bricks import event as event_module
 from virtualbricks.bricks.event import Event, EventConfig, is_event
 from virtualbricks.tests import BrickTestCase, FakeLogger

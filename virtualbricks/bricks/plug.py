@@ -22,7 +22,7 @@ from twisted.internet import defer
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.config import get_setting
+from virtualbricks.config.settings import get_setting
 
 link_loop = (
     "Loop link detected: aborting operation. If you want "

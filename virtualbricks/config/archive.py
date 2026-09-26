@@ -1170,12 +1170,8 @@ def main(stdin: IO[str] = sys.stdin, stdout: IO[str] = sys.stdout) -> int:
 
 # The application's side
 
-# Not "-m virtualbricks.config.archive": the package imports this module, and
-# runpy would warn that it runs a second copy of it.
-PROCESS = (
-    "import sys; from virtualbricks.config.archive import main; "
-    "sys.exit(main())"
-)
+# The process runs this module, with python -m.
+MODULE = "virtualbricks.config.archive"
 
 
 class ArchiveJob:
@@ -1212,7 +1208,7 @@ class ArchiveJob:
         reactor.spawnProcess(
             self.protocol,
             sys.executable,
-            [sys.executable, "-c", PROCESS],
+            [sys.executable, "-m", MODULE],
             env=dict(os.environ),
         )
         return self

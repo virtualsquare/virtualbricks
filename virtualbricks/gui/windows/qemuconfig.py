@@ -31,7 +31,7 @@ from gi.repository import Gdk, Gtk, Pango
 from twisted.logger import Logger
 
 from virtualbricks import qemu, tools
-from virtualbricks.config import get_setting
+from virtualbricks.config.settings import get_setting
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IMenu
 from virtualbricks.spawn import getQemuOutput

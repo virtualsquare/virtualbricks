@@ -37,9 +37,9 @@ import tomlkit
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.config import (
-    DEFAULT_MODEL,
-    AppSettings,
+from virtualbricks.config.projectfile import DEFAULT_MODEL
+from virtualbricks.config.settings import AppSettings, ProjectSettings
+from virtualbricks.config.schema import (
     Bool,
     Choice,
     Float,
@@ -47,7 +47,6 @@ from virtualbricks.config import (
     IPv4,
     ListOf,
     Path,
-    ProjectSettings,
     Ref,
     dump_record,
     field_names,

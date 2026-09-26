@@ -22,7 +22,8 @@ import os
 
 
 from virtualbricks import locations
-from virtualbricks.config import get_setting, load_toml, set_setting
+from virtualbricks.config.settings import get_setting, set_setting
+from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.tests.gui import FakeGui, GuiTestCase, has_display
 
 if has_display:

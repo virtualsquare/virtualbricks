@@ -238,8 +238,9 @@ To add a language, see the top of `l10n.sh`.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their
-  archives in a process of their own. The rest of the code takes what it needs
-  from the package by name, as in `from virtualbricks.config import projects`.
+  archives in a process of their own. The rest of the code imports what it
+  needs from each module, as in `from virtualbricks.config.workspace import
+  projects`; the package itself exports nothing.
   It imports no GTK or GLib, so that it works in a console or a script: what
   needs the desktop, as the trash, is given to it by the GUI.
 - `virtualbricks/migrate/`: the only code that reads the files of Virtualbricks

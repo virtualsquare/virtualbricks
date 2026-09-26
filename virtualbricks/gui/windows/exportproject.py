@@ -34,7 +34,7 @@ from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 
 from virtualbricks import locations
-from virtualbricks.config import ArchiveCancelled, export_project
+from virtualbricks.config.archive import ArchiveCancelled, export_project
 from virtualbricks.config.archive import DISK, find_qemu_img, member_kind
 from virtualbricks.gui.windows.base import _, pango_attr_list
 from virtualbricks.i18n import ngettext

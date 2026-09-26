@@ -22,7 +22,7 @@ import re
 
 from virtualbricks import bricks
 from virtualbricks.bricks.wire import Wire
-from virtualbricks.config import (
+from virtualbricks.config.schema import (
     Bool,
     Float,
     Int,

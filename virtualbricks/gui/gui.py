@@ -35,7 +35,9 @@ from twisted.logger import (
 from zope.interface import implementer
 
 from virtualbricks import brickfactory, errors, tools
-from virtualbricks.config import ProjectFormatError, current_project, projects
+from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config.settings import current_project
+from virtualbricks.config.workspace import projects
 from virtualbricks.spawn import qemu_img
 from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event

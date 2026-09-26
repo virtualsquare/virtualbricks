@@ -20,7 +20,7 @@
 from twisted.internet import defer
 
 from virtualbricks import errors
-from virtualbricks.config import get_setting, set_setting
+from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.bricks.plug import Plug, link_loop
 from virtualbricks.bricks.sock import Sock
 from virtualbricks.tests import BrickTestCase, FakeLogger

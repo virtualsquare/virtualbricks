@@ -15,8 +15,7 @@ writes them
 
 *project*.vbp
 
-**python -c** \'**import sys; from virtualbricks.config.archive import main;
-sys.exit(main())**\' **<** *job.toml*
+**python -m virtualbricks.config.archive** **<** *job.toml*
 
 # DESCRIPTION
 
@@ -233,14 +232,10 @@ The application starts the process with its own Python interpreter and its own
 environment:
 
 ```
-python -c "import sys; \
-    from virtualbricks.config.archive import main; \
-    sys.exit(main())"
+python -m virtualbricks.config.archive
 ```
 
-and not **python -m virtualbricks.config.archive**: the package
-**virtualbricks.config** imports that module, and Python would warn that it
-runs a second copy of it. The process lowers its priority to **nice** 10, and
+The process lowers its priority to **nice** 10, and
 handles SIGTERM.
 
 The process always comes from the same installation as the application, so
@@ -711,7 +706,9 @@ In the application, an **ArchiveJob** runs a job:
   error of the process, or \"the process stopped\".
 - **cancel**() sends SIGTERM to the process.
 
-Three functions, exported by **virtualbricks.config**, make the jobs, and
+Three functions make the jobs, the first two in
+**virtualbricks.config.archive** and the last in
+**virtualbricks.config.importing**, and
 **done** fires with what they make of the result:
 
 **inspect_archive**(*path*, *on_head*, *on_progress*)
@@ -735,7 +732,7 @@ closing either window lets an import or an export go on to its end, and the
 application logs its result.
 
 ```
-from virtualbricks.config import inspect_archive
+from virtualbricks.config.archive import inspect_archive
 
 def show(contents):
     print(contents.description)
@@ -771,21 +768,11 @@ job.done.addCallback(show)
 
 # EXAMPLES
 
-Run the process by hand with a small script:
-
-```
-$ cat > archive-process.py <<'EOF'
-import sys
-from virtualbricks.config.archive import main
-sys.exit(main())
-EOF
-```
-
-Inspect an archive:
+Run the process by hand. Inspect an archive:
 
 ```
 $ printf 'job = "inspect"\narchive = "/home/user/lab.vbp"\n' |
->     python archive-process.py
+>     python -m virtualbricks.config.archive
 {"progress": {"step": "read", "done": 512, "total": 409600}}
 {"result": {"path": "/home/user/lab.vbp", "data": ...}}
 ```
@@ -818,7 +805,7 @@ The result, laid out:
 Export a project, with the job of **export** in *export.toml*:
 
 ```
-$ python archive-process.py < export.toml
+$ python -m virtualbricks.config.archive < export.toml
 {"created": "/home/user/.lab.vbp.hsp68v_7.part"}
 {"created": "/home/user/.virtualbricks-export-chcr2_tb"}
 {"progress": {"step": "pack", "done": 0, "total": 393232}}
@@ -833,7 +820,8 @@ $ echo $?
 Stop a long export: the process removes the unfinished archive and its folder.
 
 ```
-$ python archive-process.py < export.toml > messages &
+$ python -m virtualbricks.config.archive \
+>     < export.toml > messages &
 $ sleep 2; kill $!; wait $!; echo $?
 1
 $ tail -n 1 messages
@@ -844,7 +832,7 @@ A job that fails:
 
 ```
 $ printf 'job = "inspect"\narchive = "notes.txt"\n' |
->     python archive-process.py
+>     python -m virtualbricks.config.archive
 {"progress": {"step": "read", "done": 512, "total": 5383}}
 {"error": "notes.txt: invalid header"}
 $ echo $?

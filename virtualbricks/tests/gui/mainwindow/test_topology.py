@@ -21,7 +21,7 @@ on the bricks, and the export.
 """
 
 from virtualbricks import topology as layouts
-from virtualbricks.config import projects
+from virtualbricks.config.workspace import projects
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 

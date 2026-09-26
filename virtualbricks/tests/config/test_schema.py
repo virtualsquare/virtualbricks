@@ -19,7 +19,7 @@ import copy
 
 from twisted.trial import unittest
 
-from virtualbricks.config import (
+from virtualbricks.config.schema import (
     Bool,
     Choice,
     Float,
@@ -31,7 +31,6 @@ from virtualbricks.config import (
     Path,
     Record,
     Ref,
-    Report,
     Str,
     define,
     dump_record,
@@ -43,8 +42,9 @@ from virtualbricks.config import (
     load_record,
     parse_value,
     rename_references,
-    schema,
 )
+from virtualbricks.config.report import Report
+from virtualbricks.config import schema
 from virtualbricks.config.schema import field_info, fields, references
 
 

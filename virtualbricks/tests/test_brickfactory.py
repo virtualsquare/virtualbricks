@@ -25,13 +25,14 @@ from twisted.internet import defer, task
 from twisted.trial import unittest
 
 from virtualbricks import brickfactory, errors, locations
-from virtualbricks.config import projects, workspace
-from virtualbricks.config import (
+from virtualbricks.config.workspace import projects
+from virtualbricks.config import workspace
+from virtualbricks.config.settings import (
     current_project,
     get_setting,
-    load_toml,
     store_settings,
 )
+from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.tests import (
     use_workspace,
     BrickTestCase,

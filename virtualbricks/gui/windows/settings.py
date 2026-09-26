@@ -28,14 +28,14 @@ from gi.repository import Gdk, Gtk
 from twisted.logger import Logger
 
 from virtualbricks import tools
-from virtualbricks.config import (
+from virtualbricks.config.settings import (
     COW_FORMATS,
     get_setting,
     project_settings,
-    projects,
     set_setting,
     store_settings,
 )
+from virtualbricks.config.workspace import projects
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
 
 logger = Logger()

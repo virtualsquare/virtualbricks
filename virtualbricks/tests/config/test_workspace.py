@@ -26,15 +26,14 @@ import time
 from twisted.trial import unittest
 
 from virtualbricks import errors, locations
-from virtualbricks.config import (
-    ProjectFormatError,
+from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config.settings import (
     current_project,
-    dump_toml,
-    load_toml,
     project_settings,
     set_setting,
-    workspace,
 )
+from virtualbricks.config.tomlfile import dump_toml, load_toml
+from virtualbricks.config import workspace
 from virtualbricks.config.workspace import (
     DiskUsage,
     ImageSummary,
@@ -91,7 +90,7 @@ class TestPaths(WorkspaceTestCase):
         self.assertEqual(Workspace().project_path("lab"), "/srv/labs/lab")
 
     def test_the_shared_workspace(self):
-        from virtualbricks.config import projects
+        from virtualbricks.config.workspace import projects
 
         self.assertIsInstance(projects, Workspace)
 

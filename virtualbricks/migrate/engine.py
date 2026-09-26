@@ -35,28 +35,23 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 import attr
 from twisted.python import lockfile
 
-from virtualbricks.config import (
-    ERROR,
-    INFO,
-    SETTINGS_FORMAT,
-    WARNING,
+from virtualbricks.config.report import ERROR, INFO, WARNING, Report
+from virtualbricks.config.settings import (
+    FORMAT as SETTINGS_FORMAT,
     AppSettings,
-    DecodeError,
     ProjectSettings,
-    Report,
-    dump_record,
-    dump_toml,
-    load_record,
-    load_toml,
     new_project_settings,
 )
+from virtualbricks.config.tomlfile import DecodeError, dump_toml, load_toml
+from virtualbricks.config.schema import dump_record, load_record
 from virtualbricks import locations
 from virtualbricks.migrate import convert, legacy
 
 if TYPE_CHECKING:
     from twisted.logger import Logger
 
-    from virtualbricks.config import Level, Message, Table
+    from virtualbricks.config.report import Level, Message
+    from virtualbricks.config.tomlfile import Table
 
 Status = Literal["waiting", "migrating", "migrated", "failed", "skipped"]
 

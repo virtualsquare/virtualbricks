@@ -22,13 +22,13 @@ from twisted.python import lockfile
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.config import (
-    SETTINGS_FORMAT,
+from virtualbricks.config.settings import (
+    FORMAT as SETTINGS_FORMAT,
     AppSettings,
-    Report,
     ProjectSettings,
-    load_toml,
 )
+from virtualbricks.config.report import Report
+from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.config.settings import use_project
 from virtualbricks.config.tomlfile import dumps_toml
 from virtualbricks.migrate import engine, startup_migration

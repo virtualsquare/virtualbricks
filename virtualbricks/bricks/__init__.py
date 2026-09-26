@@ -37,15 +37,15 @@ from twisted.logger import Logger
 from zope.interface import implementer
 
 from virtualbricks import base, errors, interfaces
-from virtualbricks.config import (
+from virtualbricks.config.schema import (
     Ref,
     define,
     dump_record,
     field,
-    get_setting,
     load_record,
     parse_value,
 )
+from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 from virtualbricks.spawn import abspath_vde
 from virtualbricks.sudo import sudo_command

@@ -35,7 +35,7 @@ from typing import TYPE_CHECKING, TypeAlias
 import attr
 
 if TYPE_CHECKING:
-    from virtualbricks.config import Report
+    from virtualbricks.config.report import Report
 
 SECTION = re.compile(r"^\[(?P<type>[a-zA-Z0-9_]+):(?P<name>.+)\]$")
 ASSIGNMENT = re.compile(r"^(?P<key>[\w.\[\]]+)\s*=\s*(?P<value>.*)$")

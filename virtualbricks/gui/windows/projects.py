@@ -37,7 +37,7 @@ from twisted.internet import threads
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.config import projects
+from virtualbricks.config.workspace import projects
 from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.windows import projectname
 from virtualbricks.gui.windows.base import _, pango_attr_list

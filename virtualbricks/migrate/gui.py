@@ -45,7 +45,7 @@ from twisted.logger import Logger
 from virtualbricks import i18n, locations
 from virtualbricks.i18n import _, ngettext
 from virtualbricks.migrate import engine
-from virtualbricks.config import ERROR, INFO, WARNING
+from virtualbricks.config.report import ERROR, INFO, WARNING
 
 if TYPE_CHECKING:
     from twisted.internet.interfaces import IReactorCore

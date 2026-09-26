@@ -32,8 +32,9 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.logger import Logger
 
-from virtualbricks import config, errors, tools
-from virtualbricks.config import get_setting, projects, set_setting
+from virtualbricks import errors, tools
+from virtualbricks.config.settings import get_setting, set_setting
+from virtualbricks.config.workspace import projects
 from virtualbricks.gui.interfaces import IConfigController
 from virtualbricks.tools import is_running
 from virtualbricks.gui.windows.base import _, load_pixbuf
@@ -99,7 +100,6 @@ class VBGUI:
     def __init__(self, factory, messages=None):
         self.factory = self.brickfactory = factory
         self.build_ui()
-        self.config = config
         # the messages of this run, see virtualbricks.gui.messages
         self.messages = MessageLog() if messages is None else messages
 

@@ -7,9 +7,8 @@ and writes them
 .SH SYNOPSIS
 \f[I]project\f[R].vbp
 .PP
-\f[B]python \-c\f[R] \(aq\f[B]import sys; from
-virtualbricks.config.archive import main; sys.exit(main())\f[R]\(aq
-\f[B]<\f[R] \f[I]job.toml\f[R]
+\f[B]python \-m virtualbricks.config.archive\f[R] \f[B]<\f[R]
+\f[I]job.toml\f[R]
 .SH DESCRIPTION
 Virtualbricks exports a project to an archive, a \f[I].vbp\f[R] file,
 and imports a project from one, on the same computer or on another.
@@ -236,14 +235,9 @@ The application starts the process with its own Python interpreter and
 its own environment:
 .IP
 .EX
-python \-c \(dqimport sys; \(rs
-    from virtualbricks.config.archive import main; \(rs
-    sys.exit(main())\(dq
+python \-m virtualbricks.config.archive
 .EE
 .PP
-and not \f[B]python \-m virtualbricks.config.archive\f[R]: the package
-\f[B]virtualbricks.config\f[R] imports that module, and Python would
-warn that it runs a second copy of it.
 The process lowers its priority to \f[B]nice\f[R] 10, and handles
 SIGTERM.
 .PP
@@ -755,8 +749,10 @@ the standard error of the process, or \(dqthe process stopped\(dq.
 .IP \(bu 2
 \f[B]cancel\f[R]() sends SIGTERM to the process.
 .PP
-Three functions, exported by \f[B]virtualbricks.config\f[R], make the
-jobs, and \f[B]done\f[R] fires with what they make of the result:
+Three functions make the jobs, the first two in
+\f[B]virtualbricks.config.archive\f[R] and the last in
+\f[B]virtualbricks.config.importing\f[R], and \f[B]done\f[R] fires with
+what they make of the result:
 .TP
 \f[B]inspect_archive\f[R](\f[I]path\f[R], \f[I]on_head\f[R], \f[I]on_progress\f[R])
 Fires with an \f[B]ArchiveContents\f[R]; \f[I]on_head\f[R] gets one too.
@@ -781,7 +777,7 @@ window lets an import or an export go on to its end, and the application
 logs its result.
 .IP
 .EX
-from virtualbricks.config import inspect_archive
+from virtualbricks.config.archive import inspect_archive
 
 def show(contents):
     print(contents.description)
@@ -814,21 +810,12 @@ The image library, where the import copies the images.
 \f[I]workspace\f[R]/\f[I]name\f[R]/
 An imported project.
 .SH EXAMPLES
-Run the process by hand with a small script:
-.IP
-.EX
-$ cat > archive\-process.py <<\(aqEOF\(aq
-import sys
-from virtualbricks.config.archive import main
-sys.exit(main())
-EOF
-.EE
-.PP
+Run the process by hand.
 Inspect an archive:
 .IP
 .EX
 $ printf \(aqjob = \(dqinspect\(dq\(rsnarchive = \(dq/home/user/lab.vbp\(dq\(rsn\(aq |
->     python archive\-process.py
+>     python \-m virtualbricks.config.archive
 {\(dqprogress\(dq: {\(dqstep\(dq: \(dqread\(dq, \(dqdone\(dq: 512, \(dqtotal\(dq: 409600}}
 {\(dqresult\(dq: {\(dqpath\(dq: \(dq/home/user/lab.vbp\(dq, \(dqdata\(dq: ...}}
 .EE
@@ -862,7 +849,7 @@ Export a project, with the job of \f[B]export\f[R] in
 \f[I]export.toml\f[R]:
 .IP
 .EX
-$ python archive\-process.py < export.toml
+$ python \-m virtualbricks.config.archive < export.toml
 {\(dqcreated\(dq: \(dq/home/user/.lab.vbp.hsp68v_7.part\(dq}
 {\(dqcreated\(dq: \(dq/home/user/.virtualbricks\-export\-chcr2_tb\(dq}
 {\(dqprogress\(dq: {\(dqstep\(dq: \(dqpack\(dq, \(dqdone\(dq: 0, \(dqtotal\(dq: 393232}}
@@ -878,7 +865,8 @@ Stop a long export: the process removes the unfinished archive and its
 folder.
 .IP
 .EX
-$ python archive\-process.py < export.toml > messages &
+$ python \-m virtualbricks.config.archive \(rs
+>     < export.toml > messages &
 $ sleep 2; kill $!; wait $!; echo $?
 1
 $ tail \-n 1 messages
@@ -889,7 +877,7 @@ A job that fails:
 .IP
 .EX
 $ printf \(aqjob = \(dqinspect\(dq\(rsnarchive = \(dqnotes.txt\(dq\(rsn\(aq |
->     python archive\-process.py
+>     python \-m virtualbricks.config.archive
 {\(dqprogress\(dq: {\(dqstep\(dq: \(dqread\(dq, \(dqdone\(dq: 512, \(dqtotal\(dq: 5383}}
 {\(dqerror\(dq: \(dqnotes.txt: invalid header\(dq}
 $ echo $?

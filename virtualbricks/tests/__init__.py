@@ -23,7 +23,8 @@ from twisted.trial import unittest
 
 # The tests of the configuration are virtualbricks.tests.config: here that
 # name is theirs, so the settings are taken by name and from their module.
-from virtualbricks.config import AppSettings, settings
+from virtualbricks.config.settings import AppSettings
+from virtualbricks.config import settings
 from virtualbricks.config.settings import AppState
 
 DATA = os.path.join(os.path.dirname(__file__), "data")
@@ -84,7 +85,7 @@ def use_workspace(test, path=None):
     Return the workspace, ``projects``, which the modules share.
     """
 
-    from virtualbricks.config import projects
+    from virtualbricks.config.workspace import projects
 
     test.patch(projects, "_path", path)
     test.patch(projects, "current", None)

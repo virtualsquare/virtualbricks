@@ -20,7 +20,8 @@
 import os
 
 from virtualbricks import locations
-from virtualbricks.config import current_project, dump_toml, load_toml
+from virtualbricks.config.settings import current_project
+from virtualbricks.config.tomlfile import dump_toml, load_toml
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, ProjectsGui, has_display
 

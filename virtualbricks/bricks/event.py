@@ -22,7 +22,7 @@ from twisted.internet import defer, reactor
 
 from virtualbricks import base, console, errors
 from virtualbricks.bricks.eventaction import EventAction
-from virtualbricks.config import Int, ListOf, define, field
+from virtualbricks.config.schema import Int, ListOf, define, field
 
 if False:  # pyflakes
     _ = str

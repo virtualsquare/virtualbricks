@@ -35,29 +35,35 @@ from typing import TYPE_CHECKING
 from twisted.internet import defer
 
 from virtualbricks import errors, locations
-from virtualbricks.config import (
+from virtualbricks.config.projectfile import (
     DEFAULT_MODEL,
-    PROJECT_KEYS,
     SOCKET_NAME,
+    project_document,
+)
+from virtualbricks.config.settings import (
+    PROJECT_KEYS,
     AppSettings,
+    ProjectSettings,
+)
+from virtualbricks.config.schema import (
     Bool,
     Float,
     Int,
     Kind,
     ListOf,
     Mac,
-    ProjectSettings,
     field_default,
     field_names,
     kind_of,
-    project_document,
 )
 from virtualbricks.migrate import legacy
 from virtualbricks.nic import random_mac
 
 if TYPE_CHECKING:
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
-    from virtualbricks.config import Report, SettingValue, Table
+    from virtualbricks.config.report import Report
+    from virtualbricks.config.settings import SettingValue
+    from virtualbricks.config.tomlfile import Table
     from virtualbricks.bricks.sock import Sock
 
 SETTINGS_DROPPED = frozenset(("alt-term", "cdroms", "kvm", "python", "sudo"))

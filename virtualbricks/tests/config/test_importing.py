@@ -28,13 +28,9 @@ import time
 from twisted.trial import unittest
 
 from virtualbricks import locations
-from virtualbricks.config import (
-    archive,
-    importing,
-    load_toml,
-    plan_import,
-    update_plan,
-)
+from virtualbricks.config import archive, importing
+from virtualbricks.config.tomlfile import load_toml
+from virtualbricks.config.importing import plan_import, update_plan
 from virtualbricks.config.archive import (
     ArchiveContents,
     ArchiveError,

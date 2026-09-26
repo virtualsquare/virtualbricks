@@ -22,7 +22,7 @@ import os
 from twisted.internet import defer
 
 from virtualbricks import bricks, errors
-from virtualbricks.config import Path, define, field
+from virtualbricks.config.schema import Path, define, field
 from virtualbricks.i18n import _
 
 sock_not_exists = "Socket does not exists: {path}"

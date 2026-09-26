@@ -24,7 +24,8 @@ from twisted.internet import defer
 
 from virtualbricks import bricks
 from virtualbricks.config.workspace import OpenProject
-from virtualbricks.config import Report, set_setting
+from virtualbricks.config.report import Report
+from virtualbricks.config.settings import set_setting
 from virtualbricks.tests import (
     use_workspace,
     BrickTestCase,

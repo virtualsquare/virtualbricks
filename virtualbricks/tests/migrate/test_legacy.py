@@ -30,7 +30,7 @@ from virtualbricks.migrate.legacy import (
     read_settings,
     where,
 )
-from virtualbricks.config import Report
+from virtualbricks.config.report import Report
 from virtualbricks.tests.migrate.fixtures import CONFIG1
 
 NETEMU = """\

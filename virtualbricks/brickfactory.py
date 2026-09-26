@@ -41,13 +41,13 @@ from twisted.logger import (
 )
 
 from virtualbricks import console, errors, locations
-from virtualbricks.config import (
-    field_values,
+from virtualbricks.config.schema import field_values
+from virtualbricks.config.settings import (
     load_settings,
     load_state,
-    projects,
     store_settings,
 )
+from virtualbricks.config.workspace import projects
 from virtualbricks import i18n
 from virtualbricks.bricks import capture, netemu, router, switch
 from virtualbricks.bricks import switchwrapper, tap, tunnelconnect

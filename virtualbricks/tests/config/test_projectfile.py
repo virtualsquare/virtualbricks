@@ -21,16 +21,15 @@ import os
 from twisted.trial import unittest
 
 from virtualbricks import console
-from virtualbricks.config import (
+from virtualbricks.config.projectfile import (
     ProjectFormatError,
-    ProjectSettings,
-    Report,
-    dump_record,
-    dump_toml,
-    load_toml,
     project_document,
-    projectfile,
 )
+from virtualbricks.config.settings import ProjectSettings
+from virtualbricks.config.report import Report
+from virtualbricks.config.schema import dump_record
+from virtualbricks.config.tomlfile import dump_toml, load_toml
+from virtualbricks.config import projectfile
 from virtualbricks.config.projectfile import (
     create_project_file,
     devices_for_image,

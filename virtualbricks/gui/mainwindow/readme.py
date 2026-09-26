@@ -39,7 +39,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk  # noqa: E402
 from twisted.internet import reactor  # noqa: E402
 
-from virtualbricks.config import projects  # noqa: E402
+from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.markdownview import MarkdownView  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402

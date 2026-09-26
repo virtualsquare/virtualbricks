@@ -25,11 +25,10 @@ from twisted.protocols import basic
 from twisted.logger import Logger
 from zope.interface import implementer
 from virtualbricks import __version__, bricks, errors
-from virtualbricks.config import (
-    field_values,
+from virtualbricks.config.schema import field_values, kind_of
+from virtualbricks.config.settings import (
     get_setting,
     has_option,
-    kind_of,
     parse_setting,
     set_setting,
     setting_kind,
