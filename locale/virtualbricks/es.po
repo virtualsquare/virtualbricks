@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 14:42+0200\n"
+"POT-Creation-Date: 2026-09-26 14:50+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -274,6 +274,61 @@ msgid ""
 "another one, or create one."
 msgstr ""
 
+#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/mainwindow/running.py
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Icon"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/mainwindow/window.py virtualbricks/migrate/gui.py
+msgid "Status"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/mainwindow/running.py
+#: virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/gui/windows/attachevent.py
+#: virtualbricks/gui/windows/createimagedialog.py
+#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
+msgid "Name"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/gui/windows/attachevent.py
+msgid "Parameters"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+#, fuzzy
+msgid "_Events"
+msgstr "Eventos"
+
+#: virtualbricks/gui/mainwindow/events.py
+msgid "New Event"
+msgstr "Nuevo Evento"
+
+#: virtualbricks/gui/mainwindow/events.py
+msgid "Start All Events"
+msgstr "Arrancar todos los eventos"
+
+#: virtualbricks/gui/mainwindow/events.py
+msgid "Stop All Events"
+msgstr "Parar todos los eventos"
+
+#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Configure"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+msgid "No event selected"
+msgstr ""
+
 #: virtualbricks/gui/mainwindow/readme.py
 msgid "a heading; ## for a smaller one"
 msgstr ""
@@ -327,28 +382,12 @@ msgid "Syntax"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/running.py
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Icon"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/running.py
 msgid "Pid"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/running.py
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Type"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/running.py
-#: virtualbricks/gui/mainwindow/window.py
-#: virtualbricks/gui/windows/attachevent.py
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
-msgid "Name"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/running.py
@@ -380,10 +419,6 @@ msgstr "Seleccionar imágenes para volúmenes QEMU"
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "No brick selected"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "No event selected"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py
@@ -487,39 +522,9 @@ msgid "Stop All Bricks"
 msgstr "Parar todos los bricks"
 
 #: virtualbricks/gui/mainwindow/window.py
-msgid "Configure"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py virtualbricks/migrate/gui.py
-msgid "Status"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-#: virtualbricks/gui/windows/attachevent.py
-msgid "Parameters"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
 #, fuzzy
 msgid "_Bricks"
 msgstr "Bricks (Bloques)"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "New Event"
-msgstr "Nuevo Evento"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Start All Events"
-msgstr "Arrancar todos los eventos"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Stop All Events"
-msgstr "Parar todos los eventos"
-
-#: virtualbricks/gui/mainwindow/window.py
-#, fuzzy
-msgid "_Events"
-msgstr "Eventos"
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Toggle window"

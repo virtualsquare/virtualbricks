@@ -47,13 +47,13 @@ from virtualbricks.gui.windows.exportproject import ExportProjectDialog
 from virtualbricks.gui.windows.importdialog import ImportDialog
 from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.messages import MessageLog
+from virtualbricks.gui.mainwindow.events import EventsTab
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
 from virtualbricks.gui.mainwindow.running import RunningTab
 from virtualbricks.gui.mainwindow.tab import switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
 from virtualbricks.gui.windows.logging import LoggingWindow
 from virtualbricks.gui.windows.newbrick import NewBrickDialog
-from virtualbricks.gui.windows.newevent import NewEventDialog
 from virtualbricks.gui.windows import projectname
 from virtualbricks.gui.windows.projects import ProjectsWindow
 from virtualbricks.gui.windows.settings import SettingsDialog
@@ -155,23 +155,6 @@ class BricksBindingList(widgets.AbstractBindingList):
         return iter(self._factory.bricks)
 
 
-class EventsBindingList(widgets.AbstractBindingList):
-
-    def __init__(self, factory):
-        widgets.AbstractBindingList.__init__(self, factory)
-        factory.connect("event-added", self._on_added)
-        factory.connect("event-removed", self._on_removed)
-        factory.connect("event-changed", self._on_changed)
-
-    def __dispose__(self):
-        self._factory.disconnect("event-added", self._on_added)
-        self._factory.disconnect("event-removed", self._on_removed)
-        self._factory.disconnect("event-changed", self._on_changed)
-
-    def __iter__(self):
-        return self._factory.iter_events()
-
-
 class VBGUI(_Root):
     """
     The main GUI object for virtualbricks, containing all the configuration for
@@ -179,7 +162,6 @@ class VBGUI(_Root):
     """
 
     __bricks_binding_list = None
-    __events_binding_list = None
 
     def __init__(self, factory, messages=None):
         self.factory = self.brickfactory = factory
@@ -200,13 +182,6 @@ class VBGUI(_Root):
             _("No brick selected"),
             self.configure_brick_button,
         )
-        state_add_selection(
-            self.__state_manager,
-            self.events_view,
-            self.__event_selected,
-            _("No event selected"),
-            self.configure_event_button,
-        )
         self.init(factory)
 
         # attach the quit callback at the end, so it is not called if an
@@ -223,10 +198,6 @@ class VBGUI(_Root):
         # bricks_store (widgets.List)
         # Custom widget from glade-catalog.xml
         self.bricks_store = widgets.List()
-
-        # events_store (widgets.List)
-        # Custom widget from glade-catalog.xml
-        self.events_store = widgets.List()
 
         # window (Gtk.Window)
         # Glade image "virtualbricks.png" (virtualbricks/gui/data)
@@ -499,116 +470,7 @@ class VBGUI(_Root):
             use_underline=True,
         )
         self.main_notebook.append_page(vbox11, bricks_label)
-        vbox16 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
-        )
-        toolbar2 = Gtk.Toolbar(
-            visible=True,
-            can_focus=False,
-            toolbar_style=Gtk.ToolbarStyle.BOTH,
-        )
-        new_event_button = Gtk.ToolButton(
-            visible=True,
-            can_focus=False,
-            label=_("New Event"),
-            use_underline=True,
-            stock_id="gtk-new",
-        )
-        toolbar2.insert(new_event_button, -1)
-        separatortoolitem2 = Gtk.SeparatorToolItem(
-            visible=True,
-            can_focus=False,
-        )
-        toolbar2.insert(separatortoolitem2, -1)
-        separatortoolitem2.set_homogeneous(False)
-        start_all_events_button = Gtk.ToolButton(
-            visible=True,
-            can_focus=False,
-            label=_("Start All Events"),
-            use_underline=True,
-            stock_id="gtk-media-play",
-        )
-        toolbar2.insert(start_all_events_button, -1)
-        stop_all_events_button = Gtk.ToolButton(
-            visible=True,
-            can_focus=False,
-            label=_("Stop All Events"),
-            use_underline=True,
-            stock_id="gtk-media-stop",
-        )
-        toolbar2.insert(stop_all_events_button, -1)
-        separatortoolitem4 = Gtk.SeparatorToolItem(
-            visible=True,
-            can_focus=False,
-        )
-        toolbar2.insert(separatortoolitem4, -1)
-        separatortoolitem4.set_homogeneous(False)
-        self.configure_event_button = Gtk.ToolButton(
-            visible=True,
-            sensitive=False,
-            can_focus=False,
-            label=_("Configure"),
-            use_underline=True,
-            stock_id="gtk-edit",
-        )
-        toolbar2.insert(self.configure_event_button, -1)
-        vbox16.pack_start(toolbar2, False, False, 0)
-        events_scrolledwindow = Gtk.ScrolledWindow(
-            visible=True,
-            can_focus=True,
-            shadow_type=Gtk.ShadowType.IN,
-        )
-        # Custom widget from glade-catalog.xml
-        self.events_view = widgets.TreeView(
-            visible=True,
-            can_focus=True,
-            model=self.events_store,
-            headers_clickable=False,
-        )
-        tvc_event_icon = Gtk.TreeViewColumn.new()
-        tvc_event_icon.set_properties(title=_("Icon"))
-        # Custom widget from glade-catalog.xml
-        crp2 = widgets.CellRendererBrickIcon()
-        tvc_event_icon.pack_start(crp2, False)
-        self.events_view.append_column(tvc_event_icon)
-        tvc_event_status = Gtk.TreeViewColumn.new()
-        tvc_event_status.set_properties(title=_("Status"))
-        # Custom widget from glade-catalog.xml
-        crt5 = widgets.CellRendererFormattable(
-            format_string="s",
-            formatting_enabled=True,
-        )
-        tvc_event_status.pack_start(crt5, False)
-        self.events_view.append_column(tvc_event_status)
-        tvc_event_name = Gtk.TreeViewColumn.new()
-        tvc_event_name.set_properties(title=_("Name"))
-        # Custom widget from glade-catalog.xml
-        crt6 = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        tvc_event_name.pack_start(crt6, False)
-        self.events_view.append_column(tvc_event_name)
-        tvc_event_params = Gtk.TreeViewColumn.new()
-        tvc_event_params.set_properties(title=_("Parameters"))
-        # Custom widget from glade-catalog.xml
-        crt7 = widgets.CellRendererFormattable(
-            format_string="p",
-            formatting_enabled=True,
-        )
-        tvc_event_params.pack_start(crt7, False)
-        self.events_view.append_column(tvc_event_params)
-        events_scrolledwindow.add(self.events_view)
-        vbox16.pack_start(events_scrolledwindow, True, True, 0)
-        event_label = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("_Events"),
-            use_underline=True,
-        )
-        self.main_notebook.append_page(vbox16, event_label)
+        self.append_tab(EventsTab(self, self.factory))
         self.append_tab(RunningTab(self, self.bricks_store))
         self.append_tab(TopologyTab(self, self.factory))
         self.append_tab(ReadmeTab())
@@ -775,31 +637,6 @@ class VBGUI(_Root):
             "row-activated",
             self.on_bricks_view_row_activated,
         )
-        new_event_button.connect("clicked", self.on_new_event_button_clicked)
-        start_all_events_button.connect(
-            "clicked",
-            self.on_start_all_events_button_clicked,
-        )
-        stop_all_events_button.connect(
-            "clicked",
-            self.on_stop_all_events_button_clicked,
-        )
-        self.configure_event_button.connect(
-            "clicked",
-            self.on_configure_event_button_clicked,
-        )
-        self.events_view.connect(
-            "button-release-event",
-            self.on_events_view_button_release_event,
-        )
-        self.events_view.connect(
-            "key-release-event",
-            self.on_events_view_key_release_event,
-        )
-        self.events_view.connect(
-            "row-activated",
-            self.on_events_view_row_activated,
-        )
         systray_toggle_item.connect(
             "activate",
             self.on_systray_toggle_item_activate,
@@ -828,11 +665,6 @@ class VBGUI(_Root):
         self.bricks_view.enable_model_drag_dest(
             BRICK_DRAG_TARGETS, Gdk.DragAction.LINK
         )
-
-        # events tab
-        self.events_view.set_cells_data_func()
-        self.__events_binding_list = EventsBindingList(self.factory)
-        self.events_store.set_data_source(self.__events_binding_list)
 
     def check_prerequisites(self):
         """Say which programs are missing, in the folders of the project."""
@@ -865,9 +697,6 @@ class VBGUI(_Root):
         if self.__bricks_binding_list is not None:
             dispose(self.__bricks_binding_list)
             self.__bricks_binding_list = None
-        if self.__events_binding_list is not None:
-            dispose(self.__events_binding_list)
-            self.__events_binding_list = None
 
     def get_object(self, name):
         return getattr(self, name, None)
@@ -976,12 +805,6 @@ class VBGUI(_Root):
             brick = treeview.get_selected_value()
             if brick is not None:
                 self.ask_remove_brick(brick)
-
-    def on_events_view_key_release_event(self, treeview, event):
-        if Gdk.keyval_name(event.keyval) in set(["Delete", "BackSpace"]):
-            event = treeview.get_selected_value()
-            if event is not None:
-                self.ask_remove_event(event)
 
     # status icon handling
 
@@ -1186,25 +1009,6 @@ class VBGUI(_Root):
     def on_configure_brick_button_clicked(self, toolbutton):
         return self.__show_config_if_selected(self.bricks_view)
 
-    # events toolbar
-
-    def on_new_event_button_clicked(self, toolbutton):
-        NewEventDialog(self).show(self.window)
-        return True
-
-    def on_start_all_events_button_clicked(self, toolbutton):
-        for event in self.brickfactory.iter_events():
-            event.poweron()
-        return True
-
-    def on_stop_all_events_button_clicked(self, toolbutton):
-        for event in self.brickfactory.iter_events():
-            event.poweroff()
-        return True
-
-    def on_configure_event_button_clicked(self, toolbutton):
-        return self.__show_config_if_selected(self.events_view)
-
     def confirm(self, message):
         dialog = Gtk.MessageDialog(
             None,
@@ -1234,18 +1038,10 @@ class VBGUI(_Root):
                 menu.popup(event.button, event.time, self)
             return True
 
-    def on_events_view_button_release_event(self, treeview, event):
-        return self.on_bricks_view_button_release_event(treeview, event)
-
     def on_bricks_view_row_activated(self, treeview, path, column):
         model = treeview.get_model()
         brick = model.get_value(model.get_iter(path), 0)
         self.startstop_brick(brick)
-
-    def on_events_view_row_activated(self, treeview, path, column):
-        model = treeview.get_model()
-        event = model.get_value(model.get_iter(path), 0)
-        event.toggle()
 
     def startstop_brick(self, brick):
         if is_running(brick):
@@ -1310,9 +1106,3 @@ class VBGUI(_Root):
         return bool(self.bricks_view.get_selected_value())
 
     # Events tab signals
-
-    def on_events_selection_changed(self, selection):
-        self.__state_event_config.check()
-
-    def __event_selected(self):
-        return bool(self.events_view.get_selected_value())

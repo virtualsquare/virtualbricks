@@ -22,9 +22,13 @@ A tab of the main window, and what the window tells its tabs.
 A tab is the widget of its page, and a :class:`Tab` too: the window puts it
 in its notebook under its title, and tells it when a project opens, is
 saved, or Virtualbricks quits, and when it shows or another tab does.
+
+The lists of the Bricks and the Events tabs share the last helpers.
 """
 
 from __future__ import annotations
+
+from virtualbricks.gui.interfaces import IMenu
 
 
 class Tab:
@@ -71,3 +75,36 @@ def switch(notebook, page) -> None:
         current.on_left()
     if isinstance(page, Tab):
         page.on_shown()
+
+
+# The lists of the bricks and the events
+
+
+def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
+    """Make widgets sensitive while prerequisite() is true, on a selection."""
+
+    state = manager._build_state(tooltip, *widgets)
+    state.add_prerequisite(prerequisite)
+    selection = treeview.get_selection()
+    selection.connect("changed", lambda s: state.check())
+    state.check()
+    return state
+
+
+def popup_menu(view, event, gui) -> bool | None:
+    """
+    For the button-release-event of a list: the right button opens the menu
+    of the row under it. True if it's the right button, on a row or not.
+    """
+
+    if event.button != 3:
+        return None
+    found = view.get_path_at_pos(int(event.x), int(event.y))
+    if found is not None:
+        path, column, _x, _y = found
+        view.grab_focus()
+        view.set_cursor(path, column, False)
+        model = view.get_model()
+        value = model.get_value(model.get_iter(path), 0)
+        IMenu(value).popup(event.button, event.time, gui)
+    return True
