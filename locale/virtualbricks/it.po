@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 22:54+0200\n"
+"POT-Creation-Date: 2026-09-26 23:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -199,14 +199,6 @@ msgstr ""
 msgid "Normalized name %s already in use"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
-msgid "Cannot find suspend point."
-msgstr "Impossibile trovare punto di sospensione."
-
-#: virtualbricks/gui/gui.py
-msgid "Suspend/Resume not supported on this disk."
-msgstr "Sospensione/Ripristino non supportato su questo disco."
-
 #: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/readme.py
 msgid "Edit"
 msgstr "Modifica"
@@ -229,7 +221,7 @@ msgstr "_Avvia/Ferma"
 msgid "_Play"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Continue"
 msgstr ""
 
@@ -237,11 +229,11 @@ msgstr ""
 msgid "_Redo"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Restart"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Kill"
 msgstr ""
 
@@ -263,9 +255,13 @@ msgstr "Invia hard reset ACPI"
 msgid "_Delete"
 msgstr "Ca_ncella"
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Terminate"
 msgstr ""
+
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Suspend/Resume not supported on this disk."
+msgstr "Sospensione/Ripristino non supportato su questo disco."
 
 #: virtualbricks/gui/gui.py
 #, python-brace-format
@@ -439,6 +435,82 @@ msgstr ""
 #, fuzzy
 msgid "no network card"
 msgstr "Aggiungi una scheda di rete"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Connect To"
+msgstr "Connetti a"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, python-brace-format
+msgid "Process {pid}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "Stop"
+msgstr "_Avvia/Ferma"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Start"
+msgstr "Avvia Mattone"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Configure…"
+msgstr "_Configura"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Rename…"
+msgstr "_Rinomina"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/windows/projectname.py
+#, fuzzy
+msgid "Duplicate"
+msgstr "Azioni"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Attach Event…"
+msgstr "_Aggancia Evento"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Resume"
+msgstr "R_iprendi VM"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Delete…"
+msgstr "Ca_ncella"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Open Control Monitor"
+msgstr "Apri console di controllo"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Pause"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "Suspend"
+msgstr "Sospendi Qemu"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Reset"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Cannot find suspend point."
+msgstr "Impossibile trovare punto di sospensione."
 
 #: virtualbricks/gui/mainwindow/bricks.py
 #: virtualbricks/gui/mainwindow/events.py
@@ -1287,12 +1359,6 @@ msgid "The images: {names}"
 msgstr "Formato immagine"
 
 #: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Stop"
-msgstr "_Avvia/Ferma"
-
-#: virtualbricks/gui/windows/exportproject.py
 #, python-brace-format
 msgid "{size} before compression"
 msgstr ""
@@ -1834,11 +1900,6 @@ msgstr "Nuovo progetto"
 
 #: virtualbricks/gui/windows/projectname.py
 #, fuzzy
-msgid "Duplicate"
-msgstr "Azioni"
-
-#: virtualbricks/gui/windows/projectname.py
-#, fuzzy
 msgid "New name"
 msgstr "Nuovo nome evento"
 
@@ -1947,11 +2008,6 @@ msgstr ""
 #, fuzzy
 msgid "Export…"
 msgstr "porta:"
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Rename…"
-msgstr "_Rinomina"
 
 #: virtualbricks/gui/windows/projects.py
 #, fuzzy
@@ -3043,9 +3099,6 @@ msgstr "kvm non trovato"
 #~ msgid "<b>Event Configuration</b>"
 #~ msgstr "<b>Configurazione Evento</b>"
 
-#~ msgid "Connect to"
-#~ msgstr "Connetti a"
-
 #~ msgid "Listen to port:"
 #~ msgstr "Porta di ascolto:"
 
@@ -3316,9 +3369,6 @@ msgstr "kvm non trovato"
 #~ msgid "open control monitor"
 #~ msgstr "Apri console di controllo"
 
-#~ msgid "Suspend Qemu"
-#~ msgstr "Sospendi Qemu"
-
 #~ msgid "Send ACPI poweroff"
 #~ msgstr "Invia poweroff ACPI"
 
@@ -3411,9 +3461,6 @@ msgstr "kvm non trovato"
 #~ msgid "Event type selection"
 #~ msgstr "Selezione del tipo di evento"
 
-#~ msgid "Brick Start"
-#~ msgstr "Avvia Mattone"
-
 #~ msgid "Brick Stop"
 #~ msgstr "Ferma Mattone"
 
@@ -3441,12 +3488,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "_Configure"
 #~ msgstr "_Configura"
-
-#~ msgid "_Resume VM"
-#~ msgstr "R_iprendi VM"
-
-#~ msgid "_Attach Event"
-#~ msgstr "_Aggancia Evento"
 
 #~ msgid "<b>Confirm Action</b>"
 #~ msgstr "<b>Conferma Azione</b>"

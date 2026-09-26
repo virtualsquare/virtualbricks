@@ -36,7 +36,7 @@ from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui import widgets  # noqa: E402
-from virtualbricks.gui.mainwindow import brickinfo  # noqa: E402
+from virtualbricks.gui.mainwindow import brickinfo, brickmenu  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     Tab,
     popup_menu,
@@ -219,7 +219,11 @@ class BricksTab(Tab, Gtk.Box):
             self.gui.curtain_up(brick)
 
     def on_button_release(self, view, event) -> bool | None:
-        return popup_menu(view, event, self.gui)
+        return popup_menu(view, event, self.gui, self.open_menu)
+
+    def open_menu(self, brick, event) -> None:
+        # kept while it shows
+        self._menu = brickmenu.popup(self.view, event, self.gui, brick)
 
     def on_key_release(self, view, key) -> None:
         if Gdk.keyval_name(key.keyval) in DELETE_KEYS:

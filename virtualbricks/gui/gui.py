@@ -38,11 +38,9 @@ from virtualbricks import brickfactory, errors, tools
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
-from virtualbricks.spawn import qemu_img
 from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event
 from virtualbricks.gui.windows import (
-    AttachEventDialog,
     EditEthernetDialog,
     RenameDialog,
     SwitchConfigController,
@@ -70,10 +68,7 @@ logger = Logger()
 cannot_open_last = "{message}"
 sync_error = "Sync terminated unexpectedly"
 create_image_error = "Create image terminated unexpectedly"
-cannot_rename = "Cannot rename Brick: it is in use."
 s_r_not_supported = "Suspend/Resume not supported on this disk."
-snap_error = "Error on snapshot"
-resume_vm = "Resuming virtual machine {name}"
 event_in_use = "Cannot rename event: it is in use."
 proc_signal = "Sending to process signal {signame}!"
 send_acpi = "send ACPI {acpievent}"
@@ -116,91 +111,6 @@ class BaseMenu:
 
     def on_configure_activate(self, menuitem, gui):
         gui.curtain_up(self.original)
-
-
-class BrickPopupMenu(BaseMenu):
-
-    def build(self, gui):
-        menu = BaseMenu.build(self, gui)
-        attach = Gtk.MenuItem.new_with_mnemonic("_Attach Event")
-        attach.connect("activate", self.on_attach_activate, gui)
-        menu.append(attach)
-        return menu
-
-    def on_startstop_activate(self, menuitem, gui):
-        gui.startstop_brick(self.original)
-        _clear_menu()
-
-    def on_delete_activate(self, menuitem, gui):
-        gui.ask_remove_brick(self.original)
-
-    def on_copy_activate(self, menuitem, gui):
-        gui.brickfactory.dup_brick(self.original)
-
-    def on_rename_activate(self, menuitem, gui):
-        if self.original.proc is not None:
-            logger.error(cannot_rename)
-        else:
-            RenameDialog(gui.brickfactory, self.original).show(gui.window)
-
-    def on_attach_activate(self, menuitem, gui):
-        AttachEventDialog(self.original, gui.factory).show(gui.window)
-        return True
-
-
-registerAdapter(BrickPopupMenu, Brick, IMenu)
-
-
-class VMPopupMenu(BrickPopupMenu):
-
-    def build(self, gui):
-        menu = BrickPopupMenu.build(self, gui)
-        resume = Gtk.MenuItem.new_with_mnemonic("_Resume VM")
-        resume.connect("activate", self.on_resume_activate, gui)
-        menu.append(resume)
-        return menu
-
-    def resume(self, factory):
-
-        def grep(out, pattern):
-            if out.find(pattern) == -1:
-                raise RuntimeError(_("Cannot find suspend point."))
-
-        def loadvm(_):
-            if self.original.proc is not None:
-                self.original.send(b"loadvm virtualbricks\n")
-            else:
-                return self.original.poweron("virtualbricks")
-
-        img = self.original.disk("hda")
-        if img.is_cow():
-            path = img.get_cow_path()
-        elif img.image:
-            path = img.image.path
-        else:
-            logger.error(s_r_not_supported)
-            return defer.fail(
-                RuntimeError(
-                    _("Suspend/Resume not supported on " "this disk.")
-                )
-            )
-        output = qemu_img(["snapshot", "-l", path])
-        output.addCallback(grep, "virtualbricks")
-        output.addCallback(loadvm)
-
-        def log_snapshot_error(failure):
-            logger.failure(snap_error, failure)
-            return failure
-
-        output.addErrback(log_snapshot_error)
-        return output
-
-    def on_resume_activate(self, menuitem, gui):
-        logger.debug(resume_vm, name=self.original.get_name())
-        ProgressBar(gui).wait_for(self.resume(gui.brickfactory))
-
-
-registerAdapter(VMPopupMenu, VirtualMachine, IMenu)
 
 
 class EventPopupMenu(BaseMenu):

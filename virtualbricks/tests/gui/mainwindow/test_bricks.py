@@ -29,7 +29,7 @@ if has_display:
     from gi.repository import Gdk, GObject, Gtk
 
     from virtualbricks.gui import widgets
-    from virtualbricks.gui.mainwindow import bricks
+    from virtualbricks.gui.mainwindow import brickmenu, bricks
     from virtualbricks.gui.mainwindow.bricks import BricksTab
 
 
@@ -158,11 +158,26 @@ class TestTheList(BricksTestCase):
         self.patch(
             bricks,
             "popup_menu",
-            lambda view, event, gui: releases.append((view, gui)) or True,
+            lambda view, event, gui, open_menu: releases.append(
+                (view, gui, open_menu)
+            )
+            or True,
         )
         event = Gdk.Event.new(Gdk.EventType.BUTTON_RELEASE)
         self.assertTrue(self.view.emit("button-release-event", event))
-        self.assertEqual(releases, [(self.view, self.gui)])
+        self.assertEqual(releases, [(self.view, self.gui, self.tab.open_menu)])
+
+    def test_the_menu_of_a_brick(self):
+        shown = []
+
+        def popup(widget, event, gui, brick):
+            shown.append((widget, event, gui, brick))
+            return "menu"
+
+        self.patch(brickmenu, "popup", popup)
+        self.tab.open_menu(self.sw, "event")
+        self.assertEqual(shown, [(self.view, "event", self.gui, self.sw)])
+        self.assertEqual(self.tab._menu, "menu")
 
     def release_key(self, keyval):
         event = Gdk.Event.new(Gdk.EventType.KEY_RELEASE)

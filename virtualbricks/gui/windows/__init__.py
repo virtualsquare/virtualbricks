@@ -23,7 +23,6 @@ Only the classes that code outside this package imports from it are exported;
 the tests import the others from their modules.
 """
 
-from .attachevent import AttachEventDialog
 from .captureconfig import CaptureConfigController
 from .ethernetdialog import EditEthernetDialog
 from .eventconfig import EventConfigController
@@ -38,7 +37,6 @@ from .tunnellconfig import TunnelListenConfigController
 from .wireconfig import WireConfigController
 
 __all__ = [
-    "AttachEventDialog",
     "CaptureConfigController",
     "EditEthernetDialog",
     "EventConfigController",

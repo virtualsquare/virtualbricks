@@ -28,7 +28,7 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gdk, GLib, Gtk
 
-    from virtualbricks.gui.mainwindow import picture, topology
+    from virtualbricks.gui.mainwindow import brickmenu, picture, topology
     from virtualbricks.gui.mainwindow.topology import (
         GAP,
         TopologyTab,
@@ -62,13 +62,13 @@ class FakeGui:
         self.started.append(brick)
 
 
-class FakeMenu:
-    def __init__(self, shown, brick):
-        self.shown = shown
-        self.brick = brick
+class FakeMenus:
+    def __init__(self):
+        self.shown = []
 
-    def popup(self, button, time, gui):
-        self.shown.append((self.brick, button, gui))
+    def popup(self, widget, event, gui, brick):
+        self.shown.append((widget, brick, event.button, gui))
+        return self
 
 
 class FakeDialog:
@@ -371,10 +371,8 @@ class TestClicks(TopologyTestCase):
 
     def setUp(self):
         super().setUp()
-        self.menus = []
-        self.patch(
-            topology, "IMenu", lambda brick, _: FakeMenu(self.menus, brick)
-        )
+        self.menus = FakeMenus()
+        self.patch(brickmenu, "popup", self.menus.popup)
         self.show(1000, 800)
 
     def press(self, brick, button=1, double=False):
@@ -392,7 +390,11 @@ class TestClicks(TopologyTestCase):
 
     def test_the_menu_of_a_brick(self):
         self.assertTrue(self.press(self.vm, button=3))
-        self.assertEqual(self.menus, [(self.vm, 3, self.gui)])
+        self.assertEqual(
+            self.menus.shown, [(self.view.area, self.vm, 3, self.gui)]
+        )
+        # kept while it shows
+        self.assertIs(self.tab._menu, self.menus)
 
     def test_a_double_click_starts_or_stops(self):
         self.assertTrue(self.press(self.vm, double=True))
@@ -406,7 +408,7 @@ class TestClicks(TopologyTestCase):
         event.button.button = 3
         event.button.x = event.button.y = 1
         self.assertFalse(self.tab.on_button_press(self.view.area, event))
-        self.assertEqual(self.menus, [])
+        self.assertEqual(self.menus.shown, [])
 
 
 class TestExport(TopologyTestCase):

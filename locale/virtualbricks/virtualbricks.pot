@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 22:54+0200\n"
+"POT-Creation-Date: 2026-09-26 23:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -198,14 +198,6 @@ msgstr ""
 msgid "Normalized name %s already in use"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
-msgid "Cannot find suspend point."
-msgstr ""
-
-#: virtualbricks/gui/gui.py
-msgid "Suspend/Resume not supported on this disk."
-msgstr ""
-
 #: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/readme.py
 msgid "Edit"
 msgstr ""
@@ -226,7 +218,7 @@ msgstr ""
 msgid "_Play"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Continue"
 msgstr ""
 
@@ -234,11 +226,11 @@ msgstr ""
 msgid "_Redo"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Restart"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Kill"
 msgstr ""
 
@@ -258,8 +250,12 @@ msgstr ""
 msgid "_Delete"
 msgstr ""
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
 msgid "Terminate"
+msgstr ""
+
+#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Suspend/Resume not supported on this disk."
 msgstr ""
 
 #: virtualbricks/gui/gui.py
@@ -419,6 +415,71 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickinfo.py
 msgid "no network card"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Connect To"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, python-brace-format
+msgid "Process {pid}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py
+msgid "Stop"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Start"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Configure…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/windows/projects.py
+msgid "Rename…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/windows/projectname.py
+msgid "Duplicate"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Attach Event…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Resume"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Delete…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Open Control Monitor"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Pause"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Suspend"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Reset"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "Cannot find suspend point."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks.py
@@ -1201,11 +1262,6 @@ msgid "The images: {names}"
 msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Stop"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
 #, python-brace-format
 msgid "{size} before compression"
 msgstr ""
@@ -1712,10 +1768,6 @@ msgid "Duplicate Project"
 msgstr ""
 
 #: virtualbricks/gui/windows/projectname.py
-msgid "Duplicate"
-msgstr ""
-
-#: virtualbricks/gui/windows/projectname.py
 msgid "New name"
 msgstr ""
 
@@ -1814,10 +1866,6 @@ msgstr ""
 
 #: virtualbricks/gui/windows/projects.py
 msgid "Export…"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Rename…"
 msgstr ""
 
 #: virtualbricks/gui/windows/projects.py

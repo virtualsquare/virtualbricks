@@ -41,8 +41,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.config.workspace import projects  # noqa: E402
-from virtualbricks.gui.interfaces import IMenu  # noqa: E402
-from virtualbricks.gui.mainwindow import picture  # noqa: E402
+from virtualbricks.gui.mainwindow import brickmenu, picture  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.mainwindow.topologyview import (  # noqa: E402
     EPSILON,
@@ -313,7 +312,8 @@ class TopologyTab(Tab, Gtk.Overlay):
         if brick is None:
             return False
         if event.button == 3:
-            IMenu(brick, None).popup(event.button, event.time, self.gui)
+            # kept while it shows
+            self._menu = brickmenu.popup(area, event, self.gui, brick)
         elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
             self.gui.startstop_brick(brick)
         return True
