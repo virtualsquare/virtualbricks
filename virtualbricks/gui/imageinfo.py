@@ -25,6 +25,10 @@ when only stopped machines use it, used by no disk, or its file is missing.
 Its facts come from ``qemu-img info``: "qcow2 · 4.0 GB disk · 1.9 GB on
 disk". Its use says which machines use it and how: "r1, r2 and r3, private
 copies · vm, the image itself". The sizes are in MB and GB, of 1000.
+
+The picker of a disk says of an image its format, the size of its disk and
+the other machines that use it; under a disk, a line says what its mode
+does.
 """
 
 from __future__ import annotations
@@ -168,3 +172,87 @@ def tooltip(image, image_state: State, uses) -> str | None:
             names=names(running)
         )
     return None
+
+
+# The picker and the disks of a machine
+
+
+def short_facts(info) -> str:
+    """The format and the size of the disk: "qcow2 · 4.0 GB"."""
+
+    return SEPARATOR.join((info.format, human_size(info.virtual_size)))
+
+
+def others_words(uses, vm) -> str:
+    """
+    Which machines other than vm use an image, and how: "r2 and r3 use it ·
+    gw writes into it"; empty for none.
+    """
+
+    others = [use for use in uses if use.vm is not vm]
+    parts = []
+    private = _machines([use for use in others if use.private])
+    if private:
+        parts.append(
+            ngettext("{names} uses it", "{names} use it", len(private)).format(
+                names=names(private)
+            )
+        )
+    itself = _machines([use for use in others if not use.private])
+    if itself:
+        parts.append(
+            ngettext(
+                "{names} writes into it", "{names} write into it", len(itself)
+            ).format(names=names(itself))
+        )
+    return SEPARATOR.join(parts)
+
+
+def option_words(image, info, uses, vm) -> str:
+    """What the picker of a disk of vm says of image, under its name."""
+
+    if not os.path.exists(image.get_path()):
+        return _("The file isn't on this computer")
+    parts = [short_facts(info)] if info is not None else []
+    others = others_words(uses, vm)
+    if others:
+        parts.append(others)
+    return SEPARATOR.join(parts)
+
+
+def disk_line(vm, image, saved, private, copy, copy_size) -> str:
+    """
+    What a disk of the machine named vm does with image in its mode: its
+    private copy, copy, which takes copy_size or isn't made yet (None), or
+    the image itself. saved is the image that the disk has now.
+    """
+
+    if image is None:
+        return _("No image: {vm} starts without this disk.").format(vm=vm)
+    name = image.get_name()
+    if not os.path.exists(image.get_path()):
+        return _(
+            "The file of {image} isn't there: find it in the Images tab, or"
+            " choose another image."
+        ).format(image=name)
+    if not private:
+        return _(
+            "{vm} writes into {image}; while {vm} runs, no other machine can"
+            " use it."
+        ).format(vm=vm, image=name)
+    copy = os.path.basename(copy)
+    if copy_size is None:
+        return _(
+            "{vm}'s changes will be kept in"
+            " {copy}, made at the next start; {image} stays as it is."
+        ).format(vm=vm, copy=copy, image=name)
+    if saved is not None and saved is not image:
+        return _(
+            "{copy} keeps {vm}'s changes to"
+            " {saved}: the next start sets it aside and begins again from"
+            " {image}."
+        ).format(copy=copy, vm=vm, saved=saved.get_name(), image=name)
+    return _(
+        "{vm}'s changes are kept in {copy},"
+        " {size}, in the project; {image} stays as it is."
+    ).format(vm=vm, copy=copy, size=human_size(copy_size), image=name)

@@ -20,7 +20,6 @@ Configuration panel of the virtual machines.
 """
 
 import os
-import string
 
 import gi
 
@@ -35,7 +34,6 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IMenu
 from virtualbricks.spawn import getQemuOutput
-from virtualbricks.tools import dispose
 from virtualbricks.bricks.virtualmachine import get_usb_devices
 from virtualbricks.gui.windows.base import (
     _,
@@ -43,12 +41,10 @@ from virtualbricks.gui.windows.base import (
     SensitiveControl,
     State,
     StateManager,
+    pango_attr_list,
 )
 from virtualbricks.gui.windows.confirmdialog import DeleteLinkConfirmDialog
-from virtualbricks.gui.windows.addimage import (
-    ExistingImageDialog,
-    NewDiskDialog,
-)
+from virtualbricks.gui.windows.disks import DisksSection
 from virtualbricks.gui.windows.ethernetdialog import AddEthernetDialog
 from virtualbricks.gui.windows.usbdev import UsbDevDialog
 
@@ -111,14 +107,6 @@ def _set_mac(column, cell_renderer, model, iter, data=None):
     cell_renderer.set_property("text", link.mac)
 
 
-class ImageFormatter(string.Formatter):
-
-    def format(self, format_string, image):
-        if image is None:
-            return ""
-        return format(image, format_string)
-
-
 BOOT_DEVICE = (
     ("", "hd1"),
     ("a", "floppy"),
@@ -131,18 +119,23 @@ SOUND_DEVICE = (
     ("ac97", "Intel 82801AA AC97 Audio"),
     ("es1370", "ENSONIQ AudioPCI ES1370"),
 )
+
+
+def _title(text):
+    """The title of a part of a tab."""
+
+    return Gtk.Label(
+        visible=True,
+        xalign=0,
+        label=text,
+        attributes=pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD)),
+    )
+
+
 MOUNT_DEVICE = (
     ("", "No"),
     ("/dev/cdrom", "cdrom"),
 )
-
-
-class ImagesBindingList(widgets.ImagesBindingList):
-
-    def __iter__(self):
-        yield None
-        for image in widgets.ImagesBindingList.__iter__(self):
-            yield image
 
 
 class QemuConfigController(ConfigController):
@@ -157,13 +150,6 @@ class QemuConfigController(ConfigController):
         ("deviceen", "device_radio"),
         ("cdromen", "cdrom_image_radio"),
         ("use_virtio", "virtio_check"),
-        ("privatehda", "hda_private_check"),
-        ("privatehdb", "hdb_private_check"),
-        ("privatehdc", "hdc_private_check"),
-        ("privatehdd", "hdd_private_check"),
-        ("privatefda", "fda_private_check"),
-        ("privatefdb", "fdb_private_check"),
-        ("privatemtdblock", "mtdblock_private_check"),
         ("kvm", "kvm_check"),
         ("kvmsm", "kvmsm_check"),
         ("novga", "novga_check"),
@@ -194,7 +180,6 @@ class QemuConfigController(ConfigController):
     )
 
     state_manager = None
-    __images_list = None
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``qemuconfig.ui``."""
@@ -262,10 +247,6 @@ class QemuConfigController(ConfigController):
         self.device_store = widgets.List()
         self.device_store.set_properties(value_member="value")
 
-        # images_store (widgets.List)
-        # Custom widget from glade-catalog.xml
-        self.images_store = widgets.List()
-
         # machine_store (widgets.List)
         # Custom widget from glade-catalog.xml
         self.machine_store = widgets.List()
@@ -286,70 +267,32 @@ class QemuConfigController(ConfigController):
             orientation=Gtk.Orientation.VERTICAL,
         )
         notebook_imgsettings = Gtk.Notebook(visible=True, can_focus=True)
-        table1 = Gtk.Grid(
+        # The Drives tab: the disks, then the CD-ROM and the start
+        drives = Gtk.Box(
             visible=True,
-            can_focus=False,
-            row_spacing=5,
-            column_spacing=5,
-        )
-        vbox1 = Gtk.Box(
-            visible=True,
-            can_focus=False,
             orientation=Gtk.Orientation.VERTICAL,
+            spacing=18,
+            margin=12,
         )
-        frame1 = Gtk.Frame(visible=True, can_focus=False, label_xalign=0)
-        vbox2 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
+        # the disks need the factory: _get_config_view() adds them
+        self.disks_box = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL
         )
-        hbox1 = Gtk.Box(visible=True, can_focus=False, spacing=6)
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("boot as device"),
-            xalign=0,
-        )
-        hbox1.pack_start(label1, False, True, 0)
-        # Custom widget from glade-catalog.xml
-        self.boot_combo = widgets.ComboBox(
-            width_request=150,
-            visible=True,
-            can_focus=False,
-            model=self.boot_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.boot_cell = widgets.CellRendererFormattable(
-            display_member="label"
-        )
-        self.boot_combo.pack_start(self.boot_cell, False)
-        hbox1.pack_start(self.boot_combo, True, True, 0)
-        vbox2.pack_start(hbox1, False, True, 0)
-        self.snapshot_check = Gtk.CheckButton(
-            label=_("Snapshot mode"),
+        drives.pack_start(self.disks_box, False, False, 0)
+        self.virtio_check = Gtk.CheckButton(
+            label=_("Use virtio block devices"),
             visible=True,
             can_focus=True,
             receives_default=False,
-            has_tooltip=True,
-            tooltip_text=_(
-                "write to temporary files instead of disk image files",
-            ),
-            use_underline=True,
             xalign=0.5,
             draw_indicator=True,
         )
-        vbox2.pack_start(self.snapshot_check, False, True, 0)
-        frame1.add(vbox2)
-        label2 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("<b>boot options</b>"),
-            use_markup=True,
+        below = Gtk.Box(visible=True, spacing=40)
+        drives.pack_start(below, False, False, 0)
+        cdrom = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=8
         )
-        frame1.set_label_widget(label2)
-        vbox1.pack_start(frame1, False, False, 0)
-        frame2 = Gtk.Frame(visible=True, can_focus=False, label_xalign=0)
+        cdrom.pack_start(_title(_("CD-ROM")), False, False, 0)
         table2 = Gtk.Grid(
             visible=True,
             can_focus=False,
@@ -403,12 +346,6 @@ class QemuConfigController(ConfigController):
             group=nocdrom_radiobutton,
         )
         table2.attach(self.cdrom_image_radio, 0, 2, 1, 1)
-        image1 = Gtk.Image(
-            visible=True,
-            can_focus=False,
-            stock="gtk-cdrom",
-        )
-        table2.attach(image1, 1, 0, 1, 1)
         # Custom widget from glade-catalog.xml
         self.mount_combo = widgets.ComboBox(
             width_request=180,
@@ -427,325 +364,58 @@ class QemuConfigController(ConfigController):
             visible=True, can_focus=False
         )
         table2.attach(self.cdrom_chooser, 1, 2, 1, 1)
-        frame2.add(table2)
-        label3 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("<b>cdrom device</b>"),
-            use_markup=True,
+        cdrom.pack_start(table2, False, False, 0)
+        below.pack_start(cdrom, False, False, 0)
+        start = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=8
         )
-        frame2.set_label_widget(label3)
-        vbox1.pack_start(frame2, False, False, 0)
-        table1.attach(vbox1, 0, 0, 1, 1)
-        vbox3 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
+        start.pack_start(_title(_("Start")), False, False, 0)
+        hbox1 = Gtk.Box(visible=True, can_focus=False, spacing=6)
+        hbox1.pack_start(
+            Gtk.Label(visible=True, label=_("Boot from"), xalign=0),
+            False,
+            True,
+            0,
         )
-        frame3 = Gtk.Frame(visible=True, can_focus=False, label_xalign=0)
-        vbox4 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            margin_left=6,
-            margin_right=6,
-            margin_top=5,
-            margin_bottom=5,
-            orientation=Gtk.Orientation.VERTICAL,
-        )
-        hbox3 = Gtk.Box(visible=True, can_focus=False)
-        image3 = Gtk.Image(
-            visible=True,
-            can_focus=False,
-            stock="gtk-harddisk",
-            icon_size=3,
-        )
-        hbox3.pack_start(image3, True, True, 0)
-        label123 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Select images for Qemu volumes"),
-            xalign=0,
-        )
-        hbox3.pack_start(label123, True, True, 0)
-        vbox4.pack_start(hbox3, False, True, 0)
-        self.virtio_check = Gtk.CheckButton(
-            label=_("Use virtio block devices"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        vbox4.pack_start(self.virtio_check, True, True, 0)
-        table3 = Gtk.Grid(
-            visible=True,
-            can_focus=False,
-            row_spacing=2,
-            column_spacing=2,
-            column_homogeneous=True,
-        )
-        label9 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("hda:"),
-            xalign=0,
-        )
-        table3.attach(label9, 0, 0, 1, 1)
-        label8 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("hdb:"),
-            xalign=0,
-        )
-        table3.attach(label8, 0, 1, 1, 1)
-        label7 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("hdc:"),
-            xalign=0,
-        )
-        table3.attach(label7, 0, 2, 1, 1)
-        label6 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("hdd:"),
-            xalign=0,
-        )
-        table3.attach(label6, 0, 3, 1, 1)
-        label5 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("fda:"),
-            xalign=0,
-        )
-        table3.attach(label5, 0, 4, 1, 1)
         # Custom widget from glade-catalog.xml
-        self.hda_combo = widgets.ComboBox(
+        self.boot_combo = widgets.ComboBox(
+            width_request=150,
             visible=True,
             can_focus=False,
-            model=self.images_store,
+            model=self.boot_store,
             active=0,
         )
         # Custom widget from glade-catalog.xml
-        self.hda_cell = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
+        self.boot_cell = widgets.CellRendererFormattable(
+            display_member="label"
         )
-        self.hda_combo.pack_start(self.hda_cell, False)
-        table3.attach(self.hda_combo, 1, 0, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.hdb_combo = widgets.ComboBox(
+        self.boot_combo.pack_start(self.boot_cell, False)
+        hbox1.pack_start(self.boot_combo, True, True, 0)
+        start.pack_start(hbox1, False, True, 0)
+        # what snapshot mode does, rather than its name
+        self.snapshot_check = Gtk.CheckButton(
+            visible=True, can_focus=True, receives_default=False
+        )
+        words = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=2
+        )
+        self.snapshot_label = Gtk.Label(visible=True, xalign=0)
+        words.pack_start(self.snapshot_label, False, False, 0)
+        hint = Gtk.Label(
             visible=True,
-            can_focus=False,
-            model=self.images_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.hdb_cell = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        self.hdb_combo.pack_start(self.hdb_cell, False)
-        table3.attach(self.hdb_combo, 1, 1, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.hdc_combo = widgets.ComboBox(
-            visible=True,
-            can_focus=False,
-            model=self.images_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.hdc_cell = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        self.hdc_combo.pack_start(self.hdc_cell, False)
-        table3.attach(self.hdc_combo, 1, 2, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.hdd_combo = widgets.ComboBox(
-            visible=True,
-            can_focus=False,
-            model=self.images_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.hdd_cell = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        self.hdd_combo.pack_start(self.hdd_cell, False)
-        table3.attach(self.hdd_combo, 1, 3, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.fda_combo = widgets.ComboBox(
-            visible=True,
-            can_focus=False,
-            model=self.images_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.fda_cell = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        self.fda_combo.pack_start(self.fda_cell, False)
-        table3.attach(self.fda_combo, 1, 4, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.fdb_combo = widgets.ComboBox(
-            visible=True,
-            can_focus=False,
-            model=self.images_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.fdb_cell = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        self.fdb_combo.pack_start(self.fdb_cell, False)
-        table3.attach(self.fdb_combo, 1, 5, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.mtdblock_combo = widgets.ComboBox(
-            visible=True,
-            can_focus=False,
-            model=self.images_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.mtdblock_cell = widgets.CellRendererFormattable(
-            format_string="n",
-            formatting_enabled=True,
-        )
-        self.mtdblock_combo.pack_start(self.mtdblock_cell, False)
-        table3.attach(self.mtdblock_combo, 1, 6, 1, 1)
-        self.hda_private_check = Gtk.CheckButton(
-            label=_("Private COW"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        table3.attach(self.hda_private_check, 2, 0, 1, 1)
-        self.hdb_private_check = Gtk.CheckButton(
-            label=_("Private COW"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        table3.attach(self.hdb_private_check, 2, 1, 1, 1)
-        self.hdc_private_check = Gtk.CheckButton(
-            label=_("Private COW"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        table3.attach(self.hdc_private_check, 2, 2, 1, 1)
-        self.hdd_private_check = Gtk.CheckButton(
-            label=_("Private COW"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        table3.attach(self.hdd_private_check, 2, 3, 1, 1)
-        self.fda_private_check = Gtk.CheckButton(
-            label=_("Private COW"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        table3.attach(self.fda_private_check, 2, 4, 1, 1)
-        self.fdb_private_check = Gtk.CheckButton(
-            label=_("Private COW"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        table3.attach(self.fdb_private_check, 2, 5, 1, 1)
-        self.mtdblock_private_check = Gtk.CheckButton(
-            label=_("Private COW"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        table3.attach(self.mtdblock_private_check, 2, 6, 1, 1)
-        label4 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("fdb:"),
             xalign=0,
+            wrap=True,
+            max_width_chars=44,
+            label=_(
+                "Snapshot mode: the disks and their images stay as they"
+                " were."
+            ),
         )
-        table3.attach(label4, 0, 5, 1, 1)
-        label10 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("mtdblock:"),
-            xalign=0,
-        )
-        table3.attach(label10, 0, 6, 1, 1)
-        vbox4.pack_start(table3, False, True, 0)
-        frame3.add(vbox4)
-        label11 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("<b>additional media</b>"),
-            use_markup=True,
-        )
-        frame3.set_label_widget(label11)
-        vbox3.pack_start(frame3, False, True, 0)
-        frame4 = Gtk.Frame(visible=True, can_focus=False, label_xalign=0)
-        hbuttonbox1 = Gtk.ButtonBox(
-            visible=True,
-            can_focus=False,
-            margin_left=6,
-            margin_right=6,
-            margin_top=6,
-            margin_bottom=6,
-            spacing=5,
-            layout_style=Gtk.ButtonBoxStyle.CENTER,
-        )
-        newimage_button = Gtk.Button(
-            label=_("New image\nfrom file"),
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-        )
-        hbuttonbox1.pack_start(newimage_button, False, False, 0)
-        configimage_button = Gtk.Button(
-            label=_("Configure \ndisk images"),
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-        )
-        hbuttonbox1.pack_start(configimage_button, False, False, 0)
-        newempty_button = Gtk.Button(
-            label=_("New (empty)\ndisk image"),
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-        )
-        hbuttonbox1.pack_start(newempty_button, False, False, 0)
-        frame4.add(hbuttonbox1)
-        label32 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("<b>disk images</b>"),
-            use_markup=True,
-        )
-        frame4.set_label_widget(label32)
-        vbox3.pack_start(frame4, False, True, 0)
-        table1.attach(vbox3, 1, 0, 1, 1)
+        hint.get_style_context().add_class("dim-label")
+        words.pack_start(hint, False, False, 0)
+        self.snapshot_check.add(words)
+        start.pack_start(self.snapshot_check, False, False, 0)
+        below.pack_start(start, False, False, 0)
         hbox1b = Gtk.Box(visible=True, can_focus=False)
         image11 = Gtk.Image(
             visible=True,
@@ -759,7 +429,12 @@ class QemuConfigController(ConfigController):
             label=_("Drives"),
         )
         hbox1b.pack_start(label12, True, True, 0)
-        notebook_imgsettings.append_page(table1, hbox1b)
+        # a machine may have up to seven disks
+        scrolled = Gtk.ScrolledWindow(
+            visible=True, hscrollbar_policy=Gtk.PolicyType.NEVER
+        )
+        scrolled.add(drives)
+        notebook_imgsettings.append_page(scrolled, hbox1b)
         hbox4 = Gtk.Box(
             visible=True,
             can_focus=False,
@@ -1501,18 +1176,6 @@ class QemuConfigController(ConfigController):
         self.panel.pack_start(notebook_imgsettings, True, True, 0)
 
         # Signals
-        newimage_button.connect(
-            "clicked",
-            self.on_newimage_button_clicked,
-        )
-        configimage_button.connect(
-            "clicked",
-            self.on_configimage_button_clicked,
-        )
-        newempty_button.connect(
-            "clicked",
-            self.on_newempty_button_clicked,
-        )
         self.argv0_combo.connect("changed", self.on_argv0_combo_changed)
         self.bind_button.connect("clicked", self.on_bind_button_clicked)
         network_cards_view.connect(
@@ -1691,46 +1354,16 @@ class QemuConfigController(ConfigController):
             self.mount_cell, self.mount_cell.set_text
         )
 
-        # harddisks
-        self.__images_list = ImagesBindingList(gui.factory)
-        formatter = ImageFormatter()
-        self.images_store.set_data_source(self.__images_list)
-        self.hda_combo.set_selected_value(self.original.disk("hda").image)
-        self.hda_combo.set_cell_data_func(
-            self.hda_cell, self.hda_cell.set_text
+        # the disks, and the use of virtio beside Add Disk
+        self.disks = DisksSection(
+            self.original, gui.brickfactory, manage=gui.show_images
         )
-        self.hda_cell.set_property("formatter", formatter)
-        self.hdb_combo.set_selected_value(self.original.disk("hdb").image)
-        self.hdb_combo.set_cell_data_func(
-            self.hdb_cell, self.hdb_cell.set_text
-        )
-        self.hdb_cell.set_property("formatter", formatter)
-        self.hdc_combo.set_selected_value(self.original.disk("hdc").image)
-        self.hdc_combo.set_cell_data_func(
-            self.hdc_cell, self.hdc_cell.set_text
-        )
-        self.hdc_cell.set_property("formatter", formatter)
-        self.hdd_combo.set_selected_value(self.original.disk("hdd").image)
-        self.hdd_combo.set_cell_data_func(
-            self.hdd_cell, self.hdd_cell.set_text
-        )
-        self.hdd_cell.set_property("formatter", formatter)
-        self.fda_combo.set_selected_value(self.original.disk("fda").image)
-        self.fda_combo.set_cell_data_func(
-            self.fda_cell, self.fda_cell.set_text
-        )
-        self.fda_cell.set_property("formatter", formatter)
-        self.fdb_combo.set_selected_value(self.original.disk("fdb").image)
-        self.fdb_combo.set_cell_data_func(
-            self.fdb_cell, self.fdb_cell.set_text
-        )
-        self.fdb_cell.set_property("formatter", formatter)
-        self.mtdblock_combo.set_selected_value(
-            self.original.disk("mtdblock").image
-        )
-        self.mtdblock_cell.set_property("formatter", formatter)
-        self.mtdblock_combo.set_cell_data_func(
-            self.mtdblock_cell, self.mtdblock_cell.set_text
+        self.disks.footer.pack_start(self.virtio_check, False, False, 0)
+        self.disks_box.pack_start(self.disks, False, False, 0)
+        self.snapshot_label.set_text(
+            _("Forget every change when {name} stops").format(
+                name=self.original.get_name()
+            )
         )
 
         cfg = self.original.config
@@ -1759,16 +1392,8 @@ class QemuConfigController(ConfigController):
         cfg["soundhw"] = self.sound_combo.get_selected_value()
         cfg["device"] = self.mount_combo.get_selected_value()
 
-        # harddisks
-        self.original.set_image("hda", self.hda_combo.get_selected_value())
-        self.original.set_image("hdb", self.hdb_combo.get_selected_value())
-        self.original.set_image("hdc", self.hdc_combo.get_selected_value())
-        self.original.set_image("hdd", self.hdd_combo.get_selected_value())
-        self.original.set_image("fda", self.fda_combo.get_selected_value())
-        self.original.set_image("fdb", self.fdb_combo.get_selected_value())
-        self.original.set_image(
-            "mtdblock", self.mtdblock_combo.get_selected_value()
-        )
+        # the images of the disks, and their modes
+        cfg.update(self.disks.apply())
 
         for config_name, widget_name in self.config_to_widget_mapping:
             cfg[config_name] = getattr(self, widget_name).get_active()
@@ -1788,21 +1413,7 @@ class QemuConfigController(ConfigController):
         self.original.update_usbdevlist(devs)
         self.original.set(cfg)
 
-    def __dispose__(self):
-        if self.__images_list is not None:
-            dispose(self.__images_list)
-            self.__images_list = None
-
     # signals
-
-    def on_newimage_button_clicked(self, button):
-        ExistingImageDialog(self.gui.brickfactory).show(self.gui.window)
-
-    def on_configimage_button_clicked(self, button):
-        self.gui.show_images()
-
-    def on_newempty_button_clicked(self, button):
-        NewDiskDialog(self.gui.brickfactory).show(self.gui.window)
 
     def on_argv0_combo_changed(self, combobox):
         arch = self.argv0_combo.get_selected_value()

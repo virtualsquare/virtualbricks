@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 19:21+0200\n"
+"POT-Creation-Date: 2026-09-27 19:33+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -267,7 +267,7 @@ msgstr[1] ""
 msgid "{names}, the image itself"
 msgstr ""
 
-#: virtualbricks/gui/imageinfo.py
+#: virtualbricks/gui/imageinfo.py virtualbricks/gui/windows/imagepicker.py
 #, python-brace-format
 msgid "{path} isn't there"
 msgstr ""
@@ -283,6 +283,62 @@ msgid "{names} runs"
 msgid_plural "{names} run"
 msgstr[0] ""
 msgstr[1] ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{names} uses it"
+msgid_plural "{names} use it"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{names} writes into it"
+msgid_plural "{names} write into it"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/imageinfo.py
+msgid "The file isn't on this computer"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "No image: {vm} starts without this disk."
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid ""
+"The file of {image} isn't there: find it in the Images tab, or choose "
+"another image."
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{vm} writes into {image}; while {vm} runs, no other machine can use it."
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid ""
+"{vm}'s changes will be kept in {copy}, made at the next start; {image} stays "
+"as it is."
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid ""
+"{copy} keeps {vm}'s changes to {saved}: the next start sets it aside and "
+"begins again from {image}."
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid ""
+"{vm}'s changes are kept in {copy}, {size}, in the project; {image} stays as "
+"it is."
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
@@ -520,6 +576,7 @@ msgstr "_Avvia/Ferma"
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #: virtualbricks/gui/mainwindow/events/eventmenu.py
+#: virtualbricks/gui/windows/qemuconfig.py
 #, fuzzy
 msgid "Start"
 msgstr "Avvia Mattone"
@@ -978,7 +1035,7 @@ msgid "Details…"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/images/imagemenu.py
-#: virtualbricks/gui/windows/projects.py
+#: virtualbricks/gui/windows/disks.py virtualbricks/gui/windows/projects.py
 #, fuzzy
 msgid "Show in Files"
 msgstr "Mostra impostazioni"
@@ -1047,6 +1104,7 @@ msgid "Existing Image…"
 msgstr "Esporta come Immagine"
 
 #: virtualbricks/gui/mainwindow/images/tab.py
+#: virtualbricks/gui/windows/imagepicker.py
 msgid "New Empty Disk…"
 msgstr ""
 
@@ -1606,6 +1664,38 @@ msgstr ""
 msgid "Do you really want to delete the network interface?"
 msgstr "Si vuole veramente cancellare "
 
+#: virtualbricks/gui/windows/disks.py
+#, fuzzy
+msgid "Private copy"
+msgstr "COW Privato"
+
+#: virtualbricks/gui/windows/disks.py
+#, fuzzy
+msgid "The image itself"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/windows/disks.py
+#, fuzzy
+msgid "Remove Disk"
+msgstr "Rimuovi"
+
+#: virtualbricks/gui/windows/disks.py
+#, python-brace-format
+msgid "More for {device}"
+msgstr ""
+
+#: virtualbricks/gui/windows/disks.py
+msgid "Disks"
+msgstr ""
+
+#: virtualbricks/gui/windows/disks.py
+msgid "No disk: add one to give the machine its disk."
+msgstr ""
+
+#: virtualbricks/gui/windows/disks.py
+msgid "Add Disk"
+msgstr ""
+
 #: virtualbricks/gui/windows/ethernetdialog.py
 msgid "rtl8139"
 msgstr ""
@@ -1827,6 +1917,31 @@ msgid ""
 "The private copies of its disks are pointed at the file first, so that they "
 "keep their changes."
 msgstr ""
+
+#: virtualbricks/gui/windows/imagepicker.py
+#, fuzzy
+msgid "No image"
+msgstr "Salva come..."
+
+#: virtualbricks/gui/windows/imagepicker.py
+#, fuzzy
+msgid "Find an image"
+msgstr "immagini disco"
+
+#: virtualbricks/gui/windows/imagepicker.py
+#, fuzzy
+msgid "Add an Existing Image…"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/windows/imagepicker.py
+#, fuzzy
+msgid "Manage Images…"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/windows/imagepicker.py
+#, fuzzy
+msgid "Choose an image for this disk"
+msgstr "Scegli un nuovo nome:"
 
 #: virtualbricks/gui/windows/importdialog.py
 msgid "Reading the archive"
@@ -2450,20 +2565,13 @@ msgid "The images it uses stay in your image library."
 msgstr ""
 
 #: virtualbricks/gui/windows/qemuconfig.py
-msgid "boot as device"
-msgstr "fai boot dal dispositivo"
+#, fuzzy
+msgid "Use virtio block devices"
+msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
 
 #: virtualbricks/gui/windows/qemuconfig.py
-msgid "Snapshot mode"
-msgstr "Modalità Snapshot"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "write to temporary files instead of disk image files"
-msgstr "scrivi su un file temporaneo invece delle immagini disco"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>boot options</b>"
-msgstr "<b>opzioni di boot</b>"
+msgid "CD-ROM"
+msgstr ""
 
 #: virtualbricks/gui/windows/qemuconfig.py
 msgid "no cdrom"
@@ -2486,79 +2594,12 @@ msgid "use image as cdrom"
 msgstr "usa immagine come cdrom"
 
 #: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>cdrom device</b>"
-msgstr "<b>dispositivo cdrom</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Select images for Qemu volumes"
-msgstr "Seleziona immagini per supporti Qemu"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Use virtio block devices"
-msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "hda:"
+msgid "Boot from"
 msgstr ""
 
 #: virtualbricks/gui/windows/qemuconfig.py
-msgid "hdb:"
+msgid "Snapshot mode: the disks and their images stay as they were."
 msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "hdc:"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "hdd:"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "fda:"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Private COW"
-msgstr "COW Privato"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "fdb:"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "mtdblock:"
-msgstr "mtdblock"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>additional media</b>"
-msgstr "<b>supporti aggiuntivi</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid ""
-"New image\n"
-"from file"
-msgstr "Selezionare il file immagine"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid ""
-"Configure \n"
-"disk images"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid ""
-"New (empty)\n"
-"disk image"
-msgstr "crea una nuova immagine vuota"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "<b>disk images</b>"
-msgstr "<b>Mattoni aggiunti</b>"
 
 #: virtualbricks/gui/windows/qemuconfig.py
 msgid "Drives"
@@ -2773,6 +2814,11 @@ msgstr "Abilita il debugging del kernel"
 
 #: virtualbricks/gui/windows/qemuconfig.py
 msgid "USB disabled or /dev/bus/usb not accessible"
+msgstr ""
+
+#: virtualbricks/gui/windows/qemuconfig.py
+#, python-brace-format
+msgid "Forget every change when {name} stops"
 msgstr ""
 
 #: virtualbricks/gui/windows/renamedialog.py
@@ -3059,6 +3105,47 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "boot as device"
+#~ msgstr "fai boot dal dispositivo"
+
+#~ msgid "Snapshot mode"
+#~ msgstr "Modalità Snapshot"
+
+#~ msgid "write to temporary files instead of disk image files"
+#~ msgstr "scrivi su un file temporaneo invece delle immagini disco"
+
+#~ msgid "<b>boot options</b>"
+#~ msgstr "<b>opzioni di boot</b>"
+
+#~ msgid "<b>cdrom device</b>"
+#~ msgstr "<b>dispositivo cdrom</b>"
+
+#~ msgid "Select images for Qemu volumes"
+#~ msgstr "Seleziona immagini per supporti Qemu"
+
+#, fuzzy
+#~ msgid "mtdblock:"
+#~ msgstr "mtdblock"
+
+#~ msgid "<b>additional media</b>"
+#~ msgstr "<b>supporti aggiuntivi</b>"
+
+#, fuzzy
+#~ msgid ""
+#~ "New image\n"
+#~ "from file"
+#~ msgstr "Selezionare il file immagine"
+
+#, fuzzy
+#~ msgid ""
+#~ "New (empty)\n"
+#~ "disk image"
+#~ msgstr "crea una nuova immagine vuota"
+
+#, fuzzy
+#~ msgid "<b>disk images</b>"
+#~ msgstr "<b>Mattoni aggiunti</b>"
 
 #~ msgid "_Create new image"
 #~ msgstr "_Crea nuova immagine"

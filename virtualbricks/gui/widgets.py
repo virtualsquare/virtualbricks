@@ -15,14 +15,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from zope.interface import implementer
 from gi.repository import Gtk
 from gi.repository import GObject
-
-
-from virtualbricks import observable
-from virtualbricks.tools import dispose
-from virtualbricks.gui import interfaces
 
 if False:
     _ = str  # make pyflakes happy
@@ -126,7 +120,6 @@ class List(Gtk.ListStore):
         ),
     }
     _value_member = ""
-    _ibinding_list = None
 
     def __init__(self):
         Gtk.ListStore.__init__(self, GObject.TYPE_PYOBJECT)
@@ -144,79 +137,9 @@ class List(Gtk.ListStore):
             raise TypeError("Unknown property %r" % (pspec.name,))
 
     def set_data_source(self, lst):
-        dispose(self)
         self.clear()
         for item in lst:
             self.append((item,))
-        if interfaces.IBindingList.providedBy(lst):
-            self._ibinding_list = lst
-            lst.added.connect(self.on_add)
-            lst.removed.connect(self.on_remove)
-            lst.changed.connect(self.on_changed)
-
-    def on_add(self, value):
-        self.append((value,))
-
-    def on_remove(self, value):
-        mbr = self._value_member
-        itr = self.get_iter_first()
-        while itr:
-            obj = self.get_value(itr, 0)
-            if (mbr and getattr(obj, mbr) == value) or obj == value:
-                self.remove(itr)
-                return
-            itr = self.iter_next(itr)
-
-    def on_changed(self, value):
-        mbr = self._value_member
-        itr = self.get_iter_first()
-        while itr:
-            obj = self.get_value(itr, 0)
-            if (mbr and getattr(obj, mbr) == value) or obj == value:
-                self.row_changed(self.get_path(itr), itr)
-            itr = self.iter_next(itr)
-
-    def __dispose__(self):
-        if self._ibinding_list is not None:
-            dispose(self._ibinding_list)
-            self._ibinding_list = None
-
-
-@implementer(interfaces.IBindingList)
-class AbstractBindingList:
-
-    def __init__(self, factory):
-        self._factory = factory
-        self._observable = observable.Observable("added", "removed", "changed")
-        self.added = observable.Event(self._observable, "added")
-        self.removed = observable.Event(self._observable, "removed")
-        self.changed = observable.Event(self._observable, "changed")
-
-    def _on_added(self, obj):
-        self._observable.notify("added", obj)
-
-    def _on_removed(self, obj):
-        self._observable.notify("removed", obj)
-
-    def _on_changed(self, obj):
-        self._observable.notify("changed", obj)
-
-
-class ImagesBindingList(AbstractBindingList):
-
-    def __init__(self, factory):
-        AbstractBindingList.__init__(self, factory)
-        factory.connect("image-added", self._on_added)
-        factory.connect("image-removed", self._on_removed)
-        factory.connect("image-changed", self._on_changed)
-
-    def __dispose__(self):
-        self._factory.disconnect("image-added", self._on_added)
-        self._factory.disconnect("image-removed", self._on_removed)
-        self._factory.disconnect("image-changed", self._on_changed)
-
-    def __iter__(self):
-        return self._factory.iter_disk_images()
 
 
 class ListEntry:
