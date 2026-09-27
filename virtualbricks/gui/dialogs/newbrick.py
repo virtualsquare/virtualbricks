@@ -31,7 +31,7 @@ from virtualbricks import errors
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.i18n import _
 from virtualbricks.gui.dialogs.base import (
-    _Dialog,
+    Window,
     destroy_on_exit,
     load_pixbuf,
 )
@@ -42,7 +42,7 @@ brick_invalid_name = "Cannot create brick: Invalid name."
 created = "Created successfully"
 
 
-class NewBrickDialog(_Dialog):
+class NewBrickDialog(Window):
     """
     Create a new brick: the type is chosen with a radio button for each brick
     type, the name of the radio button is the type.

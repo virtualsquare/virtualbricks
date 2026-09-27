@@ -9,7 +9,7 @@ from typing import List
 
 import gi
 
-from virtualbricks.gui.dialogs.base import _Dialog
+from virtualbricks.gui.dialogs.base import Window
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
@@ -95,7 +95,7 @@ warszawianka
 LOGO_RESOURCE = "virtualbricks.png"
 
 
-class AboutDialog(_Dialog):
+class AboutDialog(Window):
 
     AboutDialog: Gtk.AboutDialog
 

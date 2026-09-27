@@ -26,10 +26,10 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import _Dialog, pango_attr_list
+from virtualbricks.gui.dialogs.base import Window, pango_attr_list
 
 
-class _ConfirmDialog(_Dialog):
+class _ConfirmDialog(Window):
     """
     A question with Yes and No buttons: a primary text and an optional
     secondary text. The subclasses handle the response.

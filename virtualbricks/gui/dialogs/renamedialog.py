@@ -32,14 +32,14 @@ from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import _Dialog, destroy_on_exit
+from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
 
 logger = Logger()
 
 invalid_name = "Invalid name {name}"
 
 
-class RenameDialog(_Dialog):
+class RenameDialog(Window):
     """
     Rename a brick or an event. The OK button is sensitive only when the name
     is valid and not in use.

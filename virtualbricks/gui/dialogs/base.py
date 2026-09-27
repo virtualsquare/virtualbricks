@@ -18,12 +18,11 @@
 """
 Code shared by the windows and dialogs that build their UI in Python.
 
-Every window subclasses ``_Dialog`` or ``Window`` and implements
-``build_ui()``, that creates the widgets, and ``get_root_widget()``, that
-returns the main widget. Who wants to know when a window closes connects to
-the ``destroy`` signal of that widget. The brick
-configuration panels have their own base, in
-:mod:`virtualbricks.gui.mainwindow.bricks.config.base`.
+Every window subclasses ``Window`` and implements ``build_ui()``, that
+creates the widgets, and ``get_root_widget()``, that returns the main
+widget. Who wants to know when a window closes connects to the ``destroy``
+signal of that widget. The brick configuration panels have their own
+base, in :mod:`virtualbricks.gui.mainwindow.bricks.config.base`.
 """
 
 import functools
@@ -69,22 +68,18 @@ def destroy_on_exit(func: Callable) -> Callable:
     return on_response
 
 
-class _Dialog:
-    """A window or a dialog: show() shows it, above parent if given."""
+class Window:
+    """
+    A window or a dialog. The UI is built when the instance is made, unless
+    a subclass makes it in its own ``__init__``; show() shows it, above
+    parent if given.
+    """
+
+    def __init__(self):
+        self.build_ui()
 
     def show(self, parent=None):
         window = self.get_root_widget()
         if parent is not None:
             window.set_transient_for(parent)
         window.show()
-
-
-class Window(_Dialog):
-    """
-    Base class for the dialogs that used ``virtualbricks.gui.dialogs.Window``.
-
-    The UI is built when the instance is created.
-    """
-
-    def __init__(self):
-        self.build_ui()

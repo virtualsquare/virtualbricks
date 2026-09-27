@@ -54,7 +54,7 @@ from virtualbricks.config import archive, images
 from virtualbricks.config.workspace import projects
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import check_name
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.dialogs.base import Window, pango_attr_list
 from virtualbricks.i18n import _, ngettext
 
 logger = Logger()
@@ -137,19 +137,11 @@ def disks_words(uses) -> str:
     return words
 
 
-class _Dialog:
-
-    def show(self, parent=None):
-        if parent is not None:
-            self.dialog.set_transient_for(parent)
-        self.dialog.show()
+class RemoveImageDialog(Window):
+    """Remove an image from the library, and maybe its file."""
 
     def get_root_widget(self):
         return self.dialog
-
-
-class RemoveImageDialog(_Dialog):
-    """Remove an image from the library, and maybe its file."""
 
     def __init__(self, factory, image, workspace=None):
         self.factory = factory
@@ -235,8 +227,11 @@ class RemoveImageDialog(_Dialog):
             logger.error(remove_failed, path=path, error=exc)
 
 
-class FindFileDialog(_Dialog):
+class FindFileDialog(Window):
     """Give an image whose file is missing its file again."""
+
+    def get_root_widget(self):
+        return self.dialog
 
     def __init__(self, factory, image, workspace=None, qemu_img=None):
         self.factory = factory
@@ -352,7 +347,7 @@ def _stop_first(names) -> str:
     return _("Stop {names} first.").format(names=imageinfo.names(names))
 
 
-class _JobDialog(_Dialog):
+class _JobDialog(Window):
     """
     A dialog that runs a job of the archive process: its progress shows,
     and Cancel stops it.
@@ -361,6 +356,9 @@ class _JobDialog(_Dialog):
     job = None
     # called when the job is done
     on_done = None
+
+    def get_root_widget(self):
+        return self.dialog
 
     def _job_rows(self, box):
         self.progress = Gtk.ProgressBar(show_text=True, no_show_all=True)
@@ -668,8 +666,11 @@ class MergeDialog(_JobDialog):
         return dialog
 
 
-class StartOverDialog(_Dialog):
+class StartOverDialog(Window):
     """Start a disk over from its image, without its private copy."""
+
+    def get_root_widget(self):
+        return self.dialog
 
     def __init__(self, vm, device, workspace=None) -> None:
         self.vm = vm

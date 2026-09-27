@@ -37,7 +37,7 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import _Dialog, destroy_on_exit
+from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
 
 logger = Logger()
 
@@ -167,7 +167,7 @@ def combobox_set_active_value(combobox, value, column):
         itr = model.iter_next(itr)
 
 
-class SettingsDialog(_Dialog):
+class SettingsDialog(Window):
     """The preferences: of the application, and of the open project."""
 
     def __init__(self, virtualbricks_gui):

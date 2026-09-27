@@ -27,10 +27,10 @@ from gi.repository import Gdk, Gtk
 from twisted.internet import task
 
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import _Dialog
+from virtualbricks.gui.dialogs.base import Window
 
 
-class ProgressBarDialog(_Dialog):
+class ProgressBarDialog(Window):
     """
     A pulsing progress bar shown until the deferred fires.
     """

@@ -26,10 +26,10 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import _Dialog, destroy_on_exit
+from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
 
 
-class UsbDevDialog(_Dialog):
+class UsbDevDialog(Window):
     """
     Choose the host USB devices passed to a virtual machine.
     """
