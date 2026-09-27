@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 06:24+0200\n"
+"POT-Creation-Date: 2026-09-27 07:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -403,24 +403,10 @@ msgid "process {pid}"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricklist.py
-#, fuzzy, python-brace-format
-msgid "Stop {name}"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/mainwindow/bricklist.py
-#, fuzzy, python-brace-format
-msgid "Start {name}"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/mainwindow/bricklist.py
-#, fuzzy, python-brace-format
-msgid "Menu of {name}"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/mainwindow/bricklist.py
-#, python-brace-format
-msgid "No running brick matches “{text}”"
-msgstr ""
+#: virtualbricks/gui/windows/importdialog.py
+#, fuzzy
+msgid "No bricks"
+msgstr "_Importa Mattoni"
 
 #: virtualbricks/gui/mainwindow/bricklist.py
 #, python-brace-format
@@ -433,10 +419,9 @@ msgid "No brick is running"
 msgstr "_Importa Mattoni"
 
 #: virtualbricks/gui/mainwindow/bricklist.py
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "No bricks"
-msgstr "_Importa Mattoni"
+#, python-brace-format
+msgid "No running brick matches “{text}”"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricklist.py
 #, python-brace-format
@@ -556,20 +541,6 @@ msgid "Search bricks"
 msgstr "Nuovo Mattone"
 
 #: virtualbricks/gui/mainwindow/bricks.py
-msgid "All"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks.py
-#, fuzzy
-msgid "Start All"
-msgstr "Avvia Tutti i Mattoni"
-
-#: virtualbricks/gui/mainwindow/bricks.py
-#, fuzzy
-msgid "Stop All"
-msgstr "Ferma Tutti i Mattoni"
-
-#: virtualbricks/gui/mainwindow/bricks.py
 #, fuzzy
 msgid "No Bricks Yet"
 msgstr "_Importa Mattoni"
@@ -584,16 +555,6 @@ msgstr ""
 #, fuzzy, python-brace-format
 msgid "{kind} settings"
 msgstr "Impostazion manuali"
-
-#: virtualbricks/gui/mainwindow/bricks.py virtualbricks/gui/windows/base.py
-#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "_Cancel"
-msgstr "Annulla"
-
-#: virtualbricks/gui/mainwindow/bricks.py virtualbricks/gui/windows/base.py
-msgid "_OK"
-msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
 msgid "Icon"
@@ -708,6 +669,45 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/readme.py
 msgid "Syntax"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+#, fuzzy, python-brace-format
+msgid "Stop {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+#, fuzzy, python-brace-format
+msgid "Start {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+#, fuzzy, python-brace-format
+msgid "Menu of {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+msgid "All"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+#, fuzzy
+msgid "Start All"
+msgstr "Avvia Tutti i Mattoni"
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+#, fuzzy
+msgid "Stop All"
+msgstr "Ferma Tutti i Mattoni"
+
+#: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/gui/windows/base.py
+#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "_Cancel"
+msgstr "Annulla"
+
+#: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/gui/windows/base.py
+msgid "_OK"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py

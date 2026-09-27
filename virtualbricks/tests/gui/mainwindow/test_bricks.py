@@ -33,7 +33,9 @@ if has_display:
     # the panels of the bricks, adapters of IConfigController
     import virtualbricks.gui.gui  # noqa: F401
     from virtualbricks.gui.mainwindow import brickmenu, bricks
-    from virtualbricks.gui.mainwindow.bricks import BricksTab, count, types
+    from virtualbricks.gui.mainwindow import rowtab
+    from virtualbricks.gui.mainwindow.bricks import BricksTab, count
+    from virtualbricks.gui.mainwindow.rowtab import types
     from virtualbricks.gui.mainwindow.picture import Icons
 
 
@@ -238,14 +240,14 @@ class TestTheRowAboveTheList(BricksTestCase):
 
     def test_how_it_is_made(self):
         tab = self.tab
-        self.assertEqual(tab.get_children(), [tab.bricks_page])
-        self.assertIs(tab.get_visible_child(), tab.bricks_page)
-        header, separator, pages = tab.bricks_page.get_children()
+        self.assertEqual(tab.get_children(), [tab.main_page])
+        self.assertIs(tab.get_visible_child(), tab.main_page)
+        header, separator, pages = tab.main_page.get_children()
         self.assertIsInstance(separator, Gtk.Separator)
         self.assertEqual(
             [
                 (expand, fill)
-                for _child, expand, fill in packing(tab.bricks_page)
+                for _child, expand, fill in packing(tab.main_page)
             ],
             [(False, False), (False, False), (True, True)],
         )
@@ -420,8 +422,8 @@ class TestAProjectWithoutBricks(BricksTestCase):
         self.assertTrue(self.tab.search.get_sensitive())
 
     def test_an_icon_not_there(self):
-        self.patch(bricks.graphics, "get_data_filename", lambda name: "/none")
-        self.assertIsNone(bricks.empty_icon())
+        self.patch(rowtab.graphics, "get_data_filename", lambda name: "/none")
+        self.assertIsNone(rowtab.empty_icon("switch.png"))
 
 
 class TestTheKeys(BricksTestCase):
@@ -553,7 +555,7 @@ class TestTheMouse(BricksTestCase):
         self.brick("qemu", "vm")
         self.show()
         self.assertTrue(self.click(3, 70))
-        self.assertIs(self.tab.list.selected_brick(), self.factory.bricks[1])
+        self.assertIs(self.tab.list.selected(), self.factory.bricks[1])
         self.assertIs(
             self.tab.get_toplevel().get_focus(),
             self.tab.list.row_of(self.factory.bricks[1]),
@@ -632,7 +634,7 @@ class TestTheSettings(BricksTestCase):
         self.assertEqual(self.sw.config.numports, 8)
         self.assertIsNone(tab.configuring)
         self.assertIsNone(tab.settings)
-        self.assertIs(tab.get_visible_child(), tab.bricks_page)
+        self.assertIs(tab.get_visible_child(), tab.main_page)
         # back on the brick
         row = tab.list.row_of(self.sw)
         self.assertIs(tab.list.get_selected_row(), row)
@@ -645,7 +647,7 @@ class TestTheSettings(BricksTestCase):
         panel.get_child_at(1, 0).set_value(8)
         self.tab.cancel_button.clicked()
         self.assertEqual(self.sw.config.numports, 32)
-        self.assertIs(self.tab.get_visible_child(), self.tab.bricks_page)
+        self.assertIs(self.tab.get_visible_child(), self.tab.main_page)
 
     def test_how_the_page_is_made(self):
         calls, controllers = self.fake_panels()
@@ -765,7 +767,7 @@ class TestTheSettings(BricksTestCase):
         self.assertIs(self.tab.configuring, vm)
         self.assertIsNot(self.tab.settings, first)
         self.assertEqual(
-            self.tab.get_children(), [self.tab.bricks_page, self.tab.settings]
+            self.tab.get_children(), [self.tab.main_page, self.tab.settings]
         )
 
     def test_the_brick_deleted(self):
@@ -790,7 +792,7 @@ class TestTheSettings(BricksTestCase):
     def test_a_router_has_no_panel(self):
         self.tab.configure(self.brick("router", "r"))
         self.assertIsNone(self.tab.configuring)
-        self.assertIs(self.tab.get_visible_child(), self.tab.bricks_page)
+        self.assertIs(self.tab.get_visible_child(), self.tab.main_page)
 
     def test_the_keys_of_the_list_wait(self):
         window = self.show()
@@ -801,13 +803,13 @@ class TestTheSettings(BricksTestCase):
 
     def test_nothing_to_close(self):
         self.tab.close_settings()
-        self.assertIs(self.tab.get_visible_child(), self.tab.bricks_page)
+        self.assertIs(self.tab.get_visible_child(), self.tab.main_page)
 
     def test_a_brick_gone_from_the_list(self):
         # the list follows the factory first
         calls, controllers = self.fake_panels()
         self.tab.configure(self.sw)
-        self.tab.list.on_brick_removed(self.sw)
+        self.tab.list.on_removed(self.sw)
         self.tab.close_settings()
         self.assertIsNone(self.tab.list.get_selected_row())
 

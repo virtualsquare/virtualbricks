@@ -27,7 +27,7 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gdk, GObject, Gtk
 
-    from virtualbricks.gui.mainwindow import bricklist
+    from virtualbricks.gui.mainwindow import rowtab
     from virtualbricks.gui.mainwindow.bricklist import BrickList, BrickRow
 
 
@@ -93,11 +93,11 @@ class BrickListTestCase(GuiTestCase):
         return self.list.row_of(brick)
 
     def rows(self):
-        return [row.brick for row in self.list.get_children()]
+        return [row.item for row in self.list.get_children()]
 
     def shown(self):
         return [
-            row.brick
+            row.item
             for row in self.list.get_children()
             if isinstance(row, BrickRow) and row.get_child_visible()
         ]
@@ -227,7 +227,7 @@ class TestTheRows(BrickListTestCase):
         )
         # GTK keeps 8 bits of it
         self.assertAlmostEqual(
-            row.icon.get_opacity(), bricklist.STOPPED_OPACITY, places=2
+            row.icon.get_opacity(), rowtab.STOPPED_OPACITY, places=2
         )
         self.assertIsNot(row.icon.get_pixbuf(), None)
         self.running(self.sw)
@@ -328,9 +328,9 @@ class TestTheRows(BrickListTestCase):
         row.popover.emit("closed")
 
     def test_the_selected_brick(self):
-        self.assertIsNone(self.list.selected_brick())
+        self.assertIsNone(self.list.selected())
         self.list.select_row(self.row(self.tap))
-        self.assertIs(self.list.selected_brick(), self.tap)
+        self.assertIs(self.list.selected(), self.tap)
 
 
 class TestWhatTheListShows(BrickListTestCase):
