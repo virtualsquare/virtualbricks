@@ -119,9 +119,6 @@ class FakeController:
         self.calls.append("cancel")
         gui.curtain_down()
 
-    def __dispose__(self):
-        self.calls.append("dispose")
-
 
 class BricksTestCase(GuiTestCase):
 
@@ -745,7 +742,6 @@ class TestTheSettings(BricksTestCase):
         self.assertFalse(self.tab.on_settings_key_press(page, event.key))
         event = self.key(Gdk.KEY_Escape)
         self.assertTrue(self.tab.on_settings_key_press(page, event.key))
-        self.assertEqual(calls[-1], "dispose")
         self.assertIsNone(self.tab.configuring)
         # the page's key
         self.show()
@@ -761,9 +757,7 @@ class TestTheSettings(BricksTestCase):
         self.tab.configure(self.sw)
         first = self.tab.settings
         self.tab.configure(vm)
-        self.assertEqual(
-            calls, [("view", self.gui), "dispose", ("view", self.gui)]
-        )
+        self.assertEqual(calls, [("view", self.gui), ("view", self.gui)])
         self.assertIs(self.tab.configuring, vm)
         self.assertIsNot(self.tab.settings, first)
         self.assertEqual(
@@ -778,14 +772,12 @@ class TestTheSettings(BricksTestCase):
         self.assertIs(self.tab.configuring, self.sw)
         self.factory.del_brick(self.sw)
         self.assertIsNone(self.tab.configuring)
-        self.assertEqual(calls[-1], "dispose")
 
     def test_another_project(self):
         calls, controllers = self.fake_panels()
         self.tab.configure(self.sw)
         self.tab.on_open()
         self.assertIsNone(self.tab.configuring)
-        self.assertEqual(calls[-1], "dispose")
         # and with none
         self.tab.on_open()
 

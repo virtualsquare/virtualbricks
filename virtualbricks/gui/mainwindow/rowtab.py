@@ -59,7 +59,7 @@ from virtualbricks.gui.mainwindow.picture import Icons  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.dialogs.base import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.tools import dispose, is_running  # noqa: E402
+from virtualbricks.tools import is_running  # noqa: E402
 
 ICON_SIZE = 32
 # A stopped object's icon, this opaque.
@@ -726,7 +726,7 @@ class RowsTab(Tab, Gtk.Stack):
         if controller is None:
             return
         if self.configuring is not None:
-            self.cancel_settings()
+            self.close_settings()
         self.configuring = item
         self._controller = controller
         self.settings = self._settings_page(item, controller)
@@ -800,12 +800,6 @@ class RowsTab(Tab, Gtk.Stack):
         page.connect("key-press-event", self.on_settings_key_press)
         return page
 
-    def cancel_settings(self) -> None:
-        """Close the settings, as Cancel does."""
-
-        dispose(self._controller)
-        self.close_settings()
-
     def close_settings(self) -> None:
         """Back to the list, on the object configured."""
 
@@ -825,7 +819,7 @@ class RowsTab(Tab, Gtk.Stack):
 
     def on_open(self) -> None:
         if self.configuring is not None:
-            self.cancel_settings()
+            self.close_settings()
         # an entry emptied tells the list at once
         self.search.set_text("")
         self.all_button.set_active(True)
@@ -843,11 +837,11 @@ class RowsTab(Tab, Gtk.Stack):
 
     def on_removed(self, item) -> None:
         if item is self.configuring:
-            self.cancel_settings()
+            self.close_settings()
 
     def on_settings_key_press(self, page, event) -> bool:
         if event.keyval == Gdk.KEY_Escape:
-            self.cancel_settings()
+            self.close_settings()
             return True
         return False
 

@@ -36,7 +36,6 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf, Pango
 
 from virtualbricks.gui import graphics
-from virtualbricks.tools import dispose
 
 TRANSLATION_DOMAIN = "virtualbricks"
 
@@ -70,12 +69,6 @@ def destroy_on_exit(func: Callable) -> Callable:
     return on_response
 
 
-NUMERIC = set(map(str, range(10)))
-NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
-EXTRA = set(["BackSpace", "Delete", "Left", "Right", "Home", "End", "Tab"])
-VALIDKEY = NUMERIC | NUMPAD | EXTRA
-
-
 class _Dialog:
     """A window or a dialog: show() shows it, above parent if given."""
 
@@ -86,7 +79,7 @@ class _Dialog:
         window.show()
 
 
-class Window:
+class Window(_Dialog):
     """
     Base class for the dialogs that used ``virtualbricks.gui.dialogs.Window``.
 
@@ -95,19 +88,3 @@ class Window:
 
     def __init__(self):
         self.build_ui()
-
-    def set_transient_for(self, parent):
-        self.get_root_widget().set_transient_for(parent)
-
-    def show(self, parent=None):
-        window = self.get_root_widget()
-        if parent is not None:
-            window.set_transient_for(parent)
-        window.connect("destroy", self.on_window_destroy)
-        window.show()
-
-    def on_window_destroy(self, window):
-        dispose(self)
-
-    def __dispose__(self):
-        pass

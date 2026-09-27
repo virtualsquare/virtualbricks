@@ -27,7 +27,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from virtualbricks.gui import help, widgets
-from virtualbricks.tools import dispose
 from virtualbricks.i18n import _
 from virtualbricks.gui.mainwindow.bricks.config.base import (
     ConfigController,
@@ -811,7 +810,6 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         for i, wname in enumerate(("sock0_combo", "sock1_combo")):
             self.connect_plug(self.original.plugs[i], getattr(self, wname))
 
-        dispose(self)
         gui.curtain_down()
 
     # save channel configuration

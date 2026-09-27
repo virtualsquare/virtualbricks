@@ -39,7 +39,6 @@ from virtualbricks.gui.interfaces import (
     IStateManager,
 )
 from virtualbricks.i18n import _
-from virtualbricks.tools import dispose
 
 
 @implementer(IConfigController)
@@ -55,16 +54,11 @@ class ConfigController:
         self.original = original
         self.build_ui()
 
-    def __dispose__(self):
-        pass
-
     def on_ok_button_clicked(self, button, gui):
         self.configure_brick(gui)
-        dispose(self)
         gui.curtain_down()
 
     def on_cancel_button_clicked(self, button, gui):
-        dispose(self)
         gui.curtain_down()
 
     def get_view(self, gui):

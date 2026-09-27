@@ -239,10 +239,6 @@ def image_type_from_file(filename):
         return image_type(fp.read(MAX_HEADER_LENGTH))
 
 
-def dispose(obj):
-    obj.__dispose__()
-
-
 def is_running(brick):
     return brick.__isrunning__()
 
