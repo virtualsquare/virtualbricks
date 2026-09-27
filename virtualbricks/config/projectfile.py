@@ -56,7 +56,7 @@ from virtualbricks.config.tomlfile import (
 )
 from virtualbricks.nic import random_mac
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks import Brick
     from virtualbricks.bricks.virtualmachine import (

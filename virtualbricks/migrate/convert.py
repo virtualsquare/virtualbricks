@@ -59,7 +59,7 @@ from virtualbricks.config.schema import (
 from virtualbricks.migrate import legacy
 from virtualbricks.nic import random_mac
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
     from virtualbricks.config.report import Report
     from virtualbricks.config.settings import SettingValue

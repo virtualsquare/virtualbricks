@@ -55,7 +55,7 @@ from twisted.logger import Logger
 from virtualbricks import errors, spawn
 from virtualbricks.config.workspace import projects
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
     from virtualbricks.config.workspace import Workspace

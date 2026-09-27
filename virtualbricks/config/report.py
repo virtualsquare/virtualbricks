@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Final, Literal
 
 import attr
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from twisted.logger import Logger
 
 Level = Literal["info", "warning", "error"]

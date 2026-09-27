@@ -47,7 +47,7 @@ from virtualbricks.config.schema import dump_record, load_record
 from virtualbricks import locations
 from virtualbricks.migrate import convert, legacy
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from twisted.logger import Logger
 
     from virtualbricks.config.report import Level, Message

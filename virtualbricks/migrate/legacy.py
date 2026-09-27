@@ -34,7 +34,7 @@ from typing import TYPE_CHECKING, TypeAlias
 
 import attr
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.report import Report
 
 SECTION = re.compile(r"^\[(?P<type>[a-zA-Z0-9_]+):(?P<name>.+)\]$")

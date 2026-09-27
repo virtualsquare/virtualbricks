@@ -56,7 +56,7 @@ from virtualbricks.config.tomlfile import (
     load_toml,
 )
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.schema import Kind
     from virtualbricks.config.tomlfile import Table
 

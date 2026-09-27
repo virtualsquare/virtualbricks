@@ -47,7 +47,7 @@ from virtualbricks.i18n import _, ngettext
 from virtualbricks.migrate import engine
 from virtualbricks.config.report import ERROR, INFO, WARNING
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from twisted.internet.interfaces import IReactorCore
     from twisted.python.failure import Failure
     from twisted.python.lockfile import FilesystemLock

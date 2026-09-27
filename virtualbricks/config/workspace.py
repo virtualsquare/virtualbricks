@@ -62,7 +62,7 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.i18n import _
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.config.settings import ProjectSettings
     from virtualbricks.config.tomlfile import Table

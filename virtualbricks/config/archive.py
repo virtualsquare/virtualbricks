@@ -81,7 +81,7 @@ from virtualbricks.config.tomlfile import (
     loads_toml,
 )
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.tomlfile import Table
 
 # The format of contents.toml.

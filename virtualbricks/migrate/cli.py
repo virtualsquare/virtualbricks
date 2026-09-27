@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING, NoReturn, TextIO
 
 from virtualbricks.migrate import engine
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing_extensions import Unpack
 
     from virtualbricks.migrate.gui import WindowOptions

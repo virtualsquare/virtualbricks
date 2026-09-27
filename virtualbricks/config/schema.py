@@ -36,7 +36,7 @@ import attr
 
 from virtualbricks.nic import MAC_PATTERN
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.report import Report
     from virtualbricks.config.tomlfile import Table, Value
 

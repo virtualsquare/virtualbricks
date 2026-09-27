@@ -79,7 +79,7 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.config.tomlfile import dump_toml
 from virtualbricks.i18n import _
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.tomlfile import Table
     from virtualbricks.config.workspace import Workspace
 
