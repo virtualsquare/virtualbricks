@@ -71,6 +71,9 @@ def mode_words(use) -> str:
 
     if not use.private:
         return _("the image itself")
+    if use.copy is None:
+        # no project open
+        return _("private copy")
     copy = os.path.basename(use.copy)
     if use.copy_size is None:
         return _("private copy {file}, made at the next start").format(

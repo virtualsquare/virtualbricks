@@ -279,6 +279,15 @@ class TestUses(ImagesTestCase):
         self.factory.new_brick("switch", "sw")
         self.assertEqual(uses(self.factory, self.image), [])
 
+    def test_while_no_project_is_open(self):
+        # as while a project loads: its folder isn't known yet
+        self.projects.current = None
+        self.vm("r1")
+        [use] = uses(self.factory, self.image)
+        self.assertTrue(use.private)
+        self.assertIsNone(use.copy)
+        self.assertIsNone(use.copy_size)
+
 
 class TestRelink(ImagesTestCase):
 

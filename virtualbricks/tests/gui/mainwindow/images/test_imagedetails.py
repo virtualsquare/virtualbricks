@@ -154,6 +154,14 @@ class TestTheUses(DetailsTestCase):
             ],
         )
 
+    def test_no_project_open(self):
+        self.vm("r1")
+        self.manager.current = None
+        self.assertEqual(
+            cells(self.details().uses),
+            [["r1", "hda", "private copy", "Stopped"]],
+        )
+
     def test_no_other_project(self):
         self.assertFalse(self.details().others.get_visible())
 

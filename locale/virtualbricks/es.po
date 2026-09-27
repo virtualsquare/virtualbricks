@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 20:07+0200\n"
+"POT-Creation-Date: 2026-09-27 20:53+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -916,6 +916,11 @@ msgstr "Mostrar preferencias"
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
 msgid "the image itself"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, fuzzy
+msgid "private copy"
+msgstr "Private COW"
 
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
 #, python-brace-format

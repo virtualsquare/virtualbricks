@@ -234,6 +234,28 @@ class TestTheRows(ImagesTestCase):
         self.assertEqual(self.listed(), [other])
         self.assertIsNone(self.row())
 
+    def test_while_a_project_loads(self):
+        # the machines of a project come before it's open, as at start-up
+        self.manager.current = None
+        self.manager.create("dtn")
+        self.manager.open("dtn", self.factory)
+        frr = self.image("frr")
+        self.qemu_img.infos[frr.get_path()] = INFO
+        # a machine read after another tells the tab
+        self.vm("node1", frr)
+        self.vm("node2", frr)
+        self.manager.save(self.factory)
+        self.manager.close(self.factory)
+        self.assertIsNone(self.manager.current)
+        self.manager.open("dtn", self.factory)
+        frr = self.factory.get_image_by_name("frr")
+        self.qemu_img.answer()
+        self.assertEqual(
+            self.row(frr).detail.get_text(),
+            "qcow2 · 4.0 GB disk · 1.9 GB on disk · node1 and node2, private"
+            " copies",
+        )
+
     def test_the_rows_follow_the_bricks(self):
         vm = self.vm("r1")
         self.assertIn("r1, private copy", self.row().detail.get_text())
