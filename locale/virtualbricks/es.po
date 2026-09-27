@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 08:08+0200\n"
+"POT-Creation-Date: 2026-09-27 08:19+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -548,6 +548,7 @@ msgid "Ready"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events.py
 msgid "Waiting"
 msgstr ""
 
@@ -620,26 +621,39 @@ msgid "Run Now"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "Icon"
-msgstr ""
+#, python-brace-format
+msgid "{waiting} of {total} waiting"
+msgid_plural "{waiting} of {total} waiting"
+msgstr[0] ""
+msgstr[1] ""
 
-#: virtualbricks/gui/mainwindow/events.py virtualbricks/migrate/gui.py
-msgid "Status"
+#: virtualbricks/gui/mainwindow/events.py
+#, python-brace-format
+msgid "{seconds} s"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/windows/attachevent.py
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
-msgid "Name"
+#, python-brace-format
+msgid "Add an action to {name} first"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/windows/attachevent.py
-msgid "Parameters"
+#, fuzzy
+msgid "No events"
+msgstr "Eventos"
+
+#: virtualbricks/gui/mainwindow/events.py
+#, python-brace-format
+msgid "No event matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+msgid "No event is waiting"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+#, python-brace-format
+msgid "No waiting event matches “{text}”"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
@@ -652,20 +666,25 @@ msgid "New Event"
 msgstr "Nuevo Evento"
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "Start All Events"
+#, fuzzy
+msgid "Search events"
 msgstr "Arrancar todos los eventos"
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "Stop All Events"
-msgstr "Parar todos los eventos"
+#, fuzzy
+msgid "No Events Yet"
+msgstr "Nuevo Evento"
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "Configure"
+msgid ""
+"An event waits, then starts or stops bricks, or runs commands. Add one to "
+"script the lab."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "No event selected"
-msgstr ""
+#, fuzzy
+msgid "Event settings"
+msgstr "Mostrar preferencias"
 
 #: virtualbricks/gui/mainwindow/picture.py
 msgid "PNG image"
@@ -1072,6 +1091,19 @@ msgstr "<b> Ajustes Extra </b>"
 #, fuzzy
 msgid "<b>Stop event selection</b>"
 msgstr "<b> Ajustes de dispositivo de Audio </b>"
+
+#: virtualbricks/gui/windows/attachevent.py
+#: virtualbricks/gui/windows/createimagedialog.py
+#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
+msgid "Name"
+msgstr ""
+
+#: virtualbricks/gui/windows/attachevent.py
+msgid "Parameters"
+msgstr ""
 
 #: virtualbricks/gui/windows/attachevent.py
 msgid "Assing nothing"
@@ -2666,6 +2698,10 @@ msgid "Write to"
 msgstr ""
 
 #: virtualbricks/migrate/gui.py
+msgid "Status"
+msgstr ""
+
+#: virtualbricks/migrate/gui.py
 msgid "Save report…"
 msgstr ""
 
@@ -2728,6 +2764,9 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#~ msgid "Stop All Events"
+#~ msgstr "Parar todos los eventos"
 
 #, fuzzy
 #~ msgid "R_unning"

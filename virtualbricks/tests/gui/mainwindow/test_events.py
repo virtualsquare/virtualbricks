@@ -15,195 +15,430 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The Events tab: the list of the events, its toolbar and its keys."""
+"""
+The Events tab: the rows of the events and their countdown, the row above
+the list, the page of a project without events, the keys and the settings.
+"""
 
+from twisted.internet import task
+
+from virtualbricks import console
+from virtualbricks.bricks import event as event_module
+from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
     from gi.repository import Gdk, Gtk
 
-    from virtualbricks.gui import widgets
+    # the panel of an event, an adapter of IConfigController
+    import virtualbricks.gui.gui  # noqa: F401
     from virtualbricks.gui.mainwindow import eventmenu, events
-    from virtualbricks.gui.mainwindow.events import EventsTab
+    from virtualbricks.gui.mainwindow.events import EventsTab, count
+
+
+class Recording(console.VbShellCommand):
+    """An action that records that it was performed."""
+
+    performed = []
+
+    def perform(self, factory):
+        self.performed.append(str(self))
+        return 0
 
 
 class FakeGui:
-    def __init__(self):
+    def __init__(self, factory):
+        self.brickfactory = factory
         self.window = object()
         self.configured = []
         self.removed = []
+        self.tab = None
 
     def curtain_up(self, event):
         self.configured.append(event)
+
+    def curtain_down(self):
+        # the panels close the settings through the window
+        self.tab.close_settings()
 
     def ask_remove_event(self, event):
         self.removed.append(event)
 
 
 class FakeDialog:
-    def __init__(self, shown, gui):
+    def __init__(self, shown, *args):
         self.shown = shown
-        self.gui = gui
+        self.args = args
 
     def show(self, parent):
-        self.shown.append((self.gui, parent))
+        self.shown.append((self.args, parent))
 
 
-class TestEventsTab(GuiTestCase):
+class EventsTestCase(GuiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.gui = FakeGui()
-        self.done = []
-        self.ev1 = self.event("ev1")
-        self.tab = EventsTab(self.gui, self.factory)
+        self.clock = task.Clock()
+        self.patch(event_module, "reactor", self.clock)
+        Recording.performed = []
+        self.gui = FakeGui(self.factory)
+        self.ev = self.event("start-vms", 5, "vm1 on")
+        self.tab = EventsTab(self.gui, self.factory, self.clock)
+        self.gui.tab = self.tab
         self.addCleanup(self.tab.destroy)
-        self.view = self.tab.view
+        # a test that quits says so
+        self.addCleanup(lambda: self.tab.on_quit())
 
-    def event(self, name):
+    def event(self, name, delay=5, *commands):
         event = self.factory.new_event(name)
-        event.poweron = lambda: self.done.append(("on", name))
-        event.poweroff = lambda: self.done.append(("off", name))
-        event.toggle = lambda: self.done.append(("toggle", name))
+        self.patch(event, "logger", FakeLogger())
+        event.set(
+            {
+                "delay": delay,
+                "actions": [Recording(command) for command in commands],
+            }
+        )
         return event
 
+    def row(self, event=None):
+        return self.tab.list.row_of(self.ev if event is None else event)
+
     def listed(self):
-        return [row[0] for row in self.tab.store]
+        return [
+            row.item
+            for row in self.tab.list.get_children()
+            if self.tab.list._visible(row)
+        ]
 
-    def select(self, index):
-        self.view.get_selection().select_path(Gtk.TreePath(index))
+    def select(self, event):
+        row = self.row(event)
+        self.tab.list.select_row(row)
+        return row
 
-    def changes(self):
-        changed = []
-        self.tab.store.connect(
-            "row-changed", lambda store, path, itr: changed.append(path)
-        )
-        return changed
-
-    def test_the_events(self):
-        changed = self.changes()
-        ev2 = self.event("ev2")
-        self.assertEqual(self.listed(), [self.ev1, ev2])
-        ev2.changed.notify(ev2)
-        self.assertEqual([path.get_indices() for path in changed], [[1]])
-        self.factory.del_event(self.ev1)
-        self.assertEqual(self.listed(), [ev2])
-
-    def test_not_after_quit(self):
-        changed = self.changes()
-        self.tab.on_quit()
-        self.event("ev2")
-        self.ev1.changed.notify(self.ev1)
-        self.factory.del_event(self.ev1)
-        self.assertEqual(self.listed(), [self.ev1])
-        self.assertEqual(changed, [])
-
-    def test_the_columns(self):
-        columns = self.view.get_columns()
-        self.assertEqual(
-            [column.get_title() for column in columns],
-            ["Icon", "Status", "Name", "Parameters"],
-        )
-        cells = [column.get_cells()[0] for column in columns]
-        self.assertIsInstance(cells[0], widgets.CellRendererBrickIcon)
-        self.assertEqual(
-            [cell.props.format_string for cell in cells[1:]],
-            ["s", "n", "p"],
-        )
-        name = columns[2]
-        model = self.view.get_model()
-        name.cell_set_cell_data(model, model.get_iter_first(), False, False)
-        self.assertEqual(cells[2].props.text, "ev1")
-
-    def test_new(self):
-        shown = []
-        self.patch(
-            events, "NewEventDialog", lambda gui: FakeDialog(shown, gui)
-        )
-        self.tab.new_button.emit("clicked")
-        self.assertEqual(shown, [(self.gui, self.gui.window)])
-
-    def test_start_and_stop_all(self):
-        self.event("ev2")
-        self.tab.start_button.emit("clicked")
-        self.tab.stop_button.emit("clicked")
-        self.assertEqual(
-            self.done,
-            [("on", "ev1"), ("on", "ev2"), ("off", "ev1"), ("off", "ev2")],
-        )
-
-    def test_configure_the_selected(self):
-        button = self.tab.configure_button
-        self.assertFalse(button.get_sensitive())
-        # a tool button gives its tooltip to its button
-        self.assertEqual(
-            button.get_child().get_tooltip_text(), "No event selected"
-        )
-        self.select(0)
-        self.assertTrue(button.get_sensitive())
-        button.emit("clicked")
-        self.assertEqual(self.gui.configured, [self.ev1])
-
-    def test_the_menu(self):
-        releases = []
-        self.patch(
-            events,
-            "popup_menu",
-            lambda view, event, open_menu: releases.append((view, open_menu))
-            or True,
-        )
-        event = Gdk.Event.new(Gdk.EventType.BUTTON_RELEASE)
-        self.assertTrue(self.view.emit("button-release-event", event))
-        [(view, open_menu)] = releases
-        self.assertIs(view, self.view)
-        opened = []
-        self.patch(
-            eventmenu, "popup", lambda *args: opened.append(args) or "menu"
-        )
-        open_menu(self.ev1, event)
-        self.assertEqual(opened, [(self.view, event, self.gui, self.ev1)])
-        # kept while it shows
-        self.assertEqual(self.tab._menu, "menu")
-
-    def release_key(self, keyval):
-        event = Gdk.Event.new(Gdk.EventType.KEY_RELEASE)
+    def press(self, keyval, state=0):
+        event = Gdk.Event.new(Gdk.EventType.KEY_PRESS)
         event.key.keyval = keyval
-        self.view.emit("key-release-event", event)
+        event.key.state = Gdk.ModifierType(state)
+        event.key.window = self.tab.get_window()
+        seat = Gdk.Display.get_default().get_default_seat()
+        event.set_device(seat.get_keyboard())
+        return self.tab.on_list_key_press(self.tab.list, event.key)
 
-    def test_delete(self):
-        self.release_key(Gdk.KEY_Delete)
-        # nothing selected
-        self.assertEqual(self.gui.removed, [])
-        self.select(0)
-        self.release_key(Gdk.KEY_Delete)
-        self.release_key(Gdk.KEY_BackSpace)
-        self.release_key(Gdk.KEY_a)
-        self.assertEqual(self.gui.removed, [self.ev1, self.ev1])
-
-    def test_a_double_click(self):
-        self.view.row_activated(Gtk.TreePath(0), self.view.get_column(0))
-        self.assertEqual(self.done, [("toggle", "ev1")])
-
-    def test_title(self):
-        self.assertEqual(self.tab.title, "_Events")
-
-    def test_its_parts_show(self):
+    def show(self):
         window = Gtk.OffscreenWindow()
         self.addCleanup(window.destroy)
-        # else the toolbar keeps its buttons in its overflow menu
         window.set_size_request(900, 400)
         window.add(self.tab)
         window.show()
-        tab = self.tab
-        for widget in (
-            tab.new_button,
-            tab.start_button,
-            tab.stop_button,
-            tab.configure_button,
-            tab.view,
-        ):
-            self.assertTrue(widget.get_mapped(), widget)
+        return window
+
+
+class TestTheRows(EventsTestCase):
+
+    def test_a_ready_event(self):
+        row = self.row()
+        self.assertEqual(row.name.get_text(), "start-vms")
+        self.assertEqual(row.detail.get_text(), "After 5 s, starts vm1")
+        self.assertEqual(row.state_label.get_text(), "Ready")
+        self.assertTrue(row.dot.get_visible())
+        self.assertFalse(row.warning.get_visible())
+        self.assertIsNone(row.state.get_tooltip_text())
+        self.assertTrue(row.startstop.get_sensitive())
+        self.assertEqual(row.startstop.get_tooltip_text(), "Start start-vms")
+
+    def test_an_event_without_actions(self):
+        row = self.row(self.event("draft"))
+        self.assertEqual(row.detail.get_text(), "No actions yet")
+        self.assertEqual(row.state_label.get_text(), "Not configured")
+        self.assertFalse(row.dot.get_visible())
+        self.assertTrue(row.warning.get_visible())
         self.assertEqual(
-            [b.get_label() for b in (tab.new_button, tab.configure_button)],
-            ["New Event", "Configure"],
+            row.state.get_tooltip_text(), "Add an action to draft first"
         )
+        self.assertFalse(row.startstop.get_sensitive())
+
+    def test_a_waiting_event(self):
+        self.ev.poweron()
+        row = self.row()
+        self.assertEqual(row.state_label.get_text(), "Waiting · 5 s")
+        self.assertTrue(row.dot.get_style_context().has_class("waiting"))
+        self.assertEqual(row.icon.get_opacity(), 1.0)
+        self.assertEqual(row.startstop.get_tooltip_text(), "Stop start-vms")
+        # the menu of the row follows
+        self.assertFalse(row.actions.get_action_enabled("rename"))
+
+    def test_the_countdown(self):
+        self.clock.advance(0.5)
+        self.ev.poweron()
+        label = self.row().state_label
+        seen = [label.get_text()]
+        for _ in range(4):
+            self.clock.advance(1)
+            seen.append(label.get_text())
+        self.assertEqual(
+            seen,
+            [
+                "Waiting · 5 s",
+                "Waiting · 4 s",
+                "Waiting · 3 s",
+                "Waiting · 2 s",
+                "Waiting · 1 s",
+            ],
+        )
+        self.clock.advance(1)
+        self.assertEqual(Recording.performed, ["vm1 on"])
+        self.assertEqual(label.get_text(), "Ready")
+
+    def test_only_while_an_event_waits(self):
+        self.assertEqual(self.clock.getDelayedCalls(), [])
+        self.ev.poweron()
+        # the wait, and the countdown
+        self.assertEqual(len(self.clock.getDelayedCalls()), 2)
+        other = self.event("other", 9, "vm2 on")
+        other.poweron()
+        self.assertEqual(len(self.clock.getDelayedCalls()), 3)
+        self.ev.poweroff()
+        self.assertEqual(len(self.clock.getDelayedCalls()), 2)
+        self.clock.advance(9)
+        self.assertEqual(self.clock.getDelayedCalls(), [])
+
+    def test_the_bricks_that_start_it(self):
+        row = self.row()
+        sw = self.factory.new_brick("switch", "sw1")
+        sw.set({"pon_vbevent": "start-vms"})
+        self.assertEqual(
+            row.detail.get_text(), "After 5 s, starts vm1 · when sw1 starts"
+        )
+        self.factory.rename(sw, "sw9")
+        self.assertEqual(
+            row.detail.get_text(), "After 5 s, starts vm1 · when sw9 starts"
+        )
+        self.factory.dup_brick(sw)
+        self.assertEqual(
+            row.detail.get_text(),
+            "After 5 s, starts vm1 · when sw9 starts · when copy_of_sw9 "
+            "starts",
+        )
+        self.factory.del_brick(sw)
+        self.assertEqual(
+            row.detail.get_text(),
+            "After 5 s, starts vm1 · when copy_of_sw9 starts",
+        )
+
+    def test_the_rows_follow_the_events(self):
+        other = self.event("other", 1, "vm2 on")
+        self.assertEqual(self.listed(), [self.ev, other])
+        self.assertEqual(
+            self.row(other).detail.get_text(), "After 1 s, starts vm2"
+        )
+        self.factory.del_event(self.ev)
+        self.assertEqual(self.listed(), [other])
+        self.assertIsNone(self.row())
+
+    def test_start_and_stop(self):
+        row = self.row()
+        row.startstop.clicked()
+        self.assertIsNotNone(self.ev.scheduled)
+        row.startstop.clicked()
+        self.assertIsNone(self.ev.scheduled)
+        self.assertEqual(self.clock.getDelayedCalls(), [])
+
+    def test_after_quit(self):
+        row = self.row()
+        self.ev.poweron()
+        self.tab.on_quit()
+        self.assertEqual(len(self.clock.getDelayedCalls()), 1)
+        self.factory.new_brick("switch", "sw1").set(
+            {"pon_vbevent": "start-vms"}
+        )
+        self.assertEqual(row.detail.get_text(), "After 5 s, starts vm1")
+        self.ev.poweroff()
+        self.tab.on_quit = lambda: None
+
+
+class TestTheRowAboveTheList(EventsTestCase):
+
+    def test_its_words(self):
+        tab = self.tab
+        self.assertEqual(tab.title, "_Events")
+        self.assertEqual(tab.new_button.get_label(), "New Event")
+        self.assertEqual(tab.search.get_placeholder_text(), "Search events")
+        self.assertEqual(tab.running_button.get_label(), "Waiting")
+        self.assertEqual(tab.count.get_text(), "0 of 1 waiting")
+        self.event("other", 1, "vm2 on").poweron()
+        self.assertEqual(tab.count.get_text(), "1 of 2 waiting")
+
+    def test_the_count(self):
+        self.assertEqual(count([]), "0 of 0 waiting")
+        self.ev.poweron()
+        self.assertEqual(count([self.ev]), "1 of 1 waiting")
+
+    def test_new_event(self):
+        shown = []
+        self.patch(events, "NewEventDialog", lambda *a: FakeDialog(shown, *a))
+        self.tab.new_button.clicked()
+        self.assertEqual(shown, [((self.gui,), self.gui.window)])
+
+    def test_start_all_starts_what_can(self):
+        # an event without actions doesn't stop the others
+        draft = self.event("draft")
+        other = self.event("other", 1, "vm2 on")
+        self.tab.start_button.clicked()
+        self.assertIsNotNone(self.ev.scheduled)
+        self.assertIsNone(draft.scheduled)
+        self.assertIsNotNone(other.scheduled)
+        # and what waits waits on
+        scheduled = other.scheduled
+        self.clock.advance(0.5)
+        self.tab.start_all()
+        self.assertIs(other.scheduled, scheduled)
+
+    def test_stop_all_stops_what_waits(self):
+        other = self.event("other", 1, "vm2 on")
+        self.ev.poweron()
+        other.poweron()
+        self.tab.stop_button.clicked()
+        self.assertIsNone(self.ev.scheduled)
+        self.assertIsNone(other.scheduled)
+        self.clock.advance(5)
+        self.assertEqual(Recording.performed, [])
+
+    def test_the_buttons_for_all_events(self):
+        tab = self.tab
+        self.assertTrue(tab.start_button.get_sensitive())
+        self.assertFalse(tab.stop_button.get_sensitive())
+        self.ev.poweron()
+        self.assertFalse(tab.start_button.get_sensitive())
+        self.assertTrue(tab.stop_button.get_sensitive())
+        # nothing to start in an event without actions
+        self.ev.poweroff()
+        self.ev.set({"actions": []})
+        self.assertFalse(tab.start_button.get_sensitive())
+
+    def test_the_search(self):
+        self.event("ping-gateway", 1, "vm2 on")
+        self.tab.list.set_search("VMS")
+        self.assertEqual(self.listed(), [self.ev])
+        # by name only: not "event"
+        self.tab.list.set_search("event")
+        self.assertEqual(self.listed(), [])
+        self.assertEqual(
+            self.tab.list.placeholder.get_text(), "No event matches “event”"
+        )
+
+    def test_the_waiting_events(self):
+        other = self.event("other", 1, "vm2 on")
+        self.tab.running_button.set_active(True)
+        self.assertEqual(self.listed(), [])
+        self.assertEqual(
+            self.tab.list.placeholder.get_text(), "No event is waiting"
+        )
+        other.poweron()
+        self.assertEqual(self.listed(), [other])
+        self.clock.advance(1)
+        self.assertEqual(self.listed(), [])
+
+
+class TestAProjectWithoutEvents(EventsTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.factory.del_event(self.ev)
+
+    def test_the_page(self):
+        tab = self.tab
+        self.assertIs(tab.pages.get_visible_child(), tab.empty)
+        image, title, words, button = tab.empty.get_children()
+        self.assertEqual(title.get_text(), "No Events Yet")
+        self.assertEqual(
+            words.get_text(),
+            "An event waits, then starts or stops bricks, or runs commands. "
+            "Add one to script the lab.",
+        )
+        self.assertEqual(button.get_label(), "New Event")
+        self.assertIsNotNone(image.get_pixbuf())
+        self.assertEqual(tab.count.get_text(), "")
+        self.assertFalse(tab.start_button.get_sensitive())
+
+    def test_the_first_event(self):
+        self.event("first")
+        self.assertEqual(self.tab.pages.get_visible_child_name(), "list")
+
+
+class TestTheKeysAndTheMouse(EventsTestCase):
+
+    def test_delete(self):
+        self.select(self.ev)
+        self.assertTrue(self.press(Gdk.KEY_Delete))
+        self.assertEqual(self.gui.removed, [self.ev])
+
+    def test_rename(self):
+        shown = []
+        self.patch(eventmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
+        self.select(self.ev)
+        self.assertTrue(self.press(Gdk.KEY_F2))
+        self.assertEqual(shown, [((self.factory, self.ev), self.gui.window)])
+        # not while it waits
+        self.ev.poweron()
+        self.assertTrue(self.press(Gdk.KEY_F2))
+        self.assertEqual(len(shown), 1)
+
+    def test_the_menu(self):
+        shown = []
+        self.patch(
+            eventmenu, "popup", lambda *args: shown.append(args) or "menu"
+        )
+        row = self.select(self.ev)
+        self.assertTrue(self.press(Gdk.KEY_Menu))
+        self.assertEqual(
+            shown, [(row.menu_button, None, self.gui, self.ev, True)]
+        )
+        self.assertEqual(self.tab._menu, "menu")
+
+    def test_the_menu_of_a_row(self):
+        # the menu of the event, without keys, and its actions
+        row = self.row()
+        section = row.menu_model().get_item_link(0, "section")
+        self.assertEqual(
+            section.get_item_attribute_value(1, "label").unpack(), "Run Now"
+        )
+        self.assertIsNone(section.get_item_attribute_value(2, "accel"))
+        self.assertIsInstance(row.actions, eventmenu.EventActions)
+        self.assertIs(row.actions.event, self.ev)
+        self.assertIs(row.get_action_group("event"), row.actions)
+
+    def test_a_double_click_configures(self):
+        self.tab.list.emit("row-activated", self.row())
+        self.assertEqual(self.gui.configured, [self.ev])
+
+
+class TestTheSettings(EventsTestCase):
+
+    def test_the_settings(self):
+        tab = self.tab
+        self.show()
+        tab.configure(self.ev)
+        self.assertIs(tab.get_visible_child(), tab.settings)
+        head = tab.settings.get_children()[0]
+        _image, text = head.get_children()
+        name, words = text.get_children()
+        self.assertEqual(name.get_text(), "start-vms")
+        self.assertEqual(words.get_text(), "Event settings")
+        tab._controller.delay_entry.set_text("7")
+        tab.ok_button.clicked()
+        self.assertEqual(self.ev.config.delay, 7)
+        self.assertIs(tab.get_visible_child(), tab.main_page)
+        self.assertEqual(self.row().detail.get_text(), "After 7 s, starts vm1")
+
+    def test_cancel(self):
+        self.tab.configure(self.ev)
+        self.tab._controller.delay_entry.set_text("7")
+        self.tab.cancel_button.clicked()
+        self.assertEqual(self.ev.config.delay, 5)
+        self.assertIsNone(self.tab.configuring)
+
+    def test_deleting_the_event(self):
+        self.tab.configure(self.ev)
+        self.factory.del_event(self.ev)
+        self.assertIsNone(self.tab.configuring)
+        self.assertIs(self.tab.get_visible_child(), self.tab.main_page)

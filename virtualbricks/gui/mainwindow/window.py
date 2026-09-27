@@ -36,7 +36,6 @@ from virtualbricks import errors, tools
 from virtualbricks.bricks.event import is_event
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
-from virtualbricks.gui.interfaces import IConfigController
 from virtualbricks.tools import is_running
 from virtualbricks.gui.windows.base import _, load_pixbuf
 from virtualbricks.gui.windows.about import AboutDialog
@@ -272,18 +271,11 @@ class VBGUI:
         self.main_notebook = Gtk.Notebook(visible=True, can_focus=True)
         self.bricks = BricksTab(self, self.factory)
         self.append_tab(self.bricks)
-        self.append_tab(EventsTab(self, self.factory))
+        self.events = EventsTab(self, self.factory)
+        self.append_tab(self.events)
         self.append_tab(TopologyTab(self, self.factory))
         self.append_tab(ReadmeTab())
         vbox1.pack_start(self.main_notebook, True, True, 0)
-        self.config_frame = Gtk.Frame(
-            can_focus=False,
-            label_xalign=0,
-            shadow_type=Gtk.ShadowType.NONE,
-        )
-        # TODO: empty Glade placeholder, nothing to create.
-        # TODO: empty Glade placeholder (label_item), nothing to create.
-        vbox1.pack_start(self.config_frame, True, True, 0)
         self.window.add(vbox1)
 
         # systray_menu (Gtk.Menu)
@@ -459,44 +451,31 @@ class VBGUI:
     """ ********************************************************     """
 
     def curtain_down(self):
-        """Close the settings that show: an event's, or a brick's."""
+        """
+        Close the settings that show, in the tab that shows them: their OK
+        and Cancel are there.
+        """
 
-        configframe = self.config_frame
-        configpanel = configframe.get_child()
-        if configpanel is None:
-            self.bricks.close_settings()
-            return
-        self.main_notebook.show()
-        configpanel.destroy()
-        configframe.hide()
-        self.set_title()
+        page = self.main_notebook.get_nth_page(
+            self.main_notebook.get_current_page()
+        )
+        if page in (self.bricks, self.events):
+            page.close_settings()
 
-    def curtain_up(self, brick):
+    def curtain_up(self, item):
         """
         Show the settings of a brick in the Bricks tab, or of an event in
-        the whole window.
+        the Events tab.
         """
 
-        if not is_event(brick):
-            page = self.main_notebook.page_num(self.bricks)
-            self.main_notebook.set_current_page(page)
-            self.bricks.configure(brick)
-            return
-        configframe = self.config_frame
-        configframe.add(IConfigController(brick).get_view(self))
-        configframe.show()
-        self.main_notebook.hide()
-        self.set_title(
-            "Virtualbricks (Configuring Brick %s)" % brick.get_name()
-        )
+        tab = self.events if is_event(item) else self.bricks
+        self.main_notebook.set_current_page(self.main_notebook.page_num(tab))
+        tab.configure(item)
 
-    def set_title(self, title=None):
-        if title is None:
-            if projects.current:
-                name = projects.current.name
-                title = _("Virtualbricks (project: {0})").format(name)
-                self.window.set_title(title)
-        else:
+    def set_title(self):
+        if projects.current:
+            name = projects.current.name
+            title = _("Virtualbricks (project: {0})").format(name)
             self.window.set_title(title)
 
     """ ******************************************************** """

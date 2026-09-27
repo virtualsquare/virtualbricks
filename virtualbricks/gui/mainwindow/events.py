@@ -17,11 +17,18 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The Events tab of the main window: the events of the project.
+The Events tab of the main window: the events of the project, on the tab of
+rows of :mod:`virtualbricks.gui.mainwindow.rowtab`.
 
-A toolbar creates an event, starts or stops them all, and configures the
-selected one. In the list, the right button opens the menu of an event,
-Delete removes it and a double click starts or stops it.
+A row says in words what an event does, after how long, and which bricks
+start it; while the event waits, its state counts the seconds down. An event
+without actions can't start, and its row says so. The switch shows all the
+events or the waiting ones, and Start All starts the events that can start.
+The search finds an event by its name.
+
+New Event opens the window that makes an event. The menu of an event is
+:mod:`virtualbricks.gui.mainwindow.eventmenu`'s, and its settings are its
+panel of :mod:`virtualbricks.gui.windows`.
 """
 
 from __future__ import annotations
@@ -29,171 +36,204 @@ from __future__ import annotations
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gtk  # noqa: E402
+from gi.repository import Gtk  # noqa: E402
+from twisted.internet import reactor, task  # noqa: E402
 
-from virtualbricks.gui import widgets  # noqa: E402
-from virtualbricks.gui.mainwindow import eventmenu  # noqa: E402
-from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
-    Tab,
-    popup_menu,
-    state_add_selection,
+from virtualbricks.gui.interfaces import IConfigController  # noqa: E402
+from virtualbricks.gui.mainwindow import eventinfo, eventmenu  # noqa: E402
+from virtualbricks.gui.mainwindow.eventinfo import (  # noqa: E402
+    LABELS,
+    SEPARATOR,
+    State,
 )
-from virtualbricks.gui.windows.base import StateManager  # noqa: E402
+from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
+    Row,
+    RowList,
+    RowsTab,
+)
 from virtualbricks.gui.windows.newevent import NewEventDialog  # noqa: E402
-from virtualbricks.i18n import _  # noqa: E402
-from virtualbricks.tools import dispose  # noqa: E402
+from virtualbricks.i18n import _, ngettext  # noqa: E402
+from virtualbricks.tools import is_running  # noqa: E402
 
-# The columns: title, and what the cell shows (see
-# widgets.CellRendererFormattable), None for the icon.
-COLUMNS = (
-    (_("Icon"), None),
-    (_("Status"), "s"),
-    (_("Name"), "n"),
-    (_("Parameters"), "p"),
-)
-DELETE_KEYS = frozenset(("Delete", "BackSpace"))
+# How often the countdown moves, in seconds.
+TICK = 1
+# What the rows of the events say of the bricks.
+BRICK_SIGNALS = ("brick-added", "brick-removed", "brick-changed")
 
 
-class EventsBindingList(widgets.AbstractBindingList):
-    """The events of the factory, for a widgets.List."""
+def count(events) -> str:
+    """How many events wait, of how many."""
 
-    def __init__(self, factory):
-        widgets.AbstractBindingList.__init__(self, factory)
-        factory.connect("event-added", self._on_added)
-        factory.connect("event-removed", self._on_removed)
-        factory.connect("event-changed", self._on_changed)
-
-    def __dispose__(self):
-        self._factory.disconnect("event-added", self._on_added)
-        self._factory.disconnect("event-removed", self._on_removed)
-        self._factory.disconnect("event-changed", self._on_changed)
-
-    def __iter__(self):
-        return self._factory.iter_events()
+    total = len(events)
+    waiting = sum(1 for event in events if is_running(event))
+    return ngettext(
+        "{waiting} of {total} waiting", "{waiting} of {total} waiting", total
+    ).format(waiting=waiting, total=total)
 
 
-def _tool_button(label, stock_id, **properties):
-    return Gtk.ToolButton(
-        visible=True,
-        label=label,
-        use_underline=True,
-        stock_id=stock_id,
-        **properties,
-    )
+class EventRow(Row):
+    """An event, what it does and when, and what can be done to it."""
+
+    GROUP = eventmenu.GROUP
+
+    def __init__(self, gui, item, icons, sizes, clock) -> None:
+        # the first update() needs it
+        self.clock = clock
+        super().__init__(gui, item, icons, sizes)
+
+    def make_actions(self):
+        return eventmenu.EventActions(self.gui, self.item)
+
+    def menu_model(self):
+        return eventmenu.menu(self.item)
+
+    def update(self, processes=False) -> None:
+        event = self.item
+        state = eventinfo.state(event)
+        label = LABELS[state]
+        if state is State.WAITING:
+            left = eventinfo.seconds_left(event, self.clock)
+            label = SEPARATOR.join(
+                (label, _("{seconds} s").format(seconds=left))
+            )
+        tooltip = None
+        if state is State.NOT_CONFIGURED:
+            tooltip = _("Add an action to {name} first").format(
+                name=event.get_name()
+            )
+        self.show(
+            eventinfo.summary(event, self.gui.brickfactory),
+            label,
+            state is State.WAITING,
+            state is State.NOT_CONFIGURED,
+            tooltip,
+            dot="waiting",
+        )
+
+    def on_startstop_clicked(self, button) -> None:
+        self.item.toggle()
 
 
-class EventsTab(Tab, Gtk.Box):
+class EventList(RowList):
+    """
+    The events of the factory, a row each. The rows follow the bricks too:
+    they say which ones start the events.
+    """
+
+    ADDED = "event-added"
+    REMOVED = "event-removed"
+    CHANGED = "event-changed"
+    NONE = _("No events")
+    NO_MATCH = _("No event matches “{text}”")
+    NONE_RUNNING = _("No event is waiting")
+    NO_RUNNING_MATCH = _("No waiting event matches “{text}”")
+
+    def __init__(self, gui, factory, clock=None) -> None:
+        # the rows need them, from the first
+        self.clock = reactor if clock is None else clock
+        self._countdown = task.LoopingCall(self._tick)
+        self._countdown.clock = self.clock
+        super().__init__(gui, factory)
+        for signal in BRICK_SIGNALS:
+            factory.connect(signal, self.on_brick_changed)
+
+    def items(self) -> list:
+        return list(self.factory.iter_events())
+
+    def make_row(self, item) -> EventRow:
+        return EventRow(self.gui, item, self.icons, self._sizes, self.clock)
+
+    def close(self) -> None:
+        super().close()
+        for signal in BRICK_SIGNALS:
+            self.factory.disconnect(signal, self.on_brick_changed)
+        if self._countdown.running:
+            self._countdown.stop()
+
+    def update(self) -> None:
+        super().update()
+        self._follow_waits()
+
+    # The countdown
+
+    def _follow_waits(self) -> None:
+        """Count down while an event waits, and only then."""
+
+        waiting = any(map(is_running, self.items()))
+        if waiting and not self._countdown.running:
+            self._countdown.start(TICK, now=False)
+        elif not waiting and self._countdown.running:
+            self._countdown.stop()
+
+    def _tick(self) -> None:
+        for event in self.items():
+            if is_running(event):
+                self.row_of(event).update(self.only_running)
+
+    # The factory
+
+    def on_brick_changed(self, brick) -> None:
+        self.update()
+
+
+class EventsTab(RowsTab):
     """The events of the project, and what can be done with them."""
 
     title = _("_Events")
+    NEW = _("New Event")
+    SEARCH = _("Search events")
+    RUNNING = _("Waiting")
+    EMPTY_TITLE = _("No Events Yet")
+    EMPTY_WORDS = _(
+        "An event waits, then starts or stops bricks, or runs commands. "
+        "Add one to script the lab."
+    )
+    EMPTY_ICON = "event.png"
+    ADDED = "event-added"
+    REMOVED = "event-removed"
+    CHANGED = "event-changed"
 
-    def __init__(self, gui, factory) -> None:
-        super().__init__(visible=True, orientation=Gtk.Orientation.VERTICAL)
-        self.gui = gui
-        self.factory = factory
-        # the menu that shows
-        self._menu: Gtk.Menu | None = None
+    def __init__(self, gui, factory, clock=None) -> None:
+        # for the list, which the tab makes first
+        self.clock = clock
+        super().__init__(gui, factory)
 
-        toolbar = Gtk.Toolbar(
-            visible=True, toolbar_style=Gtk.ToolbarStyle.BOTH
-        )
-        self.new_button = _tool_button(_("New Event"), "gtk-new")
-        self.start_button = _tool_button(
-            _("Start All Events"), "gtk-media-play"
-        )
-        self.stop_button = _tool_button(_("Stop All Events"), "gtk-media-stop")
-        # made insensitive by the state below, which shows why
-        self.configure_button = _tool_button(_("Configure"), "gtk-edit")
-        for item in (
-            self.new_button,
-            None,
-            self.start_button,
-            self.stop_button,
-            None,
-            self.configure_button,
-        ):
-            if item is None:
-                item = Gtk.SeparatorToolItem(visible=True)
-                item.set_homogeneous(False)
-            toolbar.insert(item, -1)
-        self.pack_start(toolbar, False, False, 0)
+    def make_list(self) -> EventList:
+        return EventList(self.gui, self.factory, self.clock)
 
-        self.store = widgets.List()
-        self._events = EventsBindingList(factory)
-        self.store.set_data_source(self._events)
-        scrolled = Gtk.ScrolledWindow(
-            visible=True, shadow_type=Gtk.ShadowType.IN
-        )
-        self.view = widgets.TreeView(
-            visible=True, model=self.store, headers_clickable=False
-        )
-        for title, format_string in COLUMNS:
-            column = Gtk.TreeViewColumn.new()
-            column.set_properties(title=title)
-            if format_string is None:
-                cell = widgets.CellRendererBrickIcon()
-            else:
-                cell = widgets.CellRendererFormattable(
-                    format_string=format_string, formatting_enabled=True
-                )
-            column.pack_start(cell, False)
-            self.view.append_column(column)
-        self.view.set_cells_data_func()
-        scrolled.add(self.view)
-        self.pack_start(scrolled, True, True, 0)
+    def items(self) -> list:
+        return list(self.factory.iter_events())
 
-        self._states = StateManager()
-        state_add_selection(
-            self._states,
-            self.view,
-            lambda: self.view.get_selected_value() is not None,
-            _("No event selected"),
-            self.configure_button,
-        )
-        self.new_button.connect("clicked", self.on_new_clicked)
-        self.start_button.connect("clicked", self.on_start_clicked)
-        self.stop_button.connect("clicked", self.on_stop_clicked)
-        self.configure_button.connect("clicked", self.on_configure_clicked)
-        self.view.connect("button-release-event", self.on_button_release)
-        self.view.connect("key-release-event", self.on_key_release)
-        self.view.connect("row-activated", self.on_row_activated)
+    def count_text(self, items) -> str:
+        return count(items)
 
-    # What the main window tells
+    def can_start(self, item) -> bool:
+        return eventinfo.state(item) is State.READY
 
-    def on_quit(self) -> None:
-        dispose(self._events)
+    def start_all(self) -> None:
+        """Start the events that can start; they wait, then run."""
 
-    # Signals
+        for event in self.items():
+            if self.can_start(event):
+                event.poweron()
 
-    def on_new_clicked(self, button) -> None:
-        NewEventDialog(self.gui).show(self.gui.window)
+    def stop_all(self) -> None:
+        """Stop the waiting events: their actions don't run."""
 
-    def on_start_clicked(self, button) -> None:
-        for event in self.factory.iter_events():
-            event.poweron()
-
-    def on_stop_clicked(self, button) -> None:
-        for event in self.factory.iter_events():
+        for event in self.items():
             event.poweroff()
 
-    def on_configure_clicked(self, button) -> None:
-        event = self.view.get_selected_value()
-        if event is not None:
-            self.gui.curtain_up(event)
+    def new(self) -> None:
+        NewEventDialog(self.gui).show(self.gui.window)
 
-    def open_menu(self, value, event) -> None:
-        self._menu = eventmenu.popup(self.view, event, self.gui, value)
+    def remove(self, item) -> None:
+        self.gui.ask_remove_event(item)
 
-    def on_button_release(self, view, event) -> bool | None:
-        return popup_menu(view, event, self.open_menu)
+    def popup(self, widget, event, item) -> Gtk.Menu:
+        return eventmenu.popup(widget, event, self.gui, item, True)
 
-    def on_key_release(self, view, key) -> None:
-        if Gdk.keyval_name(key.keyval) in DELETE_KEYS:
-            event = view.get_selected_value()
-            if event is not None:
-                self.gui.ask_remove_event(event)
+    def panel_for(self, item):
+        return IConfigController(item, None)
 
-    def on_row_activated(self, view, path, column) -> None:
-        model = view.get_model()
-        model.get_value(model.get_iter(path), 0).toggle()
+    def settings_words(self, item) -> str:
+        return _("Event settings")

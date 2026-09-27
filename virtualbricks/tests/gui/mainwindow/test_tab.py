@@ -15,24 +15,16 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""
-The tabs of the main window: which pages they are, their switch, and the
-menu of a list.
-"""
+"""The tabs of the main window: which pages they are, and their switch."""
 
 from twisted.trial import unittest
 
 from virtualbricks.tests.gui import has_display
 
 if has_display:
-    from gi.repository import Gdk, Gtk
+    from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow.tab import (
-        Tab,
-        popup_menu,
-        switch,
-        tabs,
-    )
+    from virtualbricks.gui.mainwindow.tab import Tab, switch, tabs
 
     class FakeTab(Tab, Gtk.Box):
         def __init__(self, name, heard):
@@ -99,54 +91,3 @@ class TestTabs(unittest.TestCase):
             plain.on_left,
         ):
             self.assertIsNone(hook())
-
-
-class TestPopupMenu(unittest.TestCase):
-
-    if not has_display:  # pragma: no cover
-        skip = "GTK can't open a display"
-
-    def setUp(self):
-        self.menus = []
-        store = Gtk.ListStore(object)
-        for value in ("sw1", "sw2"):
-            store.append((value,))
-        self.view = Gtk.TreeView(visible=True, model=store)
-        column = Gtk.TreeViewColumn(title="Name")
-        column.pack_start(Gtk.CellRendererText(), False)
-        self.view.append_column(column)
-        self.window = Gtk.OffscreenWindow()
-        self.addCleanup(self.window.destroy)
-        # the focus is somewhere else first
-        box = Gtk.Box(visible=True)
-        box.pack_start(Gtk.Entry(visible=True), False, False, 0)
-        box.pack_start(self.view, True, True, 0)
-        self.window.add(box)
-        self.window.show()
-        self.row = self.view.get_background_area(Gtk.TreePath(1), None)
-
-    def release(self, button, y):
-        event = Gdk.Event.new(Gdk.EventType.BUTTON_RELEASE)
-        event.button.button = button
-        event.button.x = self.row.x + 1
-        event.button.y = y
-        return popup_menu(
-            self.view,
-            event.button,
-            lambda value, event: self.menus.append((value, event.button)),
-        )
-
-    def test_on_a_row(self):
-        self.assertTrue(self.release(3, self.row.y + 1))
-        self.assertEqual(self.menus, [("sw2", 3)])
-        path, _column = self.view.get_cursor()
-        self.assertEqual(path.get_indices(), [1])
-        self.assertIs(self.window.get_focus(), self.view)
-
-    def test_not_on_a_row(self):
-        self.assertTrue(self.release(3, self.row.y + 10 * self.row.height))
-        self.assertEqual(self.menus, [])
-
-    def test_not_the_right_button(self):
-        self.assertIsNone(self.release(1, self.row.y + 1))
-        self.assertEqual(self.menus, [])

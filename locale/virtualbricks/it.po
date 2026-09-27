@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 08:08+0200\n"
+"POT-Creation-Date: 2026-09-27 08:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -568,6 +568,7 @@ msgid "Ready"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events.py
 msgid "Waiting"
 msgstr ""
 
@@ -640,27 +641,41 @@ msgid "Run Now"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "Icon"
-msgstr "Icona"
-
-#: virtualbricks/gui/mainwindow/events.py virtualbricks/migrate/gui.py
-msgid "Status"
-msgstr "Stato"
-
-#: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/windows/attachevent.py
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
-msgid "Name"
-msgstr "Nome"
+#, python-brace-format
+msgid "{waiting} of {total} waiting"
+msgid_plural "{waiting} of {total} waiting"
+msgstr[0] ""
+msgstr[1] ""
 
 #: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/windows/attachevent.py
-msgid "Parameters"
-msgstr "Parametri"
+#, python-brace-format
+msgid "{seconds} s"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+#, fuzzy, python-brace-format
+msgid "Add an action to {name} first"
+msgstr "Scegliere prima un nome di file!"
+
+#: virtualbricks/gui/mainwindow/events.py
+#, fuzzy
+msgid "No events"
+msgstr "Eventi"
+
+#: virtualbricks/gui/mainwindow/events.py
+#, python-brace-format
+msgid "No event matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events.py
+#, fuzzy
+msgid "No event is waiting"
+msgstr "Questo evento è in uso"
+
+#: virtualbricks/gui/mainwindow/events.py
+#, python-brace-format
+msgid "No waiting event matches “{text}”"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
 #, fuzzy
@@ -672,21 +687,25 @@ msgid "New Event"
 msgstr "Nuovo Evento"
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "Start All Events"
+#, fuzzy
+msgid "Search events"
 msgstr "Avvia Tutti gli Eventi"
 
 #: virtualbricks/gui/mainwindow/events.py
-msgid "Stop All Events"
-msgstr "Ferma Tutti gli Eventi"
+#, fuzzy
+msgid "No Events Yet"
+msgstr "Nuovo Evento"
+
+#: virtualbricks/gui/mainwindow/events.py
+msgid ""
+"An event waits, then starts or stops bricks, or runs commands. Add one to "
+"script the lab."
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
 #, fuzzy
-msgid "Configure"
-msgstr "_Configura"
-
-#: virtualbricks/gui/mainwindow/events.py
-msgid "No event selected"
-msgstr ""
+msgid "Event settings"
+msgstr "Impostazion manuali"
 
 #: virtualbricks/gui/mainwindow/picture.py
 #, fuzzy
@@ -1110,6 +1129,19 @@ msgstr "<b>Selezione Evento di avvio</b>"
 #, fuzzy
 msgid "<b>Stop event selection</b>"
 msgstr "<b>Selezione Evento di arresto</b>"
+
+#: virtualbricks/gui/windows/attachevent.py
+#: virtualbricks/gui/windows/createimagedialog.py
+#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
+msgid "Name"
+msgstr "Nome"
+
+#: virtualbricks/gui/windows/attachevent.py
+msgid "Parameters"
+msgstr "Parametri"
 
 #: virtualbricks/gui/windows/attachevent.py
 #, fuzzy
@@ -2753,6 +2785,10 @@ msgid "Write to"
 msgstr ""
 
 #: virtualbricks/migrate/gui.py
+msgid "Status"
+msgstr "Stato"
+
+#: virtualbricks/migrate/gui.py
 msgid "Save report…"
 msgstr ""
 
@@ -2816,6 +2852,16 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "Icon"
+#~ msgstr "Icona"
+
+#~ msgid "Stop All Events"
+#~ msgstr "Ferma Tutti gli Eventi"
+
+#, fuzzy
+#~ msgid "Configure"
+#~ msgstr "_Configura"
 
 #, fuzzy
 #~ msgid "Open control monitor"
@@ -3781,9 +3827,6 @@ msgstr "kvm non trovato"
 #~ msgstr ""
 #~ "Il mattone è ancora in esecuzione, sarà arrestato prima di essere "
 #~ "cancellato!\n"
-
-#~ msgid "This event is in use"
-#~ msgstr "Questo evento è in uso"
 
 #~ msgid "Do you really want to delete"
 #~ msgstr "Vuoi davvero cancellare"

@@ -23,9 +23,8 @@ A tab is the widget of its page, and a :class:`Tab` too: the window puts it
 in its notebook under its title, and tells it when a project opens, is
 saved, or Virtualbricks quits, and when it shows or another tab does.
 
-The tabs share the helpers after it: a button with an icon; the menus of
-the bricks and the events, their items and where they open; and for the
-list of the Events tab, its menu and the sensitivity of its toolbar.
+The tabs share the helpers after it: a button with an icon, and the menus
+of the bricks and the events, their items and where they open.
 """
 
 from __future__ import annotations
@@ -151,36 +150,3 @@ def popup(widget, event, model, group, actions) -> Gtk.Menu:
     else:
         result.popup_at_pointer(event)
     return result
-
-
-# The list of the events
-
-
-def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
-    """Make widgets sensitive while prerequisite() is true, on a selection."""
-
-    state = manager._build_state(tooltip, *widgets)
-    state.add_prerequisite(prerequisite)
-    selection = treeview.get_selection()
-    selection.connect("changed", lambda s: state.check())
-    state.check()
-    return state
-
-
-def popup_menu(view, event, open_menu) -> bool | None:
-    """
-    For the button-release-event of a list: the right button opens the menu
-    of the row under it, with open_menu(value, event). True if it's the
-    right button, on a row or not.
-    """
-
-    if event.button != 3:
-        return None
-    found = view.get_path_at_pos(int(event.x), int(event.y))
-    if found is not None:
-        path, column, _x, _y = found
-        view.grab_focus()
-        view.set_cursor(path, column, False)
-        model = view.get_model()
-        open_menu(model.get_value(model.get_iter(path), 0), event)
-    return True
