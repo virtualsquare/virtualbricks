@@ -59,7 +59,8 @@ class Event(base.Base):
         return state
 
     def configured(self):
-        return len(self.config.actions) > 0 and self.config.delay > 0
+        # a delay of 0 runs the actions at once
+        return len(self.config.actions) > 0
 
     def get_parameters(self):
         tempstr = _("Delay: %d") % self.config.delay

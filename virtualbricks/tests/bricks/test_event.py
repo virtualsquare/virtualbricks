@@ -107,8 +107,9 @@ class TestEvent(BrickTestCase):
         self.assertFalse(self.event.configured())
         self.event.set({"delay": 2})
         self.assertFalse(self.event.configured())
+        # at once
         self.event.set({"delay": 0, "actions": [action]})
-        self.assertFalse(self.event.configured())
+        self.assertTrue(self.event.configured())
         self.event.set({"delay": 2})
         self.assertTrue(self.event.configured())
 
@@ -147,7 +148,7 @@ class TestEvent(BrickTestCase):
         self.assertIsNone(self.event.scheduled)
 
     def test_poweron_needs_a_configuration(self):
-        for delay, actions in ((0, []), (2, []), (0, [Recording("a on")])):
+        for delay, actions in ((0, []), (2, [])):
             self.event.set({"delay": delay, "actions": actions})
             self.assertRaises(errors.BadConfigError, self.event.poweron)
         self.assertEqual(self.clock.getDelayedCalls(), [])
@@ -184,6 +185,15 @@ class TestEvent(BrickTestCase):
         self.assertEqual(self.clock.getDelayedCalls(), [])
         # the event is over
         self.assertEqual(self.changes, [self.event, self.event])
+        return deferred.addCallback(self.assertIs, self.event)
+
+    def test_at_once(self):
+        # a delay of 0: when the reactor comes back
+        self.configure(0, Recording("a on"))
+        deferred = self.event.poweron()
+        self.assertEqual(Recording.performed, [])
+        self.clock.advance(0)
+        self.assertEqual(Recording.performed, [("a on", self.factory)])
         return deferred.addCallback(self.assertIs, self.event)
 
     def test_can_run_again(self):

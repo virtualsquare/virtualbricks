@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 07:50+0200\n"
+"POT-Creation-Date: 2026-09-27 07:59+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -271,6 +271,7 @@ msgid "Not connected"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/eventinfo.py
 msgid "Not configured"
 msgstr ""
 
@@ -521,6 +522,77 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks.py
 #, python-brace-format
 msgid "{kind} settings"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+msgid "Ready"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+msgid "Waiting"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "{first} and {last}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "starts {names}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "stops {names}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "starts the event {names}"
+msgid_plural "starts the events {names}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "stops the event {names}"
+msgid_plural "stops the events {names}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "runs “{command}” on the host"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "runs “{command}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+msgid "No actions yet"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "After {delay} s, {does}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "At once, {does}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "when {brick} starts"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventinfo.py
+#, python-brace-format
+msgid "when {brick} stops"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
