@@ -26,7 +26,8 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import Window, pango_attr_list
+from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.pango import pango_attr_list
 
 
 class _ConfirmDialog(Window):

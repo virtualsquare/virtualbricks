@@ -57,7 +57,7 @@ from twisted.internet import defer  # noqa: E402
 from virtualbricks.gui import graphics  # noqa: E402
 from virtualbricks.gui.mainwindow.picture import Icons  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
-from virtualbricks.gui.dialogs.base import pango_attr_list  # noqa: E402
+from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.tools import is_running  # noqa: E402
 

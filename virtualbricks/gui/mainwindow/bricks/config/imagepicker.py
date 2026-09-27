@@ -40,7 +40,7 @@ from virtualbricks.gui.dialogs.addimage import (
     ExistingImageDialog,
     NewDiskDialog,
 )
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
 GAP = 10

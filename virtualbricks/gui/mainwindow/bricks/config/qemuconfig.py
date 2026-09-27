@@ -36,7 +36,7 @@ from virtualbricks.gui.interfaces import IMenu
 from virtualbricks.spawn import getQemuOutput
 from virtualbricks.bricks.virtualmachine import get_usb_devices
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.gui.mainwindow.bricks.config.base import (
     ConfigController,
     SensitiveControl,

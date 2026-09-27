@@ -25,20 +25,6 @@ signal of that widget. The brick configuration panels have their own
 base, in :mod:`virtualbricks.gui.mainwindow.bricks.config.base`.
 """
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Pango
-
-
-def pango_attr_list(*attributes: Pango.Attribute) -> Pango.AttrList:
-    """Return a Pango.AttrList with the given attributes."""
-
-    attr_list = Pango.AttrList()
-    for attribute in attributes:
-        attr_list.insert(attribute)
-    return attr_list
-
 
 class Window:
     """

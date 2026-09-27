@@ -54,7 +54,8 @@ from virtualbricks.config import archive, images
 from virtualbricks.config.workspace import projects
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.dialogs.addimage import check_name
-from virtualbricks.gui.dialogs.base import Window, pango_attr_list
+from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _, ngettext
 
 logger = Logger()

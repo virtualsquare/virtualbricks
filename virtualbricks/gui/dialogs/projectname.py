@@ -33,7 +33,7 @@ from twisted.logger import Logger
 from virtualbricks import errors
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.pango import pango_attr_list
 
 logger = Logger()
 project_created = 'Project "{name}" created'

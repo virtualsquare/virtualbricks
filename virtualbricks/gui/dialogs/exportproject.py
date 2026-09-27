@@ -37,7 +37,7 @@ from virtualbricks import locations
 from virtualbricks.config.archive import ArchiveCancelled, export_project
 from virtualbricks.config.archive import DISK, find_qemu_img, member_kind
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import ngettext
 
 logger = Logger()

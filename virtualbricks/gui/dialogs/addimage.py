@@ -47,7 +47,7 @@ from virtualbricks import errors, spawn
 from virtualbricks.config import images
 from virtualbricks.config.workspace import copy_sparse, projects
 from virtualbricks.gui import imageinfo
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import _
 
 MARGIN = 18

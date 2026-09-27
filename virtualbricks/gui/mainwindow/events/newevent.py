@@ -37,7 +37,7 @@ from virtualbricks import errors  # noqa: E402
 from virtualbricks.gui.mainwindow.events.eventeditor import (  # noqa: E402
     delay_button,
 )
-from virtualbricks.gui.dialogs.base import pango_attr_list  # noqa: E402
+from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 
 # The name suggested, and the delay, in seconds.

@@ -41,7 +41,7 @@ from gi.repository import Gio, GLib, Gtk, Pango
 from virtualbricks.bricks.virtualmachine import DISK_DEVICES
 from virtualbricks.config import images
 from virtualbricks.gui import imageinfo
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.gui.dialogs.imagedialogs import (
     MergeDialog,
     SaveImageDialog,

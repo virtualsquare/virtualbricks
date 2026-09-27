@@ -46,7 +46,8 @@ from virtualbricks.config.archive import find_qemu_img
 from virtualbricks.config.importing import COPY, SKIP, USE
 from virtualbricks.gui.markdownview import MarkdownLabel
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import Window, pango_attr_list
+from virtualbricks.gui.dialogs.base import Window
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import ngettext
 from virtualbricks.markdown import first_paragraph
 

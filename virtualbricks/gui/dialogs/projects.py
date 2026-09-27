@@ -41,7 +41,7 @@ from virtualbricks.config.workspace import projects
 from virtualbricks.gui.markdownview import MarkdownView
 from virtualbricks.gui.dialogs import projectname
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import pango_attr_list
+from virtualbricks.gui.pango import pango_attr_list
 from virtualbricks.i18n import ngettext
 from virtualbricks.markdown import first_line
 
