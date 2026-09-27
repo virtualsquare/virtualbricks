@@ -27,8 +27,8 @@ events or the waiting ones, and Start All starts the events that can start.
 The search finds an event by its name.
 
 New Event opens the window that makes an event. The menu of an event is
-:mod:`virtualbricks.gui.mainwindow.eventmenu`'s, and its settings are its
-panel of :mod:`virtualbricks.gui.windows`.
+:mod:`virtualbricks.gui.mainwindow.eventmenu`'s, and its settings are
+:mod:`virtualbricks.gui.mainwindow.eventeditor`'s.
 """
 
 from __future__ import annotations
@@ -39,8 +39,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 from twisted.internet import reactor, task  # noqa: E402
 
-from virtualbricks.gui.interfaces import IConfigController  # noqa: E402
 from virtualbricks.gui.mainwindow import eventinfo, eventmenu  # noqa: E402
+from virtualbricks.gui.mainwindow.eventeditor import EventEditor  # noqa: E402
 from virtualbricks.gui.mainwindow.eventinfo import (  # noqa: E402
     LABELS,
     SEPARATOR,
@@ -232,8 +232,8 @@ class EventsTab(RowsTab):
     def popup(self, widget, event, item) -> Gtk.Menu:
         return eventmenu.popup(widget, event, self.gui, item, True)
 
-    def panel_for(self, item):
-        return IConfigController(item, None)
+    def panel_for(self, item) -> EventEditor:
+        return EventEditor(item)
 
     def settings_words(self, item) -> str:
         return _("Event settings")

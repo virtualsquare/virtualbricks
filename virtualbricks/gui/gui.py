@@ -39,7 +39,6 @@ from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
 from virtualbricks.bricks import Brick
-from virtualbricks.bricks.event import Event
 from virtualbricks.gui.windows import (
     EditEthernetDialog,
     SwitchConfigController,
@@ -51,7 +50,6 @@ from virtualbricks.gui.windows import (
     TunnelClientConfigController,
     TunnelListenConfigController,
     QemuConfigController,
-    EventConfigController,
 )
 from virtualbricks.gui.mainwindow import VBGUI
 from virtualbricks.gui.interfaces import IMenu, IConfigController
@@ -101,9 +99,6 @@ class LinkMenu:
 
 registerAdapter(LinkMenu, Plug, IMenu)
 registerAdapter(LinkMenu, Sock, IMenu)
-
-
-registerAdapter(EventConfigController, Event, IConfigController)
 
 
 def config_panel_factory(context):

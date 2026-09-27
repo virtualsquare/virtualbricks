@@ -25,8 +25,45 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
+from virtualbricks import console
 from virtualbricks.gui.windows.base import _, Window
-from virtualbricks.gui.windows.eventconfig import EventControllerMixin
+
+
+class EventControllerMixin:
+    """Edit the actions of an event as commands, one per line."""
+
+    def setup_controller(self, event):
+        self.actions_view.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
+        self.shell_cell.set_activatable(True)
+        self.action_cell.set_property("editable", True)
+        model = self.actions_store
+        for action in event.config.actions:
+            model.append((action, isinstance(action, console.ShellCommand)))
+        model.append(("", False))
+
+    def on_action_cell_edited(self, cell_renderer, path, new_text):
+        model = self.actions_store
+        iter = model.get_iter(path)
+        if new_text:
+            model.set_value(iter, 0, new_text)
+            if model.iter_next(iter) is None:
+                model.append(("", False))
+        elif model.iter_next(iter) is not None:
+            model.remove(iter)
+        else:
+            model.set_value(iter, 0, new_text)
+
+    def on_shell_cell_toggled(self, cell_renderer, path):
+        model = self.actions_store
+        model.set_value(
+            model.get_iter(path), 1, not cell_renderer.get_active()
+        )
+
+    def configure_event(self, event, attrs):
+        model = self.actions_store
+        f = (console.VbShellCommand, console.ShellCommand)
+        attrs["actions"] = [f[row[1]](row[0]) for row in model if row[0]]
+        event.set(attrs)
 
 
 class ShellCommandDialog(Window, EventControllerMixin):

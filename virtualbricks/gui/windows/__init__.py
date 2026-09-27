@@ -25,7 +25,6 @@ the tests import the others from their modules.
 
 from .captureconfig import CaptureConfigController
 from .ethernetdialog import EditEthernetDialog
-from .eventconfig import EventConfigController
 from .netemuconfig import NetemuConfigController
 from .qemuconfig import QemuConfigController
 from .switchconfig import SwitchConfigController
@@ -38,7 +37,6 @@ from .wireconfig import WireConfigController
 __all__ = [
     "CaptureConfigController",
     "EditEthernetDialog",
-    "EventConfigController",
     "NetemuConfigController",
     "QemuConfigController",
     "SwitchConfigController",

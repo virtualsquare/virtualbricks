@@ -30,9 +30,8 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gdk, Gtk
 
-    # the panel of an event, an adapter of IConfigController
-    import virtualbricks.gui.gui  # noqa: F401
     from virtualbricks.gui.mainwindow import eventmenu, events
+    from virtualbricks.gui.mainwindow.eventeditor import EventEditor
     from virtualbricks.gui.mainwindow.events import EventsTab, count
 
 
@@ -424,7 +423,8 @@ class TestTheSettings(EventsTestCase):
         name, words = text.get_children()
         self.assertEqual(name.get_text(), "start-vms")
         self.assertEqual(words.get_text(), "Event settings")
-        tab._controller.delay_entry.set_text("7")
+        self.assertIsInstance(tab._controller, EventEditor)
+        tab._controller.delay.set_value(7)
         tab.ok_button.clicked()
         self.assertEqual(self.ev.config.delay, 7)
         self.assertIs(tab.get_visible_child(), tab.main_page)
@@ -432,7 +432,7 @@ class TestTheSettings(EventsTestCase):
 
     def test_cancel(self):
         self.tab.configure(self.ev)
-        self.tab._controller.delay_entry.set_text("7")
+        self.tab._controller.delay.set_value(7)
         self.tab.cancel_button.clicked()
         self.assertEqual(self.ev.config.delay, 5)
         self.assertIsNone(self.tab.configuring)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 08:19+0200\n"
+"POT-Creation-Date: 2026-09-27 08:27+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -562,6 +562,64 @@ msgstr ""
 #, fuzzy, python-brace-format
 msgid "{kind} settings"
 msgstr "Impostazion manuali"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Start a brick"
+msgstr "Nuovo Mattone"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Stop a brick"
+msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Start an event"
+msgstr "Avvia in vncserver"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Stop an event"
+msgstr "Ferma Tutti gli Eventi"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Console command"
+msgstr "Comando della shell Host"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Shell command"
+msgstr "Comando della shell Host"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+msgid "A command of the console, as “vm1 config ram=512”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+msgid "A command for the shell of the host"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Remove the action"
+msgstr "Sessione Remota"
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, python-brace-format
+msgid "{name} (missing)"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, python-brace-format
+msgid "Wait {delay} seconds, then:"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, fuzzy
+msgid "Add Action"
+msgstr "Azioni"
 
 #: virtualbricks/gui/mainwindow/eventinfo.py
 msgid "Ready"
@@ -1439,19 +1497,13 @@ msgstr ""
 "(ogni riga è un'azione)"
 
 #: virtualbricks/gui/windows/eventcommand.py
-#: virtualbricks/gui/windows/eventconfig.py
 #, fuzzy
 msgid "Action"
 msgstr "Azioni"
 
 #: virtualbricks/gui/windows/eventcommand.py
-#: virtualbricks/gui/windows/eventconfig.py
 msgid "Host shell command"
 msgstr "Comando della shell Host"
-
-#: virtualbricks/gui/windows/eventconfig.py
-msgid "Delay (seconds):"
-msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
 msgid "Compressing the disks…"
@@ -2856,9 +2908,6 @@ msgstr "kvm non trovato"
 #~ msgid "Icon"
 #~ msgstr "Icona"
 
-#~ msgid "Stop All Events"
-#~ msgstr "Ferma Tutti gli Eventi"
-
 #, fuzzy
 #~ msgid "Configure"
 #~ msgstr "_Configura"
@@ -3072,9 +3121,6 @@ msgstr "kvm non trovato"
 #~ msgstr ""
 #~ "Clicca per selezionare un elemento da usare o configurare, tasto destro "
 #~ "per altro."
-
-#~ msgid "Remote Sessions"
-#~ msgstr "Sessione Remota"
 
 #~ msgid "Topology"
 #~ msgstr "Topologia"
