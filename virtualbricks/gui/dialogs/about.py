@@ -19,9 +19,6 @@ from virtualbricks import __version__
 from virtualbricks.gui import graphics
 from virtualbricks.i18n import _
 
-TRANSLATION_DOMAIN = "virtualbricks"
-
-
 COPYRIGHT = """\
 Copyright © 2019 Virtualbricks team
 VDE - Copyright © 2003-2011 Renzo Davoli.

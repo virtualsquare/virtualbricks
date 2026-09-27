@@ -18,6 +18,9 @@
 
 # This module is ported to new GTK3 using PyGObject
 
+import gi
+
+gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf
 
 from virtualbricks.path import get_resource_filename
@@ -26,6 +29,7 @@ __all__ = [
     "get_image",
     "pixbuf_for_brick_type",
     "get_data_filename",
+    "load_pixbuf",
 ]
 
 
@@ -35,6 +39,14 @@ def get_data_filename(resource):
 
 def get_image(name):
     return get_data_filename(name)
+
+
+def load_pixbuf(name: str) -> GdkPixbuf.Pixbuf:
+    """
+    Load an image from the ``virtualbricks/gui/data`` directory.
+    """
+
+    return GdkPixbuf.Pixbuf.new_from_file(get_data_filename(name))
 
 
 def has_custom_icon(brick):

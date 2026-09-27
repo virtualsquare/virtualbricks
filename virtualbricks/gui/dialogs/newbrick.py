@@ -30,11 +30,8 @@ from twisted.logger import Logger
 from virtualbricks import errors
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import (
-    Window,
-    destroy_on_exit,
-    load_pixbuf,
-)
+from virtualbricks.gui.graphics import load_pixbuf
+from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
 
 logger = Logger()
 

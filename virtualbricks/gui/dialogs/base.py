@@ -31,21 +31,7 @@ from typing import Callable
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import GdkPixbuf, Pango
-
-from virtualbricks.gui import graphics
-
-TRANSLATION_DOMAIN = "virtualbricks"
-
-
-def load_pixbuf(name: str) -> GdkPixbuf.Pixbuf:
-    """
-    Load an image from the ``virtualbricks/gui/data`` directory, the same
-    directory Gtk.Builder used to resolve the image paths of the Glade files.
-    """
-
-    return GdkPixbuf.Pixbuf.new_from_file(graphics.get_image(name))
+from gi.repository import Pango
 
 
 def pango_attr_list(*attributes: Pango.Attribute) -> Pango.AttrList:

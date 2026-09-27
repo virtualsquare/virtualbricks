@@ -40,7 +40,7 @@ from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.tools import is_running
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import load_pixbuf
+from virtualbricks.gui.graphics import load_pixbuf
 from virtualbricks.gui.dialogs.about import AboutDialog
 from virtualbricks.gui.dialogs.confirmdialog import (
     DeleteBrickConfirmDialog,
