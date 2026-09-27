@@ -23,9 +23,7 @@ from twisted.internet import defer, reactor
 from virtualbricks import base, console, errors
 from virtualbricks.bricks.eventaction import EventAction
 from virtualbricks.config.schema import Int, ListOf, define, field
-
-if False:  # pyflakes
-    _ = str
+from virtualbricks.i18n import _
 
 process_ended = "Process ended with exit code {code}"
 event_error = "Error in event action. See the log for more " "information"

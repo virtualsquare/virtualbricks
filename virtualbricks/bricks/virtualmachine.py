@@ -44,13 +44,11 @@ from virtualbricks.config.schema import (
 )
 from virtualbricks.config.settings import get_setting
 from virtualbricks.config.workspace import projects
+from virtualbricks.i18n import _
 from virtualbricks.nic import random_mac
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
-
-if False:
-    _ = str
 
 logger = Logger()
 new_cow = (

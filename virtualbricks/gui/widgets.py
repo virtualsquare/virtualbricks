@@ -18,14 +18,7 @@
 from gi.repository import Gtk
 from gi.repository import GObject
 
-if False:
-    _ = str  # make pyflakes happy
-
-try:
-    _
-except NameError:
-    # needed to support glade
-    _ = str
+from virtualbricks.i18n import _
 
 
 class CellRendererFormattable(Gtk.CellRendererText):
