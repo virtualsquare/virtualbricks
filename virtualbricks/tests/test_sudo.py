@@ -70,14 +70,18 @@ class TestSudoCommand(unittest.TestCase):
     def test_with_a_helper(self):
         environ = {"SUDO_ASKPASS": "/usr/bin/ssh-askpass"}
         self.assertEqual(
-            sudo_command(environ, self.no_conf), ["/usr/bin/sudo", "-A", "--"]
+            sudo_command(["tee", "/a"], environ, self.no_conf),
+            ["/usr/bin/sudo", "-A", "--", "tee", "/a"],
         )
 
     def test_without_a_helper(self):
         self.assertEqual(
-            sudo_command({}, self.no_conf), ["/usr/bin/sudo", "-n", "--"]
+            sudo_command(["tee", "/a"], {}, self.no_conf),
+            ["/usr/bin/sudo", "-n", "--", "tee", "/a"],
         )
 
     def test_sudo_not_found(self):
         self.patch(shutil, "which", lambda name: None)
-        self.assertEqual(sudo_command({}, self.no_conf)[0], "sudo")
+        self.assertEqual(
+            sudo_command([], {}, self.no_conf), ["sudo", "-n", "--"]
+        )

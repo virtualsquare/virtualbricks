@@ -68,14 +68,15 @@ def askpass_configured(
 
 
 def sudo_command(
-    environ: Mapping[str, str] | None = None, sudo_conf: str = SUDO_CONF
+    args: list[str],
+    environ: Mapping[str, str] | None = None,
+    sudo_conf: str = SUDO_CONF,
 ) -> list[str]:
     """
-    The start of a command that runs a program as root.
-
-    ``[sudo, "-A", "--"]`` with an askpass helper, else ``[sudo, "-n",
-    "--"]``: the program and its arguments follow.
+    The command that runs args, a program and its arguments, as root:
+    ``[sudo, "-A", "--", *args]`` with an askpass helper, else ``[sudo,
+    "-n", "--", *args]``.
     """
 
     option = "-A" if askpass_configured(environ, sudo_conf) else "-n"
-    return [shutil.which("sudo") or "sudo", option, "--"]
+    return [shutil.which("sudo") or "sudo", option, "--", *args]

@@ -32,7 +32,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.logger import Logger
 
-from virtualbricks import errors, tools
+from virtualbricks import errors, ksm, tools
 from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.config.settings import get_setting, set_setting
@@ -352,7 +352,7 @@ class VBGUI:
         vmissing = tools.check_missing_vde()
         missing = vmissing + qmissing
 
-        if not tools.check_ksm():
+        if not ksm.check_ksm():
             set_setting("ksm", False)
             missing.append("ksm")
         missing_text = []

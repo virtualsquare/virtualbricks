@@ -27,7 +27,7 @@ from gi.repository import Gdk, Gtk
 
 from twisted.logger import Logger
 
-from virtualbricks import tools
+from virtualbricks import ksm
 from virtualbricks.config.settings import (
     COW_FORMATS,
     get_setting,
@@ -348,7 +348,7 @@ class SettingsDialog(_Dialog):
         # disable the switch, try to change the value of KSM and reactivate
         # the switch
         self.enable_ksm_switch.set_sensitive(False)
-        deferred = tools.set_ksm(enable=self.enable_ksm_switch.get_active())
+        deferred = ksm.set_ksm(enable=self.enable_ksm_switch.get_active())
         deferred.addBoth(set_ksm_cb)
         self._setting_ksm_deferred = deferred
 
@@ -371,7 +371,7 @@ class SettingsDialog(_Dialog):
             projects.save(self.virtualbricks_gui.brickfactory)
         ksm_active = self.enable_ksm_switch.get_active()
         set_setting("ksm", ksm_active)
-        tools.set_ksm(ksm_active)
+        ksm.set_ksm(ksm_active)
         store_settings()
         if self.systray_switch.get_active():
             self.virtualbricks_gui.start_systray()

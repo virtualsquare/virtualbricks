@@ -25,7 +25,7 @@ from twisted.internet import defer
 from twisted.logger import LogLevel
 from twisted.trial import unittest
 
-from virtualbricks import tools
+from virtualbricks import ksm
 from virtualbricks.config import workspace
 from virtualbricks.tests import (
     FakeLogger,
@@ -110,7 +110,7 @@ class GuiTestCase(unittest.TestCase):
             self.ksm.append(enable)
             return defer.succeed(enable)
 
-        self.patch(tools, "set_ksm", set_ksm)
+        self.patch(ksm, "set_ksm", set_ksm)
         self.factory = make_factory(self)
         self.manager = use_workspace(
             self, os.path.join(self.root, "workspace")

@@ -433,7 +433,7 @@ class Brick(base.Base):
             self.logger.info(start_brick, args=" ".join(args))
             # usePTY?
             if self.needsudo():
-                args = sudo_command() + args
+                args = sudo_command(args)
                 prog = args[0]
             self.proc = self.process_protocol(self)
             reactor.spawnProcess(self.proc, prog, args, os.environ)

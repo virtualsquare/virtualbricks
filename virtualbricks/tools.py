@@ -19,22 +19,17 @@
 
 import os
 import sys
-import errno
 from pathlib import Path
 from functools import update_wrapper, wraps
-import tempfile
 import struct
 
-from twisted.internet import defer
 from twisted.internet import utils
 from twisted.logger import Logger
 import constantly as constants
 
 from virtualbricks.config.settings import get_setting
-from virtualbricks.sudo import sudo_command
 
 logger = Logger()
-ksm_error = "Can not change ksm state. (failed command: {cmd})"
 
 
 def synchronize(func, lock):
@@ -128,70 +123,6 @@ def check_kvm(path=None):
     return os.access("/dev/kvm", os.R_OK & os.W_OK)
 
 
-KSM_PATH = "/sys/kernel/mm/ksm/run"
-
-
-def check_ksm():
-    """
-    Check if KSM is enabled in the machine.
-
-    :rtype: bool
-    """
-
-    try:
-        with open(KSM_PATH) as fp:
-            return bool(int(fp.readline()))
-    except IOError:
-        return False
-
-
-def _check_set_ksm_cb(exit_code, cmd):
-    """
-    :type exit_code: bool
-    :type cmd: str
-    :rtype: bool
-    """
-
-    if exit_code:  # exit state != 0
-        logger.error(ksm_error, cmd=cmd)
-    return check_ksm()
-
-
-def set_ksm(enable):
-    """
-    Enable or disable KSM support in the machine.
-
-    :type enable: bool
-    :rtype: twisted.internet.defer.Deferred[bool]
-    """
-
-    ksm_enabled = check_ksm()
-    if enable ^ ksm_enabled:
-        enable = 1 if enable else 0
-        cmd = f"echo {enable} > {KSM_PATH}"
-        args = ["/bin/sh", "-c", cmd]
-        if os.geteuid() != 0:
-            args = sudo_command() + args
-        d = utils.getProcessValue(args[0], args[1:], env=os.environ)
-        return d.addCallback(_check_set_ksm_cb, cmd)
-    else:
-        return defer.succeed(ksm_enabled)
-
-
-class Tempfile:
-
-    def __enter__(self):
-        self.fd, self.filename = tempfile.mkstemp()
-        return self.fd, self.filename
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        try:
-            os.remove(self.filename)
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
-
-
 GENERIC_HEADER = ">II"
 GENERIC_HEADER_LEN = struct.calcsize(GENERIC_HEADER)
 COW_MAGIC = 0x4F4F4F4D  # OOOM
@@ -249,90 +180,6 @@ def get_backing_file(imagefile):
         else:
             raise NotCowFileError()
     return os.fsdecode(backing_b)
-
-
-def fmtsize(size):
-    if size < 10240:
-        return "{0} B".format(size)
-    size /= 1024.0
-    for unit in "KB", "MB", "GB":
-        if size < 1024:
-            return "{0:.1f} {1}".format(size, unit)
-        size /= 1024.0
-    return "{0:.1f} TB".format(size)
-
-
-def copyTo(self, destination, followLinks=True):
-    """
-    Copies self to destination.
-
-    If self doesn't exist, an OSError is raised.
-
-    If self is a directory, this method copies its children (but not
-    itself) recursively to destination - if destination does not exist as a
-    directory, this method creates it.  If destination is a file, an
-    IOError will be raised.
-
-    If self is a file, this method copies it to destination.  If
-    destination is a file, this method overwrites it.  If destination is a
-    directory, an IOError will be raised.
-
-    If self is a link (and followLinks is False), self will be copied
-    over as a new symlink with the same target as returned by os.readlink.
-    That means that if it is absolute, both the old and new symlink will
-    link to the same thing.  If it's relative, then perhaps not (and
-    it's also possible that this relative link will be broken).
-
-    File/directory permissions and ownership will NOT be copied over.
-
-    If followLinks is True, symlinks are followed so that they're treated
-    as their targets.  In other words, if self is a link, the link's target
-    will be copied.  If destination is a link, self will be copied to the
-    destination's target (the actual destination will be destination's
-    target).  Symlinks under self (if self is a directory) will be
-    followed and its target's children be copied recursively.
-
-    If followLinks is False, symlinks will be copied over as symlinks.
-
-    @param destination: the destination (a FilePath) to which self
-        should be copied
-    @param followLinks: whether symlinks in self should be treated as links
-        or as their targets
-    """
-    if self.islink() and not followLinks:
-        os.symlink(os.readlink(self.path), destination.path)
-        return
-    # XXX TODO: *thorough* audit and documentation of the exact desired
-    # semantics of this code.  Right now the behavior of existent
-    # destination symlinks is convenient, and quite possibly correct, but
-    # its security properties need to be explained.
-    if self.isdir():
-        if not destination.exists():
-            destination.createDirectory()
-        for child in self.children():
-            destChild = destination.child(child.basename())
-            copyTo(child, destChild, followLinks)
-    elif self.isfile():
-        writefile = destination.open("w")
-        try:
-            readfile = self.open()
-            try:
-                while 1:
-                    # XXX TODO: optionally use os.open, os.read and O_DIRECT
-                    # and use os.fstatvfs to determine chunk sizes and make
-                    # *****sure**** copy is page-atomic; the following is
-                    # good enough for 99.9% of everybody and won't take a
-                    # week to audit though.
-                    chunk = readfile.read(self._chunkSize)
-                    writefile.write(chunk)
-                    if len(chunk) < self._chunkSize:
-                        break
-            finally:
-                readfile.close()
-        finally:
-            writefile.close()
-    elif not self.exists():
-        raise OSError(errno.ENOENT, "No such file or directory")
 
 
 class ImageFormat(constants.Names):

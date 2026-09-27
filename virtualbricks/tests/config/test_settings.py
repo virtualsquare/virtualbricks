@@ -19,7 +19,7 @@ import os
 
 from twisted.trial import unittest
 
-from virtualbricks import locations, tools
+from virtualbricks import ksm, locations
 from virtualbricks.config.settings import (
     PROJECT_KEYS,
     AppSettings,
@@ -57,8 +57,8 @@ class SettingsTestCase(unittest.TestCase):
         self.logger = FakeLogger()
         self.patch(settings, "logger", self.logger)
         self.ksm = []
-        self.patch(tools, "check_ksm", lambda: True)
-        self.patch(tools, "set_ksm", lambda enable: self.ksm.append(enable))
+        self.patch(ksm, "check_ksm", lambda: True)
+        self.patch(ksm, "set_ksm", lambda enable: self.ksm.append(enable))
 
 
 class TestCheckFormat(unittest.TestCase):

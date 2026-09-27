@@ -221,14 +221,14 @@ def load_settings(path: str | None = None) -> Report:
         logger.info(settings_loaded, filename=path)
     report.log(logger)
     if _app.ksm:
-        from virtualbricks.tools import set_ksm
+        from virtualbricks.ksm import set_ksm
 
         set_ksm(enable=True)
     return report
 
 
 def install() -> None:
-    from virtualbricks.tools import check_ksm
+    from virtualbricks.ksm import check_ksm
 
     _app.ksm = check_ksm()
     if store_settings():
