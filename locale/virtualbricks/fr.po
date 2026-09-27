@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 00:24+0200\n"
+"POT-Creation-Date: 2026-09-27 06:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -545,6 +545,20 @@ msgid ""
 "to start the lab."
 msgstr ""
 
+#: virtualbricks/gui/mainwindow/bricks.py
+#, python-brace-format
+msgid "{kind} settings"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks.py virtualbricks/gui/windows/base.py
+#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
+msgid "_Cancel"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks.py virtualbricks/gui/windows/base.py
+msgid "_OK"
+msgstr ""
+
 #: virtualbricks/gui/mainwindow/events.py
 msgid "Icon"
 msgstr ""
@@ -949,15 +963,6 @@ msgstr ""
 
 #: virtualbricks/gui/windows/attachevent.py
 msgid "Assign nothing"
-msgstr ""
-
-#: virtualbricks/gui/windows/base.py
-msgid "_OK"
-msgstr ""
-
-#: virtualbricks/gui/windows/base.py virtualbricks/gui/windows/logging.py
-#: virtualbricks/migrate/gui.py
-msgid "_Cancel"
 msgstr ""
 
 #: virtualbricks/gui/windows/brickselection.py

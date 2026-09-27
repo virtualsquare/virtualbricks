@@ -26,7 +26,7 @@ lab out when it shows, and again when a brick changes while it shows; a
 project without bricks shows a hint instead.
 
 A click on a brick works as in the list of the bricks: the right button
-opens its menu, a double click starts or stops it.
+opens its menu, a double click configures it.
 """
 
 from __future__ import annotations
@@ -315,7 +315,7 @@ class TopologyTab(Tab, Gtk.Overlay):
             # kept while it shows
             self._menu = brickmenu.popup(area, event, self.gui, brick)
         elif event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
-            self.gui.startstop_brick(brick)
+            self.gui.curtain_up(brick)
         return True
 
     def on_bar_allocated(self, bar, allocation) -> None:

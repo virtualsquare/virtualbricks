@@ -30,6 +30,8 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gdk, Gtk
 
+    # the panels of the bricks, adapters of IConfigController
+    import virtualbricks.gui.gui  # noqa: F401
     from virtualbricks.gui.mainwindow import brickmenu, bricks
     from virtualbricks.gui.mainwindow.bricks import BricksTab, count, types
     from virtualbricks.gui.mainwindow.picture import Icons
@@ -68,9 +70,18 @@ class FakeGui:
         self.window = object()
         self.started = []
         self.removed = []
+        self.configured = []
+        self.tab = None
 
     def startstop_brick(self, brick):
         self.started.append(brick)
+
+    def curtain_up(self, brick):
+        self.configured.append(brick)
+
+    def curtain_down(self):
+        # the panels close the settings through the window
+        self.tab.close_settings()
 
     def ask_remove_brick(self, brick):
         self.removed.append(brick)
@@ -85,6 +96,31 @@ class FakeDialog:
         self.shown.append((self.factory, parent))
 
 
+class FakeController:
+    """A panel: what the tab asks of it."""
+
+    def __init__(self, calls):
+        self.calls = calls
+        self.panel = Gtk.Box()
+        self.hidden = Gtk.Label(label="hidden")
+        self.panel.add(self.hidden)
+
+    def get_config_view(self, gui):
+        self.calls.append(("view", gui))
+        return self.panel
+
+    def on_ok_button_clicked(self, button, gui):
+        self.calls.append("ok")
+        gui.curtain_down()
+
+    def on_cancel_button_clicked(self, button, gui):
+        self.calls.append("cancel")
+        gui.curtain_down()
+
+    def __dispose__(self):
+        self.calls.append("dispose")
+
+
 class BricksTestCase(GuiTestCase):
 
     def setUp(self):
@@ -96,6 +132,7 @@ class BricksTestCase(GuiTestCase):
         self.done = []
         self.sw = self.brick("switch", "sw")
         self.tab = BricksTab(self.gui, self.factory)
+        self.gui.tab = self.tab
         self.addCleanup(self.tab.destroy)
         # a test that quits says so
         self.addCleanup(lambda: self.tab.on_quit())
@@ -201,10 +238,15 @@ class TestTheRowAboveTheList(BricksTestCase):
 
     def test_how_it_is_made(self):
         tab = self.tab
-        header, separator, pages = tab.get_children()
+        self.assertEqual(tab.get_children(), [tab.bricks_page])
+        self.assertIs(tab.get_visible_child(), tab.bricks_page)
+        header, separator, pages = tab.bricks_page.get_children()
         self.assertIsInstance(separator, Gtk.Separator)
         self.assertEqual(
-            [(expand, fill) for _child, expand, fill in packing(tab)],
+            [
+                (expand, fill)
+                for _child, expand, fill in packing(tab.bricks_page)
+            ],
             [(False, False), (False, False), (True, True)],
         )
         self.assertIs(pages, tab.pages)
@@ -531,10 +573,10 @@ class TestTheMouse(BricksTestCase):
         self.assertFalse(self.click(1, 10))
         self.assertEqual(shown, [])
 
-    def test_a_double_click(self):
+    def test_a_double_click_configures(self):
         row = self.tab.list.row_of(self.sw)
         self.tab.list.emit("row-activated", row)
-        self.assertEqual(self.gui.started, [self.sw])
+        self.assertEqual(self.gui.configured, [self.sw])
 
 
 class TestWhatTheWindowTells(BricksTestCase):
@@ -555,3 +597,225 @@ class TestWhatTheWindowTells(BricksTestCase):
         self.assertEqual(self.tab.count.get_text(), "0 of 1 running")
         self.assertIsNone(self.tab.list.row_of(self.factory.bricks[1]))
         self.tab.on_quit = lambda: None
+
+
+class TestTheSettings(BricksTestCase):
+
+    def fake_panels(self):
+        calls = []
+        controllers = {}
+
+        def adapt(brick, default):
+            controllers[brick] = FakeController(calls)
+            return controllers[brick]
+
+        self.patch(bricks, "IConfigController", adapt)
+        return calls, controllers
+
+    def test_a_switch(self):
+        window = self.show()
+        tab = self.tab
+        tab.configure(self.sw)
+        self.assertIs(tab.configuring, self.sw)
+        self.assertIs(tab.get_visible_child(), tab.settings)
+        head, _sep, scrolled, _sep2, actions = tab.settings.get_children()
+        image, text = head.get_children()
+        name, kind = text.get_children()
+        self.assertEqual(name.get_text(), "sw")
+        self.assertEqual(kind.get_text(), "Switch settings")
+        self.assertTrue(kind.get_style_context().has_class("dim-label"))
+        self.assertIs(image.get_pixbuf(), tab.list.icons.get(self.sw, False))
+        [panel] = scrolled.get_child().get_child().get_children()
+        spin = panel.get_child_at(1, 0)
+        spin.set_value(8)
+        tab.ok_button.clicked()
+        self.assertEqual(self.sw.config.numports, 8)
+        self.assertIsNone(tab.configuring)
+        self.assertIsNone(tab.settings)
+        self.assertIs(tab.get_visible_child(), tab.bricks_page)
+        # back on the brick
+        row = tab.list.row_of(self.sw)
+        self.assertIs(tab.list.get_selected_row(), row)
+        self.assertIs(window.get_focus(), row)
+
+    def test_cancel(self):
+        self.tab.configure(self.sw)
+        scrolled = self.tab.settings.get_children()[2]
+        [panel] = scrolled.get_child().get_child().get_children()
+        panel.get_child_at(1, 0).set_value(8)
+        self.tab.cancel_button.clicked()
+        self.assertEqual(self.sw.config.numports, 32)
+        self.assertIs(self.tab.get_visible_child(), self.tab.bricks_page)
+
+    def test_how_the_page_is_made(self):
+        calls, controllers = self.fake_panels()
+        self.tab.configure(self.sw)
+        page = self.tab.settings
+        self.assertEqual(
+            [(expand, fill) for _child, expand, fill in packing(page)],
+            [(False, False)] * 2 + [(True, True)] + [(False, False)] * 2,
+        )
+        for child in page.get_children():
+            self.assertTrue(child.get_visible(), child)
+        head = page.get_children()[0]
+        image, text = head.get_children()
+        name, kind = text.get_children()
+        self.assertEqual(
+            packing(head), [(image, False, False), (text, True, True)]
+        )
+        self.assertEqual(
+            packing(text), [(name, False, False), (kind, False, False)]
+        )
+        for widget in (image, text, name, kind):
+            self.assertTrue(widget.get_visible(), widget)
+        actions = page.get_children()[4]
+        self.assertEqual(
+            packing(actions),
+            [
+                (self.tab.cancel_button, False, False),
+                (self.tab.ok_button, False, False),
+            ],
+        )
+        self.assertEqual(
+            [
+                actions.child_get_property(child, "pack-type")
+                for child in actions.get_children()
+            ],
+            [Gtk.PackType.START, Gtk.PackType.END],
+        )
+        self.assertEqual(
+            actions.get_children(),
+            [self.tab.cancel_button, self.tab.ok_button],
+        )
+        self.assertEqual(self.tab.cancel_button.get_label(), "_Cancel")
+        self.assertEqual(self.tab.ok_button.get_label(), "_OK")
+        self.assertTrue(self.tab.ok_button.get_use_underline())
+        self.assertTrue(
+            self.tab.ok_button.get_style_context().has_class(
+                "suggested-action"
+            )
+        )
+        for button in (self.tab.cancel_button, self.tab.ok_button):
+            self.assertTrue(button.get_visible())
+        controller = controllers[self.sw]
+        self.assertEqual(calls, [("view", self.gui)])
+        # the panel shows, but not what it hides
+        self.assertTrue(controller.panel.get_visible())
+        self.assertFalse(controller.hidden.get_visible())
+        holder = controller.panel.get_parent()
+        self.assertEqual(packing(holder), [(controller.panel, True, True)])
+        self.assertEqual(
+            (
+                holder.get_margin_start(),
+                holder.get_margin_end(),
+                holder.get_margin_top(),
+            ),
+            (8, 8, 8),
+        )
+        self.assertTrue(holder.get_visible())
+
+    def test_a_panel_that_replaces_itself(self):
+        # as the virtual machine's does, once it knows the QEMU there is
+        calls, controllers = self.fake_panels()
+        self.tab.configure(self.sw)
+        panel = controllers[self.sw].panel
+        container = panel.get_parent()
+        container.remove(panel)
+        container.pack_start(Gtk.Label(label="ready"), True, True, 0)
+        self.assertIs(self.tab.configuring, self.sw)
+
+    def test_the_panel_closes_it(self):
+        calls, controllers = self.fake_panels()
+        self.tab.configure(self.sw)
+        self.tab.ok_button.clicked()
+        self.tab.configure(self.sw)
+        self.tab.cancel_button.clicked()
+        self.assertEqual(
+            calls, [("view", self.gui), "ok", ("view", self.gui), "cancel"]
+        )
+        self.assertIsNone(self.tab.configuring)
+
+    def test_escape(self):
+        calls, controllers = self.fake_panels()
+        self.tab.configure(self.sw)
+        page = self.tab.settings
+        event = self.key(Gdk.KEY_a)
+        self.assertFalse(self.tab.on_settings_key_press(page, event.key))
+        event = self.key(Gdk.KEY_Escape)
+        self.assertTrue(self.tab.on_settings_key_press(page, event.key))
+        self.assertEqual(calls[-1], "dispose")
+        self.assertIsNone(self.tab.configuring)
+        # the page's key
+        self.show()
+        self.tab.configure(self.sw)
+        self.assertTrue(
+            self.tab.settings.emit("key-press-event", self.key(Gdk.KEY_Escape))
+        )
+        self.assertIsNone(self.tab.configuring)
+
+    def test_another_brick(self):
+        calls, controllers = self.fake_panels()
+        vm = self.brick("qemu", "vm")
+        self.tab.configure(self.sw)
+        first = self.tab.settings
+        self.tab.configure(vm)
+        self.assertEqual(
+            calls, [("view", self.gui), "dispose", ("view", self.gui)]
+        )
+        self.assertIs(self.tab.configuring, vm)
+        self.assertIsNot(self.tab.settings, first)
+        self.assertEqual(
+            self.tab.get_children(), [self.tab.bricks_page, self.tab.settings]
+        )
+
+    def test_the_brick_deleted(self):
+        calls, controllers = self.fake_panels()
+        vm = self.brick("qemu", "vm")
+        self.tab.configure(self.sw)
+        self.factory.del_brick(vm)
+        self.assertIs(self.tab.configuring, self.sw)
+        self.factory.del_brick(self.sw)
+        self.assertIsNone(self.tab.configuring)
+        self.assertEqual(calls[-1], "dispose")
+
+    def test_another_project(self):
+        calls, controllers = self.fake_panels()
+        self.tab.configure(self.sw)
+        self.tab.on_open()
+        self.assertIsNone(self.tab.configuring)
+        self.assertEqual(calls[-1], "dispose")
+        # and with none
+        self.tab.on_open()
+
+    def test_a_router_has_no_panel(self):
+        self.tab.configure(self.brick("router", "r"))
+        self.assertIsNone(self.tab.configuring)
+        self.assertIs(self.tab.get_visible_child(), self.tab.bricks_page)
+
+    def test_the_keys_of_the_list_wait(self):
+        window = self.show()
+        self.tab.configure(self.sw)
+        event = self.key(Gdk.KEY_f, Gdk.ModifierType.CONTROL_MASK)
+        self.assertFalse(self.tab.on_key_press(self.tab, event.key))
+        self.assertIsNot(window.get_focus(), self.tab.search)
+
+    def test_nothing_to_close(self):
+        self.tab.close_settings()
+        self.assertIs(self.tab.get_visible_child(), self.tab.bricks_page)
+
+    def test_a_brick_gone_from_the_list(self):
+        # the list follows the factory first
+        calls, controllers = self.fake_panels()
+        self.tab.configure(self.sw)
+        self.tab.list.on_brick_removed(self.sw)
+        self.tab.close_settings()
+        self.assertIsNone(self.tab.list.get_selected_row())
+
+    def test_quit(self):
+        calls, controllers = self.fake_panels()
+        self.tab.on_quit()
+        self.tab.on_quit = lambda: None
+        self.tab.configure(self.sw)
+        self.factory.del_brick(self.sw)
+        # not told any more
+        self.assertIs(self.tab.configuring, self.sw)

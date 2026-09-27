@@ -33,6 +33,7 @@ from gi.repository import Gdk, Gtk
 from twisted.logger import Logger
 
 from virtualbricks import errors, tools
+from virtualbricks.bricks.event import is_event
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.gui.interfaces import IConfigController
@@ -269,7 +270,8 @@ class VBGUI:
         menubar1.append(menu_help)
         vbox1.pack_start(menubar1, False, False, 0)
         self.main_notebook = Gtk.Notebook(visible=True, can_focus=True)
-        self.append_tab(BricksTab(self, self.factory))
+        self.bricks = BricksTab(self, self.factory)
+        self.append_tab(self.bricks)
         self.append_tab(EventsTab(self, self.factory))
         self.append_tab(TopologyTab(self, self.factory))
         self.append_tab(ReadmeTab())
@@ -460,15 +462,29 @@ class VBGUI:
     """ ********************************************************     """
 
     def curtain_down(self):
-        self.main_notebook.show()
+        """Close the settings that show: an event's, or a brick's."""
+
         configframe = self.config_frame
         configpanel = configframe.get_child()
-        if configpanel:
-            configpanel.destroy()
+        if configpanel is None:
+            self.bricks.close_settings()
+            return
+        self.main_notebook.show()
+        configpanel.destroy()
         configframe.hide()
         self.set_title()
 
     def curtain_up(self, brick):
+        """
+        Show the settings of a brick in the Bricks tab, or of an event in
+        the whole window.
+        """
+
+        if not is_event(brick):
+            page = self.main_notebook.page_num(self.bricks)
+            self.main_notebook.set_current_page(page)
+            self.bricks.configure(brick)
+            return
         configframe = self.config_frame
         configframe.add(IConfigController(brick).get_view(self))
         configframe.show()

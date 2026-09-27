@@ -27,8 +27,14 @@ brick is instead.
 
 In the list, the right button, the Menu key and Shift+F10 open the menu of
 the selected brick, Delete removes it and F2 renames it; Ctrl+F goes to the
-search, and so does typing in the list; Escape clears the search. A double
-click starts or stops a brick.
+search, and so does typing in the list; Escape clears the search.
+
+A double click or Enter configures a brick, as Configure in its menu does:
+its settings take the place of the list, under a line that names the brick,
+with the panel of :mod:`virtualbricks.gui.windows` in a scrolled window and
+Cancel and OK under it. The menus and the other tabs stay. Cancel, OK and
+Escape go back to the list; so do deleting the brick, opening another
+project and configuring another brick, as Cancel.
 """
 
 from __future__ import annotations
@@ -42,14 +48,19 @@ from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui import graphics  # noqa: E402
-from virtualbricks.gui.mainwindow import brickinfo, brickmenu  # noqa: E402
+from virtualbricks.gui.interfaces import IConfigController  # noqa: E402
+from virtualbricks.gui.mainwindow import (  # noqa: E402
+    brickinfo,
+    bricklist,
+    brickmenu,
+)
 from virtualbricks.gui.mainwindow.brickinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.bricklist import BrickList  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab  # noqa: E402
 from virtualbricks.gui.windows.base import pango_attr_list  # noqa: E402
 from virtualbricks.gui.windows.newbrick import NewBrickDialog  # noqa: E402
 from virtualbricks.i18n import _, ngettext  # noqa: E402
-from virtualbricks.tools import is_running  # noqa: E402
+from virtualbricks.tools import dispose, is_running  # noqa: E402
 
 logger = Logger()
 not_started = "Brick not started."
@@ -107,16 +118,24 @@ def count(bricks) -> str:
     ).format(running=running, total=total)
 
 
-class BricksTab(Tab, Gtk.Box):
+class BricksTab(Tab, Gtk.Stack):
     """The bricks of the project, and what can be done with them."""
 
     title = _("_Bricks")
 
     def __init__(self, gui, factory) -> None:
-        super().__init__(visible=True, orientation=Gtk.Orientation.VERTICAL)
+        super().__init__(visible=True)
         self.gui = gui
         self.factory = factory
         self._menu: Gtk.Menu | None = None
+        # the brick whose settings show, and their panel
+        self.configuring = None
+        self._controller = None
+        self.settings: Gtk.Box | None = None
+        self.bricks_page = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL
+        )
+        self.add_named(self.bricks_page, "bricks")
 
         header = Gtk.Box(visible=True, spacing=GAP, margin=GAP)
         self.new_button = _icon_button(_("New Brick"), "list-add-symbolic")
@@ -152,8 +171,8 @@ class BricksTab(Tab, Gtk.Box):
             header.pack_start(widget, False, False, 0)
         header.pack_end(all_bricks, False, False, 0)
         header.pack_end(self.count, False, False, 0)
-        self.pack_start(header, False, False, 0)
-        self.pack_start(
+        self.bricks_page.pack_start(header, False, False, 0)
+        self.bricks_page.pack_start(
             Gtk.Separator(
                 visible=True, orientation=Gtk.Orientation.HORIZONTAL
             ),
@@ -171,7 +190,7 @@ class BricksTab(Tab, Gtk.Box):
         self.pages = Gtk.Stack(visible=True)
         self.pages.add_named(scrolled, "list")
         self.pages.add_named(self.empty, "empty")
-        self.pack_start(self.pages, True, True, 0)
+        self.bricks_page.pack_start(self.pages, True, True, 0)
 
         self.new_button.connect("clicked", self.on_new_clicked)
         self.empty_new_button.connect("clicked", self.on_new_clicked)
@@ -186,6 +205,7 @@ class BricksTab(Tab, Gtk.Box):
         self.connect("key-press-event", self.on_key_press)
         for signal in SIGNALS:
             factory.connect(signal, self.on_brick_changed)
+        factory.connect("brick-removed", self.on_brick_removed)
         self.update()
 
     def _empty_page(self) -> Gtk.Box:
@@ -288,9 +308,121 @@ class BricksTab(Tab, Gtk.Box):
         # kept while it shows
         self._menu = brickmenu.popup(widget, event, self.gui, brick, True)
 
+    # The settings of a brick
+
+    def configure(self, brick) -> None:
+        """
+        Show the settings of brick in place of the list. Those of another
+        brick close first, as with Cancel. A brick without a panel, as a
+        router, shows nothing.
+        """
+
+        controller = IConfigController(brick, None)
+        if controller is None:
+            return
+        if self.configuring is not None:
+            self.cancel_settings()
+        self.configuring = brick
+        self._controller = controller
+        self.settings = self._settings_page(brick, controller)
+        self.add_named(self.settings, "settings")
+        self.set_visible_child(self.settings)
+
+    def _settings_page(self, brick, controller) -> Gtk.Box:
+        page = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
+        head = Gtk.Box(visible=True, spacing=12, margin=GAP)
+        image = Gtk.Image(visible=True, pixel_size=bricklist.ICON_SIZE)
+        pixbuf = self.list.icons.get(brick, is_running(brick))
+        if pixbuf is not None:
+            image.set_from_pixbuf(pixbuf)
+        text = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
+        name = Gtk.Label(
+            visible=True,
+            xalign=0.0,
+            label=brick.get_name(),
+            attributes=pango_attr_list(
+                Pango.attr_weight_new(Pango.Weight.BOLD)
+            ),
+        )
+        kind = Gtk.Label(
+            visible=True,
+            xalign=0.0,
+            label=_("{kind} settings").format(kind=brickinfo.kind(brick)),
+        )
+        kind.get_style_context().add_class("dim-label")
+        text.pack_start(name, False, False, 0)
+        text.pack_start(kind, False, False, 0)
+        head.pack_start(image, False, False, 0)
+        head.pack_start(text, True, True, 0)
+
+        scrolled = Gtk.ScrolledWindow(visible=True)
+        # in a box, as get_view() puts it: the virtual machine's panel
+        # replaces itself in its parent once it knows the QEMU there is
+        holder = Gtk.Box(
+            visible=True,
+            orientation=Gtk.Orientation.VERTICAL,
+            margin_start=GAP,
+            margin_end=GAP,
+            margin_top=GAP,
+        )
+        panel = controller.get_config_view(self.gui)
+        panel.show()
+        holder.pack_start(panel, True, True, 0)
+        scrolled.add(holder)
+
+        actions = Gtk.Box(visible=True, spacing=GAP, margin=GAP)
+        self.cancel_button = Gtk.Button.new_with_mnemonic(_("_Cancel"))
+        self.ok_button = Gtk.Button.new_with_mnemonic(_("_OK"))
+        self.ok_button.get_style_context().add_class("suggested-action")
+        self.cancel_button.show()
+        self.ok_button.show()
+        actions.pack_start(self.cancel_button, False, False, 0)
+        actions.pack_end(self.ok_button, False, False, 0)
+        # the panel's own: they call the window's curtain_down()
+        self.cancel_button.connect(
+            "clicked", controller.on_cancel_button_clicked, self.gui
+        )
+        self.ok_button.connect(
+            "clicked", controller.on_ok_button_clicked, self.gui
+        )
+
+        for widget, expand in (
+            (head, False),
+            (Gtk.Separator(visible=True), False),
+            (scrolled, True),
+            (Gtk.Separator(visible=True), False),
+            (actions, False),
+        ):
+            page.pack_start(widget, expand, expand, 0)
+        page.connect("key-press-event", self.on_settings_key_press)
+        return page
+
+    def cancel_settings(self) -> None:
+        """Close the settings, as Cancel does."""
+
+        dispose(self._controller)
+        self.close_settings()
+
+    def close_settings(self) -> None:
+        """Back to the list, on the brick configured."""
+
+        brick = self.configuring
+        if brick is None:
+            return
+        self.configuring = self._controller = None
+        # the stack shows the list once the page goes
+        self.settings.destroy()
+        self.settings = None
+        row = self.list.row_of(brick)
+        if row is not None:
+            self.list.select_row(row)
+            row.grab_focus()
+
     # What the main window tells
 
     def on_open(self) -> None:
+        if self.configuring is not None:
+            self.cancel_settings()
         # an entry emptied tells the list at once
         self.search.set_text("")
         self.all_button.set_active(True)
@@ -299,11 +431,22 @@ class BricksTab(Tab, Gtk.Box):
         self.list.close()
         for signal in SIGNALS:
             self.factory.disconnect(signal, self.on_brick_changed)
+        self.factory.disconnect("brick-removed", self.on_brick_removed)
 
     # Signals
 
     def on_brick_changed(self, brick) -> None:
         self.update()
+
+    def on_brick_removed(self, brick) -> None:
+        if brick is self.configuring:
+            self.cancel_settings()
+
+    def on_settings_key_press(self, page, event) -> bool:
+        if event.keyval == Gdk.KEY_Escape:
+            self.cancel_settings()
+            return True
+        return False
 
     def on_new_clicked(self, button) -> None:
         NewBrickDialog(self.factory).show(self.gui.window)
@@ -328,7 +471,7 @@ class BricksTab(Tab, Gtk.Box):
         self.list.set_only_running(button.get_active())
 
     def on_row_activated(self, listbox, row) -> None:
-        self.gui.startstop_brick(row.brick)
+        self.gui.curtain_up(row.brick)
 
     def on_button_press(self, listbox, event) -> bool:
         if not event.triggers_context_menu():
@@ -368,6 +511,8 @@ class BricksTab(Tab, Gtk.Box):
 
     def on_key_press(self, tab, event) -> bool:
         control = event.state & Gdk.ModifierType.CONTROL_MASK
+        if self.configuring is not None:
+            return False
         if control and event.keyval in (Gdk.KEY_f, Gdk.KEY_F):
             self.search.grab_focus()
             return True

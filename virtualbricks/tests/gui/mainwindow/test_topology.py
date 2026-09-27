@@ -56,10 +56,10 @@ def run_idle_calls():
 
 class FakeGui:
     def __init__(self):
-        self.started = []
+        self.configured = []
 
-    def startstop_brick(self, brick):
-        self.started.append(brick)
+    def curtain_up(self, brick):
+        self.configured.append(brick)
 
 
 class FakeMenus:
@@ -396,12 +396,12 @@ class TestClicks(TopologyTestCase):
         # kept while it shows
         self.assertIs(self.tab._menu, self.menus)
 
-    def test_a_double_click_starts_or_stops(self):
+    def test_a_double_click_configures(self):
         self.assertTrue(self.press(self.vm, double=True))
-        self.assertEqual(self.gui.started, [self.vm])
+        self.assertEqual(self.gui.configured, [self.vm])
         # one click does nothing
         self.assertTrue(self.press(self.vm))
-        self.assertEqual(self.gui.started, [self.vm])
+        self.assertEqual(self.gui.configured, [self.vm])
 
     def test_not_on_a_brick(self):
         event = Gdk.Event.new(Gdk.EventType.BUTTON_PRESS)

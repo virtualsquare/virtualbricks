@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 00:24+0200\n"
+"POT-Creation-Date: 2026-09-27 06:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -580,6 +580,21 @@ msgid ""
 "to start the lab."
 msgstr ""
 
+#: virtualbricks/gui/mainwindow/bricks.py
+#, fuzzy, python-brace-format
+msgid "{kind} settings"
+msgstr "Impostazion manuali"
+
+#: virtualbricks/gui/mainwindow/bricks.py virtualbricks/gui/windows/base.py
+#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "_Cancel"
+msgstr "Annulla"
+
+#: virtualbricks/gui/mainwindow/bricks.py virtualbricks/gui/windows/base.py
+msgid "_OK"
+msgstr ""
+
 #: virtualbricks/gui/mainwindow/events.py
 msgid "Icon"
 msgstr "Icona"
@@ -1022,16 +1037,6 @@ msgstr "Assegna niente"
 #, fuzzy
 msgid "Assign nothing"
 msgstr "Assegna niente"
-
-#: virtualbricks/gui/windows/base.py
-msgid "_OK"
-msgstr ""
-
-#: virtualbricks/gui/windows/base.py virtualbricks/gui/windows/logging.py
-#: virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "_Cancel"
-msgstr "Annulla"
 
 #: virtualbricks/gui/windows/brickselection.py
 msgid "Bricks to add to the event"
