@@ -28,7 +28,6 @@ from virtualbricks.errors import BadConfigError, CommandError
 from virtualbricks.i18n import _
 
 logger = Logger()
-qemu_commit_failed = "Failed to commit image."
 qemu_info_failed = "Error while getting information about image file."
 
 
@@ -107,17 +106,6 @@ def abspath_qemu(executable):
 def _log_failure(failure, message):
     logger.failure(message, failure)
     return failure
-
-
-def qemu_commit_image(path):
-    """
-    :type path: Union[str, pathlib.Path]
-    :rtype: twisted.internet.defer.Deferred[None]
-    """
-
-    deferred = qemu_img(["commit", str(path)])
-    deferred.addErrback(_log_failure, qemu_commit_failed)
-    return deferred
 
 
 def qemu_img_info(path):

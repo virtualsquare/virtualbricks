@@ -37,6 +37,9 @@ The files of the images go in the image folder of the workspace,
 ``<workspace>/vimages``, which the import fills too; several projects may
 use one file, under different names. ``other_projects()`` says which, from
 the summaries that the list of the projects reads.
+
+A disk's private copy can start over, empty, or become a new image of its
+own, saved by the archive process; ``adopt()`` adds that image.
 """
 
 from __future__ import annotations
@@ -197,7 +200,9 @@ class DiskUse:
     running: bool
 
 
-def _size(path: str) -> int | None:
+def space_taken(path: str) -> int | None:
+    """The space that the file path takes on disk; None if it isn't there."""
+
     try:
         return os.stat(path).st_blocks * 512
     except OSError:
@@ -222,7 +227,7 @@ def uses(factory: BrickFactory, image: Image) -> list[DiskUse]:
                     device=disk.device,
                     private=private,
                     copy=copy,
-                    copy_size=None if copy is None else _size(copy),
+                    copy_size=None if copy is None else space_taken(copy),
                     running=brick.__isrunning__(),
                 )
             )
@@ -322,3 +327,56 @@ def other_projects(workspace: Workspace, path: str) -> list[tuple[str, str]]:
             if image.path and os.path.abspath(image.path) == path:
                 found.append((summary.name, image.name))
     return found
+
+
+# The private copies
+
+
+def discard(path: str, trasher=None) -> bool:
+    """
+    Move path to the trash, or delete it without one; True if it went to
+    the trash. A missing file is gone already.
+    """
+
+    if not os.path.lexists(path):
+        return False
+    if trasher is not None and trasher.can_trash(path):
+        trasher.trash(path)
+        return True
+    os.remove(path)
+    return False
+
+
+def start_over(vm: VirtualMachine, device: str, trasher=None) -> bool:
+    """
+    The private copy of a disk of vm goes, with its changes: the next start
+    makes an empty one. Fail with ``RunningError`` while vm runs. True if
+    the copy went to the trash.
+    """
+
+    if vm.__isrunning__():
+        raise RunningError([vm.get_name()])
+    return discard(vm.disk(device).get_cow_path(), trasher)
+
+
+def adopt(
+    factory: BrickFactory,
+    vm: VirtualMachine,
+    device: str,
+    name: str,
+    path: str,
+    use_it: bool,
+    trasher=None,
+) -> Image:
+    """
+    Add the image saved from a disk of vm, name for the file path. use_it
+    gives it to the disk, whose private copy goes: its changes are in the
+    image now.
+    """
+
+    image = factory.new_disk_image(name, path)
+    if use_it:
+        copy = vm.disk(device).get_cow_path()
+        vm.set_image(device, image)
+        discard(copy, trasher)
+    return image

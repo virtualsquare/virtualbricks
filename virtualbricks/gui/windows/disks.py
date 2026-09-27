@@ -23,7 +23,9 @@ says what the mode does. Add Disk offers the free devices, hda to mtdblock.
 
 The mode is Private copy, the machine's changes kept in a file of the
 project, or The image itself, which the machine writes into; the project
-file keeps it as the private<device> setting.
+file keeps it as the private<device> setting. The menu of a disk with a
+private copy saves it as a new image, merges it into its image or starts it
+over, in the dialogs of ``imagedialogs``.
 
 Nothing changes until OK: the rows keep what is chosen, and ``apply()``
 gives the images to the machine and returns the modes as its settings.
@@ -40,7 +42,12 @@ from virtualbricks.bricks.virtualmachine import DISK_DEVICES
 from virtualbricks.config import images
 from virtualbricks.gui import imageinfo
 from virtualbricks.gui.windows.base import pango_attr_list
-from virtualbricks.gui.windows.imagedialogs import show_in_files
+from virtualbricks.gui.windows.imagedialogs import (
+    MergeDialog,
+    SaveImageDialog,
+    StartOverDialog,
+    show_in_files,
+)
 from virtualbricks.gui.windows.imagepicker import ImagePicker
 from virtualbricks.i18n import _
 
@@ -59,13 +66,6 @@ def _label(text="", dim=False, bold=False, **props):
             pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD))
         )
     return label
-
-
-def _size(path):
-    try:
-        return os.stat(path).st_blocks * 512
-    except OSError:
-        return None
 
 
 class DiskRow(Gtk.ListBoxRow):
@@ -98,6 +98,9 @@ class DiskRow(Gtk.ListBoxRow):
 
         self.actions = Gio.SimpleActionGroup()
         for name, callback in (
+            ("save", self.save),
+            ("merge", self.merge),
+            ("start-over", self.start_over),
             ("show", self.show_in_files),
             ("remove", self.remove),
         ):
@@ -105,14 +108,13 @@ class DiskRow(Gtk.ListBoxRow):
             action.connect("activate", lambda a, p, call=callback: call())
             self.actions.add_action(action)
         self.insert_action_group("disk", self.actions)
-        menu = Gio.Menu()
-        menu.append(_("Show in Files"), "disk.show")
-        menu.append(_("Remove Disk"), "disk.remove")
+        # its items name the image: update() makes them
+        self.menu = Gio.Menu()
         self.menu_button = Gtk.MenuButton(
             visible=True,
             relief=Gtk.ReliefStyle.NONE,
             valign=Gtk.Align.CENTER,
-            menu_model=menu,
+            menu_model=self.menu,
             tooltip_text=_("More for {device}").format(device=device),
         )
         self.menu_button.add(
@@ -146,13 +148,78 @@ class DiskRow(Gtk.ListBoxRow):
                 disk.image,
                 self.private,
                 copy,
-                _size(copy),
+                images.space_taken(copy),
             )
         )
         there = self.image is not None and os.path.exists(
             self.image.get_path()
         )
         self.actions.lookup_action("show").set_enabled(there)
+        changes = self.keeps_changes()
+        for name in ("save", "merge", "start-over"):
+            self.actions.lookup_action(name).set_enabled(changes)
+        self._make_menu()
+
+    def _make_menu(self) -> None:
+        image = "" if self.image is None else self.image.get_name()
+        changes = Gio.Menu()
+        changes.append(_("Save as a New Image…"), "disk.save")
+        changes.append(
+            _("Merge into {image}…").format(image=image), "disk.merge"
+        )
+        changes.append(
+            _("Start Over from {image}…").format(image=image),
+            "disk.start-over",
+        )
+        others = Gio.Menu()
+        others.append(_("Show in Files"), "disk.show")
+        others.append(_("Remove Disk"), "disk.remove")
+        self.menu.remove_all()
+        self.menu.append_section(None, changes)
+        self.menu.append_section(None, others)
+
+    def keeps_changes(self) -> bool:
+        """
+        Whether the disk, as saved and shown, has a private copy with
+        changes, and its image its file.
+        """
+
+        disk = self.section.vm.disk(self.device)
+        return (
+            self.image is not None
+            and self.image is disk.image
+            and self.private
+            and bool(disk.is_cow())
+            and os.path.exists(disk.get_cow_path())
+            and os.path.exists(self.image.get_path())
+        )
+
+    def save(self) -> SaveImageDialog:
+        section = self.section
+        dialog = SaveImageDialog(section.factory, section.vm, self.device)
+        dialog.on_saved = self._saved
+        dialog.on_done = self.update
+        dialog.show(self._window())
+        return dialog
+
+    def _saved(self, image, use_it) -> None:
+        # the row follows the disk, or OK would give it its old image
+        if use_it:
+            self.picker.choose(image)
+
+    def merge(self) -> MergeDialog:
+        section = self.section
+        dialog = MergeDialog(section.factory, section.vm, self.device)
+        dialog.on_saved = self._saved
+        dialog.on_done = self.update
+        dialog.show(self._window())
+        return dialog
+
+    def start_over(self) -> StartOverDialog:
+        dialog = StartOverDialog(self.section.vm, self.device)
+        dialog.on_done = self.update
+        dialog.show(self._window())
+        return dialog
 
     def show_in_files(self) -> None:
         show_in_files(self._window(), self.image.get_path())

@@ -15,10 +15,16 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""Remove an image, maybe with its file; find the file of an image."""
+"""
+Remove an image, maybe with its file; find the file of an image; save a
+disk as a new image, merge it into its image, start it over.
+"""
 
 import os
 
+from twisted.internet import defer
+
+from virtualbricks.config.archive import ArchiveCancelled, ArchiveError
 from virtualbricks.config.images import DiskUse
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.tests import FakeLogger, FakeTrash
@@ -32,7 +38,10 @@ if has_display:
     from virtualbricks.gui.windows import imagedialogs
     from virtualbricks.gui.windows.imagedialogs import (
         FindFileDialog,
+        MergeDialog,
         RemoveImageDialog,
+        SaveImageDialog,
+        StartOverDialog,
         disks_words,
         show_in_files,
     )
@@ -286,3 +295,245 @@ class TestFindFile(DialogTestCase):
         dialog.dialog.connect("destroy", destroyed.append)
         dialog.dialog.response(Gtk.ResponseType.CANCEL)
         self.assertEqual(len(destroyed), 1)
+
+
+class FakeJob:
+    """A job of the archive process, that ends when told."""
+
+    def __init__(self, *args):
+        self.args = args
+        self.done = defer.Deferred()
+        self.cancelled = False
+
+    def cancel(self):
+        self.cancelled = True
+        self.done.errback(ArchiveCancelled())
+
+
+class DiskTestCase(DialogTestCase):
+    """r1, whose hda has a private copy on frr."""
+
+    def setUp(self):
+        super().setUp()
+        self.frr = self.factory.new_disk_image("frr", self.file(self.vimages))
+        self.r1 = self.vm("r1", self.frr)
+        self.copy = self.r1.disk("hda").get_cow_path()
+        with open(self.copy, "wb") as fp:
+            fp.write(b"x" * 5000)
+        self.jobs = []
+        self.events = []
+
+    def start(self, *args):
+        job = FakeJob(*args)
+        self.jobs.append(job)
+        return job
+
+    def track(self, dialog):
+        dialog.on_done = lambda: self.events.append("done")
+        dialog.dialog.connect(
+            "destroy", lambda widget: self.events.append("destroyed")
+        )
+        self.addCleanup(dialog.dialog.destroy)
+        return dialog
+
+
+class TestSave(DiskTestCase):
+
+    def dialog(self):
+        dialog = SaveImageDialog(
+            self.factory, self.r1, "hda", self.workspace, self.start
+        )
+        dialog.on_saved = lambda *args: self.events.append(("saved", *args))
+        return self.track(dialog)
+
+    def test_the_name(self):
+        dialog = self.dialog()
+        self.assertEqual(dialog.name_entry.get_text(), "frr-r1")
+        self.assertEqual(
+            dialog.output(), os.path.join(self.vimages, "frr-r1.qcow2")
+        )
+        self.factory.new_disk_image("frr-r1", "/lab/other.qcow2")
+        self.assertEqual(self.dialog().name_entry.get_text(), "frr-r1-2")
+
+    def test_a_name_in_use(self):
+        dialog = self.dialog()
+        dialog.name_entry.set_text("frr")
+        self.assertTrue(dialog.name_message.get_visible())
+        self.assertFalse(dialog.action_button.get_sensitive())
+        dialog.name_entry.set_text("")
+        self.assertFalse(dialog.name_message.get_visible())
+        self.assertFalse(dialog.action_button.get_sensitive())
+
+    def test_not_while_it_runs(self):
+        self.r1.__isrunning__ = lambda: True
+        dialog = self.dialog()
+        self.assertEqual(dialog.error_label.get_text(), "Stop r1 first.")
+        self.assertFalse(dialog.action_button.get_sensitive())
+        dialog.dialog.response(Gtk.ResponseType.OK)
+        self.assertEqual(self.jobs, [])
+
+    def test_save_and_use(self):
+        dialog = self.dialog()
+        dialog.dialog.response(Gtk.ResponseType.OK)
+        (job,) = self.jobs
+        output = os.path.join(self.vimages, "frr-r1.qcow2")
+        self.assertEqual(job.args, (self.copy, output, dialog.on_progress))
+        self.assertEqual(dialog.cancel_button.get_label(), "Stop")
+        self.assertFalse(dialog.action_button.get_sensitive())
+        self.assertTrue(dialog.progress.get_visible())
+        dialog.on_progress("save", 50, 100)
+        self.assertEqual(dialog.progress.get_fraction(), 0.5)
+        self.assertEqual(dialog.progress.get_text(), "50%")
+        job.done.callback({"output": output, "size": 4096})
+        image = self.factory.get_image_by_name("frr-r1")
+        self.assertEqual(image.get_path(), output)
+        self.assertIs(self.r1.disk("hda").image, image)
+        self.assertEqual(self.trash.trashed, [self.copy])
+        self.assertEqual(
+            self.events, [("saved", image, True), "destroyed", "done"]
+        )
+
+    def test_save_only(self):
+        dialog = self.dialog()
+        dialog.use_check.set_active(False)
+        dialog.run()
+        self.jobs[0].done.callback({"output": "/lab/frr-r1.qcow2"})
+        self.assertIs(self.r1.disk("hda").image, self.frr)
+        self.assertEqual(self.trash.trashed, [])
+
+    def test_stop(self):
+        dialog = self.dialog()
+        dialog.run()
+        dialog.dialog.response(Gtk.ResponseType.CANCEL)
+        self.assertTrue(self.jobs[0].cancelled)
+        self.assertEqual(dialog.error_label.get_text(), "Stopped.")
+        self.assertEqual(dialog.cancel_button.get_label(), "Cancel")
+        self.assertTrue(dialog.action_button.get_sensitive())
+        self.assertFalse(dialog.progress.get_visible())
+        self.assertEqual(self.events, [])
+        # and again
+        dialog.run()
+        self.assertEqual(dialog.error_label.get_text(), "")
+        self.assertEqual(len(self.jobs), 2)
+
+    def test_closed_while_it_saves(self):
+        dialog = self.dialog()
+        dialog.run()
+        dialog.dialog.response(Gtk.ResponseType.DELETE_EVENT)
+        self.assertTrue(self.jobs[0].cancelled)
+        self.assertEqual(self.events, ["destroyed"])
+
+    def test_a_failure(self):
+        dialog = self.dialog()
+        dialog.run()
+        self.jobs[0].done.errback(ArchiveError("qemu-img: No space left"))
+        self.assertEqual(
+            dialog.error_label.get_text(), "qemu-img: No space left"
+        )
+        self.assertIsNone(self.factory.get_image_by_name("frr-r1"))
+
+    def test_cancel(self):
+        dialog = self.dialog()
+        dialog.dialog.response(Gtk.ResponseType.CANCEL)
+        self.assertEqual(self.events, ["destroyed"])
+
+
+class TestMerge(DiskTestCase):
+
+    def dialog(self):
+        return self.track(
+            MergeDialog(
+                self.factory, self.r1, "hda", self.workspace, self.start
+            )
+        )
+
+    def test_no_other_disk(self):
+        self.assertIn("No other disk uses frr.", texts(self.dialog().dialog))
+
+    def test_the_others(self):
+        from virtualbricks.tests.config.test_images import FakeWorkspace
+
+        self.vm("r2", self.frr)
+        others = FakeWorkspace(None, ospf=[("router", self.frr.get_path())])
+        self.workspace.others = others.summaries()
+        self.assertIn(
+            "frr changes for all that use it too: r2 (hda) and the project"
+            " ospf, as router. Their private copies may stop working.",
+            texts(self.dialog().dialog),
+        )
+
+    def test_not_while_one_runs(self):
+        self.vm("r2", self.frr).__isrunning__ = lambda: True
+        self.vm("r3", self.frr).__isrunning__ = lambda: True
+        dialog = self.dialog()
+        self.assertEqual(
+            dialog.error_label.get_text(), "Stop r2 and r3 first."
+        )
+        self.assertFalse(dialog.action_button.get_sensitive())
+
+    def test_merge(self):
+        dialog = self.dialog()
+        dialog.dialog.response(Gtk.ResponseType.OK)
+        (job,) = self.jobs
+        self.assertEqual(job.args, (self.copy, dialog.on_progress))
+        self.assertFalse(dialog.instead_button.get_sensitive())
+        job.done.callback({"disk": self.copy})
+        self.assertEqual(self.events, ["destroyed", "done"])
+
+    def test_instead(self):
+        shown = []
+        self.patch(
+            SaveImageDialog,
+            "show",
+            lambda dialog, parent: shown.append(dialog),
+        )
+        dialog = self.dialog()
+        dialog.on_saved = saved = object()
+        save = dialog.instead()
+        self.addCleanup(save.dialog.destroy)
+        self.assertEqual(shown, [save])
+        self.assertIs(save.on_saved, saved)
+        self.assertIs(save.on_done, dialog.on_done)
+        self.assertEqual(self.events, ["destroyed"])
+
+
+class TestStartOver(DiskTestCase):
+
+    def dialog(self):
+        return self.track(StartOverDialog(self.r1, "hda", self.workspace))
+
+    def test_to_the_trash(self):
+        dialog = self.dialog()
+        self.assertIn(
+            "r1_hda.cow goes to the trash, with the changes it keeps, 8.2 KB;"
+            " the next start makes an empty one.",
+            texts(dialog.dialog),
+        )
+        dialog.dialog.response(Gtk.ResponseType.OK)
+        self.assertEqual(self.trash.trashed, [self.copy])
+        self.assertEqual(self.events, ["done", "destroyed"])
+
+    def test_without_a_trash(self):
+        self.workspace.trasher = None
+        dialog = self.dialog()
+        self.assertIn("is deleted for good", texts(dialog.dialog)[1])
+        dialog.start_over()
+        self.assertFalse(os.path.exists(self.copy))
+
+    def test_not_while_it_runs(self):
+        self.r1.__isrunning__ = lambda: True
+        dialog = self.dialog()
+        self.assertIn("Stop r1 first.", texts(dialog.dialog))
+        self.assertFalse(dialog.action_button.get_sensitive())
+
+    def test_a_failure(self):
+        self.trash.error = OSError(13, "Permission denied")
+        dialog = self.dialog()
+        dialog.start_over()
+        self.assertEqual(self.logger.levels(), ["error"])
+        self.assertEqual(self.events, [])
+
+    def test_cancel(self):
+        self.dialog().dialog.response(Gtk.ResponseType.CANCEL)
+        self.assertTrue(os.path.exists(self.copy))
+        self.assertEqual(self.events, ["destroyed"])

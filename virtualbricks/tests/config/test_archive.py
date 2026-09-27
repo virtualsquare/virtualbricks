@@ -1060,3 +1060,185 @@ class TestExportInTheRealProcess(ArchiveTestCase):
             self.check(output)
 
         return job.done.addCallback(check)
+
+
+# qemu-img that logs its arguments, says it's half done, then done, and
+# writes its last argument when it converts; it fails when asked to.
+FAKE_QEMU_IMG = """echo "$@" >> "{log}"
+printf '    (50.00/100%%)\\r'
+if [ "$1" = convert ]; then
+    for last; do :; done
+    echo image > "$last"
+fi
+[ -e "{fail}" ] && {{ echo "No space left on device" >&2; exit 1; }}
+printf '    (100.00/100%%)\\r'
+exit 0
+"""
+
+
+class ImageJobTestCase(ArchiveTestCase):
+    """The fake qemu-img, and the image folder."""
+
+    def setUp(self):
+        super().setUp()
+        self.log = self.path("qemu-img.log")
+        self.failing = self.path("qemu-img.fail")
+        self.qemu_img = self.script(
+            "qemu-img", FAKE_QEMU_IMG.format(log=self.log, fail=self.failing)
+        )
+        self.output = self.path("vimages", "frr-r1.qcow2")
+        os.makedirs(os.path.dirname(self.output))
+
+
+class TestImageJobs(ImageJobTestCase):
+
+    def calls(self):
+        with open(self.log) as fp:
+            return [line.split() for line in fp.read().splitlines()]
+
+    def save(self):
+        return archive.run_job(
+            {
+                "job": "write-image",
+                "disk": "/lab/r1_hda.cow",
+                "output": self.output,
+                "qemu_img": self.qemu_img,
+            },
+            self.emitted,
+        )
+
+    def test_save(self):
+        result = self.save()
+        self.assertEqual(result["output"], self.output)
+        self.assertEqual(result["size"], archive.stored_size(self.output))
+        self.assertEqual(
+            self.calls(),
+            [
+                [
+                    "convert",
+                    "-p",
+                    "-O",
+                    "qcow2",
+                    "-m",
+                    "8",
+                    "-W",
+                    "/lab/r1_hda.cow",
+                    self.output,
+                ]
+            ],
+        )
+        # a stopped job leaves no file
+        self.assertEqual(self.emitted.of("created"), [self.output])
+        progress = self.emitted.of("progress")
+        self.assertEqual(
+            progress[-1], {"step": "save", "done": 100, "total": 100}
+        )
+
+    def test_save_fails(self):
+        open(self.failing, "w").close()
+        with self.assertRaises(ArchiveError) as cm:
+            self.save()
+        self.assertIn("No space left", str(cm.exception))
+        self.assertFalse(os.path.lexists(self.output))
+
+    def test_a_file_there_already(self):
+        with open(self.output, "w") as fp:
+            fp.write("mine")
+        self.assertRaises(ArchiveError, self.save)
+        self.assertEqual(self.emitted.of("created"), [])
+        with open(self.output) as fp:
+            self.assertEqual(fp.read(), "mine")
+
+    def test_without_qemu_img(self):
+        with self.assertRaises(ArchiveError) as cm:
+            archive.run_job(
+                {"job": "commit-image", "disk": "/lab/r1_hda.cow"},
+                self.emitted,
+            )
+        self.assertEqual(str(cm.exception), "qemu-img is needed")
+
+    def test_merge(self):
+        result = archive.run_job(
+            {
+                "job": "commit-image",
+                "disk": "/lab/r1_hda.cow",
+                "qemu_img": self.qemu_img,
+            },
+            self.emitted,
+        )
+        self.assertEqual(result, {"disk": "/lab/r1_hda.cow"})
+        self.assertEqual(self.calls(), [["commit", "-p", "/lab/r1_hda.cow"]])
+        steps = self.emitted.of("progress")
+        self.assertEqual({p["step"] for p in steps}, {"merge"})
+        self.assertEqual(steps[-1]["done"], 100)
+
+    def test_from_the_application(self):
+        spawned = []
+
+        class Reactor:
+            def spawnProcess(self, protocol, executable, args, env):
+                spawned.append(protocol)
+
+        self.patch(archive, "find_qemu_img", lambda: "/usr/bin/qemu-img")
+        progress = []
+        job = archive.save_image(
+            "/lab/r1_hda.cow",
+            self.output,
+            lambda *args: progress.append(args),
+            reactor=Reactor(),
+        )
+        self.assertEqual(
+            job.job,
+            {
+                "job": "write-image",
+                "disk": "/lab/r1_hda.cow",
+                "output": self.output,
+                "qemu_img": "/usr/bin/qemu-img",
+            },
+        )
+        job = archive.merge_image(
+            "/lab/r1_hda.cow", qemu_img=self.qemu_img, reactor=Reactor()
+        )
+        self.assertEqual(
+            job.job,
+            {
+                "job": "commit-image",
+                "disk": "/lab/r1_hda.cow",
+                "qemu_img": self.qemu_img,
+            },
+        )
+        self.assertEqual(len(spawned), 2)
+
+
+class TestImageJobInTheRealProcess(ImageJobTestCase):
+    """A save through a real process, with the fake qemu-img."""
+
+    def test_the_process(self):
+        progress = []
+        job = archive.save_image(
+            "/lab/r1_hda.cow",
+            self.output,
+            lambda *args: progress.append(args),
+            qemu_img=self.qemu_img,
+        )
+
+        def check(result):
+            self.assertEqual(result["output"], self.output)
+            self.assertEqual(progress[-1], ("save", 100, 100))
+
+        return job.done.addCallback(check)
+
+    def test_a_failure_leaves_no_file(self):
+        open(self.failing, "w").close()
+        job = archive.save_image(
+            "/lab/r1_hda.cow", self.output, qemu_img=self.qemu_img
+        )
+
+        def check(failure):
+            failure.trap(ArchiveError)
+            self.assertFalse(os.path.lexists(self.output))
+
+        return job.done.addCallbacks(
+            lambda result: self.fail(f"it should have failed: {result}"),
+            check,
+        )

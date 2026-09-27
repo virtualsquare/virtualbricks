@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 19:33+0200\n"
+"POT-Creation-Date: 2026-09-27 20:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -569,6 +569,7 @@ msgstr "Connetti a"
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #: virtualbricks/gui/mainwindow/events/eventmenu.py
 #: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/imagedialogs.py
 #: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
 msgid "Stop"
@@ -855,6 +856,7 @@ msgstr "Crea"
 #: virtualbricks/gui/mainwindow/events/newevent.py
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
 #: virtualbricks/gui/windows/addimage.py
+#: virtualbricks/gui/windows/imagedialogs.py
 #: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
 msgid "Name"
@@ -1346,7 +1348,6 @@ msgid "Toggle window"
 msgstr "Attiva finestra"
 
 #: virtualbricks/gui/mainwindow/window.py
-#: virtualbricks/gui/windows/commitimagedialog.py
 #: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py virtualbricks/migrate/gui.py
 #, fuzzy
@@ -1584,58 +1585,6 @@ msgstr "Connetti a:"
 msgid "Capture interface:"
 msgstr "Nome dell'interfaccia di rete:"
 
-#: virtualbricks/gui/windows/commitdialog.py
-msgid "create new empty image"
-msgstr "crea una nuova immagine vuota"
-
-#: virtualbricks/gui/windows/commitdialog.py
-#: virtualbricks/gui/windows/commitimagedialog.py
-#, fuzzy
-msgid "Commit"
-msgstr "Comando"
-
-#: virtualbricks/gui/windows/commitdialog.py
-msgid "<b>Commit COW changes to base image</b>"
-msgstr ""
-
-#: virtualbricks/gui/windows/commitdialog.py
-msgid "Commit _COW file changes"
-msgstr ""
-
-#: virtualbricks/gui/windows/commitdialog.py
-#, fuzzy
-msgid "Commit _Virtual Machine changes"
-msgstr "Macchina Virtuale"
-
-#: virtualbricks/gui/windows/commitdialog.py
-msgid "Select A Directory"
-msgstr "Selezione Una Directory"
-
-#: virtualbricks/gui/windows/commitdialog.py
-#: virtualbricks/gui/windows/commitimagedialog.py
-msgid "Commit changes on private COW"
-msgstr ""
-
-#: virtualbricks/gui/windows/commitdialog.py
-#: virtualbricks/gui/windows/commitimagedialog.py
-msgid "label"
-msgstr ""
-
-#: virtualbricks/gui/windows/commitimagedialog.py
-#, fuzzy
-msgid "Commit COW changes"
-msgstr "Macchina Virtuale"
-
-#: virtualbricks/gui/windows/commitimagedialog.py
-#, fuzzy
-msgid "Commit COW file changes"
-msgstr "Macchina Virtuale"
-
-#: virtualbricks/gui/windows/commitimagedialog.py
-#, fuzzy
-msgid "Commit virtual machine changes"
-msgstr "Macchina Virtuale"
-
 #: virtualbricks/gui/windows/confirmdialog.py
 #, fuzzy
 msgid "No"
@@ -1675,14 +1624,29 @@ msgid "The image itself"
 msgstr "Formato immagine"
 
 #: virtualbricks/gui/windows/disks.py
-#, fuzzy
-msgid "Remove Disk"
-msgstr "Rimuovi"
-
-#: virtualbricks/gui/windows/disks.py
 #, python-brace-format
 msgid "More for {device}"
 msgstr ""
+
+#: virtualbricks/gui/windows/disks.py
+#, fuzzy
+msgid "Save as a New Image…"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/windows/disks.py
+#, python-brace-format
+msgid "Merge into {image}…"
+msgstr ""
+
+#: virtualbricks/gui/windows/disks.py
+#, python-brace-format
+msgid "Start Over from {image}…"
+msgstr ""
+
+#: virtualbricks/gui/windows/disks.py
+#, fuzzy
+msgid "Remove Disk"
+msgstr "Rimuovi"
 
 #: virtualbricks/gui/windows/disks.py
 msgid "Disks"
@@ -1916,6 +1880,106 @@ msgstr "Cartella di destinazione per la nuova immagine"
 msgid ""
 "The private copies of its disks are pointed at the file first, so that they "
 "keep their changes."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Stop {names} first."
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy
+msgid "Stopped."
+msgstr "_Avvia/Ferma"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy
+msgid "Save as a New Image"
+msgstr "_Crea nuova immagine"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy
+msgid "Save"
+msgstr "Salva come..."
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "Save {vm}'s {device} as a new image"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid ""
+"A file of its own in the image folder: {image} with the changes {vm} made to "
+"it."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Use it for {vm}'s {device}"
+msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "The disk starts again from it, with an empty private copy."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "Merge into {image}"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "Merge"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "Merge {vm}'s changes into {image}?"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "the project {project}, as {image}"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid ""
+"{image} changes for all that use it too: {users}. Their private copies may "
+"stop working."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "No other disk uses {image}."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "Save as a New Image Instead"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy
+msgid "Start Over"
+msgstr "Avvia in vncserver"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "Start {vm}'s {device} over from {image}?"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid ""
+"{copy} goes to the trash, with the changes it keeps, {size}; the next start "
+"makes an empty one."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid ""
+"{copy} is deleted for good, with the changes it keeps, {size}: there is no "
+"trash. The next start makes an empty one."
 msgstr ""
 
 #: virtualbricks/gui/windows/imagepicker.py
@@ -3106,6 +3170,32 @@ msgstr "Salvare il progetto corrente?"
 msgid "{exe} not found"
 msgstr "kvm non trovato"
 
+#~ msgid "create new empty image"
+#~ msgstr "crea una nuova immagine vuota"
+
+#, fuzzy
+#~ msgid "Commit"
+#~ msgstr "Comando"
+
+#, fuzzy
+#~ msgid "Commit _Virtual Machine changes"
+#~ msgstr "Macchina Virtuale"
+
+#~ msgid "Select A Directory"
+#~ msgstr "Selezione Una Directory"
+
+#, fuzzy
+#~ msgid "Commit COW changes"
+#~ msgstr "Macchina Virtuale"
+
+#, fuzzy
+#~ msgid "Commit COW file changes"
+#~ msgstr "Macchina Virtuale"
+
+#, fuzzy
+#~ msgid "Commit virtual machine changes"
+#~ msgstr "Macchina Virtuale"
+
 #~ msgid "boot as device"
 #~ msgstr "fai boot dal dispositivo"
 
@@ -3153,10 +3243,6 @@ msgstr "kvm non trovato"
 #, fuzzy
 #~ msgid "Images library"
 #~ msgstr "Formato immagine"
-
-#, fuzzy
-#~ msgid "Create new Image"
-#~ msgstr "_Crea nuova immagine"
 
 #, fuzzy
 #~ msgid "Create new empty disk image"

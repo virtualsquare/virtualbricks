@@ -33,6 +33,10 @@ object a line from its stdout:
 
 SIGTERM cancels the job: the process removes what it wrote and exits with 1.
 
+Two jobs work on disk images, as long as an archive: writing a disk with its
+changes as a new image, with ``qemu-img convert``, and merging the changes
+of a disk into its image, with ``qemu-img commit``.
+
 The archive tool is ``bsdtar`` when it's installed, otherwise GNU tar,
 otherwise Python's ``tarfile``. The head of an archive, the small files at its
 start, is always read with ``tarfile``, whatever the compression.
@@ -704,7 +708,10 @@ PERCENT = re.compile(rb"\(\s*([0-9.]+)/100%\)")
 
 
 class QemuImg:
-    """qemu-img, run by the process: info, convert with progress, rebase."""
+    """
+    qemu-img, run by the process: info, convert and commit with progress,
+    rebase.
+    """
 
     def __init__(self, path: str) -> None:
         self.path = path
@@ -776,6 +783,11 @@ class QemuImg:
 
     def rebase(self, disk: str, backing: str, backing_format: str) -> None:
         self._run(["rebase", "-u", "-b", backing, "-F", backing_format, disk])
+
+    def commit(self, disk: str, on_percent=None) -> None:
+        """Write the changes of disk into its backing file."""
+
+        self._run(["commit", "-p", disk], on_percent)
 
 
 def backing_of(info: dict[str, Any]) -> tuple[str, str] | None:
@@ -1119,6 +1131,66 @@ def _write_with_tool(tool: Tool, staging: str, names: list[str], out) -> None:
             raise ArchiveError(f"{os.path.basename(args[0])}: {text}")
 
 
+# The jobs on disk images
+
+
+def _percent_progress(emit, step: str):
+    """A Progress in percent, and what qemu-img's percent gives it."""
+
+    progress = Progress(emit, step, 100)
+
+    def on_percent(percent: float) -> None:
+        progress.done = 0
+        progress.advance(int(percent))
+
+    return progress, on_percent
+
+
+def _qemu_img(job: Table) -> QemuImg:
+    path = str(job.get("qemu_img", ""))
+    if not path:
+        raise ArchiveError("qemu-img is needed")
+    return QemuImg(path)
+
+
+def write_image(job: Table, emit) -> dict[str, Any]:
+    """
+    Write a disk, with the images below it, as a new qcow2 image of its
+    own. A job stopped halfway leaves no file.
+    """
+
+    qemu_img = _qemu_img(job)
+    disk, output = str(job["disk"]), str(job["output"])
+    if os.path.lexists(output):
+        raise ArchiveError(f"{output} is there already")
+    emit({"created": output})
+    progress, on_percent = _percent_progress(emit, "save")
+    try:
+        qemu_img.convert(disk, output, False, None, on_percent)
+    except BaseException:
+        if os.path.lexists(output):
+            os.remove(output)
+        raise
+    progress.done = 100
+    progress.send()
+    return {"output": output, "size": stored_size(output)}
+
+
+def commit_image(job: Table, emit) -> dict[str, Any]:
+    """
+    Write the changes of a disk into its image. Stopped halfway, the image
+    has part of them, and the disk all of them still.
+    """
+
+    qemu_img = _qemu_img(job)
+    disk = str(job["disk"])
+    progress, on_percent = _percent_progress(emit, "merge")
+    qemu_img.commit(disk, on_percent)
+    progress.done = 100
+    progress.send()
+    return {"disk": disk}
+
+
 # The process
 
 
@@ -1141,6 +1213,10 @@ def run_job(job: Table, emit, tool: Tool | None = None) -> Any:
         from virtualbricks.config.importing import run_import
 
         return run_import(job, emit, tool)
+    if kind == "write-image":
+        return write_image(job, emit)
+    if kind == "commit-image":
+        return commit_image(job, emit)
     raise ArchiveError(f"unknown job {kind!r}")
 
 
@@ -1351,6 +1427,49 @@ def export_project(
             # isn't; without qemu-img the archive is gzipped instead.
             "compression": "none" if qemu_img else "gzip",
             "qemu_img": qemu_img,
+        },
+        on_progress,
+    )
+    return job.start(reactor)
+
+
+def save_image(
+    disk: str,
+    output: str,
+    on_progress: Callable[[str, int, int], None] | None = None,
+    qemu_img: str = "",
+    reactor=None,
+) -> ArchiveJob:
+    """
+    Write disk, with its changes, as the new image output, in the process.
+    done fires with {"output": ..., "size": ...}.
+    """
+
+    job = ArchiveJob(
+        {
+            "job": "write-image",
+            "disk": disk,
+            "output": output,
+            "qemu_img": qemu_img or find_qemu_img(),
+        },
+        on_progress,
+    )
+    return job.start(reactor)
+
+
+def merge_image(
+    disk: str,
+    on_progress: Callable[[str, int, int], None] | None = None,
+    qemu_img: str = "",
+    reactor=None,
+) -> ArchiveJob:
+    """Write the changes of disk into its image, in the process."""
+
+    job = ArchiveJob(
+        {
+            "job": "commit-image",
+            "disk": disk,
+            "qemu_img": qemu_img or find_qemu_img(),
         },
         on_progress,
     )

@@ -15,7 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The disks of a machine: their rows, Add Disk, and what OK gives."""
+"""The disks of a machine: their rows, their menu, Add Disk, and what OK gives."""
+
+import os
 
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
@@ -198,3 +200,105 @@ class TestOK(DisksTestCase):
         self.assertEqual(self.section.apply(), {"privatehda": True})
         self.assertIsNone(self.r1.disk("hdc").image)
         self.assertEqual(self.r1.config.hdc, "")
+
+
+class FakeDialog:
+    def __init__(self, shown, name, *args):
+        self.shown = shown
+        self.name = name
+        self.args = args
+        self.on_done = None
+        self.on_saved = None
+
+    def show(self, parent):
+        self.shown.append((self.name, self.args, parent))
+
+
+class TestTheChanges(DisksTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.copy = self.r1.disk("hda").get_cow_path()
+        with open(self.copy, "wb") as fp:
+            fp.write(b"x" * 5000)
+        self.hda = self.section.row("hda")
+        self.hda.update()
+        self.shown = []
+        for name in ("SaveImageDialog", "MergeDialog", "StartOverDialog"):
+            self.patch(
+                disks, name, lambda *a, n=name: FakeDialog(self.shown, n, *a)
+            )
+
+    def items(self, row):
+        found = []
+        for i in range(row.menu.get_n_items()):
+            section = row.menu.get_item_link(i, "section")
+            for j in range(section.get_n_items()):
+                label = section.get_item_attribute_value(j, "label").unpack()
+                action = section.get_item_attribute_value(j, "action")
+                name = action.unpack().partition(".")[2]
+                found.append((label, row.actions.get_action_enabled(name)))
+        return found
+
+    def test_the_menu(self):
+        self.assertEqual(
+            self.items(self.hda),
+            [
+                ("Save as a New Image…", True),
+                ("Merge into frr…", True),
+                ("Start Over from frr…", True),
+                ("Show in Files", True),
+                ("Remove Disk", True),
+            ],
+        )
+
+    def test_only_as_saved(self):
+        # the image chosen isn't the disk's yet
+        self.hda.picker.choose(self.pc)
+        self.assertEqual(
+            [enabled for _label, enabled in self.items(self.hda)][:3],
+            [False, False, False],
+        )
+        self.assertEqual(self.items(self.hda)[1][0], "Merge into pc…")
+        self.hda.picker.choose(self.frr)
+        self.hda.mode_combo.set_active_id(disks.ITSELF)
+        self.assertFalse(self.hda.keeps_changes())
+
+    def test_no_changes_yet(self):
+        # hdc writes into its image; a new copy isn't made yet
+        self.assertFalse(self.section.row("hdc").keeps_changes())
+        self.hda.picker.choose(self.pc)
+        self.hda.picker.choose(self.frr)
+        self.assertTrue(self.hda.keeps_changes())
+        os.remove(self.copy)
+        self.hda.update()
+        self.assertFalse(self.hda.keeps_changes())
+
+    def test_save(self):
+        self.hda.actions.activate_action("save", None)
+        ((name, args, parent),) = self.shown
+        self.assertEqual(name, "SaveImageDialog")
+        self.assertEqual(args, (self.factory, self.r1, "hda"))
+        dialog = self.hda.save()
+        # the row follows the disk
+        dialog.on_saved(self.pc, True)
+        self.assertIs(self.hda.image, self.pc)
+        dialog.on_saved(self.frr, False)
+        self.assertIs(self.hda.image, self.pc)
+        self.assertEqual(dialog.on_done, self.hda.update)
+
+    def test_merge(self):
+        self.hda.actions.activate_action("merge", None)
+        self.assertEqual(
+            self.shown[0][:2], ("MergeDialog", (self.factory, self.r1, "hda"))
+        )
+        dialog = self.hda.merge()
+        dialog.on_saved(self.pc, True)
+        self.assertIs(self.hda.image, self.pc)
+
+    def test_start_over(self):
+        self.hda.actions.activate_action("start-over", None)
+        self.assertEqual(
+            self.shown[0][:2], ("StartOverDialog", (self.r1, "hda"))
+        )
+        self.assertEqual(self.hda.start_over().on_done, self.hda.update)

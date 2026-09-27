@@ -17,7 +17,7 @@
 
 """
 The disk images: what qemu-img info says, who uses them, relinking, the
-image folder and the other projects that use a file.
+image folder, the other projects that use a file, and the private copies.
 """
 
 import json
@@ -31,6 +31,8 @@ from virtualbricks.config.images import (
     ImageInfo,
     InfoCache,
     RunningError,
+    adopt,
+    discard,
     free_path,
     image_folder,
     is_inside,
@@ -38,6 +40,7 @@ from virtualbricks.config.images import (
     parse_info,
     read_info,
     relink,
+    start_over,
     uses,
 )
 from virtualbricks.config.workspace import (
@@ -45,7 +48,12 @@ from virtualbricks.config.workspace import (
     OpenProject,
     ProjectSummary,
 )
-from virtualbricks.tests import BrickTestCase, FakeLogger, use_workspace
+from virtualbricks.tests import (
+    BrickTestCase,
+    FakeLogger,
+    FakeTrash,
+    use_workspace,
+)
 
 INFO = {
     "virtual-size": 4000000000,
@@ -491,3 +499,66 @@ class TestOtherProjects(BrickTestCase):
         self.assertEqual(
             other_projects(workspace, "/ws/frr.qcow2"), [("lab", "frr")]
         )
+
+
+class TestPrivateCopies(ImagesTestCase):
+
+    def test_discard_to_the_trash(self):
+        path = self.copy(self.vm("r1"))
+        trash = FakeTrash()
+        self.assertTrue(discard(path, trash))
+        self.assertEqual(trash.trashed, [path])
+
+    def test_discard_without_a_trash(self):
+        path = self.copy(self.vm("r1"))
+        self.assertFalse(discard(path, FakeTrash(can_trash=False)))
+        self.assertFalse(os.path.exists(path))
+        path = self.copy(self.vm("r2"))
+        self.assertFalse(discard(path))
+        self.assertFalse(os.path.exists(path))
+
+    def test_discard_a_file_gone(self):
+        trash = FakeTrash()
+        self.assertFalse(discard("/nowhere/r1_hda.cow", trash))
+        self.assertEqual(trash.asked, [])
+
+    def test_start_over(self):
+        vm = self.vm("r1")
+        path = self.copy(vm)
+        trash = FakeTrash()
+        self.assertTrue(start_over(vm, "hda", trash))
+        self.assertEqual(trash.trashed, [path])
+        # the disk keeps its image and its mode
+        self.assertIs(vm.disk("hda").image, self.image)
+        self.assertTrue(vm.disk("hda").is_cow())
+
+    def test_not_while_it_runs(self):
+        vm = self.running(self.vm("r1"))
+        path = self.copy(vm)
+        with self.assertRaises(RunningError) as cm:
+            start_over(vm, "hda")
+        self.assertEqual(cm.exception.names, ["r1"])
+        self.assertTrue(os.path.exists(path))
+
+    def test_adopt(self):
+        vm = self.vm("r1")
+        path = self.copy(vm)
+        trash = FakeTrash()
+        image = adopt(
+            self.factory, vm, "hda", "frr-r1", "/lab/frr-r1.qcow2", True, trash
+        )
+        self.assertIs(self.factory.get_image_by_name("frr-r1"), image)
+        self.assertEqual(image.get_path(), "/lab/frr-r1.qcow2")
+        self.assertIs(vm.disk("hda").image, image)
+        # its changes are in the image now
+        self.assertEqual(trash.trashed, [path])
+
+    def test_adopt_only(self):
+        vm = self.vm("r1")
+        path = self.copy(vm)
+        image = adopt(
+            self.factory, vm, "hda", "frr-r1", "/lab/frr-r1.qcow2", False
+        )
+        self.assertIsNotNone(image)
+        self.assertIs(vm.disk("hda").image, self.image)
+        self.assertTrue(os.path.exists(path))
