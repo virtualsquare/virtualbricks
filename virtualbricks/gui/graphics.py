@@ -25,11 +25,8 @@ from virtualbricks.tools import is_running
 
 __all__ = [
     "get_image",
-    "pixbuf_for_brick",
     "pixbuf_for_brick_at_size",
     "pixbuf_for_brick_type",
-    "pixbuf_for_running_brick",
-    "pixbuf_for_running_brick_at_size",
     "get_data_filename",
 ]
 
@@ -65,24 +62,8 @@ def pixbuf_for_brick_at_size(brick, width, height):
     return saturate_if_stopped(brick, pixbuf)
 
 
-def pixbuf_for_brick(brick):
-    filename = brick_icon(brick)
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
-    return saturate_if_stopped(brick, pixbuf)
-
-
 def pixbuf_for_brick_type(type):
     filename = get_data_filename("%s.png" % type.lower())
     if filename is None:
         return None
     return GdkPixbuf.Pixbuf.new_from_file(filename)
-
-
-def pixbuf_for_running_brick(brick):
-    return GdkPixbuf.Pixbuf.new_from_file(brick_icon(brick))
-
-
-def pixbuf_for_running_brick_at_size(brick, witdh, height):
-    return GdkPixbuf.Pixbuf.new_from_file_at_size(
-        brick_icon(brick), witdh, height
-    )

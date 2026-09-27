@@ -454,9 +454,6 @@ class VBGUI:
                 components=" ".join(missing_components),
             )
 
-    def get_object(self, name):
-        return getattr(self, name, None)
-
     """ ********************************************************     """
     """ Signal handlers                                           """
     """ ********************************************************     """
@@ -730,23 +727,7 @@ class VBGUI:
         dialog.show(self.window)
         return True
 
-    # bricks toolbar
-
-    def confirm(self, message):
-        dialog = Gtk.MessageDialog(
-            None,
-            Gtk.DialogFlags.MODAL,
-            Gtk.MessageType.INFO,
-            Gtk.ButtonsType.YES_NO,
-            message,
-        )
-        response = dialog.run()
-        dialog.destroy()
-
-        if response == Gtk.ResponseType.YES:
-            return True
-        elif response == Gtk.ResponseType.NO:
-            return False
+    # What the menus and the lists of the bricks call
 
     def startstop_brick(self, brick):
         if is_running(brick):
@@ -766,7 +747,3 @@ class VBGUI:
 
     def set_sensitive(self):
         self.window.set_sensitive(True)
-
-    # Bricks tab signals
-
-    # Events tab signals
