@@ -241,21 +241,6 @@ class _HostonlySock:
 hostonly_sock = _HostonlySock()
 
 
-def sizeof_fmt(num, suffix="B"):
-    """
-    :type num: Union[float, int, str]
-    :type suffix: str
-    :rtype: str
-    """
-
-    num = float(num)
-    for unit in "", "Ki", "Mi":
-        if abs(num) < 1024.0:
-            return f"{num:.1f}{unit}{suffix}"
-        num /= 1024.0
-    return f"{num:.1f}Gi{suffix}"
-
-
 class Image:
 
     readonly = False
@@ -352,15 +337,6 @@ class Image:
     def basename(self):
         return os.path.basename(self.path)
 
-    def get_size(self):
-        """
-        :rtype: str
-        """
-
-        if not self.exists():
-            return "0B"
-        return sizeof_fmt(os.path.getsize(self.path))
-
     def exists(self):
         return os.path.exists(self.path)
 
@@ -397,12 +373,6 @@ class Image:
             return str(self.path)
         elif format_string == "d":
             return str(self.get_description())
-        elif format_string == "m":
-            if self.master is None:
-                return ""
-            return repr(self.master)
-        elif format_string == "s":
-            return self.get_size()
         raise ValueError("invalid format string " + repr(format_string))
 
 

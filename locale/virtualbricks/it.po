@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 09:26+0200\n"
+"POT-Creation-Date: 2026-09-27 11:16+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -641,6 +641,7 @@ msgid "Waiting"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/eventinfo.py
+#: virtualbricks/gui/windows/confirmdialog.py
 #, python-brace-format
 msgid "{first} and {last}"
 msgstr ""
@@ -1314,6 +1315,38 @@ msgid "The event is in use, it will be stopped before."
 msgstr ""
 
 #: virtualbricks/gui/windows/confirmdialog.py
+#, fuzzy, python-brace-format
+msgid "Remove the image {name}?"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/windows/confirmdialog.py
+#, python-brace-format
+msgid "{vm} ({device})"
+msgstr ""
+
+#: virtualbricks/gui/windows/confirmdialog.py
+#, python-brace-format
+msgid "The disk {disks} will have no image."
+msgid_plural "The disks {disks} will have no image."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/confirmdialog.py
+msgid "The private copy stays."
+msgid_plural "The private copies stay."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/confirmdialog.py
+msgid "No disk uses it."
+msgstr ""
+
+#: virtualbricks/gui/windows/confirmdialog.py
+#, python-brace-format
+msgid "The file stays: {path}"
+msgstr ""
+
+#: virtualbricks/gui/windows/confirmdialog.py
 #, fuzzy
 msgid "Do you really want to delete the network interface?"
 msgstr "Si vuole veramente cancellare "
@@ -1386,6 +1419,20 @@ msgstr "<b>crea una nuova immagine Disco vuota</b>\n"
 #, fuzzy
 msgid "Select a directory"
 msgstr "Selezione Una Directory"
+
+#: virtualbricks/gui/windows/disklibrary.py
+msgid "File missing"
+msgstr ""
+
+#: virtualbricks/gui/windows/disklibrary.py
+#, python-brace-format
+msgid "{disk} disk, {taken} on disk"
+msgstr ""
+
+#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/windows/projects.py
+msgid "Unknown"
+msgstr ""
 
 #: virtualbricks/gui/windows/disklibrary.py
 #, fuzzy
@@ -2154,10 +2201,6 @@ msgstr ""
 #, fuzzy
 msgid "This project is open"
 msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Unknown"
-msgstr ""
 
 #: virtualbricks/gui/windows/projects.py
 #, python-brace-format

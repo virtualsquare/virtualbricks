@@ -237,9 +237,25 @@ class BrickFactory:
         return disk_image
 
     def remove_disk_image(self, disk_image):
+        """
+        Remove an image from the library. The disks that used it are left
+        without an image, and returned; their private copies stay.
+        """
+
+        disks = [
+            disk
+            for brick in self._bricks
+            if virtualmachine.is_virtualmachine(brick)
+            for disk in brick.disks()
+            if disk.image is disk_image
+        ]
+        for disk in disks:
+            # through the machine, which tells that it changed
+            disk.vm.set({disk.device: ""})
         disk_image.changed.disconnect(self.image_changed.notify)
         del self._disk_images[disk_image.get_name()]
         self.image_removed.notify(disk_image)
+        return disks
 
     def get_image_by_name(self, name):
         """

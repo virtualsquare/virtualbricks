@@ -25,11 +25,13 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk, Pango
 
+from virtualbricks.config import images
 from virtualbricks.gui.windows.base import (
     _,
     _Dialog,
     pango_attr_list,
 )
+from virtualbricks.i18n import ngettext
 
 
 class _ConfirmDialog(_Dialog):
@@ -235,6 +237,56 @@ class DeleteEventConfirmDialog(_ConfirmDialog):
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.YES:
             self._brickfactory.del_event(self._event)
+        dialog.destroy()
+
+
+class RemoveImageConfirmDialog(_ConfirmDialog):
+    """
+    Ask to remove a disk image from the library, saying which disks lose it.
+    The file stays.
+    """
+
+    def __init__(self, brickfactory, image):
+        self._brickfactory = brickfactory
+        self._image = image
+        self.build_ui()
+        self.set_primary_text(
+            _("Remove the image {name}?").format(name=image.get_name())
+        )
+        uses = images.uses(brickfactory, image)
+        disks = [
+            _("{vm} ({device})").format(
+                vm=use.vm.get_name(), device=use.device
+            )
+            for use in uses
+        ]
+        if disks:
+            if len(disks) == 1:
+                listed = disks[0]
+            else:
+                listed = _("{first} and {last}").format(
+                    first=", ".join(disks[:-1]), last=disks[-1]
+                )
+            lose = ngettext(
+                "The disk {disks} will have no image.",
+                "The disks {disks} will have no image.",
+                len(disks),
+            ).format(disks=listed)
+            copies = sum(1 for use in uses if use.private)
+            if copies:
+                lose += " " + ngettext(
+                    "The private copy stays.",
+                    "The private copies stay.",
+                    copies,
+                )
+        else:
+            lose = _("No disk uses it.")
+        stays = _("The file stays: {path}").format(path=image.get_path())
+        self.set_secondary_text(f"{lose}\n\n{stays}")
+
+    def on_dialog_response(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.YES:
+            self._brickfactory.remove_disk_image(self._image)
         dialog.destroy()
 
 

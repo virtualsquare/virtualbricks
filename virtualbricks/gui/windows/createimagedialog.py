@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Dialog to create a new empty disk image.
+Dialog to create a new empty disk image, and add it to the library.
 """
 
 import gi
@@ -27,6 +27,7 @@ from gi.repository import Gdk, Gtk, Pango
 
 from twisted.logger import Logger
 
+from virtualbricks import errors
 from virtualbricks.spawn import qemu_img
 from virtualbricks.gui.windows.base import _, _Dialog, pango_attr_list
 
@@ -48,12 +49,13 @@ class QemuCreateArgs:
 class CreateImageDialog(_Dialog):
     """
     Create a new empty disk image with ``qemu-img``: name, folder, format and
-    size.
+    size. The image joins the library under its name, which no image, brick
+    or event may have.
     """
 
     def __init__(self, gui, factory):
         self.gui = gui
-        # self.factory = factory
+        self.factory = factory
         self.build_ui()
 
     def build_ui(self) -> None:
@@ -270,8 +272,10 @@ class CreateImageDialog(_Dialog):
 
     def _get_create_image_args(self):
         name = self.image_name_entry.get_text()
-        if not name:
-            raise ValueError("empty name")
+        try:
+            name = self.factory.normalize_name(name)
+        except errors.InvalidNameError as exc:
+            raise ValueError(str(exc)) from None
         folder = self.folder_chooser.get_filename()
         if folder is None:
             raise ValueError("folder not chosen")
@@ -315,7 +319,11 @@ class CreateImageDialog(_Dialog):
         done_deferred = qemu_img(
             ["create", "-f", args.fileformat, args.pathname, args.size]
         )
-        done_deferred.addCallback(lambda stdout: (args.name, args.pathname))
+        done_deferred.addCallback(
+            lambda stdout: self.factory.new_disk_image(
+                args.name, args.pathname
+            )
+        )
 
         def log_create_error(failure):
             logger.failure(img_create_err, failure)

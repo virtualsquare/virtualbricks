@@ -221,7 +221,7 @@ class LoadImageDialog(_Dialog):
 
     def _load_desc(self, pathname):
         try:
-            with open(pathname + ".vbdescr") as fd:
+            with open(pathname + ".md") as fd:
                 return fd.read()
         except FileNotFoundError:
             return ""

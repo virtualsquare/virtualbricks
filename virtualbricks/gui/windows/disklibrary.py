@@ -17,6 +17,12 @@
 
 """
 Window with the library of the disk images.
+
+The list says how many disks use each image, and how many of them through a
+private copy, which disk writes the image itself while its machine runs, and
+the size of the disk with the space the file takes, from ``qemu-img info``.
+Remove asks first, and says which disks lose their image. A new file for an
+image points the private copies at it first, so that none loses its changes.
 """
 
 import os
@@ -28,16 +34,19 @@ from gi.repository import Gtk, Pango
 from twisted.logger import Logger
 
 from virtualbricks import errors
-from virtualbricks.bricks.virtualmachine import is_virtualmachine
+from virtualbricks.config import images
 from virtualbricks.gui.windows.base import (
     _,
     _Window,
     iter_tree_model,
     pango_attr_list,
 )
+from virtualbricks.gui.windows.confirmdialog import RemoveImageConfirmDialog
+from virtualbricks.gui.windows.projects import human_size
 
 logger = Logger()
 invalid_name = "Cannot rename the image: {error}"
+relink_failed = "Cannot change the file of the image {name}: {error}"
 
 
 class DisksLibraryWindow(_Window):
@@ -60,37 +69,65 @@ class DisksLibraryWindow(_Window):
 
     @staticmethod
     def set_cell_used_by(tree_column, cell, tree_model, itr, brickfactory):
+        # every disk, through a private copy or not
         disk_image = tree_model.get_value(itr, 0)
-        count = 0
-        for vm in filter(is_virtualmachine, brickfactory.bricks):
-            for disk in vm.disks():
-                if disk.image is disk_image and disk.is_cow():
-                    count += 1
-        cell.set_property("text", str(count))
+        uses = images.uses(brickfactory, disk_image)
+        cell.set_property("text", str(len(uses)))
 
     @staticmethod
     def set_cell_master_brick(tree_column, cell, tree_model, itr, data):
+        # the disk that writes the image itself, while its machine runs
         disk_image = tree_model.get_value(itr, 0)
-        text = "" if disk_image.master is None else repr(disk_image.master)
+        master = disk_image.master
+        text = ""
+        if master is not None:
+            text = f"{master.vm.get_name()} ({master.device})"
         cell.set_property("text", text)
         return True
 
     @staticmethod
     def set_cell_cows(tree_column, cell, tree_model, itr, brickfactory):
         disk_image = tree_model.get_value(itr, 0)
-        num_cows = 0
-        for vm in filter(is_virtualmachine, brickfactory.bricks):
-            for disk in vm.disks():
-                if disk.image is disk_image and disk.is_cow():
-                    num_cows += 1
-        cell.set_property("text", str(num_cows))
+        uses = images.uses(brickfactory, disk_image)
+        count = sum(1 for use in uses if use.private)
+        cell.set_property("text", str(count))
         return True
 
-    @staticmethod
-    def set_cell_size(tree_column, cell, tree_model, itr, data):
+    def set_cell_size(self, tree_column, cell, tree_model, itr, data):
         disk_image = tree_model.get_value(itr, 0)
-        cell.set_property("text", disk_image.get_size())
+        cell.set_property("text", self.size_words(disk_image))
         return True
+
+    def size_words(self, disk_image):
+        """
+        The size of the disk and the space the file takes, once qemu-img
+        info has read the file; it's read the first time the list asks.
+        """
+
+        path = disk_image.get_path()
+        if not os.path.exists(path):
+            return _("File missing")
+        info = self._infos.get(path)
+        if info is not None:
+            return _("{disk} disk, {taken} on disk").format(
+                disk=human_size(info.virtual_size),
+                taken=human_size(info.actual_size),
+            )
+        if path in self._unreadable:
+            return _("Unknown")
+        if path not in self._reading:
+            self._reading.add(path)
+            reading = self._infos.read(path)
+            reading.addErrback(self._not_read, path)
+            reading.addBoth(self._read, path, disk_image)
+        return "\N{HORIZONTAL ELLIPSIS}"
+
+    def _not_read(self, failure, path):
+        self._unreadable.add(path)
+
+    def _read(self, result, path, disk_image):
+        self._reading.discard(path)
+        self.on_disk_image_changed(disk_image, self._tree_model)
 
     def __init__(self, brickfactory):
         """
@@ -98,6 +135,10 @@ class DisksLibraryWindow(_Window):
         """
 
         self._brickfactory = brickfactory
+        # what qemu-img info says of the files, and the files it can't read
+        self._infos = images.InfoCache()
+        self._reading = set()
+        self._unreadable = set()
         self.build_ui()
         self._disk_image = None
         tree_view = self.images_view
@@ -410,6 +451,8 @@ class DisksLibraryWindow(_Window):
             if obj == disk_image:
                 tree_model.remove(itr)
                 break
+        if disk_image is self._disk_image:
+            self._hide_edit_screen()
 
     def on_images_view_row_activated(self, tree_view, path, column):
         """
@@ -435,26 +478,39 @@ class DisksLibraryWindow(_Window):
 
     def on_remove_button_clicked(self, button):
         assert self._disk_image is not None
-        # TODO: ask for confirmation
-        self._brickfactory.remove_disk_image(self._disk_image)
-        self._hide_edit_screen()
+        # the edit screen closes when the image goes
+        RemoveImageConfirmDialog(self._brickfactory, self._disk_image).show(
+            self.window
+        )
         return True
 
     def on_save_button_clicked(self, button):
-        assert self._disk_image is not None
-        self._disk_image.set_path(self.path_chooser.get_filename())
+        disk_image = self._disk_image
+        assert disk_image is not None
         name = self.name_entry.get_text()
-        if name != self._disk_image.get_name():
+        if name != disk_image.get_name():
             try:
                 # Through the factory, to rename the disks' references too.
-                self._brickfactory.rename(self._disk_image, name)
+                self._brickfactory.rename(disk_image, name)
             except errors.InvalidNameError as exc:
                 logger.error(invalid_name, error=exc)
                 return True
         description = self.description_buffer.get_property("text")
-        self._disk_image.set_description(description)
+        disk_image.set_description(description)
+        path = self.path_chooser.get_filename()
+        if path is not None:
+            relinked = images.relink(self._brickfactory, disk_image, path)
+            relinked.addErrback(self._relink_failed, disk_image)
         self._hide_edit_screen()
         return True
+
+    @staticmethod
+    def _relink_failed(failure, disk_image):
+        logger.error(
+            relink_failed,
+            name=disk_image.get_name(),
+            error=failure.getErrorMessage(),
+        )
 
     def on_edit_button_clicked(self, button):
         tree_selection = self.images_view.get_selection()
