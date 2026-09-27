@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 08:27+0200\n"
+"POT-Creation-Date: 2026-09-27 08:44+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -717,6 +717,7 @@ msgid "_Events"
 msgstr "Eventos"
 
 #: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/mainwindow/newevent.py
 msgid "New Event"
 msgstr "Nuevo Evento"
 
@@ -740,6 +741,43 @@ msgstr ""
 #, fuzzy
 msgid "Event settings"
 msgstr "Mostrar preferencias"
+
+#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/newbrick.py
+#: virtualbricks/gui/windows/projectname.py
+#: virtualbricks/gui/windows/projects.py
+#: virtualbricks/gui/windows/renamedialog.py
+#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
+msgid "Cancel"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/windows/projectname.py
+msgid "Create"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/windows/attachevent.py
+#: virtualbricks/gui/windows/createimagedialog.py
+#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/windows/importdialog.py
+#: virtualbricks/gui/windows/loadimagedialog.py
+#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
+msgid "Name"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/newevent.py
+#, python-brace-format
+msgid "Wait {delay} seconds"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/newevent.py
+#, python-brace-format
+msgid "The name “{name}” is in use"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/picture.py
 msgid "PNG image"
@@ -1148,15 +1186,6 @@ msgid "<b>Stop event selection</b>"
 msgstr "<b> Ajustes de dispositivo de Audio </b>"
 
 #: virtualbricks/gui/windows/attachevent.py
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
-msgid "Name"
-msgstr ""
-
-#: virtualbricks/gui/windows/attachevent.py
 msgid "Parameters"
 msgstr ""
 
@@ -1166,24 +1195,6 @@ msgstr ""
 
 #: virtualbricks/gui/windows/attachevent.py
 msgid "Assign nothing"
-msgstr ""
-
-#: virtualbricks/gui/windows/brickselection.py
-msgid "Bricks to add to the event"
-msgstr ""
-
-#: virtualbricks/gui/windows/brickselection.py
-msgid "Availables"
-msgstr ""
-
-#: virtualbricks/gui/windows/brickselection.py
-msgid ""
-"--->\n"
-"<---"
-msgstr ""
-
-#: virtualbricks/gui/windows/brickselection.py
-msgid "Added"
 msgstr ""
 
 #: virtualbricks/gui/windows/captureconfig.py
@@ -1436,18 +1447,6 @@ msgstr "Direccion MAC:"
 msgid "Randomize"
 msgstr "Aleatorizar"
 
-#: virtualbricks/gui/windows/eventcommand.py
-msgid "Enter command (each line is an action)"
-msgstr ""
-
-#: virtualbricks/gui/windows/eventcommand.py
-msgid "Action"
-msgstr ""
-
-#: virtualbricks/gui/windows/eventcommand.py
-msgid "Host shell command"
-msgstr ""
-
 #: virtualbricks/gui/windows/exportproject.py
 msgid "Compressing the disks…"
 msgstr ""
@@ -1460,17 +1459,6 @@ msgstr ""
 #, fuzzy
 msgid "Export Project"
 msgstr "_Abrir proyecto"
-
-#: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/newbrick.py
-#: virtualbricks/gui/windows/projectname.py
-#: virtualbricks/gui/windows/projects.py
-#: virtualbricks/gui/windows/renamedialog.py
-#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
-msgid "Cancel"
-msgstr ""
 
 #: virtualbricks/gui/windows/exportproject.py
 msgid "Export"
@@ -1953,40 +1941,6 @@ msgstr "Direccion MAC:"
 msgid "Brick name"
 msgstr "Bricks (Bloques)"
 
-#: virtualbricks/gui/windows/newevent.py
-#, fuzzy
-msgid "Brick start"
-msgstr "Bricks (Bloques)"
-
-#: virtualbricks/gui/windows/newevent.py
-#, fuzzy
-msgid "Brick stop"
-msgstr "Bricks (Bloques)"
-
-#: virtualbricks/gui/windows/newevent.py
-msgid "Brick config"
-msgstr ""
-
-#: virtualbricks/gui/windows/newevent.py
-msgid "Free shell command"
-msgstr ""
-
-#: virtualbricks/gui/windows/newevent.py
-msgid "Events collation"
-msgstr ""
-
-#: virtualbricks/gui/windows/newevent.py
-msgid "Event name:"
-msgstr ""
-
-#: virtualbricks/gui/windows/newevent.py
-msgid "Delay:"
-msgstr ""
-
-#: virtualbricks/gui/windows/newevent.py
-msgid "10"
-msgstr ""
-
 #: virtualbricks/gui/windows/progressbardialog.py
 #: virtualbricks/gui/windows/userwait.py
 msgid "Virtualbricks: action in progress"
@@ -2001,10 +1955,6 @@ msgstr ""
 #, fuzzy
 msgid "New Project"
 msgstr "Guardar proyecto como"
-
-#: virtualbricks/gui/windows/projectname.py
-msgid "Create"
-msgstr ""
 
 #: virtualbricks/gui/windows/projectname.py
 #, fuzzy
@@ -2813,6 +2763,14 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Brick start"
+#~ msgstr "Bricks (Bloques)"
+
+#, fuzzy
+#~ msgid "Brick stop"
+#~ msgstr "Bricks (Bloques)"
 
 #, fuzzy
 #~ msgid "R_unning"

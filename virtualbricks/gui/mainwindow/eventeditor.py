@@ -78,6 +78,25 @@ PLACEHOLDERS = {
 }
 
 
+def delay_button(seconds: int) -> Gtk.SpinButton:
+    """A number of seconds, from 0 to MAX_DELAY."""
+
+    return Gtk.SpinButton(
+        visible=True,
+        adjustment=Gtk.Adjustment(
+            value=seconds,
+            lower=0,
+            upper=MAX_DELAY,
+            step_increment=1,
+            page_increment=10,
+        ),
+        numeric=True,
+        digits=0,
+        # not as wide as the longest delay
+        width_chars=6,
+    )
+
+
 def _is_separator(model, itr) -> bool:
     # the id of a Gtk.ComboBoxText
     return model[itr][1] == SEPARATOR_ID
@@ -192,20 +211,7 @@ class EventEditor(ConfigController):
         before, _sep, after = _("Wait {delay} seconds, then:").partition(
             "{delay}"
         )
-        self.delay = Gtk.SpinButton(
-            visible=True,
-            adjustment=Gtk.Adjustment(
-                value=event.config.delay,
-                lower=0,
-                upper=MAX_DELAY,
-                step_increment=1,
-                page_increment=10,
-            ),
-            numeric=True,
-            digits=0,
-            # not as wide as the longest delay
-            width_chars=6,
-        )
+        self.delay = delay_button(event.config.delay)
         for widget in (
             Gtk.Label(visible=True, label=before.strip()),
             self.delay,

@@ -26,7 +26,9 @@ without actions can't start, and its row says so. The switch shows all the
 events or the waiting ones, and Start All starts the events that can start.
 The search finds an event by its name.
 
-New Event opens the window that makes an event. The menu of an event is
+New Event asks a name and a delay, in the window of
+:mod:`virtualbricks.gui.mainwindow.newevent`, then shows the settings of the
+new event. The menu of an event is
 :mod:`virtualbricks.gui.mainwindow.eventmenu`'s, and its settings are
 :mod:`virtualbricks.gui.mainwindow.eventeditor`'s.
 """
@@ -46,12 +48,12 @@ from virtualbricks.gui.mainwindow.eventinfo import (  # noqa: E402
     SEPARATOR,
     State,
 )
+from virtualbricks.gui.mainwindow.newevent import NewEventDialog  # noqa: E402
 from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     Row,
     RowList,
     RowsTab,
 )
-from virtualbricks.gui.windows.newevent import NewEventDialog  # noqa: E402
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 from virtualbricks.tools import is_running  # noqa: E402
 
