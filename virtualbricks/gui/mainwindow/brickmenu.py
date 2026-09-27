@@ -22,10 +22,14 @@ The menu of a brick, in the Bricks tab and in the Topology tab.
 ``menu()`` makes the ``Gio.Menu`` of a brick, and ``BrickActions`` the
 group of actions its items call, under the prefix ``brick``. The menu has
 Start or Stop, Configure, Rename, Duplicate, Connect To the bricks the
-brick can plug into or take, Attach Event and Delete; a virtual machine
-has Resume. While the brick runs, Process slides to the actions on its
-process: the control monitor, pause and continue, restart and kill, and
-for a virtual machine suspend, reset and terminate.
+brick can plug into or take, When It Starts and When It Stops, and Delete;
+a virtual machine has Resume. While the brick runs, Process slides to the
+actions on its process: the control monitor, pause and continue, restart
+and kill, and for a virtual machine suspend, reset and terminate.
+
+When It Starts and When It Stops choose the event that the brick starts,
+one or none: No Event, then every event of the project. An event that
+isn't there any more stays, marked missing, until another is chosen.
 """
 
 from __future__ import annotations
@@ -49,9 +53,6 @@ from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     menu_of,
     menu_section,
 )
-from virtualbricks.gui.windows.attachevent import (  # noqa: E402
-    AttachEventDialog,
-)
 from virtualbricks.gui.windows.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.spawn import qemu_img  # noqa: E402
@@ -74,15 +75,21 @@ KILL_AFTER = 2
 # The kinds of bricks without a settings panel, and without a console.
 NO_PANEL = frozenset(("Router",))
 NO_CONSOLE = frozenset(("Tap", "Capture"))
+# The choices of an event: the action, the setting of the brick it
+# changes, and the label of its submenu.
+WHEN = (
+    ("when-starts", "pon_vbevent", _("When It Starts")),
+    ("when-stops", "poff_vbevent", _("When It Stops")),
+)
 
 
 _item = functools.partial(menu_item, GROUP)
 
 
-def menu(brick, bricks, keys=False) -> Gio.Menu:
+def menu(brick, bricks, events, keys=False) -> Gio.Menu:
     """
-    The menu of brick, among bricks. keys shows the keys of the Bricks tab
-    next to the items: Enter, F2 and Delete.
+    The menu of brick, among bricks and events. keys shows the keys of the
+    Bricks tab next to the items: Enter, F2 and Delete.
     """
 
     def key(name):
@@ -97,6 +104,13 @@ def menu(brick, bricks, keys=False) -> Gio.Menu:
             *(_item(t.name, "connect", t.name) for t in targets)
         )
         connect_to = Gio.MenuItem.new_submenu(_("Connect To"), submenu)
+    names = [event.get_name() for event in events]
+    when = [
+        Gio.MenuItem.new_submenu(
+            label, _events_menu(action, getattr(brick.config, setting), names)
+        )
+        for action, setting, label in WHEN
+    ]
     process = None
     if running:
         process = Gio.MenuItem.new_submenu(
@@ -112,10 +126,23 @@ def menu(brick, bricks, keys=False) -> Gio.Menu:
             _item(_("Rename…"), "rename", keys=key("F2")),
             _item(_("Duplicate"), "duplicate"),
             connect_to,
-            _item(_("Attach Event…"), "attach-event"),
+            *when,
         ),
         menu_section(_item(_("Resume"), "resume") if vm else None, process),
         menu_section(_item(_("Delete…"), "delete", keys=key("Delete"))),
+    )
+
+
+def _events_menu(action, current, names) -> Gio.Menu:
+    """No Event, then the events: a choice of one, current, for action."""
+
+    choices = [_item(name, action, name) for name in names]
+    if current and current not in names:
+        label = _("{name} (missing)").format(name=current)
+        choices.append(_item(label, action, current))
+    return menu_of(
+        menu_section(_item(_("No Event"), action, "")),
+        menu_section(*choices),
     )
 
 
@@ -163,7 +190,6 @@ class BrickActions(Gio.SimpleActionGroup):
             ("configure", self.configure),
             ("rename", self.rename),
             ("duplicate", self.duplicate),
-            ("attach-event", self.attach_event),
             ("resume", self.resume),
             ("delete", self.delete),
             ("console", self.console),
@@ -181,6 +207,13 @@ class BrickActions(Gio.SimpleActionGroup):
         action = Gio.SimpleAction.new("connect", GLib.VariantType.new("s"))
         action.connect("activate", self.on_connect)
         self.add_action(action)
+        for name, setting, _label in WHEN:
+            # the event chosen, which update() sets
+            action = Gio.SimpleAction.new_stateful(
+                name, GLib.VariantType.new("s"), GLib.Variant.new_string("")
+            )
+            action.connect("change-state", self.on_event_chosen, setting)
+            self.add_action(action)
         self.update()
 
     def update(self) -> None:
@@ -205,6 +238,11 @@ class BrickActions(Gio.SimpleActionGroup):
         }
         for name, value in enabled.items():
             self.lookup_action(name).set_enabled(value)
+        # the events chosen, as the brick has them now
+        for name, setting, _label in WHEN:
+            self.lookup_action(name).set_state(
+                GLib.Variant.new_string(getattr(self.brick.config, setting))
+            )
 
     # The items
 
@@ -225,10 +263,9 @@ class BrickActions(Gio.SimpleActionGroup):
         if other is not None:
             brickinfo.connect(self.brick, other)
 
-    def attach_event(self) -> None:
-        AttachEventDialog(self.brick, self.gui.brickfactory).show(
-            self.gui.window
-        )
+    def on_event_chosen(self, action, value, setting) -> None:
+        self.brick.set({setting: value.get_string()})
+        action.set_state(value)
 
     def resume(self) -> None:
         logger.debug(resuming, name=self.brick.get_name())
@@ -282,10 +319,11 @@ def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:
     returns while it shows.
     """
 
+    factory = gui.brickfactory
     return tab.popup(
         widget,
         event,
-        menu(brick, gui.brickfactory.bricks, keys),
+        menu(brick, factory.bricks, list(factory.iter_events()), keys),
         GROUP,
         BrickActions(gui, brick),
     )

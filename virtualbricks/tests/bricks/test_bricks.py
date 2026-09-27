@@ -21,7 +21,7 @@
 import os
 
 
-from virtualbricks import errors
+from virtualbricks import console, errors
 from virtualbricks.bricks import BrickConfig
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import field_names
@@ -183,6 +183,7 @@ class TestRelatedEvents(BrickTestCase):
     def test_related_events(self):
         switch = self.factory.new_brick("switch", "sw")
         event = self.factory.new_event("boot")
+        event.set({"actions": [console.VbShellCommand("sw on")]})
         started = []
         event.poweron = lambda: started.append("boot")
         switch._start_related_events(on=True)

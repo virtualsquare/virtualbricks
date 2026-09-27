@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 08:44+0200\n"
+"POT-Creation-Date: 2026-09-27 08:58+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -431,6 +431,15 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
 #, fuzzy
+msgid "When It Starts"
+msgstr "Avvia Mattone"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+msgid "When It Stops"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
 msgid "Connect To"
 msgstr "Connetti a"
 
@@ -470,11 +479,6 @@ msgstr "Azioni"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
 #, fuzzy
-msgid "Attach Event…"
-msgstr "_Aggancia Evento"
-
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#, fuzzy
 msgid "Resume"
 msgstr "R_iprendi VM"
 
@@ -483,6 +487,17 @@ msgstr "R_iprendi VM"
 #, fuzzy
 msgid "Delete…"
 msgstr "Ca_ncella"
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventeditor.py
+#, python-brace-format
+msgid "{name} (missing)"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/brickmenu.py
+#, fuzzy
+msgid "No Event"
+msgstr "Nuovo Evento"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
 #, fuzzy
@@ -605,11 +620,6 @@ msgstr ""
 #, fuzzy
 msgid "Remove the action"
 msgstr "Sessione Remota"
-
-#: virtualbricks/gui/mainwindow/eventeditor.py
-#, python-brace-format
-msgid "{name} (missing)"
-msgstr ""
 
 #: virtualbricks/gui/mainwindow/eventeditor.py
 #, python-brace-format
@@ -784,7 +794,6 @@ msgid "Create"
 msgstr "Crea"
 
 #: virtualbricks/gui/mainwindow/newevent.py
-#: virtualbricks/gui/windows/attachevent.py
 #: virtualbricks/gui/windows/createimagedialog.py
 #: virtualbricks/gui/windows/disklibrary.py
 #: virtualbricks/gui/windows/importdialog.py
@@ -1215,30 +1224,6 @@ msgstr ""
 #: virtualbricks/gui/widgets.py
 msgid "Value member"
 msgstr ""
-
-#: virtualbricks/gui/windows/attachevent.py
-#, fuzzy
-msgid "<b>Start event selection</b>"
-msgstr "<b>Selezione Evento di avvio</b>"
-
-#: virtualbricks/gui/windows/attachevent.py
-#, fuzzy
-msgid "<b>Stop event selection</b>"
-msgstr "<b>Selezione Evento di arresto</b>"
-
-#: virtualbricks/gui/windows/attachevent.py
-msgid "Parameters"
-msgstr "Parametri"
-
-#: virtualbricks/gui/windows/attachevent.py
-#, fuzzy
-msgid "Assing nothing"
-msgstr "Assegna niente"
-
-#: virtualbricks/gui/windows/attachevent.py
-#, fuzzy
-msgid "Assign nothing"
-msgstr "Assegna niente"
 
 #: virtualbricks/gui/windows/captureconfig.py
 #: virtualbricks/gui/windows/ethernetdialog.py
@@ -2843,6 +2828,29 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#, fuzzy
+#~ msgid "Attach Event…"
+#~ msgstr "_Aggancia Evento"
+
+#, fuzzy
+#~ msgid "<b>Start event selection</b>"
+#~ msgstr "<b>Selezione Evento di avvio</b>"
+
+#, fuzzy
+#~ msgid "<b>Stop event selection</b>"
+#~ msgstr "<b>Selezione Evento di arresto</b>"
+
+#~ msgid "Parameters"
+#~ msgstr "Parametri"
+
+#, fuzzy
+#~ msgid "Assing nothing"
+#~ msgstr "Assegna niente"
+
+#, fuzzy
+#~ msgid "Assign nothing"
+#~ msgstr "Assegna niente"
 
 #, fuzzy
 #~ msgid "Brick start"

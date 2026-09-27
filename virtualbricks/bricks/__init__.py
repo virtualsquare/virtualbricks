@@ -62,6 +62,9 @@ event_unavailable = (
     "Warning. The Event {name} attached to Brick "
     "{brick} is not available. Skipping execution."
 )
+event_without_actions = (
+    "The event {name} of the brick {brick} has no actions: skipping it."
+)
 shutdown_brick = "Shutting down {name} (pid: {pid})"
 start_brick = "Starting: {args}"
 open_console = "Opening console for {name}\n%{args}\n"
@@ -365,7 +368,7 @@ class Brick(base.Base):
 
     def process_ended(self, proc, status):
         self.proc = None
-        self._start_related_events(off=True)
+        self._start_related_events(on=False, off=True)
         self._last_status = status
         # ovvensive programming, raise an exception instead of hide the error
         # behind a lambda (lambda _: None)
@@ -452,10 +455,13 @@ class Brick(base.Base):
             return
 
         event = self.factory.get_event_by_name(name)
-        if event:
-            event.poweron()
-        else:
+        if event is None:
             self.logger.info(event_unavailable, name=name, brick=self.name)
+        elif not event.configured():
+            # it would raise, and fail the start of the brick
+            self.logger.info(event_without_actions, name=name, brick=self.name)
+        else:
+            event.poweron()
 
     #############################
     # Console related operations.

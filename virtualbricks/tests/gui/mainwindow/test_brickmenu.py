@@ -137,8 +137,11 @@ class BrickMenuTestCase(GuiTestCase):
         brick.proc = FakeProcess()
         return brick
 
+    def events(self):
+        return list(self.factory.iter_events())
+
     def menu(self, brick, keys=False):
-        return content(menu(brick, self.factory.bricks, keys))
+        return content(menu(brick, self.factory.bricks, self.events(), keys))
 
 
 class TestTheMenu(BrickMenuTestCase):
@@ -149,7 +152,12 @@ class TestTheMenu(BrickMenuTestCase):
             self.menu(sw),
             [
                 ["Start", "Configure…"],
-                ["Rename…", "Duplicate", "Attach Event…"],
+                [
+                    "Rename…",
+                    "Duplicate",
+                    ("When It Starts", [["No Event"]]),
+                    ("When It Stops", [["No Event"]]),
+                ],
                 ["Delete…"],
             ],
         )
@@ -165,10 +173,11 @@ class TestTheMenu(BrickMenuTestCase):
                 "Rename…",
                 "Duplicate",
                 ("Connect To", ["tap", "vm"]),
-                "Attach Event…",
+                ("When It Starts", [["No Event"]]),
+                ("When It Stops", [["No Event"]]),
             ],
         )
-        model = menu(sw, self.factory.bricks)
+        model = menu(sw, self.factory.bricks, self.events())
         submenu = model.get_item_link(1, "section").get_item_link(2, "submenu")
         self.assertEqual(
             [
@@ -187,7 +196,12 @@ class TestTheMenu(BrickMenuTestCase):
             self.menu(sw),
             [
                 ["Stop", "Configure…"],
-                ["Rename…", "Duplicate", "Attach Event…"],
+                [
+                    "Rename…",
+                    "Duplicate",
+                    ("When It Starts", [["No Event"]]),
+                    ("When It Stops", [["No Event"]]),
+                ],
                 [
                     (
                         "Process 41301",
@@ -231,12 +245,12 @@ class TestTheMenu(BrickMenuTestCase):
 
     def test_the_keys(self):
         sw = self.brick("switch", "sw")
-        model = menu(sw, self.factory.bricks, keys=True)
+        model = menu(sw, self.factory.bricks, self.events(), keys=True)
         self.assertEqual(attribute(model, [0, 1], "accel"), "Return")
         self.assertEqual(attribute(model, [1, 0], "accel"), "F2")
         self.assertEqual(attribute(model, [2, 0], "accel"), "Delete")
         self.assertIsNone(attribute(model, [0, 0], "accel"))
-        model = menu(sw, self.factory.bricks)
+        model = menu(sw, self.factory.bricks, self.events())
         self.assertIsNone(attribute(model, [0, 1], "accel"))
 
     def test_every_item_has_its_action(self):
@@ -257,7 +271,7 @@ class TestTheMenu(BrickMenuTestCase):
                     yield action.unpack()
 
         self.brick("tap", "tap")
-        used = set(walk(menu(vm, self.factory.bricks)))
+        used = set(walk(menu(vm, self.factory.bricks, self.events())))
         self.assertEqual({name.partition(".")[2] for name in used}, actions)
         self.assertEqual({name.partition(".")[0] for name in used}, {"brick"})
 
@@ -273,13 +287,14 @@ class TestWhatIsEnabled(BrickMenuTestCase):
         )
 
     STOPPED = [
-        "attach-event",
         "configure",
         "connect",
         "delete",
         "duplicate",
         "rename",
         "startstop",
+        "when-starts",
+        "when-stops",
     ]
 
     def test_a_stopped_brick(self):
@@ -303,7 +318,6 @@ class TestWhatIsEnabled(BrickMenuTestCase):
         self.assertEqual(
             self.enabled(sw),
             [
-                "attach-event",
                 "configure",
                 "connect",
                 "console",
@@ -314,6 +328,8 @@ class TestWhatIsEnabled(BrickMenuTestCase):
                 "pause",
                 "restart",
                 "startstop",
+                "when-starts",
+                "when-stops",
             ],
         )
 
@@ -352,21 +368,11 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
             ],
         )
 
-    def test_the_dialogs(self):
+    def test_rename(self):
         shown = []
         self.patch(brickmenu, "RenameDialog", lambda *a: FakeDialog(shown, *a))
-        self.patch(
-            brickmenu, "AttachEventDialog", lambda *a: FakeDialog(shown, *a)
-        )
         self.activate("rename")
-        self.activate("attach-event")
-        self.assertEqual(
-            shown,
-            [
-                ((self.factory, self.sw), self.gui.window),
-                ((self.sw, self.factory), self.gui.window),
-            ],
-        )
+        self.assertEqual(shown, [((self.factory, self.sw), self.gui.window)])
 
     def test_duplicate(self):
         self.activate("duplicate")
@@ -440,6 +446,131 @@ class TestWhatTheItemsDo(BrickMenuTestCase):
         )
         actions.activate_action("restart", None)
         self.assertEqual(restarts, [(self.sw, clock)])
+
+
+class TestTheEventsOfABrick(BrickMenuTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.sw = self.brick("switch", "sw")
+        self.factory.new_event("boot")
+        # without actions: it can be chosen too
+        self.factory.new_event("draft")
+
+    def submenu(self, label, model=None):
+        if model is None:
+            model = menu(self.sw, self.factory.bricks, self.events())
+        section = model.get_item_link(1, "section")
+        for i in range(section.get_n_items()):
+            if section.get_item_attribute_value(i, "label").unpack() == label:
+                return section.get_item_link(i, "submenu")
+        raise AssertionError(label)
+
+    def targets(self, submenu):
+        return [
+            [
+                (
+                    section.get_item_attribute_value(i, "action").unpack(),
+                    section.get_item_attribute_value(i, "target").unpack(),
+                )
+                for i in range(section.get_n_items())
+            ]
+            for section in (
+                submenu.get_item_link(j, "section")
+                for j in range(submenu.get_n_items())
+            )
+        ]
+
+    def test_the_submenus(self):
+        for label, action in (
+            ("When It Starts", "brick.when-starts"),
+            ("When It Stops", "brick.when-stops"),
+        ):
+            submenu = self.submenu(label)
+            self.assertEqual(
+                content(submenu), [["No Event"], ["boot", "draft"]]
+            )
+            self.assertEqual(
+                self.targets(submenu),
+                [[(action, "")], [(action, "boot"), (action, "draft")]],
+            )
+
+    def test_no_events(self):
+        for event in self.events():
+            self.factory.del_event(event)
+        self.assertEqual(
+            content(self.submenu("When It Starts")), [["No Event"]]
+        )
+
+    def test_a_missing_event(self):
+        # deleted, the brick still names it
+        self.sw.set({"poff_vbevent": "gone"})
+        submenu = self.submenu("When It Stops")
+        self.assertEqual(
+            content(submenu),
+            [["No Event"], ["boot", "draft", "gone (missing)"]],
+        )
+        self.assertEqual(
+            self.targets(submenu)[1][2], ("brick.when-stops", "gone")
+        )
+        self.assertEqual(
+            content(self.submenu("When It Starts")),
+            [["No Event"], ["boot", "draft"]],
+        )
+
+    def test_choosing(self):
+        actions = BrickActions(self.gui, self.sw)
+        for name in ("when-starts", "when-stops"):
+            self.assertEqual(actions.get_action_state(name).unpack(), "")
+        actions.activate_action("when-starts", GLib.Variant.new_string("boot"))
+        actions.activate_action("when-stops", GLib.Variant.new_string("draft"))
+        self.assertEqual(self.sw.config.pon_vbevent, "boot")
+        self.assertEqual(self.sw.config.poff_vbevent, "draft")
+        self.assertEqual(
+            actions.get_action_state("when-starts").unpack(), "boot"
+        )
+        # No Event
+        actions.activate_action("when-starts", GLib.Variant.new_string(""))
+        self.assertEqual(self.sw.config.pon_vbevent, "")
+        self.assertEqual(self.sw.config.poff_vbevent, "draft")
+
+    def test_the_choice_follows_the_brick(self):
+        actions = BrickActions(self.gui, self.sw)
+        self.sw.set({"pon_vbevent": "boot"})
+        actions.update()
+        self.assertEqual(
+            actions.get_action_state("when-starts").unpack(), "boot"
+        )
+
+    def test_a_radio_item_each(self):
+        # as GTK shows them: the one chosen, checked
+        self.sw.set({"pon_vbevent": "boot"})
+        result = Gtk.Menu.new_from_model(
+            menu(self.sw, self.factory.bricks, self.events())
+        )
+        self.addCleanup(result.destroy)
+        result.insert_action_group("brick", BrickActions(self.gui, self.sw))
+        [item] = [
+            child
+            for child in result.get_children()
+            if child.get_label() == "When It Starts"
+        ]
+        items = [
+            child
+            for child in item.get_submenu().get_children()
+            if not isinstance(child, Gtk.SeparatorMenuItem)
+        ]
+        self.assertEqual(
+            [
+                (i.get_label(), i.get_draw_as_radio(), i.get_active())
+                for i in items
+            ],
+            [
+                ("No Event", True, False),
+                ("boot", True, True),
+                ("draft", True, False),
+            ],
+        )
 
 
 class TestRestart(BrickMenuTestCase):
