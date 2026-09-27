@@ -38,15 +38,16 @@ from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.tools import is_running
-from virtualbricks.gui.windows.base import _, load_pixbuf
-from virtualbricks.gui.windows.about import AboutDialog
-from virtualbricks.gui.windows.confirmdialog import (
+from virtualbricks.i18n import _
+from virtualbricks.gui.dialogs.base import load_pixbuf
+from virtualbricks.gui.dialogs.about import AboutDialog
+from virtualbricks.gui.dialogs.confirmdialog import (
     DeleteBrickConfirmDialog,
     DeleteEventConfirmDialog,
 )
-from virtualbricks.gui.windows.exportproject import ExportProjectDialog
-from virtualbricks.gui.windows.imagedialogs import RemoveImageDialog
-from virtualbricks.gui.windows.importdialog import ImportDialog
+from virtualbricks.gui.dialogs.exportproject import ExportProjectDialog
+from virtualbricks.gui.dialogs.imagedialogs import RemoveImageDialog
+from virtualbricks.gui.dialogs.importdialog import ImportDialog
 from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.mainwindow.bricks import BricksTab
 from virtualbricks.gui.mainwindow.events import EventsTab
@@ -54,11 +55,11 @@ from virtualbricks.gui.mainwindow.images import ImagesTab
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
 from virtualbricks.gui.mainwindow.tab import switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
-from virtualbricks.gui.windows.logging import LoggingWindow
-from virtualbricks.gui.windows import projectname
-from virtualbricks.gui.windows.projects import ProjectsWindow
-from virtualbricks.gui.windows.settings import SettingsDialog
-from virtualbricks.gui.windows.userwait import Freezer
+from virtualbricks.gui.dialogs.logging import LoggingWindow
+from virtualbricks.gui.dialogs import projectname
+from virtualbricks.gui.dialogs.projects import ProjectsWindow
+from virtualbricks.gui.dialogs.settings import SettingsDialog
+from virtualbricks.gui.dialogs.userwait import Freezer
 
 logger = Logger()
 cannot_open_project = 'Cannot open the project "{name}": {error}'
@@ -135,78 +136,55 @@ class VBGUI:
             orientation=Gtk.Orientation.VERTICAL,
         )
         menubar1 = Gtk.MenuBar(visible=True, can_focus=False)
-        menu_file = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_File"),
-            use_underline=True,
-        )
-        menu1 = Gtk.Menu(visible=True, can_focus=False)
 
-        def item(label):
+        def menu(label):
+            """A menu of the bar, empty."""
+
+            top = Gtk.MenuItem(
+                visible=True, can_focus=False, label=label, use_underline=True
+            )
+            submenu = Gtk.Menu(visible=True, can_focus=False)
+            top.set_submenu(submenu)
+            menubar1.append(top)
+            return top, submenu
+
+        def item(submenu, label):
             menu_item = Gtk.MenuItem(
                 visible=True, label=label, use_underline=True
             )
-            menu1.append(menu_item)
+            submenu.append(menu_item)
             return menu_item
 
-        def separator():
-            menu1.append(Gtk.SeparatorMenuItem(visible=True))
+        def separator(submenu):
+            submenu.append(Gtk.SeparatorMenuItem(visible=True))
 
-        file_open_item = item(_("_Projects…"))
-        file_open_item.set_tooltip_text(
+        # File: what isn't a project's
+        file_menu = menu(_("_File"))[1]
+        file_settings_item = item(file_menu, _("_Settings"))
+        file_logs_item = item(file_menu, _("_Logs"))
+        separator(file_menu)
+        file_quit_item = item(file_menu, _("_Quit"))
+
+        # Projects
+        menu_projects, projects_menu = menu(_("_Projects"))
+        projects_open_item = item(projects_menu, _("_Projects…"))
+        projects_open_item.set_tooltip_text(
             _("See, open, rename, duplicate, export and remove your projects")
         )
-        file_new_item = item(_("_New Project…"))
-        file_recent_item = item(_("Open _Recent"))
+        projects_new_item = item(projects_menu, _("_New Project…"))
+        projects_recent_item = item(projects_menu, _("Open _Recent"))
         self.recent_menu = Gtk.Menu(visible=True)
-        file_recent_item.set_submenu(self.recent_menu)
-        self.file_recent_item = file_recent_item
-        separator()
-        file_save_item = item(_("_Save"))
-        file_duplicate_item = item(_("_Duplicate…"))
-        file_rename_item = item(_("Re_name…"))
-        separator()
-        file_import_item = item(_("_Import…"))
-        file_export_item = item(_("E_xport…"))
-        separator()
-        file_quit_item = item(_("_Quit"))
-        menu_file.connect("activate", self.on_file_menu_activate)
-        menu_file.set_submenu(menu1)
-        menubar1.append(menu_file)
-        menu_settings = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_Settings"),
-            use_underline=True,
-        )
-        menu2 = Gtk.Menu(visible=True, can_focus=False)
-        settings_preferences_item = Gtk.ImageMenuItem(
-            label="gtk-preferences",
-            visible=True,
-            can_focus=False,
-            use_underline=True,
-            use_stock=True,
-        )
-        menu2.append(settings_preferences_item)
-        menu_settings.set_submenu(menu2)
-        menubar1.append(menu_settings)
-        menu_view = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_View"),
-            use_underline=True,
-        )
-        menu3 = Gtk.Menu(visible=True, can_focus=False)
-        view_messages_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_Messages"),
-            use_underline=True,
-        )
-        menu3.append(view_messages_item)
-        menu_view.set_submenu(menu3)
-        menubar1.append(menu_view)
+        projects_recent_item.set_submenu(self.recent_menu)
+        self.projects_recent_item = projects_recent_item
+        separator(projects_menu)
+        projects_save_item = item(projects_menu, _("_Save"))
+        projects_duplicate_item = item(projects_menu, _("_Duplicate…"))
+        projects_rename_item = item(projects_menu, _("Re_name…"))
+        separator(projects_menu)
+        projects_import_item = item(projects_menu, _("_Import…"))
+        projects_export_item = item(projects_menu, _("E_xport…"))
+        menu_projects.connect("activate", self.on_projects_menu_activate)
+
         menu_help = Gtk.MenuItem(
             visible=True,
             can_focus=False,
@@ -271,21 +249,21 @@ class VBGUI:
         # accelerators.
         accel_group = Gtk.AccelGroup()
         self.window.add_accel_group(accel_group)
-        file_new_item.add_accelerator(
+        projects_new_item.add_accelerator(
             "activate",
             accel_group,
             Gdk.KEY_n,
             Gdk.ModifierType.CONTROL_MASK,
             Gtk.AccelFlags.VISIBLE,
         )
-        file_open_item.add_accelerator(
+        projects_open_item.add_accelerator(
             "activate",
             accel_group,
             Gdk.KEY_o,
             Gdk.ModifierType.CONTROL_MASK,
             Gtk.AccelFlags.VISIBLE,
         )
-        file_save_item.add_accelerator(
+        projects_save_item.add_accelerator(
             "activate",
             accel_group,
             Gdk.KEY_s,
@@ -299,7 +277,7 @@ class VBGUI:
             Gdk.ModifierType.CONTROL_MASK,
             Gtk.AccelFlags.VISIBLE,
         )
-        settings_preferences_item.add_accelerator(
+        file_settings_item.add_accelerator(
             "activate",
             accel_group,
             Gdk.KEY_p,
@@ -317,34 +295,36 @@ class VBGUI:
         # Signals
         self.window.connect("delete-event", self.on_window_delete_event)
         self.window.connect("destroy", self.do_quit)
-        file_new_item.connect("activate", self.on_file_new_item_activate)
-        file_open_item.connect("activate", self.on_file_open_item_activate)
-        file_rename_item.connect(
-            "activate",
-            self.on_file_rename_item_activate,
+        projects_new_item.connect(
+            "activate", self.on_projects_new_item_activate
         )
-        file_save_item.connect("activate", self.on_file_save_item_activate)
-        file_duplicate_item.connect(
-            "activate",
-            self.on_file_duplicate_item_activate,
+        projects_open_item.connect(
+            "activate", self.on_projects_open_item_activate
         )
-        file_import_item.connect(
+        projects_rename_item.connect(
             "activate",
-            self.on_file_import_item_activate,
+            self.on_projects_rename_item_activate,
         )
-        file_export_item.connect(
+        projects_save_item.connect(
+            "activate", self.on_projects_save_item_activate
+        )
+        projects_duplicate_item.connect(
             "activate",
-            self.on_file_export_item_activate,
+            self.on_projects_duplicate_item_activate,
+        )
+        projects_import_item.connect(
+            "activate",
+            self.on_projects_import_item_activate,
+        )
+        projects_export_item.connect(
+            "activate",
+            self.on_projects_export_item_activate,
         )
         file_quit_item.connect("activate", self.do_quit)
-        settings_preferences_item.connect(
-            "activate",
-            self.on_settings_preferences_item_activate,
+        file_settings_item.connect(
+            "activate", self.on_file_settings_item_activate
         )
-        view_messages_item.connect(
-            "activate",
-            self.on_view_messages_item_activate,
-        )
+        file_logs_item.connect("activate", self.on_file_logs_item_activate)
         help_about_item.connect("activate", self.on_help_about_item_activate)
         self.main_notebook.connect(
             "switch-page",
@@ -529,15 +509,15 @@ class VBGUI:
 
     # menu items signals
 
-    def on_file_new_item_activate(self, menuitem):
+    def on_projects_new_item_activate(self, menuitem):
         self.project_name_dialog(projectname.NEW)
         return True
 
-    def on_file_open_item_activate(self, menuitem):
+    def on_projects_open_item_activate(self, menuitem):
         self.show_projects()
         return True
 
-    def on_file_menu_activate(self, menuitem):
+    def on_projects_menu_activate(self, menuitem):
         """Fill Open Recent with the projects used last."""
 
         for child in self.recent_menu.get_children():
@@ -554,7 +534,7 @@ class VBGUI:
                 "activate", self.on_recent_item_activate, summary.name
             )
             self.recent_menu.append(recent_item)
-        self.file_recent_item.set_sensitive(bool(recent))
+        self.projects_recent_item.set_sensitive(bool(recent))
 
     def on_recent_item_activate(self, menuitem, name):
         try:
@@ -563,23 +543,23 @@ class VBGUI:
             logger.error(cannot_open_project, name=name, error=exc)
         return True
 
-    def on_file_rename_item_activate(self, menuitem):
+    def on_projects_rename_item_activate(self, menuitem):
         self.project_name_dialog(projectname.RENAME, projects.current.name)
         return True
 
-    def on_file_save_item_activate(self, menuitem):
+    def on_projects_save_item_activate(self, menuitem):
         self.on_save()
         return True
 
-    def on_file_duplicate_item_activate(self, menuitem):
+    def on_projects_duplicate_item_activate(self, menuitem):
         self.project_name_dialog(projectname.DUPLICATE, projects.current.name)
         return True
 
-    def on_file_import_item_activate(self, menuitem):
+    def on_projects_import_item_activate(self, menuitem):
         self.import_project()
         return True
 
-    def on_file_export_item_activate(self, menuitem):
+    def on_projects_export_item_activate(self, menuitem):
         self.export_project(None)
         return True
 
@@ -639,11 +619,11 @@ class VBGUI:
         dialog = ExportProjectDialog(path, images)
         dialog.show(parent or self.window)
 
-    def on_settings_preferences_item_activate(self, menuitem):
+    def on_file_settings_item_activate(self, menuitem):
         SettingsDialog(self).show(self.window)
         return True
 
-    def on_view_messages_item_activate(self, menuitem):
+    def on_file_logs_item_activate(self, menuitem):
         LoggingWindow(self.messages).show()
         return True
 

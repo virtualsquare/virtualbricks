@@ -57,7 +57,7 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     ThemeIcons,
     theme_icon,
 )
-from virtualbricks.gui.windows.addimage import (  # noqa: E402
+from virtualbricks.gui.dialogs.addimage import (  # noqa: E402
     ExistingImageDialog,
     NewDiskDialog,
 )

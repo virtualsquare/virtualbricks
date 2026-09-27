@@ -46,7 +46,9 @@ from virtualbricks.gui.mainwindow.events.eventinfo import (  # noqa: E402
     Kind,
 )
 from virtualbricks.gui.mainwindow.tab import icon_button  # noqa: E402
-from virtualbricks.gui.windows.base import ConfigController  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.config.base import (  # noqa: E402
+    ConfigController,
+)
 from virtualbricks.i18n import _  # noqa: E402
 
 # Between the widgets, in pixels.

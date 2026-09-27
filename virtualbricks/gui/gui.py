@@ -39,18 +39,18 @@ from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
 from virtualbricks.bricks import Brick
-from virtualbricks.gui.windows import (
-    EditEthernetDialog,
+from virtualbricks.gui.mainwindow.bricks.config import (
+    CaptureConfigController,
+    NetemuConfigController,
+    QemuConfigController,
     SwitchConfigController,
     SwitchWrapperConfigController,
     TapConfigController,
-    CaptureConfigController,
-    WireConfigController,
-    NetemuConfigController,
     TunnelClientConfigController,
     TunnelListenConfigController,
-    QemuConfigController,
+    WireConfigController,
 )
+from virtualbricks.gui.dialogs import EditEthernetDialog
 from virtualbricks.gui.mainwindow import VBGUI
 from virtualbricks.gui.interfaces import IMenu, IConfigController
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver

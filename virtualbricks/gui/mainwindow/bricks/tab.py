@@ -23,7 +23,7 @@ rows of :mod:`virtualbricks.gui.mainwindow.rowtab`.
 New Brick opens the window that makes a brick. The switch shows all the
 bricks or the running ones, and Start All starts the bricks that can start.
 The menu of a brick is :mod:`virtualbricks.gui.mainwindow.bricks.brickmenu`'s, and
-its settings are its panel of :mod:`virtualbricks.gui.windows`; a router has
+its settings are its panel of :mod:`virtualbricks.gui.mainwindow.bricks.config`; a router has
 none.
 """
 
@@ -49,7 +49,7 @@ from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     RowsTab,
     log_failures,
 )
-from virtualbricks.gui.windows.newbrick import NewBrickDialog  # noqa: E402
+from virtualbricks.gui.dialogs.newbrick import NewBrickDialog  # noqa: E402
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 from virtualbricks.tools import is_running  # noqa: E402
 

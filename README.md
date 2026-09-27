@@ -102,7 +102,7 @@ Virtualbricks keeps its files in TOML, and writes them itself:
   changes it.
 
 Each project has its own settings, in its `project.toml`: the first time,
-choose in *Settings › Preferences*, on the page of the project, where
+choose in *File › Settings*, on the page of the project, where
 Virtualbricks finds the programs: `qemupath` and `vdepath`, the folders of the
 Qemu and VDE binaries. A new project starts with a copy of the settings of the
 project that is open. The page of the application sets `term`, the terminal of

@@ -21,7 +21,9 @@ The Bricks tab of the main window.
 ``tab`` is the tab, on the rows of
 :mod:`virtualbricks.gui.mainwindow.rowtab`; ``bricklist`` its list, a row
 per brick; ``brickinfo`` what a row says about a brick, without widgets; and
-``brickmenu`` the menu of a brick, which the Topology tab opens too.
+``brickmenu`` the menu of a brick, which the Topology tab opens too. The
+sub package ``config`` has the settings of each kind of brick, which the
+tab shows in place of the list.
 
 Only the classes that code outside this package imports from it are exported;
 the tests import the others from their modules.

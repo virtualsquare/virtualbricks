@@ -41,9 +41,9 @@ from virtualbricks import errors  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
 from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
-from virtualbricks.gui.windows.base import (  # noqa: E402
+from virtualbricks.gui.dialogs.base import pango_attr_list  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.config.base import (  # noqa: E402
     ConfigController,
-    pango_attr_list,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
 

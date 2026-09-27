@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 20:53+0200\n"
+"POT-Creation-Date: 2026-09-27 21:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -199,13 +199,1201 @@ msgstr ""
 msgid "Normalized name %s already in use"
 msgstr ""
 
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/dialogs/exportproject.py
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/dialogs/newbrick.py
+#: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/dialogs/projects.py
+#: virtualbricks/gui/dialogs/renamedialog.py
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/dialogs/usbdev.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
+msgid "Cancel"
+msgstr "Annulla"
+
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
+#, python-brace-format
+msgid "The name “{name}” is in use"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/dialogs/projectname.py virtualbricks/gui/dialogs/usbdev.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Name"
+msgstr "Nome"
+
+#: virtualbricks/gui/dialogs/addimage.py
+msgid "Add an Existing Image"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+msgid "Add"
+msgstr "Aggiungi"
+
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, fuzzy
+msgid "File"
+msgstr "_File"
+
+#: virtualbricks/gui/dialogs/addimage.py
+#, fuzzy
+msgid "Choose a Disk Image"
+msgstr "immagini disco"
+
+#: virtualbricks/gui/dialogs/addimage.py
+msgid "Copy it to the image folder"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+msgid "Use it where it is"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Description"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+msgid "Reading the file…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+#, python-brace-format
+msgid "above {file}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+#, fuzzy, python-brace-format
+msgid "Not a disk image: {error}"
+msgstr "immagini disco"
+
+#: virtualbricks/gui/dialogs/addimage.py
+msgid "It is above another file, so it's used where it is."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+#, python-brace-format
+msgid "The copy takes {size}, and keeps the file as it is."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+msgid "Copying the file…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+#, fuzzy
+msgid "New Empty Disk"
+msgstr "crea una nuova immagine vuota"
+
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
+msgid "Create"
+msgstr "Crea"
+
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Size"
+msgstr "Dimensione"
+
+#: virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Format"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py virtualbricks/migrate/gui.py
+msgid "Folder"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/addimage.py
+#, fuzzy
+msgid "Choose a Folder"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/dialogs/addimage.py
+#, python-brace-format
+msgid "{file} is there already"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/confirmdialog.py
+#, fuzzy
+msgid "No"
+msgstr "Nessuno"
+
+#: virtualbricks/gui/dialogs/confirmdialog.py
+msgid "Yes"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/confirmdialog.py
+#, fuzzy, python-brace-format
+msgid "Do you really want to delete {brick} ({type})?"
+msgstr "Si vuole veramente cancellare "
+
+#: virtualbricks/gui/dialogs/confirmdialog.py
+#, fuzzy, python-brace-format
+msgid "Do you really want to delete {event} ({type})?"
+msgstr "Si vuole veramente cancellare "
+
+#: virtualbricks/gui/dialogs/confirmdialog.py
+msgid "The event is in use, it will be stopped before."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/confirmdialog.py
+#, fuzzy
+msgid "Do you really want to delete the network interface?"
+msgstr "Si vuole veramente cancellare "
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "rtl8139"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "e1000"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "virtio-net-pci"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "i82551"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "i82557b"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "i82559er"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "ne2k_pci"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "pcnet"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "ne2k_isa"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "<b>New ethernet interface</b>"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+#, fuzzy
+msgid "Model:"
+msgstr "Modalità:"
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
+msgid "Connect to:"
+msgstr "Connetti a:"
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "Mac address:"
+msgstr "Indirizzo Mac:"
+
+#: virtualbricks/gui/dialogs/ethernetdialog.py
+msgid "Randomize"
+msgstr "Randomizza"
+
+#: virtualbricks/gui/dialogs/exportproject.py
+msgid "Compressing the disks…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+msgid "Writing the archive…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, fuzzy
+msgid "Export Project"
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, fuzzy
+msgid "Export"
+msgstr "porta:"
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/mainwindow/window.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "Close"
+msgstr "Chiudi VB"
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, fuzzy
+msgid "Save as"
+msgstr "Salva come..."
+
+#: virtualbricks/gui/dialogs/exportproject.py virtualbricks/migrate/gui.py
+msgid "Choose…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+msgid "Include"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+msgid "The project: its file and its README"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, fuzzy, python-brace-format
+msgid "The images: {names}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
+#, fuzzy
+msgid "Stop"
+msgstr "_Avvia/Ferma"
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, python-brace-format
+msgid "{size} before compression"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, python-brace-format
+msgid "{path} is a folder"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, python-brace-format
+msgid "The folder of {path} doesn't exist"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
+msgid "Virtualbricks archives"
+msgstr "Virtualbricks"
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, fuzzy, python-brace-format
+msgid "\"{name}\" already exists. Replace it?"
+msgstr "\" esiste già."
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, python-brace-format
+msgid "The archive in {folder} is replaced when the export ends."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+msgid "Replace"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, python-brace-format
+msgid "Exported to {path}, {size}."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/exportproject.py
+#, python-brace-format
+msgid "Cannot export to {path}: {error}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "No disk uses it."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "{vm} ({device})"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "The disk {disks} will have no image."
+msgid_plural "The disks {disks} will have no image."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "The private copy stays."
+msgid_plural "The private copies stay."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy
+msgid "Remove Image"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py virtualbricks/gui/gui.py
+msgid "Remove"
+msgstr "Rimuovi"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Remove the image {name}?"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "The project {names} uses the file too: it stays."
+msgid_plural "The projects {names} use the file too: it stays."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "Also move the file to the trash ({size})"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "Also delete the file ({size}): there is no trash"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "The file stays: {path}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "Find the File"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "Use This File"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Where is the file of {name}?"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "{path} isn't there."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy
+msgid "Choose the File"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy
+msgid "The image folder has a file of the same name."
+msgstr "Cartella di destinazione per la nuova immagine"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid ""
+"The private copies of its disks are pointed at the file first, so that they "
+"keep their changes."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Stop {names} first."
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy
+msgid "Stopped."
+msgstr "_Avvia/Ferma"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy
+msgid "Save as a New Image"
+msgstr "_Crea nuova immagine"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy
+msgid "Save"
+msgstr "Salva come..."
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "Save {vm}'s {device} as a new image"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid ""
+"A file of its own in the image folder: {image} with the changes {vm} made to "
+"it."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Use it for {vm}'s {device}"
+msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "The disk starts again from it, with an empty private copy."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "Merge into {image}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "Merge"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "Merge {vm}'s changes into {image}?"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "the project {project}, as {image}"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid ""
+"{image} changes for all that use it too: {users}. Their private copies may "
+"stop working."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "No other disk uses {image}."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+msgid "Save as a New Image Instead"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, fuzzy
+msgid "Start Over"
+msgstr "Avvia in vncserver"
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid "Start {vm}'s {device} over from {image}?"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid ""
+"{copy} goes to the trash, with the changes it keeps, {size}; the next start "
+"makes an empty one."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#, python-brace-format
+msgid ""
+"{copy} is deleted for good, with the changes it keeps, {size}: there is no "
+"trash. The next start makes an empty one."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Reading the archive"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Extracting the archive"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Uncompressing the disks"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "{count} {type}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy, python-brace-format
+msgid "{n} event"
+msgid_plural "{n} events"
+msgstr[0] "Eventi"
+msgstr[1] "Eventi"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
+#, fuzzy
+msgid "No bricks"
+msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "no disk"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy, python-brace-format
+msgid "Used by {disks}"
+msgstr "RAM usata:"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Copy"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Use a file…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Leave unset"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Looking in the archive…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Not in the archive"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "{size} in the archive"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "Looking in the archive… if it's there, copied to {path}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "Copied to {path}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy, python-brace-format
+msgid "Uses {path}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Unset: its disks get an image later, in their settings"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
+msgid "Import Project"
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
+msgid "Import"
+msgstr "porta:"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Choose an archive of a Virtualbricks project."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
+msgid "Choose an archive"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "Reading the archive…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Images"
+msgstr "immagini disco"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
+msgid "The project uses no image."
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "This computer's paths"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy
+msgid "Open the project after the import"
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid ""
+"You can close this window: the Messages window says when the import is done."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+msgid "To check"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "Cannot read {path}: {error}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "Use this computer's {key}, {ours}, instead of {theirs}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "The file of {name}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, fuzzy, python-brace-format
+msgid "Importing {name}"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "Imported as \"{name}\"."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/importdialog.py
+#, python-brace-format
+msgid "cannot be opened: {error}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "%A %d %B %Y"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "%A %d %B %Y, %H:%M:%S"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, python-brace-format
+msgid "pid {pid}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, python-brace-format
+msgid "Output of the program on {stream}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Debug"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Info"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Warning"
+msgstr "Attenzione"
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Error"
+msgstr "Errore"
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Critical"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, python-brace-format
+msgid "{0} more line"
+msgid_plural "{0} more lines"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, python-brace-format
+msgid "traceback, {0} call"
+msgid_plural "traceback, {0} calls"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Logs"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Filter, for example level:warning source:tap0"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Menu"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Following"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Show the newest messages as they arrive"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, fuzzy
+msgid "Expand all"
+msgstr "Espandi Verticalmente"
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Collapse all"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Save…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, fuzzy
+msgid "Report a bug…"
+msgstr "porta"
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Clear"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} message"
+msgid_plural "{0} messages"
+msgstr[0] "messaggio"
+msgstr[1] "messaggio"
+
+#: virtualbricks/gui/dialogs/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} of {1} message"
+msgid_plural "{0} of {1} messages"
+msgstr[0] "messaggio"
+msgstr[1] "messaggio"
+
+#: virtualbricks/gui/dialogs/logging.py
+#, python-brace-format
+msgid "{0} error"
+msgid_plural "{0} errors"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, fuzzy, python-brace-format
+msgid "{0} warning"
+msgid_plural "{0} warnings"
+msgstr[0] "Attenzione"
+msgstr[1] "Attenzione"
+
+#: virtualbricks/gui/dialogs/logging.py
+#, python-brace-format
+msgid "{0} line of program output"
+msgid_plural "{0} lines of program output"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Following the newest"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+msgid "Paused"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/logging.py
+#, fuzzy
+msgid "Save the messages"
+msgstr "Salva come..."
+
+#: virtualbricks/gui/dialogs/logging.py
+#: virtualbricks/gui/mainwindow/bricks/config/base.py
+#: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/migrate/gui.py
+#, fuzzy
+msgid "_Cancel"
+msgstr "Annulla"
+
+#: virtualbricks/gui/dialogs/logging.py virtualbricks/gui/mainwindow/window.py
+#: virtualbricks/migrate/gui.py
+msgid "_Save"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/newbrick.py
+#: virtualbricks/gui/dialogs/renamedialog.py
+#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/dialogs/usbdev.py
+msgid "OK"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/newbrick.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+msgid "Tap"
+msgstr "Tap"
+
+#: virtualbricks/gui/dialogs/newbrick.py
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, fuzzy
+msgid "Brick name"
+msgstr "Nome Mattone:"
+
+#: virtualbricks/gui/dialogs/progressbardialog.py
+#: virtualbricks/gui/dialogs/userwait.py
+msgid "Virtualbricks: action in progress"
+msgstr "Virtualbricks: azione in corso"
+
+#: virtualbricks/gui/dialogs/progressbardialog.py
+#, fuzzy
+msgid "Please wait..."
+msgstr "Prego attendere"
+
+#: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "New Project"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/projectname.py
+#, fuzzy
+msgid "Rename Project"
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/dialogs/projectname.py
+#, fuzzy
+msgid "Rename"
+msgstr "_Rinomina"
+
+#: virtualbricks/gui/dialogs/projectname.py
+#, fuzzy
+msgid "Duplicate Project"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/projectname.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
+#, fuzzy
+msgid "Duplicate"
+msgstr "Azioni"
+
+#: virtualbricks/gui/dialogs/projectname.py
+#, fuzzy
+msgid "New name"
+msgstr "Nuovo nome evento"
+
+#: virtualbricks/gui/dialogs/projectname.py
+msgid "Name of the copy"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projectname.py
+msgid ""
+"Optional; it becomes the README of the project. The project starts with a "
+"copy of the settings of the open project."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projectname.py
+msgid "Open the copy"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "Today at {time}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "Yesterday"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy, python-brace-format
+msgid "{n} brick"
+msgid_plural "{n} bricks"
+msgstr[0] "_Importa Mattoni"
+msgstr[1] "_Importa Mattoni"
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "Can't be read"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "{n} image missing"
+msgid_plural "{n} images missing"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "Open"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Projects"
+msgstr "Nome Evento:"
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "New…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Import…"
+msgstr "porta:"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "No projects yet"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "A project is a lab: its bricks, events and images."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Import a Project…"
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Find a project"
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Select a project"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/messages.py
+#: virtualbricks/migrate/gui.py
+msgid "Bricks"
+msgstr "Mattoni"
+
+#: virtualbricks/gui/dialogs/projects.py virtualbricks/gui/messages.py
+msgid "Events"
+msgstr "Eventi"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Private disks"
+msgstr "COW Privato"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Other files"
+msgstr "Altri"
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "Last used"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "Duplicate…"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Export…"
+msgstr "porta:"
+
+#: virtualbricks/gui/dialogs/projects.py
+#: virtualbricks/gui/mainwindow/topology.py
+msgid "More"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
+#, fuzzy
+msgid "Rename…"
+msgstr "_Rinomina"
+
+#: virtualbricks/gui/dialogs/projects.py
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
+#, fuzzy
+msgid "Show in Files"
+msgstr "Mostra impostazioni"
+
+#: virtualbricks/gui/dialogs/projects.py
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
+#, fuzzy
+msgid "Remove…"
+msgstr "Rimuovi"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "The project file can't be read: {problem}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "None"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "{name}: {path}, not on this computer"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "This project is open"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/projects.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Unknown"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "Cannot open {name}: {error}"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy, python-brace-format
+msgid "Remove {name}?"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "{name} is open"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy, python-brace-format
+msgid "Open another project first, then remove {name}."
+msgstr "Apertura progetto"
+
+#: virtualbricks/gui/dialogs/projects.py
+#, fuzzy
+msgid "Delete Permanently"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "Move to Trash"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "Its folder, with {size} of private disks, goes"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+#, python-brace-format
+msgid "Its folder, {size}, goes"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "Its folder goes"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid " to the trash, where you can restore it."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid " for good: the drive of the workspace has no trash."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/projects.py
+msgid "The images it uses stay in your image library."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, fuzzy
+msgid "Virtualbricks - Rename brick"
+msgstr "Lista Mattoni di Virtualbricks"
+
+#: virtualbricks/gui/dialogs/renamedialog.py
+#, fuzzy
+msgid "Chose a new name"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "VDE binaries path"
+msgstr ""
+"Percorso\n"
+"binari VDE"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "Allow female plugs on devices"
+msgstr "Permetti plugs femmina nei dispositivi"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "Network topology loop detection"
+msgstr "Rileva loop della topologia di rete"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "Qemu binaries path"
+msgstr "Percorso binari Qemu/KVM"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "Private COW format"
+msgstr "COW Privato"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "Virtualbricks Settings"
+msgstr "Impostazioni Virtualbricks"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "Application"
+msgstr "Azioni"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid ""
+"These settings belong to the open project: changing them doesn't change the "
+"other projects. A new project starts with a copy of them."
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "This project"
+msgstr "Nuovo progetto"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "X-window terminal command"
+msgstr ""
+"Comando per\n"
+"terminale X-window"
+
+#: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "Enable systray"
+msgstr "Abilita SysTray"
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "Warn about missing components at startup"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "Enable KSM"
+msgstr "Abilita KSM"
+
+#: virtualbricks/gui/dialogs/usbdev.py
+#, fuzzy
+msgid "Select USB devices"
+msgstr "Seleziona una carella"
+
+#: virtualbricks/gui/dialogs/usbdev.py
+#, fuzzy
+msgid "ID"
+msgstr "PID"
+
+#: virtualbricks/gui/dialogs/userwait.py
+msgid "Please wait"
+msgstr "Prego attendere"
+
 #: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/readme.py
 msgid "Edit"
 msgstr "Modifica"
-
-#: virtualbricks/gui/gui.py virtualbricks/gui/windows/imagedialogs.py
-msgid "Remove"
-msgstr "Rimuovi"
 
 #: virtualbricks/gui/gui.py
 #, python-brace-format
@@ -267,7 +1455,8 @@ msgstr[1] ""
 msgid "{names}, the image itself"
 msgstr ""
 
-#: virtualbricks/gui/imageinfo.py virtualbricks/gui/windows/imagepicker.py
+#: virtualbricks/gui/imageinfo.py
+#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
 #, python-brace-format
 msgid "{path} isn't there"
 msgstr ""
@@ -349,11 +1538,6 @@ msgstr "Switch"
 #, fuzzy
 msgid "Switch wrapper"
 msgstr "Switch"
-
-#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
-#: virtualbricks/gui/windows/newbrick.py
-msgid "Tap"
-msgstr "Tap"
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "Wire"
@@ -527,12 +1711,6 @@ msgid "process {pid}"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/bricklist.py
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "No bricks"
-msgstr "_Importa Mattoni"
-
-#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, python-brace-format
 msgid "No brick matches “{text}”"
 msgstr ""
@@ -567,17 +1745,8 @@ msgid "Connect To"
 msgstr "Connetti a"
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 #: virtualbricks/gui/mainwindow/events/eventmenu.py
-#: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/imagedialogs.py
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Stop"
-msgstr "_Avvia/Ferma"
-
-#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
-#: virtualbricks/gui/mainwindow/events/eventmenu.py
-#: virtualbricks/gui/windows/qemuconfig.py
 #, fuzzy
 msgid "Start"
 msgstr "Avvia Mattone"
@@ -587,21 +1756,6 @@ msgstr "Avvia Mattone"
 #, fuzzy
 msgid "Configure…"
 msgstr "_Configura"
-
-#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
-#: virtualbricks/gui/mainwindow/events/eventmenu.py
-#: virtualbricks/gui/mainwindow/images/imagemenu.py
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Rename…"
-msgstr "_Rinomina"
-
-#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
-#: virtualbricks/gui/mainwindow/events/eventmenu.py
-#: virtualbricks/gui/windows/projectname.py
-#, fuzzy
-msgid "Duplicate"
-msgstr "Azioni"
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, fuzzy
@@ -666,6 +1820,517 @@ msgstr "Sospensione/Ripristino non supportato su questo disco."
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Cannot find suspend point."
 msgstr "Impossibile trovare punto di sospensione."
+
+#: virtualbricks/gui/mainwindow/bricks/config/base.py
+#: virtualbricks/gui/mainwindow/rowtab.py
+msgid "_OK"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+#, fuzzy
+msgid "Capture interface:"
+msgstr "Nome dell'interfaccia di rete:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#, fuzzy
+msgid "Private copy"
+msgstr "COW Privato"
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#, fuzzy
+msgid "The image itself"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#, python-brace-format
+msgid "More for {device}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#, fuzzy
+msgid "Save as a New Image…"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#, python-brace-format
+msgid "Merge into {image}…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#, python-brace-format
+msgid "Start Over from {image}…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#, fuzzy
+msgid "Remove Disk"
+msgstr "Rimuovi"
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+msgid "Disks"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+msgid "No disk: add one to give the machine its disk."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+msgid "Add Disk"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
+#, fuzzy
+msgid "No image"
+msgstr "Salva come..."
+
+#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
+#, fuzzy
+msgid "Find an image"
+msgstr "immagini disco"
+
+#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
+#, fuzzy
+msgid "Add an Existing Image…"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
+#: virtualbricks/gui/mainwindow/images/tab.py
+msgid "New Empty Disk…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
+#, fuzzy
+msgid "Manage Images…"
+msgstr "Esporta come Immagine"
+
+#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
+#, fuzzy
+msgid "Choose an image for this disk"
+msgstr "Scegli un nuovo nome:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "<=== connect ===>"
+msgstr "<=== connetti ===>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#, fuzzy
+msgid "Markov state"
+msgstr "Avvia Mattone"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#, fuzzy
+msgid "Channel configuration"
+msgstr "Controlla la configurazione"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "Forward link"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "Reverse link"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#, fuzzy
+msgid "Asymmetric"
+msgstr "Simmetrico"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "buffer length (Byte; 0=no limit)"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "propagation delay (one way; ms)"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "Percentage of loss as a floating point number."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "loss rate (in %, [0,100] real)"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "bandwidth (Byte/s; 0=no limit)"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#, fuzzy
+msgid "Markov configuration"
+msgstr "Controlla la configurazione"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "Changing state probability"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "========>"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#, fuzzy
+msgid "State name"
+msgstr "Formato immagine"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "Disabled because set symmetric"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
+msgid "Eth"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Connection"
+msgstr "Connetti a"
+
+#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Model"
+msgstr "Modalità:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "MAC address"
+msgstr "Indirizzo MAC: "
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Use virtio block devices"
+msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "CD-ROM"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "no cdrom"
+msgstr "nessun cdrom"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "don´t use any cdrom device"
+msgstr "non usare nessun dispositivo cdrom"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "mount cdrom"
+msgstr "monta cdrom"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "mount local cdrom Drive"
+msgstr "monta dispositovo cdrom locale"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "use image as cdrom"
+msgstr "usa immagine come cdrom"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Boot from"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Snapshot mode: the disks and their images stay as they were."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Drives"
+msgstr "Drives"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Architecture:"
+msgstr "Architettura:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "CPU Type:"
+msgstr "Tipo di CPU"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Machine type:"
+msgstr "Tipo di macchina"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "KVM"
+msgstr "KVM"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Number of CPUs:"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>System and machine</b>"
+msgstr "<b>Sistema e macchina</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Emulated Soundcard:"
+msgstr "seleziona Scheda audio emulata"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>Audio Device Settings</b>"
+msgstr "<b>Impostazioni dispositivo audio</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Used RAM:"
+msgstr "RAM usata:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "MB"
+msgstr " MB"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "KVM Shadow Memory:"
+msgstr "KVM Shadow Memory: "
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>Memory Settings</b>"
+msgstr "<b>Impostazioni memoria</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "disable graphical output"
+msgstr "disabilita output grafico"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Use VGA instead of Default"
+msgstr "Usa VGA invece del Default"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Start in vncserver"
+msgstr "Avvia in vncserver"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "on Display: "
+msgstr "sul Display:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "SDL"
+msgstr "SDL"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Portrait"
+msgstr "Verticale"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>Display Options</b>"
+msgstr "<b>Visualizza Opzioni</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "enable usb"
+msgstr "abilita usb"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Bind devices"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>USB settings</b>"
+msgstr "<b>Impostazioni USB</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Set realtime clock to local time"
+msgstr "Imposta l'orologio come l'ora locale"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Guest time drift compensation (TDF)"
+msgstr ""
+"Compensazione dello slittamento\n"
+"tempo Guest (TDF)"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Keyboard:"
+msgstr "Tastiera:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Serial"
+msgstr "Seriale"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>Extra Settings</b>"
+msgstr "<b>Impostazioni Extra</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "System"
+msgstr "Sistema"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>Network cards</b>"
+msgstr "<b>Schede di rete</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Nic"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Set up a new network card"
+msgstr "Imposta una nuova scheda di rete"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Add Network card"
+msgstr "Aggiungi una scheda di rete"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Network"
+msgstr "Rete"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Use a custom kernel"
+msgstr "Usa kernel personalizzato"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Specify initial ramdisk"
+msgstr "Specifica ramdisk iniziale"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Parameters to append to command line:"
+msgstr "Parametri da appendere alla riga di comando:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Enable kernel debugging"
+msgstr "Abilita il debugging del kernel"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "GNU debugger TCP port:"
+msgstr "Porta TCP debugger GNU:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>Booting Linux</b>"
+msgstr "<b>Booting Linux</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Customize Linux Boot"
+msgstr "Personalizza Linux Boot"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "<b>Virtual Machine Icon</b>"
+msgstr "<b>Icona Macchina Virtuale</b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Others"
+msgstr "Altri"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Mount cdrom option not active"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "File image option not active"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Graphical output disabled"
+msgstr "disabilita output grafico"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "VNC enabled"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Custom kernel selction option disabled"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "Initrd option disabled"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, fuzzy
+msgid "Kernel debugging disabled"
+msgstr "Abilita il debugging del kernel"
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "USB disabled or /dev/bus/usb not accessible"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, python-brace-format
+msgid "Forget every change when {name} stops"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
+#, fuzzy
+msgid "Number of ports:"
+msgstr "Numero di porte:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
+msgid "Use FSTP"
+msgstr "Usa FSTP"
+
+#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
+msgid "Hub mode"
+msgstr "Modalità Hub"
+
+#: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
+msgid "Path to switch:"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+msgid "Don't touch interface settings"
+msgstr "Non toccare le impostazioni di interfaccia"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+msgid "Use DHCP"
+msgstr "Usa DHCP"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+msgid "Manual settings"
+msgstr "Impostazion manuali"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+#, fuzzy
+msgid "IP Address:"
+msgstr "Indirizzo IP:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+msgid "10.0.0.1"
+msgstr "10.0.0.1"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+msgid "Netmask:"
+msgstr "Netmask:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+msgid "255.0.0.0"
+msgstr "255.0.0.0"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+#, fuzzy
+msgid "Gateway:"
+msgstr "Gateway:  "
+
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#, fuzzy
+msgid "Tunnel server host:"
+msgstr "Tunnel Server"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+msgid "Local port:"
+msgstr "Porta locale:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
+msgid "Password:"
+msgstr "Password:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
+#, fuzzy
+msgid "Port:"
+msgstr "Porte:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
+#, fuzzy
+msgid "Listen port:"
+msgstr "Porta di ascolto:"
 
 #: virtualbricks/gui/mainwindow/bricks/tab.py
 #, python-brace-format
@@ -835,42 +2500,8 @@ msgid "New Event"
 msgstr "Nuovo Evento"
 
 #: virtualbricks/gui/mainwindow/events/newevent.py
-#: virtualbricks/gui/windows/addimage.py
-#: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/imagedialogs.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/newbrick.py
-#: virtualbricks/gui/windows/projectname.py
-#: virtualbricks/gui/windows/projects.py
-#: virtualbricks/gui/windows/renamedialog.py
-#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
-msgid "Cancel"
-msgstr "Annulla"
-
-#: virtualbricks/gui/mainwindow/events/newevent.py
-#: virtualbricks/gui/windows/addimage.py
-#: virtualbricks/gui/windows/projectname.py
-msgid "Create"
-msgstr "Crea"
-
-#: virtualbricks/gui/mainwindow/events/newevent.py
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
-#: virtualbricks/gui/windows/addimage.py
-#: virtualbricks/gui/windows/imagedialogs.py
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
-msgid "Name"
-msgstr "Nome"
-
-#: virtualbricks/gui/mainwindow/events/newevent.py
 #, python-brace-format
 msgid "Wait {delay} seconds"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/newevent.py
-#: virtualbricks/gui/windows/addimage.py
-#, python-brace-format
-msgid "The name “{name}” is in use"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/tab.py
@@ -956,12 +2587,6 @@ msgid "private copy {file}, {size}"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
-#: virtualbricks/gui/windows/addimage.py
-#: virtualbricks/gui/windows/projectname.py
-msgid "Description"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
 #, fuzzy
 msgid "Used by"
 msgstr "RAM usata:"
@@ -979,12 +2604,6 @@ msgid "{project}, as {image}"
 msgstr "Nuovo progetto"
 
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
-#: virtualbricks/gui/windows/addimage.py
-#, fuzzy
-msgid "File"
-msgstr "_File"
-
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
 #, fuzzy
 msgid "State"
 msgstr "Stato"
@@ -994,24 +2613,9 @@ msgid "The file isn't there"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
-#: virtualbricks/gui/windows/addimage.py
-msgid "Format"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
-#: virtualbricks/gui/windows/projects.py
-msgid "Unknown"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
 #, python-brace-format
 msgid "{format}, above {file}"
 msgstr ""
-
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
-#: virtualbricks/gui/windows/addimage.py
-msgid "Size"
-msgstr "Dimensione"
 
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
 #, python-brace-format
@@ -1028,11 +2632,6 @@ msgstr "Modalità Snapshot"
 msgid "Changed"
 msgstr "Cambia"
 
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid "No disk uses it."
-msgstr ""
-
 #: virtualbricks/gui/mainwindow/images/imagemenu.py
 msgid "Find the File…"
 msgstr ""
@@ -1040,18 +2639,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/images/imagemenu.py
 msgid "Details…"
 msgstr ""
-
-#: virtualbricks/gui/mainwindow/images/imagemenu.py
-#: virtualbricks/gui/windows/disks.py virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Show in Files"
-msgstr "Mostra impostazioni"
-
-#: virtualbricks/gui/mainwindow/images/imagemenu.py
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Remove…"
-msgstr "Rimuovi"
 
 #: virtualbricks/gui/mainwindow/images/tab.py
 #, python-brace-format
@@ -1109,11 +2696,6 @@ msgstr ""
 #, fuzzy
 msgid "Existing Image…"
 msgstr "Esporta come Immagine"
-
-#: virtualbricks/gui/mainwindow/images/tab.py
-#: virtualbricks/gui/windows/imagepicker.py
-msgid "New Empty Disk…"
-msgstr ""
 
 #: virtualbricks/gui/mainwindow/images/tab.py
 #, fuzzy
@@ -1215,16 +2797,6 @@ msgstr "Avvia Tutti i Mattoni"
 msgid "Stop All"
 msgstr "Ferma Tutti i Mattoni"
 
-#: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/gui/windows/base.py
-#: virtualbricks/gui/windows/logging.py virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "_Cancel"
-msgstr "Annulla"
-
-#: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/gui/windows/base.py
-msgid "_OK"
-msgstr ""
-
 #: virtualbricks/gui/mainwindow/topology.py
 msgid "Left to Right"
 msgstr ""
@@ -1268,11 +2840,6 @@ msgid "Fit All"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
-#: virtualbricks/gui/windows/projects.py
-msgid "More"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/topology.py
 #, fuzzy
 msgid "Export as Image"
 msgstr "Esporta come Immagine"
@@ -1284,6 +2851,23 @@ msgstr "Virtualbricks"
 #: virtualbricks/gui/mainwindow/window.py
 msgid "_File"
 msgstr "_File"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Settings"
+msgstr "_Impostazioni"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Logs"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "_Quit"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+#, fuzzy
+msgid "_Projects"
+msgstr "Nome Evento:"
 
 #: virtualbricks/gui/mainwindow/window.py
 #, fuzzy
@@ -1303,11 +2887,6 @@ msgstr "Nuovo progetto"
 #, fuzzy
 msgid "Open _Recent"
 msgstr "_Apri Progetto"
-
-#: virtualbricks/gui/mainwindow/window.py virtualbricks/gui/windows/logging.py
-#: virtualbricks/migrate/gui.py
-msgid "_Save"
-msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "_Duplicate…"
@@ -1329,35 +2908,12 @@ msgid "E_xport…"
 msgstr "porta:"
 
 #: virtualbricks/gui/mainwindow/window.py
-msgid "_Quit"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "_Settings"
-msgstr "_Impostazioni"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "_View"
-msgstr "_Vista"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "_Messages"
-msgstr "_Messaggi"
-
-#: virtualbricks/gui/mainwindow/window.py
 msgid "_Help"
 msgstr "_Aiuto"
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Toggle window"
 msgstr "Attiva finestra"
-
-#: virtualbricks/gui/mainwindow/window.py
-#: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/importdialog.py virtualbricks/migrate/gui.py
-#, fuzzy
-msgid "Close"
-msgstr "Chiudi VB"
 
 #: virtualbricks/gui/mainwindow/window.py
 #, fuzzy
@@ -1401,10 +2957,6 @@ msgstr "_Impostazioni"
 msgid "Console"
 msgstr ""
 
-#: virtualbricks/gui/messages.py virtualbricks/gui/windows/projects.py
-msgid "Events"
-msgstr "Eventi"
-
 #: virtualbricks/gui/messages.py
 #, fuzzy
 msgid "Virtual machines"
@@ -1414,11 +2966,6 @@ msgstr "Macchina Virtuale"
 #, fuzzy
 msgid "Connections"
 msgstr "Connetti a"
-
-#: virtualbricks/gui/messages.py virtualbricks/gui/windows/projects.py
-#: virtualbricks/migrate/gui.py
-msgid "Bricks"
-msgstr "Mattoni"
 
 #: virtualbricks/gui/messages.py
 msgid "capture"
@@ -1509,1548 +3056,6 @@ msgstr ""
 #: virtualbricks/gui/widgets.py
 msgid "Value member"
 msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-msgid "Add an Existing Image"
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-msgid "Add"
-msgstr "Aggiungi"
-
-#: virtualbricks/gui/windows/addimage.py
-#, fuzzy
-msgid "Choose a Disk Image"
-msgstr "immagini disco"
-
-#: virtualbricks/gui/windows/addimage.py
-msgid "Copy it to the image folder"
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-msgid "Use it where it is"
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-msgid "Reading the file…"
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-#, python-brace-format
-msgid "above {file}"
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-#, fuzzy, python-brace-format
-msgid "Not a disk image: {error}"
-msgstr "immagini disco"
-
-#: virtualbricks/gui/windows/addimage.py
-msgid "It is above another file, so it's used where it is."
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-#, python-brace-format
-msgid "The copy takes {size}, and keeps the file as it is."
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-msgid "Copying the file…"
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-#, fuzzy
-msgid "New Empty Disk"
-msgstr "crea una nuova immagine vuota"
-
-#: virtualbricks/gui/windows/addimage.py virtualbricks/migrate/gui.py
-msgid "Folder"
-msgstr ""
-
-#: virtualbricks/gui/windows/addimage.py
-#, fuzzy
-msgid "Choose a Folder"
-msgstr "Scegli un nuovo nome:"
-
-#: virtualbricks/gui/windows/addimage.py
-#, python-brace-format
-msgid "{file} is there already"
-msgstr ""
-
-#: virtualbricks/gui/windows/captureconfig.py
-#: virtualbricks/gui/windows/ethernetdialog.py
-#: virtualbricks/gui/windows/tapconfig.py
-#: virtualbricks/gui/windows/tunnelcconfig.py
-#: virtualbricks/gui/windows/tunnellconfig.py
-msgid "Connect to:"
-msgstr "Connetti a:"
-
-#: virtualbricks/gui/windows/captureconfig.py
-#, fuzzy
-msgid "Capture interface:"
-msgstr "Nome dell'interfaccia di rete:"
-
-#: virtualbricks/gui/windows/confirmdialog.py
-#, fuzzy
-msgid "No"
-msgstr "Nessuno"
-
-#: virtualbricks/gui/windows/confirmdialog.py
-msgid "Yes"
-msgstr ""
-
-#: virtualbricks/gui/windows/confirmdialog.py
-#, fuzzy, python-brace-format
-msgid "Do you really want to delete {brick} ({type})?"
-msgstr "Si vuole veramente cancellare "
-
-#: virtualbricks/gui/windows/confirmdialog.py
-#, fuzzy, python-brace-format
-msgid "Do you really want to delete {event} ({type})?"
-msgstr "Si vuole veramente cancellare "
-
-#: virtualbricks/gui/windows/confirmdialog.py
-msgid "The event is in use, it will be stopped before."
-msgstr ""
-
-#: virtualbricks/gui/windows/confirmdialog.py
-#, fuzzy
-msgid "Do you really want to delete the network interface?"
-msgstr "Si vuole veramente cancellare "
-
-#: virtualbricks/gui/windows/disks.py
-#, fuzzy
-msgid "Private copy"
-msgstr "COW Privato"
-
-#: virtualbricks/gui/windows/disks.py
-#, fuzzy
-msgid "The image itself"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/disks.py
-#, python-brace-format
-msgid "More for {device}"
-msgstr ""
-
-#: virtualbricks/gui/windows/disks.py
-#, fuzzy
-msgid "Save as a New Image…"
-msgstr "Esporta come Immagine"
-
-#: virtualbricks/gui/windows/disks.py
-#, python-brace-format
-msgid "Merge into {image}…"
-msgstr ""
-
-#: virtualbricks/gui/windows/disks.py
-#, python-brace-format
-msgid "Start Over from {image}…"
-msgstr ""
-
-#: virtualbricks/gui/windows/disks.py
-#, fuzzy
-msgid "Remove Disk"
-msgstr "Rimuovi"
-
-#: virtualbricks/gui/windows/disks.py
-msgid "Disks"
-msgstr ""
-
-#: virtualbricks/gui/windows/disks.py
-msgid "No disk: add one to give the machine its disk."
-msgstr ""
-
-#: virtualbricks/gui/windows/disks.py
-msgid "Add Disk"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "rtl8139"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "e1000"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "virtio-net-pci"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "i82551"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "i82557b"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "i82559er"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "ne2k_pci"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "pcnet"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "ne2k_isa"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "<b>New ethernet interface</b>"
-msgstr ""
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-#, fuzzy
-msgid "Model:"
-msgstr "Modalità:"
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "Mac address:"
-msgstr "Indirizzo Mac:"
-
-#: virtualbricks/gui/windows/ethernetdialog.py
-msgid "Randomize"
-msgstr "Randomizza"
-
-#: virtualbricks/gui/windows/exportproject.py
-msgid "Compressing the disks…"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-msgid "Writing the archive…"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-#, fuzzy
-msgid "Export Project"
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/exportproject.py
-#, fuzzy
-msgid "Export"
-msgstr "porta:"
-
-#: virtualbricks/gui/windows/exportproject.py
-#, fuzzy
-msgid "Save as"
-msgstr "Salva come..."
-
-#: virtualbricks/gui/windows/exportproject.py virtualbricks/migrate/gui.py
-msgid "Choose…"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-msgid "Include"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-msgid "The project: its file and its README"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-#, fuzzy, python-brace-format
-msgid "The images: {names}"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid "{size} before compression"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid "{path} is a folder"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid "The folder of {path} doesn't exist"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Virtualbricks archives"
-msgstr "Virtualbricks"
-
-#: virtualbricks/gui/windows/exportproject.py
-#, fuzzy, python-brace-format
-msgid "\"{name}\" already exists. Replace it?"
-msgstr "\" esiste già."
-
-#: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid "The archive in {folder} is replaced when the export ends."
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-msgid "Replace"
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid "Exported to {path}, {size}."
-msgstr ""
-
-#: virtualbricks/gui/windows/exportproject.py
-#, python-brace-format
-msgid "Cannot export to {path}: {error}"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "{vm} ({device})"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "The disk {disks} will have no image."
-msgid_plural "The disks {disks} will have no image."
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid "The private copy stays."
-msgid_plural "The private copies stay."
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy
-msgid "Remove Image"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy, python-brace-format
-msgid "Remove the image {name}?"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "The project {names} uses the file too: it stays."
-msgid_plural "The projects {names} use the file too: it stays."
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "Also move the file to the trash ({size})"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "Also delete the file ({size}): there is no trash"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "The file stays: {path}"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid "Find the File"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid "Use This File"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy, python-brace-format
-msgid "Where is the file of {name}?"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "{path} isn't there."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy
-msgid "Choose the File"
-msgstr "Scegli un nuovo nome:"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy
-msgid "The image folder has a file of the same name."
-msgstr "Cartella di destinazione per la nuova immagine"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid ""
-"The private copies of its disks are pointed at the file first, so that they "
-"keep their changes."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy, python-brace-format
-msgid "Stop {names} first."
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy
-msgid "Stopped."
-msgstr "_Avvia/Ferma"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy
-msgid "Save as a New Image"
-msgstr "_Crea nuova immagine"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy
-msgid "Save"
-msgstr "Salva come..."
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "Save {vm}'s {device} as a new image"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid ""
-"A file of its own in the image folder: {image} with the changes {vm} made to "
-"it."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy, python-brace-format
-msgid "Use it for {vm}'s {device}"
-msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid "The disk starts again from it, with an empty private copy."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "Merge into {image}"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid "Merge"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "Merge {vm}'s changes into {image}?"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy, python-brace-format
-msgid "the project {project}, as {image}"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid ""
-"{image} changes for all that use it too: {users}. Their private copies may "
-"stop working."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "No other disk uses {image}."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-msgid "Save as a New Image Instead"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, fuzzy
-msgid "Start Over"
-msgstr "Avvia in vncserver"
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid "Start {vm}'s {device} over from {image}?"
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid ""
-"{copy} goes to the trash, with the changes it keeps, {size}; the next start "
-"makes an empty one."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagedialogs.py
-#, python-brace-format
-msgid ""
-"{copy} is deleted for good, with the changes it keeps, {size}: there is no "
-"trash. The next start makes an empty one."
-msgstr ""
-
-#: virtualbricks/gui/windows/imagepicker.py
-#, fuzzy
-msgid "No image"
-msgstr "Salva come..."
-
-#: virtualbricks/gui/windows/imagepicker.py
-#, fuzzy
-msgid "Find an image"
-msgstr "immagini disco"
-
-#: virtualbricks/gui/windows/imagepicker.py
-#, fuzzy
-msgid "Add an Existing Image…"
-msgstr "Esporta come Immagine"
-
-#: virtualbricks/gui/windows/imagepicker.py
-#, fuzzy
-msgid "Manage Images…"
-msgstr "Esporta come Immagine"
-
-#: virtualbricks/gui/windows/imagepicker.py
-#, fuzzy
-msgid "Choose an image for this disk"
-msgstr "Scegli un nuovo nome:"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Reading the archive"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Extracting the archive"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Uncompressing the disks"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "{count} {type}"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy, python-brace-format
-msgid "{n} event"
-msgid_plural "{n} events"
-msgstr[0] "Eventi"
-msgstr[1] "Eventi"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "no disk"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy, python-brace-format
-msgid "Used by {disks}"
-msgstr "RAM usata:"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Copy"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Use a file…"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Leave unset"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Looking in the archive…"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Not in the archive"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "{size} in the archive"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "Looking in the archive… if it's there, copied to {path}"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "Copied to {path}"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy, python-brace-format
-msgid "Uses {path}"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Unset: its disks get an image later, in their settings"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Import Project"
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Import"
-msgstr "porta:"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Choose an archive of a Virtualbricks project."
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Choose an archive"
-msgstr "Scegli un nuovo nome:"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "Reading the archive…"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Images"
-msgstr "immagini disco"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "The project uses no image."
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "This computer's paths"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy
-msgid "Open the project after the import"
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid ""
-"You can close this window: the Messages window says when the import is done."
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-msgid "To check"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "Cannot read {path}: {error}"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "Use this computer's {key}, {ours}, instead of {theirs}"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "The file of {name}"
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, fuzzy, python-brace-format
-msgid "Importing {name}"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "Imported as \"{name}\"."
-msgstr ""
-
-#: virtualbricks/gui/windows/importdialog.py
-#, python-brace-format
-msgid "cannot be opened: {error}"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "%A %d %B %Y"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "%A %d %B %Y, %H:%M:%S"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-#, python-brace-format
-msgid "pid {pid}"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-#, python-brace-format
-msgid "Output of the program on {stream}"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Debug"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Info"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Warning"
-msgstr "Attenzione"
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Error"
-msgstr "Errore"
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Critical"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-#, python-brace-format
-msgid "{0} more line"
-msgid_plural "{0} more lines"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/logging.py
-#, python-brace-format
-msgid "traceback, {0} call"
-msgid_plural "traceback, {0} calls"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Messages"
-msgstr "Messaggi"
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Filter, for example level:warning source:tap0"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Menu"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Following"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Show the newest messages as they arrive"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-#, fuzzy
-msgid "Expand all"
-msgstr "Espandi Verticalmente"
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Collapse all"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Save…"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-#, fuzzy
-msgid "Report a bug…"
-msgstr "porta"
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Clear"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-#, fuzzy, python-brace-format
-msgid "{0} message"
-msgid_plural "{0} messages"
-msgstr[0] "messaggio"
-msgstr[1] "messaggio"
-
-#: virtualbricks/gui/windows/logging.py
-#, fuzzy, python-brace-format
-msgid "{0} of {1} message"
-msgid_plural "{0} of {1} messages"
-msgstr[0] "messaggio"
-msgstr[1] "messaggio"
-
-#: virtualbricks/gui/windows/logging.py
-#, python-brace-format
-msgid "{0} error"
-msgid_plural "{0} errors"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/logging.py
-#, fuzzy, python-brace-format
-msgid "{0} warning"
-msgid_plural "{0} warnings"
-msgstr[0] "Attenzione"
-msgstr[1] "Attenzione"
-
-#: virtualbricks/gui/windows/logging.py
-#, python-brace-format
-msgid "{0} line of program output"
-msgid_plural "{0} lines of program output"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Following the newest"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-msgid "Paused"
-msgstr ""
-
-#: virtualbricks/gui/windows/logging.py
-#, fuzzy
-msgid "Save the messages"
-msgstr "Salva come..."
-
-#: virtualbricks/gui/windows/netemuconfig.py
-#: virtualbricks/gui/windows/wireconfig.py
-msgid "<=== connect ===>"
-msgstr "<=== connetti ===>"
-
-#: virtualbricks/gui/windows/netemuconfig.py
-#, fuzzy
-msgid "Markov state"
-msgstr "Avvia Mattone"
-
-#: virtualbricks/gui/windows/netemuconfig.py
-#, fuzzy
-msgid "Channel configuration"
-msgstr "Controlla la configurazione"
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "Forward link"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "Reverse link"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-#, fuzzy
-msgid "Asymmetric"
-msgstr "Simmetrico"
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "buffer length (Byte; 0=no limit)"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "propagation delay (one way; ms)"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "Percentage of loss as a floating point number."
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "loss rate (in %, [0,100] real)"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "bandwidth (Byte/s; 0=no limit)"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-#, fuzzy
-msgid "Markov configuration"
-msgstr "Controlla la configurazione"
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "Changing state probability"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "========>"
-msgstr ""
-
-#: virtualbricks/gui/windows/netemuconfig.py
-#, fuzzy
-msgid "State name"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/netemuconfig.py
-msgid "Disabled because set symmetric"
-msgstr ""
-
-#: virtualbricks/gui/windows/networkcards.py
-msgid "Eth"
-msgstr ""
-
-#: virtualbricks/gui/windows/networkcards.py
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Connection"
-msgstr "Connetti a"
-
-#: virtualbricks/gui/windows/networkcards.py
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Model"
-msgstr "Modalità:"
-
-#: virtualbricks/gui/windows/networkcards.py
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "MAC address"
-msgstr "Indirizzo MAC: "
-
-#: virtualbricks/gui/windows/newbrick.py
-#: virtualbricks/gui/windows/renamedialog.py
-#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
-msgid "OK"
-msgstr ""
-
-#: virtualbricks/gui/windows/newbrick.py
-#: virtualbricks/gui/windows/renamedialog.py
-#, fuzzy
-msgid "Brick name"
-msgstr "Nome Mattone:"
-
-#: virtualbricks/gui/windows/progressbardialog.py
-#: virtualbricks/gui/windows/userwait.py
-msgid "Virtualbricks: action in progress"
-msgstr "Virtualbricks: azione in corso"
-
-#: virtualbricks/gui/windows/progressbardialog.py
-#, fuzzy
-msgid "Please wait..."
-msgstr "Prego attendere"
-
-#: virtualbricks/gui/windows/projectname.py
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "New Project"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/projectname.py
-#, fuzzy
-msgid "Rename Project"
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/projectname.py
-#, fuzzy
-msgid "Rename"
-msgstr "_Rinomina"
-
-#: virtualbricks/gui/windows/projectname.py
-#, fuzzy
-msgid "Duplicate Project"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/projectname.py
-#, fuzzy
-msgid "New name"
-msgstr "Nuovo nome evento"
-
-#: virtualbricks/gui/windows/projectname.py
-msgid "Name of the copy"
-msgstr ""
-
-#: virtualbricks/gui/windows/projectname.py
-msgid ""
-"Optional; it becomes the README of the project. The project starts with a "
-"copy of the settings of the open project."
-msgstr ""
-
-#: virtualbricks/gui/windows/projectname.py
-msgid "Open the copy"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "Today at {time}"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Yesterday"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy, python-brace-format
-msgid "{n} brick"
-msgid_plural "{n} bricks"
-msgstr[0] "_Importa Mattoni"
-msgstr[1] "_Importa Mattoni"
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Can't be read"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "{n} image missing"
-msgid_plural "{n} images missing"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Open"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Projects"
-msgstr "Nome Evento:"
-
-#: virtualbricks/gui/windows/projects.py
-msgid "New…"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Import…"
-msgstr "porta:"
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "No projects yet"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/projects.py
-msgid "A project is a lab: its bricks, events and images."
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Import a Project…"
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Find a project"
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Select a project"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Private disks"
-msgstr "COW Privato"
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Other files"
-msgstr "Altri"
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Last used"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Duplicate…"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Export…"
-msgstr "porta:"
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "The project file can't be read: {problem}"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "None"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "{name}: {path}, not on this computer"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "This project is open"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "Cannot open {name}: {error}"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy, python-brace-format
-msgid "Remove {name}?"
-msgstr "Formato immagine"
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "{name} is open"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy, python-brace-format
-msgid "Open another project first, then remove {name}."
-msgstr "Apertura progetto"
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Delete Permanently"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Move to Trash"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "Its folder, with {size} of private disks, goes"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, python-brace-format
-msgid "Its folder, {size}, goes"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Its folder goes"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid " to the trash, where you can restore it."
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid " for good: the drive of the workspace has no trash."
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "The images it uses stay in your image library."
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Use virtio block devices"
-msgstr "<b>cambia la sorgente dei dispositivi a blocchi</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "CD-ROM"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "no cdrom"
-msgstr "nessun cdrom"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "don´t use any cdrom device"
-msgstr "non usare nessun dispositivo cdrom"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "mount cdrom"
-msgstr "monta cdrom"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "mount local cdrom Drive"
-msgstr "monta dispositovo cdrom locale"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "use image as cdrom"
-msgstr "usa immagine come cdrom"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Boot from"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Snapshot mode: the disks and their images stay as they were."
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Drives"
-msgstr "Drives"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Architecture:"
-msgstr "Architettura:"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "CPU Type:"
-msgstr "Tipo di CPU"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Machine type:"
-msgstr "Tipo di macchina"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "KVM"
-msgstr "KVM"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Number of CPUs:"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>System and machine</b>"
-msgstr "<b>Sistema e macchina</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Emulated Soundcard:"
-msgstr "seleziona Scheda audio emulata"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>Audio Device Settings</b>"
-msgstr "<b>Impostazioni dispositivo audio</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Used RAM:"
-msgstr "RAM usata:"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "MB"
-msgstr " MB"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "KVM Shadow Memory:"
-msgstr "KVM Shadow Memory: "
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>Memory Settings</b>"
-msgstr "<b>Impostazioni memoria</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "disable graphical output"
-msgstr "disabilita output grafico"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Use VGA instead of Default"
-msgstr "Usa VGA invece del Default"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Start in vncserver"
-msgstr "Avvia in vncserver"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "on Display: "
-msgstr "sul Display:"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "SDL"
-msgstr "SDL"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Portrait"
-msgstr "Verticale"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>Display Options</b>"
-msgstr "<b>Visualizza Opzioni</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "enable usb"
-msgstr "abilita usb"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Bind devices"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>USB settings</b>"
-msgstr "<b>Impostazioni USB</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Set realtime clock to local time"
-msgstr "Imposta l'orologio come l'ora locale"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Guest time drift compensation (TDF)"
-msgstr ""
-"Compensazione dello slittamento\n"
-"tempo Guest (TDF)"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Keyboard:"
-msgstr "Tastiera:"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Serial"
-msgstr "Seriale"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>Extra Settings</b>"
-msgstr "<b>Impostazioni Extra</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "System"
-msgstr "Sistema"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>Network cards</b>"
-msgstr "<b>Schede di rete</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Nic"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Set up a new network card"
-msgstr "Imposta una nuova scheda di rete"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Add Network card"
-msgstr "Aggiungi una scheda di rete"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Network"
-msgstr "Rete"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Use a custom kernel"
-msgstr "Usa kernel personalizzato"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Specify initial ramdisk"
-msgstr "Specifica ramdisk iniziale"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Parameters to append to command line:"
-msgstr "Parametri da appendere alla riga di comando:"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Enable kernel debugging"
-msgstr "Abilita il debugging del kernel"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "GNU debugger TCP port:"
-msgstr "Porta TCP debugger GNU:"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>Booting Linux</b>"
-msgstr "<b>Booting Linux</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Customize Linux Boot"
-msgstr "Personalizza Linux Boot"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "<b>Virtual Machine Icon</b>"
-msgstr "<b>Icona Macchina Virtuale</b>"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Others"
-msgstr "Altri"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Mount cdrom option not active"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "File image option not active"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Graphical output disabled"
-msgstr "disabilita output grafico"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "VNC enabled"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Custom kernel selction option disabled"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "Initrd option disabled"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, fuzzy
-msgid "Kernel debugging disabled"
-msgstr "Abilita il debugging del kernel"
-
-#: virtualbricks/gui/windows/qemuconfig.py
-msgid "USB disabled or /dev/bus/usb not accessible"
-msgstr ""
-
-#: virtualbricks/gui/windows/qemuconfig.py
-#, python-brace-format
-msgid "Forget every change when {name} stops"
-msgstr ""
-
-#: virtualbricks/gui/windows/renamedialog.py
-#, fuzzy
-msgid "Virtualbricks - Rename brick"
-msgstr "Lista Mattoni di Virtualbricks"
-
-#: virtualbricks/gui/windows/renamedialog.py
-#, fuzzy
-msgid "Chose a new name"
-msgstr "Scegli un nuovo nome:"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "VDE binaries path"
-msgstr ""
-"Percorso\n"
-"binari VDE"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Allow female plugs on devices"
-msgstr "Permetti plugs femmina nei dispositivi"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Network topology loop detection"
-msgstr "Rileva loop della topologia di rete"
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Qemu binaries path"
-msgstr "Percorso binari Qemu/KVM"
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Private COW format"
-msgstr "COW Privato"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Virtualbricks Settings"
-msgstr "Impostazioni Virtualbricks"
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Application"
-msgstr "Azioni"
-
-#: virtualbricks/gui/windows/settings.py
-msgid ""
-"These settings belong to the open project: changing them doesn't change the "
-"other projects. A new project starts with a copy of them."
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "This project"
-msgstr "Nuovo progetto"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "X-window terminal command"
-msgstr ""
-"Comando per\n"
-"terminale X-window"
-
-#: virtualbricks/gui/windows/settings.py
-#, fuzzy
-msgid "Enable systray"
-msgstr "Abilita SysTray"
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Warn about missing components at startup"
-msgstr ""
-
-#: virtualbricks/gui/windows/settings.py
-msgid "Enable KSM"
-msgstr "Abilita KSM"
-
-#: virtualbricks/gui/windows/switchconfig.py
-#, fuzzy
-msgid "Number of ports:"
-msgstr "Numero di porte:"
-
-#: virtualbricks/gui/windows/switchconfig.py
-msgid "Use FSTP"
-msgstr "Usa FSTP"
-
-#: virtualbricks/gui/windows/switchconfig.py
-msgid "Hub mode"
-msgstr "Modalità Hub"
-
-#: virtualbricks/gui/windows/switchwrapperconfig.py
-msgid "Path to switch:"
-msgstr ""
-
-#: virtualbricks/gui/windows/tapconfig.py
-msgid "Don't touch interface settings"
-msgstr "Non toccare le impostazioni di interfaccia"
-
-#: virtualbricks/gui/windows/tapconfig.py
-msgid "Use DHCP"
-msgstr "Usa DHCP"
-
-#: virtualbricks/gui/windows/tapconfig.py
-msgid "Manual settings"
-msgstr "Impostazion manuali"
-
-#: virtualbricks/gui/windows/tapconfig.py
-#, fuzzy
-msgid "IP Address:"
-msgstr "Indirizzo IP:"
-
-#: virtualbricks/gui/windows/tapconfig.py
-msgid "10.0.0.1"
-msgstr "10.0.0.1"
-
-#: virtualbricks/gui/windows/tapconfig.py
-msgid "Netmask:"
-msgstr "Netmask:"
-
-#: virtualbricks/gui/windows/tapconfig.py
-msgid "255.0.0.0"
-msgstr "255.0.0.0"
-
-#: virtualbricks/gui/windows/tapconfig.py
-#, fuzzy
-msgid "Gateway:"
-msgstr "Gateway:  "
-
-#: virtualbricks/gui/windows/tunnelcconfig.py
-#, fuzzy
-msgid "Tunnel server host:"
-msgstr "Tunnel Server"
-
-#: virtualbricks/gui/windows/tunnelcconfig.py
-msgid "Local port:"
-msgstr "Porta locale:"
-
-#: virtualbricks/gui/windows/tunnelcconfig.py
-#: virtualbricks/gui/windows/tunnellconfig.py
-msgid "Password:"
-msgstr "Password:"
-
-#: virtualbricks/gui/windows/tunnelcconfig.py
-#, fuzzy
-msgid "Port:"
-msgstr "Porte:"
-
-#: virtualbricks/gui/windows/tunnellconfig.py
-#, fuzzy
-msgid "Listen port:"
-msgstr "Porta di ascolto:"
-
-#: virtualbricks/gui/windows/usbdev.py
-#, fuzzy
-msgid "Select USB devices"
-msgstr "Seleziona una carella"
-
-#: virtualbricks/gui/windows/usbdev.py
-#, fuzzy
-msgid "ID"
-msgstr "PID"
-
-#: virtualbricks/gui/windows/userwait.py
-msgid "Please wait"
-msgstr "Prego attendere"
 
 #: virtualbricks/migrate/gui.py
 #, python-brace-format
@@ -3174,6 +3179,15 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "_View"
+#~ msgstr "_Vista"
+
+#~ msgid "_Messages"
+#~ msgstr "_Messaggi"
+
+#~ msgid "Messages"
+#~ msgstr "Messaggi"
 
 #~ msgid "create new empty image"
 #~ msgstr "crea una nuova immagine vuota"

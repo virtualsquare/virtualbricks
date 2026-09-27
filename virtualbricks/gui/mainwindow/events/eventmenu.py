@@ -42,7 +42,7 @@ from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     menu_of,
     menu_section,
 )
-from virtualbricks.gui.windows.renamedialog import RenameDialog  # noqa: E402
+from virtualbricks.gui.dialogs.renamedialog import RenameDialog  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 from virtualbricks.tools import is_running  # noqa: E402
 
