@@ -23,7 +23,7 @@ from virtualbricks import console
 from virtualbricks.bricks import event as event_module
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
-from virtualbricks.tests.gui.mainwindow.test_brickmenu import (
+from virtualbricks.tests.gui.mainwindow.bricks.test_brickmenu import (
     attribute,
     content,
 )
@@ -31,8 +31,8 @@ from virtualbricks.tests.gui.mainwindow.test_brickmenu import (
 if has_display:
     from gi.repository import Gdk, Gtk
 
-    from virtualbricks.gui.mainwindow import eventmenu
-    from virtualbricks.gui.mainwindow.eventmenu import (
+    from virtualbricks.gui.mainwindow.events import eventmenu
+    from virtualbricks.gui.mainwindow.events.eventmenu import (
         EventActions,
         menu,
         popup,

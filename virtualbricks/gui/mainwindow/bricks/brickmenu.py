@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_brickmenu -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.test_brickmenu -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -46,8 +46,9 @@ from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks import tools  # noqa: E402
 from virtualbricks.bricks.virtualmachine import VirtualMachine  # noqa: E402
-from virtualbricks.gui.mainwindow import brickinfo, tab  # noqa: E402
-from virtualbricks.gui.mainwindow.brickinfo import State  # noqa: E402
+from virtualbricks.gui.mainwindow import tab  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks import brickinfo  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.brickinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     menu_item,
     menu_of,

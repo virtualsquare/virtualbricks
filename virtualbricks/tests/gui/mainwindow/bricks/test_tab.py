@@ -32,9 +32,9 @@ if has_display:
 
     # the panels of the bricks, adapters of IConfigController
     import virtualbricks.gui.gui  # noqa: F401
-    from virtualbricks.gui.mainwindow import brickmenu, bricks
     from virtualbricks.gui.mainwindow import rowtab
-    from virtualbricks.gui.mainwindow.bricks import BricksTab, count
+    from virtualbricks.gui.mainwindow.bricks import brickmenu, tab
+    from virtualbricks.gui.mainwindow.bricks.tab import BricksTab, count
     from virtualbricks.gui.mainwindow.rowtab import types
     from virtualbricks.gui.mainwindow.picture import Icons
 
@@ -129,7 +129,7 @@ class BricksTestCase(GuiTestCase):
         super().setUp()
         os.makedirs(self.factory.runtime_dir)
         self.logger = FakeLogger()
-        self.patch(bricks, "logger", self.logger)
+        self.patch(tab, "logger", self.logger)
         self.gui = FakeGui(self.factory)
         self.done = []
         self.sw = self.brick("switch", "sw")
@@ -313,7 +313,7 @@ class TestTheRowAboveTheList(BricksTestCase):
     def test_new_brick(self):
         shown = []
         self.patch(
-            bricks,
+            tab,
             "NewBrickDialog",
             lambda factory: FakeDialog(shown, factory),
         )
@@ -611,7 +611,7 @@ class TestTheSettings(BricksTestCase):
             controllers[brick] = FakeController(calls)
             return controllers[brick]
 
-        self.patch(bricks, "IConfigController", adapt)
+        self.patch(tab, "IConfigController", adapt)
         return calls, controllers
 
     def test_a_switch(self):

@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_eventmenu -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.events.test_eventmenu -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -34,8 +34,9 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, Gtk  # noqa: E402
 
-from virtualbricks.gui.mainwindow import eventinfo, tab  # noqa: E402
-from virtualbricks.gui.mainwindow.eventinfo import State  # noqa: E402
+from virtualbricks.gui.mainwindow import tab  # noqa: E402
+from virtualbricks.gui.mainwindow.events import eventinfo  # noqa: E402
+from virtualbricks.gui.mainwindow.events.eventinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     menu_item,
     menu_of,

@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_bricks -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.test_tab -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -22,7 +22,7 @@ rows of :mod:`virtualbricks.gui.mainwindow.rowtab`.
 
 New Brick opens the window that makes a brick. The switch shows all the
 bricks or the running ones, and Start All starts the bricks that can start.
-The menu of a brick is :mod:`virtualbricks.gui.mainwindow.brickmenu`'s, and
+The menu of a brick is :mod:`virtualbricks.gui.mainwindow.bricks.brickmenu`'s, and
 its settings are its panel of :mod:`virtualbricks.gui.windows`; a router has
 none.
 """
@@ -37,9 +37,14 @@ from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.gui.interfaces import IConfigController  # noqa: E402
-from virtualbricks.gui.mainwindow import brickinfo, brickmenu  # noqa: E402
-from virtualbricks.gui.mainwindow.brickinfo import State  # noqa: E402
-from virtualbricks.gui.mainwindow.bricklist import BrickList  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks import (  # noqa: E402
+    brickinfo,
+    brickmenu,
+)
+from virtualbricks.gui.mainwindow.bricks.brickinfo import State  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.bricklist import (  # noqa: E402
+    BrickList,
+)
 from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     RowsTab,
     log_failures,

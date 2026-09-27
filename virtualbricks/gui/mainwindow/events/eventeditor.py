@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_eventeditor -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.events.test_eventeditor -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -23,7 +23,7 @@ chosen instead of typed.
 The delay is a number of seconds. Each action is a row: its kind, then the
 brick, the event or the command it does it to, and a button that removes it;
 Add Action adds one. The kinds are those of
-:mod:`virtualbricks.gui.mainwindow.eventinfo`: start or stop a brick or an
+:mod:`virtualbricks.gui.mainwindow.events.eventinfo`: start or stop a brick or an
 event, a command of the console, a shell command on the host. An event isn't
 among the events that it can start or stop.
 
@@ -40,8 +40,11 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
-from virtualbricks.gui.mainwindow import eventinfo  # noqa: E402
-from virtualbricks.gui.mainwindow.eventinfo import Action, Kind  # noqa: E402
+from virtualbricks.gui.mainwindow.events import eventinfo  # noqa: E402
+from virtualbricks.gui.mainwindow.events.eventinfo import (  # noqa: E402
+    Action,
+    Kind,
+)
 from virtualbricks.gui.mainwindow.tab import icon_button  # noqa: E402
 from virtualbricks.gui.windows.base import ConfigController  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402

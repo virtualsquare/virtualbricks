@@ -29,8 +29,8 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gdk, GLib, Gtk
 
-    from virtualbricks.gui.mainwindow import brickmenu
-    from virtualbricks.gui.mainwindow.brickmenu import (
+    from virtualbricks.gui.mainwindow.bricks import brickmenu
+    from virtualbricks.gui.mainwindow.bricks.brickmenu import (
         BrickActions,
         menu,
         popup,

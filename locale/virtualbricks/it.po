@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 08:58+0200\n"
+"POT-Creation-Date: 2026-09-27 09:26+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -219,564 +219,501 @@ msgid ""
 "another one, or create one."
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Switch"
 msgstr "Switch"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Switch wrapper"
 msgstr "Switch"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #: virtualbricks/gui/windows/newbrick.py
 msgid "Tap"
 msgstr "Tap"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "Wire"
 msgstr "Wire"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "Netemu"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Capture interface"
 msgstr "Nome dell'interfaccia di rete:"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Tunnel server"
 msgstr "Tunnel Server"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Tunnel client"
 msgstr "Tunnel Client"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "Router"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Virtual machine"
 msgstr "Macchina Virtuale"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 msgid "Running"
 msgstr "In esecuzione"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Stopped"
 msgstr "_Avvia/Ferma"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "Not connected"
 msgstr "disconnesso"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy
 msgid "Not configured"
 msgstr "Non ancora configurato."
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "nothing"
 msgstr "Assegna niente"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy, python-brace-format
 msgid "on {brick}"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy, python-brace-format
 msgid "{n} port"
 msgid_plural "{n} ports"
 msgstr[0] "porta"
 msgstr[1] "porta"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "hub"
 msgstr "hdb"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "no socket"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "no address"
 msgstr "Indirizzo MAC: "
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "{delay} ms"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-format, python-brace-format
 msgid "{loss}% loss"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "no interface"
 msgstr "Nome dell'interfaccia di rete:"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "{interface} on {brick}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "UDP port {port}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "to {host}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "no host"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "eth{n} as a socket"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "eth{n} not connected"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "eth{n} host only"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy, python-brace-format
 msgid "eth{n} on {brick}"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, python-brace-format
 msgid "{size} MiB"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickinfo.py
+#: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #, fuzzy
 msgid "no network card"
 msgstr "Aggiungi una scheda di rete"
 
-#: virtualbricks/gui/mainwindow/bricklist.py
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, python-brace-format
 msgid "Process {pid}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, fuzzy, python-brace-format
 msgid "Connect {name} first"
 msgstr "Scegliere prima un nome di file!"
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, fuzzy, python-brace-format
 msgid "Configure {name} first"
 msgstr "Scegliere prima un nome di file!"
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, python-brace-format
 msgid "process {pid}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
 msgid "No bricks"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, python-brace-format
 msgid "No brick matches “{text}”"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, fuzzy
 msgid "No brick is running"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, python-brace-format
 msgid "No running brick matches “{text}”"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/bricklist.py
+#: virtualbricks/gui/mainwindow/bricks/bricklist.py
 #, python-brace-format
 msgid "Connect {brick} to {other}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, fuzzy
 msgid "When It Starts"
 msgstr "Avvia Mattone"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "When It Stops"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, fuzzy
 msgid "Connect To"
 msgstr "Connetti a"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#: virtualbricks/gui/mainwindow/eventmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
 #: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
 msgid "Stop"
 msgstr "_Avvia/Ferma"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#: virtualbricks/gui/mainwindow/eventmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
 #, fuzzy
 msgid "Start"
 msgstr "Avvia Mattone"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#: virtualbricks/gui/mainwindow/eventmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
 #, fuzzy
 msgid "Configure…"
 msgstr "_Configura"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#: virtualbricks/gui/mainwindow/eventmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
 #: virtualbricks/gui/windows/projects.py
 #, fuzzy
 msgid "Rename…"
 msgstr "_Rinomina"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#: virtualbricks/gui/mainwindow/eventmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
 #: virtualbricks/gui/windows/projectname.py
 #, fuzzy
 msgid "Duplicate"
 msgstr "Azioni"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, fuzzy
 msgid "Resume"
 msgstr "R_iprendi VM"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#: virtualbricks/gui/mainwindow/eventmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
 #, fuzzy
 msgid "Delete…"
 msgstr "Ca_ncella"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, python-brace-format
 msgid "{name} (missing)"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, fuzzy
 msgid "No Event"
 msgstr "Nuovo Evento"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, fuzzy
 msgid "Open Control Monitor"
 msgstr "Apri console di controllo"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Pause"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Continue"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #, fuzzy
 msgid "Suspend"
 msgstr "Sospendi Qemu"
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Reset"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Restart"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Terminate"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Kill"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Suspend/Resume not supported on this disk."
 msgstr "Sospensione/Ripristino non supportato su questo disco."
 
-#: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 msgid "Cannot find suspend point."
 msgstr "Impossibile trovare punto di sospensione."
 
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 #, python-brace-format
 msgid "{running} of {total} running"
 msgid_plural "{running} of {total} running"
 msgstr[0] ""
 msgstr[1] ""
 
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 #, fuzzy
 msgid "_Bricks"
 msgstr "Mattoni"
 
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 msgid "New Brick"
 msgstr "Nuovo Mattone"
 
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 #, fuzzy
 msgid "Search bricks"
 msgstr "Nuovo Mattone"
 
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 #, fuzzy
 msgid "No Bricks Yet"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 msgid ""
 "A brick is a switch, a virtual machine, a wire or a tap. Add the first one "
 "to start the lab."
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/bricks.py
+#: virtualbricks/gui/mainwindow/bricks/tab.py
 #, fuzzy, python-brace-format
 msgid "{kind} settings"
 msgstr "Impostazion manuali"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Start a brick"
 msgstr "Nuovo Mattone"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Stop a brick"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Start an event"
 msgstr "Avvia in vncserver"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Stop an event"
 msgstr "Ferma Tutti gli Eventi"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Console command"
 msgstr "Comando della shell Host"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Shell command"
 msgstr "Comando della shell Host"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 msgid "A command of the console, as “vm1 config ram=512”"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 msgid "A command for the shell of the host"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Remove the action"
 msgstr "Sessione Remota"
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, python-brace-format
 msgid "Wait {delay} seconds, then:"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventeditor.py
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
 #, fuzzy
 msgid "Add Action"
 msgstr "Azioni"
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 msgid "Ready"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
-#: virtualbricks/gui/mainwindow/events.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/tab.py
 msgid "Waiting"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, python-brace-format
 msgid "{first} and {last}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy, python-brace-format
 msgid "starts {names}"
 msgstr "Formato immagine"
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy, python-brace-format
 msgid "stops {names}"
 msgstr "Formato immagine"
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy, python-brace-format
 msgid "starts the event {names}"
 msgid_plural "starts the events {names}"
 msgstr[0] "Formato immagine"
 msgstr[1] "Formato immagine"
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, python-brace-format
 msgid "stops the event {names}"
 msgid_plural "stops the events {names}"
 msgstr[0] ""
 msgstr[1] ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, python-brace-format
 msgid "runs “{command}” on the host"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, python-brace-format
 msgid "runs “{command}”"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy
 msgid "No actions yet"
 msgstr "Nuovo progetto"
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, python-brace-format
 msgid "After {delay} s, {does}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, python-brace-format
 msgid "At once, {does}"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy, python-brace-format
 msgid "when {brick} starts"
 msgstr "Avvia Mattone"
 
-#: virtualbricks/gui/mainwindow/eventinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy, python-brace-format
 msgid "when {brick} stops"
 msgstr "_Importa Mattoni"
 
-#: virtualbricks/gui/mainwindow/eventmenu.py
+#: virtualbricks/gui/mainwindow/events/eventmenu.py
 msgid "Run Now"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/events.py
-#, python-brace-format
-msgid "{waiting} of {total} waiting"
-msgid_plural "{waiting} of {total} waiting"
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/mainwindow/events.py
-#, python-brace-format
-msgid "{seconds} s"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events.py
-#, fuzzy, python-brace-format
-msgid "Add an action to {name} first"
-msgstr "Scegliere prima un nome di file!"
-
-#: virtualbricks/gui/mainwindow/events.py
-#, fuzzy
-msgid "No events"
-msgstr "Eventi"
-
-#: virtualbricks/gui/mainwindow/events.py
-#, python-brace-format
-msgid "No event matches “{text}”"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events.py
-#, fuzzy
-msgid "No event is waiting"
-msgstr "Questo evento è in uso"
-
-#: virtualbricks/gui/mainwindow/events.py
-#, python-brace-format
-msgid "No waiting event matches “{text}”"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events.py
-#, fuzzy
-msgid "_Events"
-msgstr "Eventi"
-
-#: virtualbricks/gui/mainwindow/events.py
-#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
+#: virtualbricks/gui/mainwindow/events/tab.py
 msgid "New Event"
 msgstr "Nuovo Evento"
 
-#: virtualbricks/gui/mainwindow/events.py
-#, fuzzy
-msgid "Search events"
-msgstr "Avvia Tutti gli Eventi"
-
-#: virtualbricks/gui/mainwindow/events.py
-#, fuzzy
-msgid "No Events Yet"
-msgstr "Nuovo Evento"
-
-#: virtualbricks/gui/mainwindow/events.py
-msgid ""
-"An event waits, then starts or stops bricks, or runs commands. Add one to "
-"script the lab."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events.py
-#, fuzzy
-msgid "Event settings"
-msgstr "Impostazion manuali"
-
-#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
 #: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py
 #: virtualbricks/gui/windows/loadimagedialog.py
@@ -788,12 +725,12 @@ msgstr "Impostazion manuali"
 msgid "Cancel"
 msgstr "Annulla"
 
-#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
 #: virtualbricks/gui/windows/projectname.py
 msgid "Create"
 msgstr "Crea"
 
-#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
 #: virtualbricks/gui/windows/createimagedialog.py
 #: virtualbricks/gui/windows/disklibrary.py
 #: virtualbricks/gui/windows/importdialog.py
@@ -802,15 +739,78 @@ msgstr "Crea"
 msgid "Name"
 msgstr "Nome"
 
-#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
 #, python-brace-format
 msgid "Wait {delay} seconds"
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/newevent.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
 #, python-brace-format
 msgid "The name “{name}” is in use"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, python-brace-format
+msgid "{waiting} of {total} waiting"
+msgid_plural "{waiting} of {total} waiting"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, python-brace-format
+msgid "{seconds} s"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy, python-brace-format
+msgid "Add an action to {name} first"
+msgstr "Scegliere prima un nome di file!"
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy
+msgid "No events"
+msgstr "Eventi"
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, python-brace-format
+msgid "No event matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy
+msgid "No event is waiting"
+msgstr "Questo evento è in uso"
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, python-brace-format
+msgid "No waiting event matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy
+msgid "_Events"
+msgstr "Eventi"
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy
+msgid "Search events"
+msgstr "Avvia Tutti gli Eventi"
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy
+msgid "No Events Yet"
+msgstr "Nuovo Evento"
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+msgid ""
+"An event waits, then starts or stops bricks, or runs commands. Add one to "
+"script the lab."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events/tab.py
+#, fuzzy
+msgid "Event settings"
+msgstr "Impostazion manuali"
 
 #: virtualbricks/gui/mainwindow/picture.py
 #, fuzzy

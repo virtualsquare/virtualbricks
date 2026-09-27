@@ -25,8 +25,8 @@ from virtualbricks import console
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
-    from virtualbricks.gui.mainwindow import eventinfo
-    from virtualbricks.gui.mainwindow.eventinfo import (
+    from virtualbricks.gui.mainwindow.events import eventinfo
+    from virtualbricks.gui.mainwindow.events.eventinfo import (
         Action,
         Kind,
         State,

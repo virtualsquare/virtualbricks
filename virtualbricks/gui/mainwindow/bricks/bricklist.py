@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_bricklist -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.test_bricklist -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -36,8 +36,11 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, Gtk  # noqa: E402
 
-from virtualbricks.gui.mainwindow import brickinfo, brickmenu  # noqa: E402
-from virtualbricks.gui.mainwindow.brickinfo import (  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks import (  # noqa: E402
+    brickinfo,
+    brickmenu,
+)
+from virtualbricks.gui.mainwindow.bricks.brickinfo import (  # noqa: E402
     LABELS,
     SEPARATOR,
     State,

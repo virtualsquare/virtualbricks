@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_newevent -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.events.test_newevent -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -34,7 +34,9 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
 
 from virtualbricks import errors  # noqa: E402
-from virtualbricks.gui.mainwindow.eventeditor import delay_button  # noqa: E402
+from virtualbricks.gui.mainwindow.events.eventeditor import (  # noqa: E402
+    delay_button,
+)
 from virtualbricks.gui.windows.base import pango_attr_list  # noqa: E402
 from virtualbricks.i18n import _  # noqa: E402
 

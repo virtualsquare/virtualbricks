@@ -30,9 +30,9 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gdk, Gtk
 
-    from virtualbricks.gui.mainwindow import eventmenu, events
-    from virtualbricks.gui.mainwindow.eventeditor import EventEditor
-    from virtualbricks.gui.mainwindow.events import EventsTab, count
+    from virtualbricks.gui.mainwindow.events import eventmenu, tab
+    from virtualbricks.gui.mainwindow.events.eventeditor import EventEditor
+    from virtualbricks.gui.mainwindow.events.tab import EventsTab, count
 
 
 class Recording(console.VbShellCommand):
@@ -274,7 +274,7 @@ class TestTheRowAboveTheList(EventsTestCase):
 
     def test_new_event(self):
         shown = []
-        self.patch(events, "NewEventDialog", lambda *a: FakeDialog(shown, *a))
+        self.patch(tab, "NewEventDialog", lambda *a: FakeDialog(shown, *a))
         self.tab.new_button.clicked()
         self.assertEqual(shown, [((self.gui,), self.gui.window)])
 

@@ -41,7 +41,8 @@ from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks.config.workspace import projects  # noqa: E402
-from virtualbricks.gui.mainwindow import brickmenu, picture  # noqa: E402
+from virtualbricks.gui.mainwindow import picture  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks import brickmenu  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.mainwindow.topologyview import (  # noqa: E402
     EPSILON,

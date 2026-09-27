@@ -26,12 +26,12 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow import eventeditor
-    from virtualbricks.gui.mainwindow.eventeditor import (
+    from virtualbricks.gui.mainwindow.events import eventeditor
+    from virtualbricks.gui.mainwindow.events.eventeditor import (
         MAX_DELAY,
         EventEditor,
     )
-    from virtualbricks.gui.mainwindow.eventinfo import Action, Kind
+    from virtualbricks.gui.mainwindow.events.eventinfo import Action, Kind
 
 
 def vb(command):

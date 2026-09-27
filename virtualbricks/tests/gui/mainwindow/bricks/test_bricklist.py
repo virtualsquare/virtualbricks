@@ -28,7 +28,10 @@ if has_display:
     from gi.repository import Gdk, GObject, Gtk
 
     from virtualbricks.gui.mainwindow import rowtab
-    from virtualbricks.gui.mainwindow.bricklist import BrickList, BrickRow
+    from virtualbricks.gui.mainwindow.bricks.bricklist import (
+        BrickList,
+        BrickRow,
+    )
 
 
 class FakeProcess:

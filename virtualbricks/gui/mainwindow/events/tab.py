@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_events -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.events.test_tab -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -27,10 +27,10 @@ events or the waiting ones, and Start All starts the events that can start.
 The search finds an event by its name.
 
 New Event asks a name and a delay, in the window of
-:mod:`virtualbricks.gui.mainwindow.newevent`, then shows the settings of the
+:mod:`virtualbricks.gui.mainwindow.events.newevent`, then shows the settings of the
 new event. The menu of an event is
-:mod:`virtualbricks.gui.mainwindow.eventmenu`'s, and its settings are
-:mod:`virtualbricks.gui.mainwindow.eventeditor`'s.
+:mod:`virtualbricks.gui.mainwindow.events.eventmenu`'s, and its settings are
+:mod:`virtualbricks.gui.mainwindow.events.eventeditor`'s.
 """
 
 from __future__ import annotations
@@ -41,14 +41,21 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 from twisted.internet import reactor, task  # noqa: E402
 
-from virtualbricks.gui.mainwindow import eventinfo, eventmenu  # noqa: E402
-from virtualbricks.gui.mainwindow.eventeditor import EventEditor  # noqa: E402
-from virtualbricks.gui.mainwindow.eventinfo import (  # noqa: E402
+from virtualbricks.gui.mainwindow.events import (  # noqa: E402
+    eventinfo,
+    eventmenu,
+)
+from virtualbricks.gui.mainwindow.events.eventeditor import (  # noqa: E402
+    EventEditor,
+)
+from virtualbricks.gui.mainwindow.events.eventinfo import (  # noqa: E402
     LABELS,
     SEPARATOR,
     State,
 )
-from virtualbricks.gui.mainwindow.newevent import NewEventDialog  # noqa: E402
+from virtualbricks.gui.mainwindow.events.newevent import (  # noqa: E402
+    NewEventDialog,
+)
 from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     Row,
     RowList,

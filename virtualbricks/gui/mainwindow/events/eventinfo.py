@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_eventinfo -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.events.test_eventinfo -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 

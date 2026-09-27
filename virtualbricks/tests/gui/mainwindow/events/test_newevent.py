@@ -22,8 +22,8 @@ from virtualbricks.tests.gui import GuiTestCase, has_display
 if has_display:
     from gi.repository import Gtk
 
-    from virtualbricks.gui.mainwindow.eventeditor import MAX_DELAY
-    from virtualbricks.gui.mainwindow.newevent import NewEventDialog
+    from virtualbricks.gui.mainwindow.events.eventeditor import MAX_DELAY
+    from virtualbricks.gui.mainwindow.events.newevent import NewEventDialog
 
 
 class FakeGui:

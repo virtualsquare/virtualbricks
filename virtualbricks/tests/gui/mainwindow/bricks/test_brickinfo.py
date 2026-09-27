@@ -23,8 +23,8 @@ from virtualbricks.bricks.virtualmachine import hostonly_sock
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
-    from virtualbricks.gui.mainwindow import brickinfo
-    from virtualbricks.gui.mainwindow.brickinfo import (
+    from virtualbricks.gui.mainwindow.bricks import brickinfo
+    from virtualbricks.gui.mainwindow.bricks.brickinfo import (
         State,
         connect,
         connectable,
