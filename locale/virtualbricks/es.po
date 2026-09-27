@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:16+0200\n"
+"POT-Creation-Date: 2026-09-27 19:21+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -202,7 +202,7 @@ msgstr ""
 msgid "Edit"
 msgstr "Editar"
 
-#: virtualbricks/gui/gui.py
+#: virtualbricks/gui/gui.py virtualbricks/gui/windows/imagedialogs.py
 msgid "Remove"
 msgstr "Quitar"
 
@@ -217,6 +217,71 @@ msgid ""
 "The project \"{name}\" that was open last doesn't exist any more. Open "
 "another one, or create one."
 msgstr ""
+
+#: virtualbricks/gui/imageinfo.py virtualbricks/gui/mainwindow/images/tab.py
+msgid "In use"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+msgid "Not in use"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+msgid "No disk"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+msgid "File missing"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#: virtualbricks/gui/mainwindow/events/eventinfo.py
+#, python-brace-format
+msgid "{first} and {last}"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{size} disk"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{size} on disk"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+msgid "no disk uses it"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{names}, private copy"
+msgid_plural "{names}, private copies"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{names}, the image itself"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{path} isn't there"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "Find the file of {name}"
+msgstr ""
+
+#: virtualbricks/gui/imageinfo.py
+#, python-brace-format
+msgid "{names} runs"
+msgid_plural "{names} run"
+msgstr[0] ""
+msgstr[1] ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 msgid "Switch"
@@ -262,10 +327,12 @@ msgstr "<b> Icono de Maquina Virtual </b>"
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
 #: virtualbricks/gui/mainwindow/bricks/tab.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
 msgid "Running"
 msgstr "En ejecución"
 
 #: virtualbricks/gui/mainwindow/bricks/brickinfo.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
 msgid "Stopped"
 msgstr ""
 
@@ -452,6 +519,7 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
 #: virtualbricks/gui/mainwindow/events/eventmenu.py
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
 #: virtualbricks/gui/windows/projects.py
 msgid "Rename…"
 msgstr ""
@@ -619,12 +687,6 @@ msgid "Waiting"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/eventinfo.py
-#: virtualbricks/gui/windows/confirmdialog.py
-#, python-brace-format
-msgid "{first} and {last}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/events/eventinfo.py
 #, fuzzy, python-brace-format
 msgid "starts {names}"
 msgstr "Quitar"
@@ -693,9 +755,10 @@ msgid "New Event"
 msgstr "Nuevo Evento"
 
 #: virtualbricks/gui/mainwindow/events/newevent.py
+#: virtualbricks/gui/windows/addimage.py
 #: virtualbricks/gui/windows/exportproject.py
+#: virtualbricks/gui/windows/imagedialogs.py
 #: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
 #: virtualbricks/gui/windows/newbrick.py
 #: virtualbricks/gui/windows/projectname.py
 #: virtualbricks/gui/windows/projects.py
@@ -705,15 +768,15 @@ msgid "Cancel"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/newevent.py
+#: virtualbricks/gui/windows/addimage.py
 #: virtualbricks/gui/windows/projectname.py
 msgid "Create"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/newevent.py
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#: virtualbricks/gui/windows/addimage.py
 #: virtualbricks/gui/windows/importdialog.py
-#: virtualbricks/gui/windows/loadimagedialog.py
 #: virtualbricks/gui/windows/projectname.py virtualbricks/gui/windows/usbdev.py
 msgid "Name"
 msgstr ""
@@ -724,6 +787,7 @@ msgid "Wait {delay} seconds"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/newevent.py
+#: virtualbricks/gui/windows/addimage.py
 #, python-brace-format
 msgid "The name “{name}” is in use"
 msgstr ""
@@ -789,6 +853,181 @@ msgstr ""
 #, fuzzy
 msgid "Event settings"
 msgstr "Mostrar preferencias"
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "the image itself"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, python-brace-format
+msgid "private copy {file}, made at the next start"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, python-brace-format
+msgid "private copy {file}, {size}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#: virtualbricks/gui/windows/addimage.py
+#: virtualbricks/gui/windows/projectname.py
+msgid "Description"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, fuzzy
+msgid "Used by"
+msgstr "RAM usada:"
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, fuzzy, python-brace-format
+msgid "The project {names} uses the same file."
+msgid_plural "The projects {names} use the same file."
+msgstr[0] "Guardar proyecto como"
+msgstr[1] "Guardar proyecto como"
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, fuzzy, python-brace-format
+msgid "{project}, as {image}"
+msgstr "Guardar proyecto como"
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#: virtualbricks/gui/windows/addimage.py
+#, fuzzy
+msgid "File"
+msgstr "_Fichero"
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "State"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "The file isn't there"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#: virtualbricks/gui/windows/addimage.py
+msgid "Format"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#: virtualbricks/gui/windows/projects.py
+msgid "Unknown"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, python-brace-format
+msgid "{format}, above {file}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#: virtualbricks/gui/windows/addimage.py
+msgid "Size"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, python-brace-format
+msgid "{disk} disk, {taken} on disk"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#, fuzzy
+msgid "Snapshots"
+msgstr "Modo snapshot"
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Changed"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "No disk uses it."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
+msgid "Find the File…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
+msgid "Details…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
+#: virtualbricks/gui/windows/projects.py
+msgid "Show in Files"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/imagemenu.py
+#: virtualbricks/gui/windows/projects.py
+#, fuzzy
+msgid "Remove…"
+msgstr "Quitar"
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, python-brace-format
+msgid "{in_use} of {total} in use"
+msgid_plural "{in_use} of {total} in use"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "No images"
+msgstr "_Mensajes"
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, python-brace-format
+msgid "No image matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+msgid "No image is in use"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, python-brace-format
+msgid "No image in use matches “{text}”"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "_Images"
+msgstr "Creación de imagen"
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "Add Image"
+msgstr "Creación de imagen"
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "Search images"
+msgstr "Nuevo Brick"
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "No Images Yet"
+msgstr "Nuevo Evento"
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+msgid ""
+"A disk image is the disk a virtual machine starts from. Add one to give a "
+"machine its disk."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "Existing Image…"
+msgstr "Exportar como imagen"
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+msgid "New Empty Disk…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/images/tab.py
+#, fuzzy
+msgid "Disk image"
+msgstr "<b> dispositivo de CD-ROM </b>"
 
 #: virtualbricks/gui/mainwindow/picture.py
 msgid "PNG image"
@@ -1009,26 +1248,6 @@ msgid "_Messages"
 msgstr "_Mensajes"
 
 #: virtualbricks/gui/mainwindow/window.py
-msgid "_Disk images"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "_Create new image"
-msgstr "_Crear nueva imagen"
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "_New image from file"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Co_mmit cow image"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
-msgid "Images library"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/window.py
 msgid "_Help"
 msgstr "_Ayuda"
 
@@ -1186,6 +1405,73 @@ msgstr ""
 msgid "Value member"
 msgstr ""
 
+#: virtualbricks/gui/windows/addimage.py
+msgid "Add an Existing Image"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+#, fuzzy
+msgid "Add"
+msgstr "hdd"
+
+#: virtualbricks/gui/windows/addimage.py
+#, fuzzy
+msgid "Choose a Disk Image"
+msgstr "<b> dispositivo de CD-ROM </b>"
+
+#: virtualbricks/gui/windows/addimage.py
+msgid "Copy it to the image folder"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+msgid "Use it where it is"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+msgid "Reading the file…"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+#, python-brace-format
+msgid "above {file}"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+#, fuzzy, python-brace-format
+msgid "Not a disk image: {error}"
+msgstr "<b> dispositivo de CD-ROM </b>"
+
+#: virtualbricks/gui/windows/addimage.py
+msgid "It is above another file, so it's used where it is."
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+#, python-brace-format
+msgid "The copy takes {size}, and keeps the file as it is."
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+msgid "Copying the file…"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+msgid "New Empty Disk"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py virtualbricks/migrate/gui.py
+msgid "Folder"
+msgstr ""
+
+#: virtualbricks/gui/windows/addimage.py
+#, fuzzy
+msgid "Choose a Folder"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/gui/windows/addimage.py
+#, python-brace-format
+msgid "{file} is there already"
+msgstr ""
+
 #: virtualbricks/gui/windows/captureconfig.py
 #: virtualbricks/gui/windows/ethernetdialog.py
 #: virtualbricks/gui/windows/tapconfig.py
@@ -1272,162 +1558,7 @@ msgid "The event is in use, it will be stopped before."
 msgstr ""
 
 #: virtualbricks/gui/windows/confirmdialog.py
-#, fuzzy, python-brace-format
-msgid "Remove the image {name}?"
-msgstr "Quitar"
-
-#: virtualbricks/gui/windows/confirmdialog.py
-#, python-brace-format
-msgid "{vm} ({device})"
-msgstr ""
-
-#: virtualbricks/gui/windows/confirmdialog.py
-#, python-brace-format
-msgid "The disk {disks} will have no image."
-msgid_plural "The disks {disks} will have no image."
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/confirmdialog.py
-msgid "The private copy stays."
-msgid_plural "The private copies stay."
-msgstr[0] ""
-msgstr[1] ""
-
-#: virtualbricks/gui/windows/confirmdialog.py
-msgid "No disk uses it."
-msgstr ""
-
-#: virtualbricks/gui/windows/confirmdialog.py
-#, python-brace-format
-msgid "The file stays: {path}"
-msgstr ""
-
-#: virtualbricks/gui/windows/confirmdialog.py
 msgid "Do you really want to delete the network interface?"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "Auto"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "raw"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "qcow"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "qcow2"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "cow"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "vmdk"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "cloop"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "Kb"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "Mb"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "Gb"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-#, fuzzy
-msgid "Create new Image"
-msgstr "_Crear nueva imagen"
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "Format"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-#: virtualbricks/gui/windows/disklibrary.py
-msgid "Size"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-msgid "Target folder for the new image"
-msgstr ""
-
-#: virtualbricks/gui/windows/createimagedialog.py
-#, fuzzy
-msgid "Create new empty disk image"
-msgstr "_Crear nueva imagen"
-
-#: virtualbricks/gui/windows/createimagedialog.py
-#, fuzzy
-msgid "Select a directory"
-msgstr "Guardar proyecto como"
-
-#: virtualbricks/gui/windows/disklibrary.py
-msgid "File missing"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-#, python-brace-format
-msgid "{disk} disk, {taken} on disk"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/projects.py
-msgid "Unknown"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-msgid "Path"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-#, fuzzy
-msgid "Used by"
-msgstr "RAM usada:"
-
-#: virtualbricks/gui/windows/disklibrary.py
-#, fuzzy
-msgid "Master brick"
-msgstr "Nuevo Brick"
-
-#: virtualbricks/gui/windows/disklibrary.py
-msgid "COWs"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-msgid "page0"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-#, fuzzy
-msgid "File path"
-msgstr "Creación de imagen"
-
-#: virtualbricks/gui/windows/disklibrary.py
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/projectname.py
-msgid "Description"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-msgid "Configure disk image"
-msgstr ""
-
-#: virtualbricks/gui/windows/disklibrary.py
-msgid "page1"
 msgstr ""
 
 #: virtualbricks/gui/windows/ethernetdialog.py
@@ -1564,6 +1695,89 @@ msgstr ""
 #: virtualbricks/gui/windows/exportproject.py
 #, python-brace-format
 msgid "Cannot export to {path}: {error}"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "{vm} ({device})"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "The disk {disks} will have no image."
+msgid_plural "The disks {disks} will have no image."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "The private copy stays."
+msgid_plural "The private copies stay."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy
+msgid "Remove Image"
+msgstr "Quitar"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Remove the image {name}?"
+msgstr "Quitar"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "The project {names} uses the file too: it stays."
+msgid_plural "The projects {names} use the file too: it stays."
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "Also move the file to the trash ({size})"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "Also delete the file ({size}): there is no trash"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "The file stays: {path}"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "Find the File"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "Use This File"
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy, python-brace-format
+msgid "Where is the file of {name}?"
+msgstr "Quitar"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, python-brace-format
+msgid "{path} isn't there."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+#, fuzzy
+msgid "Choose the File"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid "The image folder has a file of the same name."
+msgstr ""
+
+#: virtualbricks/gui/windows/imagedialogs.py
+msgid ""
+"The private copies of its disks are pointed at the file first, so that they "
+"keep their changes."
 msgstr ""
 
 #: virtualbricks/gui/windows/importdialog.py
@@ -1722,22 +1936,6 @@ msgstr ""
 #: virtualbricks/gui/windows/importdialog.py
 #, python-brace-format
 msgid "cannot be opened: {error}"
-msgstr ""
-
-#: virtualbricks/gui/windows/loadimagedialog.py
-#: virtualbricks/gui/windows/newbrick.py
-#: virtualbricks/gui/windows/renamedialog.py
-#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
-msgid "OK"
-msgstr ""
-
-#: virtualbricks/gui/windows/loadimagedialog.py
-#, fuzzy
-msgid "Load disk image"
-msgstr "<b> dispositivo de CD-ROM </b>"
-
-#: virtualbricks/gui/windows/loadimagedialog.py
-msgid "Image name"
 msgstr ""
 
 #: virtualbricks/gui/windows/logging.py
@@ -1972,6 +2170,12 @@ msgstr "Direccion MAC:"
 
 #: virtualbricks/gui/windows/newbrick.py
 #: virtualbricks/gui/windows/renamedialog.py
+#: virtualbricks/gui/windows/settings.py virtualbricks/gui/windows/usbdev.py
+msgid "OK"
+msgstr ""
+
+#: virtualbricks/gui/windows/newbrick.py
+#: virtualbricks/gui/windows/renamedialog.py
 #, fuzzy
 msgid "Brick name"
 msgstr "Bricks (Bloques)"
@@ -2114,15 +2318,6 @@ msgstr ""
 #: virtualbricks/gui/windows/projects.py
 msgid "Export…"
 msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-msgid "Show in Files"
-msgstr ""
-
-#: virtualbricks/gui/windows/projects.py
-#, fuzzy
-msgid "Remove…"
-msgstr "Quitar"
 
 #: virtualbricks/gui/windows/projects.py
 #, python-brace-format
@@ -2720,10 +2915,6 @@ msgid "In place"
 msgstr ""
 
 #: virtualbricks/migrate/gui.py
-msgid "Folder"
-msgstr ""
-
-#: virtualbricks/migrate/gui.py
 msgid "Write to"
 msgstr ""
 
@@ -2794,6 +2985,29 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#~ msgid "_Create new image"
+#~ msgstr "_Crear nueva imagen"
+
+#, fuzzy
+#~ msgid "Create new Image"
+#~ msgstr "_Crear nueva imagen"
+
+#, fuzzy
+#~ msgid "Create new empty disk image"
+#~ msgstr "_Crear nueva imagen"
+
+#, fuzzy
+#~ msgid "Select a directory"
+#~ msgstr "Guardar proyecto como"
+
+#, fuzzy
+#~ msgid "Master brick"
+#~ msgstr "Nuevo Brick"
+
+#, fuzzy
+#~ msgid "File path"
+#~ msgstr "Creación de imagen"
 
 #, fuzzy
 #~ msgid "<b>Start event selection</b>"
@@ -2939,9 +3153,6 @@ msgstr ""
 
 #~ msgid "fda"
 #~ msgstr "fda"
-
-#~ msgid "hdd"
-#~ msgstr "hdd"
 
 #~ msgid "hdc"
 #~ msgstr "hdc"

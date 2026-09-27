@@ -15,7 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The disk images: what qemu-img info says, who uses them, relinking."""
+"""
+The disk images: what qemu-img info says, who uses them, relinking, the
+image folder and the other projects that use a file.
+"""
 
 import json
 import os
@@ -28,12 +31,20 @@ from virtualbricks.config.images import (
     ImageInfo,
     InfoCache,
     RunningError,
+    free_path,
+    image_folder,
+    is_inside,
+    other_projects,
     parse_info,
     read_info,
     relink,
     uses,
 )
-from virtualbricks.config.workspace import OpenProject
+from virtualbricks.config.workspace import (
+    ImageSummary,
+    OpenProject,
+    ProjectSummary,
+)
 from virtualbricks.tests import BrickTestCase, FakeLogger, use_workspace
 
 INFO = {
@@ -114,7 +125,7 @@ class TestParseInfo(BrickTestCase):
         info = self.successResultOf(read_info("/lab/frr.qcow2", qemu_img))
         self.assertEqual(info.format, "qcow2")
         self.assertEqual(
-            qemu_img.calls, [["info", "--output=json", "/lab/frr.qcow2"]]
+            qemu_img.calls, [["info", "--output=json", "-U", "/lab/frr.qcow2"]]
         )
 
     def test_read_info_with_qemu_img(self):
@@ -390,3 +401,93 @@ class TestRelink(ImagesTestCase):
             relink(self.factory, self.image, "/new/frr.qcow2")
         )
         self.assertEqual(len(self.qemu_img.rebases()), 1)
+
+
+class TestFiles(BrickTestCase):
+
+    def test_the_image_folder(self):
+        workspace = use_workspace(self, os.path.abspath(self.mktemp()))
+        folder = image_folder(workspace)
+        self.assertEqual(folder, os.path.join(workspace.path, "vimages"))
+        self.assertTrue(os.path.isdir(folder))
+        # made once
+        self.assertEqual(image_folder(workspace), folder)
+
+    def test_inside(self):
+        self.assertTrue(is_inside("/ws/vimages/frr.qcow2", "/ws/vimages"))
+        self.assertTrue(is_inside("/ws/vimages/old/frr.qcow2", "/ws/vimages"))
+        self.assertTrue(is_inside("/ws/vimages/../vimages/a", "/ws/vimages/"))
+
+    def test_outside(self):
+        self.assertFalse(is_inside("/ws/vimages2/frr.qcow2", "/ws/vimages"))
+        self.assertFalse(is_inside("/ws/vimages/../frr.qcow2", "/ws/vimages"))
+        self.assertFalse(is_inside("/tmp/frr.qcow2", "/ws/vimages"))
+
+    def test_a_free_path(self):
+        folder = self.mktemp()
+        os.makedirs(folder)
+        self.assertEqual(
+            free_path(folder, "frr.qcow2"), os.path.join(folder, "frr.qcow2")
+        )
+
+    def test_a_number_when_taken(self):
+        folder = self.mktemp()
+        os.makedirs(folder)
+        for name in ("frr.qcow2", "frr-2.qcow2"):
+            open(os.path.join(folder, name), "w").close()
+        # a broken link takes a name too
+        os.symlink("/nowhere", os.path.join(folder, "frr-3.qcow2"))
+        self.assertEqual(
+            free_path(folder, "frr.qcow2"),
+            os.path.join(folder, "frr-4.qcow2"),
+        )
+
+
+class FakeWorkspace:
+    """The summaries of the projects, and the open one."""
+
+    def __init__(self, current, **projects):
+        self.current = OpenProject("/ws/" + current, None) if current else None
+        self._summaries = [
+            ProjectSummary(
+                name=name,
+                path="/ws/" + name,
+                description="",
+                modified=0.0,
+                bricks={},
+                events=0,
+                images=tuple(
+                    ImageSummary(image, path, True) for image, path in images
+                ),
+            )
+            for name, images in projects.items()
+        ]
+
+    def summaries(self):
+        return self._summaries
+
+
+class TestOtherProjects(BrickTestCase):
+
+    def test_the_projects_that_use_the_file(self):
+        workspace = FakeWorkspace(
+            "lab",
+            lab=[("frr", "/ws/vimages/frr.qcow2")],
+            ospf=[("router", "/ws/vimages/frr.qcow2"), ("pc", "/ws/pc.img")],
+            bgp=[("pc", "/ws/pc.img")],
+            rip=[("r", "/ws/vimages/../vimages/frr.qcow2"), ("empty", "")],
+        )
+        self.assertEqual(
+            other_projects(workspace, "/ws/vimages/frr.qcow2"),
+            [("ospf", "router"), ("rip", "r")],
+        )
+
+    def test_none(self):
+        workspace = FakeWorkspace("lab", lab=[("frr", "/ws/frr.qcow2")])
+        self.assertEqual(other_projects(workspace, "/ws/frr.qcow2"), [])
+
+    def test_no_project_open(self):
+        workspace = FakeWorkspace(None, lab=[("frr", "/ws/frr.qcow2")])
+        self.assertEqual(
+            other_projects(workspace, "/ws/frr.qcow2"), [("lab", "frr")]
+        )

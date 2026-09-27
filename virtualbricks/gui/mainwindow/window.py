@@ -34,24 +34,23 @@ from twisted.logger import Logger
 
 from virtualbricks import errors, tools
 from virtualbricks.bricks.event import is_event
+from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.tools import is_running
 from virtualbricks.gui.windows.base import _, load_pixbuf
 from virtualbricks.gui.windows.about import AboutDialog
-from virtualbricks.gui.windows.commitimagedialog import CommitImageDialog
 from virtualbricks.gui.windows.confirmdialog import (
     DeleteBrickConfirmDialog,
     DeleteEventConfirmDialog,
 )
-from virtualbricks.gui.windows.createimagedialog import CreateImageDialog
-from virtualbricks.gui.windows.disklibrary import DisksLibraryWindow
 from virtualbricks.gui.windows.exportproject import ExportProjectDialog
+from virtualbricks.gui.windows.imagedialogs import RemoveImageDialog
 from virtualbricks.gui.windows.importdialog import ImportDialog
-from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.messages import MessageLog
 from virtualbricks.gui.mainwindow.bricks import BricksTab
 from virtualbricks.gui.mainwindow.events import EventsTab
+from virtualbricks.gui.mainwindow.images import ImagesTab
 from virtualbricks.gui.mainwindow.readme import ReadmeTab
 from virtualbricks.gui.mainwindow.tab import switch, tabs
 from virtualbricks.gui.mainwindow.topology import TopologyTab
@@ -208,48 +207,6 @@ class VBGUI:
         menu3.append(view_messages_item)
         menu_view.set_submenu(menu3)
         menubar1.append(menu_view)
-        menu_images = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_Disk images"),
-            use_underline=True,
-        )
-        menu4 = Gtk.Menu(visible=True, can_focus=False)
-        images_create_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_Create new image"),
-            use_underline=True,
-        )
-        menu4.append(images_create_item)
-        images_new_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("_New image from file"),
-            use_underline=True,
-        )
-        menu4.append(images_new_item)
-        images_commit_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("Co_mmit cow image"),
-            use_underline=True,
-        )
-        menu4.append(images_commit_item)
-        separatormenuitem2 = Gtk.SeparatorMenuItem(
-            visible=True,
-            can_focus=False,
-        )
-        menu4.append(separatormenuitem2)
-        images_library_item = Gtk.MenuItem(
-            visible=True,
-            can_focus=False,
-            label=_("Images library"),
-            use_underline=True,
-        )
-        menu4.append(images_library_item)
-        menu_images.set_submenu(menu4)
-        menubar1.append(menu_images)
         menu_help = Gtk.MenuItem(
             visible=True,
             can_focus=False,
@@ -273,6 +230,8 @@ class VBGUI:
         self.append_tab(self.bricks)
         self.events = EventsTab(self, self.factory)
         self.append_tab(self.events)
+        self.images = ImagesTab(self, self.factory)
+        self.append_tab(self.images)
         self.append_tab(TopologyTab(self, self.factory))
         self.append_tab(ReadmeTab())
         vbox1.pack_start(self.main_notebook, True, True, 0)
@@ -386,19 +345,6 @@ class VBGUI:
             "activate",
             self.on_view_messages_item_activate,
         )
-        images_create_item.connect(
-            "activate",
-            self.on_images_create_item_activate,
-        )
-        images_new_item.connect("activate", self.on_images_new_item_activate)
-        images_commit_item.connect(
-            "activate",
-            self.on_images_commit_item_activate,
-        )
-        images_library_item.connect(
-            "activate",
-            self.on_images_library_item_activate,
-        )
         help_about_item.connect("activate", self.on_help_about_item_activate)
         self.main_notebook.connect(
             "switch-page",
@@ -459,16 +405,22 @@ class VBGUI:
         page = self.main_notebook.get_nth_page(
             self.main_notebook.get_current_page()
         )
-        if page in (self.bricks, self.events):
+        if page in (self.bricks, self.events, self.images):
             page.close_settings()
 
     def curtain_up(self, item):
         """
-        Show the settings of a brick in the Bricks tab, or of an event in
-        the Events tab.
+        Show the settings of a brick in the Bricks tab, of an event in the
+        Events tab, or the details of a disk image in the Images tab.
         """
 
-        tab = self.events if is_event(item) else self.bricks
+        # an image has no type: ask it first
+        if is_disk_image(item):
+            tab = self.images
+        elif is_event(item):
+            tab = self.events
+        else:
+            tab = self.bricks
         self.main_notebook.set_current_page(self.main_notebook.page_num(tab))
         tab.configure(item)
 
@@ -536,6 +488,16 @@ class VBGUI:
 
     def ask_remove_event(self, event):
         DeleteEventConfirmDialog(self.brickfactory, event).show(self.window)
+
+    def ask_remove_image(self, image):
+        RemoveImageDialog(self.brickfactory, image).show(self.window)
+
+    def show_images(self):
+        """Show the Images tab."""
+
+        self.main_notebook.set_current_page(
+            self.main_notebook.page_num(self.images)
+        )
 
     # status icon handling
 
@@ -683,22 +645,6 @@ class VBGUI:
 
     def on_view_messages_item_activate(self, menuitem):
         LoggingWindow(self.messages).show()
-        return True
-
-    def on_images_create_item_activate(self, menuitem):
-        CreateImageDialog(self, self.brickfactory).show(self.window)
-        return True
-
-    def on_images_new_item_activate(self, menuitem):
-        LoadImageDialog(self.brickfactory).show(self.window)
-        return True
-
-    def on_images_commit_item_activate(self, menuitem):
-        CommitImageDialog(self.brickfactory).show(self.window)
-        return True
-
-    def on_images_library_item_activate(self, menuitem):
-        DisksLibraryWindow(self.brickfactory).show()
         return True
 
     def on_help_about_item_activate(self, menuitem):

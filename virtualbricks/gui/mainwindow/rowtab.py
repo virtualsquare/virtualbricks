@@ -40,7 +40,9 @@ settings; so do deleting the object, opening another project and configuring
 another object, as Cancel.
 
 Each tab says what differs: its words, its rows, its menu, how its objects
-start and stop, what New does, and their panels.
+start and stop, what New does, and their panels. A kind of object that
+doesn't start or stop, as the disk images, has no Start or Stop: the switch
+shows the objects in use, as the list says which are.
 """
 
 from __future__ import annotations
@@ -117,6 +119,40 @@ def empty_icon(name):
     return grey
 
 
+def theme_icon(names, size, grey=False):
+    """The first of the icon names that the theme has, at size; grey."""
+
+    theme = Gtk.IconTheme.get_default()
+    for name in names:
+        try:
+            pixbuf = theme.load_icon(
+                name, size, Gtk.IconLookupFlags.FORCE_SIZE
+            )
+        except GLib.Error:
+            continue
+        if pixbuf is None:
+            continue
+        if grey:
+            copy = pixbuf.copy()
+            pixbuf.saturate_and_pixelate(copy, 0.0, False)
+            pixbuf = copy
+        return pixbuf
+    return None
+
+
+class ThemeIcons:
+    """The icons of the rows of one kind: an icon of the theme, for all."""
+
+    def __init__(self, names, size) -> None:
+        self._pixbufs = {
+            running: theme_icon(names, size, grey=not running)
+            for running in (True, False)
+        }
+
+    def get(self, item, running: bool) -> GdkPixbuf.Pixbuf | None:
+        return self._pixbufs[bool(running)]
+
+
 def types(event) -> bool:
     """Whether a key typed in the list goes to the search: a character."""
 
@@ -142,6 +178,8 @@ class Row(Gtk.ListBoxRow):
 
     # The prefix of the actions of the menu.
     GROUP = ""
+    # Whether the object starts and stops, with a button of the row.
+    STARTS = True
 
     def __init__(self, gui, item, icons, sizes) -> None:
         super().__init__(visible=True)
@@ -206,7 +244,8 @@ class Row(Gtk.ListBoxRow):
             visible=True, relief=Gtk.ReliefStyle.NONE, valign=Gtk.Align.CENTER
         )
         self.popover: Gtk.Popover | None = None
-        box.pack_start(self.startstop, False, False, 0)
+        if self.STARTS:
+            box.pack_start(self.startstop, False, False, 0)
         box.pack_start(self.menu_button, False, False, 0)
         self.add(box)
 
@@ -320,7 +359,7 @@ class RowList(Gtk.ListBox):
         self.factory = factory
         self.search = ""
         self.only_running = False
-        self.icons = Icons(ICON_SIZE)
+        self.icons = self.make_icons()
         self._sizes = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         self._rows: dict[object, Row] = {}
 
@@ -357,6 +396,16 @@ class RowList(Gtk.ListBox):
 
     def prepare(self, row) -> None:
         """Make ready a row, before the list takes it."""
+
+    def make_icons(self):
+        """The icons of the rows: what gives, for an object, its picture."""
+
+        return Icons(ICON_SIZE)
+
+    def running(self, item) -> bool:
+        """Whether item shows with the running ones: it runs, or is in use."""
+
+        return is_running(item)
 
     # What the lists share
 
@@ -401,7 +450,7 @@ class RowList(Gtk.ListBox):
 
     def _visible(self, row) -> bool:
         item = row.item
-        if self.only_running and not is_running(item):
+        if self.only_running and not self.running(item):
             return False
         text = self.search.strip().casefold()
         return (
@@ -446,6 +495,8 @@ class RowsTab(Tab, Gtk.Stack):
     NEW = SEARCH = RUNNING = EMPTY_TITLE = EMPTY_WORDS = ""
     # The picture of a project without objects, a file of the data folder.
     EMPTY_ICON = ""
+    # Whether the objects start and stop: then Start All and Stop All.
+    STARTS = True
     # The factory's signals: an object added, removed, changed.
     ADDED = REMOVED = CHANGED = ""
 
@@ -495,7 +546,8 @@ class RowsTab(Tab, Gtk.Stack):
         all_items.pack_start(self.stop_button, False, False, 0)
         for widget in (self.new_button, self.search, filters):
             header.pack_start(widget, False, False, 0)
-        header.pack_end(all_items, False, False, 0)
+        if self.STARTS:
+            header.pack_end(all_items, False, False, 0)
         header.pack_end(self.count, False, False, 0)
         self.main_page.pack_start(header, False, False, 0)
         self.main_page.pack_start(
@@ -547,7 +599,7 @@ class RowsTab(Tab, Gtk.Stack):
             margin=3 * GAP,
         )
         image = Gtk.Image(visible=True, pixel_size=EMPTY_ICON_SIZE)
-        icon = empty_icon(self.EMPTY_ICON)
+        icon = self.empty_picture()
         if icon is not None:
             image.set_from_pixbuf(icon)
         image.set_opacity(EMPTY_ICON_OPACITY)
@@ -576,6 +628,11 @@ class RowsTab(Tab, Gtk.Stack):
         return page
 
     # What each kind of tab does
+
+    def empty_picture(self):
+        """The picture of a project without objects, grey."""
+
+        return empty_icon(self.EMPTY_ICON)
 
     def make_list(self) -> RowList:
         raise NotImplementedError
@@ -636,8 +693,9 @@ class RowsTab(Tab, Gtk.Stack):
         self.count.set_text(self.count_text(items) if items else "")
         for widget in (self.search, self.all_button, self.running_button):
             widget.set_sensitive(bool(items))
-        self.start_button.set_sensitive(any(map(self.can_start, items)))
-        self.stop_button.set_sensitive(any(map(is_running, items)))
+        if self.STARTS:
+            self.start_button.set_sensitive(any(map(self.can_start, items)))
+            self.stop_button.set_sensitive(any(map(is_running, items)))
 
     def open_menu(self, event=None) -> None:
         """
@@ -679,7 +737,7 @@ class RowsTab(Tab, Gtk.Stack):
         page = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
         head = Gtk.Box(visible=True, spacing=12, margin=GAP)
         image = Gtk.Image(visible=True, pixel_size=ICON_SIZE)
-        pixbuf = self.list.icons.get(item, is_running(item))
+        pixbuf = self.list.icons.get(item, self.list.running(item))
         if pixbuf is not None:
             image.set_from_pixbuf(pixbuf)
         text = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)

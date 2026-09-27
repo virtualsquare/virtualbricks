@@ -32,6 +32,11 @@ of that machine above the image, or by writing the image itself.
 The path of an image changes through ``relink()``: it points the private
 copies at the new file first, with ``qemu-img rebase -u``, so that no
 machine loses its changes at its next start.
+
+The files of the images go in the image folder of the workspace,
+``<workspace>/vimages``, which the import fills too; several projects may
+use one file, under different names. ``other_projects()`` says which, from
+the summaries that the list of the projects reads.
 """
 
 from __future__ import annotations
@@ -49,6 +54,7 @@ from virtualbricks import errors, spawn
 if TYPE_CHECKING:
     from virtualbricks.brickfactory import BrickFactory
     from virtualbricks.bricks.virtualmachine import Image, VirtualMachine
+    from virtualbricks.config.workspace import Workspace
 
 logger = Logger()
 back_failed = (
@@ -58,6 +64,9 @@ back_failed = (
 
 # qemu-img with its arguments: its output, when it ends.
 Run = Callable[[list[str]], defer.Deferred]
+
+# The folder of the images, in the workspace.
+IMAGE_FOLDER = "vimages"
 
 
 class RunningError(errors.Error):
@@ -104,7 +113,8 @@ def read_info(path: str, run: Run | None = None) -> defer.Deferred:
 
     if run is None:
         run = spawn.qemu_img
-    deferred = run(["info", "--output=json", path])
+    # -U: a running machine locks the image it writes to
+    deferred = run(["info", "--output=json", "-U", path])
     deferred.addCallback(lambda output: parse_info(json.loads(output)))
     return deferred
 
@@ -264,3 +274,51 @@ def _relink(image, old, path, copies, run):
                 logger.failure(back_failed, copy=copy, path=old)
         raise
     image.set_path(path)
+
+
+# The files
+
+
+def image_folder(workspace: Workspace) -> str:
+    """The folder of the images of the workspace, made if it isn't there."""
+
+    folder = os.path.join(workspace.path, IMAGE_FOLDER)
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+def is_inside(path: str, folder: str) -> bool:
+    """Whether path is in folder, or in a folder of it."""
+
+    path, folder = os.path.abspath(path), os.path.abspath(folder)
+    return os.path.commonpath([path, folder]) == folder
+
+
+def free_path(folder: str, filename: str) -> str:
+    """A path in folder for filename, with a number if it's taken."""
+
+    stem, extension = os.path.splitext(filename)
+    path = os.path.join(folder, filename)
+    number = 2
+    while os.path.lexists(path):
+        path = os.path.join(folder, f"{stem}-{number}{extension}")
+        number += 1
+    return path
+
+
+def other_projects(workspace: Workspace, path: str) -> list[tuple[str, str]]:
+    """
+    (project, image): the images of the other projects than the open one
+    whose file is path, the most recently used project first.
+    """
+
+    path = os.path.abspath(path)
+    current = workspace.current.name if workspace.current else None
+    found = []
+    for summary in workspace.summaries():
+        if summary.name == current:
+            continue
+        for image in summary.images:
+            if image.path and os.path.abspath(image.path) == path:
+                found.append((summary.name, image.name))
+    return found

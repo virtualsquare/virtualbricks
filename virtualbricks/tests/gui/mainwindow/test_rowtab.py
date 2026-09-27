@@ -26,15 +26,17 @@ from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
-    from gi.repository import Gio, Gtk
+    from gi.repository import GdkPixbuf, Gio, GLib, Gtk
 
     from virtualbricks.gui.mainwindow import rowtab
     from virtualbricks.gui.mainwindow.rowtab import (
         Row,
         RowList,
         RowsTab,
+        ThemeIcons,
         empty_icon,
         log_failures,
+        theme_icon,
     )
 
     class Actions(Gio.SimpleActionGroup):
@@ -213,3 +215,58 @@ class TestTheHelpers(GuiTestCase):
             (rowtab.EMPTY_ICON_SIZE, rowtab.EMPTY_ICON_SIZE),
         )
         self.assertIsNone(empty_icon("nowhere.png"))
+
+
+class FakeIconTheme:
+    """An icon theme with red icons of some names."""
+
+    def __init__(self, *names):
+        self.names = names
+        self.loaded = []
+
+    def load_icon(self, name, size, flags):
+        self.loaded.append((name, size))
+        if name not in self.names:
+            raise GLib.Error(f"no icon {name}")
+        pixbuf = GdkPixbuf.Pixbuf.new(
+            GdkPixbuf.Colorspace.RGB, False, 8, size, size
+        )
+        pixbuf.fill(0xFF000000)
+        return pixbuf
+
+
+def first_pixel(pixbuf):
+    return tuple(pixbuf.get_pixels()[:3])
+
+
+class TestThemeIcons(GuiTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.theme = FakeIconTheme("drive-harddisk")
+        self.patch(Gtk.IconTheme, "get_default", lambda: self.theme)
+
+    def test_the_first_that_the_theme_has(self):
+        pixbuf = theme_icon(("disk-x", "drive-harddisk", "media-floppy"), 24)
+        self.assertEqual(pixbuf.get_width(), 24)
+        self.assertEqual(
+            self.theme.loaded, [("disk-x", 24), ("drive-harddisk", 24)]
+        )
+        self.assertEqual(first_pixel(pixbuf), (255, 0, 0))
+
+    def test_grey(self):
+        pixbuf = theme_icon(("drive-harddisk",), 24, grey=True)
+        red, green, blue = first_pixel(pixbuf)
+        self.assertEqual(red, green)
+        self.assertEqual(green, blue)
+
+    def test_none(self):
+        self.assertIsNone(theme_icon(("disk-x",), 24))
+
+    def test_for_all_the_rows(self):
+        icons = ThemeIcons(("drive-harddisk",), 24)
+        self.assertEqual(first_pixel(icons.get(object(), True)), (255, 0, 0))
+        grey = icons.get(object(), False)
+        self.assertEqual(len(set(first_pixel(grey))), 1)
+        # made once
+        self.assertEqual(len(self.theme.loaded), 2)

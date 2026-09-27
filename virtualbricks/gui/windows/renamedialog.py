@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Dialog to rename a brick or an event.
+Dialog to rename a brick, an event or a disk image.
 """
 
 import gi
@@ -29,6 +29,7 @@ from twisted.logger import Logger
 
 from virtualbricks import errors
 from virtualbricks.bricks.event import is_event
+from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.gui.windows.base import _, _Dialog, destroy_on_exit
 
@@ -53,9 +54,9 @@ class RenameDialog(_Dialog):
 
         self._factory = brickfactory
         self._brick = brick
-        self._prev_name = brick.name
+        self._prev_name = brick.get_name()
         self.build_ui()
-        self.brick_name_entry.set_text(brick.name)
+        self.brick_name_entry.set_text(brick.get_name())
 
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``renamedialog.ui``."""
@@ -191,7 +192,8 @@ class RenameDialog(_Dialog):
             return
         try:
             name = self._factory.normalize_name(brick_name)
-            if not is_event(self._brick):
+            # only a brick has sockets, named after it
+            if not (is_disk_image(self._brick) or is_event(self._brick)):
                 self._factory.check_socket_room(name)
             self._reset_error()
         except NameAlreadyInUseError:
@@ -209,7 +211,7 @@ class RenameDialog(_Dialog):
         if response_id == Gtk.ResponseType.OK:
             name = self.brick_name_entry.get_text()
             try:
-                self._brick.rename(name)
+                self._factory.rename(self._brick, name)
                 # TODO: add debugging log
                 # logger.debug(renamed)
             except errors.InvalidNameError:

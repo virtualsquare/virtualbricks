@@ -1,0 +1,159 @@
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2019 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""What the windows say about a disk image: its state, facts and uses."""
+
+import os
+
+from virtualbricks.config.images import DiskUse, ImageInfo
+from virtualbricks.gui import imageinfo
+from virtualbricks.gui.imageinfo import State
+from virtualbricks.tests import BrickTestCase
+from virtualbricks.tests.gui import untranslated
+
+INFO = ImageInfo("qcow2", 4_300_000_000, 1_234_567, None, ())
+
+
+class FakeImage:
+    def __init__(self, path, name="frr"):
+        self.path = path
+        self.name = name
+
+    def get_path(self):
+        return self.path
+
+    def get_name(self):
+        return self.name
+
+
+class FakeVM:
+    def __init__(self, name):
+        self.name = name
+
+    def get_name(self):
+        return self.name
+
+
+def use(vm, private=True, running=False, device="hda"):
+    return DiskUse(FakeVM(vm), device, private, None, None, running)
+
+
+class TestWords(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        untranslated(self)
+
+    def test_sizes(self):
+        self.assertEqual(imageinfo.human_size(999), "999 B")
+        self.assertEqual(imageinfo.human_size(200_700), "200.7 KB")
+        self.assertEqual(imageinfo.human_size(4_300_000_000), "4.3 GB")
+        # no TB: a disk is some thousands of GB at most
+        self.assertEqual(imageinfo.human_size(2e12), "2000.0 GB")
+
+    def test_names(self):
+        self.assertEqual(imageinfo.names(["r1"]), "r1")
+        self.assertEqual(imageinfo.names(["r1", "r2"]), "r1 and r2")
+        self.assertEqual(imageinfo.names(["r1", "r2", "r3"]), "r1, r2 and r3")
+
+    def test_short_path(self):
+        home = os.path.expanduser("~")
+        self.assertEqual(
+            imageinfo.short_path(os.path.join(home, "vm", "a.img")),
+            os.path.join("~", "vm", "a.img"),
+        )
+        self.assertEqual(imageinfo.short_path(home), "~")
+        # a folder whose name starts as the home's
+        self.assertEqual(imageinfo.short_path(home + "2/a"), home + "2/a")
+        self.assertEqual(imageinfo.short_path("/srv/a.img"), "/srv/a.img")
+
+    def test_facts(self):
+        self.assertEqual(
+            imageinfo.facts(INFO), "qcow2 · 4.3 GB disk · 1.2 MB on disk"
+        )
+
+    def test_use_words(self):
+        uses = [
+            use("r1"),
+            use("r1", device="hdb"),
+            use("r2"),
+            use("vm", private=False),
+        ]
+        self.assertEqual(
+            imageinfo.use_words(uses),
+            "r1 and r2, private copies · vm, the image itself",
+        )
+        self.assertEqual(imageinfo.use_words([use("r1")]), "r1, private copy")
+        self.assertEqual(imageinfo.use_words([]), "no disk uses it")
+
+
+class TestState(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        untranslated(self)
+        self.path = os.path.abspath(self.mktemp())
+        open(self.path, "w").close()
+        self.image = FakeImage(self.path)
+
+    def test_states(self):
+        self.assertIs(imageinfo.state(self.image, []), State.NO_DISK)
+        self.assertIs(
+            imageinfo.state(self.image, [use("r1")]), State.NOT_IN_USE
+        )
+        self.assertIs(
+            imageinfo.state(self.image, [use("r1"), use("r2", running=True)]),
+            State.IN_USE,
+        )
+
+    def test_missing_first(self):
+        image = FakeImage("/nowhere/frr.qcow2")
+        self.assertIs(
+            imageinfo.state(image, [use("r1", running=True)]), State.MISSING
+        )
+
+    def test_summary(self):
+        uses = [use("r1")]
+        self.assertEqual(
+            imageinfo.summary(self.image, INFO, uses),
+            "qcow2 · 4.3 GB disk · 1.2 MB on disk · r1, private copy",
+        )
+        # before qemu-img says
+        self.assertEqual(
+            imageinfo.summary(self.image, None, uses), "r1, private copy"
+        )
+
+    def test_summary_of_a_missing_file(self):
+        image = FakeImage("/nowhere/frr.qcow2")
+        self.assertEqual(
+            imageinfo.summary(image, INFO, []),
+            "/nowhere/frr.qcow2 isn't there · no disk uses it",
+        )
+
+    def test_tooltips(self):
+        uses = [use("r1", running=True), use("r2", running=True), use("r3")]
+        self.assertEqual(
+            imageinfo.tooltip(self.image, State.IN_USE, uses), "r1 and r2 run"
+        )
+        self.assertEqual(
+            imageinfo.tooltip(self.image, State.IN_USE, uses[:1]), "r1 runs"
+        )
+        self.assertEqual(
+            imageinfo.tooltip(self.image, State.MISSING, uses),
+            "Find the file of frr",
+        )
+        self.assertIsNone(imageinfo.tooltip(self.image, State.NO_DISK, []))

@@ -45,10 +45,11 @@ from virtualbricks.gui.windows.base import (
     StateManager,
 )
 from virtualbricks.gui.windows.confirmdialog import DeleteLinkConfirmDialog
-from virtualbricks.gui.windows.createimagedialog import CreateImageDialog
-from virtualbricks.gui.windows.disklibrary import DisksLibraryWindow
+from virtualbricks.gui.windows.addimage import (
+    ExistingImageDialog,
+    NewDiskDialog,
+)
 from virtualbricks.gui.windows.ethernetdialog import AddEthernetDialog
-from virtualbricks.gui.windows.loadimagedialog import LoadImageDialog
 from virtualbricks.gui.windows.usbdev import UsbDevDialog
 
 logger = Logger()
@@ -1795,15 +1796,13 @@ class QemuConfigController(ConfigController):
     # signals
 
     def on_newimage_button_clicked(self, button):
-        LoadImageDialog(self.gui.brickfactory).show(self.gui.window)
+        ExistingImageDialog(self.gui.brickfactory).show(self.gui.window)
 
     def on_configimage_button_clicked(self, button):
-        DisksLibraryWindow(self.original.factory).show()
+        self.gui.show_images()
 
     def on_newempty_button_clicked(self, button):
-        CreateImageDialog(self.gui, self.gui.brickfactory).show(
-            self.gui.window
-        )
+        NewDiskDialog(self.gui.brickfactory).show(self.gui.window)
 
     def on_argv0_combo_changed(self, combobox):
         arch = self.argv0_combo.get_selected_value()
