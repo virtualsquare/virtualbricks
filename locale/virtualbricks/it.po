@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 07:59+0200\n"
+"POT-Creation-Date: 2026-09-27 08:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -435,6 +435,7 @@ msgid "Connect To"
 msgstr "Connetti a"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py
 #, fuzzy
@@ -442,22 +443,26 @@ msgid "Stop"
 msgstr "_Avvia/Ferma"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #, fuzzy
 msgid "Start"
 msgstr "Avvia Mattone"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #, fuzzy
 msgid "Configure…"
 msgstr "_Configura"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #: virtualbricks/gui/windows/projects.py
 #, fuzzy
 msgid "Rename…"
 msgstr "_Rinomina"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #: virtualbricks/gui/windows/projectname.py
 #, fuzzy
 msgid "Duplicate"
@@ -474,6 +479,7 @@ msgid "Resume"
 msgstr "R_iprendi VM"
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #, fuzzy
 msgid "Delete…"
 msgstr "Ca_ncella"
@@ -628,6 +634,10 @@ msgstr "Avvia Mattone"
 #, fuzzy, python-brace-format
 msgid "when {brick} stops"
 msgstr "_Importa Mattoni"
+
+#: virtualbricks/gui/mainwindow/eventmenu.py
+msgid "Run Now"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py
 msgid "Icon"

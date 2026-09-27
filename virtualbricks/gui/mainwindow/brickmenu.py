@@ -30,20 +30,25 @@ for a virtual machine suspend, reset and terminate.
 
 from __future__ import annotations
 
+import functools
 import signal
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
+from gi.repository import Gio, GLib, Gtk  # noqa: E402
 from twisted.internet import defer, error, reactor  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
 from virtualbricks import tools  # noqa: E402
 from virtualbricks.bricks.virtualmachine import VirtualMachine  # noqa: E402
-from virtualbricks.gui.mainwindow import brickinfo  # noqa: E402
+from virtualbricks.gui.mainwindow import brickinfo, tab  # noqa: E402
 from virtualbricks.gui.mainwindow.brickinfo import State  # noqa: E402
+from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
+    menu_item,
+    menu_of,
+    menu_section,
+)
 from virtualbricks.gui.windows.attachevent import (  # noqa: E402
     AttachEventDialog,
 )
@@ -71,25 +76,7 @@ NO_PANEL = frozenset(("Router",))
 NO_CONSOLE = frozenset(("Tap", "Capture"))
 
 
-def _item(label, action, target=None, keys=None):
-    item = Gio.MenuItem.new(label, None)
-    if target is None:
-        item.set_detailed_action(f"{GROUP}.{action}")
-    else:
-        item.set_action_and_target_value(
-            f"{GROUP}.{action}", GLib.Variant.new_string(target)
-        )
-    if keys is not None:
-        item.set_attribute_value("accel", GLib.Variant.new_string(keys))
-    return item
-
-
-def _section(*items):
-    section = Gio.Menu()
-    for item in items:
-        if item is not None:
-            section.append_item(item)
-    return section
+_item = functools.partial(menu_item, GROUP)
 
 
 def menu(brick, bricks, keys=False) -> Gio.Menu:
@@ -106,7 +93,7 @@ def menu(brick, bricks, keys=False) -> Gio.Menu:
     targets = brickinfo.connectable(brick, bricks)
     connect_to = None
     if targets:
-        submenu = _section(
+        submenu = menu_section(
             *(_item(t.name, "connect", t.name) for t in targets)
         )
         connect_to = Gio.MenuItem.new_submenu(_("Connect To"), submenu)
@@ -116,24 +103,20 @@ def menu(brick, bricks, keys=False) -> Gio.Menu:
             _("Process {pid}").format(pid=brickinfo.process(brick)),
             _process_menu(brick),
         )
-    result = Gio.Menu()
-    for section in (
-        _section(
+    return menu_of(
+        menu_section(
             _item(_("Stop") if running else _("Start"), "startstop"),
             _item(_("Configure…"), "configure", keys=key("Return")),
         ),
-        _section(
+        menu_section(
             _item(_("Rename…"), "rename", keys=key("F2")),
             _item(_("Duplicate"), "duplicate"),
             connect_to,
             _item(_("Attach Event…"), "attach-event"),
         ),
-        _section(_item(_("Resume"), "resume") if vm else None, process),
-        _section(_item(_("Delete…"), "delete", keys=key("Delete"))),
-    ):
-        if section.get_n_items():
-            result.append_section(None, section)
-    return result
+        menu_section(_item(_("Resume"), "resume") if vm else None, process),
+        menu_section(_item(_("Delete…"), "delete", keys=key("Delete"))),
+    )
 
 
 def _process_menu(brick) -> Gio.Menu:
@@ -141,15 +124,17 @@ def _process_menu(brick) -> Gio.Menu:
     result = Gio.Menu()
     if brick.get_type() not in NO_CONSOLE:
         result.append_section(
-            None, _section(_item(_("Open Control Monitor"), "console"))
+            None, menu_section(_item(_("Open Control Monitor"), "console"))
         )
     result.append_section(
         None,
-        _section(_item(_("Pause"), "pause"), _item(_("Continue"), "continue")),
+        menu_section(
+            _item(_("Pause"), "pause"), _item(_("Continue"), "continue")
+        ),
     )
     result.append_section(
         None,
-        _section(
+        menu_section(
             _item(_("Suspend"), "suspend") if vm else None,
             _item(_("Reset"), "reset") if vm else None,
             _item(_("Restart"), "restart"),
@@ -157,7 +142,7 @@ def _process_menu(brick) -> Gio.Menu:
     )
     result.append_section(
         None,
-        _section(
+        menu_section(
             _item(_("Terminate"), "terminate") if vm else None,
             _item(_("Kill"), "kill"),
         ),
@@ -297,18 +282,13 @@ def popup(widget, event, gui, brick, keys=False) -> Gtk.Menu:
     returns while it shows.
     """
 
-    result = Gtk.Menu.new_from_model(
-        menu(brick, gui.brickfactory.bricks, keys)
+    return tab.popup(
+        widget,
+        event,
+        menu(brick, gui.brickfactory.bricks, keys),
+        GROUP,
+        BrickActions(gui, brick),
     )
-    result.insert_action_group(GROUP, BrickActions(gui, brick))
-    result.attach_to_widget(widget, None)
-    if event is None:
-        result.popup_at_widget(
-            widget, Gdk.Gravity.SOUTH_EAST, Gdk.Gravity.NORTH_EAST, None
-        )
-    else:
-        result.popup_at_pointer(event)
-    return result
 
 
 # What the process items do to a brick

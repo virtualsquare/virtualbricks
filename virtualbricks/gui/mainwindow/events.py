@@ -33,6 +33,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk  # noqa: E402
 
 from virtualbricks.gui import widgets  # noqa: E402
+from virtualbricks.gui.mainwindow import eventmenu  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import (  # noqa: E402
     Tab,
     popup_menu,
@@ -91,6 +92,8 @@ class EventsTab(Tab, Gtk.Box):
         super().__init__(visible=True, orientation=Gtk.Orientation.VERTICAL)
         self.gui = gui
         self.factory = factory
+        # the menu that shows
+        self._menu: Gtk.Menu | None = None
 
         toolbar = Gtk.Toolbar(
             visible=True, toolbar_style=Gtk.ToolbarStyle.BOTH
@@ -179,8 +182,11 @@ class EventsTab(Tab, Gtk.Box):
         if event is not None:
             self.gui.curtain_up(event)
 
+    def open_menu(self, value, event) -> None:
+        self._menu = eventmenu.popup(self.view, event, self.gui, value)
+
     def on_button_release(self, view, event) -> bool | None:
-        return popup_menu(view, event, self.gui)
+        return popup_menu(view, event, self.open_menu)
 
     def on_key_release(self, view, key) -> None:
         if Gdk.keyval_name(key.keyval) in DELETE_KEYS:

@@ -28,7 +28,6 @@ from .ethernetdialog import EditEthernetDialog
 from .eventconfig import EventConfigController
 from .netemuconfig import NetemuConfigController
 from .qemuconfig import QemuConfigController
-from .renamedialog import RenameDialog
 from .switchconfig import SwitchConfigController
 from .switchwrapperconfig import SwitchWrapperConfigController
 from .tapconfig import TapConfigController
@@ -42,7 +41,6 @@ __all__ = [
     "EventConfigController",
     "NetemuConfigController",
     "QemuConfigController",
-    "RenameDialog",
     "SwitchConfigController",
     "SwitchWrapperConfigController",
     "TapConfigController",

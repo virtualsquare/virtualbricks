@@ -23,7 +23,7 @@ if has_display:
     from gi.repository import Gdk, Gtk
 
     from virtualbricks.gui import widgets
-    from virtualbricks.gui.mainwindow import events
+    from virtualbricks.gui.mainwindow import eventmenu, events
     from virtualbricks.gui.mainwindow.events import EventsTab
 
 
@@ -149,11 +149,21 @@ class TestEventsTab(GuiTestCase):
         self.patch(
             events,
             "popup_menu",
-            lambda view, event, gui: releases.append((view, gui)) or True,
+            lambda view, event, open_menu: releases.append((view, open_menu))
+            or True,
         )
         event = Gdk.Event.new(Gdk.EventType.BUTTON_RELEASE)
         self.assertTrue(self.view.emit("button-release-event", event))
-        self.assertEqual(releases, [(self.view, self.gui)])
+        [(view, open_menu)] = releases
+        self.assertIs(view, self.view)
+        opened = []
+        self.patch(
+            eventmenu, "popup", lambda *args: opened.append(args) or "menu"
+        )
+        open_menu(self.ev1, event)
+        self.assertEqual(opened, [(self.view, event, self.gui, self.ev1)])
+        # kept while it shows
+        self.assertEqual(self.tab._menu, "menu")
 
     def release_key(self, keyval):
         event = Gdk.Event.new(Gdk.EventType.KEY_RELEASE)

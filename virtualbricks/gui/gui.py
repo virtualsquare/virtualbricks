@@ -42,7 +42,6 @@ from virtualbricks.bricks import Brick
 from virtualbricks.bricks.event import Event
 from virtualbricks.gui.windows import (
     EditEthernetDialog,
-    RenameDialog,
     SwitchConfigController,
     SwitchWrapperConfigController,
     TapConfigController,
@@ -67,65 +66,6 @@ logger = Logger()
 cannot_open_last = "{message}"
 sync_error = "Sync terminated unexpectedly"
 create_image_error = "Create image terminated unexpectedly"
-event_in_use = "Cannot rename event: it is in use."
-
-
-@implementer(IMenu)
-class BaseMenu:
-
-    def __init__(self, brick):
-        self.original = brick
-
-    def build(self, gui):
-        _clear_menu()
-        menu = _menu
-        menu.append(Gtk.MenuItem(self.original.get_name(), False))
-        menu.append(Gtk.SeparatorMenuItem())
-        start_stop = Gtk.MenuItem.new_with_mnemonic("_Start/Stop")
-        start_stop.connect("activate", self.on_startstop_activate, gui)
-        menu.append(start_stop)
-        delete = Gtk.MenuItem.new_with_mnemonic("_Delete")
-        delete.connect("activate", self.on_delete_activate, gui)
-        menu.append(delete)
-        copy = Gtk.MenuItem.new_with_mnemonic("Make a C_opy")
-        copy.connect("activate", self.on_copy_activate, gui)
-        menu.append(copy)
-        rename = Gtk.MenuItem.new_with_mnemonic("Re_name")
-        rename.connect("activate", self.on_rename_activate, gui)
-        menu.append(rename)
-        configure = Gtk.MenuItem.new_with_mnemonic("_Configure")
-        configure.connect("activate", self.on_configure_activate, gui)
-        menu.append(configure)
-        return menu
-
-    def popup(self, button, time, gui):
-        menu = self.build(gui)
-        menu.show_all()
-        menu.popup(None, None, None, None, button, time)
-
-    def on_configure_activate(self, menuitem, gui):
-        gui.curtain_up(self.original)
-
-
-class EventPopupMenu(BaseMenu):
-
-    def on_startstop_activate(self, menuitem, gui):
-        self.original.toggle()
-
-    def on_delete_activate(self, menuitem, gui):
-        gui.ask_remove_event(self.original)
-
-    def on_copy_activate(self, menuitem, gui):
-        gui.brickfactory.dup_event(self.original)
-
-    def on_rename_activate(self, menuitem, gui):
-        if not self.original.scheduled:
-            RenameDialog(gui.brickfactory, self.original).show(gui.window)
-        else:
-            logger.error(event_in_use)
-
-
-registerAdapter(EventPopupMenu, Event, IMenu)
 
 
 @implementer(IMenu)

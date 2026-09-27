@@ -23,9 +23,9 @@ A tab is the widget of its page, and a :class:`Tab` too: the window puts it
 in its notebook under its title, and tells it when a project opens, is
 saved, or Virtualbricks quits, and when it shows or another tab does.
 
-The tabs share the helpers after it: a button with an icon, and for the
-lists of the Bricks and the Events tabs, their menu and the sensitivity of
-their toolbars.
+The tabs share the helpers after it: a button with an icon; the menus of
+the bricks and the events, their items and where they open; and for the
+list of the Events tab, its menu and the sensitivity of its toolbar.
 """
 
 from __future__ import annotations
@@ -33,9 +33,8 @@ from __future__ import annotations
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
-
-from virtualbricks.gui.interfaces import IMenu  # noqa: E402
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 
 
 class Tab:
@@ -93,7 +92,68 @@ def icon_button(button, icon, name):
     return button
 
 
-# The lists of the bricks and the events
+# The menus of the bricks and the events
+
+
+def menu_item(group, label, action, target=None, keys=None) -> Gio.MenuItem:
+    """
+    An item that activates the action of group, with a string target if
+    there is one; keys, as Gtk.accelerator_parse() reads them, show next to
+    it.
+    """
+
+    item = Gio.MenuItem.new(label, None)
+    if target is None:
+        item.set_detailed_action(f"{group}.{action}")
+    else:
+        item.set_action_and_target_value(
+            f"{group}.{action}", GLib.Variant.new_string(target)
+        )
+    if keys is not None:
+        item.set_attribute_value("accel", GLib.Variant.new_string(keys))
+    return item
+
+
+def menu_section(*items) -> Gio.Menu:
+    """The items that aren't None, together."""
+
+    section = Gio.Menu()
+    for item in items:
+        if item is not None:
+            section.append_item(item)
+    return section
+
+
+def menu_of(*sections) -> Gio.Menu:
+    """A menu of the sections that aren't empty."""
+
+    result = Gio.Menu()
+    for section in sections:
+        if section.get_n_items():
+            result.append_section(None, section)
+    return result
+
+
+def popup(widget, event, model, group, actions) -> Gtk.Menu:
+    """
+    Open the menu of model, with the actions of group: at the pointer, for
+    a click on widget, or under widget when event is None, as for the Menu
+    key. Keep the menu that it returns while it shows.
+    """
+
+    result = Gtk.Menu.new_from_model(model)
+    result.insert_action_group(group, actions)
+    result.attach_to_widget(widget, None)
+    if event is None:
+        result.popup_at_widget(
+            widget, Gdk.Gravity.SOUTH_EAST, Gdk.Gravity.NORTH_EAST, None
+        )
+    else:
+        result.popup_at_pointer(event)
+    return result
+
+
+# The list of the events
 
 
 def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
@@ -107,10 +167,11 @@ def state_add_selection(manager, treeview, prerequisite, tooltip, *widgets):
     return state
 
 
-def popup_menu(view, event, gui) -> bool | None:
+def popup_menu(view, event, open_menu) -> bool | None:
     """
     For the button-release-event of a list: the right button opens the menu
-    of the row under it. True if it's the right button, on a row or not.
+    of the row under it, with open_menu(value, event). True if it's the
+    right button, on a row or not.
     """
 
     if event.button != 3:
@@ -121,6 +182,5 @@ def popup_menu(view, event, gui) -> bool | None:
         view.grab_focus()
         view.set_cursor(path, column, False)
         model = view.get_model()
-        value = model.get_value(model.get_iter(path), 0)
-        IMenu(value).popup(event.button, event.time, gui)
+        open_menu(model.get_value(model.get_iter(path), 0), event)
     return True

@@ -27,7 +27,6 @@ from virtualbricks.tests.gui import has_display
 if has_display:
     from gi.repository import Gdk, Gtk
 
-    from virtualbricks.gui.mainwindow import tab
     from virtualbricks.gui.mainwindow.tab import (
         Tab,
         popup_menu,
@@ -102,15 +101,6 @@ class TestTabs(unittest.TestCase):
             self.assertIsNone(hook())
 
 
-class FakeMenu:
-    def __init__(self, shown, value):
-        self.shown = shown
-        self.value = value
-
-    def popup(self, button, time, gui):
-        self.shown.append((self.value, button, gui))
-
-
 class TestPopupMenu(unittest.TestCase):
 
     if not has_display:  # pragma: no cover
@@ -118,7 +108,6 @@ class TestPopupMenu(unittest.TestCase):
 
     def setUp(self):
         self.menus = []
-        self.patch(tab, "IMenu", lambda value: FakeMenu(self.menus, value))
         store = Gtk.ListStore(object)
         for value in ("sw1", "sw2"):
             store.append((value,))
@@ -141,11 +130,15 @@ class TestPopupMenu(unittest.TestCase):
         event.button.button = button
         event.button.x = self.row.x + 1
         event.button.y = y
-        return popup_menu(self.view, event.button, "gui")
+        return popup_menu(
+            self.view,
+            event.button,
+            lambda value, event: self.menus.append((value, event.button)),
+        )
 
     def test_on_a_row(self):
         self.assertTrue(self.release(3, self.row.y + 1))
-        self.assertEqual(self.menus, [("sw2", 3, "gui")])
+        self.assertEqual(self.menus, [("sw2", 3)])
         path, _column = self.view.get_cursor()
         self.assertEqual(path.get_indices(), [1])
         self.assertIs(self.window.get_focus(), self.view)

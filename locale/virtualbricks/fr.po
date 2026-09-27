@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 07:59+0200\n"
+"POT-Creation-Date: 2026-09-27 08:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -415,25 +415,30 @@ msgid "Connect To"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #: virtualbricks/gui/windows/exportproject.py
 #: virtualbricks/gui/windows/importdialog.py
 msgid "Stop"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 msgid "Start"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 msgid "Configure…"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #: virtualbricks/gui/windows/projects.py
 msgid "Rename…"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 #: virtualbricks/gui/windows/projectname.py
 msgid "Duplicate"
 msgstr ""
@@ -447,6 +452,7 @@ msgid "Resume"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/brickmenu.py
+#: virtualbricks/gui/mainwindow/eventmenu.py
 msgid "Delete…"
 msgstr ""
 
@@ -593,6 +599,10 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/eventinfo.py
 #, python-brace-format
 msgid "when {brick} stops"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/eventmenu.py
+msgid "Run Now"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events.py

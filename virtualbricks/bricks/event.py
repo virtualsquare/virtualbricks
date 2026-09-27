@@ -114,6 +114,12 @@ class Event(base.Base):
             return self.poweron()
 
     def do_actions(self, deferred):
+        self.scheduled = None
+        self.run_actions().chainDeferred(deferred)
+        self.notify_changed()
+
+    def run_actions(self):
+        """Run the actions now; a wait goes on."""
 
         def log_err(results):
             for success, status in results:
@@ -123,14 +129,13 @@ class Event(base.Base):
                     self.logger.error(event_error, log_failure=status)
             return self
 
-        self.scheduled = None
         procs = [
             defer.maybeDeferred(action.perform, self.factory)
             for action in self.config.actions
         ]
-        dl = defer.DeferredList(procs, consumeErrors=True).addCallback(log_err)
-        dl.chainDeferred(deferred)
-        self.notify_changed()
+        return defer.DeferredList(procs, consumeErrors=True).addCallback(
+            log_err
+        )
 
 
 def is_event(brick):
