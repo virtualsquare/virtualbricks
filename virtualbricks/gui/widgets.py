@@ -22,7 +22,7 @@ from gi.repository import GObject
 
 from virtualbricks import observable
 from virtualbricks.tools import dispose
-from virtualbricks.gui import interfaces, graphics
+from virtualbricks.gui import interfaces
 
 if False:
     _ = str  # make pyflakes happy
@@ -32,11 +32,6 @@ try:
 except NameError:
     # needed to support glade
     _ = str
-
-
-def set_cells_data_func(column):
-    for cell in column.get_cells():
-        column.set_cell_data_func(cell, cell.set_cell_data)
 
 
 class CellRendererFormattable(Gtk.CellRendererText):
@@ -116,21 +111,6 @@ class CellRendererFormattable(Gtk.CellRendererText):
         cell.set_property("text", text)
 
     set_text = set_cell_data
-
-
-class CellRendererBrickIcon(Gtk.CellRendererPixbuf):
-
-    __gtype_name__ = "CellRendererBrickIcon"
-
-    @staticmethod
-    def set_cell_data(cell_layout, cell, model, itr, data=None):
-        brick = model.get_value(itr, 0)
-        pixbuf = graphics.pixbuf_for_brick_at_size(brick, 48, 48)
-        cell.set_property("pixbuf", pixbuf)
-
-
-SELECT_ALL = object()
-SELECT_NONE = object()
 
 
 class List(Gtk.ListStore):
@@ -237,110 +217,6 @@ class ImagesBindingList(AbstractBindingList):
 
     def __iter__(self):
         return self._factory.iter_disk_images()
-
-
-class TreeView(Gtk.TreeView):
-
-    __gtype_name__ = "TreeView"
-
-    def get_selection_mode(self):
-        return self.get_selection().get_mode()
-
-    def set_selection_mode(self, value):
-        self.get_selection().set_mode(value)
-
-    def get_selected_value(self):
-        mode = self.get_selection().get_mode()
-        if mode in (
-            Gtk.SelectionMode.NONE,
-            Gtk.SelectionMode.SINGLE,
-            Gtk.SelectionMode.BROWSE,
-        ):
-            values = self.get_selected_values()
-            if values:
-                return values[0]
-            return None
-        raise ValueError("Invalid selection mode")
-
-    def set_selected_value(self, value):
-        if value is SELECT_ALL:
-            raise ValueError("Cannot select more than one node")
-        elif self.get_selection().get_mode() == Gtk.SelectionMode.NONE:
-            raise ValueError("Cannot select any node")
-        else:
-            self.set_selected_values((value,))
-
-    def get_selected_values(self):
-        selection = self.get_selection()
-        mode = selection.get_mode()
-        if mode == Gtk.SelectionMode.NONE:
-            return ()
-        elif mode in (Gtk.SelectionMode.SINGLE, Gtk.SelectionMode.BROWSE):
-            model, itr = selection.get_selected()
-            if itr is None:
-                return ()
-            try:
-                mbr = model.get_property("value-member")
-                if not mbr:
-                    raise TypeError
-            except TypeError:
-                return (model.get_value(itr, 0),)
-            else:
-                return (getattr(model.get_value(itr, 0), mbr),)
-        else:
-            model, paths = selection.get_selected_rows()
-            try:
-                mbr = model.get_property("value-member")
-                if not mbr:
-                    raise TypeError
-            except TypeError:
-                return tuple(
-                    model.get_value(model.get_iter(path), 0) for path in paths
-                )
-            else:
-                return tuple(
-                    getattr(model.get_value(model.get_iter(path), 0), mbr)
-                    for path in paths
-                )
-
-    def set_selected_values(self, iterable):
-        selection = self.get_selection()
-        mode = selection.get_mode()
-        if iterable is SELECT_ALL:
-            if mode != Gtk.SelectionMode.MULTIPLE:
-                raise ValueError("Cannot select all the nodes")
-            selection.select_all()
-        elif iterable is SELECT_NONE:
-            selection.unselect_all()
-        elif mode == Gtk.SelectionMode.NONE:
-            raise ValueError("Cannot select any node")
-        else:
-            model = self.get_model()
-            selection.unselect_all()
-            try:
-                mbr = model.get_property("value-member")
-                if not mbr:
-                    raise TypeError
-            except TypeError:
-                for value in iterable:
-                    itr = model.get_iter_first()
-                    while itr:
-                        obj = model.get_value(itr, 0)
-                        if obj == value:
-                            selection.select_iter(itr)
-                        itr = model.iter_next(itr)
-            else:
-                for value in iterable:
-                    itr = model.get_iter_first()
-                    while itr:
-                        obj = model.get_value(itr, 0)
-                        if getattr(obj, mbr) == value:
-                            selection.select_iter(itr)
-                        itr = model.iter_next(itr)
-
-    def set_cells_data_func(self):
-        for column in self.get_columns():
-            set_cells_data_func(column)
 
 
 class ListEntry:

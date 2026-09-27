@@ -21,11 +21,9 @@
 from gi.repository import GdkPixbuf
 
 from virtualbricks.path import get_resource_filename
-from virtualbricks.tools import is_running
 
 __all__ = [
     "get_image",
-    "pixbuf_for_brick_at_size",
     "pixbuf_for_brick_type",
     "get_data_filename",
 ]
@@ -48,18 +46,6 @@ def brick_icon(brick):
         return brick.config.icon
     else:
         return get_data_filename(brick.get_type().lower() + ".png")
-
-
-def saturate_if_stopped(brick, pixbuf):
-    if not is_running(brick):
-        pixbuf.saturate_and_pixelate(pixbuf, 0.0, True)
-    return pixbuf
-
-
-def pixbuf_for_brick_at_size(brick, width, height):
-    filename = brick_icon(brick)
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(filename, width, height)
-    return saturate_if_stopped(brick, pixbuf)
 
 
 def pixbuf_for_brick_type(type):
