@@ -37,7 +37,7 @@ from virtualbricks.config.settings import (
 )
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
+from virtualbricks.gui.dialogs.base import Window
 
 logger = Logger()
 
@@ -298,7 +298,6 @@ class SettingsDialog(Window):
     def get_root_widget(self) -> Gtk.Dialog:
         return self.dialog
 
-    @destroy_on_exit
     def on_dialog_response(self, dialog, response_id):
         """
         :type dialog: Gtk.Dialog
@@ -307,6 +306,7 @@ class SettingsDialog(Window):
 
         if response_id == Gtk.ResponseType.OK:
             self.store_settings()
+        dialog.destroy()
         return True
 
     def on_dialog_delete_event(self, dialog, event):

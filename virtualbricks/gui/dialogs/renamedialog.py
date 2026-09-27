@@ -32,7 +32,7 @@ from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
+from virtualbricks.gui.dialogs.base import Window
 
 logger = Logger()
 
@@ -207,7 +207,6 @@ class RenameDialog(Window):
             self._set_error(str(exc))
         return True
 
-    @destroy_on_exit
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
             name = self.brick_name_entry.get_text()
@@ -219,4 +218,5 @@ class RenameDialog(Window):
                 # TODO: check the difference between invalid_name and
                 # brick_invalid_name
                 logger.error(invalid_name, name=name)
+        dialog.destroy()
         return True

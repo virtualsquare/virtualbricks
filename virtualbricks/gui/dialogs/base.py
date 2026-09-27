@@ -25,9 +25,6 @@ signal of that widget. The brick configuration panels have their own
 base, in :mod:`virtualbricks.gui.mainwindow.bricks.config.base`.
 """
 
-import functools
-from typing import Callable
-
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -41,17 +38,6 @@ def pango_attr_list(*attributes: Pango.Attribute) -> Pango.AttrList:
     for attribute in attributes:
         attr_list.insert(attribute)
     return attr_list
-
-
-def destroy_on_exit(func: Callable) -> Callable:
-    @functools.wraps(func)
-    def on_response(self, dialog, *args):
-        try:
-            return func(self, dialog, *args)
-        finally:
-            dialog.destroy()
-
-    return on_response
 
 
 class Window:

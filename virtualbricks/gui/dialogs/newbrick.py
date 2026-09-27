@@ -31,7 +31,7 @@ from virtualbricks import errors
 from virtualbricks.errors import InvalidNameError, NameAlreadyInUseError
 from virtualbricks.i18n import _
 from virtualbricks.gui.graphics import load_pixbuf
-from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
+from virtualbricks.gui.dialogs.base import Window
 
 logger = Logger()
 
@@ -451,7 +451,6 @@ class NewBrickDialog(Window):
             self._set_error(str(exc))
         return True
 
-    @destroy_on_exit
     def on_dialog_response(self, dialog, response_id):
         """
         :type dialog: Gtk.Dialog
@@ -468,4 +467,5 @@ class NewBrickDialog(Window):
                 logger.error(brick_invalid_name)
             else:
                 logger.debug(created)
+        dialog.destroy()
         return True

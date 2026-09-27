@@ -26,7 +26,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import Window, destroy_on_exit
+from virtualbricks.gui.dialogs.base import Window
 
 
 class UsbDevDialog(Window):
@@ -196,11 +196,11 @@ class UsbDevDialog(Window):
         self._tree_model.set_value(tree_iter, 0, not selected)
         return True
 
-    @destroy_on_exit
     def on_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.OK:
             new_selected_devices = [
                 device for selected, device in self._tree_model if selected
             ]
             self._selected_devices[:] = new_selected_devices
+        dialog.destroy()
         return True
