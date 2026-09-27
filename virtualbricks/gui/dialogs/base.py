@@ -18,9 +18,10 @@
 """
 Code shared by the windows and dialogs that build their UI in Python.
 
-Every window subclasses ``_Window``, ``_Dialog`` or ``Window`` and
-implements ``build_ui()``, that creates the widgets, and
-``get_root_widget()``, that returns the main widget. The brick
+Every window subclasses ``_Dialog`` or ``Window`` and implements
+``build_ui()``, that creates the widgets, and ``get_root_widget()``, that
+returns the main widget. Who wants to know when a window closes connects to
+the ``destroy`` signal of that widget. The brick
 configuration panels have their own base, in
 :mod:`virtualbricks.gui.mainwindow.bricks.config.base`.
 """
@@ -69,43 +70,20 @@ def destroy_on_exit(func: Callable) -> Callable:
     return on_response
 
 
-def iter_tree_model(tree_model):
-    """
-    :type disk_image: virtualbricks.bricks.virtualmachine.Image
-    :rtype: Generator[Tuple[Any, Gtk.TreeIter]]
-    """
-
-    itr = tree_model.get_iter_first()
-    while itr:
-        value = tree_model.get_value(itr, 0)
-        yield value, itr
-        itr = tree_model.iter_next(itr)
-
-
 NUMERIC = set(map(str, range(10)))
 NUMPAD = set(map(lambda i: "KP_%d" % i, range(10)))
 EXTRA = set(["BackSpace", "Delete", "Left", "Right", "Home", "End", "Tab"])
 VALIDKEY = NUMERIC | NUMPAD | EXTRA
 
 
-class _Window:
-    """Base class for all windows."""
-
-    on_destroy = None
-
-    def show(self):
-        window = self.get_root_widget()
-        if self.on_destroy is not None:
-            window.connect("destroy", lambda w: self.on_destroy())
-        window.show()
-
-
-class _Dialog(_Window):
+class _Dialog:
+    """A window or a dialog: show() shows it, above parent if given."""
 
     def show(self, parent=None):
+        window = self.get_root_widget()
         if parent is not None:
-            self.get_root_widget().set_transient_for(parent)
-        super().show()
+            window.set_transient_for(parent)
+        window.show()
 
 
 class Window:
@@ -114,8 +92,6 @@ class Window:
 
     The UI is built when the instance is created.
     """
-
-    on_destroy = None
 
     def __init__(self):
         self.build_ui()
@@ -128,8 +104,6 @@ class Window:
         if parent is not None:
             window.set_transient_for(parent)
         window.connect("destroy", self.on_window_destroy)
-        if self.on_destroy is not None:
-            window.connect("destroy", lambda w: self.on_destroy())
         window.show()
 
     def on_window_destroy(self, window):

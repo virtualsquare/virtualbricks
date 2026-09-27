@@ -87,9 +87,9 @@ class ProjectsGui(FakeGui):
     def set_title(self):
         self.calls.append(("title",))
 
-    def import_project(self, on_destroy=None):
+    def import_project(self, on_closed=None):
         self.calls.append(("import",))
-        self.import_closed = on_destroy
+        self.import_closed = on_closed
 
     def export_project(self, summary, parent=None):
         self.calls.append(("export", summary.name))

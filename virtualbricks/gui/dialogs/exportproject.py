@@ -128,8 +128,6 @@ def _label(text="", dim=False, bold=False, wrap=False, xalign=0.0, **props):
 class ExportProjectDialog:
     """Export a project: images is a list of (name, path)."""
 
-    on_destroy = None
-
     def __init__(self, path, images=(), run=export_project):
         self.path = path
         self.name = os.path.basename(path)
@@ -279,8 +277,6 @@ class ExportProjectDialog:
     def show(self, parent=None):
         if parent is not None:
             self.window.set_transient_for(parent)
-        if self.on_destroy is not None:
-            self.window.connect("destroy", lambda w: self.on_destroy())
         self.window.show()
         self.on_changed()
 

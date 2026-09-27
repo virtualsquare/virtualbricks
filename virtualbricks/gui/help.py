@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.test_help -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -17,7 +18,6 @@
 
 import os
 import errno
-import re
 
 from gi.repository import Gtk
 from zope.interface import implementer
@@ -55,14 +55,8 @@ class HelpWindow:
         window.add(sw)
         window.show_all()
 
-    def do_destroy(self, window):
-        self.window = None
-
     def set_text(self, text):
         self.textbuffer.set_text(text)
-
-    def on_destroy(self, callable, *args):
-        self.window.connect("destroy", callable, *args)
 
     def present(self):
         self.window.present()
@@ -71,14 +65,18 @@ class HelpWindow:
 @implementer(interfaces.IHelp)
 class Help:
 
-    RE = re.compile(r"^(\w+)_help_button$")
     window_factory = HelpWindow
     window = None
 
     def get_help(self, argument):
+        filename = graphics.get_data_filename(
+            os.path.join("help", argument + ".txt")
+        )
+        if filename is None:
+            # no such resource
+            raise NoHelpFoundError(argument)
         try:
-            path = os.path.join("help", argument + ".txt")
-            with open(graphics.get_data_filename(path)) as fp:
+            with open(filename) as fp:
                 return fp.read()
         except IOError as e:
             if e.errno == errno.ENOENT:
@@ -92,13 +90,13 @@ class Help:
         window = self.window
         if not window:
             self.window = window = self.window_factory()
-            window.on_destroy(self.destroy_window)
+            window.window.connect("destroy", self.destroy_window)
         window.set_text(text)
         window.present()
         return window
 
-    def on_help_button_clicked(self, button):
-        match = self.RE.match(Gtk.Buildable.get_name(button))
-        if match:
-            self.show_help_window(self.get_help(match.group(1)))
-            return True
+    def on_help_button_clicked(self, button, topic):
+        """Show the help on topic, the file help/<topic>.txt."""
+
+        self.show_help_window(self.get_help(topic))
+        return True

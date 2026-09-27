@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.test_window -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -577,12 +578,13 @@ class VBGUI:
 
         window = self.show_projects(problem=message)
 
-        def closed():
+        def closed(widget):
+            # closed without opening a project: the last one, or a new one
             if projects.current is None:
                 projects.restore_last(self.brickfactory)
                 self.set_title()
 
-        window.on_closed = closed
+        window.get_root_widget().connect("destroy", closed)
         return window
 
     def project_name_dialog(self, kind, original=None):
@@ -590,16 +592,19 @@ class VBGUI:
         dialog.show(self.window)
         return dialog
 
-    def import_project(self, on_destroy=None):
+    def import_project(self, on_closed=None):
+        """Import a project; on_closed is called when the window closes."""
+
         dialog = ImportDialog(self.brickfactory)
 
-        def destroyed():
+        def destroyed(window):
             self.set_title()
-            if on_destroy is not None:
-                on_destroy()
+            if on_closed is not None:
+                on_closed()
 
-        dialog.on_destroy = destroyed
         dialog.show(self.window)
+        dialog.get_root_widget().connect("destroy", destroyed)
+        return dialog
 
     def export_project(self, summary, parent=None):
         """Export a project, the open one if summary is None."""

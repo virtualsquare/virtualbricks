@@ -248,8 +248,8 @@ class TestExport(ExportTestCase):
     def test_cancel_closes(self):
         dialog = self.dialog()
         closed = []
-        dialog.on_destroy = lambda: closed.append(True)
         dialog.show()
+        dialog.window.connect("destroy", lambda window: closed.append(True))
         dialog.cancel_button.clicked()
         self.assertEqual(closed, [True])
 

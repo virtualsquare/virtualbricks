@@ -29,10 +29,10 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 
 from virtualbricks.i18n import _
-from virtualbricks.gui.dialogs.base import _Window
+from virtualbricks.gui.dialogs.base import _Dialog
 
 
-class NetworkCards(_Window):
+class NetworkCards(_Dialog):
     """
     List of the network cards of a virtual machine with the button to add a new
     one.

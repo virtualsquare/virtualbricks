@@ -723,6 +723,7 @@ class NetemuConfigController(_PlugMixin, ConfigController):
             getattr(self, button).connect(
                 "clicked",
                 self.help.on_help_button_clicked,
+                button.removesuffix("_help_button"),
             )
 
         # markov buttons

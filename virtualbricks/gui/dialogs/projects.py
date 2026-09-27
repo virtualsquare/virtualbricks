@@ -164,9 +164,6 @@ class ProjectsWindow:
     it, as its menus do, and it runs the import and the export.
     """
 
-    # Called when the window is closed.
-    on_closed = None
-
     def __init__(self, gui, workspace=None, disk_usage=None):
         self.gui = gui
         self.workspace = projects if workspace is None else workspace
@@ -560,7 +557,7 @@ class ProjectsWindow:
         self.name_dialog(projectname.NEW)
 
     def on_import_clicked(self, button):
-        self.gui.import_project(on_destroy=self.on_import_closed)
+        self.gui.import_project(on_closed=self.on_import_closed)
 
     def on_import_closed(self):
         if not self.destroyed:
@@ -616,8 +613,6 @@ class ProjectsWindow:
 
     def on_destroy(self, window):
         self.destroyed = True
-        if self.on_closed is not None:
-            self.on_closed()
 
 
 class RemoveDialog:

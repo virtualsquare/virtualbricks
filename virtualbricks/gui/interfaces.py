@@ -107,10 +107,10 @@ class IHelp(Interface):
     def show_help_window(text):
         """Show the help window with the text specified."""
 
-    def on_help_button_clicked(button):
+    def on_help_button_clicked(button, topic):
         """
-        Callback that can be used to open the help window and show the help
-        based on the name of the button.
+        Callback of a help button, connected with its topic: show the help
+        on topic.
         """
 
 

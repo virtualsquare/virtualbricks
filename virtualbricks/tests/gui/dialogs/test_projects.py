@@ -428,10 +428,8 @@ class TestActions(ProjectsTestCase):
 
     def test_closed(self):
         window = self.window()
-        closed = []
-        window.on_closed = lambda: closed.append(True)
         window.window.destroy()
-        self.assertEqual(closed, [True])
+        self.assertTrue(window.destroyed)
 
     def test_show_problem(self):
         window = self.window()

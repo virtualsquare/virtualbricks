@@ -41,7 +41,7 @@ from twisted.logger import Logger
 from virtualbricks import __version__
 from virtualbricks.gui import graphics
 from virtualbricks.gui.messages import parse_filter, type_name
-from virtualbricks.gui.dialogs.base import _Window
+from virtualbricks.gui.dialogs.base import _Dialog
 from virtualbricks.i18n import _, ngettext
 
 logger = Logger()
@@ -613,7 +613,7 @@ class ConsoleView:
         return True
 
 
-class LoggingWindow(_Window):
+class LoggingWindow(_Dialog):
     """
     The messages of Virtualbricks, with a filter, and the actions to save
     them, to clear them and to report a bug.
