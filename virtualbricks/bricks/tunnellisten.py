@@ -24,7 +24,7 @@ from virtualbricks import bricks
 from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Int, Str, define, field
-from virtualbricks.i18n import N_, _
+from virtualbricks.i18n import N_
 
 
 def tunnel_key(password):
@@ -81,19 +81,6 @@ class TunnelListen(bricks.Brick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
-
-    def get_parameters(self):
-        if self.plugs[0].sock:
-            return (
-                _("plugged to")
-                + " "
-                + self.plugs[0].sock.brick.name
-                + " "
-                + _("listening to udp:")
-                + " "
-                + str(self.config.listen_port)
-            )
-        return _("disconnected")
 
     def configured(self):
         return bool(self.plugs[0].sock)

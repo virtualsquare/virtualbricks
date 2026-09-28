@@ -76,18 +76,6 @@ class TunnelConnect(TunnelListen):
     config_factory = TunnelConnectConfig
     draft_factory = TunnelConnectDraft
 
-    def get_parameters(self):
-        if self.plugs[0].sock:
-            return (
-                _("plugged to")
-                + " "
-                + self.plugs[0].sock.brick.name
-                + _(", connecting to udp://")
-                + self.config.server_host
-            )
-
-        return _("disconnected")
-
     def configured(self):
         return self.plugs[0].sock is not None and self.config.server_host
 

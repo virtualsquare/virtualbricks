@@ -24,9 +24,6 @@ class Router(bricks.Brick):
     type = "Router"
     summary = "A VDE router"
 
-    def get_parameters(self):
-        return "Work in progress..."
-
     def command(self, prepared):
         cmd = Command(vde_program(prepared.vde, "vde_router"))
         cmd.option("-M", self.console())

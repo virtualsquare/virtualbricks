@@ -124,27 +124,6 @@ class TestEvent(BrickTestCase):
         self.event.poweroff()
         self.assertEqual(self.event.get_state(), "off")
 
-    def test_parameters(self):
-        self.assertEqual(self.event.get_parameters(), "Delay: 0")
-        self.event.set({"delay": 2})
-        self.assertEqual(self.event.get_parameters(), "Delay: 2")
-
-    def test_parameters_with_actions(self):
-        self.configure(
-            2, console.VbShellCommand("a on"), console.ShellCommand("ls -l")
-        )
-        self.assertEqual(
-            self.event.get_parameters(),
-            'Delay: 2; Actions: "a on", "*ls -l"',
-        )
-
-    def test_format(self):
-        self.configure(2, console.VbShellCommand("a on"))
-        self.assertEqual(f"{self.event:s}", "off")
-        self.assertEqual(f"{self.event:t}", "Event")
-        self.assertEqual(f"{self.event:n}", "boot")
-        self.assertEqual(f"{self.event:p}", 'Delay: 2; Actions: "a on"')
-
     def test_not_running(self):
         self.assertFalse(self.event.__isrunning__())
         self.assertIsNone(self.event.scheduled)

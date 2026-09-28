@@ -29,11 +29,9 @@ from virtualbricks.tests import (
 
 class TestSwitch(CommandTestCase):
 
-    def test_switch_parameters(self):
+    def test_switch_ports(self):
         switch = self.factory.new_brick("switch", "sw")
-        self.assertEqual(switch.get_parameters(), "Ports: 32")
-        switch.set({"fast_spanning_tree": True, "hub_mode": True, "ports": 8})
-        self.assertEqual(switch.get_parameters(), "Ports: 8, FSTP, HUB")
+        switch.set({"ports": 8})
         self.assertEqual(switch.socks[0].get_free_ports(), 8)
 
 

@@ -19,7 +19,6 @@
 
 from virtualbricks import bricks
 from virtualbricks.bricks.command import Command, socket_path, vde_program
-from virtualbricks.i18n import _
 
 
 class Wire(bricks.Brick):
@@ -32,24 +31,6 @@ class Wire(bricks.Brick):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(factory.new_plug(self))
         self.plugs.append(factory.new_plug(self))
-
-    def get_parameters(self):
-        p0 = _("disconnected")
-        p1 = _("disconnected")
-        if len(self.plugs) == 2:
-            if self.plugs[0].sock:
-                p0 = self.plugs[0].sock.brick.name
-            if self.plugs[1].sock:
-                p1 = self.plugs[1].sock.brick.name
-            if p0 != _("disconnected") and p1 != _("disconnected"):
-                return _("Configured to connect {0} to {1}").format(p0, p1)
-        elif len(self.plugs) == 1:
-            if self.plugs[0].sock:
-                p0 = self.plugs[0].sock.brick.name
-            return _("Configured to connect {0} to {1}").format(p0, p1)
-        return _(
-            "Not yet configured. Left plug is {0} and right plug is {1}"
-        ).format(p0, p1)
 
     def configured(self):
         return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))

@@ -30,10 +30,10 @@ class TestTap(CommandTestCase):
 
     def test_tap(self):
         tap = self.factory.new_brick("tap", "tap0")
-        self.assertEqual(tap.get_parameters(), "disconnected")
+        self.assertFalse(tap.configured())
         sw = self.factory.new_brick("switch", "sw")
         tap.plugs[0].connect(sw.socks[0])
-        self.assertEqual(tap.get_parameters(), "plugged to sw ")
+        self.assertTrue(tap.configured())
 
 
 class TestTheDraft(BrickTestCase):

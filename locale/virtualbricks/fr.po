@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 22:29+0200\n"
+"POT-Creation-Date: 2026-09-28 23:00+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -85,20 +85,6 @@ msgstr ""
 msgid "{interface} isn't an interface of this host"
 msgstr ""
 
-#: virtualbricks/bricks/capture.py
-msgid "No interface selected"
-msgstr ""
-
-#: virtualbricks/bricks/capture.py
-#, python-format
-msgid "Interface %(interface)s plugged to %(socket)s "
-msgstr ""
-
-#: virtualbricks/bricks/capture.py
-#, python-format
-msgid "Interface %s disconnected"
-msgstr ""
-
 #: virtualbricks/bricks/draft.py virtualbricks/bricks/virtualmachine.py
 #, python-brace-format
 msgid "In nothing: {brick} can't start"
@@ -116,15 +102,6 @@ msgstr ""
 msgid "off"
 msgstr ""
 
-#: virtualbricks/bricks/event.py
-#, python-format
-msgid "Delay: %d"
-msgstr ""
-
-#: virtualbricks/bricks/event.py
-msgid "Actions:"
-msgstr ""
-
 #: virtualbricks/bricks/__init__.py
 #, python-format
 msgid "Cannot start '%s': not configured"
@@ -135,9 +112,7 @@ msgstr ""
 msgid "Cannot start '%s': not connected"
 msgstr ""
 
-#: virtualbricks/bricks/__init__.py virtualbricks/bricks/tap.py
-#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
-#: virtualbricks/bricks/wire.py
+#: virtualbricks/bricks/__init__.py
 msgid "disconnected"
 msgstr ""
 
@@ -309,10 +284,6 @@ msgstr[1] ""
 msgid "{switch} needs {count} ports, one for each plug"
 msgstr ""
 
-#: virtualbricks/bricks/switch.py
-msgid "Ports: "
-msgstr ""
-
 #: virtualbricks/bricks/switchwrapper.py
 msgid "Control folder"
 msgstr ""
@@ -363,11 +334,6 @@ msgstr ""
 msgid "Virtualbricks doesn't set it yet"
 msgstr ""
 
-#: virtualbricks/bricks/tap.py
-#, python-format
-msgid "plugged to %s "
-msgstr ""
-
 #: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
 msgid "Password"
 msgstr ""
@@ -405,24 +371,12 @@ msgstr ""
 msgid "Without a server, {brick} can't start"
 msgstr ""
 
-#: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
-msgid "plugged to"
-msgstr ""
-
-#: virtualbricks/bricks/tunnelconnect.py
-msgid ", connecting to udp://"
-msgstr ""
-
 #: virtualbricks/bricks/tunnellisten.py
 msgid "Port"
 msgstr ""
 
 #: virtualbricks/bricks/tunnellisten.py
 msgid "The UDP port to listen on"
-msgstr ""
-
-#: virtualbricks/bricks/tunnellisten.py
-msgid "listening to udp:"
 msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
@@ -735,20 +689,6 @@ msgstr ""
 #: virtualbricks/bricks/virtualmachine.py
 #, python-brace-format
 msgid "{mac} isn't a MAC address"
-msgstr ""
-
-#: virtualbricks/bricks/virtualmachine.py
-msgid "command:"
-msgstr ""
-
-#: virtualbricks/bricks/wire.py
-#, python-brace-format
-msgid "Configured to connect {0} to {1}"
-msgstr ""
-
-#: virtualbricks/bricks/wire.py
-#, python-brace-format
-msgid "Not yet configured. Left plug is {0} and right plug is {1}"
 msgstr ""
 
 #: virtualbricks/config/importing.py

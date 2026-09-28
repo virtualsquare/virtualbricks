@@ -113,15 +113,6 @@ class Switch(bricks.Brick):
         sock.path = self.path()
         self.socks.append(sock)
 
-    def get_parameters(self):
-        fstp = ""
-        hub = ""
-        if self.config.fast_spanning_tree:
-            fstp = ", FSTP"
-        if self.config.hub_mode:
-            hub = ", HUB"
-        return _("Ports: ") + "%d%s%s" % (self.config.ports, fstp, hub)
-
     def command(self, prepared):
         config = self.config
         cmd = Command(vde_program(prepared.vde, "vde_switch"))

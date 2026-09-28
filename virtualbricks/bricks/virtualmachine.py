@@ -115,16 +115,6 @@ class UsbDevice:
     def __str__(self):
         return self.id
 
-    # def __repr__(self):
-    #     return self.id
-
-    def __format__(self, format_string):
-        if format_string == "id" or format_string == "":
-            return self.id
-        elif format_string == "d":
-            return self.description
-        raise ValueError("invalid format string {format_string!r}")
-
 
 LSUSB_REGEX = re.compile(r"(?P<id>\w{4}:\w{4})" r"(?:\s(?P<description>.+))?$")
 USB_ID = re.compile(r"\w{4}:\w{4}")
@@ -377,15 +367,6 @@ class Image:
         else:
             raise errors.LockedImageError(self, self.master)
 
-    def __format__(self, format_string):
-        if format_string in ("n", ""):
-            return str(self.name)
-        elif format_string == "p":
-            return str(self.path)
-        elif format_string == "d":
-            return str(self.get_description())
-        raise ValueError("invalid format string " + repr(format_string))
-
 
 def is_disk_image(brick):
     return isinstance(brick, Image)
@@ -599,7 +580,7 @@ class Disk:
 
     def __repr__(self):
         return (
-            f"<Disk {self.device}({self.vm.name}) image={self.image:p} "
+            f"<Disk {self.device}({self.vm.name}) image={self.image.get_path()} "
             f"readonly={self.readonly()} cow={self.is_cow()}>"
         )
 
@@ -1129,12 +1110,6 @@ def _kind(brick, link) -> str:
     return "socket" if link in brick.socks else "plug"
 
 
-def _get_nick(link):
-    if hasattr(link, "sock"):
-        return str(getattr(link.sock, "nickname", "None"))
-    return "None"
-
-
 class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
@@ -1224,18 +1199,6 @@ class VirtualMachine(bricks.Brick):
             return bricks.Brick.poweroff(self)
         else:
             return bricks.Brick.poweroff(self, kill)
-
-    def get_parameters(self):
-        try:
-            command = self.program()
-        except FileNotFoundError:
-            command = self.config.qemu_program
-
-        ram = self.config.memory
-        txt = [_("command:") + " %s, ram: %s" % (command, ram)]
-        for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
-            txt.append("eth%d: %s" % (i, _get_nick(link)))
-        return ", ".join(txt)
 
     def update_usb_devices(self, dev):
         self.logger.debug(update_usb, old=self.config.usb_devices, new=dev)

@@ -355,9 +355,6 @@ class Brick(base.Base):
             pass
         return self._exited_d
 
-    def get_parameters(self):
-        raise NotImplementedError("Bricks.get_parameters() not implemented")
-
     def configure(self, attrlist):
         """Set the parameters typed in the console as ``name=value``."""
 
@@ -521,13 +518,6 @@ class Brick(base.Base):
 
     def __isrunning__(self):
         return self.proc is not None
-
-    def __format__(self, format_string):
-        if format_string == "d":
-            if self.pid == -10:
-                return "python-thread   "
-            return str(self.pid)
-        return base.Base.__format__(self, format_string)
 
     def __repr__(self):
         return "<{0.type} {0.name}>".format(self)

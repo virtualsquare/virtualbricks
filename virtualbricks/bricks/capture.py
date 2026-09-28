@@ -84,16 +84,6 @@ class Capture(bricks.PrivilegedBrick):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
 
-    def get_parameters(self):
-        if self.config.interface == "":
-            return _("No interface selected")
-        if self.plugs[0].sock:
-            return _("Interface %(interface)s plugged to %(socket)s ") % {
-                "interface": self.config.interface,
-                "socket": self.plugs[0].sock.brick.name,
-            }
-        return _("Interface %s disconnected") % self.config.interface
-
     def command(self, prepared):
         cmd = Command(vde_program(prepared.vde, "vde_pcapplug"))
         cmd.option("-s", socket_path(self.plugs[0]))

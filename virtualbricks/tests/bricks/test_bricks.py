@@ -124,17 +124,16 @@ class TestSchemas(BrickTestCase):
         vm = self.factory.new_brick("qemu", "vm")
         self.assertRaises(ValueError, vm.set, {"memory": 0})
 
-    def test_tunnel_parameters(self):
+    def test_tunnel_configured(self):
         listen = self.factory.new_brick("tunnellisten", "tl")
         sw = self.factory.new_brick("switch", "sw")
-        self.assertEqual(listen.get_parameters(), "disconnected")
+        self.assertFalse(listen.configured())
         listen.connect(sw.socks[0])
-        self.assertIn("7667", listen.get_parameters())
+        self.assertTrue(listen.configured())
 
     def test_switch_wrapper(self):
         wrapper = self.factory.new_brick("switchwrapper", "wr")
         wrapper.set({"socket_path": "/nonexistent"})
-        self.assertEqual(wrapper.get_parameters(), "/nonexistent")
         failure = self.failureResultOf(wrapper.poweron())
         failure.trap(errors.BadConfigError)
         path = self.mktemp()

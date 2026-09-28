@@ -20,7 +20,7 @@
 
 from twisted.internet import defer, reactor
 
-from virtualbricks import base, console, errors
+from virtualbricks import base, errors
 from virtualbricks.bricks.eventaction import EventAction
 from virtualbricks.config.schema import Int, ListOf, define, field
 from virtualbricks.i18n import _
@@ -65,20 +65,6 @@ class Event(base.Base):
     def configured(self):
         # a delay of 0 runs the actions at once
         return len(self.config.actions) > 0
-
-    def get_parameters(self):
-        tempstr = _("Delay: %d") % self.config.delay
-        if len(self.config.actions) > 0:
-            tempstr += "; " + _("Actions:")
-            # Add actions cutting the tail if it's too long
-            for s in self.config.actions:
-                if isinstance(s, console.ShellCommand):
-                    tempstr += ' "*%s",' % s
-                else:
-                    tempstr += ' "%s",' % s
-            # Remove the last character
-            tempstr = tempstr[0:-1]
-        return tempstr
 
     # def connect(self, endpoint):
     #     return True

@@ -25,7 +25,6 @@ from twisted.internet import defer
 from virtualbricks import bricks
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.config.report import Report
-from virtualbricks.config.settings import set_setting
 from virtualbricks.tests import (
     use_workspace,
     BrickTestCase,
@@ -150,21 +149,6 @@ class TestVirtualMachine(BrickTestCase):
 
 
 class TestRunning(CommandTestCase):
-
-    def test_parameters(self):
-        vm = self.factory.new_brick("qemu", "vm")
-        sw = self.factory.new_brick("switch", "sw")
-        vm.add_plug(sw.socks[0], "00:aa:00:00:00:01", "e1000")
-        prog = os.path.join(self.bin, "qemu-system-i386")
-        self.assertEqual(
-            vm.get_parameters(), f"command: {prog}, ram: 64, eth0: sw_port"
-        )
-        # the program isn't on this machine
-        set_setting("qemu_path", os.path.join(self.bin, "missing"))
-        self.patch(os, "environ", dict(os.environ, PATH=self.bin + "/missing"))
-        self.assertTrue(
-            vm.get_parameters().startswith("command: qemu-system-i386,")
-        )
 
     def test_update_usb_devices(self):
         vm = self.factory.new_brick("qemu", "vm")

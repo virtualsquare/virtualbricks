@@ -83,11 +83,6 @@ class Tap(bricks.PrivilegedBrick):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
 
-    def get_parameters(self):
-        if self.configured():
-            return _("plugged to %s ") % self.plugs[0].sock.brick.name
-        return _("disconnected")
-
     def command(self, prepared):
         cmd = Command(vde_program(prepared.vde, "vde_plug2tap"))
         cmd.option("-s", socket_path(self.plugs[0]))

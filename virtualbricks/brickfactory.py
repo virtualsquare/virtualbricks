@@ -327,7 +327,7 @@ class BrickFactory:
 
     def del_brick(self, brick):
         if is_running(brick):
-            msg = "Cannot delete brick {0:n}: brick is running".format(brick)
+            msg = f"Cannot delete brick {brick.name}: brick is running"
             raise errors.BrickRunningError(msg)
         logger.info(remove_brick, brick=brick.name)
         socks = set(brick.socks)

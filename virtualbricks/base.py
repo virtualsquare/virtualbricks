@@ -112,16 +112,3 @@ class Base:
     def notify_changed(self):
         if not self._restore:
             self._observable.notify("changed", self)
-
-    def __format__(self, format_string):
-        if format_string == "":
-            return repr(self)
-        elif format_string == "s":
-            return self.get_state()
-        elif format_string == "t":
-            return self.get_type()
-        elif format_string == "n":
-            return self.name
-        elif format_string == "p":
-            return self.get_parameters()
-        raise ValueError("Invalid format string %r" % (format_string,))

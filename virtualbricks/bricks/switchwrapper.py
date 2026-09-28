@@ -66,9 +66,6 @@ class SwitchWrapper(bricks.Brick):
         self.proc = None
         return defer.succeed((self, None))
 
-    def get_parameters(self):
-        return self.config.socket_path
-
     def configured(self):
         return self.socks[0].has_valid_path()
 
