@@ -26,6 +26,7 @@ import re
 import shutil
 import warnings
 
+import attr
 from twisted.internet import defer
 from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
@@ -38,6 +39,7 @@ from virtualbricks.bricks.command import (
     socket_path,
     vde_socket,
 )
+from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.config.images import read_info
 from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.schema import (
@@ -55,7 +57,7 @@ from virtualbricks.config.schema import (
 from virtualbricks.config.settings import get_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import _
-from virtualbricks.nic import random_mac
+from virtualbricks.nic import is_valid_mac, random_mac
 from virtualbricks.programs import PACKAGES, Missing, ProgramError, programs
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
@@ -803,6 +805,237 @@ class VirtualMachineConfig(bricks.BrickConfig):
     mtdblock_private = _private("mtdblock")
 
 
+@attr.define
+class Card:
+    """
+    A network card in the draft of a machine: a plug, whose socket is sock,
+    None for nothing and hostonly_sock for QEMU's own user network; or a
+    socket that other bricks plug into. link is the card of the machine it
+    is, None for a new one.
+    """
+
+    kind: str
+    model: str
+    mac: str
+    sock: object = None
+    link: object = None
+
+    def needs_vde(self) -> bool:
+        return self.kind == "socket" or self.sock is not hostonly_sock
+
+
+# The disks' images, which the draft gives the machine one by one.
+DISK_IMAGES = frozenset(f"{device}_image" for device in DISK_DEVICES)
+KEYBOARD_LAYOUT = re.compile(r"[a-z]{2}")
+
+
+class VirtualMachineDraft(Draft):
+    """
+    The settings of a machine, its network cards, and what its QEMU lacks.
+
+    The panel gives the draft the answers of the QEMU program, ``qemu`` and
+    ``machine_properties``, when they come; until then nothing lacks.
+    """
+
+    WITH = {
+        "kvm_shadow_memory": ("use_kvm_shadow_memory", True),
+        "use_kvm_shadow_memory": ("use_kvm", True),
+        "cdrom_image": ("cdrom", "image"),
+        "cdrom_device": ("cdrom", "device"),
+        # no display at all wins over VNC and SDL
+        "use_vnc": ("headless", False),
+        "vnc_display": ("use_vnc", True),
+        "sdl_window": ("headless", False),
+        "usb_devices": ("use_usb", True),
+        "kernel": ("use_kernel", True),
+        "use_initrd": ("use_kernel", True),
+        "initrd": ("use_initrd", True),
+        "kernel_command_line": ("use_kernel", True),
+        "gdb_port": ("use_gdb", True),
+    }
+
+    def __init__(self, brick):
+        super().__init__(brick)
+        # the cards are the draft's own, and not links
+        self.links = []
+        self.original_links = []
+        self.cards = [
+            Card("plug", plug.model, plug.mac, plug.sock, plug)
+            for plug in brick.plugs
+        ] + [
+            Card("socket", sock.model, sock.mac, None, sock)
+            for sock in brick.socks
+        ]
+        self.qemu = None
+        self.machine_properties = frozenset()
+
+    # the cards
+
+    def add_card(self) -> int:
+        """A new card in nothing, after the other plugs; its index."""
+
+        index = sum(1 for card in self.cards if card.kind == "plug")
+        self.cards.insert(
+            index, Card("plug", DEFAULT_MODEL, random_mac(), None)
+        )
+        return index
+
+    def remove_card(self, index: int) -> None:
+        del self.cards[index]
+
+    def set_card(self, index: int, **values) -> None:
+        """
+        Change a card: its model, mac, kind or sock. A plug that becomes a
+        socket, or back, moves among the plugs or the sockets.
+        """
+
+        card = self.cards[index]
+        for name, value in values.items():
+            setattr(card, name, value)
+        if card.kind == "socket":
+            card.sock = None
+        self.cards.sort(key=lambda card: card.kind == "socket")
+
+    # what is wrong
+
+    def lacks(self) -> list:
+        """What the QEMU program lacks, once it answered."""
+
+        if self.qemu is None:
+            return []
+        cards = [(card.model, card.needs_vde()) for card in self.cards]
+        return lacks(
+            self.settings,
+            cards,
+            self.qemu,
+            self.machine_properties,
+            get_setting("audio_driver"),
+        )
+
+    def check(self):
+        settings = self.settings
+        problems = []
+        for used, name, text in (
+            (
+                settings.use_kernel and not settings.kernel,
+                "kernel",
+                _("Choose the kernel, or don't boot one"),
+            ),
+            (
+                settings.use_kernel
+                and settings.use_initrd
+                and not settings.initrd,
+                "initrd",
+                _("Choose the ramdisk, or don't load one"),
+            ),
+            (
+                settings.cdrom == "image" and not settings.cdrom_image,
+                "cdrom_image",
+                _("Choose the image of the CD-ROM"),
+            ),
+            (
+                settings.cdrom == "device" and not settings.cdrom_device,
+                "cdrom_device",
+                _("Choose the drive of the CD-ROM"),
+            ),
+            (
+                settings.keyboard_layout
+                and not KEYBOARD_LAYOUT.fullmatch(settings.keyboard_layout),
+                "keyboard_layout",
+                _("Two letters, as it or de"),
+            ),
+        ):
+            if used:
+                problems.append(Problem(name, text))
+        for index, card in enumerate(self.cards):
+            if not is_valid_mac(card.mac):
+                text = _("{mac} isn't a MAC address").format(mac=card.mac)
+                problems.append(Problem(f"card{index}", text))
+            elif card.kind == "plug" and card.sock is None:
+                text = _("In nothing: {brick} can't start").format(
+                    brick=self.brick.name
+                )
+                problems.append(Problem(f"card{index}", text, error=False))
+        problems += [
+            Problem(lack.key, lack.words(), error=False)
+            for lack in self.lacks()
+        ]
+        return problems
+
+    # to the machine
+
+    def changes(self):
+        return {
+            name: value
+            for name, value in super().changes().items()
+            if name not in DISK_IMAGES
+        }
+
+    def apply_extras(self):
+        changed = self._apply_images()
+        before = list(self.original.usb_devices)
+        after = list(self.settings.usb_devices)
+        if after != before:
+            # a running machine gets the new ones at once
+            self.brick.update_usb_devices(after)
+        return self._apply_cards() or changed
+
+    def _apply_images(self) -> bool:
+        brick = self.brick
+        changed = False
+        for device in DISK_DEVICES:
+            name = getattr(self.settings, f"{device}_image")
+            if name == getattr(self.original, f"{device}_image"):
+                continue
+            image = brick.factory.get_image_by_name(name) if name else None
+            if name and image is None:
+                # an image not in the library keeps its name
+                setattr(brick.config, f"{device}_image", name)
+            else:
+                brick.set_image(device, image)
+            changed = True
+        return changed
+
+    def _apply_cards(self) -> bool:
+        brick = self.brick
+        kept = {
+            id(card.link)
+            for card in self.cards
+            if card.link is not None and card.kind == _kind(brick, card.link)
+        }
+        changed = False
+        for link in list(brick.plugs) + list(brick.socks):
+            if id(link) not in kept:
+                if link in brick.plugs and link.sock is not None:
+                    link.disconnect()
+                brick.remove_plug(link)
+                changed = True
+        for card in self.cards:
+            link = card.link
+            if link is None or id(link) not in kept:
+                if card.kind == "socket":
+                    brick.add_sock(card.mac, card.model)
+                else:
+                    brick.add_plug(card.sock, card.mac, card.model)
+                changed = True
+                continue
+            if (link.model, link.mac) != (card.model, card.mac):
+                link.model = card.model
+                link.mac = card.mac
+                changed = True
+            if card.kind == "plug" and link.sock is not card.sock:
+                if link.sock is not None:
+                    link.disconnect()
+                if card.sock is not None:
+                    link.connect(card.sock)
+                changed = True
+        return changed
+
+
+def _kind(brick, link) -> str:
+    return "socket" if link in brick.socks else "plug"
+
+
 def _get_nick(link):
     if hasattr(link, "sock"):
         return str(getattr(link.sock, "nickname", "None"))
@@ -815,6 +1048,7 @@ class VirtualMachine(bricks.Brick):
     summary = "A virtual machine, run by QEMU"
     term_command = "unixterm"
     config_factory = VirtualMachineConfig
+    draft_factory = VirtualMachineDraft
     process_protocol = bricks.Process
     connections = "nics"
 
@@ -975,22 +1209,29 @@ class VirtualMachine(bricks.Brick):
         return deferred.addCallback(prepared)
 
     def command(self, prepared):
-        """The command line, with what the QEMU program has."""
+        """
+        The command line, with what the QEMU program has: what it lacks is
+        left out, with the warnings of lacks().
+        """
 
         config = self.config
         qemu = prepared.qemu
-        version = f"{self.name}: QEMU {qemu.version}"
         cmd = Command(qemu.path)
-        machine = config.machine_type
-        if machine and not qemu.has_machine(machine):
-            cmd.warn(
-                f"{version} has no machine type {machine} (machine_type): the"
-                " machine starts with the default one"
-            )
-            machine = ""
+        links = list(itertools.chain(self.plugs, self.socks))
+        found = lacks(
+            config,
+            [(link.model, needs_vde(link)) for link in links],
+            qemu,
+            prepared.machine_properties,
+            prepared.audio_driver,
+        )
+        for lack in found:
+            cmd.warn(lack.warning(self.name))
+        lacked = {lack.key for lack in found}
+        machine = "" if "machine_type" in lacked else config.machine_type
         acpi_off = not config.acpi
         machine_acpi = acpi_off and "acpi" in prepared.machine_properties
-        sound, speaker = self._sound(cmd, prepared)
+        sound, speaker = self._sound(prepared, "sound_card" in lacked)
         cmd.option(
             "-machine",
             joined(
@@ -999,51 +1240,26 @@ class VirtualMachine(bricks.Brick):
                 "pcspk-audiodev=snd0" if speaker else "",
             ),
         )
-        if acpi_off and not machine_acpi:
-            if "-no-acpi" in qemu.options:
-                cmd.arg("-no-acpi")
-            else:
-                cmd.warn(f"{version} can't turn ACPI off here (acpi)")
-        if config.use_kvm:
-            if "kvm" in qemu.accelerators:
-                # with the emulator in its place where KVM can't run; QEMU
-                # takes the shadow memory in bytes
-                shadow = (
-                    f"kvm-shadow-mem={config.kvm_shadow_memory * 1024 * 1024}"
-                )
-                cmd.option(
-                    "-accel",
-                    joined(
-                        "kvm", shadow if config.use_kvm_shadow_memory else ""
-                    ),
-                )
-                cmd.option("-accel", "tcg")
-            else:
-                cmd.warn(
-                    f"{version} has no KVM (use_kvm): the machine is emulated"
-                )
-        cpu = config.cpu_model
-        if cpu and not qemu.has_cpu(cpu):
-            cmd.warn(
-                f"{version} has no CPU model {cpu} (cpu_model): the machine starts"
-                " with the default one"
+        if acpi_off and not machine_acpi and "-no-acpi" in qemu.options:
+            cmd.arg("-no-acpi")
+        if config.use_kvm and "use_kvm" not in lacked:
+            # with the emulator in its place where KVM can't run; QEMU takes
+            # the shadow memory in bytes
+            shadow = f"kvm-shadow-mem={config.kvm_shadow_memory * 1024 * 1024}"
+            cmd.option(
+                "-accel",
+                joined("kvm", shadow if config.use_kvm_shadow_memory else ""),
             )
-            cpu = ""
-        cmd.option("-cpu", cpu)
+            cmd.option("-accel", "tcg")
+        cmd.option("-cpu", "" if "cpu_model" in lacked else config.cpu_model)
         cmd.option("-smp", config.cpus)
         cmd.option("-m", config.memory)
         cmd.option("-boot", config.boot_order)
         cmd.arg(*sound)
         cmd.flag("-usb", config.use_usb)
         cmd.flag("-snapshot", config.forget_disk_changes)
-        if config.sdl_window:
-            if "sdl" in qemu.displays:
-                cmd.option("-display", "sdl")
-            else:
-                cmd.warn(
-                    f"{version} has no SDL window (sdl_window): install the"
-                    " qemu-system-gui package"
-                )
+        if config.sdl_window and "sdl_window" not in lacked:
+            cmd.option("-display", "sdl")
         cmd.option("-loadvm", prepared.resume)
         if config.headless:
             cmd.option("-display", "none")
@@ -1073,7 +1289,7 @@ class VirtualMachine(bricks.Brick):
                     f"usb-host,vendorid=0x{vendor},productid=0x{product}",
                 )
         cmd.option("-name", self.name)
-        self._cards(cmd, qemu)
+        self._cards(cmd, qemu, links, lacked)
         if config.cdrom == "image":
             cmd.option("-cdrom", config.cdrom_image)
         elif config.cdrom == "device":
@@ -1096,73 +1312,40 @@ class VirtualMachine(bricks.Brick):
         cmd.arg("-chardev", "stdio,id=mon_cons,signal=off")
         return cmd
 
-    def _sound(self, cmd, prepared):
+    def _sound(self, prepared, lacked):
         """
-        The arguments of the sound card, and whether it's the PC speaker.
-
-        A card or a driver that the program doesn't have is left out, with a
-        warning in cmd.
+        The arguments of the sound card, and whether it's the PC speaker;
+        none when the program lacks the card or the driver.
         """
 
         card = self.config.sound_card
-        if not card:
+        if not card or lacked:
             return [], False
-        qemu = prepared.qemu
-        version = f"{self.name}: QEMU {qemu.version}"
-        driver = prepared.audio_driver
-        # QEMU 6.2 doesn't list its drivers: the driver is taken on trust
-        drivers = qemu.audio_drivers
-        if drivers is not None and driver not in drivers:
-            cmd.warn(
-                f"{version} has no audio driver {driver} (audio_driver of the"
-                " settings): the machine has no sound card"
-            )
-            return [], False
-        audiodev = ["-audiodev", f"{driver},id=snd0"]
+        audiodev = ["-audiodev", f"{prepared.audio_driver},id=snd0"]
         # the PC speaker is part of the machine, not a device of its own
         if card == "pcspk":
             return audiodev, True
-        device = qemu.device(card)
-        if device is None:
-            cmd.warn(
-                f"{version} has no sound card {card} (sound_card): the machine"
-                " has none"
-            )
-            return [], False
+        device = prepared.qemu.device(card)
         return audiodev + ["-device", f"{device.name},audiodev=snd0"], False
 
-    def _cards(self, cmd, qemu):
+    def _cards(self, cmd, qemu, links, lacked):
         """The network cards, each with its backend when QEMU has it."""
 
-        links = list(itertools.chain(self.plugs, self.socks))
         if not links:
             cmd.option("-net", "none")
             return
-        version = f"{self.name}: QEMU {qemu.version}"
         vde = "vde" in qemu.netdevs
-        unplugged = []
         for index, link in enumerate(links):
             model = link.model
-            if qemu.device(model) is None:
-                cmd.warn(
-                    f"{version} has no network card {model}: card {index} is"
-                    f" a {DEFAULT_MODEL}"
-                )
+            if f"card{index}" in lacked:
                 model = DEFAULT_MODEL
             netdev = _netdev(link, index, vde)
             device = f"{model},mac={link.mac},id=vx{index}"
             if netdev is None:
-                unplugged.append(str(index))
                 cmd.option("-device", device)
             else:
                 cmd.option("-device", f"{device},netdev=vx{index}")
                 cmd.option("-netdev", netdev)
-        if unplugged:
-            cmd.warn(
-                f"{version} can't join a VDE switch: card"
-                f" {', '.join(unplugged)} unplugged; install a QEMU built with"
-                " VDE"
-            )
 
     def add_sock(self, mac=None, model=None, name=None):
         """
@@ -1256,6 +1439,139 @@ def _netdev(link, index, vde):
         return f"vde,id=vx{index},sock={socket_path(link)}" if vde else None
     # a card on QEMU's own user network
     return f"user,id=vx{index}"
+
+
+def needs_vde(link):
+    """Whether a card of the machine joins a VDE socket, as _netdev() says."""
+
+    if link.mode == "sock":
+        return True
+    if link.sock is not None and link.sock.mode == "hostonly":
+        return False
+    return link.mode == "vde"
+
+
+@attr.define(frozen=True)
+class Lack:
+    """
+    What the QEMU program lacks of a setting, and what the start does then.
+
+    The panel says ``words()`` under the setting's row; the start writes
+    ``warning()``, with the machine's name and the key: ``where`` when it
+    isn't the key, none when it's empty.
+    """
+
+    key: str
+    text: str
+    then: str = ""
+    where: str | None = None
+
+    def words(self) -> str:
+        return f"{self.text}: {self.then}" if self.then else self.text
+
+    def warning(self, name: str) -> str:
+        where = self.key if self.where is None else self.where
+        line = f"{name}: {self.text}"
+        if where:
+            line += f" ({where})"
+        if self.then:
+            line += f": {self.then}"
+        return line
+
+
+def lacks(config, cards, qemu, machine_properties, audio_driver):
+    """
+    What the QEMU program lacks of the settings of a machine, in the order
+    of its command line: a Lack for each.
+
+    cards are the model of each network card, and whether it joins a VDE
+    socket. machine_properties are those of the machine type, or of the
+    default one when the program lacks it.
+    """
+
+    version = f"QEMU {qemu.version}"
+    found = []
+    machine = config.machine_type
+    if machine and not qemu.has_machine(machine):
+        found.append(
+            Lack(
+                "machine_type",
+                f"{version} has no machine type {machine}",
+                "the machine starts with the default one",
+            )
+        )
+    card = config.sound_card
+    # QEMU 6.2 doesn't list its drivers: the driver is taken on trust
+    drivers = qemu.audio_drivers
+    if card and drivers is not None and audio_driver not in drivers:
+        found.append(
+            Lack(
+                "sound_card",
+                f"{version} has no audio driver {audio_driver}",
+                "the machine has no sound card",
+                "audio_driver of the settings",
+            )
+        )
+    elif card and card != "pcspk" and qemu.device(card) is None:
+        found.append(
+            Lack(
+                "sound_card",
+                f"{version} has no sound card {card}",
+                "the machine has none",
+            )
+        )
+    if (
+        not config.acpi
+        and "acpi" not in machine_properties
+        and "-no-acpi" not in qemu.options
+    ):
+        found.append(Lack("acpi", f"{version} can't turn ACPI off here"))
+    if config.use_kvm and "kvm" not in qemu.accelerators:
+        found.append(
+            Lack("use_kvm", f"{version} has no KVM", "the machine is emulated")
+        )
+    cpu = config.cpu_model
+    if cpu and not qemu.has_cpu(cpu):
+        found.append(
+            Lack(
+                "cpu_model",
+                f"{version} has no CPU model {cpu}",
+                "the machine starts with the default one",
+            )
+        )
+    if config.sdl_window and "sdl" not in qemu.displays:
+        found.append(
+            Lack(
+                "sdl_window",
+                f"{version} has no SDL window",
+                "install the qemu-system-gui package",
+            )
+        )
+    for index, (model, _vde) in enumerate(cards):
+        if qemu.device(model) is None:
+            found.append(
+                Lack(
+                    f"card{index}",
+                    f"{version} has no network card {model}",
+                    f"card {index} is a {DEFAULT_MODEL}",
+                    "",
+                )
+            )
+    if "vde" not in qemu.netdevs:
+        unplugged = [
+            str(index) for index, (_model, vde) in enumerate(cards) if vde
+        ]
+        if unplugged:
+            found.append(
+                Lack(
+                    "cards",
+                    f"{version} can't join a VDE switch",
+                    f"card {', '.join(unplugged)} unplugged; install a QEMU"
+                    " built with VDE",
+                    "",
+                )
+            )
+    return found
 
 
 def is_virtualmachine(brick):

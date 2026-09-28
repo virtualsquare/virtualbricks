@@ -50,6 +50,17 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 
 
+def copy(record):
+    """A copy of a record of settings, with copies of its lists."""
+
+    lists = {
+        name: list(value)
+        for name, value in attr.asdict(record, recurse=False).items()
+        if isinstance(value, list)
+    }
+    return attr.evolve(record, **lists)
+
+
 @attr.define(frozen=True)
 class Problem:
     """What is wrong with a setting. An error blocks OK; a lack only warns."""
@@ -68,8 +79,8 @@ class Draft:
     def __init__(self, brick: Any) -> None:
         self.brick = brick
         # the settings as they were, and as the panel has them
-        self.original = attr.evolve(brick.config)
-        self.settings = attr.evolve(brick.config)
+        self.original = copy(brick.config)
+        self.settings = copy(brick.config)
         # the values that their kind refused, as typed, and why
         self.refused: dict[str, tuple[object, str]] = {}
         # the socket that each plug joins, or None

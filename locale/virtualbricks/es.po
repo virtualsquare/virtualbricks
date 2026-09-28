@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 22:04+0200\n"
+"POT-Creation-Date: 2026-09-28 22:11+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -92,7 +92,7 @@ msgstr ""
 msgid "Interface %s disconnected"
 msgstr ""
 
-#: virtualbricks/bricks/draft.py
+#: virtualbricks/bricks/draft.py virtualbricks/bricks/virtualmachine.py
 #, fuzzy, python-brace-format
 msgid "In nothing: {brick} can't start"
 msgstr "Bricks (Bloques)"
@@ -424,6 +424,32 @@ msgstr ""
 #: virtualbricks/bricks/tunnellisten.py
 msgid "listening to udp:"
 msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "Choose the kernel, or don't boot one"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "Choose the ramdisk, or don't load one"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+#, fuzzy
+msgid "Choose the image of the CD-ROM"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "Choose the drive of the CD-ROM"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+msgid "Two letters, as it or de"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py
+#, fuzzy, python-brace-format
+msgid "{mac} isn't a MAC address"
+msgstr "Direccion MAC:"
 
 #: virtualbricks/bricks/virtualmachine.py
 msgid "command:"
