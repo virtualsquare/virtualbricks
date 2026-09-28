@@ -34,9 +34,8 @@ import re
 
 from twisted.internet import protocol, reactor, error, defer
 from twisted.logger import Logger
-from zope.interface import implementer
 
-from virtualbricks import base, errors, interfaces
+from virtualbricks import base, errors
 from virtualbricks.bricks.command import Prepared
 from virtualbricks.bricks.draft import Draft
 from virtualbricks.config.schema import (
@@ -100,7 +99,6 @@ class ProcessLogger:
         return self.logger.__get__(instance, owner)
 
 
-@implementer(interfaces.IProcess)
 class Process(protocol.ProcessProtocol):
 
     logger = ProcessLogger(Logger())
@@ -150,7 +148,6 @@ class Process(protocol.ProcessProtocol):
         self.transport.write(data)
 
 
-@implementer(interfaces.IProcess)
 class FakeProcess:
 
     pid = -1
@@ -291,8 +288,6 @@ class Brick(base.Base):
         self.plugs = []
         self.socks = []
         self.config_socks = []
-
-    # IBrick interface
 
     def poweron(self, resume=""):
         """
