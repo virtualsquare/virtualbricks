@@ -32,6 +32,7 @@ from twisted.logger import Logger
 
 from virtualbricks import bricks, errors, tools
 from virtualbricks.bricks.command import Command, Prepared, joined, socket_path
+from virtualbricks.config.images import read_info
 from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.schema import (
     Bool,
@@ -473,18 +474,17 @@ class Disk:
 
         assert self.image is not None
 
-        logger.info(new_cow, backing_file=self.image.path)
-        args = [
-            "create",
-            "-f",
-            get_setting("cow_format"),
-            "-b",
-            self.image.path,
-            "-F",
-            get_setting("cow_format"),
-            filename,
-        ]
-        deferred = qemu_img(args)
+        path = self.image.path
+        logger.info(new_cow, backing_file=path)
+
+        def create(info):
+            # -F is the format of the image, which may be raw
+            args = ["create", "-f", get_setting("cow_format")]
+            args += ["-b", path, "-F", info.format, filename]
+            return qemu_img(args)
+
+        deferred = read_info(path, qemu_img)
+        deferred.addCallback(create)
         deferred.addCallback(discard_first_arg(sync))
         # Always return None, independently of the return from sync
         deferred.addCallback(lambda _: None)
