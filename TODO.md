@@ -10,9 +10,6 @@
 - [ ] Move `locations` into `config` (maybe)
 - [ ] Drop the `log_link_loops` setting, maybe: a loop always stops a
   start (10 §13)
-- [ ] Declare on the schema's fields which settings go with others,
-  `field(..., when=("use_vnc", True))`, for the panels, the files'
-  comments and the console (11 §11, P9 C)
 
 ## Projects
 
