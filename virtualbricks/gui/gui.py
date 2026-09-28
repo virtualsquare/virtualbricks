@@ -32,74 +32,20 @@ from twisted.logger import (
     formatEvent,
     globalLogPublisher,
 )
-from zope.interface import implementer
 
 from virtualbricks import brickfactory, errors
 from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
-from virtualbricks.bricks import Brick
-from virtualbricks.gui.mainwindow.bricks.config import QemuConfigController
-from virtualbricks.gui.dialogs import EditEthernetDialog
 from virtualbricks.gui.mainwindow import VBGUI
-from virtualbricks.gui.interfaces import IMenu, IConfigController
 from virtualbricks.gui.messages import MessageLog, MessageLogObserver
 from virtualbricks.gui.trash import DesktopTrash
 from virtualbricks.i18n import _
-from virtualbricks.interfaces import registerAdapter
-from virtualbricks.bricks.plug import Plug
-from virtualbricks.bricks.sock import Sock
 
 logger = Logger()
 cannot_open_last = "{message}"
 sync_error = "Sync terminated unexpectedly"
 create_image_error = "Create image terminated unexpectedly"
-
-
-@implementer(IMenu)
-class LinkMenu:
-
-    def __init__(self, original):
-        self.original = original
-
-    def build(self, controller, gui):
-        _clear_menu()
-        menu = _menu
-        edit = Gtk.MenuItem(_("Edit"))
-        edit.connect("activate", self.on_edit_activate, controller, gui)
-        menu.append(edit)
-        remove = Gtk.MenuItem(_("Remove"))
-        remove.connect("activate", self.on_remove_activate, controller)
-        menu.append(remove)
-        return menu
-
-    def popup(self, button, time, controller, gui):
-        menu = self.build(controller, gui)
-        menu.show_all()
-        menu.popup(None, None, None, None, button, time)
-
-    def on_edit_activate(self, menuitem, controller, gui):
-        EditEthernetDialog(
-            gui.brickfactory, self.original.brick, self.original
-        ).show(gui.window)
-
-    def on_remove_activate(self, menuitem, controller):
-        controller.ask_remove_link(self.original)
-
-
-registerAdapter(LinkMenu, Plug, IMenu)
-registerAdapter(LinkMenu, Sock, IMenu)
-
-
-def config_panel_factory(context):
-    """The old panels; those on drafts are in PANELS."""
-
-    type = context.get_type()
-    if type == "Qemu":
-        return QemuConfigController(context)
-
-
-registerAdapter(config_panel_factory, Brick, IConfigController)
 
 
 class SyncProtocol(protocol.ProcessProtocol):
@@ -132,14 +78,6 @@ class QemuImgCreateProtocol(protocol.ProcessProtocol):
 
 # These instructions keep a reference of a popup menu and reinitialize
 # it
-def _clear_menu():
-    global _menu
-    _menu = Gtk.Menu()
-
-
-_menu = Gtk.Menu()
-
-
 class List(Gtk.ListStore):
 
     def __init__(self):

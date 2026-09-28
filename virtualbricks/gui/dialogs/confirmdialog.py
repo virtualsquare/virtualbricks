@@ -234,21 +234,3 @@ class DeleteEventConfirmDialog(_ConfirmDialog):
         if response_id == Gtk.ResponseType.YES:
             self._brickfactory.del_event(self._event)
         dialog.destroy()
-
-
-class DeleteLinkConfirmDialog(_ConfirmDialog):
-    """
-    Ask to delete a network interface of a virtual machine.
-    """
-
-    def __init__(self, qemu_config_controller, link):
-        self._qemu_config_controller = qemu_config_controller
-        self._link = link
-        self.build_ui()
-        question = _("Do you really want to delete the network interface?")
-        self.set_primary_text(question)
-
-    def on_dialog_response(self, dialog, response_id):
-        if response_id == Gtk.ResponseType.YES:
-            self._qemu_config_controller._remove_link(self._link)
-        dialog.destroy()

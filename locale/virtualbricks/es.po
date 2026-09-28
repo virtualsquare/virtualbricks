@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 22:23+0200\n"
+"POT-Creation-Date: 2026-09-28 22:29+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -146,7 +146,7 @@ msgstr ""
 #: virtualbricks/bricks/netemu.py virtualbricks/gui/dialogs/addimage.py
 #: virtualbricks/gui/dialogs/imagedialogs.py
 #: virtualbricks/gui/dialogs/importdialog.py
-#: virtualbricks/gui/dialogs/projectname.py virtualbricks/gui/dialogs/usbdev.py
+#: virtualbricks/gui/dialogs/projectname.py
 #: virtualbricks/gui/mainwindow/events/newevent.py
 #: virtualbricks/gui/mainwindow/images/imagedetails.py
 msgid "Name"
@@ -460,7 +460,6 @@ msgid "The CPU model, as -cpu takes it; empty for the QEMU default"
 msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 msgid "KVM"
 msgstr "KVM"
 
@@ -506,7 +505,6 @@ msgid "KVM shadow memory in MiB"
 msgstr "KVM Memoria Shadow: "
 
 #: virtualbricks/bricks/virtualmachine.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 msgid "Boot from"
 msgstr ""
 
@@ -537,7 +535,6 @@ msgid "Attach the disks as virtio devices"
 msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
 msgid "CD-ROM"
 msgstr ""
@@ -834,7 +831,7 @@ msgstr ""
 #: virtualbricks/gui/dialogs/projectname.py
 #: virtualbricks/gui/dialogs/projects.py
 #: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/dialogs/usbdev.py
+#: virtualbricks/gui/dialogs/settings.py
 #: virtualbricks/gui/mainwindow/events/newevent.py
 msgid "Cancel"
 msgstr ""
@@ -961,66 +958,6 @@ msgstr ""
 #: virtualbricks/gui/dialogs/confirmdialog.py
 msgid "The event is in use, it will be stopped before."
 msgstr ""
-
-#: virtualbricks/gui/dialogs/confirmdialog.py
-msgid "Do you really want to delete the network interface?"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "rtl8139"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "e1000"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "virtio-net-pci"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "i82551"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "i82557b"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "i82559er"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "ne2k_pci"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "pcnet"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "ne2k_isa"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "<b>New ethernet interface</b>"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "Model:"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "Connect to:"
-msgstr "Conectar con:"
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "Mac address:"
-msgstr "Direccion MAC:"
-
-#: virtualbricks/gui/dialogs/ethernetdialog.py
-msgid "Randomize"
-msgstr "Aleatorizar"
 
 #: virtualbricks/gui/dialogs/exportproject.py
 msgid "Compressing the disks…"
@@ -1150,7 +1087,7 @@ msgstr[1] ""
 msgid "Remove Image"
 msgstr "Quitar"
 
-#: virtualbricks/gui/dialogs/imagedialogs.py virtualbricks/gui/gui.py
+#: virtualbricks/gui/dialogs/imagedialogs.py
 msgid "Remove"
 msgstr "Quitar"
 
@@ -1619,7 +1556,6 @@ msgid "Save the messages"
 msgstr "_Mensajes"
 
 #: virtualbricks/gui/dialogs/logging.py
-#: virtualbricks/gui/mainwindow/bricks/config/base.py
 #: virtualbricks/gui/mainwindow/bricks/config/form.py
 #: virtualbricks/gui/mainwindow/rowtab.py virtualbricks/migrate/gui.py
 msgid "_Cancel"
@@ -1632,7 +1568,7 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/newbrick.py
 #: virtualbricks/gui/dialogs/renamedialog.py
-#: virtualbricks/gui/dialogs/settings.py virtualbricks/gui/dialogs/usbdev.py
+#: virtualbricks/gui/dialogs/settings.py
 msgid "OK"
 msgstr ""
 
@@ -1814,7 +1750,7 @@ msgid "Rename…"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/projects.py
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
 #: virtualbricks/gui/mainwindow/images/imagemenu.py
 msgid "Show in Files"
 msgstr ""
@@ -1977,21 +1913,9 @@ msgstr ""
 msgid "Audio driver of QEMU, as alsa, pa or pipewire"
 msgstr ""
 
-#: virtualbricks/gui/dialogs/usbdev.py
-msgid "Select USB devices"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/usbdev.py
-msgid "ID"
-msgstr ""
-
 #: virtualbricks/gui/dialogs/userwait.py
 msgid "Please wait"
 msgstr ""
-
-#: virtualbricks/gui/gui.py virtualbricks/gui/mainwindow/readme.py
-msgid "Edit"
-msgstr "Editar"
 
 #: virtualbricks/gui/gui.py
 #, python-brace-format
@@ -2054,7 +1978,7 @@ msgid "{names}, the image itself"
 msgstr ""
 
 #: virtualbricks/gui/imageinfo.py
-#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/imagepicker.py
 #, python-brace-format
 msgid "{path} isn't there"
 msgstr ""
@@ -2335,7 +2259,6 @@ msgid "Connect To"
 msgstr "Conectar con:"
 
 #: virtualbricks/gui/mainwindow/bricks/brickmenu.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 #: virtualbricks/gui/mainwindow/events/eventmenu.py
 msgid "Start"
 msgstr ""
@@ -2405,14 +2328,7 @@ msgstr ""
 msgid "Cannot find suspend point."
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/bricks/config/base.py
-#: virtualbricks/gui/mainwindow/rowtab.py
-msgid "_OK"
-msgstr ""
-
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
@@ -2439,54 +2355,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
 #, python-brace-format
 msgid "{value}, not on this host"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#, fuzzy
-msgid "Private copy"
-msgstr "Private COW"
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#, fuzzy
-msgid "The image itself"
-msgstr "Quitar"
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#, python-brace-format
-msgid "More for {device}"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#, fuzzy
-msgid "Save as a New Image…"
-msgstr "Exportar como imagen"
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#, python-brace-format
-msgid "Merge into {image}…"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#, python-brace-format
-msgid "Start Over from {image}…"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#, fuzzy
-msgid "Remove Disk"
-msgstr "Quitar"
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/panel.py
-msgid "Disks"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-msgid "No disk: add one to give the machine its disk."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/disks.py
-msgid "Add Disk"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/form.py
@@ -2521,36 +2389,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
 msgid "Nothing"
 msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
-#, fuzzy
-msgid "No image"
-msgstr "_Mensajes"
-
-#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
-#, fuzzy
-msgid "Find an image"
-msgstr "<b> dispositivo de CD-ROM </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
-#, fuzzy
-msgid "Add an Existing Image…"
-msgstr "Exportar como imagen"
-
-#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
-#: virtualbricks/gui/mainwindow/images/tab.py
-msgid "New Empty Disk…"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
-#, fuzzy
-msgid "Manage Images…"
-msgstr "Exportar como imagen"
-
-#: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
-#, fuzzy
-msgid "Choose an image for this disk"
-msgstr "_Crear nueva imagen"
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
 #, python-format, python-brace-format
@@ -2646,23 +2484,6 @@ msgid ""
 "when it starts again."
 msgstr ""
 
-#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
-msgid "Eth"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
-msgid "Model"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
-#, fuzzy
-msgid "MAC address"
-msgstr "Direccion MAC:"
-
 #: virtualbricks/gui/mainwindow/bricks/config/panel.py
 #, python-brace-format
 msgid "{brick} is running: the settings take effect when it starts again."
@@ -2684,266 +2505,6 @@ msgstr ""
 #, fuzzy
 msgid "Search"
 msgstr "Nuevo Brick"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, python-brace-format
-msgid "{name}, not installed"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, python-brace-format
-msgid "{name}, not in this QEMU"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/machine.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
-msgid "The default"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy, python-brace-format
-msgid "The default, {name}"
-msgstr "Quitar"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Use virtio block devices"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "no cdrom"
-msgstr "Sin CD-ROM"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "don´t use any cdrom device"
-msgstr "No uso ningun dipositivo de CD-ROm"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "mount cdrom"
-msgstr "Montar CD-ROM"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "mount local cdrom Drive"
-msgstr "Montar dispositivo local de CD-ROM"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "use image as cdrom"
-msgstr "Usar imagen como CD-ROM"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Snapshot mode: the disks and their images stay as they were."
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Drives"
-msgstr "Unidades"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "Architecture:"
-msgstr "Arquitectura: "
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "CPU Type:"
-msgstr "Tipo de CPU"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "Machine type:"
-msgstr "Tipo de máquina"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Number of CPUs:"
-msgstr "Número de CPUs:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>System and machine</b>"
-msgstr "<b> Sistema y máquina </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "Emulated Soundcard:"
-msgstr "Seleccionar Tarjeta de Sonido emulada "
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>Audio Device Settings</b>"
-msgstr "<b> Ajustes de dispositivo de Audio </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Used RAM:"
-msgstr "RAM usada:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "MB"
-msgstr " MB"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "KVM Shadow Memory:"
-msgstr "KVM Memoria Shadow: "
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>Memory Settings</b>"
-msgstr "<b> Ajustes de Memoria </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "disable graphical output"
-msgstr "Desactivar Salida Gráfica"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Use VGA instead of Default"
-msgstr "Usar VGA en vez del Por Defecto"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Start in vncserver"
-msgstr "Arrancar en vncserver"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "on Display: "
-msgstr "En Display: "
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "SDL"
-msgstr "SDL"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>Display Options</b>"
-msgstr "<b> Opciones de Display </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "enable usb"
-msgstr "Activar USB"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Bind devices"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>USB settings</b>"
-msgstr "<b> Opciones de USB </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Set realtime clock to local time"
-msgstr "Establecer reloj de tiempo real a la hora local"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Guest time drift compensation (TDF)"
-msgstr "Compensación de decalaje de tiempo en el Guest"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "Keyboard:"
-msgstr "Teclado: "
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Serial"
-msgstr "Serie"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>Extra Settings</b>"
-msgstr "<b> Ajustes Extra </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "System"
-msgstr "Sistema"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>Network cards</b>"
-msgstr "<b> Tarjetas de red </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Nic"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Set up a new network card"
-msgstr "Configurar una nueva tarjeta de red"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Add Network card"
-msgstr "Añadir tarjeta de red"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/vm/panel.py
-msgid "Network"
-msgstr "Red"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Use a custom kernel"
-msgstr "Usar kernel personalizado"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Specify initial ramdisk"
-msgstr "Especificar ramdisk inicial"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Parameters to append to command line:"
-msgstr "Parametros a añadir a la linea de comandos"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Enable kernel debugging"
-msgstr "Activar debugging del kernel"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "GNU debugger TCP port:"
-msgstr "Puerto TCP del debugger GNU"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>Booting Linux</b>"
-msgstr "<b> Arrancando Linux </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Customize Linux Boot"
-msgstr "Personalizar Arranque de Linux"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "<b>Virtual Machine Icon</b>"
-msgstr "<b> Icono de Maquina Virtual </b>"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Others"
-msgstr "Otros"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Mount cdrom option not active"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "File image option not active"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "Graphical output disabled"
-msgstr "Desactivar Salida Gráfica"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "VNC enabled"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Custom kernel selction option disabled"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Initrd option disabled"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, fuzzy
-msgid "Kernel debugging disabled"
-msgstr "Activar debugging del kernel"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "USB disabled or /dev/bus/usb not accessible"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-#, python-brace-format
-msgid "Forget every change when {name} stops"
-msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
 msgid "The control folder of the switch"
@@ -3020,6 +2581,84 @@ msgstr ""
 msgid "{device}, not on this host"
 msgstr ""
 
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#, fuzzy
+msgid "Private copy"
+msgstr "Private COW"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#, fuzzy
+msgid "The image itself"
+msgstr "Quitar"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#, python-brace-format
+msgid "More for {device}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#, fuzzy
+msgid "Save as a New Image…"
+msgstr "Exportar como imagen"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#, python-brace-format
+msgid "Merge into {image}…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#, python-brace-format
+msgid "Start Over from {image}…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#, fuzzy
+msgid "Remove Disk"
+msgstr "Quitar"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/panel.py
+msgid "Disks"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+msgid "No disk: add one to give the machine its disk."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/disks.py
+msgid "Add Disk"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/imagepicker.py
+#, fuzzy
+msgid "No image"
+msgstr "_Mensajes"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/imagepicker.py
+#, fuzzy
+msgid "Find an image"
+msgstr "<b> dispositivo de CD-ROM </b>"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/imagepicker.py
+#, fuzzy
+msgid "Add an Existing Image…"
+msgstr "Exportar como imagen"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/imagepicker.py
+#: virtualbricks/gui/mainwindow/images/tab.py
+msgid "New Empty Disk…"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/imagepicker.py
+#, fuzzy
+msgid "Manage Images…"
+msgstr "Exportar como imagen"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/imagepicker.py
+#, fuzzy
+msgid "Choose an image for this disk"
+msgstr "_Crear nueva imagen"
+
 #: virtualbricks/gui/mainwindow/bricks/config/vm/machine.py
 #, python-brace-format
 msgid "not in QEMU {version}"
@@ -3034,6 +2673,11 @@ msgstr "Tipo de máquina"
 #: virtualbricks/gui/mainwindow/bricks/config/vm/machine.py
 #, python-brace-format
 msgid "{value}, not installed"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/machine.py
+#: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
+msgid "The default"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/vm/media.py
@@ -3095,6 +2739,15 @@ msgid "Other bricks plug into it"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
+msgid "Model"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
+#, fuzzy
+msgid "MAC address"
+msgstr "Direccion MAC:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/network.py
 #, fuzzy
 msgid "Network cards"
 msgstr "Añadir tarjeta de red"
@@ -3111,6 +2764,10 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/vm/panel.py
 msgid "CD-ROM and boot"
 msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/vm/panel.py
+msgid "Network"
+msgstr "Red"
 
 #: virtualbricks/gui/mainwindow/bricks/config/vm/panel.py
 msgid "Sound and USB"
@@ -3576,6 +3233,10 @@ msgid "No README yet. The pencil, at the top right, writes one."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/readme.py
+msgid "Edit"
+msgstr "Editar"
+
+#: virtualbricks/gui/mainwindow/readme.py
 msgid "Preview"
 msgstr ""
 
@@ -3611,6 +3272,10 @@ msgstr "Arrancar todos los bricks"
 #, fuzzy
 msgid "Stop All"
 msgstr "Parar todos los bricks"
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+msgid "_OK"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/rowtab.py
 #, python-brace-format
@@ -3829,43 +3494,6 @@ msgstr ""
 msgid "wire"
 msgstr ""
 
-#: virtualbricks/gui/widgets.py
-msgid "Enable formatting"
-msgstr ""
-
-#: virtualbricks/gui/widgets.py
-msgid "Whether enable formatting"
-msgstr ""
-
-#: virtualbricks/gui/widgets.py
-msgid "Format string"
-msgstr ""
-
-#: virtualbricks/gui/widgets.py
-msgid "The format string understand by the builtin format()"
-msgstr ""
-
-#: virtualbricks/gui/widgets.py
-msgid "Custom formatter"
-msgstr ""
-
-#: virtualbricks/gui/widgets.py
-msgid "An instance of string.Formatter() class"
-msgstr ""
-
-#: virtualbricks/gui/widgets.py
-#, fuzzy
-msgid "Display member"
-msgstr "En Display: "
-
-#: virtualbricks/gui/widgets.py
-msgid "The member used to display the text"
-msgstr ""
-
-#: virtualbricks/gui/widgets.py
-msgid "Value member"
-msgstr ""
-
 #: virtualbricks/migrate/gui.py
 #, python-brace-format
 msgid "⚠ {0} warning"
@@ -3982,6 +3610,167 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#~ msgid "Connect to:"
+#~ msgstr "Conectar con:"
+
+#~ msgid "Mac address:"
+#~ msgstr "Direccion MAC:"
+
+#~ msgid "Randomize"
+#~ msgstr "Aleatorizar"
+
+#, fuzzy, python-brace-format
+#~ msgid "The default, {name}"
+#~ msgstr "Quitar"
+
+#~ msgid "no cdrom"
+#~ msgstr "Sin CD-ROM"
+
+#~ msgid "don´t use any cdrom device"
+#~ msgstr "No uso ningun dipositivo de CD-ROm"
+
+#~ msgid "mount cdrom"
+#~ msgstr "Montar CD-ROM"
+
+#~ msgid "mount local cdrom Drive"
+#~ msgstr "Montar dispositivo local de CD-ROM"
+
+#~ msgid "use image as cdrom"
+#~ msgstr "Usar imagen como CD-ROM"
+
+#~ msgid "Drives"
+#~ msgstr "Unidades"
+
+#, fuzzy
+#~ msgid "Architecture:"
+#~ msgstr "Arquitectura: "
+
+#, fuzzy
+#~ msgid "CPU Type:"
+#~ msgstr "Tipo de CPU"
+
+#, fuzzy
+#~ msgid "Machine type:"
+#~ msgstr "Tipo de máquina"
+
+#~ msgid "Number of CPUs:"
+#~ msgstr "Número de CPUs:"
+
+#~ msgid "<b>System and machine</b>"
+#~ msgstr "<b> Sistema y máquina </b>"
+
+#, fuzzy
+#~ msgid "Emulated Soundcard:"
+#~ msgstr "Seleccionar Tarjeta de Sonido emulada "
+
+#~ msgid "<b>Audio Device Settings</b>"
+#~ msgstr "<b> Ajustes de dispositivo de Audio </b>"
+
+#~ msgid "Used RAM:"
+#~ msgstr "RAM usada:"
+
+#, fuzzy
+#~ msgid "MB"
+#~ msgstr " MB"
+
+#, fuzzy
+#~ msgid "KVM Shadow Memory:"
+#~ msgstr "KVM Memoria Shadow: "
+
+#~ msgid "<b>Memory Settings</b>"
+#~ msgstr "<b> Ajustes de Memoria </b>"
+
+#~ msgid "disable graphical output"
+#~ msgstr "Desactivar Salida Gráfica"
+
+#~ msgid "Use VGA instead of Default"
+#~ msgstr "Usar VGA en vez del Por Defecto"
+
+#~ msgid "Start in vncserver"
+#~ msgstr "Arrancar en vncserver"
+
+#~ msgid "on Display: "
+#~ msgstr "En Display: "
+
+#~ msgid "SDL"
+#~ msgstr "SDL"
+
+#~ msgid "<b>Display Options</b>"
+#~ msgstr "<b> Opciones de Display </b>"
+
+#~ msgid "enable usb"
+#~ msgstr "Activar USB"
+
+#~ msgid "<b>USB settings</b>"
+#~ msgstr "<b> Opciones de USB </b>"
+
+#~ msgid "Set realtime clock to local time"
+#~ msgstr "Establecer reloj de tiempo real a la hora local"
+
+#~ msgid "Guest time drift compensation (TDF)"
+#~ msgstr "Compensación de decalaje de tiempo en el Guest"
+
+#, fuzzy
+#~ msgid "Keyboard:"
+#~ msgstr "Teclado: "
+
+#~ msgid "Serial"
+#~ msgstr "Serie"
+
+#~ msgid "<b>Extra Settings</b>"
+#~ msgstr "<b> Ajustes Extra </b>"
+
+#~ msgid "System"
+#~ msgstr "Sistema"
+
+#~ msgid "<b>Network cards</b>"
+#~ msgstr "<b> Tarjetas de red </b>"
+
+#~ msgid "Set up a new network card"
+#~ msgstr "Configurar una nueva tarjeta de red"
+
+#~ msgid "Add Network card"
+#~ msgstr "Añadir tarjeta de red"
+
+#~ msgid "Use a custom kernel"
+#~ msgstr "Usar kernel personalizado"
+
+#~ msgid "Specify initial ramdisk"
+#~ msgstr "Especificar ramdisk inicial"
+
+#~ msgid "Parameters to append to command line:"
+#~ msgstr "Parametros a añadir a la linea de comandos"
+
+#~ msgid "Enable kernel debugging"
+#~ msgstr "Activar debugging del kernel"
+
+#~ msgid "GNU debugger TCP port:"
+#~ msgstr "Puerto TCP del debugger GNU"
+
+#~ msgid "<b>Booting Linux</b>"
+#~ msgstr "<b> Arrancando Linux </b>"
+
+#~ msgid "Customize Linux Boot"
+#~ msgstr "Personalizar Arranque de Linux"
+
+#~ msgid "<b>Virtual Machine Icon</b>"
+#~ msgstr "<b> Icono de Maquina Virtual </b>"
+
+#~ msgid "Others"
+#~ msgstr "Otros"
+
+#, fuzzy
+#~ msgid "Graphical output disabled"
+#~ msgstr "Desactivar Salida Gráfica"
+
+#, fuzzy
+#~ msgid "Kernel debugging disabled"
+#~ msgstr "Activar debugging del kernel"
+
+#, fuzzy
+#~ msgid "Display member"
+#~ msgstr "En Display: "
 
 #~ msgid "<=== connect ===>"
 #~ msgstr "<=== conectar ===>"

@@ -24,8 +24,8 @@ from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 from virtualbricks.tests.gui.mainwindow.images.test_tab import LaterQemuImg
 
 if has_display:
-    from virtualbricks.gui.mainwindow.bricks.config import imagepicker
-    from virtualbricks.gui.mainwindow.bricks.config.imagepicker import (
+    from virtualbricks.gui.mainwindow.bricks.config.vm import imagepicker
+    from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
         ImagePicker,
     )
 

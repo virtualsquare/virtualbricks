@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_disks -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.vm.test_disks -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -27,10 +27,9 @@ file keeps it as the private<device> setting. The menu of a disk with a
 private copy saves it as a new image, merges it into its image or starts it
 over, in the dialogs of ``imagedialogs``.
 
-Nothing changes until OK: the rows keep what is chosen, and ``apply()``
-gives the images to the machine and returns the modes as its settings; on a
-draft, ``to_draft()`` writes them into the draft, and ``changed`` is called
-after each change of a row.
+Nothing changes until OK: the rows keep what is chosen, ``changed`` is
+called after each change, and ``to_draft()`` writes the images and the modes
+into the machine's draft.
 """
 
 import os
@@ -50,7 +49,9 @@ from virtualbricks.gui.dialogs.imagedialogs import (
     StartOverDialog,
     show_in_files,
 )
-from virtualbricks.gui.mainwindow.bricks.config.imagepicker import ImagePicker
+from virtualbricks.gui.mainwindow.bricks.config.vm.imagepicker import (
+    ImagePicker,
+)
 from virtualbricks.i18n import _
 
 # The modes of a disk: whether it has a private copy.
@@ -374,17 +375,3 @@ class DisksSection(Gtk.Box):
             draft.set(f"{device}_image", name)
             if row is not None:
                 draft.set(f"{device}_private", row.private)
-
-    def apply(self) -> dict:
-        """
-        Give the images to the machine; return the modes of its disks as
-        its settings. A device without a disk loses its image.
-        """
-
-        settings = {}
-        for device in DISK_DEVICES:
-            row = self.row(device)
-            self.vm.set_image(device, None if row is None else row.image)
-            if row is not None:
-                settings[f"{device}_private"] = row.private
-        return settings

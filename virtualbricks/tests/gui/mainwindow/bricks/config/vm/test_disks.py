@@ -19,6 +19,7 @@
 
 import os
 
+from virtualbricks.bricks.virtualmachine import VirtualMachineDraft
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
 from virtualbricks.tests.config.test_images import INFO, FakeQemuImg
@@ -27,8 +28,10 @@ from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 if has_display:
     from gi.repository import GLib
 
-    from virtualbricks.gui.mainwindow.bricks.config import disks
-    from virtualbricks.gui.mainwindow.bricks.config.disks import DisksSection
+    from virtualbricks.gui.mainwindow.bricks.config.vm import disks
+    from virtualbricks.gui.mainwindow.bricks.config.vm.disks import (
+        DisksSection,
+    )
 
 
 class DisksTestCase(GuiTestCase):
@@ -179,27 +182,38 @@ class TestAddDisk(DisksTestCase):
         self.assertEqual(self.devices(), ["hda", "hdc"])
 
 
-class TestOK(DisksTestCase):
+class TestTheDraft(DisksTestCase):
 
-    def test_apply(self):
-        section = self.section
+    def test_to_the_draft(self):
+        calls = []
+        section = DisksSection(
+            self.r1,
+            self.factory,
+            images.InfoCache(self.qemu_img),
+            changed=lambda: calls.append("changed"),
+        )
+        self.addCleanup(section.destroy)
         section.row("hda").picker.choose(self.pc)
         section.row("hdc").mode_combo.set_active_id(disks.PRIVATE)
         section.add_disk("hdb").picker.choose(self.frr)
-        settings = section.apply()
+        section.remove_disk("hdc")
+        self.assertEqual(calls, ["changed"] * 5)
+        draft = VirtualMachineDraft(self.r1)
+        section.to_draft(draft)
         self.assertEqual(
-            settings,
-            {"hda_private": True, "hdb_private": True, "hdc_private": True},
+            [
+                (draft.get(f"{device}_image"), draft.get(f"{device}_private"))
+                for device in ("hda", "hdb", "hdc")
+            ],
+            # a disk removed keeps its mode, and loses its image
+            [("pc", True), ("frr", True), ("", False)],
         )
-        self.assertIs(self.r1.disk("hda").image, self.pc)
-        self.assertIs(self.r1.disk("hdb").image, self.frr)
-        self.assertIs(self.r1.disk("hdc").image, self.pc)
+        # the machine waits for OK
+        self.assertIs(self.r1.disk("hda").image, self.frr)
 
-    def test_a_disk_removed_loses_its_image(self):
-        self.section.remove_disk("hdc")
-        self.assertEqual(self.section.apply(), {"hda_private": True})
-        self.assertIsNone(self.r1.disk("hdc").image)
-        self.assertEqual(self.r1.config.hdc_image, "")
+    def test_without_a_callback(self):
+        self.section.add_disk("hdb")
+        self.assertIsNone(self.section.changed)
 
 
 class FakeDialog:

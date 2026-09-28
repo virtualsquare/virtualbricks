@@ -1,4 +1,4 @@
-# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_imagepicker -*-
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.vm.test_imagepicker -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 

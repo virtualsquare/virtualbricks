@@ -604,13 +604,12 @@ class TestTheSettings(BricksTestCase):
         calls = []
         controllers = {}
 
-        def adapt(brick, default):
+        def adapt(brick, gui):
             controllers[brick] = FakeController(calls)
             return controllers[brick]
 
-        self.patch(tab, "IConfigController", adapt)
-        # not a panel on a draft
-        self.patch(tab, "new_panel", lambda brick, gui: None)
+        # a panel without a draft, as the events' and the images'
+        self.patch(tab, "new_panel", adapt)
         return calls, controllers
 
     def test_a_switch(self):

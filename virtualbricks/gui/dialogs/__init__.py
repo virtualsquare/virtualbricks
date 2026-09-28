@@ -20,10 +20,5 @@ The windows and dialogs of Virtualbricks, but for the main window and the
 brick configuration panels, which are in
 :mod:`virtualbricks.gui.mainwindow`.
 
-Only the classes that code outside this package imports from it are exported;
-the tests import the others from their modules.
+Code outside this package imports from the modules; nothing is exported.
 """
-
-from .ethernetdialog import EditEthernetDialog
-
-__all__ = ["EditEthernetDialog"]

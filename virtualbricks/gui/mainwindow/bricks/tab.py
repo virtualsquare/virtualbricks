@@ -24,7 +24,7 @@ New Brick opens the window that makes a brick. The switch shows all the
 bricks or the running ones, and Start All starts the bricks that can start.
 The menu of a brick is :mod:`virtualbricks.gui.mainwindow.bricks.brickmenu`'s, and
 its settings are its panel of :mod:`virtualbricks.gui.mainwindow.bricks.config`, on a
-draft of the brick if it's one of ``PANELS``; a router has none.
+draft of the brick; a router has none.
 """
 
 from __future__ import annotations
@@ -36,7 +36,6 @@ from gi.repository import Gtk  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks.gui.interfaces import IConfigController  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks import (  # noqa: E402
     brickinfo,
     brickmenu,
@@ -126,10 +125,7 @@ class BricksTab(RowsTab):
         return brickmenu.popup(widget, event, self.gui, item, True)
 
     def panel_for(self, item):
-        panel = new_panel(item, self.gui)
-        if panel is not None:
-            return panel
-        return IConfigController(item, None)
+        return new_panel(item, self.gui)
 
     def settings_words(self, item) -> str:
         return _("{kind} settings").format(kind=brickinfo.kind(item))

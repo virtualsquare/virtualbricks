@@ -19,12 +19,12 @@
 """
 The Disks, and the CD-ROM and boot, sections of a virtual machine.
 
-The disks are the section of :mod:`..disks`, which writes each change into
+The disks are the section of :mod:`.disks`, which writes each change into
 the draft: the image of each device, by name, and its mode.
 """
 
 from virtualbricks.bricks.virtualmachine import DISK_DEVICES
-from virtualbricks.gui.mainwindow.bricks.config.disks import DisksSection
+from virtualbricks.gui.mainwindow.bricks.config.vm.disks import DisksSection
 from virtualbricks.i18n import _
 
 # What -boot takes, and its words.

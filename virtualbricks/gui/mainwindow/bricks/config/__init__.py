@@ -20,9 +20,8 @@ The configuration panels of the bricks, shown in the Bricks tab of the main
 window: one module for each kind of brick, and the parts of the panel of a
 virtual machine, its disks and the picker of their images.
 
-The panels on drafts, of :mod:`.panel`, are in ``PANELS``, by the type of
-their brick; ``new_panel()`` makes one on a new draft of its brick. The others
-are still adapters of ``IConfigController``, until they move.
+The panels, on drafts, are in ``PANELS``, by the type of their brick;
+``new_panel()`` makes one on a new draft of its brick. A router has none.
 
 Only the names that code outside this package imports from it are exported;
 the tests import the others from their modules.
@@ -30,17 +29,16 @@ the tests import the others from their modules.
 
 from .captureconfig import CapturePanel
 from .netemuconfig import NetemuPanel
-from .qemuconfig import QemuConfigController
 from .switchconfig import SwitchPanel
 from .switchwrapperconfig import SwitchWrapperPanel
 from .tapconfig import TapPanel
 from .tunnelcconfig import TunnelConnectPanel
 from .tunnellconfig import TunnelListenPanel
+from .vm.panel import VirtualMachinePanel
 from .wireconfig import WirePanel
 
 __all__ = [
     "PANELS",
-    "QemuConfigController",
     "new_panel",
 ]
 
@@ -48,6 +46,7 @@ __all__ = [
 PANELS = {
     "Capture": CapturePanel,
     "Netemu": NetemuPanel,
+    "Qemu": VirtualMachinePanel,
     "Switch": SwitchPanel,
     "SwitchWrapper": SwitchWrapperPanel,
     "TunnelConnect": TunnelConnectPanel,
