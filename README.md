@@ -41,7 +41,9 @@ sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
 
 - `qemu-system-*` for each architecture of your VMs, and `qemu-img`;
   `qemu-system-gui` has the windows of the machines, SDL and GTK. QEMU 6.2
-  and newer. Ubuntu builds its QEMU without VDE, which a machine needs to
+  and newer: before a machine starts, Virtualbricks asks its QEMU what it
+  has, and a setting that this QEMU lacks is left out, with a warning in
+  *File › Logs*. Ubuntu builds its QEMU without VDE, which a machine needs to
   plug into a switch: there, use a QEMU package built with it;
 - VDE 2: `vde_switch`, `vde_plug`, `wirefilter`, `vde_plug2tap`,
   `vde_pcapplug`, `dpipe`, `vdeterm` and `unixterm`, and `vde_cryptcab`, in
@@ -67,8 +69,9 @@ To install Virtualbricks for your user, once the libraries above are there:
 pip install --user .
 ```
 
-It installs the `virtualbricks` command, the manual page of the configuration
-files and the translations. To work on the code, follow
+It installs the `virtualbricks` command, the `virtualbricks-migrate` window,
+the manual pages of the configuration files and of the archives of the
+projects, and the translations. To work on the code, follow
 [Development](#development) instead.
 
 ## Running
@@ -107,12 +110,18 @@ Virtualbricks keeps its files in TOML, and writes them itself:
   `project.toml`, its README and its private disks. The `workspace` setting
   changes it.
 
+Each file says, in a comment above each key, what the key is for, and marks
+with `# default` the values that are the defaults. Virtualbricks writes the
+files again as it saves, so comments added by hand don't last.
+
 Each project has its own settings, in its `project.toml`: the first time,
 choose in *File › Settings*, on the page of the project, where
-Virtualbricks finds the programs: `qemupath` and `vdepath`, the folders of the
-Qemu and VDE binaries. A new project starts with a copy of the settings of the
-project that is open. The page of the application sets `term`, the terminal of
-the consoles.
+Virtualbricks finds the programs: `qemu_path` and `vde_path`, the folders of
+the Qemu and VDE binaries. A new project starts with a copy of the settings of
+the project that is open. The page of the application sets `terminal`, the
+terminal of the consoles, and `audio_driver`, the audio driver of QEMU that
+plays the sound cards of the machines: `alsa` by default, or `pa`,
+`pipewire`, and the others your QEMU has.
 
 A tap and a capture need root. Unless Virtualbricks runs as root, it runs them
 with `sudo -A` when an askpass helper is configured, in `SUDO_ASKPASS` or
@@ -127,7 +136,9 @@ the command line.
 
 The files are described in the manual page, which you can read from the
 sources with `man ./docs/man/virtualbricks-config.5`, and in
-[`docs/config-files.html`](docs/config-files.html).
+[`docs/config-files.html`](docs/config-files.html); the archives that export
+and import projects in `man ./docs/man/virtualbricks-archive.7` and
+[`docs/archive-protocol.html`](docs/archive-protocol.html).
 
 ## Development
 
@@ -188,7 +199,18 @@ coverage report
 `trial` writes in `_trial_temp/`, which git ignores.
 
 - The tests don't touch your settings, your projects or the lock: each one
-  runs in a temporary home. They need neither root, nor Qemu, nor VDE.
+  runs in a temporary home. They need neither root, nor Qemu, nor VDE, but
+  one: `test_integration.py` makes the sample project of
+  `virtualbricks/tests/sample.py`, a brick of each kind, and starts it with
+  the programs installed here, the machine paused; it is skipped without
+  `qemu-system-x86_64`, `qemu-img` and `vde_switch`.
+- The command lines of the bricks are tested against what the QEMU and VDE of
+  each supported distribution answer, recorded in
+  `virtualbricks/tests/data/programs/<target>.json`. In the same folder,
+  `record.py` records them again, for a new distribution or when one updates
+  its QEMU, and `start.py` starts the sample project in a container of each
+  distribution, as root: the check before a release. Both need `podman` and
+  the network.
 - The tests of the windows need a display, and are skipped without one. To run
   them on a machine without, install `xvfb` and run
   `xvfb-run -a python -m twisted.trial virtualbricks`.
@@ -199,7 +221,8 @@ coverage report
   module: `virtualbricks/config/workspace.py` is tested by
   `virtualbricks/tests/config/test_workspace.py`. The helpers are in
   `virtualbricks/tests/__init__.py` (`isolate`, `reset_settings`,
-  `make_factory`, `FakeLogger`, `use_workspace`) and, for the windows, in
+  `make_factory`, `FakeLogger`, `use_workspace`, and `BrickTestCase` and
+  `CommandTestCase` for the bricks) and, for the windows, in
   `virtualbricks/tests/gui/__init__.py` (`GuiTestCase`).
 - `test_docs.py` checks that the manual page documents every setting, key of
   the project file and kind of brick of the code, and that the page is up to
@@ -237,10 +260,15 @@ To add a language, see the top of `l10n.sh`.
 - `virtualbricks/`: `app.py` and `scripts/` start the application and read its
   command line; `brickfactory.py` is the model in memory, the bricks, the
   events and the images of the open project; `console.py` is the console of
-  the terminal; `tools.py` and `spawn.py` run the Qemu and VDE programs;
-  `locations.py` has the paths of the files.
+  the terminal; `programs.py` asks the installed Qemu and VDE programs what
+  they have; `sudo.py` writes the `sudo` command of what needs root, and
+  `ksm.py` turns Kernel Samepage Merging on and off; `spawn.py` and
+  `tools.py` are helpers for `qemu-img`, KVM and the formats of the disk
+  images; `markdown.py` reads the README of a project, and `topology.py`
+  lays the lab out with Graphviz; `locations.py` has the paths of the files.
 - `virtualbricks/bricks/`: a module for each kind of brick: virtual machine,
-  switch, tap, wire, and so on.
+  switch, tap, wire, and so on; each writes its command line with
+  `command.py`.
 - `virtualbricks/config/`: the settings and the state, the schemas of their
   fields, the project file, and the projects: `workspace.py` lists, creates and
   opens them, `archive.py` and `importing.py` read, write and import their
@@ -251,13 +279,16 @@ To add a language, see the top of `l10n.sh`.
   needs the desktop, as the trash, is given to it by the GUI.
 - `virtualbricks/migrate/`: the only code that reads the files of Virtualbricks
   2.1 and older.
-- `virtualbricks/gui/`: the application window and the messages log;
-  `windows/` has a module for each window, built in Python code.
+- `virtualbricks/gui/`: the windows, built in Python code. `mainwindow/` is
+  the main window, with a module or a package for each tab: `bricks/`, with
+  the settings panel of each kind of brick in `bricks/config/`, `events/`,
+  `images/`, `topology.py` and `readme.py`. `dialogs/` has the other windows
+  and dialogs, and `messages.py` the messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
-- `docs/`: the manual page, in `man/`, and the designs of the parts that were
-  rewritten: `config-redesign.html` and `config-files.html` for the files,
-  `messages-window.html` for the messages window and `projects-redesign.html`
-  for the projects, their import and their export.
+- `docs/`: the manual pages, in `man/`, and their web pages,
+  `config-files.html` and `archive-protocol.html`; in `redesign/`, the designs
+  of the parts that were rewritten, numbered in the order of the work, from
+  the conversion of the Glade files to the settings.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
 ## License
