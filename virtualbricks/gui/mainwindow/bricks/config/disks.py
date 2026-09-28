@@ -359,5 +359,5 @@ class DisksSection(Gtk.Box):
             row = self.row(device)
             self.vm.set_image(device, None if row is None else row.image)
             if row is not None:
-                settings["private" + device] = row.private
+                settings[f"{device}_private"] = row.private
         return settings

@@ -88,36 +88,36 @@ class TestCheckFormat(unittest.TestCase):
 class TestValues(SettingsTestCase):
 
     def test_defaults(self):
-        self.assertEqual(get_setting("term"), "/usr/bin/xterm")
+        self.assertEqual(get_setting("terminal"), "/usr/bin/xterm")
         self.assertEqual(
             get_setting("workspace"),
             os.path.join(self.root, ".virtualbricks"),
         )
         # a setting of a project, while none is open
-        self.assertEqual(get_setting("qemupath"), "/usr/bin")
+        self.assertEqual(get_setting("qemu_path"), "/usr/bin")
 
     def test_has_option(self):
-        self.assertTrue(has_option("term"))
-        self.assertTrue(has_option("cowfmt"))
+        self.assertTrue(has_option("terminal"))
+        self.assertTrue(has_option("cow_format"))
         self.assertFalse(has_option("python"))
 
     def test_set_validates(self):
-        self.assertRaises(ValueError, set_setting, "systray", "maybe")
-        set_setting("systray", False)
-        self.assertIs(get_setting("systray"), False)
+        self.assertRaises(ValueError, set_setting, "tray_icon", "maybe")
+        set_setting("tray_icon", False)
+        self.assertIs(get_setting("tray_icon"), False)
         use_project(ProjectSettings())
-        self.assertRaises(ValueError, set_setting, "cowfmt", "qed")
-        set_setting("cowfmt", "qcow")
-        self.assertEqual(get_setting("cowfmt"), "qcow")
+        self.assertRaises(ValueError, set_setting, "cow_format", "qed")
+        set_setting("cow_format", "qcow")
+        self.assertEqual(get_setting("cow_format"), "qcow")
 
     def test_parse(self):
-        self.assertIs(parse_setting("femaleplugs", "yes"), True)
-        self.assertIs(parse_setting("systray", "no"), False)
-        self.assertRaises(ValueError, parse_setting, "cowfmt", "qed")
+        self.assertIs(parse_setting("allow_female_plugs", "yes"), True)
+        self.assertIs(parse_setting("tray_icon", "no"), False)
+        self.assertRaises(ValueError, parse_setting, "cow_format", "qed")
 
     def test_setting_kind(self):
-        self.assertEqual(setting_kind("cowfmt").format("qcow"), '"qcow"')
-        self.assertEqual(setting_kind("systray").format(True), "true")
+        self.assertEqual(setting_kind("cow_format").format("qcow"), '"qcow"')
+        self.assertEqual(setting_kind("tray_icon").format(True), "true")
         self.assertRaises(KeyError, setting_kind, "python")
 
     def test_unknown_name_is_an_error(self):
@@ -133,34 +133,37 @@ class TestProjectSettings(SettingsTestCase):
 
     def test_no_project_is_open(self):
         self.assertIsNone(project_settings())
-        self.assertEqual(get_setting("cowfmt"), "qcow2")
-        error = self.assertRaises(ValueError, set_setting, "cowfmt", "qcow")
-        self.assertEqual(
-            str(error), "cowfmt is a setting of a project, and none is open"
+        self.assertEqual(get_setting("cow_format"), "qcow2")
+        error = self.assertRaises(
+            ValueError, set_setting, "cow_format", "qcow"
         )
-        self.assertEqual(get_setting("cowfmt"), "qcow2")
+        self.assertEqual(
+            str(error),
+            "cow_format is a setting of a project, and none is open",
+        )
+        self.assertEqual(get_setting("cow_format"), "qcow2")
 
     def test_the_open_project(self):
-        project = ProjectSettings(qemupath="/opt/qemu")
+        project = ProjectSettings(qemu_path="/opt/qemu")
         use_project(project)
         self.assertIs(project_settings(), project)
-        self.assertEqual(get_setting("qemupath"), "/opt/qemu")
-        set_setting("qemupath", "/srv/qemu")
-        self.assertEqual(project.qemupath, "/srv/qemu")
+        self.assertEqual(get_setting("qemu_path"), "/opt/qemu")
+        set_setting("qemu_path", "/srv/qemu")
+        self.assertEqual(project.qemu_path, "/srv/qemu")
         # the settings of the application aren't the project's
-        set_setting("term", "/usr/bin/foot")
-        self.assertEqual(get_setting("term"), "/usr/bin/foot")
+        set_setting("terminal", "/usr/bin/foot")
+        self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
         use_project(None)
-        self.assertEqual(get_setting("qemupath"), "/usr/bin")
-        self.assertEqual(get_setting("term"), "/usr/bin/foot")
+        self.assertEqual(get_setting("qemu_path"), "/usr/bin")
+        self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
 
     def test_a_new_project_copies_the_open_one(self):
-        project = ProjectSettings(vdepath="/opt/vde", cowfmt="qcow")
+        project = ProjectSettings(vde_path="/opt/vde", cow_format="qcow")
         use_project(project)
         new = new_project_settings()
         self.assertEqual(new, project)
-        new.cowfmt = "cow"
-        self.assertEqual(project.cowfmt, "qcow")
+        new.cow_format = "cow"
+        self.assertEqual(project.cow_format, "qcow")
 
     def test_a_new_project_without_an_open_one(self):
         self.assertEqual(new_project_settings(), ProjectSettings())
@@ -175,7 +178,13 @@ class TestProjectSettings(SettingsTestCase):
     def test_project_keys(self):
         self.assertEqual(
             PROJECT_KEYS,
-            {"cowfmt", "erroronloop", "femaleplugs", "qemupath", "vdepath"},
+            {
+                "cow_format",
+                "log_link_loops",
+                "allow_female_plugs",
+                "qemu_path",
+                "vde_path",
+            },
         )
         # none of them is a setting of the application
         self.assertFalse(PROJECT_KEYS & set(field_names(AppSettings)))
@@ -191,7 +200,7 @@ class TestLoadStore(SettingsTestCase):
         self.assertEqual(len(report), 0)
         data = load_toml(self.path())
         self.assertEqual(data["format"], 1)
-        self.assertIs(data["ksm"], True)
+        self.assertIs(data["kernel_samepage_merging"], True)
         self.assertEqual(len(data), 1 + len(field_names(AppSettings)))
         self.assertEqual(
             self.logger.formatted(),
@@ -209,26 +218,26 @@ class TestLoadStore(SettingsTestCase):
         dump_toml(
             {
                 "format": 1,
-                "term": "/usr/bin/foot",
+                "terminal": "/usr/bin/foot",
                 "color": 1,
-                "cowfmt": "cow",
+                "cow_format": "cow",
             },
             self.path(),
         )
         report = load_settings()
-        self.assertEqual(get_setting("term"), "/usr/bin/foot")
+        self.assertEqual(get_setting("terminal"), "/usr/bin/foot")
         messages = [str(m) for m in report]
         self.assertIn("color: unknown field, dropped", messages)
-        self.assertIn("cowfmt: unknown field, dropped", messages)
-        self.assertIn("systray: missing, using the default true", messages)
-        self.assertEqual(get_setting("cowfmt"), "qcow2")
+        self.assertIn("cow_format: unknown field, dropped", messages)
+        self.assertIn("tray_icon: missing, using the default true", messages)
+        self.assertEqual(get_setting("cow_format"), "qcow2")
         self.assertEqual(self.ksm, [])
 
     def test_load_enables_ksm(self):
         os.makedirs(os.path.dirname(self.path()))
         data = {
             "format": 1,
-            **dump_record(AppSettings(ksm=True)),
+            **dump_record(AppSettings(kernel_samepage_merging=True)),
         }
         dump_toml(data, self.path())
         load_settings()
@@ -238,9 +247,9 @@ class TestLoadStore(SettingsTestCase):
         path = self.mktemp()
         load_settings(path)
         self.assertTrue(os.path.isfile(path))
-        set_setting("term", "x")
+        set_setting("terminal", "x")
         self.assertTrue(store_settings())
-        self.assertEqual(load_toml(path)["term"], "x")
+        self.assertEqual(load_toml(path)["terminal"], "x")
 
     def test_unreadable(self):
         os.makedirs(self.path())  # a directory can't be read as a file
@@ -254,17 +263,17 @@ class TestLoadStore(SettingsTestCase):
     def test_invalid_toml(self):
         os.makedirs(os.path.dirname(self.path()))
         with open(self.path(), "w") as fp:
-            fp.write("term = \n")
+            fp.write("terminal = \n")
         load_settings()
         self.assertEqual(self.logger.levels(), ["error"])
         self.assertFalse(store_settings())
 
     def test_newer_format_is_not_overwritten(self):
         os.makedirs(os.path.dirname(self.path()))
-        dump_toml({"format": 2, "term": "/x"}, self.path())
+        dump_toml({"format": 2, "terminal": "/x"}, self.path())
         report = load_settings()
         self.assertTrue(report.has_errors)
-        self.assertEqual(get_setting("term"), "/usr/bin/xterm")
+        self.assertEqual(get_setting("terminal"), "/usr/bin/xterm")
         self.assertFalse(store_settings())
         self.assertEqual(load_toml(self.path())["format"], 2)
 

@@ -60,7 +60,7 @@ class PickerTestCase(GuiTestCase):
 
     def vm(self, name, image, private=True):
         vm = self.factory.new_brick("qemu", name)
-        vm.set({"hda": image.get_name(), "privatehda": private})
+        vm.set({"hda_image": image.get_name(), "hda_private": private})
         return vm
 
     def picker(self, image=None, infos=None):

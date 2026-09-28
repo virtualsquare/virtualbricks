@@ -28,10 +28,10 @@ from virtualbricks.i18n import _
 @define
 class TapConfig(bricks.BrickConfig):
 
-    ip = field(IPv4(), default="10.0.0.1")
-    nm = field(IPv4(), default="255.255.255.0")
-    gw = field(IPv4(optional=True), default="")
-    mode = field(Choice("off", "dhcp", "manual"), default="off")
+    address_mode = field(Choice("off", "dhcp", "manual"), default="off")
+    ip_address = field(IPv4(), default="10.0.0.1")
+    netmask = field(IPv4(), default="255.255.255.0")
+    gateway = field(IPv4(optional=True), default="")
 
 
 class Tap(bricks.PrivilegedBrick):

@@ -22,6 +22,7 @@ import os
 
 
 from virtualbricks import console, errors
+from virtualbricks.base import BaseConfig
 from virtualbricks.bricks import BrickConfig
 from virtualbricks.config.report import Report
 from virtualbricks.config.schema import field_names
@@ -35,32 +36,35 @@ class TestBase(BrickTestCase):
     def test_get_and_set(self):
         switch = self.factory.new_brick("switch", "sw")
         calls = []
-        switch.cbset_numports = calls.append
-        switch.set({"numports": 16, "hub": False})
-        self.assertEqual(switch.get("numports"), 16)
+        switch.cbset_ports = calls.append
+        switch.set({"ports": 16, "hub_mode": False})
+        self.assertEqual(switch.get("ports"), 16)
         self.assertEqual(calls, [16])
         self.assertRaises(KeyError, switch.get, "nope")
         self.assertRaises(KeyError, switch.set, {"nope": 1})
-        self.assertRaises(ValueError, switch.set, {"numports": 500})
+        self.assertRaises(ValueError, switch.set, {"ports": 500})
 
     def test_configure_from_the_console(self):
         switch = self.factory.new_brick("switch", "sw")
-        switch.configure(["numports=8", "fstp=yes"])
-        self.assertEqual(switch.config.numports, 8)
-        self.assertIs(switch.config.fstp, True)
+        switch.configure(["ports=8", "fast_spanning_tree=yes"])
+        self.assertEqual(switch.config.ports, 8)
+        self.assertIs(switch.config.fast_spanning_tree, True)
         self.assertRaises(KeyError, switch.configure, ["nope=1"])
-        self.assertRaises(ValueError, switch.configure, ["numports=x"])
+        self.assertRaises(ValueError, switch.configure, ["ports=x"])
 
     def test_config_table(self):
         tap = self.factory.new_brick("tap", "tap0")
-        tap.set({"mode": "manual"})
+        tap.set({"address_mode": "manual"})
         table = tap.config_table()
-        self.assertEqual(table["mode"], "manual")
+        self.assertEqual(table["address_mode"], "manual")
         report = Report()
         tap.load_config_table(
-            {**table, "ip": "10.1.1.1", "type": "tap"}, report, "t", {"type"}
+            {**table, "ip_address": "10.1.1.1", "type": "tap"},
+            report,
+            "t",
+            {"type"},
         )
-        self.assertEqual(tap.config.ip, "10.1.1.1")
+        self.assertEqual(tap.config.ip_address, "10.1.1.1")
         self.assertEqual(len(report), 0)
 
     def test_runtime_paths(self):
@@ -97,17 +101,28 @@ class TestSchemas(BrickTestCase):
         ):
             brick = self.factory.new_brick(kind, kind + "1")
             self.assertIsInstance(brick.config, BrickConfig)
-            self.assertEqual(brick.config.pon_vbevent, "")
+            self.assertEqual(brick.config.on_start, "")
+            self.assertEqual(brick.config.on_stop, "")
+
+    def test_every_brick_and_event_has_an_icon(self):
+        event = self.factory.new_event("ev")
+        vm = self.factory.new_brick("qemu", "vm")
+        for item in (self.factory.new_brick("switch", "sw"), vm, event):
+            self.assertIsInstance(item.config, BaseConfig)
+            self.assertEqual(field_names(item.config)[0], "icon")
+            self.assertEqual(item.config.icon, "")
+        vm.set({"icon": "/usr/share/pixmaps/router.png"})
+        self.assertEqual(vm.get("icon"), "/usr/share/pixmaps/router.png")
 
     def test_limits(self):
         tap = self.factory.new_brick("tap", "tap0")
-        self.assertRaises(ValueError, tap.set, {"mode": "static"})
-        self.assertRaises(ValueError, tap.set, {"ip": "10.0.0"})
-        tap.set({"gw": ""})
+        self.assertRaises(ValueError, tap.set, {"address_mode": "static"})
+        self.assertRaises(ValueError, tap.set, {"ip_address": "10.0.0"})
+        tap.set({"gateway": ""})
         listen = self.factory.new_brick("tunnellisten", "tl")
-        self.assertRaises(ValueError, listen.set, {"port": 0})
+        self.assertRaises(ValueError, listen.set, {"listen_port": 0})
         vm = self.factory.new_brick("qemu", "vm")
-        self.assertRaises(ValueError, vm.set, {"ram": 0})
+        self.assertRaises(ValueError, vm.set, {"memory": 0})
 
     def test_tunnel_parameters(self):
         listen = self.factory.new_brick("tunnellisten", "tl")
@@ -118,13 +133,13 @@ class TestSchemas(BrickTestCase):
 
     def test_switch_wrapper(self):
         wrapper = self.factory.new_brick("switchwrapper", "wr")
-        wrapper.set({"path": "/nonexistent"})
+        wrapper.set({"socket_path": "/nonexistent"})
         self.assertEqual(wrapper.get_parameters(), "/nonexistent")
         failure = self.failureResultOf(wrapper.poweron())
         failure.trap(errors.BadConfigError)
         path = self.mktemp()
         os.makedirs(path)
-        wrapper.set({"path": path})
+        wrapper.set({"socket_path": path})
         self.assertIs(self.successResultOf(wrapper.poweron()), wrapper)
 
     def test_router_has_no_name_field(self):
@@ -142,7 +157,7 @@ class TestRelatedEvents(BrickTestCase):
         event.poweron = lambda: started.append("boot")
         switch._start_related_events(on=True)
         self.assertEqual(started, [])
-        switch.set({"pon_vbevent": "boot", "poff_vbevent": "gone"})
+        switch.set({"on_start": "boot", "on_stop": "gone"})
         switch._start_related_events(on=True)
         self.assertEqual(started, ["boot"])
         switch._start_related_events(on=False, off=True)

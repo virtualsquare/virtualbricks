@@ -99,7 +99,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
                 name = line.strip().split(":")[0]
                 if name != "lo":
                     itr = model.append((name,))
-                    if self.original.get("iface") == name:
+                    if self.original.get("interface") == name:
                         combo2.set_active_iter(itr)
 
         return self.panel
@@ -110,7 +110,7 @@ class CaptureConfigController(_PlugMixin, ConfigController):
         itr = combo.get_active_iter()
         if itr is not None:
             model = combo.get_model()
-            self.original.set({"iface": model[itr][0]})
+            self.original.set({"interface": model[itr][0]})
 
     def on_manual_radiobutton_toggled(self, radiobtn):
         self.ipconfig_table.set_sensitive(radiobtn.get_active())

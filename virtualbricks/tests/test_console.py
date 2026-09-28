@@ -35,15 +35,15 @@ class TestConsole(BrickTestCase):
     def test_show(self):
         switch = self.factory.new_brick("switch", "sw")
         self.protocol.brick_action(switch, ["show"])
-        self.assertIn("numports = 32", self.lines)
-        self.assertIn('pon_vbevent = ""', self.lines)
+        self.assertIn("ports = 32", self.lines)
+        self.assertIn('on_start = ""', self.lines)
 
     def test_config(self):
         switch = self.factory.new_brick("switch", "sw")
-        self.protocol.brick_action(switch, ["config", "numports=4"])
-        self.assertEqual(switch.config.numports, 4)
+        self.protocol.brick_action(switch, ["config", "ports=4"])
+        self.assertEqual(switch.config.ports, 4)
         self.protocol.brick_action(switch, ["config", "nope=4"])
-        self.protocol.brick_action(switch, ["config", "numports=500"])
+        self.protocol.brick_action(switch, ["config", "ports=500"])
         self.assertEqual(
             self.lines, ["No such parameter nope", "500 is outside 1–128"]
         )
@@ -51,17 +51,17 @@ class TestConsole(BrickTestCase):
     def test_settings(self):
         config = console.ConfigurationProtocol(self.factory)
         config.sendLine = self.lines.append
-        config.do_get("femaleplugs")
-        config.do_set("femaleplugs", "yes")
-        config.do_get("femaleplugs")
-        config.do_set("cowfmt", "qed")
+        config.do_get("allow_female_plugs")
+        config.do_set("allow_female_plugs", "yes")
+        config.do_get("allow_female_plugs")
+        config.do_set("cow_format", "qed")
         config.do_get("python")
         config.do_set("python", "1")
         self.assertEqual(
             self.lines,
             [
-                "femaleplugs = false",
-                "femaleplugs = true",
+                "allow_female_plugs = false",
+                "allow_female_plugs = true",
                 '"qed" is not one of cow, qcow, qcow2',
                 "No such option python",
                 "No such option python",

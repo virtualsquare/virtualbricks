@@ -63,23 +63,23 @@ class TestFactory(BrickTestCase):
 
     def test_dup_brick(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"ram": 256, "usbdevlist": [UsbDevice("1d6b:0002", "hub")]})
+        vm.set({"memory": 256, "usb_devices": [UsbDevice("1d6b:0002", "hub")]})
         copy = self.factory.dup_brick(vm)
-        self.assertEqual(copy.config.ram, 256)
-        self.assertEqual(copy.config.usbdevlist, vm.config.usbdevlist)
-        self.assertIsNot(copy.config.usbdevlist, vm.config.usbdevlist)
+        self.assertEqual(copy.config.memory, 256)
+        self.assertEqual(copy.config.usb_devices, vm.config.usb_devices)
+        self.assertIsNot(copy.config.usb_devices, vm.config.usb_devices)
 
     def test_rename_event_updates_the_bricks(self):
         event = self.factory.new_event("boot")
         switch = self.factory.new_brick("switch", "sw")
-        switch.set({"pon_vbevent": "boot", "poff_vbevent": "boot"})
+        switch.set({"on_start": "boot", "on_stop": "boot"})
         other = self.factory.new_event("other")
         other.set({"delay": 1})
         changed = []
         switch.changed.connect(changed.append)
         self.factory.rename(event, "start")
-        self.assertEqual(switch.config.pon_vbevent, "start")
-        self.assertEqual(switch.config.poff_vbevent, "start")
+        self.assertEqual(switch.config.on_start, "start")
+        self.assertEqual(switch.config.on_stop, "start")
         self.assertEqual(changed, [switch])
 
     def test_check_socket_room(self):

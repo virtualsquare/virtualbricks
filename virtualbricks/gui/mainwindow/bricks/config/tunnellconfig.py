@@ -37,6 +37,9 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
     port and the password.
     """
 
+    # the setting of the port of the panel: the one listened on
+    port_key = "listen_port"
+
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``tunnellconfig.ui``."""
 
@@ -111,7 +114,7 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
             gui,
         )
         port = self.port_spin
-        port.set_value(self.original.get("port"))
+        port.set_value(self.original.get(self.port_key))
         password = self.password_entry
         password.set_text(self.original.get("password"))
         return self.panel
@@ -120,4 +123,4 @@ class TunnelListenConfigController(_PlugMixin, ConfigController):
         self.connect_plug(self.original.plugs[0], self.sock_combo)
         port = self.port_spin.get_value_as_int()
         password = self.password_entry.get_text()
-        self.original.set({"port": port, "password": password})
+        self.original.set({self.port_key: port, "password": password})

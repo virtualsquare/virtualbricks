@@ -251,10 +251,11 @@ class TermProtocol(protocol.ProcessProtocol):
 
 
 @define
-class BrickConfig:
+class BrickConfig(base.BaseConfig):
 
-    pon_vbevent = field(Ref("event"), default="")
-    poff_vbevent = field(Ref("event"), default="")
+    # the events to run when the brick starts and when it stops
+    on_start = field(Ref("event"), default="")
+    on_stop = field(Ref("event"), default="")
 
 
 class Brick(base.Base):
@@ -414,7 +415,7 @@ class Brick(base.Base):
         Return a Deferred of a Prepared. resume is for a virtual machine.
         """
 
-        deferred = programs.vde(get_setting("vdepath"))
+        deferred = programs.vde(get_setting("vde_path"))
         return deferred.addCallback(lambda vde: Prepared(vde=vde))
 
     def command(self, prepared):
@@ -440,10 +441,10 @@ class Brick(base.Base):
         reactor.spawnProcess(self.proc, args[0], args, os.environ)
 
     def _start_related_events(self, on=True, off=False):
-        if on and self.config.pon_vbevent:
-            name = self.config.pon_vbevent
-        elif off and self.config.poff_vbevent:
-            name = self.config.poff_vbevent
+        if on and self.config.on_start:
+            name = self.config.on_start
+        elif off and self.config.on_stop:
+            name = self.config.on_stop
         else:
             return
 
@@ -487,7 +488,7 @@ class Brick(base.Base):
     ############################
 
     def open_console(self):
-        term = get_setting("term")
+        term = get_setting("terminal")
         args = [term, "-e", abspath_vde(self.term_command), self.console()]
         self.logger.info(open_console, name=self.name, args=" ".join(args))
         reactor.spawnProcess(TermProtocol(), term, args, os.environ)

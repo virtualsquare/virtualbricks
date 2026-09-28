@@ -103,7 +103,7 @@ class TestReadingAnEvent(EditorTestCase):
             vb("sw2 off"),
             vb("boot on"),
             vb("boot off"),
-            vb("sw1 config numports=8"),
+            vb("sw1 config ports=8"),
             sh("ping -c 3 10.0.0.254"),
         )
         self.assertEqual(editor.delay.get_value_as_int(), 5)
@@ -114,7 +114,7 @@ class TestReadingAnEvent(EditorTestCase):
                 ("stop-brick", "sw2"),
                 ("start-event", "boot"),
                 ("stop-event", "boot"),
-                ("console", "sw1 config numports=8"),
+                ("console", "sw1 config ports=8"),
                 ("shell", "ping -c 3 10.0.0.254"),
             ],
         )
@@ -188,7 +188,7 @@ class TestSaving(EditorTestCase):
             vb("sw1 on"),
             vb("boot off"),
             vb("vm9 on"),
-            vb("sw1 config numports=8"),
+            vb("sw1 config ports=8"),
             sh(" ls -l"),
         ]
         editor = self.edit(5, *actions)
@@ -273,10 +273,10 @@ class TestChangingAnAction(EditorTestCase):
             row.subject.get_placeholder_text(),
             "A command of the console, as “vm1 config ram=512”",
         )
-        row.subject.set_text("sw2 config numports=4")
+        row.subject.set_text("sw2 config ports=4")
         # a command stays a command
         row.kind_combo.set_active_id("shell")
-        self.assertEqual(row.subject.get_text(), "sw2 config numports=4")
+        self.assertEqual(row.subject.get_text(), "sw2 config ports=4")
         self.assertEqual(
             row.subject.get_placeholder_text(),
             "A command for the shell of the host",
@@ -284,7 +284,7 @@ class TestChangingAnAction(EditorTestCase):
         self.ok(editor)
         self.assertEqual(
             commands(self.event),
-            [(console.ShellCommand, "sw2 config numports=4")],
+            [(console.ShellCommand, "sw2 config ports=4")],
         )
 
     def test_no_event_to_choose(self):

@@ -204,7 +204,7 @@ class TestTheRows(EventsTestCase):
     def test_the_bricks_that_start_it(self):
         row = self.row()
         sw = self.factory.new_brick("switch", "sw1")
-        sw.set({"pon_vbevent": "start-vms"})
+        sw.set({"on_start": "start-vms"})
         self.assertEqual(
             row.detail.get_text(), "After 5 s, starts vm1 · when sw1 starts"
         )
@@ -247,9 +247,7 @@ class TestTheRows(EventsTestCase):
         self.ev.poweron()
         self.tab.on_quit()
         self.assertEqual(len(self.clock.getDelayedCalls()), 1)
-        self.factory.new_brick("switch", "sw1").set(
-            {"pon_vbevent": "start-vms"}
-        )
+        self.factory.new_brick("switch", "sw1").set({"on_start": "start-vms"})
         self.assertEqual(row.detail.get_text(), "After 5 s, starts vm1")
         self.ev.poweroff()
         self.tab.on_quit = lambda: None

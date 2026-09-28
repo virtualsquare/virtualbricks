@@ -35,6 +35,7 @@ from virtualbricks.bricks.command import Command, Prepared, joined, socket_path
 from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.schema import (
     Bool,
+    Choice,
     Int,
     Kind,
     ListOf,
@@ -68,7 +69,7 @@ invalid_base = (
     " found_backing_file={found_backing_file} backup_file={backup_file}"
 )
 powerdown = "Sending powerdown to {vm}"
-update_usb = "update_usbdevlist: old {old} - new {new}"
+update_usb = "update_usb_devices: old {old} - new {new}"
 own_err = "plug {plug} does not belong to {brick}"
 acquire_lock = "Aquiring disk locks"
 release_lock = "Releasing disk locks"
@@ -410,17 +411,17 @@ class Disk:
     def image(self):
         """The image named in the configuration, if it's in the library."""
 
-        name = getattr(self.vm.config, self.device)
+        name = getattr(self.vm.config, f"{self.device}_image")
         if not name:
             return None
         return self.vm.factory.get_image_by_name(name)
 
     def set_image(self, image):
         name = "" if image is None else image.get_name()
-        setattr(self.vm.config, self.device, name)
+        setattr(self.vm.config, f"{self.device}_image", name)
 
     def is_cow(self):
-        return getattr(self.vm.config, "private" + self.device)
+        return getattr(self.vm.config, f"{self.device}_private")
 
     def _basefolder(self):
         return projects.current.path
@@ -476,11 +477,11 @@ class Disk:
         args = [
             "create",
             "-f",
-            get_setting("cowfmt"),
+            get_setting("cow_format"),
             "-b",
             self.image.path,
             "-F",
-            get_setting("cowfmt"),
+            get_setting("cow_format"),
             filename,
         ]
         deferred = qemu_img(args)
@@ -586,7 +587,7 @@ class Disk:
             return defer.succeed(self.image.path)
 
     def readonly(self):
-        return self.vm.config.snapshot
+        return self.vm.config.forget_disk_changes
 
     def __repr__(self):
         return (
@@ -608,8 +609,8 @@ def _image(dev):
 
     Without this function each disk field would repeat the kind, the default
     and the path. Leaving the path out changes the format of the project file:
-    the field would then be written as a top-level ``hda = "..."`` key of the
-    brick, which the project files of format 1 don't have.
+    the field would then be written as a top-level ``hda_image = "..."`` key
+    of the brick, which the project files don't have.
     """
 
     return field(Ref("image"), default="", path=("disks", dev, "image"))
@@ -626,7 +627,7 @@ def _private(dev):
 
     As for :func:`_image`, without this function each field would repeat the
     kind, the default and the path, and leaving the path out would write a
-    top-level ``privatehda = ...`` key instead, a different file format.
+    top-level ``hda_private = ...`` key instead, a different file format.
     """
 
     return field(Bool(), default=False, path=("disks", dev, "private"))
@@ -640,71 +641,63 @@ class VirtualMachineConfig(bricks.BrickConfig):
     The order of the fields is the order of the keys in the project file.
     """
 
-    # boot options
-    boot = field(Str(), default="")
-    snapshot = field(Bool(), default=False)
-    # cdrom device
-    deviceen = field(Bool(), default=False)
-    device = field(Str(), default="")
-    cdromen = field(Bool(), default=False)
-    cdrom = field(Path(), default="")
-    # additional media
-    use_virtio = field(Bool(), default=False)
-    # system and machine
-    argv0 = field(Str(), default="qemu-system-i386")
-    cpu = field(Str(), default="")
-    machine = field(Str(), default="")
-    kvm = field(Bool(), default=False)
-    smp = field(Int(1, 64), default=1)
-    # audio device soundcard
-    soundhw = field(Str(), default="")
-    # memory device settings
-    ram = field(Int(1, 99999), default=64)
-    kvmsm = field(Bool(), default=False)
-    kvmsmem = field(Int(0, 99999), default=1)
-    # display options
-    novga = field(Bool(), default=False)
-    vga = field(Bool(), default=False)
-    vnc = field(Bool(), default=False)
-    vncN = field(Int(0, 500), default=1)
-    sdl = field(Bool(), default=False)
-    portrait = field(Bool(), default=False)
-    # usb settings
-    usbmode = field(Bool(), default=False)
-    usbdevlist = field(ListOf(UsbDeviceKind()), factory=list)
-    # extra settings
-    rtc = field(Bool(), default=False)
-    tdf = field(Bool(), default=False)
-    keyboard = field(Str(), default="")
-    serial = field(Bool(), default=False)
-    # booting linux
-    kernelenbl = field(Bool(), default=False)
+    # the program and the machine
+    qemu_program = field(Str(required=True), default="qemu-system-i386")
+    machine_type = field(Str(), default="")
+    cpu_model = field(Str(), default="")
+    use_kvm = field(Bool(), default=False)
+    cpus = field(Int(1, 64), default=1)
+    # in MiB
+    memory = field(Int(1, 99999), default=64)
+    use_kvm_shadow_memory = field(Bool(), default=False)
+    kvm_shadow_memory = field(Int(0, 99999), default=1)
+    # the boot and the disks
+    boot_order = field(Str(), default="")
+    forget_disk_changes = field(Bool(), default=False)
+    virtio_disks = field(Bool(), default=False)
+    # the CD-ROM: none, an image file, or a drive of the host
+    cdrom = field(Choice("none", "image", "device"), default="none")
+    cdrom_image = field(Path(), default="")
+    cdrom_device = field(Str(), default="")
+    # the display
+    headless = field(Bool(), default=False)
+    standard_vga = field(Bool(), default=False)
+    use_vnc = field(Bool(), default=False)
+    vnc_display = field(Int(0, 500), default=1)
+    sdl_window = field(Bool(), default=False)
+    # sound and USB
+    sound_card = field(Str(), default="")
+    use_usb = field(Bool(), default=False)
+    usb_devices = field(ListOf(UsbDeviceKind()), factory=list)
+    # the keyboard, the clock and the serial port
+    keyboard_layout = field(Str(), default="")
+    clock_local_time = field(Bool(), default=False)
+    clock_drift_fix = field(Bool(), default=False)
+    serial_socket = field(Bool(), default=False)
+    # booting a kernel directly, and debugging it
+    use_kernel = field(Bool(), default=False)
     kernel = field(Path(), default="")
-    initrdenbl = field(Bool(), default=False)
+    use_initrd = field(Bool(), default=False)
     initrd = field(Path(), default="")
-    kopt = field(Str(), default="")
-    gdb = field(Bool(), default=False)
-    gdbport = field(Int(1, 65535), default=1234)
-    # virtual machine icon
-    icon = field(Path(), default="")
-    # others
-    noacpi = field(Str(), default="")
-    stdout = field(Str(), default="")
+    kernel_command_line = field(Str(), default="")
+    use_gdb = field(Bool(), default=False)
+    gdb_port = field(Int(1, 65535), default=1234)
+    acpi = field(Bool(), default=True)
     # the disks, one per device of DISK_DEVICES, in the same order
-    hda = _image("hda")
-    privatehda = _private("hda")
-    hdb = _image("hdb")
-    privatehdb = _private("hdb")
-    hdc = _image("hdc")
-    privatehdc = _private("hdc")
-    hdd = _image("hdd")
-    privatehdd = _private("hdd")
-    fda = _image("fda")
-    privatefda = _private("fda")
-    fdb = _image("fdb")
-    privatefdb = _private("fdb")
-    mtdblock = _image("mtdblock")
-    privatemtdblock = _private("mtdblock")
+    hda_image = _image("hda")
+    hda_private = _private("hda")
+    hdb_image = _image("hdb")
+    hdb_private = _private("hdb")
+    hdc_image = _image("hdc")
+    hdc_private = _private("hdc")
+    hdd_image = _image("hdd")
+    hdd_private = _private("hdd")
+    fda_image = _image("fda")
+    fda_private = _private("fda")
+    fdb_image = _image("fdb")
+    fdb_private = _private("fdb")
+    mtdblock_image = _image("mtdblock")
+    mtdblock_private = _private("mtdblock")
 
 
 def _get_nick(link):
@@ -719,7 +712,6 @@ class VirtualMachine(bricks.Brick):
     term_command = "unixterm"
     config_factory = VirtualMachineConfig
     process_protocol = bricks.Process
-    default_arg0 = "qemu-system-x86_64"
     connections = "nics"
 
     def __init__(self, factory, name):
@@ -806,17 +798,17 @@ class VirtualMachine(bricks.Brick):
         try:
             command = self.program()
         except FileNotFoundError:
-            command = self.config.argv0 or self.default_arg0
+            command = self.config.qemu_program
 
-        ram = self.config.ram
+        ram = self.config.memory
         txt = [_("command:") + " %s, ram: %s" % (command, ram)]
         for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
             txt.append("eth%d: %s" % (i, _get_nick(link)))
         return ", ".join(txt)
 
-    def update_usbdevlist(self, dev):
-        self.logger.debug(update_usb, old=self.config.usbdevlist, new=dev)
-        for usb_dev in set(dev) - set(self.config.usbdevlist):
+    def update_usb_devices(self, dev):
+        self.logger.debug(update_usb, old=self.config.usb_devices, new=dev)
+        for usb_dev in set(dev) - set(self.config.usb_devices):
             self.send(f"usb_add host:{usb_dev.id}\n".encode())
         # FIXME: Don't know how to remove old devices, due to the ugly syntax
         # of usb_del command.
@@ -831,7 +823,7 @@ class VirtualMachine(bricks.Brick):
     def program(self):
         """The path of the QEMU program; FileNotFoundError if missing."""
 
-        return abspath_qemu(self.config.argv0 or self.default_arg0)
+        return abspath_qemu(self.config.qemu_program)
 
     def prepare(self, resume=""):
         """
@@ -841,7 +833,7 @@ class VirtualMachine(bricks.Brick):
         that the program doesn't have is left out, so its default is asked.
         """
 
-        name = self.config.argv0 or self.default_arg0
+        name = self.config.qemu_program
         try:
             path = self.program()
         except FileNotFoundError:
@@ -850,7 +842,7 @@ class VirtualMachine(bricks.Brick):
         disks = [disk for disk in self.disks() if disk.image]
 
         def ask_machine(qemu):
-            machine = self.config.machine
+            machine = self.config.machine_type
             if not qemu.has_machine(machine):
                 machine = ""
             deferred = programs.machine_properties(qemu, machine)
@@ -885,14 +877,14 @@ class VirtualMachine(bricks.Brick):
         qemu = prepared.qemu
         version = f"{self.name}: QEMU {qemu.version}"
         cmd = Command(qemu.path)
-        machine = config.machine
+        machine = config.machine_type
         if machine and not qemu.has_machine(machine):
             cmd.warn(
-                f"{version} has no machine type {machine} (machine): the"
+                f"{version} has no machine type {machine} (machine_type): the"
                 " machine starts with the default one"
             )
             machine = ""
-        acpi_off = bool(config.noacpi)
+        acpi_off = not config.acpi
         machine_acpi = acpi_off and "acpi" in prepared.machine_properties
         sound, speaker = self._sound(cmd, prepared)
         cmd.option(
@@ -907,70 +899,70 @@ class VirtualMachine(bricks.Brick):
             if "-no-acpi" in qemu.options:
                 cmd.arg("-no-acpi")
             else:
-                cmd.warn(f"{version} can't turn ACPI off here (noacpi)")
-        if config.kvm:
+                cmd.warn(f"{version} can't turn ACPI off here (acpi)")
+        if config.use_kvm:
             if "kvm" in qemu.accelerators:
                 # with the emulator in its place where KVM can't run; QEMU
                 # takes the shadow memory in bytes
-                shadow = f"kvm-shadow-mem={config.kvmsmem * 1024 * 1024}"
+                shadow = (
+                    f"kvm-shadow-mem={config.kvm_shadow_memory * 1024 * 1024}"
+                )
                 cmd.option(
-                    "-accel", joined("kvm", shadow if config.kvmsm else "")
+                    "-accel",
+                    joined(
+                        "kvm", shadow if config.use_kvm_shadow_memory else ""
+                    ),
                 )
                 cmd.option("-accel", "tcg")
             else:
                 cmd.warn(
-                    f"{version} has no KVM (kvm): the machine is emulated"
+                    f"{version} has no KVM (use_kvm): the machine is emulated"
                 )
-        cpu = config.cpu
+        cpu = config.cpu_model
         if cpu and not qemu.has_cpu(cpu):
             cmd.warn(
-                f"{version} has no CPU model {cpu} (cpu): the machine starts"
+                f"{version} has no CPU model {cpu} (cpu_model): the machine starts"
                 " with the default one"
             )
             cpu = ""
         cmd.option("-cpu", cpu)
-        cmd.option("-smp", config.smp)
-        cmd.option("-m", config.ram)
-        cmd.option("-boot", config.boot)
+        cmd.option("-smp", config.cpus)
+        cmd.option("-m", config.memory)
+        cmd.option("-boot", config.boot_order)
         cmd.arg(*sound)
-        cmd.flag("-usb", config.usbmode)
-        cmd.flag("-snapshot", config.snapshot)
-        if config.sdl:
+        cmd.flag("-usb", config.use_usb)
+        cmd.flag("-snapshot", config.forget_disk_changes)
+        if config.sdl_window:
             if "sdl" in qemu.displays:
                 cmd.option("-display", "sdl")
             else:
                 cmd.warn(
-                    f"{version} has no SDL window (sdl): install the"
+                    f"{version} has no SDL window (sdl_window): install the"
                     " qemu-system-gui package"
                 )
-        if config.portrait:
-            if "-portrait" in qemu.options:
-                cmd.arg("-portrait")
-            else:
-                cmd.warn(f"{version} can't rotate the display (portrait)")
         cmd.option("-loadvm", prepared.resume)
-        if config.novga:
+        if config.headless:
             cmd.option("-display", "none")
         for device, path in prepared.disks:
-            if config.use_virtio:
+            if config.virtio_disks:
                 cmd.option("-drive", f"file={path},if=virtio")
             else:
                 cmd.option(f"-{device}", path)
-        if config.kernelenbl:
+        if config.use_kernel:
             cmd.option("-kernel", config.kernel)
-        if config.initrdenbl:
+        if config.use_initrd:
             cmd.option("-initrd", config.initrd)
-        if config.kernelenbl and config.kernel:
+        if config.use_kernel and config.kernel:
             # as it is: no shell reads it
-            cmd.option("-append", config.kopt)
-        if config.gdb:
-            cmd.option("-gdb", f"tcp::{config.gdbport}")
-        if config.vnc:
-            cmd.option("-vnc", f":{config.vncN}")
-        if config.vga:
+            cmd.option("-append", config.kernel_command_line)
+        if config.use_gdb:
+            cmd.option("-gdb", f"tcp::{config.gdb_port}")
+        if config.use_vnc:
+            cmd.option("-vnc", f":{config.vnc_display}")
+        if config.standard_vga:
             cmd.option("-vga", "std")
-        if config.usbmode:
-            for device in config.usbdevlist:
+        if config.use_usb:
+            for device in config.usb_devices:
                 vendor, product = device.id.split(":")
                 cmd.option(
                     "-device",
@@ -978,20 +970,20 @@ class VirtualMachine(bricks.Brick):
                 )
         cmd.option("-name", self.name)
         self._cards(cmd, qemu)
-        if config.cdromen and config.cdrom:
-            cmd.option("-cdrom", config.cdrom)
-        elif config.deviceen and config.device:
-            cmd.option("-cdrom", config.device)
+        if config.cdrom == "image":
+            cmd.option("-cdrom", config.cdrom_image)
+        elif config.cdrom == "device":
+            cmd.option("-cdrom", config.cdrom_device)
         cmd.option(
             "-rtc",
             joined(
-                "base=localtime" if config.rtc else "",
-                "driftfix=slew" if config.tdf else "",
+                "base=localtime" if config.clock_local_time else "",
+                "driftfix=slew" if config.clock_drift_fix else "",
             ),
         )
-        if len(config.keyboard) == 2:
-            cmd.option("-k", config.keyboard)
-        if config.serial:
+        if len(config.keyboard_layout) == 2:
+            cmd.option("-k", config.keyboard_layout)
+        if config.serial_socket:
             serial = self.runtime_path(f"{self.name}_serial")
             cmd.option("-serial", f"unix:{serial},server=on,wait=off")
         console = f"socket,id=mon,path={self.console()},server=on,wait=off"
@@ -1008,7 +1000,7 @@ class VirtualMachine(bricks.Brick):
         warning in cmd.
         """
 
-        card = self.config.soundhw
+        card = self.config.sound_card
         if not card:
             return [], False
         qemu = prepared.qemu
@@ -1029,7 +1021,7 @@ class VirtualMachine(bricks.Brick):
         device = qemu.device(card)
         if device is None:
             cmd.warn(
-                f"{version} has no sound card {card} (soundhw): the machine"
+                f"{version} has no sound card {card} (sound_card): the machine"
                 " has none"
             )
             return [], False

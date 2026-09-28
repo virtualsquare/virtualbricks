@@ -251,7 +251,7 @@ class BrickFactory:
         ]
         for disk in disks:
             # through the machine, which tells that it changed
-            disk.vm.set({disk.device: ""})
+            disk.vm.set({f"{disk.device}_image": ""})
         disk_image.changed.disconnect(self.image_changed.notify)
         del self._disk_images[disk_image.get_name()]
         self.image_removed.notify(disk_image)

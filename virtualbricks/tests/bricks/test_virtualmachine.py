@@ -47,15 +47,15 @@ class TestVirtualMachine(BrickTestCase):
         changes = []
         vm.image_changed.connect(lambda payload: changes.append(payload))
         vm.set_image("hda", image)
-        self.assertEqual(vm.config.hda, "deb")
+        self.assertEqual(vm.config.hda_image, "deb")
         self.assertIs(disk.image, image)
         self.assertEqual(changes, [(vm, image)])
-        vm.set({"privatehda": True})
+        vm.set({"hda_private": True})
         self.assertTrue(disk.is_cow())
         self.assertFalse(disk.readonly())
         vm.set_image("hda", None)
-        self.assertEqual(vm.config.hda, "")
-        vm.config.hdb = "missing"
+        self.assertEqual(vm.config.hda_image, "")
+        vm.config.hdb_image = "missing"
         self.assertIsNone(vm.disk("hdb").image)
         self.assertEqual([d.device for d in vm.disks()][0], "hda")
 
@@ -64,7 +64,7 @@ class TestVirtualMachine(BrickTestCase):
         image = self.factory.new_disk_image("deb", "/i/deb.qcow2")
         vm.set_image("hda", image)
         self.factory.rename(image, "debian")
-        self.assertEqual(vm.config.hda, "debian")
+        self.assertEqual(vm.config.hda_image, "debian")
         self.assertIs(vm.disk("hda").image, image)
 
     def test_sockets(self):
@@ -136,22 +136,18 @@ class TestRunning(CommandTestCase):
             vm.get_parameters(), f"command: {prog}, ram: 64, eth0: sw_port"
         )
         # the program isn't on this machine
-        set_setting("qemupath", os.path.join(self.bin, "missing"))
+        set_setting("qemu_path", os.path.join(self.bin, "missing"))
         self.patch(os, "environ", dict(os.environ, PATH=self.bin + "/missing"))
         self.assertTrue(
             vm.get_parameters().startswith("command: qemu-system-i386,")
         )
-        vm.set({"argv0": ""})
-        self.assertTrue(
-            vm.get_parameters().startswith("command: qemu-system-x86_64,")
-        )
 
     def test_update_usb_devices(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"usbdevlist": [UsbDevice("1d6b:0002", "hub")]})
+        vm.set({"usb_devices": [UsbDevice("1d6b:0002", "hub")]})
         sent = []
         vm.send = sent.append
-        vm.update_usbdevlist(
+        vm.update_usb_devices(
             [UsbDevice("1d6b:0002", "hub"), UsbDevice("046d:c52b", "mouse")]
         )
         self.assertEqual(sent, [b"usb_add host:046d:c52b\n"])

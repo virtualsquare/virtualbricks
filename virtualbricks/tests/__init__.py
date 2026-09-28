@@ -226,5 +226,5 @@ class CommandTestCase(BrickTestCase):
             with open(path, "w") as fp:
                 fp.write("#!/bin/sh\n")
             os.chmod(path, 0o755)
-        settings.set_setting("qemupath", self.bin)
-        settings.set_setting("vdepath", self.bin)
+        settings.set_setting("qemu_path", self.bin)
+        settings.set_setting("vde_path", self.bin)

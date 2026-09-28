@@ -90,8 +90,8 @@ class SwitchConfigController(ConfigController):
         return self.panel
 
     def get_config_view(self, gui):
-        self.fstp_check.set_active(self.original.get("fstp"))
-        self.hub_check.set_active(self.original.get("hub"))
+        self.fstp_check.set_active(self.original.get("fast_spanning_tree"))
+        self.hub_check.set_active(self.original.get("hub_mode"))
         minports = len(
             [
                 1
@@ -102,13 +102,13 @@ class SwitchConfigController(ConfigController):
         )
         spinner = self.ports_spin
         spinner.set_range(max(minports, 1), 128)
-        spinner.set_value(self.original.get("numports"))
+        spinner.set_value(self.original.get("ports"))
         return self.panel
 
     def configure_brick(self, gui):
         cfg = {
-            "fstp": self.fstp_check.get_active(),
-            "hub": self.hub_check.get_active(),
-            "numports": self.ports_spin.get_value_as_int(),
+            "fast_spanning_tree": self.fstp_check.get_active(),
+            "hub_mode": self.hub_check.get_active(),
+            "ports": self.ports_spin.get_value_as_int(),
         }
         self.original.set(cfg)

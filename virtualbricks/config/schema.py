@@ -60,6 +60,7 @@ __all__ = [
     "field_names",
     "field_values",
     "fields",
+    "key_of",
     "kind_of",
     "load_record",
     "parse_value",
@@ -183,17 +184,27 @@ class Float(_Number[float]):
 
 
 class Str(Kind[str]):
-    """A string, optionally matching a pattern unless it's empty."""
+    """
+    A string, optionally matching a pattern unless it's empty.
+
+    A required string can't be empty.
+    """
 
     def __init__(
-        self, pattern: str | None = None, what: str = "valid"
+        self,
+        pattern: str | None = None,
+        what: str = "valid",
+        required: bool = False,
     ) -> None:
         self.pattern = None if pattern is None else re.compile(pattern)
         self.what = what
+        self.required = required
 
     def check(self, value: object) -> None:
         if not isinstance(value, str):
             raise ValueError(f"{value!r} is not a string")
+        if self.required and not value:
+            raise ValueError("can't be empty")
         if value and self.pattern and not self.pattern.fullmatch(value):
             raise ValueError(f'"{value}" is not {self.what}')
 
@@ -399,6 +410,15 @@ def kind_of(cls_or_obj: object, name: str) -> Kind[object]:
     for attribute in fields(cls_or_obj):
         if attribute.name == name:
             return field_info(attribute).kind
+    raise KeyError(name)
+
+
+def key_of(cls_or_obj: object, name: str) -> str:
+    """The dotted key of a field in its table, as ``disks.hda.image``."""
+
+    for attribute in fields(cls_or_obj):
+        if attribute.name == name:
+            return ".".join(_path(attribute))
     raise KeyError(name)
 
 

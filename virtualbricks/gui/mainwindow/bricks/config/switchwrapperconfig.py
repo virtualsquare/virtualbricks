@@ -58,8 +58,8 @@ class SwitchWrapperConfigController(ConfigController):
         return self.panel
 
     def get_config_view(self, gui):
-        self.path_entry.set_text(self.original.get("path"))
+        self.path_entry.set_text(self.original.get("socket_path"))
         return self.panel
 
     def configure_brick(self, gui):
-        self.original.set({"path": self.path_entry.get_text()})
+        self.original.set({"socket_path": self.path_entry.get_text()})

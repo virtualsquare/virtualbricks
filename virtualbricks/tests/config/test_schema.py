@@ -38,6 +38,7 @@ from virtualbricks.config.schema import (
     field_default,
     field_names,
     field_values,
+    key_of,
     kind_of,
     load_record,
     parse_value,
@@ -65,7 +66,9 @@ class Machine:
     tags = field(ListOf(Str()), factory=list)
     event = field(Ref("event"), default="")
     hda = field(Ref("image"), default="", path=("disks", "hda", "image"))
-    privatehda = field(Bool(), default=False, path=("disks", "hda", "private"))
+    hda_private = field(
+        Bool(), default=False, path=("disks", "hda", "private")
+    )
     boot = field(Record(Disk), factory=Disk)
 
 
@@ -178,6 +181,17 @@ class TestStrings(unittest.TestCase):
         Str().check("")
         self.assertRaises(ValueError, Str().check, 1)
         self.assertEqual(Str().parse("x"), "x")
+
+    def test_required(self):
+        kind = Str(required=True)
+        kind.check("qemu-system-x86_64")
+        with self.assertRaisesRegex(ValueError, "^can't be empty$"):
+            kind.check("")
+        self.assertRaises(ValueError, kind.parse, "")
+        # with a pattern, empty is refused before it's matched
+        kind = Str(r"\d+", "a number", required=True)
+        self.assertRaisesRegex(ValueError, "empty", kind.check, "")
+        self.assertRaisesRegex(ValueError, "a number", kind.check, "x")
 
     def test_pattern(self):
         kind = Str(r"\d+", "a number")
@@ -297,7 +311,7 @@ class TestFields(unittest.TestCase):
                 "tags",
                 "event",
                 "hda",
-                "privatehda",
+                "hda_private",
                 "boot",
             ],
         )
@@ -310,6 +324,11 @@ class TestFields(unittest.TestCase):
         self.assertEqual(field_default(Machine, "ram"), 64)
         self.assertEqual(field_default(Machine, "tags"), [])
         self.assertRaises(KeyError, field_default, Machine, "nope")
+
+    def test_key_of(self):
+        self.assertEqual(key_of(Machine, "ram"), "ram")
+        self.assertEqual(key_of(Machine(), "hda"), "disks.hda.image")
+        self.assertRaises(KeyError, key_of, Machine, "nope")
 
     def test_values(self):
         machine = Machine(ram=100)
@@ -327,7 +346,7 @@ class TestFields(unittest.TestCase):
 class TestDump(unittest.TestCase):
 
     def test_every_field_with_paths(self):
-        data = dump_record(Machine(hda="deb", privatehda=True))
+        data = dump_record(Machine(hda="deb", hda_private=True))
         self.assertEqual(
             data,
             {

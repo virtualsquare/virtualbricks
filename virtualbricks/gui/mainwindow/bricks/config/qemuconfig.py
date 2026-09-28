@@ -90,7 +90,7 @@ def _set_connection(column, cell_renderer, model, iter, data=None):
         conn = "Host"
     elif link.sock:
         conn = link.sock.brick.name
-    elif link.mode == "sock" and get_setting("femaleplugs"):
+    elif link.mode == "sock" and get_setting("allow_female_plugs"):
         conn = "Vde socket (female plug)"
     else:
         conn = "None"
@@ -200,37 +200,34 @@ class QemuConfigController(ConfigController):
     """
 
     config_to_widget_mapping = (
-        ("snapshot", "snapshot_check"),
-        ("deviceen", "device_radio"),
-        ("cdromen", "cdrom_image_radio"),
-        ("use_virtio", "virtio_check"),
-        ("kvm", "kvm_check"),
-        ("kvmsm", "kvmsm_check"),
-        ("novga", "novga_check"),
-        ("vga", "vga_check"),
-        ("vnc", "vnc_check"),
-        ("sdl", "sdl_check"),
-        ("portrait", "portrait_check"),
-        ("usbmode", "usb_check"),
-        ("rtc", "rtc_check"),
-        ("tdf", "tdf_check"),
-        ("serial", "serial_check"),
-        ("kernelenbl", "kernel_check"),
-        ("initrdenbl", "initrd_check"),
-        ("gdb", "gdb_check"),
+        ("forget_disk_changes", "snapshot_check"),
+        ("virtio_disks", "virtio_check"),
+        ("use_kvm", "kvm_check"),
+        ("use_kvm_shadow_memory", "kvmsm_check"),
+        ("headless", "novga_check"),
+        ("standard_vga", "vga_check"),
+        ("use_vnc", "vnc_check"),
+        ("sdl_window", "sdl_check"),
+        ("use_usb", "usb_check"),
+        ("clock_local_time", "rtc_check"),
+        ("clock_drift_fix", "tdf_check"),
+        ("serial_socket", "serial_check"),
+        ("use_kernel", "kernel_check"),
+        ("use_initrd", "initrd_check"),
+        ("use_gdb", "gdb_check"),
     )
     config_to_filechooser_mapping = (
-        ("cdrom", "cdrom_chooser"),
+        ("cdrom_image", "cdrom_chooser"),
         ("kernel", "kernel_chooser"),
         ("initrd", "initrd_chooser"),
         ("icon", "icon_chooser"),
     )
     config_to_spinint_mapping = (
-        ("smp", "smp_spin"),
-        ("ram", "ram_spin"),
-        ("kvmsmem", "kvmsmem_spin"),
-        ("vncN", "vnc_display_spin"),
-        ("gdbport", "gdb_port_spin"),
+        ("cpus", "smp_spin"),
+        ("memory", "ram_spin"),
+        ("kvm_shadow_memory", "kvmsmem_spin"),
+        ("vnc_display", "vnc_display_spin"),
+        ("gdb_port", "gdb_port_spin"),
     )
 
     state_manager = None
@@ -355,7 +352,7 @@ class QemuConfigController(ConfigController):
             row_spacing=3,
             column_spacing=6,
         )
-        nocdrom_radiobutton = Gtk.RadioButton(
+        self.nocdrom_radio = Gtk.RadioButton(
             label=_("no cdrom"),
             visible=True,
             can_focus=True,
@@ -368,7 +365,7 @@ class QemuConfigController(ConfigController):
             active=True,
             draw_indicator=True,
         )
-        table2.attach(nocdrom_radiobutton, 0, 0, 1, 1)
+        table2.attach(self.nocdrom_radio, 0, 0, 1, 1)
         self.device_radio = Gtk.RadioButton(
             label=_("mount cdrom"),
             visible=True,
@@ -379,7 +376,7 @@ class QemuConfigController(ConfigController):
             use_underline=True,
             xalign=0.5,
             draw_indicator=True,
-            group=nocdrom_radiobutton,
+            group=self.nocdrom_radio,
         )
         table2.attach(self.device_radio, 0, 1, 1, 1)
         self.cdrom_image_radio = Gtk.RadioButton(
@@ -397,7 +394,7 @@ class QemuConfigController(ConfigController):
             use_underline=True,
             xalign=0.5,
             draw_indicator=True,
-            group=nocdrom_radiobutton,
+            group=self.nocdrom_radio,
         )
         table2.attach(self.cdrom_image_radio, 0, 2, 1, 1)
         # Custom widget from glade-catalog.xml
@@ -811,15 +808,6 @@ class QemuConfigController(ConfigController):
             draw_indicator=True,
         )
         vbox8.pack_start(self.sdl_check, True, True, 0)
-        self.portrait_check = Gtk.CheckButton(
-            label=_("Portrait"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        vbox8.pack_start(self.portrait_check, True, True, 0)
         frame6.add(vbox8)
         label18 = Gtk.Label(
             visible=True,
@@ -1259,7 +1247,7 @@ class QemuConfigController(ConfigController):
         for plug in self.original.plugs:
             vmplugs.append((plug,))
 
-        if get_setting("femaleplugs"):
+        if get_setting("allow_female_plugs"):
             for sock in self.original.socks:
                 vmplugs.append((sock,))
 
@@ -1278,7 +1266,7 @@ class QemuConfigController(ConfigController):
 
     def get_config_view(self, gui):
         self.gui = gui
-        self.usb_devices = list(self.original.config.usbdevlist)
+        self.usb_devices = list(self.original.config.usb_devices)
 
         self.state_manager = StateManager()
         self.state_manager.add_checkbutton_active(
@@ -1355,8 +1343,8 @@ class QemuConfigController(ConfigController):
         self.machine_combo.set_cell_data_func(
             self.machine_cell, self.machine_cell.set_text
         )
-        argv0 = self.original.config.argv0
-        names = qemu_programs(get_setting("qemupath"))
+        argv0 = self.original.config.qemu_program
+        names = qemu_programs(get_setting("qemu_path"))
         self.argv0_store.set_data_source(program_entries(names, argv0))
         self.argv0_combo.set_cell_data_func(
             self.argv0_cell, self.argv0_cell.set_text
@@ -1366,19 +1354,19 @@ class QemuConfigController(ConfigController):
         # boot/sound/mount comboboxes
         boots = map(widgets.ListEntry.from_tuple, BOOT_DEVICE)
         self.boot_store.set_data_source(boots)
-        self.boot_combo.set_selected_value(self.original.config.boot)
+        self.boot_combo.set_selected_value(self.original.config.boot_order)
         self.boot_combo.set_cell_data_func(
             self.boot_cell, self.boot_cell.set_text
         )
         sounds = map(widgets.ListEntry.from_tuple, SOUND_DEVICE)
         self.sound_store.set_data_source(sounds)
-        self.sound_combo.set_selected_value(self.original.config.soundhw)
+        self.sound_combo.set_selected_value(self.original.config.sound_card)
         self.sound_combo.set_cell_data_func(
             self.sound_cell, self.sound_cell.set_text
         )
         devices = map(widgets.ListEntry.from_tuple, MOUNT_DEVICE)
         self.device_store.set_data_source(devices)
-        self.mount_combo.set_selected_value(self.original.config.device)
+        self.mount_combo.set_selected_value(self.original.config.cdrom_device)
         self.mount_combo.set_cell_data_func(
             self.mount_cell, self.mount_cell.set_text
         )
@@ -1403,23 +1391,38 @@ class QemuConfigController(ConfigController):
         for pname, wname in self.config_to_filechooser_mapping:
             if getattr(cfg, pname):
                 getattr(self, wname).set_filename(getattr(cfg, pname))
+        radios = {
+            "none": self.nocdrom_radio,
+            "device": self.device_radio,
+            "image": self.cdrom_image_radio,
+        }
+        radios[cfg.cdrom].set_active(True)
         self.setup_netwoks_cards()
-        self.keyboard_entry.set_text(cfg.keyboard)
-        self.kernel_options_entry.set_text(cfg.kopt)
+        self.keyboard_entry.set_text(cfg.keyboard_layout)
+        self.kernel_options_entry.set_text(cfg.kernel_command_line)
         return self.panel
 
     def configure_brick(self, gui):
         cfg = {}
 
         # argv0/cpu/machine comboboxes
-        cfg["argv0"] = self.argv0_combo.get_selected_value() or ""
-        cfg["cpu"] = self.cpu_combo.get_selected_value() or ""
-        cfg["machine"] = self.machine_combo.get_selected_value() or ""
+        # a machine always has a program: none chosen keeps it
+        program = self.argv0_combo.get_selected_value()
+        if program:
+            cfg["qemu_program"] = program
+        cfg["cpu_model"] = self.cpu_combo.get_selected_value() or ""
+        cfg["machine_type"] = self.machine_combo.get_selected_value() or ""
 
         # boot/sound/mount comboboxes
-        cfg["boot"] = self.boot_combo.get_selected_value()
-        cfg["soundhw"] = self.sound_combo.get_selected_value()
-        cfg["device"] = self.mount_combo.get_selected_value()
+        cfg["boot_order"] = self.boot_combo.get_selected_value()
+        cfg["sound_card"] = self.sound_combo.get_selected_value()
+        cfg["cdrom_device"] = self.mount_combo.get_selected_value()
+        if self.cdrom_image_radio.get_active():
+            cfg["cdrom"] = "image"
+        elif self.device_radio.get_active():
+            cfg["cdrom"] = "device"
+        else:
+            cfg["cdrom"] = "none"
 
         # the images of the disks, and their modes
         cfg.update(self.disks.apply())
@@ -1432,22 +1435,24 @@ class QemuConfigController(ConfigController):
             filename = getattr(self, wname).get_filename()
             if filename:
                 cfg[pname] = filename
-        cfg["keyboard"] = self.keyboard_entry.get_text()
-        cfg["kopt"] = self.kernel_options_entry.get_text()
+        cfg["keyboard_layout"] = self.keyboard_entry.get_text()
+        cfg["kernel_command_line"] = self.kernel_options_entry.get_text()
         if self.usb_check.get_active():
             devs = list(set(self.usb_devices))
         else:
             devs = []
-        cfg["usbdevlist"] = devs
-        self.original.update_usbdevlist(devs)
+        cfg["usb_devices"] = devs
+        self.original.update_usb_devices(devs)
         self.original.set(cfg)
 
     # signals
 
     def on_argv0_combo_changed(self, combobox):
         # what is chosen stays chosen; the first time, the machine's own
-        cpu = _chosen(self.cpu_combo, self.original.config.cpu)
-        machine = _chosen(self.machine_combo, self.original.config.machine)
+        cpu = _chosen(self.cpu_combo, self.original.config.cpu_model)
+        machine = _chosen(
+            self.machine_combo, self.original.config.machine_type
+        )
         self._fill_models(None, cpu, machine)
         name = self.argv0_combo.get_selected_value()
         try:

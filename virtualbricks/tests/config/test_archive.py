@@ -303,7 +303,7 @@ class TestInspect(ArchiveTestCase):
         path = make_archive(self.path("lab.vbp"), {".project": LEGACY})
         contents = self.inspect(path)
         self.assertTrue(contents.converted)
-        self.assertEqual(contents.data["bricks"]["sw"]["numports"], 8)
+        self.assertEqual(contents.data["bricks"]["sw"]["ports"], 8)
 
     def test_every_compression(self):
         for mode in ("w", "w:gz", "w:bz2", "w:xz"):

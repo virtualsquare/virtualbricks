@@ -28,6 +28,6 @@ class TestSwitch(CommandTestCase):
     def test_switch_parameters(self):
         switch = self.factory.new_brick("switch", "sw")
         self.assertEqual(switch.get_parameters(), "Ports: 32")
-        switch.set({"fstp": True, "hub": True, "numports": 8})
+        switch.set({"fast_spanning_tree": True, "hub_mode": True, "ports": 8})
         self.assertEqual(switch.get_parameters(), "Ports: 8, FSTP, HUB")
         self.assertEqual(switch.socks[0].get_free_ports(), 8)

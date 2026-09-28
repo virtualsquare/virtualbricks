@@ -112,7 +112,7 @@ class TestState(BrickInfoTestCase):
     def test_not_configured(self):
         capture = self.brick("capture", "cap", self.switch().socks[0])
         self.assertIs(state(capture), State.NOT_CONFIGURED)
-        capture.config.iface = "eth0"
+        capture.config.interface = "eth0"
         self.assertIs(state(capture), State.STOPPED)
 
     def test_a_free_plug_comes_first(self):
@@ -133,16 +133,16 @@ class TestSummary(BrickInfoTestCase):
     def test_a_switch(self):
         sw = self.switch()
         self.assertEqual(summary(sw), "32 ports")
-        sw.config.numports = 1
+        sw.config.ports = 1
         self.assertEqual(summary(sw), "1 port")
-        sw.config.fstp = True
-        sw.config.hub = True
+        sw.config.fast_spanning_tree = True
+        sw.config.hub_mode = True
         self.assertEqual(summary(sw), "1 port · FSTP · hub")
 
     def test_a_switch_wrapper(self):
         wrapper = self.brick("switchwrapper", "wrapper")
         self.assertEqual(summary(wrapper), "no socket")
-        wrapper.config.path = "/run/vde/lab.ctl"
+        wrapper.config.socket_path = "/run/vde/lab.ctl"
         self.assertEqual(summary(wrapper), "/run/vde/lab.ctl")
 
     def test_a_tap(self):
@@ -150,17 +150,17 @@ class TestSummary(BrickInfoTestCase):
         self.assertEqual(summary(tap), "no address")
         tap.connect(self.switch().socks[0])
         self.assertEqual(summary(tap), "on sw · no address")
-        tap.config.mode = "dhcp"
+        tap.config.address_mode = "dhcp"
         self.assertEqual(summary(tap), "on sw · DHCP")
-        tap.config.mode = "manual"
+        tap.config.address_mode = "manual"
         self.assertEqual(summary(tap), "on sw · 10.0.0.1/24")
-        tap.config.nm = "255.255.240.0"
+        tap.config.netmask = "255.255.240.0"
         self.assertEqual(summary(tap), "on sw · 10.0.0.1/20")
 
     def test_a_tap_with_a_mask_that_is_not_one(self):
         tap = self.brick("tap", "tap")
-        tap.config.mode = "manual"
-        tap.config.nm = "255.0.255.0"
+        tap.config.address_mode = "manual"
+        tap.config.netmask = "255.0.255.0"
         self.assertEqual(summary(tap), "10.0.0.1/255.0.255.0")
 
     def test_a_wire(self):
@@ -181,9 +181,9 @@ class TestSummary(BrickInfoTestCase):
 
     def test_a_netemu_one_way(self):
         netemu = self.brick("netemu", "ne")
-        netemu.config.delaysymm = False
-        netemu.config.delayr = 30
-        netemu.config.losssymm = False
+        netemu.config.delay_symmetric = False
+        netemu.config.delay_right_to_left = 30
+        netemu.config.loss_symmetric = False
         netemu.config.loss = 0.5
         self.assertEqual(
             summary(netemu), "nothing ↔ nothing · 0/30 ms · 0.5/0% loss"
@@ -192,7 +192,7 @@ class TestSummary(BrickInfoTestCase):
     def test_a_capture_interface(self):
         capture = self.brick("capture", "cap")
         self.assertEqual(summary(capture), "no interface")
-        capture.config.iface = "eth0"
+        capture.config.interface = "eth0"
         self.assertEqual(summary(capture), "eth0")
         capture.connect(self.switch().socks[0])
         self.assertEqual(summary(capture), "eth0 on sw")
@@ -206,7 +206,7 @@ class TestSummary(BrickInfoTestCase):
     def test_a_tunnel_client(self):
         client = self.brick("tunnelconnect", "client")
         self.assertEqual(summary(client), "no host")
-        client.config.host = "lab.example.org"
+        client.config.server_host = "lab.example.org"
         client.connect(self.switch().socks[0])
         self.assertEqual(summary(client), "on sw · to lab.example.org")
 
@@ -216,14 +216,12 @@ class TestSummary(BrickInfoTestCase):
     def test_a_virtual_machine(self):
         vm = self.brick("qemu", "vm")
         self.assertEqual(summary(vm), "i386 · 64 MiB · no network card")
-        vm.config.argv0 = "/usr/bin/qemu-kvm"
-        vm.config.kvm = True
-        vm.config.ram = 512
+        vm.config.qemu_program = "/usr/bin/qemu-kvm"
+        vm.config.use_kvm = True
+        vm.config.memory = 512
         self.assertEqual(
             summary(vm), "qemu-kvm · KVM · 512 MiB · no network card"
         )
-        vm.config.argv0 = ""
-        self.assertTrue(summary(vm).startswith("x86_64 · KVM"))
 
     def test_the_cards_of_a_virtual_machine(self):
         vm = self.brick("qemu", "vm", self.switch().socks[0])

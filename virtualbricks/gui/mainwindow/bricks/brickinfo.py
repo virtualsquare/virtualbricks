@@ -124,28 +124,28 @@ def _both_ways(value, back, symmetric) -> str:
 
 
 def _switch(brick) -> list[str]:
-    ports = brick.config.numports
+    ports = brick.config.ports
     parts = [ngettext("{n} port", "{n} ports", ports).format(n=ports)]
-    if brick.config.fstp:
+    if brick.config.fast_spanning_tree:
         parts.append("FSTP")
-    if brick.config.hub:
+    if brick.config.hub_mode:
         parts.append(_("hub"))
     return parts
 
 
 def _switch_wrapper(brick) -> list[str]:
-    return [brick.config.path or _("no socket")]
+    return [brick.config.socket_path or _("no socket")]
 
 
 def _tap(brick) -> list[str]:
     config = brick.config
-    if config.mode == "manual":
+    if config.address_mode == "manual":
         try:
-            network = ipaddress.IPv4Network(f"0.0.0.0/{config.nm}")
-            address = f"{config.ip}/{network.prefixlen}"
+            network = ipaddress.IPv4Network(f"0.0.0.0/{config.netmask}")
+            address = f"{config.ip_address}/{network.prefixlen}"
         except ValueError:
-            address = f"{config.ip}/{config.nm}"
-    elif config.mode == "dhcp":
+            address = f"{config.ip_address}/{config.netmask}"
+    elif config.address_mode == "dhcp":
         address = "DHCP"
     else:
         address = _("no address")
@@ -159,17 +159,21 @@ def _wire(brick) -> list[str]:
 def _netemu(brick) -> list[str]:
     config = brick.config
     parts = _wire(brick)
-    if config.delay or config.delayr:
-        delay = _both_ways(config.delay, config.delayr, config.delaysymm)
+    if config.delay or config.delay_right_to_left:
+        delay = _both_ways(
+            config.delay, config.delay_right_to_left, config.delay_symmetric
+        )
         parts.append(_("{delay} ms").format(delay=delay))
-    if config.loss or config.lossr:
-        loss = _both_ways(config.loss, config.lossr, config.losssymm)
+    if config.loss or config.loss_right_to_left:
+        loss = _both_ways(
+            config.loss, config.loss_right_to_left, config.loss_symmetric
+        )
         parts.append(_("{loss}% loss").format(loss=loss))
     return parts
 
 
 def _capture(brick) -> list[str]:
-    interface = brick.config.iface or _("no interface")
+    interface = brick.config.interface or _("no interface")
     plug = brick.plugs[0]
     if plug.sock is None:
         return [interface]
@@ -181,12 +185,12 @@ def _capture(brick) -> list[str]:
 
 
 def _tunnel_server(brick) -> list[str]:
-    port = _("UDP port {port}").format(port=brick.config.port)
+    port = _("UDP port {port}").format(port=brick.config.listen_port)
     return _on(brick.plugs[0]) + [port]
 
 
 def _tunnel_client(brick) -> list[str]:
-    host = brick.config.host
+    host = brick.config.server_host
     to = _("to {host}").format(host=host) if host else _("no host")
     return _on(brick.plugs[0]) + [to]
 
@@ -207,13 +211,13 @@ def _card(brick, number, link) -> str:
 
 def _virtual_machine(brick) -> list[str]:
     config = brick.config
-    program = os.path.basename(config.argv0 or brick.default_arg0)
+    program = os.path.basename(config.qemu_program)
     if program.startswith(QEMU_PREFIX):
         program = program[len(QEMU_PREFIX) :]
     parts = [program]
-    if config.kvm:
+    if config.use_kvm:
         parts.append("KVM")
-    parts.append(_("{size} MiB").format(size=config.ram))
+    parts.append(_("{size} MiB").format(size=config.memory))
     links = list(itertools.chain(brick.plugs, brick.socks))
     if not links:
         parts.append(_("no network card"))

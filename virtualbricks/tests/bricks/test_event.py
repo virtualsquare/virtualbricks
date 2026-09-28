@@ -67,7 +67,9 @@ class TestEventConfig(BrickTestCase):
         EventConfig(actions=[console.ShellCommand("ls")])
 
     def test_the_fields(self):
-        self.assertEqual(field_names(EventConfig), ["actions", "delay"])
+        self.assertEqual(
+            field_names(EventConfig), ["icon", "delay", "actions"]
+        )
 
     def test_the_action_kind(self):
         kind = kind_of(EventConfig, "actions")

@@ -199,8 +199,8 @@ class TestWords(EventInfoTestCase):
 
     def test_the_bricks_that_start_it(self):
         self.actions(vb("sw1 on"))
-        self.sw1.set({"pon_vbevent": "start-lab"})
-        self.vm1.set({"poff_vbevent": "start-lab", "pon_vbevent": "start-vms"})
+        self.sw1.set({"on_start": "start-lab"})
+        self.vm1.set({"on_stop": "start-lab", "on_start": "start-vms"})
         self.assertEqual(
             triggers(self.event, self.factory.bricks),
             [(self.sw1, "on"), (self.vm1, "off")],

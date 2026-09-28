@@ -79,8 +79,8 @@ NO_CONSOLE = frozenset(("Tap", "Capture"))
 # The choices of an event: the action, the setting of the brick it
 # changes, and the label of its submenu.
 WHEN = (
-    ("when-starts", "pon_vbevent", _("When It Starts")),
-    ("when-stops", "poff_vbevent", _("When It Stops")),
+    ("when-starts", "on_start", _("When It Starts")),
+    ("when-stops", "on_stop", _("When It Stops")),
 )
 
 

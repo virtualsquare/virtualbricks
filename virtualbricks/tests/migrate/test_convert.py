@@ -31,6 +31,7 @@ from virtualbricks.bricks.eventaction import EventAction
 from virtualbricks.migrate import convert
 from virtualbricks.migrate.convert import (
     MigrationError,
+    convert_command,
     convert_project,
     convert_settings,
     convert_value,
@@ -89,15 +90,15 @@ class TestConvertSettings(unittest.TestCase):
         self.assertEqual(current, "lab")
         # the settings of the application, and of the migrated projects
         self.assertEqual(app.workspace, "/srv/vb")
-        self.assertEqual(app.term, self.program)
-        self.assertIs(project.femaleplugs, True)
-        self.assertEqual(project.cowfmt, "qcow")
-        self.assertEqual(project.qemupath, self.bin)
+        self.assertEqual(app.terminal, self.program)
+        self.assertIs(project.allow_female_plugs, True)
+        self.assertEqual(project.cow_format, "qcow")
+        self.assertEqual(project.qemu_path, self.bin)
 
     def test_defaults(self):
         _, project, current, report = self.convert(current_project="")
         self.assertEqual(current, locations.DEFAULT_PROJECT)
-        self.assertEqual(project.cowfmt, "qcow2")
+        self.assertEqual(project.cow_format, "qcow2")
 
     def test_dropped_and_unknown(self):
         dropped = ("alt-term", "cdroms", "kvm", "python", "sudo")
@@ -128,8 +129,8 @@ class TestConvertSettings(unittest.TestCase):
                 "default false",
             ],
         )
-        self.assertEqual(project.cowfmt, "qcow2")
-        self.assertIs(app.ksm, False)
+        self.assertEqual(project.cow_format, "qcow2")
+        self.assertIs(app.kernel_samepage_merging, False)
 
     def test_programs_not_on_this_machine(self):
         missing = os.path.join(self.root, "missing")
@@ -149,7 +150,7 @@ class TestConvertSettings(unittest.TestCase):
         lines = {"qemupath": (self.bin, 1)}
         report = Report()
         app, project, _ = convert_settings(lines, "vb.conf", report)
-        app.term = os.path.join(self.root, "missing")
+        app.terminal = os.path.join(self.root, "missing")
         report = Report()
         convert._check_programs(app, project, lines, "vb.conf", report)
         self.assertEqual(
@@ -249,8 +250,8 @@ class TestFixtures(ConvertTestCase):
         self.assertEqual(
             sender["disks"]["hda"], {"image": "martin", "private": True}
         )
-        self.assertIs(sender["kvm"], True)
-        self.assertIs(sender["tdf"], True)
+        self.assertIs(sender["use_kvm"], True)
+        self.assertIs(sender["clock_drift_fix"], True)
         self.assertEqual(
             sender["nics"],
             [
@@ -286,19 +287,26 @@ class TestFixtures(ConvertTestCase):
         )
         self.assertEqual(vm["disks"]["hdb"], {"image": "", "private": False})
         self.assertEqual(
-            (vm["ram"], vm["smp"], vm["gdbport"], vm["vncN"], vm["kvmsmem"]),
+            (
+                vm["memory"],
+                vm["cpus"],
+                vm["gdb_port"],
+                vm["vnc_display"],
+                vm["kvm_shadow_memory"],
+            ),
             (64, 1, 1234, 1, 1),
         )
         self.assertEqual(
-            (vm["argv0"], vm["keyboard"]), ("qemu-system-i386", "it")
+            (vm["qemu_program"], vm["keyboard_layout"]),
+            ("qemu-system-i386", "it"),
         )
-        self.assertIs(vm["snapshot"], True)
-        self.assertIs(vm["novga"], False)
-        self.assertEqual(vm["usbdevlist"], [])
+        self.assertIs(vm["forget_disk_changes"], True)
+        self.assertIs(vm["headless"], False)
+        self.assertEqual(vm["usb_devices"], [])
         self.assertEqual(vm["nics"], [])
         wrapper = data["bricks"]["sw1"]
         self.assertEqual(wrapper["type"], "switchwrapper")
-        self.assertEqual(wrapper["path"], "/var/run/switch/sck")
+        self.assertEqual(wrapper["socket_path"], "/var/run/switch/sck")
         self.assertEqual(
             messages(report, "info"),
             [
@@ -307,6 +315,8 @@ class TestFixtures(ConvertTestCase):
                 ".project:4: [DiskImage:vtatpa.qcow2] became an image",
                 ".project:8: [Qemu:test1] loadvm: a machine resumes when it's "
                 "started so, not by a key, dropped",
+                ".project:18: [Qemu:test1] portrait: QEMU 9 and later have no "
+                "such option, dropped",
                 ".project:55: [Qemu:test1] name: it repeats the brick name, "
                 "dropped",
                 ".project:62: [SwitchWrapper:sw1] numports: a switch wrapper "
@@ -324,7 +334,7 @@ class TestFixtures(ConvertTestCase):
         )
         vm = data["bricks"]["test"]
         self.assertEqual(vm["disks"]["hda"]["image"], "vtatpa.martin.qcow2")
-        self.assertIs(vm["use_virtio"], True)
+        self.assertIs(vm["virtio_disks"], True)
         self.assertIn(
             '.project:14: link of "sender", which does not exist, dropped',
             messages(report),
@@ -348,26 +358,27 @@ class TestFixtures(ConvertTestCase):
         data, count, report = self.convert(WAN)
         self.assertEqual(count, 3)
         wan = data["bricks"]["wan"]
-        self.assertEqual(wan["transperiod"], 250)
+        self.assertEqual(wan["transition_period"], 250)
         self.assertEqual(wan["transitions"], [[0.0, 0.2], [0.5, 0.0]])
         self.assertEqual(wan["endpoints"], ["", "sw2"])
         first, second = wan["states"]
         self.assertEqual((first["name"], first["delay"]), ("default name", 10))
-        self.assertIs(first["bandwidthsymm"], False)
+        self.assertIs(first["bandwidth_symmetric"], False)
         self.assertEqual(
             (second["name"], second["delay"], second["loss"]),
             ("congested", 200, 2.5),
         )
-        self.assertIs(second["bandwidthsymm"], True)
-        self.assertEqual(data["bricks"]["sw2"]["numports"], 32)
+        self.assertIs(second["bandwidth_symmetric"], True)
+        self.assertEqual(data["bricks"]["sw2"]["ports"], 32)
         self.assertEqual(
             data["events"]["boot"],
             {
+                "icon": "",
+                "delay": 3,
                 "actions": [
                     {"kind": "vb", "command": "sw1 on"},
                     {"kind": "shell", "command": "logger hi"},
                 ],
-                "delay": 3,
             },
         )
         self.assertEqual(
@@ -425,8 +436,8 @@ class TestSections(ConvertTestCase):
             "[Switch:sw]\ncolor=red\nnumports=x\nhub=*\n[Router:r]\nname=r\n"
         )
         data, _, report = self.convert(text)
-        self.assertIs(data["bricks"]["sw"]["hub"], True)
-        self.assertEqual(data["bricks"]["sw"]["numports"], 32)
+        self.assertIs(data["bricks"]["sw"]["hub_mode"], True)
+        self.assertEqual(data["bricks"]["sw"]["ports"], 32)
         self.assertEqual(
             messages(report),
             [
@@ -444,10 +455,10 @@ class TestSections(ConvertTestCase):
         )
         data, _, report = self.convert(text)
         self.assertEqual(
-            data["bricks"]["vm"]["usbdevlist"],
+            data["bricks"]["vm"]["usb_devices"],
             [{"id": "1d6b:0002", "description": ""}],
         )
-        self.assertEqual(data["bricks"]["vm2"]["usbdevlist"], [])
+        self.assertEqual(data["bricks"]["vm2"]["usb_devices"], [])
         self.assertEqual(
             messages(report),
             [
@@ -523,7 +534,7 @@ class TestNetemu(ConvertTestCase):
         data, _, report = self.convert(text)
         wan = data["bricks"]["wan"]
         self.assertEqual(len(wan["states"]), 2)
-        self.assertEqual(wan["transperiod"], 100)
+        self.assertEqual(wan["transition_period"], 100)
         self.assertEqual(wan["transitions"], [[0.0, 0.0], [0.0, 0.0]])
         self.assertEqual(
             messages(report),
@@ -560,14 +571,14 @@ class TestNetemu(ConvertTestCase):
         self.assertEqual(len(report), 0)
         wan = data["bricks"]["wan"]
         self.assertEqual(len(wan["states"]), 1)
-        self.assertEqual(wan["transperiod"], 1)
+        self.assertEqual(wan["transition_period"], 1)
 
     def test_events_of_every_state(self):
         text = "[Event:on]\n[Netemu:wan]\npon_vbevent=on\nstates=3\n"
         data, _, report = self.convert(text)
         self.assertEqual(len(report), 0)
         wan = data["bricks"]["wan"]
-        self.assertEqual(wan["pon_vbevent"], "on")
+        self.assertEqual(wan["on_start"], "on")
         self.assertEqual(len(wan["states"]), 3)
         factory = convert._Converter(
             parse_project(text, "f", Report()),
@@ -577,7 +588,7 @@ class TestNetemu(ConvertTestCase):
         factory.convert(ProjectSettings())
         brick = factory.factory.get_brick_by_name("wan")
         self.assertEqual(
-            [state.pon_vbevent for state in brick.markov_manager.states],
+            [state.on_start for state in brick.markov_manager.states],
             ["on", "on", "on"],
         )
 
@@ -682,3 +693,274 @@ class TestConnections(ConvertTestCase):
                 '.project:10: "sw" has no plug left, link dropped',
             ],
         )
+
+
+class TestNames(ConvertTestCase):
+    """The keys of 2.1 get the names of today."""
+
+    def brick(self, text, name):
+        data, _, report = self.convert(text)
+        return data["bricks"][name], report
+
+    def test_every_type(self):
+        text = """
+[Event:boot]
+delay=1
+actions=["add sw1 on"]
+
+[Switch:sw1]
+numports=8
+hub=*
+fstp=*
+pon_vbevent=boot
+poff_vbevent=boot
+
+[SwitchWrapper:wr]
+path=/run/vde/lab.ctl
+
+[Tap:tap0]
+mode=manual
+ip=10.0.0.2
+nm=255.255.0.0
+gw=10.0.0.1
+
+[Capture:cap]
+iface=eth0
+
+[TunnelListen:tl]
+port=7700
+password=secret
+
+[TunnelConnect:tc]
+host=lab.example.org
+port=7701
+localport=10001
+password=secret
+"""
+        data, _, report = self.convert(text)
+        bricks = data["bricks"]
+        sw = bricks["sw1"]
+        self.assertEqual(
+            (sw["ports"], sw["hub_mode"], sw["fast_spanning_tree"]),
+            (8, True, True),
+        )
+        self.assertEqual((sw["on_start"], sw["on_stop"]), ("boot", "boot"))
+        self.assertEqual(bricks["wr"]["socket_path"], "/run/vde/lab.ctl")
+        tap = bricks["tap0"]
+        self.assertEqual(
+            [tap[key] for key in ("address_mode", "ip_address", "netmask")],
+            ["manual", "10.0.0.2", "255.255.0.0"],
+        )
+        self.assertEqual(tap["gateway"], "10.0.0.1")
+        self.assertEqual(bricks["cap"]["interface"], "eth0")
+        self.assertEqual(bricks["tl"]["listen_port"], 7700)
+        tc = bricks["tc"]
+        self.assertEqual(
+            (tc["server_host"], tc["server_port"], tc["local_port"]),
+            ("lab.example.org", 7701, 10001),
+        )
+        self.assertEqual(tc["password"], "secret")
+        self.assertEqual(report.warnings, 0)
+
+    def test_machine(self):
+        vm, report = self.brick(
+            """
+[Qemu:vm]
+argv0=qemu-system-x86_64
+machine=q35
+cpu=host
+kvm=*
+smp=2
+ram=512
+kvmsm=*
+kvmsmem=16
+boot=d
+snapshot=*
+use_virtio=*
+novga=*
+vga=*
+vnc=*
+vncN=3
+sdl=*
+soundhw=ac97
+usbmode=*
+keyboard=it
+rtc=*
+tdf=*
+serial=*
+kernelenbl=*
+kernel=/boot/k
+initrdenbl=*
+initrd=/boot/i
+kopt=quiet
+gdb=*
+gdbport=4321
+basehdb=deb
+""",
+            "vm",
+        )
+        expected = {
+            "qemu_program": "qemu-system-x86_64",
+            "machine_type": "q35",
+            "cpu_model": "host",
+            "cpus": 2,
+            "memory": 512,
+            "kvm_shadow_memory": 16,
+            "boot_order": "d",
+            "vnc_display": 3,
+            "sound_card": "ac97",
+            "keyboard_layout": "it",
+            "kernel": "/boot/k",
+            "initrd": "/boot/i",
+            "kernel_command_line": "quiet",
+            "gdb_port": 4321,
+        }
+        self.assertEqual({key: vm[key] for key in expected}, expected)
+        for key in (
+            "use_kvm",
+            "use_kvm_shadow_memory",
+            "forget_disk_changes",
+            "virtio_disks",
+            "headless",
+            "standard_vga",
+            "use_vnc",
+            "sdl_window",
+            "use_usb",
+            "clock_local_time",
+            "clock_drift_fix",
+            "serial_socket",
+            "use_kernel",
+            "use_initrd",
+            "use_gdb",
+        ):
+            self.assertIs(vm[key], True, key)
+        self.assertEqual(vm["disks"]["hdb"]["image"], "deb")
+
+    def test_cdrom(self):
+        cases = [
+            ("cdromen=*\ndeviceen=*", "image"),
+            ("cdromen=\ndeviceen=*", "device"),
+            ("cdromen=\ndeviceen=", "none"),
+            ("", "none"),
+        ]
+        for switches, choice in cases:
+            vm, _ = self.brick(
+                f"[Qemu:vm]\n{switches}\ncdrom=/c.iso\ndevice=/dev/sr0\n", "vm"
+            )
+            self.assertEqual(vm["cdrom"], choice, switches)
+            self.assertEqual(vm["cdrom_image"], "/c.iso")
+            self.assertEqual(vm["cdrom_device"], "/dev/sr0")
+
+    def test_acpi(self):
+        vm, _ = self.brick("[Qemu:vm]\nnoacpi=*\n", "vm")
+        self.assertIs(vm["acpi"], False)
+        vm, _ = self.brick("[Qemu:vm]\nnoacpi=\n", "vm")
+        self.assertIs(vm["acpi"], True)
+
+    def test_empty_program(self):
+        vm, report = self.brick("[Qemu:vm]\nargv0=\n", "vm")
+        self.assertEqual(vm["qemu_program"], "qemu-system-x86_64")
+        self.assertIn(
+            ".project:2: [Qemu:vm] argv0: empty, which ran "
+            "qemu-system-x86_64",
+            messages(report, "info"),
+        )
+        vm, _ = self.brick("[Qemu:vm]\n", "vm")
+        self.assertEqual(vm["qemu_program"], "qemu-system-i386")
+
+    def test_dropped(self):
+        vm, report = self.brick(
+            "[Qemu:vm]\nstdout=x\nportrait=*\nloadvm=snap\n", "vm"
+        )
+        for key in ("stdout", "portrait", "loadvm"):
+            self.assertNotIn(key, vm)
+        self.assertEqual(len(messages(report, "info")), 3)
+        self.assertEqual(report.warnings, 0)
+
+    def test_netemu_states(self):
+        text = """
+[Netemu:wan]
+states=2
+transperiod=50
+state0.bandwidthsymm=
+state0.bandwidthr=500
+state0.chanbufsize=100
+state1.losssymm=
+state1.lossr=2.5
+state1.delaysymm=
+state1.delayr=20
+state1.chanbufsizesymm=
+state1.chanbufsizer=200
+"""
+        data, _, report = self.convert(text)
+        wan = data["bricks"]["wan"]
+        self.assertEqual(wan["transition_period"], 50)
+        first, second = wan["states"]
+        self.assertIs(first["bandwidth_symmetric"], False)
+        self.assertEqual(first["bandwidth_right_to_left"], 500)
+        self.assertEqual(first["buffer_size"], 100)
+        self.assertIs(second["loss_symmetric"], False)
+        self.assertEqual(second["loss_right_to_left"], 2.5)
+        self.assertIs(second["delay_symmetric"], False)
+        self.assertEqual(second["delay_right_to_left"], 20)
+        self.assertIs(second["buffer_size_symmetric"], False)
+        self.assertEqual(second["buffer_size_right_to_left"], 200)
+        self.assertEqual(report.warnings, 0)
+
+    def test_commands_of_the_events(self):
+        text = """
+[Event:resize]
+actions=["add vm config ram=512 kvm=* noacpi=* cdromen=* stdout=x", \
+"add sw config numports=8", "add vm on", "add vm config nope=1", \
+"add ghost config ram=1", "addsh vm config ram=512"]
+
+[Qemu:vm]
+
+[Switch:sw]
+"""
+        data, _, report = self.convert(text)
+        self.assertEqual(
+            [
+                action["command"]
+                for action in data["events"]["resize"]["actions"]
+            ],
+            [
+                "vm config memory=512 use_kvm=true acpi=false cdrom=image",
+                "sw config ports=8",
+                "vm on",
+                "vm config nope=1",
+                "ghost config ram=1",
+                "vm config ram=512",
+            ],
+        )
+        infos = [m for m in messages(report, "info") if "[Event:resize]" in m]
+        self.assertEqual(len(infos), 2)
+
+
+class TestConvertCommand(unittest.TestCase):
+
+    def setUp(self):
+        from twisted.internet import defer
+
+        from virtualbricks.brickfactory import BrickFactory
+
+        self.factory = BrickFactory(defer.Deferred())
+        self.factory.new_brick("qemu", "vm")
+
+    def test_values(self):
+        cases = {
+            "vm config deviceen=*": "vm config cdrom=device",
+            "vm config cdromen=": "vm config cdrom=none",
+            "vm config noacpi=": "vm config acpi=true",
+            "vm config argv0=": "vm config qemu_program=qemu-system-x86_64",
+            "vm config argv0=qemu-system-arm": (
+                "vm config qemu_program=qemu-system-arm"
+            ),
+            "vm config snapshot=": "vm config forget_disk_changes=false",
+            "vm config pon_vbevent=boot": "vm config on_start=boot",
+            "vm  config   ram=64": "vm config memory=64",
+            "vm config": "vm config",
+            "vm config verbose": "vm config verbose",
+        }
+        for old, new in cases.items():
+            self.assertEqual(convert_command(self.factory, old), new, old)

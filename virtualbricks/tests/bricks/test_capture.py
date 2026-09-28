@@ -28,7 +28,7 @@ class TestCapture(CommandTestCase):
     def test_capture(self):
         capture = self.factory.new_brick("capture", "cap")
         self.assertEqual(capture.get_parameters(), "No interface selected")
-        capture.set({"iface": "eth0"})
+        capture.set({"interface": "eth0"})
         self.assertEqual(
             capture.get_parameters(), "Interface eth0 disconnected"
         )

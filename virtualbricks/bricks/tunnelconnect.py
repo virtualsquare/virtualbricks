@@ -18,16 +18,20 @@
 """A tunnel client: vde_cryptcab, connecting to a tunnel server."""
 
 from virtualbricks.bricks.command import Command, socket_path, vde_program
-from virtualbricks.bricks.tunnellisten import TunnelListen, TunnelListenConfig
+from virtualbricks import bricks
+from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import _
 
 
 @define
-class TunnelConnectConfig(TunnelListenConfig):
+class TunnelConnectConfig(bricks.BrickConfig):
 
-    host = field(Str(), default="")
-    localport = field(Int(1, 65535), default=10771)
+    password = field(Str(), default="")
+    # the host that runs the server end, and its port
+    server_host = field(Str(), default="")
+    server_port = field(Int(1, 65535), default=7667)
+    local_port = field(Int(1, 65535), default=10771)
 
 
 class TunnelConnect(TunnelListen):
@@ -42,19 +46,19 @@ class TunnelConnect(TunnelListen):
                 + " "
                 + self.plugs[0].sock.brick.name
                 + _(", connecting to udp://")
-                + self.config.host
+                + self.config.server_host
             )
 
         return _("disconnected")
 
     def configured(self):
-        return self.plugs[0].sock is not None and self.config.host
+        return self.plugs[0].sock is not None and self.config.server_host
 
     def command(self, prepared):
         config = self.config
         cmd = Command(vde_program(prepared.vde, "vde_cryptcab"))
         cmd.option("-P", self.key_path())
         cmd.option("-s", socket_path(self.plugs[0]))
-        cmd.option("-p", config.localport)
-        cmd.option("-c", f"{config.host}:{config.port}")
+        cmd.option("-p", config.local_port)
+        cmd.option("-c", f"{config.server_host}:{config.server_port}")
         return cmd

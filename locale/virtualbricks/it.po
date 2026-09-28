@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 15:13+0200\n"
+"POT-Creation-Date: 2026-09-28 16:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1321,8 +1321,8 @@ msgid "Allow female plugs on devices"
 msgstr "Permetti plugs femmina nei dispositivi"
 
 #: virtualbricks/gui/dialogs/settings.py
-msgid "Network topology loop detection"
-msgstr "Rileva loop della topologia di rete"
+msgid "Log an error when links make a loop"
+msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 #, fuzzy
@@ -2133,10 +2133,6 @@ msgstr "sul Display:"
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 msgid "SDL"
 msgstr "SDL"
-
-#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
-msgid "Portrait"
-msgstr "Verticale"
 
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 msgid "<b>Display Options</b>"
@@ -3198,6 +3194,12 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "Network topology loop detection"
+#~ msgstr "Rileva loop della topologia di rete"
+
+#~ msgid "Portrait"
+#~ msgstr "Verticale"
 
 #~ msgid "_View"
 #~ msgstr "_Vista"

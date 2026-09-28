@@ -27,9 +27,9 @@ from virtualbricks.i18n import _
 @define
 class SwitchConfig(bricks.BrickConfig):
 
-    numports = field(Int(1, 128), default=32)
-    hub = field(Bool(), default=False)
-    fstp = field(Bool(), default=False)
+    ports = field(Int(1, 128), default=32)
+    hub_mode = field(Bool(), default=False)
+    fast_spanning_tree = field(Bool(), default=False)
 
 
 class Switch(bricks.Brick):
@@ -56,18 +56,18 @@ class Switch(bricks.Brick):
     def get_parameters(self):
         fstp = ""
         hub = ""
-        if self.config.fstp:
+        if self.config.fast_spanning_tree:
             fstp = ", FSTP"
-        if self.config.hub:
+        if self.config.hub_mode:
             hub = ", HUB"
-        return _("Ports: ") + "%d%s%s" % (self.config.numports, fstp, hub)
+        return _("Ports: ") + "%d%s%s" % (self.config.ports, fstp, hub)
 
     def command(self, prepared):
         config = self.config
         cmd = Command(vde_program(prepared.vde, "vde_switch"))
-        cmd.flag("-x", config.hub)
-        cmd.option("-n", config.numports)
-        cmd.flag("-F", config.fstp)
+        cmd.flag("-x", config.hub_mode)
+        cmd.option("-n", config.ports)
+        cmd.flag("-F", config.fast_spanning_tree)
         cmd.option("-s", self.path())
         cmd.option("-M", self.console())
         return cmd
@@ -75,15 +75,12 @@ class Switch(bricks.Brick):
     def configured(self):
         return self.socks[0].has_valid_path()
 
-    # live-management callbacks
-    def cbset_path(self, path):
-        self.socks[0].path = path
-
-    def cbset_fstp(self, arg=False):
+    # what a running switch takes at once, by the name of the setting
+    def cbset_fast_spanning_tree(self, arg=False):
         self.send(b"fstp/setfstp %d\n" % bool(arg))
 
-    def cbset_hub(self, arg=False):
+    def cbset_hub_mode(self, arg=False):
         self.send(b"port/sethub %d\n" % bool(arg))
 
-    def cbset_numports(self, arg=32):
+    def cbset_ports(self, arg=32):
         self.send(b"port/setnumports %d\n" % arg)

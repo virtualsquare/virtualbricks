@@ -31,7 +31,8 @@ sock_not_exists = "Socket does not exists: {path}"
 @define
 class SwitchWrapperConfig(bricks.BrickConfig):
 
-    path = field(Path(), default="")
+    # the control folder of a switch that another program runs
+    socket_path = field(Path(), default="")
 
 
 class SwitchWrapper(bricks.Brick):
@@ -47,12 +48,12 @@ class SwitchWrapper(bricks.Brick):
     def poweron(self):
         if self.proc is not None:
             return defer.succeed(self)
-        elif os.path.exists(self.config.path):
+        elif os.path.exists(self.config.socket_path):
             self.proc = bricks.FakeProcess(self)
             return defer.succeed(self)
         else:
-            self.logger.debug(sock_not_exists, path=self.config.path)
-            msg = _("Socket does not exists: %s") % self.config.path
+            self.logger.debug(sock_not_exists, path=self.config.socket_path)
+            msg = _("Socket does not exists: %s") % self.config.socket_path
             return defer.fail(errors.BadConfigError(msg))
 
     def poweroff(self, kill=False):
@@ -60,10 +61,10 @@ class SwitchWrapper(bricks.Brick):
         return defer.succeed((self, None))
 
     def get_parameters(self):
-        return self.config.path
+        return self.config.socket_path
 
     def configured(self):
         return self.socks[0].has_valid_path()
 
-    def cbset_path(self, path):
+    def cbset_socket_path(self, path):
         self.socks[0].path = path

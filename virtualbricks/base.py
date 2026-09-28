@@ -19,11 +19,26 @@
 from twisted.logger import Logger
 
 from virtualbricks import observable
-from virtualbricks.config.schema import field_names, rename_references
+from virtualbricks.config.schema import (
+    Path,
+    define,
+    field,
+    field_names,
+    rename_references,
+)
 from virtualbricks.i18n import _
 
 logger = Logger()
 attribute_set = "Attribute {attr} set in {brick} with value {value}."
+
+
+@define
+class BaseConfig:
+    """What the configuration of every brick and every event has."""
+
+    # an image file to show instead of the icon of the type; not shown yet
+    # but for virtual machines
+    icon = field(Path(), default="")
 
 
 class Base:

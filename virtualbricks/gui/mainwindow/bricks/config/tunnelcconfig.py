@@ -39,6 +39,9 @@ class TunnelClientConfigController(TunnelListenConfigController):
     different.
     """
 
+    # the port of the server end
+    port_key = "server_port"
+
     def build_ui(self) -> None:
         """Create the widgets, formerly in ``tunnelcconfig.ui``."""
 
@@ -144,13 +147,13 @@ class TunnelClientConfigController(TunnelListenConfigController):
 
     def get_config_view(self, gui):
         host = self.host_entry
-        host.set_text(self.original.get("host"))
+        host.set_text(self.original.get("server_host"))
         localport = self.local_port_spin
-        localport.set_value(self.original.get("localport"))
+        localport.set_value(self.original.get("local_port"))
         return TunnelListenConfigController.get_config_view(self, gui)
 
     def configure_brick(self, gui):
         TunnelListenConfigController.configure_brick(self, gui)
         host = self.host_entry.get_text()
         lport = self.local_port_spin.get_value_as_int()
-        self.original.set({"host": host, "localport": lport})
+        self.original.set({"server_host": host, "local_port": lport})

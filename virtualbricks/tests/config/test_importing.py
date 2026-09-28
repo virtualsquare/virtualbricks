@@ -233,19 +233,19 @@ class TestPlan(ImportingTestCase):
         theirs_here = self.path("their-bin")
         os.makedirs(theirs_here)
         # this computer's: those of the open project
-        use_project(ProjectSettings(qemupath=ours, vdepath=ours))
+        use_project(ProjectSettings(qemu_path=ours, vde_path=ours))
         data = project(
-            settings={"qemupath": "/opt/qemu", "vdepath": theirs_here}
+            settings={"qemu_path": "/opt/qemu", "vde_path": theirs_here}
         )
         plan = plan_import(self.contents(data), self.workspace)
         self.assertEqual(
             plan.machine_paths,
             [
-                MachinePath("qemupath", "/opt/qemu", ours, True),
-                MachinePath("vdepath", theirs_here, ours, False),
+                MachinePath("qemu_path", "/opt/qemu", ours, True),
+                MachinePath("vde_path", theirs_here, ours, False),
             ],
         )
-        data = project(settings={"qemupath": ours})
+        data = project(settings={"qemu_path": ours})
         self.assertEqual(
             plan_import(self.contents(data), self.workspace).machine_paths, []
         )
@@ -282,8 +282,8 @@ class TestPlan(ImportingTestCase):
             {"deb": "/gone", "late": "/gone"}, {"deb": 5}, complete=False
         )
         plan.machine_paths = [
-            MachinePath("qemupath", "/opt", "/usr/bin", True),
-            MachinePath("vdepath", "/opt", "/usr/bin", False),
+            MachinePath("qemu_path", "/opt", "/usr/bin", True),
+            MachinePath("vde_path", "/opt", "/usr/bin", False),
         ]
         job = plan.job(self.workspace, "/ws/.importing-x", "/usr/bin/qemu-img")
         self.assertEqual(job["job"], "import")
@@ -294,7 +294,7 @@ class TestPlan(ImportingTestCase):
             [(i["name"], i["choice"]) for i in job["images"]],
             [("deb", "copy"), ("late", "auto")],
         )
-        self.assertEqual(job["settings"], {"qemupath": "/usr/bin"})
+        self.assertEqual(job["settings"], {"qemu_path": "/usr/bin"})
         # it goes through TOML
         dumps_toml(job)
 
@@ -325,7 +325,7 @@ class TestRunImport(ImportingTestCase):
         data = project(
             {"deb": "/other/deb.qcow2"},
             {"vm": vm(("hda", "deb"))},
-            {"qemupath": "/opt/qemu"},
+            {"qemu_path": "/opt/qemu"},
         )
         files = {"vm_hda.cow": b"cow", "README": b"A lab"}
         for name in images if images is not None else ["deb"]:
@@ -376,7 +376,7 @@ class TestRunImport(ImportingTestCase):
             self.assertEqual(fp.read(), b"image of deb")
         data = self.data()
         self.assertEqual(data["images"]["deb"]["path"], image)
-        self.assertEqual(data["settings"]["qemupath"], "/usr/bin")
+        self.assertEqual(data["settings"]["qemu_path"], "/usr/bin")
         cow = os.path.join(folder, "vm_hda.cow")
         staged = cow.replace(
             folder, os.path.join(self.workspace.path, ".importing-lab-x")
@@ -489,7 +489,7 @@ class TestRunImport(ImportingTestCase):
     def test_an_archive_of_an_older_virtualbricks(self):
         path = self.archive(None, legacy=True)
         result = self.run_import(self.plan(path))
-        self.assertEqual(self.data(result.name)["bricks"]["sw"]["numports"], 8)
+        self.assertEqual(self.data(result.name)["bricks"]["sw"]["ports"], 8)
 
     def test_no_project_file(self):
         plan = self.plan(self.lab())

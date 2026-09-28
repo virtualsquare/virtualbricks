@@ -228,7 +228,7 @@ def _sock_should_visible(model, iter, data):
     sock = model.get_value(iter, 0)
     return sock and (
         sock.brick.get_type().startswith("Switch")
-        or get_setting("femaleplugs")
+        or get_setting("allow_female_plugs")
     )
 
 

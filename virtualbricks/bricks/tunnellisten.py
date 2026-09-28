@@ -58,7 +58,7 @@ def write_key(path, password):
 class TunnelListenConfig(bricks.BrickConfig):
 
     password = field(Str(), default="")
-    port = field(Int(1, 65535), default=7667)
+    listen_port = field(Int(1, 65535), default=7667)
 
 
 class TunnelListen(bricks.Brick):
@@ -80,7 +80,7 @@ class TunnelListen(bricks.Brick):
                 + " "
                 + _("listening to udp:")
                 + " "
-                + str(self.config.port)
+                + str(self.config.listen_port)
             )
         return _("disconnected")
 
@@ -107,5 +107,5 @@ class TunnelListen(bricks.Brick):
         cmd = Command(vde_program(prepared.vde, "vde_cryptcab"))
         cmd.option("-P", self.key_path())
         cmd.option("-s", socket_path(self.plugs[0]))
-        cmd.option("-p", self.config.port)
+        cmd.option("-p", self.config.listen_port)
         return cmd

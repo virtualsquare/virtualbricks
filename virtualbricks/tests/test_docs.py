@@ -82,7 +82,7 @@ BRICK_TYPES = (
 )
 # Keys that are subsections of a brick, documented under their own heading.
 NESTED = {"disks": "Disks", "nics": "Network cards", "states": None}
-COMMON_KEYS = {"type", "pon_vbevent", "poff_vbevent"}
+COMMON_KEYS = {"type", "icon", "on_start", "on_stop"}
 
 
 def parse(path):

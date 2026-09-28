@@ -64,14 +64,14 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
         }
     )
     sw1 = factory.new_brick("switch", "sw1")
-    sw1.set({"numports": 16, "pon_vbevent": "boot"})
+    sw1.set({"ports": 16, "on_start": "boot"})
     sw2 = factory.new_brick("switch", "sw2")
     vm = factory.new_brick("qemu", "vm")
     vm.set(
         {
-            "kvm": True,
-            "privatehda": True,
-            "usbdevlist": [UsbDevice("1d6b:0002", "hub")],
+            "use_kvm": True,
+            "hda_private": True,
+            "usb_devices": [UsbDevice("1d6b:0002", "hub")],
         }
     )
     vm.set_image("hda", image)
@@ -80,7 +80,7 @@ def build_lab(factory, image_path="/images/deb.qcow2"):
     vm.add_plug(None, "00:aa:00:00:00:03", "rtl8139")
     vm.add_sock("00:aa:00:00:00:04", "virtio")
     tap = factory.new_brick("tap", "tap0")
-    tap.set({"mode": "manual", "ip": "10.0.0.2"})
+    tap.set({"address_mode": "manual", "ip_address": "10.0.0.2"})
     tap.connect(sw2.socks[0])
     wan = factory.new_brick("netemu", "wan")
     wan.plugs[0].connect(sw1.socks[0])
@@ -130,9 +130,9 @@ class TestDocument(ProjectFileTestCase):
 
     def test_lab(self):
         data = project_document(
-            build_lab(self.factory), ProjectSettings(femaleplugs=True)
+            build_lab(self.factory), ProjectSettings(allow_female_plugs=True)
         )
-        self.assertEqual(data["settings"]["femaleplugs"], True)
+        self.assertEqual(data["settings"]["allow_female_plugs"], True)
         self.assertEqual(
             data["images"],
             {
@@ -145,7 +145,7 @@ class TestDocument(ProjectFileTestCase):
         self.assertEqual(data["events"]["boot"]["delay"], 5)
         bricks = data["bricks"]
         self.assertEqual(bricks["sw1"]["type"], "switch")
-        self.assertEqual(bricks["sw1"]["pon_vbevent"], "boot")
+        self.assertEqual(bricks["sw1"]["on_start"], "boot")
         self.assertEqual(
             bricks["vm"]["disks"]["hda"], {"image": "deb", "private": True}
         )
@@ -183,7 +183,7 @@ class TestDocument(ProjectFileTestCase):
         self.assertEqual(bricks["cap"]["connect"], "")
         self.assertNotIn("connect", bricks["wr"])
         self.assertEqual(
-            set(bricks["r"]), {"type", "pon_vbevent", "poff_vbevent"}
+            set(bricks["r"]), {"type", "icon", "on_start", "on_stop"}
         )
 
     def test_socket_target(self):
@@ -203,7 +203,7 @@ class TestRoundTrip(ProjectFileTestCase):
 
     def test_lab(self):
         data = project_document(
-            build_lab(self.factory), ProjectSettings(vdepath="/opt")
+            build_lab(self.factory), ProjectSettings(vde_path="/opt")
         )
         text = dumps_toml(data)
         factory, project_settings = self.restore(loads_toml(text))
@@ -211,7 +211,7 @@ class TestRoundTrip(ProjectFileTestCase):
             self.messages(),
             ["images.deb: /images/deb.qcow2 not found, kept in the library"],
         )
-        self.assertEqual(project_settings.vdepath, "/opt")
+        self.assertEqual(project_settings.vde_path, "/opt")
         self.assertEqual(project_document(factory, project_settings), data)
         vm = factory.get_brick_by_name("vm")
         self.assertIs(vm.disk("hda").image, factory.get_image_by_name("deb"))
@@ -287,7 +287,7 @@ class TestLenientReading(ProjectFileTestCase):
 
     def test_missing_settings(self):
         # not those of the project that is open
-        use_project(ProjectSettings(qemupath="/opt/qemu"))
+        use_project(ProjectSettings(qemu_path="/opt/qemu"))
         _, project_settings = self.restore({"format": 1})
         self.assertEqual(project_settings, ProjectSettings())
         self.assertEqual(
@@ -303,12 +303,12 @@ class TestLenientReading(ProjectFileTestCase):
 
     def test_partial_settings(self):
         _, project_settings = self.restore(
-            {"format": 1, "settings": {"femaleplugs": True, "color": 1}}
+            {"format": 1, "settings": {"allow_female_plugs": True, "color": 1}}
         )
-        self.assertTrue(project_settings.femaleplugs)
-        self.assertEqual(project_settings.cowfmt, "qcow2")
+        self.assertTrue(project_settings.allow_female_plugs)
+        self.assertEqual(project_settings.cow_format, "qcow2")
         self.assertIn(
-            'settings.cowfmt: missing, using the default "qcow2"',
+            'settings.cow_format: missing, using the default "qcow2"',
             self.messages(),
         )
         self.assertIn(
@@ -362,7 +362,10 @@ class TestLenientReading(ProjectFileTestCase):
         data = {
             "format": 1,
             "settings": {},
-            "events": {"1bad": {}, "ok": {"delay": 1, "actions": []}},
+            "events": {
+                "1bad": {},
+                "ok": {"icon": "", "delay": 1, "actions": []},
+            },
         }
         factory, _ = self.restore(data)
         self.assertEqual([e.get_name() for e in factory.iter_events()], ["ok"])
@@ -373,15 +376,15 @@ class TestLenientReading(ProjectFileTestCase):
         data["bricks"]["x"] = {"type": 3}
         data["bricks"]["y"] = {"type": "spaceship"}
         data["bricks"]["1bad"] = {"type": "switch"}
-        data["bricks"]["sw1"]["numports"] = 500
+        data["bricks"]["sw1"]["ports"] = 500
         data["bricks"]["sw1"]["color"] = "red"
         factory, _ = self.restore(data)
         self.assertIsNone(factory.get_brick_by_name("x"))
         self.assertIsNone(factory.get_brick_by_name("y"))
-        self.assertEqual(factory.get_brick_by_name("sw1").config.numports, 32)
+        self.assertEqual(factory.get_brick_by_name("sw1").config.ports, 32)
         messages = self.messages()
         self.assertIn(
-            "bricks.sw1.numports: 500 is outside 1–128, using the default 32",
+            "bricks.sw1.ports: 500 is outside 1–128, using the default 32",
             messages,
         )
         self.assertIn("bricks.sw1.color: unknown field, dropped", messages)
@@ -491,16 +494,14 @@ class TestLenientReading(ProjectFileTestCase):
         data = self.lab()
         del data["images"]
         del data["events"]
-        data["bricks"]["sw1"]["poff_vbevent"] = "down"
+        data["bricks"]["sw1"]["on_stop"] = "down"
         self.restore(data)
         messages = self.messages()
+        self.assertIn('bricks.sw1.on_start: no event named "boot"', messages)
+        self.assertIn('bricks.sw1.on_stop: no event named "down"', messages)
         self.assertIn(
-            'bricks.sw1.pon_vbevent: no event named "boot"', messages
+            'bricks.vm.disks.hda.image: no image named "deb"', messages
         )
-        self.assertIn(
-            'bricks.sw1.poff_vbevent: no event named "down"', messages
-        )
-        self.assertIn('bricks.vm.hda: no image named "deb"', messages)
 
     def test_event_references(self):
         data = self.lab()

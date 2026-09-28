@@ -30,10 +30,10 @@ event_error = "Error in event action. See the log for more " "information"
 
 
 @define
-class EventConfig:
+class EventConfig(base.BaseConfig):
 
-    actions = field(ListOf(EventAction()), factory=list)
     delay = field(Int(), default=0)
+    actions = field(ListOf(EventAction()), factory=list)
 
 
 class Event(base.Base):

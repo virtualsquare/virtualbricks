@@ -504,7 +504,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
 
     def test_a_missing_event(self):
         # deleted, the brick still names it
-        self.sw.set({"poff_vbevent": "gone"})
+        self.sw.set({"on_stop": "gone"})
         submenu = self.submenu("When It Stops")
         self.assertEqual(
             content(submenu),
@@ -524,19 +524,19 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
             self.assertEqual(actions.get_action_state(name).unpack(), "")
         actions.activate_action("when-starts", GLib.Variant.new_string("boot"))
         actions.activate_action("when-stops", GLib.Variant.new_string("draft"))
-        self.assertEqual(self.sw.config.pon_vbevent, "boot")
-        self.assertEqual(self.sw.config.poff_vbevent, "draft")
+        self.assertEqual(self.sw.config.on_start, "boot")
+        self.assertEqual(self.sw.config.on_stop, "draft")
         self.assertEqual(
             actions.get_action_state("when-starts").unpack(), "boot"
         )
         # No Event
         actions.activate_action("when-starts", GLib.Variant.new_string(""))
-        self.assertEqual(self.sw.config.pon_vbevent, "")
-        self.assertEqual(self.sw.config.poff_vbevent, "draft")
+        self.assertEqual(self.sw.config.on_start, "")
+        self.assertEqual(self.sw.config.on_stop, "draft")
 
     def test_the_choice_follows_the_brick(self):
         actions = BrickActions(self.gui, self.sw)
-        self.sw.set({"pon_vbevent": "boot"})
+        self.sw.set({"on_start": "boot"})
         actions.update()
         self.assertEqual(
             actions.get_action_state("when-starts").unpack(), "boot"
@@ -544,7 +544,7 @@ class TestTheEventsOfABrick(BrickMenuTestCase):
 
     def test_a_radio_item_each(self):
         # as GTK shows them: the one chosen, checked
-        self.sw.set({"pon_vbevent": "boot"})
+        self.sw.set({"on_start": "boot"})
         result = Gtk.Menu.new_from_model(
             menu(self.sw, self.factory.bricks, self.events())
         )

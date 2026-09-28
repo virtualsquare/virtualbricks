@@ -97,11 +97,11 @@ def check_format(data: Table, report: Report, where: str) -> bool:
 class ProjectSettings:
     """The settings that each project has its own copy of."""
 
-    cowfmt: str = field(Choice(*COW_FORMATS), default="qcow2")
-    erroronloop: bool = field(Bool(), default=False)
-    femaleplugs: bool = field(Bool(), default=False)
-    qemupath: str = field(Path(), default="/usr/bin")
-    vdepath: str = field(Path(), default="/usr/bin")
+    cow_format: str = field(Choice(*COW_FORMATS), default="qcow2")
+    log_link_loops: bool = field(Bool(), default=False)
+    allow_female_plugs: bool = field(Bool(), default=False)
+    qemu_path: str = field(Path(), default="/usr/bin")
+    vde_path: str = field(Path(), default="/usr/bin")
 
 
 @define
@@ -109,10 +109,10 @@ class AppSettings:
     """The settings of the application, which aren't about a project."""
 
     workspace: str = field(Path(), factory=locations.default_workspace)
-    term: str = field(Str(), default="/usr/bin/xterm")
-    ksm: bool = field(Bool(), default=False)
-    systray: bool = field(Bool(), default=True)
-    show_missing: bool = field(Bool(), default=True)
+    terminal: str = field(Str(), default="/usr/bin/xterm")
+    kernel_samepage_merging: bool = field(Bool(), default=False)
+    tray_icon: bool = field(Bool(), default=True)
+    warn_missing_programs: bool = field(Bool(), default=True)
     # the audio driver of QEMU that plays the sound cards of the machines;
     # it's about this computer, not about a project
     audio_driver: str = field(Str(), default="alsa")
@@ -223,7 +223,7 @@ def load_settings(path: str | None = None) -> Report:
         _app = load_record(AppSettings, data, report, ignore={"format"})
         logger.info(settings_loaded, filename=path)
     report.log(logger)
-    if _app.ksm:
+    if _app.kernel_samepage_merging:
         from virtualbricks.ksm import set_ksm
 
         set_ksm(enable=True)
@@ -233,7 +233,7 @@ def load_settings(path: str | None = None) -> Report:
 def install() -> None:
     from virtualbricks.ksm import check_ksm
 
-    _app.ksm = check_ksm()
+    _app.kernel_samepage_merging = check_ksm()
     if store_settings():
         logger.info(settings_installed, filename=_settings_path)
 

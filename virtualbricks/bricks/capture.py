@@ -28,7 +28,8 @@ from virtualbricks.i18n import _
 @define
 class CaptureConfig(bricks.BrickConfig):
 
-    iface = field(Str(), default="")
+    # the interface of the host to capture
+    interface = field(Str(), default="")
 
 
 class Capture(bricks.PrivilegedBrick):
@@ -42,23 +43,23 @@ class Capture(bricks.PrivilegedBrick):
         self.plugs.append(Plug(self))
 
     def get_parameters(self):
-        if self.config.iface == "":
+        if self.config.interface == "":
             return _("No interface selected")
         if self.plugs[0].sock:
             return _("Interface %(interface)s plugged to %(socket)s ") % {
-                "interface": self.config.iface,
+                "interface": self.config.interface,
                 "socket": self.plugs[0].sock.brick.name,
             }
-        return _("Interface %s disconnected") % self.config.iface
+        return _("Interface %s disconnected") % self.config.interface
 
     def command(self, prepared):
         cmd = Command(vde_program(prepared.vde, "vde_pcapplug"))
         cmd.option("-s", socket_path(self.plugs[0]))
-        cmd.arg(self.config.iface)
+        cmd.arg(self.config.interface)
         return cmd
 
     def open_console(self):
         pass
 
     def configured(self):
-        return self.plugs[0].sock and self.config.iface
+        return self.plugs[0].sock and self.config.interface

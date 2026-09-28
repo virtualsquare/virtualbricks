@@ -177,7 +177,9 @@ class TestVdeBricks(LinesTestCase):
                 f"{RUN}/sw1.mgmt",
             ],
         )
-        sw3 = self.brick("switch", "sw3", hub=True, fstp=True, numports=8)
+        sw3 = self.brick(
+            "switch", "sw3", hub_mode=True, fast_spanning_tree=True, ports=8
+        )
         self.assertLine(
             sw3,
             ["/usr/bin/vde_switch", "-x", "-n", "8", "-F"]
@@ -195,7 +197,7 @@ class TestVdeBricks(LinesTestCase):
         )
 
     def test_capture(self):
-        capture = self.brick("capture", "cap1", self.sw1, iface="eth0")
+        capture = self.brick("capture", "cap1", self.sw1, interface="eth0")
         self.assertLine(
             capture, ["/usr/bin/vde_pcapplug", "-s", f"{RUN}/sw1.ctl", "eth0"]
         )
@@ -210,7 +212,7 @@ class TestVdeBricks(LinesTestCase):
 
     def test_each_tunnel_its_own(self):
         tl1 = self.brick("tunnellisten", "tl1", self.sw1)
-        tl2 = self.brick("tunnellisten", "tl2", self.sw2, port=7700)
+        tl2 = self.brick("tunnellisten", "tl2", self.sw2, listen_port=7700)
         self.assertLine(
             tl1,
             ["/usr/bin/vde_cryptcab", "-P", f"{RUN}/tl1.key"]
@@ -221,7 +223,9 @@ class TestVdeBricks(LinesTestCase):
             ["/usr/bin/vde_cryptcab", "-P", f"{RUN}/tl2.key"]
             + ["-s", f"{RUN}/sw2.ctl", "-p", "7700"],
         )
-        tc1 = self.brick("tunnelconnect", "tc1", self.sw2, host="example.org")
+        tc1 = self.brick(
+            "tunnelconnect", "tc1", self.sw2, server_host="example.org"
+        )
         self.assertLine(
             tc1,
             ["/usr/bin/vde_cryptcab", "-P", f"{RUN}/tc1.key"]
@@ -269,16 +273,16 @@ class TestNetemu(LinesTestCase):
     def test_vde_netemu(self):
         self.netemu.set(
             {
-                "bandwidthsymm": False,
-                "bandwidthr": 1000,
-                "delaysymm": False,
+                "bandwidth_symmetric": False,
+                "bandwidth_right_to_left": 1000,
+                "delay_symmetric": False,
                 "delay": 10,
-                "delayr": 20,
-                "chanbufsizesymm": False,
-                "chanbufsizer": 500,
-                "losssymm": False,
+                "delay_right_to_left": 20,
+                "buffer_size_symmetric": False,
+                "buffer_size_right_to_left": 500,
+                "loss_symmetric": False,
                 "loss": 1.5,
-                "lossr": 2.5,
+                "loss_right_to_left": 2.5,
             }
         )
         prepared = prepared_vde(**{"vde-netemu": "/usr/bin/vde-netemu"})
@@ -348,39 +352,38 @@ class TestMachine(LinesTestCase):
         vm = self.brick("qemu", name)
         vm.set(
             {
-                "argv0": "qemu-system-x86_64",
-                "kvm": True,
-                "machine": "pc",
-                "kvmsm": True,
-                "kvmsmem": 2,
-                "cpu": "host",
-                "smp": 2,
-                "ram": 512,
-                "boot": "d",
-                "soundhw": "ac97",
-                "snapshot": True,
-                "sdl": True,
-                "portrait": True,
-                "noacpi": "*",
-                "novga": True,
-                "kernelenbl": True,
+                "qemu_program": "qemu-system-x86_64",
+                "use_kvm": True,
+                "machine_type": "pc",
+                "use_kvm_shadow_memory": True,
+                "kvm_shadow_memory": 2,
+                "cpu_model": "host",
+                "cpus": 2,
+                "memory": 512,
+                "boot_order": "d",
+                "sound_card": "ac97",
+                "forget_disk_changes": True,
+                "sdl_window": True,
+                "acpi": False,
+                "headless": True,
+                "use_kernel": True,
                 "kernel": "/boot/k",
-                "initrdenbl": True,
+                "use_initrd": True,
                 "initrd": "/boot/i",
-                "kopt": 'console=ttyS0 init="/bin/sh"',
-                "gdb": True,
-                "gdbport": 1234,
-                "vnc": True,
-                "vncN": 2,
-                "vga": True,
-                "usbmode": True,
-                "usbdevlist": [UsbDevice("1d6b:0002", "hub")],
-                "cdromen": True,
-                "cdrom": "/c.iso",
-                "rtc": True,
-                "tdf": True,
-                "keyboard": "it",
-                "serial": True,
+                "kernel_command_line": 'console=ttyS0 init="/bin/sh"',
+                "use_gdb": True,
+                "gdb_port": 1234,
+                "use_vnc": True,
+                "vnc_display": 2,
+                "standard_vga": True,
+                "use_usb": True,
+                "usb_devices": [UsbDevice("1d6b:0002", "hub")],
+                "cdrom": "image",
+                "cdrom_image": "/c.iso",
+                "clock_local_time": True,
+                "clock_drift_fix": True,
+                "keyboard_layout": "it",
+                "serial_socket": True,
             }
         )
         vm.add_plug(self.sw1.socks[0], "00:aa:00:00:00:01", "e1000")
@@ -404,14 +407,6 @@ class TestMachine(LinesTestCase):
             prepared = prepared_qemu(target, resume="snap1")
             argv, warnings = self.line(vm, prepared)
             expected_warnings = []
-            portrait = []
-            if "-portrait" in facts.old_options:
-                portrait = ["-portrait"]
-            else:
-                expected_warnings.append(
-                    f"vm2: QEMU {prepared.qemu.version} can't rotate the"
-                    " display (portrait)"
-                )
             sock = f"vde,id=vx2,sock={RUN}/vm2_sock_eth2[]"
             if facts.vde:
                 cards = [
@@ -451,7 +446,6 @@ class TestMachine(LinesTestCase):
                 + ["-audiodev", "alsa,id=snd0"]
                 + ["-device", "AC97,audiodev=snd0"]
                 + ["-usb", "-snapshot", "-display", "sdl"]
-                + portrait
                 + ["-loadvm", "snap1", "-display", "none"]
                 + ["-kernel", "/boot/k", "-initrd", "/boot/i"]
                 + ["-append", 'console=ttyS0 init="/bin/sh"']
@@ -472,11 +466,11 @@ class TestMachine(LinesTestCase):
             "qemu",
             "vm",
             kernel="/boot/k",
-            kopt="quiet",
-            deviceen=True,
-            device="/dev/cdrom",
-            tdf=True,
-            keyboard="ita",
+            kernel_command_line="quiet",
+            cdrom="device",
+            cdrom_device="/dev/cdrom",
+            clock_drift_fix=True,
+            keyboard_layout="ita",
         )
         argv, warnings = self.line(vm, prepared_qemu())
         self.assertEqual(argv[1:3], ["-smp", "1"])
@@ -494,7 +488,7 @@ class TestMachine(LinesTestCase):
         self.assertEqual(
             argv[5:9], ["-hda", "/lab/vm_hda.cow", "-hdc", "/images/c.qcow2"]
         )
-        vm.set({"use_virtio": True})
+        vm.set({"virtio_disks": True})
         argv, _ = self.line(vm, prepared_qemu(disks=disks))
         self.assertEqual(
             argv[5:9],
@@ -503,48 +497,50 @@ class TestMachine(LinesTestCase):
         )
 
     def test_unknown_machine_and_cpu(self):
-        vm = self.brick("qemu", "vm", machine="pc-q35-11.1", cpu="Zen9")
+        vm = self.brick(
+            "qemu", "vm", machine_type="pc-q35-11.1", cpu_model="Zen9"
+        )
         argv, warnings = self.line(vm, prepared_qemu("ubuntu-24.04"))
         self.assertNotIn("-machine", argv)
         self.assertNotIn("-cpu", argv)
         self.assertEqual(
             warnings,
             [
-                "vm: QEMU 8.2.2 has no machine type pc-q35-11.1 (machine): the"
+                "vm: QEMU 8.2.2 has no machine type pc-q35-11.1 (machine_type): the"
                 " machine starts with the default one",
-                "vm: QEMU 8.2.2 has no CPU model Zen9 (cpu): the machine"
+                "vm: QEMU 8.2.2 has no CPU model Zen9 (cpu_model): the machine"
                 " starts with the default one",
             ],
         )
 
     def test_without_kvm(self):
-        vm = self.brick("qemu", "vm", kvm=True)
+        vm = self.brick("qemu", "vm", use_kvm=True)
         prepared = prepared_qemu(accelerators=frozenset(["tcg"]))
         argv, warnings = self.line(vm, prepared)
         self.assertNotIn("-accel", argv)
         self.assertEqual(
             warnings,
-            ["vm: QEMU 10.0.13 has no KVM (kvm): the machine is emulated"],
+            ["vm: QEMU 10.0.13 has no KVM (use_kvm): the machine is emulated"],
         )
-        vm.set({"kvmsm": False})
+        vm.set({"use_kvm_shadow_memory": False})
         argv, _ = self.line(vm, prepared_qemu())
         self.assertEqual(argv[1:5], ["-accel", "kvm", "-accel", "tcg"])
 
     def test_without_sdl(self):
-        vm = self.brick("qemu", "vm", sdl=True)
+        vm = self.brick("qemu", "vm", sdl_window=True)
         prepared = prepared_qemu(displays=frozenset(["none", "curses"]))
         argv, warnings = self.line(vm, prepared)
         self.assertNotIn("sdl", argv)
         self.assertEqual(
             warnings,
             [
-                "vm: QEMU 10.0.13 has no SDL window (sdl): install the"
+                "vm: QEMU 10.0.13 has no SDL window (sdl_window): install the"
                 " qemu-system-gui package"
             ],
         )
 
     def test_acpi_off(self):
-        vm = self.brick("qemu", "vm", noacpi="*")
+        vm = self.brick("qemu", "vm", acpi=False)
         argv, _ = self.line(vm, prepared_qemu())
         self.assertEqual(argv[1:3], ["-machine", "acpi=off"])
         # a machine without the property, on a QEMU with the old option
@@ -558,11 +554,11 @@ class TestMachine(LinesTestCase):
         argv, warnings = self.line(vm, prepared)
         self.assertNotIn("-no-acpi", argv)
         self.assertEqual(
-            warnings, ["vm: QEMU 10.0.13 can't turn ACPI off here (noacpi)"]
+            warnings, ["vm: QEMU 10.0.13 can't turn ACPI off here (acpi)"]
         )
 
     def test_sound(self):
-        vm = self.brick("qemu", "vm", soundhw="sb16")
+        vm = self.brick("qemu", "vm", sound_card="sb16")
         argv, _ = self.line(vm, prepared_qemu(driver="pa"))
         self.assertEqual(
             argv[5:9],
@@ -576,7 +572,7 @@ class TestMachine(LinesTestCase):
         self.assertEqual(warnings, [])
 
     def test_pc_speaker(self):
-        vm = self.brick("qemu", "vm", soundhw="pcspk", machine="q35")
+        vm = self.brick("qemu", "vm", sound_card="pcspk", machine_type="q35")
         argv, _ = self.line(vm, prepared_qemu())
         self.assertEqual(
             argv[1:5],
@@ -585,17 +581,17 @@ class TestMachine(LinesTestCase):
         self.assertEqual(argv[7:9], ["-audiodev", "alsa,id=snd0"])
 
     def test_sound_left_out(self):
-        vm = self.brick("qemu", "vm", soundhw="gus2")
+        vm = self.brick("qemu", "vm", sound_card="gus2")
         argv, warnings = self.line(vm, prepared_qemu())
         self.assertNotIn("-audiodev", argv)
         self.assertEqual(
             warnings,
             [
-                "vm: QEMU 10.0.13 has no sound card gus2 (soundhw): the"
+                "vm: QEMU 10.0.13 has no sound card gus2 (sound_card): the"
                 " machine has none"
             ],
         )
-        vm.set({"soundhw": "ac97"})
+        vm.set({"sound_card": "ac97"})
         argv, warnings = self.line(vm, prepared_qemu(driver="coreaudio"))
         self.assertNotIn("-audiodev", argv)
         self.assertEqual(
@@ -666,7 +662,7 @@ class TestPrepare(CommandTestCase):
         set_setting("audio_driver", "pipewire")
         self.factory.new_disk_image("debian", "/images/debian.qcow2")
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"hdb": "debian", "machine": "q35"})
+        vm.set({"hdb_image": "debian", "machine_type": "q35"})
         prepared = self.successResultOf(vm.prepare())
         self.assertEqual(
             prepared.qemu.path, os.path.join(self.bin, "qemu-system-i386")
@@ -679,7 +675,7 @@ class TestPrepare(CommandTestCase):
 
     def test_unknown_machine(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"machine": "pc-q35-11.1"})
+        vm.set({"machine_type": "pc-q35-11.1"})
         info = recorded_info("debian-13")
         self.run.answers[("-machine", f"{info.default_machine},help")] = (
             self.run.answers[("-machine", "pc,help")]
@@ -690,13 +686,13 @@ class TestPrepare(CommandTestCase):
 
     def test_missing_program(self):
         vm = self.factory.new_brick("qemu", "vm")
-        vm.set({"argv0": "qemu-system-arm"})
+        vm.set({"qemu_program": "qemu-system-arm"})
         failure = self.failureResultOf(vm.prepare())
         failure.trap(ProgramError)
         self.assertEqual(str(failure.value), "qemu-system-arm isn't installed")
         os.remove(os.path.join(self.bin, "qemu-system-i386"))
         self.patch(os, "environ", dict(os.environ, PATH=self.bin))
-        vm.set({"argv0": "qemu-system-i386"})
+        vm.set({"qemu_program": "qemu-system-i386"})
         failure = self.failureResultOf(vm.prepare())
         self.assertEqual(
             str(failure.value),

@@ -127,7 +127,7 @@ class TestTheRows(BrickListTestCase):
         self.list.close()
         self.brick("qemu", "vm")
         self.factory.del_brick(self.tap)
-        self.sw.config.numports = 8
+        self.sw.config.ports = 8
         self.sw.notify_changed()
         self.assertEqual(self.rows(), [self.sw, self.tap])
         self.assertEqual(

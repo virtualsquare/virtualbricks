@@ -31,7 +31,7 @@ class Sock:
         self.mode = "sock"
 
     def get_free_ports(self):
-        return self.brick.config.numports - len(self.plugs)
+        return self.brick.config.ports - len(self.plugs)
 
     def has_valid_path(self):
         return os.access(os.path.dirname(self.path), os.W_OK)

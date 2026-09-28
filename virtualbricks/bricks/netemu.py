@@ -56,18 +56,19 @@ class NetemuConfig(bricks.BrickConfig):
     """
 
     name = field(Str(), default="default name")
+    # each value both ways, or from left to right and from right to left
     bandwidth = field(Int(), default=125000)
-    bandwidthr = field(Int(), default=125000)
-    bandwidthsymm = field(Bool(), default=True)
+    bandwidth_right_to_left = field(Int(), default=125000)
+    bandwidth_symmetric = field(Bool(), default=True)
     delay = field(Int(), default=0)
-    delayr = field(Int(), default=0)
-    delaysymm = field(Bool(), default=True)
-    chanbufsize = field(Int(), default=75000)
-    chanbufsizer = field(Int(), default=75000)
-    chanbufsizesymm = field(Bool(), default=True)
+    delay_right_to_left = field(Int(), default=0)
+    delay_symmetric = field(Bool(), default=True)
+    buffer_size = field(Int(), default=75000)
+    buffer_size_right_to_left = field(Int(), default=75000)
+    buffer_size_symmetric = field(Bool(), default=True)
     loss = field(Float(0, 100), default=0.0)
-    lossr = field(Float(0, 100), default=0.0)
-    losssymm = field(Bool(), default=True)
+    loss_right_to_left = field(Float(0, 100), default=0.0)
+    loss_symmetric = field(Bool(), default=True)
 
 
 BRICK_KEYS = frozenset(field_names(bricks.BrickConfig))
@@ -79,7 +80,7 @@ STATE_KEYS = frozenset(field_names(NetemuConfig)) - BRICK_KEYS
 class NetemuTable(bricks.BrickConfig):
     """The table of a Netemu in the project file."""
 
-    transperiod = field(Int(1), default=100)
+    transition_period = field(Int(1), default=100)
     transitions = field(ListOf(ListOf(Float(0))), factory=lambda: [[0.0]])
     states = field(
         ListOf(Record(NetemuConfig, exclude=BRICK_KEYS), min_length=1),
@@ -103,8 +104,7 @@ class MarkovConfig:
     def add(self, index):
         # the events belong to the brick, so every state has the same ones
         new = NetemuConfig(
-            pon_vbevent=self.states[0].pon_vbevent,
-            poff_vbevent=self.states[0].poff_vbevent,
+            **{name: getattr(self.states[0], name) for name in BRICK_KEYS}
         )
         length = len(self.states)
         self.weights.insert(index, list())
@@ -226,15 +226,30 @@ class Netemu(Wire):
         )
         # each value both ways, or left to right (LR) and right to left (RL)
         for option, value, reverse, symmetric in (
-            ("-b", config.bandwidth, config.bandwidthr, config.bandwidthsymm),
-            ("-d", config.delay, config.delayr, config.delaysymm),
+            (
+                "-b",
+                config.bandwidth,
+                config.bandwidth_right_to_left,
+                config.bandwidth_symmetric,
+            ),
+            (
+                "-d",
+                config.delay,
+                config.delay_right_to_left,
+                config.delay_symmetric,
+            ),
             (
                 "-c",
-                config.chanbufsize,
-                config.chanbufsizer,
-                config.chanbufsizesymm,
+                config.buffer_size,
+                config.buffer_size_right_to_left,
+                config.buffer_size_symmetric,
             ),
-            ("-l", config.loss, config.lossr, config.losssymm),
+            (
+                "-l",
+                config.loss,
+                config.loss_right_to_left,
+                config.loss_symmetric,
+            ),
         ):
             if symmetric:
                 cmd.option(option, value)
@@ -249,10 +264,20 @@ class Netemu(Wire):
         self.markov_manager = MarkovConfig(self.config)
 
     def set(self, attrs):
-        self._set(attrs, "chanbufsizesymm", "chanbufsize", "chanbufsizer")
-        self._set(attrs, "delaysymm", "delay", "delayr")
-        self._set(attrs, "bandwidthsymm", "bandwidth", "bandwidthr")
-        self._set(attrs, "losssymm", "loss", "lossr")
+        self._set(
+            attrs,
+            "buffer_size_symmetric",
+            "buffer_size",
+            "buffer_size_right_to_left",
+        )
+        self._set(attrs, "delay_symmetric", "delay", "delay_right_to_left")
+        self._set(
+            attrs,
+            "bandwidth_symmetric",
+            "bandwidth",
+            "bandwidth_right_to_left",
+        )
+        self._set(attrs, "loss_symmetric", "loss", "loss_right_to_left")
         Wire.set(self, attrs)
         # the events belong to the brick, so every state has the same ones
         for name in BRICK_KEYS:
@@ -276,7 +301,7 @@ class Netemu(Wire):
 
     def config_table(self):
         table = dump_record(self.config, exclude=STATE_KEYS)
-        table["transperiod"] = self.transPeriod
+        table["transition_period"] = self.transPeriod
         table["transitions"] = [
             [float(weight) for weight in row]
             for row in self.markov_manager.weights
@@ -305,7 +330,7 @@ class Netemu(Wire):
         self.markov_manager = MarkovConfig(states[0])
         self.markov_manager.states = states
         self.markov_manager.weights = weights
-        self.transPeriod = data.transperiod
+        self.transPeriod = data.transition_period
         self.currentState = self.startupState = 0
         self.config = states[0]
 
@@ -368,58 +393,60 @@ class Netemu(Wire):
             b"markov-name %d,%b\n" % (self.currentState, value.encode("UTF-8"))
         )
 
-    def cbset_chanbufsize(self, value):
-        if self.config.chanbufsizesymm:
+    def cbset_buffer_size(self, value):
+        if self.config.buffer_size_symmetric:
             self.send(b"chanbufsize %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"chanbufsize LR %d[%d]\n" % (value, self.currentState))
 
-    def cbset_chanbufsizer(self, value):
-        if not self.config.chanbufsizesymm:
+    def cbset_buffer_size_right_to_left(self, value):
+        if not self.config.buffer_size_symmetric:
             self.send(b"chanbufsize RL %d[%d]\n" % (value, self.currentState))
 
-    def cbset_chanbufsizesymm(self, value):
-        self.cbset_chanbufsize(self.config.chanbufsize)
-        self.cbset_chanbufsizer(self.config.chanbufsizer)
+    def cbset_buffer_size_symmetric(self, value):
+        self.cbset_buffer_size(self.config.buffer_size)
+        self.cbset_buffer_size_right_to_left(
+            self.config.buffer_size_right_to_left
+        )
 
     def cbset_delay(self, value):
-        if self.config.delaysymm:
+        if self.config.delay_symmetric:
             self.send(b"delay %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"delay LR %d[%d]\n" % (value, self.currentState))
 
-    def cbset_delayr(self, value):
-        if not self.config.delaysymm:
+    def cbset_delay_right_to_left(self, value):
+        if not self.config.delay_symmetric:
             self.send(b"delay RL %d[%d]\n" % (value, self.currentState))
 
-    def cbset_delaysymm(self, value):
+    def cbset_delay_symmetric(self, value):
         self.cbset_delay(self.config.delay)
-        self.cbset_delayr(self.config.delayr)
+        self.cbset_delay_right_to_left(self.config.delay_right_to_left)
 
     def cbset_loss(self, value):
-        if self.config.losssymm:
+        if self.config.loss_symmetric:
             self.send(b"loss %f[%d]\n" % (value, self.currentState))
         else:
             self.send(b"loss LR %f[%d]\n" % (value, self.currentState))
 
-    def cbset_lossr(self, value):
-        if not self.config.losssymm:
+    def cbset_loss_right_to_left(self, value):
+        if not self.config.loss_symmetric:
             self.send(b"loss RL %f[%d]\n" % (value, self.currentState))
 
-    def cbset_losssymm(self, value):
+    def cbset_loss_symmetric(self, value):
         self.cbset_loss(self.config.loss)
-        self.cbset_lossr(self.config.lossr)
+        self.cbset_loss_right_to_left(self.config.loss_right_to_left)
 
     def cbset_bandwidth(self, value):
-        if self.config.bandwidthsymm:
+        if self.config.bandwidth_symmetric:
             self.send(b"bandwidth %d[%d]\n" % (value, self.currentState))
         else:
             self.send(b"bandwidth LR %d[%d]\n" % (value, self.currentState))
 
-    def cbset_bandwidthr(self, value):
-        if not self.config.bandwidthsymm:
+    def cbset_bandwidth_right_to_left(self, value):
+        if not self.config.bandwidth_symmetric:
             self.send(b"bandwidth RL %d[%d]\n" % (value, self.currentState))
 
-    def cbset_bandwidthsymm(self, value):
+    def cbset_bandwidth_symmetric(self, value):
         self.cbset_bandwidth(self.config.bandwidth)
-        self.cbset_bandwidthr(self.config.bandwidthr)
+        self.cbset_bandwidth_right_to_left(self.config.bandwidth_right_to_left)

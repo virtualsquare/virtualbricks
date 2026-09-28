@@ -124,17 +124,17 @@ quits.
 :   The directory of the projects, *.virtualbricks* in your home directory
     by default. Write it as an absolute path: **~** is not expanded.
 
-**term** = *string*, default `"/usr/bin/xterm"`
+**terminal** = *string*, default `"/usr/bin/xterm"`
 :   The terminal that opens the console of a brick.
 
-**ksm** = *boolean*, default `false`
+**kernel_samepage_merging** = *boolean*, default `false`
 :   Enable Kernel Samepage Merging at start, so that virtual machines share
     identical memory pages.
 
-**systray** = *boolean*, default `true`
+**tray_icon** = *boolean*, default `true`
 :   Show an icon in the system tray.
 
-**show_missing** = *boolean*, default `true`
+**warn_missing_programs** = *boolean*, default `true`
 :   Warn at start about the programs that Virtualbricks needs and can't find,
     with the package that has each.
 
@@ -199,21 +199,22 @@ with the defaults when none is. An imported project brings the paths of the
 machine it comes from; the import dialog offers to replace them with those of
 the open project.
 
-**cowfmt** = *choice*, default `"qcow2"`
+**cow_format** = *choice*, default `"qcow2"`
 :   The format of the private copy-on-write disks of the virtual machines:
     **"cow"**, **"qcow"** or **"qcow2"**.
 
-**erroronloop** = *boolean*, default `false`
-:   Log an error when starting a brick finds a loop in the network.
+**log_link_loops** = *boolean*, default `false`
+:   Log an error when starting a brick finds a loop in the links. The bricks
+    on a loop don't start either way.
 
-**femaleplugs** = *boolean*, default `false`
+**allow_female_plugs** = *boolean*, default `false`
 :   Allow plugs to connect to the socket cards of virtual machines, not only
     to switches.
 
-**qemupath** = *path*, default `"/usr/bin"`
+**qemu_path** = *path*, default `"/usr/bin"`
 :   The directory of the QEMU programs.
 
-**vdepath** = *path*, default `"/usr/bin"`
+**vde_path** = *path*, default `"/usr/bin"`
 :   The directory of the VDE programs, such as **vde_switch**(1).
 
 ## Images
@@ -227,6 +228,10 @@ the open project.
 :   A description, which can span several lines.
 
 ## Events
+
+**icon** = *path*, default `""`
+:   An image file to show instead of the icon of events. Nothing shows it
+    yet.
 
 **delay** = *integer*, default `0`
 :   Seconds to wait before running the actions.
@@ -248,12 +253,16 @@ the open project.
 
 Every brick table has a **type**, which is one of **qemu**, **switch**,
 **switchwrapper**, **tap**, **capture**, **wire**, **netemu**,
-**tunnellisten**, **tunnelconnect** and **router**, and these two keys:
+**tunnellisten**, **tunnelconnect** and **router**, and these three keys:
 
-**pon_vbevent** = *event*, default `""`
+**icon** = *path*, default `""`
+:   An image file to show instead of the icon of the type. Only the panel
+    of a virtual machine sets it, for now.
+
+**on_start** = *event*, default `""`
 :   The event that runs when the brick starts.
 
-**poff_vbevent** = *event*, default `""`
+**on_stop** = *event*, default `""`
 :   The event that runs when the brick stops.
 
 The other keys are described below for each type.
@@ -332,130 +341,121 @@ program lacks is left out, and the machine starts with a warning that says so,
 as a machine type or a CPU model that it doesn't know, which leaves QEMU's
 default in its place.
 
-**argv0** = *string*, default `"qemu-system-i386"`
-:   The QEMU program, in the **qemupath** directory, for example
-    **"qemu-system-x86_64"**. Empty means **qemu-system-x86_64**.
+**qemu_program** = *string*, default `"qemu-system-i386"`
+:   The QEMU program, in the **qemu_path** directory, for example
+    **"qemu-system-x86_64"**. It can't be empty.
 
-**machine** = *string*, default `""`
-:   The machine type, as in **-machine type=**.
+**machine_type** = *string*, default `""`
+:   The machine type, as in **-machine type=**. Empty means the default of
+    QEMU.
 
-**cpu** = *string*, default `""`
+**cpu_model** = *string*, default `""`
 :   The CPU model: **-cpu**.
 
-**kvm** = *boolean*, default `false`
+**use_kvm** = *boolean*, default `false`
 :   Use KVM when the host supports it: **-accel kvm -accel tcg**.
 
-**smp** = *integer* 1-64, default `1`
+**cpus** = *integer* 1-64, default `1`
 :   The number of CPUs: **-smp**.
 
-**ram** = *integer* 1-99999, default `64`
+**memory** = *integer* 1-99999, default `64`
 :   The memory, in MiB: **-m**.
 
-**kvmsm** = *boolean*, default `false`
-:   Set the size of the KVM shadow memory to **kvmsmem**.
+**use_kvm_shadow_memory** = *boolean*, default `false`
+:   Set the size of the KVM shadow memory to **kvm_shadow_memory**.
 
-**kvmsmem** = *integer* 0-99999, default `1`
+**kvm_shadow_memory** = *integer* 0-99999, default `1`
 :   The size of the KVM shadow memory, in MiB: **-accel
-    kvm,kvm-shadow-mem=**.
+    kvm,kvm-shadow-mem=**, which takes it in bytes.
 
-**boot** = *string*, default `""`
+**boot_order** = *string*, default `""`
 :   The boot order: **-boot**, for example **"c"** for the first disk or
     **"d"** for the CD-ROM. Empty means the QEMU default.
 
-**snapshot** = *boolean*, default `false`
-:   Write to temporary files instead of the disk images: **-snapshot**.
+**forget_disk_changes** = *boolean*, default `false`
+:   Write to temporary files instead of the disk images, forgotten when the
+    machine stops: **-snapshot**.
 
-**use_virtio** = *boolean*, default `false`
+**virtio_disks** = *boolean*, default `false`
 :   Attach the disks as virtio devices.
 
-**cdromen** = *boolean*, default `false`
-:   Use the image **cdrom** as the CD-ROM.
+**cdrom** = *choice*, default `"none"`
+:   The CD-ROM: **"none"**, **"image"** for the file **cdrom_image**, or
+    **"device"** for the drive **cdrom_device** of the host: **-cdrom**.
 
-**cdrom** = *path*, default `""`
-:   An image file for the CD-ROM: **-cdrom**.
+**cdrom_image** = *path*, default `""`
+:   An image file for the CD-ROM.
 
-**deviceen** = *boolean*, default `false`
-:   Use the host device **device** as the CD-ROM, unless **cdromen** is set.
+**cdrom_device** = *string*, default `""`
+:   A CD-ROM drive of the host, for example **"/dev/cdrom"**.
 
-**device** = *string*, default `""`
-:   A CD-ROM device of the host, for example **"/dev/cdrom"**.
-
-**novga** = *boolean*, default `false`
+**headless** = *boolean*, default `false`
 :   No display: **-display none**.
 
-**vga** = *boolean*, default `false`
+**standard_vga** = *boolean*, default `false`
 :   A standard VGA card: **-vga std**.
 
-**vnc** = *boolean*, default `false`
-:   Show the display over VNC, on display **vncN**.
+**use_vnc** = *boolean*, default `false`
+:   Show the display over VNC, on display **vnc_display**.
 
-**vncN** = *integer* 0-500, default `1`
+**vnc_display** = *integer* 0-500, default `1`
 :   The VNC display: **-vnc :***N*.
 
-**sdl** = *boolean*, default `false`
+**sdl_window** = *boolean*, default `false`
 :   Show the display in an SDL window: **-display sdl**. QEMU has it with the
     package **qemu-system-gui**.
 
-**portrait** = *boolean*, default `false`
-:   Rotate the display: **-portrait**, which QEMU 8.2 has and 9.2 doesn't.
-
-**soundhw** = *string*, default `""`
+**sound_card** = *string*, default `""`
 :   The sound card, as **"ac97"**, **"es1370"** or **"sb16"**: **-audiodev**,
     with the **audio_driver** setting, and **-device**. **"pcspk"** is the
     speaker of the PC: **-machine pcspk-audiodev=**.
 
-**usbmode** = *boolean*, default `false`
-:   Enable USB, **-usb**, and pass the devices of **usbdevlist** to the
+**use_usb** = *boolean*, default `false`
+:   Enable USB, **-usb**, and pass the devices of **usb_devices** to the
     guest.
 
-**usbdevlist** = *array*, default `[]`
+**usb_devices** = *array*, default `[]`
 :   USB devices of the host, each an inline table with an **id**, the
     vendor and product id as **"046d:c52b"**, and a **description**. Each
     device becomes **-device usb-host,vendorid=0x046d,productid=0xc52b**.
 
-**keyboard** = *string*, default `""`
+**keyboard_layout** = *string*, default `""`
 :   The keyboard layout, a code of two letters such as **"it"**: **-k**.
 
-**rtc** = *boolean*, default `false`
+**clock_local_time** = *boolean*, default `false`
 :   Set the clock of the guest to the local time: **-rtc base=localtime**.
 
-**tdf** = *boolean*, default `false`
+**clock_drift_fix** = *boolean*, default `false`
 :   Correct the drift of the clock: **-rtc driftfix=slew**.
 
-**serial** = *boolean*, default `false`
+**serial_socket** = *boolean*, default `false`
 :   Connect the serial port to a socket in the runtime directory:
     **-serial unix:**...**_serial**.
 
-**kernelenbl** = *boolean*, default `false`
+**use_kernel** = *boolean*, default `false`
 :   Boot the kernel **kernel** directly.
 
 **kernel** = *path*, default `""`
 :   A kernel image: **-kernel**.
 
-**initrdenbl** = *boolean*, default `false`
+**use_initrd** = *boolean*, default `false`
 :   Use the initial ramdisk **initrd**.
 
 **initrd** = *path*, default `""`
 :   An initial ramdisk: **-initrd**.
 
-**kopt** = *string*, default `""`
-:   The kernel command line, with **kernelenbl**: **-append**.
+**kernel_command_line** = *string*, default `""`
+:   The kernel command line, with **use_kernel**: **-append**.
 
-**gdb** = *boolean*, default `false`
-:   Wait for a GDB connection on port **gdbport**.
+**use_gdb** = *boolean*, default `false`
+:   Wait for a GDB connection on port **gdb_port**.
 
-**gdbport** = *integer* 1-65535, default `1234`
+**gdb_port** = *integer* 1-65535, default `1234`
 :   The port of the GDB server: **-gdb tcp::***port*.
 
-**noacpi** = *string*, default `""`
-:   **"\*"** disables ACPI: **-machine acpi=off**, or **-no-acpi** for a
-    machine type without that property.
-
-**icon** = *path*, default `""`
-:   An image file that shows the machine in the main window.
-
-**stdout** = *string*, default `""`
-:   Not used.
+**acpi** = *boolean*, default `true`
+:   Give the machine ACPI. False turns it off: **-machine acpi=off**, or
+    **-no-acpi** for a machine type without that property.
 
 ### Disks
 
@@ -469,7 +469,7 @@ each device, all of them always written:
 **disks.***device***.private** = *boolean*, default `false`
 :   Write to a private copy-on-write file, *vm*_*device*.cow in the project
     directory, instead of the image, which then stays unchanged. The format
-    of the file is the project's **cowfmt**.
+    of the file is the project's **cow_format**.
 
 ### Network cards
 
@@ -506,13 +506,13 @@ sees them. Each card has these keys:
 
 A VDE switch, **vde_switch**(1). Plugs connect to it by its name.
 
-**numports** = *integer* 1-128, default `32`
+**ports** = *integer* 1-128, default `32`
 :   The number of ports.
 
-**hub** = *boolean*, default `false`
+**hub_mode** = *boolean*, default `false`
 :   Send every packet to every port, like a hub.
 
-**fstp** = *boolean*, default `false`
+**fast_spanning_tree** = *boolean*, default `false`
 :   Enable the fast spanning tree protocol.
 
 ## switchwrapper
@@ -520,7 +520,7 @@ A VDE switch, **vde_switch**(1). Plugs connect to it by its name.
 A VDE switch that Virtualbricks doesn't start, run by another program. Plugs
 connect to it by its name.
 
-**path** = *path*, default `""`
+**socket_path** = *path*, default `""`
 :   The control directory of the switch.
 
 ## tap
@@ -531,17 +531,18 @@ A tap interface of the host, plugged into a switch through
 **connect** = *string*, default `""`
 :   The socket the tap is plugged into.
 
-**mode** = *choice*, default `"off"`
+**address_mode** = *choice*, default `"off"`
 :   How the interface gets its address: **"off"** for not at all,
-    **"dhcp"**, or **"manual"** for **ip**, **nm** and **gw**.
+    **"dhcp"**, or **"manual"** for **ip_address**, **netmask** and
+    **gateway**.
 
-**ip** = *address*, default `"10.0.0.1"`
+**ip_address** = *address*, default `"10.0.0.1"`
 :   The address of the interface.
 
-**nm** = *address*, default `"255.255.255.0"`
+**netmask** = *address*, default `"255.255.255.0"`
 :   The netmask.
 
-**gw** = *address*, default `""`
+**gateway** = *address*, default `""`
 :   The default gateway, or empty for none.
 
 ## capture
@@ -552,7 +553,7 @@ Captures the packets of an interface of the host into a switch, through
 **connect** = *string*, default `""`
 :   The socket the capture is plugged into.
 
-**iface** = *string*, default `""`
+**interface** = *string*, default `""`
 :   The interface of the host, for example **"eth0"**.
 
 ## wire
@@ -570,10 +571,10 @@ can change over time between the states of a Markov chain. It runs
 vde-netemu isn't installed.
 
 **endpoints** = *array*, default `["", ""]`
-:   The two sockets, left and right. LR values apply from left to right, RL
-    values from right to left.
+:   The two sockets, left and right. The values of a state apply from left
+    to right, the ones that end in **_right_to_left** from right to left.
 
-**transperiod** = *integer* >= 1, default `100`
+**transition_period** = *integer* >= 1, default `100`
 :   How often the emulator may change state, in milliseconds.
 
 **transitions** = *array*, default `[[0.0]]`
@@ -589,42 +590,42 @@ the emulator starts in. Each state has these keys:
 
 **bandwidth** = *integer*, default `125000`
 :   The bandwidth, in bytes per second, or 0 for no limit; from left to
-    right when **bandwidthsymm** is false.
+    right when **bandwidth_symmetric** is false.
 
-**bandwidthr** = *integer*, default `125000`
+**bandwidth_right_to_left** = *integer*, default `125000`
 :   The bandwidth from right to left.
 
-**bandwidthsymm** = *boolean*, default `true`
+**bandwidth_symmetric** = *boolean*, default `true`
 :   Use **bandwidth** in both directions.
 
 **delay** = *integer*, default `0`
 :   The propagation delay, one way, in milliseconds; from left to right when
-    **delaysymm** is false.
+    **delay_symmetric** is false.
 
-**delayr** = *integer*, default `0`
+**delay_right_to_left** = *integer*, default `0`
 :   The delay from right to left.
 
-**delaysymm** = *boolean*, default `true`
+**delay_symmetric** = *boolean*, default `true`
 :   Use **delay** in both directions.
 
-**chanbufsize** = *integer*, default `75000`
+**buffer_size** = *integer*, default `75000`
 :   The size of the channel buffer, in bytes, or 0 for no limit; from left
-    to right when **chanbufsizesymm** is false.
+    to right when **buffer_size_symmetric** is false.
 
-**chanbufsizer** = *integer*, default `75000`
+**buffer_size_right_to_left** = *integer*, default `75000`
 :   The size of the channel buffer from right to left.
 
-**chanbufsizesymm** = *boolean*, default `true`
-:   Use **chanbufsize** in both directions.
+**buffer_size_symmetric** = *boolean*, default `true`
+:   Use **buffer_size** in both directions.
 
 **loss** = *number* 0-100, default `0.0`
-:   The percentage of packets lost; from left to right when **losssymm** is
-    false.
+:   The percentage of packets lost; from left to right when
+    **loss_symmetric** is false.
 
-**lossr** = *number* 0-100, default `0.0`
+**loss_right_to_left** = *number* 0-100, default `0.0`
 :   The percentage of packets lost from right to left.
 
-**losssymm** = *boolean*, default `true`
+**loss_symmetric** = *boolean*, default `true`
 :   Use **loss** in both directions.
 
 ## tunnellisten
@@ -635,7 +636,7 @@ The server end of an encrypted tunnel between two machines, through
 **connect** = *string*, default `""`
 :   The socket the tunnel is plugged into.
 
-**port** = *integer* 1-65535, default `7667`
+**listen_port** = *integer* 1-65535, default `7667`
 :   The UDP port to listen on.
 
 **password** = *string*, default `""`
@@ -648,13 +649,13 @@ The client end of an encrypted tunnel, through **vde_cryptcab**(1).
 **connect** = *string*, default `""`
 :   The socket the tunnel is plugged into.
 
-**host** = *string*, default `""`
+**server_host** = *string*, default `""`
 :   The host that runs the server end.
 
-**port** = *integer* 1-65535, default `7667`
+**server_port** = *integer* 1-65535, default `7667`
 :   The UDP port of the server end.
 
-**localport** = *integer* 1-65535, default `10771`
+**local_port** = *integer* 1-65535, default `10771`
 :   The local UDP port.
 
 **password** = *string*, default `""`
@@ -666,9 +667,10 @@ A router. It has only the two event keys.
 
 # PRIVILEGES
 
-A **tap** and a **capture** open interfaces of the host, and the **ksm**
-setting writes to */sys*: they need root. When Virtualbricks doesn't run as
-root, it runs them with **sudo**(8), in one of two ways:
+A **tap** and a **capture** open interfaces of the host, and the
+**kernel_samepage_merging** setting writes to */sys*: they need root. When
+Virtualbricks doesn't run as root, it runs them with **sudo**(8), in one of
+two ways:
 
 **sudo -A**
 :   When an askpass helper is configured: the program of **SUDO_ASKPASS**,
@@ -680,7 +682,7 @@ root, it runs them with **sudo**(8), in one of two ways:
 :   Otherwise. sudo never asks for a password: when it would have to, it
     fails at once, and the brick doesn't start. This is the way on a machine
     without a display, with a rule of **sudoers**(5) that lets you run the
-    programs of the bricks, from the folder of the **vdepath** setting,
+    programs of the bricks, from the folder of the **vde_path** setting,
     without a password:
 
     ```
@@ -688,9 +690,10 @@ root, it runs them with **sudo**(8), in one of two ways:
         /usr/bin/vde_pcapplug
     ```
 
-The **ksm** setting runs */bin/sh* as root to write its value, and a rule
-that lets a shell run as root gives root to anyone who can use it. Turn KSM
-on at boot instead, with a **tmpfiles.d**(5) line, and leave **ksm** false:
+The **kernel_samepage_merging** setting runs */bin/sh* as root to write its
+value, and a rule that lets a shell run as root gives root to anyone who can
+use it. Turn KSM on at boot instead, with a **tmpfiles.d**(5) line, and leave
+**kernel_samepage_merging** false:
 
 ```
 w /sys/kernel/mm/ksm/run - - - - 1
@@ -706,7 +709,10 @@ converts *~/.virtualbricks.conf* into **settings.toml** and **state.toml**,
 and the *.project* file of each project into a **project.toml** next to it,
 and shows what it converted in a window. The settings of
 *~/.virtualbricks.conf* that are now a project's, as **qemupath**, go into
-each converted project. The old files are left as they were.
+each converted project. The keys get the names of this page, as **qemupath**
+becomes **qemu_path** and **numports** becomes **ports**, and so do the
+settings in the commands of the events, as **sw1 config numports=16**. The
+old files are left as they were.
 
 The same conversion can be tried on copies, into a new folder laid out like
 the XDG directories:
@@ -769,10 +775,10 @@ A **settings.toml** as Virtualbricks writes it at its first start:
 ```
 format = 1
 workspace = "/home/alice/.virtualbricks"
-term = "/usr/bin/xterm"
-ksm = false
-systray = true
-show_missing = true
+terminal = "/usr/bin/xterm"
+kernel_samepage_merging = false
+tray_icon = true
+warn_missing_programs = true
 audio_driver = "alsa"
 ```
 
@@ -784,47 +790,53 @@ shortened: Virtualbricks writes all of its keys, and the six empty disks.
 format = 1
 
 [settings]
-cowfmt = "qcow2"
-erroronloop = false
-femaleplugs = false
-qemupath = "/usr/bin"
-vdepath = "/usr/bin"
+cow_format = "qcow2"
+log_link_loops = false
+allow_female_plugs = false
+qemu_path = "/usr/bin"
+vde_path = "/usr/bin"
 
 [images.debian]
 path = "/home/alice/.virtualbricks/vimages/debian-12.qcow2"
 description = "Debian 12\nbase image"
 
 [events.start_lab]
+icon = ""
+delay = 5
 actions = [
     {kind = "vb", command = "sw1 on"},
     {kind = "shell", command = "logger lab started"},
 ]
-delay = 5
 
 [bricks.sw1]
 type = "switch"
-pon_vbevent = "start_lab"
-poff_vbevent = ""
-numports = 16
-hub = false
-fstp = true
+icon = ""
+on_start = "start_lab"
+on_stop = ""
+ports = 16
+hub_mode = false
+fast_spanning_tree = true
 
 [bricks.sw2]
 type = "switch"
-pon_vbevent = ""
-poff_vbevent = ""
-numports = 32
-hub = false
-fstp = false
+icon = ""
+on_start = ""
+on_stop = ""
+ports = 32
+hub_mode = false
+fast_spanning_tree = false
 
 [bricks.router1]
 type = "qemu"
-pon_vbevent = ""
-poff_vbevent = ""
-argv0 = "qemu-system-x86_64"
-kvm = true
-smp = 2
-ram = 1024
+icon = ""
+on_start = ""
+on_stop = ""
+qemu_program = "qemu-system-x86_64"
+machine_type = ""
+cpu_model = ""
+use_kvm = true
+cpus = 2
+memory = 1024
 # ... and the other keys of a qemu brick
 
 [bricks.router1.disks.hda]
@@ -852,57 +864,59 @@ mac = "52:54:00:12:34:03"
 
 [bricks.tap0]
 type = "tap"
-pon_vbevent = ""
-poff_vbevent = ""
-ip = "10.0.0.1"
-nm = "255.255.255.0"
-gw = ""
-mode = "manual"
+icon = ""
+on_start = ""
+on_stop = ""
+address_mode = "manual"
+ip_address = "10.0.0.1"
+netmask = "255.255.255.0"
+gateway = ""
 connect = "sw2"
 
 [bricks.wan]
 type = "netemu"
-pon_vbevent = ""
-poff_vbevent = ""
-transperiod = 100
+icon = ""
+on_start = ""
+on_stop = ""
+transition_period = 100
 transitions = [[0.0, 0.2], [0.5, 0.0]]
 endpoints = ["sw1", "sw2"]
 
 [[bricks.wan.states]]
 name = "good"
 bandwidth = 125000
-bandwidthr = 125000
-bandwidthsymm = true
+bandwidth_right_to_left = 125000
+bandwidth_symmetric = true
 delay = 10
-delayr = 0
-delaysymm = true
-chanbufsize = 75000
-chanbufsizer = 75000
-chanbufsizesymm = true
+delay_right_to_left = 0
+delay_symmetric = true
+buffer_size = 75000
+buffer_size_right_to_left = 75000
+buffer_size_symmetric = true
 loss = 0.0
-lossr = 0.0
-losssymm = true
+loss_right_to_left = 0.0
+loss_symmetric = true
 
 [[bricks.wan.states]]
 name = "congested"
 bandwidth = 125000
-bandwidthr = 125000
-bandwidthsymm = true
+bandwidth_right_to_left = 125000
+bandwidth_symmetric = true
 delay = 200
-delayr = 50
-delaysymm = false
-chanbufsize = 75000
-chanbufsizer = 75000
-chanbufsizesymm = true
+delay_right_to_left = 50
+delay_symmetric = false
+buffer_size = 75000
+buffer_size_right_to_left = 75000
+buffer_size_symmetric = true
 loss = 2.5
-lossr = 0.0
-losssymm = true
+loss_right_to_left = 0.0
+loss_symmetric = true
 ```
 
 # BUGS
 
-The **mode**, **ip**, **nm** and **gw** of a tap are stored but not applied:
-the interface gets no address from Virtualbricks.
+The **address_mode**, **ip_address**, **netmask** and **gateway** of a tap
+are stored but not applied: the interface gets no address from Virtualbricks.
 
 # SEE ALSO
 

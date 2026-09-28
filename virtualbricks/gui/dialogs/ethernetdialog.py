@@ -219,7 +219,7 @@ class BaseEthernetDialog(Window):
         socks.append(
             ("Host-only ad hoc network", virtualmachine.hostonly_sock)
         )
-        if get_setting("femaleplugs"):
+        if get_setting("allow_female_plugs"):
             socks.append(("Vde socket", "_sock"))
             for sock in self.factory.socks:
                 socks.append((sock.nickname, sock))
@@ -290,7 +290,7 @@ class EditEthernetDialog(BaseEthernetDialog):
             itr = model.iter_next(itr)
 
         socks = self.sock_store
-        if self.plug.mode == "sock" and get_setting("femaleplugs"):
+        if self.plug.mode == "sock" and get_setting("allow_female_plugs"):
             self.sock_combo.set_active(1)
         else:
             itr = socks.get_iter_first()

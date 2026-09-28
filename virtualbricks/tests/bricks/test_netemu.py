@@ -38,21 +38,21 @@ class TestNetemu(BrickTestCase):
         netemu = self.factory.new_brick("netemu", "wan")
         netemu.markov_manager.add(1)
         self.factory.new_event("up")
-        netemu.set({"pon_vbevent": "up"})
+        netemu.set({"on_start": "up"})
         self.assertEqual(
-            [s.pon_vbevent for s in netemu.markov_manager.states], ["up", "up"]
+            [s.on_start for s in netemu.markov_manager.states], ["up", "up"]
         )
         netemu.markov_manager.add(2)
-        self.assertEqual(netemu.markov_manager.states[2].pon_vbevent, "up")
+        self.assertEqual(netemu.markov_manager.states[2].on_start, "up")
 
     def test_event_rename_updates_every_state(self):
         netemu = self.factory.new_brick("netemu", "wan")
         netemu.markov_manager.add(1)
         event = self.factory.new_event("up")
-        netemu.set({"pon_vbevent": "up"})
+        netemu.set({"on_start": "up"})
         self.factory.rename(event, "start")
         self.assertEqual(
-            [s.pon_vbevent for s in netemu.markov_manager.states],
+            [s.on_start for s in netemu.markov_manager.states],
             ["start", "start"],
         )
         self.assertFalse(netemu.rename_references("event", "none", "x"))
@@ -64,10 +64,10 @@ class TestNetemu(BrickTestCase):
         netemu.markov_manager.weights[0][1] = 0.3
         netemu.transPeriod = 250
         table = netemu.config_table()
-        self.assertEqual(table["transperiod"], 250)
+        self.assertEqual(table["transition_period"], 250)
         self.assertEqual(table["transitions"], [[0.0, 0.3], [0.0, 0.0]])
         self.assertEqual(len(table["states"]), 2)
-        self.assertNotIn("pon_vbevent", table["states"][0])
+        self.assertNotIn("on_start", table["states"][0])
         other = self.factory.new_brick("netemu", "wan2")
         report = Report()
         other.load_config_table(table, report, "w", set())

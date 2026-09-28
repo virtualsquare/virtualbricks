@@ -122,17 +122,17 @@ The directory of the projects, \f[I].virtualbricks\f[R] in your home
 directory by default.
 Write it as an absolute path: \f[B]\(ti\f[R] is not expanded.
 .TP
-\f[B]term\f[R] = \f[I]string\f[R], default \f[CR]\(dq/usr/bin/xterm\(dq\f[R]
+\f[B]terminal\f[R] = \f[I]string\f[R], default \f[CR]\(dq/usr/bin/xterm\(dq\f[R]
 The terminal that opens the console of a brick.
 .TP
-\f[B]ksm\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]kernel_samepage_merging\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Enable Kernel Samepage Merging at start, so that virtual machines share
 identical memory pages.
 .TP
-\f[B]systray\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
+\f[B]tray_icon\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Show an icon in the system tray.
 .TP
-\f[B]show_missing\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
+\f[B]warn_missing_programs\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Warn at start about the programs that Virtualbricks needs and can\(aqt
 find, with the package that has each.
 .TP
@@ -201,22 +201,23 @@ open, or with the defaults when none is.
 An imported project brings the paths of the machine it comes from; the
 import dialog offers to replace them with those of the open project.
 .TP
-\f[B]cowfmt\f[R] = \f[I]choice\f[R], default \f[CR]\(dqqcow2\(dq\f[R]
+\f[B]cow_format\f[R] = \f[I]choice\f[R], default \f[CR]\(dqqcow2\(dq\f[R]
 The format of the private copy\-on\-write disks of the virtual machines:
 \f[B]\(dqcow\(dq\f[R], \f[B]\(dqqcow\(dq\f[R] or
 \f[B]\(dqqcow2\(dq\f[R].
 .TP
-\f[B]erroronloop\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Log an error when starting a brick finds a loop in the network.
+\f[B]log_link_loops\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+Log an error when starting a brick finds a loop in the links.
+The bricks on a loop don\(aqt start either way.
 .TP
-\f[B]femaleplugs\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]allow_female_plugs\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Allow plugs to connect to the socket cards of virtual machines, not only
 to switches.
 .TP
-\f[B]qemupath\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
+\f[B]qemu_path\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
 The directory of the QEMU programs.
 .TP
-\f[B]vdepath\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
+\f[B]vde_path\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
 The directory of the VDE programs, such as \f[B]vde_switch\f[R](1).
 .SS Images
 .TP
@@ -230,6 +231,10 @@ Two images can\(aqt use the same file.
 \f[B]description\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 A description, which can span several lines.
 .SS Events
+.TP
+\f[B]icon\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
+An image file to show instead of the icon of events.
+Nothing shows it yet.
 .TP
 \f[B]delay\f[R] = \f[I]integer\f[R], default \f[CR]0\f[R]
 Seconds to wait before running the actions.
@@ -255,12 +260,16 @@ Every brick table has a \f[B]type\f[R], which is one of \f[B]qemu\f[R],
 \f[B]switch\f[R], \f[B]switchwrapper\f[R], \f[B]tap\f[R],
 \f[B]capture\f[R], \f[B]wire\f[R], \f[B]netemu\f[R],
 \f[B]tunnellisten\f[R], \f[B]tunnelconnect\f[R] and \f[B]router\f[R],
-and these two keys:
+and these three keys:
 .TP
-\f[B]pon_vbevent\f[R] = \f[I]event\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]icon\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
+An image file to show instead of the icon of the type.
+Only the panel of a virtual machine sets it, for now.
+.TP
+\f[B]on_start\f[R] = \f[I]event\f[R], default \f[CR]\(dq\(dq\f[R]
 The event that runs when the brick starts.
 .TP
-\f[B]poff_vbevent\f[R] = \f[I]event\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]on_stop\f[R] = \f[I]event\f[R], default \f[CR]\(dq\(dq\f[R]
 The event that runs when the brick stops.
 .PP
 The other keys are described below for each type.
@@ -342,141 +351,131 @@ What the program lacks is left out, and the machine starts with a
 warning that says so, as a machine type or a CPU model that it
 doesn\(aqt know, which leaves QEMU\(aqs default in its place.
 .TP
-\f[B]argv0\f[R] = \f[I]string\f[R], default \f[CR]\(dqqemu\-system\-i386\(dq\f[R]
-The QEMU program, in the \f[B]qemupath\f[R] directory, for example
+\f[B]qemu_program\f[R] = \f[I]string\f[R], default \f[CR]\(dqqemu\-system\-i386\(dq\f[R]
+The QEMU program, in the \f[B]qemu_path\f[R] directory, for example
 \f[B]\(dqqemu\-system\-x86_64\(dq\f[R].
-Empty means \f[B]qemu\-system\-x86_64\f[R].
+It can\(aqt be empty.
 .TP
-\f[B]machine\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]machine_type\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The machine type, as in \f[B]\-machine type=\f[R].
+Empty means the default of QEMU.
 .TP
-\f[B]cpu\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]cpu_model\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The CPU model: \f[B]\-cpu\f[R].
 .TP
-\f[B]kvm\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]use_kvm\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Use KVM when the host supports it: \f[B]\-accel kvm \-accel tcg\f[R].
 .TP
-\f[B]smp\f[R] = \f[I]integer\f[R] 1\-64, default \f[CR]1\f[R]
+\f[B]cpus\f[R] = \f[I]integer\f[R] 1\-64, default \f[CR]1\f[R]
 The number of CPUs: \f[B]\-smp\f[R].
 .TP
-\f[B]ram\f[R] = \f[I]integer\f[R] 1\-99999, default \f[CR]64\f[R]
+\f[B]memory\f[R] = \f[I]integer\f[R] 1\-99999, default \f[CR]64\f[R]
 The memory, in MiB: \f[B]\-m\f[R].
 .TP
-\f[B]kvmsm\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Set the size of the KVM shadow memory to \f[B]kvmsmem\f[R].
+\f[B]use_kvm_shadow_memory\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+Set the size of the KVM shadow memory to \f[B]kvm_shadow_memory\f[R].
 .TP
-\f[B]kvmsmem\f[R] = \f[I]integer\f[R] 0\-99999, default \f[CR]1\f[R]
+\f[B]kvm_shadow_memory\f[R] = \f[I]integer\f[R] 0\-99999, default \f[CR]1\f[R]
 The size of the KVM shadow memory, in MiB: \f[B]\-accel
-kvm,kvm\-shadow\-mem=\f[R].
+kvm,kvm\-shadow\-mem=\f[R], which takes it in bytes.
 .TP
-\f[B]boot\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]boot_order\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The boot order: \f[B]\-boot\f[R], for example \f[B]\(dqc\(dq\f[R] for
 the first disk or \f[B]\(dqd\(dq\f[R] for the CD\-ROM.
 Empty means the QEMU default.
 .TP
-\f[B]snapshot\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Write to temporary files instead of the disk images:
-\f[B]\-snapshot\f[R].
+\f[B]forget_disk_changes\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+Write to temporary files instead of the disk images, forgotten when the
+machine stops: \f[B]\-snapshot\f[R].
 .TP
-\f[B]use_virtio\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]virtio_disks\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Attach the disks as virtio devices.
 .TP
-\f[B]cdromen\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Use the image \f[B]cdrom\f[R] as the CD\-ROM.
+\f[B]cdrom\f[R] = \f[I]choice\f[R], default \f[CR]\(dqnone\(dq\f[R]
+The CD\-ROM: \f[B]\(dqnone\(dq\f[R], \f[B]\(dqimage\(dq\f[R] for the
+file \f[B]cdrom_image\f[R], or \f[B]\(dqdevice\(dq\f[R] for the drive
+\f[B]cdrom_device\f[R] of the host: \f[B]\-cdrom\f[R].
 .TP
-\f[B]cdrom\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
-An image file for the CD\-ROM: \f[B]\-cdrom\f[R].
+\f[B]cdrom_image\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
+An image file for the CD\-ROM.
 .TP
-\f[B]deviceen\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Use the host device \f[B]device\f[R] as the CD\-ROM, unless
-\f[B]cdromen\f[R] is set.
+\f[B]cdrom_device\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+A CD\-ROM drive of the host, for example \f[B]\(dq/dev/cdrom\(dq\f[R].
 .TP
-\f[B]device\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
-A CD\-ROM device of the host, for example \f[B]\(dq/dev/cdrom\(dq\f[R].
-.TP
-\f[B]novga\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]headless\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 No display: \f[B]\-display none\f[R].
 .TP
-\f[B]vga\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]standard_vga\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 A standard VGA card: \f[B]\-vga std\f[R].
 .TP
-\f[B]vnc\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Show the display over VNC, on display \f[B]vncN\f[R].
+\f[B]use_vnc\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+Show the display over VNC, on display \f[B]vnc_display\f[R].
 .TP
-\f[B]vncN\f[R] = \f[I]integer\f[R] 0\-500, default \f[CR]1\f[R]
+\f[B]vnc_display\f[R] = \f[I]integer\f[R] 0\-500, default \f[CR]1\f[R]
 The VNC display: \f[B]\-vnc :\f[R]\f[I]N\f[R].
 .TP
-\f[B]sdl\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]sdl_window\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Show the display in an SDL window: \f[B]\-display sdl\f[R].
 QEMU has it with the package \f[B]qemu\-system\-gui\f[R].
 .TP
-\f[B]portrait\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Rotate the display: \f[B]\-portrait\f[R], which QEMU 8.2 has and 9.2
-doesn\(aqt.
-.TP
-\f[B]soundhw\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]sound_card\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The sound card, as \f[B]\(dqac97\(dq\f[R], \f[B]\(dqes1370\(dq\f[R] or
 \f[B]\(dqsb16\(dq\f[R]: \f[B]\-audiodev\f[R], with the
 \f[B]audio_driver\f[R] setting, and \f[B]\-device\f[R].
 \f[B]\(dqpcspk\(dq\f[R] is the speaker of the PC: \f[B]\-machine
 pcspk\-audiodev=\f[R].
 .TP
-\f[B]usbmode\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]use_usb\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Enable USB, \f[B]\-usb\f[R], and pass the devices of
-\f[B]usbdevlist\f[R] to the guest.
+\f[B]usb_devices\f[R] to the guest.
 .TP
-\f[B]usbdevlist\f[R] = \f[I]array\f[R], default \f[CR][]\f[R]
+\f[B]usb_devices\f[R] = \f[I]array\f[R], default \f[CR][]\f[R]
 USB devices of the host, each an inline table with an \f[B]id\f[R], the
 vendor and product id as \f[B]\(dq046d:c52b\(dq\f[R], and a
 \f[B]description\f[R].
 Each device becomes \f[B]\-device
 usb\-host,vendorid=0x046d,productid=0xc52b\f[R].
 .TP
-\f[B]keyboard\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]keyboard_layout\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The keyboard layout, a code of two letters such as \f[B]\(dqit\(dq\f[R]:
 \f[B]\-k\f[R].
 .TP
-\f[B]rtc\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]clock_local_time\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Set the clock of the guest to the local time: \f[B]\-rtc
 base=localtime\f[R].
 .TP
-\f[B]tdf\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]clock_drift_fix\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Correct the drift of the clock: \f[B]\-rtc driftfix=slew\f[R].
 .TP
-\f[B]serial\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]serial_socket\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Connect the serial port to a socket in the runtime directory:
 \f[B]\-serial unix:\f[R]...**_serial**.
 .TP
-\f[B]kernelenbl\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]use_kernel\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Boot the kernel \f[B]kernel\f[R] directly.
 .TP
 \f[B]kernel\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
 A kernel image: \f[B]\-kernel\f[R].
 .TP
-\f[B]initrdenbl\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]use_initrd\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Use the initial ramdisk \f[B]initrd\f[R].
 .TP
 \f[B]initrd\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
 An initial ramdisk: \f[B]\-initrd\f[R].
 .TP
-\f[B]kopt\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
-The kernel command line, with \f[B]kernelenbl\f[R]: \f[B]\-append\f[R].
+\f[B]kernel_command_line\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+The kernel command line, with \f[B]use_kernel\f[R]: \f[B]\-append\f[R].
 .TP
-\f[B]gdb\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
-Wait for a GDB connection on port \f[B]gdbport\f[R].
+\f[B]use_gdb\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+Wait for a GDB connection on port \f[B]gdb_port\f[R].
 .TP
-\f[B]gdbport\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]1234\f[R]
+\f[B]gdb_port\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]1234\f[R]
 The port of the GDB server: \f[B]\-gdb tcp::\f[R]\f[I]port\f[R].
 .TP
-\f[B]noacpi\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
-\f[B]\(dq*\(dq\f[R] disables ACPI: \f[B]\-machine acpi=off\f[R], or
+\f[B]acpi\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
+Give the machine ACPI.
+False turns it off: \f[B]\-machine acpi=off\f[R], or
 \f[B]\-no\-acpi\f[R] for a machine type without that property.
-.TP
-\f[B]icon\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
-An image file that shows the machine in the main window.
-.TP
-\f[B]stdout\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
-Not used.
 .SS Disks
 The disks are in the subtables \f[B]disks.hda\f[R], \f[B]disks.hdb\f[R],
 \f[B]disks.hdc\f[R], \f[B]disks.hdd\f[R], \f[B]disks.fda\f[R],
@@ -490,7 +489,7 @@ The image of the device, by name.
 Write to a private copy\-on\-write file,
 \f[I]vm\f[R]_\f[I]device\f[R].cow in the project directory, instead of
 the image, which then stays unchanged.
-The format of the file is the project\(aqs \f[B]cowfmt\f[R].
+The format of the file is the project\(aqs \f[B]cow_format\f[R].
 .SS Network cards
 \f[B]nics\f[R] is an array of tables, the network cards in the order the
 guest sees them.
@@ -528,20 +527,20 @@ A missing or invalid address is replaced with a random one.
 A VDE switch, \f[B]vde_switch\f[R](1).
 Plugs connect to it by its name.
 .TP
-\f[B]numports\f[R] = \f[I]integer\f[R] 1\-128, default \f[CR]32\f[R]
+\f[B]ports\f[R] = \f[I]integer\f[R] 1\-128, default \f[CR]32\f[R]
 The number of ports.
 .TP
-\f[B]hub\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]hub_mode\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Send every packet to every port, like a hub.
 .TP
-\f[B]fstp\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
+\f[B]fast_spanning_tree\f[R] = \f[I]boolean\f[R], default \f[CR]false\f[R]
 Enable the fast spanning tree protocol.
 .SS switchwrapper
 A VDE switch that Virtualbricks doesn\(aqt start, run by another
 program.
 Plugs connect to it by its name.
 .TP
-\f[B]path\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]socket_path\f[R] = \f[I]path\f[R], default \f[CR]\(dq\(dq\f[R]
 The control directory of the switch.
 .SS tap
 A tap interface of the host, plugged into a switch through
@@ -551,18 +550,18 @@ It needs root, see \f[B]PRIVILEGES\f[R].
 \f[B]connect\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The socket the tap is plugged into.
 .TP
-\f[B]mode\f[R] = \f[I]choice\f[R], default \f[CR]\(dqoff\(dq\f[R]
+\f[B]address_mode\f[R] = \f[I]choice\f[R], default \f[CR]\(dqoff\(dq\f[R]
 How the interface gets its address: \f[B]\(dqoff\(dq\f[R] for not at
 all, \f[B]\(dqdhcp\(dq\f[R], or \f[B]\(dqmanual\(dq\f[R] for
-\f[B]ip\f[R], \f[B]nm\f[R] and \f[B]gw\f[R].
+\f[B]ip_address\f[R], \f[B]netmask\f[R] and \f[B]gateway\f[R].
 .TP
-\f[B]ip\f[R] = \f[I]address\f[R], default \f[CR]\(dq10.0.0.1\(dq\f[R]
+\f[B]ip_address\f[R] = \f[I]address\f[R], default \f[CR]\(dq10.0.0.1\(dq\f[R]
 The address of the interface.
 .TP
-\f[B]nm\f[R] = \f[I]address\f[R], default \f[CR]\(dq255.255.255.0\(dq\f[R]
+\f[B]netmask\f[R] = \f[I]address\f[R], default \f[CR]\(dq255.255.255.0\(dq\f[R]
 The netmask.
 .TP
-\f[B]gw\f[R] = \f[I]address\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]gateway\f[R] = \f[I]address\f[R], default \f[CR]\(dq\(dq\f[R]
 The default gateway, or empty for none.
 .SS capture
 Captures the packets of an interface of the host into a switch, through
@@ -572,7 +571,7 @@ It needs root, see \f[B]PRIVILEGES\f[R].
 \f[B]connect\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The socket the capture is plugged into.
 .TP
-\f[B]iface\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]interface\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The interface of the host, for example \f[B]\(dqeth0\(dq\f[R].
 .SS wire
 Connects two sockets, through \f[B]dpipe\f[R](1) and
@@ -588,9 +587,10 @@ which it\(aqs a fork of, where vde\-netemu isn\(aqt installed.
 .TP
 \f[B]endpoints\f[R] = \f[I]array\f[R], default \f[CR][\(dq\(dq, \(dq\(dq]\f[R]
 The two sockets, left and right.
-LR values apply from left to right, RL values from right to left.
+The values of a state apply from left to right, the ones that end in
+**_right_to_left** from right to left.
 .TP
-\f[B]transperiod\f[R] = \f[I]integer\f[R] >= 1, default \f[CR]100\f[R]
+\f[B]transition_period\f[R] = \f[I]integer\f[R] >= 1, default \f[CR]100\f[R]
 How often the emulator may change state, in milliseconds.
 .TP
 \f[B]transitions\f[R] = \f[I]array\f[R], default \f[CR][[0.0]]\f[R]
@@ -608,42 +608,42 @@ The name of the state.
 .TP
 \f[B]bandwidth\f[R] = \f[I]integer\f[R], default \f[CR]125000\f[R]
 The bandwidth, in bytes per second, or 0 for no limit; from left to
-right when \f[B]bandwidthsymm\f[R] is false.
+right when \f[B]bandwidth_symmetric\f[R] is false.
 .TP
-\f[B]bandwidthr\f[R] = \f[I]integer\f[R], default \f[CR]125000\f[R]
+\f[B]bandwidth_right_to_left\f[R] = \f[I]integer\f[R], default \f[CR]125000\f[R]
 The bandwidth from right to left.
 .TP
-\f[B]bandwidthsymm\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
+\f[B]bandwidth_symmetric\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Use \f[B]bandwidth\f[R] in both directions.
 .TP
 \f[B]delay\f[R] = \f[I]integer\f[R], default \f[CR]0\f[R]
 The propagation delay, one way, in milliseconds; from left to right when
-\f[B]delaysymm\f[R] is false.
+\f[B]delay_symmetric\f[R] is false.
 .TP
-\f[B]delayr\f[R] = \f[I]integer\f[R], default \f[CR]0\f[R]
+\f[B]delay_right_to_left\f[R] = \f[I]integer\f[R], default \f[CR]0\f[R]
 The delay from right to left.
 .TP
-\f[B]delaysymm\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
+\f[B]delay_symmetric\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Use \f[B]delay\f[R] in both directions.
 .TP
-\f[B]chanbufsize\f[R] = \f[I]integer\f[R], default \f[CR]75000\f[R]
+\f[B]buffer_size\f[R] = \f[I]integer\f[R], default \f[CR]75000\f[R]
 The size of the channel buffer, in bytes, or 0 for no limit; from left
-to right when \f[B]chanbufsizesymm\f[R] is false.
+to right when \f[B]buffer_size_symmetric\f[R] is false.
 .TP
-\f[B]chanbufsizer\f[R] = \f[I]integer\f[R], default \f[CR]75000\f[R]
+\f[B]buffer_size_right_to_left\f[R] = \f[I]integer\f[R], default \f[CR]75000\f[R]
 The size of the channel buffer from right to left.
 .TP
-\f[B]chanbufsizesymm\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
-Use \f[B]chanbufsize\f[R] in both directions.
+\f[B]buffer_size_symmetric\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
+Use \f[B]buffer_size\f[R] in both directions.
 .TP
 \f[B]loss\f[R] = \f[I]number\f[R] 0\-100, default \f[CR]0.0\f[R]
 The percentage of packets lost; from left to right when
-\f[B]losssymm\f[R] is false.
+\f[B]loss_symmetric\f[R] is false.
 .TP
-\f[B]lossr\f[R] = \f[I]number\f[R] 0\-100, default \f[CR]0.0\f[R]
+\f[B]loss_right_to_left\f[R] = \f[I]number\f[R] 0\-100, default \f[CR]0.0\f[R]
 The percentage of packets lost from right to left.
 .TP
-\f[B]losssymm\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
+\f[B]loss_symmetric\f[R] = \f[I]boolean\f[R], default \f[CR]true\f[R]
 Use \f[B]loss\f[R] in both directions.
 .SS tunnellisten
 The server end of an encrypted tunnel between two machines, through
@@ -652,7 +652,7 @@ The server end of an encrypted tunnel between two machines, through
 \f[B]connect\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The socket the tunnel is plugged into.
 .TP
-\f[B]port\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]7667\f[R]
+\f[B]listen_port\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]7667\f[R]
 The UDP port to listen on.
 .TP
 \f[B]password\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
@@ -665,13 +665,13 @@ The client end of an encrypted tunnel, through
 \f[B]connect\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The socket the tunnel is plugged into.
 .TP
-\f[B]host\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
+\f[B]server_host\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
 The host that runs the server end.
 .TP
-\f[B]port\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]7667\f[R]
+\f[B]server_port\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]7667\f[R]
 The UDP port of the server end.
 .TP
-\f[B]localport\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]10771\f[R]
+\f[B]local_port\f[R] = \f[I]integer\f[R] 1\-65535, default \f[CR]10771\f[R]
 The local UDP port.
 .TP
 \f[B]password\f[R] = \f[I]string\f[R], default \f[CR]\(dq\(dq\f[R]
@@ -682,7 +682,8 @@ A router.
 It has only the two event keys.
 .SH PRIVILEGES
 A \f[B]tap\f[R] and a \f[B]capture\f[R] open interfaces of the host, and
-the \f[B]ksm\f[R] setting writes to \f[I]/sys\f[R]: they need root.
+the \f[B]kernel_samepage_merging\f[R] setting writes to \f[I]/sys\f[R]:
+they need root.
 When Virtualbricks doesn\(aqt run as root, it runs them with
 \f[B]sudo\f[R](8), in one of two ways:
 .TP
@@ -699,7 +700,7 @@ sudo never asks for a password: when it would have to, it fails at once,
 and the brick doesn\(aqt start.
 This is the way on a machine without a display, with a rule of
 \f[B]sudoers\f[R](5) that lets you run the programs of the bricks, from
-the folder of the \f[B]vdepath\f[R] setting, without a password:
+the folder of the \f[B]vde_path\f[R] setting, without a password:
 .RS
 .IP
 .EX
@@ -708,11 +709,11 @@ alice ALL=(root) NOPASSWD: /usr/bin/vde_plug2tap, \(rs
 .EE
 .RE
 .PP
-The \f[B]ksm\f[R] setting runs \f[I]/bin/sh\f[R] as root to write its
-value, and a rule that lets a shell run as root gives root to anyone who
-can use it.
+The \f[B]kernel_samepage_merging\f[R] setting runs \f[I]/bin/sh\f[R] as
+root to write its value, and a rule that lets a shell run as root gives
+root to anyone who can use it.
 Turn KSM on at boot instead, with a \f[B]tmpfiles.d\f[R](5) line, and
-leave \f[B]ksm\f[R] false:
+leave \f[B]kernel_samepage_merging\f[R] false:
 .IP
 .EX
 w /sys/kernel/mm/ksm/run \- \- \- \- 1
@@ -728,6 +729,10 @@ it converts \f[I]\(ti/.virtualbricks.conf\f[R] into
 next to it, and shows what it converted in a window.
 The settings of \f[I]\(ti/.virtualbricks.conf\f[R] that are now a
 project\(aqs, as \f[B]qemupath\f[R], go into each converted project.
+The keys get the names of this page, as \f[B]qemupath\f[R] becomes
+\f[B]qemu_path\f[R] and \f[B]numports\f[R] becomes \f[B]ports\f[R], and
+so do the settings in the commands of the events, as \f[B]sw1 config
+numports=16\f[R].
 The old files are left as they were.
 .PP
 The same conversion can be tried on copies, into a new folder laid out
@@ -792,10 +797,10 @@ A \f[B]settings.toml\f[R] as Virtualbricks writes it at its first start:
 .EX
 format = 1
 workspace = \(dq/home/alice/.virtualbricks\(dq
-term = \(dq/usr/bin/xterm\(dq
-ksm = false
-systray = true
-show_missing = true
+terminal = \(dq/usr/bin/xterm\(dq
+kernel_samepage_merging = false
+tray_icon = true
+warn_missing_programs = true
 audio_driver = \(dqalsa\(dq
 .EE
 .PP
@@ -808,47 +813,53 @@ and the six empty disks.
 format = 1
 
 [settings]
-cowfmt = \(dqqcow2\(dq
-erroronloop = false
-femaleplugs = false
-qemupath = \(dq/usr/bin\(dq
-vdepath = \(dq/usr/bin\(dq
+cow_format = \(dqqcow2\(dq
+log_link_loops = false
+allow_female_plugs = false
+qemu_path = \(dq/usr/bin\(dq
+vde_path = \(dq/usr/bin\(dq
 
 [images.debian]
 path = \(dq/home/alice/.virtualbricks/vimages/debian\-12.qcow2\(dq
 description = \(dqDebian 12\(rsnbase image\(dq
 
 [events.start_lab]
+icon = \(dq\(dq
+delay = 5
 actions = [
     {kind = \(dqvb\(dq, command = \(dqsw1 on\(dq},
     {kind = \(dqshell\(dq, command = \(dqlogger lab started\(dq},
 ]
-delay = 5
 
 [bricks.sw1]
 type = \(dqswitch\(dq
-pon_vbevent = \(dqstart_lab\(dq
-poff_vbevent = \(dq\(dq
-numports = 16
-hub = false
-fstp = true
+icon = \(dq\(dq
+on_start = \(dqstart_lab\(dq
+on_stop = \(dq\(dq
+ports = 16
+hub_mode = false
+fast_spanning_tree = true
 
 [bricks.sw2]
 type = \(dqswitch\(dq
-pon_vbevent = \(dq\(dq
-poff_vbevent = \(dq\(dq
-numports = 32
-hub = false
-fstp = false
+icon = \(dq\(dq
+on_start = \(dq\(dq
+on_stop = \(dq\(dq
+ports = 32
+hub_mode = false
+fast_spanning_tree = false
 
 [bricks.router1]
 type = \(dqqemu\(dq
-pon_vbevent = \(dq\(dq
-poff_vbevent = \(dq\(dq
-argv0 = \(dqqemu\-system\-x86_64\(dq
-kvm = true
-smp = 2
-ram = 1024
+icon = \(dq\(dq
+on_start = \(dq\(dq
+on_stop = \(dq\(dq
+qemu_program = \(dqqemu\-system\-x86_64\(dq
+machine_type = \(dq\(dq
+cpu_model = \(dq\(dq
+use_kvm = true
+cpus = 2
+memory = 1024
 # ... and the other keys of a qemu brick
 
 [bricks.router1.disks.hda]
@@ -876,56 +887,58 @@ mac = \(dq52:54:00:12:34:03\(dq
 
 [bricks.tap0]
 type = \(dqtap\(dq
-pon_vbevent = \(dq\(dq
-poff_vbevent = \(dq\(dq
-ip = \(dq10.0.0.1\(dq
-nm = \(dq255.255.255.0\(dq
-gw = \(dq\(dq
-mode = \(dqmanual\(dq
+icon = \(dq\(dq
+on_start = \(dq\(dq
+on_stop = \(dq\(dq
+address_mode = \(dqmanual\(dq
+ip_address = \(dq10.0.0.1\(dq
+netmask = \(dq255.255.255.0\(dq
+gateway = \(dq\(dq
 connect = \(dqsw2\(dq
 
 [bricks.wan]
 type = \(dqnetemu\(dq
-pon_vbevent = \(dq\(dq
-poff_vbevent = \(dq\(dq
-transperiod = 100
+icon = \(dq\(dq
+on_start = \(dq\(dq
+on_stop = \(dq\(dq
+transition_period = 100
 transitions = [[0.0, 0.2], [0.5, 0.0]]
 endpoints = [\(dqsw1\(dq, \(dqsw2\(dq]
 
 [[bricks.wan.states]]
 name = \(dqgood\(dq
 bandwidth = 125000
-bandwidthr = 125000
-bandwidthsymm = true
+bandwidth_right_to_left = 125000
+bandwidth_symmetric = true
 delay = 10
-delayr = 0
-delaysymm = true
-chanbufsize = 75000
-chanbufsizer = 75000
-chanbufsizesymm = true
+delay_right_to_left = 0
+delay_symmetric = true
+buffer_size = 75000
+buffer_size_right_to_left = 75000
+buffer_size_symmetric = true
 loss = 0.0
-lossr = 0.0
-losssymm = true
+loss_right_to_left = 0.0
+loss_symmetric = true
 
 [[bricks.wan.states]]
 name = \(dqcongested\(dq
 bandwidth = 125000
-bandwidthr = 125000
-bandwidthsymm = true
+bandwidth_right_to_left = 125000
+bandwidth_symmetric = true
 delay = 200
-delayr = 50
-delaysymm = false
-chanbufsize = 75000
-chanbufsizer = 75000
-chanbufsizesymm = true
+delay_right_to_left = 50
+delay_symmetric = false
+buffer_size = 75000
+buffer_size_right_to_left = 75000
+buffer_size_symmetric = true
 loss = 2.5
-lossr = 0.0
-losssymm = true
+loss_right_to_left = 0.0
+loss_symmetric = true
 .EE
 .SH BUGS
-The \f[B]mode\f[R], \f[B]ip\f[R], \f[B]nm\f[R] and \f[B]gw\f[R] of a tap
-are stored but not applied: the interface gets no address from
-Virtualbricks.
+The \f[B]address_mode\f[R], \f[B]ip_address\f[R], \f[B]netmask\f[R] and
+\f[B]gateway\f[R] of a tap are stored but not applied: the interface
+gets no address from Virtualbricks.
 .SH SEE ALSO
 \f[B]virtualbricks\-archive\f[R](7), \f[B]qemu\f[R](1),
 \f[B]vde_switch\f[R](1), \f[B]vde_plug2tap\f[R](1),

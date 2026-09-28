@@ -60,6 +60,8 @@ from virtualbricks.migrate import legacy
 from virtualbricks.nic import random_mac
 
 if TYPE_CHECKING:  # pragma: no cover
+    from virtualbricks.brickfactory import BrickFactory
+    from virtualbricks.bricks import Brick
     from virtualbricks.bricks.netemu import MarkovConfig, Netemu
     from virtualbricks.config.report import Report
     from virtualbricks.config.settings import SettingValue
@@ -82,12 +84,101 @@ BRICK_TYPES = {
 }
 IMAGE_TYPES = frozenset(("Image", "DiskImage"))
 DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
-# Keys that older versions wrote with another name.
-RENAMED_KEYS = {"qemu": {f"base{dev}": dev for dev in DISK_DEVICES}}
+# The names of 2.1 and older, and those of today: the keys of every brick,
+# and those of each type.
+EVERY_BRICK = {"pon_vbevent": "on_start", "poff_vbevent": "on_stop"}
+RENAMED_KEYS = {
+    "qemu": {
+        **{f"base{dev}": f"{dev}_image" for dev in DISK_DEVICES},
+        **{dev: f"{dev}_image" for dev in DISK_DEVICES},
+        **{f"private{dev}": f"{dev}_private" for dev in DISK_DEVICES},
+        "argv0": "qemu_program",
+        "machine": "machine_type",
+        "cpu": "cpu_model",
+        "kvm": "use_kvm",
+        "smp": "cpus",
+        "ram": "memory",
+        "kvmsm": "use_kvm_shadow_memory",
+        "kvmsmem": "kvm_shadow_memory",
+        "boot": "boot_order",
+        "snapshot": "forget_disk_changes",
+        "use_virtio": "virtio_disks",
+        "cdrom": "cdrom_image",
+        "device": "cdrom_device",
+        "novga": "headless",
+        "vga": "standard_vga",
+        "vnc": "use_vnc",
+        "vncN": "vnc_display",
+        "sdl": "sdl_window",
+        "soundhw": "sound_card",
+        "usbmode": "use_usb",
+        "usbdevlist": "usb_devices",
+        "keyboard": "keyboard_layout",
+        "rtc": "clock_local_time",
+        "tdf": "clock_drift_fix",
+        "serial": "serial_socket",
+        "kernelenbl": "use_kernel",
+        "initrdenbl": "use_initrd",
+        "kopt": "kernel_command_line",
+        "gdb": "use_gdb",
+        "gdbport": "gdb_port",
+    },
+    "switch": {
+        "numports": "ports",
+        "hub": "hub_mode",
+        "fstp": "fast_spanning_tree",
+    },
+    "switchwrapper": {"path": "socket_path"},
+    "tap": {
+        "mode": "address_mode",
+        "ip": "ip_address",
+        "nm": "netmask",
+        "gw": "gateway",
+    },
+    "capture": {"iface": "interface"},
+    "tunnellisten": {"port": "listen_port"},
+    "tunnelconnect": {
+        "host": "server_host",
+        "port": "server_port",
+        "localport": "local_port",
+    },
+    # the keys of a state
+    "netemu": {
+        "bandwidthr": "bandwidth_right_to_left",
+        "bandwidthsymm": "bandwidth_symmetric",
+        "delayr": "delay_right_to_left",
+        "delaysymm": "delay_symmetric",
+        "chanbufsize": "buffer_size",
+        "chanbufsizer": "buffer_size_right_to_left",
+        "chanbufsizesymm": "buffer_size_symmetric",
+        "lossr": "loss_right_to_left",
+        "losssymm": "loss_symmetric",
+    },
+}
+# The keys of a virtual machine that became others: the two switches of the
+# CD-ROM are one choice, where the image wins as it did, and "*" in noacpi
+# turned ACPI off.
+CDROM_SWITCHES = {"cdromen": "image", "deviceen": "device"}
+NOACPI = "noacpi"
+# The program an empty argv0 ran.
+EMPTY_ARGV0 = "qemu-system-x86_64"
+SETTINGS_RENAMED = {
+    "term": "terminal",
+    "ksm": "kernel_samepage_merging",
+    "systray": "tray_icon",
+    "show_missing": "warn_missing_programs",
+    "cowfmt": "cow_format",
+    "erroronloop": "log_link_loops",
+    "femaleplugs": "allow_female_plugs",
+    "qemupath": "qemu_path",
+    "vdepath": "vde_path",
+}
 DROPPED_KEYS = {
     "qemu": {
         "name": "it repeats the brick name",
         "loadvm": "a machine resumes when it's started so, not by a key",
+        "stdout": "nothing read it",
+        "portrait": "QEMU 9 and later have no such option",
     },
     "router": {"name": "it repeats the brick name"},
     "switchwrapper": {"numports": "a switch wrapper has no ports of its own"},
@@ -128,15 +219,16 @@ def convert_settings(
         if key in SETTINGS_DROPPED:
             report.info(f"{key}: not used any more, dropped", where)
             continue
+        name = SETTINGS_RENAMED.get(key, key)
         target: AppSettings | ProjectSettings
-        if key in PROJECT_KEYS:
+        if name in PROJECT_KEYS:
             target = project
-        elif key in app_names:
+        elif name in app_names:
             target = app
         else:
             report.warning(f"{key}: unknown setting, dropped", where)
             continue
-        kind = kind_of(target, key)
+        kind = kind_of(target, name)
         value: SettingValue
         try:
             if isinstance(kind, Bool):
@@ -145,10 +237,10 @@ def convert_settings(
                 value = text
             kind.check(value)
         except ValueError as exc:
-            default = kind.format(field_default(target, key))
+            default = kind.format(field_default(target, name))
             report.warning(f"{key}: {exc}, using the default {default}", where)
         else:
-            setattr(target, key, value)
+            setattr(target, name, value)
     _check_programs(app, project, options, filename, report)
     return app, project, current_project
 
@@ -166,7 +258,7 @@ def _check_programs(
         (project, "vdepath", os.path.isdir),
     )
     for settings, key, exists in checks:
-        path = getattr(settings, key)
+        path = getattr(settings, SETTINGS_RENAMED[key])
         if path and os.path.isabs(path) and not exists(path):
             lineno = options.get(key, ("", 0))[1]
             report.warning(
@@ -225,7 +317,7 @@ def _apply(
 ) -> None:
     """Set the values of the items on an instance; report what's dropped."""
 
-    renamed = RENAMED_KEYS.get(brick_type, {})
+    renamed = {**EVERY_BRICK, **RENAMED_KEYS.get(brick_type, {})}
     dropped = DROPPED_KEYS.get(brick_type, {})
     for item in items:
         where = legacy.where(filename, item.lineno)
@@ -337,6 +429,7 @@ class _Converter:
                     f"{section.label()} unknown type, dropped",
                     self.where(section.lineno),
                 )
+        self.commands()
         self.sockets()
         self.plugs()
         self.follow_image_aliases()
@@ -411,6 +504,8 @@ class _Converter:
             self.report.info(f"{section.label()} became netemu", where)
         if brick_type == "netemu":
             self.netemu(brick, section)
+        elif brick_type == "qemu":
+            self.qemu(brick, section)
         else:
             _apply(
                 brick.config,
@@ -453,9 +548,39 @@ class _Converter:
             markov.add(index)
         for item in states:
             self.state_item(markov, item, count, label)
+        from virtualbricks.bricks.netemu import BRICK_KEYS
+
+        # the events and the icon are the brick's, the same in every state
         for state in markov.states:
-            state.pon_vbevent = markov.states[0].pon_vbevent
-            state.poff_vbevent = markov.states[0].poff_vbevent
+            for name in BRICK_KEYS:
+                setattr(state, name, getattr(markov.states[0], name))
+
+    def qemu(self, brick: Brick, section: legacy.Section) -> None:
+        """The keys of a machine, with those that became others."""
+
+        label = section.label()
+        plain: list[legacy.Item] = []
+        switches: dict[str, legacy.Item] = {}
+        for item in section.items:
+            if item.key in CDROM_SWITCHES or item.key == NOACPI:
+                switches[item.key] = item
+            elif item.key == "argv0" and not item.value.strip():
+                brick.config.qemu_program = EMPTY_ARGV0
+                self.report.info(
+                    f"{label} argv0: empty, which ran {EMPTY_ARGV0}",
+                    self.where(item.lineno),
+                )
+            else:
+                plain.append(item)
+        _apply(brick.config, plain, "qemu", label, self.filename, self.report)
+        for key, choice in CDROM_SWITCHES.items():
+            item = switches.get(key)
+            if item is not None and legacy.parse_bool(item.value):
+                brick.config.cdrom = choice
+                break
+        item = switches.get(NOACPI)
+        if item is not None and item.value.strip():
+            brick.config.acpi = False
 
     def state_item(
         self, markov: MarkovConfig, item: legacy.Item, count: int, label: str
@@ -577,9 +702,88 @@ class _Converter:
             if brick.connections != "nics":
                 continue
             for dev in DISK_DEVICES:
-                name = getattr(brick.config, dev)
+                key = f"{dev}_image"
+                name = getattr(brick.config, key)
                 if name in self.image_aliases:
-                    setattr(brick.config, dev, self.image_aliases[name])
+                    setattr(brick.config, key, self.image_aliases[name])
+
+    def commands(self) -> None:
+        """Give the console commands of the events the names of today."""
+
+        from virtualbricks import console
+
+        for event in self.factory.iter_events():
+            where = self.where(self.seen["event"][event.get_name()])
+            actions: list[object] = []
+            for action in event.config.actions:
+                if isinstance(action, console.VbShellCommand):
+                    text = convert_command(self.factory, str(action))
+                    if text != str(action):
+                        self.report.info(
+                            f"[Event:{event.get_name()}] {action!r} is now"
+                            f" {text!r}",
+                            where,
+                        )
+                        action = console.VbShellCommand(text)
+                actions.append(action)
+            event.config.actions = actions
+
+
+def _convert_setting(brick_type: str, config: object, word: str) -> list[str]:
+    """
+    A key=value of the config command, with the name of today.
+
+    What became another key is converted, what's dropped is left out, and a
+    boolean written as the old versions did, "*" for true, is true or false.
+    """
+
+    key, sep, value = word.partition("=")
+    if not sep:
+        return [word]
+    if key in DROPPED_KEYS.get(brick_type, {}):
+        return []
+    if brick_type == "qemu":
+        if key in CDROM_SWITCHES:
+            choice = (
+                CDROM_SWITCHES[key] if legacy.parse_bool(value) else "none"
+            )
+            return [f"cdrom={choice}"]
+        if key == NOACPI:
+            return ["acpi=false" if value.strip() else "acpi=true"]
+        if key == "argv0" and not value.strip():
+            return [f"qemu_program={EMPTY_ARGV0}"]
+    name = {**EVERY_BRICK, **RENAMED_KEYS.get(brick_type, {})}.get(key, key)
+    try:
+        kind = kind_of(config, name)
+    except KeyError:
+        # the brick doesn't know it: the event says so when it runs
+        return [word]
+    if isinstance(kind, Bool):
+        value = "true" if legacy.parse_bool(value) else "false"
+    return [f"{name}={value}"]
+
+
+def convert_command(factory: BrickFactory, text: str) -> str:
+    """
+    A console command of an event, with the names of today.
+
+    Only "BRICK config KEY=VALUE..." changes, for a brick of the project;
+    anything else stays as it is.
+    """
+
+    words = text.split()
+    if len(words) < 3 or words[1] != "config":
+        return text
+    brick = factory.get_brick_by_name(words[0])
+    if brick is None:
+        return text
+    brick_type = brick.get_type().lower()
+    settings = [
+        converted
+        for word in words[2:]
+        for converted in _convert_setting(brick_type, brick.config, word)
+    ]
+    return " ".join(words[:2] + settings)
 
 
 def convert_project(

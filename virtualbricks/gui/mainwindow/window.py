@@ -110,7 +110,7 @@ class VBGUI:
         self.messages = MessageLog() if messages is None else messages
 
         logger.info(start_virtualbricks)
-        if get_setting("systray"):
+        if get_setting("tray_icon"):
             self.start_systray()
 
         # attach the quit callback at the end, so it is not called if an
@@ -357,15 +357,15 @@ class VBGUI:
 
         lines = []
         if not ksm.check_ksm():
-            set_setting("ksm", False)
+            set_setting("kernel_samepage_merging", False)
             lines.append(ksm_not_found)
         missing = missing_programs(
-            get_setting("vdepath"), get_setting("qemupath")
+            get_setting("vde_path"), get_setting("qemu_path")
         )
         if missing:
             names = ", ".join(map(str, missing))
             lines.append(programs_not_found.format(programs=names))
-        if lines and get_setting("show_missing"):
+        if lines and get_setting("warn_missing_programs"):
             logger.error(components_not_found, text="\n".join(lines))
 
     """ ********************************************************     """
@@ -454,7 +454,7 @@ class VBGUI:
 
     def on_window_delete_event(self, window, event):
         # don't delete; hide instead
-        if get_setting("systray"):
+        if get_setting("tray_icon"):
             window.hide()
             self.status_icon.set_tooltip("Virtualbricks Hidden")
             return True

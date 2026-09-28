@@ -85,7 +85,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 LIBRARY = "vimages"
 # The paths of the machine a project comes from, that can be replaced.
-MACHINE_PATHS = ("qemupath", "vdepath")
+MACHINE_PATHS = ("qemu_path", "vde_path")
 
 # The choices for an image.
 COPY = "copy"

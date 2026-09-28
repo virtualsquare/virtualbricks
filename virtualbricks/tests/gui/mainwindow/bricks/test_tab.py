@@ -628,7 +628,7 @@ class TestTheSettings(BricksTestCase):
         spin = panel.get_child_at(1, 0)
         spin.set_value(8)
         tab.ok_button.clicked()
-        self.assertEqual(self.sw.config.numports, 8)
+        self.assertEqual(self.sw.config.ports, 8)
         self.assertIsNone(tab.configuring)
         self.assertIsNone(tab.settings)
         self.assertIs(tab.get_visible_child(), tab.main_page)
@@ -643,7 +643,7 @@ class TestTheSettings(BricksTestCase):
         [panel] = scrolled.get_child().get_child().get_children()
         panel.get_child_at(1, 0).set_value(8)
         self.tab.cancel_button.clicked()
-        self.assertEqual(self.sw.config.numports, 32)
+        self.assertEqual(self.sw.config.ports, 32)
         self.assertIs(self.tab.get_visible_child(), self.tab.main_page)
 
     def test_how_the_page_is_made(self):

@@ -231,8 +231,8 @@ class ImagesTestCase(BrickTestCase):
         vm = self.factory.new_brick("qemu", name)
         vm.set(
             {
-                device: (image or self.image).get_name(),
-                "private" + device: private,
+                f"{device}_image": (image or self.image).get_name(),
+                f"{device}_private": private,
             }
         )
         return vm

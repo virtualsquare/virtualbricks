@@ -78,7 +78,12 @@ class DetailsTestCase(GuiTestCase):
 
     def vm(self, name, private=True, device="hda"):
         vm = self.factory.new_brick("qemu", name)
-        vm.set({device: self.frr.get_name(), "private" + device: private})
+        vm.set(
+            {
+                f"{device}_image": self.frr.get_name(),
+                f"{device}_private": private,
+            }
+        )
         return vm
 
 
@@ -189,7 +194,7 @@ class TestSaving(DetailsTestCase):
         self.assertEqual(self.frr.get_name(), "frr-debian")
         self.assertEqual(self.frr.get_description(), "FRR on Debian.")
         # the disks follow
-        self.assertEqual(vm.config.hda, "frr-debian")
+        self.assertEqual(vm.config.hda_image, "frr-debian")
 
     def test_a_name_in_use(self):
         logger = FakeLogger()

@@ -26,7 +26,7 @@ from virtualbricks.config.tomlfile import dumps_toml, loads_toml
 
 DOCUMENT = {
     "format": 1,
-    "settings": {"cowfmt": "qcow2", "femaleplugs": False},
+    "settings": {"cow_format": "qcow2", "allow_female_plugs": False},
     "images": {"deb": {"path": "/i/deb.qcow2", "description": "a\nb"}},
     "events": {
         "boot": {
@@ -44,7 +44,7 @@ DOCUMENT = {
             "nics": [
                 {"kind": "plug", "connect": "sw", "model": "e1000", "mac": ""}
             ],
-            "usbdevlist": [],
+            "usb_devices": [],
         },
         "wan": {"type": "netemu", "transitions": [[0.0, 0.2], [0.5, 0.0]]},
         "vm.2": {"type": "switch"},
@@ -55,8 +55,8 @@ EXPECTED = """\
 format = 1
 
 [settings]
-cowfmt = "qcow2"
-femaleplugs = false
+cow_format = "qcow2"
+allow_female_plugs = false
 
 [images.deb]
 path = "/i/deb.qcow2"
@@ -71,7 +71,7 @@ actions = [
 
 [bricks.vm]
 type = "qemu"
-usbdevlist = []
+usb_devices = []
 
 [bricks.vm.disks.hda]
 image = "deb"

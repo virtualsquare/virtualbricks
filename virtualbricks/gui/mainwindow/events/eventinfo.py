@@ -141,9 +141,9 @@ def triggers(event, bricks) -> list:
 
     found = []
     for brick in bricks:
-        if brick.config.pon_vbevent == event.get_name():
+        if brick.config.on_start == event.get_name():
             found.append((brick, ON))
-        if brick.config.poff_vbevent == event.get_name():
+        if brick.config.on_stop == event.get_name():
             found.append((brick, OFF))
     return found
 

@@ -24,11 +24,7 @@ from twisted.logger import Logger
 from virtualbricks import errors
 from virtualbricks.config.settings import get_setting
 
-link_loop = (
-    "Loop link detected: aborting operation. If you want "
-    "to start a looped network, disable the check loop "
-    "feature in the general settings"
-)
+link_loop = "The links make a loop: the bricks on it don't start."
 
 
 class Plug:
@@ -48,7 +44,7 @@ class Plug:
 
     def connected(self):
         if self._antiloop:
-            if get_setting("erroronloop"):
+            if get_setting("log_link_loops"):
                 self.logger.error(link_loop)
             self._antiloop = False
             return defer.fail(errors.LinkLoopError())

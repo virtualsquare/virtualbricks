@@ -56,7 +56,7 @@ class FakeJob:
 def data(**images):
     return {
         "format": 1,
-        "settings": {"qemupath": "/opt/elsewhere/qemu"},
+        "settings": {"qemu_path": "/opt/elsewhere/qemu"},
         "images": {name: {"path": path} for name, path in images.items()},
         "events": {"ev": {}},
         "bricks": {
@@ -83,7 +83,7 @@ class ImportTestCase(GuiTestCase):
         self.patch(locations, "ensure_private_dir", lambda path: path)
         self.ours = self.folder("bin")
         # this computer's: those of the open project
-        use_project(ProjectSettings(qemupath=self.ours, vdepath=self.ours))
+        use_project(ProjectSettings(qemu_path=self.ours, vde_path=self.ours))
         self.inspected = []
         self.imports = []
         self.dialog = importdialog.ImportDialog(
@@ -192,8 +192,8 @@ class TestReading(ImportTestCase):
         self.assertEqual(
             row.copy_button.get_tooltip_text(), "2.0 KB in the archive"
         )
-        self.assertEqual(list(dialog.machine_checks), ["qemupath"])
-        self.assertTrue(dialog.machine_checks["qemupath"].get_active())
+        self.assertEqual(list(dialog.machine_checks), ["qemu_path"])
+        self.assertTrue(dialog.machine_checks["qemu_path"].get_active())
         self.assertTrue(dialog.import_button.get_sensitive())
         self.assertFalse(dialog.problems_label.get_visible())
 
@@ -315,7 +315,7 @@ class TestChoices(ImportTestCase):
     def test_machine_paths_and_open(self):
         self.read()
         plan = self.dialog.plan
-        self.dialog.machine_checks["qemupath"].set_active(False)
+        self.dialog.machine_checks["qemu_path"].set_active(False)
         self.assertFalse(plan.machine_paths[0].use_ours)
         self.dialog.open_check.set_active(False)
         self.assertFalse(plan.open)

@@ -176,34 +176,36 @@ class TapConfigController(_PlugMixin, ConfigController):
             gui,
         )
 
-        self.ip_entry.set_text(self.original.get("ip"))
-        self.nm_entry.set_text(self.original.get("nm"))
-        self.gw_entry.set_text(self.original.get("gw"))
+        self.ip_entry.set_text(self.original.get("ip_address"))
+        self.nm_entry.set_text(self.original.get("netmask"))
+        self.gw_entry.set_text(self.original.get("gateway"))
         # default to manual if not valid mode is set
-        if self.original.get("mode") == "off":
+        if self.original.get("address_mode") == "off":
             self.nocfg_radio.set_active(True)
-        elif self.original.get("mode") == "dhcp":
+        elif self.original.get("address_mode") == "dhcp":
             self.dhcp_radio.set_active(True)
         else:
             self.manual_radio.set_active(True)
 
-        self.ipconfig_grid.set_sensitive(self.original.get("mode") == "manual")
+        self.ipconfig_grid.set_sensitive(
+            self.original.get("address_mode") == "manual"
+        )
 
         return self.panel
 
     def configure_brick(self, gui):
         if self.nocfg_radio.get_active():
-            self.original.set({"mode": "off"})
+            self.original.set({"address_mode": "off"})
         elif self.dhcp_radio.get_active():
-            self.original.set({"mode": "dhcp"})
+            self.original.set({"address_mode": "dhcp"})
         else:
             try:
                 self.original.set(
                     {
-                        "mode": "manual",
-                        "ip": self.ip_entry.get_text(),
-                        "nm": self.nm_entry.get_text(),
-                        "gw": self.gw_entry.get_text(),
+                        "address_mode": "manual",
+                        "ip_address": self.ip_entry.get_text(),
+                        "netmask": self.nm_entry.get_text(),
+                        "gateway": self.gw_entry.get_text(),
                     }
                 )
             except ValueError as exc:

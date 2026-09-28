@@ -227,8 +227,8 @@ class TestMigrateToFolder(EngineTestCase):
         )
         self.assertIn("sender", project["bricks"])
         # the per-project settings come from the old settings
-        self.assertEqual(project["settings"]["cowfmt"], "qcow")
-        self.assertIs(project["settings"]["femaleplugs"], True)
+        self.assertEqual(project["settings"]["cow_format"], "qcow")
+        self.assertIs(project["settings"]["allow_female_plugs"], True)
         with open(os.path.join(target.workspace, "lab1", "README")) as fp:
             self.assertEqual(fp.read(), "My lab\n")
         self.assertFalse(
@@ -279,7 +279,7 @@ class TestMigrateToFolder(EngineTestCase):
         project = load_toml(
             os.path.join(migration.target.project_dir("lab1"), "project.toml")
         )
-        self.assertEqual(project["settings"]["cowfmt"], "qcow2")
+        self.assertEqual(project["settings"]["cow_format"], "qcow2")
 
     def test_skip_what_is_migrated(self):
         self.folder_migration(self.legacy_settings).run()
@@ -598,20 +598,20 @@ class TestEntryPoints(EngineTestCase):
     def test_migration_for(self):
         write(
             locations.settings_file(),
-            dumps_toml({"format": 1, "term": "/usr/bin/foot"}),
+            dumps_toml({"format": 1, "terminal": "/usr/bin/foot"}),
         )
         migration = migration_for(self.workspace)
         self.assertIsInstance(migration.target, InPlace)
-        self.assertEqual(migration.app_settings.term, "/usr/bin/foot")
+        self.assertEqual(migration.app_settings.terminal, "/usr/bin/foot")
         self.assertEqual(migration.project_settings, ProjectSettings())
         migration = migration_for(self.workspace, output=self.output)
         self.assertIsInstance(migration.target, Folder)
-        self.assertEqual(migration.app_settings.term, "/usr/bin/xterm")
+        self.assertEqual(migration.app_settings.terminal, "/usr/bin/xterm")
         self.assertEqual(migration.project_settings, ProjectSettings())
         old = write_settings(os.path.join(self.root, "vb.conf"), "/srv/vb")
         migration = migration_for(self.workspace, old, self.output)
         # the settings of the projects come from the old settings
-        self.assertEqual(migration.project_settings.cowfmt, "qcow")
+        self.assertEqual(migration.project_settings.cow_format, "qcow")
         self.assertEqual(migration.items[0].kind, "settings")
 
 
@@ -637,9 +637,9 @@ class TestImportedProject(EngineTestCase):
 
     def test_uses_the_settings_of_new_projects(self):
         # those of the open project
-        use_project(ProjectSettings(cowfmt="cow"))
+        use_project(ProjectSettings(cow_format="cow"))
         data, _, _ = self.convert(CONFIG1)
-        self.assertEqual(data["settings"]["cowfmt"], "cow")
+        self.assertEqual(data["settings"]["cow_format"], "cow")
 
     def test_no_project_file(self):
         data, report, directory = self.convert()

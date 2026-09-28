@@ -83,49 +83,49 @@ class ProjectSettingsWidgets:
             2,
             1,
         )
-        self.vdepath_chooser = _folder_chooser()
-        self.femaleplugs_switch = _switch()
-        self.erroronloop_switch = _switch()
-        self.qemupath_chooser = _folder_chooser()
+        self.vde_path_chooser = _folder_chooser()
+        self.female_plugs_switch = _switch()
+        self.link_loops_switch = _switch()
+        self.qemu_path_chooser = _folder_chooser()
         formats = Gtk.ListStore(str)
         for cow_format in COW_FORMATS:
             formats.append([cow_format])
-        self.cowfmt_combo = Gtk.ComboBox(
+        self.cow_format_combo = Gtk.ComboBox(
             visible=True, can_focus=False, hexpand=True, model=formats
         )
         cell = Gtk.CellRendererText()
-        self.cowfmt_combo.pack_start(cell, False)
-        self.cowfmt_combo.add_attribute(cell, "text", 0)
+        self.cow_format_combo.pack_start(cell, False)
+        self.cow_format_combo.add_attribute(cell, "text", 0)
         rows = (
-            (_("VDE binaries path"), self.vdepath_chooser),
-            (_("Allow female plugs on devices"), self.femaleplugs_switch),
-            (_("Network topology loop detection"), self.erroronloop_switch),
-            (_("Qemu binaries path"), self.qemupath_chooser),
-            (_("Private COW format"), self.cowfmt_combo),
+            (_("VDE binaries path"), self.vde_path_chooser),
+            (_("Allow female plugs on devices"), self.female_plugs_switch),
+            (_("Log an error when links make a loop"), self.link_loops_switch),
+            (_("Qemu binaries path"), self.qemu_path_chooser),
+            (_("Private COW format"), self.cow_format_combo),
         )
         for row, (text, widget) in enumerate(rows, 1):
             grid.attach(_label(text), 0, row, 1, 1)
             grid.attach(widget, 1, row, 1, 1)
 
     def load(self, get):
-        self.vdepath_chooser.set_current_folder(get("vdepath"))
-        self.femaleplugs_switch.set_active(get("femaleplugs"))
-        self.erroronloop_switch.set_active(get("erroronloop"))
-        self.qemupath_chooser.set_current_folder(get("qemupath"))
-        combobox_set_active_value(self.cowfmt_combo, get("cowfmt"), 0)
+        self.vde_path_chooser.set_current_folder(get("vde_path"))
+        self.female_plugs_switch.set_active(get("allow_female_plugs"))
+        self.link_loops_switch.set_active(get("log_link_loops"))
+        self.qemu_path_chooser.set_current_folder(get("qemu_path"))
+        combobox_set_active_value(self.cow_format_combo, get("cow_format"), 0)
 
     def store(self, set):
-        vdepath = self.vdepath_chooser.get_current_folder()
-        if vdepath is not None:
-            set("vdepath", vdepath)
-        set("femaleplugs", self.femaleplugs_switch.get_active())
-        set("erroronloop", self.erroronloop_switch.get_active())
-        qemupath = self.qemupath_chooser.get_current_folder()
-        if qemupath is not None:
-            set("qemupath", qemupath)
-        cowfmt = combobox_get_active_value(self.cowfmt_combo, 0)
-        if cowfmt is not None:
-            set("cowfmt", cowfmt)
+        vde_path = self.vde_path_chooser.get_current_folder()
+        if vde_path is not None:
+            set("vde_path", vde_path)
+        set("allow_female_plugs", self.female_plugs_switch.get_active())
+        set("log_link_loops", self.link_loops_switch.get_active())
+        qemu_path = self.qemu_path_chooser.get_current_folder()
+        if qemu_path is not None:
+            set("qemu_path", qemu_path)
+        cow_format = combobox_get_active_value(self.cow_format_combo, 0)
+        if cow_format is not None:
+            set("cow_format", cow_format)
 
 
 def combobox_get_active_value(combobox, column, default=None):
@@ -277,16 +277,18 @@ class SettingsDialog(Window):
 
     def _build_application_page(self):
         grid = _grid()
-        self.term_entry = Gtk.Entry(visible=True, can_focus=True, hexpand=True)
-        self.systray_switch = _switch()
+        self.terminal_entry = Gtk.Entry(
+            visible=True, can_focus=True, hexpand=True
+        )
+        self.tray_icon_switch = _switch()
         self.warn_missing_switch = _switch()
         self.enable_ksm_switch = _switch()
         self.audio_driver_entry = Gtk.Entry(
             visible=True, can_focus=True, hexpand=True
         )
         rows = (
-            (_("X-window terminal command"), self.term_entry),
-            (_("Enable systray"), self.systray_switch),
+            (_("X-window terminal command"), self.terminal_entry),
+            (_("Enable systray"), self.tray_icon_switch),
             (
                 _("Warn about missing components at startup"),
                 self.warn_missing_switch,
@@ -360,10 +362,14 @@ class SettingsDialog(Window):
         self._setting_ksm_deferred = deferred
 
     def load_settings(self):
-        self.term_entry.set_text(get_setting("term"))
-        self.systray_switch.set_active(get_setting("systray"))
-        self.warn_missing_switch.set_active(get_setting("show_missing"))
-        self.enable_ksm_switch.set_active(get_setting("ksm"))
+        self.terminal_entry.set_text(get_setting("terminal"))
+        self.tray_icon_switch.set_active(get_setting("tray_icon"))
+        self.warn_missing_switch.set_active(
+            get_setting("warn_missing_programs")
+        )
+        self.enable_ksm_switch.set_active(
+            get_setting("kernel_samepage_merging")
+        )
         self.audio_driver_entry.set_text(get_setting("audio_driver"))
         # with no project open, the defaults
         self.project_widgets.load(get_setting)
@@ -371,18 +377,20 @@ class SettingsDialog(Window):
 
     def store_settings(self):
         logger.debug(apply_settings)
-        set_setting("term", self.term_entry.get_text())
-        set_setting("systray", self.systray_switch.get_active())
-        set_setting("show_missing", self.warn_missing_switch.get_active())
+        set_setting("terminal", self.terminal_entry.get_text())
+        set_setting("tray_icon", self.tray_icon_switch.get_active())
+        set_setting(
+            "warn_missing_programs", self.warn_missing_switch.get_active()
+        )
         set_setting("audio_driver", self.audio_driver_entry.get_text().strip())
         if project_settings() is not None:
             self.project_widgets.store(set_setting)
             projects.save(self.virtualbricks_gui.brickfactory)
         ksm_active = self.enable_ksm_switch.get_active()
-        set_setting("ksm", ksm_active)
+        set_setting("kernel_samepage_merging", ksm_active)
         ksm.set_ksm(ksm_active)
         store_settings()
-        if self.systray_switch.get_active():
+        if self.tray_icon_switch.get_active():
             self.virtualbricks_gui.start_systray()
         else:
             self.virtualbricks_gui.stop_systray()

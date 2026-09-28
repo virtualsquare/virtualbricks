@@ -187,7 +187,7 @@ class TestCreate(WorkspaceTestCase):
         self.projects.create("lab")
         data = load_toml(self.project_file("lab"))
         self.assertEqual(data["format"], 1)
-        self.assertEqual(data["settings"]["cowfmt"], "qcow2")
+        self.assertEqual(data["settings"]["cow_format"], "qcow2")
         self.assertFalse(
             os.path.exists(os.path.join(self.path, "lab", "README"))
         )
@@ -195,10 +195,10 @@ class TestCreate(WorkspaceTestCase):
     def test_a_new_project_copies_the_open_one(self):
         self.projects.create("lab")
         self.projects.open("lab", self.factory)
-        set_setting("cowfmt", "qcow")
+        set_setting("cow_format", "qcow")
         self.projects.create("lab2")
         data = load_toml(self.project_file("lab2"))
-        self.assertEqual(data["settings"]["cowfmt"], "qcow")
+        self.assertEqual(data["settings"]["cow_format"], "qcow")
 
     def test_description(self):
         self.projects.create("lab", "OSPF between three routers")
@@ -595,13 +595,13 @@ class TestOpen(WorkspaceTestCase):
         self.projects.create("other")
         self.projects.open("lab", self.factory)
         self.factory.new_brick("switch", "sw")
-        set_setting("femaleplugs", True)
+        set_setting("allow_female_plugs", True)
         self.projects.current.set_description("A lab")
         self.projects.open("other", self.factory)
         # what the factory held is in the file, not lost with the reset
         data = load_toml(self.project_file("lab"))
         self.assertIn("sw", data["bricks"])
-        self.assertTrue(data["settings"]["femaleplugs"])
+        self.assertTrue(data["settings"]["allow_female_plugs"])
         with open(os.path.join(self.path, "lab", "README")) as fp:
             self.assertEqual(fp.read(), "A lab")
         self.assertEqual(self.projects.current.name, "other")
@@ -693,12 +693,12 @@ class TestOpen(WorkspaceTestCase):
         self.projects.create("lab")
         self.projects.open("lab", self.factory)
         self.factory.new_brick("switch", "sw")
-        set_setting("femaleplugs", True)
+        set_setting("allow_female_plugs", True)
         self.projects.current.set_description("A lab")
         self.projects.save(self.factory)
         data = load_toml(self.project_file("lab"))
         self.assertIn("sw", data["bricks"])
-        self.assertTrue(data["settings"]["femaleplugs"])
+        self.assertTrue(data["settings"]["allow_female_plugs"])
         with open(os.path.join(self.path, "lab", "README")) as fp:
             self.assertEqual(fp.read(), "A lab")
 

@@ -45,21 +45,21 @@ class NetemuConfigController(_PlugMixin, ConfigController):
     state_manager = None
     help = help.Help()
     config_to_checkbutton_mapping = (
-        ("chanbufsizesymm", "chanbufsize_check"),
-        ("delaysymm", "delay_check"),
-        ("losssymm", "loss_check"),
-        ("bandwidthsymm", "bandwidth_check"),
+        ("buffer_size_symmetric", "chanbufsize_check"),
+        ("delay_symmetric", "delay_check"),
+        ("loss_symmetric", "loss_check"),
+        ("bandwidth_symmetric", "bandwidth_check"),
     )
     config_to_spinint_mapping = (
-        ("chanbufsizer", "chanbufsizer_spin"),
-        ("chanbufsize", "chanbufsize_spin"),
-        ("delayr", "delayr_spin"),
+        ("buffer_size_right_to_left", "chanbufsizer_spin"),
+        ("buffer_size", "chanbufsize_spin"),
+        ("delay_right_to_left", "delayr_spin"),
         ("delay", "delay_spin"),
-        ("bandwidthr", "bandwidthr_spin"),
+        ("bandwidth_right_to_left", "bandwidthr_spin"),
         ("bandwidth", "bandwidth_spin"),
     )
     config_to_spinfloat_mapping = (
-        ("lossr", "lossr_spin"),
+        ("loss_right_to_left", "lossr_spin"),
         ("loss", "loss_spin"),
     )
     help_buttons = (
@@ -707,12 +707,20 @@ class NetemuConfigController(_PlugMixin, ConfigController):
         self.update(False, self.original.currentState)
 
         self.state_manager = manager = StateManager()
-        params = ("chanbufsize", "delay", "loss", "bandwidth")
-        for param in params:
-            checkbutton = getattr(self, param + "_check")
-            checkbutton.set_active(not self.original.get(param + "symm"))
+        # the widgets of each value, and its setting
+        params = (
+            ("chanbufsize", "buffer_size"),
+            ("delay", "delay"),
+            ("loss", "loss"),
+            ("bandwidth", "bandwidth"),
+        )
+        for widget, setting in params:
+            checkbutton = getattr(self, widget + "_check")
+            checkbutton.set_active(
+                not self.original.get(setting + "_symmetric")
+            )
             tooltip = _("Disabled because set symmetric")
-            spinbutton = getattr(self, param + "r_spin")
+            spinbutton = getattr(self, widget + "r_spin")
             manager.add_checkbutton_active(checkbutton, tooltip, spinbutton)
 
         self.time_spin.set_value(self.original.transPeriod)

@@ -45,10 +45,10 @@ class DisksTestCase(GuiTestCase):
         self.r1 = self.factory.new_brick("qemu", "r1")
         self.r1.set(
             {
-                "hda": "frr",
-                "privatehda": True,
-                "hdc": "pc",
-                "privatehdc": False,
+                "hda_image": "frr",
+                "hda_private": True,
+                "hdc_image": "pc",
+                "hdc_private": False,
             }
         )
         self.section = self.make()
@@ -118,7 +118,7 @@ class TestTheRows(DisksTestCase):
         )
 
     def test_no_disk(self):
-        self.r1.set({"hda": "", "hdc": ""})
+        self.r1.set({"hda_image": "", "hdc_image": ""})
         self.section = self.make()
         self.assertEqual(self.devices(), [])
         self.assertEqual(len(self.add_items()), 7)
@@ -189,7 +189,7 @@ class TestOK(DisksTestCase):
         settings = section.apply()
         self.assertEqual(
             settings,
-            {"privatehda": True, "privatehdb": True, "privatehdc": True},
+            {"hda_private": True, "hdb_private": True, "hdc_private": True},
         )
         self.assertIs(self.r1.disk("hda").image, self.pc)
         self.assertIs(self.r1.disk("hdb").image, self.frr)
@@ -197,9 +197,9 @@ class TestOK(DisksTestCase):
 
     def test_a_disk_removed_loses_its_image(self):
         self.section.remove_disk("hdc")
-        self.assertEqual(self.section.apply(), {"privatehda": True})
+        self.assertEqual(self.section.apply(), {"hda_private": True})
         self.assertIsNone(self.r1.disk("hdc").image)
-        self.assertEqual(self.r1.config.hdc, "")
+        self.assertEqual(self.r1.config.hdc_image, "")
 
 
 class FakeDialog:

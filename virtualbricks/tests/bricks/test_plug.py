@@ -168,12 +168,12 @@ class TestPlug(BrickTestCase):
     def test_loop_is_only_logged_when_the_settings_ask(self):
         self.other.poweron = self.plug.connected
         self.plug.connect(self.sock)
-        self.assertFalse(get_setting("erroronloop"))
+        self.assertFalse(get_setting("log_link_loops"))
         d = self.assertFailure(self.plug.connected(), errors.LinkLoopError)
 
         def check_silent(_):
             self.assertEqual(self.logger.events, [])
-            set_setting("erroronloop", True)
+            set_setting("log_link_loops", True)
             deferred = self.plug.connected()
             return self.assertFailure(deferred, errors.LinkLoopError)
 

@@ -44,6 +44,7 @@ from virtualbricks.config.schema import (
     define,
     dump_record,
     field,
+    key_of,
     kind_of,
     load_record,
     references,
@@ -460,7 +461,8 @@ def _check_references(factory: BrickFactory, report: Report) -> None:
     for kind, obj in objects:
         for name, target, value in references(obj.config):
             if lookups[target](value) is None:
-                where = f"{kind}.{obj.get_name()}.{name}"
+                key = key_of(obj.config, name)
+                where = f"{kind}.{obj.get_name()}.{key}"
                 report.warning(f'no {target} named "{value}"', where)
 
 
