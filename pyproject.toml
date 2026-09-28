@@ -70,7 +70,6 @@ include = ["virtualbricks*"]
 "share/virtualbricks" = [
     "virtualbricks/gui/data/*.png",
     "virtualbricks/gui/data/help/*",
-    "virtualbricks/gui/data/qemu_specs_*.*",
 ]
 "share/locale/de/LC_MESSAGES" = ["locale/de/LC_MESSAGES/virtualbricks.mo"]
 "share/locale/es/LC_MESSAGES" = ["locale/es/LC_MESSAGES/virtualbricks.mo"]

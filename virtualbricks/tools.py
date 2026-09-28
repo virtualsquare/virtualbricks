@@ -19,15 +19,12 @@
 
 import os
 import sys
-from pathlib import Path
 from functools import update_wrapper, wraps
 import struct
 
 from twisted.internet import utils
 from twisted.logger import Logger
 import constantly as constants
-
-from virtualbricks.config.settings import get_setting
 
 logger = Logger()
 
@@ -55,68 +52,6 @@ def stack_trace():
         out.append("{0.f_code.co_filename}:{0.f_lineno}".format(f))
         f = f.f_back
     return "\n".join(out)
-
-
-def _check_missing(default_paths, files):
-    if not default_paths:
-        default_paths = os.environ.get("PATH", ".").split(":")
-    elif isinstance(default_paths, str):
-        default_paths = [default_paths]
-    for filename in files:
-        for directory in default_paths:
-            if os.access(Path(directory, filename), os.X_OK):
-                break
-        else:
-            yield filename
-
-
-vde_bins = [
-    "vde_switch",
-    "vde_plug",
-    "vde_cryptcab",
-    "dpipe",
-    "vdeterm",
-    "vde_plug2tap",
-    "wirefilter",
-    "vde_router",
-]
-
-qemu_bins = [
-    "qemu",
-    "qemu-system-arm",
-    "qemu-system-cris",
-    "qemu-system-i386",
-    "qemu-system-m68k",
-    "qemu-system-microblaze",
-    "qemu-system-mips",
-    "qemu-system-mips64",
-    "qemu-system-mips64el",
-    "qemu-system-mipsel",
-    "qemu-system-ppc",
-    "qemu-system-ppc64",
-    "qemu-system-ppcemb",
-    "qemu-system-sh4",
-    "qemu-system-sh4eb",
-    "qemu-system-sparc",
-    "qemu-system-sparc64",
-    "qemu-system-x86_64",
-    "qemu-img",
-]
-
-
-def check_missing_vde(path=None):
-    if path is None:
-
-        path = get_setting("vdepath")
-    return list(_check_missing(path, vde_bins))
-
-
-def check_missing_qemu(path=None):
-    if path is None:
-
-        path = get_setting("qemupath")
-    missing = list(_check_missing(path, qemu_bins))
-    return missing, sorted(set(qemu_bins) - set(missing))
 
 
 def check_kvm(path=None):

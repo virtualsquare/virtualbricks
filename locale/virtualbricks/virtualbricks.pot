@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 21:25+0200\n"
+"POT-Creation-Date: 2026-09-28 14:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1889,6 +1889,25 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 msgid "MAC address"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, python-brace-format
+msgid "{name}, not installed"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, python-brace-format
+msgid "{name}, not in this QEMU"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+msgid "The default"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#, python-brace-format
+msgid "The default, {name}"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py

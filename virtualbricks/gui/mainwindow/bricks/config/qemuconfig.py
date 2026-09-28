@@ -29,11 +29,12 @@ from gi.repository import Gdk, Gtk, Pango
 
 from twisted.logger import Logger
 
-from virtualbricks import qemu, tools
+from virtualbricks import tools
 from virtualbricks.config.settings import get_setting
 from virtualbricks.gui import graphics, widgets
 from virtualbricks.gui.interfaces import IMenu
-from virtualbricks.spawn import getQemuOutput
+from virtualbricks.programs import programs, qemu_programs
+from virtualbricks.spawn import abspath_qemu
 from virtualbricks.bricks.virtualmachine import get_usb_devices
 from virtualbricks.i18n import _
 from virtualbricks.gui.pango import pango_attr_list
@@ -50,8 +51,7 @@ from virtualbricks.gui.dialogs.usbdev import UsbDevDialog
 
 logger = Logger()
 
-qemu_version_parsing_error = "Error while parsing qemu version"
-retrieve_qemu_version_error = "Error while retrieving qemu version."
+qemu_info_error = "Cannot ask {program} for its machines and CPU models"
 usb_access = "Cannot access /dev/bus/usb. Check user privileges."
 no_kvm = (
     "No KVM support found on the system. Check your active "
@@ -136,6 +136,60 @@ MOUNT_DEVICE = (
     ("", "No"),
     ("/dev/cdrom", "cdrom"),
 )
+
+
+def program_entries(names, chosen):
+    """The QEMU programs to choose from, by architecture."""
+
+    entries = [
+        widgets.ListEntry(name, name.removeprefix("qemu-system-"))
+        for name in names
+    ]
+    if chosen and chosen not in names:
+        label = _("{name}, not installed").format(name=chosen)
+        entries.append(widgets.ListEntry(chosen, label))
+    return entries
+
+
+def _entries(models, chosen, default):
+    entries = [widgets.ListEntry("", default)]
+    names = set()
+    for model in models:
+        names.add(model.name)
+        label = f"{model.name} {model.description}".rstrip()
+        entries.append(widgets.ListEntry(model.name, label))
+    if chosen and chosen not in names:
+        label = _("{name}, not in this QEMU").format(name=chosen)
+        entries.append(widgets.ListEntry(chosen, label))
+    return entries
+
+
+def machine_entries(info, chosen):
+    """
+    The machine types of a QEMU to choose from, the default first.
+
+    Without info, only the default and the chosen one.
+    """
+
+    if info is None:
+        return _entries((), chosen, _("The default"))
+    default = _("The default, {name}").format(name=info.default_machine)
+    return _entries(info.machines, chosen, default)
+
+
+def cpu_entries(info, chosen):
+    """The CPU models of a QEMU to choose from, the default first."""
+
+    models = () if info is None else info.cpus
+    return _entries(models, chosen, _("The default"))
+
+
+def _chosen(combo, first):
+    """What the combo has chosen, or first while it's empty."""
+
+    if combo.get_model().get_iter_first() is None:
+        return first
+    return combo.get_selected_value() or ""
 
 
 class QemuConfigController(ConfigController):
@@ -1223,31 +1277,6 @@ class QemuConfigController(ConfigController):
         mac_c.set_cell_data_func(mac_cr, _set_mac)
 
     def get_config_view(self, gui):
-
-        def install_qemu_version(version):
-            qemu.parse_and_install(version)
-            container = panel.get_parent()
-            container.remove(panel)
-            container.pack_start(self._get_config_view(gui), True, True, 0)
-
-        def log_retrieve_error(failure):
-            logger.failure(retrieve_qemu_version_error, failure)
-            return failure
-
-        def close_panel(failure):
-            logger.failure(qemu_version_parsing_error, failure)
-            gui.curtain_down()
-
-        panel = Gtk.Alignment()
-        label = Gtk.Label("Loading configuration...")
-        panel.add(label)
-        d = getQemuOutput("qemu-system-x86_64", ["-version"])
-        d.addCallbacks(install_qemu_version, log_retrieve_error)
-        d.addErrback(close_panel)
-        panel.show_all()
-        return panel
-
-    def _get_config_view(self, gui):
         self.gui = gui
         self.usb_devices = list(self.original.config.usbdevlist)
 
@@ -1318,21 +1347,21 @@ class QemuConfigController(ConfigController):
         self.kvm_check.connect("toggled", lambda cb: kvmstate.check())
         kvmstate.check()
 
-        # argv0/cpu/machine comboboxes
-        exes = qemu.get_executables()
-        self.argv0_store.set_data_source(
-            map(widgets.ListEntry.from_tuple, exes)
-        )
-        self.argv0_combo.set_selected_value(self.original.config.argv0)
-        self.argv0_combo.set_cell_data_func(
-            self.argv0_cell, self.argv0_cell.set_text
-        )
+        # argv0/cpu/machine comboboxes: the programs installed, and the
+        # machines and CPU models of the one chosen, as it says
         self.cpu_combo.set_cell_data_func(
             self.cpu_cell, self.cpu_cell.set_text
         )
         self.machine_combo.set_cell_data_func(
             self.machine_cell, self.machine_cell.set_text
         )
+        argv0 = self.original.config.argv0
+        names = qemu_programs(get_setting("qemupath"))
+        self.argv0_store.set_data_source(program_entries(names, argv0))
+        self.argv0_combo.set_cell_data_func(
+            self.argv0_cell, self.argv0_cell.set_text
+        )
+        self.argv0_combo.set_selected_value(argv0)
 
         # boot/sound/mount comboboxes
         boots = map(widgets.ListEntry.from_tuple, BOOT_DEVICE)
@@ -1416,14 +1445,38 @@ class QemuConfigController(ConfigController):
     # signals
 
     def on_argv0_combo_changed(self, combobox):
-        arch = self.argv0_combo.get_selected_value()
-        if arch:
-            cpus = map(widgets.ListEntry.from_tuple, qemu.get_cpus(arch))
-            self.cpu_store.set_data_source(cpus)
-            machines = map(
-                widgets.ListEntry.from_tuple, qemu.get_machines(arch)
+        # what is chosen stays chosen; the first time, the machine's own
+        cpu = _chosen(self.cpu_combo, self.original.config.cpu)
+        machine = _chosen(self.machine_combo, self.original.config.machine)
+        self._fill_models(None, cpu, machine)
+        name = self.argv0_combo.get_selected_value()
+        try:
+            path = abspath_qemu(name) if name else None
+        except FileNotFoundError:
+            path = None
+        if path is None:
+            return
+
+        def fill(info):
+            # unless another program was chosen in the meantime
+            if self.argv0_combo.get_selected_value() == name:
+                self._fill_models(info, cpu, machine)
+
+        deferred = programs.qemu(path)
+        deferred.addCallback(fill)
+        deferred.addErrback(
+            lambda failure: logger.failure(
+                qemu_info_error, failure, program=path
             )
-            self.machine_store.set_data_source(machines)
+        )
+
+    def _fill_models(self, info, cpu, machine):
+        """The machines and CPU models of info, or only the chosen ones."""
+
+        self.machine_store.set_data_source(machine_entries(info, machine))
+        self.machine_combo.set_selected_value(machine)
+        self.cpu_store.set_data_source(cpu_entries(info, cpu))
+        self.cpu_combo.set_selected_value(cpu)
 
     def on_bind_button_clicked(self, button):
 

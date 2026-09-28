@@ -15,7 +15,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import errno
 from os.path import basename, dirname, join as joinpath, exists as pathexists
 import pkgutil
 import sys
@@ -49,26 +48,3 @@ def get_resource_filename(package, resource):
     for path in _resource_paths(package, resource):
         if pathexists(path):
             return path
-
-
-def _get_data(package, resource, mode):
-    for path in _resource_paths(package, resource):
-        try:
-            with open(path, mode=mode) as fp:
-                return fp.read()
-        except IOError as exc:
-            if exc.errno != errno.ENOENT:
-                raise
-    # We will never know, maybe pkgutil will have more luck than us
-    data = pkgutil.get_data(package, resource)
-    if data and "t" in mode:
-        return data.decode("strict")
-    return data
-
-
-def read_data(package, resource):
-    return _get_data(package, resource, mode="rb")
-
-
-def read_text(package, resource):
-    return _get_data(package, resource, mode="r")

@@ -35,12 +35,18 @@ To use Virtualbricks, and not only to install it, you need these programs too.
 On Debian:
 
 ```sh
-sudo apt install qemu-system-x86 qemu-utils vde2 xterm sudo
+sudo apt install qemu-system-x86 qemu-system-gui qemu-utils vde2 \
+    vde2-cryptcab xterm sudo
 ```
 
 - `qemu-system-*` for each architecture of your VMs, and `qemu-img`;
-- VDE 2: `vde_switch`, `vde_plug`, `wirefilter`, `vde_plug2tap`, `dpipe`,
-  `vdeterm`, `vde_router` and `vde_cryptcab`;
+  `qemu-system-gui` has the windows of the machines, SDL and GTK. QEMU 6.2
+  and newer. Ubuntu builds its QEMU without VDE, which a machine needs to
+  plug into a switch: there, use a QEMU package built with it;
+- VDE 2: `vde_switch`, `vde_plug`, `wirefilter`, `vde_plug2tap`,
+  `vde_pcapplug`, `dpipe`, `vdeterm` and `unixterm`, and `vde_cryptcab`, in
+  its own package; the router brick needs `vde_router`, which no distribution
+  ships;
 - a terminal, `xterm` by default, and `sudo`, which runs the bricks that need
   root, a tap and a capture (see [Configuration](#configuration)).
 

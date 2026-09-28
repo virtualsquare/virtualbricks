@@ -33,11 +33,12 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk
 from twisted.logger import Logger
 
-from virtualbricks import errors, ksm, tools
+from virtualbricks import errors, ksm
 from virtualbricks.bricks.event import is_event
 from virtualbricks.bricks.virtualmachine import is_disk_image
 from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.workspace import projects
+from virtualbricks.programs import missing_programs
 from virtualbricks.tools import is_running
 from virtualbricks.i18n import _
 from virtualbricks.gui.graphics import load_pixbuf
@@ -69,9 +70,14 @@ RECENT = 8
 
 start_virtualbricks = "Starting VirtualBricks"
 components_not_found = (
-    "{text}\nThere are some components not "
-    "found: {components} some functionalities may not be available.\nYou can "
-    "disable this alert from the general settings."
+    "{text}\nYou can disable this alert from the general settings."
+)
+ksm_not_found = (
+    "KSM not found in Linux. Samepage memory will not work on this system."
+)
+programs_not_found = (
+    "Some programs of the bricks are missing, each with the package that has"
+    " it: {programs}. Some bricks won't start."
 )
 stop_error = "Error on stopping brick."
 start_error = "Error on starting brick."
@@ -347,31 +353,20 @@ class VBGUI:
         return self.window
 
     def check_prerequisites(self):
-        """Say which programs are missing, in the folders of the project."""
+        """Say which programs are missing, and the packages that have them."""
 
-        qmissing, _ = tools.check_missing_qemu()
-        vmissing = tools.check_missing_vde()
-        missing = vmissing + qmissing
-
+        lines = []
         if not ksm.check_ksm():
             set_setting("ksm", False)
-            missing.append("ksm")
-        missing_text = []
-        missing_components = []
-        if len(missing) > 0 and get_setting("show_missing"):
-            for m in missing:
-                if m == "ksm":
-                    missing_text.append(
-                        "KSM not found in Linux. Samepage memory will"
-                        " not work on this system."
-                    )
-                else:
-                    missing_components.append(m)
-            logger.error(
-                components_not_found,
-                text="\n".join(missing_text),
-                components=" ".join(missing_components),
-            )
+            lines.append(ksm_not_found)
+        missing = missing_programs(
+            get_setting("vdepath"), get_setting("qemupath")
+        )
+        if missing:
+            names = ", ".join(map(str, missing))
+            lines.append(programs_not_found.format(programs=names))
+        if lines and get_setting("show_missing"):
+            logger.error(components_not_found, text="\n".join(lines))
 
     """ ********************************************************     """
     """ Signal handlers                                           """

@@ -4,3 +4,4 @@ include docs/*.html
 include docs/man/build.py docs/man/*.md docs/man/*.[1-9]
 include locale/virtualbricks/virtualbricks.pot locale/virtualbricks/*.po
 recursive-include share *
+recursive-include virtualbricks/tests/data *.json *.py
