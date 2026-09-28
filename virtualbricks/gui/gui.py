@@ -42,8 +42,6 @@ from virtualbricks.bricks import Brick
 from virtualbricks.gui.mainwindow.bricks.config import (
     NetemuConfigController,
     QemuConfigController,
-    TapConfigController,
-    WireConfigController,
 )
 from virtualbricks.gui.dialogs import EditEthernetDialog
 from virtualbricks.gui.mainwindow import VBGUI
@@ -100,11 +98,7 @@ def config_panel_factory(context):
     """The old panels; those on drafts are in PANELS."""
 
     type = context.get_type()
-    if type == "Tap":
-        return TapConfigController(context)
-    elif type == "Wire":
-        return WireConfigController(context)
-    elif type == "Netemu":
+    if type == "Netemu":
         return NetemuConfigController(context)
     elif type == "Qemu":
         return QemuConfigController(context)

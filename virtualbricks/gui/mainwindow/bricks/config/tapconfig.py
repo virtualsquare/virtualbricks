@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_tapconfig -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,201 +17,25 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Configuration panel of the Tap brick.
+The panel of a tap: the switch it joins, and how its interface gets an
+address.
 """
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
-from twisted.logger import Logger
-
+from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
-from virtualbricks.gui.mainwindow.bricks.config.base import (
-    ConfigController,
-    _PlugMixin,
-)
-
-logger = Logger()
-invalid_address = "Tap not configured: {error}"
 
 
-class TapConfigController(_PlugMixin, ConfigController):
-    """
-    Configuration panel of the Tap brick: the sock to connect to and the IP
-    configuration (none, DHCP or manual).
-    """
+class TapPanel(Panel):
+    """The settings of a tap."""
 
-    def build_ui(self) -> None:
-        """Create the widgets, formerly in ``tapconfig.ui``."""
-
-        # panel (Gtk.Grid)
-        self.panel = Gtk.Grid(
-            visible=True,
-            can_focus=False,
-            row_spacing=2,
-            column_spacing=6,
+    def build(self, form):
+        form.section(_("Connection"))
+        form.socket(0, _("Plugged into"), _("The switch the interface joins"))
+        form.section(_("Address"))
+        form.choice(
+            "address_mode",
+            [("off", _("Off")), ("dhcp", _("DHCP")), ("manual", _("Manual"))],
         )
-        self.nocfg_radio = Gtk.RadioButton(
-            label=_("Don't touch interface settings"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(self.nocfg_radio, 0, 1, 1, 1)
-        self.dhcp_radio = Gtk.RadioButton(
-            label=_("Use DHCP"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(self.dhcp_radio, 0, 2, 1, 1)
-        self.manual_radio = Gtk.RadioButton(
-            label=_("Manual settings"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            active=True,
-            draw_indicator=True,
-        )
-        self.panel.attach(self.manual_radio, 0, 3, 1, 1)
-        hbox1 = Gtk.Box(visible=True, can_focus=False, spacing=12)
-        label2 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Connect to:"),
-            xalign=0,
-        )
-        hbox1.pack_start(label2, False, True, 0)
-        self.sock_combo = Gtk.ComboBox(visible=True, can_focus=False)
-        renderer1 = Gtk.CellRendererText()
-        self.sock_combo.pack_start(renderer1, False)
-        hbox1.pack_start(self.sock_combo, True, True, 0)
-        self.panel.attach(hbox1, 0, 0, 2, 1)
-        hbox2 = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
-        )
-        self.ipconfig_grid = Gtk.Grid(visible=True, can_focus=False)
-        label3 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            xpad=6,
-            label=_("IP Address:"),
-            xalign=1,
-        )
-        self.ipconfig_grid.attach(label3, 0, 0, 1, 1)
-        self.ip_entry = Gtk.Entry(
-            visible=True,
-            can_focus=True,
-            max_length=16,
-            width_chars=16,
-            text=_("10.0.0.1"),
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-        )
-        self.ipconfig_grid.attach(self.ip_entry, 1, 0, 1, 1)
-        label4 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Netmask:"),
-            xalign=1,
-        )
-        self.ipconfig_grid.attach(label4, 0, 1, 1, 1)
-        self.nm_entry = Gtk.Entry(
-            visible=True,
-            can_focus=True,
-            max_length=16,
-            width_chars=16,
-            text=_("255.0.0.0"),
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-        )
-        self.ipconfig_grid.attach(self.nm_entry, 1, 1, 1, 1)
-        label5 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Gateway:"),
-            xalign=1,
-        )
-        self.ipconfig_grid.attach(label5, 0, 2, 1, 1)
-        self.gw_entry = Gtk.Entry(
-            visible=True,
-            can_focus=True,
-            max_length=16,
-            width_chars=16,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-        )
-        self.ipconfig_grid.attach(self.gw_entry, 1, 2, 1, 1)
-        hbox2.pack_start(self.ipconfig_grid, False, True, 0)
-        self.panel.attach(hbox2, 1, 1, 1, 3)
-
-        # Need the complete widget tree:
-        # references to objects created later (radio groups).
-        self.nocfg_radio.join_group(self.manual_radio)
-        self.dhcp_radio.join_group(self.manual_radio)
-
-        # Signals
-        self.manual_radio.connect(
-            "toggled",
-            self.on_manual_radio_toggled,
-        )
-
-    def get_root_widget(self) -> Gtk.Grid:
-        return self.panel
-
-    def get_config_view(self, gui):
-        combo = self.sock_combo
-        self.configure_sock_combobox(
-            combo,
-            gui.brickfactory.socks.filter_new(),
-            self.original,
-            self.original.plugs[0],
-            gui,
-        )
-
-        self.ip_entry.set_text(self.original.get("ip_address"))
-        self.nm_entry.set_text(self.original.get("netmask"))
-        self.gw_entry.set_text(self.original.get("gateway"))
-        # default to manual if not valid mode is set
-        if self.original.get("address_mode") == "off":
-            self.nocfg_radio.set_active(True)
-        elif self.original.get("address_mode") == "dhcp":
-            self.dhcp_radio.set_active(True)
-        else:
-            self.manual_radio.set_active(True)
-
-        self.ipconfig_grid.set_sensitive(
-            self.original.get("address_mode") == "manual"
-        )
-
-        return self.panel
-
-    def configure_brick(self, gui):
-        if self.nocfg_radio.get_active():
-            self.original.set({"address_mode": "off"})
-        elif self.dhcp_radio.get_active():
-            self.original.set({"address_mode": "dhcp"})
-        else:
-            try:
-                self.original.set(
-                    {
-                        "address_mode": "manual",
-                        "ip_address": self.ip_entry.get_text(),
-                        "netmask": self.nm_entry.get_text(),
-                        "gateway": self.gw_entry.get_text(),
-                    }
-                )
-            except ValueError as exc:
-                logger.error(invalid_address, error=exc)
-        self.connect_plug(self.original.plugs[0], self.sock_combo)
-
-    def on_manual_radio_toggled(self, radiobtn):
-        self.ipconfig_grid.set_sensitive(radiobtn.get_active())
+        form.entry("ip_address")
+        form.entry("netmask")
+        form.entry("gateway")

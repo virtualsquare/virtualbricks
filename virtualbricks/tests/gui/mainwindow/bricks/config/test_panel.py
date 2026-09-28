@@ -130,4 +130,4 @@ class TestTheTable(PanelTestCase):
         self.assertIsInstance(panel.draft, self.switch.draft_factory)
 
     def test_not_yet(self):
-        self.assertIsNone(new_panel(self.factory.new_brick("tap", "tap0")))
+        self.assertIsNone(new_panel(self.factory.new_brick("router", "r1")))

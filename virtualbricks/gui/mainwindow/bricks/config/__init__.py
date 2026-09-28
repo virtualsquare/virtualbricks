@@ -33,17 +33,15 @@ from .netemuconfig import NetemuConfigController
 from .qemuconfig import QemuConfigController
 from .switchconfig import SwitchPanel
 from .switchwrapperconfig import SwitchWrapperPanel
-from .tapconfig import TapConfigController
+from .tapconfig import TapPanel
 from .tunnelcconfig import TunnelConnectPanel
 from .tunnellconfig import TunnelListenPanel
-from .wireconfig import WireConfigController
+from .wireconfig import WirePanel
 
 __all__ = [
     "NetemuConfigController",
     "PANELS",
     "QemuConfigController",
-    "TapConfigController",
-    "WireConfigController",
     "new_panel",
 ]
 
@@ -53,7 +51,9 @@ PANELS = {
     "Switch": SwitchPanel,
     "SwitchWrapper": SwitchWrapperPanel,
     "TunnelConnect": TunnelConnectPanel,
+    "Tap": TapPanel,
     "TunnelListen": TunnelListenPanel,
+    "Wire": WirePanel,
 }
 
 

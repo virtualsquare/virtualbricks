@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 21:53+0200\n"
+"POT-Creation-Date: 2026-09-28 21:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -191,6 +191,48 @@ msgstr ""
 #, python-format
 msgid "Socket does not exists: %s"
 msgstr ""
+
+#: virtualbricks/bricks/tap.py
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
+#, fuzzy
+msgid "Address"
+msgstr "Indirizzo:"
+
+#: virtualbricks/bricks/tap.py
+msgid "How the interface gets its address"
+msgstr ""
+
+#: virtualbricks/bricks/tap.py
+#, fuzzy
+msgid "IP address"
+msgstr "Indirizzo IP:"
+
+#: virtualbricks/bricks/tap.py
+msgid "The address of the interface, when it's set by hand"
+msgstr ""
+
+#: virtualbricks/bricks/tap.py
+#, fuzzy
+msgid "Netmask"
+msgstr "Netmask:"
+
+#: virtualbricks/bricks/tap.py
+msgid "The netmask, when the address is set by hand"
+msgstr ""
+
+#: virtualbricks/bricks/tap.py
+#, fuzzy
+msgid "Gateway"
+msgstr "Gateway:  "
+
+#: virtualbricks/bricks/tap.py
+msgid "The default gateway; empty for none"
+msgstr ""
+
+#: virtualbricks/bricks/tap.py
+#, fuzzy
+msgid "Virtualbricks doesn't set it yet"
+msgstr "Impostazioni Virtualbricks"
 
 #: virtualbricks/bricks/tap.py
 #, python-format
@@ -514,7 +556,6 @@ msgid "Model:"
 msgstr "Modalità:"
 
 #: virtualbricks/gui/dialogs/ethernetdialog.py
-#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
 msgid "Connect to:"
 msgstr "Connetti a:"
 
@@ -1953,6 +1994,7 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
 #, fuzzy
@@ -1960,6 +2002,7 @@ msgid "Connection"
 msgstr "Connetti a"
 
 #: virtualbricks/gui/mainwindow/bricks/config/captureconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
 #, fuzzy
@@ -2073,7 +2116,6 @@ msgid "Choose an image for this disk"
 msgstr "Scegli un nuovo nome:"
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
 msgid "<=== connect ===>"
 msgstr "<=== connetti ===>"
 
@@ -2452,38 +2494,22 @@ msgid "The control folder of the switch"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-msgid "Don't touch interface settings"
+#, fuzzy
+msgid "The switch the interface joins"
 msgstr "Non toccare le impostazioni di interfaccia"
 
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-msgid "Use DHCP"
-msgstr "Usa DHCP"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-msgid "Manual settings"
-msgstr "Impostazion manuali"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
 #, fuzzy
-msgid "IP Address:"
-msgstr "Indirizzo IP:"
+msgid "Off"
+msgstr "spento"
 
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-msgid "10.0.0.1"
-msgstr "10.0.0.1"
+msgid "DHCP"
+msgstr "DHCP"
 
 #: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-msgid "Netmask:"
-msgstr "Netmask:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-msgid "255.0.0.0"
-msgstr "255.0.0.0"
-
-#: virtualbricks/gui/mainwindow/bricks/config/tapconfig.py
-#, fuzzy
-msgid "Gateway:"
-msgstr "Gateway:  "
+msgid "Manual"
+msgstr "Manuale"
 
 #: virtualbricks/gui/mainwindow/bricks/config/tunnelcconfig.py
 #: virtualbricks/gui/mainwindow/bricks/config/tunnellconfig.py
@@ -2495,6 +2521,26 @@ msgstr ""
 #, fuzzy
 msgid "Tunnel"
 msgstr "Tunnel Server"
+
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "Ends"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "Left end"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "The switch at one end of the wire"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "Right end"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "The switch at the other end"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/tab.py
 #, python-brace-format
@@ -3343,6 +3389,22 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "Use DHCP"
+#~ msgstr "Usa DHCP"
+
+#~ msgid "Manual settings"
+#~ msgstr "Impostazion manuali"
+
+#, fuzzy
+#~ msgid "IP Address:"
+#~ msgstr "Indirizzo IP:"
+
+#~ msgid "10.0.0.1"
+#~ msgstr "10.0.0.1"
+
+#~ msgid "255.0.0.0"
+#~ msgstr "255.0.0.0"
 
 #, fuzzy
 #~ msgid "Capture interface:"
@@ -4271,9 +4333,6 @@ msgstr "kvm non trovato"
 #~ "Crea una VLAN condivisa via socket multicast UDP\n"
 #~ "Usa una socket multicast UDP già aperta"
 
-#~ msgid "IP address: "
-#~ msgstr "Indirizzo IP:"
-
 #~ msgid "MAC address: "
 #~ msgstr "Indirizzo MAC: "
 
@@ -4312,15 +4371,6 @@ msgstr "kvm non trovato"
 
 #~ msgid "Mode:"
 #~ msgstr "Modalità:"
-
-#~ msgid "DHCP"
-#~ msgstr "DHCP"
-
-#~ msgid "Manual"
-#~ msgstr "Manuale"
-
-#~ msgid "Address:"
-#~ msgstr "Indirizzo:"
 
 #~ msgid "Advanced"
 #~ msgstr "Avanzate"

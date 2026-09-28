@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_wireconfig -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,70 +17,17 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Configuration panel of the Wire brick.
+The panel of a wire: the two sockets it joins.
 """
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
-
+from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
-from virtualbricks.gui.mainwindow.bricks.config.base import (
-    ConfigController,
-    _PlugMixin,
-)
 
 
-class WireConfigController(_PlugMixin, ConfigController):
-    """
-    Configuration panel of the Wire brick: the socks connected by the wire.
-    """
+class WirePanel(Panel):
+    """The settings of a wire."""
 
-    def build_ui(self) -> None:
-        """Create the widgets, formerly in ``wireconfig.ui``."""
-
-        # panel (Gtk.Box)
-        self.panel = Gtk.Box(
-            visible=True,
-            can_focus=False,
-            orientation=Gtk.Orientation.VERTICAL,
-        )
-        hbox = Gtk.Box(visible=True, can_focus=False, spacing=6)
-        self.sock0_combo = Gtk.ComboBox(visible=True, can_focus=False)
-        sock0_cellrenderer = Gtk.CellRendererText()
-        self.sock0_combo.pack_start(sock0_cellrenderer, False)
-        self.sock0_combo.add_attribute(sock0_cellrenderer, "text", 0)
-        hbox.pack_start(self.sock0_combo, False, False, 0)
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("<=== connect ===>"),
-        )
-        hbox.pack_start(label1, False, True, 0)
-        self.sock1_combo = Gtk.ComboBox(visible=True, can_focus=False)
-        sock1_cellrenderer = Gtk.CellRendererText()
-        self.sock1_combo.pack_start(sock1_cellrenderer, False)
-        self.sock1_combo.add_attribute(sock1_cellrenderer, "text", 0)
-        hbox.pack_start(self.sock1_combo, False, False, 0)
-        self.panel.pack_start(hbox, False, False, 0)
-
-    def get_root_widget(self) -> Gtk.Box:
-        return self.panel
-
-    def get_config_view(self, gui):
-        for i, wname in enumerate(("sock0_combo", "sock1_combo")):
-            combo = getattr(self, wname)
-            self.configure_sock_combobox(
-                combo,
-                gui.brickfactory.socks.filter_new(),
-                self.original,
-                self.original.plugs[i],
-                gui,
-            )
-
-        return self.panel
-
-    def configure_brick(self, gui):
-        for i, wname in enumerate(("sock0_combo", "sock1_combo")):
-            self.connect_plug(self.original.plugs[i], getattr(self, wname))
+    def build(self, form):
+        form.section(_("Ends"))
+        form.socket(0, _("Left end"), _("The switch at one end of the wire"))
+        form.socket(1, _("Right end"), _("The switch at the other end"))
