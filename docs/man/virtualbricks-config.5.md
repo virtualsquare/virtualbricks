@@ -427,7 +427,8 @@ default in its place.
 :   A CD-ROM drive of the host, for example **"/dev/cdrom"**.
 
 **headless** = *boolean*, default `false`
-:   No display: **-display none**.
+:   No display: **-display none**. It leaves out **use_vnc** and
+    **sdl_window**.
 
 **standard_vga** = *boolean*, default `false`
 :   A standard VGA card: **-vga std**.
@@ -476,7 +477,7 @@ default in its place.
 :   A kernel image: **-kernel**.
 
 **use_initrd** = *boolean*, default `false`
-:   Use the initial ramdisk **initrd**.
+:   Use the initial ramdisk **initrd**, with **use_kernel**.
 
 **initrd** = *path*, default `""`
 :   An initial ramdisk: **-initrd**.

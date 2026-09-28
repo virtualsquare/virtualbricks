@@ -1377,8 +1377,10 @@ class VirtualMachine(bricks.Brick):
         cmd.arg(*sound)
         cmd.flag("-usb", config.use_usb)
         cmd.flag("-snapshot", config.forget_disk_changes)
-        if config.sdl_window and "sdl_window" not in lacked:
-            cmd.option("-display", "sdl")
+        # no display at all leaves out SDL and VNC, as the panel greys them
+        if config.sdl_window and not config.headless:
+            if "sdl_window" not in lacked:
+                cmd.option("-display", "sdl")
         cmd.option("-loadvm", prepared.resume)
         if config.headless:
             cmd.option("-display", "none")
@@ -1389,14 +1391,14 @@ class VirtualMachine(bricks.Brick):
                 cmd.option(f"-{device}", path)
         if config.use_kernel:
             cmd.option("-kernel", config.kernel)
-        if config.use_initrd:
+        if config.use_kernel and config.use_initrd:
             cmd.option("-initrd", config.initrd)
         if config.use_kernel and config.kernel:
             # as it is: no shell reads it
             cmd.option("-append", config.kernel_command_line)
         if config.use_gdb:
             cmd.option("-gdb", f"tcp::{config.gdb_port}")
-        if config.use_vnc:
+        if config.use_vnc and not config.headless:
             cmd.option("-vnc", f":{config.vnc_display}")
         if config.standard_vga:
             cmd.option("-vga", "std")
@@ -1658,7 +1660,11 @@ def lacks(config, cards, qemu, machine_properties, audio_driver):
                 "the machine starts with the default one",
             )
         )
-    if config.sdl_window and "sdl" not in qemu.displays:
+    if (
+        config.sdl_window
+        and not config.headless
+        and "sdl" not in qemu.displays
+    ):
         found.append(
             Lack(
                 "sdl_window",

@@ -384,7 +384,6 @@ class TestMachine(LinesTestCase):
                 "forget_disk_changes": True,
                 "sdl_window": True,
                 "acpi": False,
-                "headless": True,
                 "use_kernel": True,
                 "kernel": "/boot/k",
                 "use_initrd": True,
@@ -465,7 +464,7 @@ class TestMachine(LinesTestCase):
                 + ["-audiodev", "alsa,id=snd0"]
                 + ["-device", "AC97,audiodev=snd0"]
                 + ["-usb", "-snapshot", "-display", "sdl"]
-                + ["-loadvm", "snap1", "-display", "none"]
+                + ["-loadvm", "snap1"]
                 + ["-kernel", "/boot/k", "-initrd", "/boot/i"]
                 + ["-append", 'console=ttyS0 init="/bin/sh"']
                 + ["-gdb", "tcp::1234", "-vnc", ":2", "-vga", "std"]
@@ -490,13 +489,23 @@ class TestMachine(LinesTestCase):
             cdrom_device="/dev/cdrom",
             clock_drift_fix=True,
             keyboard_layout="ita",
+            headless=True,
+            use_vnc=True,
+            sdl_window=True,
+            use_initrd=True,
+            initrd="/boot/i",
         )
         argv, warnings = self.line(vm, prepared_qemu())
         self.assertEqual(argv[1:3], ["-smp", "1"])
         self.assertIn("-cdrom", argv)
         self.assertEqual(argv[argv.index("-cdrom") + 1], "/dev/cdrom")
         self.assertEqual(argv[argv.index("-rtc") + 1], "driftfix=slew")
+        # no display at all, and no ramdisk without a kernel
+        self.assertEqual(argv[argv.index("-display") + 1], "none")
+        self.assertNotIn("sdl", argv)
         for option in ("-machine", "-accel", "-append", "-kernel", "-k"):
+            self.assertNotIn(option, argv)
+        for option in ("-vnc", "-initrd"):
             self.assertNotIn(option, argv)
         self.assertEqual(warnings, [])
 
