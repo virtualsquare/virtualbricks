@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 23:57+0200\n"
+"POT-Creation-Date: 2026-09-29 00:33+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1523,15 +1523,6 @@ msgstr ""
 msgid "Brick name"
 msgstr "Bricks (Bloques)"
 
-#: virtualbricks/gui/dialogs/progressbardialog.py
-#: virtualbricks/gui/dialogs/userwait.py
-msgid "Virtualbricks: action in progress"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/progressbardialog.py
-msgid "Please wait..."
-msgstr ""
-
 #: virtualbricks/gui/dialogs/projectname.py
 #: virtualbricks/gui/dialogs/projects.py
 #, fuzzy
@@ -1851,10 +1842,6 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid "Audio driver of QEMU, as alsa, pa or pipewire"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/userwait.py
-msgid "Please wait"
 msgstr ""
 
 #: virtualbricks/gui/gui.py
@@ -3275,6 +3262,14 @@ msgstr ""
 #, fuzzy
 msgid "Export as Image"
 msgstr "Exportar como imagen"
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Virtualbricks: action in progress"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/window.py
+msgid "Please wait"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/window.py
 msgid "Virtualbricks"
