@@ -70,6 +70,13 @@ class TestImport(I18nTestCase):
         )
         self.assertEqual(i18n.ngettext("a warning", "warnings", 2), "warnings")
 
+    def test_marked_for_later(self):
+        # English where it is written, translated where it is shown
+        self.language("it")
+        gettext.install(i18n.DOMAIN, i18n.find_localedir(), names=i18n.NAMES)
+        self.assertEqual(i18n.N_("Cancel"), "Cancel")
+        self.assertEqual(i18n._(i18n.N_("Cancel")), "Annulla")
+
     def test_translations(self):
         self.language("it")
         gettext.install(i18n.DOMAIN, i18n.find_localedir(), names=i18n.NAMES)

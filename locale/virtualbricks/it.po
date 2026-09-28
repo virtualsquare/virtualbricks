@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 16:04+0200\n"
+"POT-Creation-Date: 2026-09-28 21:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -109,6 +109,45 @@ msgstr "Impossibile avviare '%s': non connesso"
 #: virtualbricks/bricks/wire.py
 msgid "disconnected"
 msgstr "disconnesso"
+
+#: virtualbricks/bricks/switch.py
+#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
+#, fuzzy
+msgid "Ports"
+msgstr "Porte:"
+
+#: virtualbricks/bricks/switch.py
+#, fuzzy
+msgid "Number of ports"
+msgstr "Numero di porte:"
+
+#: virtualbricks/bricks/switch.py
+msgid "Hub mode"
+msgstr "Modalità Hub"
+
+#: virtualbricks/bricks/switch.py
+msgid "Send every packet to every port, as a hub"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+msgid "Fast spanning tree"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+msgid "Run the fast spanning tree protocol"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+#, python-brace-format
+msgid "at least {count}: {names} plugs into {switch}"
+msgid_plural "at least {count}: {names} plug into {switch}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/bricks/switch.py
+#, python-brace-format
+msgid "{switch} needs {count} ports, one for each plug"
+msgstr ""
 
 #: virtualbricks/bricks/switch.py
 #, fuzzy
@@ -1878,6 +1917,11 @@ msgstr ""
 msgid "Add Disk"
 msgstr ""
 
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#, python-brace-format
+msgid "{help} · {note}"
+msgstr ""
+
 #: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
 #, fuzzy
 msgid "No image"
@@ -1999,6 +2043,23 @@ msgstr "Modalità:"
 #, fuzzy
 msgid "MAC address"
 msgstr "Indirizzo MAC: "
+
+#: virtualbricks/gui/mainwindow/bricks/config/panel.py
+#, python-brace-format
+msgid "{brick} is running: the settings take effect when it starts again."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/panel.py
+#, python-brace-format
+msgid "{brick} is running. These change at once: {settings}."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/panel.py
+#, python-brace-format
+msgid ""
+"{brick} is running. These change at once: {settings}; the rest when it "
+"starts again."
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 #, python-brace-format
@@ -2271,19 +2332,6 @@ msgstr ""
 #, python-brace-format
 msgid "Forget every change when {name} stops"
 msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
-#, fuzzy
-msgid "Number of ports:"
-msgstr "Numero di porte:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
-msgid "Use FSTP"
-msgstr "Usa FSTP"
-
-#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
-msgid "Hub mode"
-msgstr "Modalità Hub"
 
 #: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
 msgid "Path to switch:"
@@ -2812,6 +2860,11 @@ msgstr "Avvia Tutti i Mattoni"
 msgid "Stop All"
 msgstr "Ferma Tutti i Mattoni"
 
+#: virtualbricks/gui/mainwindow/rowtab.py
+#, python-brace-format
+msgid "{setting}: {problem}"
+msgstr ""
+
 #: virtualbricks/gui/mainwindow/topology.py
 msgid "Left to Right"
 msgstr ""
@@ -3194,6 +3247,9 @@ msgstr "Salvare il progetto corrente?"
 #, fuzzy, python-brace-format
 msgid "{exe} not found"
 msgstr "kvm non trovato"
+
+#~ msgid "Use FSTP"
+#~ msgstr "Usa FSTP"
 
 #~ msgid "Network topology loop detection"
 #~ msgstr "Rileva loop della topologia di rete"
@@ -4265,9 +4321,6 @@ msgstr "kvm non trovato"
 #, python-format
 #~ msgid "Added host-shell command: '%s'"
 #~ msgstr "Aggiunto un comando host-shell: '%s'"
-
-#~ msgid "Ports:"
-#~ msgstr "Porte:"
 
 #~ msgid "Configured to connect"
 #~ msgstr "Configurato per connettere"

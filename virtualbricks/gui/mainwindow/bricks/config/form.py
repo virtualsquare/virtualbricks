@@ -1,0 +1,228 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_form -*-
+# Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
+# Copyright (C) 2019 Virtualbricks team
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+"""
+The rows of a panel, bound to the settings of a draft.
+
+A form has sections: a title, and the rows under it in a frame. A row is a
+setting: its label and its help from the schema, translated, with what the
+draft adds to the help; its widget, at the end; and under them what is wrong
+with the setting, when something is. The widget comes from the kind of the
+field: a switch for true or false, a spin button for a number, between the
+limits of the draft.
+
+A change in a widget goes into the draft, then the form calls back. The panel
+then refreshes the rows: a row greys out while the draft doesn't use its
+setting, and shows its problem.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Pango  # noqa: E402
+
+from virtualbricks.config.schema import Float, info_of, kind_of  # noqa: E402
+from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
+from virtualbricks.i18n import _  # noqa: E402
+
+# Between the sections, and around the texts of a row, in pixels.
+GAP = 8
+# The size of the help of a row, from the size of its label.
+HELP_SCALE = 0.9
+# The widest range of a spin button whose kind has no limit.
+LOWEST = -(2**31)
+HIGHEST = 2**31 - 1
+
+
+def _separate(row, before) -> None:
+    """A line between two rows."""
+
+    if before is not None and row.get_header() is None:
+        row.set_header(Gtk.Separator(visible=True))
+
+
+class Row(Gtk.ListBoxRow):
+    """A setting: its label, its help, its widget and its problem."""
+
+    def __init__(self, draft, name: str, widget: Gtk.Widget) -> None:
+        super().__init__(visible=True, activatable=False, selectable=False)
+        info = info_of(draft.settings, name)
+        # widget and name are taken by Gtk.Widget
+        self.key = name
+        self.control = widget
+        self.help = _(info.help)
+        grid = Gtk.Grid(
+            visible=True,
+            column_spacing=16,
+            row_spacing=4,
+            margin_start=12,
+            margin_end=12,
+            margin_top=GAP,
+            margin_bottom=GAP,
+        )
+        texts = Gtk.Box(
+            visible=True,
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=2,
+            hexpand=True,
+            valign=Gtk.Align.CENTER,
+        )
+        self.title = Gtk.Label(visible=True, xalign=0.0, label=_(info.label))
+        # read with the widget, by a screen reader
+        self.title.set_mnemonic_widget(widget)
+        self.caption = Gtk.Label(
+            visible=True,
+            xalign=0.0,
+            wrap=True,
+            label=self.help,
+            attributes=pango_attr_list(Pango.attr_scale_new(HELP_SCALE)),
+        )
+        self.caption.get_style_context().add_class("dim-label")
+        texts.pack_start(self.title, False, False, 0)
+        texts.pack_start(self.caption, False, False, 0)
+        widget.set_valign(Gtk.Align.CENTER)
+        widget.set_halign(Gtk.Align.END)
+        self.problem = Gtk.Label(
+            visible=False,
+            xalign=0.0,
+            wrap=True,
+            attributes=pango_attr_list(Pango.attr_scale_new(HELP_SCALE)),
+        )
+        self.problem.get_style_context().add_class("error")
+        grid.attach(texts, 0, 0, 1, 1)
+        grid.attach(widget, 1, 0, 1, 1)
+        grid.attach(self.problem, 0, 1, 2, 1)
+        self.add(grid)
+
+    def refresh(self, used: bool, note: str, problem: str | None) -> None:
+        """Grey out if not used; the help with the note; the problem."""
+
+        self.set_sensitive(used)
+        if note:
+            caption = _("{help} · {note}").format(help=self.help, note=note)
+        else:
+            caption = self.help
+        self.caption.set_text(caption)
+        self.problem.set_text(problem or "")
+        self.problem.set_visible(bool(problem))
+        context = self.control.get_style_context()
+        if problem:
+            context.add_class("error")
+        else:
+            context.remove_class("error")
+
+
+class Form:
+    """The sections and the rows of a panel, on a draft."""
+
+    def __init__(self, draft, changed: Callable[[], None]) -> None:
+        self.draft = draft
+        self.changed = changed
+        self.widget = Gtk.Box(
+            visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=6
+        )
+        self.rows: dict[str, Row] = {}
+        self._list: Gtk.ListBox | None = None
+
+    def section(self, title: str) -> None:
+        """A title, and a frame for the rows that follow."""
+
+        label = Gtk.Label(
+            visible=True,
+            xalign=0.0,
+            label=title,
+            attributes=pango_attr_list(
+                Pango.attr_weight_new(Pango.Weight.BOLD)
+            ),
+        )
+        if self.rows:
+            label.set_margin_top(GAP)
+        frame = Gtk.Frame(visible=True)
+        self._list = Gtk.ListBox(
+            visible=True, selection_mode=Gtk.SelectionMode.NONE
+        )
+        self._list.set_header_func(_separate)
+        frame.add(self._list)
+        self.widget.pack_start(label, False, False, 0)
+        self.widget.pack_start(frame, False, False, 0)
+
+    def _row(self, name: str, widget: Gtk.Widget) -> Row:
+        if self._list is None:
+            raise ValueError("a row comes after the title of its section")
+        row = Row(self.draft, name, widget)
+        self._list.add(row)
+        self.rows[name] = row
+        return row
+
+    def _set(self, name: str, value: object) -> None:
+        self.draft.set(name, value)
+        self.changed()
+
+    def switch(self, name: str) -> Gtk.Switch:
+        """A setting true or false."""
+
+        switch = Gtk.Switch(visible=True, active=self.draft.get(name))
+        switch.connect(
+            "notify::active",
+            lambda widget, _: self._set(name, widget.get_active()),
+        )
+        self._row(name, switch)
+        return switch
+
+    def spin(self, name: str) -> Gtk.SpinButton:
+        """A number, between the draft's limits."""
+
+        value = self.draft.get(name)
+        low, high = self.draft.limits(name)
+        low = LOWEST if low is None else low
+        high = HIGHEST if high is None else high
+        is_float = isinstance(kind_of(self.draft.settings, name), Float)
+        spin = Gtk.SpinButton(
+            visible=True, numeric=True, digits=2 if is_float else 0
+        )
+        # a value already below its limit stays, and shows its problem
+        spin.set_range(min(low, value), max(high, value))
+        spin.set_increments(1, 10)
+        spin.set_value(value)
+
+        def on_changed(widget):
+            number = (
+                widget.get_value() if is_float else widget.get_value_as_int()
+            )
+            self._set(name, number)
+
+        spin.connect("value-changed", on_changed)
+        self._row(name, spin)
+        return spin
+
+    def refresh(self) -> None:
+        """Each row as the draft says: in use or not, its note, its problem."""
+
+        problems: dict[str, str] = {}
+        for problem in self.draft.problems():
+            problems.setdefault(problem.key, problem.text)
+        for name, row in self.rows.items():
+            row.refresh(
+                self.draft.uses(name),
+                self.draft.note(name),
+                problems.get(name),
+            )

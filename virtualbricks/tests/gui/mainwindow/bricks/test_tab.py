@@ -609,6 +609,8 @@ class TestTheSettings(BricksTestCase):
             return controllers[brick]
 
         self.patch(tab, "IConfigController", adapt)
+        # not a panel on a draft
+        self.patch(tab, "new_panel", lambda brick: None)
         return calls, controllers
 
     def test_a_switch(self):
@@ -617,16 +619,20 @@ class TestTheSettings(BricksTestCase):
         tab.configure(self.sw)
         self.assertIs(tab.configuring, self.sw)
         self.assertIs(tab.get_visible_child(), tab.settings)
-        head, _sep, scrolled, _sep2, actions = tab.settings.get_children()
+        head, bar, _sep, scrolled, _sep2, actions = tab.settings.get_children()
         image, text = head.get_children()
         name, kind = text.get_children()
         self.assertEqual(name.get_text(), "sw")
         self.assertEqual(kind.get_text(), "Switch settings")
         self.assertTrue(kind.get_style_context().has_class("dim-label"))
         self.assertIs(image.get_pixbuf(), tab.list.icons.get(self.sw, False))
+        # a panel on a draft, and the bar of a running switch, hidden
         [panel] = scrolled.get_child().get_child().get_children()
-        spin = panel.get_child_at(1, 0)
-        spin.set_value(8)
+        self.assertIs(panel, tab._controller.widget)
+        self.assertIs(bar, tab.running_bar)
+        self.assertFalse(bar.get_visible())
+        tab._controller.form.rows["ports"].control.set_value(8)
+        self.assertEqual(self.sw.config.ports, 32)
         tab.ok_button.clicked()
         self.assertEqual(self.sw.config.ports, 8)
         self.assertIsNone(tab.configuring)
@@ -639,12 +645,97 @@ class TestTheSettings(BricksTestCase):
 
     def test_cancel(self):
         self.tab.configure(self.sw)
-        scrolled = self.tab.settings.get_children()[2]
-        [panel] = scrolled.get_child().get_child().get_children()
-        panel.get_child_at(1, 0).set_value(8)
+        self.tab._controller.form.rows["ports"].control.set_value(8)
         self.tab.cancel_button.clicked()
         self.assertEqual(self.sw.config.ports, 32)
         self.assertIs(self.tab.get_visible_child(), self.tab.main_page)
+
+    def test_the_page_of_a_draft(self):
+        self.tab.configure(self.sw)
+        page = self.tab.settings
+        head, bar, _sep, scrolled, _sep2, actions = page.get_children()
+        self.assertEqual(
+            [(expand, fill) for _child, expand, fill in packing(page)],
+            [(False, False)] * 3 + [(True, True)] + [(False, False)] * 2,
+        )
+        self.assertIs(bar, self.tab.running_bar)
+        self.assertEqual(bar.get_message_type(), Gtk.MessageType.INFO)
+        [words] = bar.get_content_area().get_children()
+        self.assertIs(words, self.tab.running_words)
+        why = self.tab.why
+        # the first error, between Cancel and OK
+        for child, expand, pack in (
+            (self.tab.cancel_button, False, Gtk.PackType.START),
+            (self.tab.ok_button, False, Gtk.PackType.END),
+            (why, True, Gtk.PackType.END),
+        ):
+            self.assertIs(child.get_parent(), actions)
+            self.assertEqual(
+                actions.child_get_property(child, "expand"), expand
+            )
+            self.assertEqual(
+                actions.child_get_property(child, "pack-type"), pack
+            )
+        self.assertLess(
+            actions.child_get_property(self.tab.ok_button, "position"),
+            actions.child_get_property(why, "position"),
+        )
+        self.assertTrue(why.get_style_context().has_class("error"))
+        self.assertFalse(why.get_visible())
+        self.assertTrue(self.tab.ok_button.get_sensitive())
+
+    def test_ok_waits_for_the_errors(self):
+        self.tab.configure(self.sw)
+        panel = self.tab._controller
+        panel.draft.set("ports", 200)
+        panel.on_changed()
+        self.assertFalse(self.tab.ok_button.get_sensitive())
+        self.assertTrue(self.tab.why.get_visible())
+        self.assertEqual(
+            self.tab.why.get_text(), "Ports: 200 is outside 1–128"
+        )
+        # a setting without a row
+        panel.draft.set("ports", 16)
+        panel.draft.set("icon", 1)
+        panel.on_changed()
+        self.assertEqual(self.tab.why.get_text(), "1 is not a string")
+        panel.draft.set("icon", "")
+        panel.on_changed()
+        self.assertTrue(self.tab.ok_button.get_sensitive())
+        self.assertFalse(self.tab.why.get_visible())
+        self.tab.ok_button.clicked()
+        self.assertEqual(self.sw.config.ports, 16)
+        self.assertIsNone(self.tab.configuring)
+
+    def test_a_running_switch(self):
+        self.running(self.sw)
+        self.tab.configure(self.sw)
+        self.assertTrue(self.tab.running_bar.get_visible())
+        self.assertEqual(
+            self.tab.running_words.get_text(),
+            "sw is running. These change at once: Ports, Hub mode, Fast"
+            " spanning tree.",
+        )
+        # it stops, and starts again, while its settings show
+        self.sw.proc = None
+        self.sw.notify_changed()
+        self.assertFalse(self.tab.running_bar.get_visible())
+        self.running(self.sw)
+        self.assertTrue(self.tab.running_bar.get_visible())
+        # another brick doesn't count
+        self.running(self.brick("switch", "sw2"))
+        self.sw.proc = None
+        self.brick("switch", "sw3").notify_changed()
+        self.assertTrue(self.tab.running_bar.get_visible())
+
+    def test_closed(self):
+        self.tab.configure(self.sw)
+        self.tab.cancel_button.clicked()
+        self.assertIsNone(self.tab.running_bar)
+        self.assertIsNone(self.tab.running_words)
+        self.assertIsNone(self.tab.why)
+        # its changes, with nothing to show
+        self.running(self.sw)
 
     def test_how_the_page_is_made(self):
         calls, controllers = self.fake_panels()

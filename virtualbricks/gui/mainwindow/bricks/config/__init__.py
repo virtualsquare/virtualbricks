@@ -20,14 +20,18 @@ The configuration panels of the bricks, shown in the Bricks tab of the main
 window: one module for each kind of brick, and the parts of the panel of a
 virtual machine, its disks and the picker of their images.
 
-Only the classes that code outside this package imports from it are exported;
+The panels on drafts, of :mod:`.panel`, are in ``PANELS``, by the type of
+their brick; ``new_panel()`` makes one on a new draft of its brick. The others
+are still adapters of ``IConfigController``, until they move.
+
+Only the names that code outside this package imports from it are exported;
 the tests import the others from their modules.
 """
 
 from .captureconfig import CaptureConfigController
 from .netemuconfig import NetemuConfigController
 from .qemuconfig import QemuConfigController
-from .switchconfig import SwitchConfigController
+from .switchconfig import SwitchPanel
 from .switchwrapperconfig import SwitchWrapperConfigController
 from .tapconfig import TapConfigController
 from .tunnelcconfig import TunnelClientConfigController
@@ -37,11 +41,24 @@ from .wireconfig import WireConfigController
 __all__ = [
     "CaptureConfigController",
     "NetemuConfigController",
+    "PANELS",
     "QemuConfigController",
-    "SwitchConfigController",
     "SwitchWrapperConfigController",
     "TapConfigController",
     "TunnelClientConfigController",
     "TunnelListenConfigController",
     "WireConfigController",
+    "new_panel",
 ]
+
+# The panels on drafts, by the type of their brick.
+PANELS = {"Switch": SwitchPanel}
+
+
+def new_panel(brick):
+    """The panel of brick on a new draft, or None if it has none yet."""
+
+    panel = PANELS.get(brick.get_type())
+    if panel is None:
+        return None
+    return panel(brick.draft_factory(brick))

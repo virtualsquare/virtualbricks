@@ -36,6 +36,19 @@ def ngettext(singular: str, plural: str, count: int) -> str:
     return builtins.ngettext(singular, plural, count)
 
 
+def N_(message: str) -> str:
+    """
+    Mark a message for translation, and return it as it is.
+
+    For a text that stays in English in one place and is translated in
+    another: the labels and the help of the settings, English in the
+    comments of the files, translated with ``_()`` where a window shows
+    them. ``l10n.sh`` extracts the marked messages.
+    """
+
+    return message
+
+
 def find_localedir():
     """
     Return the directory that holds the compiled catalogs, or None.

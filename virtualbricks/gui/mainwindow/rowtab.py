@@ -25,7 +25,10 @@ New, the search, a switch between all the objects and the running ones, how
 many run, and Start All and Stop All; under them, the ``RowList``, or a page
 that says what the objects are when the project has none. The second has the
 settings of one object: a line that names it, its panel in a scrolled
-window, and Cancel and OK.
+window, and Cancel and OK. A panel on a draft, of
+:mod:`virtualbricks.gui.mainwindow.bricks.config.panel`, has more: an info bar
+over it while its brick runs, and OK only while the draft has no errors, the
+first of them beside it; OK applies the draft.
 
 A ``Row`` shows an object's icon, grey while it doesn't run; its name; a line
 about it; its state; a button that starts or stops it; and the button of its
@@ -54,7 +57,11 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango  # noqa: E402
 from twisted.internet import defer  # noqa: E402
 
+from virtualbricks.bricks.draft import apply  # noqa: E402
 from virtualbricks.gui import graphics  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.config.panel import (
+    Panel,
+)  # noqa: E402
 from virtualbricks.gui.mainwindow.picture import Icons  # noqa: E402
 from virtualbricks.gui.mainwindow.tab import Tab, icon_button  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
@@ -509,6 +516,10 @@ class RowsTab(Tab, Gtk.Stack):
         self.configuring = None
         self._controller = None
         self.settings: Gtk.Box | None = None
+        # a panel on a draft: the brick running, and the first error
+        self.running_bar: Gtk.InfoBar | None = None
+        self.running_words: Gtk.Label | None = None
+        self.why: Gtk.Label | None = None
         self.main_page = Gtk.Box(
             visible=True, orientation=Gtk.Orientation.VERTICAL
         )
@@ -768,7 +779,10 @@ class RowsTab(Tab, Gtk.Stack):
             margin_end=GAP,
             margin_top=GAP,
         )
-        panel = controller.get_config_view(self.gui)
+        if isinstance(controller, Panel):
+            panel = controller.widget
+        else:
+            panel = controller.get_config_view(self.gui)
         panel.show()
         holder.pack_start(panel, True, True, 0)
         scrolled.add(holder)
@@ -781,16 +795,33 @@ class RowsTab(Tab, Gtk.Stack):
         self.ok_button.show()
         actions.pack_start(self.cancel_button, False, False, 0)
         actions.pack_end(self.ok_button, False, False, 0)
-        # the panel's own: they call the window's curtain_down()
-        self.cancel_button.connect(
-            "clicked", controller.on_cancel_button_clicked, self.gui
-        )
-        self.ok_button.connect(
-            "clicked", controller.on_ok_button_clicked, self.gui
-        )
+        parts = [head]
+        if isinstance(controller, Panel):
+            self.cancel_button.connect("clicked", self.on_cancel_clicked)
+            self.ok_button.connect("clicked", self.on_ok_clicked)
+            self.why = Gtk.Label(
+                visible=False, xalign=1.0, ellipsize=Pango.EllipsizeMode.END
+            )
+            self.why.get_style_context().add_class("error")
+            actions.pack_end(self.why, True, True, 0)
+            self.running_bar = Gtk.InfoBar(message_type=Gtk.MessageType.INFO)
+            self.running_words = Gtk.Label(visible=True, xalign=0.0, wrap=True)
+            self.running_bar.get_content_area().add(self.running_words)
+            parts.append(self.running_bar)
+            controller.connect_changed(self.on_panel_changed)
+            self.on_panel_changed(controller)
+            self.show_running(item, controller)
+        else:
+            # the panel's own: they call the window's curtain_down()
+            self.cancel_button.connect(
+                "clicked", controller.on_cancel_button_clicked, self.gui
+            )
+            self.ok_button.connect(
+                "clicked", controller.on_ok_button_clicked, self.gui
+            )
 
         for widget, expand in (
-            (head, False),
+            *((part, False) for part in parts),
             (Gtk.Separator(visible=True), False),
             (scrolled, True),
             (Gtk.Separator(visible=True), False),
@@ -800,6 +831,36 @@ class RowsTab(Tab, Gtk.Stack):
         page.connect("key-press-event", self.on_settings_key_press)
         return page
 
+    def show_running(self, item, panel: Panel) -> None:
+        """The info bar of a panel on a draft, while its brick runs."""
+
+        running = is_running(item)
+        if running:
+            self.running_words.set_text(panel.running_words())
+        self.running_bar.set_visible(running)
+
+    def on_panel_changed(self, panel: Panel) -> None:
+        errors = panel.draft.errors()
+        self.ok_button.set_sensitive(not errors)
+        if errors:
+            error = errors[0]
+            row = panel.form.rows.get(error.key)
+            if row is None:
+                text = error.text
+            else:
+                text = _("{setting}: {problem}").format(
+                    setting=row.title.get_text(), problem=error.text
+                )
+            self.why.set_text(text)
+        self.why.set_visible(bool(errors))
+
+    def on_ok_clicked(self, button) -> None:
+        apply(self._controller.draft)
+        self.close_settings()
+
+    def on_cancel_clicked(self, button) -> None:
+        self.close_settings()
+
     def close_settings(self) -> None:
         """Back to the list, on the object configured."""
 
@@ -807,6 +868,7 @@ class RowsTab(Tab, Gtk.Stack):
         if item is None:
             return
         self.configuring = self._controller = None
+        self.running_bar = self.running_words = self.why = None
         # the stack shows the list once the page goes
         self.settings.destroy()
         self.settings = None
@@ -834,6 +896,8 @@ class RowsTab(Tab, Gtk.Stack):
 
     def on_changed(self, item) -> None:
         self.update()
+        if item is self.configuring and self.running_bar is not None:
+            self.show_running(item, self._controller)
 
     def on_removed(self, item) -> None:
         if item is self.configuring:

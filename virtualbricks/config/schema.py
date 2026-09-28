@@ -65,6 +65,7 @@ __all__ = [
     "field_names",
     "field_values",
     "fields",
+    "info_of",
     "key_of",
     "kind_of",
     "load_record",
@@ -449,11 +450,17 @@ def _path(attribute: attr.Attribute[object]) -> tuple[str, ...]:
     return field_info(attribute).path or (attribute.name,)
 
 
-def kind_of(cls_or_obj: object, name: str) -> Kind[object]:
+def info_of(cls_or_obj: object, name: str) -> FieldInfo:
+    """What the schema says of a field: its kind, its label and its help."""
+
     for attribute in fields(cls_or_obj):
         if attribute.name == name:
-            return field_info(attribute).kind
+            return field_info(attribute)
     raise KeyError(name)
+
+
+def kind_of(cls_or_obj: object, name: str) -> Kind[object]:
+    return info_of(cls_or_obj, name).kind
 
 
 def key_of(cls_or_obj: object, name: str) -> str:

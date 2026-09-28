@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 16:04+0200\n"
+"POT-Creation-Date: 2026-09-28 21:40+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -109,6 +109,45 @@ msgstr ""
 #: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
 #: virtualbricks/bricks/wire.py
 msgid "disconnected"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
+#, fuzzy
+msgid "Ports"
+msgstr "Vertical"
+
+#: virtualbricks/bricks/switch.py
+#, fuzzy
+msgid "Number of ports"
+msgstr "Número de CPUs:"
+
+#: virtualbricks/bricks/switch.py
+msgid "Hub mode"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+msgid "Send every packet to every port, as a hub"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+msgid "Fast spanning tree"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+msgid "Run the fast spanning tree protocol"
+msgstr ""
+
+#: virtualbricks/bricks/switch.py
+#, python-brace-format
+msgid "at least {count}: {names} plugs into {switch}"
+msgid_plural "at least {count}: {names} plug into {switch}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: virtualbricks/bricks/switch.py
+#, python-brace-format
+msgid "{switch} needs {count} ports, one for each plug"
 msgstr ""
 
 #: virtualbricks/bricks/switch.py
@@ -1836,6 +1875,11 @@ msgstr ""
 msgid "Add Disk"
 msgstr ""
 
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#, python-brace-format
+msgid "{help} · {note}"
+msgstr ""
+
 #: virtualbricks/gui/mainwindow/bricks/config/imagepicker.py
 #, fuzzy
 msgid "No image"
@@ -1953,6 +1997,23 @@ msgstr ""
 #, fuzzy
 msgid "MAC address"
 msgstr "Direccion MAC:"
+
+#: virtualbricks/gui/mainwindow/bricks/config/panel.py
+#, python-brace-format
+msgid "{brick} is running: the settings take effect when it starts again."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/panel.py
+#, python-brace-format
+msgid "{brick} is running. These change at once: {settings}."
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/panel.py
+#, python-brace-format
+msgid ""
+"{brick} is running. These change at once: {settings}; the rest when it "
+"starts again."
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 #, python-brace-format
@@ -2221,19 +2282,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/bricks/config/qemuconfig.py
 #, python-brace-format
 msgid "Forget every change when {name} stops"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
-#, fuzzy
-msgid "Number of ports:"
-msgstr "Número de CPUs:"
-
-#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
-msgid "Use FSTP"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/switchconfig.py
-msgid "Hub mode"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/switchwrapperconfig.py
@@ -2751,6 +2799,11 @@ msgstr "Arrancar todos los bricks"
 #, fuzzy
 msgid "Stop All"
 msgstr "Parar todos los bricks"
+
+#: virtualbricks/gui/mainwindow/rowtab.py
+#, python-brace-format
+msgid "{setting}: {problem}"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/topology.py
 msgid "Left to Right"

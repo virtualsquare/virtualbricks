@@ -20,20 +20,74 @@
 
 from virtualbricks import bricks
 from virtualbricks.bricks.command import Command, vde_program
+from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.config.schema import Bool, Int, define, field
-from virtualbricks.i18n import _
+from virtualbricks.i18n import N_, _, ngettext
 
 
 @define
 class SwitchConfig(bricks.BrickConfig):
 
-    ports = field(Int(1, 128), default=32, help="Number of ports")
+    ports = field(
+        Int(1, 128),
+        default=32,
+        label=N_("Ports"),
+        help=N_("Number of ports"),
+    )
     hub_mode = field(
-        Bool(), default=False, help="Send every packet to every port, as a hub"
+        Bool(),
+        default=False,
+        label=N_("Hub mode"),
+        help=N_("Send every packet to every port, as a hub"),
     )
     fast_spanning_tree = field(
-        Bool(), default=False, help="Run the fast spanning tree protocol"
+        Bool(),
+        default=False,
+        label=N_("Fast spanning tree"),
+        help=N_("Run the fast spanning tree protocol"),
     )
+
+
+class SwitchDraft(Draft):
+    """The settings of a switch: it needs a port for each plug in it."""
+
+    def plugged(self) -> list:
+        """The bricks plugged into the switch, once each, in their order."""
+
+        bricks = []
+        for plug in self.brick.socks[0].plugs:
+            if plug.brick not in bricks:
+                bricks.append(plug.brick)
+        return bricks
+
+    def needed(self) -> int:
+        return len(self.brick.socks[0].plugs)
+
+    def limits(self, name):
+        low, high = super().limits(name)
+        if name == "ports":
+            low = max(low, self.needed())
+        return low, high
+
+    def note(self, name):
+        needed = self.needed()
+        if name != "ports" or not needed:
+            return ""
+        names = ", ".join(brick.name for brick in self.plugged())
+        return ngettext(
+            "at least {count}: {names} plugs into {switch}",
+            "at least {count}: {names} plug into {switch}",
+            len(self.plugged()),
+        ).format(count=needed, names=names, switch=self.brick.name)
+
+    def check(self):
+        needed = self.needed()
+        if self.settings.ports >= needed:
+            return []
+        text = _("{switch} needs {count} ports, one for each plug").format(
+            switch=self.brick.name, count=needed
+        )
+        return [Problem("ports", text)]
 
 
 class Switch(bricks.Brick):
@@ -42,6 +96,7 @@ class Switch(bricks.Brick):
     summary = "A VDE switch"
     ports_used = 0
     config_factory = SwitchConfig
+    draft_factory = SwitchDraft
 
     def set_name(self, name):
         self._name = name

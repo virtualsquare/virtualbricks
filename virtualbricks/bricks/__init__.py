@@ -38,6 +38,7 @@ from zope.interface import implementer
 
 from virtualbricks import base, errors, interfaces
 from virtualbricks.bricks.command import Prepared
+from virtualbricks.bricks.draft import Draft
 from virtualbricks.config.schema import (
     Ref,
     define,
@@ -272,6 +273,8 @@ class Brick(base.Base):
     _last_status = None
     process_protocol = VDEProcessProtocol
     config_factory = BrickConfig
+    # what the panel of the brick works on
+    draft_factory = Draft
     # What the brick is, the comment of its type in the project file.
     summary = ""
     # How the plugs are saved: "connect", "endpoints", "nics" or None.

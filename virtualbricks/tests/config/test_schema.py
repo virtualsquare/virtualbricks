@@ -38,6 +38,7 @@ from virtualbricks.config.schema import (
     field_default,
     field_names,
     field_values,
+    info_of,
     key_of,
     kind_of,
     load_record,
@@ -326,6 +327,13 @@ class TestFields(unittest.TestCase):
         self.assertEqual(field_default(Machine, "ram"), 64)
         self.assertEqual(field_default(Machine, "tags"), [])
         self.assertRaises(KeyError, field_default, Machine, "nope")
+
+    def test_info_of(self):
+        info = info_of(Machine(), "name")
+        self.assertIsInstance(info.kind, Str)
+        self.assertEqual((info.label, info.help), ("Name", "The name"))
+        self.assertEqual((info_of(Machine, "ram").label), "")
+        self.assertRaises(KeyError, info_of, Machine, "nope")
 
     def test_key_of(self):
         self.assertEqual(key_of(Machine, "ram"), "ram")

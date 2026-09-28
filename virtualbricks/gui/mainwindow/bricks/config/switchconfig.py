@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_switchconfig -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,99 +17,18 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Configuration panel of the Switch brick.
+The panel of a switch: its ports, hub mode and fast spanning tree.
 """
 
-import gi
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
-
+from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
 from virtualbricks.i18n import _
-from virtualbricks.gui.mainwindow.bricks.config.base import ConfigController
 
 
-class SwitchConfigController(ConfigController):
-    """
-    Configuration panel of the Switch brick: number of ports, FSTP and hub
-    mode.
-    """
+class SwitchPanel(Panel):
+    """The settings of a switch."""
 
-    def build_ui(self) -> None:
-        """Create the widgets, formerly in ``switchconfig.ui``."""
-
-        # adjustment1 (Gtk.Adjustment)
-        adjustment1 = Gtk.Adjustment(
-            lower=1,
-            upper=128,
-            value=32,
-            step_increment=1,
-            page_increment=32,
-        )
-
-        # panel (Gtk.Grid)
-        self.panel = Gtk.Grid(
-            visible=True,
-            can_focus=False,
-            row_spacing=2,
-            column_spacing=6,
-        )
-        label2 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Number of ports:"),
-        )
-        self.panel.attach(label2, 0, 0, 1, 2)
-        self.ports_spin = Gtk.SpinButton(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment1,
-        )
-        self.panel.attach(self.ports_spin, 1, 0, 1, 2)
-        self.fstp_check = Gtk.CheckButton(
-            label=_("Use FSTP"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(self.fstp_check, 2, 0, 1, 1)
-        self.hub_check = Gtk.CheckButton(
-            label=_("Hub mode"),
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(self.hub_check, 2, 1, 1, 1)
-
-    def get_root_widget(self) -> Gtk.Grid:
-        return self.panel
-
-    def get_config_view(self, gui):
-        self.fstp_check.set_active(self.original.get("fast_spanning_tree"))
-        self.hub_check.set_active(self.original.get("hub_mode"))
-        minports = len(
-            [
-                1
-                for b in iter(gui.brickfactory.bricks)
-                for p in b.plugs
-                if b.socks and p.sock.nickname == b.socks[0].nickname
-            ]
-        )
-        spinner = self.ports_spin
-        spinner.set_range(max(minports, 1), 128)
-        spinner.set_value(self.original.get("ports"))
-        return self.panel
-
-    def configure_brick(self, gui):
-        cfg = {
-            "fast_spanning_tree": self.fstp_check.get_active(),
-            "hub_mode": self.hub_check.get_active(),
-            "ports": self.ports_spin.get_value_as_int(),
-        }
-        self.original.set(cfg)
+    def build(self, form):
+        form.section(_("Ports"))
+        form.spin("ports")
+        form.switch("hub_mode")
+        form.switch("fast_spanning_tree")

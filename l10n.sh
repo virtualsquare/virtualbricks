@@ -41,6 +41,7 @@ xgettext \
     --output="$DOMAIN.pot" \
     --output-dir="$WORKDIR" \
     --from-code=utf-8 \
+    --keyword=N_ \
     --add-location=file \
     --copyright-holder="Virtualbricks team" \
     --package-name=Virtualbricks \

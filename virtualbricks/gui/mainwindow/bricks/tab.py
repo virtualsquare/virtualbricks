@@ -23,8 +23,8 @@ rows of :mod:`virtualbricks.gui.mainwindow.rowtab`.
 New Brick opens the window that makes a brick. The switch shows all the
 bricks or the running ones, and Start All starts the bricks that can start.
 The menu of a brick is :mod:`virtualbricks.gui.mainwindow.bricks.brickmenu`'s, and
-its settings are its panel of :mod:`virtualbricks.gui.mainwindow.bricks.config`; a router has
-none.
+its settings are its panel of :mod:`virtualbricks.gui.mainwindow.bricks.config`, on a
+draft of the brick if it's one of ``PANELS``; a router has none.
 """
 
 from __future__ import annotations
@@ -45,6 +45,7 @@ from virtualbricks.gui.mainwindow.bricks.brickinfo import State  # noqa: E402
 from virtualbricks.gui.mainwindow.bricks.bricklist import (  # noqa: E402
     BrickList,
 )
+from virtualbricks.gui.mainwindow.bricks.config import new_panel  # noqa: E402
 from virtualbricks.gui.mainwindow.rowtab import (  # noqa: E402
     RowsTab,
     log_failures,
@@ -125,6 +126,9 @@ class BricksTab(RowsTab):
         return brickmenu.popup(widget, event, self.gui, item, True)
 
     def panel_for(self, item):
+        panel = new_panel(item)
+        if panel is not None:
+            return panel
         return IConfigController(item, None)
 
     def settings_words(self, item) -> str:

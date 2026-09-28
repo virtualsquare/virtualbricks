@@ -43,7 +43,6 @@ from virtualbricks.gui.mainwindow.bricks.config import (
     CaptureConfigController,
     NetemuConfigController,
     QemuConfigController,
-    SwitchConfigController,
     SwitchWrapperConfigController,
     TapConfigController,
     TunnelClientConfigController,
@@ -102,10 +101,10 @@ registerAdapter(LinkMenu, Sock, IMenu)
 
 
 def config_panel_factory(context):
+    """The old panels; those on drafts are in PANELS."""
+
     type = context.get_type()
-    if type == "Switch":
-        return SwitchConfigController(context)
-    elif type == "SwitchWrapper":
+    if type == "SwitchWrapper":
         return SwitchWrapperConfigController(context)
     elif type == "Tap":
         return TapConfigController(context)
