@@ -27,6 +27,12 @@ created and whenever a field is assigned.
 The help of a field says what it's for; with the range or the choices of its
 kind and its default, it's the comment above its key in the files, see
 :func:`notes`.
+
+A field can go with another: ``when=("use_vnc", True)`` says that it counts
+only while use_vnc is true, and only while use_vnc counts itself, see
+:func:`why_unused`. The panels grey the fields out of use, the files' comments
+say what each goes with, and the console marks those out of use. A field out
+of use keeps its value.
 """
 
 from __future__ import annotations
@@ -34,6 +40,7 @@ from __future__ import annotations
 import ipaddress
 import re
 from collections.abc import Callable, Collection, Iterator
+from functools import partial
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
 import attr
@@ -73,6 +80,7 @@ __all__ = [
     "parse_value",
     "references",
     "rename_references",
+    "why_unused",
 ]
 
 _KEY = "virtualbricks.config.schema"
@@ -392,6 +400,8 @@ class FieldInfo:
     label: str = attr.field(default="")
     help: str = attr.field(default="")
     path: tuple[str, ...] | None = attr.field(default=None)
+    # the field that this one goes with, and the value it needs
+    when: tuple[str, object] | None = attr.field(default=None)
 
 
 def _validator(
@@ -415,19 +425,22 @@ def field(
     label: str = "",
     help: str = "",
     path: tuple[str, ...] | None = None,
+    when: tuple[str, object] | None = None,
 ) -> T:
     """
     Declare a schema field.
 
     ``path`` is the position of the value in the TOML table when it isn't
     simply the field name, for example ``("disks", "hda", "image")``.
+    ``when`` is the field of the same schema that this one goes with, and the
+    value that field needs for this one to count, as ``("use_vnc", True)``.
     """
 
     field = attr.field(
         default=default,
         factory=factory,
         validator=_validator(kind),
-        metadata={_KEY: FieldInfo(kind, label, help, path)},
+        metadata={_KEY: FieldInfo(kind, label, help, path, when)},
     )
     # in the body of the class, a field stands for its values
     return cast(T, field)
@@ -451,7 +464,10 @@ def _path(attribute: attr.Attribute[object]) -> tuple[str, ...]:
 
 
 def info_of(cls_or_obj: object, name: str) -> FieldInfo:
-    """What the schema says of a field: its kind, its label and its help."""
+    """
+    What the schema says of a field: its kind, its label, its help and what
+    it goes with.
+    """
 
     for attribute in fields(cls_or_obj):
         if attribute.name == name:
@@ -518,10 +534,42 @@ def field_default(cls_or_obj: object, name: str) -> object:
     raise KeyError(name)
 
 
-def _detail(attribute: attr.Attribute[object]) -> str:
-    """The range or the choices of a field and its default, as a note says."""
+def why_unused(
+    obj: object, name: str, get: Callable[[str], object] | None = None
+) -> str | None:
+    """
+    The field that keeps a field out of use, or None if the field is in use.
 
-    kind = field_info(attribute).kind
+    A field is in use unless it goes with another, by its ``when``, and that
+    field hasn't the value it needs or is out of use itself: initrd goes with
+    use_initrd, which goes with use_kernel. The field returned is the first
+    along that chain without the value; a chain that comes back to a field
+    ends there. ``get`` reads the value of a field, getattr() by default.
+    """
+
+    if get is None:
+        get = partial(getattr, obj)
+    seen: set[str] = set()
+    while name not in seen:
+        seen.add(name)
+        when = info_of(obj, name).when
+        if when is None:
+            return None
+        other, value = when
+        if get(other) != value:
+            return other
+        name = other
+    return None
+
+
+def _detail(cls: type[object], attribute: attr.Attribute[object]) -> str:
+    """
+    The range or the choices of a field, its default and what it goes with,
+    as a note says.
+    """
+
+    info = field_info(attribute)
+    kind = info.kind
     parts = [kind.describe()] if kind.describe() else []
     default = _default_of(attribute)
     data = kind.to_data(default)
@@ -530,6 +578,10 @@ def _detail(attribute: attr.Attribute[object]) -> str:
     elif not isinstance(data, (list, dict)):
         # a table, or a list with items, is left out
         parts.append(f"default {kind.format(default)}")
+    if info.when is not None:
+        other, value = info.when
+        needed = kind_of(cls, other).format(value)
+        parts.append(f"used when {key_of(cls, other)} is {needed}")
     return "; ".join(parts)
 
 
@@ -539,9 +591,9 @@ def notes(
     """
     The note of each key of the data of an instance of the schema, by its
     path in the data as :func:`dump_record` writes it: the help of the field,
-    the range or the choices of its kind and its default, and whether the
-    value is the default. The keys inside a record or a list of records have
-    theirs too.
+    the range or the choices of its kind, its default and the key it goes
+    with, and whether the value is the default. The keys inside a record or a
+    list of records have theirs too.
     """
 
     result: dict[tuple[str | int, ...], Note] = {}
@@ -555,7 +607,9 @@ def notes(
             continue
         info = field_info(attribute)
         default = info.kind.to_data(_default_of(attribute))
-        result[path] = Note(info.help, _detail(attribute), value == default)
+        result[path] = Note(
+            info.help, _detail(cls, attribute), value == default
+        )
         for inner, note in info.kind.notes(value).items():
             result[path + inner] = note
     return result

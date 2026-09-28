@@ -81,6 +81,7 @@ class NetemuConfig(bricks.BrickConfig):
         default=125000,
         label=N_("Bandwidth from right to left"),
         help=N_("Bytes per second from right to left"),
+        when=("bandwidth_symmetric", False),
     )
     bandwidth_symmetric = field(
         Bool(),
@@ -102,6 +103,7 @@ class NetemuConfig(bricks.BrickConfig):
         default=0,
         label=N_("Delay from right to left"),
         help=N_("Delay in ms from right to left"),
+        when=("delay_symmetric", False),
     )
     delay_symmetric = field(
         Bool(),
@@ -123,6 +125,7 @@ class NetemuConfig(bricks.BrickConfig):
         default=75000,
         label=N_("Buffer from right to left"),
         help=N_("Channel buffer in bytes from right to left"),
+        when=("buffer_size_symmetric", False),
     )
     buffer_size_symmetric = field(
         Bool(),
@@ -144,6 +147,7 @@ class NetemuConfig(bricks.BrickConfig):
         default=0.0,
         label=N_("Loss from right to left"),
         help=N_("Percentage of packets lost from right to left"),
+        when=("loss_symmetric", False),
     )
     loss_symmetric = field(
         Bool(),
@@ -260,13 +264,6 @@ class NetemuDraft(Draft):
 
     What a state doesn't move to it keeps: its row adds up to 100 at most.
     """
-
-    WITH = {
-        "bandwidth_right_to_left": ("bandwidth_symmetric", False),
-        "delay_right_to_left": ("delay_symmetric", False),
-        "buffer_size_right_to_left": ("buffer_size_symmetric", False),
-        "loss_right_to_left": ("loss_symmetric", False),
-    }
 
     def __init__(self, brick):
         super().__init__(brick)

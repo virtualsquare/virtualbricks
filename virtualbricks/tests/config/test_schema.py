@@ -45,6 +45,7 @@ from virtualbricks.config.schema import (
     notes,
     parse_value,
     rename_references,
+    why_unused,
 )
 from virtualbricks.config.report import Report
 from virtualbricks.config.tomlfile import Note
@@ -579,3 +580,86 @@ class TestNotes(unittest.TestCase):
         self.assertNotIn(("states", 0, "ram"), notes(Emulator, data))
         data = {**dump_record(Emulator()), "states": ["x"]}
         self.assertNotIn(("states", 0, "ram"), notes(Emulator, data))
+
+
+@define
+class Display:
+    """Settings that go with others."""
+
+    headless = field(Bool(), default=False)
+    vnc = field(Bool(), default=False, when=("headless", False))
+    port = field(Int(0, 99), default=1, help="The port", when=("vnc", True))
+    cdrom = field(Choice("none", "image"), default="none")
+    cdrom_image = field(Str(), default="", when=("cdrom", "image"))
+    disk = field(Ref("image"), default="", path=("disks", "hda", "image"))
+    disk_private = field(Bool(), default=False, when=("disk", "deb"))
+    # a chain that comes back
+    left = field(Bool(), default=False, when=("right", True))
+    right = field(Bool(), default=False, when=("left", True))
+
+
+class TestWhen(unittest.TestCase):
+    """The settings that go with others."""
+
+    def test_declared(self):
+        self.assertEqual(info_of(Display, "port").when, ("vnc", True))
+        self.assertIsNone(info_of(Display, "headless").when)
+        self.assertIsNone(info_of(Machine, "ram").when)
+
+    def test_in_use(self):
+        display = Display()
+        # a setting that goes with nothing is always in use
+        self.assertIsNone(why_unused(display, "headless"))
+        self.assertIsNone(why_unused(display, "vnc"))
+        self.assertEqual(why_unused(display, "port"), "vnc")
+        display.vnc = True
+        self.assertIsNone(why_unused(display, "port"))
+        self.assertEqual(why_unused(display, "cdrom_image"), "cdrom")
+        display.cdrom = "image"
+        self.assertIsNone(why_unused(display, "cdrom_image"))
+
+    def test_along(self):
+        # port goes with vnc, which goes with no headless
+        display = Display(vnc=True, headless=True)
+        self.assertEqual(why_unused(display, "vnc"), "headless")
+        self.assertEqual(why_unused(display, "port"), "headless")
+
+    def test_a_chain_that_comes_back(self):
+        display = Display()
+        self.assertEqual(why_unused(display, "left"), "right")
+        display.right = True
+        self.assertEqual(why_unused(display, "left"), "left")
+        display.left = True
+        self.assertIsNone(why_unused(display, "left"))
+        self.assertIsNone(why_unused(display, "right"))
+
+    def test_values_read_elsewhere(self):
+        values = {"headless": False, "vnc": "yes"}
+        self.assertEqual(why_unused(Display, "port", values.get), "vnc")
+        values["vnc"] = True
+        self.assertIsNone(why_unused(Display, "port", values.get))
+
+    def test_not_a_field(self):
+        self.assertRaises(KeyError, why_unused, Display(), "nope")
+
+    def test_notes(self):
+        data = dump_record(Display())
+        result = notes(Display, data)
+        self.assertEqual(
+            result[("port",)],
+            Note("The port", "0-99; default 1; used when vnc is true", True),
+        )
+        self.assertEqual(
+            result[("vnc",)].detail,
+            "default false; used when headless is false",
+        )
+        self.assertEqual(
+            result[("cdrom_image",)].detail,
+            'default empty; used when cdrom is "image"',
+        )
+        # the key of the field it goes with, in the file
+        self.assertEqual(
+            result[("disk_private",)].detail,
+            'default false; used when disks.hda.image is "deb"',
+        )
+        self.assertEqual(result[("headless",)].detail, "default false")

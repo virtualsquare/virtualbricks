@@ -25,7 +25,7 @@ from virtualbricks import console, errors
 from virtualbricks.base import BaseConfig
 from virtualbricks.bricks import BrickConfig
 from virtualbricks.config.report import Report
-from virtualbricks.config.schema import field_names
+from virtualbricks.config.schema import field_names, info_of, kind_of
 from virtualbricks.tests import (
     BrickTestCase,
 )
@@ -84,21 +84,25 @@ class TestBase(BrickTestCase):
         )
 
 
+# The types of bricks.
+KINDS = (
+    "switch",
+    "switchwrapper",
+    "tap",
+    "capture",
+    "wire",
+    "netemu",
+    "tunnellisten",
+    "tunnelconnect",
+    "router",
+    "qemu",
+)
+
+
 class TestSchemas(BrickTestCase):
 
     def test_every_brick_has_the_events(self):
-        for kind in (
-            "switch",
-            "switchwrapper",
-            "tap",
-            "capture",
-            "wire",
-            "netemu",
-            "tunnellisten",
-            "tunnelconnect",
-            "router",
-            "qemu",
-        ):
+        for kind in KINDS:
             brick = self.factory.new_brick(kind, kind + "1")
             self.assertIsInstance(brick.config, BrickConfig)
             self.assertEqual(brick.config.on_start, "")
@@ -113,6 +117,24 @@ class TestSchemas(BrickTestCase):
             self.assertEqual(item.config.icon, "")
         vm.set({"icon": "/usr/share/pixmaps/router.png"})
         self.assertEqual(vm.get("icon"), "/usr/share/pixmaps/router.png")
+
+    def test_what_goes_with_what(self):
+        # a setting goes with another setting of its schema, and a value that
+        # one takes
+        declared = {}
+        items = [self.factory.new_brick(kind, kind + "1") for kind in KINDS]
+        for item in items + [self.factory.new_event("ev")]:
+            names = field_names(item.config)
+            for name in names:
+                when = info_of(item.config, name).when
+                if when is None:
+                    continue
+                other, value = when
+                self.assertIn(other, names, (item.name, name))
+                self.assertNotEqual(other, name)
+                kind_of(item.config, other).check(value)
+                declared[item.name] = declared.get(item.name, 0) + 1
+        self.assertEqual(declared, {"tap1": 3, "netemu1": 4, "qemu1": 13})
 
     def test_limits(self):
         tap = self.factory.new_brick("tap", "tap0")

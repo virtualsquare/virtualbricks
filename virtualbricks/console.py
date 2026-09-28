@@ -25,7 +25,7 @@ from twisted.protocols import basic
 from twisted.logger import Logger
 from zope.interface import implementer
 from virtualbricks import __version__, bricks, errors
-from virtualbricks.config.schema import field_values, kind_of
+from virtualbricks.config.schema import field_values, kind_of, why_unused
 from virtualbricks.config.settings import (
     get_setting,
     has_option,
@@ -208,7 +208,15 @@ class VBProtocol(Protocol):
         elif cmd[0] == "show":
             for name, value in field_values(obj.config).items():
                 kind = kind_of(obj.config, name)
-                self.sendLine("%s = %s" % (name, kind.format(value)))
+                line = "%s = %s" % (name, kind.format(value))
+                other = why_unused(obj.config, name)
+                if other is not None:
+                    # what keeps it out of use, as it is
+                    now = kind_of(obj.config, other).format(
+                        getattr(obj.config, other)
+                    )
+                    line += "  # not used: %s is %s" % (other, now)
+                self.sendLine(line)
         elif cmd[0] == "connect" and len(cmd) == 2:
             if self.connect_to(obj, cmd[1].rstrip("\n")) is not None:
                 logger.info(conn_ok)

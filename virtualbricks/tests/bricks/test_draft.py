@@ -21,6 +21,14 @@ once. The drafts here are those of a switch, without its own checks.
 """
 
 from virtualbricks.bricks.draft import Draft, Problem, apply
+from virtualbricks.bricks.switch import SwitchConfig
+from virtualbricks.config.schema import (
+    Bool,
+    Int,
+    define,
+    field,
+    field_values,
+)
 from virtualbricks.config.settings import set_setting
 from virtualbricks.tests import BrickTestCase
 
@@ -35,13 +43,27 @@ class FakeProcess:
         self.written.append(data)
 
 
+@define
+class HubSettings(SwitchConfig):
+    """The ports of a switch in use as a hub only, and the hub without FSTP."""
+
+    ports = field(Int(1, 128), default=32, when=("hub_mode", True))
+    hub_mode = field(Bool(), default=False, when=("fast_spanning_tree", False))
+
+
+@define
+class LoopSettings(SwitchConfig):
+    """Two settings that go with each other."""
+
+    ports = field(Int(1, 128), default=32, when=("hub_mode", True))
+    hub_mode = field(Bool(), default=False, when=("ports", 32))
+
+
 class HubDraft(Draft):
     """A draft whose settings go with others, and a check of its own."""
 
-    WITH = {
-        "ports": ("hub_mode", True),
-        "hub_mode": ("fast_spanning_tree", False),
-    }
+    def read(self):
+        return HubSettings(**field_values(self.brick.config))
 
     def check(self):
         if self.settings.ports == 13:
@@ -50,9 +72,9 @@ class HubDraft(Draft):
 
 
 class LoopDraft(Draft):
-    """Two settings that go with each other."""
 
-    WITH = {"ports": ("hub_mode", True), "hub_mode": ("ports", 32)}
+    def read(self):
+        return LoopSettings(**field_values(self.brick.config))
 
 
 class DraftTestCase(BrickTestCase):

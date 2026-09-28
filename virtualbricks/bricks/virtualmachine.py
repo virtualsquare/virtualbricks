@@ -746,12 +746,14 @@ class VirtualMachineConfig(bricks.BrickConfig):
         default=False,
         label=N_("KVM shadow memory"),
         help=N_("Set the size of the KVM shadow memory"),
+        when=("use_kvm", True),
     )
     kvm_shadow_memory = field(
         Int(0, 99999),
         default=1,
         label=N_("Shadow memory"),
         help=N_("KVM shadow memory in MiB"),
+        when=("use_kvm_shadow_memory", True),
     )
     # the boot and the disks
     boot_order = field(
@@ -790,12 +792,14 @@ class VirtualMachineConfig(bricks.BrickConfig):
         default="",
         label=N_("Image"),
         help=N_("An image file for the CD-ROM"),
+        when=("cdrom", "image"),
     )
     cdrom_device = field(
         Str(),
         default="",
         label=N_("Drive"),
         help=N_("A CD-ROM drive of the host, as /dev/cdrom"),
+        when=("cdrom", "device"),
     )
     # the display
     headless = field(
@@ -815,18 +819,22 @@ class VirtualMachineConfig(bricks.BrickConfig):
         default=False,
         label=N_("VNC"),
         help=N_("Show the display over VNC"),
+        # no display at all wins over VNC and SDL
+        when=("headless", False),
     )
     vnc_display = field(
         Int(0, 500),
         default=1,
         label=N_("VNC display"),
         help=N_("The VNC display number"),
+        when=("use_vnc", True),
     )
     sdl_window = field(
         Bool(),
         default=False,
         label=N_("SDL window"),
         help=N_("Show the display in an SDL window"),
+        when=("headless", False),
     )
     # sound and USB
     sound_card = field(
@@ -846,6 +854,7 @@ class VirtualMachineConfig(bricks.BrickConfig):
         factory=list,
         label=N_("USB devices"),
         help=N_("USB devices of the host, by vendor and product id"),
+        when=("use_usb", True),
     )
     # the keyboard, the clock and the serial port
     keyboard_layout = field(
@@ -880,22 +889,32 @@ class VirtualMachineConfig(bricks.BrickConfig):
         help=N_("Boot a kernel directly"),
     )
     kernel = field(
-        Path(), default="", label=N_("Kernel"), help=N_("A kernel image")
+        Path(),
+        default="",
+        label=N_("Kernel"),
+        help=N_("A kernel image"),
+        when=("use_kernel", True),
     )
     use_initrd = field(
         Bool(),
         default=False,
         label=N_("Initial ramdisk"),
         help=N_("Load an initial ramdisk with the kernel"),
+        when=("use_kernel", True),
     )
     initrd = field(
-        Path(), default="", label=N_("Ramdisk"), help=N_("An initial ramdisk")
+        Path(),
+        default="",
+        label=N_("Ramdisk"),
+        help=N_("An initial ramdisk"),
+        when=("use_initrd", True),
     )
     kernel_command_line = field(
         Str(),
         default="",
         label=N_("Command line"),
         help=N_("The command line of the kernel"),
+        when=("use_kernel", True),
     )
     use_gdb = field(
         Bool(),
@@ -908,6 +927,7 @@ class VirtualMachineConfig(bricks.BrickConfig):
         default=1234,
         label=N_("GDB port"),
         help=N_("The TCP port for GDB"),
+        when=("use_gdb", True),
     )
     acpi = field(
         Bool(),
@@ -963,23 +983,6 @@ class VirtualMachineDraft(Draft):
     The panel gives the draft the answers of the QEMU program, ``qemu`` and
     ``machine_properties``, when they come; until then nothing lacks.
     """
-
-    WITH = {
-        "kvm_shadow_memory": ("use_kvm_shadow_memory", True),
-        "use_kvm_shadow_memory": ("use_kvm", True),
-        "cdrom_image": ("cdrom", "image"),
-        "cdrom_device": ("cdrom", "device"),
-        # no display at all wins over VNC and SDL
-        "use_vnc": ("headless", False),
-        "vnc_display": ("use_vnc", True),
-        "sdl_window": ("headless", False),
-        "usb_devices": ("use_usb", True),
-        "kernel": ("use_kernel", True),
-        "use_initrd": ("use_kernel", True),
-        "initrd": ("use_initrd", True),
-        "kernel_command_line": ("use_kernel", True),
-        "gdb_port": ("use_gdb", True),
-    }
 
     def __init__(self, brick):
         super().__init__(brick)

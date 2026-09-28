@@ -34,21 +34,21 @@ for a plug in nothing; ``sockets()`` are those a plug can join. ``apply()``
 moves the plugs whose socket changed. What a brick has beyond its record, as
 the states of a Netemu, its draft gives it in ``apply_extras()``.
 
-A draft also says which settings are in use: a setting of ``WITH`` is in use
-while the setting it goes with has the value it needs. A brick that checks
-its settings against each other, or against the project, has a draft of its
-own, in its module, with ``check()``, ``limits()`` and ``note()``.
+A draft also says which settings are in use, as the schema of the settings
+declares with ``when``, from the values in the draft. A brick that checks its
+settings against each other, or against the project, has a draft of its own,
+in its module, with ``check()``, ``limits()`` and ``note()``.
 
 Nothing here imports GTK.
 """
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any
 
 import attr
 
-from virtualbricks.config.schema import field_names, kind_of
+from virtualbricks.config.schema import field_names, kind_of, why_unused
 from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
 
@@ -75,9 +75,6 @@ class Problem:
 
 class Draft:
     """The settings of a brick as its panel shows them, until OK."""
-
-    # a setting, and the setting and the value that it goes with
-    WITH: ClassVar[dict[str, tuple[str, object]]] = {}
 
     def __init__(self, brick: Any) -> None:
         # a brick, an event or an image
@@ -128,16 +125,14 @@ class Draft:
             self.refused.pop(name, None)
 
     def uses(self, name: str) -> bool:
-        """Whether a setting is in use: what it goes with has its value."""
+        """
+        Whether a setting is in use: what it goes with has its value, as
+        typed. What isn't a setting, as a plug, is always in use.
+        """
 
-        seen = set()
-        while name in self.WITH and name not in seen:
-            seen.add(name)
-            other, value = self.WITH[name]
-            if self.get(other) != value:
-                return False
-            name = other
-        return True
+        if name not in field_names(self.settings):
+            return True
+        return why_unused(self.settings, name, self.get) is None
 
     def limits(self, name: str) -> tuple[Any, Any]:
         """The lowest and the highest value of a number, None for no limit."""

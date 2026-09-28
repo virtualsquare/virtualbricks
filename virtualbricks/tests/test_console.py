@@ -38,6 +38,21 @@ class TestConsole(BrickTestCase):
         self.assertIn("ports = 32", self.lines)
         self.assertIn('on_start = ""', self.lines)
 
+    def test_show_what_is_not_used(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        vm.set({"use_vnc": True, "headless": True, "cdrom": "device"})
+        self.protocol.brick_action(vm, ["show"])
+        # what keeps each out of use, along the chain for vnc_display
+        for line in (
+            "headless = true",
+            "use_vnc = true  # not used: headless is true",
+            "vnc_display = 1  # not used: headless is true",
+            'cdrom_image = ""  # not used: cdrom is "device"',
+            'cdrom_device = ""',
+            "gdb_port = 1234  # not used: use_gdb is false",
+        ):
+            self.assertIn(line, self.lines)
+
     def test_config(self):
         switch = self.factory.new_brick("switch", "sw")
         self.protocol.brick_action(switch, ["config", "ports=4"])

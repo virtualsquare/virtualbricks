@@ -40,29 +40,26 @@ class TapConfig(bricks.BrickConfig):
         default="10.0.0.1",
         label=N_("IP address"),
         help=N_("The address of the interface, when it's set by hand"),
+        when=("address_mode", "manual"),
     )
     netmask = field(
         IPv4(),
         default="255.255.255.0",
         label=N_("Netmask"),
         help=N_("The netmask, when the address is set by hand"),
+        when=("address_mode", "manual"),
     )
     gateway = field(
         IPv4(optional=True),
         default="",
         label=N_("Gateway"),
         help=N_("The default gateway; empty for none"),
+        when=("address_mode", "manual"),
     )
 
 
 class TapDraft(Draft):
     """The settings of a tap: its addresses, when they are set by hand."""
-
-    WITH = {
-        "ip_address": ("address_mode", "manual"),
-        "netmask": ("address_mode", "manual"),
-        "gateway": ("address_mode", "manual"),
-    }
 
     def note(self, name):
         if name == "address_mode" and self.settings.address_mode != "off":

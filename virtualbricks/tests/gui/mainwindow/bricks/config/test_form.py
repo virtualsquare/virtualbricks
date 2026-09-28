@@ -18,7 +18,8 @@
 """The rows of a panel: what they show of a draft, and what they write."""
 
 from virtualbricks.bricks.draft import Draft, Problem
-from virtualbricks.bricks.switch import SwitchDraft
+from virtualbricks.bricks.switch import SwitchConfig, SwitchDraft
+from virtualbricks.config.schema import Int, define, field, field_values
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 
 if has_display:
@@ -28,10 +29,23 @@ if has_display:
     from virtualbricks.gui.mainwindow.bricks.config.form import Form
 
 
+@define
+class HubSettings(SwitchConfig):
+
+    ports = field(
+        Int(1, 128),
+        default=32,
+        label="Ports",
+        help="Number of ports",
+        when=("hub_mode", True),
+    )
+
+
 class HubDraft(SwitchDraft):
     """The ports of a switch in use only as a hub; a check of its own."""
 
-    WITH = {"ports": ("hub_mode", True)}
+    def read(self):
+        return HubSettings(**field_values(self.brick.config))
 
     def check(self):
         problems = super().check()

@@ -97,10 +97,13 @@ hub_mode = false  # default
 ```
 
 The mark compares the value with the default when the file is written, so a
-value you set to its default is marked too. The keys that belong to the
-layout of the file, as **format**, **type** and the connections, have a
-comment and never the mark; tables have none. The comments are in English,
-and at most 79 columns wide.
+value you set to its default is marked too. A key that counts only while
+another key has a given value says so last in the parentheses, as
+**(0-500; default 1; used when use_vnc is true)**: otherwise the brick does
+without it, and the key keeps its value. The keys that belong to the layout
+of the file, as **format**, **type** and the connections, have a comment and
+never the mark; tables have none. The comments are in English, and at most 79
+columns wide.
 
 ## Names
 
