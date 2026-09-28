@@ -34,6 +34,11 @@ if has_display:
     )
 
 
+def run_idle_calls():
+    while Gtk.events_pending():
+        Gtk.main_iteration()
+
+
 class FakeProcess:
     pid = 41301
 
@@ -324,11 +329,15 @@ class TestTheRows(BrickListTestCase):
         popover.popdown()
         popover.emit("closed")
         self.assertIsNone(row.popover)
+        # later: GTK still uses it after "closed"
+        self.assertEqual(destroyed, [])
+        run_idle_calls()
         self.assertEqual(destroyed, [popover])
         opened = row.open_menu()
         self.assertIs(opened, row.popover)
         self.assertIsNot(opened, popover)
         row.popover.emit("closed")
+        run_idle_calls()
 
     def test_the_selected_brick(self):
         self.assertIsNone(self.list.selected())

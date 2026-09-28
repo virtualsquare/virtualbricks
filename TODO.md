@@ -1,10 +1,5 @@
 # TODO
 
-## Bugs
-
-- [ ] Fix the segmentation fault of an action called from the popover
-  menu of a brick or an event
-
 ## Config
 
 - [ ] Move the lock into `$XDG_RUNTIME_DIR`, one per user, next to the
@@ -162,6 +157,10 @@
 
 ## Done
 
+- [x] Fix the segmentation fault of an action called from the popover
+  menu of a brick or an event (and of a disk image, the same row): the
+  row destroyed the popover in its "closed", which GTK emits in the middle
+  of a click on an item; now it destroys it once idle
 - [x] Redesign the configuration panels of the bricks: drafts between
   the panels and the bricks, rows from the schemas, the virtual
   machine's panel on the answers of its QEMU, `widgets.py` gone

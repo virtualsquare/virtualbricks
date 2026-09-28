@@ -344,7 +344,10 @@ class Row(Gtk.ListBoxRow):
     def on_menu_closed(self, popover) -> None:
         if popover is self.popover:
             self.popover = None
-        popover.destroy()
+        # later: GTK still uses the popover after "closed", and a click on
+        # an item runs its action after it; destroyed now, the popover is
+        # freed under GTK, and the action lost
+        GLib.idle_add(popover.destroy)
 
 
 class RowList(Gtk.ListBox):
