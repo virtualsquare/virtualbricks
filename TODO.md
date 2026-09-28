@@ -18,6 +18,9 @@
 - [ ] Move `locations` into `config` (maybe)
 - [ ] Drop the `log_link_loops` setting, maybe: a loop always stops a
   start (10 §13)
+- [ ] Declare on the schema's fields which settings go with others,
+  `field(..., when=("use_vnc", True))`, for the panels, the files'
+  comments and the console (11 §11, P9 C)
 
 ## Projects
 
@@ -49,15 +52,19 @@
   its singular and plural are the same text
 - [ ] Delete `gui/mainwindow/bricks/config/networkcards.py`: nothing
   uses it since the Glade conversion (01.2 §7)
+- [ ] Move the event editor and the image details onto drafts, so that
+  `ConfigController` goes (11 §11)
 
 ## Bricks and programs
 
 - [ ] Redesign the configuration panels, starting with the virtual
   machine's, on the help texts of the schemas (07 §10, 10 §13)
+  - plan: `docs/redesign/11 - panels-redesign.html`, every decision
+    made; the work is on the branch `mg/brick-panels`
 - [ ] Give the router settings and a panel: it has neither (07 §10,
-  10 §13)
+  10 §13, 11 §11)
 - [ ] Decide how an icon is chosen for any brick or event, and where it
-  shows (10 §13)
+  shows (10 §13, 11 §11)
 - [ ] Select several bricks to start, stop or delete them at once
   (07 §10)
 - [ ] Disconnect a brick from its menu: today only its panel does it
@@ -66,15 +73,21 @@
   (07 §10)
 - [ ] Set a tap's address after its process starts, through sudo:
   `address_mode`, `ip_address`, `netmask` and `gateway`; today nothing
-  does (10 §13)
+  does (10 §13, 11 §11)
 - [ ] Show readable values where QEMU's are cryptic: `boot_order` as
   disk, CD-ROM or floppy (10 §13)
 - [ ] Declare which settings a running brick takes without a restart,
-  in place of the `cbset_<name>` methods (10 §13)
+  in place of the `cbset_<name>` methods (10 §13, 11 §11)
   - the switch's ports, hub mode and FSTP, all of Netemu, a machine's
     USB devices
 - [ ] Keep notes of your own on a brick: a key, shown in its panel and
-  above its table (10 §13)
+  above its table (10 §13, 11 §11)
+- [ ] Check every value in `brick.set()` before assigning any, for the
+  console too (11 §11)
+- [ ] Offer HDA sound: a controller and its codec together, which no
+  single entry of the sound cards can start (11 §11)
+- [ ] Show the command line of a machine as it would start, in the
+  Advanced section of its panel (11 §11)
 - [ ] Add a Programs window: each program found, its version, what it
   lacks and the packages to install (10 §13)
 - [ ] Ask QEMU for other architectures the same way; only
