@@ -74,6 +74,7 @@
   lacks and the packages to install (10 §13)
 - [ ] Ask QEMU for other architectures the same way; only
   qemu-system-x86 is recorded (10 §13)
+- [ ] Support Wirefilter along Netemu
 
 ## Events
 
