@@ -624,8 +624,8 @@ class TestSuspendAndResume(BrickMenuTestCase):
         self.done = []
         self.vm.send = lambda data: self.done.append(data)
         self.vm.poweroff = lambda: defer.succeed(self.done.append("off"))
-        self.vm.poweron = lambda snapshot: defer.succeed(
-            self.done.append(("on", snapshot))
+        self.vm.poweron = lambda resume="": defer.succeed(
+            self.done.append(("on", resume))
         )
         self.disk = FakeDisk(image=FakeImage("/lab/vm.qcow2"))
         self.vm.disk = lambda name: self.disk if name == "hda" else None

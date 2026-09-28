@@ -305,6 +305,8 @@ class TestFixtures(ConvertTestCase):
                 ".project:2: [Project:/home/user/.virtualbricks.vbl] older "
                 "project metadata, dropped",
                 ".project:4: [DiskImage:vtatpa.qcow2] became an image",
+                ".project:8: [Qemu:test1] loadvm: a machine resumes when it's "
+                "started so, not by a key, dropped",
                 ".project:55: [Qemu:test1] name: it repeats the brick name, "
                 "dropped",
                 ".project:62: [SwitchWrapper:sw1] numports: a switch wrapper "

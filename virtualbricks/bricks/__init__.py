@@ -283,7 +283,20 @@ class Brick(base.Base):
 
     # IBrick interface
 
-    def poweron(self):
+    def poweron(self, resume=""):
+        """
+        Start the brick, in stages.
+
+        A brick that isn't configured or connected is refused. The bricks it
+        plugs into start first, and a loop is refused. Then prepare() gathers
+        what the command line needs, command() writes it, and spawn() starts
+        the program; once it runs, the event of the brick's start runs.
+
+        resume is the saved state that a virtual machine starts from; the
+        other bricks have none. Return a Deferred that fires with the brick
+        once its program runs.
+        """
+
         if self.proc is not None:
             return defer.succeed(self)
 
@@ -303,7 +316,9 @@ class Brick(base.Base):
         self._started_d = started = defer.Deferred()
         self._exited_d = defer.Deferred()
         d = self._check_links()
-        d.addCallback(self._poweron)
+        d.addCallback(lambda _: self.prepare(resume))
+        d.addCallback(self.command)
+        d.addCallback(self.spawn)
 
         def start_related_events(_):
             self._start_related_events(on=True)
@@ -392,11 +407,11 @@ class Brick(base.Base):
             deferreds, fireOnOneErrback=True, consumeErrors=True
         )
 
-    def prepare(self):
+    def prepare(self, resume=""):
         """
         Gather what the command line needs: here, the VDE programs.
 
-        Return a Deferred of a Prepared.
+        Return a Deferred of a Prepared. resume is for a virtual machine.
         """
 
         deferred = programs.vde(get_setting("vdepath"))
@@ -407,22 +422,22 @@ class Brick(base.Base):
 
         raise NotImplementedError("Brick.command")
 
-    def _poweron(self, ignore):
+    def spawn(self, command):
+        """
+        Start the program of a Command.
 
-        def start_process(command):
-            for warning in command.warnings:
-                self.logger.warn(left_out, warning=warning)
-            args = command.argv
-            self.logger.info(start_brick, args=" ".join(args))
-            if self.needsudo():
-                args = sudo_command(args)
-            self.proc = self.process_protocol(self)
-            reactor.spawnProcess(self.proc, args[0], args, os.environ)
+        Its warnings and the command are logged, and a brick that needs root
+        runs its program through sudo.
+        """
 
-        d = defer.maybeDeferred(self.prepare)
-        d.addCallback(self.command)
-        d.addCallback(start_process)
-        return d
+        for warning in command.warnings:
+            self.logger.warn(left_out, warning=warning)
+        args = command.argv
+        self.logger.info(start_brick, args=" ".join(args))
+        if self.needsudo():
+            args = sudo_command(args)
+        self.proc = self.process_protocol(self)
+        reactor.spawnProcess(self.proc, args[0], args, os.environ)
 
     def _start_related_events(self, on=True, off=False):
         if on and self.config.pon_vbevent:

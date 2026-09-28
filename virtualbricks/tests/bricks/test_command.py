@@ -27,8 +27,8 @@ import os
 
 import attr
 
-from virtualbricks import bricks
-from virtualbricks.bricks import tunnellisten, virtualmachine
+from virtualbricks import bricks, errors
+from virtualbricks.bricks import virtualmachine
 from virtualbricks.bricks.command import (
     Command,
     Prepared,
@@ -71,7 +71,9 @@ def prepared_vde(target="debian-13", **programs):
     )
 
 
-def prepared_qemu(target="debian-13", disks=(), driver="alsa", **changes):
+def prepared_qemu(
+    target="debian-13", disks=(), driver="alsa", resume="", **changes
+):
     qemu = attr.evolve(recorded_info(target), **changes)
     pc = load(target)["qemu"]["machines"]["pc"]["out"]
     return Prepared(
@@ -79,6 +81,7 @@ def prepared_qemu(target="debian-13", disks=(), driver="alsa", **changes):
         machine_properties=parse_machine_properties(pc),
         disks=disks,
         audio_driver=driver,
+        resume=resume,
     )
 
 
@@ -210,18 +213,18 @@ class TestVdeBricks(LinesTestCase):
         tl2 = self.brick("tunnellisten", "tl2", self.sw2, port=7700)
         self.assertLine(
             tl1,
-            ["/usr/bin/vde_cryptcab", "-P", "/tmp/tunnel_tl1.key"]
+            ["/usr/bin/vde_cryptcab", "-P", f"{RUN}/tl1.key"]
             + ["-s", f"{RUN}/sw1.ctl", "-p", "7667"],
         )
         self.assertLine(
             tl2,
-            ["/usr/bin/vde_cryptcab", "-P", "/tmp/tunnel_tl2.key"]
+            ["/usr/bin/vde_cryptcab", "-P", f"{RUN}/tl2.key"]
             + ["-s", f"{RUN}/sw2.ctl", "-p", "7700"],
         )
         tc1 = self.brick("tunnelconnect", "tc1", self.sw2, host="example.org")
         self.assertLine(
             tc1,
-            ["/usr/bin/vde_cryptcab", "-P", "/tmp/tunnel_tc1.key"]
+            ["/usr/bin/vde_cryptcab", "-P", f"{RUN}/tc1.key"]
             + [
                 "-s",
                 f"{RUN}/sw2.ctl",
@@ -359,7 +362,6 @@ class TestMachine(LinesTestCase):
                 "sdl": True,
                 "portrait": True,
                 "noacpi": "*",
-                "loadvm": "snap1",
                 "novga": True,
                 "kernelenbl": True,
                 "kernel": "/boot/k",
@@ -399,7 +401,7 @@ class TestMachine(LinesTestCase):
     def test_every_option(self):
         vm = self.machine()
         for target, facts in TARGETS.items():
-            prepared = prepared_qemu(target)
+            prepared = prepared_qemu(target, resume="snap1")
             argv, warnings = self.line(vm, prepared)
             expected_warnings = []
             portrait = []
@@ -644,14 +646,21 @@ class TestPrepare(CommandTestCase):
         self.assertIsNone(prepared.qemu)
 
     def test_tunnel_key(self):
-        commands = []
-        self.patch(tunnellisten.os, "system", commands.append)
         listen = self.factory.new_brick("tunnellisten", "tl")
         listen.set({"password": "secret"})
         self.successResultOf(listen.prepare())
-        self.assertEqual(
-            commands, ["echo secret | sha1sum >/tmp/tunnel_tl.key && sync"]
-        )
+        path = os.path.join(self.factory.runtime_dir, "tl.key")
+        self.assertEqual(listen.key_path(), path)
+        with open(path, "rb") as fp:
+            self.assertEqual(
+                fp.read(), b"fc683cd9ed1990ca2ea10b84e5e6fba048c24929  -\n"
+            )
+
+    def test_resume(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        self.assertEqual(self.successResultOf(vm.prepare()).resume, "")
+        prepared = self.successResultOf(vm.prepare("virtualbricks"))
+        self.assertEqual(prepared.resume, "virtualbricks")
 
     def test_machine(self):
         set_setting("audio_driver", "pipewire")
@@ -771,3 +780,41 @@ class TestStart(CommandTestCase):
         failure = self.failureResultOf(router.poweron())
         failure.trap(ProgramError)
         self.assertEqual(self.reactor.spawned, [])
+
+    def test_resume(self):
+        self.patch(virtualmachine, "programs", bricks.programs)
+        vm = self.factory.new_brick("qemu", "vm")
+        locks = []
+        vm.acquire = lambda: locks.append("acquire")
+        started = vm.poweron(resume="virtualbricks")
+        [(_, args)] = self.reactor.spawned
+        self.assertEqual(args[args.index("-loadvm") + 1], "virtualbricks")
+        # running already: nothing more starts, and nothing is locked again
+        self.assertIs(self.successResultOf(vm.poweron()), vm)
+        self.assertNoResult(started)
+        self.assertEqual(len(self.reactor.spawned), 1)
+        self.assertEqual(locks, [])
+
+    def test_machine_not_configured(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        vm.add_plug(None, "52:54:00:00:00:01", "e1000")
+        failure = self.failureResultOf(vm.poweron())
+        failure.trap(errors.BadConfigError)
+        self.assertEqual(self.reactor.spawned, [])
+
+    def test_spawn_a_command(self):
+        sw = self.factory.new_brick("switch", "sw")
+        sw.logger = FakeLogger()
+        command = Command("/usr/bin/vde_switch")
+        command.option("-n", 8)
+        command.warn("sw: left out")
+        sw.spawn(command)
+        self.assertEqual(
+            self.reactor.spawned,
+            [("/usr/bin/vde_switch", ["/usr/bin/vde_switch", "-n", "8"])],
+        )
+        self.assertEqual(
+            sw.logger.formatted(),
+            ["sw: left out", "Starting: /usr/bin/vde_switch -n 8"],
+        )
+        self.assertIsNotNone(sw.proc)

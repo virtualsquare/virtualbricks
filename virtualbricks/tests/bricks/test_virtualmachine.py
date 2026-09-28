@@ -156,20 +156,24 @@ class TestRunning(CommandTestCase):
         )
         self.assertEqual(sent, [b"usb_add host:046d:c52b\n"])
 
-    def test_power_on_a_snapshot(self):
+    def test_power_on_to_resume(self):
         vm = self.factory.new_brick("qemu", "vm")
         started = defer.Deferred()
         seen = []
 
-        def poweron(brick):
-            seen.append(brick.config.loadvm)
+        def poweron(brick, resume=""):
+            seen.append(resume)
             brick._exited_d = defer.Deferred()
             return started
 
         self.patch(bricks.Brick, "poweron", poweron)
-        vm.acquire = vm.release = lambda: None
-        d = vm.poweron("snap1")
+        locks = []
+        vm.acquire = lambda: locks.append("acquire")
+        vm.release = lambda: locks.append("release")
+        d = vm.poweron(resume="snap1")
         self.assertEqual(seen, ["snap1"])
+        self.assertFalse(hasattr(vm.config, "loadvm"))
         started.callback(vm)
         self.successResultOf(d)
-        self.assertEqual(vm.config.loadvm, "")
+        vm._exited_d.callback(None)
+        self.assertEqual(locks, ["acquire", "release"])

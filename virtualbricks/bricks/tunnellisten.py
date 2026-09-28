@@ -17,9 +17,8 @@
 
 """A tunnel server: vde_cryptcab, listening for a tunnel client."""
 
+import hashlib
 import os
-
-from twisted.logger import Logger
 
 from virtualbricks import bricks
 from virtualbricks.bricks.command import Command, socket_path, vde_program
@@ -27,8 +26,32 @@ from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import _
 
-logger = Logger()
-pwdgen_exit = "Command pwdgen exited with {code}"
+
+def tunnel_key(password):
+    """
+    The key of a tunnel, made from its password.
+
+    It's what "echo PASSWORD | sha1sum" writes, as Virtualbricks made it
+    before, so that both ends of a tunnel agree even when one of them runs an
+    older version: the SHA-1 of the password and a newline, in hex, then two
+    spaces, a dash and a newline. That shell command changed some passwords
+    before it read them, as one with quotes, backslashes, a dollar or spaces
+    in a row: with those, the two ends agree only if both run this version.
+    """
+
+    digest = hashlib.sha1(f"{password}\n".encode()).hexdigest()
+    return f"{digest}  -\n".encode()
+
+
+def write_key(path, password):
+    """Write the key of a tunnel to path, readable by its owner only."""
+
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    # a file that was there keeps its mode through O_CREAT
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "wb") as fp:
+        fp.write(tunnel_key(password))
 
 
 @define
@@ -65,22 +88,20 @@ class TunnelListen(bricks.Brick):
         return bool(self.plugs[0].sock)
 
     def key_path(self):
-        return "/tmp/tunnel_%s.key" % self.name
+        """The key of the tunnel, in the runtime folder."""
 
-    def prepare(self):
-        deferred = bricks.Brick.prepare(self)
+        return self.runtime_path(f"{self.name}.key")
 
-        def write_key(prepared):
-            # TODO: port to utils.getProcessOutput
-            pwdgen = "echo %s | sha1sum >%s && sync" % (
-                self.config.password,
-                self.key_path(),
-            )
-            exitstatus = os.system(pwdgen)
-            logger.info(pwdgen_exit, code=exitstatus)
+    def prepare(self, resume=""):
+        """The VDE programs, and the key of the tunnel written."""
+
+        deferred = bricks.Brick.prepare(self, resume)
+
+        def key(prepared):
+            write_key(self.key_path(), self.config.password)
             return prepared
 
-        return deferred.addCallback(write_key)
+        return deferred.addCallback(key)
 
     def command(self, prepared):
         cmd = Command(vde_program(prepared.vde, "vde_cryptcab"))
@@ -88,7 +109,3 @@ class TunnelListen(bricks.Brick):
         cmd.option("-s", socket_path(self.plugs[0]))
         cmd.option("-p", self.config.port)
         return cmd
-
-    # def post_poweroff(self):
-    #    os.unlink("/tmp/tunnel_%s.key" % self.name)
-    #    pass

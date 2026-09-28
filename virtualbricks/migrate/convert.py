@@ -85,7 +85,10 @@ DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
 # Keys that older versions wrote with another name.
 RENAMED_KEYS = {"qemu": {f"base{dev}": dev for dev in DISK_DEVICES}}
 DROPPED_KEYS = {
-    "qemu": {"name": "it repeats the brick name"},
+    "qemu": {
+        "name": "it repeats the brick name",
+        "loadvm": "a machine resumes when it's started so, not by a key",
+    },
     "router": {"name": "it repeats the brick name"},
     "switchwrapper": {"numports": "a switch wrapper has no ports of its own"},
 }

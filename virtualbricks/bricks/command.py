@@ -108,3 +108,5 @@ class Prepared:
     # the disks of a virtual machine, (device, path), in the order of devices
     disks: tuple[tuple[str, str], ...] = ()
     audio_driver: str = ""
+    # the saved state that a virtual machine starts from, if any
+    resume: str = ""

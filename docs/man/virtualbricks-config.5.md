@@ -451,10 +451,6 @@ default in its place.
 :   **"\*"** disables ACPI: **-machine acpi=off**, or **-no-acpi** for a
     machine type without that property.
 
-**loadvm** = *string*, default `""`
-:   A saved state to resume the machine from: **-loadvm**. Virtualbricks sets
-    it while it resumes a machine; leave it empty.
-
 **icon** = *path*, default `""`
 :   An image file that shows the machine in the main window.
 

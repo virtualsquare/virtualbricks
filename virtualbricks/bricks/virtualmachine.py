@@ -690,7 +690,6 @@ class VirtualMachineConfig(bricks.BrickConfig):
     # others
     noacpi = field(Str(), default="")
     stdout = field(Str(), default="")
-    loadvm = field(Str(), default="")
     # the disks, one per device of DISK_DEVICES, in the same order
     hda = _image("hda")
     privatehda = _private("hda")
@@ -766,7 +765,16 @@ class VirtualMachine(bricks.Brick):
                 path.rename(project_path.joinpath(new_disk_name))
         return prev_name
 
-    def poweron(self, snapshot=""):
+    def poweron(self, resume=""):
+        """
+        Start the machine, from the saved state resume if given.
+
+        The images of its disks are locked while it runs.
+        """
+
+        if self.proc is not None:
+            return defer.succeed(self)
+
         def acquire(passthru):
             self.acquire()
             return passthru
@@ -775,14 +783,11 @@ class VirtualMachine(bricks.Brick):
             self.release()
             return passthru
 
-        def clear_snapshot(passthru):
-            self.config.loadvm = ""
-            return passthru
-
-        self.config.loadvm = snapshot
-        d = bricks.Brick.poweron(self)
-        d.addCallback(acquire).addBoth(clear_snapshot)
-        self._exited_d.addBoth(release)
+        d = bricks.Brick.poweron(self, resume)
+        # a machine refused, as one not configured, has nothing to release
+        if self._exited_d is not None:
+            d.addCallback(acquire)
+            self._exited_d.addBoth(release)
         return d
 
     def poweroff(self, kill=False, term=False):
@@ -828,7 +833,7 @@ class VirtualMachine(bricks.Brick):
 
         return abspath_qemu(self.config.argv0 or self.default_arg0)
 
-    def prepare(self):
+    def prepare(self, resume=""):
         """
         Ask the QEMU program what it has, and make sure of the disks.
 
@@ -858,6 +863,7 @@ class VirtualMachine(bricks.Brick):
                 machine_properties=properties,
                 disks=tuple((disk.device, p) for disk, p in zip(disks, paths)),
                 audio_driver=get_setting("audio_driver"),
+                resume=resume,
             )
 
         deferred = defer.gatherResults(
@@ -942,7 +948,7 @@ class VirtualMachine(bricks.Brick):
                 cmd.arg("-portrait")
             else:
                 cmd.warn(f"{version} can't rotate the display (portrait)")
-        cmd.option("-loadvm", config.loadvm)
+        cmd.option("-loadvm", prepared.resume)
         if config.novga:
             cmd.option("-display", "none")
         for device, path in prepared.disks:

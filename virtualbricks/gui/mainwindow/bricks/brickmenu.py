@@ -390,7 +390,7 @@ def resume(vm) -> defer.Deferred:
         if vm.proc is not None:
             vm.send(f"loadvm {SNAPSHOT}\n".encode())
         else:
-            return vm.poweron(SNAPSHOT)
+            return vm.poweron(resume=SNAPSHOT)
 
     def failed(failure):
         logger.failure(snapshot_error, failure)

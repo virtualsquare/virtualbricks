@@ -440,6 +440,12 @@ class FakeRun:
         }
         for machine, answer in data["qemu"]["machines"].items():
             self.answers[machine_question(machine)] = Answer(**answer)
+        # the default machine is one of the pc machines
+        default = qemu_info("", answers(data["qemu"]["answers"]))
+        self.answers.setdefault(
+            machine_question(default.default_machine),
+            self.answers[machine_question("pc")],
+        )
         for name, answer in data["vde"]["answers"].items():
             self.answers[(name,) + VDE_QUESTIONS[name]] = Answer(**answer)
         # no target ships vde-netemu, a fork of wirefilter with its help
