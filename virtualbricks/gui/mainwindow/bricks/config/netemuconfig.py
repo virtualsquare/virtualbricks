@@ -1,3 +1,4 @@
+# -*- test-case-name: virtualbricks.tests.gui.mainwindow.bricks.config.test_netemuconfig -*-
 # Virtualbricks - a vde/qemu gui written in python and GTK/Glade.
 # Copyright (C) 2019 Virtualbricks team
 
@@ -16,924 +17,261 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-Configuration panel of the Netemu brick.
-"""
+The panel of a Netemu: its two ends; its states, a list, and the values of
+the one selected; and the chances of moving between the states, at each
+period, a row for each.
 
-from copy import deepcopy
+A value goes from left to right, or both ways; the one from right to left
+greys out while it's the same both ways. What a state doesn't move to, it
+keeps: the grid shows it, and a row that adds up to more than 100 % is an
+error.
+"""
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango  # noqa: E402
 
-from virtualbricks.gui import help, widgets
-from virtualbricks.i18n import _
-from virtualbricks.gui.mainwindow.bricks.config.base import (
-    ConfigController,
-    StateManager,
-    _PlugMixin,
-)
+from virtualbricks.gui.mainwindow.bricks.config.form import (
+    HIGHEST,
+)  # noqa: E402
+from virtualbricks.gui.mainwindow.bricks.config.panel import (
+    Panel,
+)  # noqa: E402
+from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
+from virtualbricks.i18n import _  # noqa: E402
+
+# Around the texts of a state, and between the cells of the grid, in pixels.
+GAP = 6
 
 
-class NetemuConfigController(_PlugMixin, ConfigController):
-    """
-    Configuration panel of the Netemu brick: buffer size, delay, loss and
-    bandwidth of both directions, and the states of the Markov chain with their
-    transition weights.
-    """
+def summary(state) -> str:
+    """What a state does, in a line."""
 
-    state_manager = None
-    help = help.Help()
-    config_to_checkbutton_mapping = (
-        ("buffer_size_symmetric", "chanbufsize_check"),
-        ("delay_symmetric", "delay_check"),
-        ("loss_symmetric", "loss_check"),
-        ("bandwidth_symmetric", "bandwidth_check"),
-    )
-    config_to_spinint_mapping = (
-        ("buffer_size_right_to_left", "chanbufsizer_spin"),
-        ("buffer_size", "chanbufsize_spin"),
-        ("delay_right_to_left", "delayr_spin"),
-        ("delay", "delay_spin"),
-        ("bandwidth_right_to_left", "bandwidthr_spin"),
-        ("bandwidth", "bandwidth_spin"),
-    )
-    config_to_spinfloat_mapping = (
-        ("loss_right_to_left", "lossr_spin"),
-        ("loss", "loss_spin"),
-    )
-    help_buttons = (
-        "chanbufsize_help_button",
-        "delay_help_button",
-        "loss_help_button",
-        "bandwidth_help_button",
+    return _("{bandwidth} bytes/s · {delay} ms · {loss:g} % lost").format(
+        bandwidth=state.bandwidth, delay=state.delay, loss=state.loss
     )
 
-    def build_ui(self) -> None:
-        """Create the widgets, formerly in ``netemuconfig.ui``."""
 
-        # adjustment1 (Gtk.Adjustment)
-        adjustment1 = Gtk.Adjustment(
-            upper=1073741824,
-            value=75000,
-            step_increment=1000,
-            page_increment=10000,
-        )
+def _bold(text: str) -> Gtk.Label:
+    return Gtk.Label(
+        visible=True,
+        xalign=0.0,
+        label=text,
+        attributes=pango_attr_list(Pango.attr_weight_new(Pango.Weight.BOLD)),
+    )
 
-        # adjustment2 (Gtk.Adjustment)
-        adjustment2 = Gtk.Adjustment(
-            upper=1073741824,
-            value=75000,
-            step_increment=1000,
-            page_increment=10000,
-        )
 
-        # adjustment3 (Gtk.Adjustment)
-        adjustment3 = Gtk.Adjustment(
-            upper=1073741824,
-            step_increment=10,
-            page_increment=100,
-        )
+class StateRow(Gtk.ListBoxRow):
+    """A state in the list: its name, and what it does."""
 
-        # adjustment4 (Gtk.Adjustment)
-        adjustment4 = Gtk.Adjustment(
-            upper=1073741824,
-            step_increment=10,
-            page_increment=100,
+    def __init__(self, state) -> None:
+        super().__init__(visible=True)
+        box = Gtk.Box(
+            visible=True,
+            orientation=Gtk.Orientation.VERTICAL,
+            margin_start=12,
+            margin_end=12,
+            margin_top=GAP,
+            margin_bottom=GAP,
         )
+        self.name = _bold("")
+        self.words = Gtk.Label(visible=True, xalign=0.0)
+        self.words.get_style_context().add_class("dim-label")
+        box.pack_start(self.name, False, False, 0)
+        box.pack_start(self.words, False, False, 0)
+        self.add(box)
+        self.update(state)
 
-        # adjustment5 (Gtk.Adjustment)
-        adjustment5 = Gtk.Adjustment(
-            upper=100,
-            step_increment=1,
-            page_increment=10,
-        )
+    def update(self, state) -> None:
+        self.name.set_text(state.name)
+        self.words.set_text(summary(state))
 
-        # adjustment6 (Gtk.Adjustment)
-        adjustment6 = Gtk.Adjustment(
-            upper=100,
-            step_increment=1,
-            page_increment=10,
-        )
 
-        # adjustment7 (Gtk.Adjustment)
-        adjustment7 = Gtk.Adjustment(
-            upper=1073741824,
-            value=125000,
-            step_increment=5000,
-            page_increment=25000,
-        )
+class Transitions(Gtk.Grid):
+    """The chances of moving between the states, in %: a row for each."""
 
-        # adjustment8 (Gtk.Adjustment)
-        adjustment8 = Gtk.Adjustment(
-            upper=1073741824,
-            value=125000,
-            step_increment=5000,
-            page_increment=25000,
-        )
+    def __init__(self, draft, changed) -> None:
+        super().__init__(visible=True, column_spacing=GAP, row_spacing=GAP)
+        self.draft = draft
+        self.changed = changed
+        # what each state keeps, by its index
+        self.stays: dict[int, Gtk.Label] = {}
+        self.names: list[str] = []
+        self.rebuild()
 
-        # probability_adjustment (Gtk.Adjustment)
-        self.probability_adjustment = Gtk.Adjustment(
-            upper=100,
-            step_increment=1,
-            page_increment=10,
+    def rebuild(self) -> None:
+        for child in self.get_children():
+            child.destroy()
+        states = self.draft.states
+        self.names = [state.name for state in states]
+        self.stays = {}
+        self.attach(
+            Gtk.Label(visible=True, label=_("From ↓ to →")), 0, 0, 1, 1
         )
+        for column, state in enumerate(states, 1):
+            self.attach(_bold(state.name), column, 0, 1, 1)
+        for row, state in enumerate(states, 1):
+            self.attach(_bold(state.name), 0, row, 1, 1)
+            for column in range(1, len(states) + 1):
+                self.attach(self._cell(row - 1, column - 1), column, row, 1, 1)
+        self.update_stays()
 
-        # timeAdjustment (Gtk.Adjustment)
-        time_adjustment = Gtk.Adjustment(
-            upper=1073741824,
-            value=100,
-            step_increment=1,
-            page_increment=10,
+    def _cell(self, row: int, column: int) -> Gtk.Widget:
+        if row == column:
+            label = Gtk.Label(visible=True, xalign=0.0)
+            label.get_style_context().add_class("dim-label")
+            self.stays[row] = label
+            return label
+        spin = Gtk.SpinButton(visible=True, numeric=True, digits=2)
+        spin.set_range(0, 100)
+        spin.set_increments(1, 10)
+        spin.set_value(self.draft.weights[row][column])
+        spin.set_tooltip_text(
+            _("From {first} to {second}").format(
+                first=self.draft.states[row].name,
+                second=self.draft.states[column].name,
+            )
         )
+        spin.connect("value-changed", self.on_value_changed, row, column)
+        return spin
 
-        # states_store (widgets.List)
-        # Custom widget from glade-catalog.xml
-        self.states_store = widgets.List()
-        self.states_store.set_properties(value_member="value")
+    def update_stays(self) -> None:
+        for index, label in self.stays.items():
+            percent = round(self.draft.stays(index), 2)
+            label.set_text(_("{percent:g} % stays").format(percent=percent))
 
-        # other_states_store (widgets.List)
-        # Custom widget from glade-catalog.xml
-        self.other_states_store = widgets.List()
-        self.other_states_store.set_properties(value_member="value")
+    def on_value_changed(self, spin, row: int, column: int) -> None:
+        self.draft.set_weight(row, column, spin.get_value())
+        self.update_stays()
+        self.changed()
 
-        # panel (Gtk.Grid)
-        self.panel = Gtk.Grid(
-            visible=True,
-            can_focus=False,
-            column_spacing=5,
+
+class NetemuPanel(Panel):
+    """The settings of a Netemu."""
+
+    def build(self, form):
+        form.section(_("Ends"))
+        form.socket(0, _("Left end"), _("The switch at one end of the link"))
+        form.socket(1, _("Right end"), _("The switch at the other end"))
+
+        self.states = Gtk.ListBox(visible=True)
+        self.states.connect("row-selected", self.on_state_selected)
+        self.add_button = Gtk.Button.new_from_icon_name(
+            "list-add-symbolic", Gtk.IconSize.BUTTON
         )
-        hbox = Gtk.Box(visible=True, can_focus=False, spacing=6)
-        self.sock0_combo = Gtk.ComboBox(visible=True, can_focus=False)
-        sock0_cellrenderer = Gtk.CellRendererText()
-        self.sock0_combo.pack_start(sock0_cellrenderer, False)
-        hbox.pack_start(self.sock0_combo, True, True, 0)
-        label8 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("<=== connect ===>"),
+        self.add_button.set_tooltip_text(_("Add a state after this one"))
+        self.remove_button = Gtk.Button.new_from_icon_name(
+            "list-remove-symbolic", Gtk.IconSize.BUTTON
         )
-        hbox.pack_start(label8, False, True, 0)
-        self.sock1_combo = Gtk.ComboBox(visible=True, can_focus=False)
-        sock1_cellrenderer = Gtk.CellRendererText()
-        self.sock1_combo.pack_start(sock1_cellrenderer, False)
-        hbox.pack_start(self.sock1_combo, True, True, 0)
-        self.panel.attach(hbox, 0, 0, 5, 1)
-        hseparator2 = Gtk.Separator(visible=True, can_focus=False)
-        self.panel.attach(hseparator2, 0, 1, 5, 1)
-        hboxspace = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        labelspace = Gtk.Label(visible=True, can_focus=False, label="")
-        hboxspace.pack_start(labelspace, False, False, 0)
-        self.panel.attach(hboxspace, 0, 2, 1, 1)
-        hbox_m = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        label100 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Markov state"),
+        self.remove_button.set_tooltip_text(_("Remove this state"))
+        self.add_button.connect("clicked", self.on_add_clicked)
+        self.remove_button.connect("clicked", self.on_remove_clicked)
+        tools = Gtk.Box(visible=True, spacing=GAP, margin=GAP)
+        for button in (self.add_button, self.remove_button):
+            button.get_style_context().add_class("flat")
+            button.show()
+            tools.pack_start(button, False, False, 0)
+        first = Gtk.Label(
+            visible=True, label=_("The emulator starts in the first state")
         )
-        hbox_m.pack_start(label100, False, False, 0)
-        self.panel.attach(hbox_m, 0, 3, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.state_combo = widgets.ComboBox(
-            width_request=150,
-            visible=True,
-            can_focus=False,
-            model=self.states_store,
-            active=0,
+        first.get_style_context().add_class("dim-label")
+        tools.pack_end(first, False, False, 0)
+        box = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
+        box.pack_start(self.states, False, False, 0)
+        box.pack_start(Gtk.Separator(visible=True), False, False, 0)
+        box.pack_start(tools, False, False, 0)
+        form.section(_("States"), box)
+
+        form.section(_("Values"))
+        form.entry("name")
+        form.pair(
+            "bandwidth", "bandwidth_right_to_left", "bandwidth_symmetric"
         )
-        # Custom widget from glade-catalog.xml
-        self.state_cell = widgets.CellRendererFormattable(
-            display_member="label"
+        form.pair("delay", "delay_right_to_left", "delay_symmetric")
+        form.pair(
+            "buffer_size", "buffer_size_right_to_left", "buffer_size_symmetric"
         )
-        self.state_combo.pack_start(self.state_cell, False)
-        self.panel.attach(self.state_combo, 1, 3, 1, 1)
-        hboxspace0 = Gtk.Box(visible=True, can_focus=False)
-        labelspace0 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label="",
+        form.pair("loss", "loss_right_to_left", "loss_symmetric")
+
+        form.section(_("Transitions"))
+        self.period = Gtk.SpinButton(visible=True, numeric=True)
+        self.period.set_range(1, HIGHEST)
+        self.period.set_increments(10, 100)
+        self.period.set_value(self.draft.period)
+        self.period.connect("value-changed", self.on_period_changed)
+        form.row(
+            "period",
+            self.period,
+            _("Period"),
+            _("How often, in ms, the emulator may change state"),
         )
-        hboxspace0.pack_start(labelspace0, False, False, 0)
-        self.panel.attach(hboxspace0, 0, 4, 1, 1)
-        hboxspace1 = Gtk.Box(visible=True, can_focus=False)
-        label_channel = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Channel configuration"),
-        )
-        hboxspace1.pack_start(label_channel, False, False, 0)
-        self.panel.attach(hboxspace1, 0, 5, 1, 1)
-        self.add_state_button = Gtk.Button(
-            label="Add state",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(self.add_state_button, 0, 19, 1, 1)
-        self.edit_state_button = Gtk.Button(
-            label="Change name",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(self.edit_state_button, 2, 17, 1, 1)
-        self.remove_state_button = Gtk.Button(
-            label="Remove state",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(self.remove_state_button, 0, 20, 1, 1)
-        hseparator100 = Gtk.Separator(visible=True, can_focus=False)
-        self.panel.attach(hseparator100, 0, 4, 5, 1)
-        hbox1 = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        label6 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Forward link"),
-        )
-        hbox1.pack_start(label6, False, False, 0)
-        arrow1 = Gtk.Arrow(visible=True, can_focus=False, xalign=0)
-        hbox1.pack_start(arrow1, True, True, 0)
-        self.panel.attach(hbox1, 1, 6, 1, 1)
-        hbox2 = Gtk.Box(visible=True, can_focus=False, spacing=5)
-        arrow2 = Gtk.Arrow(
-            visible=True,
-            can_focus=False,
-            xalign=1,
-            arrow_type=Gtk.ArrowType.LEFT,
-            shadow_type=Gtk.ShadowType.NONE,
-        )
-        hbox2.pack_start(arrow2, True, True, 0)
-        label7 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Reverse link"),
-            xalign=0,
-        )
-        hbox2.pack_start(label7, False, False, 0)
-        self.panel.attach(hbox2, 2, 6, 1, 1)
-        label5 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Asymmetric"),
-        )
-        self.panel.attach(label5, 3, 6, 1, 1)
-        label1 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            tooltip_text=_(
-                (
-                    "Maximum size of the packet queue. Exceeding packets are "
-                    "discarded."
-                ),
+        self.transitions = Transitions(self.draft, self.on_changed)
+        form.row(
+            "transitions",
+            self.transitions,
+            _("Chances"),
+            _(
+                "At each period, the chance in % of moving from a state, a row,"
+                " to another"
             ),
-            label=_("buffer length (Byte; 0=no limit)"),
-            xalign=0,
         )
-        self.panel.attach(label1, 0, 7, 1, 1)
-        label2 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            tooltip_text=_(
-                (
-                    "Extra delay (in milliseconds). This delay is added to "
-                    "the real communication delay. Packets are temporarily "
-                    "stored and resent after the delay."
-                ),
-            ),
-            label=_("propagation delay (one way; ms)"),
-            xalign=0,
-        )
-        self.panel.attach(label2, 0, 8, 1, 1)
-        label3 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            tooltip_text=_("Percentage of loss as a floating point number."),
-            label=_("loss rate (in %, [0,100] real)"),
-            xalign=0,
-        )
-        self.panel.attach(label3, 0, 9, 1, 1)
-        label4 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            tooltip_text=_(
-                (
-                    "Sender is not prevented from sending packets, delivery "
-                    "is delayed to limit the bandwidth to the desired value "
-                    "(like a bottleneck along the path)."
-                ),
-            ),
-            label=_("bandwidth (Byte/s; 0=no limit)"),
-            xalign=0,
-        )
-        self.panel.attach(label4, 0, 10, 1, 1)
-        self.chanbufsize_spin = Gtk.SpinButton(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment1,
-            numeric=True,
-        )
-        self.panel.attach(
-            self.chanbufsize_spin,
-            1,
-            7,
-            1,
-            1,
-        )
-        self.chanbufsizer_spin = Gtk.SpinButton(
-            visible=True,
-            sensitive=False,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment2,
-            numeric=True,
-        )
-        self.panel.attach(
-            self.chanbufsizer_spin,
-            2,
-            7,
-            1,
-            1,
-        )
-        self.delay_spin = Gtk.SpinButton(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment3,
-            numeric=True,
-        )
-        self.panel.attach(self.delay_spin, 1, 8, 1, 1)
-        self.delayr_spin = Gtk.SpinButton(
-            visible=True,
-            sensitive=False,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment4,
-            numeric=True,
-        )
-        self.panel.attach(self.delayr_spin, 2, 8, 1, 1)
-        self.loss_spin = Gtk.SpinButton(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment5,
-            digits=2,
-            numeric=True,
-        )
-        self.panel.attach(self.loss_spin, 1, 9, 1, 1)
-        self.lossr_spin = Gtk.SpinButton(
-            visible=True,
-            sensitive=False,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment6,
-            digits=2,
-            numeric=True,
-        )
-        self.panel.attach(self.lossr_spin, 2, 9, 1, 1)
-        self.bandwidth_spin = Gtk.SpinButton(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment7,
-            numeric=True,
-        )
-        self.panel.attach(self.bandwidth_spin, 1, 10, 1, 1)
-        self.bandwidthr_spin = Gtk.SpinButton(
-            visible=True,
-            sensitive=False,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=adjustment8,
-            numeric=True,
-        )
-        self.panel.attach(
-            self.bandwidthr_spin,
-            2,
-            10,
-            1,
-            1,
-        )
-        self.chanbufsize_help_button = Gtk.Button(
-            label="gtk-help",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(
-            self.chanbufsize_help_button,
-            4,
-            7,
-            1,
-            1,
-        )
-        self.delay_help_button = Gtk.Button(
-            label="gtk-help",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(self.delay_help_button, 4, 8, 1, 1)
-        self.loss_help_button = Gtk.Button(
-            label="gtk-help",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(self.loss_help_button, 4, 9, 1, 1)
-        self.bandwidth_help_button = Gtk.Button(
-            label="gtk-help",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(
-            self.bandwidth_help_button,
-            4,
-            10,
-            1,
-            1,
-        )
-        hseparator1 = Gtk.Separator(visible=True, can_focus=False)
-        self.panel.attach(hseparator1, 0, 11, 5, 1)
-        hbuttonbox1 = Gtk.ButtonBox(
-            visible=True,
-            can_focus=False,
-            layout_style=Gtk.ButtonBoxStyle.END,
-        )
-        reset_button = Gtk.Button(
-            label="Default values",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        hbuttonbox1.pack_start(reset_button, False, False, 0)
-        self.panel.attach(hbuttonbox1, 0, 11, 5, 1)
-        self.chanbufsize_check = Gtk.CheckButton(
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            halign=Gtk.Align.CENTER,
-            focus_on_click=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(
-            self.chanbufsize_check,
-            3,
-            7,
-            1,
-            1,
-        )
-        self.delay_check = Gtk.CheckButton(
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            halign=Gtk.Align.CENTER,
-            focus_on_click=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(self.delay_check, 3, 8, 1, 1)
-        self.loss_check = Gtk.CheckButton(
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            halign=Gtk.Align.CENTER,
-            focus_on_click=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(self.loss_check, 3, 9, 1, 1)
-        self.bandwidth_check = Gtk.CheckButton(
-            visible=True,
-            can_focus=True,
-            receives_default=False,
-            halign=Gtk.Align.CENTER,
-            focus_on_click=False,
-            xalign=0.5,
-            draw_indicator=True,
-        )
-        self.panel.attach(
-            self.bandwidth_check,
-            3,
-            10,
-            1,
-            1,
-        )
-        hboxspace2 = Gtk.Box(visible=True, can_focus=False)
-        labelspace2 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label="",
-        )
-        hboxspace2.pack_start(labelspace2, False, False, 0)
-        self.panel.attach(hboxspace2, 0, 12, 1, 1)
-        hboxspace3 = Gtk.Box(visible=True, can_focus=False)
-        labelspace3 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Markov configuration"),
-        )
-        hboxspace3.pack_start(labelspace3, False, False, 0)
-        self.panel.attach(hboxspace3, 0, 13, 1, 1)
-        hboxspace4 = Gtk.Box(visible=True, can_focus=False)
-        self.state_label = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label="",
-            xalign=1,
-        )
-        hboxspace4.pack_start(self.state_label, True, True, 0)
-        hboxspace4.reorder_child(self.state_label, 1)
-        self.panel.attach(hboxspace4, 0, 15, 1, 1)
-        hbuttonbox10 = Gtk.ButtonBox(
-            visible=True,
-            can_focus=False,
-            layout_style=Gtk.ButtonBoxStyle.END,
-        )
-        save_button = Gtk.Button(
-            label="Save channel configuration",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        hbuttonbox10.add(save_button)
-        self.panel.attach(hbuttonbox10, 0, 11, 1, 1)
-        label12 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("Changing state probability"),
-        )
-        self.panel.attach(label12, 3, 14, 1, 1)
-        label11 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("========>"),
-        )
-        self.panel.attach(label11, 1, 15, 1, 1)
-        # Custom widget from glade-catalog.xml
-        self.weight_combo = widgets.ComboBox(
-            width_request=150,
-            visible=True,
-            can_focus=False,
-            model=self.other_states_store,
-            active=0,
-        )
-        # Custom widget from glade-catalog.xml
-        self.weight_cell = widgets.CellRendererFormattable(
-            display_member="label"
-        )
-        self.weight_combo.pack_start(self.weight_cell, False)
-        self.panel.attach(self.weight_combo, 2, 15, 1, 1)
-        self.weight_spin = Gtk.SpinButton(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=self.probability_adjustment,
-            digits=2,
-            numeric=True,
-        )
-        self.panel.attach(self.weight_spin, 3, 15, 1, 1)
-        self.update_weight_button = Gtk.Button(
-            label="Save",
-            visible=True,
-            can_focus=True,
-            receives_default=True,
-            use_stock=True,
-            focus_on_click=False,
-        )
-        self.panel.attach(self.update_weight_button, 4, 15, 1, 1)
-        hboxspace6 = Gtk.Box(visible=True, can_focus=False)
-        label_name = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label=_("State name"),
-            xalign=1,
-        )
-        hboxspace6.pack_start(label_name, True, True, 0)
-        self.panel.attach(hboxspace6, 0, 17, 1, 1)
-        self.state_name_entry = Gtk.Entry(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-        )
-        self.panel.attach(self.state_name_entry, 1, 17, 1, 1)
-        hboxspace7 = Gtk.Box(visible=True, can_focus=False)
-        labelspace7 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label="",
-        )
-        hboxspace7.pack_start(labelspace7, False, False, 0)
-        self.panel.attach(hboxspace7, 0, 16, 1, 1)
-        hboxspace8 = Gtk.Box(visible=True, can_focus=False)
-        labelspace8 = Gtk.Label(
-            visible=True,
-            can_focus=False,
-            label="",
-        )
-        hboxspace8.pack_start(labelspace8, False, False, 0)
-        self.panel.attach(hboxspace8, 0, 18, 1, 1)
-        time_label = Gtk.Label(
-            label="Transition period (ms)",
-            visible=True,
-            can_focus=True,
-            xalign=1,
-        )
-        self.panel.attach(time_label, 2, 3, 1, 1)
-        self.time_spin = Gtk.SpinButton(
-            visible=True,
-            can_focus=True,
-            primary_icon_activatable=False,
-            secondary_icon_activatable=False,
-            adjustment=time_adjustment,
-            numeric=True,
-        )
-        self.panel.attach(self.time_spin, 3, 3, 1, 1)
-        # TODO: empty Glade placeholder, nothing to create.
-        # TODO: empty Glade placeholder, nothing to create.
+        self._fill()
 
-        # Signals
-        self.state_combo.connect("changed", self.on_state_combo_changed)
-        reset_button.connect("clicked", self.on_reset_button_clicked)
-        save_button.connect("clicked", self.on_save_button_clicked)
-        self.weight_combo.connect("changed", self.on_weight_combo_changed)
+    def _fill(self) -> None:
+        """The list of the states, the selected one selected."""
 
-    def get_root_widget(self) -> Gtk.Grid:
-        return self.panel
-
-    def get_config_view(self, gui):
-
-        # when creating a new item, the set function is not called
-        if self.original.markov_manager is None:
-            self.original.init_markov()
-
-        # original parameters
-        self.temp = deepcopy(self.original.markov_manager)
-        self.tempStates = self.temp.states
-        self.tempWeights = self.temp.weights
-
-        self.update(False, self.original.currentState)
-
-        self.state_manager = manager = StateManager()
-        # the widgets of each value, and its setting
-        params = (
-            ("chanbufsize", "buffer_size"),
-            ("delay", "delay"),
-            ("loss", "loss"),
-            ("bandwidth", "bandwidth"),
-        )
-        for widget, setting in params:
-            checkbutton = getattr(self, widget + "_check")
-            checkbutton.set_active(
-                not self.original.get(setting + "_symmetric")
+        self._filling = True
+        try:
+            for row in self.states.get_children():
+                row.destroy()
+            for state in self.draft.states:
+                self.states.add(StateRow(state))
+            self.states.select_row(
+                self.states.get_row_at_index(self.draft.selected)
             )
-            tooltip = _("Disabled because set symmetric")
-            spinbutton = getattr(self, widget + "r_spin")
-            manager.add_checkbutton_active(checkbutton, tooltip, spinbutton)
+        finally:
+            self._filling = False
+        self.remove_button.set_sensitive(len(self.draft.states) > 1)
 
-        self.time_spin.set_value(self.original.transPeriod)
+    def on_changed(self) -> None:
+        row = self.states.get_row_at_index(self.draft.selected)
+        if row is not None:
+            row.update(self.draft.states[self.draft.selected])
+        if [
+            state.name for state in self.draft.states
+        ] != self.transitions.names:
+            self.transitions.rebuild()
+        super().on_changed()
 
-        # setup help buttons
-        for button in self.help_buttons:
-            getattr(self, button).connect(
-                "clicked",
-                self.help.on_help_button_clicked,
-                button.removesuffix("_help_button"),
-            )
+    def _show_another(self) -> None:
+        self.form.reload()
+        self.on_changed()
 
-        # markov buttons
-        self.add_state_button.connect("clicked", self.on_add_state)
-        self.edit_state_button.connect("clicked", self.on_edit_state)
-        self.remove_state_button.connect("clicked", self.on_remove_state)
-        self.update_weight_button.connect("clicked", self.on_update_weight)
-
-        # setup plugs
-        for i, wname in enumerate(("sock0_combo", "sock1_combo")):
-            combo = getattr(self, wname)
-            self.configure_sock_combobox(
-                combo,
-                gui.brickfactory.socks.filter_new(),
-                self.original,
-                self.original.plugs[i],
-                gui,
-            )
-
-        return self.panel
-
-    def getconfig(self):
-        cfg = {}
-        for config_name, widget_name in self.config_to_checkbutton_mapping:
-            cfg[config_name] = not getattr(self, widget_name).get_active()
-        for pname, wname in self.config_to_spinint_mapping:
-            cfg[pname] = getattr(self, wname).get_value_as_int()
-        for pname, wname in self.config_to_spinfloat_mapping:
-            cfg[pname] = getattr(self, wname).get_value()
-        return cfg
-
-    def store_state(self, state):
-        for name, value in self.getconfig().items():
-            setattr(state, name, value)
-
-    def configure_brick(self, gui):
-        cfg = self.getconfig()
-        cfg["name"] = self.state_name_entry.get_text()
-        self.original.set(cfg)
-
-        # configure plug
-        for i, wname in enumerate(("sock0_combo", "sock1_combo")):
-            self.connect_plug(self.original.plugs[i], getattr(self, wname))
-
-    def on_reset_button_clicked(self, button):
-        self.chanbufsize_spin.set_value(75000)
-        self.chanbufsizer_spin.set_value(75000)
-        self.delay_spin.set_value(0)
-        self.delayr_spin.set_value(0)
-        self.loss_spin.set_value(0)
-        self.lossr_spin.set_value(0)
-        self.bandwidth_spin.set_value(125000)
-        self.bandwidthr_spin.set_value(125000)
-
-    # save all parameters, calling this function has the same effect of calling each save function then communicating with the emulator
-    def on_ok_button_clicked(self, button, gui):
-
-        self.original.markov_manager.states = self.tempStates
-        self.original.markov_manager.weights = self.tempWeights
-
-        transPeriod = self.time_spin.get_value_as_int()
-        if transPeriod is not None:
-            self.original.transPeriod = transPeriod
-
-        index = self.state_combo.get_selected_value()
-        if index is not None:
-            self.original.config = self.tempStates[index]
-            self.store_state(self.original.config)
-            self.original.config.name = self.state_name_entry.get_text()
-
-            self.original.currentState = index
-
-            otherIndex = self.weight_combo.get_selected_value()
-            if otherIndex is not None:
-                self.original.markov_manager.weights[index][otherIndex] = (
-                    float(self.weight_spin.get_value_as_int())
-                )
-        else:
-            self.original.config = self.tempStates[0]
-            self.original.currentState = 0
-
-        self.original.update()
-
-        # configure plug
-        for i, wname in enumerate(("sock0_combo", "sock1_combo")):
-            self.connect_plug(self.original.plugs[i], getattr(self, wname))
-
-        gui.curtain_down()
-
-    # save channel configuration
-    def on_save_button_clicked(self, button):
-        index = self.state_combo.get_selected_value()
-        if index is not None:
-            self.store_state(self.tempStates[index])
-
-    # update the gui without user intervention
-    # parameters:
-    #   noCombo: if true, the comboboxes representating the states are not updated
-    #   index: the index of the state list
-
-    def update(self, noCombo, index):
-        for pname, wname in self.config_to_checkbutton_mapping:
-            getattr(self, wname).set_active(
-                not getattr(self.tempStates[index], pname)
-            )
-        for pname, wname in self.config_to_spinint_mapping:
-            getattr(self, wname).set_value(
-                getattr(self.tempStates[index], pname)
-            )
-        for pname, wname in self.config_to_spinfloat_mapping:
-            getattr(self, wname).set_value(
-                getattr(self.tempStates[index], pname)
-            )
-
-        self.state_label.set_text("Selected state: " + str(index))
-        self.state_name_entry.set_text(self.tempStates[index].name)
-
-        states = list()
-        exstates = list()
-        for i, state in enumerate(self.tempStates):
-            states.append(
-                widgets.ListEntry(i, str(i) + " (" + state.name + ")")
-            )
-            if i != index:
-                exstates.append(
-                    widgets.ListEntry(i, str(i) + " (" + state.name + ")")
-                )
-
-        self.other_states_store.set_data_source(exstates)
-
-        if len(exstates):
-            self.weight_combo.set_selected_value(exstates[0].value)
-            self.weight_combo.set_cell_data_func(
-                self.weight_cell, self.weight_cell.set_text
-            )
-            self.weight_spin.set_editable(True)
-            self.update_weight_button.set_sensitive(True)
-            self.time_spin.set_editable(True)
-        else:
-            self.weight_spin.set_value(0.0)
-            self.weight_spin.set_editable(False)
-            self.update_weight_button.set_sensitive(False)
-            self.time_spin.set_editable(False)
-
-        if noCombo:
+    def on_state_selected(self, listbox, row) -> None:
+        if row is None or getattr(self, "_filling", False):
             return
+        self.draft.select(row.get_index())
+        self._show_another()
 
-        self.states_store.set_data_source(states)
-        self.state_combo.set_selected_value(index)
-        self.state_combo.set_cell_data_func(
-            self.state_cell, self.state_cell.set_text
-        )
+    def on_add_clicked(self, button) -> None:
+        self.draft.add()
+        self._fill()
+        self.transitions.rebuild()
+        self._show_another()
 
-    def on_add_state(self, button):
-        index = self.state_combo.get_selected_value()
-        if index is not None:
-            self.temp.add(index + 1)
-            self.update(False, index + 1)
+    def on_remove_clicked(self, button) -> None:
+        self.draft.remove()
+        self._fill()
+        self.transitions.rebuild()
+        self._show_another()
 
-    def on_remove_state(self, button):
-        index = self.state_combo.get_selected_value()
-        if index is not None:
-            self.temp.remove(index)
-            self.update(False, min(index, len(self.tempStates) - 1))
+    def on_period_changed(self, spin) -> None:
+        self.draft.period = spin.get_value_as_int()
+        self.on_changed()
 
-    def on_edit_state(self, button):
-        index = self.state_combo.get_selected_value()
-        if index is not None:
-            text = self.state_name_entry.get_text()
-            if text is None:
-                return
-
-            # no name duplicates
-            for state in self.tempStates:
-                if state.name == text:
-                    return
-
-            self.tempStates[index].name = text
-            self.update(False, index)
-
-    def on_update_weight(self, button):
-        index = self.state_combo.get_selected_value()
-        if index is not None:
-            otherIndex = self.weight_combo.get_selected_value()
-            if otherIndex is not None:
-                self.tempWeights[index][otherIndex] = float(
-                    self.weight_spin.get_value_as_int()
-                )
-
-    def on_state_combo_changed(self, combobox):
-        index = self.state_combo.get_selected_value()
-        if index is not None:
-            self.update(True, index)
-
-    def on_weight_combo_changed(self, combobox):
-        index = self.weight_combo.get_selected_value()
-        if index is not None:
-            otherIndex = self.state_combo.get_selected_value()
-            if otherIndex is not None and otherIndex < len(self.tempWeights):
-                value = self.tempWeights[otherIndex][index]
-                maxWeight = 100
-                for weight in self.tempWeights[otherIndex]:
-                    maxWeight -= weight
-                maxWeight += value
-                self.probability_adjustment.set_upper(maxWeight)
-                self.weight_spin.set_value(value)
+    def running_words(self) -> str:
+        return _(
+            "{brick} is running. The states and the transitions change at"
+            " once; the ends when it starts again."
+        ).format(brick=self.draft.brick.name)

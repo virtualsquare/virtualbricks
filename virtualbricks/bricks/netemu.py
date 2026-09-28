@@ -20,8 +20,11 @@
 
 import re
 
+import attr
+
 from virtualbricks import bricks, errors
 from virtualbricks.bricks.command import Command, socket_path
+from virtualbricks.bricks.draft import Draft, Problem
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.config.schema import (
     Bool,
@@ -40,6 +43,7 @@ from virtualbricks.config.schema import (
     notes,
     rename_references,
 )
+from virtualbricks.i18n import N_, _
 from virtualbricks.programs import ProgramError
 
 # The options that Netemu passes to its program.
@@ -56,56 +60,97 @@ class NetemuConfig(bricks.BrickConfig):
     events are keys of the brick and the states are tables without them.
     """
 
-    name = field(Str(), default="default name", help="The name of the state")
+    name = field(
+        Str(),
+        default="default name",
+        label=N_("Name"),
+        help=N_("The name of the state"),
+    )
     # each value both ways, or from left to right and from right to left
     bandwidth = field(
         Int(),
         default=125000,
-        help=(
-            "Bytes per second, 0 for no limit; left to right unless "
-            "bandwidth_symmetric"
+        label=N_("Bandwidth"),
+        help=N_(
+            "Bytes per second at which the buffer drains, 0 for no limit; left"
+            " to right, unless the same both ways"
         ),
     )
     bandwidth_right_to_left = field(
-        Int(), default=125000, help="Bytes per second from right to left"
+        Int(),
+        default=125000,
+        label=N_("Bandwidth from right to left"),
+        help=N_("Bytes per second from right to left"),
     )
     bandwidth_symmetric = field(
-        Bool(), default=True, help="Use bandwidth both ways"
+        Bool(),
+        default=True,
+        label=N_("The same bandwidth both ways"),
+        help=N_("Use bandwidth both ways"),
     )
     delay = field(
         Int(),
         default=0,
-        help="One-way delay in ms; left to right unless delay_symmetric",
+        label=N_("Delay"),
+        help=N_(
+            "One-way delay in ms, added to the time in the buffer; left to"
+            " right, unless the same both ways"
+        ),
     )
     delay_right_to_left = field(
-        Int(), default=0, help="Delay in ms from right to left"
+        Int(),
+        default=0,
+        label=N_("Delay from right to left"),
+        help=N_("Delay in ms from right to left"),
     )
-    delay_symmetric = field(Bool(), default=True, help="Use delay both ways")
+    delay_symmetric = field(
+        Bool(),
+        default=True,
+        label=N_("The same delay both ways"),
+        help=N_("Use delay both ways"),
+    )
     buffer_size = field(
         Int(),
         default=75000,
-        help=(
-            "Channel buffer in bytes, 0 for no limit; left to right unless "
-            "buffer_size_symmetric"
+        label=N_("Buffer"),
+        help=N_(
+            "Bytes the packet queue holds, 0 for no limit; left to right,"
+            " unless the same both ways"
         ),
     )
     buffer_size_right_to_left = field(
-        Int(), default=75000, help="Channel buffer in bytes from right to left"
+        Int(),
+        default=75000,
+        label=N_("Buffer from right to left"),
+        help=N_("Channel buffer in bytes from right to left"),
     )
     buffer_size_symmetric = field(
-        Bool(), default=True, help="Use buffer_size both ways"
+        Bool(),
+        default=True,
+        label=N_("The same buffer both ways"),
+        help=N_("Use buffer_size both ways"),
     )
     loss = field(
         Float(0, 100),
         default=0.0,
-        help="Percentage of packets lost; left to right unless loss_symmetric",
+        label=N_("Loss"),
+        help=N_(
+            "Percentage of packets lost, as 0.1 for one in a thousand; left"
+            " to right, unless the same both ways"
+        ),
     )
     loss_right_to_left = field(
         Float(0, 100),
         default=0.0,
-        help="Percentage of packets lost from right to left",
+        label=N_("Loss from right to left"),
+        help=N_("Percentage of packets lost from right to left"),
     )
-    loss_symmetric = field(Bool(), default=True, help="Use loss both ways")
+    loss_symmetric = field(
+        Bool(),
+        default=True,
+        label=N_("The same loss both ways"),
+        help=N_("Use loss both ways"),
+    )
 
 
 BRICK_KEYS = frozenset(field_names(bricks.BrickConfig))
@@ -207,6 +252,122 @@ class MarkovConfig:
         del self.states[index]
 
 
+class NetemuDraft(Draft):
+    """
+    The settings of a Netemu: its states, one of them selected, whose values
+    are the draft's settings; the chances of moving between them, a row for
+    each state, in %; and the period of the moves.
+
+    What a state doesn't move to it keeps: its row adds up to 100 at most.
+    """
+
+    WITH = {
+        "bandwidth_right_to_left": ("bandwidth_symmetric", False),
+        "delay_right_to_left": ("delay_symmetric", False),
+        "buffer_size_right_to_left": ("buffer_size_symmetric", False),
+        "loss_right_to_left": ("loss_symmetric", False),
+    }
+
+    def __init__(self, brick):
+        super().__init__(brick)
+        manager = brick.markov_manager
+        self.states = [attr.evolve(state) for state in manager.states]
+        self.weights = [list(row) for row in manager.weights]
+        self.period = brick.transPeriod
+        self.selected = 0
+        self.settings = self.states[0]
+
+    def select(self, index: int) -> None:
+        """Show the values of the state of index."""
+
+        self.selected = index
+        self.settings = self.states[index]
+        self.refused.clear()
+
+    def add(self) -> int:
+        """A new state after the selected one, with no chance of moving."""
+
+        index = self.selected + 1
+        first = self.states[0]
+        # the events belong to the brick, so every state has the same ones
+        state = NetemuConfig(
+            **{name: getattr(first, name) for name in BRICK_KEYS}
+        )
+        names = {other.name for other in self.states}
+        number = len(self.states) + 1
+        while f"state {number}" in names:
+            number += 1
+        state.name = f"state {number}"
+        self.states.insert(index, state)
+        for row in self.weights:
+            row.insert(index, 0.0)
+        self.weights.insert(index, [0.0] * len(self.states))
+        self.select(index)
+        return index
+
+    def remove(self) -> None:
+        """Remove the selected state, unless it's the only one."""
+
+        if len(self.states) == 1:
+            return
+        index = self.selected
+        del self.states[index]
+        del self.weights[index]
+        for row in self.weights:
+            del row[index]
+        self.select(min(index, len(self.states) - 1))
+
+    def set_weight(self, row: int, column: int, value: float) -> None:
+        self.weights[row][column] = value
+
+    def stays(self, index: int) -> float:
+        """The chance, in %, that the state of index doesn't move."""
+
+        row = self.weights[index]
+        return 100.0 - sum(row) + row[index]
+
+    def check(self):
+        problems = []
+        names = [state.name for state in self.states]
+        for name in dict.fromkeys(names):
+            if names.count(name) > 1:
+                text = _("Two states are called {name}").format(name=name)
+                problems.append(Problem("name", text))
+        for index, state in enumerate(self.states):
+            if self.stays(index) < 0:
+                text = _(
+                    "From {state} the chances add up to more than 100 %"
+                ).format(state=state.name)
+                problems.append(Problem("transitions", text))
+        left = self.links[0]
+        if left is not None and left.brick.get_type() == "Qemu":
+            text = _("A machine's socket card can only be the right end")
+            problems.append(Problem("plug0", text))
+        return problems + super().check()
+
+    def changes(self):
+        # the states are the brick's own, in apply_extras()
+        return {}
+
+    def apply_extras(self):
+        brick = self.brick
+        manager = brick.markov_manager
+        if (
+            self.states == manager.states
+            and self.weights == manager.weights
+            and self.period == brick.transPeriod
+        ):
+            return False
+        manager.states = self.states
+        manager.weights = self.weights
+        brick.transPeriod = self.period
+        brick.currentState = min(brick.currentState, len(self.states) - 1)
+        brick.config = self.states[brick.currentState]
+        # a running emulator gets them all
+        brick.update()
+        return True
+
+
 class WFProcessProtocol(bricks.VDEProcessProtocol):
 
     prompt = re.compile(rb"^VDEwf\$ ", re.M)
@@ -217,6 +378,7 @@ class Netemu(Wire):
     type = "Netemu"
     summary = "A wire that emulates a network link"
     config_factory = NetemuConfig
+    draft_factory = NetemuDraft
     process_protocol = WFProcessProtocol
 
     def __init__(self, factory, name):

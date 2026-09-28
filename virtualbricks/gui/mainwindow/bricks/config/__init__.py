@@ -29,7 +29,7 @@ the tests import the others from their modules.
 """
 
 from .captureconfig import CapturePanel
-from .netemuconfig import NetemuConfigController
+from .netemuconfig import NetemuPanel
 from .qemuconfig import QemuConfigController
 from .switchconfig import SwitchPanel
 from .switchwrapperconfig import SwitchWrapperPanel
@@ -39,7 +39,6 @@ from .tunnellconfig import TunnelListenPanel
 from .wireconfig import WirePanel
 
 __all__ = [
-    "NetemuConfigController",
     "PANELS",
     "QemuConfigController",
     "new_panel",
@@ -48,6 +47,7 @@ __all__ = [
 # The panels on drafts, by the type of their brick.
 PANELS = {
     "Capture": CapturePanel,
+    "Netemu": NetemuPanel,
     "Switch": SwitchPanel,
     "SwitchWrapper": SwitchWrapperPanel,
     "TunnelConnect": TunnelConnectPanel,

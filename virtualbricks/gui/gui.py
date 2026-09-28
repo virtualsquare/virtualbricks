@@ -39,10 +39,7 @@ from virtualbricks.config.projectfile import ProjectFormatError
 from virtualbricks.config.settings import current_project
 from virtualbricks.config.workspace import projects
 from virtualbricks.bricks import Brick
-from virtualbricks.gui.mainwindow.bricks.config import (
-    NetemuConfigController,
-    QemuConfigController,
-)
+from virtualbricks.gui.mainwindow.bricks.config import QemuConfigController
 from virtualbricks.gui.dialogs import EditEthernetDialog
 from virtualbricks.gui.mainwindow import VBGUI
 from virtualbricks.gui.interfaces import IMenu, IConfigController
@@ -98,9 +95,7 @@ def config_panel_factory(context):
     """The old panels; those on drafts are in PANELS."""
 
     type = context.get_type()
-    if type == "Netemu":
-        return NetemuConfigController(context)
-    elif type == "Qemu":
+    if type == "Qemu":
         return QemuConfigController(context)
 
 

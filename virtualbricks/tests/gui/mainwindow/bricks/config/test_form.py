@@ -97,6 +97,30 @@ class TestSections(FormTestCase):
         made = self.make(Draft(self.switch))
         self.assertRaises(ValueError, made.switch, "hub_mode")
 
+    def test_a_section_of_any_widget(self):
+        made = self.make(Draft(self.switch))
+        content = Gtk.Label(label="a list")
+        made.section("States", content)
+        title, frame = made.widget.get_children()
+        self.assertEqual(title.get_text(), "States")
+        self.assertIs(frame.get_child(), content)
+        # no rows after it
+        self.assertRaises(ValueError, made.switch, "hub_mode")
+
+    def test_a_row_of_any_widget(self):
+        made = self.make(Draft(self.switch))
+        made.section("Ports")
+        widget = Gtk.Label(label="3")
+        row = made.row("count", widget, "Count", "How many")
+        self.assertIs(made.rows["count"], row)
+        self.assertIs(row.control, widget)
+        self.assertEqual(
+            (row.title.get_text(), row.caption.get_text()),
+            ("Count", "How many"),
+        )
+        made.refresh()
+        self.assertTrue(row.get_sensitive())
+
 
 class TestARow(FormTestCase):
 
@@ -444,3 +468,55 @@ class TestTheWidgets(FormTestCase):
             [("Nothing", ""), ("sw1", "0"), ("vm1_sock_eth0", "1")],
         )
         self.assertEqual(combo.get_active_id(), "1")
+
+
+class TestReload(FormTestCase):
+
+    def test_the_draft_again(self):
+        tap = self.factory.new_brick("tap", "tap0")
+        netemu = self.factory.new_brick("netemu", "ne1")
+        draft = Draft(tap)
+        made = self.make(draft)
+        made.section("Tap")
+        buttons = made.choice(
+            "address_mode", [("off", "Off"), ("manual", "Manual")]
+        ).get_children()
+        entry = made.entry("ip_address")
+        draft.set("address_mode", "manual")
+        draft.set("ip_address", "10.0.0.2")
+        made.reload()
+        self.assertTrue(buttons[1].get_active())
+        self.assertEqual(entry.get_text(), "10.0.0.2")
+        self.assertEqual(self.changes, 0)
+        # and the rows are refreshed
+        self.assertTrue(made.rows["ip_address"].get_sensitive())
+        # a pair, a switch, a spin button, a menu
+        draft = Draft(netemu)
+        made = self.make(draft)
+        made.section("Values")
+        row = made.pair("delay", "delay_right_to_left", "delay_symmetric")
+        spin = made.spin("bandwidth")
+        switch = made.switch("loss_symmetric")
+        draft.set("delay", 5)
+        draft.set("delay_right_to_left", 6)
+        draft.set("delay_symmetric", False)
+        draft.set("bandwidth", 7)
+        draft.set("loss_symmetric", False)
+        made.reload()
+        self.assertEqual(row.title.get_mnemonic_widget().get_value(), 5)
+        self.assertEqual(row.parts["delay_right_to_left"].get_value(), 6)
+        self.assertFalse(row.parts["delay_symmetric"].get_active())
+        self.assertEqual(spin.get_value(), 7)
+        self.assertFalse(switch.get_active())
+        self.assertEqual(self.changes, 0)
+        self.assertEqual(draft.get("delay"), 5)
+
+    def test_a_problem_of_a_part(self):
+        netemu = self.factory.new_brick("netemu", "ne1")
+        draft = Draft(netemu)
+        made = self.make(draft)
+        made.section("Values")
+        row = made.pair("loss", "loss_right_to_left", "loss_symmetric")
+        draft.set("loss_right_to_left", 300.0)
+        made.refresh()
+        self.assertEqual(row.problem.get_text(), "300.0 is outside 0–100")

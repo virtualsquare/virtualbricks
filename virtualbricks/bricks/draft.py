@@ -28,7 +28,8 @@ those it can, through its ``cbset_`` methods, and says it changed once.
 
 The links of a draft are the sockets that the plugs of the brick join, None
 for a plug in nothing; ``sockets()`` are those a plug can join. ``apply()``
-moves the plugs whose socket changed.
+moves the plugs whose socket changed. What a brick has beyond its record, as
+the states of a Netemu, its draft gives it in ``apply_extras()``.
 
 A draft also says which settings are in use: a setting of ``WITH`` is in use
 while the setting it goes with has the value it needs. A brick that checks
@@ -190,6 +191,11 @@ class Draft:
             if sock is not before
         }
 
+    def apply_extras(self) -> bool:
+        """Give the brick what it has beyond its record; whether it changed."""
+
+        return False
+
     def live(self) -> list[str]:
         """The settings a running brick takes at once, in their order."""
 
@@ -217,8 +223,9 @@ def apply(draft: Draft) -> None:
             plug.disconnect()
         if sock is not None:
             plug.connect(sock)
+    extras = draft.apply_extras()
     changes = draft.changes()
     if changes:
         brick.set(changes)
-    elif moved:
+    elif moved or extras:
         brick.notify_changed()

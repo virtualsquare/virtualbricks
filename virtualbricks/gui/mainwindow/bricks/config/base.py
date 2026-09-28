@@ -20,8 +20,8 @@ Code shared by the brick configuration panels.
 
 Every panel subclasses ``ConfigController`` and implements ``build_ui()``,
 that creates the widgets, and ``get_config_view()``, that returns the panel.
-The helpers (``StateManager``, ``_PlugMixin``, ...) manage the sensitivity
-of the widgets and the plugs of the panels.
+The helpers (``StateManager``, ``State``, ...) manage the sensitivity of the
+widgets of the panels still without a draft.
 """
 
 import gi
@@ -30,7 +30,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from zope.interface import implementer
 
-from virtualbricks.config.settings import get_setting
 from virtualbricks.gui.interfaces import (
     IConfigController,
     IControl,
@@ -219,42 +218,3 @@ class StateManager:
             tooltip,
             *widgets,
         )
-
-
-# Plug configuration, used by the panels of the bricks with plugs.
-
-
-def _sock_should_visible(model, iter, data):
-    sock = model.get_value(iter, 0)
-    return sock and (
-        sock.brick.get_type().startswith("Switch")
-        or get_setting("allow_female_plugs")
-    )
-
-
-def _set_text(column, cell_renderer, model, itr):
-    sock = model.get_value(itr, 0)
-    cell_renderer.set_property("text", sock.nickname)
-
-
-class _PlugMixin:
-
-    def configure_sock_combobox(self, combo, model, brick, plug, gui):
-        filtered_model = model.filter_new()
-        filtered_model.set_visible_func(_sock_should_visible)
-        combo.set_model(filtered_model)
-        cell = combo.get_cells()[0]
-        combo.set_cell_data_func(cell, _set_text)
-        if plug.configured():
-            itr = filtered_model.get_iter_first()
-            while itr:
-                if filtered_model[itr][0] is plug.sock:
-                    combo.set_active_iter(itr)
-                    break
-                itr = filtered_model.iter_next(itr)
-
-    def connect_plug(self, plug, combo):
-        itr = combo.get_active_iter()
-        if itr:
-            model = combo.get_model()
-            plug.connect(model[itr][0])

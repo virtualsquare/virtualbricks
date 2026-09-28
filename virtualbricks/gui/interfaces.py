@@ -99,21 +99,6 @@ class IStateManager(Interface):
         """
 
 
-class IHelp(Interface):
-
-    def get_help(argument):
-        """Return the help for the given argument or raise an exception."""
-
-    def show_help_window(text):
-        """Show the help window with the text specified."""
-
-    def on_help_button_clicked(button, topic):
-        """
-        Callback of a help button, connected with its topic: show the help
-        on topic.
-        """
-
-
 class IWidgetGetter(Interface):
 
     def __getattr__(name):

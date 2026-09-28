@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 21:55+0200\n"
+"POT-Creation-Date: 2026-09-28 22:04+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -132,6 +132,137 @@ msgstr ""
 #: virtualbricks/bricks/tunnelconnect.py virtualbricks/bricks/tunnellisten.py
 #: virtualbricks/bricks/wire.py
 msgid "disconnected"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/dialogs/imagedialogs.py
+#: virtualbricks/gui/dialogs/importdialog.py
+#: virtualbricks/gui/dialogs/projectname.py virtualbricks/gui/dialogs/usbdev.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
+#: virtualbricks/gui/mainwindow/images/imagedetails.py
+msgid "Name"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "The name of the state"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Bandwidth"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid ""
+"Bytes per second at which the buffer drains, 0 for no limit; left to right, "
+"unless the same both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Bandwidth from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Bytes per second from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "The same bandwidth both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Use bandwidth both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Delay"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid ""
+"One-way delay in ms, added to the time in the buffer; left to right, unless "
+"the same both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Delay from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Delay in ms from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "The same delay both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Use delay both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Buffer"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid ""
+"Bytes the packet queue holds, 0 for no limit; left to right, unless the same "
+"both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Buffer from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Channel buffer in bytes from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "The same buffer both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Use buffer_size both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Loss"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid ""
+"Percentage of packets lost, as 0.1 for one in a thousand; left to right, "
+"unless the same both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Loss from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Percentage of packets lost from right to left"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "The same loss both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "Use loss both ways"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+#, python-brace-format
+msgid "Two states are called {name}"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+#, python-brace-format
+msgid "From {state} the chances add up to more than 100 %"
+msgstr ""
+
+#: virtualbricks/bricks/netemu.py
+msgid "A machine's socket card can only be the right end"
 msgstr ""
 
 #: virtualbricks/bricks/switch.py
@@ -368,15 +499,6 @@ msgstr ""
 #: virtualbricks/gui/mainwindow/events/newevent.py
 #, python-brace-format
 msgid "The name “{name}” is in use"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/addimage.py
-#: virtualbricks/gui/dialogs/imagedialogs.py
-#: virtualbricks/gui/dialogs/importdialog.py
-#: virtualbricks/gui/dialogs/projectname.py virtualbricks/gui/dialogs/usbdev.py
-#: virtualbricks/gui/mainwindow/events/newevent.py
-#: virtualbricks/gui/mainwindow/images/imagedetails.py
-msgid "Name"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/addimage.py
@@ -2026,6 +2148,23 @@ msgid "{help} · {note}"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/form.py
+msgid "The same both ways"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+#, fuzzy
+msgid "From left to right"
+msgstr "De izquierda a derecha"
+
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+msgid "From right to left"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
+msgid "Both ways"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/form.py
 #: virtualbricks/migrate/gui.py
 msgid "_Select"
 msgstr ""
@@ -2065,69 +2204,97 @@ msgid "Choose an image for this disk"
 msgstr "_Crear nueva imagen"
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "<=== connect ===>"
-msgstr "<=== conectar ===>"
+#, python-format, python-brace-format
+msgid "{bandwidth} bytes/s · {delay} ms · {loss:g} % lost"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "From ↓ to →"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#, python-brace-format
+msgid "From {first} to {second}"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#, python-format, python-brace-format
+msgid "{percent:g} % stays"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "Ends"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "Left end"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "The switch at one end of the link"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+#, fuzzy
+msgid "Right end"
+msgstr "De derecha a izquierda"
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
+msgid "The switch at the other end"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
+msgid "Add a state after this one"
+msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
 #, fuzzy
-msgid "Markov state"
-msgstr "Bricks (Bloques)"
+msgid "Remove this state"
+msgstr "Sesiones Remotas"
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Channel configuration"
+msgid "The emulator starts in the first state"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Forward link"
+msgid "States"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Reverse link"
+msgid "Values"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-#, fuzzy
-msgid "Asymmetric"
-msgstr "Simétrico"
-
-#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "buffer length (Byte; 0=no limit)"
+msgid "Transitions"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "propagation delay (one way; ms)"
+msgid "Period"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Percentage of loss as a floating point number."
+msgid "How often, in ms, the emulator may change state"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "loss rate (in %, [0,100] real)"
+msgid "Chances"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "bandwidth (Byte/s; 0=no limit)"
+#, python-format
+msgid ""
+"At each period, the chance in % of moving from a state, a row, to another"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Markov configuration"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Changing state probability"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "========>"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "State name"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Disabled because set symmetric"
+#, python-brace-format
+msgid ""
+"{brick} is running. The states and the transitions change at once; the ends "
+"when it starts again."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/networkcards.py
@@ -2462,24 +2629,7 @@ msgid "Tunnel"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
-msgid "Ends"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
-msgid "Left end"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
 msgid "The switch at one end of the wire"
-msgstr ""
-
-#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
-#, fuzzy
-msgid "Right end"
-msgstr "De derecha a izquierda"
-
-#: virtualbricks/gui/mainwindow/bricks/config/wireconfig.py
-msgid "The switch at the other end"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/tab.py
@@ -3309,6 +3459,17 @@ msgstr ""
 #, python-brace-format
 msgid "{exe} not found"
 msgstr ""
+
+#~ msgid "<=== connect ===>"
+#~ msgstr "<=== conectar ===>"
+
+#, fuzzy
+#~ msgid "Markov state"
+#~ msgstr "Bricks (Bloques)"
+
+#, fuzzy
+#~ msgid "Asymmetric"
+#~ msgstr "Simétrico"
 
 #, fuzzy
 #~ msgid "Port:"

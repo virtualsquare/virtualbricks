@@ -28,6 +28,11 @@ limits of the draft, an entry for a text or a path, buttons or a menu for a
 choice. A socket row chooses what a plug of the brick joins, of the draft's
 sockets.
 
+A pair row has a number both ways, from left to right and back, and a switch
+for the same both ways; ``row()`` takes any widget, and a section can frame
+any widget instead of rows. ``reload()`` shows the draft's values again, as
+when a panel shows another of the states of a Netemu.
+
 A change in a widget goes into the draft, then the form calls back. The panel
 then refreshes the rows: a row greys out while the draft doesn't use its
 setting, and shows its problem, red for an error, in the colour of warnings
@@ -52,6 +57,8 @@ from virtualbricks.i18n import _  # noqa: E402
 GAP = 8
 # The size of the help of a row, from the size of its label.
 HELP_SCALE = 0.9
+# The characters of the numbers of a pair row.
+PAIR_WIDTH = 7
 # The widest range of a spin button whose kind has no limit.
 LOWEST = -(2**31)
 HIGHEST = 2**31 - 1
@@ -86,6 +93,10 @@ class Row(Gtk.ListBoxRow):
         self.key = key
         self.control = widget
         self.help = help
+        # the other settings of the row, by name, and their widgets
+        self.parts: dict[str, Gtk.Widget] = {}
+        # shows the draft's value again
+        self.load: Callable[[], None] = lambda: None
         grid = Gtk.Grid(
             visible=True,
             column_spacing=16,
@@ -171,9 +182,11 @@ class Form:
         )
         self.rows: dict[str, Row] = {}
         self._list: Gtk.ListBox | None = None
+        # while the widgets show the draft's values again
+        self._loading = False
 
-    def section(self, title: str) -> None:
-        """A title, and a frame for the rows that follow."""
+    def section(self, title: str, content: Gtk.Widget | None = None) -> None:
+        """A title, and a frame for the rows that follow, or for content."""
 
         label = Gtk.Label(
             visible=True,
@@ -186,13 +199,22 @@ class Form:
         if self.rows:
             label.set_margin_top(GAP)
         frame = Gtk.Frame(visible=True)
-        self._list = Gtk.ListBox(
-            visible=True, selection_mode=Gtk.SelectionMode.NONE
-        )
-        self._list.set_header_func(_separate)
-        frame.add(self._list)
+        if content is None:
+            self._list = Gtk.ListBox(
+                visible=True, selection_mode=Gtk.SelectionMode.NONE
+            )
+            self._list.set_header_func(_separate)
+            frame.add(self._list)
+        else:
+            self._list = None
+            frame.add(content)
         self.widget.pack_start(label, False, False, 0)
         self.widget.pack_start(frame, False, False, 0)
+
+    def row(self, key: str, widget: Gtk.Widget, label: str, help: str) -> Row:
+        """A row of any widget, with its label and its help."""
+
+        return self._row(key, widget, label, help)
 
     def _row(
         self, key: str, widget: Gtk.Widget, label: str = "", help: str = ""
@@ -210,8 +232,21 @@ class Form:
         return row
 
     def _set(self, name: str, value: object) -> None:
+        if self._loading:
+            return
         self.draft.set(name, value)
         self.changed()
+
+    def reload(self) -> None:
+        """The widgets show the draft's values again, then refresh."""
+
+        self._loading = True
+        try:
+            for row in self.rows.values():
+                row.load()
+        finally:
+            self._loading = False
+        self.refresh()
 
     def switch(self, name: str) -> Gtk.Switch:
         """A setting true or false."""
@@ -221,12 +256,63 @@ class Form:
             "notify::active",
             lambda widget, _: self._set(name, widget.get_active()),
         )
-        self._row(name, switch)
+        row = self._row(name, switch)
+        row.load = lambda: switch.set_active(self.draft.get(name))
         return switch
 
     def spin(self, name: str) -> Gtk.SpinButton:
         """A number, between the draft's limits."""
 
+        spin = self._number(name)
+        row = self._row(name, spin)
+        row.load = lambda: spin.set_value(self.draft.get(name))
+        return spin
+
+    def pair(self, name: str, reverse: str, symmetric: str) -> Row:
+        """
+        A number from left to right, the one from right to left, and whether
+        the first is the same both ways; the second greys out while it is.
+        """
+
+        forward = self._number(name)
+        backward = self._number(reverse)
+        # the same width, whatever their range
+        for spin in (forward, backward):
+            spin.set_width_chars(PAIR_WIDTH)
+        both = Gtk.Switch(visible=True, active=self.draft.get(symmetric))
+        both.connect(
+            "notify::active",
+            lambda widget, _: self._set(symmetric, widget.get_active()),
+        )
+        both.set_tooltip_text(_("The same both ways"))
+        box = Gtk.Box(visible=True, spacing=6)
+        for widget, tip in (
+            (Gtk.Label(visible=True, label="→"), _("From left to right")),
+            (forward, _("From left to right")),
+            (Gtk.Label(visible=True, label="←"), _("From right to left")),
+            (backward, _("From right to left")),
+            (Gtk.Label(visible=True, label=_("Both ways")), ""),
+            (both, ""),
+        ):
+            if tip:
+                widget.set_tooltip_text(tip)
+            if isinstance(widget, Gtk.Label):
+                widget.get_style_context().add_class("dim-label")
+            widget.set_valign(Gtk.Align.CENTER)
+            box.pack_start(widget, False, False, 0)
+        row = self._row(name, box)
+        row.title.set_mnemonic_widget(forward)
+        row.parts = {reverse: backward, symmetric: both}
+
+        def load():
+            forward.set_value(self.draft.get(name))
+            backward.set_value(self.draft.get(reverse))
+            both.set_active(self.draft.get(symmetric))
+
+        row.load = load
+        return row
+
+    def _number(self, name: str) -> Gtk.SpinButton:
         value = self.draft.get(name)
         low, high = self.draft.limits(name)
         low = LOWEST if low is None else low
@@ -247,7 +333,6 @@ class Form:
             self._set(name, number)
 
         spin.connect("value-changed", on_changed)
-        self._row(name, spin)
         return spin
 
     def entry(self, name: str, secret: bool = False) -> Gtk.Entry:
@@ -262,7 +347,8 @@ class Form:
         entry.connect(
             "changed", lambda widget: self._set(name, widget.get_text())
         )
-        self._row(name, entry)
+        row = self._row(name, entry)
+        row.load = lambda: entry.set_text(self.draft.get(name))
         return entry
 
     def path(self, name: str, title: str, folder: bool = False) -> Gtk.Entry:
@@ -286,7 +372,9 @@ class Form:
         box.get_style_context().add_class("linked")
         box.pack_start(entry, True, True, 0)
         box.pack_start(button, False, False, 0)
-        self._row(name, box).title.set_mnemonic_widget(entry)
+        row = self._row(name, box)
+        row.title.set_mnemonic_widget(entry)
+        row.load = lambda: entry.set_text(self.draft.get(name))
         return entry
 
     def _choose(self, button, entry, title: str, folder: bool) -> None:
@@ -342,7 +430,8 @@ class Form:
                 "changed",
                 lambda widget: self._set(name, widget.get_active_id()),
             )
-            self._row(name, combo)
+            row = self._row(name, combo)
+            row.load = lambda: combo.set_active_id(self.draft.get(name))
             return combo
         box = Gtk.Box(visible=True)
         box.get_style_context().add_class("linked")
@@ -355,7 +444,15 @@ class Form:
             button.set_active(option == value)
             button.connect("toggled", self._on_toggled, name, option)
             box.pack_start(button, False, False, 0)
-        self._row(name, box)
+        row = self._row(name, box)
+        buttons = dict(zip(dict(options), box.get_children()))
+
+        def load():
+            button = buttons.get(self.draft.get(name))
+            if button is not None:
+                button.set_active(True)
+
+        row.load = load
         return box
 
     def _on_toggled(self, button, name: str, option: str) -> None:
@@ -395,8 +492,13 @@ class Form:
         for problem in self.draft.problems():
             problems.setdefault(problem.key, problem)
         for name, row in self.rows.items():
+            found = [
+                problems[key] for key in (name, *row.parts) if key in problems
+            ]
             row.refresh(
                 self.draft.uses(name),
                 self.draft.note(name),
-                problems.get(name),
+                found[0] if found else None,
             )
+            for key, widget in row.parts.items():
+                widget.set_sensitive(self.draft.uses(key))
