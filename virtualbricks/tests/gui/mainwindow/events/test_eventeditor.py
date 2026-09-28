@@ -17,10 +17,12 @@
 
 """
 The settings of an event: its delay, its actions read into rows and saved
-back, the kinds and their subjects, adding and removing actions.
+back, the kinds and their subjects, adding and removing actions; all on a
+draft, which OK applies.
 """
 
 from virtualbricks import console
+from virtualbricks.bricks.draft import Draft, apply
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
 if has_display:
@@ -48,14 +50,6 @@ def commands(event):
     return [(type(action), str(action)) for action in event.config.actions]
 
 
-class FakeGui:
-    def __init__(self):
-        self.closed = 0
-
-    def curtain_down(self):
-        self.closed += 1
-
-
 class EditorTestCase(GuiTestCase):
 
     def setUp(self):
@@ -64,11 +58,10 @@ class EditorTestCase(GuiTestCase):
             self.factory.new_brick("switch", name)
         self.boot = self.factory.new_event("boot")
         self.event = self.factory.new_event("start-lab")
-        self.gui = FakeGui()
 
     def edit(self, delay=5, *actions):
         self.event.set({"delay": delay, "actions": list(actions)})
-        editor = EventEditor(self.event)
+        editor = EventEditor(Draft(self.event))
         self.addCleanup(editor.panel.destroy)
         return editor
 
@@ -91,7 +84,10 @@ class EditorTestCase(GuiTestCase):
         return [entry[0] for entry in model]
 
     def ok(self, editor):
-        editor.on_ok_button_clicked(None, self.gui)
+        """What OK does: the numbers typed, then the draft."""
+
+        editor.commit()
+        apply(editor.draft)
 
 
 class TestReadingAnEvent(EditorTestCase):
@@ -178,7 +174,7 @@ class TestReadingAnEvent(EditorTestCase):
         self.assertIs(spin, editor.delay)
         self.assertEqual(then.get_text(), "seconds, then:")
         self.assertEqual(editor.add_button.get_label(), "Add Action")
-        self.assertEqual(editor.get_config_view(self.gui), editor.panel)
+        self.assertIs(editor.widget, editor.panel)
 
 
 class TestSaving(EditorTestCase):
@@ -196,7 +192,32 @@ class TestSaving(EditorTestCase):
         self.ok(editor)
         self.assertEqual(commands(self.event), before)
         self.assertEqual(self.event.config.delay, 5)
-        self.assertEqual(self.gui.closed, 1)
+
+    def test_unchanged_as_written(self):
+        # the rows would write "sw1 on", but nothing changed
+        editor = self.edit(5, vb("sw1  on"))
+        changed = []
+        self.event.changed.connect(changed.append)
+        self.assertEqual(editor.draft.changes(), {})
+        self.ok(editor)
+        self.assertEqual(
+            commands(self.event), [(console.VbShellCommand, "sw1  on")]
+        )
+        self.assertEqual(changed, [])
+
+    def test_on_the_draft(self):
+        editor = self.edit(5, vb("sw1 on"))
+        editor.delay.set_value(12)
+        editor.rows()[0].kind_combo.set_active_id("stop-brick")
+        self.assertEqual(
+            editor.draft.changes(),
+            {"delay": 12, "actions": [vb("sw1 off")]},
+        )
+        # the event waits for OK
+        self.assertEqual(self.event.config.delay, 5)
+        self.assertEqual(
+            commands(self.event), [(console.VbShellCommand, "sw1 on")]
+        )
 
     def test_the_delay(self):
         editor = self.edit(5, vb("sw1 on"))
@@ -210,17 +231,6 @@ class TestSaving(EditorTestCase):
         editor.delay.set_text("30")
         self.ok(editor)
         self.assertEqual(self.event.config.delay, 30)
-
-    def test_cancel(self):
-        editor = self.edit(5, vb("sw1 on"))
-        editor.delay.set_value(12)
-        editor.rows()[0].remove_button.clicked()
-        editor.on_cancel_button_clicked(None, self.gui)
-        self.assertEqual(self.event.config.delay, 5)
-        self.assertEqual(
-            commands(self.event), [(console.VbShellCommand, "sw1 on")]
-        )
-        self.assertEqual(self.gui.closed, 1)
 
     def test_without_a_subject(self):
         editor = self.edit(5, vb("sw1 on"), sh("ls"))
@@ -298,6 +308,19 @@ class TestChangingAnAction(EditorTestCase):
         self.assertEqual(commands(self.event), [])
 
 
+class TestTheSubjectAlone(EditorTestCase):
+
+    def test_another_brick(self):
+        editor = self.edit(5, vb("sw1 on"))
+        editor.rows()[0].subject.set_active_id("sw2")
+        self.assertEqual(editor.draft.changes(), {"actions": [vb("sw2 on")]})
+
+    def test_another_command(self):
+        editor = self.edit(5, sh("ls"))
+        editor.rows()[0].subject.set_text("ls -l")
+        self.assertEqual(editor.draft.changes(), {"actions": [sh("ls -l")]})
+
+
 class TestAddingAndRemoving(EditorTestCase):
 
     def test_add(self):
@@ -351,3 +374,17 @@ class TestAddingAndRemoving(EditorTestCase):
         # the kinds as wide as each other
         self.assertIn(second.kind_combo, editor._kinds.get_widgets())
         self.assertEqual(first.action(), Action(Kind.START_BRICK, "sw1"))
+
+
+class TestWaiting(EditorTestCase):
+
+    def test_waiting(self):
+        editor = self.edit(5, vb("sw1 on"))
+        self.assertFalse(editor.running())
+        self.event.scheduled = object()
+        self.assertTrue(editor.running())
+        self.assertEqual(
+            editor.running_words(),
+            "start-lab is waiting: when the wait is over, it runs its actions"
+            " as they are then; a new delay counts from its next start.",
+        )

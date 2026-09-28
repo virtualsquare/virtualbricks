@@ -24,6 +24,7 @@ import os
 
 from twisted.internet import defer
 
+from virtualbricks.bricks.draft import Draft
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.gui import GuiTestCase, has_display
 
@@ -96,26 +97,25 @@ class FakeDialog:
         self.shown.append((self.factory, parent))
 
 
-class FakeController:
-    """A panel: what the tab asks of it."""
+class FakePanel:
+    """A panel on a draft of brick: what the tab asks of it."""
 
-    def __init__(self, calls):
+    def __init__(self, calls, brick):
         self.calls = calls
-        self.panel = Gtk.Box()
+        self.draft = Draft(brick)
+        self.widget = Gtk.Box()
         self.hidden = Gtk.Label(label="hidden")
-        self.panel.add(self.hidden)
+        self.widget.add(self.hidden)
+        self.rows = {}
 
-    def get_config_view(self, gui):
-        self.calls.append(("view", gui))
-        return self.panel
+    def connect_changed(self, callback):
+        pass
 
-    def on_ok_button_clicked(self, button, gui):
-        self.calls.append("ok")
-        gui.curtain_down()
+    def commit(self):
+        self.calls.append("commit")
 
-    def on_cancel_button_clicked(self, button, gui):
-        self.calls.append("cancel")
-        gui.curtain_down()
+    def running(self):
+        return False
 
 
 class BricksTestCase(GuiTestCase):
@@ -603,10 +603,9 @@ class TestTheSettings(BricksTestCase):
         controllers = {}
 
         def adapt(brick, gui):
-            controllers[brick] = FakeController(calls)
+            controllers[brick] = FakePanel(calls, brick)
             return controllers[brick]
 
-        # a panel without a draft, as the events' and the images'
         self.patch(tab, "new_panel", adapt)
         return calls, controllers
 
@@ -740,10 +739,12 @@ class TestTheSettings(BricksTestCase):
         page = self.tab.settings
         self.assertEqual(
             [(expand, fill) for _child, expand, fill in packing(page)],
-            [(False, False)] * 2 + [(True, True)] + [(False, False)] * 2,
+            [(False, False)] * 3 + [(True, True)] + [(False, False)] * 2,
         )
+        # all of it but the bar of a running brick
         for child in page.get_children():
-            self.assertTrue(child.get_visible(), child)
+            visible = child is not self.tab.running_bar
+            self.assertEqual(child.get_visible(), visible, child)
         head = page.get_children()[0]
         image, text = head.get_children()
         name, kind = text.get_children()
@@ -755,24 +756,14 @@ class TestTheSettings(BricksTestCase):
         )
         for widget in (image, text, name, kind):
             self.assertTrue(widget.get_visible(), widget)
-        actions = page.get_children()[4]
+        actions = page.get_children()[5]
         self.assertEqual(
             packing(actions),
             [
                 (self.tab.cancel_button, False, False),
+                (self.tab.why, True, True),
                 (self.tab.ok_button, False, False),
             ],
-        )
-        self.assertEqual(
-            [
-                actions.child_get_property(child, "pack-type")
-                for child in actions.get_children()
-            ],
-            [Gtk.PackType.START, Gtk.PackType.END],
-        )
-        self.assertEqual(
-            actions.get_children(),
-            [self.tab.cancel_button, self.tab.ok_button],
         )
         self.assertEqual(self.tab.cancel_button.get_label(), "_Cancel")
         self.assertEqual(self.tab.ok_button.get_label(), "_OK")
@@ -785,12 +776,11 @@ class TestTheSettings(BricksTestCase):
         for button in (self.tab.cancel_button, self.tab.ok_button):
             self.assertTrue(button.get_visible())
         controller = controllers[self.sw]
-        self.assertEqual(calls, [("view", self.gui)])
         # the panel shows, but not what it hides
-        self.assertTrue(controller.panel.get_visible())
+        self.assertTrue(controller.widget.get_visible())
         self.assertFalse(controller.hidden.get_visible())
-        holder = controller.panel.get_parent()
-        self.assertEqual(packing(holder), [(controller.panel, True, True)])
+        holder = controller.widget.get_parent()
+        self.assertEqual(packing(holder), [(controller.widget, True, True)])
         self.assertEqual(
             (
                 holder.get_margin_start(),
@@ -801,16 +791,39 @@ class TestTheSettings(BricksTestCase):
         )
         self.assertTrue(holder.get_visible())
 
-    def test_the_panel_closes_it(self):
+    def test_ok_takes_what_is_typed(self):
         calls, controllers = self.fake_panels()
         self.tab.configure(self.sw)
         self.tab.ok_button.clicked()
+        self.assertEqual(calls, ["commit"])
+        self.assertIsNone(self.tab.configuring)
+        # Cancel doesn't
         self.tab.configure(self.sw)
         self.tab.cancel_button.clicked()
-        self.assertEqual(
-            calls, [("view", self.gui), "ok", ("view", self.gui), "cancel"]
-        )
+        self.assertEqual(calls, ["commit"])
         self.assertIsNone(self.tab.configuring)
+
+    def test_a_number_typed(self):
+        # and not yet taken by the spin button, as with Alt+O
+        self.tab.configure(self.sw)
+        self.tab._controller.form.rows["ports"].control.set_text("8")
+        self.tab.ok_button.clicked()
+        self.assertEqual(self.sw.config.ports, 8)
+
+    def test_an_error_taken_at_ok(self):
+        self.tab.configure(self.sw)
+        spin = self.tab._controller.form.rows["ports"].control
+        # beyond the limit of the spin button, as a value already in the file
+        spin.set_range(1, 500)
+        spin.set_text("200")
+        # not through the button, which would hide an exception
+        self.tab.on_ok_clicked(self.tab.ok_button)
+        self.assertIs(self.tab.configuring, self.sw)
+        self.assertEqual(self.sw.config.ports, 32)
+        self.assertFalse(self.tab.ok_button.get_sensitive())
+        self.assertEqual(
+            self.tab.why.get_text(), "Ports: 200 is outside 1–128"
+        )
 
     def test_escape(self):
         calls, controllers = self.fake_panels()
@@ -835,7 +848,7 @@ class TestTheSettings(BricksTestCase):
         self.tab.configure(self.sw)
         first = self.tab.settings
         self.tab.configure(vm)
-        self.assertEqual(calls, [("view", self.gui), ("view", self.gui)])
+        self.assertEqual(controllers[vm].draft.brick, vm)
         self.assertIs(self.tab.configuring, vm)
         self.assertIsNot(self.tab.settings, first)
         self.assertEqual(

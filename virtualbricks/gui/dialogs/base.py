@@ -21,8 +21,9 @@ Code shared by the windows and dialogs that build their UI in Python.
 Every window subclasses ``Window`` and implements ``build_ui()``, that
 creates the widgets, and ``get_root_widget()``, that returns the main
 widget. Who wants to know when a window closes connects to the ``destroy``
-signal of that widget. The brick configuration panels have their own
-base, in :mod:`virtualbricks.gui.mainwindow.bricks.config.base`.
+signal of that widget. The settings of the bricks, of the events and of the
+disk images are panels on drafts instead, of
+:mod:`virtualbricks.gui.mainwindow.bricks.config.panel`.
 """
 
 

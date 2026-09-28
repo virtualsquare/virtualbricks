@@ -21,8 +21,13 @@ from virtualbricks.bricks.draft import Draft
 from virtualbricks.tests.gui import GuiTestCase, has_display, untranslated
 
 if has_display:
+    from gi.repository import Gtk
+
     from virtualbricks.gui.mainwindow.bricks.config import PANELS, new_panel
-    from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
+    from virtualbricks.gui.mainwindow.bricks.config.panel import (
+        Panel,
+        spin_buttons,
+    )
     from virtualbricks.gui.mainwindow.bricks.config.switchconfig import (
         SwitchPanel,
     )
@@ -32,6 +37,24 @@ if has_display:
             form.section("Ports")
             form.spin("ports")
             form.switch("hub_mode")
+
+    class Pages(Panel):
+        """A number in a form, and one of its own on a page not shown."""
+
+        def build(self, form):
+            form.section("Ports")
+            form.spin("ports")
+            self.own = Gtk.SpinButton(
+                adjustment=Gtk.Adjustment(upper=100, step_increment=1)
+            )
+            self.own.connect(
+                "value-changed",
+                lambda spin: self.draft.set("ports", spin.get_value_as_int()),
+            )
+            stack = Gtk.Stack()
+            stack.add_named(form.widget, "form")
+            stack.add_named(self.own, "own")
+            return stack
 
 
 class PortsOnly(Draft):
@@ -86,7 +109,35 @@ class TestAPanel(PanelTestCase):
         self.assertRaises(NotImplementedError, Panel, Draft(self.switch))
 
 
+class TestCommit(PanelTestCase):
+
+    def test_the_numbers_typed(self):
+        panel = self.make(Pages, Draft(self.switch))
+        spin = panel.form.rows["ports"].control
+        self.assertEqual(list(spin_buttons(panel.widget)), [spin, panel.own])
+        spin.set_text("8")
+        # not yet taken
+        self.assertEqual(panel.draft.get("ports"), 32)
+        panel.commit()
+        self.assertEqual(panel.draft.get("ports"), 8)
+        # the one of its own, on the page not shown
+        panel.own.set_text("12")
+        panel.commit()
+        self.assertEqual(panel.draft.get("ports"), 12)
+
+    def test_nothing_typed(self):
+        panel = self.make(TwoRows, Draft(self.switch))
+        panel.commit()
+        self.assertEqual(panel.draft.changes(), {})
+
+
 class TestRunning(PanelTestCase):
+
+    def test_whether_it_runs(self):
+        panel = self.make(TwoRows, Draft(self.switch))
+        self.assertFalse(panel.running())
+        self.switch.__isrunning__ = lambda: True
+        self.assertTrue(panel.running())
 
     def test_everything_at_once(self):
         panel = self.make(SwitchPanel, Draft(self.switch))

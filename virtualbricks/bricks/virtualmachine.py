@@ -368,6 +368,69 @@ class Image:
             raise errors.LockedImageError(self, self.master)
 
 
+@define
+class ImageSettings:
+    """What the details of an image change: its name and its description."""
+
+    name: str = field(Str(), default="", help="The name of the image")
+    description: str = field(
+        Str(), default="", help="A description of the image"
+    )
+
+
+class ImageDraft(Draft):
+    """
+    The name and the description of an image, until OK. The name is checked
+    as the factory checks it, and a new one reaches the disks that use the
+    image.
+    """
+
+    def __init__(self, image: Image, factory) -> None:
+        self.factory = factory
+        super().__init__(image)
+
+    def read(self) -> ImageSettings:
+        return ImageSettings(
+            self.brick.get_name(), self.brick.get_description()
+        )
+
+    def new_name(self) -> str | None:
+        """
+        The name the image takes, normalized, or None if it keeps its own;
+        InvalidNameError if it can't take it.
+        """
+
+        name = self.settings.name
+        if name == self.original.name:
+            return None
+        try:
+            return self.factory.normalize_name(name)
+        except errors.NameAlreadyInUseError as exc:
+            # its own name, written another way
+            if exc.name == self.original.name:
+                return None
+            raise
+
+    def check(self) -> list[Problem]:
+        try:
+            self.new_name()
+        except errors.NameAlreadyInUseError as exc:
+            text = _("The name “{name}” is in use").format(name=exc.name)
+            return [Problem("name", text)]
+        except errors.InvalidNameError as exc:
+            return [Problem("name", str(exc))]
+        return []
+
+    def give(self, changes: dict[str, object]) -> None:
+        image = self.brick
+        name = self.new_name()
+        if name is not None:
+            # through the factory: the disks follow
+            self.factory.rename(image, name)
+        if "description" in changes:
+            image.set_description(self.settings.description)
+
+
 def is_disk_image(brick):
     return isinstance(brick, Image)
 

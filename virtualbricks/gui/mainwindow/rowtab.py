@@ -25,10 +25,10 @@ New, the search, a switch between all the objects and the running ones, how
 many run, and Start All and Stop All; under them, the ``RowList``, or a page
 that says what the objects are when the project has none. The second has the
 settings of one object: a line that names it, its panel in a scrolled
-window, and Cancel and OK. A panel on a draft, of
-:mod:`virtualbricks.gui.mainwindow.bricks.config.panel`, has more: an info bar
-over it while its brick runs, and OK only while the draft has no errors, the
-first of them beside it; OK applies the draft.
+window, and Cancel and OK. The panel, of
+:mod:`virtualbricks.gui.mainwindow.bricks.config.panel`, is on a draft: an
+info bar over it while its object runs, and OK only while the draft has no
+errors, the first of them beside it; OK applies the draft.
 
 A ``Row`` shows an object's icon, grey while it doesn't run; its name; a line
 about it; its state; a button that starts or stops it; and the button of its
@@ -517,9 +517,9 @@ class RowsTab(Tab, Gtk.Stack):
         self._menu: Gtk.Menu | None = None
         # the object whose settings show, and their panel
         self.configuring = None
-        self._controller = None
+        self._controller: Panel | None = None
         self.settings: Gtk.Box | None = None
-        # a panel on a draft: the brick running, and the first error
+        # the object running, and the first error of the draft
         self.running_bar: Gtk.InfoBar | None = None
         self.running_words: Gtk.Label | None = None
         self.why: Gtk.Label | None = None
@@ -687,8 +687,8 @@ class RowsTab(Tab, Gtk.Stack):
 
         raise NotImplementedError
 
-    def panel_for(self, item):
-        """The panel of the settings of item, or None."""
+    def panel_for(self, item) -> Panel | None:
+        """The panel of the settings of item, on a new draft, or None."""
 
         raise NotImplementedError
 
@@ -747,7 +747,7 @@ class RowsTab(Tab, Gtk.Stack):
         self.add_named(self.settings, "settings")
         self.set_visible_child(self.settings)
 
-    def _settings_page(self, item, controller) -> Gtk.Box:
+    def _settings_page(self, item, controller: Panel) -> Gtk.Box:
         page = Gtk.Box(visible=True, orientation=Gtk.Orientation.VERTICAL)
         head = Gtk.Box(visible=True, spacing=12, margin=GAP)
         image = Gtk.Image(visible=True, pixel_size=ICON_SIZE)
@@ -781,10 +781,7 @@ class RowsTab(Tab, Gtk.Stack):
             margin_end=GAP,
             margin_top=GAP,
         )
-        if isinstance(controller, Panel):
-            panel = controller.widget
-        else:
-            panel = controller.get_config_view(self.gui)
+        panel = controller.widget
         panel.show()
         holder.pack_start(panel, True, True, 0)
         scrolled.add(holder)
@@ -797,33 +794,23 @@ class RowsTab(Tab, Gtk.Stack):
         self.ok_button.show()
         actions.pack_start(self.cancel_button, False, False, 0)
         actions.pack_end(self.ok_button, False, False, 0)
-        parts = [head]
-        if isinstance(controller, Panel):
-            self.cancel_button.connect("clicked", self.on_cancel_clicked)
-            self.ok_button.connect("clicked", self.on_ok_clicked)
-            self.why = Gtk.Label(
-                visible=False, xalign=1.0, ellipsize=Pango.EllipsizeMode.END
-            )
-            self.why.get_style_context().add_class("error")
-            actions.pack_end(self.why, True, True, 0)
-            self.running_bar = Gtk.InfoBar(message_type=Gtk.MessageType.INFO)
-            self.running_words = Gtk.Label(visible=True, xalign=0.0, wrap=True)
-            self.running_bar.get_content_area().add(self.running_words)
-            parts.append(self.running_bar)
-            controller.connect_changed(self.on_panel_changed)
-            self.on_panel_changed(controller)
-            self.show_running(item, controller)
-        else:
-            # the panel's own: they call the window's curtain_down()
-            self.cancel_button.connect(
-                "clicked", controller.on_cancel_button_clicked, self.gui
-            )
-            self.ok_button.connect(
-                "clicked", controller.on_ok_button_clicked, self.gui
-            )
+        self.cancel_button.connect("clicked", self.on_cancel_clicked)
+        self.ok_button.connect("clicked", self.on_ok_clicked)
+        self.why = Gtk.Label(
+            visible=False, xalign=1.0, ellipsize=Pango.EllipsizeMode.END
+        )
+        self.why.get_style_context().add_class("error")
+        actions.pack_end(self.why, True, True, 0)
+        self.running_bar = Gtk.InfoBar(message_type=Gtk.MessageType.INFO)
+        self.running_words = Gtk.Label(visible=True, xalign=0.0, wrap=True)
+        self.running_bar.get_content_area().add(self.running_words)
+        controller.connect_changed(self.on_panel_changed)
+        self.on_panel_changed(controller)
+        self.show_running(controller)
 
         for widget, expand in (
-            *((part, False) for part in parts),
+            (head, False),
+            (self.running_bar, False),
             (Gtk.Separator(visible=True), False),
             (scrolled, True),
             (Gtk.Separator(visible=True), False),
@@ -833,10 +820,10 @@ class RowsTab(Tab, Gtk.Stack):
         page.connect("key-press-event", self.on_settings_key_press)
         return page
 
-    def show_running(self, item, panel: Panel) -> None:
-        """The info bar of a panel on a draft, while its brick runs."""
+    def show_running(self, panel: Panel) -> None:
+        """The info bar of the panel, while its object runs."""
 
-        running = is_running(item)
+        running = panel.running()
         if running:
             self.running_words.set_text(panel.running_words())
         self.running_bar.set_visible(running)
@@ -857,7 +844,12 @@ class RowsTab(Tab, Gtk.Stack):
         self.why.set_visible(bool(errors))
 
     def on_ok_clicked(self, button) -> None:
-        apply(self._controller.draft)
+        panel = self._controller
+        panel.commit()
+        # a number just taken can make an error, which shows beside OK
+        if panel.draft.errors():
+            return
+        apply(panel.draft)
         self.close_settings()
 
     def on_cancel_clicked(self, button) -> None:
@@ -898,8 +890,8 @@ class RowsTab(Tab, Gtk.Stack):
 
     def on_changed(self, item) -> None:
         self.update()
-        if item is self.configuring and self.running_bar is not None:
-            self.show_running(item, self._controller)
+        if item is self.configuring:
+            self.show_running(self._controller)
 
     def on_removed(self, item) -> None:
         if item is self.configuring:

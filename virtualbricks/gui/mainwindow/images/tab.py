@@ -41,6 +41,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gtk  # noqa: E402
 
+from virtualbricks.bricks.virtualmachine import ImageDraft  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
 from virtualbricks.gui.imageinfo import LABELS, State  # noqa: E402
@@ -255,7 +256,7 @@ class ImagesTab(RowsTab):
         return imagemenu.popup(widget, event, self.gui, item, True)
 
     def panel_for(self, item) -> ImageDetails:
-        return ImageDetails(item, self.factory, self.list.infos)
+        return ImageDetails(ImageDraft(item, self.factory), self.list.infos)
 
     def settings_words(self, item) -> str:
         return _("Disk image")

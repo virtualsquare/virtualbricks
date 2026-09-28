@@ -32,6 +32,7 @@ from virtualbricks.tests import (
 )
 from virtualbricks.bricks.virtualmachine import (
     Card,
+    ImageDraft,
     Lack,
     UsbDevice,
     UsbDeviceKind,
@@ -595,3 +596,68 @@ class TestApply(DraftTestCase):
         apply(draft)
         self.assertEqual(self.vm.proc.written, [b"usb_add host:046d:c52b\n"])
         self.assertEqual(self.vm.config.usb_devices, [device])
+
+
+class TestTheDraftOfAnImage(BrickTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.image = self.factory.new_disk_image("frr", "/i/frr.qcow2")
+        self.image.set_description("FRR")
+        self.draft = ImageDraft(self.image, self.factory)
+
+    def test_a_copy(self):
+        draft = self.draft
+        self.assertEqual(draft.get("name"), "frr")
+        self.assertEqual(draft.get("description"), "FRR")
+        draft.set("name", "frr-debian")
+        self.assertEqual(draft.changes(), {"name": "frr-debian"})
+        self.assertEqual(draft.problems(), [])
+        self.assertEqual(self.image.get_name(), "frr")
+
+    def test_apply(self):
+        vm = self.factory.new_brick("qemu", "vm")
+        vm.set({"hda_image": "frr"})
+        self.draft.set("name", "frr debian")
+        self.draft.set("description", "FRR on Debian.")
+        apply(self.draft)
+        # the name as the factory writes it
+        self.assertIs(self.factory.get_image_by_name("frr_debian"), self.image)
+        self.assertEqual(self.image.get_description(), "FRR on Debian.")
+        # the disks follow
+        self.assertEqual(vm.config.hda_image, "frr_debian")
+
+    def test_the_description_alone(self):
+        renamed = []
+        self.patch(self.factory, "rename", lambda *args: renamed.append(args))
+        self.draft.set("description", "FRR on Debian.")
+        apply(self.draft)
+        self.assertEqual(renamed, [])
+        self.assertEqual(self.image.get_description(), "FRR on Debian.")
+
+    def test_a_name_in_use(self):
+        self.factory.new_brick("switch", "sw1")
+        self.draft.set("name", "sw1")
+        self.assertEqual(
+            self.draft.problems(),
+            [Problem("name", "The name “sw1” is in use")],
+        )
+        self.assertRaises(ValueError, apply, self.draft)
+        self.assertEqual(self.image.get_name(), "frr")
+
+    def test_a_name_that_cant_be(self):
+        for name, problem in (
+            ("1frr", "Name must start with a letter"),
+            ("", "Name is empty"),
+        ):
+            self.draft.set("name", name)
+            self.assertEqual(self.draft.problems(), [Problem("name", problem)])
+
+    def test_its_own_name_written_another_way(self):
+        renamed = []
+        self.patch(self.factory, "rename", lambda *args: renamed.append(args))
+        self.draft.set("name", " frr ")
+        self.assertEqual(self.draft.problems(), [])
+        apply(self.draft)
+        self.assertEqual(renamed, [])
+        self.assertEqual(self.image.get_name(), "frr")

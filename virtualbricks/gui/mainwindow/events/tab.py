@@ -41,6 +41,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 from twisted.internet import reactor, task  # noqa: E402
 
+from virtualbricks.bricks.draft import Draft  # noqa: E402
 from virtualbricks.gui.mainwindow.events import (  # noqa: E402
     eventinfo,
     eventmenu,
@@ -242,7 +243,7 @@ class EventsTab(RowsTab):
         return eventmenu.popup(widget, event, self.gui, item, True)
 
     def panel_for(self, item) -> EventEditor:
-        return EventEditor(item)
+        return EventEditor(Draft(item))
 
     def settings_words(self, item) -> str:
         return _("Event settings")

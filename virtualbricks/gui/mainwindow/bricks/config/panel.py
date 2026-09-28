@@ -17,23 +17,43 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The panel of a brick: its settings, as the rows of a form on a draft.
+The panel of a brick: its settings, as the rows of a form on a draft. The
+settings of an event and the details of a disk image are panels too, with
+widgets of their own.
 
 A panel says which rows it has in ``build()``, and the form makes them; a
-panel of several forms returns the widget that holds them. The settings page
-of the Bricks tab shows ``widget``, keeps OK sensitive while the draft has no
-errors, and applies the draft on OK; the brick sees nothing before. A change
-in a row refreshes the rows, then calls the callbacks of
+panel of several forms, or of widgets of its own, returns the widget that
+holds them. The settings page of a tab shows ``widget``, keeps OK sensitive
+while the draft has no errors, and on OK takes what is typed and not yet in
+the draft, with ``commit()``, then applies the draft; the brick sees nothing
+before. While the brick runs, an info bar says what ``running_words()``
+says. A change in a row refreshes the rows, then calls the callbacks of
 ``connect_changed()``. ``gui`` is the main window, for a panel that opens
 another tab.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk  # noqa: E402
 
 from virtualbricks.gui.mainwindow.bricks.config.form import Form
 from virtualbricks.i18n import _
+from virtualbricks.tools import is_running
+
+
+def spin_buttons(widget: Gtk.Widget) -> Iterator[Gtk.SpinButton]:
+    """The spin buttons in widget, in the pages of a stack not shown too."""
+
+    if isinstance(widget, Gtk.SpinButton):
+        yield widget
+    elif isinstance(widget, Gtk.Container):
+        for child in widget.get_children():
+            yield from spin_buttons(child)
 
 
 class Panel:
@@ -72,6 +92,20 @@ class Panel:
         self.refresh()
         for callback in self._callbacks:
             callback(self)
+
+    def commit(self) -> None:
+        """
+        Put in the draft the numbers typed and not yet taken, as a spin
+        button takes them when the focus leaves it; OK calls it first.
+        """
+
+        for spin in spin_buttons(self.widget):
+            spin.update()
+
+    def running(self) -> bool:
+        """Whether the brick runs: then the info bar says running_words()."""
+
+        return is_running(self.draft.brick)
 
     def running_words(self) -> str:
         """What the settings of the brick say while it runs."""

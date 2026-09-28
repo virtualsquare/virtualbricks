@@ -19,11 +19,14 @@
 """
 The details of a disk image, in the Images tab, as the settings of a brick.
 
-The name and the description can change; OK saves them, and a new name
-reaches the disks that use the image. The rest is what ``qemu-img info``
-and the project say: the file, its format and backing file, the sizes, the
-snapshots, when the file changed, each disk that uses the image with its
-mode and its machine's state, and the other projects that use the file.
+The name and the description can change, on a draft of the image,
+:class:`virtualbricks.bricks.virtualmachine.ImageDraft`: a name that can't be
+the image's says why under it, and OK waits for a good one. OK saves them,
+and a new name reaches the disks that use the image. The rest is what
+``qemu-img info`` and the project say: the file, its format and backing
+file, the sizes, the snapshots, when the file changed, each disk that uses
+the image with its mode and its machine's state, and the other projects that
+use the file.
 """
 
 from __future__ import annotations
@@ -35,20 +38,18 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango  # noqa: E402
-from twisted.logger import Logger  # noqa: E402
 
-from virtualbricks import errors  # noqa: E402
 from virtualbricks.config import images  # noqa: E402
 from virtualbricks.config.workspace import projects  # noqa: E402
 from virtualbricks.gui import imageinfo  # noqa: E402
 from virtualbricks.gui.pango import pango_attr_list  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.base import (  # noqa: E402
-    ConfigController,
+from virtualbricks.gui.mainwindow.bricks.config.form import (  # noqa: E402
+    show_problem,
+)
+from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
+    Panel,
 )
 from virtualbricks.i18n import _, ngettext  # noqa: E402
-
-logger = Logger()
-invalid_name = "Cannot rename the image {name}: {error}"
 
 GAP = 8
 # the facts of a file that qemu-img reads
@@ -84,30 +85,35 @@ def mode_words(use) -> str:
     )
 
 
-class ImageDetails(ConfigController):
-    """The name, the description and the facts of an image."""
+class ImageDetails(Panel):
+    """The name, the description and the facts of an image, on a draft."""
 
-    def __init__(self, original, factory, infos, workspace=None) -> None:
-        self.factory = factory
+    def __init__(self, draft, infos, workspace=None) -> None:
+        self.image = draft.brick
+        self.factory = draft.factory
         # the facts of the files, which the list of the tab reads too
         self.infos = infos
         self.workspace = projects if workspace is None else workspace
-        super().__init__(original)
+        super().__init__(draft)
 
-    def build_ui(self) -> None:
-        image = self.original
+    def build(self, form) -> Gtk.Box:
+        image = self.image
         self.panel = Gtk.Box(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=14
         )
 
-        form = Gtk.Grid(visible=True, row_spacing=GAP, column_spacing=12)
         label = _label(_("Name"), bold=True)
         self.name_entry = Gtk.Entry(
-            visible=True, hexpand=True, text=image.get_name()
+            visible=True, hexpand=True, text=self.draft.get("name")
         )
+        self.name_entry.connect("changed", self.on_name_changed)
         label.set_mnemonic_widget(self.name_entry)
-        form.attach(label, 0, 0, 1, 1)
-        form.attach(self.name_entry, 1, 0, 1, 1)
+        # why the name can't be the image's
+        self.name_problem = _label(wrap=True)
+        grid = Gtk.Grid(visible=True, row_spacing=GAP, column_spacing=12)
+        grid.attach(label, 0, 0, 1, 1)
+        grid.attach(self.name_entry, 1, 0, 1, 1)
+        grid.attach(self.name_problem, 1, 1, 1, 1)
         label = _label(_("Description"), bold=True, valign=Gtk.Align.START)
         scrolled = Gtk.ScrolledWindow(
             visible=True,
@@ -118,12 +124,14 @@ class ImageDetails(ConfigController):
         self.description_view = Gtk.TextView(
             visible=True, wrap_mode=Gtk.WrapMode.WORD_CHAR
         )
-        self.description_view.get_buffer().set_text(image.get_description())
+        buffer = self.description_view.get_buffer()
+        buffer.set_text(self.draft.get("description"))
+        buffer.connect("changed", self.on_description_changed)
         scrolled.add(self.description_view)
         label.set_mnemonic_widget(self.description_view)
-        form.attach(label, 0, 1, 1, 1)
-        form.attach(scrolled, 1, 1, 1, 1)
-        self.panel.pack_start(form, False, False, 0)
+        grid.attach(label, 0, 2, 1, 1)
+        grid.attach(scrolled, 1, 2, 1, 1)
+        self.panel.pack_start(grid, False, False, 0)
 
         self.facts = Gtk.Grid(visible=True, row_spacing=4, column_spacing=18)
         self.panel.pack_start(self.facts, False, False, 0)
@@ -156,11 +164,27 @@ class ImageDetails(ConfigController):
         # no gap for no project
         self.others.set_visible(bool(others))
         self.panel.pack_start(self.others, False, False, 0)
+        return self.panel
+
+    def refresh(self) -> None:
+        super().refresh()
+        problems = [p for p in self.draft.problems() if p.key == "name"]
+        problem = problems[0] if problems else None
+        show_problem(self.name_problem, problem)
+        context = self.name_entry.get_style_context()
+        if problem is None:
+            context.remove_class("error")
+        else:
+            context.add_class("error")
+
+    def running(self) -> bool:
+        # a machine that uses the image keeps its file, whatever its name
+        return False
 
     def read_facts(self) -> None:
         """Show the facts of the file, and read them first if needed."""
 
-        path = self.original.get_path()
+        path = self.image.get_path()
         info = self.infos.get(path)
         if info is not None or not os.path.exists(path):
             self.show_facts(info)
@@ -179,7 +203,7 @@ class ImageDetails(ConfigController):
         READING.
         """
 
-        path = self.original.get_path()
+        path = self.image.get_path()
         rows = [(_("File"), imageinfo.short_path(path))]
         if not os.path.exists(path):
             rows.append((_("State"), _("The file isn't there")))
@@ -236,7 +260,7 @@ class ImageDetails(ConfigController):
             )
 
     def show_uses(self) -> None:
-        uses = images.uses(self.factory, self.original)
+        uses = images.uses(self.factory, self.image)
         if not uses:
             self.uses.attach(
                 _label(_("No disk uses it."), dim=True), 0, 0, 1, 1
@@ -254,21 +278,15 @@ class ImageDetails(ConfigController):
             ):
                 self.uses.attach(label, column, row, 1, 1)
 
-    def get_config_view(self, gui):
-        return self.panel
+    # Signals
 
-    def configure_brick(self, gui) -> None:
-        image = self.original
-        name = self.name_entry.get_text()
-        if name != image.get_name():
-            try:
-                # through the factory: the disks follow
-                self.factory.rename(image, name)
-            except errors.InvalidNameError as exc:
-                logger.error(invalid_name, name=image.get_name(), error=exc)
-        buffer = self.description_view.get_buffer()
-        image.set_description(
-            buffer.get_text(
-                buffer.get_start_iter(), buffer.get_end_iter(), False
-            )
+    def on_name_changed(self, entry) -> None:
+        self.draft.set("name", entry.get_text())
+        self.on_changed()
+
+    def on_description_changed(self, buffer) -> None:
+        text = buffer.get_text(
+            buffer.get_start_iter(), buffer.get_end_iter(), False
         )
+        self.draft.set("description", text)
+        self.on_changed()

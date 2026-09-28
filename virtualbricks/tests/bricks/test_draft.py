@@ -219,6 +219,23 @@ class TestApply(DraftTestCase):
         self.assertEqual(self.changed, [])
 
 
+class TestAnEvent(DraftTestCase):
+    """A draft of what has no plugs: an event."""
+
+    def test_an_event(self):
+        event = self.factory.new_event("boot")
+        changed = []
+        event.changed.connect(changed.append)
+        draft = Draft(event)
+        self.assertEqual(draft.links, [])
+        draft.set("delay", 7)
+        self.assertEqual(draft.problems(), [])
+        self.assertEqual(event.config.delay, 0)
+        apply(draft)
+        self.assertEqual(event.config.delay, 7)
+        self.assertEqual(changed, [event])
+
+
 class TestLinks(DraftTestCase):
 
     def setUp(self):

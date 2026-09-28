@@ -29,8 +29,12 @@ among the events that it can start or stop.
 
 An action whose brick or event isn't in the project keeps its name, marked
 missing, until it changes. An action without a brick, an event or a command
-is left out. OK saves the actions as the event keeps them: an event saved
-without changes stays the same.
+is left out.
+
+The editor is a panel on a draft of the event, of
+:mod:`virtualbricks.bricks.draft`: each change goes into the draft, as the
+event keeps its actions, and OK gives the event what changed, so that an
+event saved without changes stays the same.
 """
 
 from __future__ import annotations
@@ -40,15 +44,15 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk  # noqa: E402
 
+from virtualbricks.gui.mainwindow.bricks.config.panel import (  # noqa: E402
+    Panel,
+)
 from virtualbricks.gui.mainwindow.events import eventinfo  # noqa: E402
 from virtualbricks.gui.mainwindow.events.eventinfo import (  # noqa: E402
     Action,
     Kind,
 )
 from virtualbricks.gui.mainwindow.tab import icon_button  # noqa: E402
-from virtualbricks.gui.mainwindow.bricks.config.base import (  # noqa: E402
-    ConfigController,
-)
 from virtualbricks.i18n import _  # noqa: E402
 
 # Between the widgets, in pixels.
@@ -113,11 +117,13 @@ class ActionRow(Gtk.Box):
     and a button that removes it.
     """
 
-    def __init__(self, action: Action, choices, factory) -> None:
+    def __init__(self, action: Action, choices, factory, changed) -> None:
         super().__init__(visible=True, spacing=GAP)
         # the names of the bricks and of the events, by BRICK and EVENT
         self.choices = choices
         self.factory = factory
+        # called when the kind or the subject changes
+        self.changed = changed
         self.kind = action.kind
         self.kind_combo = Gtk.ComboBoxText(visible=True)
         self.kind_combo.set_row_separator_func(_is_separator)
@@ -167,6 +173,7 @@ class ActionRow(Gtk.Box):
             chosen = subject or (names[0] if names else None)
             if chosen is not None:
                 widget.set_active_id(chosen)
+        widget.connect("changed", lambda widget: self.changed())
         self.subject = widget
         self.subject_box.pack_start(widget, True, True, 0)
 
@@ -191,13 +198,14 @@ class ActionRow(Gtk.Box):
             subject = ""
         self.kind = kind
         self._show_subject(subject)
+        self.changed()
 
 
-class EventEditor(ConfigController):
-    """The delay and the actions of an event."""
+class EventEditor(Panel):
+    """The delay and the actions of an event, on a draft."""
 
-    def build_ui(self) -> None:
-        event = self.original
+    def build(self, form) -> Gtk.Box:
+        event = self.draft.brick
         factory = event.factory
         self.choices = {
             BRICK: [brick.get_name() for brick in factory.bricks],
@@ -216,7 +224,8 @@ class EventEditor(ConfigController):
         before, _sep, after = _("Wait {delay} seconds, then:").partition(
             "{delay}"
         )
-        self.delay = delay_button(event.config.delay)
+        self.delay = delay_button(self.draft.get("delay"))
+        self.delay.connect("value-changed", self.on_delay_changed)
         for widget in (
             Gtk.Label(visible=True, label=before.strip()),
             self.delay,
@@ -229,7 +238,7 @@ class EventEditor(ConfigController):
         )
         # the kinds of the rows, as wide as the widest
         self._kinds = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
-        for command in event.config.actions:
+        for command in self.draft.get("actions"):
             self.add(eventinfo.read(command, factory))
 
         self.add_button = Gtk.Button(
@@ -246,6 +255,7 @@ class EventEditor(ConfigController):
         self.panel.pack_start(delay, False, False, 0)
         self.panel.pack_start(self.actions, False, False, 0)
         self.panel.pack_start(self.add_button, False, False, 0)
+        return self.panel
 
     def rows(self) -> list[ActionRow]:
         return self.actions.get_children()
@@ -253,37 +263,48 @@ class EventEditor(ConfigController):
     def add(self, action: Action) -> ActionRow:
         """A row for action, after the others."""
 
-        row = ActionRow(action, self.choices, self.original.factory)
+        row = ActionRow(
+            action,
+            self.choices,
+            self.draft.brick.factory,
+            self.take_actions,
+        )
         self._kinds.add_widget(row.kind_combo)
         row.remove_button.connect("clicked", self.on_remove_clicked, row)
         self.actions.pack_start(row, False, False, 0)
         return row
 
-    # What the settings page asks
+    def take_actions(self) -> None:
+        """The actions of the rows into the draft, as the event keeps them."""
 
-    def get_config_view(self, gui):
-        return self.panel
-
-    def configure_brick(self, gui) -> None:
-        # a number typed and not yet taken
-        self.delay.update()
         actions = [row.action() for row in self.rows()]
-        self.original.set(
-            {
-                "delay": self.delay.get_value_as_int(),
-                "actions": [
-                    eventinfo.write(action)
-                    for action in actions
-                    if action is not None
-                ],
-            }
+        self.draft.set(
+            "actions",
+            [
+                eventinfo.write(action)
+                for action in actions
+                if action is not None
+            ],
         )
+        self.on_changed()
+
+    def running_words(self) -> str:
+        return _(
+            "{event} is waiting: when the wait is over, it runs its actions as"
+            " they are then; a new delay counts from its next start."
+        ).format(event=self.draft.brick.name)
 
     # Signals
 
+    def on_delay_changed(self, spin) -> None:
+        self.draft.set("delay", spin.get_value_as_int())
+        self.on_changed()
+
     def on_add_clicked(self, button) -> None:
         row = self.add(Action(Kind.START_BRICK, ""))
+        self.take_actions()
         row.kind_combo.grab_focus()
 
     def on_remove_clicked(self, button, row) -> None:
         row.destroy()
+        self.take_actions()

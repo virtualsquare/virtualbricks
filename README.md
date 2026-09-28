@@ -291,8 +291,10 @@ To add a language, see the top of `l10n.sh`.
   `events/`, `images/`, `topology.py` and `readme.py`. The settings panel of
   each kind of brick is in `bricks/config/`: rows made by `form.py` from the
   schema, on the brick's draft, and the virtual machine's in `vm/`, a module
-  for each section of its sidebar. `dialogs/` has the other windows and
-  dialogs, and `messages.py` the messages of the Logs window.
+  for each section of its sidebar. The settings of an event and the details
+  of an image are panels on drafts too, in `events/` and `images/`.
+  `dialogs/` has the other windows and dialogs, and `messages.py` the
+  messages of the Logs window.
 - `virtualbricks/tests/`: the tests, in the layout of the package.
 - `docs/`: the manual pages, in `man/`, and their web pages,
   `config-files.html` and `archive-protocol.html`; in `redesign/`, the designs

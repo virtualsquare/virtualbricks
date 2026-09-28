@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 23:00+0200\n"
+"POT-Creation-Date: 2026-09-28 23:57+0200\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -386,6 +386,12 @@ msgstr "Vertical"
 
 #: virtualbricks/bricks/tunnellisten.py
 msgid "The UDP port to listen on"
+msgstr ""
+
+#: virtualbricks/bricks/virtualmachine.py virtualbricks/gui/dialogs/addimage.py
+#: virtualbricks/gui/mainwindow/events/newevent.py
+#, python-brace-format
+msgid "The name “{name}” is in use"
 msgstr ""
 
 #: virtualbricks/bricks/virtualmachine.py
@@ -774,12 +780,6 @@ msgstr ""
 #: virtualbricks/gui/dialogs/settings.py
 #: virtualbricks/gui/mainwindow/events/newevent.py
 msgid "Cancel"
-msgstr ""
-
-#: virtualbricks/gui/dialogs/addimage.py
-#: virtualbricks/gui/mainwindow/events/newevent.py
-#, python-brace-format
-msgid "The name “{name}” is in use"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/addimage.py
@@ -2837,6 +2837,13 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/eventeditor.py
 msgid "Add Action"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/events/eventeditor.py
+#, python-brace-format
+msgid ""
+"{event} is waiting: when the wait is over, it runs its actions as they are "
+"then; a new delay counts from its next start."
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/events/eventinfo.py

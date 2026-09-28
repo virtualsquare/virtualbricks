@@ -45,8 +45,6 @@
 - [ ] Move the tab files inside `virtualbricks/gui/mainwindow/tabs`
 - [ ] Drop ngettext from `count()` in `gui/mainwindow/bricks/tab.py`:
   its singular and plural are the same text
-- [ ] Move the event editor and the image details onto drafts, so that
-  `ConfigController` goes (11 §11)
 
 ## Bricks and programs
 
@@ -160,6 +158,9 @@
 
 ## Done
 
+- [x] Move the event editor and the image details onto drafts, so that
+  `ConfigController` goes (11 §11): every panel is on a draft, and OK
+  takes the numbers typed and not yet taken
 - [x] Implement workspaces: `virtualbricks --workspace FOLDER` uses the
   projects of another folder for a run, the setting stays, and
   `state.toml` remembers the project open last in each workspace

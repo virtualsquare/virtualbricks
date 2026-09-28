@@ -15,13 +15,17 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-"""The details of an image: its name, description, facts and uses."""
+"""
+The details of an image: its name and description on a draft, its facts and
+its uses.
+"""
 
 import os
 
+from virtualbricks.bricks.draft import apply
+from virtualbricks.bricks.virtualmachine import ImageDraft
 from virtualbricks.config import images
 from virtualbricks.config.workspace import OpenProject
-from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.config.test_images import (
     INFO,
     FakeQemuImg,
@@ -32,7 +36,6 @@ from virtualbricks.tests.gui.mainwindow.images.test_tab import LaterQemuImg
 
 if has_display:
     from virtualbricks.gui import imageinfo
-    from virtualbricks.gui.mainwindow.images import imagedetails
     from virtualbricks.gui.mainwindow.images.imagedetails import ImageDetails
 
 
@@ -68,8 +71,7 @@ class DetailsTestCase(GuiTestCase):
 
     def details(self, image=None, infos=None):
         details = ImageDetails(
-            self.frr if image is None else image,
-            self.factory,
+            ImageDraft(self.frr if image is None else image, self.factory),
             self.infos if infos is None else infos,
             self.workspace,
         )
@@ -190,22 +192,41 @@ class TestSaving(DetailsTestCase):
         details = self.details()
         details.name_entry.set_text("frr-debian")
         details.description_view.get_buffer().set_text("FRR on Debian.")
-        details.configure_brick(None)
+        self.assertEqual(
+            details.draft.changes(),
+            {"name": "frr-debian", "description": "FRR on Debian."},
+        )
+        # the image waits for OK
+        self.assertEqual(self.frr.get_name(), "frr")
+        apply(details.draft)
         self.assertEqual(self.frr.get_name(), "frr-debian")
         self.assertEqual(self.frr.get_description(), "FRR on Debian.")
         # the disks follow
         self.assertEqual(vm.config.hda_image, "frr-debian")
 
     def test_a_name_in_use(self):
-        logger = FakeLogger()
-        self.patch(imagedetails, "logger", logger)
         self.factory.new_disk_image("pc", "/lab/pc.qcow2")
         details = self.details()
+        self.assertFalse(details.name_problem.get_visible())
         details.name_entry.set_text("pc")
-        details.description_view.get_buffer().set_text("FRR on Debian.")
-        details.configure_brick(None)
-        self.assertEqual(self.frr.get_name(), "frr")
-        self.assertEqual(logger.levels(), ["error"])
-        # the description is saved all the same
-        self.assertEqual(self.frr.get_description(), "FRR on Debian.")
+        # under the name, in red, and OK waits
+        self.assertTrue(details.name_problem.get_visible())
+        self.assertEqual(
+            details.name_problem.get_text(), "The name “pc” is in use"
+        )
+        for widget in (details.name_problem, details.name_entry):
+            self.assertTrue(widget.get_style_context().has_class("error"))
+        self.assertTrue(details.draft.errors())
+        # another name, and it goes
+        details.name_entry.set_text("frr-debian")
+        self.assertFalse(details.name_problem.get_visible())
+        self.assertFalse(
+            details.name_entry.get_style_context().has_class("error")
+        )
+        self.assertEqual(details.draft.errors(), [])
         self.assertTrue(os.path.exists(self.frr.get_path()))
+
+    def test_not_running(self):
+        # a machine that uses it keeps its file, whatever the image's name
+        self.vm("r1").__isrunning__ = lambda: True
+        self.assertFalse(self.details().running())

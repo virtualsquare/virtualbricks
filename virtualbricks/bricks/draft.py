@@ -17,14 +17,17 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The settings of a brick while its panel shows them.
+The settings of a brick while its panel shows them; of an event, and of a disk
+image, too.
 
 A panel works on a draft, never on the brick. The draft holds a copy of the
 brick's configuration, and each value set in it is checked by the kind of
 its field, as in the brick. A value the kind refuses is kept aside, as it was
 typed, with the reason: a problem. ``apply()`` gives the brick the settings
 that changed in the draft, in one ``set()``: a running brick takes at once
-those it can, through its ``cbset_`` methods, and says it changed once.
+those it can, through its ``cbset_`` methods, and says it changed once. An
+object without a record of settings, as a disk image, has a draft that
+makes one in ``read()`` and gives the changes back in ``give()``.
 
 The links of a draft are the sockets that the plugs of the brick join, None
 for a plug in nothing; ``sockets()`` are those a plug can join. ``apply()``
@@ -77,15 +80,28 @@ class Draft:
     WITH: ClassVar[dict[str, tuple[str, object]]] = {}
 
     def __init__(self, brick: Any) -> None:
+        # a brick, an event or an image
         self.brick = brick
         # the settings as they were, and as the panel has them
-        self.original = copy(brick.config)
-        self.settings = copy(brick.config)
+        self.original = copy(self.read())
+        self.settings = copy(self.original)
         # the values that their kind refused, as typed, and why
         self.refused: dict[str, tuple[object, str]] = {}
-        # the socket that each plug joins, or None
-        self.original_links = [plug.sock for plug in brick.plugs]
+        # the socket that each plug joins, or None; an event has no plugs
+        self.original_links = [
+            plug.sock for plug in getattr(brick, "plugs", ())
+        ]
         self.links = list(self.original_links)
+
+    def read(self):
+        """The record of the settings, which the draft copies."""
+
+        return self.brick.config
+
+    def give(self, changes: dict[str, object]) -> None:
+        """Give the brick the settings that changed, in one set()."""
+
+        self.brick.set(changes)
 
     def get(self, name: str) -> object:
         """The value of a setting, as it was typed if its kind refused it."""
@@ -237,6 +253,6 @@ def apply(draft: Draft) -> None:
     extras = draft.apply_extras()
     changes = draft.changes()
     if changes:
-        brick.set(changes)
+        draft.give(changes)
     elif moved or extras:
         brick.notify_changed()
