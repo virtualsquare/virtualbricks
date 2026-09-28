@@ -18,8 +18,8 @@
 """A wire: dpipe between two vde_plug, from a switch to another."""
 
 from virtualbricks import bricks
+from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.i18n import _
-from virtualbricks.spawn import abspath_vde
 
 
 class Wire(bricks.Brick):
@@ -53,16 +53,10 @@ class Wire(bricks.Brick):
     def configured(self):
         return len(self.plugs) == 2 and all(map(lambda p: p.sock, self.plugs))
 
-    def prog(self):
-        return (abspath_vde("dpipe"),)
-
-    def args(self):
-        return [
-            self.prog(),
-            abspath_vde("vde_plug"),
-            # XXX: this is awful
-            self.plugs[0].sock.path.rstrip("[]"),
-            "=",
-            abspath_vde("vde_plug"),
-            self.plugs[1].sock.path.rstrip("[]"),
-        ]
+    def command(self, prepared):
+        # dpipe joins two vde_plug, one in each switch
+        plug = vde_program(prepared.vde, "vde_plug")
+        cmd = Command(vde_program(prepared.vde, "dpipe"))
+        cmd.arg(plug, socket_path(self.plugs[0]))
+        cmd.arg("=", plug, socket_path(self.plugs[1]))
+        return cmd

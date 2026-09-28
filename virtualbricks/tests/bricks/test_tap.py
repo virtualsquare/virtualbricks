@@ -18,8 +18,6 @@
 
 """The tap."""
 
-import os
-
 from virtualbricks.tests import (
     CommandTestCase,
 )
@@ -33,4 +31,3 @@ class TestTap(CommandTestCase):
         sw = self.factory.new_brick("switch", "sw")
         tap.plugs[0].connect(sw.socks[0])
         self.assertEqual(tap.get_parameters(), "plugged to sw ")
-        self.assertEqual(tap.prog(), os.path.join(self.bin, "vde_plug2tap"))

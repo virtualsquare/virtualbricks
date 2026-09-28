@@ -23,7 +23,6 @@ from virtualbricks.config.schema import dump_record, field_names
 from virtualbricks.tests import (
     BrickTestCase,
     CommandTestCase,
-    pairs,
 )
 from virtualbricks.bricks.netemu import (
     BRICK_KEYS,
@@ -116,7 +115,7 @@ class TestNetemu(BrickTestCase):
         self.assertIn(b"markov-time 100\n", sent)
 
 
-class TestNetemuCommandLine(CommandTestCase):
+class TestStates(CommandTestCase):
 
     def netemu(self):
         netemu = self.factory.new_brick("netemu", "wan")
@@ -125,58 +124,6 @@ class TestNetemuCommandLine(CommandTestCase):
         netemu.plugs[0].connect(left.socks[0])
         netemu.plugs[1].connect(right.socks[0])
         return netemu, left, right
-
-    def test_symmetric(self):
-        netemu, left, right = self.netemu()
-        args = netemu.args()
-        self.assertEqual(args[0], "vde-netemu")
-        self.assertEqual(
-            args[1:3],
-            [
-                "-v",
-                left.socks[0].path.rstrip("[]")
-                + ":"
-                + right.socks[0].path.rstrip("[]"),
-            ],
-        )
-        self.assertEqual(
-            pairs(args[3:11]),
-            [("-b", "125000"), ("-d", "0"), ("-c", "75000"), ("-l", "0.0")],
-        )
-        self.assertIn("--nofifo", args)
-        self.assertIn("-M", args)
-
-    def test_asymmetric(self):
-        netemu, _, _ = self.netemu()
-        netemu.set(
-            {
-                "bandwidthsymm": False,
-                "bandwidth": 1,
-                "bandwidthr": 2,
-                "delaysymm": False,
-                "delay": 3,
-                "delayr": 4,
-                "chanbufsizesymm": False,
-                "chanbufsize": 5,
-                "chanbufsizer": 6,
-                "losssymm": False,
-                "loss": 7.0,
-                "lossr": 8.0,
-            }
-        )
-        self.assertEqual(
-            pairs(netemu.args()[3:19]),
-            [
-                ("-b", "LR 1"),
-                ("-b", "RL 2"),
-                ("-d", "LR 3"),
-                ("-d", "RL 4"),
-                ("-c", "LR 5"),
-                ("-c", "RL 6"),
-                ("-l", "LR 7.0"),
-                ("-l", "RL 8.0"),
-            ],
-        )
 
     def test_new_state_names(self):
         netemu, _, _ = self.netemu()

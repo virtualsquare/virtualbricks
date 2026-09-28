@@ -19,10 +19,10 @@
 """A tap: vde_plug2tap, a tap interface of the host plugged to a switch."""
 
 from virtualbricks import bricks
+from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Choice, IPv4, define, field
 from virtualbricks.i18n import _
-from virtualbricks.spawn import abspath_vde
 
 
 @define
@@ -43,21 +43,18 @@ class Tap(bricks.PrivilegedBrick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
-        self.command_builder["-s"] = self.sock_path
-        self.command_builder["*tap"] = self.get_name
-
-    def sock_path(self):
-        if self.plugs[0].sock:
-            return self.plugs[0].sock.path.rstrip("[]")
-        return ""
 
     def get_parameters(self):
         if self.configured():
             return _("plugged to %s ") % self.plugs[0].sock.brick.name
         return _("disconnected")
 
-    def prog(self):
-        return abspath_vde("vde_plug2tap")
+    def command(self, prepared):
+        cmd = Command(vde_program(prepared.vde, "vde_plug2tap"))
+        cmd.option("-s", socket_path(self.plugs[0]))
+        # the interface of the host has the name of the brick
+        cmd.arg(self.name)
+        return cmd
 
     def open_console(self):
         pass

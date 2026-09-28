@@ -18,12 +18,10 @@
 
 """A switch: vde_switch."""
 
-from collections import OrderedDict
-
 from virtualbricks import bricks
+from virtualbricks.bricks.command import Command, vde_program
 from virtualbricks.config.schema import Bool, Int, define, field
 from virtualbricks.i18n import _
-from virtualbricks.spawn import abspath_vde
 
 
 @define
@@ -51,21 +49,6 @@ class Switch(bricks.Brick):
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.command_builder = OrderedDict(
-            [
-                ("-x", "hub"),
-                ("-n", "numports"),
-                ("-F", "fstp"),
-                ("--macaddr", "macaddr"),
-                ("-m", "mode"),
-                ("-g", "group"),
-                ("--priority", "priority"),
-                ("--mgmtmode", "mgmtmode"),
-                ("--mgmtgroup", "mgmtgroup"),
-                ("-s", self.path),
-                ("-M", self.console),
-            ]
-        )
         sock = factory.new_sock(self, self.name + "_port")
         sock.path = self.path()
         self.socks.append(sock)
@@ -79,8 +62,15 @@ class Switch(bricks.Brick):
             hub = ", HUB"
         return _("Ports: ") + "%d%s%s" % (self.config.numports, fstp, hub)
 
-    def prog(self):
-        return abspath_vde("vde_switch")
+    def command(self, prepared):
+        config = self.config
+        cmd = Command(vde_program(prepared.vde, "vde_switch"))
+        cmd.flag("-x", config.hub)
+        cmd.option("-n", config.numports)
+        cmd.flag("-F", config.fstp)
+        cmd.option("-s", self.path())
+        cmd.option("-M", self.console())
+        return cmd
 
     def configured(self):
         return self.socks[0].has_valid_path()

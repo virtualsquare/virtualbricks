@@ -80,51 +80,6 @@ class TestBase(BrickTestCase):
         )
 
 
-class TestCommandLine(BrickTestCase):
-
-    def test_typed_values(self):
-        switch = self.factory.new_brick("switch", "sw")
-        switch.command_builder = {
-            "-x": "hub",
-            "-n": "numports",
-            "-F": "fstp",
-            "-m": "mode",
-            "#skipped": "numports",
-            "-s": lambda: "/tmp/sw",
-            "-e": lambda: "",
-            "-M": lambda: "*",
-            "*plain": lambda: "value",
-            "-z": None,
-        }
-        self.assertEqual(
-            switch.build_cmd_line(),
-            ["-n", "32", "-s", "/tmp/sw", "-M", "value"],
-        )
-        switch.set({"hub": True, "fstp": True})
-        self.assertEqual(
-            switch.build_cmd_line(),
-            ["-x", "-n", "32", "-F", "-s", "/tmp/sw", "-M", "value"],
-        )
-
-    def test_switch(self):
-        switch = self.factory.new_brick("switch", "sw")
-        switch.set({"numports": 8, "hub": True})
-        line = switch.build_cmd_line()
-        self.assertEqual(line[:3], ["-x", "-n", "8"])
-        self.assertIn("-s", line)
-
-    def test_capture_and_tunnels(self):
-        capture = self.factory.new_brick("capture", "cap")
-        capture.set({"iface": "eth0"})
-        self.assertEqual(capture.build_cmd_line(), ["eth0"])
-        connect = self.factory.new_brick("tunnelconnect", "tc")
-        connect.set({"host": "example.org"})
-        self.assertEqual(
-            connect.build_cmd_line(), ["-p", "10771", "-c", "example.org:7667"]
-        )
-        self.assertEqual(connect.get_host(), "example.org:7667")
-
-
 class TestSchemas(BrickTestCase):
 
     def test_every_brick_has_the_events(self):
@@ -175,7 +130,6 @@ class TestSchemas(BrickTestCase):
     def test_router_has_no_name_field(self):
         router = self.factory.new_brick("router", "r")
         self.assertNotIn("name", field_names(router.config))
-        self.assertEqual(router.build_cmd_line()[0], "-M")
 
 
 class TestRelatedEvents(BrickTestCase):

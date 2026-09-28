@@ -22,10 +22,10 @@ import os
 from twisted.logger import Logger
 
 from virtualbricks import bricks
+from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import _
-from virtualbricks.spawn import abspath_vde
 
 logger = Logger()
 pwdgen_exit = "Command pwdgen exited with {code}"
@@ -43,17 +43,10 @@ class TunnelListen(bricks.Brick):
     type = "TunnelListen"
     config_factory = TunnelListenConfig
     connections = "connect"
-    command_builder = {"-s": None, "#password": "password", "-p": "port"}
 
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
-        self.command_builder["-s"] = self.sock_path
         self.plugs.append(Plug(self))
-
-    def sock_path(self):
-        if self.configured():
-            return self.plugs[0].sock.path.rstrip("[]")
-        return ""
 
     def get_parameters(self):
         if self.plugs[0].sock:
@@ -68,27 +61,33 @@ class TunnelListen(bricks.Brick):
             )
         return _("disconnected")
 
-    def prog(self):
-        return abspath_vde("vde_cryptcab")
-
     def configured(self):
         return bool(self.plugs[0].sock)
 
-    def args(self):
-        # TODO: port to utils.getProcessOutput
-        pwdgen = "echo %s | sha1sum >/tmp/tunnel_%s.key && sync" % (
-            self.config.password,
-            self.name,
-        )
-        exitstatus = os.system(pwdgen)
-        logger.info(pwdgen_exit, code=exitstatus)
-        res = []
-        res.append(self.prog())
-        res.append("-P")
-        res.append("/tmp/tunnel_%s.key" % self.name)
-        for arg in self.build_cmd_line():
-            res.append(arg)
-        return res
+    def key_path(self):
+        return "/tmp/tunnel_%s.key" % self.name
+
+    def prepare(self):
+        deferred = bricks.Brick.prepare(self)
+
+        def write_key(prepared):
+            # TODO: port to utils.getProcessOutput
+            pwdgen = "echo %s | sha1sum >%s && sync" % (
+                self.config.password,
+                self.key_path(),
+            )
+            exitstatus = os.system(pwdgen)
+            logger.info(pwdgen_exit, code=exitstatus)
+            return prepared
+
+        return deferred.addCallback(write_key)
+
+    def command(self, prepared):
+        cmd = Command(vde_program(prepared.vde, "vde_cryptcab"))
+        cmd.option("-P", self.key_path())
+        cmd.option("-s", socket_path(self.plugs[0]))
+        cmd.option("-p", self.config.port)
+        return cmd
 
     # def post_poweroff(self):
     #    os.unlink("/tmp/tunnel_%s.key" % self.name)

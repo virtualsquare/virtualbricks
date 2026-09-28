@@ -21,6 +21,7 @@
 import re
 
 from virtualbricks import bricks
+from virtualbricks.bricks.command import Command, socket_path
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.config.schema import (
     Bool,
@@ -38,6 +39,10 @@ from virtualbricks.config.schema import (
     load_record,
     rename_references,
 )
+from virtualbricks.programs import ProgramError
+
+# The options that Netemu passes to its program.
+OPTIONS = ("-v", "-b", "-d", "-c", "-l", "--nofifo", "-M")
 
 
 @define
@@ -172,10 +177,6 @@ class Netemu(Wire):
         )
         self.startupState = 0  # the state the emulator will start into
         self.transPeriod = 100  # default value for Netemu
-        self.command_builder = {
-            "--nofifo": lambda: "*",
-            "-M": self.console,
-        }
 
     def poweron(self):
         d = bricks.Brick.poweron(self)
@@ -184,51 +185,68 @@ class Netemu(Wire):
         self.update()
         return d
 
-    def args(self):
-        res = [
-            self.prog(),
-            "-v",
-            self.plugs[0].sock.path.rstrip("[]")
-            + ":"
-            + self.plugs[1].sock.path.rstrip("[]"),
+    def program(self, vde):
+        """
+        The program: vde-netemu, or wirefilter of VDE, which it's a fork of.
+
+        Return the path and a warning, or None.
+        """
+
+        if "vde-netemu" in vde.programs:
+            return vde.programs["vde-netemu"], None
+        path = vde.programs.get("wirefilter")
+        if path is None:
+            raise ProgramError(
+                "vde-netemu (vde-netemu) isn't installed, nor wirefilter (vde2)"
+            )
+        lacks = [
+            option
+            for option in OPTIONS
+            if option not in vde.options.get("wirefilter", ())
         ]
+        if lacks:
+            raise ProgramError(
+                "vde-netemu (vde-netemu) isn't installed, and wirefilter has"
+                f" no {', '.join(lacks)}"
+            )
+        warning = (
+            f"{self.name}: vde-netemu (vde-netemu) isn't installed:"
+            " wirefilter runs in its place"
+        )
+        return path, warning
 
-        # Bandwidth
-        if self.config.bandwidthsymm:
-            res.extend(["-b", str(self.config.bandwidth)])
-        else:
-            res.extend(["-b", "LR {0}".format(self.config.bandwidth)])
-            res.extend(["-b", "RL {0}".format(self.config.bandwidthr)])
-
-        # Delay
-        if self.config.delaysymm:
-            res.extend(["-d", str(self.config.delay)])
-        else:
-            res.extend(["-d", "LR {0}".format(self.config.delay)])
-            res.extend(["-d", "RL {0}".format(self.config.delayr)])
-
-        # Chanbufsize
-        if self.config.chanbufsizesymm:
-            res.extend(["-c", str(self.config.chanbufsize)])
-        else:
-            res.extend(["-c", "LR {0}".format(self.config.chanbufsize)])
-            res.extend(["-c", "RL {0}".format(self.config.chanbufsizer)])
-
-        # Loss
-        if self.config.losssymm:
-            res.extend(["-l", str(self.config.loss)])
-        else:
-            res.extend(["-l", "LR {0}".format(self.config.loss)])
-            res.extend(["-l", "RL {0}".format(self.config.lossr)])
-
-        res.extend(bricks.Brick.build_cmd_line(self))
-        return res
+    def command(self, prepared):
+        config = self.config
+        path, warning = self.program(prepared.vde)
+        cmd = Command(path)
+        if warning is not None:
+            cmd.warn(warning)
+        cmd.option(
+            "-v", f"{socket_path(self.plugs[0])}:{socket_path(self.plugs[1])}"
+        )
+        # each value both ways, or left to right (LR) and right to left (RL)
+        for option, value, reverse, symmetric in (
+            ("-b", config.bandwidth, config.bandwidthr, config.bandwidthsymm),
+            ("-d", config.delay, config.delayr, config.delaysymm),
+            (
+                "-c",
+                config.chanbufsize,
+                config.chanbufsizer,
+                config.chanbufsizesymm,
+            ),
+            ("-l", config.loss, config.lossr, config.losssymm),
+        ):
+            if symmetric:
+                cmd.option(option, value)
+            else:
+                cmd.option(option, f"LR {value}")
+                cmd.option(option, f"RL {reverse}")
+        cmd.arg("--nofifo")
+        cmd.option("-M", self.console())
+        return cmd
 
     def init_markov(self):
         self.markov_manager = MarkovConfig(self.config)
-
-    def prog(self):
-        return "vde-netemu"
 
     def set(self, attrs):
         self._set(attrs, "chanbufsizesymm", "chanbufsize", "chanbufsizer")

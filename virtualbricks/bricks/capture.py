@@ -18,13 +18,11 @@
 
 """A capture: vde_pcapplug, a host interface plugged to a switch."""
 
-from collections import OrderedDict as odict
-
 from virtualbricks import bricks
+from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.bricks.plug import Plug
 from virtualbricks.config.schema import Str, define, field
 from virtualbricks.i18n import _
-from virtualbricks.spawn import abspath_vde
 
 
 @define
@@ -42,14 +40,6 @@ class Capture(bricks.PrivilegedBrick):
     def __init__(self, factory, name):
         bricks.Brick.__init__(self, factory, name)
         self.plugs.append(Plug(self))
-        self.command_builder = odict(
-            (("-s", self.sock_path), ("*iface", "iface"))
-        )
-
-    def sock_path(self):
-        if self.plugs[0].sock:
-            return self.plugs[0].sock.path.rstrip("[]")
-        return ""
 
     def get_parameters(self):
         if self.config.iface == "":
@@ -61,8 +51,11 @@ class Capture(bricks.PrivilegedBrick):
             }
         return _("Interface %s disconnected") % self.config.iface
 
-    def prog(self):
-        return abspath_vde("vde_pcapplug")
+    def command(self, prepared):
+        cmd = Command(vde_program(prepared.vde, "vde_pcapplug"))
+        cmd.option("-s", socket_path(self.plugs[0]))
+        cmd.arg(self.config.iface)
+        return cmd
 
     def open_console(self):
         pass

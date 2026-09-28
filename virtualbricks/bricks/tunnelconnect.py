@@ -17,6 +17,7 @@
 
 """A tunnel client: vde_cryptcab, connecting to a tunnel server."""
 
+from virtualbricks.bricks.command import Command, socket_path, vde_program
 from virtualbricks.bricks.tunnellisten import TunnelListen, TunnelListenConfig
 from virtualbricks.config.schema import Int, Str, define, field
 from virtualbricks.i18n import _
@@ -33,22 +34,6 @@ class TunnelConnect(TunnelListen):
 
     type = "TunnelConnect"
     config_factory = TunnelConnectConfig
-    command_builder = {
-        "-s": None,
-        "#password": "password",
-        "-p": "localport",
-        "-c": None,
-        "#port": "port",
-    }
-
-    def __init__(self, factory, name):
-        TunnelListen.__init__(self, factory, name)
-        self.command_builder["-c"] = self.get_host
-
-    def get_host(self):
-        if self.config.host:
-            return "{0}:{1}".format(self.config.host, self.config.port)
-        return ""
 
     def get_parameters(self):
         if self.plugs[0].sock:
@@ -64,3 +49,12 @@ class TunnelConnect(TunnelListen):
 
     def configured(self):
         return self.plugs[0].sock is not None and self.config.host
+
+    def command(self, prepared):
+        config = self.config
+        cmd = Command(vde_program(prepared.vde, "vde_cryptcab"))
+        cmd.option("-P", self.key_path())
+        cmd.option("-s", socket_path(self.plugs[0]))
+        cmd.option("-p", config.localport)
+        cmd.option("-c", f"{config.host}:{config.port}")
+        return cmd

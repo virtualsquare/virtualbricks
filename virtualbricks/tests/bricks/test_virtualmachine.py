@@ -30,12 +30,10 @@ from virtualbricks.tests import (
     use_workspace,
     BrickTestCase,
     CommandTestCase,
-    adjacent,
 )
 from virtualbricks.bricks.virtualmachine import (
     UsbDevice,
     UsbDeviceKind,
-    hostonly_sock,
 )
 
 
@@ -127,103 +125,7 @@ class TestVirtualMachine(BrickTestCase):
         self.assertEqual(len(devices), 1)
 
 
-class TestCommandLine(CommandTestCase):
-
-    def test_every_option(self):
-        vm = self.factory.new_brick("qemu", "vm")
-        vm.set(
-            {
-                "argv0": "",
-                "kvm": True,
-                "machine": "pc",
-                "kvmsm": True,
-                "kvmsmem": 2,
-                "cpu": "host",
-                "novga": True,
-                "kernelenbl": True,
-                "kernel": "/boot/k",
-                "initrdenbl": True,
-                "initrd": "/boot/i",
-                "kopt": 'console="ttyS0"',
-                "gdb": True,
-                "gdbport": 1234,
-                "vnc": True,
-                "vncN": 2,
-                "vga": True,
-                "usbmode": True,
-                "usbdevlist": [UsbDevice("1d6b:0002", "hub")],
-                "cdromen": True,
-                "cdrom": "/c.iso",
-                "rtc": True,
-                "tdf": True,
-                "keyboard": "it",
-                "serial": True,
-            }
-        )
-        sw = self.factory.new_brick("switch", "sw")
-        vm.add_plug(sw.socks[0], "00:aa:00:00:00:01", "e1000")
-        vm.add_plug(hostonly_sock, "00:aa:00:00:00:02", "rtl8139")
-        sock = vm.add_sock("00:aa:00:00:00:03", "virtio-net-pci")
-        args = self.successResultOf(vm.args())
-        self.assertEqual(args[0], os.path.join(self.bin, "qemu-system-x86_64"))
-        options = adjacent(args)
-        for pair in [
-            ("-machine", "type=pc,accel=kvm:tcg,kvm_shadow_mem=2"),
-            ("-cpu", "host"),
-            ("-display", "none"),
-            ("-kernel", "/boot/k"),
-            ("-initrd", "/boot/i"),
-            ("-append", "'console=ttyS0'"),
-            ("-gdb", "tcp::1234"),
-            ("-vnc", ":2"),
-            ("-vga", "std"),
-            ("-usbdevice", "host:1d6b:0002"),
-            ("-name", "vm"),
-            ("-device", "e1000,mac=00:aa:00:00:00:01,id=vx0,netdev=vx0"),
-            ("-netdev", f"vde,id=vx0,sock={sw.socks[0].path.rstrip('[]')}"),
-            ("-netdev", "user,id=vx1"),
-            ("-netdev", f"vde,id=vx2,sock={sock.path}"),
-            ("-cdrom", "/c.iso"),
-            ("-rtc", "base=localtime,driftfix=slew"),
-            ("-k", "it"),
-            (
-                "-serial",
-                f"unix:{self.factory.runtime_dir}/vm_serial,server,nowait",
-            ),
-        ]:
-            self.assertIn(pair, options)
-
-    def test_few_options(self):
-        vm = self.factory.new_brick("qemu", "vm")
-        vm.set(
-            {
-                "argv0": "qemu-system-i386",
-                "kernel": "/boot/k",
-                "kopt": "quiet",
-                "deviceen": True,
-                "device": "/dev/cdrom",
-                "tdf": True,
-                "keyboard": "",
-            }
-        )
-        args = self.successResultOf(vm.args())
-        self.assertEqual(args[0], os.path.join(self.bin, "qemu-system-i386"))
-        options = adjacent(args)
-        self.assertIn(("-net", "none"), options)
-        self.assertIn(("-cdrom", "/dev/cdrom"), options)
-        self.assertIn(("-rtc", "driftfix=slew"), options)
-        for option in ("-machine", "-append", "-kernel", "-k", "-usbdevice"):
-            self.assertNotIn(option, args)
-
-    def test_a_plug_without_vde(self):
-        vm = self.factory.new_brick("qemu", "vm")
-        plug = vm.add_plug(None, "00:aa:00:00:00:01", "e1000")
-        plug.mode = "user"
-        args = self.successResultOf(vm.args())
-        self.assertIn(("-netdev", "user"), adjacent(args))
-        self.assertTrue(vm.configured())
-        plug.mode = "vde"
-        self.assertFalse(vm.configured())
+class TestRunning(CommandTestCase):
 
     def test_parameters(self):
         vm = self.factory.new_brick("qemu", "vm")

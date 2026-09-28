@@ -37,6 +37,7 @@ from twisted.logger import Logger
 from zope.interface import implementer
 
 from virtualbricks import base, errors, interfaces
+from virtualbricks.bricks.command import Prepared
 from virtualbricks.config.schema import (
     Ref,
     define,
@@ -47,6 +48,7 @@ from virtualbricks.config.schema import (
 )
 from virtualbricks.config.settings import get_setting
 from virtualbricks.i18n import _
+from virtualbricks.programs import programs
 from virtualbricks.spawn import abspath_vde
 from virtualbricks.sudo import sudo_command
 
@@ -67,6 +69,7 @@ event_without_actions = (
 )
 shutdown_brick = "Shutting down {name} (pid: {pid})"
 start_brick = "Starting: {args}"
+left_out = "{warning}"
 open_console = "Opening console for {name}\n%{args}\n"
 console_done = "Console terminated\n{status}"
 console_terminated = (
@@ -257,7 +260,6 @@ class BrickConfig:
 class Brick(base.Base):
 
     proc = None
-    command_builder = {}
     term_command = "vdeterm"
     _started_d = None
     _exited_d = None
@@ -390,59 +392,35 @@ class Brick(base.Base):
             deferreds, fireOnOneErrback=True, consumeErrors=True
         )
 
-    def args(self):
-        return [self.prog()] + self.build_cmd_line()
-
-    def prog(self):
-        raise NotImplementedError(_("Brick.prog() not implemented."))
-
-    def build_cmd_line(self):
+    def prepare(self):
         """
-        Build the arguments from ``command_builder``.
+        Gather what the command line needs: here, the VDE programs.
 
-        It maps each switch to a config field or a callable. A switch starting
-        with "#" is skipped. True (or "*") gives the bare switch, and any other
-        non-empty value gives the switch followed by the value, without the
-        switch if it starts with "*".
+        Return a Deferred of a Prepared.
         """
 
-        res = []
-        for switch, value in self.command_builder.items():
-            if switch.startswith("#"):
-                continue
-            if callable(value):
-                value = value()
-            elif value is not None:
-                value = getattr(self.config, value, None)
-            if value is True or value == "*":
-                res.append(switch)
-            elif value is None or value is False:
-                continue
-            else:
-                value = str(value)
-                if value:
-                    if not switch.startswith("*"):
-                        res.append(switch)
-                    res.append(value)
-        return res
+        deferred = programs.vde(get_setting("vdepath"))
+        return deferred.addCallback(lambda vde: Prepared(vde=vde))
+
+    def command(self, prepared):
+        """Return the Command of the brick's program."""
+
+        raise NotImplementedError("Brick.command")
 
     def _poweron(self, ignore):
 
-        def start_process(value):
-            prog, args = value
+        def start_process(command):
+            for warning in command.warnings:
+                self.logger.warn(left_out, warning=warning)
+            args = command.argv
             self.logger.info(start_brick, args=" ".join(args))
-            # usePTY?
             if self.needsudo():
                 args = sudo_command(args)
-                prog = args[0]
             self.proc = self.process_protocol(self)
-            reactor.spawnProcess(self.proc, prog, args, os.environ)
+            reactor.spawnProcess(self.proc, args[0], args, os.environ)
 
-        deferreds = [
-            defer.maybeDeferred(self.prog),
-            defer.maybeDeferred(self.args),
-        ]
-        d = defer.gatherResults(deferreds, consumeErrors=True)
+        d = defer.maybeDeferred(self.prepare)
+        d.addCallback(self.command)
         d.addCallback(start_process)
         return d
 

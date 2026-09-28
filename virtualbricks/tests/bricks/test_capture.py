@@ -18,8 +18,6 @@
 
 """The capture."""
 
-import os
-
 from virtualbricks.tests import (
     CommandTestCase,
 )
@@ -35,14 +33,9 @@ class TestCapture(CommandTestCase):
             capture.get_parameters(), "Interface eth0 disconnected"
         )
         self.assertFalse(capture.configured())
-        self.assertEqual(capture.sock_path(), "")
         sw = self.factory.new_brick("switch", "sw")
         capture.plugs[0].connect(sw.socks[0])
         self.assertEqual(
             capture.get_parameters(), "Interface eth0 plugged to sw "
         )
-        self.assertEqual(capture.sock_path(), sw.socks[0].path.rstrip("[]"))
         self.assertTrue(capture.configured())
-        self.assertEqual(
-            capture.prog(), os.path.join(self.bin, "vde_pcapplug")
-        )

@@ -281,6 +281,9 @@ class SettingsDialog(Window):
         self.systray_switch = _switch()
         self.warn_missing_switch = _switch()
         self.enable_ksm_switch = _switch()
+        self.audio_driver_entry = Gtk.Entry(
+            visible=True, can_focus=True, hexpand=True
+        )
         rows = (
             (_("X-window terminal command"), self.term_entry),
             (_("Enable systray"), self.systray_switch),
@@ -289,6 +292,10 @@ class SettingsDialog(Window):
                 self.warn_missing_switch,
             ),
             (_("Enable KSM"), self.enable_ksm_switch),
+            (
+                _("Audio driver of QEMU, as alsa, pa or pipewire"),
+                self.audio_driver_entry,
+            ),
         )
         for row, (text, widget) in enumerate(rows):
             grid.attach(_label(text), 0, row, 1, 1)
@@ -357,6 +364,7 @@ class SettingsDialog(Window):
         self.systray_switch.set_active(get_setting("systray"))
         self.warn_missing_switch.set_active(get_setting("show_missing"))
         self.enable_ksm_switch.set_active(get_setting("ksm"))
+        self.audio_driver_entry.set_text(get_setting("audio_driver"))
         # with no project open, the defaults
         self.project_widgets.load(get_setting)
         self.project_widgets.grid.set_sensitive(project_settings() is not None)
@@ -366,6 +374,7 @@ class SettingsDialog(Window):
         set_setting("term", self.term_entry.get_text())
         set_setting("systray", self.systray_switch.get_active())
         set_setting("show_missing", self.warn_missing_switch.get_active())
+        set_setting("audio_driver", self.audio_driver_entry.get_text().strip())
         if project_settings() is not None:
             self.project_widgets.store(set_setting)
             projects.save(self.virtualbricks_gui.brickfactory)

@@ -31,6 +31,8 @@ from twisted.internet.utils import getProcessOutput
 from twisted.logger import Logger
 
 from virtualbricks import bricks, errors, tools
+from virtualbricks.bricks.command import Command, Prepared, joined, socket_path
+from virtualbricks.config.projectfile import DEFAULT_MODEL
 from virtualbricks.config.schema import (
     Bool,
     Int,
@@ -46,6 +48,7 @@ from virtualbricks.config.settings import get_setting
 from virtualbricks.config.workspace import projects
 from virtualbricks.i18n import _
 from virtualbricks.nic import random_mac
+from virtualbricks.programs import PACKAGES, Missing, ProgramError, programs
 from virtualbricks.spawn import abspath_qemu, encode_proc_output, qemu_img
 from virtualbricks.observable import Event, Observable
 from virtualbricks.tools import NotCowFileError, discard_first_arg, sync
@@ -422,22 +425,6 @@ class Disk:
     def _basefolder(self):
         return projects.current.path
 
-    def args(self):
-
-        def cb(disk_name):
-            if self.vm.get("use_virtio"):
-                return ["-drive", "file={0},if=virtio".format(disk_name)]
-            else:
-                return ["-" + self.device, disk_name]
-
-        if self.image:
-            d = self.get_real_disk_name()
-            d.addCallback(cb)
-            return d
-        else:
-            # TODO: check!! Maybe return a failure?
-            return defer.succeed([])
-
     def acquire(self):
         self.lock_image()
 
@@ -608,104 +595,6 @@ class Disk:
         )
 
 
-VM_COMMAND_BUILDER = {
-    "#argv0": "argv0",
-    "#M": "machine",
-    "#cpu": "cpu",
-    "-smp": "smp",
-    "-m": "ram",
-    "-boot": "boot",
-    # numa not supported
-    "#privatehda": "privatehda",
-    "#privatehdb": "privatehdb",
-    "#privatehdc": "privatehdc",
-    "#privatehdd": "privatehdd",
-    "#privatefda": "privatefda",
-    "#privatefdb": "privatefdb",
-    "#privatemtdblock": "privatemtdblock",
-    "#cdrom": "cdrom",
-    "#device": "device",
-    "#cdromen": "cdromen",
-    "#deviceen": "deviceen",
-    "#keyboard": "keyboard",
-    "#usbdevlist": "usbdevlist",
-    "-soundhw": "soundhw",
-    "-usb": "usbmode",
-    # "-uuid": "uuid",
-    # "-curses": "curses", ## not implemented
-    # "-no-frame": "noframe", ## not implemented
-    # "-no-quit": "noquit", ## not implemented.
-    "-snapshot": "snapshot",
-    "#vga": "vga",
-    "#vncN": "vncN",
-    "#vnc": "vnc",
-    # "-full-screen": "full-screen", ## TODO 0.3
-    "-sdl": "sdl",
-    "-portrait": "portrait",
-    "-win2k-hack": "win2k",  # not implemented
-    "-no-acpi": "noacpi",
-    # "-no-hpet": "nohpet", ## ???
-    # "-baloon": "baloon", ## ???
-    # #acpitable not supported
-    # #smbios not supported
-    "#kernel": "kernel",
-    "#kernelenbl": "kernelenbl",
-    "#append": "kopt",
-    "#initrd": "initrd",
-    "#initrdenbl": "initrdenbl",
-    # "-serial": "serial",
-    # "-parallel": "parallel",
-    # "-monitor": "monitor",
-    # "-qmp": "qmp",
-    # "-mon": "",
-    # "-pidfile": "", ## not needed
-    # "-singlestep": "",
-    # "-S": "",
-    "#gdb_e": "gdb",
-    "#gdb_port": "gdbport",
-    # "-s": "",
-    # "-d": "",
-    # "-hdachs": "",
-    # "-L": "",
-    # "-bios": "",
-    "#kvm": "kvm",
-    # "-no-reboot": "", ## not supported
-    # "-no-shutdown": "", ## not supported
-    "-loadvm": "loadvm",
-    # "-daemonize": "", ## not supported
-    # "-option-rom": "",
-    # "-clock": "",
-    "#rtc": "rtc",
-    # "-icount": "",
-    # "-watchdog": "",
-    # "-watchdog-action": "",
-    # "-echr": "",
-    # "-virtioconsole": "", ## future
-    # "-show-cursor": "",
-    # "-tb-size": "",
-    # "-incoming": "",
-    # "-nodefaults": "",
-    # "-chroot": "",
-    # "-runas": "",
-    # "-readconfig": "",
-    # "-writeconfig": "",
-    # "-no-kvm": "", ## already implemented otherwise
-    # "-no-kvm-irqchip": "",
-    # "-no-kvm-pit": "",
-    # "-no-kvm-pit-reinjection": "",
-    # "-pcidevice": "",
-    # "-enable-nesting": "",
-    # "-nvram": "",
-    "#kvmsm": "kvmsm",
-    "#kvmsmem": "kvmsmem",
-    # "-mem-path": "",
-    # "-mem-prealloc": "",
-    "#icon": "icon",
-    "#serial": "serial",
-    "#stdout": "",
-}
-
-
 DISK_DEVICES = ("hda", "hdb", "hdc", "hdd", "fda", "fdb", "mtdblock")
 
 
@@ -829,7 +718,6 @@ class VirtualMachine(bricks.Brick):
 
     type = "Qemu"
     term_command = "unixterm"
-    command_builder = VM_COMMAND_BUILDER
     config_factory = VirtualMachineConfig
     process_protocol = bricks.Process
     default_arg0 = "qemu-system-x86_64"
@@ -911,12 +799,9 @@ class VirtualMachine(bricks.Brick):
 
     def get_parameters(self):
         try:
-            command = self.prog()
+            command = self.program()
         except FileNotFoundError:
-            if self.config.argv0:
-                command = self.config.argv0
-            else:
-                command = self.default_arg0
+            command = self.config.argv0 or self.default_arg0
 
         ram = self.config.ram
         txt = [_("command:") + " %s, ram: %s" % (command, ram)]
@@ -938,120 +823,244 @@ class VirtualMachine(bricks.Brick):
                 return False
         return True
 
-    def prog(self):
-        if self.config.argv0:
-            arg0 = self.config.argv0
-        else:
-            arg0 = self.default_arg0
-        return abspath_qemu(arg0)
+    def program(self):
+        """The path of the QEMU program; FileNotFoundError if missing."""
 
-    def args(self):
-        d = defer.gatherResults([disk.args() for disk in self.disks()])
-        d.addCallback(self.__args)
-        return d
+        return abspath_qemu(self.config.argv0 or self.default_arg0)
 
-    def __args(self, results):
-        res = [self.prog()]
-        if self.config.kvm or self.config.machine or self.config.kvmsm:
-            props = []
-            if self.config.machine:
-                props.append("type={}".format(self.config.machine))
-            if self.config.kvm:
-                props.append("accel=kvm:tcg")
-            if self.config.kvmsm:
-                props.append("kvm_shadow_mem={}".format(self.config.kvmsmem))
-            res.extend(["-machine", ",".join(props)])
+    def prepare(self):
+        """
+        Ask the QEMU program what it has, and make sure of the disks.
 
-        if self.config.cpu:
-            res.extend(["-cpu", self.config.cpu])
-        res.extend(list(self.build_cmd_line()))
-        if self.config.novga:
-            res.extend(["-display", "none"])
-        for disk_args in results:
-            res.extend(disk_args)
-        if self.config.kernelenbl and self.config.kernel:
-            res.extend(["-kernel", self.config.kernel])
-        if self.config.initrdenbl and self.config.initrd:
-            res.extend(["-initrd", self.config.initrd])
-        if self.config.kopt and self.config.kernelenbl and self.config.kernel:
-            res.extend(
-                [
-                    "-append",
-                    "'{0}'".format(re.sub('"', "", self.config.kopt)),
-                ]
+        The machine type is asked for its properties, as ACPI; a machine type
+        that the program doesn't have is left out, so its default is asked.
+        """
+
+        name = self.config.argv0 or self.default_arg0
+        try:
+            path = self.program()
+        except FileNotFoundError:
+            missing = Missing(name, PACKAGES.get(name))
+            return defer.fail(ProgramError(f"{missing} isn't installed"))
+        disks = [disk for disk in self.disks() if disk.image]
+
+        def ask_machine(qemu):
+            machine = self.config.machine
+            if not qemu.has_machine(machine):
+                machine = ""
+            deferred = programs.machine_properties(qemu, machine)
+            return deferred.addCallback(lambda properties: (qemu, properties))
+
+        def prepared(results):
+            (qemu, properties), paths = results
+            return Prepared(
+                qemu=qemu,
+                machine_properties=properties,
+                disks=tuple((disk.device, p) for disk, p in zip(disks, paths)),
+                audio_driver=get_setting("audio_driver"),
             )
-        if self.config.gdb:
-            res.extend(["-gdb", "tcp::%d" % self.config.gdbport])
-        if self.config.vnc:
-            res.extend(["-vnc", ":%d" % self.config.vncN])
-        if self.config.vga:
-            res.extend(["-vga", "std"])
 
-        if self.config.usbmode:
-            for usb_dev in self.config.usbdevlist:
-                res.extend(["-usbdevice", f"host:{usb_dev.id}"])
-
-        res.extend(["-name", self.name])
-        if not self.plugs and not self.socks:
-            res.extend(["-net", "none"])
-        else:
-            for i, link in enumerate(itertools.chain(self.plugs, self.socks)):
-                res.append("-device")
-                res.append(
-                    "{1.model},mac={1.mac},id=vx{0},netdev=vx{0}".format(
-                        i, link
-                    )
-                )
-                # a socket card has no sock of its own
-                if link.mode == "sock":
-                    res.append("-netdev")
-                    res.append("vde,id=vx{0},sock={1}".format(i, link.path))
-                elif link.sock and link.sock.mode == "hostonly":
-                    res.extend(("-netdev", "user,id=vx{0}".format(i)))
-                elif link.mode == "vde":
-                    res.append("-netdev")
-                    res.append(
-                        "vde,id=vx{0},sock={1}".format(
-                            i, link.sock.path.rstrip("[]")
-                        )
-                    )
-                else:
-                    res.extend(["-netdev", "user"])
-
-        if self.config.cdromen and self.config.cdrom:
-            res.extend(["-cdrom", self.config.cdrom])
-        elif self.config.deviceen and self.config.device:
-            res.extend(["-cdrom", self.config.device])
-        if self.config.rtc or self.config.tdf:
-            rtcarg = []
-            if self.config.rtc:
-                rtcarg.append("base=localtime")
-            if self.config.tdf:
-                rtcarg.append("driftfix=slew")
-            res.extend(["-rtc", ",".join(rtcarg)])
-        if len(self.config.keyboard) == 2:
-            res.extend(["-k", self.config.keyboard])
-        if self.config.serial:
-            res.extend(
-                [
-                    "-serial",
-                    "unix:%s/%s_serial,server,nowait"
-                    % (self.factory.runtime_dir, self.name),
-                ]
-            )
-        res.extend(
+        deferred = defer.gatherResults(
             [
-                "-mon",
-                "chardev=mon",
-                "-chardev",
-                "socket,id=mon,path=%s,server,nowait" % self.console(),
-                "-mon",
-                "chardev=mon_cons",
-                "-chardev",
-                "stdio,id=mon_cons,signal=off",
-            ]
+                programs.qemu(path).addCallback(ask_machine),
+                defer.gatherResults(
+                    [disk.get_real_disk_name() for disk in disks],
+                    consumeErrors=True,
+                ),
+            ],
+            consumeErrors=True,
         )
-        return res
+        return deferred.addCallback(prepared)
+
+    def command(self, prepared):
+        """The command line, with what the QEMU program has."""
+
+        config = self.config
+        qemu = prepared.qemu
+        version = f"{self.name}: QEMU {qemu.version}"
+        cmd = Command(qemu.path)
+        machine = config.machine
+        if machine and not qemu.has_machine(machine):
+            cmd.warn(
+                f"{version} has no machine type {machine} (machine): the"
+                " machine starts with the default one"
+            )
+            machine = ""
+        acpi_off = bool(config.noacpi)
+        machine_acpi = acpi_off and "acpi" in prepared.machine_properties
+        sound, speaker = self._sound(cmd, prepared)
+        cmd.option(
+            "-machine",
+            joined(
+                f"type={machine}" if machine else "",
+                "acpi=off" if machine_acpi else "",
+                "pcspk-audiodev=snd0" if speaker else "",
+            ),
+        )
+        if acpi_off and not machine_acpi:
+            if "-no-acpi" in qemu.options:
+                cmd.arg("-no-acpi")
+            else:
+                cmd.warn(f"{version} can't turn ACPI off here (noacpi)")
+        if config.kvm:
+            if "kvm" in qemu.accelerators:
+                # with the emulator in its place where KVM can't run; QEMU
+                # takes the shadow memory in bytes
+                shadow = f"kvm-shadow-mem={config.kvmsmem * 1024 * 1024}"
+                cmd.option(
+                    "-accel", joined("kvm", shadow if config.kvmsm else "")
+                )
+                cmd.option("-accel", "tcg")
+            else:
+                cmd.warn(
+                    f"{version} has no KVM (kvm): the machine is emulated"
+                )
+        cpu = config.cpu
+        if cpu and not qemu.has_cpu(cpu):
+            cmd.warn(
+                f"{version} has no CPU model {cpu} (cpu): the machine starts"
+                " with the default one"
+            )
+            cpu = ""
+        cmd.option("-cpu", cpu)
+        cmd.option("-smp", config.smp)
+        cmd.option("-m", config.ram)
+        cmd.option("-boot", config.boot)
+        cmd.arg(*sound)
+        cmd.flag("-usb", config.usbmode)
+        cmd.flag("-snapshot", config.snapshot)
+        if config.sdl:
+            if "sdl" in qemu.displays:
+                cmd.option("-display", "sdl")
+            else:
+                cmd.warn(
+                    f"{version} has no SDL window (sdl): install the"
+                    " qemu-system-gui package"
+                )
+        if config.portrait:
+            if "-portrait" in qemu.options:
+                cmd.arg("-portrait")
+            else:
+                cmd.warn(f"{version} can't rotate the display (portrait)")
+        cmd.option("-loadvm", config.loadvm)
+        if config.novga:
+            cmd.option("-display", "none")
+        for device, path in prepared.disks:
+            if config.use_virtio:
+                cmd.option("-drive", f"file={path},if=virtio")
+            else:
+                cmd.option(f"-{device}", path)
+        if config.kernelenbl:
+            cmd.option("-kernel", config.kernel)
+        if config.initrdenbl:
+            cmd.option("-initrd", config.initrd)
+        if config.kernelenbl and config.kernel:
+            # as it is: no shell reads it
+            cmd.option("-append", config.kopt)
+        if config.gdb:
+            cmd.option("-gdb", f"tcp::{config.gdbport}")
+        if config.vnc:
+            cmd.option("-vnc", f":{config.vncN}")
+        if config.vga:
+            cmd.option("-vga", "std")
+        if config.usbmode:
+            for device in config.usbdevlist:
+                vendor, product = device.id.split(":")
+                cmd.option(
+                    "-device",
+                    f"usb-host,vendorid=0x{vendor},productid=0x{product}",
+                )
+        cmd.option("-name", self.name)
+        self._cards(cmd, qemu)
+        if config.cdromen and config.cdrom:
+            cmd.option("-cdrom", config.cdrom)
+        elif config.deviceen and config.device:
+            cmd.option("-cdrom", config.device)
+        cmd.option(
+            "-rtc",
+            joined(
+                "base=localtime" if config.rtc else "",
+                "driftfix=slew" if config.tdf else "",
+            ),
+        )
+        if len(config.keyboard) == 2:
+            cmd.option("-k", config.keyboard)
+        if config.serial:
+            serial = self.runtime_path(f"{self.name}_serial")
+            cmd.option("-serial", f"unix:{serial},server=on,wait=off")
+        console = f"socket,id=mon,path={self.console()},server=on,wait=off"
+        cmd.arg("-mon", "chardev=mon", "-chardev", console)
+        cmd.arg("-mon", "chardev=mon_cons")
+        cmd.arg("-chardev", "stdio,id=mon_cons,signal=off")
+        return cmd
+
+    def _sound(self, cmd, prepared):
+        """
+        The arguments of the sound card, and whether it's the PC speaker.
+
+        A card or a driver that the program doesn't have is left out, with a
+        warning in cmd.
+        """
+
+        card = self.config.soundhw
+        if not card:
+            return [], False
+        qemu = prepared.qemu
+        version = f"{self.name}: QEMU {qemu.version}"
+        driver = prepared.audio_driver
+        # QEMU 6.2 doesn't list its drivers: the driver is taken on trust
+        drivers = qemu.audio_drivers
+        if drivers is not None and driver not in drivers:
+            cmd.warn(
+                f"{version} has no audio driver {driver} (audio_driver of the"
+                " settings): the machine has no sound card"
+            )
+            return [], False
+        audiodev = ["-audiodev", f"{driver},id=snd0"]
+        # the PC speaker is part of the machine, not a device of its own
+        if card == "pcspk":
+            return audiodev, True
+        device = qemu.device(card)
+        if device is None:
+            cmd.warn(
+                f"{version} has no sound card {card} (soundhw): the machine"
+                " has none"
+            )
+            return [], False
+        return audiodev + ["-device", f"{device.name},audiodev=snd0"], False
+
+    def _cards(self, cmd, qemu):
+        """The network cards, each with its backend when QEMU has it."""
+
+        links = list(itertools.chain(self.plugs, self.socks))
+        if not links:
+            cmd.option("-net", "none")
+            return
+        version = f"{self.name}: QEMU {qemu.version}"
+        vde = "vde" in qemu.netdevs
+        unplugged = []
+        for index, link in enumerate(links):
+            model = link.model
+            if qemu.device(model) is None:
+                cmd.warn(
+                    f"{version} has no network card {model}: card {index} is"
+                    f" a {DEFAULT_MODEL}"
+                )
+                model = DEFAULT_MODEL
+            netdev = _netdev(link, index, vde)
+            device = f"{model},mac={link.mac},id=vx{index}"
+            if netdev is None:
+                unplugged.append(str(index))
+                cmd.option("-device", device)
+            else:
+                cmd.option("-device", f"{device},netdev=vx{index}")
+                cmd.option("-netdev", netdev)
+        if unplugged:
+            cmd.warn(
+                f"{version} can't join a VDE switch: card"
+                f" {', '.join(unplugged)} unplugged; install a QEMU built with"
+                " VDE"
+            )
 
     def add_sock(self, mac=None, model=None, name=None):
         """
@@ -1130,6 +1139,20 @@ class VirtualMachine(bricks.Brick):
         self._disks[dev].set_image(image)
         if not self._restore:
             self._observable.notify("image-changed", (self, image))
+
+
+def _netdev(link, index, vde):
+    """The backend of a card, or None when it needs VDE and QEMU has none."""
+
+    if link.mode == "sock":
+        # a socket card: other bricks plug into it
+        return f"vde,id=vx{index},sock={link.path}" if vde else None
+    if link.sock is not None and link.sock.mode == "hostonly":
+        return f"user,id=vx{index}"
+    if link.mode == "vde":
+        return f"vde,id=vx{index},sock={socket_path(link)}" if vde else None
+    # a card on QEMU's own user network
+    return f"user,id=vx{index}"
 
 
 def is_virtualmachine(brick):

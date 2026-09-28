@@ -442,6 +442,10 @@ class FakeRun:
             self.answers[machine_question(machine)] = Answer(**answer)
         for name, answer in data["vde"]["answers"].items():
             self.answers[(name,) + VDE_QUESTIONS[name]] = Answer(**answer)
+        # no target ships vde-netemu, a fork of wirefilter with its help
+        wirefilter = ("wirefilter",) + VDE_QUESTIONS["wirefilter"]
+        netemu = ("vde-netemu",) + VDE_QUESTIONS["vde-netemu"]
+        self.answers.setdefault(netemu, self.answers[wirefilter])
         self.calls = []
         self.wait = wait
         self.pending = []

@@ -135,7 +135,14 @@ quits.
 :   Show an icon in the system tray.
 
 **show_missing** = *boolean*, default `true`
-:   Warn at start about the programs that Virtualbricks needs and can't find.
+:   Warn at start about the programs that Virtualbricks needs and can't find,
+    with the package that has each.
+
+**audio_driver** = *string*, default `"alsa"`
+:   The audio driver of QEMU that plays the sound cards of the virtual
+    machines, as **"alsa"**, **"pa"** or **"pipewire"**. It's about this
+    computer, not about a project. A driver that the installed QEMU doesn't
+    have leaves the machines without a sound card, with a warning.
 
 The **settings.toml** of an older version also has the settings of the
 projects, described under **Project settings**: they're reported, ignored,
@@ -319,7 +326,11 @@ spaces.
 ## qemu
 
 A QEMU virtual machine. Most keys become an option of the QEMU command line,
-given in bold.
+given in bold. Before a machine starts, Virtualbricks asks its QEMU program
+what it has, and writes each option the way that version takes it. What the
+program lacks is left out, and the machine starts with a warning that says so,
+as a machine type or a CPU model that it doesn't know, which leaves QEMU's
+default in its place.
 
 **argv0** = *string*, default `"qemu-system-i386"`
 :   The QEMU program, in the **qemupath** directory, for example
@@ -332,7 +343,7 @@ given in bold.
 :   The CPU model: **-cpu**.
 
 **kvm** = *boolean*, default `false`
-:   Use KVM when the host supports it: **-machine accel=kvm:tcg**.
+:   Use KVM when the host supports it: **-accel kvm -accel tcg**.
 
 **smp** = *integer* 1-64, default `1`
 :   The number of CPUs: **-smp**.
@@ -344,7 +355,8 @@ given in bold.
 :   Set the size of the KVM shadow memory to **kvmsmem**.
 
 **kvmsmem** = *integer* 0-99999, default `1`
-:   The size of the KVM shadow memory: **-machine kvm_shadow_mem=**.
+:   The size of the KVM shadow memory, in MiB: **-accel
+    kvm,kvm-shadow-mem=**.
 
 **boot** = *string*, default `""`
 :   The boot order: **-boot**, for example **"c"** for the first disk or
@@ -381,13 +393,16 @@ given in bold.
 :   The VNC display: **-vnc :***N*.
 
 **sdl** = *boolean*, default `false`
-:   Show the display in an SDL window: **-sdl**.
+:   Show the display in an SDL window: **-display sdl**. QEMU has it with the
+    package **qemu-system-gui**.
 
 **portrait** = *boolean*, default `false`
-:   Rotate the display: **-portrait**.
+:   Rotate the display: **-portrait**, which QEMU 8.2 has and 9.2 doesn't.
 
 **soundhw** = *string*, default `""`
-:   The sound card: **-soundhw**.
+:   The sound card, as **"ac97"**, **"es1370"** or **"sb16"**: **-audiodev**,
+    with the **audio_driver** setting, and **-device**. **"pcspk"** is the
+    speaker of the PC: **-machine pcspk-audiodev=**.
 
 **usbmode** = *boolean*, default `false`
 :   Enable USB, **-usb**, and pass the devices of **usbdevlist** to the
@@ -396,7 +411,7 @@ given in bold.
 **usbdevlist** = *array*, default `[]`
 :   USB devices of the host, each an inline table with an **id**, the
     vendor and product id as **"046d:c52b"**, and a **description**. Each
-    device becomes **-usbdevice host:***id*.
+    device becomes **-device usb-host,vendorid=0x046d,productid=0xc52b**.
 
 **keyboard** = *string*, default `""`
 :   The keyboard layout, a code of two letters such as **"it"**: **-k**.
@@ -433,7 +448,8 @@ given in bold.
 :   The port of the GDB server: **-gdb tcp::***port*.
 
 **noacpi** = *string*, default `""`
-:   **"\*"** disables ACPI: **-no-acpi**.
+:   **"\*"** disables ACPI: **-machine acpi=off**, or **-no-acpi** for a
+    machine type without that property.
 
 **loadvm** = *string*, default `""`
 :   A saved state to resume the machine from: **-loadvm**. Virtualbricks sets
@@ -467,7 +483,9 @@ sees them. Each card has these keys:
 **kind** = *choice*
 :   **"plug"** for a card plugged into a socket, **"socket"** for a card
     that other bricks plug into, or **"hostonly"** for a card on QEMU's user
-    networking.
+    networking. A plug and a socket card need the **vde** network backend of
+    QEMU, which Ubuntu builds its QEMU without: with a QEMU that lacks it, the
+    card is there but unplugged, with a warning.
 
 **connect** = *string*
 :   With **"plug"**, the socket the card is plugged into; see
@@ -481,7 +499,8 @@ sees them. Each card has these keys:
 
 **model** = *string*, default `"rtl8139"`
 :   The model of the card, for example **"e1000"** or
-    **"virtio-net-pci"**.
+    **"virtio-net-pci"**. A model that the installed QEMU doesn't have
+    becomes **"rtl8139"**, with a warning.
 
 **mac** = *string*
 :   The MAC address, as **"52:54:00:12:34:56"**. A missing or invalid
@@ -550,7 +569,9 @@ Connects two sockets, through **dpipe**(1) and **vde_plug**(1).
 ## netemu
 
 A wire that emulates a network link: bandwidth, delay, buffer and loss, which
-can change over time between the states of a Markov chain.
+can change over time between the states of a Markov chain. It runs
+**vde-netemu**, or the **wirefilter**(1) of VDE, which it's a fork of, where
+vde-netemu isn't installed.
 
 **endpoints** = *array*, default `["", ""]`
 :   The two sockets, left and right. LR values apply from left to right, RL
@@ -756,6 +777,7 @@ term = "/usr/bin/xterm"
 ksm = false
 systray = true
 show_missing = true
+audio_driver = "alsa"
 ```
 
 A **project.toml** with a virtual machine, two switches connected by a

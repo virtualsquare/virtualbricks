@@ -113,6 +113,9 @@ class AppSettings:
     ksm: bool = field(Bool(), default=False)
     systray: bool = field(Bool(), default=True)
     show_missing: bool = field(Bool(), default=True)
+    # the audio driver of QEMU that plays the sound cards of the machines;
+    # it's about this computer, not about a project
+    audio_driver: str = field(Str(), default="alsa")
 
 
 @define

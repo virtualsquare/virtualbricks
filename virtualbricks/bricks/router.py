@@ -16,22 +16,20 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from virtualbricks import bricks
-from virtualbricks.spawn import abspath_vde
+from virtualbricks.bricks.command import Command, vde_program
 
 
 class Router(bricks.Brick):
 
     type = "Router"
 
-    def __init__(self, factory, name):
-        bricks.Brick.__init__(self, factory, name)
-        self.command_builder = {"-M": self.console, "-c": "configfile"}
-
     def get_parameters(self):
         return "Work in progress..."
 
-    def prog(self):
-        return abspath_vde("vde_router")
+    def command(self, prepared):
+        cmd = Command(vde_program(prepared.vde, "vde_router"))
+        cmd.option("-M", self.console())
+        return cmd
 
     def configured(self):
         return True

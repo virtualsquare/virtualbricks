@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 14:53+0200\n"
+"POT-Creation-Date: 2026-09-28 15:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -103,10 +103,6 @@ msgstr ""
 #: virtualbricks/bricks/__init__.py
 #, python-format
 msgid "Cannot start '%s': not connected"
-msgstr ""
-
-#: virtualbricks/bricks/__init__.py
-msgid "Brick.prog() not implemented."
 msgstr ""
 
 #: virtualbricks/bricks/__init__.py virtualbricks/bricks/tap.py
@@ -1310,6 +1306,10 @@ msgstr ""
 
 #: virtualbricks/gui/dialogs/settings.py
 msgid "Enable KSM"
+msgstr ""
+
+#: virtualbricks/gui/dialogs/settings.py
+msgid "Audio driver of QEMU, as alsa, pa or pipewire"
 msgstr ""
 
 #: virtualbricks/gui/dialogs/usbdev.py
