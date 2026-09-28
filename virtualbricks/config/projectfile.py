@@ -535,6 +535,8 @@ def _read_events(factory: BrickFactory, data: Table, report: Report) -> None:
             report.warning(f"{exc}, event dropped", where)
             continue
         event.config = load_record(EventConfig, table, report, where)
+        # what shows the event learns its configuration
+        event.notify_changed()
 
 
 def _read_bricks(factory: BrickFactory, data: Table, report: Report) -> None:
@@ -558,6 +560,8 @@ def _read_bricks(factory: BrickFactory, data: Table, report: Report) -> None:
     for brick, targets, where in connections:
         _connect(factory, brick, targets, report, where)
         brick.set_restore(False)
+        # what shows the brick learns its configuration and its links
+        brick.notify_changed()
 
 
 def _check_references(factory: BrickFactory, report: Report) -> None:

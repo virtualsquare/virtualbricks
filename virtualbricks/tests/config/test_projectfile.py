@@ -231,6 +231,28 @@ class TestRoundTrip(ProjectFileTestCase):
         self.assertIsNone(wire.plugs[0].sock)
         self.assertEqual(wire.plugs[1].sock.nickname, "vm_sock_eth3")
 
+    def test_announced_once_restored(self):
+        data = project_document(build_lab(self.factory), ProjectSettings())
+        factory = make_factory(self)
+        bricks, events = {}, {}
+
+        def brick_changed(brick):
+            bricks[brick.name] = (dump_record(brick.config), len(brick.plugs))
+
+        def event_changed(event):
+            events[event.name] = dump_record(event.config)
+
+        factory.brick_changed.connect(brick_changed)
+        factory.event_changed.connect(event_changed)
+        restore_project(factory, data, self.report, "/")
+        # what shows them, as the lists of the window, learns their
+        # configuration and their links, not the defaults they were made with
+        self.assertEqual(bricks["sw1"][0]["ports"], 16)
+        self.assertEqual(bricks["vm"][1], 3)
+        self.assertTrue(bricks["vm"][0]["use_kvm"])
+        self.assertEqual(events["boot"]["delay"], 5)
+        self.assertEqual(sorted(bricks), sorted(data["bricks"]))
+
     def test_load_from_a_file(self):
         directory = os.path.abspath(self.mktemp())
         os.makedirs(directory)
